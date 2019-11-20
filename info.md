@@ -1,17 +1,18 @@
 ### Integration Standards Information
-* [Flagship Project](#)
-* [Tool Project](#)
-* [Version 2.8.0](#)
-* [Builder](#)
-* [Breaker](#)
 
-### Downloads or Social Links
-* [Download](#)
-* [Meetup](#)
+![Builders](assets/images/owasp_builders_small.png)
+![Defenders](assets/images/owasp_defenders_small.png)
+![Breakers](assets/images/owasp_breakers_small.png)
 
-### Code Repository
-* [repo](#)
+![Documentation Project](assets/images/owasp_documentation_project.jpg)
 
-### Change Log
-* [changes](#)
+### Slack
 
+- [Join OWASP Slack](https://join.slack.com/t/owasp/shared_invite/enQtNjExMTc3MTg0MzU4LWQ2Nzg3NGJiZGQ2MjRmNzkzN2Q4YzU1MWYyZTdjYjA2ZTA5M2RkNzE2ZjdkNzI5ZThhOWY5MjljYWZmYmY4ZjM)
+- [Join our channel](https://owasp.slack.com/archives/CPMEWT342)
+
+### Licensing
+
+The OWASP Cheat Sheet Series is free to use under the [Creative Commons ShareAlike 3 License](https://creativecommons.org/licenses/by-sa/3.0/us/).
+
+![CC License](assets/images/cc_license_small.png)
