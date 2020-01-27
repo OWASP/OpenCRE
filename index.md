@@ -9,6 +9,8 @@ pitch: Standards of integration between different OWASP projects to properly han
 
 ---
 
+The Integration Standards project has a goal of creating a repository that sets up a unified ID that is built on top of requirements, which makes it very descriptive for developers and application security experts to implement in their work. It will contain mappings between requirements, testing measures, how they can be done, and other frameworks (such as ENISA, CWE, CAPEC, etc.).
+
 ## Motivation
 
 The needs and desires of application security engineers are blooming day by day. In response to their needs, plenty of projects are surfacing. Each of these projects fulfill a given need in the SDLC flow (_e.g._ threat modeling, security tests, etc.).
@@ -21,10 +23,9 @@ This project's vision is to set in place a way for integration to occur between 
 
 The below is a rough estimation as it is dependent on other projects' time and availability.
 
-- End of Q4 2019: Design Phase deliverables for OWASP projects integration.
-- Start of Q1 2020: documents detailing how mature projects should start working to allow proper integration with other tools.
-- Start of Q2 2020: Review and have a retrospective session with the project leaders to identify how well the integration planning took into consideration their needs.
-- End of Q2 2020: Launch a new cycle for the project in order to tackle identified issues and to identify standards that could fit the projects on a wider scope, and not only for mature projects.
+- End of Q1 2020: Design phase; the project has a clear vision on its deliverables, with proper feedback on its way forward.
+- Start of Q2 2020: Plan the setup of the project and start tackling it, by first identifying the feeding projects and the links to be done between frameworks.
+- End of Q3 2020: MVP release where a proper requirements set has been established and released for testing to be conducted on the standard being proposed.
 
 The roadmap will be adjusted as the project moves forward.
 
