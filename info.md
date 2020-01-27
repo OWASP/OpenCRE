@@ -13,6 +13,6 @@
 
 ### Licensing
 
-The OWASP Cheat Sheet Series is free to use under the [Creative Commons ShareAlike 4.0 License](https://creativecommons.org/licenses/by-sa/4.0/legalcode).
+The OWASP Integration Standards project is free to use under the [Creative Commons ShareAlike 4.0 License](https://creativecommons.org/licenses/by-sa/4.0/legalcode).
 
 ![CC License](assets/images/cc_license_small.png)
