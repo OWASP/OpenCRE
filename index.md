@@ -9,7 +9,9 @@ pitch: Standards of integration between different OWASP projects to properly han
 
 ---
 
-The Integration Standards project has a goal of creating a repository that sets up a unified ID that is built on top of requirements, which makes it very descriptive for developers and application security experts to implement in their work. It will contain mappings between requirements, testing measures, how they can be done, and other frameworks (such as ENISA, CWE, CAPEC, etc.).
+The goal of the Integration Standards project is to enable alignment between software security initiatives inside OWASP and outside. This alignment is much needed as initiatives can benefit from each other's content, to save work in development and maintenance, but also to attain more consistency in the industry. This consistency is necessary to address the fragmentation of standards which has been making it hard for developers, testers, and clients to set and apply appropriate standards. More consistency allows for a shared understanding of security details, between developers, testers, and procurement.
+One deliverable for this project is a **repository** that maps standards on a technical requirement level, bringing together requirements, testing strategies, countermeasures, and links to existing repositories of threats and weaknesses.
+Another deliverable is a **standardisation** on how security initiatives can be integrated by exchanging data regarding different elements of the software development lifecycle (instructions, requirements, tests, test results, threats, findings).
 
 ## Motivation
 
