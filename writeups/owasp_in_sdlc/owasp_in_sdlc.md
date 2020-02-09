@@ -1,21 +1,3 @@
-<!----- Conversion time: 3.227 seconds.
-
-
-Using this Markdown file:
-
-1. Cut and paste this output into your source file.
-2. See the notes and action items below regarding this conversion run.
-3. Check the rendered output (headings, lists, code blocks, tables) for proper
-   formatting and use a linkchecker before you publish this page.
-
-Conversion notes:
-
-* Docs to Markdown version 1.0β17
-* Sun Feb 09 2020 10:34:06 GMT-0800 (PST)
-* Source doc: https://docs.google.com/a/owasp.org/open?id=1QdNW4VJOMrbXUW00tUexd51C2ozl2Uyo8Y-MtgP6jcQ
-* This document has images: check for >>>>>  gd2md-html alert:  inline image link in generated source and store images to your server.
------>
-
 ## OWASP Application Security Fragmentation
 
 _Or how I worried less and stood on the shoulders of giants. - Spyros Gasteratos, Elie Saad_
