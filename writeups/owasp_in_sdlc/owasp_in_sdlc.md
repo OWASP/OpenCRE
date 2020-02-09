@@ -38,11 +38,6 @@ The following article attempts to provide a long list of Free (as in Freedom) an
 
 The Requirements gathering process tries to answer the question: _“What is the system going to do?”_ At this stage, [SAMM project](https://owaspsamm.org/model/) offers 3 distinct maturity levels covering both [in-house](https://owaspsamm.org/model/design/security-requirements/stream-a/) software development and [third party](https://owaspsamm.org/model/design/security-requirements/stream-b/) supplier security. 
 
-
-
-<p id="gdcalert1" ><span style="color: red; font-weight: bold">>>>>>  gd2md-html alert: inline image link here (to images/OWASP-in0.png). Store image on your image server and adjust path/filename if necessary. </span><br>(<a href="#">Back to top</a>)(<a href="#gdcalert2">Next alert</a>)<br><span style="color: red; font-weight: bold">>>>>> </span></p>
-
-
 ![alt_text](images/OWASP-in0.png "image_tooltip")
 
 
@@ -78,21 +73,12 @@ There’s a few projects that can help with creating Threat Models at this stage
 Note: _A threat model can be as simple as a data flow diagram with attack vectors on every flow and asset and equivalent remediations. An example can be found below._
 
 
-
-<p id="gdcalert2" ><span style="color: red; font-weight: bold">>>>>>  gd2md-html alert: inline image link here (to images/OWASP-in1.png). Store image on your image server and adjust path/filename if necessary. </span><br>(<a href="#">Back to top</a>)(<a href="#gdcalert3">Next alert</a>)<br><span style="color: red; font-weight: bold">>>>>> </span></p>
-
-
-![alt_text](images/OWASP-in1.png "image_tooltip")
+![alt_text](images/threat_model.png "image_tooltip")
 
 
 Last, if the organisation maps Features to Epics, the Security Knowledge Framework can be used to facilitate this process by leveraging it’s questionnaire function.
 
-
-
-<p id="gdcalert3" ><span style="color: red; font-weight: bold">>>>>>  gd2md-html alert: inline image link here (to images/OWASP-in2.png). Store image on your image server and adjust path/filename if necessary. </span><br>(<a href="#">Back to top</a>)(<a href="#gdcalert4">Next alert</a>)<br><span style="color: red; font-weight: bold">>>>>> </span></p>
-
-
-![alt_text](images/OWASP-in2.png "image_tooltip")
+![alt_text](images/skf_qs.png "image_tooltip")
 
 
 This practice has the side effect that it trains non-security specialists to think like attackers.
@@ -134,11 +120,7 @@ Anecdotal evidence, points towards code pattern libraries, code anti-pattern lib
 SAMM at this stage [offers the following generic considerations](https://owaspsamm.org/model/implementation/):
 
 
-
-<p id="gdcalert4" ><span style="color: red; font-weight: bold">>>>>>  gd2md-html alert: inline image link here (to images/OWASP-in3.png). Store image on your image server and adjust path/filename if necessary. </span><br>(<a href="#">Back to top</a>)(<a href="#gdcalert5">Next alert</a>)<br><span style="color: red; font-weight: bold">>>>>> </span></p>
-
-
-![alt_text](images/OWASP-in3.png "image_tooltip")
+![alt_text](images/impl_samm.png "image_tooltip")
 
 
 At any maturity level, linters can be introduced to ensure consistent code. For most linters there is IDE integration enabling software engineers the ability to validate code correctness during development time. Several linters also include security specific rules. This allows for basic security checks before the code is even committed. For example, if you write in Typescript, you can use [tslint](https://github.com/palantir/tslint) along with [tslint-config-security](https://www.npmjs.com/package/tslint-config-security) _ _to easily and quickly perform basic checks.
@@ -147,12 +129,7 @@ However, linters cannot detect vulnerabilities in third party libraries, and as 
 
 To tackle the security of code developed in house, OWASP offers an extensive collection of [Cheatsheets](https://cheatsheetseries.owasp.org/) demonstrating how to implement features securely. Moreover, the Security Knowledge Framework[1] offers an extensive library of code patterns spanning several programming languages. These patterns can be used to not only jumpstart the development process, but also do so securely.
 
-
-
-<p id="gdcalert5" ><span style="color: red; font-weight: bold">>>>>>  gd2md-html alert: inline image link here (to images/OWASP-in4.png). Store image on your image server and adjust path/filename if necessary. </span><br>(<a href="#">Back to top</a>)(<a href="#gdcalert6">Next alert</a>)<br><span style="color: red; font-weight: bold">>>>>> </span></p>
-
-
-![alt_text](images/OWASP-in4.png "image_tooltip")
+![alt_text](images/skf_code.png "image_tooltip")
 
 
 Last, there is an abundance of libraries and frameworks implementing secure defaults. For frontend development [ReactJS](https://reactjs.org/) seems to be the latest favourite in the Javascript world.
@@ -184,12 +161,7 @@ Pentests are conducted against features released on every release and also perio
 
 This stage can be used to validate software correctness and it’s results as a metric for the security related decisions of the previous stages. At this stage both automated and manual testing can be performed. SAMM again, offers 3 maturity levels across Architecture Reviews, Requirements testing and Security Testing. Instructions can be found [here](https://owaspsamm.org/model/verification/) and a screenshot is listed below.
 
-
-
-<p id="gdcalert6" ><span style="color: red; font-weight: bold">>>>>>  gd2md-html alert: inline image link here (to images/OWASP-in5.png). Store image on your image server and adjust path/filename if necessary. </span><br>(<a href="#">Back to top</a>)(<a href="#gdcalert7">Next alert</a>)<br><span style="color: red; font-weight: bold">>>>>> </span></p>
-
-
-![alt_text](images/OWASP-in5.png "image_tooltip")
+![alt_text](images/samm_testing.png "image_tooltip")
 
 
 Testing can be performed several ways and it highly depends on the nature of the software, the organisation’s cadence and the regulatory requirements among other things.
@@ -200,14 +172,8 @@ If the application communicates using a web-based protocol,, the [ZAProxy](https
 
 Vulnerabilities from ZAProxy and a wide variety of other tools can be imported and managed  using a dedicated defect management platform such as[ Defect Dojo](https://github.com/DefectDojo/django-DefectDojo)(screenshot below).
 
-.
 
-
-
-<p id="gdcalert7" ><span style="color: red; font-weight: bold">>>>>>  gd2md-html alert: inline image link here (to images/OWASP-in6.png). Store image on your image server and adjust path/filename if necessary. </span><br>(<a href="#">Back to top</a>)(<a href="#gdcalert8">Next alert</a>)<br><span style="color: red; font-weight: bold">>>>>> </span></p>
-
-
-![alt_text](images/OWASP-in6.png "image_tooltip")
+![alt_text](images/defectdojo.png "image_tooltip")
 
 
 For manual testing the [Web](https://github.com/OWASP/wstg) and [Mobile](https://github.com/OWASP/owasp-mstg) Testing guides can be used to achieve a base level of quality for human driven testing.
@@ -231,17 +197,8 @@ Last projects such as the [ELK stack](https://www.elastic.co/elastic-stack), [Gr
 
 However, no matter the WAFs, Logging and secure configuration enforced at this stage, incidents will occur eventually. Incident management is a complicated and high stress process. To prepare organisations for this, SAMM includes a section on [incident management](https://owaspsamm.org/model/operations/incident-management/) involving simple questions for stakeholders to answer so you can determine incident preparedness accurately.
 
+![alt_text](images/samm_release.png "image_tooltip")
 
-
-<p id="gdcalert8" ><span style="color: red; font-weight: bold">>>>>>  gd2md-html alert: inline image link here (to images/OWASP-in7.png). Store image on your image server and adjust path/filename if necessary. </span><br>(<a href="#">Back to top</a>)(<a href="#gdcalert9">Next alert</a>)<br><span style="color: red; font-weight: bold">>>>>> </span></p>
-
-
-![alt_text](images/OWASP-in7.png "image_tooltip")
-
-
-
-
-*   
 
 **Example low maturity scenario:**
 
@@ -274,12 +231,7 @@ However, metrics won’t necessarily improve without training engineering teams 
 
 The code & remediation end of the spectrum isn’t as well-developed, mainly due to the complexity involved in building and distributing such material. However, there are some respectable solutions, [Remediate The Flag](https://www.remediatetheflag.com/) can be used to setup a code based challenge.
 
-
-
-<p id="gdcalert9" ><span style="color: red; font-weight: bold">>>>>>  gd2md-html alert: inline image link here (to images/OWASP-in8.png). Store image on your image server and adjust path/filename if necessary. </span><br>(<a href="#">Back to top</a>)(<a href="#gdcalert10">Next alert</a>)<br><span style="color: red; font-weight: bold">>>>>> </span></p>
-
-
-![alt_text](images/OWASP-in8.png "image_tooltip")
+![alt_text](images/rtf.png "image_tooltip")
 
 
 However, if questionnaires is the preferred medium, or if the organisation is looking for self-service testing, [Secure Coding Dojo](https://github.com/trendmicro/SecureCodingDojo) is an interesting solution.
@@ -288,12 +240,7 @@ More on the self-service side the Security Knowledge Framework has released seve
 
 However, to our knowledge, the most flexible project out there is probably the[ Juice Shop](https://github.com/bkimminich/juice-shop), deployed on Heroku with one click, it offers both CTF functionality and a self-service standalone application that comes with solution detection and a comprehensive progress-board.
 
-
-
-<p id="gdcalert10" ><span style="color: red; font-weight: bold">>>>>>  gd2md-html alert: inline image link here (to images/OWASP-in9.png). Store image on your image server and adjust path/filename if necessary. </span><br>(<a href="#">Back to top</a>)(<a href="#gdcalert11">Next alert</a>)<br><span style="color: red; font-weight: bold">>>>>> </span></p>
-
-
-![alt_text](images/OWASP-in9.png "image_tooltip")
+![alt_text](images/juiceshop.png "image_tooltip")
  
 
 Bringing it all together, a security team could gather metrics on vulnerabilities detected by team or service using the detection related projects outlined above, then either ask the teams to do the self-service training and validate the effectiveness with a questionnaire solution or deliver the training themselves.
@@ -305,12 +252,7 @@ Security doesn’t have to be hard, by following well established guidelines and
 
 Below is a diagram summarising tools used at each stage of development.
 
-
-
-<p id="gdcalert11" ><span style="color: red; font-weight: bold">>>>>>  gd2md-html alert: inline image link here (to images/OWASP-in10.png). Store image on your image server and adjust path/filename if necessary. </span><br>(<a href="#">Back to top</a>)(<a href="#gdcalert12">Next alert</a>)<br><span style="color: red; font-weight: bold">>>>>> </span></p>
-
-
-![alt_text](images/OWASP-in10.png "image_tooltip")
+![alt_text](images/summary-diag.png.png "image_tooltip")
 
 
 
