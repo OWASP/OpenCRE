@@ -12,7 +12,7 @@ However, modern Agile practitioners often find themselves at an impasse, there i
 
 The following article attempts to provide a long list of Free (as in Freedom) and Open Source solutions and frameworks that worked for us. It’s split into 6 sections, mapping loosely with the SDLC stages on the diagram below. Each section involves somewhat exaggerated low and high maturity scenarios of following the approach listed in it. The entire article can be summarised by the diagram at its end.
 
-![alt_text](writeups/images/sdlc_diag.png "typical sdlc diagram")
+![alt_text](images/sdlc_diag.png "typical sdlc diagram")
 
 
 
@@ -234,7 +234,7 @@ Security doesn’t have to be hard, by following well established guidelines and
 
 Below is a diagram summarising tools used at each stage of development.
 
-![alt_text](images/summary-diag.png.png "image_tooltip")
+![alt_text](images/summary.png "image_tooltip")
 
 
 
