@@ -4,7 +4,7 @@ _Or how I worried less and stood on the shoulders of giants. - Spyros Gasteratos
 
 ### 1. The Software Development LifeCycle and You
 
-The Systems Development Lifecycle is often depicted as a 6 part cyclical process where every step builds on top of the previous ones. In a similar fashion, security can be embedded in a SDLC by building on top of previous steps with policies, controls, designs, implementations and tests making sure that the product only performs the functions it was designed to and nothing more.
+The Systems Development Lifecycle (SDLC) is often depicted as a 6 part cyclical process where every step builds on top of the previous ones. In a similar fashion, security can be embedded in a SDLC by building on top of previous steps with policies, controls, designs, implementations and tests making sure that the product only performs the functions it was designed to and nothing more.
 
 However, modern Agile practitioners often find themselves at an impasse, there is a wealth of competing projects, standards and vendors who all claim to be the best solution in the field.
 
@@ -32,13 +32,13 @@ Nature of data accessed, retention times, transport method, and backend communic
 
 **Example high maturity scenario:**
 
-The implementor uses a mature Secure Development Lifecycle, the engineering teams receive security training, and a detailed list of requirements has been drawn and verified by the customer.
+The implementor uses a mature SDLC, the engineering teams receive security training, and a detailed list of requirements has been drawn and verified by the customer.
 
 #### 1.2. Design Stage
 
 Once requirements are gathered and analysis is performed, implementation specifics need to be defined. The outcome of this stage is usually a diagram outlining data flows and a general system architecture. This presents an opportunity for both threat modeling and attaching security considerations to every ticket and epic that is the outcome of this stage.
 
-There is some great advice on threat modeling out there e.g. [this](https://arstechnica.com/information-technology/2017/07/how-i-learned-to-stop-worrying-mostly-and-love-my-threat-model/) article or [this](https://www.microsoft.com/en-us/securityengineering/sdl/threatmodeling) one.
+There is some great advice on threat modeling out there *e.g.* [this](https://arstechnica.com/information-technology/2017/07/how-i-learned-to-stop-worrying-mostly-and-love-my-threat-model/) article or [this](https://www.microsoft.com/en-us/securityengineering/sdl/threatmodeling) one.
 
 A bite sized primer by Adam Shostack himself can be found [here](https://adam.shostack.org/blog/2018/03/threat-modeling-panel-at-appsec-cali-2018/).
 
@@ -85,7 +85,7 @@ The development stage is where assumptions and decisions made in the previous st
 
 There has been [extensive discussion](https://docs.google.com/presentation/d/1zbj9XBiv6r6zla0KHNfs63Ux45QZAfRut2zlK7o-dRw/mobilepresent?slide=id.g7c8a58b51e_0_4) on how to approach secure application development from an agile point of view. However, it ultimately depends on parameters specific to each organisation, such as engineering culture, size and competency/seniority of teams, tools available and the maturity of the security programme.
 
-Anecdotal evidence, points towards code pattern libraries, code anti-pattern libraries, library wrappers with secure defaults, linter configuration, and extensive testing suites that attempt to test for security abuse stories.
+Anecdotal evidence points towards code pattern libraries, code anti-pattern libraries, library wrappers with secure defaults, linter configuration, and extensive testing suites that attempt to test for security abuse stories.
 
 SAMM at this stage offers the following [generic implementation considerations](https://owaspsamm.org/model/implementation/):
 
@@ -147,7 +147,7 @@ The business deployed the system to production without testing. Soon after, the 
 
 **Example High Maturity Scenario:**
 
-The application features received Dynamic Automated testing when each reached staging, a trained QA team validated business requirements that involved security. A security team performed an adequate pentest and gave a sign-off.
+The application features received Dynamic Automated testing when each reached staging, a trained QA team validated business requirements that involved security checks. A security team performed an adequate pentest and gave a sign-off.
 
 #### 1.5. Release Stage
 
@@ -173,7 +173,7 @@ The CI/CD system, when migrating successful QA environments to production, appli
 
 Secrets live in-memory only and are persisted in a dedicated Secrets Storage solution such as Hashicorp Vault.
 
-All application's ingress points are protected by a WAF and DoS protection.
+All application's ingress points are protected by a WAF coupled with DoS protection.
 
 Logging from all components gets aggregated in dashboards and alerts are raised based on several Thresholds and events. There are canary values and events fired against monitoring from time to time to validate it works.
 
@@ -183,9 +183,9 @@ Business continuity and Security teams run incident management drills periodical
 
 A successful project will hopefully exist for several SDLC cycles. Each cycle adding features and fixing bugs based on the input from previous ones. The time in this stage is often invested in [Retrospective Meetings](https://www.scrum.org/resources/what-is-a-sprint-retrospective), metrics gathering, various admin work, and training or culture building.
 
-The Open Source community at this stage comes to the rescue with a number of high quality guides, applications, frameworks and complete integrated solutions.
+The Open Source community at this stage comes to the rescue with a number of high quality guides, applications, frameworks, and complete integrated solutions.
 
-Concerning metrics, the community has been quite vocal on what to measure and how important it is, the OWASP CISO guide, offers 3 broad categories of SDLC metrics[1] which can be used to measure effectiveness of security practices. Moreover, there is a number of presentations on what could be leveraged to improve a security programme, starting from Marcus' Ranum's [keynote](https://www.youtube.com/watch?v=yW7kSVwucSk) at Appsec California[1], Caroline Wong's similar [presentation](https://www.youtube.com/watch?v=dY8IuQ8rUd4) and [this presentation](https://www.youtube.com/watch?v=-XI2DL2Uulo) by J. Rose and R. Sulatycki. These among several writeups by private companies all offering their own version of what could be measured.
+Concerning metrics, the community has been quite vocal on what to measure and how important it is. The OWASP CISO guide offers 3 broad categories of SDLC metrics[1] which can be used to measure effectiveness of security practices. Moreover, there is a number of presentations on what could be leveraged to improve a security programme, starting from Marcus' Ranum's [keynote](https://www.youtube.com/watch?v=yW7kSVwucSk) at Appsec California[1], Caroline Wong's similar [presentation](https://www.youtube.com/watch?v=dY8IuQ8rUd4) and [this presentation](https://www.youtube.com/watch?v=-XI2DL2Uulo) by J. Rose and R. Sulatycki. These among several writeups by private companies all offering their own version of what could be measured.
 
 However, metrics won't necessarily improve without training engineering teams and somehow building a security-minded culture. Security training is a long and complicated discussion. There is a variety of approaches out there, on the testing-only end of the spectrum there is fully black box virtual machines such as [DVWA](http://www.dvwa.co.uk/), [Metasploitable series](https://metasploit.help.rapid7.com/docs/metasploitable-2) and the [VulnHub](https://www.vulnhub.com/) project.
 
