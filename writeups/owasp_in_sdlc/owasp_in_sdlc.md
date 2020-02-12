@@ -77,7 +77,7 @@ Remote data store access secrets are hardcoded in the configuration files. All c
 
 Frontend serves data over GraphQL as a thin layer between caching system and end user.
 
-GraphQL queries are dynamically translated to SQL, Elasticsearch and NoSQL queries. Access to data is protected with basic auth set to_ 1234:1234_ for development purposes.
+GraphQL queries are dynamically translated to SQL, Elasticsearch and NoSQL queries. Access to data is protected with basic auth set to _1234:1234_ for development purposes.
 
 **Example High Maturity Scenario:**
 
