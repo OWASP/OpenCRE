@@ -31,7 +31,9 @@ In case of internal development and if the organisation maps Features to Epics, 
 
 **Example low maturity scenario:**
 
-Customer commissions application that aggregates data from a number of stores offering a unified API for all data querying and retrieval.  The users of the system will be customer employees. The application needs to be accessible from the internet.
+An application that aggregates data from a number of data stores is commissioned.
+The application must offer a unified API for data querying.
+The users of the system will be customer employees. The application needs to be accessible from the internet.
 
 Nature of data accessed, retention times,  transport method and backend communication methods aren’t considered.
 
