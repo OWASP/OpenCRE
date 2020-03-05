@@ -1,3 +1,11 @@
+---
+title: OWASP in SDLC
+layout: null
+tab: true
+order: 1
+tags: SDLC standards integration
+---
+
 ## OWASP Application Security Fragmentation
 
 _Or how I worried less and stood on the shoulders of giants. - Spyros Gasteratos, Elie Saad_
