@@ -1,9 +1,8 @@
 ---
 title: OWASP in SDLC
-layout: null
-tab: true
-order: 1
+layout: col-document
 tags: SDLC standards integration
+document: integration standards
 ---
 
 ## OWASP Application Security Fragmentation
