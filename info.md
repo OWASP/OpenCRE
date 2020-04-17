@@ -1,15 +1,15 @@
 ### Integration Standards Information
 
-![Builders](assets/images/owasp_builders_small.png)
-![Defenders](assets/images/owasp_defenders_small.png)
-![Breakers](assets/images/owasp_breakers_small.png)
-
-![Documentation Project](assets/images/owasp_documentation_project.jpg)
+* <i class="fas fa-egg" style="font-size: 1.2em; color:#3468AC;"></i><span style="font-size:1.0em;padding-left:12px;">Incubator Project</span>
+* <i class="fas fa-book" style="font-size: 1.2em; color:#233e81;"></i><span style="font-size:1.0em;padding-left:12px;">Documentation</span>
+* <i class="fas fa-toolbox" style="font-size: 1.2em; color:#233e81;"></i><span style="font-size:1.0em;padding-left:12px;">Builder</span> 
+* <i class="fas fa-shield-alt" style="font-size: 1.2em; color:#233e81;"></i><span style="font-size:1.0em;padding-left:12px;">Defender</span>
+* <i class="fas fa-hammer" style="font-size: 1.2em; color:#233e81;"></i><span style="font-size:1.0em;padding-left:12px;">Breaker</span>
 
 ### Slack
 
-- [Join OWASP Slack](https://join.slack.com/t/owasp/shared_invite/enQtNjExMTc3MTg0MzU4LWQ2Nzg3NGJiZGQ2MjRmNzkzN2Q4YzU1MWYyZTdjYjA2ZTA5M2RkNzE2ZjdkNzI5ZThhOWY5MjljYWZmYmY4ZjM)
-- [Join our channel](https://owasp.slack.com/archives/CPMEWT342)
+* [Join OWASP Slack](https://owasp-slack.herokuapp.com/)
+* [Join our channel](https://owasp.slack.com/archives/CPMEWT342)
 
 ### Licensing
 
