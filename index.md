@@ -2,7 +2,7 @@
 
 layout: col-sidebar
 title: OWASP Integration Standards
-tags: SDLC standards integration
+tags: SDLC standards integration appsec application-security attackers builders defenders
 level: 1
 type: documentation
 pitch: Standards of integration between different OWASP projects to properly handle data from and to other tools and documents incorporated in the SDLC
