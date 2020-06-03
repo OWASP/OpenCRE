@@ -143,9 +143,9 @@ Testing can be performed several ways and it highly depends on the nature of the
 
 If available, automation is a good idea as it allows detection of easy to find vulnerabilities without much human interaction.
 
-If the application communicates using a web-based protocol, the [ZAProxy](https://github.com/zaproxy/zaproxy) project can be used to automate a great number of web related attacks and detection. ZAP can be orchestrated using its REST API and it can even automate multi-stage attacks by leveraging its Zest scripting support.
+If the application communicates using a web-based protocol, the [ZAP](https://github.com/zaproxy/zaproxy) project can be used to automate a great number of web related attacks and detection. ZAP can be orchestrated using its REST API and it can even automate multi-stage attacks by leveraging its Zest scripting support.
 
-Vulnerabilities from ZAProxy and a wide variety of other tools can be imported and managed using a dedicated defect management platform such as [Defect Dojo](https://github.com/DefectDojo/django-DefectDojo)(screenshot below).
+Vulnerabilities from ZAP and a wide variety of other tools can be imported and managed using a dedicated defect management platform such as [Defect Dojo](https://github.com/DefectDojo/django-DefectDojo)(screenshot below).
 
 ![Defect Dojo](images/defectdojo.png "Defect Dojo")
 
