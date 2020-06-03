@@ -25,6 +25,6 @@ The below is a rough estimation as it is dependent on other projects' time and a
 
 The roadmap will be adjusted as the project moves forward.
 
-## OWASP in the SDLC
+## OWASP In the SDLC
 
 In an effort to provide a high level map of how OWASP's projects link to the SDLC, a document detailing [OWASP in the SDLC](writeups/owasp_in_sdlc/owasp_in_sdlc.md)
