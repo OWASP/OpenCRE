@@ -3,7 +3,7 @@ title: OWASP in SDLC
 layout: col-document
 tags: SDLC standards integration
 document: integration standards
-redirection_from:
+redirect_from:
   - "/writeups/owasp_in_sdlc/owasp_in_sdlc.html"
   - "/writeups/owasp_in_sdlc/owasp_in_sdlc"
 ---
