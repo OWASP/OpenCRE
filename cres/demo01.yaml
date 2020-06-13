@@ -1,4 +1,3 @@
----
 CREs:
   - CRE: "6.1.1" #ID could be a number, or a keyword. If it's a keyword, an ID will be set in the metadata.
     metadata:
@@ -19,9 +18,7 @@ CREs:
         - PAGE: "4"
         MSTG:
         - PAGE: "3"
----
-CREs:
-  - CRE: "6.1.1" #ID could be a number, or a keyword. If it's a keyword, an ID will be set in the metadata.
+  - CRE: "6.1.2" #ID could be a number, or a keyword. If it's a keyword, an ID will be set in the metadata.
     metadata:
       description: "Verify that regulated private data is stored encrypted while at rest, such as personally identifiable information , sensitive personal information, or data assessed likely to be subject to EU's GDPR."
       tags:
