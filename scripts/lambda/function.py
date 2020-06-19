@@ -5,6 +5,31 @@ from pprint import pprint
 import yaml
 import json
 
+def filter_cre_id(cre_file,cre_id):
+    res = []
+    cres = ""
+    try:
+        cres = list(yaml.safe_load_all(cre_file))[0].values()
+    except Exception as ex:
+        pprint(ex) # probably malformed file
+    for thing in cres:
+        for cre in thing:
+            if cre_id in cre.get('CRE'):
+                res.append(cre)
+    return res
+
+def filter_all(cre_file):
+    res = []
+    cres = ""
+    try:
+        cres = list(yaml.safe_load_all(cre_file))[0].values()
+    except Exception as ex:
+        pprint(ex) # probably malformed file
+    for thing in cres:
+        for cre in thing:
+                res.append(cre)
+    return res
+    
 def filter_cre_contains_tag(cre_file, tag):
     res = []
     cres = ""
@@ -20,7 +45,7 @@ def filter_cre_contains_tag(cre_file, tag):
 
 def cre_to_json_str(cre):
     res = json.dumps(cre)
-    return res
+    return res or ""
 
 def list_files(bucket):
     s3 = boto3.client('s3')
@@ -36,18 +61,30 @@ def lambda_handler(event, context):
              'statusCode': 200,
              'body':"",
          }
+    # return ret
     cres = []
     try:
-        tag=event.get('tag') or 'crypto'
+        cre_id=event.get("queryStringParameters").get('cre')
+        tag=event.get("queryStringParameters").get('tag')
+        # return ret
         bucket = os.environ.get("bucket_name")
         objects = list_files(bucket)
-        for file_obj in objects['Contents']:
+        for file_obj in objects.get('Contents'):
+            obj=[]
             cre_file = get_file(bucket,file_obj)
-            obj = filter_cre_contains_tag(cre_file,tag)
-            if obj is not None:
+            if cre_id:
+                print("Filtering By CREID")
+                obj = filter_cre_id(cre_file,cre_id)
+            elif tag:
+                print("Filtering By Tag")
+                obj = filter_cre_contains_tag(cre_file,tag)
+            # else:
+            #     obj=filter_all(cre_file)
+            if obj:
                 cres.extend(obj)
         for cre in cres:
             ret['body'] = ret['body'] + cre_to_json_str(cre)
     except Exception as ex:
         ret['body'] = str(ex)
+        
     return ret
