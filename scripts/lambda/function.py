@@ -82,8 +82,10 @@ def lambda_handler(event, context):
             #     obj=filter_all(cre_file)
             if obj:
                 cres.extend(obj)
+        return_obj = []
         for cre in cres:
-            ret['body'] = ret['body'] + cre_to_json_str(cre)
+            return_obj.append(cre)
+        ret['body'] = ret['body'] + cre_to_json_str(return_obj)
     except Exception as ex:
         ret['body'] = str(ex)
         
