@@ -35,9 +35,11 @@ import logging
 from git import Repo, Git
 from pprint import pprint
 from datetime import datetime
+from github import Github
 
 # todo: generate schema from existing yaml, validate against schema  -- done
-# commit, issue pull request
+# commit, -- done
+# issue pull request 
 # migrate gspread to work as a bot as well as oauth
 # sync to spreadsheet (different script runs from master)
 # make github action    https://www.jeffgeerling.com/blog/2020/running-github-actions-workflow-on-schedule-and-other-events
@@ -94,16 +96,25 @@ def validateYaml(yamldoc: str, schema: str):
     jsonschema.validate(instance=yamldoc, schema=schema)
 
 
-def pushToGithub(cre_loc: str, apikey, pullRequestName):
-    repo = Repo(os.path.join(os.path.dirname(
-        os.path.realpath(__file__)), "../../"))
+def pushToGithub(cre_loc: str, apikey:str):
+    repo = Repo(os.path.join(os.path.dirname(os.path.realpath(__file__)), "../../"))
     g = Git()
     commit_msg = "cre_sync_%s" % (datetime.now().isoformat().replace(":","."))
-    logger.info("Pushing new branch %d, make sure you review and merge the branch to master if you want these updates into the REST API")
+    logger.info("Pushing new branch %s, make sure you review and merge the branch to master if you want these updates into the REST API"%commit_msg)
     g.checkout("-b",commit_msg)
     g.add(cre_loc)
     g.commit("-m",commit_msg)
     repo.remotes.origin.push(commit_msg)
+    remoteURL = [url for url in repo.remotes.origin.urls]        
+    createPullRequest(apiToken=apikey, repo=remoteURL[0].replace("git@github.com:","").replace(".git",""),
+                      title=commit_msg, srcBranch=commit_msg, targetBranch="master")
+
+
+def createPullRequest(apiToken:str, repo:str, title:str, srcBranch:str, targetBranch:str = "master"):
+    logger.info("Issuing pull request from %s to master for repo %s"%(srcBranch,repo))
+    github = Github(apiToken)
+    body = "CRE Sync %s"%title
+    pr = github.get_repo(repo).create_pull(title=title, body=body, head=srcBranch, base="master")
 
 def writeSpreadsheet(local, url):
     pass
@@ -113,4 +124,4 @@ spreadsheet_url = "https://docs.google.com/spreadsheets/d/1ACwnuvIwI6Lu3AikNUEeo
 cre_loc = os.path.join(os.path.dirname(
     os.path.realpath(__file__)), "../../cres")
 readSpreadsheet(spreadsheet_url, cres_loc=cre_loc)
-pushToGithub(cre_loc, "", "")
+pushToGithub(cre_loc, os.getenv("GITHUB_API_KEY"))
