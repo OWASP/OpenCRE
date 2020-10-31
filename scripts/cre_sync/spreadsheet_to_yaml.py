@@ -101,6 +101,7 @@ def pushToGithub(cre_loc: str, apikey:str):
     g = Git()
     commit_msg = "cre_sync_%s" % (datetime.now().isoformat().replace(":","."))
     logger.info("Pushing new branch %s, make sure you review and merge the branch to master if you want these updates into the REST API"%commit_msg)
+    current_branch = repo.active_branch.name
     g.checkout("-b",commit_msg)
     g.add(cre_loc)
     g.commit("-m",commit_msg)
@@ -108,6 +109,7 @@ def pushToGithub(cre_loc: str, apikey:str):
     remoteURL = [url for url in repo.remotes.origin.urls]        
     createPullRequest(apiToken=apikey, repo=remoteURL[0].replace("git@github.com:","").replace(".git",""),
                       title=commit_msg, srcBranch=commit_msg, targetBranch="master")
+    g.checkout(current_branch)
 
 
 def createPullRequest(apiToken:str, repo:str, title:str, srcBranch:str, targetBranch:str = "master"):
