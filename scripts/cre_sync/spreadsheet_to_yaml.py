@@ -41,6 +41,7 @@ from github import Github
 # commit, -- done
 # issue pull request  -- done
 # migrate gspread to work as a bot as well as oauth -- done
+# only create a pull request if there are changes (run a git diff first?)
 # sync to spreadsheet (different script runs from master)
 # make github action    https://www.jeffgeerling.com/blog/2020/running-github-actions-workflow-on-schedule-and-other-events
 
@@ -133,8 +134,14 @@ def add_to_github(cre_loc:str, alias:str,apikey):
         g.checkout(branch_name)
         g.add(cre_loc)
         g.commit("-m", commit_msg)
+
+        repo.remotes.origin.push(branch_name)
+        remoteURL = [url for url in repo.remotes.origin.urls]
+        createPullRequest(apiToken=apikey, repo=remoteURL[0].replace("git@github.com:", "").replace(".git", ""),
+                        title=commit_msg, srcBranch=commit_msg_base, targetBranch="master")
     except git.exc.GitCommandError as gce:
-        logger.error("Git error trying to sync " + commit_msg)
+        # if there's an error (commonly due to no changes, skip pushing a new branch)
+        logger.error("Skipping push due to git error trying to sync " + commit_msg)
         logger.error(gce)
 
     repo.remotes.origin.push(branch_name)
