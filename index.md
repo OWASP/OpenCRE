@@ -27,4 +27,4 @@ The roadmap will be adjusted as the project moves forward.
 
 ## OWASP in the SDLC
 
-In an effort to provide a high level map of how OWASP's projects link to the SDLC, a document detailing [OWASP in the SDLC](writeups/owasp_in_sdlc/owasp_in_sdlc.md)
+In an effort to provide a high level map of how OWASP's projects link to the SDLC, a document detailing [OWASP in the SDLC](writeups/owasp_in_sdlc/)

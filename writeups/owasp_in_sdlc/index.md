@@ -5,6 +5,7 @@ tags: SDLC standards integration
 document: integration standards
 redirect_from:
   - "/writeups/owasp_in_sdlc/owasp_in_sdlc.html"
+  - "/writeups/owasp_in_sdlc/owasp_in_sdlc.md"
   - "/writeups/owasp_in_sdlc/owasp_in_sdlc"
 ---
 
