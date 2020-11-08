@@ -1,0 +1,44 @@
+name: Sync Spreadsheets periodically
+on:
+  schedule:
+    - cron: '0 0 * * *'  # every day at midnight
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@master
+      with:
+        # args: --follow-symlinks --delete
+        persist-credentials: false # otherwise, the token used is the GITHUB_TOKEN, instead of your personal token
+        fetch-depth: 0 # otherwise, you will failed to push refs to dest repo
+      # env:
+      #   GITHUB_API_KEY: ${{ secrets.AWS_S3_BUCKET }}
+      #   GITHUB_SSH_PUSH: ${{ secrets.AWS_ACCESS_KEY_ID }}
+    - name: Setup
+      env: 
+        SERVICE_ACCOUNT: ${{ secrets.SERVICE_ACCOUNT }}
+        SSH_KEY: ${{ secrets.SSH_KEY }}
+        GITHUB_API_KEY: ${{ secrets.API_KEY }}
+      run: |
+        apt update && apt install -y python3-setuptools python3-pip git
+        
+      
+
+        mkdir -p ~/.ssh ~/.config/gspread
+        ssh-keyscan -H github.com >> ~/.ssh/known_hosts
+        echo "$SSH_KEY" > ~/.ssh/id_rsa
+
+        
+        cat ~/.ssh/id_rsa
+        chmod 511 ~/.ssh/id_rsa
+        
+        pip3 install -r scripts/cre_sync/requirements.txt 
+      
+        echo "$SERVICE_ACCOUNT" > ~/.config/gspread/service_account.json
+        cat ~/.config/gspread/service_account.json
+
+        python3 scripts/cre_sync/spreadsheet_to_yaml.py
+
+
+  # push action https://github.com/ad-m/github-push-action <-- see how this is implemented
