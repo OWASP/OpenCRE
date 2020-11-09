@@ -28,8 +28,7 @@ jobs:
         chmod 0500 ~/.ssh/id_rsa
 
         ls -lah
-        git status
-        ssh git@github.com
+        git remote -v
 
         pip3 install --user -r scripts/cre_sync/requirements.txt 
         echo "$SERVICE_ACCOUNT" > ~/.config/gspread/service_account.json
