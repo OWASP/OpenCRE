@@ -19,7 +19,7 @@ jobs:
       env: 
         SERVICE_ACCOUNT: ${{ secrets.SERVICE_ACCOUNT }}
         SSH_KEY: ${{ secrets.SSH_KEY }}
-        GITHUB_API_KEY: ${{ secrets.API_KEY }}
+        GITHUB_API_KEY: ${{ secrets.API_TOKEN }}
       run: |
 
         mkdir -p ~/.ssh ~/.config/gspread
