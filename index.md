@@ -3,7 +3,7 @@
 layout: col-sidebar
 title: OWASP Integration Standards
 tags: SDLC standards integration appsec application-security attackers builders defenders
-level: 1
+level: 2
 type: documentation
 pitch: Standards of integration between different OWASP projects to properly handle data from and to other tools and documents incorporated in the SDLC
 
@@ -25,6 +25,5 @@ The below is a rough estimation as it is dependent on other projects' time and a
 
 The roadmap will be adjusted as the project moves forward.
 
-## OWASP in the SDLC
-
+## OWASP Projects Map
 In an effort to provide a high level map of how OWASP's projects link to the SDLC, a document detailing [OWASP in the SDLC](writeups/owasp_in_sdlc/)
