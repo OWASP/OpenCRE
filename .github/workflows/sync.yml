@@ -26,7 +26,7 @@ jobs:
       
 
         mkdir -p ~/.ssh ~/.config/gspread
-        ssh-keyscan -H github.com >> ~/.ssh/known_hosts
+        ssh-keyscan github.com > ~/.ssh/known_hosts
         echo "$SSH_KEY" > ~/.ssh/id_rsa
 
         
