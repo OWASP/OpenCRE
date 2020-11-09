@@ -1,4 +1,4 @@
-name: Sync Spreadsheets periodically
+name: Sync
 on:
   schedule:
     - cron: '0 * * * *'  # every hour
