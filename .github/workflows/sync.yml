@@ -33,4 +33,8 @@ jobs:
         pip3 install --user -r scripts/cre_sync/requirements.txt 
         echo "$SERVICE_ACCOUNT" > ~/.config/gspread/service_account.json
 
+        git config --global user.email "crebot@sgaster.me"
+        git config --global user.name "cre bot"
+        # todo since i have git, replace ssh with https://uname:token@github.com/path remote
+
         python3 scripts/cre_sync/spreadsheet_to_yaml.py
