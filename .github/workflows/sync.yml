@@ -20,10 +20,9 @@ jobs:
         SSH_KEY: ${{ secrets.SSH_KEY }}
         GITHUB_API_KEY: ${{ secrets.API_KEY }}
     - run: |
-        sudo apt update && sudo apt install -y python3-pip git
         
 
-
+        which pip
         mkdir -p ~/.ssh ~/.config/gspread
         ssh-keyscan github.com > ~/.ssh/known_hosts
         echo "$SSH_KEY" > ~/.ssh/id_rsa
