@@ -1,10 +1,10 @@
 name: Sync
 on:
   schedule:
-    - cron: '* * * * *'  # every hour
+    - cron: '* * * * *'  # every minute
   push:
     branches:
-      - main
+      - master
 
 jobs:
   sync:
@@ -29,7 +29,7 @@ jobs:
         echo "============================"
         which pip
         echo "=========================="
-        
+
         mkdir -p ~/.ssh ~/.config/gspread
         ssh-keyscan github.com > ~/.ssh/known_hosts
         echo "$SSH_KEY" > ~/.ssh/id_rsa
