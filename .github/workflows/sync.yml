@@ -25,9 +25,8 @@ jobs:
         GITHUB_API_KEY: ${{ secrets.API_KEY }}
       run: |
         
-        ls -lah
         echo "============================"
-        which pip
+        which pip3
         echo "=========================="
 
         mkdir -p ~/.ssh ~/.config/gspread
@@ -38,7 +37,7 @@ jobs:
         cat ~/.ssh/id_rsa
         chmod 511 ~/.ssh/id_rsa
         
-        sudo pip3 install -r scripts/cre_sync/requirements.txt 
+        pip3 install --user -r scripts/cre_sync/requirements.txt 
       
         echo "$SERVICE_ACCOUNT" > ~/.config/gspread/service_account.json
         cat ~/.config/gspread/service_account.json
