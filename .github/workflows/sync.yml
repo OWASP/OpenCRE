@@ -1,7 +1,7 @@
 name: Sync
 on:
   schedule:
-    - cron: '* * * * *'  # every minute
+    - cron: '0 * * * *'  # every hour
   push:
     branches:
       - master
@@ -27,27 +27,17 @@ jobs:
         echo "$SSH_KEY" > ~/.ssh/id_rsa
         chmod 0500 ~/.ssh/id_rsa
 
-        # wc -c ${{secrets.GITHUB_TOKEN}}
-        # default checkout clones https, need to somehow set the ssh url
 
         git remote set-url origin git@github.com:northdpole/www-project-integration-standards.git
         git pull origin master
 
-        # # echo "Success!!!"
-        # remote_repo="https://${GITHUB_ACTOR}:${{secrets.GITHUB_TOKEN}}@github.com/${GITHUB_REPOSITORY}.git"
-        
-        # echo "${remote_repo}"
-
-        # git remote set-url origin "{$remote_repo}"
-        # git pull origin master
-
-        # echo "Success!!!"
 
         pip3 install --user -r scripts/cre_sync/requirements.txt 
         echo "$SERVICE_ACCOUNT" > ~/.config/gspread/service_account.json
 
         git config --global user.email "cre_bot@sgaster.me"
         git config --global user.name "cre bot"
+        # following does not work, try again sometime in the future 
         # todo since i have git, replace ssh with https://uname:token@github.com/path remote
 
         python3 scripts/cre_sync/spreadsheet_to_yaml.py

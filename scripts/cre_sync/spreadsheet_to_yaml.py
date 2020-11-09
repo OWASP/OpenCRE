@@ -42,9 +42,9 @@ from github import Github
 # commit, -- done
 # issue pull request  -- done
 # migrate gspread to work as a bot as well as oauth -- done
-# only create a pull request if there are changes (run a git diff first?)
+# only create a pull request if there are changes (run a git diff first?) -- done
 # sync to spreadsheet (different script runs from master)
-# make github action    https://www.jeffgeerling.com/blog/2020/running-github-actions-workflow-on-schedule-and-other-events
+# make github action -- done
 
 spreadsheets_file = "working_spreadsheets.yaml"
 commit_msg_base = "cre_sync_%s" % (datetime.now().isoformat().replace(":", "."))
