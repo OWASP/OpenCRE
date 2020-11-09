@@ -16,7 +16,7 @@ jobs:
         SSH_KEY: ${{ secrets.SSH_KEY }}
         GITHUB_API_KEY: ${{ secrets.API_KEY }}
       run: |
-        sudo apt update && sudo apt install -y python3-setuptools python3-pip git
+        sudo apt update && sudo apt install -y python3-pip git
         
       
 
