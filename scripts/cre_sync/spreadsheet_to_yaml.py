@@ -126,29 +126,21 @@ def add_to_github(cre_loc:str, alias:str,apikey):
 
     repo = git.Repo(os.path.join(os.path.dirname(os.path.realpath(__file__)), "../../"))
     g = git.Git()
-
     logger.info("Adding cre files to branch %s"% branch_name)
     current_branch = repo.active_branch.name
-
     try:
         g.checkout(branch_name)
         g.add(cre_loc)
         g.commit("-m", commit_msg)
 
         repo.remotes.origin.push(branch_name)
-        remoteURL = [url for url in repo.remotes.origin.urls]
+        remoteURL = [url for url in repo.remotes.origin.urls]        
         createPullRequest(apiToken=apikey, repo=remoteURL[0].replace("git@github.com:", "").replace(".git", ""),
                         title=commit_msg, srcBranch=commit_msg_base, targetBranch="master")
     except git.exc.GitCommandError as gce:
         # if there's an error (commonly due to no changes, skip pushing a new branch)
         logger.error("Skipping push due to git error trying to sync " + commit_msg)
         logger.error(gce)
-
-    repo.remotes.origin.push(branch_name)
-    remoteURL = [url for url in repo.remotes.origin.urls]
-    createPullRequest(apiToken=apikey, repo=remoteURL[0].replace("git@github.com:", "").replace(".git", ""),
-                      title=commit_msg, srcBranch=commit_msg_base, targetBranch="master")
-
     g.checkout(current_branch)
 
 
@@ -171,10 +163,10 @@ def main():
         create_branch(commit_msg_base)
         urls = yaml.safe_load(sfile)
         for spreadsheet_url in urls:
+            logger.info("Dealing with spreadsheet %s"%spreadsheet_url['alias'])
             if readSpreadsheet(spreadsheet_url['url'], cres_loc=cre_loc,alias=spreadsheet_url['alias']):
                 add_to_github(cre_loc, spreadsheet_url['alias'],os.getenv("GITHUB_API_KEY"))
             else:
-                logger.error("Spreadsheet \"%s\" didn't produce any changes, no pull request needed"%spreadsheet_url['alias'])
-
+                logger.info("Spreadsheet \"%s\" didn't produce any changes, no pull request needed"%spreadsheet_url['alias'])
 if __name__ == "__main__":
     main()

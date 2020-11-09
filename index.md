@@ -24,3 +24,6 @@ The below is a rough estimation as it is dependent on other projects' time and a
 - End of Q3 2020: MVP release where a proper requirements set has been established and released for testing to be conducted on the standard being proposed.
 
 The roadmap will be adjusted as the project moves forward.
+
+## OWASP Projects Map
+In an effort to provide a high level map of how OWASP's projects link to the SDLC, a document detailing [OWASP in the SDLC](writeups/owasp_in_sdlc/)
