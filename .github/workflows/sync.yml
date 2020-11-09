@@ -28,9 +28,9 @@ jobs:
         chmod 0500 ~/.ssh/id_rsa
 
         echo $GITHUB_ACTOR
-        wc -c ${{secrets.GITHUB_TOKEN}}
+        # wc -c ${{secrets.GITHUB_TOKEN}}
         # default checkout clones https, need to somehow set the ssh url
-        git remote set-url origin git@github.com:northdpole/www-project-integration-standards.git
+        git remote set-url origin northdpole:${{secrets.API_KEY}}@github.com:northdpole/www-project-integration-standards.git
 
         ls -lah
         git remote -v
