@@ -27,14 +27,15 @@ jobs:
         echo "$SSH_KEY" > ~/.ssh/id_rsa
         chmod 0500 ~/.ssh/id_rsa
 
-        echo $GITHUB_ACTOR
         # wc -c ${{secrets.GITHUB_TOKEN}}
         # default checkout clones https, need to somehow set the ssh url
 
         git remote set-url origin git@github.com:northdpole/www-project-integration-standards.git
         git pull origin master
 
-        git remote set-url origin northdpole:${{secrets.GITHUB_TOKEN}}@github.com:northdpole/www-project-integration-standards.git
+        echo "Success!!!"
+
+        git remote set-url origin https://$GITHUB_ACTOR:${{secrets.GITHUB_TOKEN}}@github.com:northdpole/www-project-integration-standards.git
         git pull origin master
 
         pip3 install --user -r scripts/cre_sync/requirements.txt 
