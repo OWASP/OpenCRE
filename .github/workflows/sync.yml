@@ -34,7 +34,8 @@ jobs:
         git pull origin master
 
         echo "Success!!!"
-        remote_repo="https://${GITHUB_ACTOR}:${{secrets.GITHUB_TOKEN}}@github.com/${GITHUB_REPOSITORY}.git"
+        remote_repo=$(echo "https://${GITHUB_ACTOR}:${{secrets.GITHUB_TOKEN}}@github.com/${GITHUB_REPOSITORY}.git" | tr -d "*")
+        
         echo "${remote_repo}"
 
         git remote set-url origin "{$remote_repo}"
