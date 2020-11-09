@@ -25,8 +25,7 @@ jobs:
         mkdir -p ~/.ssh ~/.config/gspread
         ssh-keyscan github.com > ~/.ssh/known_hosts
         echo "$SSH_KEY" > ~/.ssh/id_rsa
-        chmod 0511 ~/.ssh/id_rsa
-        ls -lah ~/.ssh/
+        chmod 0500 ~/.ssh/id_rsa
 
         ls -lah
         git status
