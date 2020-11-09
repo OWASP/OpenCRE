@@ -21,8 +21,9 @@ jobs:
         GITHUB_API_KEY: ${{ secrets.API_KEY }}
     - run: |
         
-
+        ls -lah
         which pip
+        
         mkdir -p ~/.ssh ~/.config/gspread
         ssh-keyscan github.com > ~/.ssh/known_hosts
         echo "$SSH_KEY" > ~/.ssh/id_rsa
