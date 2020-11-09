@@ -27,13 +27,16 @@ jobs:
         echo "$SSH_KEY" > ~/.ssh/id_rsa
         chmod 0500 ~/.ssh/id_rsa
 
+        # default checkout clones https, need to somehow set the ssh url
+        git remote set-url origin git@github.com:northdpole/www-project-integration-standards.git
+
         ls -lah
         git remote -v
 
         pip3 install --user -r scripts/cre_sync/requirements.txt 
         echo "$SERVICE_ACCOUNT" > ~/.config/gspread/service_account.json
 
-        git config --global user.email "crebot@sgaster.me"
+        git config --global user.email "cre_bot@sgaster.me"
         git config --global user.name "cre bot"
         # todo since i have git, replace ssh with https://uname:token@github.com/path remote
 
