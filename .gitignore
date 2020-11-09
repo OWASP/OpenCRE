@@ -7,3 +7,6 @@ _site/
 ### vscode ###
 .vscode/*
 *.code-workspace
+
+## act secrets
+.secrets/
