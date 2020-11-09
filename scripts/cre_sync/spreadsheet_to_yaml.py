@@ -33,6 +33,7 @@ import json
 import os.path
 import logging
 import git
+
 from pprint import pprint
 from datetime import datetime
 from github import Github
@@ -77,6 +78,7 @@ logging.basicConfig()
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+  
 def readSpreadsheet(url: str, cres_loc: str, alias:str):
     """given remote google spreadsheet url,
      reads each workbook into a yaml file"""
@@ -126,6 +128,7 @@ def add_to_github(cre_loc:str, alias:str,apikey):
 
     repo = git.Repo(os.path.join(os.path.dirname(os.path.realpath(__file__)), "../../"))
     g = git.Git()
+    
     logger.info("Adding cre files to branch %s"% branch_name)
     current_branch = repo.active_branch.name
     try:
@@ -141,6 +144,7 @@ def add_to_github(cre_loc:str, alias:str,apikey):
         # if there's an error (commonly due to no changes, skip pushing a new branch)
         logger.error("Skipping push due to git error trying to sync " + commit_msg)
         logger.error(gce)
+            
     g.checkout(current_branch)
 
 
