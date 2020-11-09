@@ -21,10 +21,16 @@ jobs:
         SSH_KEY: ${{ secrets.SSH_KEY }}
         GITHUB_API_KEY: ${{ secrets.API_KEY }}
       run: |
+
         mkdir -p ~/.ssh ~/.config/gspread
         ssh-keyscan github.com > ~/.ssh/known_hosts
         echo "$SSH_KEY" > ~/.ssh/id_rsa
         chmod 511 ~/.ssh/id_rsa
+
+        ls -lah
+        git status
+        ssh git@github.com
+
         pip3 install --user -r scripts/cre_sync/requirements.txt 
         echo "$SERVICE_ACCOUNT" > ~/.config/gspread/service_account.json
 
