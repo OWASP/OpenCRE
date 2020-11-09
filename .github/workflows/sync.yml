@@ -30,11 +30,11 @@ jobs:
         # wc -c ${{secrets.GITHUB_TOKEN}}
         # default checkout clones https, need to somehow set the ssh url
 
-        git remote set-url origin git@github.com:northdpole/www-project-integration-standards.git
-        git pull origin master
+        # git remote set-url origin git@github.com:northdpole/www-project-integration-standards.git
+        # git pull origin master
 
-        echo "Success!!!"
-        remote_repo=$(echo "https://${GITHUB_ACTOR}:${{secrets.GITHUB_TOKEN}}@github.com/${GITHUB_REPOSITORY}.git" | tr -d "*")
+        # echo "Success!!!"
+        remote_repo="://${GITHUB_ACTOR}:${{secrets.GITHUB_TOKEN}}@github.com/${GITHUB_REPOSITORY}.git"
         
         echo "${remote_repo}"
 
