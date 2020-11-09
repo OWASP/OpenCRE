@@ -30,10 +30,12 @@ jobs:
         echo $GITHUB_ACTOR
         # wc -c ${{secrets.GITHUB_TOKEN}}
         # default checkout clones https, need to somehow set the ssh url
-        git remote set-url origin northdpole:${{secrets.GITHUB_TOKEN}}@github.com:northdpole/www-project-integration-standards.git
 
-        ls -lah
-        git remote -v
+        git remote set-url origin git@github.com:northdpole/www-project-integration-standards.git
+        git pull origin master
+
+        git remote set-url origin northdpole:${{secrets.GITHUB_TOKEN}}@github.com:northdpole/www-project-integration-standards.git
+        git pull origin master
 
         pip3 install --user -r scripts/cre_sync/requirements.txt 
         echo "$SERVICE_ACCOUNT" > ~/.config/gspread/service_account.json
