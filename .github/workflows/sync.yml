@@ -1,7 +1,7 @@
 name: Sync
 on:
   schedule:
-    - cron: '0 * * * *'  # every hour
+    - cron: '0 1 * * *'  # every day
   push:
     branches:
       - master
