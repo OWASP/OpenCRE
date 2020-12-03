@@ -1,0 +1,4004 @@
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Architecture, Design and Threat Modeling Requirements
+    CWE: 0
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V1.1.1
+    Name:
+    OPC: C1
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Threat_Modeling_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Abuse_Case_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Attack_Surface_Analysis_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Architecture, Design and Threat Modeling Requirements
+    CWE: 1053
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V1.1.2
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Threat_Modeling_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Abuse_Case_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Attack_Surface_Analysis_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Architecture, Design and Threat Modeling Requirements
+    CWE: 1110
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V1.1.3
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Threat_Modeling_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Abuse_Case_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Attack_Surface_Analysis_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Architecture, Design and Threat Modeling Requirements
+    CWE: 1059
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V1.1.4
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Threat_Modeling_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Abuse_Case_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Attack_Surface_Analysis_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Architecture, Design and Threat Modeling Requirements
+    CWE: 1059
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V1.1.5
+    Name:
+    OPC: C1
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Threat_Modeling_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Abuse_Case_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Attack_Surface_Analysis_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Architecture, Design and Threat Modeling Requirements
+    CWE: 637
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V1.1.6
+    Name:
+    OPC: C10
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Threat_Modeling_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Abuse_Case_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Attack_Surface_Analysis_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Architecture, Design and Threat Modeling Requirements
+    CWE: 637
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V1.1.7
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Threat_Modeling_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Abuse_Case_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Attack_Surface_Analysis_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Architecture, Design and Threat Modeling Requirements
+    CWE: 250
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V1.2.1
+    Name:
+    OPC: C3
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: None
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Architecture, Design and Threat Modeling Requirements
+    CWE: 306
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V1.2.2
+    Name:
+    OPC: C3
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: None
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Architecture, Design and Threat Modeling Requirements
+    CWE: 306
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V1.2.3
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: None
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Architecture, Design and Threat Modeling Requirements
+    CWE: 306
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V1.2.4
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: None
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Architecture, Design and Threat Modeling Requirements
+    CWE: 602
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V1.4.1
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Architecture, Design and Threat Modeling Requirements
+    CWE: 284
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V1.4.2
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Architecture, Design and Threat Modeling Requirements
+    CWE: 272
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V1.4.3
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Architecture, Design and Threat Modeling Requirements
+    CWE: 284
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V1.4.4
+    Name:
+    OPC: C7
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Architecture, Design and Threat Modeling Requirements
+    CWE: 275
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V1.4.5
+    Name:
+    OPC: C7
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Architecture, Design and Threat Modeling Requirements
+    CWE: 1029
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V1.5.1
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Abuse_Case_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Deserialization_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Architecture, Design and Threat Modeling Requirements
+    CWE: 502
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V1.5.2
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Abuse_Case_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Deserialization_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Architecture, Design and Threat Modeling Requirements
+    CWE: 602
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V1.5.3
+    Name:
+    OPC: C5
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Abuse_Case_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Deserialization_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Architecture, Design and Threat Modeling Requirements
+    CWE: 116
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V1.5.4
+    Name:
+    OPC: C4
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Abuse_Case_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Deserialization_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Architecture, Design and Threat Modeling Requirements
+    CWE: 320
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V1.6.1
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Key_Management_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Architecture, Design and Threat Modeling Requirements
+    CWE: 320
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V1.6.2
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Key_Management_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Architecture, Design and Threat Modeling Requirements
+    CWE: 320
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V1.6.3
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Key_Management_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Architecture, Design and Threat Modeling Requirements
+    CWE: 320
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V1.6.4
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Key_Management_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Architecture, Design and Threat Modeling Requirements
+    CWE: 1009
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V1.7.1
+    Name:
+    OPC: C9
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Architecture, Design and Threat Modeling Requirements
+    CWE: 0
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V1.7.2
+    Name:
+    OPC: C9
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Architecture, Design and Threat Modeling Requirements
+    CWE: 0
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V1.8.1
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Abuse_Case_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/User_Privacy_Protection_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Architecture, Design and Threat Modeling Requirements
+    CWE: 0
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V1.8.2
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Abuse_Case_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/User_Privacy_Protection_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Architecture, Design and Threat Modeling Requirements
+    CWE: 319
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V1.9.1
+    Name:
+    OPC: C3
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Protection_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/TLS_Cipher_String_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Architecture, Design and Threat Modeling Requirements
+    CWE: 295
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V1.9.2
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Protection_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/TLS_Cipher_String_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Architecture, Design and Threat Modeling Requirements
+    CWE: 284
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V1.10.1
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Third_Party_Javascript_Management_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Virtual_Patching_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Architecture, Design and Threat Modeling Requirements
+    CWE: 1059
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V1.11.1
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Abuse_Case_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Architecture, Design and Threat Modeling Requirements
+    CWE: 362
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V1.11.2
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Abuse_Case_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Architecture, Design and Threat Modeling Requirements
+    CWE: 367
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V1.11.3
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Abuse_Case_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Architecture, Design and Threat Modeling Requirements
+    CWE: 552
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V1.12.1
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: None
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Architecture, Design and Threat Modeling Requirements
+    CWE: 646
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V1.12.2
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: None
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Architecture, Design and Threat Modeling Requirements
+    CWE: 923
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V1.14.1
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: None
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Architecture, Design and Threat Modeling Requirements
+    CWE: 494
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V1.14.2
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: None
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Architecture, Design and Threat Modeling Requirements
+    CWE: 1104
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V1.14.3
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: None
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Architecture, Design and Threat Modeling Requirements
+    CWE: 0
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V1.14.4
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: None
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Architecture, Design and Threat Modeling Requirements
+    CWE: 265
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V1.14.5
+    Name:
+    OPC: C5
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: None
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Architecture, Design and Threat Modeling Requirements
+    CWE: 477
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V1.14.6
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: None
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Authentication Verification Requirements
+    CWE: 521
+    NIST: 5.1.1.2
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V2.1.1
+    Name:
+    OPC: C6
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Choosing_and_Using_Security_Questions_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Forgot_Password_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Credential_Stuffing_Prevention_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Authentication Verification Requirements
+    CWE: 521
+    NIST: 5.1.1.2
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V2.1.2
+    Name:
+    OPC: C6
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Choosing_and_Using_Security_Questions_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Forgot_Password_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Credential_Stuffing_Prevention_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Authentication Verification Requirements
+    CWE: 521
+    NIST: 5.1.1.2
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V2.1.3
+    Name:
+    OPC: C6
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Choosing_and_Using_Security_Questions_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Forgot_Password_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Credential_Stuffing_Prevention_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Authentication Verification Requirements
+    CWE: 521
+    NIST: 5.1.1.2
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V2.1.4
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Choosing_and_Using_Security_Questions_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Forgot_Password_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Credential_Stuffing_Prevention_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Authentication Verification Requirements
+    CWE: 620
+    NIST: 5.1.1.2
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V2.1.5
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Choosing_and_Using_Security_Questions_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Forgot_Password_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Credential_Stuffing_Prevention_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Authentication Verification Requirements
+    CWE: 620
+    NIST: 5.1.1.2
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V2.1.6
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Choosing_and_Using_Security_Questions_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Forgot_Password_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Credential_Stuffing_Prevention_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Authentication Verification Requirements
+    CWE: 521
+    NIST: 5.1.1.2
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V2.1.7
+    Name:
+    OPC: C6
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Choosing_and_Using_Security_Questions_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Forgot_Password_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Credential_Stuffing_Prevention_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Authentication Verification Requirements
+    CWE: 521
+    NIST: 5.1.1.2
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V2.1.8
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Choosing_and_Using_Security_Questions_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Forgot_Password_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Credential_Stuffing_Prevention_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Authentication Verification Requirements
+    CWE: 521
+    NIST: 5.1.1.2
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V2.1.9
+    Name:
+    OPC: C6
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Choosing_and_Using_Security_Questions_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Forgot_Password_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Credential_Stuffing_Prevention_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Authentication Verification Requirements
+    CWE: 263
+    NIST: 5.1.1.2
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V2.1.10
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Choosing_and_Using_Security_Questions_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Forgot_Password_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Credential_Stuffing_Prevention_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Authentication Verification Requirements
+    CWE: 521
+    NIST: 5.1.1.2
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V2.1.11
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Choosing_and_Using_Security_Questions_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Forgot_Password_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Credential_Stuffing_Prevention_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Authentication Verification Requirements
+    CWE: 521
+    NIST: 5.1.1.2
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V2.1.12
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Choosing_and_Using_Security_Questions_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Forgot_Password_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Credential_Stuffing_Prevention_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Authentication Verification Requirements
+    CWE: 307
+    NIST: 5.2.2 / 5.1.1.2 / 5.1.4.2 / 5.1.5.2
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V2.2.1
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Protection_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/TLS_Cipher_String_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Authentication Verification Requirements
+    CWE: 304
+    NIST: 5.2.10
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V2.2.2
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Protection_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/TLS_Cipher_String_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Authentication Verification Requirements
+    CWE: 620
+    NIST: nan
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V2.2.3
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Protection_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/TLS_Cipher_String_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Authentication Verification Requirements
+    CWE: 308
+    NIST: 5.2.5
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V2.2.4
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Protection_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/TLS_Cipher_String_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Authentication Verification Requirements
+    CWE: 319
+    NIST: 5.2.6
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V2.2.5
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Protection_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/TLS_Cipher_String_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Authentication Verification Requirements
+    CWE: 308
+    NIST: 5.2.8
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V2.2.6
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Protection_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/TLS_Cipher_String_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Authentication Verification Requirements
+    CWE: 308
+    NIST: 5.2.9
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V2.2.7
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Protection_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/TLS_Cipher_String_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Authentication Verification Requirements
+    CWE: 330
+    NIST: 5.1.1.2 / A.3
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V2.3.1
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: None
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Authentication Verification Requirements
+    CWE: 308
+    NIST: 6.1.3
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V2.3.2
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: None
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Authentication Verification Requirements
+    CWE: 287
+    NIST: 6.1.4
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V2.3.3
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: None
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Authentication Verification Requirements
+    CWE: 916
+    NIST: 5.1.1.2
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V2.4.1
+    Name:
+    OPC: C6
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Authentication Verification Requirements
+    CWE: 916
+    NIST: 5.1.1.2
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V2.4.2
+    Name:
+    OPC: C6
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Authentication Verification Requirements
+    CWE: 916
+    NIST: 5.1.1.2
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V2.4.3
+    Name:
+    OPC: C6
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Authentication Verification Requirements
+    CWE: 916
+    NIST: 5.1.1.2
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V2.4.4
+    Name:
+    OPC: C6
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Authentication Verification Requirements
+    CWE: 916
+    NIST: 5.1.1.2
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V2.4.5
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Authentication Verification Requirements
+    CWE: 640
+    NIST: 5.1.1.2
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V2.5.1
+    Name:
+    OPC: C6
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Choosing_and_Using_Security_Questions_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Forgot_Password_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Authentication Verification Requirements
+    CWE: 640
+    NIST: 5.1.1.2
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V2.5.2
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Choosing_and_Using_Security_Questions_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Forgot_Password_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Authentication Verification Requirements
+    CWE: 640
+    NIST: 5.1.1.2
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V2.5.3
+    Name:
+    OPC: C6
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Choosing_and_Using_Security_Questions_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Forgot_Password_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Authentication Verification Requirements
+    CWE: 16
+    NIST: 5.1.1.2 / A.3
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V2.5.4
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Choosing_and_Using_Security_Questions_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Forgot_Password_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Authentication Verification Requirements
+    CWE: 304
+    NIST: 6.1.2.3
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V2.5.5
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Choosing_and_Using_Security_Questions_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Forgot_Password_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Authentication Verification Requirements
+    CWE: 640
+    NIST: 5.1.1.2
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V2.5.6
+    Name:
+    OPC: C6
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Choosing_and_Using_Security_Questions_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Forgot_Password_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Authentication Verification Requirements
+    CWE: 308
+    NIST: 6.1.2.3
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V2.5.7
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Choosing_and_Using_Security_Questions_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Forgot_Password_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Authentication Verification Requirements
+    CWE: 308
+    NIST: 5.1.2.2
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V2.6.1
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: None
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Authentication Verification Requirements
+    CWE: 330
+    NIST: 5.1.2.2
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V2.6.2
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: None
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Authentication Verification Requirements
+    CWE: 310
+    NIST: 5.1.2.2
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V2.6.3
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: None
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Authentication Verification Requirements
+    CWE: 287
+    NIST: 5.1.3.2
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V2.7.1
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Forgot_Password_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Authentication Verification Requirements
+    CWE: 287
+    NIST: 5.1.3.2
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V2.7.2
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Forgot_Password_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Authentication Verification Requirements
+    CWE: 287
+    NIST: 5.1.3.2
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V2.7.3
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Forgot_Password_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Authentication Verification Requirements
+    CWE: 523
+    NIST: 5.1.3.2
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V2.7.4
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Forgot_Password_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Authentication Verification Requirements
+    CWE: 256
+    NIST: 5.1.3.2
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V2.7.5
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Forgot_Password_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Authentication Verification Requirements
+    CWE: 310
+    NIST: 5.1.3.2
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V2.7.6
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Forgot_Password_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Authentication Verification Requirements
+    CWE: 613
+    NIST: 5.1.4.2 / 5.1.5.2
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V2.8.1
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: None
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Authentication Verification Requirements
+    CWE: 320
+    NIST: 5.1.4.2 / 5.1.5.2
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V2.8.2
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: None
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Authentication Verification Requirements
+    CWE: 326
+    NIST: 5.1.4.2 / 5.1.5.2
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V2.8.3
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: None
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Authentication Verification Requirements
+    CWE: 287
+    NIST: 5.1.4.2 / 5.1.5.2
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V2.8.4
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: None
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Authentication Verification Requirements
+    CWE: 287
+    NIST: 5.1.5.2
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V2.8.5
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: None
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Authentication Verification Requirements
+    CWE: 613
+    NIST: 5.2.1
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V2.8.6
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: None
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Authentication Verification Requirements
+    CWE: 308
+    NIST: 5.2.3
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V2.8.7
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: None
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Authentication Verification Requirements
+    CWE: 320
+    NIST: 5.1.7.2
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V2.9.1
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Key_Management_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Authentication Verification Requirements
+    CWE: 330
+    NIST: 5.1.7.2
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V2.9.2
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Key_Management_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Authentication Verification Requirements
+    CWE: 327
+    NIST: 5.1.7.2
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V2.9.3
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Key_Management_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Authentication Verification Requirements
+    CWE: 287
+    NIST: 5.1.1.1
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V2.10.1
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: None
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Authentication Verification Requirements
+    CWE: 255
+    NIST: 5.1.1.1
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V2.10.2
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: None
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Authentication Verification Requirements
+    CWE: 522
+    NIST: 5.1.1.1
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V2.10.3
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: None
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Authentication Verification Requirements
+    CWE: 798
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V2.10.4
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: None
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Session Management Verification Requirements
+    CWE: 598
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V3.1.1
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: None
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Session Management Verification Requirements
+    CWE: 384
+    NIST: 7.1
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V3.2.1
+    Name:
+    OPC: C6
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Session Management Verification Requirements
+    CWE: 331
+    NIST: 7.1
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V3.2.2
+    Name:
+    OPC: C6
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Session Management Verification Requirements
+    CWE: 539
+    NIST: 7.1
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V3.2.3
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Session Management Verification Requirements
+    CWE: 331
+    NIST: 7.1
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V3.2.4
+    Name:
+    OPC: C6
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Session Management Verification Requirements
+    CWE: 613
+    NIST: 7.1
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V3.3.1
+    Name:
+    OPC: C6
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Session Management Verification Requirements
+    CWE: 613
+    NIST: 7.2
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V3.3.2
+    Name:
+    OPC: C6
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Session Management Verification Requirements
+    CWE: 613
+    NIST: nan
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V3.3.3
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Session Management Verification Requirements
+    CWE: 613
+    NIST: 7.1
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V3.3.4
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Session Management Verification Requirements
+    CWE: 614
+    NIST: 7.1.1
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V3.4.1
+    Name:
+    OPC: C6
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Session Management Verification Requirements
+    CWE: 1004
+    NIST: 7.1.1
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V3.4.2
+    Name:
+    OPC: C6
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Session Management Verification Requirements
+    CWE: 16
+    NIST: 7.1.1
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V3.4.3
+    Name:
+    OPC: C6
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Session Management Verification Requirements
+    CWE: 16
+    NIST: 7.1.1
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V3.4.4
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Session Management Verification Requirements
+    CWE: 16
+    NIST: 7.1.1
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V3.4.5
+    Name:
+    OPC: C6
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Session Management Verification Requirements
+    CWE: 290
+    NIST: 7.1.2
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V3.5.1
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/JSON_Web_Token_for_Java_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/REST_Security_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Session Management Verification Requirements
+    CWE: 798
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V3.5.2
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/JSON_Web_Token_for_Java_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/REST_Security_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Session Management Verification Requirements
+    CWE: 345
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V3.5.3
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/JSON_Web_Token_for_Java_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/REST_Security_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Session Management Verification Requirements
+    CWE: 613
+    NIST: 7.2.1
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V3.6.1
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: None
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Session Management Verification Requirements
+    CWE: 613
+    NIST: 7.2.1
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V3.6.2
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: None
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Session Management Verification Requirements
+    CWE: 306
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V3.7.1
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Transaction_Authorization_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Access Control Verification Requirements
+    CWE: 602
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V4.1.1
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Access_Control_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Testing_Automation_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Access Control Verification Requirements
+    CWE: 639
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V4.1.2
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Access_Control_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Testing_Automation_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Access Control Verification Requirements
+    CWE: 285
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V4.1.3
+    Name:
+    OPC: C7
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Access_Control_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Testing_Automation_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Access Control Verification Requirements
+    CWE: 276
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V4.1.4
+    Name:
+    OPC: C7
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Access_Control_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Testing_Automation_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Access Control Verification Requirements
+    CWE: 285
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V4.1.5
+    Name:
+    OPC: C10
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Access_Control_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Testing_Automation_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Access Control Verification Requirements
+    CWE: 639
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V4.2.1
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Insecure_Direct_Object_Reference_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Testing_Automation_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Access Control Verification Requirements
+    CWE: 352
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V4.2.2
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Insecure_Direct_Object_Reference_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Testing_Automation_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Access Control Verification Requirements
+    CWE: 419
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V4.3.1
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/REST_Assessment_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Access Control Verification Requirements
+    CWE: 548
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V4.3.2
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/REST_Assessment_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Access Control Verification Requirements
+    CWE: 732
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V4.3.3
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/REST_Assessment_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Validation, Sanitization and Encoding Verification Requirements
+    CWE: 235
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V5.1.1
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Mass_Assignment_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Validation, Sanitization and Encoding Verification Requirements
+    CWE: 915
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V5.1.2
+    Name:
+    OPC: C5
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Mass_Assignment_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Validation, Sanitization and Encoding Verification Requirements
+    CWE: 20
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V5.1.3
+    Name:
+    OPC: C5
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Mass_Assignment_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Validation, Sanitization and Encoding Verification Requirements
+    CWE: 20
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V5.1.4
+    Name:
+    OPC: C5
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Mass_Assignment_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Validation, Sanitization and Encoding Verification Requirements
+    CWE: 601
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V5.1.5
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Mass_Assignment_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Validation, Sanitization and Encoding Verification Requirements
+    CWE: 116
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V5.2.1
+    Name:
+    OPC: C5
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Validation, Sanitization and Encoding Verification Requirements
+    CWE: 138
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V5.2.2
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Validation, Sanitization and Encoding Verification Requirements
+    CWE: 147
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V5.2.3
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Validation, Sanitization and Encoding Verification Requirements
+    CWE: 95
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V5.2.4
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Validation, Sanitization and Encoding Verification Requirements
+    CWE: 94
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V5.2.5
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Validation, Sanitization and Encoding Verification Requirements
+    CWE: 918
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V5.2.6
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Validation, Sanitization and Encoding Verification Requirements
+    CWE: 159
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V5.2.7
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Validation, Sanitization and Encoding Verification Requirements
+    CWE: 94
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V5.2.8
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Validation, Sanitization and Encoding Verification Requirements
+    CWE: 116
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V5.3.1
+    Name:
+    OPC: C4
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/HTML5_Security_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Injection_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Injection_Prevention_in_Java_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/LDAP_Injection_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/OS_Command_Injection_Defense_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/File_Upload_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Query_Parameterization_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Bean_Validation_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/XML_External_Entity_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/XML_Security_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Validation, Sanitization and Encoding Verification Requirements
+    CWE: 176
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V5.3.2
+    Name:
+    OPC: C4
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/HTML5_Security_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Injection_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Injection_Prevention_in_Java_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/LDAP_Injection_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/OS_Command_Injection_Defense_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/File_Upload_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Query_Parameterization_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Bean_Validation_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/XML_External_Entity_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/XML_Security_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Validation, Sanitization and Encoding Verification Requirements
+    CWE: 79
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V5.3.3
+    Name:
+    OPC: C4
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/HTML5_Security_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Injection_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Injection_Prevention_in_Java_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/LDAP_Injection_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/OS_Command_Injection_Defense_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/File_Upload_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Query_Parameterization_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Bean_Validation_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/XML_External_Entity_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/XML_Security_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Validation, Sanitization and Encoding Verification Requirements
+    CWE: 89
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V5.3.4
+    Name:
+    OPC: C3
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/HTML5_Security_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Injection_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Injection_Prevention_in_Java_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/LDAP_Injection_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/OS_Command_Injection_Defense_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/File_Upload_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Query_Parameterization_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Bean_Validation_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/XML_External_Entity_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/XML_Security_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Validation, Sanitization and Encoding Verification Requirements
+    CWE: 89
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V5.3.5
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/HTML5_Security_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Injection_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Injection_Prevention_in_Java_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/LDAP_Injection_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/OS_Command_Injection_Defense_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/File_Upload_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Query_Parameterization_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Bean_Validation_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/XML_External_Entity_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/XML_Security_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Validation, Sanitization and Encoding Verification Requirements
+    CWE: 830
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V5.3.6
+    Name:
+    OPC: C4
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/HTML5_Security_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Injection_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Injection_Prevention_in_Java_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/LDAP_Injection_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/OS_Command_Injection_Defense_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/File_Upload_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Query_Parameterization_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Bean_Validation_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/XML_External_Entity_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/XML_Security_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Validation, Sanitization and Encoding Verification Requirements
+    CWE: 90
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V5.3.7
+    Name:
+    OPC: C4
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/HTML5_Security_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Injection_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Injection_Prevention_in_Java_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/LDAP_Injection_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/OS_Command_Injection_Defense_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/File_Upload_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Query_Parameterization_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Bean_Validation_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/XML_External_Entity_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/XML_Security_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Validation, Sanitization and Encoding Verification Requirements
+    CWE: 78
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V5.3.8
+    Name:
+    OPC: C4
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/HTML5_Security_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Injection_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Injection_Prevention_in_Java_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/LDAP_Injection_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/OS_Command_Injection_Defense_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/File_Upload_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Query_Parameterization_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Bean_Validation_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/XML_External_Entity_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/XML_Security_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Validation, Sanitization and Encoding Verification Requirements
+    CWE: 829
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V5.3.9
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/HTML5_Security_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Injection_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Injection_Prevention_in_Java_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/LDAP_Injection_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/OS_Command_Injection_Defense_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/File_Upload_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Query_Parameterization_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Bean_Validation_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/XML_External_Entity_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/XML_Security_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Validation, Sanitization and Encoding Verification Requirements
+    CWE: 643
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V5.3.10
+    Name:
+    OPC: C4
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/HTML5_Security_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Injection_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Injection_Prevention_in_Java_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/LDAP_Injection_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/OS_Command_Injection_Defense_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/File_Upload_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Query_Parameterization_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Bean_Validation_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/XML_External_Entity_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/XML_Security_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Validation, Sanitization and Encoding Verification Requirements
+    CWE: 120
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V5.4.1
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: None
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Validation, Sanitization and Encoding Verification Requirements
+    CWE: 134
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V5.4.2
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: None
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Validation, Sanitization and Encoding Verification Requirements
+    CWE: 190
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V5.4.3
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: None
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Validation, Sanitization and Encoding Verification Requirements
+    CWE: 502
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V5.5.1
+    Name:
+    OPC: C5
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Deserialization_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/XML_External_Entity_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/XML_Security_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Validation, Sanitization and Encoding Verification Requirements
+    CWE: 611
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V5.5.2
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Deserialization_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/XML_External_Entity_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/XML_Security_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Validation, Sanitization and Encoding Verification Requirements
+    CWE: 502
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V5.5.3
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Deserialization_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/XML_External_Entity_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/XML_Security_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Validation, Sanitization and Encoding Verification Requirements
+    CWE: 95
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V5.5.4
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Deserialization_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/XML_External_Entity_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/XML_Security_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Stored Cryptography Verification Requirements
+    CWE: 311
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V6.1.1
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Abuse_Case_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/User_Privacy_Protection_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Stored Cryptography Verification Requirements
+    CWE: 311
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V6.1.2
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Abuse_Case_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/User_Privacy_Protection_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Stored Cryptography Verification Requirements
+    CWE: 311
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V6.1.3
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Abuse_Case_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/User_Privacy_Protection_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Stored Cryptography Verification Requirements
+    CWE: 310
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V6.2.1
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Key_Management_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Stored Cryptography Verification Requirements
+    CWE: 327
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V6.2.2
+    Name:
+    OPC: C8
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Key_Management_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Stored Cryptography Verification Requirements
+    CWE: 326
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V6.2.3
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Key_Management_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Stored Cryptography Verification Requirements
+    CWE: 326
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V6.2.4
+    Name:
+    OPC: C8
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Key_Management_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Stored Cryptography Verification Requirements
+    CWE: 326
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V6.2.5
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Key_Management_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Stored Cryptography Verification Requirements
+    CWE: 326
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V6.2.6
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Key_Management_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Stored Cryptography Verification Requirements
+    CWE: 326
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V6.2.7
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Key_Management_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Stored Cryptography Verification Requirements
+    CWE: 385
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V6.2.8
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Key_Management_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Stored Cryptography Verification Requirements
+    CWE: 338
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V6.3.1
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: None
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Stored Cryptography Verification Requirements
+    CWE: 338
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V6.3.2
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: None
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Stored Cryptography Verification Requirements
+    CWE: 338
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V6.3.3
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: None
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Stored Cryptography Verification Requirements
+    CWE: 798
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V6.4.1
+    Name:
+    OPC: C8
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Key_Management_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Stored Cryptography Verification Requirements
+    CWE: 320
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V6.4.2
+    Name:
+    OPC: C8
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Key_Management_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Error Handling and Logging Verification Requirements
+    CWE: 532
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V7.1.1
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Error Handling and Logging Verification Requirements
+    CWE: 532
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V7.1.2
+    Name:
+    OPC: C9
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Error Handling and Logging Verification Requirements
+    CWE: 778
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V7.1.3
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Error Handling and Logging Verification Requirements
+    CWE: 778
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V7.1.4
+    Name:
+    OPC: C9
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Error Handling and Logging Verification Requirements
+    CWE: 778
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V7.2.1
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Error Handling and Logging Verification Requirements
+    CWE: 285
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V7.2.2
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Error Handling and Logging Verification Requirements
+    CWE: 117
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V7.3.1
+    Name:
+    OPC: C9
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Error Handling and Logging Verification Requirements
+    CWE: 117
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V7.3.2
+    Name:
+    OPC: C9
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Error Handling and Logging Verification Requirements
+    CWE: 200
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V7.3.3
+    Name:
+    OPC: C9
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.htmlhttps://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Error Handling and Logging Verification Requirements
+    CWE: 0
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V7.3.4
+    Name:
+    OPC: C9
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.htmlhttps://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Error Handling and Logging Verification Requirements
+    CWE: 210
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V7.4.1
+    Name:
+    OPC: C10
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Error_Handling_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Error Handling and Logging Verification Requirements
+    CWE: 544
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V7.4.2
+    Name:
+    OPC: C10
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Error_Handling_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Error Handling and Logging Verification Requirements
+    CWE: 431
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V7.4.3
+    Name:
+    OPC: C10
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Error_Handling_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Data Protection Verification Requirements
+    CWE: 524
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V8.1.1
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: None
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Data Protection Verification Requirements
+    CWE: 524
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V8.1.2
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: None
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Data Protection Verification Requirements
+    CWE: 233
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V8.1.3
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: None
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Data Protection Verification Requirements
+    CWE: 770
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V8.1.4
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: None
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Data Protection Verification Requirements
+    CWE: 19
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V8.1.5
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: None
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Data Protection Verification Requirements
+    CWE: 19
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V8.1.6
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: None
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Data Protection Verification Requirements
+    CWE: 525
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V8.2.1
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: None
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Data Protection Verification Requirements
+    CWE: 922
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V8.2.2
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: None
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Data Protection Verification Requirements
+    CWE: 922
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V8.2.3
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: None
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Data Protection Verification Requirements
+    CWE: 319
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V8.3.1
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: None
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Data Protection Verification Requirements
+    CWE: 212
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V8.3.2
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: None
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Data Protection Verification Requirements
+    CWE: 285
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V8.3.3
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: None
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Data Protection Verification Requirements
+    CWE: 200
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V8.3.4
+    Name:
+    OPC: C8
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: None
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Data Protection Verification Requirements
+    CWE: 532
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V8.3.5
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: None
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Data Protection Verification Requirements
+    CWE: 226
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V8.3.6
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: None
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Data Protection Verification Requirements
+    CWE: 327
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V8.3.7
+    Name:
+    OPC: C8
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: None
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Data Protection Verification Requirements
+    CWE: 285
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V8.3.8
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: None
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Communications Verification Requirements
+    CWE: 319
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V9.1.1
+    Name:
+    OPC: C8
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/HTTP_Strict_Transport_Security_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Protection_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/TLS_Cipher_String_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Communications Verification Requirements
+    CWE: 326
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V9.1.2
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/HTTP_Strict_Transport_Security_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Protection_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/TLS_Cipher_String_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Communications Verification Requirements
+    CWE: 326
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V9.1.3
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/HTTP_Strict_Transport_Security_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Protection_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/TLS_Cipher_String_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Communications Verification Requirements
+    CWE: 295
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V9.2.1
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: None
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Communications Verification Requirements
+    CWE: 319
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V9.2.2
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: None
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Communications Verification Requirements
+    CWE: 287
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V9.2.3
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: None
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Communications Verification Requirements
+    CWE: 299
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V9.2.4
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: None
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Communications Verification Requirements
+    CWE: 544
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V9.2.5
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: None
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Malicious Code Verification Requirements
+    CWE: 749
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V10.1.1
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Third_Party_Javascript_Management_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Malicious Code Verification Requirements
+    CWE: 359
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V10.2.1
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: None
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Malicious Code Verification Requirements
+    CWE: 272
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V10.2.2
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: None
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Malicious Code Verification Requirements
+    CWE: 507
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V10.2.3
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: None
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Malicious Code Verification Requirements
+    CWE: 511
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V10.2.4
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: None
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Malicious Code Verification Requirements
+    CWE: 511
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V10.2.5
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: None
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Malicious Code Verification Requirements
+    CWE: 507
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V10.2.6
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: None
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Malicious Code Verification Requirements
+    CWE: 16
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V10.3.1
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Malicious Code Verification Requirements
+    CWE: 353
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V10.3.2
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Malicious Code Verification Requirements
+    CWE: 350
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V10.3.3
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Business Logic Verification Requirements
+    CWE: 841
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V11.1.1
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Abuse_Case_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Business Logic Verification Requirements
+    CWE: 799
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V11.1.2
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Abuse_Case_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Business Logic Verification Requirements
+    CWE: 770
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V11.1.3
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Abuse_Case_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Business Logic Verification Requirements
+    CWE: 770
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V11.1.4
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Abuse_Case_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Business Logic Verification Requirements
+    CWE: 841
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V11.1.5
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Abuse_Case_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Business Logic Verification Requirements
+    CWE: 367
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V11.1.6
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Abuse_Case_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Business Logic Verification Requirements
+    CWE: 754
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V11.1.7
+    Name:
+    OPC: C9
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Abuse_Case_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Business Logic Verification Requirements
+    CWE: 390
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V11.1.8
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Abuse_Case_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: File and Resources Verification Requirements
+    CWE: 400
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V12.1.1
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/File_Upload_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: File and Resources Verification Requirements
+    CWE: 409
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V12.1.2
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/File_Upload_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: File and Resources Verification Requirements
+    CWE: 770
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V12.1.3
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/File_Upload_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: File and Resources Verification Requirements
+    CWE: 434
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V12.2.1
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/File_Upload_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Third_Party_Javascript_Management_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: File and Resources Verification Requirements
+    CWE: 22
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V12.3.1
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: None
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: File and Resources Verification Requirements
+    CWE: 73
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V12.3.2
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: None
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: File and Resources Verification Requirements
+    CWE: 98
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V12.3.3
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: None
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: File and Resources Verification Requirements
+    CWE: 641
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V12.3.4
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: None
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: File and Resources Verification Requirements
+    CWE: 78
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V12.3.5
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: None
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: File and Resources Verification Requirements
+    CWE: 829
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V12.3.6
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: None
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: File and Resources Verification Requirements
+    CWE: 922
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V12.4.1
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: None
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: File and Resources Verification Requirements
+    CWE: 509
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V12.4.2
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: None
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: File and Resources Verification Requirements
+    CWE: 552
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V12.5.1
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: None
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: File and Resources Verification Requirements
+    CWE: 434
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V12.5.2
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: None
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: File and Resources Verification Requirements
+    CWE: 918
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V12.6.1
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: API and Web Service Verification Requirements
+    CWE: 116
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V13.1.1
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Web_Service_Security_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: API and Web Service Verification Requirements
+    CWE: 419
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V13.1.2
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Web_Service_Security_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: API and Web Service Verification Requirements
+    CWE: 598
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V13.1.3
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Web_Service_Security_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: API and Web Service Verification Requirements
+    CWE: 285
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V13.1.4
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Web_Service_Security_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: API and Web Service Verification Requirements
+    CWE: 434
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V13.1.5
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Web_Service_Security_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: API and Web Service Verification Requirements
+    CWE: 650
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V13.2.1
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/REST_Assessment_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/REST_Security_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: API and Web Service Verification Requirements
+    CWE: 20
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V13.2.2
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/REST_Assessment_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/REST_Security_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: API and Web Service Verification Requirements
+    CWE: 352
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V13.2.3
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/REST_Assessment_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/REST_Security_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: API and Web Service Verification Requirements
+    CWE: 770
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V13.2.4
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/REST_Assessment_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/REST_Security_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: API and Web Service Verification Requirements
+    CWE: 436
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V13.2.5
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/REST_Assessment_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/REST_Security_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: API and Web Service Verification Requirements
+    CWE: 345
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V13.2.6
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/REST_Assessment_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/REST_Security_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: API and Web Service Verification Requirements
+    CWE: 20
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V13.3.1
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/XML_Security_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: API and Web Service Verification Requirements
+    CWE: 345
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V13.3.2
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/XML_Security_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: API and Web Service Verification Requirements
+    CWE: 770
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V13.4.1
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: None
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: API and Web Service Verification Requirements
+    CWE: 285
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V13.4.2
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: None
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Configuration Verification Requirements
+    CWE: 0
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V14.1.1
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Configuration Verification Requirements
+    CWE: 120
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V14.1.2
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Configuration Verification Requirements
+    CWE: 16
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V14.1.3
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Configuration Verification Requirements
+    CWE: 0
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V14.1.4
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Configuration Verification Requirements
+    CWE: 0
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V14.1.5
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Configuration Verification Requirements
+    CWE: 1026
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V14.2.1
+    Name:
+    OPC: C2
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Vulnerable_Dependency_Management_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Configuration Verification Requirements
+    CWE: 1002
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V14.2.2
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Vulnerable_Dependency_Management_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Configuration Verification Requirements
+    CWE: 829
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V14.2.3
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Vulnerable_Dependency_Management_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Configuration Verification Requirements
+    CWE: 829
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V14.2.4
+    Name:
+    OPC: C2
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Vulnerable_Dependency_Management_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Configuration Verification Requirements
+    CWE: 0
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V14.2.5
+    Name:
+    OPC: C2
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Vulnerable_Dependency_Management_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Configuration Verification Requirements
+    CWE: 265
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V14.2.6
+    Name:
+    OPC: C2
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Vulnerable_Dependency_Management_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Configuration Verification Requirements
+    CWE: 209
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V14.3.1
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Error_Handling_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Configuration Verification Requirements
+    CWE: 497
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V14.3.2
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Error_Handling_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Configuration Verification Requirements
+    CWE: 200
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V14.3.3
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Error_Handling_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Configuration Verification Requirements
+    CWE: 173
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V14.4.1
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Content_Security_Policy_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Configuration Verification Requirements
+    CWE: 116
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V14.4.2
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Content_Security_Policy_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Configuration Verification Requirements
+    CWE: 1021
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V14.4.3
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Content_Security_Policy_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Configuration Verification Requirements
+    CWE: 116
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V14.4.4
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Content_Security_Policy_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Configuration Verification Requirements
+    CWE: 523
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V14.4.5
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Content_Security_Policy_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Configuration Verification Requirements
+    CWE: 116
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V14.4.6
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Content_Security_Policy_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Configuration Verification Requirements
+    CWE: 346
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V14.4.7
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: https://cheatsheetseries.owasp.org/cheatsheets/Content_Security_Policy_Cheat_Sheet.html
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Configuration Verification Requirements
+    CWE: 749
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V14.5.1
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: None
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Configuration Verification Requirements
+    CWE: 346
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V14.5.2
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: None
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Configuration Verification Requirements
+    CWE: 346
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V14.5.3
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: None
+
+- CRE-ID-lookup-from-taxonomy-table: 
+    CS: Configuration Verification Requirements
+    CWE: 306
+    NIST: None
+    Description: 
+    Development guide (does not exist for SessionManagement): ''
+    ID-taxonomy-lookup-from-ASVS-mapping: This still a thing?
+    Item: V14.5.4
+    Name:
+    OPC: None
+    Top10 (lookup): Empty 
+    WSTG: Empty
+    cheat_sheets: None
