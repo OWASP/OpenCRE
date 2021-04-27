@@ -1,31 +1,41 @@
-CRE Spreadhsheet to Github Sync
+
+Common Requirements Enumeration Application
 ===============================
 
-This script can be run either manually or via Github Actions.
-The Github Action is run on a cron schedule defined in .github/ .
-It syncs the contents of the spreadsheets with links between CREs and other external entities to CRE yaml files on Github.
-There is a different Github Action which syncs those Yaml files to a CRE REST API for querying.
+This is work in progress.
 
-Assumptions
------------
+This python web and cli application handles adding and presenting CREs.
 
-* The URLs of the auto-synced spreadsheets are defined in the ```spreadsheets.txt ``` file. One URL per line.
-* All spreadsheets need to follow the template defined by ```CRE_LINK_schema```, the script will ignore any workbooks that do not follow the schema
-* Only workbooks whose names start with a number will be synced, this is on purpose to allow pivot tables or other miscelaneous/WiP workbooks.
-* You _need_ to share the spreadsheet to be synced with the following email: ```project-integratio-sync-servic@project-integration-standards.iam.gserviceaccount.com``` (this script's service account)
-* This script creates Pull Requests, this is important so CRE elements can be manually reviewed.
+Installing
+---
+
+To install this application you need python3.
+Clone the repository
+`git clone <repository>`
+Launch a virtual environment, 
+`virtualenv -p python3 venv/ && source venv/bin/activate`
+install the dependencies with pip
+`pip install -r scripts/cre_sync/requirements.txt`
 
 Running
 -------
 
-This script runs automatically, if you want to run it yourself against your own spreadsheet you need the following:
+To run the cli application, you can run `python cre_main.py --help`
+To download a remote cre spreadsheet locally you can run
+`python cre_main.py --review --from_spreadsheet https://docs.google.com/spreadsheets/d/19YBNcZHL9BF2Dw9Ijzqogc6MUyhTcH10Cb-37rBTFbk/edit\#gid\=1975949890`
 
-* Setup gspread for you, if you want to run this script as a user you are looking for an OAUTH token, otherwise you need a Service Account: https://gspread.readthedocs.io/en/latest/oauth2.html#enable-api-access
-* Setup a github api token with access to your repository: https://github.com/settings/tokens
-* From within this repository and with the ability to push to github with an SSH key run: 
-`GITHUB_API_KEY="<your github api key>" python ./spreadsheet_to_yaml.py`
+To add a remote spreadsheet to your local database you can run
+`python cre_main.py --add --from_spreadsheet https://docs.google.com/spreadsheets/d/1THhpJWrH7RVwEnawEOO-3ZQwuiAKEUyb_ZAdQnvHNsU`
 
-Notes
+To run the frontend you can run
+`python web_main.py`
+
+Developing
+---
+
+You can run backend tests with `python -m unittest discover -s scripts/cre_sync -p "*_test.py" -v`
+
+Development Notes
 ---
 
 add tests
@@ -34,7 +44,7 @@ add tests
    ~ parsers -- Done   --- needs edge cases
     mapping_add -- Done for important methods, -- argparse logic only remains
    ~ spreadsheet_utils ~ -- Done
-   Frontend
+   frontend
 
 * ~ add parse from export format ~ Done
 * ~ add parse from export format where the root doc is a standard and it links to cres or groups ~ Done
@@ -45,22 +55,22 @@ add tests
 * ~ add export for Standards unmapped to CREs as lone standards (useful for visibility) ~ Done
 * ~ add sparse_spreadsheet_export functionality one level of mapping per row, either everything that maps to standard X or everything that maps to CRE x ~ Done
 * ~ add parse from export format ~ Done
-
+* ~ add github actions ci ~ Done
 * ~ make into flask rest api ~ Done
 * ~   refer use case (search by cre) ~ Done
 * ~   search by standard ~ Done
 * add db integration of tags
-   * ~ add tags in db  (search by tag, export with tags etc) ~ Done 
-   add parser integration of tags (parse the new new new spreadsheet template which incorporates tags)
-   ~ add search by tag in rest and frontend ~ Done
+* ~ add tags in db  (search by tag, export with tags etc) ~ Done 
+* add parser integration of tags (parse the new new new spreadsheet template which incorporates tags)
+* ~ add search by tag in rest and frontend ~ Done
 
-write frontend
-make frontend show Graph
+* write frontend
+* make frontend show Graph
 
-make library out of file format and spreadsheet template parsers
-add the ability for a mapping document to have multiple yamls in it
-add conditional export (select the standards you want exported and if you want to see the CRE ids or not, get spreadsheet with mappings)  (gap analysis use case)
-write docs and record usage gif
-add dockerfile???
+* make library out of file format and spreadsheet template parsers
+* add the ability for a mapping document to have multiple yamls in it
+* add conditional export (select the standards you want exported and if you want to see the CRE ids or not, get spreadsheet with mappings)  (gap analysis use case)
+* write docs and record usage gif
+* add dockerfile???
 
-add github actions ci/cd
+
