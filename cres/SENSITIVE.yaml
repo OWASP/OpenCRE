@@ -1,0 +1,54 @@
+doctype: CRE
+id: 565-697
+links:
+- document:
+    doctype: CRE
+    id: 005-038-009
+    name: DATA_PROTECTION_SENSITIVE_LOG_ACCESS_EVENTS
+  type: SAM
+- document:
+    doctype: CRE
+    id: 005-021-063
+    name: ENCRYPT_SENSITIVE_DATA_AT_REST
+  type: SAM
+- document:
+    doctype: CRE
+    id: 005-038-029
+    name: DATA_PROTECTION_SENSITIVE_NO_CACHING_SERVERSIDE
+  type: SAM
+- document:
+    doctype: CRE
+    id: 005-038-016
+    name: DATA_PROTECTION_SENSITIVE_AUTHORIZE_AND_PURGE_TEMPORARY_DATA
+  type: SAM
+- document:
+    doctype: CRE
+    id: 005-038-028
+    name: DATA_PROTECTION_SENSITIVE_NO_CACHING_CLIENTSIDE_HEADERS
+  type: SAM
+- document:
+    doctype: CRE
+    id: 005-038-028
+    name: DATA_PROTECTION_SENSITIVE_NO_CACHING_CLIENTSIDE
+  type: SAM
+- document:
+    doctype: CRE
+    id: 005-038-015
+    name: DATA_PROTECTION_SENSITIVE_PURGE_CLIENTSIDE
+  type: SAM
+- document:
+    doctype: CRE
+    id: 005-038-054
+    name: DATA_PROTECTION_SENSITIVE_PURGE_MEMORY
+  type: SAM
+- document:
+    doctype: CRE
+    id: 005-038-054
+    name: DATA_PROTECTION_SENSITIVE_CLASSIFY_PURGE
+  type: SAM
+- document:
+    doctype: CRE
+    id: 008-038-027
+    name: API_URLS_NO_SENSITIVE_DATA
+  type: SAM
+name: SENSITIVE

@@ -1,0 +1,101 @@
+doctype: CRE
+id: 002-037-015
+links:
+- document:
+    doctype: CRE
+    id: 119-473
+    name: LOG
+  type: SAM
+- document:
+    doctype: CRE
+    id: 317-323
+    name: LOG_INTEGRITY
+  type: SAM
+- document:
+    doctype: CRE
+    id: 002-037-015
+    name: LOG_CONSISTENT_FORMAT
+  type: SAM
+- document:
+    doctype: CRE
+    id: 002-037-015
+    name: LOG_CONSISTENT_FORMAT
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: AU-3 CONTENT OF AUDIT RECORDS
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: OPC
+    section: C9
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Abuse_Case_Cheat_Sheet.html
+    name: Cheatsheet
+    section: Architecture, Design and Threat Modeling Requirements
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: SIG ISO 25010
+    section: Security logging
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '1009'
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: ASVS
+    section: V1.7.1
+    subsection: LOG-LOG_INTEGRITY-LOG_CONSISTENT_FORMAT
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: AU-6 AUDIT RECORD REVIEW, ANALYSIS, AND REPORTING,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: AU-9 PROTECTION OF AUDIT INFORMATION,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: AU-3 CONTENT OF AUDIT RECORDS,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: AU-8 TIME STAMPS,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: AU-10 NON-REPUDIATION
+    subsection: ''
+  type: SAM
+name: LOG_CONSISTENT_FORMAT

@@ -1,0 +1,12 @@
+doctype: CRE
+id: 978-304
+links:
+- document:
+    description: 'Verify that a suitable X-Frame-Options or Content-Security-Policy:
+      frame-ancestors header is in use for sites where content should not be embedded
+      in a third-party site.'
+    doctype: CRE
+    id: 004-015-038
+    name: CONFIGURATION_SET_HEADERS_FRAME
+  type: SAM
+name: X_FRAME

@@ -1,0 +1,19 @@
+doctype: CRE
+id: 588-357
+links:
+- document:
+    doctype: CRE
+    id: 004-006-022
+    name: SDLC_DEFINE_INPUT_OUTPUT_REQUIREMENTS
+  type: SAM
+- document:
+    doctype: CRE
+    id: 004-019-042
+    name: VALIDATE_INPUT_TRUSTED_SERVICE_LAYER
+  type: SAM
+- document:
+    doctype: CRE
+    id: 002-014-048
+    name: OUTPUT_ENCODING_NEAR_INTERPRETER
+  type: SAM
+name: INPUT_OUTPUT_PROCESSING

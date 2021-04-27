@@ -1,0 +1,9 @@
+doctype: CRE
+id: 861-431
+links:
+- document:
+    doctype: CRE
+    id: 001-002-005
+    name: CONFIGURATION_HARDENING_SERVER_DIRECTORY_BROWSING
+  type: SAM
+name: DIRECTORY_BROWSING

@@ -1,0 +1,107 @@
+description: Verify that the attack surface is reduced by sandboxing or encapsulating
+  third party libraries to expose only the required behaviour into the application.
+  (C2)
+doctype: CRE
+id: 004-019-037
+links:
+- document:
+    doctype: CRE
+    id: 736-939
+    name: HARDEN
+  type: SAM
+- document:
+    doctype: CRE
+    id: 670-534
+    name: THIRD_PARTY_DEPENDENCIES
+  type: SAM
+- document:
+    doctype: CRE
+    id: 740-826
+    name: CONFIGURATION
+  type: SAM
+- document:
+    doctype: CRE
+    id: 223-163
+    name: HARDEN_RUNTIME
+  type: SAM
+- document:
+    doctype: CRE
+    id: 177-784
+    name: SANDBOX
+  type: SAM
+- document:
+    doctype: CRE
+    id: 277-254
+    name: ATTACK_SURFACE
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: SC-44 DETONATION CHAMBERS,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: OPC
+    section: C2
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Content_Security_Policy_Cheat_Sheet.html
+    name: Cheatsheet
+    section: Configuration Verification Requirements
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: SIG ISO 25010
+    section: Dependency strength
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: TOP10
+    section: https://owasp.org/www-project-top-ten/2017/A9_2017-Using_Components_with_Known_Vulnerabilities
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '265'
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: ASVS
+    section: V14.2.6
+    subsection: CONFIGURATION-THIRD_PARTY_DEPENDENCIES-HARDEN-HARDEN_RUNTIME-SANDBOX-ATTACK_SURFACE
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: CM-6 CONFIGURATION SETTINGS,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: CM-7 LEAST FUNCTIONALITY,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: SC-3 SECURITY FUNCTION ISOLATION
+    subsection: ''
+  type: SAM
+name: THIRD_PARTY_DEPENDENCIES_LIMIT_ATTACK_SURFACE

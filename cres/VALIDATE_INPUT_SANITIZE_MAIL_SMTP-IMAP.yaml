@@ -1,0 +1,82 @@
+description: Verify that the application sanitizes user input before passing to mail
+  systems to protect against SMTP or IMAP injection.
+doctype: CRE
+id: 010-007
+links:
+- document:
+    doctype: CRE
+    id: 348-191
+    name: SANITIZE_OUTPUT_USER_SUPPLIED
+  type: SAM
+- document:
+    doctype: CRE
+    id: 812-703
+    name: INJECTION
+  type: SAM
+- document:
+    doctype: CRE
+    id: 542-714
+    name: VALIDATE_BEFORE_FORWARDING
+  type: SAM
+- document:
+    doctype: CRE
+    id: 895-259
+    name: SMTP/IMAP_INJECTION
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: AC-4 INFORMATION FLOW ENFORCEMENT,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Deserialization_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/XML_External_Entity_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/XML_Security_Cheat_Sheet.html
+    name: Cheatsheet
+    section: Validation, Sanitization and Encoding Verification Requirements
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: WSTG
+    section: WSTG-INPV-10
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: SIG ISO 25010
+    section: Input and output verification
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: TOP10
+    section: https://owasp.org/www-project-top-ten/2017/A7_2017-Cross-Site_Scripting_(XSS)
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '147'
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: ASVS
+    section: V5.2.3
+    subsection: SANITIZE_OUTPUT_USER_SUPPLIED-VALIDATE_BEFORE_FORWARDING-INJECTION-SMTP/IMAP_INJECTION
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: SI-10 INFORMATION INPUT VALIDATION
+    subsection: ''
+  type: SAM
+name: VALIDATE_INPUT_SANITIZE_MAIL_SMTP/IMAP

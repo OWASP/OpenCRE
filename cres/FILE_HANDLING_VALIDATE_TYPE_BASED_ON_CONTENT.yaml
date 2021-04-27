@@ -1,0 +1,80 @@
+doctype: CRE
+id: 007-042-023
+links:
+- document:
+    doctype: CRE
+    id: 459-986
+    name: FILE_HANDLING
+  type: SAM
+- document:
+    doctype: CRE
+    id: 344-691
+    name: UNTRUSTED_ORIGIN
+  type: SAM
+- document:
+    doctype: CRE
+    id: 622-794
+    name: VALIDATE_TYPE
+  type: SAM
+- document:
+    doctype: CRE
+    id: 328-110
+    name: DENY_EXECUTION
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: AC-4 INFORMATION FLOW ENFORCEMENT,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.html
+    name: Cheatsheet
+    section: File and Resources Verification Requirements
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: SIG ISO 25010
+    section: Input and output verification
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: TOP10
+    section: https://owasp.org/www-project-top-ten/2017/A5_2017-Broken_Access_Control
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '434'
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: ASVS
+    section: V12.2.1
+    subsection: FILE_HANDLING-UNTRUSTED_ORIGIN-VALIDATE_TYPE-DENY_EXECUTION
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: SI-10 INFORMATION INPUT VALIDATION,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: AC-20 USE OF EXTERNAL SYSTEMS
+    subsection: ''
+  type: SAM
+name: FILE_HANDLING_VALIDATE_TYPE_BASED_ON_CONTENT

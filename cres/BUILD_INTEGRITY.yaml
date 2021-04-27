@@ -1,0 +1,9 @@
+doctype: CRE
+id: 270-978
+links:
+- document:
+    doctype: CRE
+    id: 004-012-013
+    name: CONFIGURATION_CODE_SCAN_MALICIOUS_CONTENT
+  type: SAM
+name: BUILD_INTEGRITY

@@ -1,0 +1,19 @@
+doctype: CRE
+id: 994-199
+links:
+- document:
+    doctype: CRE
+    id: 009-013
+    name: LOG_ACCESS_CONTROL_DECISIONS_SUFFICIENTLY
+  type: SAM
+- document:
+    doctype: CRE
+    id: 009-013
+    name: LOG_ACCESS_CONTROL_DECISIONS_NO_SENSITIVE_DATA
+  type: SAM
+- document:
+    doctype: CRE
+    id: 009-013
+    name: LOG_ACCESS_CONTROL_DECISIONS
+  type: SAM
+name: COLLECT_RELEVANT_EVENTS_SUFFICIENTLY

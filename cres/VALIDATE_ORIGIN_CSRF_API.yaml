@@ -1,0 +1,96 @@
+description: 'Verify that RESTful web services that utilize cookies are protected
+  from Cross-Site Request Forgery via the use of at least one or more of the following:
+  triple or double submit cookie pattern (see references), CSRF nonces, or ORIGIN
+  request header checks.'
+doctype: CRE
+id: 008-047-022
+links:
+- document:
+    doctype: CRE
+    id: 822-927
+    name: INTERFACE/API
+  type: SAM
+- document:
+    doctype: CRE
+    id: 840-427
+    name: VALIDATE_ORIGIN
+  type: SAM
+- document:
+    doctype: CRE
+    id: 388-135
+    name: CSRF
+  type: SAM
+- document:
+    doctype: CRE
+    id: 636-456
+    name: SESSION_MANAGEMENT
+  type: SAM
+- document:
+    doctype: CRE
+    id: 544-147
+    name: STATEFUL_COOKIE_BASED
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: AC-4 INFORMATION FLOW ENFORCEMENT,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/XML_Security_Cheat_Sheet.html
+    name: Cheatsheet
+    section: API and Web Service Verification Requirements
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: WSTG
+    section: WSTG-SESS-05
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: SIG ISO 25010
+    section: Input and output verification
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: TOP10
+    section: https://owasp.org/www-project-top-ten/2017/A5_2017-Broken_Access_Control
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '352'
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: ASVS
+    section: V13.2.3
+    subsection: INTERFACE/API-VALIDATE_ORIGIN-CSRF-SESSION_MANAGEMENT-STATEFUL_COOKIE_BASED
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: SI-10 INFORMATION INPUT VALIDATION,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: CM-6 Configuration Settings
+    subsection: ''
+  type: SAM
+name: VALIDATE_ORIGIN_CSRF_API

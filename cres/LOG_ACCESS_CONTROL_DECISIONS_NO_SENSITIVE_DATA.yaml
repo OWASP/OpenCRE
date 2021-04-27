@@ -1,0 +1,89 @@
+doctype: CRE
+id: 009-013
+links:
+- document:
+    doctype: CRE
+    id: 119-473
+    name: LOG
+  type: SAM
+- document:
+    doctype: CRE
+    id: 742-672
+    name: LOG_ANALYSIS
+  type: SAM
+- document:
+    doctype: CRE
+    id: 994-199
+    name: COLLECT_RELEVANT_EVENTS_SUFFICIENTLY
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: 'SI-5 Security Alerts, Advisories, and Directives, '
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Error_Handling_Cheat_Sheet.html
+    name: Cheatsheet
+    section: Error Handling and Logging Verification Requirements
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: SIG ISO 25010
+    section: Security logging
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: TOP10
+    section: https://owasp.org/www-project-top-ten/2017/A10_2017-Insufficient_Logging%2526Monitoring
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '778'
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: ASVS
+    section: V7.2.1
+    subsection: LOG-COLLECT_RELEVANT_EVENTS_SUFFICIENTLY-LOG_ANALYSIS
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: SI-12 Information Handling and Retention,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: AU-12 Audit Generation,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: AU-3 CONTENT OF AUDIT RECORDS,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: AU-10 NON-REPUDIATION
+    subsection: ''
+  type: SAM
+name: LOG_ACCESS_CONTROL_DECISIONS_NO_SENSITIVE_DATA

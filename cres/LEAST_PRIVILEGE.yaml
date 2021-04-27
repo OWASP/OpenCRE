@@ -1,0 +1,19 @@
+doctype: CRE
+id: 159-737
+links:
+- document:
+    doctype: CRE
+    id: 004-006-012
+    name: COMPONENTS_LEAST_PRIVILEGE_OS_ACCOUNTS
+  type: SAM
+- document:
+    doctype: CRE
+    id: 002-010-046
+    name: ARCHITECTURE_AUTHENTICATE_CONSISTENTLY_LEAST_PRIVILEGE
+  type: SAM
+- document:
+    doctype: CRE
+    id: 007-042-059
+    name: FILE_HANDLING_UNTRUSTED_ORIGIN_UNPRIVILEGED_STORAGE
+  type: SAM
+name: LEAST_PRIVILEGE

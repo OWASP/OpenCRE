@@ -1,0 +1,66 @@
+doctype: CRE
+id: 005-044-044
+links:
+- document:
+    doctype: CRE
+    id: 184-331
+    name: DATA_PROTECTION
+  type: SAM
+- document:
+    doctype: CRE
+    id: 242-624
+    name: USER_CONTROL
+  type: SAM
+- document:
+    doctype: CRE
+    id: 562-675
+    name: INVENTORY
+  type: SAM
+- document:
+    doctype: CRE
+    id: 385-866
+    name: DATA_PROTECTION_POLICY
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: PM-22 PERSONALLY IDENTIFIABLE INFORMATION QUALITY MANAGEMENT
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: OPC
+    section: C8
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: SIG ISO 25010
+    section: '@SDLC'
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: TOP10
+    section: https://owasp.org/www-project-top-ten/2017/A5_2017-Broken_Access_Control
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '200'
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: ASVS
+    section: V8.3.4
+    subsection: DATA_PROTECTION-USER_CONTROL-INVENTORY-DATA_PROTECTION_POLICY
+  type: SAM
+name: DATA_PROTECTION_IDENTIFY_SENSITIVE_DATA_POLICY

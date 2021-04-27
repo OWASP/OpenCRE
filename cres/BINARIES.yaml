@@ -1,0 +1,9 @@
+doctype: CRE
+id: 793-376
+links:
+- document:
+    doctype: CRE
+    id: 009-027
+    name: CONFIGURATION_DEPLOY_UNTRUSTED_DEVICES_VALIDATE_BINARY_ENDPOINTS_INTEGRITY
+  type: SAM
+name: BINARIES

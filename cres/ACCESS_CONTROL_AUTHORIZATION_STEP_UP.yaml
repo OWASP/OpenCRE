@@ -1,0 +1,86 @@
+doctype: CRE
+id: 001-002-005
+links:
+- document:
+    doctype: CRE
+    id: 613-579
+    name: ACCESS_CONTROL
+  type: SAM
+- document:
+    doctype: CRE
+    id: 253-303
+    name: ADMINISTRATIVE/ADMIN_TASKS
+  type: SAM
+- document:
+    doctype: CRE
+    id: 723-282
+    name: REAUTHENTICATION
+  type: SAM
+- document:
+    doctype: CRE
+    name: ADDITIONAL_AUTHORIZATION
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: IA-2 IDENTIFICATION AND AUTHENTICATION,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/REST_Assessment_Cheat_Sheet.html
+    name: Cheatsheet
+    section: Access Control Verification Requirements
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: WSTG
+    section: Empty
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: SIG ISO 25010
+    section: Authorized access
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: TOP10
+    section: https://owasp.org/www-project-top-ten/2017/A5_2017-Broken_Access_Control
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '732'
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: ASVS
+    section: V4.3.3
+    subsection: ACCESS_CONTROL-ADMINISTRATIVE/ADMIN_TASKS-ADDITIONAL_AUTHORIZATION-REAUTHENTICATION
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: IA-5 AUTHENTICATOR MANAGEMENT,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: AC-3 ACCESS ENFORCEMENT
+    subsection: ''
+  type: SAM
+name: ACCESS_CONTROL_AUTHORIZATION_STEP_UP

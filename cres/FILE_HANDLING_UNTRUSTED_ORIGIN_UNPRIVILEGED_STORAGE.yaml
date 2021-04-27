@@ -1,0 +1,89 @@
+doctype: CRE
+id: 007-042-059
+links:
+- document:
+    doctype: CRE
+    id: 159-737
+    name: LEAST_PRIVILEGE
+  type: SAM
+- document:
+    doctype: CRE
+    id: 459-986
+    name: FILE_HANDLING
+  type: SAM
+- document:
+    doctype: CRE
+    id: 344-691
+    name: UNTRUSTED_ORIGIN
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: SC-5 DENIAL-OF-SERVICE PROTECTION,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: WSTG
+    section: WSTG-BUSL-09
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: SIG ISO 25010
+    section: Input and output verification
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: TOP10
+    section: https://owasp.org/www-project-top-ten/2017/A5_2017-Broken_Access_Control
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '922'
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: ASVS
+    section: V12.4.1
+    subsection: FILE_HANDLING-UNTRUSTED_ORIGIN-LEAST_PRIVILEGE
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: AC-4 INFORMATION FLOW ENFORCEMENT,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: SI-10 INFORMATION INPUT VALIDATION,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: AC-6 Least Privilege,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: AC-20 USE OF EXTERNAL SYSTEMS
+    subsection: ''
+  type: SAM
+name: FILE_HANDLING_UNTRUSTED_ORIGIN_UNPRIVILEGED_STORAGE

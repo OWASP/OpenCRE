@@ -1,0 +1,14 @@
+doctype: CRE
+id: 497-627
+links:
+- document:
+    doctype: CRE
+    id: 004-012-061
+    name: ARCHITECTURE_AUTHENTICATE_CONSISTENTLY_EXTENDABLE_ALLOW_LOGGING
+  type: SAM
+- document:
+    doctype: CRE
+    id: 001-005-074
+    name: AUTHENTICATION_STRONG_FACTORS_FIRST
+  type: SAM
+name: AUTHENTICATION_MECHANISM

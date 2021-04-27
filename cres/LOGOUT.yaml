@@ -1,0 +1,9 @@
+doctype: CRE
+id: 577-748
+links:
+- document:
+    doctype: CRE
+    id: 011-039-002
+    name: SESSION_MANAGEMENT_INVALIDATE_SESSION_LOGOUT/EXPIRATION
+  type: SAM
+name: LOGOUT

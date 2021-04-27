@@ -1,0 +1,42 @@
+doctype: CRE
+id: 005-029
+links:
+- document:
+    doctype: CRE
+    id: 184-331
+    name: DATA_PROTECTION
+  type: SAM
+- document:
+    doctype: CRE
+    id: 145-471
+    name: MINIMIZE_REQUEST_PARAMETERS
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: TOP10
+    section: https://owasp.org/www-project-top-ten/2017/A5_2017-Broken_Access_Control
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: SIG ISO 25010
+    section: Input and output verification
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: ASVS
+    section: V8.1.3
+    subsection: DATA_PROTECTION-MINIMIZE_REQUEST_PARAMETERS
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '233'
+    subsection: ''
+  type: SAM
+name: DATA_PROTECTION_MINIMIZE_REQUEST_PARAMETERS

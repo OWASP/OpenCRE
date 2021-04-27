@@ -1,0 +1,24 @@
+doctype: CRE
+id: 405-960
+links:
+- document:
+    doctype: CRE
+    id: 012-045-011
+    name: VALIDATE_PARAMETERIZATION_DATABASE_INJECTION
+  type: SAM
+- document:
+    doctype: CRE
+    id: 012-045-010
+    name: VALIDATE_CONTEXT_DEPENDENT_ENCODING_SQLI
+  type: SAM
+- document:
+    doctype: CRE
+    id: 012-045-010
+    name: VALIDATE_LDAP_INJECTION
+  type: SAM
+- document:
+    doctype: CRE
+    id: 012-045-010
+    name: VALIDATE_OS_COMMAND_INJECTION
+  type: SAM
+name: PARAMETERIZED_QUERIES

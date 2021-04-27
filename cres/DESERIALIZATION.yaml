@@ -1,0 +1,19 @@
+doctype: CRE
+id: 583-219
+links:
+- document:
+    doctype: CRE
+    id: 004-019-037
+    name: VALIDATE_DESERIALIZATION_UNTRUSTED_INPUT
+  type: SAM
+- document:
+    doctype: CRE
+    id: 012-030-024
+    name: VALIDATE_DESERIALIZATION_UNTRUSTED_INPUT_THIRD_PARTY_DEPENDENCIES
+  type: SAM
+- document:
+    doctype: CRE
+    id: 012-030-024
+    name: VALIDATE_JSON_PARSING
+  type: SAM
+name: DESERIALIZATION

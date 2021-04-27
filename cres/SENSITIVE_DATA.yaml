@@ -1,0 +1,29 @@
+doctype: CRE
+id: 719-809
+links:
+- document:
+    doctype: CRE
+    id: 009-020
+    name: LOG_NO_SENSITIVE_DATA_CREDENTIALS/PAYMENT_DATA
+  type: SAM
+- document:
+    doctype: CRE
+    id: 009-020
+    name: LOG_NO_SENSITIVE_DATA
+  type: SAM
+- document:
+    doctype: CRE
+    id: 001-023
+    name: SENSITIVE_DATA_CLASSIFICATION_ENFORCE_DIRECTIVES
+  type: SAM
+- document:
+    doctype: CRE
+    id: 001-023
+    name: PROTECT_SENSITIVE_DATA_DIRECT_OBJECT_ATTACKS
+  type: SAM
+- document:
+    doctype: CRE
+    id: 004-015-036
+    name: PROTECT_DATA_IN_TRANSIT_TLS_HEADERS_PAYLOAD
+  type: SAM
+name: SENSITIVE_DATA

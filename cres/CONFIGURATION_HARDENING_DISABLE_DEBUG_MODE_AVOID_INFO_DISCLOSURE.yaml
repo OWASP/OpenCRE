@@ -1,0 +1,81 @@
+description: Verify that web or application server and application framework debug
+  modes are disabled in production to eliminate debug features, developer consoles,
+  and unintended security disclosures.
+doctype: CRE
+id: 004-015-036
+links:
+- document:
+    doctype: CRE
+    id: 736-939
+    name: HARDEN
+  type: SAM
+- document:
+    doctype: CRE
+    id: 337-429
+    name: HARDEN_INFO_DISCLOSURE
+  type: SAM
+- document:
+    doctype: CRE
+    id: 740-826
+    name: CONFIGURATION
+  type: SAM
+- document:
+    doctype: CRE
+    id: 469-624
+    name: CONFIG_SERVER
+  type: SAM
+- document:
+    doctype: CRE
+    id: 157-748
+    name: DEBUG
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: CM-2 BASELINE CONFIGURATION,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Content_Security_Policy_Cheat_Sheet.html
+    name: Cheatsheet
+    section: Configuration Verification Requirements
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: SIG ISO 25010
+    section: Input and output verification
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: TOP10
+    section: https://owasp.org/www-project-top-ten/2017/A6_2017-Security_Misconfiguration
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '497'
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: ASVS
+    section: V14.3.2
+    subsection: CONFIGURATION-CONFIG_SERVER-HARDEN-HARDEN_INFO_DISCLOSURE-DEBUG
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: CM-6 CONFIGURATION SETTINGS
+    subsection: ''
+  type: SAM
+name: CONFIGURATION_HARDENING_DISABLE_DEBUG_MODE_AVOID_INFO_DISCLOSURE

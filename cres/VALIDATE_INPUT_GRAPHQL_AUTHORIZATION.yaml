@@ -1,0 +1,59 @@
+doctype: CRE
+id: 008-048-001
+links:
+- document:
+    doctype: CRE
+    id: 822-927
+    name: INTERFACE/API
+  type: SAM
+- document:
+    doctype: CRE
+    id: 830-153
+    name: VALIDATE_QUERY
+  type: SAM
+- document:
+    doctype: CRE
+    id: 999-100
+    name: API_ACCESS_CONTROL
+  type: SAM
+- document:
+    doctype: CRE
+    id: 548-816
+    name: GRAPHQL
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: AC-4 INFORMATION FLOW ENFORCEMENT
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: SIG ISO 25010
+    section: Input and output verification
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: TOP10
+    section: https://owasp.org/www-project-top-ten/2017/A5_2017-Broken_Access_Control
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '285'
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: ASVS
+    section: V13.4.2
+    subsection: INTERFACE/API-VALIDATE_QUERY-API_ACCESS_CONTROL-GRAPHQL
+  type: SAM
+name: VALIDATE_INPUT_GRAPHQL_AUTHORIZATION

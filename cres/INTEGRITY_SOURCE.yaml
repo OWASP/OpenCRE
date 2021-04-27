@@ -1,0 +1,11 @@
+doctype: CRE
+id: 749-584
+links:
+- document:
+    description: Verify that third party components come from pre-defined, trusted
+      and continually maintained repositories. (C2)
+    doctype: CRE
+    id: 004-019-042
+    name: THIRD_PARTY_DEPENDENCIES_TRUSTED_ORIGIN
+  type: SAM
+name: INTEGRITY_SOURCE

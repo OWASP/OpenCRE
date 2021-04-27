@@ -1,0 +1,76 @@
+description: Verify that all components are up to date, preferably using a dependency
+  checker during build or compile time. (C2)
+doctype: CRE
+id: 004-019-032
+links:
+- document:
+    doctype: CRE
+    id: 670-534
+    name: THIRD_PARTY_DEPENDENCIES
+  type: SAM
+- document:
+    doctype: CRE
+    id: 740-826
+    name: CONFIGURATION
+  type: SAM
+- document:
+    doctype: CRE
+    name: FRESHNESS
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: SA-11 DEVELOPER TESTING AND EVALUATION
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: OPC
+    section: C2
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Content_Security_Policy_Cheat_Sheet.html
+    name: Cheatsheet
+    section: Configuration Verification Requirements
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: SIG ISO 25010
+    section: Dependency strength
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: TOP10
+    section: https://owasp.org/www-project-top-ten/2017/A9_2017-Using_Components_with_Known_Vulnerabilities
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '1026'
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: ASVS
+    section: V14.2.1
+    subsection: CONFIGURATION-THIRD_PARTY_DEPENDENCIES-FRESHNESS
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: CM-2 BASELINE CONFIGURATION
+    subsection: ''
+  type: SAM
+name: CONFIGURATION_THIRD_PARTY_DEPENDENCIES_FRESHNESS

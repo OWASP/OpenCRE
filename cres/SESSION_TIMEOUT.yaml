@@ -1,0 +1,21 @@
+doctype: CRE
+id: 981-343
+links:
+- document:
+    doctype: CRE
+    id: 011-039-003
+    name: SESSION_MANAGEMENT_CREDENTIAL_SERVICE_PROVIDER_SESSION_TIMEOUT
+  type: SAM
+- document:
+    doctype: CRE
+    id: 011-039-002
+    name: SESSION_MANAGEMENT_INVALIDATE_SESSION_LOGOUT/EXPIRATION
+  type: SAM
+- document:
+    description: If authenticators permit users to remain logged in, verify that re-authentication
+      occurs periodically both when actively used or after an idle period. (C6)
+    doctype: CRE
+    id: 011-039-002
+    name: SESSION_MANAGEMENT_TIMEOUT_REAUTHENTICATION
+  type: SAM
+name: SESSION_TIMEOUT

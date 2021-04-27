@@ -1,0 +1,80 @@
+description: Verify that untrusted file metadata is not used directly with system
+  API or libraries, to protect against OS command injection.
+doctype: CRE
+id: 007-042-023
+links:
+- document:
+    doctype: CRE
+    id: 459-986
+    name: FILE_HANDLING
+  type: SAM
+- document:
+    doctype: CRE
+    id: 344-691
+    name: UNTRUSTED_ORIGIN
+  type: SAM
+- document:
+    doctype: CRE
+    id: 812-703
+    name: INJECTION
+  type: SAM
+- document:
+    doctype: CRE
+    id: 210-143
+    name: OS_COMMAND_INJECTION
+  type: SAM
+- document:
+    doctype: CRE
+    id: 328-110
+    name: DENY_EXECUTION
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: AC-4 INFORMATION FLOW ENFORCEMENT,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: WSTG
+    section: WSTG-INPV-12
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: SIG ISO 25010
+    section: Input and output verification
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: TOP10
+    section: https://owasp.org/www-project-top-ten/2017/A5_2017-Broken_Access_Control
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '78'
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: ASVS
+    section: V12.3.5
+    subsection: FILE_HANDLING-UNTRUSTED_ORIGIN-DENY_EXECUTION-INJECTION-OS_COMMAND_INJECTION
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: SI-10 INFORMATION INPUT VALIDATION
+    subsection: ''
+  type: SAM
+name: FILE_HANDLING_UNTRUSTED_ORIGIN_IGNORE_FILE_METADATA

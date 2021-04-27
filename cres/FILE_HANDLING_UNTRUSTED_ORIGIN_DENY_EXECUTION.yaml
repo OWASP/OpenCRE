@@ -1,0 +1,78 @@
+doctype: CRE
+id: 007-042-023
+links:
+- document:
+    doctype: CRE
+    id: 459-986
+    name: FILE_HANDLING
+  type: SAM
+- document:
+    doctype: CRE
+    id: 344-691
+    name: UNTRUSTED_ORIGIN
+  type: SAM
+- document:
+    doctype: CRE
+    id: 670-534
+    name: THIRD_PARTY_DEPENDENCIES
+  type: SAM
+- document:
+    doctype: CRE
+    id: 328-110
+    name: DENY_EXECUTION
+  type: SAM
+- document:
+    doctype: CRE
+    id: 800-868
+    name: CDN
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: AC-4 INFORMATION FLOW ENFORCEMENT,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: SIG ISO 25010
+    section: Input and output verification
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: TOP10
+    section: https://owasp.org/www-project-top-ten/2017/A5_2017-Broken_Access_Control
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '829'
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: ASVS
+    section: V12.3.6
+    subsection: FILE_HANDLING-UNTRUSTED_ORIGIN-DENY_EXECUTION-CDN-THIRD_PARTY_DEPENDENCIES
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: SI-10 INFORMATION INPUT VALIDATION,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: SI-3 Malicious Code Protection
+    subsection: ''
+  type: SAM
+name: FILE_HANDLING_UNTRUSTED_ORIGIN_DENY_EXECUTION

@@ -1,0 +1,48 @@
+doctype: CRE
+id: 348-191
+links:
+- document:
+    doctype: CRE
+    id: 002-014-048
+    name: OUTPUT_ENCODING_NEAR_INTERPRETER
+  type: SAM
+- document:
+    doctype: CRE
+    id: 010-008
+    name: VALIDATE_INPUT_SANITIZE_WYSIWYG_HTML
+  type: SAM
+- document:
+    doctype: CRE
+    id: 010-007
+    name: VALIDATE_INPUT_SANITIZE_UNSTRUCTURED_DATA
+  type: SAM
+- document:
+    description: Verify that the application sanitizes user input before passing to
+      mail systems to protect against SMTP or IMAP injection.
+    doctype: CRE
+    id: 010-007
+    name: VALIDATE_INPUT_SANITIZE_MAIL_SMTP/IMAP
+  type: SAM
+- document:
+    doctype: CRE
+    id: 010-033
+    name: VALIDATE_INPUT_NO_DYNAMIC_CODE_EXECUTION
+  type: SAM
+- document:
+    description: Verify that the application protects against template injection attacks
+      by ensuring that any user input being included is sanitized or sandboxed.
+    doctype: CRE
+    id: 010-034
+    name: VALIDATE_INPUT_SANITIZE_ISOLATE_SCRIPTABLE_TEMPLATES
+  type: SAM
+- document:
+    doctype: CRE
+    id: 010-049-043
+    name: VALIDATE_INPUT_SANITIZE_OUTPUT_SSRF_METADATA
+  type: SAM
+- document:
+    doctype: CRE
+    id: 010-034
+    name: VALIDATE_INPUT_SANITIZE_ISOLATE_SCRIPTABLE_TEMPLATES_SVG
+  type: SAM
+name: SANITIZE_OUTPUT_USER_SUPPLIED

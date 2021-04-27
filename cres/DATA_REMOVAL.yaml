@@ -1,0 +1,9 @@
+doctype: CRE
+id: 507-288
+links:
+- document:
+    doctype: CRE
+    id: 005-038-054
+    name: DATA_PROTECTION_SENSITIVE_CLASSIFY_PURGE
+  type: SAM
+name: DATA_REMOVAL

@@ -1,0 +1,74 @@
+description: Verify that all user stories and features contain functional security
+  constraints, such as "As a user, I should be able to view and edit my profile. I
+  should not be able to view or edit anyone else's profile"
+doctype: CRE
+id: 002-036-2
+links:
+- document:
+    doctype: CRE
+    id: 912-897
+    name: SDLC_GUIDELINES_JUSTIFICATION
+  type: SAM
+- document:
+    doctype: CRE
+    id: 518-927
+    name: REQUIREMENTS
+  type: SAM
+- document:
+    doctype: CRE
+    id: 464-101
+    name: RISK_ANALYSIS
+  type: SAM
+- document:
+    doctype: CRE
+    id: 428-366
+    name: THREAT_MODEL
+  type: SAM
+- document:
+    doctype: CRE
+    id: 808-306
+    name: SECURITY_CONSTRAINTS
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: RA-3 RISK ASSESSMENT,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Abuse_Case_Cheat_Sheet.html
+    name: Cheatsheet
+    section: Architecture, Design and Threat Modeling Requirements
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: SIG ISO 25010
+    section: '@SDLC'
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '1110'
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: ASVS
+    section: V1.1.3
+    subsection: SDLC_GUIDELINES_JUSTIFICATION-REQUIREMENTS-RISK_ANALYSIS-SECURITY_CONSTRAINTS-THREAT_MODEL
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: PL-8 SECURITY AND PRIVACY ARCHITECTURES
+    subsection: ''
+  type: SAM
+name: SDLC_FEATURES_SECURITY_CONSTRAINTS_

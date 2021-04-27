@@ -1,0 +1,10 @@
+doctype: CRE
+links:
+- document:
+    description: Verify that all components are up to date, preferably using a dependency
+      checker during build or compile time. (C2)
+    doctype: CRE
+    id: 004-019-032
+    name: CONFIGURATION_THIRD_PARTY_DEPENDENCIES_FRESHNESS
+  type: SAM
+name: FRESHNESS

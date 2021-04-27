@@ -1,0 +1,11 @@
+doctype: CRE
+id: 839-946
+links:
+- document:
+    description: Verify that all cryptographic modules fail securely, and errors are
+      handled in a way that does not enable Padding Oracle attacks.
+    doctype: CRE
+    id: 005-021-031
+    name: ENCRYPT_DATA_AT_REST_CRYPTOGRAPHIC_MODULES_FAIL_SECURELY
+  type: SAM
+name: PADDING_ORACLE

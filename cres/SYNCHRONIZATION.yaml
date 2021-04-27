@@ -1,0 +1,14 @@
+doctype: CRE
+id: 457-155
+links:
+- document:
+    doctype: CRE
+    id: 009-027
+    name: LOG_TIME_SYNCHRONIZATION
+  type: SAM
+- document:
+    doctype: CRE
+    id: 005-021-047
+    name: VALIDATE_BUSINESS_LOGIC_RACE_CONDITIONS_TOCTOU
+  type: SAM
+name: SYNCHRONIZATION

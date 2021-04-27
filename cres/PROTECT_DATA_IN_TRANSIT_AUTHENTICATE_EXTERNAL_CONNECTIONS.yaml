@@ -1,0 +1,66 @@
+doctype: CRE
+id: 005-022-025
+links:
+- document:
+    doctype: CRE
+    id: 445-341
+    name: AUTHENTICATION
+  type: SAM
+- document:
+    doctype: CRE
+    id: 184-331
+    name: DATA_PROTECTION
+  type: SAM
+- document:
+    doctype: CRE
+    id: 567-480
+    name: ENCRYPT_DATA_IN_TRANSIT
+  type: SAM
+- document:
+    doctype: CRE
+    id: 311-161
+    name: DIRECTIVES
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: SC-8 TRANSMISSION CONFIDENTIALITY AND INTEGRITY,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: SIG ISO 25010
+    section: Secure communication
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: TOP10
+    section: https://owasp.org/www-project-top-ten/2017/A5_2017-Broken_Access_Control
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '287'
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: ASVS
+    section: V9.2.3
+    subsection: DATA_PROTECTION-ENCRYPT_DATA_IN_TRANSIT-DIRECTIVES-AUTHENTICATION
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: AC-20 USE OF EXTERNAL SYSTEMS
+    subsection: ''
+  type: SAM
+name: PROTECT_DATA_IN_TRANSIT_AUTHENTICATE_EXTERNAL_CONNECTIONS

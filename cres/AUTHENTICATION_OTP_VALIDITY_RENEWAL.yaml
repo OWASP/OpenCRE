@@ -1,0 +1,73 @@
+doctype: CRE
+id: 001-005-073
+links:
+- document:
+    doctype: CRE
+    id: 445-341
+    name: AUTHENTICATION
+  type: SAM
+- document:
+    doctype: CRE
+    id: 809-114
+    name: UNIQUENESS
+  type: SAM
+- document:
+    doctype: CRE
+    id: 879-906
+    name: OTP/MFA
+  type: SAM
+- document:
+    doctype: CRE
+    id: 390-505
+    name: SECRET_LIFECYCLE
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: IA-2 IDENTIFICATION AND AUTHENTICATION (ORGANIZATIONAL USERS),
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-63
+    section: 6.1.4
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: SIG ISO 25010
+    section: Authentication strength
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: TOP10
+    section: https://owasp.org/www-project-top-ten/2017/A2_2017-Broken_Authentication
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '287'
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: ASVS
+    section: V2.3.3
+    subsection: AUTHENTICATION-UNIQUENESS-SECRET_LIFECYCLE-OTP/MFA
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: IA-5 AUTHENTICATOR MANAGEMENT
+    subsection: ''
+  type: SAM
+name: AUTHENTICATION_OTP_VALIDITY_RENEWAL

@@ -1,0 +1,9 @@
+doctype: CRE
+id: 387-244
+links:
+- document:
+    doctype: CRE
+    id: 007-042-059
+    name: ACCESS_CONTROL_ENFORCE_CONSISTENTLY_SERVERSIDE
+  type: SAM
+name: ENFORCE_SERVERSIDE

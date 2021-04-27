@@ -1,0 +1,9 @@
+doctype: CRE
+id: 912-188
+links:
+- document:
+    doctype: CRE
+    id: 002-014-008
+    name: ENCRYPT_DATA_AT_REST_KEY/SECRET_MANAGEMENT_LIFECYCLE
+  type: SAM
+name: POLICY

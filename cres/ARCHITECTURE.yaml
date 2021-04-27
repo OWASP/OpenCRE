@@ -1,0 +1,68 @@
+doctype: CRE
+id: 915-348
+links:
+- document:
+    description: Verify documentation and justification of all the application's trust
+      boundaries, components, and significant data flows.
+    doctype: CRE
+    id: 002-036-3
+    name: ARCHITECTURE_VERIFY_COMPONENTS_AND_CONNECTIONS_DOCUMENTATION
+  type: SAM
+- document:
+    description: Verify definition and security analysis of the application's high-level
+      architecture and all connected remote services. (C1)
+    doctype: CRE
+    id: 002-036-4
+    name: ARCHITECTURE_VERIFY_COMPONENTS_AND_CONNECTIONS
+  type: SAM
+- document:
+    doctype: CRE
+    id: 002-037-014
+    name: ARCHITECTURE_CENTRALIZE_SECURITY_FUNCTIONALITY
+  type: SAM
+- document:
+    doctype: CRE
+    id: 004-006-012
+    name: COMPONENTS_LEAST_PRIVILEGE_OS_ACCOUNTS
+  type: SAM
+- document:
+    doctype: CRE
+    id: 002-010-046
+    name: ARCHITECTURE_AUTHENTICATE_CONSISTENTLY_LEAST_PRIVILEGE
+  type: SAM
+- document:
+    doctype: CRE
+    id: 004-012-061
+    name: ARCHITECTURE_AUTHENTICATE_CONSISTENTLY_EXTENDABLE_ALLOW_LOGGING
+  type: SAM
+- document:
+    doctype: CRE
+    id: 004-012-0612
+    name: ARCHITECTURE_AUTHENTICATE_CONSISTENTLY
+  type: SAM
+- document:
+    doctype: CRE
+    id: 007-042-066
+    name: ARCHITECTURE_ACCESS_CONTROL_FLEXIBILITY
+  type: SAM
+- document:
+    doctype: CRE
+    id: 004-006-022
+    name: SDLC_DEFINE_INPUT_OUTPUT_REQUIREMENTS
+  type: SAM
+- document:
+    doctype: CRE
+    id: 004-019-042
+    name: VALIDATE_INPUT_TRUSTED_SERVICE_LAYER
+  type: SAM
+- document:
+    doctype: CRE
+    id: 002-014-048
+    name: OUTPUT_ENCODING_NEAR_INTERPRETER
+  type: SAM
+- document:
+    doctype: CRE
+    id: 009-027
+    name: COMPONENTS_ENFORCE_TRUST_BOUNDARIES
+  type: SAM
+name: ARCHITECTURE

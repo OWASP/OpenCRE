@@ -1,0 +1,83 @@
+description: Verify that application components verify the authenticity of each side
+  in a communication link to prevent person-in-the-middle attacks. For example, application
+  components should validate TLS certificates and chains.
+doctype: CRE
+id: 012-030-024
+links:
+- document:
+    doctype: CRE
+    id: 720-105
+    name: TWO_WAY_AUTHENTICATION
+  type: SAM
+- document:
+    doctype: CRE
+    id: 184-331
+    name: DATA_PROTECTION
+  type: SAM
+- document:
+    doctype: CRE
+    id: 567-480
+    name: ENCRYPT_DATA_IN_TRANSIT
+  type: SAM
+- document:
+    doctype: CRE
+    id: 311-161
+    name: DIRECTIVES
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: IA-3 DEVICE IDENTIFICATION AND AUTHENTICATION,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Abuse_Case_Cheat_Sheet.html
+    name: Cheatsheet
+    section: Architecture, Design and Threat Modeling Requirements
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: SIG ISO 25010
+    section: Secure communication
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: TOP10
+    section: https://owasp.org/www-project-top-ten/2017/A8_2017-Insecure_Deserialization
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '295'
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: ASVS
+    section: V1.9.2
+    subsection: DATA_PROTECTION-ENCRYPT_DATA_IN_TRANSIT-DIRECTIVES-TWO_WAY_AUTHENTICATION
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: SC-8 TRANSMISSION CONFIDENTIALITY AND INTEGRITY,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: IA-3 DEVICE IDENTIFICATION AND AUTHENTICATION
+    subsection: ''
+  type: SAM
+name: PROTECT_DATA_IN_TRANSIT_VERIFY_TLS_AUTHENTICITY

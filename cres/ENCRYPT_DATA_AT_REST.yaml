@@ -1,0 +1,113 @@
+doctype: CRE
+id: 607-193
+links:
+- document:
+    doctype: CRE
+    id: 002-014-008
+    name: ENCRYPT_DATA_AT_REST_KEY/SECRET_MANAGEMENT_LIFECYCLE
+  type: SAM
+- document:
+    doctype: CRE
+    id: 002-005-051
+    name: ENCRYPT_DATA_AT_REST_KEY/SECRET_MANAGEMENT_VAULT
+  type: SAM
+- document:
+    doctype: CRE
+    id: 002-014-007
+    name: ENCRYPT_DATA_AT_REST_KEY/SECRET_MANAGEMENT
+  type: SAM
+- document:
+    doctype: CRE
+    id: 005-021-063
+    name: ENCRYPT_SENSITIVE_DATA_AT_REST
+  type: SAM
+- document:
+    description: Verify that industry proven or government approved cryptographic
+      algorithms, modes, and libraries are used, instead of custom coded cryptography.
+      (C8)
+    doctype: CRE
+    id: 005-021-049
+    name: ENCRYPT_DATA_CRYPTOGRAPHIC_DIRECTIVES
+  type: SAM
+- document:
+    description: Verify that encryption initialization vector, cipher configuration,
+      and block modes are configured securely using the latest advice.
+    doctype: CRE
+    id: 005-021-025
+    name: ENCRYPT_DATA_AT_REST_CRYPTOGRAPHIC_DIRECTIVES_SECURE_CONFIGURATION
+  type: SAM
+- document:
+    description: Verify that random number, encryption or hashing algorithms, key
+      lengths, rounds, ciphers or modes, can be reconfigured, upgraded, or swapped
+      at any time, to protect against cryptographic breaks. (C8)
+    doctype: CRE
+    id: 005-021-025
+    name: ENCRYPT_DATA_AT_REST_REPLACEABLE_CRYPTOGRAPHY
+  type: SAM
+- document:
+    description: Verify that known insecure block modes (i.e. ECB, etc.), padding
+      modes (i.e. PKCS#1 v1.5, etc.), ciphers with small block sizes (i.e. Triple-DES,
+      Blowfish, etc.), and weak hashing algorithms (i.e. MD5, SHA1, etc.) are not
+      used unless required for backwards compatibility.
+    doctype: CRE
+    id: 005-021-025
+    name: ENCRYPT_DATA_AT_REST_CRYPTOGRAPHIC_DIRECTIVES_ONLY_SECURE_MODES
+  type: SAM
+- document:
+    description: Verify that nonces, initialization vectors, and other single use
+      numbers must not be used more than once with a given encryption key. The method
+      of generation must be appropriate for the algorithm being used.
+    doctype: CRE
+    id: 005-021-025
+    name: ENCRYPT_DATA_AT_REST_CRYPTOGRAPHIC_DIRECTIVES_NONCE_IV
+  type: SAM
+- document:
+    description: Verify that encrypted data is authenticated via signatures, authenticated
+      cipher modes, or HMAC to ensure that ciphertext is not altered by an unauthorized
+      party.
+    doctype: CRE
+    id: 005-021-063
+    name: ENCRYPT_DATA_AT_REST_CRYPTOGRAPHIC_DIRECTIVES_AUTHENTICATE
+  type: SAM
+- document:
+    description: Verify that all cryptographic operations are constant-time, with
+      no 'short-circuit' operations in comparisons, calculations, or returns, to avoid
+      leaking information.
+    doctype: CRE
+    id: 005-021-025
+    name: ENCRYPT_DATA_AT_REST_CRYPTOGRAPHIC_DIRECTIVES_CONSTANT_TIME_OPERATIONS
+  type: SAM
+- document:
+    description: Verify that all random numbers, random file names, random GUIDs,
+      and random strings are generated using the cryptographic module's approved cryptographically
+      secure random number generator when these random values are intended to be not
+      guessable by an attacker.
+    doctype: CRE
+    id: 005-021-025
+    name: ENCRYPT_DATA_AT_REST_CRYPTOGRAPHIC_DIRECTIVES_RNG
+  type: SAM
+- document:
+    description: Verify that random GUIDs are created using the GUID v4 algorithm,
+      and a cryptographically-secure pseudo-random number generator (CSPRNG). GUIDs
+      created using other pseudo-random number generators may be predictable.
+    doctype: CRE
+    id: 005-021-025
+    name: ENCRYPT_DATA_AT_REST_CRYPTOGRAPHIC_DIRECTIVES_RNG_GUID
+  type: SAM
+- document:
+    description: Verify that random numbers are created with proper entropy even when
+      the application is under heavy load, or that the application degrades gracefully
+      in such circumstances.
+    doctype: CRE
+    id: 005-021-025
+    name: ENCRYPT_DATA_AT_REST_CRYPTOGRAPHIC_DIRECTIVES_RNG_GRACEFUL_DEGRADATION
+  type: SAM
+- document:
+    description: Verify that sensitive or private information that is required to
+      be encrypted, is encrypted using approved algorithms that provide both confidentiality
+      and integrity. (C8)
+    doctype: CRE
+    id: 005-021-025
+    name: ENCRYPT_DATA_AT_REST_CRYPTOGRAPHIC_DIRECTIVES
+  type: SAM
+name: ENCRYPT_DATA_AT_REST

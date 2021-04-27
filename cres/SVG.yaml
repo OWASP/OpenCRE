@@ -1,0 +1,9 @@
+doctype: CRE
+id: 952-825
+links:
+- document:
+    doctype: CRE
+    id: 010-034
+    name: VALIDATE_INPUT_SANITIZE_ISOLATE_SCRIPTABLE_TEMPLATES_SVG
+  type: SAM
+name: SVG

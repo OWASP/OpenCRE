@@ -1,0 +1,71 @@
+description: Verify that sensitive or private information that is required to be encrypted,
+  is encrypted using approved algorithms that provide both confidentiality and integrity.
+  (C8)
+doctype: CRE
+id: 005-021-025
+links:
+- document:
+    doctype: CRE
+    id: 673-960
+    name: CRYPTOGRAPHIC_DIRECTIVES
+  type: SAM
+- document:
+    doctype: CRE
+    id: 184-331
+    name: DATA_PROTECTION
+  type: SAM
+- document:
+    doctype: CRE
+    id: 607-193
+    name: ENCRYPT_DATA_AT_REST
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: PM-22 PERSONALLY IDENTIFIABLE INFORMATION QUALITY MANAGEMENT,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: OPC
+    section: C8
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: SIG ISO 25010
+    section: Secure data storage
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: TOP10
+    section: https://owasp.org/www-project-top-ten/2017/A5_2017-Broken_Access_Control
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '327'
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: ASVS
+    section: V8.3.7
+    subsection: DATA_PROTECTION-ENCRYPT_DATA_AT_REST-CRYPTOGRAPHIC_DIRECTIVES
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: RA-8 PRIVACY IMPACT ASSESSMENTS
+    subsection: ''
+  type: SAM
+name: ENCRYPT_DATA_AT_REST_CRYPTOGRAPHIC_DIRECTIVES

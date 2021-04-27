@@ -1,0 +1,64 @@
+doctype: CRE
+id: 005-022-025
+links:
+- document:
+    doctype: CRE
+    id: 740-826
+    name: CONFIGURATION
+  type: SAM
+- document:
+    doctype: CRE
+    id: 196-172
+    name: DEPENDENCIES
+  type: SAM
+- document:
+    doctype: CRE
+    id: 910-661
+    name: DEPENDENCY_FRESHNESS
+  type: SAM
+- document:
+    doctype: CRE
+    id: 134-504
+    name: CLIENTSIDE
+  type: SAM
+- document:
+    doctype: CRE
+    id: 792-116
+    name: DEPRECATED_TECHNOLOGY
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: SA-15 Development Process, Standards, and Tools
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: SIG ISO 25010
+    section: Dependency strength
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: TOP10
+    section: https://owasp.org/www-project-top-ten/2017/A5_2017-Broken_Access_Control
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '477'
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: ASVS
+    section: V1.14.6
+    subsection: CONFIGURATION-DEPENDENCIES-DEPENDENCY_FRESHNESS-CLIENTSIDE-DEPRECATED_TECHNOLOGY
+  type: SAM
+name: CONFIGURATION_THIRD_PARTY_DEPENDENCIES_NO_DEPRECATED/INSECURE_CLIENTSIDE_TECHNOLOGIES

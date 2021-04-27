@@ -1,0 +1,88 @@
+doctype: CRE
+id: 833-850
+links:
+- document:
+    doctype: CRE
+    id: 004-015-039
+    name: ACCESS_CONTROL_IGNORE_ORIGIN_HEADER
+  type: SAM
+- document:
+    doctype: CRE
+    id: 012-049-052
+    name: POSITIVE_VALIDATION_FOR_USER_INPUT
+  type: SAM
+- document:
+    doctype: CRE
+    id: 007-042-023
+    name: FILE_HANDLING_UPLOADED_FILES_IGNORE_USER_SUBMITTED_FILE_METADATA
+  type: SAM
+- document:
+    doctype: CRE
+    id: 008-046-045
+    name: VALIDATE_API_REJECT_HTTP_HEADERS
+  type: SAM
+- document:
+    description: Verify that every HTTP response contains a content type header specifying
+      a safe character set (e.g., UTF-8, ISO 8859-1).
+    doctype: CRE
+    id: 004-015-038
+    name: CONFIGURATION_SET_HEADERS_CONTENT_TYPE_CHARACTER_SET
+  type: SAM
+- document:
+    description: 'Verify that all API responses contain Content-Disposition: attachment;
+      filename="api.json" (or other appropriate filename for the content type).'
+    doctype: CRE
+    id: 004-015-038
+    name: CONFIGURATION_SET_HEADERS_CONTENT_TYPE
+  type: SAM
+- document:
+    description: Verify that a content security policy (CSPv2) is in place that helps
+      mitigate impact for XSS attacks like HTML, DOM, JSON, and JavaScript injection
+      vulnerabilities.
+    doctype: CRE
+    id: 004-015-038
+    name: CONFIGURATION_SET_HEADERS_CSP
+  type: SAM
+- document:
+    description: 'Verify that all responses contain X-Content-Type-Options: nosniff.'
+    doctype: CRE
+    id: 004-015-038
+    name: CONFIGURATION_SET_HEADERS_NOSNIFF
+  type: SAM
+- document:
+    description: 'Verify that HTTP Strict Transport Security headers are included
+      on all responses and for all subdomains, such as Strict-Transport-Security:
+      max-age=15724800; includeSubdomains.'
+    doctype: CRE
+    id: 004-015-038
+    name: CONFIGURATION_SET_HEADER_HSTS
+  type: SAM
+- document:
+    description: Verify that a suitable "Referrer-Policy" header is included, such
+      as "no-referrer" or "same-origin".
+    doctype: CRE
+    id: 004-015-038
+    name: CONFIGURATION_SET_HEADER_REFERRER_POLICY
+  type: SAM
+- document:
+    description: 'Verify that a suitable X-Frame-Options or Content-Security-Policy:
+      frame-ancestors header is in use for sites where content should not be embedded
+      in a third-party site.'
+    doctype: CRE
+    id: 004-015-038
+    name: CONFIGURATION_SET_HEADERS_FRAME
+  type: SAM
+- document:
+    description: Verify that the cross-domain resource sharing (CORS) Access-Control-Allow-Origin
+      header uses a strict white-list of trusted domains to match against and does
+      not support the "null" origin.
+    doctype: CRE
+    id: 004-015-039
+    name: VALIDATE_HTTP_HEADERS_CORS_WHITELIST
+  type: SAM
+- document:
+    doctype: CRE
+    id: 004-015-039
+    name: VALIDATE_HTTP_HEADERS_PROXY/SSO_DEVICE
+  type: SAM
+name: HTTP_HEADERS

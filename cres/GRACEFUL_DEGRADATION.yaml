@@ -1,0 +1,12 @@
+doctype: CRE
+id: 618-466
+links:
+- document:
+    description: Verify that random numbers are created with proper entropy even when
+      the application is under heavy load, or that the application degrades gracefully
+      in such circumstances.
+    doctype: CRE
+    id: 005-021-025
+    name: ENCRYPT_DATA_AT_REST_CRYPTOGRAPHIC_DIRECTIVES_RNG_GRACEFUL_DEGRADATION
+  type: SAM
+name: GRACEFUL_DEGRADATION

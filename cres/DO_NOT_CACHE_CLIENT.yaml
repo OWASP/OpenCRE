@@ -1,0 +1,14 @@
+doctype: CRE
+id: 878-293
+links:
+- document:
+    doctype: CRE
+    id: 005-038-028
+    name: DATA_PROTECTION_SENSITIVE_NO_CACHING_CLIENTSIDE_HEADERS
+  type: SAM
+- document:
+    doctype: CRE
+    id: 005-038-028
+    name: DATA_PROTECTION_SENSITIVE_NO_CACHING_CLIENTSIDE
+  type: SAM
+name: DO_NOT_CACHE_CLIENT

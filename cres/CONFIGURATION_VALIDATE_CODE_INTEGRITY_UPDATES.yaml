@@ -1,0 +1,85 @@
+doctype: CRE
+id: 004-012-061
+links:
+- document:
+    doctype: CRE
+    id: 740-826
+    name: CONFIGURATION
+  type: SAM
+- document:
+    doctype: CRE
+    id: 989-585
+    name: CODE
+  type: SAM
+- document:
+    doctype: CRE
+    id: 305-521
+    name: RUNTIME_INTEGRITY
+  type: SAM
+- document:
+    doctype: CRE
+    id: 819-360
+    name: UPDATE_INTEGRITY
+  type: SAM
+- document:
+    doctype: CRE
+    id: 937-797
+    name: CODE_SIGNATURES
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: CM-14 SIGNED COMPONENTS,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html
+    name: Cheatsheet
+    section: Malicious Code Verification Requirements
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: SIG ISO 25010
+    section: '@SDLC'
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: TOP10
+    section: https://owasp.org/www-project-top-ten/2017/A6_2017-Security_Misconfiguration
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '16'
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: ASVS
+    section: V10.3.1
+    subsection: CONFIGURATION-CODE-RUNTIME_INTEGRITY-UPDATE_INTEGRITY-CODE_SIGNATURES
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: SI-7 SOFTWARE, FIRMWARE, AND INFORMATION INTEGRITY,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: CM-14 SIGNED COMPONENTS
+    subsection: ''
+  type: SAM
+name: CONFIGURATION_VALIDATE_CODE_INTEGRITY_UPDATES

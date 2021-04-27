@@ -1,0 +1,13 @@
+doctype: CRE
+id: 414-464
+links:
+- document:
+    description: Verify that connections to and from the server use trusted TLS certificates.
+      Where internally generated or self-signed certificates are used, the server
+      must be configured to only trust specific internal CAs and specific self-signed
+      certificates. All others should be rejected.
+    doctype: CRE
+    id: 005-022-025
+    name: PROTECT_DATA_IN_TRANSIT_TLS_CERTIFICATE_VERIFY
+  type: SAM
+name: WEB_OF_TRUST

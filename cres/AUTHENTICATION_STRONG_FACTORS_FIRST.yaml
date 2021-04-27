@@ -1,0 +1,132 @@
+doctype: CRE
+id: 001-005-074
+links:
+- document:
+    doctype: CRE
+    id: 445-341
+    name: AUTHENTICATION
+  type: SAM
+- document:
+    doctype: CRE
+    id: 497-627
+    name: AUTHENTICATION_MECHANISM
+  type: SAM
+- document:
+    doctype: CRE
+    id: 114-799
+    name: CREDENTIALS_MANAGEMENT
+  type: SAM
+- document:
+    doctype: CRE
+    id: 809-114
+    name: UNIQUENESS
+  type: SAM
+- document:
+    doctype: CRE
+    id: 879-906
+    name: OTP/MFA
+  type: SAM
+- document:
+    doctype: CRE
+    id: 959-341
+    name: BIOMETRICS
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: IA-2 IDENTIFICATION AND AUTHENTICATION (ORGANIZATIONAL USERS),
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Protection_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/TLS_Cipher_String_Cheat_Sheet.html
+    name: Cheatsheet
+    section: Authentication Verification Requirements
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-63
+    section: 5.2.10
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: SIG ISO 25010
+    section: Authentication strength
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: TOP10
+    section: https://owasp.org/www-project-top-ten/2017/A2_2017-Broken_Authentication
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '304'
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: ASVS
+    section: V2.2.2
+    subsection: AUTHENTICATION-CREDENTIALS_MANAGEMENT-AUTHENTICATION_MECHANISM
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: IA-5 AUTHENTICATOR MANAGEMENT
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-63
+    section: 5.2.3
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: ASVS
+    section: V2.8.7
+    subsection: AUTHENTICATION-UNIQUENESS-OTP/MFA-BIOMETRICS
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '308'
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: IA-2 IDENTIFICATION AND AUTHENTICATION,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: IA-5 AUTHENTICATOR MANAGEMENT,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: SC-37 Out-of-Band Channels
+    subsection: ''
+  type: SAM
+name: AUTHENTICATION_STRONG_FACTORS_FIRST

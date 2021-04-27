@@ -1,0 +1,24 @@
+doctype: CRE
+id: 268-885
+links:
+- document:
+    doctype: CRE
+    id: 004-012-013
+    name: CONFIGURATION_CODE_SCAN_MALICIOUS_CONTENT
+  type: SAM
+- document:
+    doctype: CRE
+    id: 004-012-050
+    name: CONFIGURATION_CODE_THIRD_PARTY_DEPENDENCIES_SCAN_MALICIOUS_CONTENT
+  type: SAM
+- document:
+    doctype: CRE
+    id: 004-012-050
+    name: CONFIGURATION_VERIFY_PRIVACY_PERMISSIONS
+  type: SAM
+- document:
+    doctype: CRE
+    id: 007-042-059
+    name: FILE_HANDLING_UNTRUSTED_ORIGIN_SCAN_MALICIOUS_CONTENT
+  type: SAM
+name: MALICIOUS_LOGIC_DETECTION

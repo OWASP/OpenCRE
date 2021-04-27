@@ -1,0 +1,9 @@
+doctype: CRE
+id: 725-691
+links:
+- document:
+    doctype: CRE
+    id: 002-010-046
+    name: ARCHITECTURE_AUTHENTICATE_CONSISTENTLY_LEAST_PRIVILEGE
+  type: SAM
+name: AUTHORIZATION

@@ -1,0 +1,9 @@
+doctype: CRE
+id: 776-799
+links:
+- document:
+    doctype: CRE
+    id: 002-037-014
+    name: ARCHITECTURE_CENTRALIZE_SECURITY_FUNCTIONALITY
+  type: SAM
+name: ECONOMY_OF_DESIGN

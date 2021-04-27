@@ -1,0 +1,127 @@
+doctype: CRE
+id: 001-005-073
+links:
+- document:
+    doctype: CRE
+    id: 445-341
+    name: AUTHENTICATION
+  type: SAM
+- document:
+    doctype: CRE
+    id: 809-114
+    name: UNIQUENESS
+  type: SAM
+- document:
+    doctype: CRE
+    id: 210-698
+    name: MFA/OTP
+  type: SAM
+- document:
+    doctype: CRE
+    id: 164-267
+    name: SALTING/HASHING
+  type: SAM
+- document:
+    doctype: CRE
+    id: 673-960
+    name: CRYPTOGRAPHIC_DIRECTIVES
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: IA-5 AUTHENTICATOR MANAGEMENT,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Protection_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/TLS_Cipher_String_Cheat_Sheet.html
+    name: Cheatsheet
+    section: Authentication Verification Requirements
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-63
+    section: 5.1.3.2
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: SIG ISO 25010
+    section: Authentication strength
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: TOP10
+    section: https://owasp.org/www-project-top-ten/2017/A2_2017-Broken_Authentication
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '256'
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: ASVS
+    section: V2.7.5
+    subsection: AUTHENTICATION-UNIQUENESS-MFA/OTP-SALTING/HASHING
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: SC-37 Out-of-Band Channels
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-63
+    section: 5.1.4.2 / 5.1.5.2
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: ASVS
+    section: V2.8.3
+    subsection: AUTHENTICATION-UNIQUENESS-CRYPTOGRAPHIC_DIRECTIVES
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '326'
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: IA-5 AUTHENTICATOR MANAGEMENT
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: SC-12 CRYPTOGRAPHIC KEY ESTABLISHMENT AND MANAGEMENT
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: SC-13 CRYPTOGRAPHIC PROTECTION
+    subsection: ''
+  type: SAM
+name: AUTHENTICATION_MFA/OTP_CRYPTOGRAPHIC_DIRECTIVES

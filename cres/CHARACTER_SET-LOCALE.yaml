@@ -1,0 +1,16 @@
+doctype: CRE
+id: 950-839
+links:
+- document:
+    doctype: CRE
+    id: 012-045-010
+    name: CONTEXT_DEPENDENT_ENCODING_CHARACTER_SET_LOCALE
+  type: SAM
+- document:
+    description: Verify that every HTTP response contains a content type header specifying
+      a safe character set (e.g., UTF-8, ISO 8859-1).
+    doctype: CRE
+    id: 004-015-038
+    name: CONFIGURATION_SET_HEADERS_CONTENT_TYPE_CHARACTER_SET
+  type: SAM
+name: CHARACTER_SET/LOCALE

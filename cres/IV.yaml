@@ -1,0 +1,12 @@
+doctype: CRE
+id: 171-166
+links:
+- document:
+    description: Verify that nonces, initialization vectors, and other single use
+      numbers must not be used more than once with a given encryption key. The method
+      of generation must be appropriate for the algorithm being used.
+    doctype: CRE
+    id: 005-021-025
+    name: ENCRYPT_DATA_AT_REST_CRYPTOGRAPHIC_DIRECTIVES_NONCE_IV
+  type: SAM
+name: IV

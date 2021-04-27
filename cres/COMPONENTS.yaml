@@ -1,0 +1,24 @@
+doctype: CRE
+id: 714-439
+links:
+- document:
+    doctype: CRE
+    id: 004-006-012
+    name: COMPONENTS_LEAST_PRIVILEGE_OS_ACCOUNTS
+  type: SAM
+- document:
+    doctype: CRE
+    id: 002-010-046
+    name: ARCHITECTURE_AUTHENTICATE_CONSISTENTLY_LEAST_PRIVILEGE
+  type: SAM
+- document:
+    doctype: CRE
+    id: 004-012-0612
+    name: ARCHITECTURE_AUTHENTICATE_CONSISTENTLY
+  type: SAM
+- document:
+    doctype: CRE
+    id: 009-027
+    name: COMPONENTS_ENFORCE_TRUST_BOUNDARIES
+  type: SAM
+name: COMPONENTS

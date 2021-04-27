@@ -1,0 +1,19 @@
+doctype: CRE
+id: 603-735
+links:
+- document:
+    doctype: CRE
+    id: 007-042-058
+    name: FILE_HANDLING_UPLOADED_FILES_DENY_LARGE_FILES
+  type: SAM
+- document:
+    doctype: CRE
+    id: 007-042-058
+    name: FILE_HANDLING_CHECK_ZIP_BOMB
+  type: SAM
+- document:
+    doctype: CRE
+    id: 007-042-058
+    name: FILE_HANDLING_UPLOADED_FILES_SET_USER_MAXIMA
+  type: SAM
+name: DENY_DOS

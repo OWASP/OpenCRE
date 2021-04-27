@@ -1,0 +1,14 @@
+doctype: CRE
+id: 519-654
+links:
+- document:
+    doctype: CRE
+    id: 002-037-014
+    name: ARCHITECTURE_CENTRALIZE_SECURITY_FUNCTIONALITY
+  type: SAM
+- document:
+    doctype: CRE
+    id: 007-042-066
+    name: ARCHITECTURE_ACCESS_CONTROL_FLEXIBILITY
+  type: SAM
+name: SECURITY_COMPONENTS

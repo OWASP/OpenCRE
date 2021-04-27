@@ -1,0 +1,85 @@
+description: 'Verify that all API responses contain Content-Disposition: attachment;
+  filename="api.json" (or other appropriate filename for the content type).'
+doctype: CRE
+id: 004-015-038
+links:
+- document:
+    doctype: CRE
+    id: 736-939
+    name: HARDEN
+  type: SAM
+- document:
+    doctype: CRE
+    id: 833-850
+    name: HTTP_HEADERS
+  type: SAM
+- document:
+    doctype: CRE
+    id: 193-992
+    name: XSS
+  type: SAM
+- document:
+    doctype: CRE
+    id: 740-826
+    name: CONFIGURATION
+  type: SAM
+- document:
+    doctype: CRE
+    id: 469-624
+    name: CONFIG_SERVER
+  type: SAM
+- document:
+    doctype: CRE
+    id: 963-977
+    name: CONTENT_TYPE
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: CM-2 BASELINE CONFIGURATION,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Content_Security_Policy_Cheat_Sheet.html
+    name: Cheatsheet
+    section: Configuration Verification Requirements
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: SIG ISO 25010
+    section: Input and output verification
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: TOP10
+    section: https://owasp.org/www-project-top-ten/2017/A6_2017-Security_Misconfiguration
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '116'
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: ASVS
+    section: V14.4.2
+    subsection: CONFIGURATION-CONFIG_SERVER-HARDEN-HTTP_HEADERS-CONTENT_TYPE-XSS
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: CM-6 CONFIGURATION SETTINGS
+    subsection: ''
+  type: SAM
+name: CONFIGURATION_SET_HEADERS_CONTENT_TYPE

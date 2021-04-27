@@ -1,0 +1,122 @@
+doctype: CRE
+id: 005-021-063
+links:
+- document:
+    doctype: CRE
+    id: 184-331
+    name: DATA_PROTECTION
+  type: SAM
+- document:
+    doctype: CRE
+    id: 565-697
+    name: SENSITIVE
+  type: SAM
+- document:
+    doctype: CRE
+    id: 607-193
+    name: ENCRYPT_DATA_AT_REST
+  type: SAM
+- document:
+    doctype: CRE
+    id: 840-690
+    name: PII
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: SI-18 Personally Identifiable Information Quality Operations,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Key_Management_Cheat_Sheet.html
+    name: Cheatsheet
+    section: Stored Cryptography Verification Requirements
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: WSTG
+    section: WSTG-CRYP-04
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: SIG ISO 25010
+    section: Secure data storage
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: TOP10
+    section: https://owasp.org/www-project-top-ten/2017/A3_2017-Sensitive_Data_Exposure
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '311'
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: ASVS
+    section: V6.1.1
+    subsection: DATA_PROTECTION-ENCRYPT_DATA_AT_REST-SENSITIVE-PII
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: PM-22 PERSONALLY IDENTIFIABLE INFORMATION QUALITY MANAGEMENT,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: ASVS
+    section: V6.1.2
+    subsection: DATA_PROTECTION-ENCRYPT_DATA_AT_REST-SENSITIVE-PII
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: SC-12 CRYPTOGRAPHIC KEY ESTABLISHMENT AND MANAGEMENT,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: ASVS
+    section: V6.1.3
+    subsection: DATA_PROTECTION-ENCRYPT_DATA_AT_REST-SENSITIVE-PII
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: SC-13 CRYPTOGRAPHIC PROTECTION,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: RA-8 PRIVACY IMPACT ASSESSMENTS
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: SC-13 CRYPTOGRAPHIC PROTECTION
+    subsection: ''
+  type: SAM
+name: ENCRYPT_SENSITIVE_DATA_AT_REST

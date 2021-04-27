@@ -1,0 +1,8 @@
+doctype: CRE
+links:
+- document:
+    doctype: CRE
+    id: 001-002-005
+    name: ACCESS_CONTROL_AUTHORIZATION_STEP_UP
+  type: SAM
+name: ADDITIONAL_AUTHORIZATION

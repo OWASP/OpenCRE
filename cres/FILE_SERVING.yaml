@@ -1,0 +1,19 @@
+doctype: CRE
+id: 887-909
+links:
+- document:
+    doctype: CRE
+    id: 001-005-020
+    name: FILE_HANDLING_UPLOADED_FILES_SERVE_ONLY_OCTET_STREAM_OR_SEPARATE_DOMAIN
+  type: SAM
+- document:
+    doctype: CRE
+    id: 007-042-066
+    name: FILE_HANDLING_AVOID_INFO_DISCLOSURE_SERVING_FILES
+  type: SAM
+- document:
+    doctype: CRE
+    id: 007-042-066
+    name: FILE_HANDLING_DENY_EXECUTION_UPLOADED_FILES
+  type: SAM
+name: FILE_SERVING
