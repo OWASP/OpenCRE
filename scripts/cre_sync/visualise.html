@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Network</title>
+    <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    <style type="text/css">
+        html {
+            min-height: 100%;
+            /* make sure it is at least as tall as the viewport */
+            position: relative;
+        }
+
+        #cres {
+            width: 100%;
+            height: 100vh;
+            border: 1em solid #000000;
+            /* position:absolute;
+    top:0;
+    bottom:0;
+    left:0;
+    right:0;
+    overflow:hidden;
+    z-index:-1; Remove this line if it's not going to be a background! */
+
+        }
+    </style>
+</head>
+
+<body>
+    <div id="cres"></div>
+    <script type="text/javascript" src="./cre_graph.json"></script>
+    <script type="text/javascript">
+        nodes = []
+        // create an array with nodes
+        graph.nodes.cres.forEach(function (cre) {
+            nodes.push({
+                id: "c_" + cre.id,
+                label: cre.section,
+                group: 1,
+                title: cre.description
+            }) // TODO: colour specially, somehow say it's a CRE
+        });
+
+        graph.nodes.standards.forEach(function (standard) {
+            nodes.push({
+                id: "s_" + standard.id,
+                label: standard.name + ":" + standard.section + ":" + standard.subsection,
+                title: standard.name,
+                group: 2
+            }) // TODO: colour specially, somehow say it's a standard, make hyperlinkable
+        });
+
+        var edges = []
+        graph.edges.forEach(function (link) {
+            edges.push({
+                from: "c_" + link.cre,
+                to: "s_" + link.standard
+            })
+        });
+
+        // create a network
+        var container = document.getElementById("cres");
+        var data = {
+            nodes: new vis.DataSet(nodes),
+            edges: new vis.DataSet(edges),
+        };
+        var options = {
+            "physics": {
+                "barnesHut": {
+                    "springConstant": 0,
+                    "avoidOverlap": 0.5
+                }
+            }
+        }
+        var network = new vis.Network(container, data, options);
+
+        // // create an array with edges
+        // var edges = new vis.DataSet([
+        //     { from: "c_" + 1, to: "s_" + 3 },
+        //     // { from: "1"+1, to: "2"+2 },
+        //     // { from: "1"+2, to: "2"+4 },
+        //     // { from: "1"+2, to: "2"+5 },
+        //     // { from: "1"+3, to: "2"+3 },
+        // ]);
+
+        // create a network
+        // var container = document.getElementById("cres");
+        // var data = {
+        //     nodes: new vis.DataSet(nodes),
+        //     edges: edges,
+        // };
+
+        // var network = new vis.Network(container, data, options);
+
+    </script>
+</body>
+
+</html>
