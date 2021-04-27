@@ -1,0 +1,14 @@
+doctype: CRE
+id: 224-239
+links:
+- document:
+    doctype: CRE
+    id: 002-018
+    name: CONFIGURATION_CODE_PIPELINE_DEPLOYMENT_AUTOMATION_VERIFY_DEPLOYMENT
+  type: SAM
+- document:
+    doctype: CRE
+    id: 004-006-012
+    name: CONFIGURATION_CODE_PIPELINE_DEPLOYMENT_AUTOMATION
+  type: SAM
+name: DEPLOYMENT_AUTOMATION

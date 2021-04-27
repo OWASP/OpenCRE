@@ -1,0 +1,9 @@
+doctype: CRE
+id: 715-800
+links:
+- document:
+    doctype: CRE
+    id: 010-033
+    name: VALIDATE_INPUT_NO_DYNAMIC_CODE_EXECUTION
+  type: SAM
+name: SAFE_EVALUATION

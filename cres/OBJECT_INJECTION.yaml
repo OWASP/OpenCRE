@@ -1,0 +1,9 @@
+doctype: CRE
+id: 247-802
+links:
+- document:
+    doctype: CRE
+    id: 004-019-037
+    name: VALIDATE_DESERIALIZATION_UNTRUSTED_INPUT
+  type: SAM
+name: OBJECT_INJECTION

@@ -1,0 +1,97 @@
+doctype: CRE
+id: 004-006-012
+links:
+- document:
+    doctype: CRE
+    id: 740-826
+    name: CONFIGURATION
+  type: SAM
+- document:
+    doctype: CRE
+    id: 159-156
+    name: AUTOMATE_PIPELINE
+  type: SAM
+- document:
+    doctype: CRE
+    id: 469-998
+    name: BUILD
+  type: SAM
+- document:
+    doctype: CRE
+    id: 823-508
+    name: CI/CD
+  type: SAM
+- document:
+    doctype: CRE
+    id: 224-239
+    name: DEPLOYMENT_AUTOMATION
+  type: SAM
+- document:
+    doctype: CRE
+    id: 584-519
+    name: RESTORE
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: SA-10 DEVELOPER CONFIGURATION MANAGEMENT
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Content_Security_Policy_Cheat_Sheet.html
+    name: Cheatsheet
+    section: Configuration Verification Requirements
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: SIG ISO 25010
+    section: '@SDLC'
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '0'
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: ASVS
+    section: V14.1.1
+    subsection: CONFIGURATION-AUTOMATE_PIPELINE-BUILD-CI/CD-DEPLOYMENT_AUTOMATION
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: CM-2 BASELINE CONFIGURATION,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: ASVS
+    section: V14.1.4
+    subsection: CONFIGURATION-AUTOMATE_PIPELINE-RESTORE-CI/CD-DEPLOYMENT_AUTOMATION
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: CM-6 CONFIGURATION SETTINGS
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: CM-2 BASELINE CONFIGURATION
+    subsection: ''
+  type: SAM
+name: CONFIGURATION_CODE_PIPELINE_DEPLOYMENT_AUTOMATION

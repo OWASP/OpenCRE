@@ -1,0 +1,9 @@
+doctype: CRE
+id: 485-451
+links:
+- document:
+    doctype: CRE
+    id: 005-038-016
+    name: DATA_PROTECTION_SENSITIVE_AUTHORIZE_AND_PURGE_TEMPORARY_DATA
+  type: SAM
+name: PURGE_SENSITIVE_DATA

@@ -1,0 +1,10 @@
+doctype: CRE
+links:
+- document:
+    description: Verify that the HTTP headers or any part of the HTTP response do
+      not expose detailed version information of system components.
+    doctype: CRE
+    id: 004-015-036
+    name: SANITIZE_OUTPUT_HTTP_HEADERS_RESPONSE_AVOID_INFO_DISCLOSURE
+  type: SAM
+name: HTTP_HEADER

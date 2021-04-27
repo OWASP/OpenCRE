@@ -1,0 +1,124 @@
+doctype: CRE
+id: 009-003
+links:
+- document:
+    doctype: CRE
+    id: 119-473
+    name: LOG
+  type: SAM
+- document:
+    doctype: CRE
+    id: 285-671
+    name: DETECT_ANOMALIES
+  type: SAM
+- document:
+    doctype: CRE
+    id: 776-494
+    name: ALLOW_MONITORING
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: CA-7 CONTINUOUS MONITORING,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Abuse_Case_Cheat_Sheet.html
+    name: Cheatsheet
+    section: Business Logic Verification Requirements
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: SIG ISO 25010
+    section: Security logging
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: TOP10
+    section: https://owasp.org/www-project-top-ten/2017/A10_2017-Insufficient_Logging%2526Monitoring
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '390'
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: ASVS
+    section: V11.1.8
+    subsection: LOG-ALLOW_MONITORING-DETECT_ANOMALIES
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: SC-5 DENIAL-OF-SERVICE PROTECTION,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: AC-4 INFORMATION FLOW ENFORCEMENT,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: SI-3 Malicious Code Protection,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: 'SI-5 Security Alerts, Advisories, and Directives, '
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: 'SI-13 Predictable Failure Prevention, '
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: SI-17 Fail-Safe Procedures,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: IR-4 INCIDENT HANDLING,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: IR-5 INCIDENT MONITORING,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: SI-4 SYSTEM MONITORING
+    subsection: ''
+  type: SAM
+name: LOG_ALERTING_ANOMALIES_CONFIGURABLE

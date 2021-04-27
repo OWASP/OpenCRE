@@ -1,0 +1,26 @@
+doctype: CRE
+id: 723-282
+links:
+- document:
+    doctype: CRE
+    id: 001-002-005
+    name: ACCESS_CONTROL_AUTHORIZATION_STEP_UP
+  type: SAM
+- document:
+    description: If authenticators permit users to remain logged in, verify that re-authentication
+      occurs periodically both when actively used or after an idle period. (C6)
+    doctype: CRE
+    id: 011-039-002
+    name: SESSION_MANAGEMENT_TIMEOUT_REAUTHENTICATION
+  type: SAM
+- document:
+    doctype: CRE
+    id: 011-039-003
+    name: SESSION_MANAGEMENT_CREDENTIAL_SERVICE_PROVIDER_SESSION_TIMEOUT
+  type: SAM
+- document:
+    doctype: CRE
+    id: 011-039-003
+    name: SESSION_MANAGEMENT_CREDENTIAL_SERVICE_PROVIDER_INFORMS_RELYING_PARTIES
+  type: SAM
+name: REAUTHENTICATION

@@ -1,0 +1,92 @@
+doctype: CRE
+id: 008-038-027
+links:
+- document:
+    doctype: CRE
+    id: 613-579
+    name: ACCESS_CONTROL
+  type: SAM
+- document:
+    doctype: CRE
+    id: 565-697
+    name: SENSITIVE
+  type: SAM
+- document:
+    doctype: CRE
+    id: 736-939
+    name: HARDEN
+  type: SAM
+- document:
+    doctype: CRE
+    id: 822-927
+    name: INTERFACE/API
+  type: SAM
+- document:
+    doctype: CRE
+    id: 337-429
+    name: HARDEN_INFO_DISCLOSURE
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: CM-6 CONFIGURATION SETTINGS,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/XML_Security_Cheat_Sheet.html
+    name: Cheatsheet
+    section: API and Web Service Verification Requirements
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: WSTG
+    section: WSTG-SESS-04
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: SIG ISO 25010
+    section: Input and output verification
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: TOP10
+    section: https://owasp.org/www-project-top-ten/2017/A5_2017-Broken_Access_Control
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '598'
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: ASVS
+    section: V13.1.3
+    subsection: INTERFACE/API-SENSITIVE-HARDEN-HARDEN_INFO_DISCLOSURE-ACCESS_CONTROL
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: AC-23 DATA MINING PROTECTION,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: CM-6 CONFIGURATION SETTINGS
+    subsection: ''
+  type: SAM
+name: API_URLS_NO_SENSITIVE_DATA

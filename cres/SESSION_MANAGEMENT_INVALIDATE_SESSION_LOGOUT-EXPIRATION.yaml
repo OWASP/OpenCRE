@@ -1,0 +1,113 @@
+doctype: CRE
+id: 011-039-002
+links:
+- document:
+    doctype: CRE
+    id: 636-456
+    name: SESSION_MANAGEMENT
+  type: SAM
+- document:
+    doctype: CRE
+    id: 317-351
+    name: SESSION_VALIDITY
+  type: SAM
+- document:
+    doctype: CRE
+    id: 960-957
+    name: ACTIVELY_LIMIT
+  type: SAM
+- document:
+    doctype: CRE
+    id: 981-343
+    name: SESSION_TIMEOUT
+  type: SAM
+- document:
+    doctype: CRE
+    id: 577-748
+    name: LOGOUT
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: AC-10 Concurrent Session Control,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: OPC
+    section: C6
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Transaction_Authorization_Cheat_Sheet.html
+    name: Cheatsheet
+    section: Session Management Verification Requirements
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: WSTG
+    section: WSTG-SESS-06
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-63
+    section: '7.1'
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: SIG ISO 25010
+    section: Session management
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: TOP10
+    section: https://owasp.org/www-project-top-ten/2017/A5_2017-Broken_Access_Control
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '613'
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: ASVS
+    section: V3.3.1
+    subsection: SESSION_MANAGEMENT-SESSION_VALIDITY-ACTIVELY_LIMIT-SESSION_TIMEOUT-LOGOUT
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: 'AC-11 Session Lock, '
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: AC-12 Session Termination,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: SC-23 Session Authenticity,
+    subsection: ''
+  type: SAM
+name: SESSION_MANAGEMENT_INVALIDATE_SESSION_LOGOUT/EXPIRATION

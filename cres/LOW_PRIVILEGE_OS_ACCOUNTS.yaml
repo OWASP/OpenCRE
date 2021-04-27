@@ -1,0 +1,9 @@
+doctype: CRE
+id: 717-118
+links:
+- document:
+    doctype: CRE
+    id: 004-006-012
+    name: COMPONENTS_LEAST_PRIVILEGE_OS_ACCOUNTS
+  type: SAM
+name: LOW_PRIVILEGE_OS_ACCOUNTS

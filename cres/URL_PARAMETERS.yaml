@@ -1,0 +1,9 @@
+doctype: CRE
+id: 878-354
+links:
+- document:
+    doctype: CRE
+    id: 011-040-026
+    name: SESSION_MANAGEMENT_PROTECT/NOT_EXPOSE_SESSION_TOKENS
+  type: SAM
+name: URL_PARAMETERS

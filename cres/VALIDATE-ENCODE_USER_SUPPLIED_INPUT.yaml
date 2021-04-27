@@ -1,0 +1,144 @@
+doctype: CRE
+id: 542-355
+links:
+- document:
+    doctype: CRE
+    id: 004-019-042
+    name: VALIDATE_INPUT_TRUSTED_SERVICE_LAYER
+  type: SAM
+- document:
+    doctype: CRE
+    id: 004-019-037
+    name: VALIDATE_DESERIALIZATION_UNTRUSTED_INPUT
+  type: SAM
+- document:
+    doctype: CRE
+    id: 012-043
+    name: VALIDATE_HTTP_PARAMETER_POLLUTION
+  type: SAM
+- document:
+    doctype: CRE
+    id: 012-009
+    name: VALIDATE_MASS_PARAMETER_ASSIGNMENT
+  type: SAM
+- document:
+    doctype: CRE
+    id: 012-049-052
+    name: POSITIVE_VALIDATION_FOR_USER_INPUT
+  type: SAM
+- document:
+    doctype: CRE
+    id: 012-035
+    name: VALIDATE_STRUCTURED_DATA_SCHEMA_STRONG_TYPING
+  type: SAM
+- document:
+    doctype: CRE
+    id: 012-035
+    name: VALIDATE_URL_REDIRECTS/FORWARDS_WHITELISTING
+  type: SAM
+- document:
+    doctype: CRE
+    id: 012-045-011
+    name: CONTEXT_DEPENDENT_ENCODING
+  type: SAM
+- document:
+    doctype: CRE
+    id: 012-045-010
+    name: CONTEXT_DEPENDENT_ENCODING_CHARACTER_SET_LOCALE
+  type: SAM
+- document:
+    doctype: CRE
+    id: 012-045-011
+    name: CONTEXT_DEPENDENT_OUTPUT_ESCAPING
+  type: SAM
+- document:
+    doctype: CRE
+    id: 012-045-011
+    name: VALIDATE_PARAMETERIZATION_DATABASE_INJECTION
+  type: SAM
+- document:
+    doctype: CRE
+    id: 012-045-010
+    name: VALIDATE_CONTEXT_DEPENDENT_ENCODING_SQLI
+  type: SAM
+- document:
+    doctype: CRE
+    id: 012-045-010
+    name: VALIDATE_JS/JSON_INJECTION
+  type: SAM
+- document:
+    doctype: CRE
+    id: 012-045-010
+    name: VALIDATE_LDAP_INJECTION
+  type: SAM
+- document:
+    doctype: CRE
+    id: 012-045-010
+    name: VALIDATE_OS_COMMAND_INJECTION
+  type: SAM
+- document:
+    doctype: CRE
+    id: 012-045-010
+    name: VALIDATE_LFI/RFI
+  type: SAM
+- document:
+    doctype: CRE
+    id: 012-045-010
+    name: VALIDATE_XPATH/XML_INJECTION
+  type: SAM
+- document:
+    doctype: CRE
+    id: 012-028
+    name: VALIDATE_MEMORY_SAFE_PROCESSING_OVERFLOWS
+  type: SAM
+- document:
+    doctype: CRE
+    id: 012-035
+    name: VALIDATE_FORMAT_STRINGS_CONSTANT
+  type: SAM
+- document:
+    doctype: CRE
+    id: 012-028
+    name: VALIDATE_INTEGER_OVERFLOWS
+  type: SAM
+- document:
+    doctype: CRE
+    id: 012-030-024
+    name: VALIDATE_SERIALIZATION_INTEGRITY_CHECKS_ENCRYPTION
+  type: SAM
+- document:
+    doctype: CRE
+    id: 012-030-078
+    name: VALIDATE_XML_PARSING_XXE
+  type: SAM
+- document:
+    doctype: CRE
+    id: 012-030-024
+    name: VALIDATE_DESERIALIZATION_UNTRUSTED_INPUT_THIRD_PARTY_DEPENDENCIES
+  type: SAM
+- document:
+    doctype: CRE
+    id: 012-030-024
+    name: VALIDATE_JSON_PARSING
+  type: SAM
+- document:
+    doctype: CRE
+    id: 009-027
+    name: LOG_PROTECTION_LOG_INJECTION_ENCODE_INPUT
+  type: SAM
+- document:
+    doctype: CRE
+    id: 009-027
+    name: LOG_PROTECTION_LOG_INJECTION
+  type: SAM
+- document:
+    doctype: CRE
+    id: 009-027
+    name: LOG_PROTECTION_AUTHORIZED_ACCESS
+  type: SAM
+- document:
+    doctype: CRE
+    id: 004-015-039
+    name: VALIDATE_HTTP_METHODS_WHITELIST
+  type: SAM
+name: VALIDATE/ENCODE_USER_SUPPLIED_INPUT

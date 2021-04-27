@@ -1,0 +1,9 @@
+doctype: CRE
+id: 627-693
+links:
+- document:
+    doctype: CRE
+    id: 004-019-041
+    name: THIRD_PARTY_DEPENDENCIES-USE_SRI_FOR_CDNS
+  type: SAM
+name: INTEGRITY_ASSETS

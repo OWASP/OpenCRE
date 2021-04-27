@@ -1,0 +1,70 @@
+doctype: CRE
+id: 010-033
+links:
+- document:
+    doctype: CRE
+    id: 348-191
+    name: SANITIZE_OUTPUT_USER_SUPPLIED
+  type: SAM
+- document:
+    doctype: CRE
+    id: 715-800
+    name: SAFE_EVALUATION
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: SC-39 PROCESS ISOLATION,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Deserialization_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/XML_External_Entity_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/XML_Security_Cheat_Sheet.html
+    name: Cheatsheet
+    section: Validation, Sanitization and Encoding Verification Requirements
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: WSTG
+    section: WSTG-CLNT-02
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: SIG ISO 25010
+    section: Input and output verification
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: TOP10
+    section: https://owasp.org/www-project-top-ten/2017/A7_2017-Cross-Site_Scripting_(XSS)
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '95'
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: ASVS
+    section: V5.2.4
+    subsection: SANITIZE_OUTPUT_USER_SUPPLIED-SAFE_EVALUATION
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: AC-4 INFORMATION FLOW ENFORCEMENT
+    subsection: ''
+  type: SAM
+name: VALIDATE_INPUT_NO_DYNAMIC_CODE_EXECUTION

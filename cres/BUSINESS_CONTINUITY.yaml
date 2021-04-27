@@ -1,0 +1,14 @@
+doctype: CRE
+id: 626-171
+links:
+- document:
+    doctype: CRE
+    id: 005-032-053
+    name: ENCRYPT_DATA_AT_REST_BACKUP_PROTECTION
+  type: SAM
+- document:
+    doctype: CRE
+    id: 005-038-028
+    name: DATA_PROTECTION_SENSITIVE_NO_CACHING_CLIENTSIDE_HEADERS
+  type: SAM
+name: BUSINESS_CONTINUITY

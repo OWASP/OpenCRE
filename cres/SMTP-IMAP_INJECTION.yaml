@@ -1,0 +1,11 @@
+doctype: CRE
+id: 895-259
+links:
+- document:
+    description: Verify that the application sanitizes user input before passing to
+      mail systems to protect against SMTP or IMAP injection.
+    doctype: CRE
+    id: 010-007
+    name: VALIDATE_INPUT_SANITIZE_MAIL_SMTP/IMAP
+  type: SAM
+name: SMTP/IMAP_INJECTION

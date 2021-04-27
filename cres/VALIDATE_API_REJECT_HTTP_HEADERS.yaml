@@ -1,0 +1,68 @@
+doctype: CRE
+id: 008-046-045
+links:
+- document:
+    doctype: CRE
+    id: 822-927
+    name: INTERFACE/API
+  type: SAM
+- document:
+    doctype: CRE
+    id: 833-850
+    name: HTTP_HEADERS
+  type: SAM
+- document:
+    doctype: CRE
+    id: 927-865
+    name: VALIDATE_MESSAGE
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: AC-4 INFORMATION FLOW ENFORCEMENT,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/XML_Security_Cheat_Sheet.html
+    name: Cheatsheet
+    section: API and Web Service Verification Requirements
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: SIG ISO 25010
+    section: Input and output verification
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: TOP10
+    section: https://owasp.org/www-project-top-ten/2017/A5_2017-Broken_Access_Control
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '434'
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: ASVS
+    section: V13.1.5
+    subsection: INTERFACE/API-VALIDATE_MESSAGE-HTTP_HEADERS
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: SI-10 INFORMATION INPUT VALIDATION
+    subsection: ''
+  type: SAM
+name: VALIDATE_API_REJECT_HTTP_HEADERS

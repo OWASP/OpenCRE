@@ -1,0 +1,87 @@
+doctype: CRE
+id: 002-026-031
+links:
+- document:
+    doctype: CRE
+    id: 740-826
+    name: CONFIGURATION
+  type: SAM
+- document:
+    doctype: CRE
+    id: 159-156
+    name: AUTOMATE_PIPELINE
+  type: SAM
+- document:
+    doctype: CRE
+    id: 704-920
+    name: TRACEABILITY
+  type: SAM
+- document:
+    doctype: CRE
+    id: 169-503
+    name: ISSUE_MANAGEMENT
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: CM-1 POLICY AND PROCEDURES,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Abuse_Case_Cheat_Sheet.html
+    name: Cheatsheet
+    section: Architecture, Design and Threat Modeling Requirements
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: SIG ISO 25010
+    section: '@SDLC'
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '284'
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: ASVS
+    section: V1.10.1
+    subsection: CONFIGURATION-AUTOMATE_PIPELINE-TRACEABILITY-ISSUE_MANAGEMENT
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: CM-2 BASELINE CONFIGURATION,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: CM-3 CONFIGURATION CHANGE CONTROL,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: CM-5 ACCESS RESTRICTIONS FOR CHANGE,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: CM-6 CONFIGURATION SETTINGS
+    subsection: ''
+  type: SAM
+name: CONFIGURATION_CODE_PIPELINE_TRACEABILITY

@@ -1,0 +1,19 @@
+doctype: CRE
+id: 467-720
+links:
+- document:
+    doctype: CRE
+    id: 012-045-010
+    name: CONTEXT_DEPENDENT_ENCODING_CHARACTER_SET_LOCALE
+  type: SAM
+- document:
+    doctype: CRE
+    id: 012-045-011
+    name: CONTEXT_DEPENDENT_OUTPUT_ESCAPING
+  type: SAM
+- document:
+    doctype: CRE
+    id: 010-008
+    name: VALIDATE_INPUT_SANITIZE_WYSIWYG_HTML
+  type: SAM
+name: VALIDATE_BEFORE_RETURNING

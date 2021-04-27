@@ -1,0 +1,89 @@
+doctype: CRE
+id: 001-017-070
+links:
+- document:
+    doctype: CRE
+    id: 613-579
+    name: ACCESS_CONTROL
+  type: SAM
+- document:
+    doctype: CRE
+    id: 253-303
+    name: ADMINISTRATIVE/ADMIN_TASKS
+  type: SAM
+- document:
+    doctype: CRE
+    id: 315-827
+    name: ACCESS/PASSWORD_RECOVERY
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: IA-5 AUTHENTICATOR MANAGEMENT
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Protection_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/TLS_Cipher_String_Cheat_Sheet.html
+    name: Cheatsheet
+    section: Authentication Verification Requirements
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-63
+    section: 5.1.1.2 / A.3
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: SIG ISO 25010
+    section: User management
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: TOP10
+    section: https://owasp.org/www-project-top-ten/2017/A5_2017-Broken_Access_Control
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '16'
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: ASVS
+    section: V2.5.4
+    subsection: ACCESS_CONTROL-ADMINISTRATIVE/ADMIN_TASKS-ACCESS/PASSWORD_RECOVERY
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: SA-8 SECURITY AND PRIVACY ENGINEERING PRINCIPLES,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: AC-5 SEPARATION OF DUTIES,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: SC-2 SEPARATION OF SYSTEM AND USER FUNCTIONALITY
+    subsection: ''
+  type: SAM
+name: AUTHENTICATION_NO_SHARED/DEFAULT_ACCOUNTS

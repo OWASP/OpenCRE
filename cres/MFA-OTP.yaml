@@ -1,0 +1,49 @@
+doctype: CRE
+id: 210-698
+links:
+- document:
+    doctype: CRE
+    id: 001-005-074
+    name: AUTHENTICATION_MFA/OTP
+  type: SAM
+- document:
+    doctype: CRE
+    id: 001-005-006
+    name: AUTHENTICATE_CREDENTIAL_SERVICE_PROVIDER_MUTUAL_TLS
+  type: SAM
+- document:
+    doctype: CRE
+    id: 001-005-073
+    name: AUTHENTICATION_MFA/OTP_ALLOW_AUTHENTICATION_DEVICES
+  type: SAM
+- document:
+    doctype: CRE
+    id: 001-002-056
+    name: AUTHENTICATION_MFA/OTP_AVOID_CLEARTEXT
+  type: SAM
+- document:
+    doctype: CRE
+    id: 001-005-073
+    name: AUTHENTICATION_MFA/OTP_VALIDITY
+  type: SAM
+- document:
+    doctype: CRE
+    id: 001-017-076
+    name: AUTHENTICATION_MFA/OTP_VERIFIER_SECURE_DATA_TRANSPORT
+  type: SAM
+- document:
+    doctype: CRE
+    id: 001-005-073
+    name: AUTHENTICATION_MFA/OTP_CRYPTOGRAPHIC_DIRECTIVES
+  type: SAM
+- document:
+    doctype: CRE
+    id: 001-002-056
+    name: AUTHENTICATION_FACTOR_CHANGE_SECURE_RECOVERY
+  type: SAM
+- document:
+    doctype: CRE
+    id: 001-002-004
+    name: ACCESS_CONTROL_AUTHORIZATION_ADMINISTRATION_MFA
+  type: SAM
+name: MFA/OTP

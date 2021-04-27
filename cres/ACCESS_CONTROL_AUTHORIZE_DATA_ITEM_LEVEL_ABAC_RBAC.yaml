@@ -1,0 +1,82 @@
+doctype: CRE
+id: 004-019-032
+links:
+- document:
+    doctype: CRE
+    id: 613-579
+    name: ACCESS_CONTROL
+  type: SAM
+- document:
+    doctype: CRE
+    id: 372-687
+    name: ENFORCE_LEAST_PRIVILEGE_ALL_RESOURCES
+  type: SAM
+- document:
+    doctype: CRE
+    id: 450-741
+    name: RBAC/ABAC
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: SA-15 Development Process, Standards, and Tools,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: OPC
+    section: C7
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Abuse_Case_Cheat_Sheet.html
+    name: Cheatsheet
+    section: Architecture, Design and Threat Modeling Requirements
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: SIG ISO 25010
+    section: Authorized access
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: TOP10
+    section: https://owasp.org/www-project-top-ten/2017/A9_2017-Using_Components_with_Known_Vulnerabilities
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '275'
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: ASVS
+    section: V1.4.5
+    subsection: ACCESS_CONTROL-ENFORCE_LEAST_PRIVILEGE_ALL_RESOURCES-RBAC/ABAC
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: AC-3 ACCESS ENFORCEMENT
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: AC-16 SECURITY AND PRIVACY ATTRIBUTES
+    subsection: ''
+  type: SAM
+name: ACCESS_CONTROL_AUTHORIZE_DATA_ITEM_LEVEL_ABAC_RBAC

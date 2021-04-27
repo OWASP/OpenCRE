@@ -1,0 +1,117 @@
+doctype: CRE
+id: 012-045-011
+links:
+- document:
+    doctype: CRE
+    id: 542-355
+    name: VALIDATE/ENCODE_USER_SUPPLIED_INPUT
+  type: SAM
+- document:
+    doctype: CRE
+    id: 193-992
+    name: XSS
+  type: SAM
+- document:
+    doctype: CRE
+    id: 012-045-011
+    name: CONTEXT_DEPENDENT_ENCODING
+  type: SAM
+- document:
+    doctype: CRE
+    id: 012-045-011
+    name: CONTEXT_DEPENDENT_ENCODING
+  type: SAM
+- document:
+    doctype: CRE
+    id: 012-045-010
+    name: CONTEXT_DEPENDENT_ENCODING_CHARACTER_SET_LOCALE
+  type: SAM
+- document:
+    doctype: CRE
+    id: 012-045-011
+    name: CONTEXT_DEPENDENT_OUTPUT_ESCAPING
+  type: SAM
+- document:
+    doctype: CRE
+    id: 012-045-011
+    name: VALIDATE_PARAMETERIZATION_DATABASE_INJECTION
+  type: SAM
+- document:
+    doctype: CRE
+    id: 012-045-010
+    name: VALIDATE_CONTEXT_DEPENDENT_ENCODING_SQLI
+  type: SAM
+- document:
+    doctype: CRE
+    id: 012-045-010
+    name: VALIDATE_OS_COMMAND_INJECTION
+  type: SAM
+- document:
+    doctype: CRE
+    id: 012-045-010
+    name: VALIDATE_XPATH/XML_INJECTION
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: AC-4 INFORMATION FLOW ENFORCEMENT,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: OPC
+    section: C4
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Deserialization_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/XML_External_Entity_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/XML_Security_Cheat_Sheet.html
+    name: Cheatsheet
+    section: Validation, Sanitization and Encoding Verification Requirements
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: WSTG
+    section: WSTG-APPE-D
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: SIG ISO 25010
+    section: Input and output verification
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: TOP10
+    section: https://owasp.org/www-project-top-ten/2017/A1_2017-Injection
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '116'
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: ASVS
+    section: V5.3.1
+    subsection: VALIDATE/ENCODE_USER_SUPPLIED_INPUT-VALIDATE_BEFORE_RETURNING-CONTEXT_DEPENDENT_ENCODING-XSS
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: SI-10 INFORMATION INPUT VALIDATION
+    subsection: ''
+  type: SAM
+name: CONTEXT_DEPENDENT_ENCODING

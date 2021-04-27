@@ -1,0 +1,9 @@
+doctype: CRE
+id: 398-485
+links:
+- document:
+    doctype: CRE
+    id: 004-015-036
+    name: PROTECT_DATA_IN_TRANSIT_TLS_HEADERS_PAYLOAD
+  type: SAM
+name: HTTP_MESSAGE_BODY/HEADERS

@@ -1,0 +1,87 @@
+doctype: CRE
+id: 004-015-039
+links:
+- document:
+    doctype: CRE
+    id: 542-355
+    name: VALIDATE/ENCODE_USER_SUPPLIED_INPUT
+  type: SAM
+- document:
+    doctype: CRE
+    id: 736-939
+    name: HARDEN
+  type: SAM
+- document:
+    doctype: CRE
+    id: 200-134
+    name: HTTP_METHODS
+  type: SAM
+- document:
+    doctype: CRE
+    id: 672-739
+    name: WHITELIST
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: CM-2 BASELINE CONFIGURATION,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: WSTG
+    section: WSTG-CONF-06
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: SIG ISO 25010
+    section: Input and output verification
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: TOP10
+    section: https://owasp.org/www-project-top-ten/2017/A6_2017-Security_Misconfiguration
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '749'
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: ASVS
+    section: V14.5.1
+    subsection: VALIDATE/ENCODE_USER_SUPPLIED_INPUT-HTTP_METHODS-WHITELIST-HARDEN
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: CM-6 CONFIGURATION SETTINGS,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: AC-4 INFORMATION FLOW ENFORCEMENT,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: CM-6 CONFIGURATION SETTINGS
+    subsection: ''
+  type: SAM
+name: VALIDATE_HTTP_METHODS_WHITELIST

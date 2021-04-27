@@ -1,0 +1,11 @@
+doctype: CRE
+id: 820-505
+links:
+- document:
+    description: Verify documentation and justification of all the application's trust
+      boundaries, components, and significant data flows.
+    doctype: CRE
+    id: 002-036-3
+    name: ARCHITECTURE_VERIFY_COMPONENTS_AND_CONNECTIONS_DOCUMENTATION
+  type: SAM
+name: COMPONENT_SECURITY_FUNCTIONS

@@ -1,0 +1,9 @@
+doctype: CRE
+id: 959-341
+links:
+- document:
+    doctype: CRE
+    id: 001-005-074
+    name: AUTHENTICATION_STRONG_FACTORS_FIRST
+  type: SAM
+name: BIOMETRICS

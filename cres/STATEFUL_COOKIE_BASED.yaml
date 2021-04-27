@@ -1,0 +1,18 @@
+doctype: CRE
+id: 544-147
+links:
+- document:
+    doctype: CRE
+    id: 011-040-068
+    name: SESSION_MANAGEMENT_STATEFUL_COOKIE_TOKEN_DIRECTIVES
+  type: SAM
+- document:
+    description: 'Verify that RESTful web services that utilize cookies are protected
+      from Cross-Site Request Forgery via the use of at least one or more of the following:
+      triple or double submit cookie pattern (see references), CSRF nonces, or ORIGIN
+      request header checks.'
+    doctype: CRE
+    id: 008-047-022
+    name: VALIDATE_ORIGIN_CSRF_API
+  type: SAM
+name: STATEFUL_COOKIE_BASED

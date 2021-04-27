@@ -1,0 +1,76 @@
+doctype: CRE
+id: 005-032-053
+links:
+- document:
+    doctype: CRE
+    id: 184-331
+    name: DATA_PROTECTION
+  type: SAM
+- document:
+    doctype: CRE
+    id: 476-940
+    name: DATA_STORAGE
+  type: SAM
+- document:
+    doctype: CRE
+    id: 130-962
+    name: RECOVERY
+  type: SAM
+- document:
+    doctype: CRE
+    id: 186-641
+    name: PROTECT_BACKUPS
+  type: SAM
+- document:
+    doctype: CRE
+    id: 458-155
+    name: MTTR
+  type: SAM
+- document:
+    doctype: CRE
+    id: 626-171
+    name: BUSINESS_CONTINUITY
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: CP-9 SYSTEM BACKUP,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: SIG ISO 25010
+    section: Secure data storage
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: TOP10
+    section: https://owasp.org/www-project-top-ten/2017/A5_2017-Broken_Access_Control
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '19'
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: ASVS
+    section: V8.1.6
+    subsection: DATA_PROTECTION-DATA_STORAGE-RECOVERY-PROTECT_BACKUPS-MTTR-BUSINESS_CONTINUITY
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: CP-4 CONTINGENCY PLAN TESTING
+    subsection: ''
+  type: SAM
+name: ENCRYPT_DATA_AT_REST_BACKUP_PROTECTION

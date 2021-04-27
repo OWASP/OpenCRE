@@ -1,0 +1,9 @@
+doctype: CRE
+id: 520-727
+links:
+- document:
+    doctype: CRE
+    id: 002-014-007
+    name: ENCRYPT_DATA_AT_REST_KEY/SECRET_MANAGEMENT
+  type: SAM
+name: RE_ENCRYPTION

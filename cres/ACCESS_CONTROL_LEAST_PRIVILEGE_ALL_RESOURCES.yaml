@@ -1,0 +1,91 @@
+doctype: CRE
+id: 002-014-072
+links:
+- document:
+    doctype: CRE
+    id: 613-579
+    name: ACCESS_CONTROL
+  type: SAM
+- document:
+    doctype: CRE
+    id: 372-687
+    name: ENFORCE_LEAST_PRIVILEGE_ALL_RESOURCES
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: AC-2 ACCOUNT MANAGEMENT,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Abuse_Case_Cheat_Sheet.html
+    name: Cheatsheet
+    section: Architecture, Design and Threat Modeling Requirements
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: SIG ISO 25010
+    section: Authorized access
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: TOP10
+    section: https://owasp.org/www-project-top-ten/2017/A5_2017-Broken_Access_Control
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '272'
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: ASVS
+    section: V1.4.3
+    subsection: ACCESS_CONTROL-ENFORCE_LEAST_PRIVILEGE_ALL_RESOURCES
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: 'PL-8 Information Security Architecture, '
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: CM-8 Information System Component Inventory,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: AC-6 Least Privilege,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: AC-5 Separation of Duties,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: AC-3 ACCESS ENFORCEMENT
+    subsection: ''
+  type: SAM
+name: ACCESS_CONTROL_LEAST_PRIVILEGE_ALL_RESOURCES

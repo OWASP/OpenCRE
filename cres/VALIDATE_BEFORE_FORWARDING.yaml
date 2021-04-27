@@ -1,0 +1,36 @@
+doctype: CRE
+id: 542-714
+links:
+- document:
+    doctype: CRE
+    id: 012-045-011
+    name: VALIDATE_PARAMETERIZATION_DATABASE_INJECTION
+  type: SAM
+- document:
+    doctype: CRE
+    id: 012-045-010
+    name: VALIDATE_CONTEXT_DEPENDENT_ENCODING_SQLI
+  type: SAM
+- document:
+    doctype: CRE
+    id: 012-045-010
+    name: VALIDATE_JS/JSON_INJECTION
+  type: SAM
+- document:
+    doctype: CRE
+    id: 012-045-010
+    name: VALIDATE_LDAP_INJECTION
+  type: SAM
+- document:
+    doctype: CRE
+    id: 012-045-010
+    name: VALIDATE_LFI/RFI
+  type: SAM
+- document:
+    description: Verify that the application sanitizes user input before passing to
+      mail systems to protect against SMTP or IMAP injection.
+    doctype: CRE
+    id: 010-007
+    name: VALIDATE_INPUT_SANITIZE_MAIL_SMTP/IMAP
+  type: SAM
+name: VALIDATE_BEFORE_FORWARDING

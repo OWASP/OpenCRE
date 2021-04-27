@@ -1,0 +1,9 @@
+doctype: CRE
+id: 555-112
+links:
+- document:
+    doctype: CRE
+    id: 011-040-033
+    name: SESSION_MANAGEMENT_TOKEN_GENERATION_ON_AUTHENTICATION
+  type: SAM
+name: TOKEN_RENEWAL

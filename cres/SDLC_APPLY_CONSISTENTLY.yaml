@@ -1,0 +1,75 @@
+description: Verify the use of a secure software development lifecycle that addresses
+  security in all stages of development. (C1)
+doctype: CRE
+id: 002-036-10
+links:
+- document:
+    doctype: CRE
+    id: 912-897
+    name: SDLC_GUIDELINES_JUSTIFICATION
+  type: SAM
+- document:
+    doctype: CRE
+    id: 518-927
+    name: REQUIREMENTS
+  type: SAM
+- document:
+    doctype: CRE
+    id: 464-101
+    name: RISK_ANALYSIS
+  type: SAM
+- document:
+    doctype: CRE
+    id: 428-366
+    name: THREAT_MODEL
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: RA-3 RISK ASSESSMENT,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: OPC
+    section: C1
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Abuse_Case_Cheat_Sheet.html
+    name: Cheatsheet
+    section: Architecture, Design and Threat Modeling Requirements
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: SIG ISO 25010
+    section: '@SDLC'
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '0'
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: ASVS
+    section: V1.1.1
+    subsection: SDLC_GUIDELINES_JUSTIFICATION-REQUIREMENTS-RISK_ANALYSIS-THREAT_MODEL
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: PL-8 SECURITY AND PRIVACY ARCHITECTURES
+    subsection: ''
+  type: SAM
+name: SDLC_APPLY_CONSISTENTLY

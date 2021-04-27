@@ -1,0 +1,75 @@
+doctype: CRE
+id: 004-006-018
+links:
+- document:
+    doctype: CRE
+    id: 740-826
+    name: CONFIGURATION
+  type: SAM
+- document:
+    doctype: CRE
+    id: 159-156
+    name: AUTOMATE_PIPELINE
+  type: SAM
+- document:
+    doctype: CRE
+    id: 592-965
+    name: CONFIGURATION_INTEGRITY
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: SI-7 SOFTWARE, FIRMWARE, AND INFORMATION INTEGRITY,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Content_Security_Policy_Cheat_Sheet.html
+    name: Cheatsheet
+    section: Configuration Verification Requirements
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: SIG ISO 25010
+    section: '@SDLC'
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '0'
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: ASVS
+    section: V14.1.5
+    subsection: CONFIGURATION-AUTOMATE_PIPELINE-CONFIGURATION_INTEGRITY
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: SA-18 Tamper Resistance and Detection,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: AC-5 SEPARATION OF DUTIES,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: SC-2 SEPARATION OF SYSTEM AND USER FUNCTIONALITY
+    subsection: ''
+  type: SAM
+name: CONFIGURATION_CODE_INTEGRITY

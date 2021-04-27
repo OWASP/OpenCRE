@@ -1,0 +1,34 @@
+doctype: CRE
+id: 372-687
+links:
+- document:
+    doctype: CRE
+    id: 002-014-072
+    name: ACCESS_CONTROL_LEAST_PRIVILEGE_ALL_RESOURCES
+  type: SAM
+- document:
+    doctype: CRE
+    id: 004-019-032
+    name: ACCESS_CONTROL_AUTHORIZE_DATA_ITEM_LEVEL_ABAC_RBAC
+  type: SAM
+- document:
+    doctype: CRE
+    id: 001-023
+    name: ACCESS_CONTROL_ADMINISTER_PROPERLY
+  type: SAM
+- document:
+    doctype: CRE
+    id: 001-023
+    name: ACCESS_CONTROL_LEAST_PRIVILEGE_DENY_BY_DEFAULT
+  type: SAM
+- document:
+    doctype: CRE
+    id: 001-023
+    name: ACCESS_CONTROL_LEAST_PRIVILEGE_DENY_BY_DEFAULT_NEW_USER
+  type: SAM
+- document:
+    doctype: CRE
+    id: 001-023
+    name: PROTECT_SENSITIVE_DATA_DIRECT_OBJECT_ATTACKS
+  type: SAM
+name: ENFORCE_LEAST_PRIVILEGE_ALL_RESOURCES

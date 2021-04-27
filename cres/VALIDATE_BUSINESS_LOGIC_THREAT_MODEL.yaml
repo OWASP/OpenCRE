@@ -1,0 +1,108 @@
+doctype: CRE
+id: 003-004
+links:
+- document:
+    doctype: CRE
+    id: 464-101
+    name: RISK_ANALYSIS
+  type: SAM
+- document:
+    doctype: CRE
+    id: 428-366
+    name: THREAT_MODEL
+  type: SAM
+- document:
+    doctype: CRE
+    id: 489-518
+    name: BUSINESS_LOGIC
+  type: SAM
+- document:
+    doctype: CRE
+    id: 148-435
+    name: ANTI_AUTOMATION
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: CA-7 CONTINUOUS MONITORING,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Abuse_Case_Cheat_Sheet.html
+    name: Cheatsheet
+    section: Business Logic Verification Requirements
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: WSTG
+    section: WSTG-BUSL-$$
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: SIG ISO 25010
+    section: '@SDLC'
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '841'
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: ASVS
+    section: V11.1.5
+    subsection: BUSINESS_LOGIC-ANTI_AUTOMATION-RISK_ANALYSIS-THREAT_MODEL
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: SC-5 DENIAL-OF-SERVICE PROTECTION,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: AC-4 INFORMATION FLOW ENFORCEMENT,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: RA-1 Risk Assessment Policy and Procedures,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: PL-8 Information Security Architecture,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: RA-3 RISK ASSESSMENT,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: SI-4 SYSTEM MONITORING
+    subsection: ''
+  type: SAM
+name: VALIDATE_BUSINESS_LOGIC_THREAT_MODEL

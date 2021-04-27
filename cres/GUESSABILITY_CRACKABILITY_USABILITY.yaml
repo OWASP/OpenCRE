@@ -1,0 +1,29 @@
+doctype: CRE
+id: 949-193
+links:
+- document:
+    doctype: CRE
+    id: 001-024
+    name: CREDENTIALS_MANAGEMENT_SYMMETRIC_KEYS_STATIC_SECRETS_LOW_RISK_SECRETS
+  type: SAM
+- document:
+    doctype: CRE
+    id: 001-005-020
+    name: CREDENTIALS_MANAGEMENT_PASSWORD_DIRECTIVES
+  type: SAM
+- document:
+    doctype: CRE
+    id: 001-005-020
+    name: CREDENTIALS_MANAGEMENT_PASSWORD_CHANGE_USABILITY
+  type: SAM
+- document:
+    doctype: CRE
+    id: 001-005-020
+    name: CREDENTIALS_MANAGEMENT_CHECK_STUFFING/SPRAYING
+  type: SAM
+- document:
+    doctype: CRE
+    id: 001-005-020
+    name: CREDENTIALS_MANAGEMENT_ALLOW_PASSWORD_MANAGER
+  type: SAM
+name: GUESSABILITY_CRACKABILITY_USABILITY

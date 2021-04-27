@@ -1,0 +1,71 @@
+doctype: CRE
+id: 011-040-069
+links:
+- document:
+    doctype: CRE
+    id: 673-960
+    name: CRYPTOGRAPHIC_DIRECTIVES
+  type: SAM
+- document:
+    doctype: CRE
+    id: 636-456
+    name: SESSION_MANAGEMENT
+  type: SAM
+- document:
+    doctype: CRE
+    id: 842-154
+    name: TOKEN_DIRECTIVES
+  type: SAM
+- document:
+    doctype: CRE
+    id: 684-837
+    name: STATELESS_TOKEN_BASED
+  type: SAM
+- document:
+    doctype: CRE
+    id: 305-575
+    name: TOKEN_SIGNING
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Transaction_Authorization_Cheat_Sheet.html
+    name: Cheatsheet
+    section: Session Management Verification Requirements
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: WSTG
+    section: WSTG-CRYP-04
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: SIG ISO 25010
+    section: Session management
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: TOP10
+    section: https://owasp.org/www-project-top-ten/2017/A5_2017-Broken_Access_Control
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '345'
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: ASVS
+    section: V3.5.3
+    subsection: SESSION_MANAGEMENT-TOKEN_DIRECTIVES-STATELESS_TOKEN_BASED-CRYPTOGRAPHIC_DIRECTIVES-TOKEN_SIGNING
+  type: SAM
+name: SESSION_MANAGEMENT_STATELESS_TOKENS_SIGNATURES_ENCRYPTION

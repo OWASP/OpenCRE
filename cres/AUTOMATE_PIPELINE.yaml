@@ -1,0 +1,33 @@
+doctype: CRE
+id: 159-156
+links:
+- document:
+    doctype: CRE
+    id: 002-026-031
+    name: CONFIGURATION_CODE_PIPELINE_TRACEABILITY
+  type: SAM
+- document:
+    doctype: CRE
+    id: 002-018
+    name: CONFIGURATION_CODE_PIPELINE_DEPLOYMENT_AUTOMATION_VERIFY_DEPLOYMENT
+  type: SAM
+- document:
+    doctype: CRE
+    id: 004-006-012
+    name: CONFIGURATION_CODE_PIPELINE_DEPLOYMENT_AUTOMATION
+  type: SAM
+- document:
+    description: Verify that compiler flags are configured to enable all available
+      buffer overflow protections and warnings, including stack randomization, data
+      execution prevention, and to break the build if an unsafe pointer, memory, format
+      string, integer, or string operations are found.
+    doctype: CRE
+    id: 004-006-017
+    name: CONFIGURATION_CODE_HARDENING_COMPILER_FLAGS
+  type: SAM
+- document:
+    doctype: CRE
+    id: 004-006-018
+    name: CONFIGURATION_CODE_INTEGRITY
+  type: SAM
+name: AUTOMATE_PIPELINE

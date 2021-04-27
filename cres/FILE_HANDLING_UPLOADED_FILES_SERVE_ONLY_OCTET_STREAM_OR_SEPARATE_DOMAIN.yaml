@@ -1,0 +1,88 @@
+doctype: CRE
+id: 001-005-020
+links:
+- document:
+    doctype: CRE
+    id: 459-986
+    name: FILE_HANDLING
+  type: SAM
+- document:
+    doctype: CRE
+    id: 344-691
+    name: UNTRUSTED_ORIGIN
+  type: SAM
+- document:
+    doctype: CRE
+    id: 193-992
+    name: XSS
+  type: SAM
+- document:
+    doctype: CRE
+    id: 121-532
+    name: CSP
+  type: SAM
+- document:
+    doctype: CRE
+    id: 887-909
+    name: FILE_SERVING
+  type: SAM
+- document:
+    doctype: CRE
+    id: 517-266
+    name: OCTET_STREAM
+  type: SAM
+- document:
+    doctype: CRE
+    id: 932-785
+    name: CLOUD_BUCKET
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: AC-4 INFORMATION FLOW ENFORCEMENT,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: SIG ISO 25010
+    section: Input and output verification
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: TOP10
+    section: https://owasp.org/www-project-top-ten/2017/A2_2017-Broken_Authentication
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '646'
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: ASVS
+    section: V1.12.2
+    subsection: FILE_HANDLING-UNTRUSTED_ORIGIN-FILE_SERVING-OCTET_STREAM-CLOUD_BUCKET-CSP-XSS
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: 'SI-10 Information Input Validation, '
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: SI-16 Memory Protection
+    subsection: ''
+  type: SAM
+name: FILE_HANDLING_UPLOADED_FILES_SERVE_ONLY_OCTET_STREAM_OR_SEPARATE_DOMAIN

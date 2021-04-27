@@ -1,0 +1,9 @@
+doctype: CRE
+id: 901-466
+links:
+- document:
+    doctype: CRE
+    id: 012-009
+    name: VALIDATE_MASS_PARAMETER_ASSIGNMENT
+  type: SAM
+name: MASS_PARAMETER_ASSIGNMENT

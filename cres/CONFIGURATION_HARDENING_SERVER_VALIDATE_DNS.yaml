@@ -1,0 +1,105 @@
+description: Verify that the application has protection from sub-domain takeovers
+  if the application relies upon DNS entries or DNS sub-domains, such as expired domain
+  names, out of date DNS pointers or CNAMEs, expired projects at public source code
+  repos, or transient cloud APIs, serverless functions, or storage buckets (autogen-bucket-id.cloud.example.com)
+  or similar. Protections can include ensuring that DNS names used by applications
+  are regularly checked for expiry or change.
+doctype: CRE
+id: 004-012-061
+links:
+- document:
+    doctype: CRE
+    id: 736-939
+    name: HARDEN
+  type: SAM
+- document:
+    doctype: CRE
+    id: 740-826
+    name: CONFIGURATION
+  type: SAM
+- document:
+    doctype: CRE
+    id: 989-585
+    name: CODE
+  type: SAM
+- document:
+    doctype: CRE
+    id: 305-521
+    name: RUNTIME_INTEGRITY
+  type: SAM
+- document:
+    doctype: CRE
+    id: 225-240
+    name: DNS_ATTACKS
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: CM-6 CONFIGURATION SETTINGS,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html
+    name: Cheatsheet
+    section: Malicious Code Verification Requirements
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: WSTG
+    section: WSTG-CONF-10
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: SIG ISO 25010
+    section: '@SDLC'
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: TOP10
+    section: https://owasp.org/www-project-top-ten/2017/A6_2017-Security_Misconfiguration
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '350'
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: ASVS
+    section: V10.3.3
+    subsection: CONFIGURATION-CODE-RUNTIME_INTEGRITY-HARDEN-DNS_ATTACKS
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: SC-20 SECURE NAME/ADDRESS RESOLUTION SERVICE (AUTHORITATIVE SOURCE),
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: SC-21 SECURE NAME/ADDRESS RESOLUTION SERVICE (RECURSIVE OR CACHING RESOLVER),
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: SC-22 ARCHITECTURE AND PROVISIONING FOR NAME/ADDRESS RESOLUTION SERVICE
+    subsection: ''
+  type: SAM
+name: CONFIGURATION_HARDENING_SERVER_VALIDATE_DNS

@@ -1,0 +1,66 @@
+doctype: CRE
+id: 344-691
+links:
+- document:
+    doctype: CRE
+    id: 007-042-059
+    name: FILE_HANDLING_UNTRUSTED_ORIGIN_UNPRIVILEGED_STORAGE
+  type: SAM
+- document:
+    doctype: CRE
+    id: 005-021-047
+    name: FILE_HANDLING_UPLOADED_FILES_UNPRIVILEGED_STORAGE
+  type: SAM
+- document:
+    doctype: CRE
+    id: 001-005-020
+    name: FILE_HANDLING_UPLOADED_FILES_SERVE_ONLY_OCTET_STREAM_OR_SEPARATE_DOMAIN
+  type: SAM
+- document:
+    doctype: CRE
+    id: 007-042-058
+    name: FILE_HANDLING_UPLOADED_FILES_DENY_LARGE_FILES
+  type: SAM
+- document:
+    doctype: CRE
+    id: 007-042-058
+    name: FILE_HANDLING_CHECK_ZIP_BOMB
+  type: SAM
+- document:
+    doctype: CRE
+    id: 007-042-058
+    name: FILE_HANDLING_UPLOADED_FILES_SET_USER_MAXIMA
+  type: SAM
+- document:
+    doctype: CRE
+    id: 007-042-023
+    name: FILE_HANDLING_VALIDATE_TYPE_BASED_ON_CONTENT
+  type: SAM
+- document:
+    doctype: CRE
+    id: 007-042-023
+    name: FILE_HANDLING_UPLOADED_FILES_IGNORE_USER_SUBMITTED_FILE_METADATA
+  type: SAM
+- document:
+    description: Verify that untrusted file metadata is not used directly with system
+      API or libraries, to protect against OS command injection.
+    doctype: CRE
+    id: 007-042-023
+    name: FILE_HANDLING_UNTRUSTED_ORIGIN_IGNORE_FILE_METADATA
+  type: SAM
+- document:
+    doctype: CRE
+    id: 007-042-023
+    name: FILE_HANDLING_UNTRUSTED_ORIGIN_DENY_EXECUTION
+  type: SAM
+- document:
+    doctype: CRE
+    id: 007-042-059
+    name: FILE_HANDLING_UNTRUSTED_ORIGIN_SCAN_MALICIOUS_CONTENT
+  type: SAM
+- document:
+    doctype: CRE
+    id: 007-042-066
+    name: FILE_HANDLING_DENY_EXECUTION_UPLOADED_FILES
+  type: SAM
+name: UNTRUSTED_ORIGIN

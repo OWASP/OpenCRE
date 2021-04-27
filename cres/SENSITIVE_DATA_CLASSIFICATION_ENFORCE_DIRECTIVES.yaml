@@ -1,0 +1,112 @@
+doctype: CRE
+id: 001-023
+links:
+- document:
+    doctype: CRE
+    id: 719-809
+    name: SENSITIVE_DATA
+  type: SAM
+- document:
+    doctype: CRE
+    id: 364-896
+    name: DATA_PROTECTION_LEVELS
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: SA-5 SYSTEM DOCUMENTATION
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Abuse_Case_Cheat_Sheet.html
+    name: Cheatsheet
+    section: Architecture, Design and Threat Modeling Requirements
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: SIG ISO 25010
+    section: '@SDLC'
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: TOP10
+    section: https://owasp.org/www-project-top-ten/2017/A5_2017-Broken_Access_Control
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '0'
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: ASVS
+    section: V1.8.1
+    subsection: SENSITIVE_DATA-DATA_PROTECTION_LEVELS
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: AC-16 SECURITY AND PRIVACY ATTRIBUTES
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: ASVS
+    section: V1.8.2
+    subsection: SENSITIVE_DATA-DATA_PROTECTION_LEVELS
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: SA-5 SYSTEM DOCUMENTATION,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: SC-13 CRYPTOGRAPHIC PROTECTION,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: SI-7 SOFTWARE, FIRMWARE, AND INFORMATION INTEGRITY,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: SA-18 Tamper Resistance and Detection,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: PL-8 SECURITY AND PRIVACY ARCHITECTURES,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: RA-8 PRIVACY IMPACT ASSESSMENTS
+    subsection: ''
+  type: SAM
+name: SENSITIVE_DATA_CLASSIFICATION_ENFORCE_DIRECTIVES

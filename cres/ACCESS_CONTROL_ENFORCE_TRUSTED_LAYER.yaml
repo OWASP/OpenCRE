@@ -1,0 +1,84 @@
+doctype: CRE
+id: 001-024
+links:
+- document:
+    doctype: CRE
+    id: 613-579
+    name: ACCESS_CONTROL
+  type: SAM
+- document:
+    doctype: CRE
+    id: 625-776
+    name: ENFORCE_TRUSTED_COMPONENT
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: AC-1 Access Control Policy and Procedures,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/REST_Assessment_Cheat_Sheet.html
+    name: Cheatsheet
+    section: Access Control Verification Requirements
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: WSTG
+    section: WSTG-ATHZ-02
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: SIG ISO 25010
+    section: Authorized access
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: TOP10
+    section: https://owasp.org/www-project-top-ten/2017/A5_2017-Broken_Access_Control
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '602'
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: ASVS
+    section: V4.1.1
+    subsection: ACCESS_CONTROL-ENFORCE_TRUSTED_COMPONENT
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: AC-2 ACCOUNT MANAGEMENT,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: AC-3 ACCESS ENFORCEMENT,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: AC-24 ACCESS CONTROL DECISIONS
+    subsection: ''
+  type: SAM
+name: ACCESS_CONTROL_ENFORCE_TRUSTED_LAYER

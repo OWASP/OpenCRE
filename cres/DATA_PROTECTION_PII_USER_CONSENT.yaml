@@ -1,0 +1,76 @@
+doctype: CRE
+id: 005-044
+links:
+- document:
+    doctype: CRE
+    id: 184-331
+    name: DATA_PROTECTION
+  type: SAM
+- document:
+    doctype: CRE
+    id: 840-690
+    name: PII
+  type: SAM
+- document:
+    doctype: CRE
+    id: 242-624
+    name: USER_CONTROL
+  type: SAM
+- document:
+    doctype: CRE
+    id: 104-917
+    name: UNDERSTANDABILITY
+  type: SAM
+- document:
+    doctype: CRE
+    id: 543-727
+    name: CONSENT
+  type: SAM
+- document:
+    doctype: CRE
+    id: 971-871
+    name: OPT_IN
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: CA-1 POLICY AND PROCEDURES,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: SIG ISO 25010
+    section: '@SDLC'
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: TOP10
+    section: https://owasp.org/www-project-top-ten/2017/A5_2017-Broken_Access_Control
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '285'
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: ASVS
+    section: V8.3.3
+    subsection: DATA_PROTECTION-USER_CONTROL-PII-UNDERSTANDABILITY-CONSENT-OPT_IN
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: PT-5 PRIVACY NOTICE
+    subsection: ''
+  type: SAM
+name: DATA_PROTECTION_PII_USER_CONSENT

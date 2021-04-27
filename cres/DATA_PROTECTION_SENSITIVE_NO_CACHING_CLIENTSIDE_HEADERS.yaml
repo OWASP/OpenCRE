@@ -1,0 +1,76 @@
+doctype: CRE
+id: 005-038-028
+links:
+- document:
+    doctype: CRE
+    id: 184-331
+    name: DATA_PROTECTION
+  type: SAM
+- document:
+    doctype: CRE
+    id: 565-697
+    name: SENSITIVE
+  type: SAM
+- document:
+    doctype: CRE
+    id: 458-155
+    name: MTTR
+  type: SAM
+- document:
+    doctype: CRE
+    id: 626-171
+    name: BUSINESS_CONTINUITY
+  type: SAM
+- document:
+    doctype: CRE
+    id: 878-293
+    name: DO_NOT_CACHE_CLIENT
+  type: SAM
+- document:
+    doctype: CRE
+    id: 184-854
+    name: ANTI_CACHING_HEADERS
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: SI-14 NON-PERSISTENCE
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: WSTG
+    section: WSTG-ATHN-06
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: SIG ISO 25010
+    section: Secure data storage
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: TOP10
+    section: https://owasp.org/www-project-top-ten/2017/A5_2017-Broken_Access_Control
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '525'
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: ASVS
+    section: V8.2.1
+    subsection: DATA_PROTECTION-SENSITIVE-DO_NOT_CACHE_CLIENT-ANTI_CACHING_HEADERS-MTTR-BUSINESS_CONTINUITY
+  type: SAM
+name: DATA_PROTECTION_SENSITIVE_NO_CACHING_CLIENTSIDE_HEADERS

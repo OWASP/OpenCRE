@@ -1,0 +1,82 @@
+doctype: CRE
+id: 007-042-059
+links:
+- document:
+    doctype: CRE
+    id: 613-579
+    name: ACCESS_CONTROL
+  type: SAM
+- document:
+    doctype: CRE
+    id: 625-776
+    name: ENFORCE_TRUSTED_COMPONENT
+  type: SAM
+- document:
+    doctype: CRE
+    id: 387-244
+    name: ENFORCE_SERVERSIDE
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: 'CA-3 System Interconnections, '
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Abuse_Case_Cheat_Sheet.html
+    name: Cheatsheet
+    section: Architecture, Design and Threat Modeling Requirements
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: SIG ISO 25010
+    section: Authorized access
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: TOP10
+    section: https://owasp.org/www-project-top-ten/2017/A5_2017-Broken_Access_Control
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '602'
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: ASVS
+    section: V1.4.1
+    subsection: ACCESS_CONTROL-ENFORCE_TRUSTED_COMPONENT-ENFORCE_SERVERSIDE
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: 'SA-8 SECURITY AND PRIVACY ENGINEERING PRINCIPLES, '
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: SA-9 External Information System Services,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: AC-3 ACCESS ENFORCEMENT
+    subsection: ''
+  type: SAM
+name: ACCESS_CONTROL_ENFORCE_CONSISTENTLY_SERVERSIDE

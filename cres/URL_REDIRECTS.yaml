@@ -1,0 +1,9 @@
+doctype: CRE
+id: 943-654
+links:
+- document:
+    doctype: CRE
+    id: 012-035
+    name: VALIDATE_URL_REDIRECTS/FORWARDS_WHITELISTING
+  type: SAM
+name: URL_REDIRECTS

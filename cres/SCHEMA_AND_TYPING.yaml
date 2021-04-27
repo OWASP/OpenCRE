@@ -1,0 +1,64 @@
+doctype: CRE
+id: 604-798
+links:
+- document:
+    doctype: CRE
+    id: 009-027
+    name: LOG_PROTECTION_LOG_INJECTION_ENCODE_INPUT
+  type: SAM
+- document:
+    doctype: CRE
+    id: 012-049-052
+    name: POSITIVE_VALIDATION_FOR_USER_INPUT
+  type: SAM
+- document:
+    doctype: CRE
+    id: 012-035
+    name: VALIDATE_STRUCTURED_DATA_SCHEMA_STRONG_TYPING
+  type: SAM
+- document:
+    doctype: CRE
+    id: 012-035
+    name: VALIDATE_URL_REDIRECTS/FORWARDS_WHITELISTING
+  type: SAM
+- document:
+    doctype: CRE
+    id: 010-008
+    name: VALIDATE_INPUT_SANITIZE_WYSIWYG_HTML
+  type: SAM
+- document:
+    doctype: CRE
+    id: 012-035
+    name: VALIDATE_FORMAT_STRINGS_CONSTANT
+  type: SAM
+- document:
+    description: Verify that enabled RESTful HTTP methods are a valid choice for the
+      user or action, such as preventing normal users using DELETE or PUT on protected
+      API or resources.
+    doctype: CRE
+    id: 008-046-040
+    name: VALIDATE_API_ALLOWED_HTTP_METHODS
+  type: SAM
+- document:
+    description: Verify that JSON schema validation is in place and verified before
+      accepting input.
+    doctype: CRE
+    id: 008-046-045
+    name: VALIDATE_API_JSON_SCHEMA
+  type: SAM
+- document:
+    description: Verify that REST services explicitly check the incoming Content-Type
+      to be the expected one, such as application/xml or application/JSON.
+    doctype: CRE
+    id: 008-046-019
+    name: VALIDATE_API_CONTENT_TYPE
+  type: SAM
+- document:
+    description: Verify that XSD schema validation takes place to ensure a properly
+      formed XML document, followed by validation of each input field before any processing
+      of that data takes place.
+    doctype: CRE
+    id: 008-046-067
+    name: VALIDATE_API_XSD_SCHEMA
+  type: SAM
+name: SCHEMA_AND_TYPING

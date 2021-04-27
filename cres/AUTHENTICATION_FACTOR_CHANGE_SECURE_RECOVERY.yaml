@@ -1,0 +1,129 @@
+doctype: CRE
+id: 001-002-056
+links:
+- document:
+    doctype: CRE
+    id: 613-579
+    name: ACCESS_CONTROL
+  type: SAM
+- document:
+    doctype: CRE
+    id: 210-698
+    name: MFA/OTP
+  type: SAM
+- document:
+    doctype: CRE
+    id: 253-303
+    name: ADMINISTRATIVE/ADMIN_TASKS
+  type: SAM
+- document:
+    doctype: CRE
+    id: 315-827
+    name: ACCESS/PASSWORD_RECOVERY
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: 'IA-1 Identification and Authentication Policy and Procedures, '
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: OPC
+    section: C6
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Protection_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/TLS_Cipher_String_Cheat_Sheet.html
+    name: Cheatsheet
+    section: Authentication Verification Requirements
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: WSTG
+    section: WSTG-ATHN-09
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-63
+    section: 5.1.1.2
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: SIG ISO 25010
+    section: User management
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: TOP10
+    section: https://owasp.org/www-project-top-ten/2017/A5_2017-Broken_Access_Control
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '640'
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: ASVS
+    section: V2.5.6
+    subsection: ACCESS_CONTROL-ADMINISTRATIVE/ADMIN_TASKS-ACCESS/PASSWORD_RECOVERY-MFA/OTP
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: AC-2 Account Management
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-63
+    section: 6.1.2.3
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: ASVS
+    section: V2.5.7
+    subsection: ACCESS_CONTROL-ADMINISTRATIVE/ADMIN_TASKS-ACCESS/PASSWORD_RECOVERY-MFA/OTP
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '308'
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: IA-5 AUTHENTICATOR MANAGEMENT,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: IA-2 IDENTIFICATION AND AUTHENTICATION
+    subsection: ''
+  type: SAM
+name: AUTHENTICATION_FACTOR_CHANGE_SECURE_RECOVERY

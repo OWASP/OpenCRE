@@ -1,0 +1,68 @@
+doctype: CRE
+id: 008-001
+links:
+- document:
+    doctype: CRE
+    id: 613-579
+    name: ACCESS_CONTROL
+  type: SAM
+- document:
+    doctype: CRE
+    id: 822-927
+    name: INTERFACE/API
+  type: SAM
+- document:
+    doctype: CRE
+    id: 176-810
+    name: RESOURCE_LEVEL_AUTHORIZATION
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: AC-4 INFORMATION FLOW ENFORCEMENT,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/XML_Security_Cheat_Sheet.html
+    name: Cheatsheet
+    section: API and Web Service Verification Requirements
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: SIG ISO 25010
+    section: Authorized access
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: TOP10
+    section: https://owasp.org/www-project-top-ten/2017/A5_2017-Broken_Access_Control
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '285'
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: ASVS
+    section: V13.1.4
+    subsection: INTERFACE/API-ACCESS_CONTROL-RESOURCE_LEVEL_AUTHORIZATION
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: AC-3 ACCESS ENFORCEMENT
+    subsection: ''
+  type: SAM
+name: ACCESS_CONTROL_AUTHORIZE_URI_AND_RESOURCE_LEVEL

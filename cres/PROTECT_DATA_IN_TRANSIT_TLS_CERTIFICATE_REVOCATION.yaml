@@ -1,0 +1,59 @@
+doctype: CRE
+id: 005-022-025
+links:
+- document:
+    doctype: CRE
+    id: 184-331
+    name: DATA_PROTECTION
+  type: SAM
+- document:
+    doctype: CRE
+    id: 567-480
+    name: ENCRYPT_DATA_IN_TRANSIT
+  type: SAM
+- document:
+    doctype: CRE
+    id: 311-161
+    name: DIRECTIVES
+  type: SAM
+- document:
+    doctype: CRE
+    id: 881-965
+    name: OCSP
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: IA-5 AUTHENTICATOR MANAGEMENT
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: SIG ISO 25010
+    section: Secure communication
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: TOP10
+    section: https://owasp.org/www-project-top-ten/2017/A5_2017-Broken_Access_Control
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '299'
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: ASVS
+    section: V9.2.4
+    subsection: DATA_PROTECTION-ENCRYPT_DATA_IN_TRANSIT-DIRECTIVES-OCSP
+  type: SAM
+name: PROTECT_DATA_IN_TRANSIT_TLS_CERTIFICATE_REVOCATION

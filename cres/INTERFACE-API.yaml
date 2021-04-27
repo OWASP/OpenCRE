@@ -1,0 +1,93 @@
+doctype: CRE
+id: 822-927
+links:
+- document:
+    doctype: CRE
+    id: 008-001
+    name: ACCESS_CONTROL_AUTHORIZE/LIMIT_ADMINISTRATION_FUNCTIONS
+  type: SAM
+- document:
+    doctype: CRE
+    id: 008-038-027
+    name: API_URLS_NO_SENSITIVE_DATA
+  type: SAM
+- document:
+    doctype: CRE
+    id: 008-001
+    name: ACCESS_CONTROL_AUTHORIZE_URI_AND_RESOURCE_LEVEL
+  type: SAM
+- document:
+    doctype: CRE
+    id: 008-047-022
+    name: VALIDATE_ORIGIN_CSRF_ANTI_AUTOMATION
+  type: SAM
+- document:
+    doctype: CRE
+    id: 008-016
+    name: VALIDATE_CONSISTENT_PARSING_ENCODING
+  type: SAM
+- document:
+    doctype: CRE
+    id: 008-046-045
+    name: VALIDATE_API_REJECT_HTTP_HEADERS
+  type: SAM
+- document:
+    description: Verify that enabled RESTful HTTP methods are a valid choice for the
+      user or action, such as preventing normal users using DELETE or PUT on protected
+      API or resources.
+    doctype: CRE
+    id: 008-046-040
+    name: VALIDATE_API_ALLOWED_HTTP_METHODS
+  type: SAM
+- document:
+    description: Verify that JSON schema validation is in place and verified before
+      accepting input.
+    doctype: CRE
+    id: 008-046-045
+    name: VALIDATE_API_JSON_SCHEMA
+  type: SAM
+- document:
+    description: 'Verify that RESTful web services that utilize cookies are protected
+      from Cross-Site Request Forgery via the use of at least one or more of the following:
+      triple or double submit cookie pattern (see references), CSRF nonces, or ORIGIN
+      request header checks.'
+    doctype: CRE
+    id: 008-047-022
+    name: VALIDATE_ORIGIN_CSRF_API
+  type: SAM
+- document:
+    doctype: CRE
+    id: 008-004-055
+    name: API_ANTI_AUTOMATION
+  type: SAM
+- document:
+    description: Verify that REST services explicitly check the incoming Content-Type
+      to be the expected one, such as application/xml or application/JSON.
+    doctype: CRE
+    id: 008-046-019
+    name: VALIDATE_API_CONTENT_TYPE
+  type: SAM
+- document:
+    description: Verify that XSD schema validation takes place to ensure a properly
+      formed XML document, followed by validation of each input field before any processing
+      of that data takes place.
+    doctype: CRE
+    id: 008-046-067
+    name: VALIDATE_API_XSD_SCHEMA
+  type: SAM
+- document:
+    doctype: CRE
+    id: 008-046-067
+    name: VALIDATE_ORIGIN_API_SOAP_WS_SECURITY
+  type: SAM
+- document:
+    doctype: CRE
+    id: 008-048-077
+    name: VALIDATE_INPUT_GRAPHQL_QUERY_WHITELISTING/LIMITING
+  type: SAM
+- document:
+    doctype: CRE
+    id: 008-048-001
+    name: VALIDATE_INPUT_GRAPHQL_AUTHORIZATION
+  type: SAM
+name: INTERFACE/API

@@ -1,0 +1,14 @@
+doctype: CRE
+id: 776-494
+links:
+- document:
+    doctype: CRE
+    id: 009-003
+    name: LOG_ALERTING_ANOMALIES
+  type: SAM
+- document:
+    doctype: CRE
+    id: 009-003
+    name: LOG_ALERTING_ANOMALIES_CONFIGURABLE
+  type: SAM
+name: ALLOW_MONITORING

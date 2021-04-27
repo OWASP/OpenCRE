@@ -1,0 +1,9 @@
+doctype: CRE
+id: 450-741
+links:
+- document:
+    doctype: CRE
+    id: 004-019-032
+    name: ACCESS_CONTROL_AUTHORIZE_DATA_ITEM_LEVEL_ABAC_RBAC
+  type: SAM
+name: RBAC/ABAC

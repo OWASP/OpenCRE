@@ -1,0 +1,23 @@
+doctype: CRE
+id: 156-165
+links:
+- document:
+    description: Verify documentation and justification of all the application's trust
+      boundaries, components, and significant data flows.
+    doctype: CRE
+    id: 002-036-3
+    name: ARCHITECTURE_VERIFY_COMPONENTS_AND_CONNECTIONS_DOCUMENTATION
+  type: SAM
+- document:
+    description: Verify definition and security analysis of the application's high-level
+      architecture and all connected remote services. (C1)
+    doctype: CRE
+    id: 002-036-4
+    name: ARCHITECTURE_VERIFY_COMPONENTS_AND_CONNECTIONS
+  type: SAM
+- document:
+    doctype: CRE
+    id: 009-027
+    name: COMPONENTS_ENFORCE_TRUST_BOUNDARIES
+  type: SAM
+name: TRUST_BOUNDARIES

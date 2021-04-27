@@ -1,0 +1,90 @@
+doctype: CRE
+id: 002-010-046
+links:
+- document:
+    doctype: CRE
+    id: 428-366
+    name: THREAT_MODEL
+  type: SAM
+- document:
+    doctype: CRE
+    id: 915-348
+    name: ARCHITECTURE
+  type: SAM
+- document:
+    doctype: CRE
+    id: 714-439
+    name: COMPONENTS
+  type: SAM
+- document:
+    doctype: CRE
+    id: 159-737
+    name: LEAST_PRIVILEGE
+  type: SAM
+- document:
+    doctype: CRE
+    id: 200-682
+    name: AUTHENTICATE_CONSISTENTLY
+  type: SAM
+- document:
+    doctype: CRE
+    id: 725-691
+    name: AUTHORIZATION
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: CM-8 Information System Component Inventory,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: OPC
+    section: C3
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: SIG ISO 25010
+    section: Authentication strength
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: TOP10
+    section: https://owasp.org/www-project-top-ten/2017/A5_2017-Broken_Access_Control
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '306'
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: ASVS
+    section: V1.2.2
+    subsection: ARCHITECTURE-COMPONENTS-AUTHENTICATE_CONSISTENTLY-AUTHORIZATION-LEAST_PRIVILEGE-THREAT_MODEL
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: AC-6 Least Privilege,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: AC-5 Separation of Duties
+    subsection: ''
+  type: SAM
+name: ARCHITECTURE_AUTHENTICATE_CONSISTENTLY_LEAST_PRIVILEGE

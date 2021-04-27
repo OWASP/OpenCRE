@@ -1,0 +1,9 @@
+doctype: CRE
+id: 401-419
+links:
+- document:
+    doctype: CRE
+    id: 010-008
+    name: VALIDATE_INPUT_SANITIZE_WYSIWYG_HTML
+  type: SAM
+name: HTML_SANITIZATION

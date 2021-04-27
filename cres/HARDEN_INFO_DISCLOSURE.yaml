@@ -1,0 +1,47 @@
+doctype: CRE
+id: 337-429
+links:
+- document:
+    doctype: CRE
+    id: 001-002-005
+    name: CONFIGURATION_HARDENING_SERVER_DIRECTORY_BROWSING
+  type: SAM
+- document:
+    doctype: CRE
+    id: 008-038-027
+    name: API_URLS_NO_SENSITIVE_DATA
+  type: SAM
+- document:
+    description: Verify that a generic message is shown when an unexpected or security
+      sensitive error occurs, potentially with a unique ID which support personnel
+      can use to investigate. (C10)
+    doctype: CRE
+    id: 004-015-036
+    name: CONFIGURATION_HARDENING_EXCEPTION_HANDLING_AVOID_INFO_DISCLOSURE
+  type: SAM
+- document:
+    doctype: CRE
+    id: 004-015-036
+    name: PROTECT_DATA_IN_TRANSIT_TLS_HEADERS_PAYLOAD
+  type: SAM
+- document:
+    doctype: CRE
+    id: 007-042-066
+    name: FILE_HANDLING_AVOID_INFO_DISCLOSURE_SERVING_FILES
+  type: SAM
+- document:
+    description: Verify that web or application server and application framework debug
+      modes are disabled in production to eliminate debug features, developer consoles,
+      and unintended security disclosures.
+    doctype: CRE
+    id: 004-015-036
+    name: CONFIGURATION_HARDENING_DISABLE_DEBUG_MODE_AVOID_INFO_DISCLOSURE
+  type: SAM
+- document:
+    description: Verify that the HTTP headers or any part of the HTTP response do
+      not expose detailed version information of system components.
+    doctype: CRE
+    id: 004-015-036
+    name: SANITIZE_OUTPUT_HTTP_HEADERS_RESPONSE_AVOID_INFO_DISCLOSURE
+  type: SAM
+name: HARDEN_INFO_DISCLOSURE

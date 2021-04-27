@@ -1,0 +1,87 @@
+doctype: CRE
+id: 004-012-050
+links:
+- document:
+    doctype: CRE
+    id: 740-826
+    name: CONFIGURATION
+  type: SAM
+- document:
+    doctype: CRE
+    id: 989-585
+    name: CODE
+  type: SAM
+- document:
+    doctype: CRE
+    id: 268-885
+    name: MALICIOUS_LOGIC_DETECTION
+  type: SAM
+- document:
+    doctype: CRE
+    id: 411-312
+    name: PRIVACY_PERMISSIONS
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: SA-11 DEVELOPER TESTING AND EVALUATION,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: SIG ISO 25010
+    section: '@SDLC'
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: ASVS
+    section: V10.2.2
+    subsection: CONFIGURATION-CODE-MALICIOUS_LOGIC_DETECTION-PRIVACY_PERMISSIONS
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '272'
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: SI-3 MALICIOUS CODE PROTECTION,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: RA-5 VULNERABILITY MONITORING AND SCANNING,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: CA-7 CONTINUOUS MONITORING,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: RA-8 PRIVACY IMPACT ASSESSMENTS,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: SI-4 SYSTEM MONITORING
+    subsection: ''
+  type: SAM
+name: CONFIGURATION_VERIFY_PRIVACY_PERMISSIONS

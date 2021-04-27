@@ -1,0 +1,14 @@
+doctype: CRE
+id: 821-271
+links:
+- document:
+    doctype: CRE
+    id: 007-042-023
+    name: FILE_HANDLING_UPLOADED_FILES_IGNORE_USER_SUBMITTED_FILE_METADATA
+  type: SAM
+- document:
+    doctype: CRE
+    id: 008-016
+    name: VALIDATE_CONSISTENT_PARSING_ENCODING
+  type: SAM
+name: RFI

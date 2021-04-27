@@ -1,0 +1,80 @@
+doctype: CRE
+id: 010-007
+links:
+- document:
+    doctype: CRE
+    id: 348-191
+    name: SANITIZE_OUTPUT_USER_SUPPLIED
+  type: SAM
+- document:
+    doctype: CRE
+    id: 193-992
+    name: XSS
+  type: SAM
+- document:
+    doctype: CRE
+    id: 531-390
+    name: UNSTRUCTURED_DATA
+  type: SAM
+- document:
+    doctype: CRE
+    id: 639-979
+    name: SANITIZATION
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: AC-4 INFORMATION FLOW ENFORCEMENT,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Deserialization_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/XML_External_Entity_Prevention_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/XML_Security_Cheat_Sheet.html
+    name: Cheatsheet
+    section: Validation, Sanitization and Encoding Verification Requirements
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: WSTG
+    section: WSTG-INPV-00
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: SIG ISO 25010
+    section: Input and output verification
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: TOP10
+    section: https://owasp.org/www-project-top-ten/2017/A7_2017-Cross-Site_Scripting_(XSS)
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '138'
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: ASVS
+    section: V5.2.2
+    subsection: SANITIZE_OUTPUT_USER_SUPPLIED-UNSTRUCTURED_DATA-SANITIZATION-XSS
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: SI-10 INFORMATION INPUT VALIDATION
+    subsection: ''
+  type: SAM
+name: VALIDATE_INPUT_SANITIZE_UNSTRUCTURED_DATA

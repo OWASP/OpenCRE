@@ -1,0 +1,34 @@
+doctype: CRE
+id: 164-267
+links:
+- document:
+    doctype: CRE
+    id: 001-005-073
+    name: AUTHENTICATION_MFA/OTP_CRYPTOGRAPHIC_DIRECTIVES
+  type: SAM
+- document:
+    doctype: CRE
+    id: 001-005-073
+    name: CREDENTIALS_MANAGEMENT_CRYPTOGRAPHIC_DIRECTIVES_KDF_SALTING_HASHING
+  type: SAM
+- document:
+    doctype: CRE
+    id: 001-005-073
+    name: CREDENTIALS_MANAGEMENT_CRYPTOGRAPHIC_DIRECTIVES
+  type: SAM
+- document:
+    doctype: CRE
+    id: 001-005-073
+    name: CREDENTIALS_MANAGEMENT_CRYPTOGRAPHIC_DIRECTIVES_AVOID_INFO_DISCLOSURE
+  type: SAM
+- document:
+    doctype: CRE
+    id: 009-020
+    name: LOG_NO_SENSITIVE_DATA_CREDENTIALS/PAYMENT_DATA
+  type: SAM
+- document:
+    doctype: CRE
+    id: 009-020
+    name: LOG_NO_SENSITIVE_DATA
+  type: SAM
+name: SALTING/HASHING

@@ -1,0 +1,9 @@
+doctype: CRE
+id: 294-372
+links:
+- document:
+    doctype: CRE
+    id: 005-032-071
+    name: ENCRYPT_DATA_AT_REST_BACKUP_REGULARLY
+  type: SAM
+name: DATA_RECOVERY_TEST

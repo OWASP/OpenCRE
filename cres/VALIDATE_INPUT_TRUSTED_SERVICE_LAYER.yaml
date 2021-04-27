@@ -1,0 +1,89 @@
+doctype: CRE
+id: 004-019-042
+links:
+- document:
+    doctype: CRE
+    id: 915-348
+    name: ARCHITECTURE
+  type: SAM
+- document:
+    doctype: CRE
+    id: 588-357
+    name: INPUT_OUTPUT_PROCESSING
+  type: SAM
+- document:
+    doctype: CRE
+    id: 542-355
+    name: VALIDATE/ENCODE_USER_SUPPLIED_INPUT
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: PL-8 SECURITY AND PRIVACY ARCHITECTURES,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: OPC
+    section: C5
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Abuse_Case_Cheat_Sheet.html
+    name: Cheatsheet
+    section: Architecture, Design and Threat Modeling Requirements
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: SIG ISO 25010
+    section: Input and output verification
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: TOP10
+    section: https://owasp.org/www-project-top-ten/2017/A9_2017-Using_Components_with_Known_Vulnerabilities
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '602'
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: ASVS
+    section: V1.5.3
+    subsection: ARCHITECTURE-INPUT_OUTPUT_PROCESSING-VALIDATE/ENCODE_USER_SUPPLIED_INPUT
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: SA-17 DEVELOPER SECURITY AND PRIVACY ARCHITECTURE AND DESIGN,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: SC-39 PROCESS ISOLATION,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: SC-3 SECURITY FUNCTION ISOLATION
+    subsection: ''
+  type: SAM
+name: VALIDATE_INPUT_TRUSTED_SERVICE_LAYER

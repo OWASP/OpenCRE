@@ -1,0 +1,108 @@
+doctype: CRE
+id: 001-002-004
+links:
+- document:
+    doctype: CRE
+    id: 613-579
+    name: ACCESS_CONTROL
+  type: SAM
+- document:
+    doctype: CRE
+    id: 210-698
+    name: MFA/OTP
+  type: SAM
+- document:
+    doctype: CRE
+    id: 253-303
+    name: ADMINISTRATIVE/ADMIN_TASKS
+  type: SAM
+- document:
+    doctype: CRE
+    id: 326-687
+    name: ADDITIONAL_AUTHENTICATION
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: IA-2 IDENTIFICATION AND AUTHENTICATION,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/REST_Assessment_Cheat_Sheet.html
+    name: Cheatsheet
+    section: Access Control Verification Requirements
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: WSTG
+    section: Empty
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: SIG ISO 25010
+    section: Authentication strength
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: TOP10
+    section: https://owasp.org/www-project-top-ten/2017/A2_2017-Broken_Authentication
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '419'
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: ASVS
+    section: V4.3.1
+    subsection: ACCESS_CONTROL-ADMINISTRATIVE/ADMIN_TASKS-ADDITIONAL_AUTHENTICATION-MFA/OTP
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: IA-5 AUTHENTICATOR MANAGEMENT,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: SC-37 Out-of-Band Channels,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: AC-3 ACCESS ENFORCEMENT,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: AC-5 SEPARATION OF DUTIES,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: SC-2 SEPARATION OF SYSTEM AND USER FUNCTIONALITY
+    subsection: ''
+  type: SAM
+name: ACCESS_CONTROL_AUTHORIZATION_ADMINISTRATION_MFA

@@ -1,0 +1,12 @@
+doctype: CRE
+id: 708-313
+links:
+- document:
+    description: 'Verify that HTTP Strict Transport Security headers are included
+      on all responses and for all subdomains, such as Strict-Transport-Security:
+      max-age=15724800; includeSubdomains.'
+    doctype: CRE
+    id: 004-015-038
+    name: CONFIGURATION_SET_HEADER_HSTS
+  type: SAM
+name: HSTS

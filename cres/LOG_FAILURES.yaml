@@ -1,0 +1,10 @@
+doctype: CRE
+id: 465-946
+links:
+- document:
+    description: Verify that backend TLS connection failures are logged.
+    doctype: CRE
+    id: 005-022-025
+    name: PROTECT_DATA_IN_TRANSIT_TLS_CONNECTION_LOG_FAILURES
+  type: SAM
+name: LOG_FAILURES

@@ -1,0 +1,9 @@
+doctype: CRE
+id: 548-816
+links:
+- document:
+    doctype: CRE
+    id: 008-048-001
+    name: VALIDATE_INPUT_GRAPHQL_AUTHORIZATION
+  type: SAM
+name: GRAPHQL

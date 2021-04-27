@@ -1,0 +1,14 @@
+doctype: CRE
+id: 762-297
+links:
+- document:
+    doctype: CRE
+    id: 006-011-062
+    name: EXCEPTION_HANDLING_CATCH_COMPLETELY
+  type: SAM
+- document:
+    doctype: CRE
+    id: 006-011-062
+    name: EXCEPTION_HANDLING_CATCH_UNHANDLED_EXCEPTIONS
+  type: SAM
+name: CATCH_EXCEPTIONS_SAFELY_COMPLETELY

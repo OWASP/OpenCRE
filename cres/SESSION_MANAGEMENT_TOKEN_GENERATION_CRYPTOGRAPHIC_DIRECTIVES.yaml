@@ -1,0 +1,122 @@
+doctype: CRE
+id: 011-040-033
+links:
+- document:
+    doctype: CRE
+    id: 673-960
+    name: CRYPTOGRAPHIC_DIRECTIVES
+  type: SAM
+- document:
+    doctype: CRE
+    id: 636-456
+    name: SESSION_MANAGEMENT
+  type: SAM
+- document:
+    doctype: CRE
+    id: 842-154
+    name: TOKEN_DIRECTIVES
+  type: SAM
+- document:
+    doctype: CRE
+    id: 312-265
+    name: TOKEN_GENERATION
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: 'AC-11 Session Lock, '
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: OPC
+    section: C6
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html,https://cheatsheetseries.owasp.org/cheatsheets/Transaction_Authorization_Cheat_Sheet.html
+    name: Cheatsheet
+    section: Session Management Verification Requirements
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: WSTG
+    section: WSTG-SESS-01
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-63
+    section: '7.1'
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: SIG ISO 25010
+    section: Session management
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: TOP10
+    section: https://owasp.org/www-project-top-ten/2017/A5_2017-Broken_Access_Control
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '331'
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: ASVS
+    section: V3.2.2
+    subsection: SESSION_MANAGEMENT-TOKEN_DIRECTIVES-TOKEN_GENERATION-CRYPTOGRAPHIC_DIRECTIVES
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: AC-12 Session Termination
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: ASVS
+    section: V3.2.4
+    subsection: SESSION_MANAGEMENT-TOKEN_DIRECTIVES-TOKEN_GENERATION-CRYPTOGRAPHIC_DIRECTIVES
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: SC-12 CRYPTOGRAPHIC KEY ESTABLISHMENT AND MANAGEMENT
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: SC-12 CRYPTOGRAPHIC KEY ESTABLISHMENT AND MANAGEMENT,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: SC-13 CRYPTOGRAPHIC PROTECTION
+    subsection: ''
+  type: SAM
+name: SESSION_MANAGEMENT_TOKEN_GENERATION_CRYPTOGRAPHIC_DIRECTIVES

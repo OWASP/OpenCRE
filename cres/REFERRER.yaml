@@ -1,0 +1,11 @@
+doctype: CRE
+id: 902-404
+links:
+- document:
+    description: Verify that a suitable "Referrer-Policy" header is included, such
+      as "no-referrer" or "same-origin".
+    doctype: CRE
+    id: 004-015-038
+    name: CONFIGURATION_SET_HEADER_REFERRER_POLICY
+  type: SAM
+name: REFERRER

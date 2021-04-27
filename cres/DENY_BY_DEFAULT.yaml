@@ -1,0 +1,9 @@
+doctype: CRE
+id: 165-872
+links:
+- document:
+    doctype: CRE
+    id: 001-023
+    name: ACCESS_CONTROL_LEAST_PRIVILEGE_DENY_BY_DEFAULT_NEW_USER
+  type: SAM
+name: DENY_BY_DEFAULT

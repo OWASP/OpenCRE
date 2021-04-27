@@ -1,0 +1,9 @@
+doctype: CRE
+id: 104-291
+links:
+- document:
+    doctype: CRE
+    id: 012-045-010
+    name: VALIDATE_JS/JSON_INJECTION
+  type: SAM
+name: JSON_INJECTION

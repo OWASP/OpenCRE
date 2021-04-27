@@ -1,0 +1,73 @@
+doctype: CRE
+id: 008-046-067
+links:
+- document:
+    doctype: CRE
+    id: 822-927
+    name: INTERFACE/API
+  type: SAM
+- document:
+    doctype: CRE
+    id: 927-865
+    name: VALIDATE_MESSAGE
+  type: SAM
+- document:
+    doctype: CRE
+    id: 676-302
+    name: XML
+  type: SAM
+- document:
+    doctype: CRE
+    id: 872-444
+    name: SOAP_DIRECTIVES_XSD_SCHEMA_WS_SECURITY
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: SC-8 TRANSMISSION CONFIDENTIALITY AND INTEGRITY,
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/XML_Security_Cheat_Sheet.html
+    name: Cheatsheet
+    section: API and Web Service Verification Requirements
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: SIG ISO 25010
+    section: Input and output verification
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: TOP10
+    section: https://owasp.org/www-project-top-ten/2017/A5_2017-Broken_Access_Control
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '345'
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: ASVS
+    section: V13.3.2
+    subsection: INTERFACE/API-VALIDATE_MESSAGE-XML-SOAP_DIRECTIVES_XSD_SCHEMA_WS_SECURITY
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: SC-17 Public Key Infrastructure Certificates
+    subsection: ''
+  type: SAM
+name: VALIDATE_ORIGIN_API_SOAP_WS_SECURITY

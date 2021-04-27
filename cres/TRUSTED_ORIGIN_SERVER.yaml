@@ -1,0 +1,9 @@
+doctype: CRE
+id: 245-647
+links:
+- document:
+    doctype: CRE
+    id: 007-041-065
+    name: FILE_HANDLING_WHITELISTED_RESOURCES
+  type: SAM
+name: TRUSTED_ORIGIN_SERVER

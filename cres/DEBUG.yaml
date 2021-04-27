@@ -1,0 +1,12 @@
+doctype: CRE
+id: 157-748
+links:
+- document:
+    description: Verify that web or application server and application framework debug
+      modes are disabled in production to eliminate debug features, developer consoles,
+      and unintended security disclosures.
+    doctype: CRE
+    id: 004-015-036
+    name: CONFIGURATION_HARDENING_DISABLE_DEBUG_MODE_AVOID_INFO_DISCLOSURE
+  type: SAM
+name: DEBUG

@@ -1,0 +1,61 @@
+doctype: CRE
+id: 002-014-048
+links:
+- document:
+    doctype: CRE
+    id: 915-348
+    name: ARCHITECTURE
+  type: SAM
+- document:
+    doctype: CRE
+    id: 588-357
+    name: INPUT_OUTPUT_PROCESSING
+  type: SAM
+- document:
+    doctype: CRE
+    id: 348-191
+    name: SANITIZE_OUTPUT_USER_SUPPLIED
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53
+    section: CM-8 Information System Component Inventory
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: OPC
+    section: C4
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Abuse_Case_Cheat_Sheet.html
+    name: Cheatsheet
+    section: Architecture, Design and Threat Modeling Requirements
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: SIG ISO 25010
+    section: Input and output verification
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '116'
+    subsection: ''
+  type: SAM
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: ASVS
+    section: V1.5.4
+    subsection: ARCHITECTURE-INPUT_OUTPUT_PROCESSING-SANITIZE_OUTPUT_USER_SUPPLIED
+  type: SAM
+name: OUTPUT_ENCODING_NEAR_INTERPRETER
