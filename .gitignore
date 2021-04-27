@@ -1,12 +1,21 @@
 /Gemfile
 /Gemfile.lock
-/favicon.ico
 _site/
-
+__pycache__
+.coverage
+.aws-sam/
+*.orig
+.vagrant/*
+*.patch
+Vagrantfile
 
 ### vscode ###
-.vscode/*
+.vscode/
 *.code-workspace
 
 ## act secrets
 .secrets/
+
+### conventions ###
+venv/
+v/

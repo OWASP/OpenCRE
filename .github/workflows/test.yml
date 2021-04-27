@@ -1,0 +1,14 @@
+name: Test
+on: [push]
+jobs:
+  build:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+
+      - name: Install python dependencies
+        run: sudo apt-get update && sudo apt-get install -y python3-setuptools python3-pip && pip install -r scripts/cre_sync/requirements.txt
+      - name: Test
+        run: python -m unittest discover -s scripts/cre_sync -p "*_test.py"

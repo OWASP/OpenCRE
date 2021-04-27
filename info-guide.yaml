@@ -1,0 +1,31 @@
+---
+info:
+  name: "<project name>"
+  repository: "<link to the project's code>"
+  
+  :
+  - one of the OWASP project states e.g.
+  - incubator
+  - lab
+  - flagship
+  tags:
+  - any ammount of tags that seem necessary preferrably at least one of the following
+  - builders
+  - breakers
+  - defenders
+  - meta
+  sdlc:
+  - one or more of the following or empty
+  - Planning
+  - Analysis
+  - Design
+  - Implementation
+  - Maintenance
+  - Strategy
+  - Culture
+  example_usage: either link to demo site or a one liner to run the project with
+  output_type:
+  - vulnerabilities
+  - urls
+  - controls
+  - guidelines
