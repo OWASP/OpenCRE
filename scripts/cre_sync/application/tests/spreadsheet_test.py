@@ -1,17 +1,33 @@
-import uuid
-import yaml
 import base64
 import os
+import tempfile
 import unittest
-from defs import cre_defs as defs
-from database import db
-import tempfile
+import uuid
 from pprint import pprint
-from utils.spreadsheet import *
-import tempfile
+
+import yaml
+
+from application.database import db
+from application.defs import cre_defs as defs
+from application.utils.spreadsheet import *
+from application import create_app, sqla
 
 
 class TestDB(unittest.TestCase):
+
+    def tearDown(self):
+        sqla.session.remove()
+        sqla.drop_all()
+        self.app_context.pop()
+
+    def setUp(self):
+        self.app = create_app(mode='test')
+        sqla.create_all(app=self.app)
+
+        self.app_context = self.app.app_context()
+        self.app_context.push()
+        self.collection = db.Standard_collection()
+
     def test_prepare_spreadsheet_standards(self):
         """
         Given:
@@ -30,16 +46,19 @@ class TestDB(unittest.TestCase):
                     * 1 element contains the entry of "LoneStand" without any mappings
                     * 1 element contains the entry of "OtherLoneStand" without any mappings
         """
-        collection = db.Standard_collection(cache_file="")
 
-        dbcre = db.CRE(description="CREdesc", name="CREname", external_id="06-06-06")
+        collection = self.collection
+
+        dbcre = db.CRE(description="CREdesc", name="CREname",
+                       external_id="06-06-06")
         dbgroup = db.CRE(
             description="CREGroupDesc", name="CREGroup", external_id="09-09-09"
         )
         collection.session.add(dbcre)
         collection.session.add(dbgroup)
         collection.session.commit()
-        collection.session.add(db.InternalLinks(cre=dbcre.id, group=dbgroup.id))
+        collection.session.add(db.InternalLinks(
+            cre=dbcre.id, group=dbgroup.id))
 
         conflict1 = db.Standard(
             subsection="4.5.1",
@@ -266,7 +285,7 @@ class TestDB(unittest.TestCase):
         result = prepare_spreadsheet(
             collection, collection.export(dir=tempfile.mkdtemp())
         )
-        assert all([a == b for a, b in zip(result, expected)])
+        self.assertCountEqual(result, expected)
 
     def test_prepare_spreadsheet_groups(self):
         """Given:
@@ -282,16 +301,18 @@ class TestDB(unittest.TestCase):
                 * 1 element contains ONLY the mapping of "CREname" to the remaining subsection of "ConflictStandName"
                 * 1 element contains the mappings of "CREGroup" to "CREname" and "GroupStand2"
         """
-        collection = db.Standard_collection(cache_file="")
+        collection = self.collection
 
-        dbcre = db.CRE(description="CREdesc", name="CREname", external_id="06-06-06")
+        dbcre = db.CRE(description="CREdesc", name="CREname",
+                       external_id="06-06-06")
         dbgroup = db.CRE(
             description="CREGroupDesc", name="CREGroup", external_id="09-09-09"
         )
         collection.session.add(dbcre)
         collection.session.add(dbgroup)
         collection.session.commit()
-        collection.session.add(db.InternalLinks(cre=dbcre.id, group=dbgroup.id))
+        collection.session.add(db.InternalLinks(
+            cre=dbcre.id, group=dbgroup.id))
 
         conflict1 = db.Standard(
             subsection="4.5.1",
@@ -417,7 +438,7 @@ class TestDB(unittest.TestCase):
             collection, collection.export(dir=tempfile.mkdtemp())
         )
 
-        assert all([a == b for a, b in zip(result, expected)])
+        self.assertCountEqual(result, expected)
 
     def test_prepare_spreadsheet_simple(self):
         """Given:
@@ -429,10 +450,11 @@ class TestDB(unittest.TestCase):
                 * 1 element contains ONLY the mapping of "CREname" to the remaining subsection of "ConflictStandName"
         """
         # empty string means temporary db
-        collection = db.Standard_collection(cache_file="")
+        collection = self.collection
 
         # test 0, single CRE, connects to several standards, 1 cre maps to the same standard in multiple sections/subsections
-        dbcre = db.CRE(description="CREdesc", name="CREname", external_id="123-321-0")
+        dbcre = db.CRE(description="CREdesc", name="CREname",
+                       external_id="123-321-0")
         collection.session.add(dbcre)
 
         conflict0 = db.Standard(
@@ -511,8 +533,7 @@ class TestDB(unittest.TestCase):
         result = prepare_spreadsheet(
             collection, collection.export(dir=tempfile.mkdtemp())
         )
-
-        assert all([a == b for a, b in zip(result, expected)])
+        self.assertCountEqual(result, expected)
 
 
 if __name__ == "__main__":

@@ -1,15 +1,16 @@
 import json
-from database import db
-from flask import Flask, jsonify, render_template, request
-from jinja2 import Template
 from pprint import pprint
-from jinja2 import TemplateNotFound
 
-app = Flask(__name__)
+from flask import Flask, abort, jsonify, render_template, request, Blueprint
+from jinja2 import Template, TemplateNotFound
 
-cache_loc = "standards_cache.sqlite"
-database = db.Standard_collection(cache=True, cache_file=cache_loc)
+from application import create_app
+from application.database import db
 
+ITEMS_PER_PAGE = 20
+
+app= Blueprint('web',__name__)
+database = db.Standard_collection()
 
 @app.route("/", methods=["GET"])
 def index():
@@ -37,15 +38,18 @@ def find_standard_by_name(sname):
     opt_section = request.args.get("section")
     opt_subsection = request.args.get("subsection")
     opt_hyperlink = request.args.get("hyperlink")
-
+    page = request.args.get("page")
     standards = database.get_standards(
-        name=sname, section=opt_section, subsection=opt_subsection, link=opt_hyperlink
+        name=sname, section=opt_section, subsection=opt_subsection, link=opt_hyperlink,
+        page=page or 0, items_per_page=ITEMS_PER_PAGE
     )
     if standards:
         res = [stand.todict() for stand in standards]
         return jsonify(res)
+    abort(404)
 
 
+# TODO: (spyros) paginate
 @app.route("/rest/v1/tags", methods=["GET"])
 def find_document_by_tag(sname):
     tags = request.args.getlist("tag")
@@ -53,6 +57,13 @@ def find_document_by_tag(sname):
     if documents:
         res = [doc.todict() for doc in documents]
         return jsonify(res)
+
+
+@app.errorhandler(404)
+def page_not_found(e):
+    # Even though Flask logs it by default,
+    # I prefer to have a logger dedicated to 404
+    return 'Resource Not found', 404
 
 
 if __name__ == "__main__":
