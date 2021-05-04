@@ -1,7 +1,8 @@
 import unittest
-from defs import cre_defs as defs
-from utils.parsers import *
 from pprint import pprint
+
+from application.defs import cre_defs as defs
+from application.utils.parsers import *
 
 
 class TestCreDefs(unittest.TestCase):

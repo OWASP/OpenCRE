@@ -20,20 +20,23 @@ install the dependencies with pip
 Running
 -------
 
-To run the cli application, you can run `python cre_main.py --help`
+To run the cli application, you can run `python cre.py --help`
 To download a remote cre spreadsheet locally you can run
-`python cre_main.py --review --from_spreadsheet https://docs.google.com/spreadsheets/d/19YBNcZHL9BF2Dw9Ijzqogc6MUyhTcH10Cb-37rBTFbk/edit\#gid\=1975949890`
+`python cre.py --review --from_spreadsheet https://docs.google.com/spreadsheets/d/19YBNcZHL9BF2Dw9Ijzqogc6MUyhTcH10Cb-37rBTFbk/edit\#gid\=1975949890`
 
 To add a remote spreadsheet to your local database you can run
 `python cre_main.py --add --from_spreadsheet https://docs.google.com/spreadsheets/d/1THhpJWrH7RVwEnawEOO-3ZQwuiAKEUyb_ZAdQnvHNsU`
 
-To run the frontend you can run
-`python web_main.py`
+To run the web application for development you can run
+`FLASK_APP=cre.py flask run`
+
+To run the web application for production you need gunicorn and you can run from within the cre_sync dir
+`gunicorn cre:app --log-file=-`
 
 Developing
 ---
 
-You can run backend tests with `python -m unittest discover -s scripts/cre_sync -p "*_test.py" -v`
+You can run backend tests with `FLASK_APP=cre.py FLASK_CONFIG=test flask test`
 
 Development Notes
 ---
@@ -59,6 +62,8 @@ add tests
 * ~ make into flask rest api ~ Done
 * ~   refer use case (search by cre) ~ Done
 * ~   search by standard ~ Done
+* ~ add the ability for a mapping document to have multiple yamls in it ~ Done
+
 * add db integration of tags
 * ~ add tags in db  (search by tag, export with tags etc) ~ Done 
 * add parser integration of tags (parse the new new new spreadsheet template which incorporates tags)
@@ -67,10 +72,8 @@ add tests
 * write frontend
 * make frontend show Graph
 
+* add flask cover from here https://github.com/miguelgrinberg/flasky/blob/master/flasky.py#L33
 * make library out of file format and spreadsheet template parsers
-* add the ability for a mapping document to have multiple yamls in it
 * add conditional export (select the standards you want exported and if you want to see the CRE ids or not, get spreadsheet with mappings)  (gap analysis use case)
 * write docs and record usage gif
 * add dockerfile???
-
-

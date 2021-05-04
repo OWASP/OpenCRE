@@ -14,6 +14,7 @@ distlib==0.3.0
 distro==1.4.0
 Flask==1.1.2
 Flask-Cache==0.13.1
+Flask-SQLAlchemy==2.5.1
 gitdb==4.0.5
 github2==0.6.2
 GitPython==3.1.9

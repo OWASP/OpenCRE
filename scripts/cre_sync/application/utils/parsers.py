@@ -1,7 +1,7 @@
 import copy
 import re
 import logging
-from defs import cre_defs as defs
+from application.defs import cre_defs as defs
 from pprint import pprint
 
 # collection of methods to parse different versions of spreadsheet standards

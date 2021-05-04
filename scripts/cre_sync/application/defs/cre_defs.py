@@ -165,6 +165,9 @@ class Link:
         )
 
     def todict(self):
+        if isinstance(self.document,list):
+            print('wtf?')
+            pprint(self.document)
         res = {"type": self.ltype.value}
         if self.document:
             res["document"] = self.document.todict()
@@ -239,7 +242,7 @@ class Document:
             "Document name not defined for document of doctype %s" % doctype
         )
         self.links = links or []
-        if "" in tags:
+        if isinstance(tags,list) and "" in tags:
             tags.remove("")
         self.tags = tags
         self.id = id
@@ -256,7 +259,8 @@ class CRE(Document):
 
     def __hash__(self):
         return super().__hash__()
-
+    def __eq__(self, other):
+        return (isinstance(other,CRE) and super().__eq__(other))
 
 @dataclass
 class Standard(Document):
@@ -277,7 +281,8 @@ class Standard(Document):
 
     def __eq__(self, other):
         return (
-            super().__eq__(other)
+            isinstance(other,Standard)
+            and super().__eq__(other)
             and self.section == other.section
             and self.subsection == other.subsection
             and self.hyperlink == other.hyperlink

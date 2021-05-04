@@ -1,16 +1,29 @@
+import os
+import tempfile
 import unittest
-from defs import cre_defs as defs
-from utils.parsers import *
 from pprint import pprint
-from database import db
-from cre_main import *
+from unittest import skip
+from flask import Flask
+
+from application.cmd import cre_main as main
+from application import create_app, sqla
+from application.database import db
+from application.defs import cre_defs as defs
 
 
 class TestMain(unittest.TestCase):
+
+    def tearDown(self):
+        sqla.session.remove()
+        sqla.drop_all(app=self.app)
+        self.app_context.pop()
+
     def setUp(self):
-        connection = ""  # empty string means temporary db
-        collection = db.Standard_collection(cache_file=connection)
-        self.collection = collection
+        self.app = create_app(mode="test")
+        sqla.create_all(app=self.app)
+        self.app_context = self.app.app_context()
+        self.app_context.push()
+        self.collection = db.Standard_collection()
 
     def test_register_standard_with_links(self):
         standard_with_links = defs.Standard(
@@ -48,7 +61,7 @@ class TestMain(unittest.TestCase):
             metadata=defs.Metadata(labels=[]),
             section="Standard With Links",
         )
-        ret = register_standard(
+        ret = main.register_standard(
             standard=standard_with_links, collection=self.collection
         )
         # assert returned value makes sense
@@ -57,9 +70,13 @@ class TestMain(unittest.TestCase):
 
         # assert db structure makes sense
         # no links since our standards don't have a CRE to map to
+        for thing in self.collection.session.query(db.Links).all():
+            pprint(thing.cre)
+
         self.assertEqual(self.collection.session.query(db.Links).all(), [])
         # 3 cre-less standards in the db
-        self.assertEqual(len(self.collection.session.query(db.Standard).all()), 3)
+        self.assertEqual(
+            len(self.collection.session.query(db.Standard).all()), 3)
 
     def test_register_standard_with_cre(self):
 
@@ -98,7 +115,8 @@ class TestMain(unittest.TestCase):
             section="standard_with_cre",
         )
 
-        ret = register_standard(standard=standard_with_cre, collection=self.collection)
+        ret = main.register_standard(
+            standard=standard_with_cre, collection=self.collection)
         # assert db structure makes sense
         self.assertEqual(
             len(self.collection.session.query(db.Links).all()), 2
@@ -180,7 +198,7 @@ class TestMain(unittest.TestCase):
             section="Session Management",
         )
 
-        ret = register_standard(
+        ret = main.register_standard(
             standard=with_groupped_cre_links, collection=self.collection
         )
         # assert db structure makes sense
@@ -214,14 +232,16 @@ class TestMain(unittest.TestCase):
             tags=["CREt1", "CREt2"],
             metadata=defs.Metadata(labels=["CREl1", "CREl2"]),
         )
-        self.assertEqual(register_cre(cre, self.collection).name, cre.name)
-        self.assertEqual(register_cre(cre, self.collection).external_id, cre.id)
+        self.assertEqual(main.register_cre(
+            cre, self.collection).name, cre.name)
+        self.assertEqual(main.register_cre(
+            cre, self.collection).external_id, cre.id)
         self.assertEqual(
             len(self.collection.session.query(db.CRE).all()), 1
         )  # 1 cre in the db
 
     def test_parse_file(self):
-        file = {
+        file = [{
             "description": "Verify that approved cryptographic algorithms are used in the generation, seeding, and verification.",
             "doctype": "CRE",
             "id": "001-005-073",
@@ -262,8 +282,13 @@ class TestMain(unittest.TestCase):
             "metadata": {},
             "name": "CREDENTIALS_MANAGEMENT_CRYPTOGRAPHIC_DIRECTIVES",
             "tags": [],
-        }
-        expected = defs.CRE(
+        }, {
+            "description": "Desc",
+            "doctype": "CRE",
+            "id": "14",
+            "name": "name",
+        }]
+        expected = [defs.CRE(
             doctype=defs.Credoctypes.CRE,
             id="001-005-073",
             description="Verify that approved cryptographic algorithms are used in the generation, seeding, and verification.",
@@ -300,13 +325,19 @@ class TestMain(unittest.TestCase):
             ],
             tags=[],
             metadata={},
-        )
+        ),defs.CRE(id='14', description='Desc', name='name')]
 
-        result = parse_file(file, self.collection)
+        result = main.parse_file(
+            filename="tests", yamldocs=file[0], scollection=self.collection)
+        # negative test first parse_file accepts a list of objects
+        self.assertEqual(result, None)
 
-        self.assertEqual(result, expected)
+        result = main.parse_file(filename="tests", yamldocs=
+                                 file, scollection=self.collection)
+        self.assertCountEqual(result, expected)
 
     # TODO: ensure db has exact values instead of correct number of elements
+
     def test_parse_standards_from_spreadsheeet(self):
         input = [
             {
@@ -345,16 +376,26 @@ class TestMain(unittest.TestCase):
                 "cheat_sheets": "https: // cheatsheetseries.owasp.org/cheatsheets/Threat_Modeling_Cheat_Sheet.html, https: // cheatsheetseries.owasp.org/cheatsheets/Abuse_Case_Cheat_Sheet.html, https: // cheatsheetseries.owasp.org/cheatsheets/Attack_Surface_Analysis_Cheat_Sheet.html",
             }
         ]
-        parse_standards_from_spreadsheeet(input, self.collection)
-        self.assertEqual(len(self.collection.session.query(db.Standard).all()), 8)
+        main.parse_standards_from_spreadsheeet(input, self.collection)
+        self.assertEqual(
+            len(self.collection.session.query(db.Standard).all()), 8)
         self.assertEqual(len(self.collection.session.query(db.CRE).all()), 5)
         # assert the one CRE in the inpu externally links to all the 8 standards
         self.assertEqual(len(self.collection.session.query(db.Links).all()), 8)
-        self.assertEqual(len(self.collection.session.query(db.InternalLinks).all()), 4)
+        self.assertEqual(
+            len(self.collection.session.query(db.InternalLinks).all()), 4)
 
-    # TODO:implement
-    #  def test_get_standards_files_from_disk(self):
-    #     raise NotImplementedError
+    def test_get_standards_files_from_disk(self):
+        loc = tempfile.mkdtemp()
+        ymls = []
+        cre = defs.CRE(name="c", description="cd")
+        for _ in range(1, 5):
+            ymldesc, location = tempfile.mkstemp(
+                dir=loc, suffix=".yaml", text=True)
+            os.write(ymldesc, bytes(str(cre), 'utf-8'))
+            ymls.append(location)
+        self.assertCountEqual(
+            ymls, [x for x in main.get_standards_files_from_disk(loc)])
 
     # def test_add_from_spreadsheet(self):
     #     raise NotImplementedError

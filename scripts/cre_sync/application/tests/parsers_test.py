@@ -1,8 +1,9 @@
-import unittest
-import cre_defs as defs
-from parsers import *
-from pprint import pprint
 import collections
+import unittest
+from pprint import pprint
+
+from application.defs import cre_defs as defs
+from application.utils.parsers import *
 
 
 class TestParsers(unittest.TestCase):
