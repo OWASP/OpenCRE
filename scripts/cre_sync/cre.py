@@ -29,9 +29,6 @@ def test(coverage, test_names):
         tests = unittest.TestLoader().discover("application/tests",pattern="*_test.py")
     unittest.TextTestRunner(verbosity=2).run(tests)
 
-
-
-
 # python cre.py --<x> commands
 def main():
     script_path = os.path.dirname(os.path.realpath(__file__))

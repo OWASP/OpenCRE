@@ -30,6 +30,9 @@ To add a remote spreadsheet to your local database you can run
 To run the web application for development you can run
 `FLASK_APP=cre.py flask run`
 
+Alternatively, you can use the dockerfile with
+`docker build -f Dockerfile-dev -t csync . && docker run -it -p 5000:5000 csync`
+
 To run the web application for production you need gunicorn and you can run from within the cre_sync dir
 `gunicorn cre:app --log-file=-`
 
@@ -68,6 +71,7 @@ add tests
 * ~ add tags in db  (search by tag, export with tags etc) ~ Done 
 * add parser integration of tags (parse the new new new spreadsheet template which incorporates tags)
 * ~ add search by tag in rest and frontend ~ Done
+* ~ add dockerfile ~ Done
 
 * write frontend
 * make frontend show Graph
@@ -78,4 +82,3 @@ add tests
 * make library out of file format and spreadsheet template parsers
 * add conditional export (select the standards you want exported and if you want to see the CRE ids or not, get spreadsheet with mappings)  (gap analysis use case)
 * write docs and record usage gif
-* add dockerfile???
