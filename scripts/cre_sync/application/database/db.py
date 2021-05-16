@@ -223,8 +223,48 @@ class Standard_collection:
                 )
         return documents
 
-    def get_standards(self, name: str, section=None, subsection=None, link=None, page: int = 0, items_per_page=None):
+    def get_standards_with_pagination(self, name: str, section=None, subsection=None, link=None, page: int = 0, items_per_page=None):
         standards = []
+        dbstands = self.__get_standards_query__(
+            name, section, subsection, link).paginate(int(page), items_per_page, False)
+        total_pages = dbstands.pages
+        if dbstands.items:
+            for dbstand in dbstands.items:
+                standard = StandardFromDB(dbstandard=dbstand)
+                linked_cres = Links.query.filter(
+                    Links.standard == dbstand.id).all()
+                for dbcre_link in linked_cres:
+                    dbcre = CRE.query.filter(CRE.id == dbcre_link.cre).first()
+                    if dbcre:
+                        standard.add_link(cre_defs.Link(
+                            ltype=dbcre_link.type, document=CREfromDB(dbcre)))
+                standards.append(standard)
+            return total_pages, standards, dbstands
+        else:
+            logger.warning("Standard %s does not exist in the db" % (name))
+            return None, None, None
+
+    def get_standards(self, name: str, section=None, subsection=None, link=None) -> [cre_defs.Standard]:
+        standards = []
+        standards_query = self.__get_standards_query__(
+            name, section, subsection, link)
+        dbstands = standards_query.all()
+        if dbstands:
+            for dbstand in dbstands:
+                standard = StandardFromDB(dbstandard=dbstand)
+                linked_cres = Links.query.filter(
+                    Links.standard == dbstand.id).all()
+                for dbcre_link in linked_cres:
+                    standard.add_link(cre_defs.Link(ltype=dbcre_link.type, document=CREfromDB(
+                        CRE.query.filter(CRE.id == dbcre_link.cre).first()),))
+                standards.append(standard)
+            return standards
+        else:
+            logger.warning("Standard %s does not exist in the db" % (name))
+            return
+
+    def __get_standards_query__(self, name: str, section=None, subsection=None, link=None, page: int = 0, items_per_page=None) -> (int, [cre_defs.Standard]):
+        total_pages = 0
         query = Standard.query.filter(Standard.name == name)
         if section:
             query = query.filter(Standard.section == section)
@@ -232,32 +272,7 @@ class Standard_collection:
             query = query.filter(Standard.subsection == subsection)
         if link:
             query = query.filter(Standard.link == link)
-        if int(page) > 0 and items_per_page:
-            dbstands = query.paginate(int(page), items_per_page, False).items
-        else:
-            dbstands = query.all()
-        if dbstands:
-            for dbstand in dbstands:
-                standard = StandardFromDB(dbstandard=dbstand)
-                linked_cres = (
-                    Links.query.filter(Links.standard == dbstand.id).all()
-                )
-                for dbcre_link in linked_cres:
-                    standard.add_link(
-                        cre_defs.Link(
-                            ltype=dbcre_link.type,
-                            document=CREfromDB(
-                                CRE.query
-                                .filter(CRE.id == dbcre_link.cre)
-                                .first()
-                            ),
-                        )
-                    )
-                standards.append(standard)
-        else:
-            logger.warning("Standard %s does not exist in the db" % (name))
-            return
-        return standards
+        return query
 
     def get_CRE(self, external_id: str = None, name: str = None) -> cre_defs.CRE:
         cre = None

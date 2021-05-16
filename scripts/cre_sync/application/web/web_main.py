@@ -38,14 +38,19 @@ def find_standard_by_name(sname):
     opt_section = request.args.get("section")
     opt_subsection = request.args.get("subsection")
     opt_hyperlink = request.args.get("hyperlink")
-    page = request.args.get("page")
-    standards = database.get_standards(
+    page = request.args.get("page") or 0
+    items_per_page = request.args.get("items_per_page") or ITEMS_PER_PAGE
+
+    total_pages, standards, _ = database.get_standards_with_pagination(
         name=sname, section=opt_section, subsection=opt_subsection, link=opt_hyperlink,
-        page=page or 0, items_per_page=ITEMS_PER_PAGE
-    )
+        page=int(page), items_per_page=int(items_per_page))
+    result = {}
+    result['total_pages'] = total_pages
+    result['page'] = page
     if standards:
         res = [stand.todict() for stand in standards]
-        return jsonify(res)
+        result['standards'] = res
+        return jsonify(result)
     abort(404)
 
 

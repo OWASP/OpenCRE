@@ -454,19 +454,20 @@ class TestDB(unittest.TestCase):
         """Given: a Standard 'S1' that links to cres
         return the Standard in Document format"""
         collection = db.Standard_collection()
-        dbc1 = db.CRE(external_id="123", description="CD1", name="C1")
-        dbc2 = db.CRE(description="CD2", name="C2")
-        dbc3 = db.CRE(description="CD3", name="C3")
-        dbs1 = db.Standard(name="S1", section="1", subsection="2", link="3")
-
-        collection.session.add(dbc1)
-        collection.session.add(dbc2)
-        collection.session.add(dbc3)
-        collection.session.add(dbs1)
+        docs = {
+            'dbc1': db.CRE(external_id="123", description="CD1", name="C1"),
+            'dbc2': db.CRE(description="CD2", name="C2"),
+            'dbc3': db.CRE(description="CD3", name="C3"),
+            'dbs1': db.Standard(name="S1", section="1", subsection="2", link="3")
+        }
+        links = [('dbc1', 'dbs1'), ('dbc2', 'dbs1'), ('dbc3', 'dbs1')]
+        for k, v in docs.items():
+            collection.session.add(v)
         collection.session.commit()
-        collection.session.add(db.Links(cre=dbc1.id, standard=dbs1.id))
-        collection.session.add(db.Links(cre=dbc2.id, standard=dbs1.id))
-        collection.session.add(db.Links(cre=dbc3.id, standard=dbs1.id))
+
+        for cre, standard in links:
+            collection.session.add(
+                db.Links(cre=docs[cre].id, standard=docs[standard].id))
         collection.session.commit()
 
         expected = [
@@ -487,6 +488,47 @@ class TestDB(unittest.TestCase):
         ]
 
         res = collection.get_standards(name="S1")
+        self.assertEqual(expected, res)
+
+    def test_get_standards_with_pagination(self):
+        """Given: a Standard 'S1' that links to cres
+        return the Standard in Document format and the total pages and the page we are in"""
+        collection = db.Standard_collection()
+        docs = {
+            'dbc1': db.CRE(external_id="123", description="CD1", name="C1"),
+            'dbc2': db.CRE(description="CD2", name="C2"),
+            'dbc3': db.CRE(description="CD3", name="C3"),
+            'dbs1': db.Standard(name="S1", section="1", subsection="2", link="3")
+        }
+        links = [('dbc1', 'dbs1'), ('dbc2', 'dbs1'), ('dbc3', 'dbs1')]
+        for k, v in docs.items():
+            collection.session.add(v)
+        collection.session.commit()
+
+        for cre, standard in links:
+            collection.session.add(
+                db.Links(cre=docs[cre].id, standard=docs[standard].id))
+        collection.session.commit()
+
+        expected = [
+            defs.Standard(
+                name="S1",
+                section="1",
+                subsection="2",
+                hyperlink="3",
+                links=[
+                    defs.Link(
+                        document=defs.CRE(
+                            name="C1", description="CD1", id="123")
+                    ),
+                    defs.Link(document=defs.CRE(name="C2", description="CD2")),
+                    defs.Link(document=defs.CRE(name="C3", description="CD3")),
+                ],
+            )
+        ]
+        total_pages, res, pagination_object = collection.get_standards_with_pagination(
+            name="S1")
+        self.assertEqual(total_pages, 1)
         self.assertEqual(expected, res)
 
 
