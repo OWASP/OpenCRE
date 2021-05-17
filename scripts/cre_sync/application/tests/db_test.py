@@ -447,8 +447,16 @@ class TestDB(unittest.TestCase):
             ],
         )
 
+
         res = collection.get_CRE(name="C1")
         self.assertEqual(expected, res)
+
+        res = collection.get_CRE(external_id='123')
+        self.assertEqual(expected, res)
+
+        self.assertIsNone(collection.get_CRE(external_id='123',name="C5"))
+        self.assertIsNone(collection.get_CRE(external_id='1234'))
+        self.assertIsNone(collection.get_CRE(name='C5'))
 
     def test_get_standards(self):
         """Given: a Standard 'S1' that links to cres
