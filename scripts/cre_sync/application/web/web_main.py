@@ -19,18 +19,18 @@ def index():
 
 @app.route("/rest/v1/id/<creid>", methods=["GET"])
 def find_by_id(creid):  # refer
-    cre = database.get_CRE(id=creid)
+    cre = database.get_CRE(external_id=creid)
     if cre:
-        pprint(cre.todict())
         return jsonify(cre.todict())
+    abort(404)
 
 
 @app.route("/rest/v1/name/<crename>", methods=["GET"])
 def find_by_name(crename):
     cre = database.get_CRE(name=crename)
     if cre:
-        pprint(cre.todict())
         return jsonify(cre.todict())
+    abort(404)
 
 
 @app.route("/rest/v1/standard/<sname>", methods=["GET"])
