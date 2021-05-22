@@ -1,7 +1,8 @@
 import json
+import os
 from pprint import pprint
 
-from flask import Flask, abort, jsonify, render_template, request, Blueprint
+from flask import Flask, abort, jsonify, send_from_directory, render_template, request, Blueprint
 from jinja2 import Template, TemplateNotFound
 
 from application import create_app
@@ -9,13 +10,8 @@ from application.database import db
 
 ITEMS_PER_PAGE = 20
 
-app= Blueprint('web',__name__)
+app= Blueprint('web', __name__, static_folder='../frontend/www')
 database = db.Standard_collection()
-
-@app.route("/", methods=["GET"])
-def index():
-    return render_template("index.html")
-
 
 @app.route("/rest/v1/id/<creid>", methods=["GET"])
 def find_by_id(creid):  # refer
@@ -70,6 +66,15 @@ def page_not_found(e):
     # I prefer to have a logger dedicated to 404
     return 'Resource Not found', 404
 
+
+# If no other routes are matched, serve the react app, or any other static files (like bundle.js)
+@app.route('/', defaults={'path': ''})
+@app.route('/<path:path>')
+def index(path):
+    if path != "" and os.path.exists(app.static_folder + '/' + path):
+        return send_from_directory(app.static_folder, path)
+    else:
+        return send_from_directory(app.static_folder, 'index.html')
 
 if __name__ == "__main__":
     app.run(use_reloader=False, debug=False)
