@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "rootDirs": ["src"],
+    "module": "es2015",
+    "target": "es6",
+    "jsx": "react",
+    "strictNullChecks": true,
+    "allowSyntheticDefaultImports": true,
+    "allowJs": true,
+    "checkJs": false,
+    "lib": ["esnext", "dom"],
+    "outDir": "dist",
+    "moduleResolution": "node",
+    "keyofStringsOnly": true,
+    "skipLibCheck": true
+  },
+  "include": ["**/*.ts", "**/*.tsx", "**/*.js", "src/**/*"],
+  "exclude": ["dist", "node_modules", "build", "scripts"]
+}

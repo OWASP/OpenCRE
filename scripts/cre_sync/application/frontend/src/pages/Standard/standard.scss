@@ -1,0 +1,16 @@
+.standard-page {
+  padding-left: 20px;
+  padding-right: 20px;
+  padding-bottom: 20px;
+
+  &__links-container {
+    margin-top: 10px;
+  }
+}
+
+.standard-page .standard-page {
+  &__heading {
+    font-size: 2rem;
+    margin-bottom: 0px;
+  }
+}

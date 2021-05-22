@@ -1,0 +1,26 @@
+.search-page {
+  width: 100vw;
+  height: 100vh;
+  background-color: #242e4c;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  justify-content: center;
+
+  .search-page__heading {
+    text-align: center;
+    font-size: 4rem !important;
+  }
+
+  .search-page__heading,
+  .search-page__sub-heading {
+    color: white;
+    font-weight: 300 !important;
+  }
+
+  .search-page__sub-heading {
+    margin-top: 0px;
+    margin-bottom: 30px;
+    color: #eee;
+  }
+}

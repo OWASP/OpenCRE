@@ -1,0 +1,50 @@
+.header__nav-bar {
+  &.ui.secondary.menu {
+    margin-top: 0px;
+    border-bottom: none;
+    background-color: #242e4c;
+    margin-bottom: 20px;
+    padding-left: 20px;
+
+    .item {
+      // padding: 0px !important;
+      .ui.form {
+        .fields {
+          margin-bottom: 0px !important;
+        }
+      }
+    }
+  }
+
+  &__link {
+    padding-top: 10px;
+    padding-bottom: 10px;
+    text-align: center;
+
+    .item {
+      color: white !important;
+      width: 100%;
+      height: 100%;
+    }
+
+    .visible.menu.transition {
+      margin-top: 10px !important;
+      border-radius: 0px !important;
+      border: none !important;
+      left: -5px !important;
+    }
+  }
+
+  &__link:hover,
+  &__link--active {
+    background-color: white !important;
+    transition: all 0.2s ease;
+
+    .item {
+      color: #242e4c !important;
+      transition: all 0.2s ease;
+      border-radius: 0 !important;
+      background-color: transparent !important;
+    }
+  }
+}
