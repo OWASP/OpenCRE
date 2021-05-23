@@ -40,6 +40,8 @@ Developing
 ---
 
 You can run backend tests with `FLASK_APP=cre.py FLASK_CONFIG=test flask test`
+You can run get a coverage report with `FLASK_APP=cre.py FLASK_CONFIG=test flask test --coverage`
+Try to keep the coverage above 70%
 
 Development Notes
 ---
@@ -72,15 +74,17 @@ add tests
 * add parser integration of tags (parse the new new new spreadsheet template which incorporates tags)
 * ~ add search by tag in rest and frontend ~ Done
 * ~ add dockerfile ~ Done
+* ~ add conditional export (select the standards you want exported get mappings between them)  (gap analysis use case) ~ -- Done
+* ~ add flask cover command from here https://github.com/miguelgrinberg/flasky/blob/master/flasky.py#L33~ Done
 
 * write frontend
 * make frontend show Graph
 
-* make pagination also for tag results
+* make pagination also for tag results and gap analysis
 * make results per page a config item from env
-* add flask cover command from here https://github.com/miguelgrinberg/flasky/blob/master/flasky.py#L33
+
 * make library out of file format and spreadsheet template parsers
-* add conditional export (select the standards you want exported and if you want to see the CRE ids or not, get spreadsheet with mappings)  (gap analysis use case)  -- DB part done
+
 * add more linkTypes, Child, Controls, Tests, others.
 * Add more Document types, Tool, Library
 * Figure a way to dynamically register new Custom Resource Definitions and register custom logic on what to do on import/export and search.
