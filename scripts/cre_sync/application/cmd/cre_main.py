@@ -34,13 +34,12 @@ def register_standard(standard: defs.Standard,
     )  # we need to know the cres added in case we encounter a higher level CRE, then we get the higher level CRE to link to these cres
     for link in standard.links:
         if type(link.document).__name__ == defs.Standard.__name__:
-            # if a standard links another standard it is likely that a standards writer references something
+            # if a standard links another standard it is likely that a standards writer wants to reference something
             # in that case, find which of the two standards has at least one CRE attached to it and link both to the parent CRE
             cres = collection.find_cres_of_standard(link.document)
             if cres:
                 for cre in cres:
-                    collection.add_link(
-                        cre=cre, standard=linked_standard, type=link.ltype)
+                    collection.add_link(cre=cre, standard=linked_standard, type=link.ltype)
                     for unlinked_standard in cre_less_standards:  # if anything in this
                         collection.add_link(
                             cre=cre, link=unlinked_standard, type=link.ltype
