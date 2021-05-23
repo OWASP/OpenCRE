@@ -226,6 +226,7 @@ class Document:
             raise ValueError("add_link only takes Link() types")
 
         self.links.append(link)
+        return self
 
     def __init__(
         self,
@@ -288,7 +289,7 @@ class Standard(Document):
             and self.hyperlink == other.hyperlink
         )
 
-    def __init__(self, section=None, subsection=None, hyperlink=None, *args, **kwargs):
+    def __init__(self, section="", subsection="", hyperlink="", *args, **kwargs):
         self.doctype = Credoctypes.Standard
         if section is None or section == "":
             raise MandatoryFieldException(
@@ -297,7 +298,7 @@ class Standard(Document):
                 % (kwargs.get("name"), section)
             )
         self.section = section
-        self.subsection = subsection
+        self.subsection =   subsection 
         self.hyperlink = hyperlink
         super().__init__(*args, **kwargs)
 

@@ -15,7 +15,7 @@ class TestCreDefs(unittest.TestCase):
         )
         standard_output = {
             "doctype": "Standard",
-            "hyperlink": None,
+            "hyperlink": "",
             "name": "ASVS",
             "section": "SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING",
             "subsection": "3.1.1",
@@ -37,7 +37,7 @@ class TestCreDefs(unittest.TestCase):
                     "type": "SAM",
                     "document": {
                         "doctype": "Standard",
-                        "hyperlink": None,
+                        "hyperlink": "",
                         "name": "ASVS",
                         "section": "SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING",
                         "subsection": "3.1.1",
@@ -77,7 +77,7 @@ class TestCreDefs(unittest.TestCase):
                                 "type": "SAM",
                                 "document": {
                                     "doctype": "Standard",
-                                    "hyperlink": None,
+                                    "hyperlink": "",
                                     "name": "ASVS",
                                     "section": "SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING",
                                     "subsection": "3.1.1",
@@ -92,7 +92,7 @@ class TestCreDefs(unittest.TestCase):
                     "type": "SAM",
                     "document": {
                         "doctype": "Standard",
-                        "hyperlink": None,
+                        "hyperlink": "",
                         "name": "Standard",
                         "section": "StandardSection",
                         "subsection": "3.1.1",
@@ -110,7 +110,7 @@ class TestCreDefs(unittest.TestCase):
         )
         nested_output = {
             "doctype": "Standard",
-            "hyperlink": None,
+            "hyperlink": "",
             "name": "ASVS",
             "section": "SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING",
             "subsection": "3.1.1",

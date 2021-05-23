@@ -11,10 +11,10 @@ from application.database import db
 ITEMS_PER_PAGE = 20
 
 app= Blueprint('web', __name__, static_folder='../frontend/www')
-database = db.Standard_collection()
 
 @app.route("/rest/v1/id/<creid>", methods=["GET"])
 def find_by_id(creid):  # refer
+    database = db.Standard_collection()
     cre = database.get_CRE(external_id=creid)
     if cre:
         return jsonify(cre.todict())
@@ -23,6 +23,7 @@ def find_by_id(creid):  # refer
 
 @app.route("/rest/v1/name/<crename>", methods=["GET"])
 def find_by_name(crename):
+    database = db.Standard_collection()
     cre = database.get_CRE(name=crename)
     if cre:
         return jsonify(cre.todict())
@@ -31,6 +32,7 @@ def find_by_name(crename):
 
 @app.route("/rest/v1/standard/<sname>", methods=["GET"])
 def find_standard_by_name(sname):
+    database = db.Standard_collection()
     opt_section = request.args.get("section")
     opt_subsection = request.args.get("subsection")
     opt_hyperlink = request.args.get("hyperlink")
@@ -53,12 +55,21 @@ def find_standard_by_name(sname):
 # TODO: (spyros) paginate
 @app.route("/rest/v1/tags", methods=["GET"])
 def find_document_by_tag(sname):
+    database = db.Standard_collection()
     tags = request.args.getlist("tag")
     documents = database.get_by_tags(tags)
     if documents:
         res = [doc.todict() for doc in documents]
         return jsonify(res)
 
+@app.route('/rest/v1/gap_analysis',methods=["GET"])
+def gap_analysis(): # TODO (spyros): add export result to spreadsheet 
+    database = db.Standard_collection()
+    standards = request.args.getlist('standard')
+    documents = database.gap_analysis(standards=standards)
+    if documents:
+        res = [doc.todict() for doc in documents]
+        return jsonify(res)
 
 @app.errorhandler(404)
 def page_not_found(e):
