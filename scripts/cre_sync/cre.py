@@ -5,12 +5,19 @@ import sys
 import click
 import argparse
 from application.cmd import cre_main
+import coverage
 
 # Hacky solutions to make this both a command line application with argparse and a flask application
 
 app = create_app(mode=os.getenv('FLASK_CONFIG') or 'default')
 sqla.create_all(app=app)
+
 # flask <x> commands
+
+COV = None
+if os.environ.get('FLASK_COVERAGE'):
+    COV = coverage.coverage(branch=True, include='application/*')
+    COV.start()
 
 @app.cli.command()
 @click.option('--coverage/--no-coverage', default=False,
@@ -25,9 +32,18 @@ def test(coverage, test_names):
     if test_names:
         tests = unittest.TestLoader().loadTestsFromNames(test_names)
     else:
-        # tests = unittest.TestLoader().run('application/tests/dummy_test.py')
         tests = unittest.TestLoader().discover("application/tests",pattern="*_test.py")
     unittest.TextTestRunner(verbosity=2).run(tests)
+    if COV:
+        COV.stop()
+        COV.save()
+        print('Coverage Summary:')
+        COV.report()
+        basedir = os.path.abspath(os.path.dirname(__file__))
+        covdir = os.path.join(basedir, 'tmp/coverage')
+        COV.html_report(directory=covdir)
+        print('HTML version: file://%s/index.html' % covdir)
+        COV.erase()
 
 # python cre.py --<x> commands
 def main():
