@@ -8,8 +8,6 @@
     "build": "webpack --config webpack.prod.js",
     "start": "webpack serve",
     "test": "jest",
-    "e2e:view": "yarn run cypress open",
-    "e2e": "yarn run cypress run",
     "postinstall": "del-cli node_modules/@types/react-dom/node_modules/@types && del-cli node_modules/webpack/types.d.ts"
   },
   "keywords": [],
@@ -48,7 +46,6 @@
     "@types/react-dom": "^17.0.3",
     "@wojtekmaj/enzyme-adapter-react-17": "^0.6.1",
     "awesome-typescript-loader": "5.2.1",
-    "cypress": "^7.2.0",
     "d3-dag": "^0.6.3",
     "date-fns": "^2.16.1",
     "del-cli": "^3.0.1",
@@ -73,7 +70,7 @@
     "sass": "^1.32.12",
     "semantic-ui-react": "^2.0.3",
     "sinon": "^10.0.0",
-    "typescript": "^4.2.4",
+    "typescript": "4.2.4",
     "webpack-cli": "^4.4.0"
   },
   "importSort": {
