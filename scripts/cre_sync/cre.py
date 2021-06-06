@@ -47,6 +47,9 @@ def test(coverage, test_names):
 
 # python cre.py --<x> commands
 def main():
+    app_context = app.app_context()
+    app_context.push()
+    
     script_path = os.path.dirname(os.path.realpath(__file__))
     parser = argparse.ArgumentParser(
         description="Add documents describing standards to a database"
