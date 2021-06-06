@@ -587,9 +587,9 @@ class Standard_collection:
 
 
 def StandardFromDB(dbstandard: Standard):
-    tags = []
+    tags = set()
     if dbstandard.tags:
-        tags = dbstandard.tags.split(",")
+        tags = set(dbstandard.tags.split(","))
     return cre_defs.Standard(
         name=dbstandard.name,
         section=dbstandard.section,
@@ -600,9 +600,9 @@ def StandardFromDB(dbstandard: Standard):
 
 
 def CREfromDB(dbcre: CRE):
-    tags = []
+    tags = set()
     if dbcre.tags:
-        tags = dbcre.tags.split(",")
+        tags = set(dbcre.tags.split(","))
     return cre_defs.CRE(
         name=dbcre.name, description=dbcre.description, id=dbcre.external_id, tags=tags
     )

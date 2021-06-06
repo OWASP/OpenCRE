@@ -443,7 +443,8 @@ class TestParsers(unittest.TestCase):
         for key, val in result.items():
             # assert equal links, lists in python aren't ordered so normal equality doesn't work
             self.assertEqual(
-                collections.Counter(expected[key].links), collections.Counter(val.links)
+                collections.Counter(
+                    expected[key].links), collections.Counter(val.links)
             )
 
             expected[key].links = []
@@ -1115,6 +1116,78 @@ class TestParsers(unittest.TestCase):
             groupless[key].links = []
             self.assertEqual(groupless[key], value)
 
+    def test_parse_hierarchical_export_format(self):
+        cauth = defs.CRE(id=2, name="Authentication")
+        cauthmech = defs.CRE(id=3, name="Authentication mechanism")
+        cauth4 = defs.CRE(id=4, name="""Verify that the application 
+                  uses a single vetted authentication mechanism that is known to be secure, can be extended to include strong authentication, 
+                  and has sufficient logging and monitoring to detect account abuse or breaches.""")
+        clogging = defs.CRE(name="Logging and Error handling")
+
+        sTop10 = defs.Standard(
+            name="Top10 2017", section="A2_Broken_Authenticationn")
+        sASVS = defs.Standard(name="ASVS", section="V1.2.3")
+        sCWE = defs.Standard(name="CWE", section="306")
+
+        cauth.add_link(defs.Link(document=cauthmech)).add_link(defs.Link(document=sTop10))
+        
+        cauthmech.add_link(defs.Link(document=cauth4))
+        
+        cauth4.add_link(defs.Link(document=clogging)).add_link(defs.Link(document=sASVS)).add_link(defs.Link(document=sCWE))
+
+        for nsection in ['PL-8 Information ', 'Security Architecture,\n', 'SC-39 PROCESS ', 'ISOLATION', 'SC-3 SECURITY FUNCTION', 'ISOLATION']:
+            cauth4.add_link(defs.Link(document=defs.Standard(
+                name="NIST 800-53", section=nsection)))
+
+        data = [{'ASVS Item ': '', 'ASVS sequence': 0,
+                  'ASVS-L1': '', 'ASVS-L2': '',
+                  'ASVS-L3': '', 'CRE hierarchy 1': 'Authentication',
+                  'CRE hierarchy 2': '', 'CRE hierarchy 3': '',
+                  'CRE hierarchy 4 (based on ASVS - text will be made more abstract)': '',
+                  'CRE mapped Top10 2017 version': 'A2_Broken_Authenticationn',
+                  'CRE sequency': 2,
+                  'CWE (from ASVS)': '', 'Link to other CRE': '',
+                  'NIST 800-53 - IS Preliminary mapping by CRE team': '',
+                  'NIST-800-63 (from ASVS)': '', 'OPC (ASVS source)': '',
+                  'TAGS': '',
+                  'WSTG (prefilled by SR, but Elie has plan to make the administration self-maintaining)': ''},
+                 {'ASVS Item ': '', 'ASVS sequence': 0,
+                  'ASVS-L1': '', 'ASVS-L2': '',
+                  'ASVS-L3': '', 'CRE hierarchy 1': 'Authentication',
+                  'CRE hierarchy 2': 'Authentication mechanism',
+                  'CRE hierarchy 3': '', 'CRE hierarchy 4 (based on ASVS - text will be made more abstract)': '',
+                  'CRE mapped Top10 2017 version': 'See higher level topic',
+                  'CRE sequency': 3, 'CWE (from ASVS)': '',
+                  'Link to other CRE': '', 'NIST 800-53 - IS Preliminary mapping by CRE team': '',
+                  'NIST-800-63 (from ASVS)': '', 'OPC (ASVS source)': '',
+                  'TAGS': '', 'WSTG (prefilled by SR, but Elie has plan to make the administration self-maintaining)': ''},
+                 {'ASVS Item ': 'V1.2.3', 'ASVS sequence': 10,
+                  'ASVS-L1': '', 'ASVS-L2': 'X', 'ASVS-L3': 'X',
+                  'CRE hierarchy 1': 'Authentication', 'CRE hierarchy 2': 'Authentication mechanism',
+                  'CRE hierarchy 3': '', 'CRE hierarchy 4 (based on ASVS - text will be made more abstract)': """Verify that the application 
+                  uses a single vetted authentication mechanism that is known to be secure, can be extended to include strong authentication, 
+                  and has sufficient logging and monitoring to detect account abuse or breaches.""",
+                  'CRE mapped Top10 2017 version': 'See higher level topic',
+                  'CRE sequency': 4, 'CWE (from ASVS)': 306, 'Link to other CRE': 'Logging and Error handling',
+                  'NIST 800-53 - IS Preliminary mapping by CRE team': 'PL-8 Information '
+                  'Security Architecture,\n'
+                  'SC-39 PROCESS '
+                  'ISOLATION,\n'
+                  'SC-3 SECURITY FUNCTION '
+                  'ISOLATION',
+                  'NIST-800-63 (from ASVS)': 'None',
+                  'OPC (ASVS source)': 'None',
+                  'TAGS': 'Architecture',
+                  'WSTG (prefilled by SR, but Elie has plan to make the administration self-maintaining)': ''}]
+        expected = {"Authentication": cauth, "Authentication mechanism": cauthmech,
+                    """Verify that the application 
+                  uses a single vetted authentication mechanism that is known to be secure, can be extended to include strong authentication, 
+                  and has sufficient logging and monitoring to detect account abuse or breaches.""": cauth4,
+                    "Logging and Error handling": clogging }
+
+        self.maxDiff = None
+        output = parse_hierarchical_export_format(data)
+        self.assertCountEqual(expected, output)
 
 if __name__ == "__main__":
     unittest.main()

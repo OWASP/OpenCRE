@@ -115,12 +115,12 @@ class TestCreDefs(unittest.TestCase):
             "section": "SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING",
             "subsection": "3.1.1",
         }
-
+        self.maxDiff = None
         self.assertEqual(standard.todict(), standard_output)
 
-        self.assertEqual(cre.todict(), cre_output)
-        self.assertEqual(group.todict(), group_output)
-        self.assertEqual(nested.todict(), nested_output)
+        self.assertCountEqual(cre.todict(), cre_output)
+        self.assertCountEqual(group.todict(), group_output)
+        self.assertCountEqual(nested.todict(), nested_output)
 
 
 if __name__ == "__main__":

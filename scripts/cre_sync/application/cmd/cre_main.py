@@ -130,7 +130,8 @@ def parse_standards_from_spreadsheeet(cre_file: list, result: db.Standard_collec
         hi_lvl_CREs, cres = parsers.parse_v1_standards(cre_file)
     elif "CRE:name" in cre_file[0].keys():
         cres = parsers.parse_export_format(cre_file)
-
+    elif any(key.startswith("CRE sequency") for key in cre_file[0].keys()):
+        cres = parsers.parse_hierarchical_export_format(cre_file)
     else:
         cres = parsers.parse_v0_standards(cre_file)
 

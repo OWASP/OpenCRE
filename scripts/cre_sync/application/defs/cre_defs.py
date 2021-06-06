@@ -141,10 +141,10 @@ class Metadata:
 @dataclass
 class Link:
     ltype: LinkTypes
-    tags: list
+    tags: set
     document = None
 
-    def __init__(self, ltype=LinkTypes.Same, tags=[], document=None):
+    def __init__(self, ltype=LinkTypes.Same, tags=set(), document=None):
         if document is None:
             raise_MandatoryFieldException("Links need to link to a Document")
         self.document = document
@@ -152,7 +152,7 @@ class Link:
             self.ltype = LinkTypes.from_str(ltype)
         else:
             self.ltype = ltype
-        self.tags = tags
+        self.tags = tags if isinstance(tags,set) else set(tags)
 
     def __hash__(self):
         return hash(json.dumps(self.todict()))
@@ -172,7 +172,7 @@ class Link:
         if self.document:
             res["document"] = self.document.todict()
         if len(self.tags):
-            res["tags"] = self.tags
+            res["tags"] = list(self.tags)
         return res
 
 
@@ -183,7 +183,7 @@ class Document:
     description: str
     name: str
     links: list
-    tags: list
+    tags: set
     metadata: Metadata
 
     def __eq__(self, other):
@@ -193,7 +193,7 @@ class Document:
             and self.doctype.value == other.doctype.value
             and self.description == other.description
             and self.links == other.links
-            and self.tags == other.tags
+            and all([a==b for a,b in zip(self.tags, other.tags)])
             and self.metadata == other.metadata
         )
 
@@ -214,7 +214,7 @@ class Document:
             for link in self.links:
                 result["links"].append(link.todict())
         if self.tags:
-            result["tags"] = self.tags
+            result["tags"] = list(self.tags)
         if self.metadata:
             result["metadata"] = self.metadata.todict()
         return result
@@ -235,7 +235,7 @@ class Document:
         id="",
         description="",
         links=[],
-        tags=[],
+        tags=set(),
         metadata: Metadata = None,
     ):
         self.description = str(description)
@@ -243,9 +243,10 @@ class Document:
             "Document name not defined for document of doctype %s" % doctype
         )
         self.links = links or []
-        if isinstance(tags,list) and "" in tags:
+        if isinstance(tags,set) and "" in tags:
             tags.remove("")
-        self.tags = tags
+
+        self.tags = tags if isinstance(tags,set) else set(tags)
         self.id = id
         self.metadata = metadata
         if not doctype and not self.doctype:

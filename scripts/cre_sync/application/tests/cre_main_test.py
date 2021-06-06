@@ -39,7 +39,7 @@ class TestMain(unittest.TestCase):
                         description="",
                         name="CWE",
                         links=[],
-                        tags=[],
+                        tags=set(),
                         metadata=defs.Metadata(labels=[]),
                         section="598",
                     )
@@ -51,13 +51,13 @@ class TestMain(unittest.TestCase):
                         description="",
                         name="ASVS",
                         links=[],
-                        tags=[],
+                        tags=set(),
                         metadata=defs.Metadata(labels=[]),
                         section="SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING",
                     )
                 ),
             ],
-            tags=[],
+            tags=set(),
             metadata=defs.Metadata(labels=[]),
             section="Standard With Links",
         )
@@ -93,7 +93,7 @@ class TestMain(unittest.TestCase):
                         description="cre desc",
                         name="crename",
                         links=[],
-                        tags=[],
+                        tags=set(),
                         metadata=defs.Metadata(labels=[]),
                     )
                 ),
@@ -104,13 +104,13 @@ class TestMain(unittest.TestCase):
                         description="",
                         name="ASVS",
                         links=[],
-                        tags=[],
+                        tags=set(),
                         metadata=defs.Metadata(labels=[]),
                         section="SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING",
                     )
                 ),
             ],
-            tags=[],
+            tags=set(),
             metadata=defs.Metadata(labels=[]),
             section="standard_with_cre",
         )
@@ -148,12 +148,12 @@ class TestMain(unittest.TestCase):
                                     description="cre2 desc",
                                     name="crename2",
                                     links=[],
-                                    tags=[],
+                                    tags=set(),
                                     metadata=defs.Metadata(labels=[]),
                                 )
                             )
                         ],
-                        tags=[],
+                        tags=set(),
                         metadata=defs.Metadata(labels=[]),
                     )
                 ),
@@ -164,7 +164,7 @@ class TestMain(unittest.TestCase):
                         description="",
                         name="CWE",
                         links=[],
-                        tags=[],
+                        tags=set(),
                         metadata=defs.Metadata(labels=[]),
                         section="598",
                     )
@@ -176,7 +176,7 @@ class TestMain(unittest.TestCase):
                         description="cre desc",
                         name="crename",
                         links=[],
-                        tags=[],
+                        tags=set(),
                         metadata=defs.Metadata(labels=[]),
                     )
                 ),
@@ -187,13 +187,13 @@ class TestMain(unittest.TestCase):
                         description="",
                         name="ASVS",
                         links=[],
-                        tags=[],
+                        tags=set(),
                         metadata=defs.Metadata(labels=[]),
                         section="SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING",
                     )
                 ),
             ],
-            tags=[],
+            tags=set(),
             metadata=defs.Metadata(labels=[]),
             section="Session Management",
         )
@@ -301,7 +301,7 @@ class TestMain(unittest.TestCase):
                         description="",
                         name="TOP10",
                         links=[],
-                        tags=[],
+                        tags=set(),
                         metadata={},
                         section="https://owasp.org/www-project-top-ten/2017/A5_2017-Broken_Access_Control",
                         subsection="None",
@@ -315,7 +315,7 @@ class TestMain(unittest.TestCase):
                         description="",
                         name="ISO 25010",
                         links=[],
-                        tags=[],
+                        tags=set(),
                         metadata={},
                         section="Secure data storage",
                         subsection="None",
@@ -323,7 +323,7 @@ class TestMain(unittest.TestCase):
                     )
                 ),
             ],
-            tags=[],
+            tags=set(),
             metadata={},
         ),defs.CRE(id='14', description='Desc', name='name')]
 
@@ -331,9 +331,8 @@ class TestMain(unittest.TestCase):
             filename="tests", yamldocs=file[0], scollection=self.collection)
         # negative test first parse_file accepts a list of objects
         self.assertEqual(result, None)
-
-        result = main.parse_file(filename="tests", yamldocs=
-                                 file, scollection=self.collection)
+        self.maxDiff = None
+        result = main.parse_file(filename="tests", yamldocs=file, scollection=self.collection)
         self.assertCountEqual(result, expected)
 
     # TODO: ensure db has exact values instead of correct number of elements
