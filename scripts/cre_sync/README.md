@@ -77,7 +77,7 @@ add tests
 * ~ add conditional export (select the standards you want exported get mappings between them)  (gap analysis use case) ~ -- Done
 * ~ add flask cover command from here https://github.com/miguelgrinberg/flasky/blob/master/flasky.py#L33~ Done
 
-* write frontend
+* ~ write frontend  ~ Done
 * make frontend show Graph
 
 * make pagination also for tag results and gap analysis

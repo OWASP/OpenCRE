@@ -17,7 +17,7 @@ def find_by_id(creid):  # refer
     database = db.Standard_collection()
     cre = database.get_CRE(external_id=creid)
     if cre:
-        return jsonify(cre.todict())
+        return jsonify({"data":cre.todict()})
     abort(404)
 
 
