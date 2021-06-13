@@ -76,17 +76,20 @@ add tests
 * ~ add dockerfile ~ Done
 * ~ add conditional export (select the standards you want exported get mappings between them)  (gap analysis use case) ~ -- Done
 * ~ add flask cover command from here https://github.com/miguelgrinberg/flasky/blob/master/flasky.py#L33~ Done
-
+* ~ Make Standards versioned ~ -- Done
 * ~ write frontend  ~ Done
 * make frontend show Graph
 
+* Make frontend show gap analysis
+* Make frontend export search results and gap analysis to spreadsheet (supply backend with an "export=True" arg)
+* Make frontned able to import from spreadsheet template.
+* Make frontend able to import from files
+* Make frontend able to import by filing in a form.
+* Make frontend show Graph
 * make pagination also for tag results and gap analysis
 * make results per page a config item from env
-
 * make library out of file format and spreadsheet template parsers
-
 * add more linkTypes, Child, Controls, Tests, others.
 * Add more Document types, Tool, Library
 * Figure a way to dynamically register new Custom Resource Definitions and register custom logic on what to do on import/export and search.
-
 * write docs and record usage gif
