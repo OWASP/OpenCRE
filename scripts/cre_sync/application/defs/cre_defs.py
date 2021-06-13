@@ -270,12 +270,14 @@ class Standard(Document):
     section: str
     subsection: str
     hyperlink: str
+    version: str
 
     def todict(self):
         result = super().todict()
         result["section"] = self.section
         result["subsection"] = self.subsection
         result["hyperlink"] = self.hyperlink
+        result["version"] = self.version
         return result
 
     def __hash__(self):
@@ -288,9 +290,10 @@ class Standard(Document):
             and self.section == other.section
             and self.subsection == other.subsection
             and self.hyperlink == other.hyperlink
+            and self.version == other.version
         )
 
-    def __init__(self, section="", subsection="", hyperlink="", *args, **kwargs):
+    def __init__(self, section="", subsection="", hyperlink="", version="", *args, **kwargs):
         self.doctype = Credoctypes.Standard
         if section is None or section == "":
             raise MandatoryFieldException(
@@ -301,6 +304,7 @@ class Standard(Document):
         self.section = section
         self.subsection =   subsection 
         self.hyperlink = hyperlink
+        self.version = version
         super().__init__(*args, **kwargs)
 
 

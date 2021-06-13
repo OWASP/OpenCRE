@@ -1,6 +1,5 @@
 
 
-
 import logging
 import os
 # from sqlalchemy.ext.declarative import declarative_base
@@ -35,6 +34,8 @@ class Standard(sqla.Model):
     subsection = sqla.Column(sqla.String)
     tags = sqla.Column(sqla.String, default="")  # coma separated tags
 
+    version = sqla.Column(sqla.String)
+
     # some external link to where this is, usually a URL with an anchor
     link = sqla.Column(sqla.String, default="")
     __table_args__ = (
@@ -65,6 +66,7 @@ class InternalLinks(sqla.Model):
     cre = sqla.Column(sqla.Integer, sqla.ForeignKey(
         "cre.id"), primary_key=True)
 
+
 class Links(sqla.Model):
     __tablename__ = "links"
     type = sqla.Column(sqla.String, default="SAM")
@@ -84,10 +86,10 @@ class Standard_collection:
         for il in self.session.query(InternalLinks).all():
             graph.add_node(il.group)
             graph.add_node(il.cre)
-            graph.add_edge(il.group,il.cre)
+            graph.add_edge(il.group, il.cre)
         for l in self.session.query(Links).all():
             graph.add_node("Standard:"+str(l.standard))
-            graph.add_edge(l.cre,"Standard:"+str(l.standard))
+            graph.add_edge(l.cre, "Standard:"+str(l.standard))
         return graph
 
     def __get_external_links(self):
@@ -170,7 +172,8 @@ class Standard_collection:
                         .filter(sqla.and_(
                             Standard.name == standard.name,
                             Standard.section == standard.section,
-                            Standard.subsection == standard.subsection,)).first())
+                            Standard.subsection == standard.subsection,
+                            Standard.version == standard.version)).first())
         if not standard:
             return
         result = []
@@ -192,15 +195,19 @@ class Standard_collection:
             return []
 
         for tag in tags:
-            standards_where_clause.append(sqla.and_(Standard.tags.like("%{}%".format(tag))))
-            cre_where_clause.append(sqla.and_(CRE.tags.like("%{}%".format(tag))))
+            standards_where_clause.append(
+                sqla.and_(Standard.tags.like("%{}%".format(tag))))
+            cre_where_clause.append(
+                sqla.and_(CRE.tags.like("%{}%".format(tag))))
 
-        standards = (Standard.query.filter(*standards_where_clause).all() or [])
+        standards = (Standard.query.filter(
+            *standards_where_clause).all() or [])
         for standard in standards:
             standard = self.get_standards(
                 name=standard.name,
                 section=standard.section,
                 subsection=standard.subsection,
+                version=standard.version,
                 link=standard.link,
             )
             if standard:
@@ -217,13 +224,14 @@ class Standard_collection:
             if cre:
                 documents.append(cre)
             else:
-                logger.fatal("db.get_CRE returned None for CRE %s:%s that exists, BUG!"% (c.id, c.name))
+                logger.fatal(
+                    "db.get_CRE returned None for CRE %s:%s that exists, BUG!" % (c.id, c.name))
         return documents
 
-    def get_standards_with_pagination(self, name: str, section=None, subsection=None, link=None, page: int = 0, items_per_page=None):
+    def get_standards_with_pagination(self, name: str, section=None, subsection=None, link=None, version=None, page: int = 0, items_per_page=None):
         standards = []
         dbstands = self.__get_standards_query__(
-            name, section, subsection, link).paginate(int(page), items_per_page, False)
+            name, section, subsection, link, version).paginate(int(page), items_per_page, False)
         total_pages = dbstands.pages
         if dbstands.items:
             for dbstand in dbstands.items:
@@ -241,9 +249,10 @@ class Standard_collection:
             logger.warning("Standard %s does not exist in the db" % (name))
             return None, None, None
 
-    def get_standards(self, name: str, section=None, subsection=None, link=None) -> [cre_defs.Standard]:
+    def get_standards(self, name: str, section=None, subsection=None, link=None, version=None) -> [cre_defs.Standard]:
         standards = []
-        standards_query = self.__get_standards_query__(name, section, subsection, link)
+        standards_query = self.__get_standards_query__(
+            name, section, subsection, link, version)
         dbstands = standards_query.all()
         if dbstands:
             for dbstand in dbstands:
@@ -259,7 +268,7 @@ class Standard_collection:
             logger.warning("Standard %s does not exist in the db" % (name))
             return
 
-    def __get_standards_query__(self, name: str, section=None, subsection=None, link=None, page: int = 0, items_per_page=None) -> (int, [cre_defs.Standard]):
+    def __get_standards_query__(self, name: str, section=None, subsection=None, link=None, version=None, page: int = 0, items_per_page=None) -> (int, [cre_defs.Standard]):
         total_pages = 0
         query = Standard.query.filter(Standard.name == name)
         if section:
@@ -268,6 +277,8 @@ class Standard_collection:
             query = query.filter(Standard.subsection == subsection)
         if link:
             query = query.filter(Standard.link == link)
+        if version:
+            query = query.filter(Standard.version == version)
         return query
 
     def get_CRE(self, external_id: str = None, name: str = None) -> cre_defs.CRE:
@@ -373,8 +384,8 @@ class Standard_collection:
         # unlinked standards last
         for ustandard in self.__get_unlinked_standards():
             ustand = StandardFromDB(ustandard)
-            docs["%s-%s:%s" % (ustand.name, ustand.section,
-                               ustand.subsection)] = ustand
+            docs["%s-%s:%s:%s" % (ustand.name, ustand.section,
+                                  ustand.subsection, ustand.version)] = ustand
 
         for _, doc in docs.items():
             title = doc.name.replace("/", "-") + ".yaml"
@@ -418,6 +429,7 @@ class Standard_collection:
                     Standard.name == standard.name,
                     Standard.section == standard.section,
                     Standard.subsection == standard.subsection,
+                    Standard.version == standard.version,
                 )
             )
             .first()
@@ -438,21 +450,22 @@ class Standard_collection:
                 section=standard.section,
                 subsection=standard.subsection,
                 link=standard.hyperlink,
+                version=standard.version,
             )
             self.session.add(entry)
             self.session.commit()
             self.cre_graph.add_node("Standard:"+str(entry.id))
         return entry
 
-    def __introduces_cycle(self,node_from,node_to):
+    def __introduces_cycle(self, node_from, node_to):
         new_graph = self.cre_graph.copy()
-        new_graph.add_edge(node_from,node_to)
+        new_graph.add_edge(node_from, node_to)
         try:
             return nx.find_cycle(new_graph)
         except nx.NetworkXNoCycle:
             return False
 
-    def add_internal_link(self, group: CRE, cre: CRE, type: cre_defs.LinkTypes=cre_defs.LinkTypes.Same):
+    def add_internal_link(self, group: CRE, cre: CRE, type: cre_defs.LinkTypes = cre_defs.LinkTypes.Same):
         if cre.id == None:
             if cre.external_id == None:
                 cre = (
@@ -520,16 +533,17 @@ class Standard_collection:
                 "did not know of internal link %s:%s == %s:%s ,adding"
                 % (group.external_id, group.name, cre.external_id, cre.name)
             )
-            cycle = self.__introduces_cycle(group.id,cre.id)
+            cycle = self.__introduces_cycle(group.id, cre.id)
             if not cycle:
-                self.session.add(InternalLinks(type=type.value, cre=cre.id, group=group.id))
+                self.session.add(InternalLinks(
+                    type=type.value, cre=cre.id, group=group.id))
                 self.session.commit()
-                self.cre_graph.add_edge(group.id,cre.id)
+                self.cre_graph.add_edge(group.id, cre.id)
             else:
-                logger.warning("A link between CREs %s and %s would introduce a cycle, skipping"%(group.id,cre.id))
+                logger.warning("A link between CREs %s and %s would introduce a cycle, skipping" % (
+                    group.id, cre.id))
 
-
-    def add_link(self, cre: CRE, standard: Standard, type: cre_defs.LinkTypes=cre_defs.LinkTypes.Same):
+    def add_link(self, cre: CRE, standard: Standard, type: cre_defs.LinkTypes = cre_defs.LinkTypes.Same):
         if cre.id == None:
             cre = self.session.query(CRE).filter(
                 sqla.and_(CRE.name == cre.name)).first()
@@ -539,7 +553,8 @@ class Standard_collection:
                 .filter(sqla.and_(
                         Standard.name == standard.name,
                         Standard.section == standard.section,
-                        Standard.subsection == standard.subsection)).first())
+                        Standard.subsection == standard.subsection,
+                        Standard.version == standard.version,)).first())
 
         entry = (
             self.session.query(Links).filter(sqla.and_(Links.cre == cre.id, Links.standard == standard.id)).first())
@@ -556,8 +571,9 @@ class Standard_collection:
                 "did not know of link %s)%s:%s==%s)%s ,adding"
                 % (standard.id, standard.name, standard.section, cre.id, cre.name)
             )
-            self.session.add(Links(type=type.value, cre=cre.id, standard=standard.id))
-            self.cre_graph.add_edge(cre.id,"Standard:"+str(standard.id))
+            self.session.add(
+                Links(type=type.value, cre=cre.id, standard=standard.id))
+            self.cre_graph.add_edge(cre.id, "Standard:"+str(standard.id))
         self.session.commit()
 
     def find_path_between_standards(self, standard_source_id, standard_destination_id):
@@ -573,15 +589,17 @@ class Standard_collection:
         processed_standards = []
         dbstands = []
         for stand in standards:
-            dbstands.extend(self.session.query(Standard).filter(Standard.name == stand).all())
+            dbstands.extend(self.session.query(
+                Standard).filter(Standard.name == stand).all())
 
         for standard in dbstands:
             working_standard = StandardFromDB(standard)
             for other_standard in dbstands:
                 if standard.id == other_standard.id:
                     continue
-                if self.find_path_between_standards(standard.id,other_standard.id):
-                    working_standard.add_link(cre_defs.Link(document=StandardFromDB(other_standard)))
+                if self.find_path_between_standards(standard.id, other_standard.id):
+                    working_standard.add_link(cre_defs.Link(
+                        document=StandardFromDB(other_standard)))
             processed_standards.append(working_standard)
         return processed_standards
 
@@ -596,6 +614,7 @@ def StandardFromDB(dbstandard: Standard):
         subsection=dbstandard.subsection,
         hyperlink=dbstandard.link,
         tags=tags,
+        version=dbstandard.version,
     )
 
 
@@ -606,4 +625,3 @@ def CREfromDB(dbcre: CRE):
     return cre_defs.CRE(
         name=dbcre.name, description=dbcre.description, id=dbcre.external_id, tags=tags
     )
-

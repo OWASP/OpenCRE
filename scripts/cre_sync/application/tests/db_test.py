@@ -197,6 +197,7 @@ class TestDB(unittest.TestCase):
             section="bar",
             subsection="foobar",
             hyperlink="https://example.com/foo/bar",
+            version="1.1.1"
         )
         self.assertEqual(
             expected,
@@ -206,6 +207,7 @@ class TestDB(unittest.TestCase):
                     section="bar",
                     subsection="foobar",
                     link="https://example.com/foo/bar",
+                    version='1.1.1'
                 )
             ),
         )
@@ -372,7 +374,7 @@ class TestDB(unittest.TestCase):
         dbc1 = db.CRE(external_id="123", description="CD1", name="C1")
         dbc2 = db.CRE(description="CD2", name="C2")
         dbc3 = db.CRE(description="CD3", name="C3")
-        dbs1 = db.Standard(name="S2", section="1", subsection="2", link="3")
+        dbs1 = db.Standard(name="S2", section="1", subsection="2", link="3",version="1.1.1")
 
         collection.session.add(dbc1)
         collection.session.add(dbc2)
@@ -391,7 +393,7 @@ class TestDB(unittest.TestCase):
             links=[
                 defs.Link(
                     document=defs.Standard(
-                        name="S2", section="1", subsection="2", hyperlink="3"
+                        name="S2", section="1", subsection="2", hyperlink="3",version="1.1.1"
                     )
                 ),
                 defs.Link(document=defs.CRE(description="CD2", name="C2")),
@@ -417,7 +419,7 @@ class TestDB(unittest.TestCase):
             'dbc1': db.CRE(external_id="123", description="CD1", name="C1"),
             'dbc2': db.CRE(description="CD2", name="C2"),
             'dbc3': db.CRE(description="CD3", name="C3"),
-            'dbs1': db.Standard(name="S1", section="1", subsection="2", link="3")
+            'dbs1': db.Standard(name="S1", section="1", subsection="2", link="3",version="4")
         }
         links = [('dbc1', 'dbs1'), ('dbc2', 'dbs1'), ('dbc3', 'dbs1')]
         for k, v in docs.items():
@@ -435,6 +437,7 @@ class TestDB(unittest.TestCase):
                 section="1",
                 subsection="2",
                 hyperlink="3",
+                version="4",
                 links=[
                     defs.Link(
                         document=defs.CRE(
@@ -457,7 +460,7 @@ class TestDB(unittest.TestCase):
             'dbc1': db.CRE(external_id="123", description="CD1", name="C1"),
             'dbc2': db.CRE(description="CD2", name="C2"),
             'dbc3': db.CRE(description="CD3", name="C3"),
-            'dbs1': db.Standard(name="S1", section="1", subsection="2", link="3")
+            'dbs1': db.Standard(name="S1", section="1", subsection="2", link="3",version="4")
         }
         links = [('dbc1', 'dbs1'), ('dbc2', 'dbs1'), ('dbc3', 'dbs1')]
         for k, v in docs.items():
@@ -475,6 +478,7 @@ class TestDB(unittest.TestCase):
                 section="1",
                 subsection="2",
                 hyperlink="3",
+                version="4",
                 links=[
                     defs.Link(
                         document=defs.CRE(

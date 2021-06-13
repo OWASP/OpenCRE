@@ -12,6 +12,7 @@ class TestCreDefs(unittest.TestCase):
             name="ASVS",
             section="SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING",
             subsection="3.1.1",
+            version="0.0.0",
         )
         standard_output = {
             "doctype": "Standard",
@@ -19,6 +20,7 @@ class TestCreDefs(unittest.TestCase):
             "name": "ASVS",
             "section": "SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING",
             "subsection": "3.1.1",
+            "version":"0.0.0",
         }
 
         cre = defs.CRE(
@@ -114,6 +116,7 @@ class TestCreDefs(unittest.TestCase):
             "name": "ASVS",
             "section": "SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING",
             "subsection": "3.1.1",
+            "version": ""
         }
         self.maxDiff = None
         self.assertEqual(standard.todict(), standard_output)
