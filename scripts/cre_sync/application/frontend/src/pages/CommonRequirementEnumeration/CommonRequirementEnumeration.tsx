@@ -16,9 +16,9 @@ export const CommonRequirementEnumeration = () => {
   const { apiUrl } = useEnvironment();
   const [loading, setLoading] = useState<boolean>(false);
 
-  const { error, data, refetch } = useQuery<{ data: Document; totalRows: number }, string>(
+  const { error, data, refetch } = useQuery<{ data: Document;}, string>(
     'cre',
-    () => fetch(`${apiUrl}/cre/${id}`).then((res) => res.json()),
+    () => fetch(`${apiUrl}/id/${id}`).then((res) => res.json()),
     {
       retry: false,
       enabled: false,
