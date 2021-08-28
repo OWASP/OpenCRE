@@ -14,14 +14,13 @@ from application import create_app, sqla
 
 
 class TestDB(unittest.TestCase):
-
     def tearDown(self):
         sqla.session.remove()
         sqla.drop_all()
         self.app_context.pop()
 
     def setUp(self):
-        self.app = create_app(mode='test')
+        self.app = create_app(mode="test")
         sqla.create_all(app=self.app)
 
         self.app_context = self.app.app_context()
@@ -49,16 +48,14 @@ class TestDB(unittest.TestCase):
 
         collection = self.collection
 
-        dbcre = db.CRE(description="CREdesc", name="CREname",
-                       external_id="06-06-06")
+        dbcre = db.CRE(description="CREdesc", name="CREname", external_id="06-06-06")
         dbgroup = db.CRE(
             description="CREGroupDesc", name="CREGroup", external_id="09-09-09"
         )
         collection.session.add(dbcre)
         collection.session.add(dbgroup)
         collection.session.commit()
-        collection.session.add(db.InternalLinks(
-            cre=dbcre.id, group=dbgroup.id))
+        collection.session.add(db.InternalLinks(cre=dbcre.id, group=dbgroup.id))
 
         conflict1 = db.Standard(
             subsection="4.5.1",
@@ -303,16 +300,14 @@ class TestDB(unittest.TestCase):
         """
         collection = self.collection
 
-        dbcre = db.CRE(description="CREdesc", name="CREname",
-                       external_id="06-06-06")
+        dbcre = db.CRE(description="CREdesc", name="CREname", external_id="06-06-06")
         dbgroup = db.CRE(
             description="CREGroupDesc", name="CREGroup", external_id="09-09-09"
         )
         collection.session.add(dbcre)
         collection.session.add(dbgroup)
         collection.session.commit()
-        collection.session.add(db.InternalLinks(
-            cre=dbcre.id, group=dbgroup.id))
+        collection.session.add(db.InternalLinks(cre=dbcre.id, group=dbgroup.id))
 
         conflict1 = db.Standard(
             subsection="4.5.1",
@@ -453,8 +448,7 @@ class TestDB(unittest.TestCase):
         collection = self.collection
 
         # test 0, single CRE, connects to several standards, 1 cre maps to the same standard in multiple sections/subsections
-        dbcre = db.CRE(description="CREdesc", name="CREname",
-                       external_id="123-321-0")
+        dbcre = db.CRE(description="CREdesc", name="CREname", external_id="123-321-0")
         collection.session.add(dbcre)
 
         conflict0 = db.Standard(

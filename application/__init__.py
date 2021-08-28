@@ -7,7 +7,7 @@ from application.config import config
 sqla = SQLAlchemy()
 
 
-def create_app(mode: str='production',conf=None):
+def create_app(mode: str = "production", conf=None):
     app = Flask(__name__)
     if not conf:
         app.config.from_object(config[mode])
@@ -17,10 +17,10 @@ def create_app(mode: str='production',conf=None):
     sqla.init_app(app=app)
 
     from application.web.web_main import app as app_blueprint
+
     app.register_blueprint(app_blueprint)
-    
+
     cors = CORS(app)
-    app.config['CORS_HEADERS'] = 'Content-Type'
+    app.config["CORS_HEADERS"] = "Content-Type"
 
     return app
-

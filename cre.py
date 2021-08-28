@@ -9,47 +9,51 @@ import coverage
 
 # Hacky solutions to make this both a command line application with argparse and a flask application
 
-app = create_app(mode=os.getenv('FLASK_CONFIG') or 'default')
+app = create_app(mode=os.getenv("FLASK_CONFIG") or "default")
 sqla.create_all(app=app)
 
 # flask <x> commands
 
 COV = None
-if os.environ.get('FLASK_COVERAGE'):
-    COV = coverage.coverage(branch=True, include='application/*')
+if os.environ.get("FLASK_COVERAGE"):
+    COV = coverage.coverage(branch=True, include="application/*")
     COV.start()
 
+
 @app.cli.command()
-@click.option('--coverage/--no-coverage', default=False,
-              help='Run tests under code coverage.')
-@click.argument('test_names', nargs=-1)
+@click.option(
+    "--coverage/--no-coverage", default=False, help="Run tests under code coverage."
+)
+@click.argument("test_names", nargs=-1)
 def test(coverage, test_names):
-    if coverage and not os.environ.get('FLASK_COVERAGE'):
+    if coverage and not os.environ.get("FLASK_COVERAGE"):
         import subprocess
-        os.environ['FLASK_COVERAGE'] = '1'
+
+        os.environ["FLASK_COVERAGE"] = "1"
         sys.exit(subprocess.call(sys.argv))
 
     if test_names:
         tests = unittest.TestLoader().loadTestsFromNames(test_names)
     else:
-        tests = unittest.TestLoader().discover("application/tests",pattern="*_test.py")
+        tests = unittest.TestLoader().discover("application/tests", pattern="*_test.py")
     unittest.TextTestRunner(verbosity=2).run(tests)
     if COV:
         COV.stop()
         COV.save()
-        print('Coverage Summary:')
+        print("Coverage Summary:")
         COV.report()
         basedir = os.path.abspath(os.path.dirname(__file__))
-        covdir = os.path.join(basedir, 'tmp/coverage')
+        covdir = os.path.join(basedir, "tmp/coverage")
         COV.html_report(directory=covdir)
-        print('HTML version: file://%s/index.html' % covdir)
+        print("HTML version: file://%s/index.html" % covdir)
         COV.erase()
+
 
 # python cre.py --<x> commands
 def main():
     app_context = app.app_context()
     app_context.push()
-    
+
     script_path = os.path.dirname(os.path.realpath(__file__))
     parser = argparse.ArgumentParser(
         description="Add documents describing standards to a database"
@@ -80,7 +84,7 @@ def main():
     parser.add_argument(
         "--cache_file",
         help="where to read/store data",
-        default=os.path.join(script_path,"standards_cache.sqlite"),
+        default=os.path.join(script_path, "standards_cache.sqlite"),
     )
     parser.add_argument(
         "--cre_loc",
@@ -92,5 +96,5 @@ def main():
     cre_main.run(args)
 
 
-if __name__ == "__main__": # if we're called directly
+if __name__ == "__main__":  # if we're called directly
     main()

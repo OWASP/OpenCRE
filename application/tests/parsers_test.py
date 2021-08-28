@@ -443,8 +443,7 @@ class TestParsers(unittest.TestCase):
         for key, val in result.items():
             # assert equal links, lists in python aren't ordered so normal equality doesn't work
             self.assertEqual(
-                collections.Counter(
-                    expected[key].links), collections.Counter(val.links)
+                collections.Counter(expected[key].links), collections.Counter(val.links)
             )
 
             expected[key].links = []
@@ -1117,15 +1116,23 @@ class TestParsers(unittest.TestCase):
             self.assertEqual(groupless[key], value)
 
     def test_parse_hierarchical_export_format(self):
-        cauth = defs.CRE(id=8, name="Authentication", tags=[
-                         "tagA", "tagB", "tagC", "tagD"])
+        cauth = defs.CRE(
+            id=8, name="Authentication", tags=["tagA", "tagB", "tagC", "tagD"]
+        )
         cauthmech = defs.CRE(id=3, name="Authentication mechanism")
 
-        cauth4 = defs.CRE(id=4, name="Verify that the application uses a single vetted authentication mechanism",tags=["Architecture"])
+        cauth4 = defs.CRE(
+            id=4,
+            name="Verify that the application uses a single vetted authentication mechanism",
+            tags=["Architecture"],
+        )
         clogging = defs.CRE(name="Logging and Error handling")
 
-        sTop10 = defs.Standard(hyperlink='https://example.com',
-                               name="Top10 2017", section="A2_Broken_Authentication")
+        sTop10 = defs.Standard(
+            hyperlink="https://example.com",
+            name="Top10 2017",
+            section="A2_Broken_Authentication",
+        )
 
         sOPC = defs.Standard(name="OPC", section="123654")
         sCWE19876 = defs.Standard(name="CWE", section=19876)
@@ -1133,116 +1140,185 @@ class TestParsers(unittest.TestCase):
         sNIST4 = defs.Standard(name="NIST 800-63", section="4444")
         sNIST3 = defs.Standard(name="NIST 800-63", section="3333")
 
-        sASVS = defs.Standard(name="ASVS", section="V1.2.3",
-                              hyperlink='https://example.com')
+        sASVS = defs.Standard(
+            name="ASVS", section="V1.2.3", hyperlink="https://example.com"
+        )
         sCWE = defs.Standard(name="CWE", section="306")
-        scheatf = defs.Standard(name="Cheat_sheets",
-                                section="https://example.com/cheatsheetf/foo")
-        scheatb = defs.Standard(name="Cheat_sheets",
-                                section="https://example.com/cheatsheetb/bar")
+        scheatf = defs.Standard(
+            name="Cheat_sheets", section="https://example.com/cheatsheetf/foo"
+        )
+        scheatb = defs.Standard(
+            name="Cheat_sheets", section="https://example.com/cheatsheetb/bar"
+        )
 
-        cfoo = defs.CRE(id=9, name="FooBar").add_link(defs.Link(document=cauthmech))\
-            .add_link(defs.Link(document=scheatb))\
+        cfoo = (
+            defs.CRE(id=9, name="FooBar")
+            .add_link(defs.Link(document=cauthmech))
+            .add_link(defs.Link(document=scheatb))
             .add_link(defs.Link(document=scheatf))
+        )
 
-        cauth.add_link(defs.Link(document=cfoo))\
-            .add_link(defs.Link(document=cauthmech))\
-            .add_link(defs.Link(document=sTop10))\
-            .add_link(defs.Link(document=sNIST3))\
-            .add_link(defs.Link(document=sNIST4))\
-            .add_link(defs.Link(document=sWSTG))\
-            .add_link(defs.Link(document=sCWE19876))\
-            .add_link(defs.Link(document=sOPC))
+        cauth.add_link(defs.Link(document=cfoo)).add_link(
+            defs.Link(document=cauthmech)
+        ).add_link(defs.Link(document=sTop10)).add_link(
+            defs.Link(document=sNIST3)
+        ).add_link(
+            defs.Link(document=sNIST4)
+        ).add_link(
+            defs.Link(document=sWSTG)
+        ).add_link(
+            defs.Link(document=sCWE19876)
+        ).add_link(
+            defs.Link(document=sOPC)
+        )
 
         cauthmech.add_link(defs.Link(document=cauth4))
 
         cauth4.add_link(defs.Link(document=clogging)).add_link(
-            defs.Link(document=sASVS)).add_link(defs.Link(document=sCWE))
+            defs.Link(document=sASVS)
+        ).add_link(defs.Link(document=sCWE))
 
-        for nsection in ['PL-8 Information Security Architecture', 'SC-39 PROCESS ISOLATION', 'SC-3 SECURITY FUNCTION']:
-            cauth4.add_link(defs.Link(document=defs.Standard(
-                name="NIST 800-53 v5", section=nsection)))
+        for nsection in [
+            "PL-8 Information Security Architecture",
+            "SC-39 PROCESS ISOLATION",
+            "SC-3 SECURITY FUNCTION",
+        ]:
+            cauth4.add_link(
+                defs.Link(
+                    document=defs.Standard(name="NIST 800-53 v5", section=nsection)
+                )
+            )
 
-        data = [{'Standard ASVS Item': '', 'ASVS sequence': 0,
+        data = [
+            {
+                "Standard ASVS Item": "",
+                "ASVS sequence": 0,
                 "Standard ASVS Hyperlink": "",
-                 'ASVS-L1': '', 'ASVS-L2': '',
-                 'ASVS-L3': '', 'CRE hierarchy 1': '',
-                 'CRE hierarchy 2': '', 'CRE hierarchy 3': '',
-                 'CRE hierarchy 4': '',
-                 'Standard Top10 2017': 'A2_Broken_Authentication',
-                 'Standard Top10 Hyperlink': 'https://example.com',
-                 'CRE ID': '',
-                 'Standard CWE (from ASVS)': '', 'Link to other CRE': '',
-                 'Standard NIST 800-53 v5': '',
-                 'Standard NIST-800-63 (from ASVS)': '', 'Standard OPC (ASVS source)': '',
-                 'CRE Tags': '',
-                 'Standard WSTG (prefilled by SR, but Elie has plan to make the administration self-maintaining)': ''},
-                {'Standard ASVS Item': '', 'ASVS sequence': 0,
-                "Standard ASVS Hyperlink": "", 'ASVS-L1': '', 'ASVS-L2': '', 'ASVS-L3': '',
-                 'CRE hierarchy 1': 'Authentication',
-                 'CRE hierarchy 2': '', 'CRE hierarchy 3': '', 'CRE hierarchy 4': '',
-                 'Standard Top10 2017': 'A2_Broken_Authentication',
-                 'Standard Top10 Hyperlink': 'https://example.com',
-                 'CRE ID': 8,
-                 'Standard CWE (from ASVS)': '19876',
-                 'Link to other CRE': 'FooBar',
-                 'Standard NIST 800-53 v5': '',
-                 'Standard NIST-800-63 (from ASVS)': '4444/3333',
-                 'Standard OPC (ASVS source)': '123654',
-                 'CRE Tags': 'tagA, tagB, tagC, tagD',
-                 'Standard WSTG (prefilled by SR, but Elie has plan to make the administration self-maintaining)': '2.1.2.3',
-                 "Standard Cheat_sheets": ""},
-                {'Standard ASVS Item': '', 'ASVS sequence': 0,
-                "Standard ASVS Hyperlink": "https://example.com",
-                 'ASVS-L1': '', 'ASVS-L2': '',
-                 'ASVS-L3': '', 'CRE hierarchy 1': 'Authentication',
-                 'CRE hierarchy 2': 'Authentication mechanism',
-                 'CRE hierarchy 3': '', 'CRE hierarchy 4': '',
-                 'Standard Top10 2017': 'See higher level topic',
-                 'Standard Top10 Hyperlink': 'https://example.com',
-                 'CRE ID': 3, 'Standard CWE (from ASVS)': '',
-                 'Link to other CRE': '', 'Standard NIST 800-53 v5': '',
-                 'Standard NIST-800-63 (from ASVS)': '1111', 'Standard OPC (ASVS source)': '',
-                 'CRE Tags': '', 'Standard WSTG (prefilled by SR, but Elie has plan to make the administration self-maintaining)': '',
-                 "Standard Cheat_sheets": ""},
-                {'Standard ASVS Item': 'V1.2.3', 'ASVS sequence': 10,
-                "Standard ASVS Hyperlink": "https://example.com",
-                 'ASVS-L1': '', 'ASVS-L2': 'X', 'ASVS-L3': 'X',
-                 'CRE hierarchy 1': 'Authentication', 'CRE hierarchy 2': 'Authentication mechanism',
-                 'CRE hierarchy 3': '', 'CRE hierarchy 4': "Verify that the application uses a single vetted authentication mechanism",
-                 'Standard Top10 2017': 'See higher level topic',
-                 'Standard Top10 Hyperlink': 'https://example.com',
-                 'CRE ID': 4, 'Standard CWE (from ASVS)': 306, 'Link to other CRE': 'Logging and Error handling',
-                 'Standard NIST 800-53 v5': 'PL-8 Information Security Architecture,\n'
-                 'SC-39 PROCESS ISOLATION,\n'
-                 'SC-3 SECURITY FUNCTION',
-                 'Standard NIST-800-63 (from ASVS)': 'None',
-                 'Standard OPC (ASVS source)': 'None',
-                 'CRE Tags': 'Architecture',
-                 'Standard WSTG (prefilled by SR, but Elie has plan to make the administration self-maintaining)': '',
-                 "Standard Cheat_sheets": ""},
-                {'Standard ASVS Item': '', 'ASVS sequence': 0,
+                "ASVS-L1": "",
+                "ASVS-L2": "",
+                "ASVS-L3": "",
+                "CRE hierarchy 1": "",
+                "CRE hierarchy 2": "",
+                "CRE hierarchy 3": "",
+                "CRE hierarchy 4": "",
+                "Standard Top10 2017": "A2_Broken_Authentication",
+                "Standard Top10 Hyperlink": "https://example.com",
+                "CRE ID": "",
+                "Standard CWE (from ASVS)": "",
+                "Link to other CRE": "",
+                "Standard NIST 800-53 v5": "",
+                "Standard NIST-800-63 (from ASVS)": "",
+                "Standard OPC (ASVS source)": "",
+                "CRE Tags": "",
+                "Standard WSTG (prefilled by SR, but Elie has plan to make the administration self-maintaining)": "",
+            },
+            {
+                "Standard ASVS Item": "",
+                "ASVS sequence": 0,
                 "Standard ASVS Hyperlink": "",
-                 'ASVS-L1': '', 'ASVS-L2': '',
-                 'ASVS-L3': '', 'CRE hierarchy 1': 'Authentication',
-                 'CRE hierarchy 2': '', 'CRE hierarchy 3': '',
-                 'CRE hierarchy 4': 'FooBar',
-                 'Standard Top10 2017': '',
-                 'Standard Top10 Hyperlink': '',
-                 'CRE ID': 9,
-                 'Standard CWE (from ASVS)': '', 'Link to other CRE': 'Authentication mechanism',
-                 'Standard NIST 800-53 v5': '',
-                 'Standard NIST-800-63 (from ASVS)': '', 'Standard OPC (ASVS source)': '',
-                 'CRE Tags': '',
-                 'Standard WSTG (prefilled by SR, but Elie has plan to make the administration self-maintaining)': '',
-                 "Standard Cheat_sheets": "https://example.com/cheatsheetf/foo,https://example.com/cheatsheetb/bar"}, ]
-        expected = {"FooBar": cfoo, "Authentication": cauth, "Authentication mechanism": cauthmech,
-                    "Verify that the application uses a single vetted authentication mechanism": cauth4,
-                    "Logging and Error handling": clogging}
+                "ASVS-L1": "",
+                "ASVS-L2": "",
+                "ASVS-L3": "",
+                "CRE hierarchy 1": "Authentication",
+                "CRE hierarchy 2": "",
+                "CRE hierarchy 3": "",
+                "CRE hierarchy 4": "",
+                "Standard Top10 2017": "A2_Broken_Authentication",
+                "Standard Top10 Hyperlink": "https://example.com",
+                "CRE ID": 8,
+                "Standard CWE (from ASVS)": "19876",
+                "Link to other CRE": "FooBar",
+                "Standard NIST 800-53 v5": "",
+                "Standard NIST-800-63 (from ASVS)": "4444/3333",
+                "Standard OPC (ASVS source)": "123654",
+                "CRE Tags": "tagA, tagB, tagC, tagD",
+                "Standard WSTG (prefilled by SR, but Elie has plan to make the administration self-maintaining)": "2.1.2.3",
+                "Standard Cheat_sheets": "",
+            },
+            {
+                "Standard ASVS Item": "",
+                "ASVS sequence": 0,
+                "Standard ASVS Hyperlink": "https://example.com",
+                "ASVS-L1": "",
+                "ASVS-L2": "",
+                "ASVS-L3": "",
+                "CRE hierarchy 1": "Authentication",
+                "CRE hierarchy 2": "Authentication mechanism",
+                "CRE hierarchy 3": "",
+                "CRE hierarchy 4": "",
+                "Standard Top10 2017": "See higher level topic",
+                "Standard Top10 Hyperlink": "https://example.com",
+                "CRE ID": 3,
+                "Standard CWE (from ASVS)": "",
+                "Link to other CRE": "",
+                "Standard NIST 800-53 v5": "",
+                "Standard NIST-800-63 (from ASVS)": "1111",
+                "Standard OPC (ASVS source)": "",
+                "CRE Tags": "",
+                "Standard WSTG (prefilled by SR, but Elie has plan to make the administration self-maintaining)": "",
+                "Standard Cheat_sheets": "",
+            },
+            {
+                "Standard ASVS Item": "V1.2.3",
+                "ASVS sequence": 10,
+                "Standard ASVS Hyperlink": "https://example.com",
+                "ASVS-L1": "",
+                "ASVS-L2": "X",
+                "ASVS-L3": "X",
+                "CRE hierarchy 1": "Authentication",
+                "CRE hierarchy 2": "Authentication mechanism",
+                "CRE hierarchy 3": "",
+                "CRE hierarchy 4": "Verify that the application uses a single vetted authentication mechanism",
+                "Standard Top10 2017": "See higher level topic",
+                "Standard Top10 Hyperlink": "https://example.com",
+                "CRE ID": 4,
+                "Standard CWE (from ASVS)": 306,
+                "Link to other CRE": "Logging and Error handling",
+                "Standard NIST 800-53 v5": "PL-8 Information Security Architecture,\n"
+                "SC-39 PROCESS ISOLATION,\n"
+                "SC-3 SECURITY FUNCTION",
+                "Standard NIST-800-63 (from ASVS)": "None",
+                "Standard OPC (ASVS source)": "None",
+                "CRE Tags": "Architecture",
+                "Standard WSTG (prefilled by SR, but Elie has plan to make the administration self-maintaining)": "",
+                "Standard Cheat_sheets": "",
+            },
+            {
+                "Standard ASVS Item": "",
+                "ASVS sequence": 0,
+                "Standard ASVS Hyperlink": "",
+                "ASVS-L1": "",
+                "ASVS-L2": "",
+                "ASVS-L3": "",
+                "CRE hierarchy 1": "Authentication",
+                "CRE hierarchy 2": "",
+                "CRE hierarchy 3": "",
+                "CRE hierarchy 4": "FooBar",
+                "Standard Top10 2017": "",
+                "Standard Top10 Hyperlink": "",
+                "CRE ID": 9,
+                "Standard CWE (from ASVS)": "",
+                "Link to other CRE": "Authentication mechanism",
+                "Standard NIST 800-53 v5": "",
+                "Standard NIST-800-63 (from ASVS)": "",
+                "Standard OPC (ASVS source)": "",
+                "CRE Tags": "",
+                "Standard WSTG (prefilled by SR, but Elie has plan to make the administration self-maintaining)": "",
+                "Standard Cheat_sheets": "https://example.com/cheatsheetf/foo,https://example.com/cheatsheetb/bar",
+            },
+        ]
+        expected = {
+            "FooBar": cfoo,
+            "Authentication": cauth,
+            "Authentication mechanism": cauthmech,
+            "Verify that the application uses a single vetted authentication mechanism": cauth4,
+            "Logging and Error handling": clogging,
+        }
 
         self.maxDiff = None
         output = parse_hierarchical_export_format(data)
-        self.assertCountEqual(output,expected)
+        self.assertCountEqual(output, expected)
+
 
 if __name__ == "__main__":
     unittest.main()

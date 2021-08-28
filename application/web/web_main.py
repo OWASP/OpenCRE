@@ -2,7 +2,15 @@ import json
 import os
 from pprint import pprint
 
-from flask import Flask, abort, jsonify, send_from_directory, render_template, request, Blueprint
+from flask import (
+    Flask,
+    abort,
+    jsonify,
+    send_from_directory,
+    render_template,
+    request,
+    Blueprint,
+)
 from jinja2 import Template, TemplateNotFound
 
 from application import create_app
@@ -10,14 +18,15 @@ from application.database import db
 
 ITEMS_PER_PAGE = 20
 
-app= Blueprint('web', __name__, static_folder='../frontend/www')
+app = Blueprint("web", __name__, static_folder="../frontend/www")
+
 
 @app.route("/rest/v1/id/<creid>", methods=["GET"])
 def find_by_id(creid):  # refer
     database = db.Standard_collection()
     cre = database.get_CRE(external_id=creid)
     if cre:
-        return jsonify({"data":cre.todict()})
+        return jsonify({"data": cre.todict()})
     abort(404)
 
 
@@ -40,14 +49,19 @@ def find_standard_by_name(sname):
     items_per_page = request.args.get("items_per_page") or ITEMS_PER_PAGE
 
     total_pages, standards, _ = database.get_standards_with_pagination(
-        name=sname, section=opt_section, subsection=opt_subsection, link=opt_hyperlink,
-        page=int(page), items_per_page=int(items_per_page))
+        name=sname,
+        section=opt_section,
+        subsection=opt_subsection,
+        link=opt_hyperlink,
+        page=int(page),
+        items_per_page=int(items_per_page),
+    )
     result = {}
-    result['total_pages'] = total_pages
-    result['page'] = page
+    result["total_pages"] = total_pages
+    result["page"] = page
     if standards:
         res = [stand.todict() for stand in standards]
-        result['standards'] = res
+        result["standards"] = res
         return jsonify(result)
     abort(404)
 
@@ -62,30 +76,33 @@ def find_document_by_tag(sname):
         res = [doc.todict() for doc in documents]
         return jsonify(res)
 
-@app.route('/rest/v1/gap_analysis',methods=["GET"])
-def gap_analysis(): # TODO (spyros): add export result to spreadsheet 
+
+@app.route("/rest/v1/gap_analysis", methods=["GET"])
+def gap_analysis():  # TODO (spyros): add export result to spreadsheet
     database = db.Standard_collection()
-    standards = request.args.getlist('standard')
+    standards = request.args.getlist("standard")
     documents = database.gap_analysis(standards=standards)
     if documents:
         res = [doc.todict() for doc in documents]
         return jsonify(res)
 
+
 @app.errorhandler(404)
 def page_not_found(e):
     # Even though Flask logs it by default,
     # I prefer to have a logger dedicated to 404
-    return 'Resource Not found', 404
+    return "Resource Not found", 404
 
 
 # If no other routes are matched, serve the react app, or any other static files (like bundle.js)
-@app.route('/', defaults={'path': ''})
-@app.route('/<path:path>')
+@app.route("/", defaults={"path": ""})
+@app.route("/<path:path>")
 def index(path):
-    if path != "" and os.path.exists(app.static_folder + '/' + path):
+    if path != "" and os.path.exists(app.static_folder + "/" + path):
         return send_from_directory(app.static_folder, path)
     else:
-        return send_from_directory(app.static_folder, 'index.html')
+        return send_from_directory(app.static_folder, "index.html")
+
 
 if __name__ == "__main__":
     app.run(use_reloader=False, debug=False)

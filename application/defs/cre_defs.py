@@ -164,8 +164,15 @@ class Link:
     def __eq__(self, other):
         return (
             self.ltype == other.ltype
-            and all([a in other.tags and b in self.tags for a in self.tags for b in other.tags])
-            and self.document == other.document)
+            and all(
+                [
+                    a in other.tags and b in self.tags
+                    for a in self.tags
+                    for b in other.tags
+                ]
+            )
+            and self.document == other.document
+        )
 
     def todict(self):
         res = {}
@@ -174,7 +181,7 @@ class Link:
         if len(self.tags):
             res["tags"] = set(self.tags)
 
-        res['type'] = self.ltype.value
+        res["type"] = self.ltype.value
         return res
 
 
@@ -195,8 +202,19 @@ class Document:
             and self.doctype.value == other.doctype.value
             and self.description == other.description
             and len(self.links) == len(other.links)
-            and all([a in other.links and b in self.links for a in self.links for b in other.links])
-            and all([a == b and len(self.tags) == len(other.tags) for a, b in zip(self.tags, other.tags)])
+            and all(
+                [
+                    a in other.links and b in self.links
+                    for a in self.links
+                    for b in other.links
+                ]
+            )
+            and all(
+                [
+                    a == b and len(self.tags) == len(other.tags)
+                    for a, b in zip(self.tags, other.tags)
+                ]
+            )
             and self.metadata == other.metadata
         )
 
@@ -267,7 +285,7 @@ class CRE(Document):
         return super().__hash__()
 
     def __eq__(self, other):
-        return (isinstance(other, CRE) and super().__eq__(other))
+        return isinstance(other, CRE) and super().__eq__(other)
 
 
 @dataclass
@@ -299,7 +317,9 @@ class Standard(Document):
             and self.version == other.version
         )
 
-    def __init__(self, section="", subsection="", hyperlink="", version="", *args, **kwargs):
+    def __init__(
+        self, section="", subsection="", hyperlink="", version="", *args, **kwargs
+    ):
         self.doctype = Credoctypes.Standard
         if section is None or section == "":
             raise MandatoryFieldException(

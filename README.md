@@ -49,8 +49,8 @@ Development Notes
 add tests
    ~ defs --- Done
    ~ db -- Done
-   ~ parsers -- Done   --- needs edge cases
-    mapping_add -- Done for important methods, -- argparse logic only remains
+   ~ parsers -- Done 
+   ~ mapping_add -- Done for important methods, -- argparse logic only remains
    ~ spreadsheet_utils ~ -- Done
    frontend
 
@@ -68,16 +68,18 @@ add tests
 * ~   refer use case (search by cre) ~ Done
 * ~   search by standard ~ Done
 * ~ add the ability for a mapping document to have multiple yamls in it ~ Done
-
-* add db integration of tags
+* add db integration of tags ~ Done
 * ~ add tags in db  (search by tag, export with tags etc) ~ Done 
-* add parser integration of tags (parse the new new new spreadsheet template which incorporates tags)
-* ~ add search by tag in rest and frontend ~ Done
+* add parser integration of tags (parse the new new new spreadsheet template which incorporates tags) ~ Done
+* ~ add search by tag in rest ~ Done
 * ~ add dockerfile ~ Done
 * ~ add conditional export (select the standards you want exported get mappings between them)  (gap analysis use case) ~ -- Done
 * ~ add flask cover command from here https://github.com/miguelgrinberg/flasky/blob/master/flasky.py#L33~ Done
 * ~ Make Standards versioned ~ -- Done
 * ~ write frontend  ~ Done
+* make results per page a config item from env ~ Done
+
+* Add search by tag in frontend
 * make frontend show Graph
 * migrate to new repo
 * add black autoformater
@@ -85,7 +87,8 @@ add tests
 * debug frontend issues
 * merge frontend changes to master
 * make some more linktypes and make them implicit
-
+* rob mentioned a bug introducing cycles, investigate
+* Typed Python?
 
 * Make frontend show gap analysis
 * Make frontend export search results and gap analysis to spreadsheet (supply backend with an "export=True" arg)
@@ -94,7 +97,6 @@ add tests
 * Make frontend able to import by filing in a form.
 * Make frontend show Graph
 * make pagination also for tag results and gap analysis
-* make results per page a config item from env
 * make library out of file format and spreadsheet template parsers
 * add more linkTypes, Child, Controls, Tests, others.
 * Add more Document types, Tool, Library

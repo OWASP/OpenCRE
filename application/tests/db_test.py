@@ -17,14 +17,13 @@ from application import create_app, sqla
 
 
 class TestDB(unittest.TestCase):
-
     def tearDown(self):
         sqla.session.remove()
         sqla.drop_all()
         self.app_context.pop()
 
     def setUp(self):
-        self.app = create_app(mode='test')
+        self.app = create_app(mode="test")
         sqla.create_all(app=self.app)
 
         self.app_context = self.app.app_context()
@@ -33,16 +32,32 @@ class TestDB(unittest.TestCase):
         collection = self.collection
 
         dbcre = collection.add_cre(defs.CRE(description="CREdesc", name="CREname"))
-        dbgroup = collection.add_cre(defs.CRE(description="Groupdesc", name="GroupName"))
-        dbstandard = collection.add_standard(defs.Standard(subsection="4.5.6",section="FooStand",name="BarStand",hyperlink="https://example.com"))
+        dbgroup = collection.add_cre(
+            defs.CRE(description="Groupdesc", name="GroupName")
+        )
+        dbstandard = collection.add_standard(
+            defs.Standard(
+                subsection="4.5.6",
+                section="FooStand",
+                name="BarStand",
+                hyperlink="https://example.com",
+            )
+        )
 
-        unlinked = collection.add_standard(defs.Standard(subsection="4.5.6",section="Unlinked",name="Unlinked",hyperlink="https://example.com"))
+        unlinked = collection.add_standard(
+            defs.Standard(
+                subsection="4.5.6",
+                section="Unlinked",
+                name="Unlinked",
+                hyperlink="https://example.com",
+            )
+        )
 
         collection.session.add(dbcre)
 
         externalLink = collection.add_link(cre=dbcre, standard=dbstandard)
         internalLink = collection.add_internal_link(cre=dbcre, group=dbgroup)
-    
+
         self.collection = collection
 
     def test_get_by_tags(self):
@@ -79,24 +94,20 @@ class TestDB(unittest.TestCase):
 
         self.maxDiff = None
         self.assertEqual(self.collection.get_by_tags(["dash-2"]), [cre])
-        self.assertEqual(self.collection.get_by_tags(
-            ["tag1", "underscore_3"]), [cre])
+        self.assertEqual(self.collection.get_by_tags(["tag1", "underscore_3"]), [cre])
         self.assertEqual(self.collection.get_by_tags(["space 6"]), [standard])
         self.assertEqual(
             self.collection.get_by_tags(["dots.5.5", "space 6"]), [standard]
         )
 
-        self.assertCountEqual(
-            [cre, standard], self.collection.get_by_tags(["space"]))
+        self.assertCountEqual([cre, standard], self.collection.get_by_tags(["space"]))
         self.assertCountEqual(
             [cre, standard], self.collection.get_by_tags(["space", "tag1"])
         )
-        self.assertCountEqual(
-            self.collection.get_by_tags(["tag1"]), [cre, standard])
+        self.assertCountEqual(self.collection.get_by_tags(["tag1"]), [cre, standard])
 
         self.assertEqual(self.collection.get_by_tags([]), [])
-        self.assertEqual(self.collection.get_by_tags(
-            ["this should not be a tag"]), [])
+        self.assertEqual(self.collection.get_by_tags(["this should not be a tag"]), [])
 
     def test_get_standards_names(self):
         result = self.collection.get_standards_names()
@@ -106,25 +117,25 @@ class TestDB(unittest.TestCase):
     def test_get_max_internal_connections(self):
         self.assertEqual(self.collection.get_max_internal_connections(), 1)
 
-        dbcrelo = db.CRE(name='internal connections test lo',
-                         description='ictlo')
-        dbcrehi = db.CRE(name='internal connections test hi',
-                         description='icthi')
+        dbcrelo = db.CRE(name="internal connections test lo", description="ictlo")
+        dbcrehi = db.CRE(name="internal connections test hi", description="icthi")
         self.collection.session.add(dbcrelo)
         self.collection.session.add(dbcrehi)
         self.collection.session.commit()
         for i in range(0, 100):
-            dbcre = db.CRE(name=str(i)+' name', description=str(i)+' desc')
+            dbcre = db.CRE(name=str(i) + " name", description=str(i) + " desc")
             self.collection.session.add(dbcre)
             self.collection.session.commit()
 
             # 1 low level cre to multiple groups
             self.collection.session.add(
-                db.InternalLinks(group=dbcre.id, cre=dbcrelo.id))
+                db.InternalLinks(group=dbcre.id, cre=dbcrelo.id)
+            )
 
             # 1 hi level cre to multiple low level
             self.collection.session.add(
-                db.InternalLinks(group=dbcrehi.id, cre=dbcre.id))
+                db.InternalLinks(group=dbcrehi.id, cre=dbcre.id)
+            )
 
             self.collection.session.commit()
 
@@ -145,8 +156,7 @@ class TestDB(unittest.TestCase):
                 description="Groupdesc",
                 name="GroupName",
                 links=[
-                    defs.Link(document=defs.CRE(
-                        description="CREdesc", name="CREname"))
+                    defs.Link(document=defs.CRE(description="CREdesc", name="CREname"))
                 ],
             ),
             defs.CRE(
@@ -155,8 +165,7 @@ class TestDB(unittest.TestCase):
                 name="CREname",
                 links=[
                     defs.Link(
-                        document=defs.CRE(
-                            description="Groupdesc", name="GroupName")
+                        document=defs.CRE(description="Groupdesc", name="GroupName")
                     ),
                     defs.Link(
                         document=defs.Standard(
@@ -197,7 +206,7 @@ class TestDB(unittest.TestCase):
             section="bar",
             subsection="foobar",
             hyperlink="https://example.com/foo/bar",
-            version="1.1.1"
+            version="1.1.1",
         )
         self.assertEqual(
             expected,
@@ -207,7 +216,7 @@ class TestDB(unittest.TestCase):
                     section="bar",
                     subsection="foobar",
                     link="https://example.com/foo/bar",
-                    version='1.1.1'
+                    version="1.1.1",
                 )
             ),
         )
@@ -231,15 +240,18 @@ class TestDB(unittest.TestCase):
         name = str(uuid.uuid4())
         gname = str(uuid.uuid4())
 
-        c = defs.CRE(id="cid", doctype=defs.Credoctypes.CRE,
-                     description=original_desc, name=name)
-        self.assertIsNone(self.collection.session.query(
-            db.CRE).filter(db.CRE.name == c.name).first())
+        c = defs.CRE(
+            id="cid", doctype=defs.Credoctypes.CRE, description=original_desc, name=name
+        )
+        self.assertIsNone(
+            self.collection.session.query(db.CRE).filter(db.CRE.name == c.name).first()
+        )
 
         # happy path, add new cre
         newCRE = self.collection.add_cre(c)
-        dbcre = (self.collection.session.query(db.CRE).filter(
-            db.CRE.name == c.name).first())  # ensure transaction happened (commit() called)
+        dbcre = (
+            self.collection.session.query(db.CRE).filter(db.CRE.name == c.name).first()
+        )  # ensure transaction happened (commit() called)
         self.assertIsNotNone(dbcre.id)
         self.assertEqual(dbcre.name, c.name)
         self.assertEqual(dbcre.description, c.description)
@@ -251,8 +263,9 @@ class TestDB(unittest.TestCase):
         # ensure no accidental update (add only adds)
         c.description = "description2"
         newCRE = self.collection.add_cre(c)
-        dbcre = (self.collection.session.query(
-            db.CRE).filter(db.CRE.name == c.name).first())
+        dbcre = (
+            self.collection.session.query(db.CRE).filter(db.CRE.name == c.name).first()
+        )
         # ensure original description
         self.assertEqual(dbcre.description, str(original_desc))
         # ensure original description
@@ -309,8 +322,7 @@ class TestDB(unittest.TestCase):
 
         internalLink = db.InternalLinks(cre=dbcre.id, group=dbgroup.id)
         internalLink2 = db.InternalLinks(cre=dbcre.id, group=dbgroup2.id)
-        internalLink3 = db.InternalLinks(
-            cre=only_one_group.id, group=dbgroup.id)
+        internalLink3 = db.InternalLinks(cre=only_one_group.id, group=dbgroup.id)
         self.collection.session.add(internalLink)
         self.collection.session.add(internalLink2)
         self.collection.session.add(internalLink3)
@@ -344,10 +356,8 @@ class TestDB(unittest.TestCase):
         self.collection.session.add(lone_standard)
         self.collection.session.commit()
 
-        self.collection.session.add(
-            db.Links(cre=dbcre.id, standard=dbstandard1.id))
-        self.collection.session.add(
-            db.Links(cre=dbgroup.id, standard=dbstandard1.id))
+        self.collection.session.add(db.Links(cre=dbcre.id, standard=dbstandard1.id))
+        self.collection.session.add(db.Links(cre=dbgroup.id, standard=dbstandard1.id))
         self.collection.session.add(
             db.Links(cre=dbgroup.id, standard=group_standard.id)
         )
@@ -374,7 +384,9 @@ class TestDB(unittest.TestCase):
         dbc1 = db.CRE(external_id="123", description="CD1", name="C1")
         dbc2 = db.CRE(description="CD2", name="C2")
         dbc3 = db.CRE(description="CD3", name="C3")
-        dbs1 = db.Standard(name="S2", section="1", subsection="2", link="3",version="1.1.1")
+        dbs1 = db.Standard(
+            name="S2", section="1", subsection="2", link="3", version="1.1.1"
+        )
 
         collection.session.add(dbc1)
         collection.session.add(dbc2)
@@ -393,7 +405,11 @@ class TestDB(unittest.TestCase):
             links=[
                 defs.Link(
                     document=defs.Standard(
-                        name="S2", section="1", subsection="2", hyperlink="3",version="1.1.1"
+                        name="S2",
+                        section="1",
+                        subsection="2",
+                        hyperlink="3",
+                        version="1.1.1",
                     )
                 ),
                 defs.Link(document=defs.CRE(description="CD2", name="C2")),
@@ -404,31 +420,34 @@ class TestDB(unittest.TestCase):
         res = collection.get_CRE(name="C1")
         self.assertEqual(expected, res)
 
-        res = collection.get_CRE(external_id='123')
+        res = collection.get_CRE(external_id="123")
         self.assertEqual(expected, res)
 
-        self.assertIsNone(collection.get_CRE(external_id='123', name="C5"))
-        self.assertIsNone(collection.get_CRE(external_id='1234'))
-        self.assertIsNone(collection.get_CRE(name='C5'))
+        self.assertIsNone(collection.get_CRE(external_id="123", name="C5"))
+        self.assertIsNone(collection.get_CRE(external_id="1234"))
+        self.assertIsNone(collection.get_CRE(name="C5"))
 
     def test_get_standards(self):
         """Given: a Standard 'S1' that links to cres
         return the Standard in Document format"""
         collection = db.Standard_collection()
         docs = {
-            'dbc1': db.CRE(external_id="123", description="CD1", name="C1"),
-            'dbc2': db.CRE(description="CD2", name="C2"),
-            'dbc3': db.CRE(description="CD3", name="C3"),
-            'dbs1': db.Standard(name="S1", section="1", subsection="2", link="3",version="4")
+            "dbc1": db.CRE(external_id="123", description="CD1", name="C1"),
+            "dbc2": db.CRE(description="CD2", name="C2"),
+            "dbc3": db.CRE(description="CD3", name="C3"),
+            "dbs1": db.Standard(
+                name="S1", section="1", subsection="2", link="3", version="4"
+            ),
         }
-        links = [('dbc1', 'dbs1'), ('dbc2', 'dbs1'), ('dbc3', 'dbs1')]
+        links = [("dbc1", "dbs1"), ("dbc2", "dbs1"), ("dbc3", "dbs1")]
         for k, v in docs.items():
             collection.session.add(v)
         collection.session.commit()
 
         for cre, standard in links:
             collection.session.add(
-                db.Links(cre=docs[cre].id, standard=docs[standard].id))
+                db.Links(cre=docs[cre].id, standard=docs[standard].id)
+            )
         collection.session.commit()
 
         expected = [
@@ -440,8 +459,7 @@ class TestDB(unittest.TestCase):
                 version="4",
                 links=[
                     defs.Link(
-                        document=defs.CRE(
-                            name="C1", description="CD1", id="123")
+                        document=defs.CRE(name="C1", description="CD1", id="123")
                     ),
                     defs.Link(document=defs.CRE(name="C2", description="CD2")),
                     defs.Link(document=defs.CRE(name="C3", description="CD3")),
@@ -457,19 +475,22 @@ class TestDB(unittest.TestCase):
         return the Standard in Document format and the total pages and the page we are in"""
         collection = db.Standard_collection()
         docs = {
-            'dbc1': db.CRE(external_id="123", description="CD1", name="C1"),
-            'dbc2': db.CRE(description="CD2", name="C2"),
-            'dbc3': db.CRE(description="CD3", name="C3"),
-            'dbs1': db.Standard(name="S1", section="1", subsection="2", link="3",version="4")
+            "dbc1": db.CRE(external_id="123", description="CD1", name="C1"),
+            "dbc2": db.CRE(description="CD2", name="C2"),
+            "dbc3": db.CRE(description="CD3", name="C3"),
+            "dbs1": db.Standard(
+                name="S1", section="1", subsection="2", link="3", version="4"
+            ),
         }
-        links = [('dbc1', 'dbs1'), ('dbc2', 'dbs1'), ('dbc3', 'dbs1')]
+        links = [("dbc1", "dbs1"), ("dbc2", "dbs1"), ("dbc3", "dbs1")]
         for k, v in docs.items():
             collection.session.add(v)
         collection.session.commit()
 
         for cre, standard in links:
             collection.session.add(
-                db.Links(cre=docs[cre].id, standard=docs[standard].id))
+                db.Links(cre=docs[cre].id, standard=docs[standard].id)
+            )
         collection.session.commit()
 
         expected = [
@@ -481,8 +502,7 @@ class TestDB(unittest.TestCase):
                 version="4",
                 links=[
                     defs.Link(
-                        document=defs.CRE(
-                            name="C1", description="CD1", id="123")
+                        document=defs.CRE(name="C1", description="CD1", id="123")
                     ),
                     defs.Link(document=defs.CRE(name="C2", description="CD2")),
                     defs.Link(document=defs.CRE(name="C3", description="CD3")),
@@ -490,12 +510,13 @@ class TestDB(unittest.TestCase):
             )
         ]
         total_pages, res, pagination_object = collection.get_standards_with_pagination(
-            name="S1")
+            name="S1"
+        )
         self.assertEqual(total_pages, 1)
         self.assertEqual(expected, res)
 
     def test_gap_analysis(self):
-        """ Given 
+        """Given
         the following standards SA1, SA2, SA3 SAA1 , SB1, SD1, SDD1, SW1, SX1
         the following CREs CA, CB, CC, CD, CDD , CW, CX
         the following links
@@ -530,118 +551,180 @@ class TestDB(unittest.TestCase):
 
         collection = db.Standard_collection()
 
-        cres = {"dbca": collection.add_cre(defs.CRE(id="1", description="CA", name="CA")),
-                'dbcb': collection.add_cre(defs.CRE(id="2", description="CB", name="CB")),
-                'dbcc': collection.add_cre(defs.CRE(id="3", description="CC", name="CC")),
-                'dbcd': collection.add_cre(defs.CRE(id="4", description="CD", name="CD")),
-                'dbcdd': collection.add_cre(defs.CRE(id="5", description="CDD", name="CDD")),
-                'dbcw': collection.add_cre(defs.CRE(id="6", description="CW", name="CW")),
-                'dbcx': collection.add_cre(defs.CRE(id="7", description="CX", name="CX"))
-                }
-        def_standards = {'sa1': defs.Standard(name="SA", section="SA1"),
-                         'sa2': defs.Standard(name="SA", section="SA2"),
-                         'sa3': defs.Standard(name="SA", section="SA3"),
-                         'saa1': defs.Standard(name="SAA", section="SAA1"),
-                         'sb1': defs.Standard(name="SB", section="SB1"),
-                         'sd1': defs.Standard(name="SD", section="SD1"),
-                         'sdd1': defs.Standard(name="SDD", section="SDD1"),
-                         'sw1': defs.Standard(name="SW", section="SW1"),
-                         'sx1': defs.Standard(name="SX", section="SX1")
-                         }
+        cres = {
+            "dbca": collection.add_cre(defs.CRE(id="1", description="CA", name="CA")),
+            "dbcb": collection.add_cre(defs.CRE(id="2", description="CB", name="CB")),
+            "dbcc": collection.add_cre(defs.CRE(id="3", description="CC", name="CC")),
+            "dbcd": collection.add_cre(defs.CRE(id="4", description="CD", name="CD")),
+            "dbcdd": collection.add_cre(
+                defs.CRE(id="5", description="CDD", name="CDD")
+            ),
+            "dbcw": collection.add_cre(defs.CRE(id="6", description="CW", name="CW")),
+            "dbcx": collection.add_cre(defs.CRE(id="7", description="CX", name="CX")),
+        }
+        def_standards = {
+            "sa1": defs.Standard(name="SA", section="SA1"),
+            "sa2": defs.Standard(name="SA", section="SA2"),
+            "sa3": defs.Standard(name="SA", section="SA3"),
+            "saa1": defs.Standard(name="SAA", section="SAA1"),
+            "sb1": defs.Standard(name="SB", section="SB1"),
+            "sd1": defs.Standard(name="SD", section="SD1"),
+            "sdd1": defs.Standard(name="SDD", section="SDD1"),
+            "sw1": defs.Standard(name="SW", section="SW1"),
+            "sx1": defs.Standard(name="SX", section="SX1"),
+        }
         standards = {}
         for k, s in def_standards.items():
-            standards["db"+k] = collection.add_standard(s)
+            standards["db" + k] = collection.add_standard(s)
 
-        collection.add_link(cre=cres['dbca'], standard=standards['dbsa1'])
-        collection.add_link(cre=cres['dbca'], standard=standards['dbsaa1'])
-        collection.add_link(cre=cres['dbcb'], standard=standards['dbsb1'])
-        collection.add_link(cre=cres['dbcd'], standard=standards['dbsd1'])
-        collection.add_link(cre=cres['dbcdd'], standard=standards['dbsdd1'])
-        collection.add_link(cre=cres['dbcw'], standard=standards['dbsw1'])
-        collection.add_link(cre=cres['dbcx'], standard=standards['dbsa3'])
-        collection.add_link(cre=cres['dbcx'], standard=standards['dbsx1'])
+        collection.add_link(cre=cres["dbca"], standard=standards["dbsa1"])
+        collection.add_link(cre=cres["dbca"], standard=standards["dbsaa1"])
+        collection.add_link(cre=cres["dbcb"], standard=standards["dbsb1"])
+        collection.add_link(cre=cres["dbcd"], standard=standards["dbsd1"])
+        collection.add_link(cre=cres["dbcdd"], standard=standards["dbsdd1"])
+        collection.add_link(cre=cres["dbcw"], standard=standards["dbsw1"])
+        collection.add_link(cre=cres["dbcx"], standard=standards["dbsa3"])
+        collection.add_link(cre=cres["dbcx"], standard=standards["dbsx1"])
 
-        collection.add_internal_link(group=cres['dbcc'], cre=cres['dbca'])
-        collection.add_internal_link(group=cres['dbcc'], cre=cres['dbcb'])
-        collection.add_internal_link(group=cres['dbcc'], cre=cres['dbcd'])
-        collection.add_internal_link(group=cres['dbcd'], cre=cres['dbcdd'])
+        collection.add_internal_link(group=cres["dbcc"], cre=cres["dbca"])
+        collection.add_internal_link(group=cres["dbcc"], cre=cres["dbcb"])
+        collection.add_internal_link(group=cres["dbcc"], cre=cres["dbcd"])
+        collection.add_internal_link(group=cres["dbcd"], cre=cres["dbcdd"])
 
         expected = {
-            "SA": [def_standards['sa1'],
-                   def_standards['sa2'],
-                   def_standards['sa3']],
-            "SA,SAA": [copy.copy(def_standards['sa1']).add_link(defs.Link(document=def_standards['saa1'])),
-                       copy.copy(def_standards['saa1']).add_link(
-                           defs.Link(document=def_standards['sa1'])),
-                       def_standards['sa2'],
-                       def_standards['sa3']],
-            "SAA,SA": [copy.copy(def_standards['sa1']).add_link(defs.Link(document=def_standards['saa1'])),
-                       copy.copy(def_standards['saa1']).add_link(
-                           defs.Link(document=def_standards['sa1'])),
-                       def_standards['sa2'], def_standards['sa3']],
-            "SA,SDD": [copy.copy(def_standards['sa1']).add_link(defs.Link(document=def_standards['sdd1'])),
-                       copy.copy(def_standards['sdd1']).add_link(
-                           defs.Link(document=def_standards['sa1'])),
-                       def_standards['sa2'], def_standards['sa3']],
-            "SA,SW": [def_standards['sa1'],
-                      def_standards['sa2'],
-                      def_standards['sa3'],
-                      def_standards['sw1']],
-            "SA,SB,SD,SW": [copy.copy(def_standards['sa1']).add_link(defs.Link(document=def_standards['sb1'])).add_link(defs.Link(document=def_standards['sd1'])),
-                            copy.copy(def_standards['sb1']).add_link(defs.Link(
-                                document=def_standards['sa1'])).add_link(defs.Link(document=def_standards['sd1'])),
-                            copy.copy(def_standards['sd1']).add_link(defs.Link(
-                                document=def_standards['sa1'])).add_link(defs.Link(document=def_standards['sb1'])),
-                            def_standards['sa2'], def_standards['sa3'], def_standards['sw1']],
-            "SA,SX": [def_standards['sa1'], def_standards['sa2'], copy.copy(def_standards['sa3']).add_link(defs.Link(document=def_standards['sx1'])),
-                      copy.copy(def_standards['sx1']).add_link(defs.Link(document=def_standards['sa3']))],
+            "SA": [def_standards["sa1"], def_standards["sa2"], def_standards["sa3"]],
+            "SA,SAA": [
+                copy.copy(def_standards["sa1"]).add_link(
+                    defs.Link(document=def_standards["saa1"])
+                ),
+                copy.copy(def_standards["saa1"]).add_link(
+                    defs.Link(document=def_standards["sa1"])
+                ),
+                def_standards["sa2"],
+                def_standards["sa3"],
+            ],
+            "SAA,SA": [
+                copy.copy(def_standards["sa1"]).add_link(
+                    defs.Link(document=def_standards["saa1"])
+                ),
+                copy.copy(def_standards["saa1"]).add_link(
+                    defs.Link(document=def_standards["sa1"])
+                ),
+                def_standards["sa2"],
+                def_standards["sa3"],
+            ],
+            "SA,SDD": [
+                copy.copy(def_standards["sa1"]).add_link(
+                    defs.Link(document=def_standards["sdd1"])
+                ),
+                copy.copy(def_standards["sdd1"]).add_link(
+                    defs.Link(document=def_standards["sa1"])
+                ),
+                def_standards["sa2"],
+                def_standards["sa3"],
+            ],
+            "SA,SW": [
+                def_standards["sa1"],
+                def_standards["sa2"],
+                def_standards["sa3"],
+                def_standards["sw1"],
+            ],
+            "SA,SB,SD,SW": [
+                copy.copy(def_standards["sa1"])
+                .add_link(defs.Link(document=def_standards["sb1"]))
+                .add_link(defs.Link(document=def_standards["sd1"])),
+                copy.copy(def_standards["sb1"])
+                .add_link(defs.Link(document=def_standards["sa1"]))
+                .add_link(defs.Link(document=def_standards["sd1"])),
+                copy.copy(def_standards["sd1"])
+                .add_link(defs.Link(document=def_standards["sa1"]))
+                .add_link(defs.Link(document=def_standards["sb1"])),
+                def_standards["sa2"],
+                def_standards["sa3"],
+                def_standards["sw1"],
+            ],
+            "SA,SX": [
+                def_standards["sa1"],
+                def_standards["sa2"],
+                copy.copy(def_standards["sa3"]).add_link(
+                    defs.Link(document=def_standards["sx1"])
+                ),
+                copy.copy(def_standards["sx1"]).add_link(
+                    defs.Link(document=def_standards["sa3"])
+                ),
+            ],
         }
-        
+
         self.maxDiff = None
         for args, expected_vals in expected.items():
             stands = args.split(",")
-            res = collection.gap_analysis(stands)            
+            res = collection.gap_analysis(stands)
             # unfortunately named, asserts element and count equality
             self.assertCountEqual(res, expected_vals)
 
-
     def test_add_internal_link(self):
-        """ test that internal links are added successfully,
+        """test that internal links are added successfully,
         edge cases:
             cre or group don't exist
             called on a cycle scenario"""
 
-        cres = {"dbca": self.collection.add_cre(defs.CRE(id="1", description="CA", name="CA")),
-                'dbcb': self.collection.add_cre(defs.CRE(id="2", description="CB", name="CB")),
-                'dbcc': self.collection.add_cre(defs.CRE(id="3", description="CC", name="CC")),
-                }
+        cres = {
+            "dbca": self.collection.add_cre(
+                defs.CRE(id="1", description="CA", name="CA")
+            ),
+            "dbcb": self.collection.add_cre(
+                defs.CRE(id="2", description="CB", name="CB")
+            ),
+            "dbcc": self.collection.add_cre(
+                defs.CRE(id="3", description="CC", name="CC")
+            ),
+        }
 
         # happy path
         self.collection.add_internal_link(
-            cres['dbca'], cres['dbcb'], defs.LinkTypes.Same)
+            cres["dbca"], cres["dbcb"], defs.LinkTypes.Same
+        )
 
         # no cycle, free to insert
         self.collection.add_internal_link(
-            group=cres['dbcb'], cre=cres['dbcc'], type=defs.LinkTypes.Same)
+            group=cres["dbcb"], cre=cres["dbcc"], type=defs.LinkTypes.Same
+        )
 
         # introdcues a cycle, should not be inserted
         self.collection.add_internal_link(
-            group=cres['dbcc'], cre=cres['dbca'], type=defs.LinkTypes.Same)
+            group=cres["dbcc"], cre=cres["dbca"], type=defs.LinkTypes.Same
+        )
 
         #   "happy path, internal link exists"
-        res = self.collection.session.query(db.InternalLinks).filter(
-            db.InternalLinks.group == cres['dbca'].id, db.InternalLinks.cre == cres['dbcb'].id).first()
-        self.assertEqual((res.group, res.cre),
-                         (cres['dbca'].id, cres['dbcb'].id))
+        res = (
+            self.collection.session.query(db.InternalLinks)
+            .filter(
+                db.InternalLinks.group == cres["dbca"].id,
+                db.InternalLinks.cre == cres["dbcb"].id,
+            )
+            .first()
+        )
+        self.assertEqual((res.group, res.cre), (cres["dbca"].id, cres["dbcb"].id))
 
-        res = self.collection.session.query(db.InternalLinks).filter(
-            db.InternalLinks.group == cres['dbcb'].id, db.InternalLinks.cre == cres['dbcc'].id).first()
-        self.assertEqual((res.group, res.cre),
-                         (cres['dbcb'].id, cres['dbcc'].id))
+        res = (
+            self.collection.session.query(db.InternalLinks)
+            .filter(
+                db.InternalLinks.group == cres["dbcb"].id,
+                db.InternalLinks.cre == cres["dbcc"].id,
+            )
+            .first()
+        )
+        self.assertEqual((res.group, res.cre), (cres["dbcb"].id, cres["dbcc"].id))
 
         # cycles are not inserted branch
-        none_res = self.collection.session.query(db.InternalLinks).filter(
-            db.InternalLinks.group == cres['dbcc'].id, db.InternalLinks.cre == cres['dbca'].id).one_or_none()
+        none_res = (
+            self.collection.session.query(db.InternalLinks)
+            .filter(
+                db.InternalLinks.group == cres["dbcc"].id,
+                db.InternalLinks.cre == cres["dbca"].id,
+            )
+            .one_or_none()
+        )
         self.assertIsNone(none_res)
 
 

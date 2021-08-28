@@ -12,7 +12,6 @@ from application.defs import cre_defs as defs
 
 
 class TestMain(unittest.TestCase):
-
     def tearDown(self):
         sqla.session.remove()
         sqla.drop_all(app=self.app)
@@ -75,8 +74,7 @@ class TestMain(unittest.TestCase):
 
         self.assertEqual(self.collection.session.query(db.Links).all(), [])
         # 3 cre-less standards in the db
-        self.assertEqual(
-            len(self.collection.session.query(db.Standard).all()), 3)
+        self.assertEqual(len(self.collection.session.query(db.Standard).all()), 3)
 
     def test_register_standard_with_cre(self):
         standard_with_cre = defs.Standard(
@@ -94,7 +92,8 @@ class TestMain(unittest.TestCase):
                         links=[],
                         tags=set(),
                         metadata=defs.Metadata(labels=[]),
-                    )),
+                    )
+                ),
                 defs.Link(
                     document=defs.Standard(
                         doctype=defs.Credoctypes.Standard,
@@ -105,14 +104,17 @@ class TestMain(unittest.TestCase):
                         tags=set(),
                         metadata=defs.Metadata(labels=[]),
                         section="SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING",
-                    )),],
+                    )
+                ),
+            ],
             tags=set(),
             metadata=defs.Metadata(labels=[]),
             section="standard_with_cre",
         )
 
         ret = main.register_standard(
-            standard=standard_with_cre, collection=self.collection)
+            standard=standard_with_cre, collection=self.collection
+        )
         # assert db structure makes sense
         self.assertEqual(
             len(self.collection.session.query(db.Links).all()), 2
@@ -146,9 +148,13 @@ class TestMain(unittest.TestCase):
                                     links=[],
                                     tags=set(),
                                     metadata=defs.Metadata(labels=[]),
-                                ))],
+                                )
+                            )
+                        ],
                         tags=set(),
-                        metadata=defs.Metadata(labels=[]),)),
+                        metadata=defs.Metadata(labels=[]),
+                    )
+                ),
                 defs.Link(
                     document=defs.Standard(
                         doctype=defs.Credoctypes.Standard,
@@ -158,7 +164,9 @@ class TestMain(unittest.TestCase):
                         links=[],
                         tags=set(),
                         metadata=defs.Metadata(labels=[]),
-                        section="598",)),
+                        section="598",
+                    )
+                ),
                 defs.Link(
                     document=defs.CRE(
                         doctype=defs.Credoctypes.CRE,
@@ -167,7 +175,9 @@ class TestMain(unittest.TestCase):
                         name="crename",
                         links=[],
                         tags=set(),
-                        metadata=defs.Metadata(labels=[]),)),
+                        metadata=defs.Metadata(labels=[]),
+                    )
+                ),
                 defs.Link(
                     document=defs.Standard(
                         doctype=defs.Credoctypes.Standard,
@@ -177,13 +187,18 @@ class TestMain(unittest.TestCase):
                         links=[],
                         tags=set(),
                         metadata=defs.Metadata(labels=[]),
-                        section="SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING",)),],
+                        section="SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING",
+                    )
+                ),
+            ],
             tags=set(),
             metadata=defs.Metadata(labels=[]),
-            section="Session Management",)
+            section="Session Management",
+        )
 
         ret = main.register_standard(
-            standard=with_groupped_cre_links, collection=self.collection)
+            standard=with_groupped_cre_links, collection=self.collection
+        )
         # assert db structure makes sense
         self.assertEqual(
             len(self.collection.session.query(db.Links).all()), 5
@@ -215,107 +230,114 @@ class TestMain(unittest.TestCase):
             tags=["CREt1", "CREt2"],
             metadata=defs.Metadata(labels=["CREl1", "CREl2"]),
         )
-        self.assertEqual(main.register_cre(
-            cre, self.collection).name, cre.name)
-        self.assertEqual(main.register_cre(
-            cre, self.collection).external_id, cre.id)
+        self.assertEqual(main.register_cre(cre, self.collection).name, cre.name)
+        self.assertEqual(main.register_cre(cre, self.collection).external_id, cre.id)
         self.assertEqual(
             len(self.collection.session.query(db.CRE).all()), 1
         )  # 1 cre in the db
 
     def test_parse_file(self):
-        file = [{
-            "description": "Verify that approved cryptographic algorithms are used in the generation, seeding, and verification.",
-            "doctype": "CRE",
-            "id": "001-005-073",
-            "links": [
-                {
-                    "type": "SAM",
-                    "tags": [],
-                    "document": {
-                        "description": "",
-                        "doctype": "Standard",
-                        "hyperlink": "None",
-                        "id": "",
-                        "links": [],
-                        "metadata": {},
-                        "name": "TOP10",
-                        "section": "https://owasp.org/www-project-top-ten/2017/A5_2017-Broken_Access_Control",
-                        "subsection": "None",
+        file = [
+            {
+                "description": "Verify that approved cryptographic algorithms are used in the generation, seeding, and verification.",
+                "doctype": "CRE",
+                "id": "001-005-073",
+                "links": [
+                    {
+                        "type": "SAM",
                         "tags": [],
+                        "document": {
+                            "description": "",
+                            "doctype": "Standard",
+                            "hyperlink": "None",
+                            "id": "",
+                            "links": [],
+                            "metadata": {},
+                            "name": "TOP10",
+                            "section": "https://owasp.org/www-project-top-ten/2017/A5_2017-Broken_Access_Control",
+                            "subsection": "None",
+                            "tags": [],
+                        },
                     },
-                },
-                {
-                    "type": "SAM",
-                    "tags": [],
-                    "document": {
-                        "description": "",
-                        "doctype": "Standard",
-                        "hyperlink": "None",
-                        "id": "",
-                        "links": [],
-                        "metadata": {},
-                        "name": "ISO 25010",
-                        "section": "Secure data storage",
-                        "subsection": "None",
+                    {
+                        "type": "SAM",
                         "tags": [],
+                        "document": {
+                            "description": "",
+                            "doctype": "Standard",
+                            "hyperlink": "None",
+                            "id": "",
+                            "links": [],
+                            "metadata": {},
+                            "name": "ISO 25010",
+                            "section": "Secure data storage",
+                            "subsection": "None",
+                            "tags": [],
+                        },
                     },
-                },
-            ],
-            "metadata": {},
-            "name": "CREDENTIALS_MANAGEMENT_CRYPTOGRAPHIC_DIRECTIVES",
-            "tags": [],
-        }, {
-            "description": "Desc",
-            "doctype": "CRE",
-            "id": "14",
-            "name": "name",
-        }]
-        expected = [defs.CRE(
-            doctype=defs.Credoctypes.CRE,
-            id="001-005-073",
-            description="Verify that approved cryptographic algorithms are used in the generation, seeding, and verification.",
-            name="CREDENTIALS_MANAGEMENT_CRYPTOGRAPHIC_DIRECTIVES",
-            links=[
-                defs.Link(
-                    document=defs.Standard(
-                        doctype=defs.Credoctypes.Standard,
-                        id="",
-                        description="",
-                        name="TOP10",
-                        links=[],
-                        tags=set(),
-                        metadata={},
-                        section="https://owasp.org/www-project-top-ten/2017/A5_2017-Broken_Access_Control",
-                        subsection="None",
-                        hyperlink="None",
-                    )
-                ),
-                defs.Link(
-                    document=defs.Standard(
-                        doctype=defs.Credoctypes.Standard,
-                        id="",
-                        description="",
-                        name="ISO 25010",
-                        links=[],
-                        tags=set(),
-                        metadata={},
-                        section="Secure data storage",
-                        subsection="None",
-                        hyperlink="None",
-                    )
-                ),
-            ],
-            tags=set(),
-            metadata={},
-        ),defs.CRE(id='14', description='Desc', name='name')]
+                ],
+                "metadata": {},
+                "name": "CREDENTIALS_MANAGEMENT_CRYPTOGRAPHIC_DIRECTIVES",
+                "tags": [],
+            },
+            {
+                "description": "Desc",
+                "doctype": "CRE",
+                "id": "14",
+                "name": "name",
+            },
+        ]
+        expected = [
+            defs.CRE(
+                doctype=defs.Credoctypes.CRE,
+                id="001-005-073",
+                description="Verify that approved cryptographic algorithms are used in the generation, seeding, and verification.",
+                name="CREDENTIALS_MANAGEMENT_CRYPTOGRAPHIC_DIRECTIVES",
+                links=[
+                    defs.Link(
+                        document=defs.Standard(
+                            doctype=defs.Credoctypes.Standard,
+                            id="",
+                            description="",
+                            name="TOP10",
+                            links=[],
+                            tags=set(),
+                            metadata={},
+                            section="https://owasp.org/www-project-top-ten/2017/A5_2017-Broken_Access_Control",
+                            subsection="None",
+                            hyperlink="None",
+                        )
+                    ),
+                    defs.Link(
+                        document=defs.Standard(
+                            doctype=defs.Credoctypes.Standard,
+                            id="",
+                            description="",
+                            name="ISO 25010",
+                            links=[],
+                            tags=set(),
+                            metadata={},
+                            section="Secure data storage",
+                            subsection="None",
+                            hyperlink="None",
+                        )
+                    ),
+                ],
+                tags=set(),
+                metadata={},
+            ),
+            defs.CRE(id="14", description="Desc", name="name"),
+        ]
 
         result = main.parse_file(
-            filename="tests", yamldocs=file[0], scollection=self.collection)
+            filename="tests", yamldocs=file[0], scollection=self.collection
+        )
         # negative test first parse_file accepts a list of objects
         self.assertEqual(result, None)
         self.maxDiff = None
-        result = main.parse_file(filename="tests", yamldocs=file, scollection=self.collection)
+        result = main.parse_file(
+            filename="tests", yamldocs=file, scollection=self.collection
+        )
         self.assertCountEqual(result, expected)
 
     # TODO: ensure db has exact values instead of correct number of elements
@@ -359,25 +381,23 @@ class TestMain(unittest.TestCase):
             }
         ]
         main.parse_standards_from_spreadsheeet(input, self.collection)
-        self.assertEqual(
-            len(self.collection.session.query(db.Standard).all()), 8)
+        self.assertEqual(len(self.collection.session.query(db.Standard).all()), 8)
         self.assertEqual(len(self.collection.session.query(db.CRE).all()), 5)
         # assert the one CRE in the inpu externally links to all the 8 standards
         self.assertEqual(len(self.collection.session.query(db.Links).all()), 8)
-        self.assertEqual(
-            len(self.collection.session.query(db.InternalLinks).all()), 4)
+        self.assertEqual(len(self.collection.session.query(db.InternalLinks).all()), 4)
 
     def test_get_standards_files_from_disk(self):
         loc = tempfile.mkdtemp()
         ymls = []
         cre = defs.CRE(name="c", description="cd")
         for _ in range(1, 5):
-            ymldesc, location = tempfile.mkstemp(
-                dir=loc, suffix=".yaml", text=True)
-            os.write(ymldesc, bytes(str(cre), 'utf-8'))
+            ymldesc, location = tempfile.mkstemp(dir=loc, suffix=".yaml", text=True)
+            os.write(ymldesc, bytes(str(cre), "utf-8"))
             ymls.append(location)
         self.assertCountEqual(
-            ymls, [x for x in main.get_standards_files_from_disk(loc)])
+            ymls, [x for x in main.get_standards_files_from_disk(loc)]
+        )
 
     # def test_add_from_spreadsheet(self):
     #     raise NotImplementedError
