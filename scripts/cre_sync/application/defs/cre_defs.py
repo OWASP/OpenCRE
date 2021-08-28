@@ -118,11 +118,11 @@ class Credoctypes(Enum):
 
 
 class LinkTypes(Enum):
-    Same = "SAM"
+    Same = "SAME"
 
     @staticmethod
     def from_str(name):
-        if name == "SAM":
+        if name == "SAM" or name == "SAME":
             return LinkTypes.Same
         raise ValueError('"{}" is not a valid link type'.format(name))
 
@@ -141,7 +141,7 @@ class Metadata:
 @dataclass
 class Link:
     ltype: LinkTypes
-    tags: set
+    tags: list
     document = None
 
     def __init__(self, ltype=LinkTypes.Same, tags=set(), document=None):
@@ -149,30 +149,32 @@ class Link:
             raise_MandatoryFieldException("Links need to link to a Document")
         self.document = document
         if type(ltype) == str:
-            self.ltype = LinkTypes.from_str(ltype)
+            self.ltype = LinkTypes.from_str(ltype) or LinkTypes.Same
         else:
-            self.ltype = ltype
-        self.tags = tags if isinstance(tags,set) else set(tags)
+            self.ltype = ltype or LinkTypes.Same
+
+        self.tags = tags if isinstance(tags, set) else set(tags)
 
     def __hash__(self):
         return hash(json.dumps(self.todict()))
 
+    def __str__(self):
+        return json.dumps(self.todict())
+
     def __eq__(self, other):
         return (
             self.ltype == other.ltype
-            and self.tags == other.tags
-            and self.document == other.document
-        )
+            and all([a in other.tags and b in self.tags for a in self.tags for b in other.tags])
+            and self.document == other.document)
 
     def todict(self):
-        if isinstance(self.document,list):
-            print('wtf?')
-            pprint(self.document)
-        res = {"type": self.ltype.value}
+        res = {}
         if self.document:
             res["document"] = self.document.todict()
         if len(self.tags):
-            res["tags"] = list(self.tags)
+            res["tags"] = set(self.tags)
+
+        res['type'] = self.ltype.value
         return res
 
 
@@ -192,8 +194,9 @@ class Document:
             and self.name == other.name
             and self.doctype.value == other.doctype.value
             and self.description == other.description
-            and self.links == other.links
-            and all([a==b for a,b in zip(self.tags, other.tags)])
+            and len(self.links) == len(other.links)
+            and all([a in other.links and b in self.links for a in self.links for b in other.links])
+            and all([a == b and len(self.tags) == len(other.tags) for a, b in zip(self.tags, other.tags)])
             and self.metadata == other.metadata
         )
 
@@ -214,6 +217,7 @@ class Document:
             for link in self.links:
                 result["links"].append(link.todict())
         if self.tags:
+            # purposefully make this a list instead of a set since sets are not json serializable
             result["tags"] = list(self.tags)
         if self.metadata:
             result["metadata"] = self.metadata.todict()
@@ -230,12 +234,12 @@ class Document:
 
     def __init__(
         self,
-        name,
-        doctype=None,
-        id="",
-        description="",
-        links=[],
-        tags=set(),
+        name: str,
+        doctype: Credoctypes = None,
+        id: str = "",
+        description: str = "",
+        links: list = [],
+        tags: list = [],
         metadata: Metadata = None,
     ):
         self.description = str(description)
@@ -243,10 +247,10 @@ class Document:
             "Document name not defined for document of doctype %s" % doctype
         )
         self.links = links or []
-        if isinstance(tags,set) and "" in tags:
+        if isinstance(tags, set) and "" in tags:
             tags.remove("")
 
-        self.tags = tags if isinstance(tags,set) else set(tags)
+        self.tags = tags if isinstance(tags, set) else set(tags)
         self.id = id
         self.metadata = metadata
         if not doctype and not self.doctype:
@@ -261,8 +265,10 @@ class CRE(Document):
 
     def __hash__(self):
         return super().__hash__()
+
     def __eq__(self, other):
-        return (isinstance(other,CRE) and super().__eq__(other))
+        return (isinstance(other, CRE) and super().__eq__(other))
+
 
 @dataclass
 class Standard(Document):
@@ -285,7 +291,7 @@ class Standard(Document):
 
     def __eq__(self, other):
         return (
-            isinstance(other,Standard)
+            isinstance(other, Standard)
             and super().__eq__(other)
             and self.section == other.section
             and self.subsection == other.subsection
@@ -302,7 +308,7 @@ class Standard(Document):
                 % (kwargs.get("name"), section)
             )
         self.section = section
-        self.subsection =   subsection 
+        self.subsection = subsection
         self.hyperlink = hyperlink
         self.version = version
         super().__init__(*args, **kwargs)

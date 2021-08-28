@@ -79,6 +79,13 @@ add tests
 * ~ Make Standards versioned ~ -- Done
 * ~ write frontend  ~ Done
 * make frontend show Graph
+* migrate to new repo
+* add black autoformater
+* make heroku autodeploy from a master protected branch
+* debug frontend issues
+* merge frontend changes to master
+* make some more linktypes and make them implicit
+
 
 * Make frontend show gap analysis
 * Make frontend export search results and gap analysis to spreadsheet (supply backend with an "export=True" arg)
