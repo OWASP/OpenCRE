@@ -1,3 +1,4 @@
+import typing
 import copy
 import re
 import logging
@@ -348,7 +349,9 @@ def parse_v1_standards(cre_file: list) -> dict:
     return (groups, groupless_cres)
 
 
-def parse_v0_standards(cre_file: list) -> dict:
+def parse_v0_standards(
+    cre_file: typing.List[typing.Dict[str, str]]
+) -> typing.Dict[str, defs.CRE]:
     """given a yaml with standards, build a list of standards"""
     cres = {}
     for cre_mapping in cre_file:

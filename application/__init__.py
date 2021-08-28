@@ -13,7 +13,7 @@ def create_app(mode: str = "production", conf=None):
         app.config.from_object(config[mode])
     else:
         app.config.from_object(conf)
-    config[mode].init_app(app)
+    # config[mode].init_app(app)
     sqla.init_app(app=app)
 
     from application.web.web_main import app as app_blueprint

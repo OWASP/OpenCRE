@@ -3,10 +3,10 @@ import logging
 import os
 import shutil
 import tempfile
+import yaml
+
 from collections import namedtuple
 from pprint import pprint
-
-import yaml
 
 from application import create_app
 from application.config import CMDConfig

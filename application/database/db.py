@@ -1,3 +1,4 @@
+from typing import List, Tuple
 import logging
 import os
 from collections import namedtuple
@@ -10,15 +11,17 @@ import yaml
 from application.defs import cre_defs
 from application.utils import file
 import yaml
-
+from flask_sqlalchemy.model import DefaultMeta
 from .. import sqla
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+BaseModel: DefaultMeta = sqla.Model
 
-class Standard(sqla.Model):
+
+class Standard(BaseModel):
     __tablename__ = "standard"
     id = sqla.Column(sqla.Integer, primary_key=True)
     # ASVS or standard name,  what are we linking to
@@ -38,7 +41,7 @@ class Standard(sqla.Model):
     )
 
 
-class CRE(sqla.Model):
+class CRE(BaseModel):
     __tablename__ = "cre"
     id = sqla.Column(sqla.Integer, primary_key=True)
 
@@ -52,7 +55,7 @@ class CRE(sqla.Model):
     )
 
 
-class InternalLinks(sqla.Model):
+class InternalLinks(BaseModel):
     # model cre-groups linking cres
     __tablename__ = "crelinks"
     type = sqla.Column(sqla.String, default="SAM")
@@ -60,7 +63,7 @@ class InternalLinks(sqla.Model):
     cre = sqla.Column(sqla.Integer, sqla.ForeignKey("cre.id"), primary_key=True)
 
 
-class Links(sqla.Model):
+class Links(BaseModel):
     __tablename__ = "links"
     type = sqla.Column(sqla.String, default="SAM")
     cre = sqla.Column(sqla.Integer, sqla.ForeignKey("cre.id"), primary_key=True)
@@ -183,7 +186,7 @@ class Standard_collection:
             )
         return result or None
 
-    def get_by_tags(self, tags: list) -> [cre_defs.Document]:
+    def get_by_tags(self, tags: List[str]) -> List[cre_defs.Document]:
         """Returns the cre_defs.Documents and their Links
         that are tagged with ALL of the tags provided
         """
@@ -264,8 +267,13 @@ class Standard_collection:
             return None, None, None
 
     def get_standards(
-        self, name: str, section=None, subsection=None, link=None, version=None
-    ) -> [cre_defs.Standard]:
+        self,
+        name: str,
+        section: Optional[str] = None,
+        subsection: Optional[str] = None,
+        link: Optional[str] = None,
+        version: Optional[str] = None,
+    ) -> List[cre_defs.Standard]:
         standards = []
         standards_query = self.__get_standards_query__(
             name, section, subsection, link, version
@@ -299,7 +307,7 @@ class Standard_collection:
         version=None,
         page: int = 0,
         items_per_page=None,
-    ) -> (int, [cre_defs.Standard]):
+    ) -> Tuple[int, List[cre_defs.Standard]]:
         total_pages = 0
         query = Standard.query.filter(Standard.name == name)
         if section:
@@ -647,7 +655,7 @@ class Standard_collection:
         )
         return path
 
-    def gap_analysis(self, standards: list) -> [cre_defs.Document]:
+    def gap_analysis(self, standards: List[str]) -> [cre_defs.Document]:
         """Since the CRE structure is a tree-like graph with leaves being standards we can find the paths between standards
         find_path_between_standards() is a graph-path-finding method
         """
