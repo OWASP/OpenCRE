@@ -29,28 +29,26 @@ def register_standard(standard: defs.Standard,
     """
     linked_standard = collection.add_standard(standard)
     cre_less_standards = []
-    cres_added = (
-        []
-    )  # we need to know the cres added in case we encounter a higher level CRE, then we get the higher level CRE to link to these cres
+    cres_added = ([])
+      # we need to know the cres added in case we encounter a higher level CRE, then we get the higher level CRE to link to these cres
     for link in standard.links:
         if type(link.document).__name__ == defs.Standard.__name__:
             # if a standard links another standard it is likely that a standards writer wants to reference something
             # in that case, find which of the two standards has at least one CRE attached to it and link both to the parent CRE
             cres = collection.find_cres_of_standard(link.document)
+            db_link = collection.add_standard(link.document)
             if cres:
                 for cre in cres:
                     collection.add_link(cre=cre, standard=linked_standard, type=link.ltype)
                     for unlinked_standard in cre_less_standards:  # if anything in this
-                        collection.add_link(
-                            cre=cre, link=unlinked_standard, type=link.ltype
-                        )
+                        collection.add_link(cre=cre, link=unlinked_standard, type=link.ltype)
             else:
                 cres = collection.find_cres_of_standard(linked_standard)
                 if cres:
                     for cre in cres:
                         collection.add_link(
                             cre=cre,
-                            standard=collection.add_standard(link.document),
+                            standard=db_link,
                             type=link.ltype,
                         )
                         for unlinked_standard in cre_less_standards:
@@ -58,11 +56,10 @@ def register_standard(standard: defs.Standard,
                                 cre=cre, standard=unlinked_standard, type=link.ltype
                             )
                 else:  # if neither the root nor a linked standard has a CRE, add both as unlinked standards
-                    collection.add_standard(link.document)
                     cre_less_standards.append(link.document)
 
             if link.document.links and len(link.document.links) > 0:
-                register_standard(standard=link, collection=collection)
+                register_standard(standard=link.document, collection=collection)
 
         elif type(link.document).__name__ == defs.CRE.__name__:
             dbcre = register_cre(link.document, collection)
@@ -90,13 +87,13 @@ def register_cre(cre: defs.CRE, collection: db.Standard_collection) -> db.CRE:
 
 def parse_file(filename:str, yamldocs: list, scollection: db.Standard_collection) -> [defs.Document]:
     """given yaml from export format deserialise to internal standards format and add standards to db"""
-
+ 
     resulting_objects = []
     for contents in yamldocs:
         links = []
         document = None
         register_callback = None
-        if not isinstance(contents,dict): # basic object matching, make sure we at least have an object, go has this build in
+        if not isinstance(contents,dict): # basic object matching, make sure we at least have an object, go has this build in :(
             logger.fatal("Malformed file %s, skipping"%filename)
             return
 
@@ -130,7 +127,7 @@ def parse_standards_from_spreadsheeet(cre_file: list, result: db.Standard_collec
         hi_lvl_CREs, cres = parsers.parse_v1_standards(cre_file)
     elif "CRE:name" in cre_file[0].keys():
         cres = parsers.parse_export_format(cre_file)
-    elif any(key.startswith("CRE sequency") for key in cre_file[0].keys()):
+    elif any(key.startswith("CRE hierarchy") for key in cre_file[0].keys()):
         cres = parsers.parse_hierarchical_export_format(cre_file)
     else:
         cres = parsers.parse_v0_standards(cre_file)

@@ -2,10 +2,7 @@
 
 import logging
 import os
-# from sqlalchemy.ext.declarative import declarative_base
 from collections import namedtuple
-# from sqlalchemy.sql import operators
-# from sqlalchemy.orm import sessionmaker, relationship
 from enum import Enum
 from pprint import pprint
 import networkx as nx
@@ -84,12 +81,12 @@ class Standard_collection:
     def __load_cre_graph(self):
         graph = nx.Graph()
         for il in self.session.query(InternalLinks).all():
-            graph.add_node(il.group)
-            graph.add_node(il.cre)
-            graph.add_edge(il.group, il.cre)
+            graph.add_node(f"CRE: {il.group}")
+            graph.add_node(f"CRE: {il.cre}")
+            graph.add_edge(f"CRE: {il.group}", f"CRE: {il.cre}")
         for l in self.session.query(Links).all():
-            graph.add_node("Standard:"+str(l.standard))
-            graph.add_edge(l.cre, "Standard:"+str(l.standard))
+            graph.add_node(f"Standard: {str(l.standard)}")
+            graph.add_edge(f"CRE: {l.cre}", f"Standard: {str(l.standard)}")
         return graph
 
     def __get_external_links(self):
@@ -419,7 +416,7 @@ class Standard_collection:
                         name=cre.name, external_id=cre.id)
             self.session.add(entry)
             self.session.commit()
-            self.cre_graph.add_node(entry.id)
+            self.cre_graph.add_node(f"CRE: {entry.id}")
         return entry
 
     def add_standard(self, standard: cre_defs.Standard) -> Standard:
@@ -435,16 +432,13 @@ class Standard_collection:
             .first()
         )
         if entry is not None:
-            logger.debug("knew of %s:%s ,updating" %
-                         (entry.name, entry.section))
+            logger.debug(f"knew of {entry.name}:{entry.section} ,updating")
             entry.link = standard.hyperlink
             self.session.commit()
             return entry
         else:
             logger.debug(
-                "did not know of %s:%s ,adding" % (
-                    standard.name, standard.section)
-            )
+                f"did not know of {standard.name}:{standard.section} ,adding")
             entry = Standard(
                 name=standard.name,
                 section=standard.section,
@@ -454,10 +448,19 @@ class Standard_collection:
             )
             self.session.add(entry)
             self.session.commit()
-            self.cre_graph.add_node("Standard:"+str(entry.id))
+            self.cre_graph.add_node("Standard: "+str(entry.id))
         return entry
 
     def __introduces_cycle(self, node_from, node_to):
+        try:
+            existing_cycle = nx.find_cycle(self.cre_graph)
+            if existing_cycle:
+                logger.fatal(
+                    f"Existing graph contains cycle, this not a recoverable error, manual database actions are required {existing_cycle}")
+                raise ValueError(
+                    f"Existing graph contains cycle, this not a recoverable error, manual database actions are required {existing_cycle}")
+        except nx.exception.NetworkXNoCycle:
+            pass  # happy path, we don't want cycles
         new_graph = self.cre_graph.copy()
         new_graph.add_edge(node_from, node_to)
         try:
@@ -522,26 +525,24 @@ class Standard_collection:
         )
         if entry != None:
             logger.debug(
-                "knew of internal link %s == %s ,updating" % (
-                    cre.name, group.name)
-            )
+                f"knew of internal link {cre.name} == {group.name} ,updating")
             entry.type = type.value
             self.session.commit()
             return
         else:
             logger.debug(
-                "did not know of internal link %s:%s == %s:%s ,adding"
-                % (group.external_id, group.name, cre.external_id, cre.name)
-            )
-            cycle = self.__introduces_cycle(group.id, cre.id)
+                f"did not know of internal link {group.external_id}:{group.name} == {cre.external_id}:{cre.name} ,adding")
+            cycle = self.__introduces_cycle(
+                f"CRE: {group.id}", f"CRE: {cre.id}")
             if not cycle:
                 self.session.add(InternalLinks(
                     type=type.value, cre=cre.id, group=group.id))
                 self.session.commit()
-                self.cre_graph.add_edge(group.id, cre.id)
+                self.cre_graph.add_edge(f"CRE: {group.id}", f"CRE: {cre.id}")
             else:
-                logger.warning("A link between CREs %s and %s would introduce a cycle, skipping" % (
-                    group.id, cre.id))
+                logger.warning(
+                    f"A link between CREs {group.external_id} and {cre.external_id} would introduce a cycle, skipping")
+                logger.debug(cycle)
 
     def add_link(self, cre: CRE, standard: Standard, type: cre_defs.LinkTypes = cre_defs.LinkTypes.Same):
         if cre.id == None:
@@ -556,30 +557,35 @@ class Standard_collection:
                         Standard.subsection == standard.subsection,
                         Standard.version == standard.version,)).first())
 
-        entry = (
-            self.session.query(Links).filter(sqla.and_(Links.cre == cre.id, Links.standard == standard.id)).first())
+        entry = (self.session.query(Links).filter(
+            sqla.and_(Links.cre == cre.id, Links.standard == standard.id)).first())
         if entry:
             logger.debug(
-                "knew of link %s:%s==%s ,updating"
-                % (standard.name, standard.section, cre.name)
-            )
+                f"knew of link {standard.name}:{standard.section}=={cre.name} ,updating")
             entry.type = type.value
             self.session.commit()
             return
         else:
+            # Since multiple CREs need to link to the same standard, cycles are inevitable
+            # cycle = self.__introduces_cycle(
+            #     f"CRE: {cre.id}", f"Standard: {str(standard.id)}")
+            # if not cycle:
             logger.debug(
-                "did not know of link %s)%s:%s==%s)%s ,adding"
-                % (standard.id, standard.name, standard.section, cre.id, cre.name)
-            )
+                f"did not know of link {standard.id}){standard.name}:{standard.section}=={cre.id}){cre.name} ,adding")
             self.session.add(
                 Links(type=type.value, cre=cre.id, standard=standard.id))
-            self.cre_graph.add_edge(cre.id, "Standard:"+str(standard.id))
+            self.cre_graph.add_edge(
+                f"CRE: {cre.id}", f"Standard: {str(standard.id)}")
+            # else:
+            #     logger.warning(f"A link between CRE {cre.external_id} and Standard: {standard.name}:{standard.section}:{standard.subsection}"
+            #                    " would introduce a cycle, skipping")
+            #     logger.debug(f"{cycle}")
         self.session.commit()
 
     def find_path_between_standards(self, standard_source_id, standard_destination_id):
         """ One line method to return paths in a graph, this starts getting complicated when we have more linktypes"""
-        path = nx.has_path(self.cre_graph, "Standard:"+str(standard_source_id),
-                           "Standard:"+str(standard_destination_id))
+        path = nx.has_path(self.cre_graph, "Standard: "+str(standard_source_id),
+                           "Standard: "+str(standard_destination_id))
         return path
 
     def gap_analysis(self, standards: list) -> [cre_defs.Document]:

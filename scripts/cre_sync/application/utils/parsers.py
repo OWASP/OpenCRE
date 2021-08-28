@@ -22,6 +22,8 @@ def is_empty(value: str):
         or "n/a" in value.lower()
         or value == "nan"
         or value.lower() == "no"
+        or value.lower() == "tbd"
+        or value.lower() == "see higher level topic"
     )
 
 
@@ -77,7 +79,6 @@ def parse_export_format(lfile: list) -> [defs.Document]:
         set([k for k, v in lfile[0].items() if link_types_regexp.match(k)])
     )
 
-    # input()
     for mapping in lfile:
         # if the line does not register a CRE
         if not mapping.get(defs.ExportFormat.cre_name_key()):
@@ -417,54 +418,84 @@ def parse_hierarchical_export_format(cre_file):
         if is_empty(name):
             logger.warning("Found entry without a cre name, skipping")
             continue
+
         if name in cres.keys():
             cre = cres.get(name)
         else:
-            cre = defs.CRE(name=name, id=mapping.pop("CRE sequency"))
+            cre = defs.CRE(name=name)
 
-        if not is_empty(mapping.get('TAGS')):
-            cre.tags.update(set([x.strip()
-                            for x in mapping.pop('TAGS').split(",")]))
+        if not is_empty(mapping.get("CRE ID")):
+            cre.id = mapping.pop("CRE ID")
+        else:
+            logger.warning(f"empty Id for {name}")
+    
+        if not is_empty(mapping.get('CRE Tags')):
+            [cre.tags.add(x.strip()) for x in mapping.pop('CRE Tags').split(",")]
 
         if not is_empty(mapping.get("Link to other CRE")):
-            for other_cre in set([x.strip() for x in mapping.pop("Link to other CRE").split(",")]):
+            for other_cre in set([x.strip() for x in mapping.pop("Link to other CRE").split(",") if not is_empty(x.strip())]):
                 if not cres.get(other_cre):
-                    logger.warning(
-                        "%s linking to not yet existent cre %s" % (cre.name, other_cre))
+                    logger.warning("%s linking to not yet existent cre %s" % (cre.name, other_cre))
                     new_cre = defs.CRE(name=other_cre)
                     cres[new_cre.name] = new_cre
+                else:
+                    new_cre = cres.get(other_cre)
+
                 cre.add_link(defs.Link(document=new_cre))
 
-        if not is_empty(mapping.get("CRE mapped Top10 2017 version")) and\
-           mapping.get("CRE mapped Top10 2017 version") != "See higher level topic":
+        if not is_empty(mapping.get("Standard ASVS Item")):
+            cre.add_link(defs.Link(document=defs.Standard(name="ASVS",
+                                            section= mapping.pop("Standard ASVS Item").strip(),
+                                            hyperlink=mapping.pop("Standard ASVS Hyperlink"))))
+
+
+        if not is_empty(mapping.get("Standard Top10 2017")) and\
+           mapping.get("Standard Top10 2017") != "See higher level topic":
             cre.add_link(defs.Link(document=defs.Standard(name="Top10 2017",
-                         section=mapping.pop("CRE mapped Top10 2017 version").strip())))
+                                            section=mapping.pop("Standard Top10 2017"),
+                                            hyperlink=mapping.pop("Standard Top10 Hyperlink").strip())))
 
-        if not is_empty(mapping.get("OPC (ASVS source)")):
+        if not is_empty(mapping.get("Standard OPC (ASVS source)")):
             cre.add_link(defs.Link(document=defs.Standard(
-                name="OPC", section=mapping.pop("OPC (ASVS source)").strip())))
+                name="OPC", section=mapping.pop("Standard OPC (ASVS source)").strip())))
 
-        if not is_empty(mapping.get("WSTG (prefilled by SR, but Elie has plan to make the administration self-maintaining)")):
+        if not is_empty(mapping.get("Standard WSTG (prefilled by SR, but Elie has plan to make the administration self-maintaining)")):
             cre.add_link(defs.Link(document=defs.Standard(name="WSTG",
-                                                section=mapping.pop("WSTG (prefilled by SR, but Elie has plan to make the administration self-maintaining)").strip())))
-        if not is_empty(mapping.get("CWE (from ASVS)")):
+                                                section=mapping.pop("Standard WSTG (prefilled by SR, but Elie has plan to make the administration self-maintaining)").strip())))
+        if not is_empty(mapping.get("Standard CWE (from ASVS)")):
             cre.add_link(defs.Link(document=defs.Standard(
-                name="CWE", section=str(mapping.pop("CWE (from ASVS)")).strip())))
+                name="CWE", section=str(mapping.pop("Standard CWE (from ASVS)")).strip())))
 
-        if not is_empty(mapping.get("NIST-800-63 (from ASVS)")):
-            for nist in set(mapping.pop("NIST-800-63 (from ASVS)").split("/")):
-                cre.add_link(defs.Link(document=defs.Standard(name="NIST-800-63", section=nist.strip())))
+        if not is_empty(mapping.get("Standard NIST-800-63 (from ASVS)")):
+            nist = str(mapping.pop("Standard NIST-800-63 (from ASVS)"))
+            if '/' in nist:
+                for nst in set(nist.split('/')):
+                    cre.add_link(defs.Link(document=defs.Standard(name="NIST-800-63", section=nst.strip())))
 
-        if not is_empty(mapping.get("NIST 800-53 - IS Preliminary mapping by CRE team")):
-            for nist in set(mapping.pop("NIST 800-53 - IS Preliminary mapping by CRE team").split(",")):
-                cre.add_link(defs.Link(document=defs.Standard(name="NIST-800-63", section=nist.strip())))
+        if not is_empty(mapping.get("Standard NIST 800-53 v5")):
+            nist = str(mapping.pop("Standard NIST 800-53 v5"))
+            if ',' in nist:
+                for nst in set(nist.split(",")):
+                    cre.add_link(defs.Link(document=defs.Standard(name="NIST 800-53 v5", section=nst.strip())))
 
-        
+        if not is_empty(mapping.get("Standard Cheat_sheets")):
+            cs = str(mapping.pop("Standard Cheat_sheets"))
+            if ',' in cs:
+                for csc in set(cs.split(',')):
+                    cheatsheet = defs.Standard(name="Cheat_sheets", section=csc.strip())
+                    cre.add_link(defs.Link(document=cheatsheet))
 
         # link CRE to a higher level one
-        if cres.get("CRE hierarchy "+str(higher_cre)):
-            cres.get("CRE hierarchy "+str(higher_cre)).add_link(defs.Link(document=cre))
+        
+        if cres.get(mapping.get(f"CRE hierarchy {str(higher_cre)}")):
+            cre_hi = cres[mapping.get(f"CRE hierarchy {str(higher_cre)}")]
+            
+            existing_link = [c for c in cre_hi.links if c.document.doctype == defs.Credoctypes.CRE and c.document.name==name]
+            if existing_link:
+                cre_hi.links[cre_hi.links.index(existing_link[0])].document = cre # ugliest way ever to write "update the object in that pointer"
+            else:
+                cre_hi.add_link(defs.Link(document=cre))
+            cres[cre_hi.name] = cre_hi
 
-        cres[cre.name] = cre
-
+        cres[cre.name] = cre    
     return cres

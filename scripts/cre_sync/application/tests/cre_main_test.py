@@ -79,7 +79,6 @@ class TestMain(unittest.TestCase):
             len(self.collection.session.query(db.Standard).all()), 3)
 
     def test_register_standard_with_cre(self):
-
         standard_with_cre = defs.Standard(
             doctype=defs.Credoctypes.Standard,
             id="",
@@ -89,14 +88,13 @@ class TestMain(unittest.TestCase):
                 defs.Link(
                     document=defs.CRE(
                         doctype=defs.Credoctypes.CRE,
-                        id="",
+                        id="101-202",
                         description="cre desc",
                         name="crename",
                         links=[],
                         tags=set(),
                         metadata=defs.Metadata(labels=[]),
-                    )
-                ),
+                    )),
                 defs.Link(
                     document=defs.Standard(
                         doctype=defs.Credoctypes.Standard,
@@ -107,9 +105,7 @@ class TestMain(unittest.TestCase):
                         tags=set(),
                         metadata=defs.Metadata(labels=[]),
                         section="SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING",
-                    )
-                ),
-            ],
+                    )),],
             tags=set(),
             metadata=defs.Metadata(labels=[]),
             section="standard_with_cre",
@@ -137,7 +133,7 @@ class TestMain(unittest.TestCase):
             links=[
                 defs.Link(
                     document=defs.CRE(
-                        id="",
+                        id="101-002",
                         description="group desc",
                         name="group name",
                         links=[
@@ -150,13 +146,9 @@ class TestMain(unittest.TestCase):
                                     links=[],
                                     tags=set(),
                                     metadata=defs.Metadata(labels=[]),
-                                )
-                            )
-                        ],
+                                ))],
                         tags=set(),
-                        metadata=defs.Metadata(labels=[]),
-                    )
-                ),
+                        metadata=defs.Metadata(labels=[]),)),
                 defs.Link(
                     document=defs.Standard(
                         doctype=defs.Credoctypes.Standard,
@@ -166,20 +158,16 @@ class TestMain(unittest.TestCase):
                         links=[],
                         tags=set(),
                         metadata=defs.Metadata(labels=[]),
-                        section="598",
-                    )
-                ),
+                        section="598",)),
                 defs.Link(
                     document=defs.CRE(
                         doctype=defs.Credoctypes.CRE,
-                        id="",
+                        id="101-000",
                         description="cre desc",
                         name="crename",
                         links=[],
                         tags=set(),
-                        metadata=defs.Metadata(labels=[]),
-                    )
-                ),
+                        metadata=defs.Metadata(labels=[]),)),
                 defs.Link(
                     document=defs.Standard(
                         doctype=defs.Credoctypes.Standard,
@@ -189,18 +177,13 @@ class TestMain(unittest.TestCase):
                         links=[],
                         tags=set(),
                         metadata=defs.Metadata(labels=[]),
-                        section="SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING",
-                    )
-                ),
-            ],
+                        section="SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING",)),],
             tags=set(),
             metadata=defs.Metadata(labels=[]),
-            section="Session Management",
-        )
+            section="Session Management",)
 
         ret = main.register_standard(
-            standard=with_groupped_cre_links, collection=self.collection
-        )
+            standard=with_groupped_cre_links, collection=self.collection)
         # assert db structure makes sense
         self.assertEqual(
             len(self.collection.session.query(db.Links).all()), 5
