@@ -49,6 +49,9 @@ You can run backend tests with `FLASK_APP=cre.py FLASK_CONFIG=test flask test`
 You can run get a coverage report with `FLASK_APP=cre.py FLASK_CONFIG=test flask test --coverage`
 Try to keep the coverage above 70%
 
+Repo Moved here from https://github.com/northdpole/www-project-integration-standards
+
+
 Development Notes
 ---
 
