@@ -2,7 +2,7 @@ import collections
 import unittest
 
 from application.defs import cre_defs as defs
-from application.utils.parsers import ( # type: ignore
+from application.utils.parsers import (  # type: ignore
     parse_export_format,
     parse_hierarchical_export_format,
     parse_uknown_key_val_spreadsheet,
