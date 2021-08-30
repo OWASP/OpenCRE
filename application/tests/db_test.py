@@ -81,6 +81,7 @@ class TestDB(unittest.TestCase):
             section="tagsstand",
             name="tagsstand",
             link="https://example.com",
+            version="",
             tags="tag1, dots.5.5, space 6 , several spaces and newline          7        \n",
         )
         standard = db.StandardFromDB(dbstandard)
@@ -235,7 +236,6 @@ class TestDB(unittest.TestCase):
     def test_add_cre(self) -> None:
         original_desc = str(uuid.uuid4())
         name = str(uuid.uuid4())
-        gname = str(uuid.uuid4())
 
         c = defs.CRE(
             id="cid", doctype=defs.Credoctypes.CRE, description=original_desc, name=name
@@ -264,9 +264,9 @@ class TestDB(unittest.TestCase):
             self.collection.session.query(db.CRE).filter(db.CRE.name == c.name).first()
         )
         # ensure original description
-        self.assertEqual(dbcre.description, str(original_desc))
+        self.assertEqual(dbcre.description, original_desc)
         # ensure original description
-        self.assertEqual(newCRE.description, str(original_desc))
+        self.assertEqual(newCRE.description, original_desc)
 
     def test_add_standard(self) -> None:
         original_section = str(uuid.uuid4())
