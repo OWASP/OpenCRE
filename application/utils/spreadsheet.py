@@ -5,6 +5,7 @@ from copy import deepcopy
 from typing import Any, Dict, List, Optional
 
 import gspread  # type: ignore
+
 import yaml
 
 from application.database import db
@@ -44,6 +45,7 @@ def readSpreadsheet(
 
 
 def __add_cre_to_spreadsheet(
+
     document: defs.Document,
     header: Dict[str, Optional[str]],
     cresheet: List[Dict[str, Any]],
@@ -58,6 +60,7 @@ def __add_cre_to_spreadsheet(
         working_array[defs.ExportFormat.cre_description_key()] = document.description
     # case where a lone standard is displayed without any CRE links
     elif document.doctype == defs.Credoctypes.Standard:
+
         working_array[
             defs.ExportFormat.section_key(document.name)
         ] = document.section  # type: ignore
@@ -72,6 +75,7 @@ def __add_cre_to_spreadsheet(
         if (
             link.document.doctype == defs.Credoctypes.Standard
         ):  # linking to normal standard
+
             # a single CRE can link to multiple subsections of the same
             # standard hence we can have conflicts
             if working_array[defs.ExportFormat.section_key(link.document.name)]:
@@ -108,6 +112,7 @@ def __add_cre_to_spreadsheet(
 
             if not grp_added:
                 logger.fatal(
+
                     "Tried to add Group %s but all of the %s group "
                     "slots are filled. This must be a bug"
                     % (link.document.name, maxgroups)
@@ -123,6 +128,7 @@ def __add_cre_to_spreadsheet(
     return cresheet
 
 
+
 def prepare_spreadsheet(
     collection: db.Standard_collection, docs: List[defs.Document]
 ) -> List[Dict[str, Any]]:
@@ -133,6 +139,7 @@ def prepare_spreadsheet(
     standard_names = (
         collection.get_standards_names()
     )  # get header from db (cheap enough)
+
     header: Dict[str, Optional[str]] = {
         defs.ExportFormat.cre_name_key(): None,
         defs.ExportFormat.cre_id_key(): None,
@@ -145,6 +152,7 @@ def prepare_spreadsheet(
         header[defs.ExportFormat.link_type_key(name)] = None
     maxgroups = collection.get_max_internal_connections()
     for i in range(0, maxgroups):
+
         header[defs.ExportFormat.linked_cre_id_key(str(i))] = None
         header[defs.ExportFormat.linked_cre_name_key(str(i))] = None
         header[defs.ExportFormat.linked_cre_link_type_key(str(i))] = None
@@ -159,7 +167,6 @@ def prepare_spreadsheet(
         )
         result.extend(flatdict[cre.name])
     return result
-
 
 def write_spreadsheet(title: str, docs: List[Dict[str, Any]], emails: List[str]) -> str:
     """upload local array of flat yamls to url, share with email list"""

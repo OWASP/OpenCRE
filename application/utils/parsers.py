@@ -1,4 +1,6 @@
+
 from typing import Any, Dict, List, Optional, Tuple
+
 import re
 import logging
 from application.defs import cre_defs as defs
@@ -13,7 +15,9 @@ logger.setLevel(logging.INFO)
 logging.basicConfig()
 
 
+
 def is_empty(value: Optional[str]) -> bool:
+
     value = str(value)
     return (
         value is None
@@ -26,12 +30,10 @@ def is_empty(value: Optional[str]) -> bool:
         or value.lower() == "see higher level topic"
     )
 
-
 def recurse_print_links(cre: defs.Document) -> None:
     for link in cre.links:
         pprint(link.document)
         recurse_print_links(link.document)
-
 
 def get_linked_standards(mapping: Dict[str, str]) -> List[defs.Link]:
     standards = []
@@ -47,19 +49,14 @@ def get_linked_standards(mapping: Dict[str, str]) -> List[defs.Link]:
         name = sname
         section = mapping.pop(defs.ExportFormat.section_key(name))
         subsection = mapping.pop(defs.ExportFormat.subsection_key(name))
-        hyperlink = mapping.pop(defs.ExportFormat.hyperlink_key(name))
+ink = mapping.pop(defs.ExportFormat.hyperlink_key(name))
         link_type = mapping.pop(defs.ExportFormat.link_type_key(name))
         standard = defs.Standard(
             name=sname, section=section, subsection=subsection, hyperlink=hyperlink
         )
         lt: defs.LinkTypes
         if not is_empty(link_type):
-            lt = defs.LinkTypes.from_str(link_type)
-            standards.append(defs.Link(document=standard, ltype=lt))
-    return standards
-
-
-def parse_export_format(lfile: List[Dict[str, Any]]) -> Dict[str, defs.Document]:
+            lt = defs.LinkTypes.from_str(link_type)rt_format(lfile: List[Dict[str, Any]]) -> Dict[str, defs.Document]:
     """Given: a spreadsheet written by prepare_spreadsheet()
     return a list of CRE docs
     cases:
@@ -69,6 +66,7 @@ def parse_export_format(lfile: List[Dict[str, Any]]) -> Dict[str, defs.Document]
         cre -> standards
         cre -> standards, other cres
     """
+
     cre: defs.Document
     internal_mapping: defs.Document
     cres: Dict[str, defs.Document] = {}
@@ -313,8 +311,10 @@ def parse_v1_standards(
         if not is_empty(cre_mapping.get("OPC")):
             cre.add_link(
                 defs.Link(
+
                     document=defs.Standard(
                         name="OPC", section=cre_mapping.pop("OPC"))
+
                 )
             )
 
@@ -329,6 +329,7 @@ def parse_v1_standards(
         if not is_empty(cre_mapping.get("WSTG")):
             cre.add_link(
                 defs.Link(
+
                     document=defs.Standard(
                         name="WSTG", section=cre_mapping.pop("WSTG"))
                 )
@@ -345,6 +346,7 @@ def parse_v1_standards(
         # group mapping
         is_in_group = False
         for i in range(1, 8):
+
             group: defs.CRE
             gname = cre_mapping.pop("CRE Group %s" % i)
             gid = cre_mapping.pop("CRE Group %s Lookup" % i)
@@ -352,12 +354,14 @@ def parse_v1_standards(
 
                 if gname not in groups.keys():
                     group = defs.CRE(name=gname, id=gid)
+
                 elif groups.get(name) and id != groups[name].id and groups.get("name"):
                     raise ValueError(
                         "Group %s has two different ids %s and %s"
                         % (name, id, groups.get("name"))
                     )
                 else:
+
                     group = groups[gname]
 
                 is_in_group = True
@@ -394,6 +398,7 @@ def parse_v0_standards(cre_file: List[Dict[str, str]]) -> Dict[str, defs.CRE]:
         if cre_mapping.get("ID-taxonomy-lookup-from-ASVS-mapping"):
             linked_standard = defs.Standard(
                 name="ASVS",
+
                 section=cre_mapping.pop(
                     "ID-taxonomy-lookup-from-ASVS-mapping"),
                 subsection=cre_mapping.pop("Item"),
@@ -437,6 +442,7 @@ def parse_hierarchical_export_format(
             continue
 
         if name in cres.keys():
+
             cre = cres[name]
         else:
             cre = defs.CRE(name=name)
@@ -447,6 +453,7 @@ def parse_hierarchical_export_format(
             logger.warning(f"empty Id for {name}")
 
         if not is_empty(mapping.get("CRE Tags")):
+
             for x in mapping.pop("CRE Tags").split(","):
                 cre.tags.add(x.strip())
 
@@ -466,6 +473,7 @@ def parse_hierarchical_export_format(
                     new_cre = defs.CRE(name=other_cre)
                     cres[new_cre.name] = new_cre
                 else:
+
                     new_cre = cres[other_cre]
 
                 cre.add_link(defs.Link(document=new_cre))
@@ -490,6 +498,7 @@ def parse_hierarchical_export_format(
                     document=defs.Standard(
                         name="Top10 2017",
                         section=mapping.pop("Standard Top10 2017"),
+
                         hyperlink=mapping.pop(
                             "Standard Top10 Hyperlink").strip(),
                     )
@@ -500,6 +509,7 @@ def parse_hierarchical_export_format(
                 defs.Link(
                     document=defs.Standard(
                         name="OPC",
+
                         section=mapping.pop(
                             "Standard OPC (ASVS source)").strip(),
                     )

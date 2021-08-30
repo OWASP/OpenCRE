@@ -15,6 +15,7 @@ from typing import (
     overload,
 )
 
+
 # used for serialising and deserialising yaml CRE documents
 
 
@@ -40,7 +41,9 @@ class ExportFormat(Enum):
         )
 
     @staticmethod
+
     def subsection_key(sname: str) -> str:
+
         "returns <sname>:subsection"
         return "%s%s%s" % (
             sname,
@@ -49,7 +52,9 @@ class ExportFormat(Enum):
         )
 
     @staticmethod
+
     def hyperlink_key(sname: str) -> str:
+
         "returns <sname>:hyperlink"
         return "%s%s%s" % (
             sname,
@@ -58,7 +63,9 @@ class ExportFormat(Enum):
         )
 
     @staticmethod
+
     def link_type_key(sname: str) -> str:
+
         "returns <sname>:link_type"
         return "%s%s%s" % (
             sname,
@@ -67,7 +74,9 @@ class ExportFormat(Enum):
         )
 
     @staticmethod
+
     def linked_cre_id_key(name: str) -> str:
+
         "returns Linked_CRE_<name>:id"
         return "%s%s%s%s" % (
             ExportFormat.cre_link.value,
@@ -78,6 +87,7 @@ class ExportFormat(Enum):
 
     @staticmethod
     def linked_cre_name_key(name: str) -> str:
+
         "returns Linked_CRE_<name>:name"
         return "%s%s%s%s" % (
             ExportFormat.cre_link.value,
@@ -88,6 +98,7 @@ class ExportFormat(Enum):
 
     @staticmethod
     def linked_cre_link_type_key(name: str) -> str:
+
         "returns Linked_CRE_<name>:link_type"
         return "%s%s%s%s" % (
             ExportFormat.cre_link.value,
@@ -98,6 +109,7 @@ class ExportFormat(Enum):
 
     @staticmethod
     def cre_id_key() -> str:
+
         "returns CRE:id"
         return "%s%s%s" % (
             ExportFormat.cre.value,
@@ -107,6 +119,7 @@ class ExportFormat(Enum):
 
     @staticmethod
     def cre_name_key() -> str:
+
         "returns CRE:name"
         return "%s%s%s" % (
             ExportFormat.cre.value,
@@ -116,6 +129,7 @@ class ExportFormat(Enum):
 
     @staticmethod
     def cre_description_key() -> str:
+
         "returns CRE:description"
         return "%s%s%s" % (
             ExportFormat.cre.value,
@@ -134,6 +148,7 @@ class LinkTypes(Enum):
 
     @staticmethod
     def from_str(name: str) -> Any:  # it returns LinkTypes but then it won't run
+
         if name == "SAM" or name == "SAME":
             return LinkTypes.Same
         raise ValueError('"{}" is not a valid link type'.format(name))
@@ -258,6 +273,7 @@ class Document:
             result["id"] = self.id
         if self.links:
             result["links"] = []
+
             [
                 result["links"].append(link.todict())  # type: ignore
                 for link in self.links
@@ -268,7 +284,7 @@ class Document:
         if self.metadata:
             result["metadata"] = self.metadata.todict()
         return result
-
+      
     def add_link(self, link: Link) -> Any:  # it returns Document but then it won't run
         if not self.links:
             self.links = []
@@ -308,6 +324,7 @@ class Document:
 
 @dataclass
 class CRE(Document):
+
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         self.doctype = Credoctypes.CRE
         super().__init__(*args, **kwargs)
@@ -330,13 +347,16 @@ class Standard(Document):
     hyperlink: str
     version: str
 
+
     def todict(self) -> Dict[Any, Any]:
         result: Dict[Any, Any] = super().todict()
+
         result["section"] = self.section
         result["subsection"] = self.subsection
         result["hyperlink"] = self.hyperlink
         result["version"] = self.version
         return result
+
 
     def __hash__(self) -> int:
         return super().__hash__()
@@ -378,7 +398,6 @@ class Standard(Document):
 
 class MandatoryFieldException(Exception):
     pass
-
 
 def raise_MandatoryFieldException(msg: str = "") -> None:
     raise MandatoryFieldException(msg)

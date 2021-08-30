@@ -1,3 +1,4 @@
+
 import argparse
 import os
 import sys
@@ -9,6 +10,7 @@ import coverage  # type: ignore
 
 from application import create_app, sqla  # type: ignore
 from application.cmd import cre_main
+
 
 # Hacky solutions to make this both a command line application with argparse and a flask application
 
@@ -29,6 +31,7 @@ if os.environ.get("FLASK_COVERAGE"):
 )  # type: ignore
 @click.argument("test_names", nargs=-1)  # type: ignore
 def test(coverage: coverage.Coverage, test_names: List[str]) -> None:
+
     if coverage and not os.environ.get("FLASK_COVERAGE"):
         import subprocess
 
@@ -53,7 +56,9 @@ def test(coverage: coverage.Coverage, test_names: List[str]) -> None:
 
 
 # python cre.py --<x> commands
+
 def main() -> None:
+
     app_context = app.app_context()
     app_context.push()
 

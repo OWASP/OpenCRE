@@ -1,8 +1,10 @@
 import logging
+
 import os
 from datetime import datetime
 
 import git
+
 from github import Github
 
 logger = logging.getLogger(__name__)
@@ -10,6 +12,7 @@ logger.setLevel(logging.INFO)
 logging.basicConfig()
 
 commit_msg_base = "cre_sync_%s" % (datetime.now().isoformat().replace(":", "."))
+
 
 
 def create_branch(branch_name: str) -> None:
@@ -20,10 +23,12 @@ def create_branch(branch_name: str) -> None:
     g.checkout(current_branch)
 
 
+
 def add_to_github(cre_loc: str, alias: str, apikey: str) -> None:
     global commit_msg_base
     commit_msg = "%s-%s" % (commit_msg_base, alias)
     branch_name = commit_msg_base
+
 
     repo = git.Repo(os.path.join(os.path.dirname(os.path.realpath(__file__)), "../../"))  # type: ignore
     g = git.Git()  # type: ignore
@@ -44,6 +49,7 @@ def add_to_github(cre_loc: str, alias: str, apikey: str) -> None:
             srcBranch=commit_msg_base,
             targetBranch="master",
         )
+
     except git.exc.GitCommandError as gce:  # type: ignore
         # if there's an error (commonly due to no changes, skip pushing a new branch)
         logger.error("Skipping push due to git error trying to sync " + commit_msg)
@@ -54,7 +60,9 @@ def add_to_github(cre_loc: str, alias: str, apikey: str) -> None:
 
 def createPullRequest(
     apiToken: str, repo: str, title: str, srcBranch: str, targetBranch: str = "master"
+
 ) -> None:
+
     logger.info(
         "Issuing pull request from %s to master for repo %s" % (srcBranch, repo)
     )

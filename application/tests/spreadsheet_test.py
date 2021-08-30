@@ -1,3 +1,4 @@
+
 import tempfile
 import unittest
 
@@ -8,11 +9,14 @@ from application.utils.spreadsheet import prepare_spreadsheet  # type: ignore
 
 class TestDB(unittest.TestCase):
     def tearDown(self) -> None:
+
         sqla.session.remove()
         sqla.drop_all()
         self.app_context.pop()
 
+
     def setUp(self) -> None:
+
         self.app = create_app(mode="test")
         sqla.create_all(app=self.app)
 
@@ -20,7 +24,9 @@ class TestDB(unittest.TestCase):
         self.app_context.push()
         self.collection = db.Standard_collection()
 
+
     def test_prepare_spreadsheet_standards(self) -> None:
+
         """
         Given:
                 * 1 CRE "CREname" that links to
@@ -277,7 +283,9 @@ class TestDB(unittest.TestCase):
         )
         self.assertCountEqual(result, expected)
 
+
     def test_prepare_spreadsheet_groups(self) -> None:
+
         """Given:
             * 1 CRE "CREname" that links to
                 ** 2 subsections of Standard "ConflictStandName"
@@ -427,6 +435,7 @@ class TestDB(unittest.TestCase):
         )
 
         self.assertCountEqual(result, expected)
+
 
     def test_prepare_spreadsheet_simple(self) -> None:
         """Given:

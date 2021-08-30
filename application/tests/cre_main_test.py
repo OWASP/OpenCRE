@@ -3,6 +3,7 @@ import os
 import tempfile
 import unittest
 from pprint import pprint
+
 from typing import Any, Dict, Iterable, List
 from unittest import skip
 
@@ -15,10 +16,12 @@ from application.defs import cre_defs as defs
 
 
 class TestMain(unittest.TestCase):
+
     def tearDown(self) -> None:
         sqla.session.remove()
         sqla.drop_all(app=self.app)
         self.app_context.pop()
+
 
     def setUp(self) -> None:
         self.app = create_app(mode="test")
@@ -27,7 +30,9 @@ class TestMain(unittest.TestCase):
         self.app_context.push()
         self.collection = db.Standard_collection()
 
+
     def test_register_standard_with_links(self) -> None:
+
         standard_with_links = defs.Standard(
             doctype=defs.Credoctypes.Standard,
             id="",
@@ -54,6 +59,7 @@ class TestMain(unittest.TestCase):
                         name="ASVS",
                         links=[],
                         tags=set(),
+
                         metadata=defs.Metadata(labels={}),
                         section="SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING",
                     )
@@ -79,6 +85,7 @@ class TestMain(unittest.TestCase):
         # 3 cre-less standards in the db
         self.assertEqual(len(self.collection.session.query(db.Standard).all()), 3)
 
+
     def test_register_standard_with_cre(self) -> None:
         standard_with_cre = defs.Standard(
             doctype=defs.Credoctypes.Standard,
@@ -94,6 +101,7 @@ class TestMain(unittest.TestCase):
                         name="crename",
                         links=[],
                         tags=set(),
+
                         metadata=defs.Metadata(labels={}),
                     )
                 ),
@@ -129,6 +137,7 @@ class TestMain(unittest.TestCase):
             len(self.collection.session.query(db.CRE).all()), 1
         )  # 1 cre in the db
 
+
     def test_register_standard_with_groupped_cre_links(self) -> None:
         with_groupped_cre_links = defs.Standard(
             doctype=defs.Credoctypes.Standard,
@@ -155,6 +164,7 @@ class TestMain(unittest.TestCase):
                             )
                         ],
                         tags=set(),
+
                         metadata=defs.Metadata(labels={}),
                     )
                 ),
@@ -218,6 +228,7 @@ class TestMain(unittest.TestCase):
             len(self.collection.session.query(db.CRE).all()), 3
         )  # 2 cres in the db
 
+
     def test_register_cre(self) -> None:
         standard = defs.Standard(
             doctype=defs.Credoctypes.Standard,
@@ -238,6 +249,7 @@ class TestMain(unittest.TestCase):
         self.assertEqual(
             len(self.collection.session.query(db.CRE).all()), 1
         )  # 1 cre in the db
+
 
     def test_parse_file(self) -> None:
         file: List[Dict[str, Any]] = [
@@ -338,6 +350,7 @@ class TestMain(unittest.TestCase):
             result = main.parse_file(
                 filename="tests", yamldocs=file[0], scollection=self.collection
             )  # type: ignore
+
             self.assertEqual(result, None)
             self.assertIn(
                 "CRITICAL:application.cmd.cre_main:Malformed file tests, skipping",
@@ -345,6 +358,7 @@ class TestMain(unittest.TestCase):
             )
 
         self.maxDiff = None
+
         res = main.parse_file(
             filename="tests", yamldocs=file, scollection=self.collection
         )
@@ -394,6 +408,7 @@ class TestMain(unittest.TestCase):
         # assert the one CRE in the inpu externally links to all the 8 standards
         self.assertEqual(len(self.collection.session.query(db.Links).all()), 8)
         self.assertEqual(len(self.collection.session.query(db.InternalLinks).all()), 4)
+
 
     def test_get_standards_files_from_disk(self) -> None:
         loc = tempfile.mkdtemp()

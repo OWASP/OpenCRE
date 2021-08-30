@@ -1,5 +1,6 @@
 import unittest
 
+
 from application.defs import cre_defs as defs
 
 
@@ -39,7 +40,8 @@ class TestCreDefs(unittest.TestCase):
                         "doctype": "Standard",
                         "hyperlink": "",
                         "name": "ASVS",
-                        "section": "SESSION-MGT-TOKEN-DIREC" "TIVES-DISCRETE-HANDLING",
+                        "section": "SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING",
+
                         "subsection": "3.1.1",
                     },
                 }
@@ -79,8 +81,7 @@ class TestCreDefs(unittest.TestCase):
                                     "doctype": "Standard",
                                     "hyperlink": "",
                                     "name": "ASVS",
-                                    "section": "SESSION-MGT-TOKEN-DIREC"
-                                    "TIVES-DISCRETE-HANDLING",
+                                    "section": "SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING",
                                     "subsection": "3.1.1",
                                 },
                             }
