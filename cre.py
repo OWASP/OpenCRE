@@ -1,11 +1,14 @@
-import os
-import unittest
-from application import sqla, create_app
-import sys
-import click
 import argparse
+import os
+import sys
+import unittest
+from typing import List
+
+import click  # type: ignore
+import coverage  # type: ignore
+
+from application import create_app, sqla  # type: ignore
 from application.cmd import cre_main
-import coverage
 
 # Hacky solutions to make this both a command line application with argparse and a flask application
 
@@ -20,12 +23,11 @@ if os.environ.get("FLASK_COVERAGE"):
     COV.start()
 
 
-@app.cli.command()
+@app.cli.command() # type: ignore
 @click.option(
-    "--coverage/--no-coverage", default=False, help="Run tests under code coverage."
-)
-@click.argument("test_names", nargs=-1)
-def test(coverage, test_names):
+    "--coverage/--no-coverage", default=False, help="Run tests under code coverage." )# type: ignore
+@click.argument("test_names", nargs=-1)# type: ignore
+def test(coverage:coverage.Coverage, test_names:List[str])->None:
     if coverage and not os.environ.get("FLASK_COVERAGE"):
         import subprocess
 
@@ -50,7 +52,7 @@ def test(coverage, test_names):
 
 
 # python cre.py --<x> commands
-def main():
+def main()->None:
     app_context = app.app_context()
     app_context.push()
 

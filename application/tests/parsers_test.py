@@ -3,11 +3,11 @@ import unittest
 from pprint import pprint
 
 from application.defs import cre_defs as defs
-from application.utils.parsers import *
+from application.utils.parsers import parse_export_format, parse_hierarchical_export_format, parse_uknown_key_val_spreadsheet, parse_v0_standards, parse_v1_standards  # type: ignore
 
 
 class TestParsers(unittest.TestCase):
-    def test_parse_export_format(self):
+    def test_parse_export_format(self) -> None:
         """Given
             * CRE "C1" -> Standard "S1" section "SE1"
             * CRE "C2" -> CRE "C3"
@@ -443,7 +443,8 @@ class TestParsers(unittest.TestCase):
         for key, val in result.items():
             # assert equal links, lists in python aren't ordered so normal equality doesn't work
             self.assertEqual(
-                collections.Counter(expected[key].links), collections.Counter(val.links)
+                collections.Counter(
+                    expected[key].links), collections.Counter(val.links)
             )
 
             expected[key].links = []
@@ -451,13 +452,13 @@ class TestParsers(unittest.TestCase):
 
             self.assertDictEqual(val.todict(), expected[key].todict())
 
-    def test_parse_uknown_key_val_spreadsheet(self):
+    def test_parse_uknown_key_val_spreadsheet(self) -> None:
         # OrderedDict only necessary for testing  so we can predict the root Standard, normally it wouldn't matter
         input = [
             collections.OrderedDict(
                 {
                     "CS": "Session Management",
-                    "CWE": 598,
+                    "CWE": '598',
                     "ASVS": "SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING",
                     "OPC": "",
                     "Top10": "https://owasp.org/www-project-top-ten/2017/A5_2017-Broken_Access_Control",
@@ -467,7 +468,7 @@ class TestParsers(unittest.TestCase):
             collections.OrderedDict(
                 {
                     "CS": "Session Management",
-                    "CWE": 384,
+                    "CWE": '384',
                     "ASVS": "SESSION-MGT-TOKEN-DIRECTIVES-GENERATION",
                     "OPC": "C6",
                     "Top10": "https://owasp.org/www-project-top-ten/2017/A5_2017-Broken_Access_Control",
@@ -482,7 +483,12 @@ class TestParsers(unittest.TestCase):
                 links=[
                     defs.Link(
                         document=defs.Standard(
-                            doctype=defs.Credoctypes.Standard, name="CWE", section=598
+                            doctype=defs.Credoctypes.Standard, name="CWE", section="598"
+                        )
+                    ),
+                    defs.Link(
+                        document=defs.Standard(
+                            doctype=defs.Credoctypes.Standard, name="CWE", section="384"
                         )
                     ),
                     defs.Link(
@@ -490,6 +496,20 @@ class TestParsers(unittest.TestCase):
                             doctype=defs.Credoctypes.Standard,
                             name="ASVS",
                             section="SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING",
+                        )
+                    ),
+                    defs.Link(
+                        document=defs.Standard(
+                            doctype=defs.Credoctypes.Standard,
+                            name="ASVS",
+                            section="SESSION-MGT-TOKEN-DIRECTIVES-GENERATION",
+                        )
+                    ),
+                    defs.Link(
+                        document=defs.Standard(
+                            doctype=defs.Credoctypes.Standard,
+                            name="OPC",
+                            section="C6",
                         )
                     ),
                     defs.Link(
@@ -503,6 +523,12 @@ class TestParsers(unittest.TestCase):
                         document=defs.Standard(
                             doctype=defs.Credoctypes.Standard,
                             name="WSTG",
+                            section="WSTG-SESS-03",
+                        )
+                    ), defs.Link(
+                        document=defs.Standard(
+                            doctype=defs.Credoctypes.Standard,
+                            name="WSTG",
                             section="WSTG-SESS-04",
                         )
                     ),
@@ -512,15 +538,15 @@ class TestParsers(unittest.TestCase):
         }
         self.maxDiff = None
         actual = parse_uknown_key_val_spreadsheet(input)
-        for key, val in actual.items():
-            self.assertEqual(expected[key], val)
+        self.assertEqual(expected,actual)
 
-    def test_parse_v0_standards(self):
+
+    def test_parse_v0_standards(self) -> None:
         input = [
             {
                 "CRE-ID-lookup-from-taxonomy-table": "011-040-026",
                 "CS": "Session Management",
-                "CWE": 598,
+                "CWE": '598',
                 "Description": "Verify the application never reveals session tokens in URL parameters or error messages.",
                 "Development guide (does not exist for SessionManagement)": "",
                 "ID-taxonomy-lookup-from-ASVS-mapping": "SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING",
@@ -533,7 +559,7 @@ class TestParsers(unittest.TestCase):
             {
                 "CRE-ID-lookup-from-taxonomy-table": "011-040-033",
                 "CS": "Session Management",
-                "CWE": 384,
+                "CWE": '384',
                 "Description": "Verify the application generates a new session token on user "
                 "authentication.",
                 "Development guide (does not exist for SessionManagement)": "",
@@ -541,7 +567,7 @@ class TestParsers(unittest.TestCase):
                 "Item": "3.2.1",
                 "Name": "Session",
                 "OPC": "C6",
-                "Top10 (lookup)": "https://owasp.org/www-project-top-ten/2017/A5_2017-Broken_Access_Control",
+                "Top10 (lookup)": "",
                 "WSTG": "WSTG-SESS-03",
             },
         ]
@@ -568,7 +594,7 @@ class TestParsers(unittest.TestCase):
                     ),
                     defs.Link(
                         document=defs.Standard(
-                            doctype=defs.Credoctypes.Standard, name="CWE", section=598
+                            doctype=defs.Credoctypes.Standard, name="CWE", section="598"
                         )
                     ),
                     defs.Link(
@@ -616,7 +642,7 @@ class TestParsers(unittest.TestCase):
                     ),
                     defs.Link(
                         document=defs.Standard(
-                            doctype=defs.Credoctypes.Standard, name="CWE", section=384
+                            doctype=defs.Credoctypes.Standard, name="CWE", section="384"
                         )
                     ),
                     defs.Link(
@@ -634,13 +660,6 @@ class TestParsers(unittest.TestCase):
                     defs.Link(
                         document=defs.Standard(
                             doctype=defs.Credoctypes.Standard,
-                            name="Top10 (lookup)",
-                            section="https://owasp.org/www-project-top-ten/2017/A5_2017-Broken_Access_Control",
-                        )
-                    ),
-                    defs.Link(
-                        document=defs.Standard(
-                            doctype=defs.Credoctypes.Standard,
                             name="WSTG",
                             section="WSTG-SESS-03",
                         )
@@ -650,10 +669,17 @@ class TestParsers(unittest.TestCase):
         }
         self.maxDiff = None
         output = parse_v0_standards(input)
-        for key, value in output.items():
-            self.assertEqual(expected[key], value)
+        for t,v in output.items():
 
-    def test_parse_v1_standards(self):
+            print("*"*77)
+            pprint(expected[t].todict())
+            print("*"*77)
+            pprint(v.todict())
+            print("*"*77)
+            print("*"*77)
+        self.assertEqual(expected, output)
+
+    def test_parse_v1_standards(self) -> None:
         input = [
             {
                 "ASVS Item": "V9.9.9",
@@ -1115,7 +1141,7 @@ class TestParsers(unittest.TestCase):
             groupless[key].links = []
             self.assertEqual(groupless[key], value)
 
-    def test_parse_hierarchical_export_format(self):
+    def test_parse_hierarchical_export_format(self) -> None:
         cauth = defs.CRE(
             id=8, name="Authentication", tags=["tagA", "tagB", "tagC", "tagD"]
         )
@@ -1135,7 +1161,7 @@ class TestParsers(unittest.TestCase):
         )
 
         sOPC = defs.Standard(name="OPC", section="123654")
-        sCWE19876 = defs.Standard(name="CWE", section=19876)
+        sCWE19876 = defs.Standard(name="CWE", section="19876")
         sWSTG = defs.Standard(name="WSTG", section="2.1.2.3")
         sNIST4 = defs.Standard(name="NIST 800-63", section="4444")
         sNIST3 = defs.Standard(name="NIST 800-63", section="3333")
@@ -1185,7 +1211,8 @@ class TestParsers(unittest.TestCase):
         ]:
             cauth4.add_link(
                 defs.Link(
-                    document=defs.Standard(name="NIST 800-53 v5", section=nsection)
+                    document=defs.Standard(
+                        name="NIST 800-53 v5", section=nsection)
                 )
             )
 

@@ -1,4 +1,4 @@
-import typing
+from typing import Any, Dict, List, Mapping, overload, Optional, Set, Tuple, Union
 import copy
 import re
 import logging
@@ -14,7 +14,7 @@ logger.setLevel(logging.INFO)
 logging.basicConfig()
 
 
-def is_empty(value: str):
+def is_empty(value: Optional[str]) -> bool:
     value = str(value)
     return (
         value is None
@@ -28,13 +28,13 @@ def is_empty(value: str):
     )
 
 
-def recurse_print_links(cre):
+def recurse_print_links(cre: defs.Document) -> None:
     for link in cre.links:
         pprint(link.document)
         recurse_print_links(link.document)
 
 
-def get_linked_standards(mapping: dict) -> [defs.Link]:
+def get_linked_standards(mapping: Dict[str, str]) -> List[defs.Link]:
     standards = []
     names = set(
         [
@@ -53,14 +53,14 @@ def get_linked_standards(mapping: dict) -> [defs.Link]:
         standard = defs.Standard(
             name=sname, section=section, subsection=subsection, hyperlink=hyperlink
         )
-        lt = None
+        lt: defs.LinkTypes
         if not is_empty(link_type):
             lt = defs.LinkTypes.from_str(link_type)
-        standards.append(defs.Link(document=standard, ltype=lt))
+            standards.append(defs.Link(document=standard, ltype=lt))
     return standards
 
 
-def parse_export_format(lfile: list) -> [defs.Document]:
+def parse_export_format(lfile: List[Dict[str, Any]]) -> Dict[str, defs.Document]:
     """Given: a spreadsheet written by prepare_spreadsheet()
     return a list of CRE docs
     cases:
@@ -70,11 +70,12 @@ def parse_export_format(lfile: list) -> [defs.Document]:
         cre -> standards
         cre -> standards, other cres
     """
-    cre = None
-    internal_mapping = None
-    cres = {}
-    lone_standards = {}
-    link_types_regexp = re.compile(defs.ExportFormat.linked_cre_name_key("(\d+)"))
+    cre: defs.Document
+    internal_mapping: defs.Document
+    cres: Dict[str, defs.Document] = {}
+    lone_standards: Dict[str, defs.Standard] = {}
+    link_types_regexp = re.compile(
+        defs.ExportFormat.linked_cre_name_key("(\d+)"))
     max_internal_cre_links = len(
         set([k for k, v in lfile[0].items() if link_types_regexp.match(k)])
     )
@@ -84,9 +85,13 @@ def parse_export_format(lfile: list) -> [defs.Document]:
         if not mapping.get(defs.ExportFormat.cre_name_key()):
             # standard -> nothing | standard
             for st in get_linked_standards(mapping):
-                lone_standards[
-                    st.document.name + ":" + st.document.section
-                ] = st.document
+                if type(st.document) == defs.Standard:
+                    lone_standards[
+                        st.document.name + ":" + st.document.section
+                    ] = st.document
+                else:
+                    logger.fatal(
+                        f"Got a {type(st.document)} expected Standard")
         else:  # cre -> standards, other cres
             name = mapping.pop(defs.ExportFormat.cre_name_key())
             id = mapping.pop(defs.ExportFormat.cre_id_key())
@@ -95,8 +100,7 @@ def parse_export_format(lfile: list) -> [defs.Document]:
             if name not in cres.keys():  # register new cre
                 cre = defs.CRE(name=name, id=id, description=description)
             else:  # it's a conflict mapping so we've seen this before, just retrive so we can add the new info
-
-                cre = cres.get(name)
+                cre = cres[name]
                 if cre.id != id:
                     if is_empty(id):
                         id = cre.id
@@ -118,14 +122,16 @@ def parse_export_format(lfile: list) -> [defs.Document]:
 
             # add the CRE links
             for i in range(0, max_internal_cre_links):
-                name = mapping.pop(defs.ExportFormat.linked_cre_name_key(i))
+                name = mapping.pop(
+                    defs.ExportFormat.linked_cre_name_key(str(i)))
                 if not is_empty(name):
-                    id = mapping.pop(defs.ExportFormat.linked_cre_id_key(i))
+                    id = mapping.pop(
+                        defs.ExportFormat.linked_cre_id_key(str(i)))
                     link_type = mapping.pop(
-                        defs.ExportFormat.linked_cre_link_type_key(i)
+                        defs.ExportFormat.linked_cre_link_type_key(str(i))
                     )
                     if name in cres:
-                        internal_mapping = cres.get(name)
+                        internal_mapping = cres[name]
                         if internal_mapping.id != id:
                             if is_empty(id):
                                 id = internal_mapping.id
@@ -165,46 +171,49 @@ def parse_export_format(lfile: list) -> [defs.Document]:
     return cres
 
 
-def parse_uknown_key_val_spreadsheet(link_file: list) -> dict:
+def parse_uknown_key_val_spreadsheet(link_file: List[Dict[str, str]]) -> Dict[str, defs.Standard]:
     """parses a cre-less spreadsheet into a list of Standards documents"""
-    standards = {}
+    standards: Dict[str, defs.Standard] = {}
+    standards_registered: List[str] = []
     # get the first Key of the first row, pretty much, choose a standard at random to be the main one
-    main_standard_name = None
+    main_standard_name: str
     for stand in list(link_file[0]):
         if not is_empty(stand):
             main_standard_name = stand
             break
 
     for mapping in link_file:
-        primary_standard = None
-        linked_standard = None
-        if not is_empty(mapping.get(main_standard_name)):
-            primary_standard = standards.get(
-                main_standard_name + "-" + str(mapping.get(main_standard_name))
-            )
-            if not primary_standard:
+        primary_standard: defs.Standard
+        linked_standard: defs.Standard
+        if not is_empty(mapping[main_standard_name]):
+            sname = f'{main_standard_name}-{str(mapping[main_standard_name])}'
+            if standards.get(sname):
+                # pop is important so that primary standard won't link to itself
+                mapping.pop(main_standard_name)
+                primary_standard = standards[sname]
+            else:
                 # pop is important here, if the primary standard is not removed, it will end up linking to itself
-                primary_standard = defs.Standard(
-                    name=main_standard_name, section=mapping.pop(main_standard_name)
-                )
+                primary_standard = defs.Standard(name=main_standard_name,
+                                                 section=mapping.pop(main_standard_name))
 
-        for key, value in mapping.items():
-            if not is_empty(value) and not is_empty(key):
-                linked_standard = defs.Standard(name=key, section=mapping.get(key))
-                primary_standard.add_link(defs.Link(document=linked_standard))
-        if primary_standard:
-            standards[
-                primary_standard.name + "-" + primary_standard.section
-            ] = primary_standard
-        return standards
+            for key, value in mapping.items():
+                if not is_empty(value) and not is_empty(key) and not f'{key}-{value}' in standards_registered:
+                    linked_standard = defs.Standard(
+                        name=key, section=value)
+                    standards_registered.append(f'{key}-{value}')
+                    primary_standard.add_link(
+                        defs.Link(document=linked_standard))
+            if primary_standard:
+                standards[sname] = primary_standard
+    return standards
 
 
-def parse_v1_standards(cre_file: list) -> dict:
-    cre = None
-    linked_standard = None
-    cres = {}
-    groupless_cres = {}
-    groups = {}
+def parse_v1_standards(cre_file: List[Dict[str, str]]) -> Tuple[Dict[str, defs.CRE], Dict[str, defs.CRE]]:
+    cre: defs.CRE
+    linked_standard: defs.Standard
+    cres: Dict[str, defs.CRE] = {}
+    groupless_cres: Dict[str, defs.CRE] = {}
+    groups: Dict[str, defs.CRE] = {}
     for cre_mapping in cre_file:
         name = cre_mapping.pop("Core-CRE (high-level description/summary)")
         id = cre_mapping.pop("CORE-CRE-ID").strip()
@@ -214,7 +223,8 @@ def parse_v1_standards(cre_file: list) -> dict:
             #     raise EnvironmentError(
             #         "same cre name %s different id? %s %s" % (cre.name, cre.id, id))
         else:
-            cre = defs.CRE(description=cre_mapping.pop("Description"), name=name, id=id)
+            cre = defs.CRE(description=cre_mapping.pop(
+                "Description"), name=name, id=id)
         asvs_tags = []
         if cre_mapping.pop("ASVS-L1") == "X":
             asvs_tags.append("L1")
@@ -224,122 +234,77 @@ def parse_v1_standards(cre_file: list) -> dict:
             asvs_tags.append("L3")
 
         if not is_empty(cre_mapping.get("ID-taxonomy-lookup-from-ASVS-mapping")):
-            cre.add_link(
-                defs.Link(
-                    document=defs.Standard(
-                        name="ASVS",
-                        section=cre_mapping.pop("ASVS Item"),
-                        subsection=cre_mapping.pop(
-                            "ID-taxonomy-lookup-from-ASVS-mapping"
-                        ),
-                        tags=asvs_tags,
-                    )
-                )
-            )
+            cre.add_link(defs.Link(
+                document=defs.Standard(
+                    name="ASVS",
+                    section=cre_mapping.pop("ASVS Item"),
+                    subsection=cre_mapping.pop(
+                        "ID-taxonomy-lookup-from-ASVS-mapping"),
+                    tags=asvs_tags)))
         if not is_empty(cre_mapping.get("CWE")):
-            cre.add_link(
-                defs.Link(
-                    document=defs.Standard(name="CWE", section=cre_mapping.pop("CWE"))
-                )
-            )
+            cre.add_link(defs.Link(
+                document=defs.Standard(
+                    name="CWE", section=cre_mapping.pop("CWE"))))
 
         if not is_empty(cre_mapping.get("Cheat Sheet")) and not is_empty(
-            cre_mapping.get("cheat_sheets")
-        ):
-            cre.add_link(
-                defs.Link(
-                    document=defs.Standard(
-                        name="Cheatsheet",
-                        section=cre_mapping.pop("Cheat Sheet"),
-                        hyperlink=cre_mapping.pop("cheat_sheets"),
-                    )
-                )
-            )
+                cre_mapping.get("cheat_sheets")):
+            cre.add_link(defs.Link(document=defs.Standard(
+                name="Cheatsheet",
+                section=cre_mapping.pop("Cheat Sheet"),
+                hyperlink=cre_mapping.pop("cheat_sheets"))))
 
         nist_items = cre_mapping.pop("NIST 800-53 - IS RELATED TO")
         if not is_empty(nist_items):
             if "\n" in nist_items:
                 for element in nist_items.split("\n"):
                     if element:
-                        cre.add_link(
-                            defs.Link(
-                                document=defs.Standard(
-                                    name="NIST 800-53",
-                                    section=element,
-                                    tags=["is related to"],
-                                )
-                            )
-                        )
+                        cre.add_link(defs.Link(
+                            document=defs.Standard(
+                                name="NIST 800-53",
+                                section=element,
+                                tags=["is related to"])))
             else:
-                cre.add_link(
-                    defs.Link(
-                        document=defs.Standard(
-                            name="NIST 800-53",
-                            section=nist_items,
-                            tags=["is related to"],
-                        )
-                    )
-                )
+                cre.add_link(defs.Link(document=defs.Standard(
+                    name="NIST 800-53",
+                    section=nist_items,
+                    tags=["is related to"])))
         if not is_empty(cre_mapping.get("NIST 800-63")):
-            cre.add_link(
-                defs.Link(
-                    document=defs.Standard(
-                        name="NIST 800-63", section=cre_mapping.pop("NIST 800-63")
-                    )
-                )
-            )
+            cre.add_link(defs.Link(
+                document=defs.Standard(
+                    name="NIST 800-63", section=cre_mapping.pop("NIST 800-63"))))
 
         if not is_empty(cre_mapping.get("OPC")):
-            cre.add_link(
-                defs.Link(
-                    document=defs.Standard(name="OPC", section=cre_mapping.pop("OPC"))
-                )
-            )
+            cre.add_link(defs.Link(document=defs.Standard(
+                name="OPC", section=cre_mapping.pop("OPC"))))
 
         if not is_empty(cre_mapping.get("Top10 2017")):
-            cre.add_link(
-                defs.Link(
-                    document=defs.Standard(
-                        name="TOP10", section=cre_mapping.pop("Top10 2017")
-                    )
-                )
-            )
+            cre.add_link(defs.Link(document=defs.Standard(
+                name="TOP10", section=cre_mapping.pop("Top10 2017"))))
         if not is_empty(cre_mapping.get("WSTG")):
-            cre.add_link(
-                defs.Link(
-                    document=defs.Standard(name="WSTG", section=cre_mapping.pop("WSTG"))
-                )
-            )
+            cre.add_link(defs.Link(document=defs.Standard(
+                name="WSTG", section=cre_mapping.pop("WSTG"))))
         if not is_empty(cre_mapping.get("SIG ISO 25010")):
-            cre.add_link(
-                defs.Link(
-                    document=defs.Standard(
-                        name="SIG ISO 25010", section=cre_mapping.pop("SIG ISO 25010")
-                    )
-                )
-            )
+            cre.add_link(defs.Link(document=defs.Standard(
+                name="SIG ISO 25010", section=cre_mapping.pop("SIG ISO 25010"))))
         cres[cre.name] = cre
         # group mapping
         is_in_group = False
         for i in range(1, 8):
-            group = None
+            group: defs.CRE
             gname = cre_mapping.pop("CRE Group %s" % i)
             gid = cre_mapping.pop("CRE Group %s Lookup" % i)
             if not is_empty(gname):
 
                 if gname not in groups.keys():
                     group = defs.CRE(name=gname, id=gid)
-                elif (
-                    groups.get(name)
-                    and id != groups.get(name).id
-                    and not is_empty(groups.get("name"))
-                ):
-                    raise Exception(
+                elif groups.get(name)\
+                        and id != groups[name].id\
+                        and groups.get("name"):
+                    raise ValueError(
                         "Group %s has two different ids %s and %s"
-                        % (name, id, groups.get("name"))
-                    )
+                        % (name, id, groups.get("name")))
                 else:
-                    group = groups.get(gname)
+                    group = groups[gname]
 
                 is_in_group = True
                 group.add_link(defs.Link(document=cre))
@@ -349,16 +314,15 @@ def parse_v1_standards(cre_file: list) -> dict:
     return (groups, groupless_cres)
 
 
-def parse_v0_standards(
-    cre_file: typing.List[typing.Dict[str, str]]
-) -> typing.Dict[str, defs.CRE]:
+def parse_v0_standards(cre_file: List[Dict[str, str]]) -> Dict[str, defs.CRE]:
     """given a yaml with standards, build a list of standards"""
-    cres = {}
+    cres: Dict[str, defs.CRE] = {}
     for cre_mapping in cre_file:
-        cre = None
-        linked_standard = None
-        if cre_mapping.get("CRE-ID-lookup-from-taxonomy-table"):
-            existing = cres.get(cre_mapping.get("CRE-ID-lookup-from-taxonomy-table"))
+        cre: defs.CRE
+        linked_standard: defs.Standard
+        if not is_empty(cre_mapping.get("CRE-ID-lookup-from-taxonomy-table")):
+            existing = cres.get(
+                cre_mapping["CRE-ID-lookup-from-taxonomy-table"])
             if existing:
                 cre = existing
                 name = cre_mapping.get("name")
@@ -376,7 +340,8 @@ def parse_v0_standards(
         if cre_mapping.get("ID-taxonomy-lookup-from-ASVS-mapping"):
             linked_standard = defs.Standard(
                 name="ASVS",
-                section=cre_mapping.pop("ID-taxonomy-lookup-from-ASVS-mapping"),
+                section=cre_mapping.pop(
+                    "ID-taxonomy-lookup-from-ASVS-mapping"),
                 subsection=cre_mapping.pop("Item"),
             )
 
@@ -391,17 +356,19 @@ def parse_v0_standards(
     return cres
 
 
-def parse_hierarchical_export_format(cre_file):
-    cres = {}
-    max_hierarchy = len([key for key in cre_file[0].keys() if "CRE hierarchy" in key])
+def parse_hierarchical_export_format(cre_file: List[Dict[str, str]]) -> Dict[str, defs.CRE]:
+    cres: Dict[str, defs.CRE] = {}
+    max_hierarchy = len(
+        [key for key in cre_file[0].keys() if "CRE hierarchy" in key])
     for mapping in cre_file:
-        cre = None
-        name = None
-        current_hierarchy = 0
-        higher_cre = 0
+        cre: defs.CRE
+        name: str = ""
+        current_hierarchy: int = 0
+        higher_cre: int = 0
         # a CRE's name is the last hierarchy item which is not blank
         for i in range(max_hierarchy, 0, -1):
-            key = [key for key in mapping if key.startswith("CRE hierarchy %s" % i)][0]
+            key = [key for key in mapping if key.startswith(
+                "CRE hierarchy %s" % i)][0]
             if not is_empty(mapping.get(key)):
                 if current_hierarchy == 0:
                     name = mapping.pop(key)
@@ -414,7 +381,7 @@ def parse_hierarchical_export_format(cre_file):
             continue
 
         if name in cres.keys():
-            cre = cres.get(name)
+            cre = cres[name]
         else:
             cre = defs.CRE(name=name)
 
@@ -424,138 +391,95 @@ def parse_hierarchical_export_format(cre_file):
             logger.warning(f"empty Id for {name}")
 
         if not is_empty(mapping.get("CRE Tags")):
-            [cre.tags.add(x.strip()) for x in mapping.pop("CRE Tags").split(",")]
+            for x in mapping.pop("CRE Tags").split(","):
+                cre.tags.add(x.strip())
 
         if not is_empty(mapping.get("Link to other CRE")):
-            for other_cre in set(
-                [
-                    x.strip()
-                    for x in mapping.pop("Link to other CRE").split(",")
-                    if not is_empty(x.strip())
-                ]
-            ):
+            for other_cre in set([x.strip()
+                                  for x in mapping.pop("Link to other CRE").split(",")
+                                  if not is_empty(x.strip())]):
                 if not cres.get(other_cre):
                     logger.warning(
-                        "%s linking to not yet existent cre %s" % (cre.name, other_cre)
+                        "%s linking to not yet existent cre %s" % (
+                            cre.name, other_cre)
                     )
                     new_cre = defs.CRE(name=other_cre)
                     cres[new_cre.name] = new_cre
                 else:
-                    new_cre = cres.get(other_cre)
+                    new_cre = cres[other_cre]
 
                 cre.add_link(defs.Link(document=new_cre))
 
         if not is_empty(mapping.get("Standard ASVS Item")):
-            cre.add_link(
-                defs.Link(
-                    document=defs.Standard(
-                        name="ASVS",
-                        section=mapping.pop("Standard ASVS Item").strip(),
-                        hyperlink=mapping.pop("Standard ASVS Hyperlink"),
-                    )
-                )
-            )
+            cre.add_link(defs.Link(document=defs.Standard(
+                name="ASVS",
+                section=mapping.pop("Standard ASVS Item").strip(),
+                hyperlink=mapping.pop("Standard ASVS Hyperlink"))))
 
-        if (
-            not is_empty(mapping.get("Standard Top10 2017"))
-            and mapping.get("Standard Top10 2017") != "See higher level topic"
-        ):
-            cre.add_link(
-                defs.Link(
-                    document=defs.Standard(
-                        name="Top10 2017",
-                        section=mapping.pop("Standard Top10 2017"),
-                        hyperlink=mapping.pop("Standard Top10 Hyperlink").strip(),
-                    )
-                )
-            )
-
+        if (not is_empty(mapping.get("Standard Top10 2017"))
+                and mapping.get("Standard Top10 2017") != "See higher level topic"):
+            cre.add_link(defs.Link(document=defs.Standard(
+                name="Top10 2017",
+                section=mapping.pop("Standard Top10 2017"),
+                hyperlink=mapping.pop("Standard Top10 Hyperlink").strip())))
         if not is_empty(mapping.get("Standard OPC (ASVS source)")):
             cre.add_link(
-                defs.Link(
-                    document=defs.Standard(
-                        name="OPC",
-                        section=mapping.pop("Standard OPC (ASVS source)").strip(),
-                    )
-                )
-            )
+                defs.Link(document=defs.Standard(name="OPC",
+                                                 section=mapping.pop("Standard OPC (ASVS source)").strip())))
 
-        if not is_empty(
-            mapping.get(
-                "Standard WSTG (prefilled by SR, but Elie has plan to make the administration self-maintaining)"
-            )
-        ):
+        if not is_empty(mapping.get(
+                "Standard WSTG (prefilled by SR, but Elie has plan to make the administration self-maintaining)")):
             cre.add_link(
-                defs.Link(
-                    document=defs.Standard(
-                        name="WSTG",
-                        section=mapping.pop(
-                            "Standard WSTG (prefilled by SR, but Elie has plan to make the administration self-maintaining)"
-                        ).strip(),
-                    )
-                )
-            )
+                defs.Link(document=defs.Standard(
+                    name="WSTG",
+                    section=mapping.pop(
+                        "Standard WSTG (prefilled by SR, but Elie has plan to make the administration self-maintaining)"
+                    ).strip())))
         if not is_empty(mapping.get("Standard CWE (from ASVS)")):
             cre.add_link(
-                defs.Link(
-                    document=defs.Standard(
-                        name="CWE",
-                        section=str(mapping.pop("Standard CWE (from ASVS)")).strip(),
-                    )
-                )
-            )
+                defs.Link(document=defs.Standard(
+                    name="CWE",
+                    section=str(mapping.pop("Standard CWE (from ASVS)")).strip())))
 
         if not is_empty(mapping.get("Standard NIST-800-63 (from ASVS)")):
             nist = str(mapping.pop("Standard NIST-800-63 (from ASVS)"))
             if "/" in nist:
                 for nst in set(nist.split("/")):
-                    cre.add_link(
-                        defs.Link(
-                            document=defs.Standard(
-                                name="NIST-800-63", section=nst.strip()
-                            )
-                        )
-                    )
+                    cre.add_link(defs.Link(
+                        document=defs.Standard(name="NIST-800-63", section=nst.strip())))
 
         if not is_empty(mapping.get("Standard NIST 800-53 v5")):
             nist = str(mapping.pop("Standard NIST 800-53 v5"))
             if "," in nist:
                 for nst in set(nist.split(",")):
-                    cre.add_link(
-                        defs.Link(
-                            document=defs.Standard(
-                                name="NIST 800-53 v5", section=nst.strip()
-                            )
-                        )
-                    )
+                    cre.add_link(defs.Link(
+                        document=defs.Standard(
+                            name="NIST 800-53 v5", section=nst.strip())))
 
         if not is_empty(mapping.get("Standard Cheat_sheets")):
             cs = str(mapping.pop("Standard Cheat_sheets"))
             if "," in cs:
                 for csc in set(cs.split(",")):
-                    cheatsheet = defs.Standard(name="Cheat_sheets", section=csc.strip())
+                    cheatsheet = defs.Standard(
+                        name="Cheat_sheets", section=csc.strip())
                     cre.add_link(defs.Link(document=cheatsheet))
 
         # link CRE to a higher level one
+        if f"CRE hierarchy {str(higher_cre)}" in mapping:
+            if cres.get(mapping[f"CRE hierarchy {str(higher_cre)}"]):
+                cre_hi = cres[mapping[f"CRE hierarchy {str(higher_cre)}"]]
 
-        if cres.get(mapping.get(f"CRE hierarchy {str(higher_cre)}")):
-            cre_hi = cres[mapping.get(f"CRE hierarchy {str(higher_cre)}")]
-
-            existing_link = [
-                c
-                for c in cre_hi.links
-                if c.document.doctype == defs.Credoctypes.CRE
-                and c.document.name == name
-            ]
-            if existing_link:
-                cre_hi.links[
-                    cre_hi.links.index(existing_link[0])
-                ].document = (
-                    cre  # ugliest way ever to write "update the object in that pointer"
-                )
-            else:
-                cre_hi.add_link(defs.Link(document=cre))
-            cres[cre_hi.name] = cre_hi
-
-        cres[cre.name] = cre
+                existing_link = [c for c in cre_hi.links
+                                 if c.document.doctype == defs.Credoctypes.CRE
+                                 and c.document.name == name]
+                if existing_link:
+                    cre_hi.links[cre_hi.links.index(existing_link[0])
+                                 # ugliest way ever to write "update the object in that pointer"
+                                 ].document = (cre
+                                               )
+                else:
+                    cre_hi.add_link(defs.Link(document=cre))
+                cres[cre_hi.name] = cre_hi
+        if cre:
+            cres[cre.name] = cre
     return cres

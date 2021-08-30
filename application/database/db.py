@@ -1,18 +1,18 @@
-from typing import List, Tuple
 import logging
 import os
 from collections import namedtuple
 from enum import Enum
 from pprint import pprint
-import networkx as nx
+from typing import Any, Dict, List, Optional, Tuple
 
-import yaml
-
-from application.defs import cre_defs
-from application.utils import file
+import networkx as nx  # type: ignore
 import yaml
 from flask_sqlalchemy.model import DefaultMeta
-from .. import sqla
+
+from application.defs import cre_defs
+from application.utils import file  # type: ignore
+
+from .. import sqla  # type: ignore
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
@@ -21,7 +21,7 @@ logger.setLevel(logging.INFO)
 BaseModel: DefaultMeta = sqla.Model
 
 
-class Standard(BaseModel):
+class Standard(BaseModel):  # type: ignore
     __tablename__ = "standard"
     id = sqla.Column(sqla.Integer, primary_key=True)
     # ASVS or standard name,  what are we linking to
@@ -37,11 +37,12 @@ class Standard(BaseModel):
     # some external link to where this is, usually a URL with an anchor
     link = sqla.Column(sqla.String, default="")
     __table_args__ = (
-        sqla.UniqueConstraint(name, section, subsection, name="standard_section"),
+        sqla.UniqueConstraint(name, section, subsection,
+                              name="standard_section"),
     )
 
 
-class CRE(BaseModel):
+class CRE(BaseModel):  # type: ignore
     __tablename__ = "cre"
     id = sqla.Column(sqla.Integer, primary_key=True)
 
@@ -55,29 +56,32 @@ class CRE(BaseModel):
     )
 
 
-class InternalLinks(BaseModel):
+class InternalLinks(BaseModel):  # type: ignore
     # model cre-groups linking cres
     __tablename__ = "crelinks"
-    type = sqla.Column(sqla.String, default="SAM")
-    group = sqla.Column(sqla.Integer, sqla.ForeignKey("cre.id"), primary_key=True)
-    cre = sqla.Column(sqla.Integer, sqla.ForeignKey("cre.id"), primary_key=True)
+    type = sqla.Column(sqla.String, default="SAME")
+    group = sqla.Column(sqla.Integer, sqla.ForeignKey(
+        "cre.id"), primary_key=True)
+    cre = sqla.Column(sqla.Integer, sqla.ForeignKey(
+        "cre.id"), primary_key=True)
 
 
-class Links(BaseModel):
+class Links(BaseModel):  # type: ignore
     __tablename__ = "links"
     type = sqla.Column(sqla.String, default="SAM")
-    cre = sqla.Column(sqla.Integer, sqla.ForeignKey("cre.id"), primary_key=True)
+    cre = sqla.Column(sqla.Integer, sqla.ForeignKey(
+        "cre.id"), primary_key=True)
     standard = sqla.Column(
         sqla.Integer, sqla.ForeignKey("standard.id"), primary_key=True
     )
 
 
 class Standard_collection:
-    def __init__(self):
+    def __init__(self) -> None:
         self.session = sqla.session
         self.cre_graph = self.__load_cre_graph()
 
-    def __load_cre_graph(self):
+    def __load_cre_graph(self) -> nx.Graph:
         graph = nx.Graph()
         for il in self.session.query(InternalLinks).all():
             graph.add_node(f"CRE: {il.group}")
@@ -88,8 +92,8 @@ class Standard_collection:
             graph.add_edge(f"CRE: {l.cre}", f"Standard: {str(l.standard)}")
         return graph
 
-    def __get_external_links(self):
-        external_links = []
+    def __get_external_links(self) -> List[Tuple[CRE, Standard, str]]:
+        external_links: List[Tuple[CRE, Standard, str]] = []
         all_links = self.session.query(Links).all()
         for link in all_links:
             cre = self.session.query(CRE).filter(CRE.id == link.cre).first()
@@ -101,7 +105,7 @@ class Standard_collection:
             external_links.append((cre, standard, link.type))
         return external_links
 
-    def __get_internal_links(self):
+    def __get_internal_links(self) -> List[Tuple[CRE, CRE, str]]:
         internal_links = []
         all_internal_links = self.session.query(InternalLinks).all()
         for il in all_internal_links:
@@ -110,26 +114,24 @@ class Standard_collection:
             internal_links.append((group, cre, il.type))
         return internal_links
 
-    def __get_unlinked_standards(self):
+    def __get_unlinked_standards(self) -> List[Standard]:
         linked_standards = (
             self.session.query(Standard.id)
             .join(Links)
             .filter(Standard.id == Links.standard)
         )
-        return (
-            self.session.query(Standard)
-            .filter(Standard.id.notin_(linked_standards))
-            .all()
-        )
+        standards: List[Standard] = self.session.query(
+            Standard).filter(Standard.id.notin_(linked_standards)).all()
+        return standards
 
-    def get_standards_names(self):
+    def get_standards_names(self) -> List[str]:
         # this returns a tuple of (str,nothing)
         q = self.session.query(Standard.name).distinct().all()
         res = [i[0] for i in q]
         return res
 
-    def get_max_internal_connections(self):
-        count = {}
+    def get_max_internal_connections(self) -> int:
+        count: Dict[int, int] = {}
         # TODO: (spyros) this should be made into a count(*) query
         q = self.session.query(InternalLinks).all()
         for il in q:
@@ -146,21 +148,25 @@ class Standard_collection:
         else:
             return 0
 
-    def find_cres_of_cre(self, cre: CRE):
+    def find_cres_of_cre(self, cre: CRE) -> Optional[List[CRE]]:
         """returns the higher level CREs of the cre or none if no higher level cres link to it"""
-        cre_id = self.session.query(CRE.id).filter(CRE.name == cre.name).first()
+        cre_id = self.session.query(CRE.id).filter(
+            CRE.name == cre.name).first()
         links = (
-            self.session.query(InternalLinks).filter(InternalLinks.cre == cre_id).all()
+            self.session.query(InternalLinks).filter(
+                InternalLinks.cre == cre_id).all()
         )
         if links:
             result = []
             for link in links:
                 result.append(
-                    self.session.query(CRE).filter(CRE.id == link.group).first()
+                    self.session.query(CRE).filter(
+                        CRE.id == link.group).first()
                 )
             return result
+        return None
 
-    def find_cres_of_standard(self, standard: Standard):
+    def find_cres_of_standard(self, standard: Standard) -> Optional[List[CRE]]:
         """returns the CREs that link to this standard or none if none link to it"""
         if not standard.id:
             standard = (
@@ -176,14 +182,14 @@ class Standard_collection:
                 .first()
             )
         if not standard:
-            return
-        result = []
+            return None
+        result: List[CRE] = []
         for link in (
-            self.session.query(Links).filter(Links.standard == standard.id).all() or []
-        ):
+            self.session.query(Links).filter(
+                Links.standard == standard.id).all()):
             result.append(
-                self.session.query(CRE).filter(CRE.id == link.cre).first() or None
-            )
+                self.session.query(CRE).filter(
+                    CRE.id == link.cre).first())
         return result or None
 
     def get_by_tags(self, tags: List[str]) -> List[cre_defs.Document]:
@@ -202,7 +208,8 @@ class Standard_collection:
             standards_where_clause.append(
                 sqla.and_(Standard.tags.like("%{}%".format(tag)))
             )
-            cre_where_clause.append(sqla.and_(CRE.tags.like("%{}%".format(tag))))
+            cre_where_clause.append(
+                sqla.and_(CRE.tags.like("%{}%".format(tag))))
 
         standards = Standard.query.filter(*standards_where_clause).all() or []
         for standard in standards:
@@ -229,20 +236,19 @@ class Standard_collection:
             else:
                 logger.fatal(
                     "db.get_CRE returned None for CRE %s:%s that exists, BUG!"
-                    % (c.id, c.name)
-                )
+                    % (c.id, c.name))
         return documents
 
     def get_standards_with_pagination(
-        self,
-        name: str,
-        section=None,
-        subsection=None,
-        link=None,
-        version=None,
-        page: int = 0,
-        items_per_page=None,
-    ):
+            self,
+            name: str,
+            section: Optional[str] = None,
+            subsection: Optional[str] = None,
+            link: Optional[str] = None,
+            version: Optional[str] = None,
+            page: int = 0,
+            items_per_page: Optional[int] = None) -> Tuple[Optional[int], Optional[List[cre_defs.Standard]], Optional[List[Standard]]]:
+
         standards = []
         dbstands = self.__get_standards_query__(
             name, section, subsection, link, version
@@ -251,13 +257,15 @@ class Standard_collection:
         if dbstands.items:
             for dbstand in dbstands.items:
                 standard = StandardFromDB(dbstandard=dbstand)
-                linked_cres = Links.query.filter(Links.standard == dbstand.id).all()
+                linked_cres = Links.query.filter(
+                    Links.standard == dbstand.id).all()
                 for dbcre_link in linked_cres:
                     dbcre = CRE.query.filter(CRE.id == dbcre_link.cre).first()
                     if dbcre:
                         standard.add_link(
                             cre_defs.Link(
-                                ltype=dbcre_link.type, document=CREfromDB(dbcre)
+                                ltype=dbcre_link.type, document=CREfromDB(
+                                    dbcre)
                             )
                         )
                 standards.append(standard)
@@ -273,7 +281,7 @@ class Standard_collection:
         subsection: Optional[str] = None,
         link: Optional[str] = None,
         version: Optional[str] = None,
-    ) -> List[cre_defs.Standard]:
+    ) -> Optional[List[cre_defs.Standard]]:
         standards = []
         standards_query = self.__get_standards_query__(
             name, section, subsection, link, version
@@ -282,13 +290,15 @@ class Standard_collection:
         if dbstands:
             for dbstand in dbstands:
                 standard = StandardFromDB(dbstandard=dbstand)
-                linked_cres = Links.query.filter(Links.standard == dbstand.id).all()
+                linked_cres = Links.query.filter(
+                    Links.standard == dbstand.id).all()
                 for dbcre_link in linked_cres:
                     standard.add_link(
                         cre_defs.Link(
                             ltype=dbcre_link.type,
                             document=CREfromDB(
-                                CRE.query.filter(CRE.id == dbcre_link.cre).first()
+                                CRE.query.filter(
+                                    CRE.id == dbcre_link.cre).first()
                             ),
                         )
                     )
@@ -296,18 +306,18 @@ class Standard_collection:
             return standards
         else:
             logger.warning("Standard %s does not exist in the db" % (name))
-            return
+            return None
 
     def __get_standards_query__(
         self,
         name: str,
-        section=None,
-        subsection=None,
-        link=None,
-        version=None,
+        section: Optional[str] = None,
+        subsection: Optional[str] = None,
+        link: Optional[str] = None,
+        version: Optional[str] = None,
         page: int = 0,
-        items_per_page=None,
-    ) -> Tuple[int, List[cre_defs.Standard]]:
+        items_per_page: Optional[int] = None,
+    ) -> sqla.Query:
         total_pages = 0
         query = Standard.query.filter(Standard.name == name)
         if section:
@@ -320,9 +330,12 @@ class Standard_collection:
             query = query.filter(Standard.version == version)
         return query
 
-    def get_CRE(self, external_id: str = None, name: str = None) -> cre_defs.CRE:
+    def get_CRE(self, external_id: Optional[str] = None, name: Optional[str] = None) -> Optional[cre_defs.CRE]:
         cre = None
         query = CRE.query
+        if not external_id and not name:
+            logger.error(f'You need to search by either external_id or name')
+            return None
         if external_id:
             query = query.filter(CRE.external_id == external_id)
         if name:
@@ -332,11 +345,13 @@ class Standard_collection:
         if dbcre:
             cre = CREfromDB(dbcre)
         else:
-            logger.warning("CRE %s:%s does not exist in the db" % (external_id, name))
-            return
+            logger.warning("CRE %s:%s does not exist in the db" %
+                           (external_id, name))
+            return None
 
         # todo figure a way to return both the Standard and the link_type for that link
-        linked_standards = self.session.query(Links).filter(Links.cre == dbcre.id).all()
+        linked_standards = self.session.query(
+            Links).filter(Links.cre == dbcre.id).all()
         for ls in linked_standards:
             cre.add_link(
                 cre_defs.Link(
@@ -353,13 +368,14 @@ class Standard_collection:
         internal_links = (
             self.session.query(InternalLinks)
             .filter(
-                sqla.or_(InternalLinks.cre == dbcre.id, InternalLinks.group == dbcre.id)
+                sqla.or_(InternalLinks.cre == dbcre.id,
+                         InternalLinks.group == dbcre.id)
             )
             .all()
         )
         for il in internal_links:
             q = self.session.query(CRE)
-            res = None
+            res: CRE
             if il.cre == dbcre.id:
                 res = q.filter(CRE.id == il.group).first()
             elif il.group == dbcre.id:
@@ -372,11 +388,10 @@ class Standard_collection:
 
         return cre
 
-    def export(self, dir):
+    def export(self, dir: str) -> List[cre_defs.Document]:
         """Exports the database to a CRE file collection on disk"""
-        docs = {}
+        docs: Dict[str, cre_defs.Document] = {}
         cre, standard = None, None
-        cres_written = {}
 
         # internal links are Group/HigherLevelCRE -> CRE
         for link in self.__get_internal_links():
@@ -415,7 +430,8 @@ class Standard_collection:
                 cr = CREfromDB(internal_doc)
             if len(standard.name) != 0:
                 cr.add_link(
-                    cre_defs.Link(ltype=type, document=StandardFromDB(standard))
+                    cre_defs.Link(
+                        ltype=type, document=StandardFromDB(standard))
                 )
             docs[cr.name] = cr
 
@@ -434,9 +450,10 @@ class Standard_collection:
                 file_content=yaml.safe_dump(doc.todict()),
                 cres_loc=dir,
             )
-        return docs.values()
+        return list(docs.values())
 
-    def add_cre(self, cre: cre_defs.CRE):
+    def add_cre(self, cre: cre_defs.CRE) -> CRE:
+        entry: CRE
         if cre.id != None:
             entry = (
                 self.session.query(CRE)
@@ -455,14 +472,15 @@ class Standard_collection:
             return entry
         else:
             logger.debug("did not know of %s ,adding" % cre.name)
-            entry = CRE(description=cre.description, name=cre.name, external_id=cre.id)
+            entry = CRE(description=cre.description,
+                        name=cre.name, external_id=cre.id)
             self.session.add(entry)
             self.session.commit()
             self.cre_graph.add_node(f"CRE: {entry.id}")
         return entry
 
     def add_standard(self, standard: cre_defs.Standard) -> Standard:
-        entry = Standard.query.filter(
+        entry: Standard = Standard.query.filter(
             sqla.and_(
                 Standard.name == standard.name,
                 Standard.section == standard.section,
@@ -476,7 +494,8 @@ class Standard_collection:
             self.session.commit()
             return entry
         else:
-            logger.debug(f"did not know of {standard.name}:{standard.section} ,adding")
+            logger.debug(
+                f"did not know of {standard.name}:{standard.section} ,adding")
             entry = Standard(
                 name=standard.name,
                 section=standard.section,
@@ -489,7 +508,7 @@ class Standard_collection:
             self.cre_graph.add_node("Standard: " + str(entry.id))
         return entry
 
-    def __introduces_cycle(self, node_from, node_to):
+    def __introduces_cycle(self, node_from: str, node_to: str) -> Any:
         try:
             existing_cycle = nx.find_cycle(self.cre_graph)
             if existing_cycle:
@@ -508,80 +527,46 @@ class Standard_collection:
         except nx.NetworkXNoCycle:
             return False
 
-    def add_internal_link(
-        self, group: CRE, cre: CRE, type: cre_defs.LinkTypes = cre_defs.LinkTypes.Same
-    ):
+    def add_internal_link(self, group: CRE,
+                          cre: CRE, type: cre_defs.LinkTypes = cre_defs.LinkTypes.Same) -> None:
         if cre.id == None:
             if cre.external_id == None:
-                cre = (
-                    self.session.query(CRE)
-                    .filter(
-                        sqla.and_(
-                            CRE.name == cre.name, CRE.description == cre.description
-                        )
-                    )
-                    .first()
-                )
+                cre = (self.session.query(CRE)
+                       .filter(sqla.and_(CRE.name == cre.name, CRE.description == cre.description)).first())
             else:
-                cre = (
-                    self.session.query(CRE)
-                    .filter(
-                        sqla.and_(
-                            CRE.name == cre.name, CRE.external_id == cre.external_id
-                        )
-                    )
-                    .first()
-                )
+                cre = (self.session.query(CRE)
+                       .filter(sqla.and_(CRE.name == cre.name, CRE.external_id == cre.external_id)).first()
+                       )
         if group.id == None:
             if group.external_id == None:
                 group = (
                     self.session.query(CRE)
-                    .filter(
-                        sqla.and_(
-                            CRE.name == group.name, CRE.description == group.description
-                        )
-                    )
-                    .first()
-                )
+                    .filter(sqla.and_(CRE.name == group.name, CRE.description == group.description)).first())
             else:
                 group = (
                     self.session.query(CRE)
-                    .filter(
-                        sqla.and_(
-                            CRE.name == group.name, CRE.external_id == group.external_id
-                        )
-                    )
-                    .first()
-                )
+                    .filter(sqla.and_(CRE.name == group.name, CRE.external_id == group.external_id)).first())
         if cre == None or group == None:
             logger.fatal(
                 "Tried to insert internal mapping with element that doesn't exist in db, this looks like a bug"
             )
-            return
+            return None
         entry = (
             self.session.query(InternalLinks)
-            .filter(
-                sqla.or_(
-                    sqla.and_(
-                        InternalLinks.cre == group.id, InternalLinks.group == cre.id
-                    ),
-                    sqla.and_(
-                        InternalLinks.cre == cre.id, InternalLinks.group == group.id
-                    ),
-                )
-            )
-            .first()
-        )
+            .filter(sqla.or_(sqla.and_(InternalLinks.cre == group.id, InternalLinks.group == cre.id),
+                    sqla.and_(InternalLinks.cre == cre.id, InternalLinks.group == group.id),)).first())
         if entry != None:
-            logger.debug(f"knew of internal link {cre.name} == {group.name} ,updating")
+            logger.debug(
+                f"knew of internal link {cre.name} == {group.name} ,updating")
             entry.type = type.value
             self.session.commit()
-            return
+            return None
         else:
             logger.debug(
                 f"did not know of internal link {group.external_id}:{group.name} == {cre.external_id}:{cre.name} ,adding"
             )
-            cycle = self.__introduces_cycle(f"CRE: {group.id}", f"CRE: {cre.id}")
+            cycle = self.__introduces_cycle(
+                f"CRE: {group.id}", f"CRE: {cre.id}")
             if not cycle:
                 self.session.add(
                     InternalLinks(type=type.value, cre=cre.id, group=group.id)
@@ -599,10 +584,11 @@ class Standard_collection:
         cre: CRE,
         standard: Standard,
         type: cre_defs.LinkTypes = cre_defs.LinkTypes.Same,
-    ):
+    ) -> None:
         if cre.id == None:
             cre = (
-                self.session.query(CRE).filter(sqla.and_(CRE.name == cre.name)).first()
+                self.session.query(CRE).filter(
+                    sqla.and_(CRE.name == cre.name)).first()
             )
         if standard.id == None:
             standard = (
@@ -638,24 +624,26 @@ class Standard_collection:
             logger.debug(
                 f"did not know of link {standard.id}){standard.name}:{standard.section}=={cre.id}){cre.name} ,adding"
             )
-            self.session.add(Links(type=type.value, cre=cre.id, standard=standard.id))
-            self.cre_graph.add_edge(f"CRE: {cre.id}", f"Standard: {str(standard.id)}")
+            self.session.add(
+                Links(type=type.value, cre=cre.id, standard=standard.id))
+            self.cre_graph.add_edge(
+                f"CRE: {cre.id}", f"Standard: {str(standard.id)}")
             # else:
             #     logger.warning(f"A link between CRE {cre.external_id} and Standard: {standard.name}:{standard.section}:{standard.subsection}"
             #                    " would introduce a cycle, skipping")
             #     logger.debug(f"{cycle}")
         self.session.commit()
 
-    def find_path_between_standards(self, standard_source_id, standard_destination_id):
+    def find_path_between_standards(self, standard_source_id: int, standard_destination_id: int) -> bool:
         """One line method to return paths in a graph, this starts getting complicated when we have more linktypes"""
-        path = nx.has_path(
+        res: bool = nx.has_path(
             self.cre_graph,
             "Standard: " + str(standard_source_id),
             "Standard: " + str(standard_destination_id),
         )
-        return path
+        return res
 
-    def gap_analysis(self, standards: List[str]) -> [cre_defs.Document]:
+    def gap_analysis(self, standards: List[str]) -> List[cre_defs.Standard]:
         """Since the CRE structure is a tree-like graph with leaves being standards we can find the paths between standards
         find_path_between_standards() is a graph-path-finding method
         """
@@ -663,7 +651,8 @@ class Standard_collection:
         dbstands = []
         for stand in standards:
             dbstands.extend(
-                self.session.query(Standard).filter(Standard.name == stand).all()
+                self.session.query(Standard).filter(
+                    Standard.name == stand).all()
             )
 
         for standard in dbstands:
@@ -679,7 +668,12 @@ class Standard_collection:
         return processed_standards
 
 
-def StandardFromDB(dbstandard: Standard):
+def dbStandardFromStandard(standard: cre_defs.Standard) -> Standard:
+    """Returns a db Standard object dropping the links"""
+    return Standard(name=standard.name, section=standard.section, subsection=standard.subsection, version=standard.version)
+
+
+def StandardFromDB(dbstandard: Standard) -> cre_defs.Standard:
     tags = set()
     if dbstandard.tags:
         tags = set(dbstandard.tags.split(","))
@@ -693,7 +687,7 @@ def StandardFromDB(dbstandard: Standard):
     )
 
 
-def CREfromDB(dbcre: CRE):
+def CREfromDB(dbcre: CRE) -> cre_defs.CRE:
     tags = set()
     if dbcre.tags:
         tags = set(dbcre.tags.split(","))

@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Mapping, overload, Optional, Set, Tuple, Union
+from typing import Any, Dict, List, Mapping, overload, Optional, Set, Tuple, TypeVar, Union
 from pprint import pprint
 from dataclasses import dataclass
 from enum import Enum
@@ -122,7 +122,7 @@ class LinkTypes(Enum):
     Same = "SAME"
 
     @staticmethod
-    def from_str(name: str) -> LinkTypes:
+    def from_str(name: str) -> Any:  # it returns LinkTypes but then it won't run
         if name == "SAM" or name == "SAME":
             return LinkTypes.Same
         raise ValueError('"{}" is not a valid link type'.format(name))
@@ -130,9 +130,9 @@ class LinkTypes(Enum):
 
 @dataclass
 class Metadata:
-    labels: Dict[str, str]
+    labels: Dict[str, Any]
 
-    def __init__(self, labels: Dict[str, str] = {}) -> None:
+    def __init__(self, labels: Dict[str, Any] = {}) -> None:
         self.labels = labels
 
     def todict(self) -> Dict[str, str]:
@@ -143,13 +143,13 @@ class Metadata:
 class Link:
     ltype: LinkTypes
     tags: Set[str]
-    document: Optional[Document] = None
+    document: Any
 
     def __init__(
         self,
         ltype: Union[str, LinkTypes] = LinkTypes.Same,
         tags: Set[str] = set(),
-        document: Optional[Document] = None,
+        document=None,  # type: Optional[Document]
     ) -> None:
         if document is None:
             raise_MandatoryFieldException("Links need to link to a Document")
@@ -158,7 +158,8 @@ class Link:
         if type(ltype) == str:
             self.ltype = LinkTypes.from_str(ltype) or LinkTypes.Same
         else:
-            self.ltype = ltype or LinkTypes.Same  # type: ignore # "ltype will always be either str or LinkTypes"
+            self.ltype = ltype or LinkTypes.Same             # type: ignore
+            # "ltype will always be either str or LinkTypes"
 
         self.tags = tags if isinstance(tags, set) else set(tags)
 
@@ -207,7 +208,7 @@ class Document:
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, type(self)):
-            return NotImplemented
+            return False
         else:
             return (
                 self.id == other.id
@@ -223,10 +224,7 @@ class Document:
                     ]
                 )
                 and all(
-                    [
-                        a == b and len(self.tags) == len(other.tags)
-                        for a, b in zip(self.tags, other.tags)
-                    ]
+                    [a in other.tags and b in self.tags for a in self.tags for b in other.tags]
                 )
                 and self.metadata == other.metadata
             )
@@ -245,7 +243,8 @@ class Document:
             result["id"] = self.id
         if self.links:
             result["links"] = []
-            [result["links"].append(link.todict()) for link in self.links]  # type: ignore # links is of type Link
+            [result["links"].append(link.todict())  # type: ignore
+             for link in self.links]  # links is of type Link
         if self.tags:
             # purposefully make this a list instead of a set since sets are not json serializable
             result["tags"] = list(self.tags)
@@ -253,7 +252,7 @@ class Document:
             result["metadata"] = self.metadata.todict()
         return result
 
-    def add_link(self, link: Link) -> Document:
+    def add_link(self, link: Link) -> Any:  # it returns Document but then it won't run
         if not self.links:
             self.links = []
         if type(link).__name__ != Link.__name__:
@@ -301,7 +300,7 @@ class CRE(Document):
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, CRE):
-            return NotImplemented
+           return False
         else:
             return super().__eq__(other)
 

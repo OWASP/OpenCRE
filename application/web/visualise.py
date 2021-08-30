@@ -1,4 +1,5 @@
-from db.db import *
+# type: ignore #unused file
+from db.db import * 
 from pprint import pprint
 import json
 
