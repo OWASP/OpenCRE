@@ -28,10 +28,10 @@ Running
 
 To run the cli application, you can run `python cre.py --help`
 To download a remote cre spreadsheet locally you can run
-`python cre.py --review --from_spreadsheet https://docs.google.com/spreadsheets/d/19YBNcZHL9BF2Dw9Ijzqogc6MUyhTcH10Cb-37rBTFbk/edit\#gid\=1975949890`
+`python cre.py --review --from_spreadsheet <google sheets url>`
 
 To add a remote spreadsheet to your local database you can run
-`python cre_main.py --add --from_spreadsheet https://docs.google.com/spreadsheets/d/1THhpJWrH7RVwEnawEOO-3ZQwuiAKEUyb_ZAdQnvHNsU`
+`python cre_main.py --add --from_spreadsheet <google sheets url>`
 
 To run the web application for development you can run
 `FLASK_APP=cre.py flask run`
