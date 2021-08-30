@@ -1,28 +1,24 @@
-import base64
 import copy
 import os
 import tempfile
 import unittest
 import uuid
-from pprint import pprint
-from unittest import skip
+from typing import Dict, Union
 
 import yaml
 
-from application import create_app, sqla
+from application import create_app, sqla  # type: ignore
 from application.database import db
 from application.defs import cre_defs as defs
 
-from application import create_app, sqla
-
 
 class TestDB(unittest.TestCase):
-    def tearDown(self):
+    def tearDown(self) -> None:
         sqla.session.remove()
         sqla.drop_all()
         self.app_context.pop()
 
-    def setUp(self):
+    def setUp(self) -> None:
         self.app = create_app(mode="test")
         sqla.create_all(app=self.app)
 
@@ -55,12 +51,12 @@ class TestDB(unittest.TestCase):
 
         collection.session.add(dbcre)
 
-        externalLink = collection.add_link(cre=dbcre, standard=dbstandard)
-        internalLink = collection.add_internal_link(cre=dbcre, group=dbgroup)
+        collection.add_link(cre=dbcre, standard=dbstandard)
+        collection.add_internal_link(cre=dbcre, group=dbgroup)
 
         self.collection = collection
 
-    def test_get_by_tags(self):
+    def test_get_by_tags(self) -> None:
         """
         Given: A CRE with no links and a combination of possible tags:
                     "tag1,dash-2,underscore_3,space 4,co_mb-ination%5"
@@ -109,12 +105,13 @@ class TestDB(unittest.TestCase):
         self.assertEqual(self.collection.get_by_tags([]), [])
         self.assertEqual(self.collection.get_by_tags(["this should not be a tag"]), [])
 
-    def test_get_standards_names(self):
+    def test_get_standards_names(self) -> None:
+
         result = self.collection.get_standards_names()
         expected = ["BarStand", "Unlinked"]
         self.assertEqual(expected, result)
 
-    def test_get_max_internal_connections(self):
+    def test_get_max_internal_connections(self) -> None:
         self.assertEqual(self.collection.get_max_internal_connections(), 1)
 
         dbcrelo = db.CRE(name="internal connections test lo", description="ictlo")
@@ -142,7 +139,7 @@ class TestDB(unittest.TestCase):
         result = self.collection.get_max_internal_connections()
         self.assertEqual(result, 100)
 
-    def test_export(self):
+    def test_export(self) -> None:
         """
         Given:
             A CRE "CREname" that links to a CRE "GroupName" and a Standard "BarStand"
@@ -200,7 +197,7 @@ class TestDB(unittest.TestCase):
             doc = yaml.safe_load(f)
             self.assertDictEqual(cre, doc)
 
-    def test_StandardFromDB(self):
+    def test_StandardFromDB(self) -> None:
         expected = defs.Standard(
             name="foo",
             section="bar",
@@ -221,7 +218,7 @@ class TestDB(unittest.TestCase):
             ),
         )
 
-    def test_CREfromDB(self):
+    def test_CREfromDB(self) -> None:
         c = defs.CRE(
             id="cid",
             doctype=defs.Credoctypes.CRE,
@@ -235,7 +232,7 @@ class TestDB(unittest.TestCase):
             ),
         )
 
-    def test_add_cre(self):
+    def test_add_cre(self) -> None:
         original_desc = str(uuid.uuid4())
         name = str(uuid.uuid4())
         gname = str(uuid.uuid4())
@@ -271,7 +268,7 @@ class TestDB(unittest.TestCase):
         # ensure original description
         self.assertEqual(newCRE.description, str(original_desc))
 
-    def test_add_standard(self):
+    def test_add_standard(self) -> None:
         original_section = str(uuid.uuid4())
         name = str(uuid.uuid4())
 
@@ -305,7 +302,7 @@ class TestDB(unittest.TestCase):
 
         # standards match on all of name,section, subsection <-- if you change even one of them it's a new entry
 
-    def find_cres_of_cre(self):
+    def find_cres_of_cre(self) -> None:
         dbcre = db.CRE(description="CREdesc1", name="CREname1")
         groupless_cre = db.CRE(description="CREdesc2", name="CREname2")
         dbgroup = db.CRE(description="Groupdesc1", name="GroupName1")
@@ -329,12 +326,18 @@ class TestDB(unittest.TestCase):
         self.collection.session.commit()
 
         # happy path, find cre with 2 groups
-        groups = self.collection.find_groups_of_cre(dbcre)
+
+        groups = self.collection.find_cres_of_cre(dbcre)
+        if not groups:
+            self.fail("Expected exactly 2 cres")
         self.assertEqual(len(groups), 2)
         self.assertEqual(groups, [dbgroup, dbgroup2])
 
         # find cre with 1 group
         group = self.collection.find_cres_of_cre(only_one_group)
+
+        if not group:
+            self.fail("Expected exactly 1 cre")
         self.assertEqual(len(group), 1)
         self.assertEqual(group, [dbgroup])
 
@@ -342,7 +345,7 @@ class TestDB(unittest.TestCase):
         groups = self.collection.find_cres_of_cre(groupless_cre)
         self.assertIsNone(groups)
 
-    def test_find_cres_of_standard(self):
+    def test_find_cres_of_standard(self) -> None:
         dbcre = db.CRE(description="CREdesc1", name="CREname1")
         dbgroup = db.CRE(description="CREdesc2", name="CREname2")
         dbstandard1 = db.Standard(section="section1", name="standard1")
@@ -365,11 +368,17 @@ class TestDB(unittest.TestCase):
 
         # happy path, 1 group and 1 cre link to 1 standard
         cres = self.collection.find_cres_of_standard(dbstandard1)
+
+        if not cres:
+            self.fail("Expected 2 cres")
         self.assertEqual(len(cres), 2)
         self.assertEqual(cres, [dbcre, dbgroup])
 
         # group links to standard
         cres = self.collection.find_cres_of_standard(group_standard)
+
+        if not cres:
+            self.fail("Expected 1 cre")
         self.assertEqual(len(cres), 1)
         self.assertEqual(cres, [dbgroup])
 
@@ -377,7 +386,7 @@ class TestDB(unittest.TestCase):
         cres = self.collection.find_cres_of_standard(lone_standard)
         self.assertIsNone(cres)
 
-    def test_get_CRE(self):
+    def test_get_CRE(self) -> None:
         """Given: a cre 'C1' that links to cres both as a group and a cre and other standards
         return the CRE in Document format"""
         collection = db.Standard_collection()
@@ -427,11 +436,11 @@ class TestDB(unittest.TestCase):
         self.assertIsNone(collection.get_CRE(external_id="1234"))
         self.assertIsNone(collection.get_CRE(name="C5"))
 
-    def test_get_standards(self):
+    def test_get_standards(self) -> None:
         """Given: a Standard 'S1' that links to cres
         return the Standard in Document format"""
         collection = db.Standard_collection()
-        docs = {
+        docs: Dict[str, Union[db.CRE, db.Standard]] = {
             "dbc1": db.CRE(external_id="123", description="CD1", name="C1"),
             "dbc2": db.CRE(description="CD2", name="C2"),
             "dbc3": db.CRE(description="CD3", name="C3"),
@@ -470,11 +479,11 @@ class TestDB(unittest.TestCase):
         res = collection.get_standards(name="S1")
         self.assertEqual(expected, res)
 
-    def test_get_standards_with_pagination(self):
+    def test_get_standards_with_pagination(self) -> None:
         """Given: a Standard 'S1' that links to cres
         return the Standard in Document format and the total pages and the page we are in"""
         collection = db.Standard_collection()
-        docs = {
+        docs: Dict[str, Union[db.Standard, db.CRE]] = {
             "dbc1": db.CRE(external_id="123", description="CD1", name="C1"),
             "dbc2": db.CRE(description="CD2", name="C2"),
             "dbc3": db.CRE(description="CD3", name="C3"),
@@ -515,7 +524,7 @@ class TestDB(unittest.TestCase):
         self.assertEqual(total_pages, 1)
         self.assertEqual(expected, res)
 
-    def test_gap_analysis(self):
+    def test_gap_analysis(self) -> None:
         """Given
         the following standards SA1, SA2, SA3 SAA1 , SB1, SD1, SDD1, SW1, SX1
         the following CREs CA, CB, CC, CD, CDD , CW, CX
@@ -662,7 +671,7 @@ class TestDB(unittest.TestCase):
             # unfortunately named, asserts element and count equality
             self.assertCountEqual(res, expected_vals)
 
-    def test_add_internal_link(self):
+    def test_add_internal_link(self) -> None:
         """test that internal links are added successfully,
         edge cases:
             cre or group don't exist

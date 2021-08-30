@@ -9,16 +9,13 @@ class Config:
     ITEMS_PER_PAGE = 20
     SLOW_DB_QUERY_TIME = 0.5
 
-    @staticmethod
-    def init_app(app):
-        pass
-
 
 class DevelopmentConfig(Config):
     DEBUG = True
-    SQLALCHEMY_DATABASE_URI = os.environ.get(
-        "DEV_DATABASE_URL"
-    ) or "sqlite:///" + os.path.join(basedir, "../standards_cache.sqlite")
+    SQLALCHEMY_DATABASE_URI = (
+        os.environ.get("DEV_DATABASE_URL")
+        or f'sqlite:///{os.path.join(basedir, "../standards_cache.sqlite")}'
+    )
 
 
 class TestingConfig(Config):
@@ -27,15 +24,15 @@ class TestingConfig(Config):
 
 
 class ProductionConfig(Config):
-    SQLALCHEMY_DATABASE_URI = os.environ.get(
-        "PROD_DATABASE_URL"
-    ) or "sqlite:///" + os.path.join(basedir, "../standards_cache.sqlite")
+    SQLALCHEMY_DATABASE_URI = (
+        os.environ.get("PROD_DATABASE_URL")
+        or f'sqlite:///{os.path.join(basedir, "../standards_cache.sqlite")}'
+    )
 
 
 class CMDConfig(Config):
-    def __init__(self, db_uri, app=None):
-        Config.init_app(app)
-        self.SQLALCHEMY_DATABASE_URI = "sqlite:///" + db_uri
+    def __init__(self, db_uri: str):
+        self.SQLALCHEMY_DATABASE_URI = f"sqlite:///{db_uri}"
 
 
 config = {

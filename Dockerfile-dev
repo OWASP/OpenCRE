@@ -8,7 +8,6 @@ COPY . /home/credev/cre_sync
 RUN chown -R credev:credev /home/credev/cre_sync
 USER credev
 
-
 WORKDIR /home/credev/cre_sync
 
 RUN export PATH=$PATH:/home/credev/.local/bin &&\

@@ -1,19 +1,10 @@
-import json
+# type: ignore
+# silence mypy for the routes file
 import os
-from pprint import pprint
+from typing import Any
 
-from flask import (
-    Flask,
-    abort,
-    jsonify,
-    send_from_directory,
-    render_template,
-    request,
-    Blueprint,
-)
-from jinja2 import Template, TemplateNotFound
+from flask import Blueprint, abort, jsonify, request, send_from_directory
 
-from application import create_app
 from application.database import db
 
 ITEMS_PER_PAGE = 20
@@ -22,7 +13,8 @@ app = Blueprint("web", __name__, static_folder="../frontend/www")
 
 
 @app.route("/rest/v1/id/<creid>", methods=["GET"])
-def find_by_id(creid):  # refer
+def find_by_id(creid: str) -> Any:  # refer
+
     database = db.Standard_collection()
     cre = database.get_CRE(external_id=creid)
     if cre:
@@ -31,7 +23,8 @@ def find_by_id(creid):  # refer
 
 
 @app.route("/rest/v1/name/<crename>", methods=["GET"])
-def find_by_name(crename):
+def find_by_name(crename: str) -> Any:
+
     database = db.Standard_collection()
     cre = database.get_CRE(name=crename)
     if cre:
@@ -40,7 +33,7 @@ def find_by_name(crename):
 
 
 @app.route("/rest/v1/standard/<sname>", methods=["GET"])
-def find_standard_by_name(sname):
+def find_standard_by_name(sname: str) -> Any:
     database = db.Standard_collection()
     opt_section = request.args.get("section")
     opt_subsection = request.args.get("subsection")
@@ -68,7 +61,7 @@ def find_standard_by_name(sname):
 
 # TODO: (spyros) paginate
 @app.route("/rest/v1/tags", methods=["GET"])
-def find_document_by_tag(sname):
+def find_document_by_tag(sname: str) -> Any:
     database = db.Standard_collection()
     tags = request.args.getlist("tag")
     documents = database.get_by_tags(tags)
@@ -78,7 +71,7 @@ def find_document_by_tag(sname):
 
 
 @app.route("/rest/v1/gap_analysis", methods=["GET"])
-def gap_analysis():  # TODO (spyros): add export result to spreadsheet
+def gap_analysis() -> Any:  # TODO (spyros): add export result to spreadsheet
     database = db.Standard_collection()
     standards = request.args.getlist("standard")
     documents = database.gap_analysis(standards=standards)
@@ -88,7 +81,7 @@ def gap_analysis():  # TODO (spyros): add export result to spreadsheet
 
 
 @app.errorhandler(404)
-def page_not_found(e):
+def page_not_found(e) -> Any:
     # Even though Flask logs it by default,
     # I prefer to have a logger dedicated to 404
     return "Resource Not found", 404
@@ -97,7 +90,8 @@ def page_not_found(e):
 # If no other routes are matched, serve the react app, or any other static files (like bundle.js)
 @app.route("/", defaults={"path": ""})
 @app.route("/<path:path>")
-def index(path):
+def index(path: str) -> Any:
+    print("index")
     if path != "" and os.path.exists(app.static_folder + "/" + path):
         return send_from_directory(app.static_folder, path)
     else:

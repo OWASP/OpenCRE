@@ -1,7 +1,20 @@
-from pprint import pprint
+import json
 from dataclasses import dataclass
 from enum import Enum
-import json
+from pprint import pprint
+from typing import (
+    Any,
+    Dict,
+    List,
+    Mapping,
+    Optional,
+    Set,
+    Tuple,
+    TypeVar,
+    Union,
+    overload,
+)
+
 
 # used for serialising and deserialising yaml CRE documents
 
@@ -19,7 +32,7 @@ class ExportFormat(Enum):
     cre = "CRE"
 
     @staticmethod
-    def section_key(sname: str):
+    def section_key(sname: str) -> str:
         "returns <sname>:section"
         return "%s%s%s" % (
             sname,
@@ -28,7 +41,8 @@ class ExportFormat(Enum):
         )
 
     @staticmethod
-    def subsection_key(sname: str):
+    def subsection_key(sname: str) -> str:
+
         "returns <sname>:subsection"
         return "%s%s%s" % (
             sname,
@@ -37,7 +51,8 @@ class ExportFormat(Enum):
         )
 
     @staticmethod
-    def hyperlink_key(sname: str):
+    def hyperlink_key(sname: str) -> str:
+
         "returns <sname>:hyperlink"
         return "%s%s%s" % (
             sname,
@@ -46,7 +61,8 @@ class ExportFormat(Enum):
         )
 
     @staticmethod
-    def link_type_key(sname: str):
+    def link_type_key(sname: str) -> str:
+
         "returns <sname>:link_type"
         return "%s%s%s" % (
             sname,
@@ -55,7 +71,8 @@ class ExportFormat(Enum):
         )
 
     @staticmethod
-    def linked_cre_id_key(name: str):
+    def linked_cre_id_key(name: str) -> str:
+
         "returns Linked_CRE_<name>:id"
         return "%s%s%s%s" % (
             ExportFormat.cre_link.value,
@@ -65,7 +82,8 @@ class ExportFormat(Enum):
         )
 
     @staticmethod
-    def linked_cre_name_key(name: str):
+    def linked_cre_name_key(name: str) -> str:
+
         "returns Linked_CRE_<name>:name"
         return "%s%s%s%s" % (
             ExportFormat.cre_link.value,
@@ -75,7 +93,8 @@ class ExportFormat(Enum):
         )
 
     @staticmethod
-    def linked_cre_link_type_key(name: str):
+    def linked_cre_link_type_key(name: str) -> str:
+
         "returns Linked_CRE_<name>:link_type"
         return "%s%s%s%s" % (
             ExportFormat.cre_link.value,
@@ -85,7 +104,8 @@ class ExportFormat(Enum):
         )
 
     @staticmethod
-    def cre_id_key():
+    def cre_id_key() -> str:
+
         "returns CRE:id"
         return "%s%s%s" % (
             ExportFormat.cre.value,
@@ -94,7 +114,8 @@ class ExportFormat(Enum):
         )
 
     @staticmethod
-    def cre_name_key():
+    def cre_name_key() -> str:
+
         "returns CRE:name"
         return "%s%s%s" % (
             ExportFormat.cre.value,
@@ -103,7 +124,8 @@ class ExportFormat(Enum):
         )
 
     @staticmethod
-    def cre_description_key():
+    def cre_description_key() -> str:
+
         "returns CRE:description"
         return "%s%s%s" % (
             ExportFormat.cre.value,
@@ -121,7 +143,8 @@ class LinkTypes(Enum):
     Same = "SAME"
 
     @staticmethod
-    def from_str(name):
+    def from_str(name: str) -> Any:  # it returns LinkTypes but then it won't run
+
         if name == "SAM" or name == "SAME":
             return LinkTypes.Same
         raise ValueError('"{}" is not a valid link type'.format(name))
@@ -129,57 +152,67 @@ class LinkTypes(Enum):
 
 @dataclass
 class Metadata:
-    labels: {}
+    labels: Dict[str, Any]
 
-    def __init__(self, labels={}):
+    def __init__(self, labels: Dict[str, Any] = {}) -> None:
         self.labels = labels
 
-    def todict(self):
+    def todict(self) -> Dict[str, str]:
         return self.labels
 
 
 @dataclass
 class Link:
     ltype: LinkTypes
-    tags: list
-    document = None
+    tags: Set[str]
+    document: Any
 
-    def __init__(self, ltype=LinkTypes.Same, tags=set(), document=None):
+    def __init__(
+        self,
+        ltype: Union[str, LinkTypes] = LinkTypes.Same,
+        tags: Set[str] = set(),
+        document=None,  # type: Optional[Document]
+    ) -> None:
         if document is None:
             raise_MandatoryFieldException("Links need to link to a Document")
         self.document = document
+
         if type(ltype) == str:
             self.ltype = LinkTypes.from_str(ltype) or LinkTypes.Same
         else:
-            self.ltype = ltype or LinkTypes.Same
+            self.ltype = ltype or LinkTypes.Same  # type: ignore
+            # "ltype will always be either str or LinkTypes"
 
         self.tags = tags if isinstance(tags, set) else set(tags)
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(json.dumps(self.todict()))
 
-    def __str__(self):
+    def __str__(self) -> str:
         return json.dumps(self.todict())
 
-    def __eq__(self, other):
-        return (
-            self.ltype == other.ltype
-            and all(
-                [
-                    a in other.tags and b in self.tags
-                    for a in self.tags
-                    for b in other.tags
-                ]
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Link):
+            return NotImplemented
+        else:
+            return (
+                self.ltype == other.ltype
+                and all(
+                    [
+                        a in other.tags and b in self.tags
+                        for a in self.tags
+                        for b in other.tags
+                    ]
+                )
+                and self.document == other.document
             )
-            and self.document == other.document
-        )
 
-    def todict(self):
-        res = {}
+    def todict(self) -> Dict[str, Union[Set[str], str, Dict[Any, Any]]]:
+        res: Dict[str, Union[Set[str], str, Dict[Any, Any]]] = {}
         if self.document:
             res["document"] = self.document.todict()
         if len(self.tags):
-            res["tags"] = set(self.tags)
+            res["tags"] = self.tags
 
         res["type"] = self.ltype.value
         return res
@@ -191,38 +224,42 @@ class Document:
     id: str
     description: str
     name: str
-    links: list
-    tags: set
-    metadata: Metadata
+    links: List[Link]
+    tags: Set[str]
+    metadata: Optional[Metadata]
 
-    def __eq__(self, other):
-        return (
-            self.id == other.id
-            and self.name == other.name
-            and self.doctype.value == other.doctype.value
-            and self.description == other.description
-            and len(self.links) == len(other.links)
-            and all(
-                [
-                    a in other.links and b in self.links
-                    for a in self.links
-                    for b in other.links
-                ]
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, type(self)):
+            return False
+        else:
+            return (
+                self.id == other.id
+                and self.name == other.name
+                and self.doctype.value == other.doctype.value
+                and self.description == other.description
+                and len(self.links) == len(other.links)
+                and all(
+                    [
+                        a in other.links and b in self.links
+                        for a in self.links
+                        for b in other.links
+                    ]
+                )
+                and all(
+                    [
+                        a in other.tags and b in self.tags
+                        for a in self.tags
+                        for b in other.tags
+                    ]
+                )
+                and self.metadata == other.metadata
             )
-            and all(
-                [
-                    a == b and len(self.tags) == len(other.tags)
-                    for a, b in zip(self.tags, other.tags)
-                ]
-            )
-            and self.metadata == other.metadata
-        )
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(json.dumps(self.todict()))
 
-    def todict(self):
-        result = {
+    def todict(self) -> Dict[str, Union[Dict[str, str], List[Any], Set[str], str]]:
+        result: Dict[str, Union[Dict[str, str], List[Any], Set[str], str]] = {
             "doctype": self.doctype.value,
             "name": self.name,
         }
@@ -232,8 +269,11 @@ class Document:
             result["id"] = self.id
         if self.links:
             result["links"] = []
-            for link in self.links:
-                result["links"].append(link.todict())
+
+            [
+                result["links"].append(link.todict())  # type: ignore
+                for link in self.links
+            ]  # links is of type Link
         if self.tags:
             # purposefully make this a list instead of a set since sets are not json serializable
             result["tags"] = list(self.tags)
@@ -241,7 +281,7 @@ class Document:
             result["metadata"] = self.metadata.todict()
         return result
 
-    def add_link(self, link: Link):
+    def add_link(self, link: Link) -> Any:  # it returns Document but then it won't run
         if not self.links:
             self.links = []
         if type(link).__name__ != Link.__name__:
@@ -253,17 +293,20 @@ class Document:
     def __init__(
         self,
         name: str,
-        doctype: Credoctypes = None,
+        doctype: Optional[Credoctypes] = None,
         id: str = "",
         description: str = "",
-        links: list = [],
-        tags: list = [],
-        metadata: Metadata = None,
-    ):
+        links: List[Link] = [],
+        tags: List[str] = [],
+        metadata: Optional[Metadata] = None,
+    ) -> None:
         self.description = str(description)
-        self.name = str(name) or raise_MandatoryFieldException(
-            "Document name not defined for document of doctype %s" % doctype
-        )
+        if not name:
+            raise_MandatoryFieldException(
+                "Document name not defined for document of doctype %s" % doctype
+            )
+        else:
+            self.name = str(name)
         self.links = links or []
         if isinstance(tags, set) and "" in tags:
             tags.remove("")
@@ -277,15 +320,18 @@ class Document:
 
 @dataclass
 class CRE(Document):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         self.doctype = Credoctypes.CRE
         super().__init__(*args, **kwargs)
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return super().__hash__()
 
-    def __eq__(self, other):
-        return isinstance(other, CRE) and super().__eq__(other)
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, CRE):
+            return False
+        else:
+            return super().__eq__(other)
 
 
 @dataclass
@@ -296,30 +342,39 @@ class Standard(Document):
     hyperlink: str
     version: str
 
-    def todict(self):
-        result = super().todict()
+    def todict(self) -> Dict[Any, Any]:
+        result: Dict[Any, Any] = super().todict()
+
         result["section"] = self.section
         result["subsection"] = self.subsection
         result["hyperlink"] = self.hyperlink
         result["version"] = self.version
         return result
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return super().__hash__()
 
-    def __eq__(self, other):
-        return (
-            isinstance(other, Standard)
-            and super().__eq__(other)
-            and self.section == other.section
-            and self.subsection == other.subsection
-            and self.hyperlink == other.hyperlink
-            and self.version == other.version
-        )
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Standard):
+            return NotImplemented
+        else:
+            return (
+                super().__eq__(other)
+                and self.section == other.section
+                and self.subsection == other.subsection
+                and self.hyperlink == other.hyperlink
+                and self.version == other.version
+            )
 
     def __init__(
-        self, section="", subsection="", hyperlink="", version="", *args, **kwargs
-    ):
+        self,
+        section: str = "",
+        subsection: str = "",
+        hyperlink: str = "",
+        version: str = "",
+        *args: Any,
+        **kwargs: Any
+    ) -> None:
         self.doctype = Credoctypes.Standard
         if section is None or section == "":
             raise MandatoryFieldException(
@@ -338,5 +393,5 @@ class MandatoryFieldException(Exception):
     pass
 
 
-def raise_MandatoryFieldException(msg=""):
+def raise_MandatoryFieldException(msg: str = "") -> None:
     raise MandatoryFieldException(msg)
