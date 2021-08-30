@@ -4,6 +4,7 @@ import React from 'react';
 import { Header } from 'semantic-ui-react';
 
 import { SearchBar } from './components/SearchBar';
+import { SearchBody } from './components/BodyText';
 
 export const Search = () => {
   return (
@@ -15,6 +16,7 @@ export const Search = () => {
         Your source for all Security Standards Mappings
       </Header>
       <SearchBar />
+      <SearchBody />
     </div>
   );
 };
