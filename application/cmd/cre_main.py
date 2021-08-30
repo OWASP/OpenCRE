@@ -8,11 +8,11 @@ from typing import Dict, List, Any, Union, Optional, Callable, Tuple, Generator
 from collections import namedtuple
 from pprint import pprint
 
-from application import create_app # type: ignore
+from application import create_app  # type: ignore
 from application.config import CMDConfig
 from application.database import db
 from application.defs import cre_defs as defs
-from application.utils import parsers # type: ignore
+from application.utils import parsers  # type: ignore
 from application.utils import spreadsheet as sheet_utils
 
 logging.basicConfig()
@@ -45,7 +45,10 @@ def register_standard(
                     )
                     for unlinked_standard in cre_less_standards:  # if anything in this
                         collection.add_link(
-                            cre=cre, standard=db.dbStandardFromStandard(unlinked_standard), type=link.ltype)
+                            cre=cre,
+                            standard=db.dbStandardFromStandard(unlinked_standard),
+                            type=link.ltype,
+                        )
             else:
                 cres = collection.find_cres_of_standard(linked_standard)
                 if cres:
@@ -57,13 +60,15 @@ def register_standard(
                         )
                         for unlinked_standard in cre_less_standards:
                             collection.add_link(
-                                cre=cre, standard=db.dbStandardFromStandard(unlinked_standard), type=link.ltype)
+                                cre=cre,
+                                standard=db.dbStandardFromStandard(unlinked_standard),
+                                type=link.ltype,
+                            )
                 else:  # if neither the root nor a linked standard has a CRE, add both as unlinked standards
                     cre_less_standards.append(link.document)
 
             if link.document.links and len(link.document.links) > 0:
-                register_standard(standard=link.document,
-                                  collection=collection)
+                register_standard(standard=link.document, collection=collection)
 
         elif type(link.document).__name__ == defs.CRE.__name__:
             dbcre = register_cre(link.document, collection)
@@ -125,20 +130,26 @@ def parse_file(
             if doclink:
                 if len(doclink) > 1:
                     logger.fatal(
-                        "Parsing single document returned 2 results this is a bug")
+                        "Parsing single document returned 2 results this is a bug"
+                    )
                 document.add_link(
                     defs.Link(
-                        document=doclink[0], ltype=link.get("type"), tags=link.get("tags")))
+                        document=doclink[0],
+                        ltype=link.get("type"),
+                        tags=link.get("tags"),
+                    )
+                )
         if register_callback:
-            register_callback(document, collection=scollection) # type: ignore
+            register_callback(document, collection=scollection)  # type: ignore
         else:
-            logger.warning(
-                "Callback to register Document is None, likely missing data")
+            logger.warning("Callback to register Document is None, likely missing data")
         resulting_objects.append(document)
     return resulting_objects
 
 
-def parse_standards_from_spreadsheeet(cre_file: List[Dict[str, Any]], result: db.Standard_collection) -> None:
+def parse_standards_from_spreadsheeet(
+    cre_file: List[Dict[str, Any]], result: db.Standard_collection
+) -> None:
     """given a yaml with standards, build a list of standards in the db"""
     hi_lvl_CREs = {}
     cres = {}
@@ -163,13 +174,11 @@ def parse_standards_from_spreadsheeet(cre_file: List[Dict[str, Any]], result: db
         for link in doc.links:
             if type(link.document).__name__ == defs.CRE.__name__:
                 dbcre = register_cre(link.document, result)
-                result.add_internal_link(
-                    group=dbgroup, cre=dbcre, type=link.ltype)
+                result.add_internal_link(group=dbgroup, cre=dbcre, type=link.ltype)
 
             elif type(link.document).__name__ == defs.Standard.__name__:
                 dbstandard = register_standard(link.document, result)
-                result.add_link(
-                    cre=dbgroup, standard=dbstandard, type=link.ltype)
+                result.add_link(cre=dbgroup, standard=dbstandard, type=link.ltype)
 
 
 def get_standards_files_from_disk(cre_loc: str) -> Generator[str, None, None]:
@@ -193,8 +202,7 @@ def add_from_spreadsheet(spreadsheet_url: str, cache_loc: str, cre_loc: str) -> 
         parse_standards_from_spreadsheeet(contents, database)
     docs = database.export(cre_loc)
     logger.info(
-        "Db located at %s got updated, files extracted at %s" % (
-            cache_loc, cre_loc)
+        "Db located at %s got updated, files extracted at %s" % (cache_loc, cre_loc)
     )
 
 
@@ -280,7 +288,7 @@ def print_graph() -> None:
     raise NotImplementedError
 
 
-def run(args: argparse.Namespace)->None:
+def run(args: argparse.Namespace) -> None:
     script_path = os.path.dirname(os.path.realpath(__file__))
     cre_loc = os.path.join(script_path, "../../../cres")
 
@@ -328,7 +336,9 @@ def create_spreadsheet(
     flat_dicts = sheet_utils.prepare_spreadsheet(
         collection=collection, docs=exported_documents
     )
-    return sheet_utils.write_spreadsheet(title=title, docs=flat_dicts, emails=share_with)
+    return sheet_utils.write_spreadsheet(
+        title=title, docs=flat_dicts, emails=share_with
+    )
 
 
 def prepare_for_review(cache: str) -> Tuple[str, str]:
@@ -337,6 +347,5 @@ def prepare_for_review(cache: str) -> Tuple[str, str]:
     if os.path.isfile(cache):
         shutil.copy(cache, loc)
     else:
-        logger.fatal(
-            "Could not copy database %s this seems like a bug" % cache)
+        logger.fatal("Could not copy database %s this seems like a bug" % cache)
     return loc, os.path.join(loc, cache_filename)

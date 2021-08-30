@@ -1,4 +1,4 @@
-#type: ignore
+# type: ignore
 # silence mypy for the routes file
 from typing import Any
 import json

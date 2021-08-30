@@ -23,11 +23,12 @@ if os.environ.get("FLASK_COVERAGE"):
     COV.start()
 
 
-@app.cli.command() # type: ignore
+@app.cli.command()  # type: ignore
 @click.option(
-    "--coverage/--no-coverage", default=False, help="Run tests under code coverage." )# type: ignore
-@click.argument("test_names", nargs=-1)# type: ignore
-def test(coverage:coverage.Coverage, test_names:List[str])->None:
+    "--coverage/--no-coverage", default=False, help="Run tests under code coverage."
+)  # type: ignore
+@click.argument("test_names", nargs=-1)  # type: ignore
+def test(coverage: coverage.Coverage, test_names: List[str]) -> None:
     if coverage and not os.environ.get("FLASK_COVERAGE"):
         import subprocess
 
@@ -52,7 +53,7 @@ def test(coverage:coverage.Coverage, test_names:List[str])->None:
 
 
 # python cre.py --<x> commands
-def main()->None:
+def main() -> None:
     app_context = app.app_context()
     app_context.push()
 

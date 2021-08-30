@@ -76,8 +76,7 @@ class TestMain(unittest.TestCase):
 
         self.assertEqual(self.collection.session.query(db.Links).all(), [])
         # 3 cre-less standards in the db
-        self.assertEqual(
-            len(self.collection.session.query(db.Standard).all()), 3)
+        self.assertEqual(len(self.collection.session.query(db.Standard).all()), 3)
 
     def test_register_standard_with_cre(self) -> None:
         standard_with_cre = defs.Standard(
@@ -231,11 +230,10 @@ class TestMain(unittest.TestCase):
             name="CREname",
             links=[defs.Link(document=standard)],
             tags=["CREt1", "CREt2"],
-            metadata=defs.Metadata(labels={'tags': ["CREl1", "CREl2"]}))
-        self.assertEqual(main.register_cre(
-            cre, self.collection).name, cre.name)
-        self.assertEqual(main.register_cre(
-            cre, self.collection).external_id, cre.id)
+            metadata=defs.Metadata(labels={"tags": ["CREl1", "CREl2"]}),
+        )
+        self.assertEqual(main.register_cre(cre, self.collection).name, cre.name)
+        self.assertEqual(main.register_cre(cre, self.collection).external_id, cre.id)
         self.assertEqual(
             len(self.collection.session.query(db.CRE).all()), 1
         )  # 1 cre in the db
@@ -337,7 +335,8 @@ class TestMain(unittest.TestCase):
         with self.assertLogs("application.cmd.cre_main", level=logging.FATAL) as logs:
             # negative test first parse_file accepts a list of objects
             result = main.parse_file(
-                filename="tests", yamldocs=file[0], scollection=self.collection) # type: ignore
+                filename="tests", yamldocs=file[0], scollection=self.collection
+            )  # type: ignore
             self.assertEqual(result, None)
             self.assertIn(
                 "CRITICAL:application.cmd.cre_main:Malformed file tests, skipping",
@@ -346,8 +345,9 @@ class TestMain(unittest.TestCase):
 
         self.maxDiff = None
         res = main.parse_file(
-            filename="tests", yamldocs=file, scollection=self.collection) 
-        self.assertCountEqual(res, expected)# type:ignore
+            filename="tests", yamldocs=file, scollection=self.collection
+        )
+        self.assertCountEqual(res, expected)  # type:ignore
 
     def test_parse_standards_from_spreadsheeet(self) -> None:
         input = [
@@ -388,21 +388,18 @@ class TestMain(unittest.TestCase):
             }
         ]
         main.parse_standards_from_spreadsheeet(input, self.collection)
-        self.assertEqual(
-            len(self.collection.session.query(db.Standard).all()), 8)
+        self.assertEqual(len(self.collection.session.query(db.Standard).all()), 8)
         self.assertEqual(len(self.collection.session.query(db.CRE).all()), 5)
         # assert the one CRE in the inpu externally links to all the 8 standards
         self.assertEqual(len(self.collection.session.query(db.Links).all()), 8)
-        self.assertEqual(
-            len(self.collection.session.query(db.InternalLinks).all()), 4)
+        self.assertEqual(len(self.collection.session.query(db.InternalLinks).all()), 4)
 
     def test_get_standards_files_from_disk(self) -> None:
         loc = tempfile.mkdtemp()
         ymls = []
         cre = defs.CRE(name="c", description="cd")
         for _ in range(1, 5):
-            ymldesc, location = tempfile.mkstemp(
-                dir=loc, suffix=".yaml", text=True)
+            ymldesc, location = tempfile.mkstemp(dir=loc, suffix=".yaml", text=True)
             os.write(ymldesc, bytes(str(cre), "utf-8"))
             ymls.append(location)
         self.assertCountEqual(

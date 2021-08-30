@@ -1,4 +1,15 @@
-from typing import Any, Dict, List, Mapping, overload, Optional, Set, Tuple, TypeVar, Union
+from typing import (
+    Any,
+    Dict,
+    List,
+    Mapping,
+    overload,
+    Optional,
+    Set,
+    Tuple,
+    TypeVar,
+    Union,
+)
 from pprint import pprint
 from dataclasses import dataclass
 from enum import Enum
@@ -158,7 +169,7 @@ class Link:
         if type(ltype) == str:
             self.ltype = LinkTypes.from_str(ltype) or LinkTypes.Same
         else:
-            self.ltype = ltype or LinkTypes.Same             # type: ignore
+            self.ltype = ltype or LinkTypes.Same  # type: ignore
             # "ltype will always be either str or LinkTypes"
 
         self.tags = tags if isinstance(tags, set) else set(tags)
@@ -224,7 +235,11 @@ class Document:
                     ]
                 )
                 and all(
-                    [a in other.tags and b in self.tags for a in self.tags for b in other.tags]
+                    [
+                        a in other.tags and b in self.tags
+                        for a in self.tags
+                        for b in other.tags
+                    ]
                 )
                 and self.metadata == other.metadata
             )
@@ -243,8 +258,10 @@ class Document:
             result["id"] = self.id
         if self.links:
             result["links"] = []
-            [result["links"].append(link.todict())  # type: ignore
-             for link in self.links]  # links is of type Link
+            [
+                result["links"].append(link.todict())  # type: ignore
+                for link in self.links
+            ]  # links is of type Link
         if self.tags:
             # purposefully make this a list instead of a set since sets are not json serializable
             result["tags"] = list(self.tags)
@@ -300,7 +317,7 @@ class CRE(Document):
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, CRE):
-           return False
+            return False
         else:
             return super().__eq__(other)
 

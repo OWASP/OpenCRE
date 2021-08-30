@@ -443,8 +443,7 @@ class TestParsers(unittest.TestCase):
         for key, val in result.items():
             # assert equal links, lists in python aren't ordered so normal equality doesn't work
             self.assertEqual(
-                collections.Counter(
-                    expected[key].links), collections.Counter(val.links)
+                collections.Counter(expected[key].links), collections.Counter(val.links)
             )
 
             expected[key].links = []
@@ -458,7 +457,7 @@ class TestParsers(unittest.TestCase):
             collections.OrderedDict(
                 {
                     "CS": "Session Management",
-                    "CWE": '598',
+                    "CWE": "598",
                     "ASVS": "SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING",
                     "OPC": "",
                     "Top10": "https://owasp.org/www-project-top-ten/2017/A5_2017-Broken_Access_Control",
@@ -468,7 +467,7 @@ class TestParsers(unittest.TestCase):
             collections.OrderedDict(
                 {
                     "CS": "Session Management",
-                    "CWE": '384',
+                    "CWE": "384",
                     "ASVS": "SESSION-MGT-TOKEN-DIRECTIVES-GENERATION",
                     "OPC": "C6",
                     "Top10": "https://owasp.org/www-project-top-ten/2017/A5_2017-Broken_Access_Control",
@@ -525,7 +524,8 @@ class TestParsers(unittest.TestCase):
                             name="WSTG",
                             section="WSTG-SESS-03",
                         )
-                    ), defs.Link(
+                    ),
+                    defs.Link(
                         document=defs.Standard(
                             doctype=defs.Credoctypes.Standard,
                             name="WSTG",
@@ -538,15 +538,14 @@ class TestParsers(unittest.TestCase):
         }
         self.maxDiff = None
         actual = parse_uknown_key_val_spreadsheet(input)
-        self.assertEqual(expected,actual)
-
+        self.assertEqual(expected, actual)
 
     def test_parse_v0_standards(self) -> None:
         input = [
             {
                 "CRE-ID-lookup-from-taxonomy-table": "011-040-026",
                 "CS": "Session Management",
-                "CWE": '598',
+                "CWE": "598",
                 "Description": "Verify the application never reveals session tokens in URL parameters or error messages.",
                 "Development guide (does not exist for SessionManagement)": "",
                 "ID-taxonomy-lookup-from-ASVS-mapping": "SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING",
@@ -559,7 +558,7 @@ class TestParsers(unittest.TestCase):
             {
                 "CRE-ID-lookup-from-taxonomy-table": "011-040-033",
                 "CS": "Session Management",
-                "CWE": '384',
+                "CWE": "384",
                 "Description": "Verify the application generates a new session token on user "
                 "authentication.",
                 "Development guide (does not exist for SessionManagement)": "",
@@ -669,14 +668,14 @@ class TestParsers(unittest.TestCase):
         }
         self.maxDiff = None
         output = parse_v0_standards(input)
-        for t,v in output.items():
+        for t, v in output.items():
 
-            print("*"*77)
+            print("*" * 77)
             pprint(expected[t].todict())
-            print("*"*77)
+            print("*" * 77)
             pprint(v.todict())
-            print("*"*77)
-            print("*"*77)
+            print("*" * 77)
+            print("*" * 77)
         self.assertEqual(expected, output)
 
     def test_parse_v1_standards(self) -> None:
@@ -1211,8 +1210,7 @@ class TestParsers(unittest.TestCase):
         ]:
             cauth4.add_link(
                 defs.Link(
-                    document=defs.Standard(
-                        name="NIST 800-53 v5", section=nsection)
+                    document=defs.Standard(name="NIST 800-53 v5", section=nsection)
                 )
             )
 

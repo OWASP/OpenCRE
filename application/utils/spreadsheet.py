@@ -17,7 +17,9 @@ logger.setLevel(logging.INFO)
 logging.basicConfig()
 
 
-def readSpreadsheet(url: str, cres_loc: str, alias: str, validate: bool = True) -> Dict[str, Any]:
+def readSpreadsheet(
+    url: str, cres_loc: str, alias: str, validate: bool = True
+) -> Dict[str, Any]:
     """given remote google spreadsheet url,
     reads each workbook into a collection of documents"""
     changes_present = False
@@ -43,7 +45,10 @@ def readSpreadsheet(url: str, cres_loc: str, alias: str, validate: bool = True) 
 
 
 def __add_cre_to_spreadsheet(
-    document: defs.Document, header: Dict[str, Optional[str]], cresheet: List[Dict[str, Any]], maxgroups: int
+    document: defs.Document,
+    header: Dict[str, Optional[str]],
+    cresheet: List[Dict[str, Any]],
+    maxgroups: int,
 ) -> List[Dict[str, Any]]:
     cresheet.append(header.copy())
     working_array = cresheet[-1]
@@ -51,16 +56,18 @@ def __add_cre_to_spreadsheet(
     if document.doctype == defs.Credoctypes.CRE:
         working_array[defs.ExportFormat.cre_name_key()] = document.name
         working_array[defs.ExportFormat.cre_id_key()] = document.id
-        working_array[defs.ExportFormat.cre_description_key()
-                      ] = document.description
+        working_array[defs.ExportFormat.cre_description_key()] = document.description
     # case where a lone standard is displayed without any CRE links
     elif document.doctype == defs.Credoctypes.Standard:
-        working_array[defs.ExportFormat.section_key(
-            document.name)] = document.section  # type: ignore
-        working_array[defs.ExportFormat.subsection_key(
-            document.name)] = document.subsection # type: ignore
-        working_array[defs.ExportFormat.hyperlink_key(
-            document.name)] = document.hyperlink # type: ignore
+        working_array[
+            defs.ExportFormat.section_key(document.name)
+        ] = document.section  # type: ignore
+        working_array[
+            defs.ExportFormat.subsection_key(document.name)
+        ] = document.subsection  # type: ignore
+        working_array[
+            defs.ExportFormat.hyperlink_key(document.name)
+        ] = document.hyperlink  # type: ignore
 
     for link in document.links:
         if (
@@ -114,14 +121,16 @@ def __add_cre_to_spreadsheet(
     return cresheet
 
 
-def prepare_spreadsheet(collection: db.Standard_collection, docs: List[defs.Document]) -> List[Dict[str,Any]]:
+def prepare_spreadsheet(
+    collection: db.Standard_collection, docs: List[defs.Document]
+) -> List[Dict[str, Any]]:
     """
     Given a list of cre_defs.Document will create a list of key,value dict representing the mappings
     """
     standard_names = (
         collection.get_standards_names()
     )  # get header from db (cheap enough)
-    header :Dict[str,Optional[str]]= {
+    header: Dict[str, Optional[str]] = {
         defs.ExportFormat.cre_name_key(): None,
         defs.ExportFormat.cre_id_key(): None,
         defs.ExportFormat.cre_description_key(): None,
@@ -154,8 +163,8 @@ def write_spreadsheet(title: str, docs: List[Dict[str, Any]], emails: List[str])
     gc = gspread.oauth()  # oauth config, TODO (northdpole): make this configurable
     sh = gc.create("0." + title)
     data = io.StringIO()
-    fieldnames:List[str] = list(docs[0].keys())
-    writer: csv.DictWriter = csv.DictWriter(data, fieldnames=fieldnames) # type: ignore
+    fieldnames: List[str] = list(docs[0].keys())
+    writer: csv.DictWriter = csv.DictWriter(data, fieldnames=fieldnames)  # type: ignore
     writer.writeheader()
     writer.writerows(docs)
     gc.import_csv(sh.id, data.getvalue().encode("utf-8"))
