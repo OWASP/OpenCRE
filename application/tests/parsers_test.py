@@ -1,10 +1,9 @@
 import collections
 import unittest
-from pprint import pprint
 
 from application.defs import cre_defs as defs
-from application.utils.parsers import (
-    parse_export_format,  # type: ignore
+from application.utils.parsers import (  # type: ignore
+    parse_export_format,
     parse_hierarchical_export_format,
     parse_uknown_key_val_spreadsheet,
     parse_v0_standards,

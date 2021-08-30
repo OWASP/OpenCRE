@@ -1,11 +1,13 @@
-FROM python:rc-slim
+FROM python:alpine
 
 # For pete's sake do not put this on the internet
 
-RUN useradd -ms /bin/bash  credev
+RUN apk add  --no-cache --update --upgrade linux-headers py3-numpy &&\
+ apk add --no-cache --virtual .build-deps gcc g++ zlib-dev make python3-dev py3-numpy-dev jpeg-dev
 
-COPY . /home/credev/cre_sync
-RUN chown -R credev:credev /home/credev/cre_sync
+RUN addgroup -S credev && adduser -S credev -G credev
+
+COPY --chown=credev:credev . /home/credev/cre_sync
 USER credev
 
 WORKDIR /home/credev/cre_sync
