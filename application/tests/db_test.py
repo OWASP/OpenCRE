@@ -5,15 +5,14 @@ import tempfile
 import unittest
 import uuid
 from pprint import pprint
+from typing import Dict, Union
 from unittest import skip
 
 import yaml
-from typing import Dict, Union
-from application import create_app, sqla  # type: ignore
+
+from application import create_app, sqla  # type: ignore; type: ignore
 from application.database import db
 from application.defs import cre_defs as defs
-
-from application import create_app, sqla  # type: ignore
 
 
 class TestDB(unittest.TestCase):

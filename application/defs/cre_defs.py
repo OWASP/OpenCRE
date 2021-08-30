@@ -1,19 +1,19 @@
+import json
+from dataclasses import dataclass
+from enum import Enum
+from pprint import pprint
 from typing import (
     Any,
     Dict,
     List,
     Mapping,
-    overload,
     Optional,
     Set,
     Tuple,
     TypeVar,
     Union,
+    overload,
 )
-from pprint import pprint
-from dataclasses import dataclass
-from enum import Enum
-import json
 
 # used for serialising and deserialising yaml CRE documents
 

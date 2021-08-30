@@ -1,9 +1,7 @@
 import csv
 import io
 import logging
-import os
 from copy import deepcopy
-from pprint import pprint
 from typing import Any, Dict, List, Optional
 
 import gspread  # type: ignore
@@ -22,9 +20,9 @@ def readSpreadsheet(
 ) -> Dict[str, Any]:
     """given remote google spreadsheet url,
     reads each workbook into a collection of documents"""
-    changes_present = False
     try:
-        gc = gspread.oauth()  # oauth config, TODO (northdpole): make this configurable
+        gc = gspread.oauth()  # oauth config,
+        # TODO (northdpole): make this configurable
         # gc = gspread.service_account()
         sh = gc.open_by_url(url)
         logger.info('accessing spreadsheet "%s" : "%s"' % (alias, url))
@@ -32,8 +30,9 @@ def readSpreadsheet(
         for wsh in sh.worksheets():
             if wsh.title[0].isdigit():
                 logger.info(
-                    "handling worksheet %s  (remember, only numbered worksheets will be processed by convention)"
-                    % wsh.title
+                    "handling worksheet %s  "
+                    "(remember, only numbered worksheets"
+                    " will be processed by convention)" % wsh.title
                 )
                 records = wsh.get_all_records()
                 toyaml = yaml.safe_load(yaml.safe_dump(records))
@@ -73,7 +72,8 @@ def __add_cre_to_spreadsheet(
         if (
             link.document.doctype == defs.Credoctypes.Standard
         ):  # linking to normal standard
-            # a single CRE can link to multiple subsections of the same standard hence we can have conflicts
+            # a single CRE can link to multiple subsections of the same
+            # standard hence we can have conflicts
             if working_array[defs.ExportFormat.section_key(link.document.name)]:
                 conflicts.append(link)
             else:
@@ -89,7 +89,8 @@ def __add_cre_to_spreadsheet(
                 working_array[
                     defs.ExportFormat.link_type_key(link.document.name)
                 ] = link.ltype.value
-        elif link.document.doctype == defs.Credoctypes.CRE:  # linking to another CRE
+        elif link.document.doctype == defs.Credoctypes.CRE:
+            # linking to another CRE
             grp_added = False
             for i in range(0, maxgroups):
                 if not working_array[defs.ExportFormat.linked_cre_id_key(str(i))]:
@@ -107,7 +108,8 @@ def __add_cre_to_spreadsheet(
 
             if not grp_added:
                 logger.fatal(
-                    "Tried to add Group %s but all of the %s group slots are filled. This must be a bug"
+                    "Tried to add Group %s but all of the %s group "
+                    "slots are filled. This must be a bug"
                     % (link.document.name, maxgroups)
                 )
 
@@ -125,7 +127,8 @@ def prepare_spreadsheet(
     collection: db.Standard_collection, docs: List[defs.Document]
 ) -> List[Dict[str, Any]]:
     """
-    Given a list of cre_defs.Document will create a list of key,value dict representing the mappings
+    Given a list of cre_defs.Document will create a list
+     of key,value dict representing the mappings
     """
     standard_names = (
         collection.get_standards_names()
@@ -160,7 +163,8 @@ def prepare_spreadsheet(
 
 def write_spreadsheet(title: str, docs: List[Dict[str, Any]], emails: List[str]) -> str:
     """upload local array of flat yamls to url, share with email list"""
-    gc = gspread.oauth()  # oauth config, TODO (northdpole): make this configurable
+    gc = gspread.oauth()  # oauth config,
+    # TODO (northdpole): make this configurable
     sh = gc.create("0." + title)
     data = io.StringIO()
     fieldnames: List[str] = list(docs[0].keys())

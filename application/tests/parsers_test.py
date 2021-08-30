@@ -3,7 +3,10 @@ import unittest
 from pprint import pprint
 
 from application.defs import cre_defs as defs
-from application.utils.parsers import parse_export_format, parse_hierarchical_export_format, parse_uknown_key_val_spreadsheet, parse_v0_standards, parse_v1_standards  # type: ignore
+from application.utils.parsers import (parse_export_format,  # type: ignore
+                                       parse_hierarchical_export_format,
+                                       parse_uknown_key_val_spreadsheet,
+                                       parse_v0_standards, parse_v1_standards)
 
 
 class TestParsers(unittest.TestCase):
@@ -668,14 +671,6 @@ class TestParsers(unittest.TestCase):
         }
         self.maxDiff = None
         output = parse_v0_standards(input)
-        for t, v in output.items():
-
-            print("*" * 77)
-            pprint(expected[t].todict())
-            print("*" * 77)
-            pprint(v.todict())
-            print("*" * 77)
-            print("*" * 77)
         self.assertEqual(expected, output)
 
     def test_parse_v1_standards(self) -> None:

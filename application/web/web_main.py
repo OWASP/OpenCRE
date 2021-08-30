@@ -1,22 +1,16 @@
 # type: ignore
 # silence mypy for the routes file
 from typing import Any
-import json
 import os
-from pprint import pprint
 
 from flask import (
-    Flask,
     abort,
     jsonify,
     send_from_directory,
-    render_template,
     request,
     Blueprint,
 )
-from jinja2 import Template, TemplateNotFound
 
-from application import create_app
 from application.database import db
 
 ITEMS_PER_PAGE = 20

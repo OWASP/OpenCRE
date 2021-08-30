@@ -1,6 +1,6 @@
 # type: ignore #unused file
-from db.db import *
-from pprint import pprint
+from application.database import Standard_collection, Links
+from application.defs.cre_defs import Standard, CRE
 import json
 
 

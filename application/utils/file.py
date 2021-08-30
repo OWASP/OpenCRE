@@ -1,9 +1,5 @@
-import base64
 import os
-from pprint import pprint
 from typing import Dict
-
-import yaml
 
 
 def writeToDisk(file_title: str, cres_loc: str, file_content: str) -> Dict[str, str]:

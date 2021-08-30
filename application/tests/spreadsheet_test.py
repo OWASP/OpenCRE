@@ -1,16 +1,9 @@
-import base64
-import os
 import tempfile
 import unittest
-import uuid
-from pprint import pprint
 
-import yaml
-
-from application.database import db
-from application.defs import cre_defs as defs
-from application.utils.spreadsheet import prepare_spreadsheet  # type: ignore
 from application import create_app, sqla  # type: ignore
+from application.database import db
+from application.utils.spreadsheet import prepare_spreadsheet  # type: ignore
 
 
 class TestDB(unittest.TestCase):

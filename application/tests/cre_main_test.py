@@ -2,13 +2,14 @@ import logging
 import os
 import tempfile
 import unittest
-from typing import Iterable, Any, List, Dict
 from pprint import pprint
+from typing import Any, Dict, Iterable, List
 from unittest import skip
+
 from flask import Flask  # type: ignore
 
-from application.cmd import cre_main as main
 from application import create_app, sqla  # type: ignore
+from application.cmd import cre_main as main
 from application.database import db
 from application.defs import cre_defs as defs
 

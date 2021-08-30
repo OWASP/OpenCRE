@@ -1,8 +1,4 @@
 import logging
-import os
-from collections import namedtuple
-from enum import Enum
-from pprint import pprint
 from typing import Any, Dict, List, Optional, Tuple
 
 import networkx as nx  # type: ignore
@@ -83,9 +79,9 @@ class Standard_collection:
             graph.add_node(f"CRE: {il.group}")
             graph.add_node(f"CRE: {il.cre}")
             graph.add_edge(f"CRE: {il.group}", f"CRE: {il.cre}")
-        for l in self.session.query(Links).all():
-            graph.add_node(f"Standard: {str(l.standard)}")
-            graph.add_edge(f"CRE: {l.cre}", f"Standard: {str(l.standard)}")
+        for lnk in self.session.query(Links).all():
+            graph.add_node(f"Standard: {str(lnk.standard)}")
+            graph.add_edge(f"CRE: {lnk.cre}", f"Standard: {str(lnk.standard)}")
         return graph
 
     def __get_external_links(self) -> List[Tuple[CRE, Standard, str]]:

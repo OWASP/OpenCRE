@@ -1,8 +1,6 @@
 import unittest
-from pprint import pprint
 
 from application.defs import cre_defs as defs
-from application.utils.parsers import *  # type: ignore
 
 
 class TestCreDefs(unittest.TestCase):
@@ -41,7 +39,7 @@ class TestCreDefs(unittest.TestCase):
                         "doctype": "Standard",
                         "hyperlink": "",
                         "name": "ASVS",
-                        "section": "SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING",
+                        "section": "SESSION-MGT-TOKEN-DIREC" "TIVES-DISCRETE-HANDLING",
                         "subsection": "3.1.1",
                     },
                 }
@@ -81,7 +79,8 @@ class TestCreDefs(unittest.TestCase):
                                     "doctype": "Standard",
                                     "hyperlink": "",
                                     "name": "ASVS",
-                                    "section": "SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING",
+                                    "section": "SESSION-MGT-TOKEN-DIREC"
+                                    "TIVES-DISCRETE-HANDLING",
                                     "subsection": "3.1.1",
                                 },
                             }

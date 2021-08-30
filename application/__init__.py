@@ -1,7 +1,7 @@
 # type:ignore
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
-from flask_cors import CORS, cross_origin
+from flask_cors import CORS
 
 from application.config import config
 
@@ -21,7 +21,7 @@ def create_app(mode: str = "production", conf=None):
 
     app.register_blueprint(app_blueprint)
 
-    cors = CORS(app)
+    CORS(app)
     app.config["CORS_HEADERS"] = "Content-Type"
 
     return app

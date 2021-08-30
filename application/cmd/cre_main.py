@@ -3,10 +3,9 @@ import logging
 import os
 import shutil
 import tempfile
+from typing import Any, Callable, Dict, Generator, List, Optional, Tuple
+
 import yaml
-from typing import Dict, List, Any, Union, Optional, Callable, Tuple, Generator
-from collections import namedtuple
-from pprint import pprint
 
 from application import create_app  # type: ignore
 from application.config import CMDConfig
@@ -200,7 +199,7 @@ def add_from_spreadsheet(spreadsheet_url: str, cache_loc: str, cre_loc: str) -> 
     )
     for worksheet, contents in spreadsheet.items():
         parse_standards_from_spreadsheeet(contents, database)
-    docs = database.export(cre_loc)
+    database.export(cre_loc)
     logger.info(
         "Db located at %s got updated, files extracted at %s" % (cache_loc, cre_loc)
     )
@@ -290,7 +289,7 @@ def print_graph() -> None:
 
 def run(args: argparse.Namespace) -> None:
     script_path = os.path.dirname(os.path.realpath(__file__))
-    cre_loc = os.path.join(script_path, "../../../cres")
+    os.path.join(script_path, "../../../cres")
 
     if args.review and args.from_spreadsheet:
         review_from_spreadsheet(
