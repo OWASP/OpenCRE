@@ -3,10 +3,13 @@ import unittest
 from pprint import pprint
 
 from application.defs import cre_defs as defs
-from application.utils.parsers import (parse_export_format,  # type: ignore
-                                      parse_hierarchical_export_format,
-                                       parse_uknown_key_val_spreadsheet,
-                                       parse_v0_standards, parse_v1_standards)
+from application.utils.parsers import (
+    parse_export_format,  # type: ignore
+    parse_hierarchical_export_format,
+    parse_uknown_key_val_spreadsheet,
+    parse_v0_standards,
+    parse_v1_standards,
+)
 
 
 class TestParsers(unittest.TestCase):
@@ -455,14 +458,12 @@ class TestParsers(unittest.TestCase):
 
             self.assertDictEqual(val.todict(), expected[key].todict())
 
-
     def test_parse_uknown_key_val_spreadsheet(self) -> None:
         # OrderedDict only necessary for testing  so we can predict the root Standard, normally it wouldn't matter
         input = [
             collections.OrderedDict(
                 {
                     "CS": "Session Management",
-
                     "CWE": "598",
                     "ASVS": "SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING",
                     "OPC": "",
@@ -473,7 +474,6 @@ class TestParsers(unittest.TestCase):
             collections.OrderedDict(
                 {
                     "CS": "Session Management",
-
                     "CWE": "384",
                     "ASVS": "SESSION-MGT-TOKEN-DIRECTIVES-GENERATION",
                     "OPC": "C6",
@@ -489,7 +489,6 @@ class TestParsers(unittest.TestCase):
                 links=[
                     defs.Link(
                         document=defs.Standard(
-
                             doctype=defs.Credoctypes.Standard, name="CWE", section="598"
                         )
                     ),
@@ -522,7 +521,6 @@ class TestParsers(unittest.TestCase):
                     defs.Link(
                         document=defs.Standard(
                             doctype=defs.Credoctypes.Standard,
-
                             name="Top10",
                             section="https://owasp.org/www-project-top-ten/2017/A5_2017-Broken_Access_Control",
                         )
@@ -668,7 +666,8 @@ class TestParsers(unittest.TestCase):
                     ),
                     defs.Link(
                         document=defs.Standard(
-                            doctype=defs.Credoctypes.Standard,name="WSTG",
+                            doctype=defs.Credoctypes.Standard,
+                            name="WSTG",
                             section="WSTG-SESS-03",
                         )
                     ),
@@ -1142,7 +1141,6 @@ class TestParsers(unittest.TestCase):
             value.links = []
             groupless[key].links = []
             self.assertEqual(groupless[key], value)
-
 
     def test_parse_hierarchical_export_format(self) -> None:
         cauth = defs.CRE(

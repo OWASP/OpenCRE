@@ -47,21 +47,17 @@ def register_standard(
                     )
                     for unlinked_standard in cre_less_standards:  # if anything in this
                         collection.add_link(
-
                             cre=cre,
                             standard=db.dbStandardFromStandard(unlinked_standard),
-                            type=link.ltype)
+                            type=link.ltype,
+                        )
             else:
                 cres = collection.find_cres_of_standard(linked_standard)
                 if cres:
                     for cre in cres:
-                        collection.add_link(
-                            cre=cre,
-                            standard=db_link,
-                            type=link.ltype                        )
+                        collection.add_link(cre=cre, standard=db_link, type=link.ltype)
                         for unlinked_standard in cre_less_standards:
                             collection.add_link(
-
                                 cre=cre,
                                 standard=db.dbStandardFromStandard(unlinked_standard),
                                 type=link.ltype,
@@ -100,7 +96,6 @@ def register_cre(cre: defs.CRE, collection: db.Standard_collection) -> db.CRE:
 
 
 def parse_file(
-
     filename: str, yamldocs: List[Dict[str, Any]], scollection: db.Standard_collection
 ) -> Optional[List[defs.Document]]:
 
@@ -119,7 +114,6 @@ def parse_file(
             logger.fatal("Malformed file %s, skipping" % filename)
 
             return None
-
 
         if contents.get("links"):
             links = contents.pop("links")
@@ -194,14 +188,12 @@ def parse_standards_from_spreadsheeet(
                 result.add_link(cre=dbgroup, standard=dbstandard, type=link.ltype)
 
 
-
 def get_standards_files_from_disk(cre_loc: str) -> Generator[str, None, None]:
 
     for root, _, cre_docs in os.walk(cre_loc):
         for name in cre_docs:
             if name.endswith(".yaml") or name.endswith(".yml"):
                 yield os.path.join(root, name)
-
 
 
 def add_from_spreadsheet(spreadsheet_url: str, cache_loc: str, cre_loc: str) -> None:
@@ -225,7 +217,6 @@ def add_from_spreadsheet(spreadsheet_url: str, cache_loc: str, cre_loc: str) -> 
     )
 
 
-
 def add_from_disk(cache_loc: str, cre_loc: str) -> None:
 
     """--add --cre_loc <path>
@@ -242,7 +233,6 @@ def add_from_disk(cache_loc: str, cre_loc: str) -> None:
                 scollection=database,
             )
     docs = database.export(cre_loc)
-
 
 
 def review_from_spreadsheet(cache: str, spreadsheet_url: str, share_with: str) -> None:
@@ -307,12 +297,10 @@ def review_from_disk(cache: str, cre_file_loc: str, share_with: str) -> None:
     logger.info("A spreadsheet view is at %s" % sheet_url)
 
 
-
 def print_graph() -> None:
 
     """export db to single json object, pass to visualise.html so it can be shown in browser"""
     raise NotImplementedError
-
 
 
 def run(args: argparse.Namespace) -> None:
@@ -341,7 +329,6 @@ def run(args: argparse.Namespace) -> None:
         print_graph()
 
 
-
 def db_connect(path: str) -> db.Standard_collection:
 
     global app
@@ -356,7 +343,6 @@ def db_connect(path: str) -> db.Standard_collection:
 
 def create_spreadsheet(
     collection: db.Standard_collection,
-
     exported_documents: List[Any],
     title: str,
     share_with: List[str],
@@ -370,7 +356,6 @@ def create_spreadsheet(
     return sheet_utils.write_spreadsheet(
         title=title, docs=flat_dicts, emails=share_with
     )
-
 
 
 def prepare_for_review(cache: str) -> Tuple[str, str]:

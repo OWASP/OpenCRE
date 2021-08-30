@@ -1,4 +1,3 @@
-
 import tempfile
 import unittest
 
@@ -14,7 +13,6 @@ class TestDB(unittest.TestCase):
         sqla.drop_all()
         self.app_context.pop()
 
-
     def setUp(self) -> None:
 
         self.app = create_app(mode="test")
@@ -23,7 +21,6 @@ class TestDB(unittest.TestCase):
         self.app_context = self.app.app_context()
         self.app_context.push()
         self.collection = db.Standard_collection()
-
 
     def test_prepare_spreadsheet_standards(self) -> None:
 
@@ -283,7 +280,6 @@ class TestDB(unittest.TestCase):
         )
         self.assertCountEqual(result, expected)
 
-
     def test_prepare_spreadsheet_groups(self) -> None:
 
         """Given:
@@ -435,7 +431,6 @@ class TestDB(unittest.TestCase):
         )
 
         self.assertCountEqual(result, expected)
-
 
     def test_prepare_spreadsheet_simple(self) -> None:
         """Given:

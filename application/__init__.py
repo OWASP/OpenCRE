@@ -23,7 +23,6 @@ def create_app(mode: str = "production", conf=None):
 
     app.register_blueprint(app_blueprint)
 
-
     CORS(app)
     app.config["CORS_HEADERS"] = "Content-Type"
 

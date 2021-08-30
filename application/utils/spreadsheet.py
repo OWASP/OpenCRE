@@ -45,7 +45,6 @@ def readSpreadsheet(
 
 
 def __add_cre_to_spreadsheet(
-
     document: defs.Document,
     header: Dict[str, Optional[str]],
     cresheet: List[Dict[str, Any]],
@@ -112,7 +111,6 @@ def __add_cre_to_spreadsheet(
 
             if not grp_added:
                 logger.fatal(
-
                     "Tried to add Group %s but all of the %s group "
                     "slots are filled. This must be a bug"
                     % (link.document.name, maxgroups)
@@ -126,7 +124,6 @@ def __add_cre_to_spreadsheet(
             document=new_cre, header=header, cresheet=cresheet, maxgroups=maxgroups
         )
     return cresheet
-
 
 
 def prepare_spreadsheet(
@@ -167,6 +164,7 @@ def prepare_spreadsheet(
         )
         result.extend(flatdict[cre.name])
     return result
+
 
 def write_spreadsheet(title: str, docs: List[Dict[str, Any]], emails: List[str]) -> str:
     """upload local array of flat yamls to url, share with email list"""

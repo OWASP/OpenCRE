@@ -1,4 +1,3 @@
-
 # type: ignore
 # silence mypy for the routes file
 from typing import Any
@@ -21,7 +20,6 @@ app = Blueprint("web", __name__, static_folder="../frontend/www")
 
 
 @app.route("/rest/v1/id/<creid>", methods=["GET"])
-
 def find_by_id(creid: str) -> Any:  # refer
 
     database = db.Standard_collection()
@@ -32,7 +30,6 @@ def find_by_id(creid: str) -> Any:  # refer
 
 
 @app.route("/rest/v1/name/<crename>", methods=["GET"])
-
 def find_by_name(crename: str) -> Any:
 
     database = db.Standard_collection()
@@ -43,7 +40,6 @@ def find_by_name(crename: str) -> Any:
 
 
 @app.route("/rest/v1/standard/<sname>", methods=["GET"])
-
 def find_standard_by_name(sname: str) -> Any:
     database = db.Standard_collection()
     opt_section = request.args.get("section")

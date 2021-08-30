@@ -14,7 +14,6 @@ logging.basicConfig()
 commit_msg_base = "cre_sync_%s" % (datetime.now().isoformat().replace(":", "."))
 
 
-
 def create_branch(branch_name: str) -> None:
     g = git.Git()  # type: ignore
     repo = git.Repo(os.path.join(os.path.dirname(os.path.realpath(__file__)), "../../"))  # type: ignore
@@ -23,12 +22,10 @@ def create_branch(branch_name: str) -> None:
     g.checkout(current_branch)
 
 
-
 def add_to_github(cre_loc: str, alias: str, apikey: str) -> None:
     global commit_msg_base
     commit_msg = "%s-%s" % (commit_msg_base, alias)
     branch_name = commit_msg_base
-
 
     repo = git.Repo(os.path.join(os.path.dirname(os.path.realpath(__file__)), "../../"))  # type: ignore
     g = git.Git()  # type: ignore
@@ -60,7 +57,6 @@ def add_to_github(cre_loc: str, alias: str, apikey: str) -> None:
 
 def createPullRequest(
     apiToken: str, repo: str, title: str, srcBranch: str, targetBranch: str = "master"
-
 ) -> None:
 
     logger.info(

@@ -1,4 +1,3 @@
-
 import argparse
 import os
 import sys
@@ -56,6 +55,7 @@ def test(coverage: coverage.Coverage, test_names: List[str]) -> None:
 
 
 # python cre.py --<x> commands
+
 
 def main() -> None:
 

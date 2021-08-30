@@ -1,4 +1,3 @@
-
 # type: ignore #unused file
 from application.database import Standard_collection, Links
 from application.defs.cre_defs import Standard, CRE

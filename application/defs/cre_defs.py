@@ -41,7 +41,6 @@ class ExportFormat(Enum):
         )
 
     @staticmethod
-
     def subsection_key(sname: str) -> str:
 
         "returns <sname>:subsection"
@@ -52,7 +51,6 @@ class ExportFormat(Enum):
         )
 
     @staticmethod
-
     def hyperlink_key(sname: str) -> str:
 
         "returns <sname>:hyperlink"
@@ -63,7 +61,6 @@ class ExportFormat(Enum):
         )
 
     @staticmethod
-
     def link_type_key(sname: str) -> str:
 
         "returns <sname>:link_type"
@@ -74,7 +71,6 @@ class ExportFormat(Enum):
         )
 
     @staticmethod
-
     def linked_cre_id_key(name: str) -> str:
 
         "returns Linked_CRE_<name>:id"
@@ -284,7 +280,7 @@ class Document:
         if self.metadata:
             result["metadata"] = self.metadata.todict()
         return result
-      
+
     def add_link(self, link: Link) -> Any:  # it returns Document but then it won't run
         if not self.links:
             self.links = []
@@ -324,7 +320,6 @@ class Document:
 
 @dataclass
 class CRE(Document):
-
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         self.doctype = Credoctypes.CRE
         super().__init__(*args, **kwargs)
@@ -347,7 +342,6 @@ class Standard(Document):
     hyperlink: str
     version: str
 
-
     def todict(self) -> Dict[Any, Any]:
         result: Dict[Any, Any] = super().todict()
 
@@ -356,7 +350,6 @@ class Standard(Document):
         result["hyperlink"] = self.hyperlink
         result["version"] = self.version
         return result
-
 
     def __hash__(self) -> int:
         return super().__hash__()
@@ -398,6 +391,7 @@ class Standard(Document):
 
 class MandatoryFieldException(Exception):
     pass
+
 
 def raise_MandatoryFieldException(msg: str = "") -> None:
     raise MandatoryFieldException(msg)

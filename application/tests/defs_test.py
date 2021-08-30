@@ -41,7 +41,6 @@ class TestCreDefs(unittest.TestCase):
                         "hyperlink": "",
                         "name": "ASVS",
                         "section": "SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING",
-
                         "subsection": "3.1.1",
                     },
                 }
