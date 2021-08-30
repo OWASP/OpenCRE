@@ -1,12 +1,11 @@
 import unittest
-from pprint import pprint
+
 
 from application.defs import cre_defs as defs
-from application.utils.parsers import *
 
 
 class TestCreDefs(unittest.TestCase):
-    def test_document_to_dict(self):
+    def test_document_to_dict(self) -> None:
         standard = defs.Standard(
             doctype=defs.Credoctypes.Standard,
             name="ASVS",

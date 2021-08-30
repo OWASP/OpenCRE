@@ -1,11 +1,11 @@
 import csv
 import io
 import logging
-import os
 from copy import deepcopy
-from pprint import pprint
+from typing import Any, Dict, List, Optional
 
-import gspread
+import gspread  # type: ignore
+
 import yaml
 
 from application.database import db
@@ -16,12 +16,14 @@ logger.setLevel(logging.INFO)
 logging.basicConfig()
 
 
-def readSpreadsheet(url: str, cres_loc: str, alias: str, validate=True):
+def readSpreadsheet(
+    url: str, cres_loc: str, alias: str, validate: bool = True
+) -> Dict[str, Any]:
     """given remote google spreadsheet url,
     reads each workbook into a collection of documents"""
-    changes_present = False
     try:
-        gc = gspread.oauth()  # oauth config, TODO (northdpole): make this configurable
+        gc = gspread.oauth()  # oauth config,
+        # TODO (northdpole): make this configurable
         # gc = gspread.service_account()
         sh = gc.open_by_url(url)
         logger.info('accessing spreadsheet "%s" : "%s"' % (alias, url))
@@ -29,8 +31,9 @@ def readSpreadsheet(url: str, cres_loc: str, alias: str, validate=True):
         for wsh in sh.worksheets():
             if wsh.title[0].isdigit():
                 logger.info(
-                    "handling worksheet %s  (remember, only numbered worksheets will be processed by convention)"
-                    % wsh.title
+                    "handling worksheet %s  "
+                    "(remember, only numbered worksheets"
+                    " will be processed by convention)" % wsh.title
                 )
                 records = wsh.get_all_records()
                 toyaml = yaml.safe_load(yaml.safe_dump(records))
@@ -42,8 +45,11 @@ def readSpreadsheet(url: str, cres_loc: str, alias: str, validate=True):
 
 
 def __add_cre_to_spreadsheet(
-    document: defs.Document, header: dict, cresheet: list, maxgroups: int
-):
+    document: defs.Document,
+    header: Dict[str, Optional[str]],
+    cresheet: List[Dict[str, Any]],
+    maxgroups: int,
+) -> List[Dict[str, Any]]:
     cresheet.append(header.copy())
     working_array = cresheet[-1]
     conflicts = []
@@ -53,19 +59,24 @@ def __add_cre_to_spreadsheet(
         working_array[defs.ExportFormat.cre_description_key()] = document.description
     # case where a lone standard is displayed without any CRE links
     elif document.doctype == defs.Credoctypes.Standard:
-        working_array[defs.ExportFormat.section_key(document.name)] = document.section
+
+        working_array[
+            defs.ExportFormat.section_key(document.name)
+        ] = document.section  # type: ignore
         working_array[
             defs.ExportFormat.subsection_key(document.name)
-        ] = document.subsection
+        ] = document.subsection  # type: ignore
         working_array[
             defs.ExportFormat.hyperlink_key(document.name)
-        ] = document.hyperlink
+        ] = document.hyperlink  # type: ignore
 
     for link in document.links:
         if (
             link.document.doctype == defs.Credoctypes.Standard
         ):  # linking to normal standard
-            # a single CRE can link to multiple subsections of the same standard hence we can have conflicts
+
+            # a single CRE can link to multiple subsections of the same
+            # standard hence we can have conflicts
             if working_array[defs.ExportFormat.section_key(link.document.name)]:
                 conflicts.append(link)
             else:
@@ -81,25 +92,27 @@ def __add_cre_to_spreadsheet(
                 working_array[
                     defs.ExportFormat.link_type_key(link.document.name)
                 ] = link.ltype.value
-        elif link.document.doctype == defs.Credoctypes.CRE:  # linking to another CRE
+        elif link.document.doctype == defs.Credoctypes.CRE:
+            # linking to another CRE
             grp_added = False
             for i in range(0, maxgroups):
-                if not working_array[defs.ExportFormat.linked_cre_id_key(i)]:
+                if not working_array[defs.ExportFormat.linked_cre_id_key(str(i))]:
                     grp_added = True
                     working_array[
-                        defs.ExportFormat.linked_cre_id_key(i)
+                        defs.ExportFormat.linked_cre_id_key(str(i))
                     ] = link.document.id
                     working_array[
-                        defs.ExportFormat.linked_cre_name_key(i)
+                        defs.ExportFormat.linked_cre_name_key(str(i))
                     ] = link.document.name
                     working_array[
-                        defs.ExportFormat.linked_cre_link_type_key(i)
+                        defs.ExportFormat.linked_cre_link_type_key(str(i))
                     ] = link.ltype.value
                     break
 
             if not grp_added:
                 logger.fatal(
-                    "Tried to add Group %s but all of the %s group slots are filled. This must be a bug"
+                    "Tried to add Group %s but all of the %s group "
+                    "slots are filled. This must be a bug"
                     % (link.document.name, maxgroups)
                 )
 
@@ -113,14 +126,18 @@ def __add_cre_to_spreadsheet(
     return cresheet
 
 
-def prepare_spreadsheet(collection: db.Standard_collection, docs: list) -> str:
+def prepare_spreadsheet(
+    collection: db.Standard_collection, docs: List[defs.Document]
+) -> List[Dict[str, Any]]:
     """
-    Given a list of cre_defs.Document will create a list of key,value dict representing the mappings
+    Given a list of cre_defs.Document will create a list
+     of key,value dict representing the mappings
     """
     standard_names = (
         collection.get_standards_names()
     )  # get header from db (cheap enough)
-    header = {
+
+    header: Dict[str, Optional[str]] = {
         defs.ExportFormat.cre_name_key(): None,
         defs.ExportFormat.cre_id_key(): None,
         defs.ExportFormat.cre_description_key(): None,
@@ -132,9 +149,10 @@ def prepare_spreadsheet(collection: db.Standard_collection, docs: list) -> str:
         header[defs.ExportFormat.link_type_key(name)] = None
     maxgroups = collection.get_max_internal_connections()
     for i in range(0, maxgroups):
-        header[defs.ExportFormat.linked_cre_id_key(i)] = None
-        header[defs.ExportFormat.linked_cre_name_key(i)] = None
-        header[defs.ExportFormat.linked_cre_link_type_key(i)] = None
+
+        header[defs.ExportFormat.linked_cre_id_key(str(i))] = None
+        header[defs.ExportFormat.linked_cre_name_key(str(i))] = None
+        header[defs.ExportFormat.linked_cre_link_type_key(str(i))] = None
 
     logger.debug(header)
 
@@ -148,13 +166,14 @@ def prepare_spreadsheet(collection: db.Standard_collection, docs: list) -> str:
     return result
 
 
-def write_spreadsheet(title: str, docs: list, emails: list):
+def write_spreadsheet(title: str, docs: List[Dict[str, Any]], emails: List[str]) -> str:
     """upload local array of flat yamls to url, share with email list"""
-    gc = gspread.oauth()  # oauth config, TODO (northdpole): make this configurable
+    gc = gspread.oauth()  # oauth config,
+    # TODO (northdpole): make this configurable
     sh = gc.create("0." + title)
     data = io.StringIO()
-    fieldnames = docs[0].keys()
-    writer = csv.DictWriter(data, fieldnames=fieldnames)
+    fieldnames: List[str] = list(docs[0].keys())
+    writer: csv.DictWriter = csv.DictWriter(data, fieldnames=fieldnames)  # type: ignore
     writer.writeheader()
     writer.writerows(docs)
     gc.import_csv(sh.id, data.getvalue().encode("utf-8"))

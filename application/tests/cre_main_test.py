@@ -3,29 +3,29 @@ import os
 import tempfile
 import unittest
 from pprint import pprint
-from unittest import skip
-from flask import Flask
+from typing import Any, Dict, List
 
+from application import create_app, sqla  # type: ignore
 from application.cmd import cre_main as main
-from application import create_app, sqla
 from application.database import db
 from application.defs import cre_defs as defs
 
 
 class TestMain(unittest.TestCase):
-    def tearDown(self):
+    def tearDown(self) -> None:
         sqla.session.remove()
         sqla.drop_all(app=self.app)
         self.app_context.pop()
 
-    def setUp(self):
+    def setUp(self) -> None:
         self.app = create_app(mode="test")
         sqla.create_all(app=self.app)
         self.app_context = self.app.app_context()
         self.app_context.push()
         self.collection = db.Standard_collection()
 
-    def test_register_standard_with_links(self):
+    def test_register_standard_with_links(self) -> None:
+
         standard_with_links = defs.Standard(
             doctype=defs.Credoctypes.Standard,
             id="",
@@ -40,7 +40,7 @@ class TestMain(unittest.TestCase):
                         name="CWE",
                         links=[],
                         tags=set(),
-                        metadata=defs.Metadata(labels=[]),
+                        metadata=defs.Metadata(labels={}),
                         section="598",
                     )
                 ),
@@ -52,13 +52,13 @@ class TestMain(unittest.TestCase):
                         name="ASVS",
                         links=[],
                         tags=set(),
-                        metadata=defs.Metadata(labels=[]),
+                        metadata=defs.Metadata(labels={}),
                         section="SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING",
                     )
                 ),
             ],
             tags=set(),
-            metadata=defs.Metadata(labels=[]),
+            metadata=defs.Metadata(labels={}),
             section="Standard With Links",
         )
         ret = main.register_standard(
@@ -77,7 +77,7 @@ class TestMain(unittest.TestCase):
         # 3 cre-less standards in the db
         self.assertEqual(len(self.collection.session.query(db.Standard).all()), 3)
 
-    def test_register_standard_with_cre(self):
+    def test_register_standard_with_cre(self) -> None:
         standard_with_cre = defs.Standard(
             doctype=defs.Credoctypes.Standard,
             id="",
@@ -92,7 +92,7 @@ class TestMain(unittest.TestCase):
                         name="crename",
                         links=[],
                         tags=set(),
-                        metadata=defs.Metadata(labels=[]),
+                        metadata=defs.Metadata(labels={}),
                     )
                 ),
                 defs.Link(
@@ -103,19 +103,17 @@ class TestMain(unittest.TestCase):
                         name="ASVS",
                         links=[],
                         tags=set(),
-                        metadata=defs.Metadata(labels=[]),
+                        metadata=defs.Metadata(labels={}),
                         section="SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING",
                     )
                 ),
             ],
             tags=set(),
-            metadata=defs.Metadata(labels=[]),
+            metadata=defs.Metadata(labels={}),
             section="standard_with_cre",
         )
 
-        ret = main.register_standard(
-            standard=standard_with_cre, collection=self.collection
-        )
+        main.register_standard(standard=standard_with_cre, collection=self.collection)
         # assert db structure makes sense
         self.assertEqual(
             len(self.collection.session.query(db.Links).all()), 2
@@ -127,7 +125,7 @@ class TestMain(unittest.TestCase):
             len(self.collection.session.query(db.CRE).all()), 1
         )  # 1 cre in the db
 
-    def test_register_standard_with_groupped_cre_links(self):
+    def test_register_standard_with_groupped_cre_links(self) -> None:
         with_groupped_cre_links = defs.Standard(
             doctype=defs.Credoctypes.Standard,
             id="",
@@ -148,12 +146,12 @@ class TestMain(unittest.TestCase):
                                     name="crename2",
                                     links=[],
                                     tags=set(),
-                                    metadata=defs.Metadata(labels=[]),
+                                    metadata=defs.Metadata(labels={}),
                                 )
                             )
                         ],
                         tags=set(),
-                        metadata=defs.Metadata(labels=[]),
+                        metadata=defs.Metadata(labels={}),
                     )
                 ),
                 defs.Link(
@@ -164,7 +162,7 @@ class TestMain(unittest.TestCase):
                         name="CWE",
                         links=[],
                         tags=set(),
-                        metadata=defs.Metadata(labels=[]),
+                        metadata=defs.Metadata(labels={}),
                         section="598",
                     )
                 ),
@@ -176,7 +174,7 @@ class TestMain(unittest.TestCase):
                         name="crename",
                         links=[],
                         tags=set(),
-                        metadata=defs.Metadata(labels=[]),
+                        metadata=defs.Metadata(labels={}),
                     )
                 ),
                 defs.Link(
@@ -187,17 +185,17 @@ class TestMain(unittest.TestCase):
                         name="ASVS",
                         links=[],
                         tags=set(),
-                        metadata=defs.Metadata(labels=[]),
+                        metadata=defs.Metadata(labels={}),
                         section="SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING",
                     )
                 ),
             ],
             tags=set(),
-            metadata=defs.Metadata(labels=[]),
+            metadata=defs.Metadata(labels={}),
             section="Session Management",
         )
 
-        ret = main.register_standard(
+        main.register_standard(
             standard=with_groupped_cre_links, collection=self.collection
         )
         # assert db structure makes sense
@@ -216,7 +214,7 @@ class TestMain(unittest.TestCase):
             len(self.collection.session.query(db.CRE).all()), 3
         )  # 2 cres in the db
 
-    def test_register_cre(self):
+    def test_register_cre(self) -> None:
         standard = defs.Standard(
             doctype=defs.Credoctypes.Standard,
             name="ASVS",
@@ -229,7 +227,7 @@ class TestMain(unittest.TestCase):
             name="CREname",
             links=[defs.Link(document=standard)],
             tags=["CREt1", "CREt2"],
-            metadata=defs.Metadata(labels=["CREl1", "CREl2"]),
+            metadata=defs.Metadata(labels={"tags": ["CREl1", "CREl2"]}),
         )
         self.assertEqual(main.register_cre(cre, self.collection).name, cre.name)
         self.assertEqual(main.register_cre(cre, self.collection).external_id, cre.id)
@@ -237,8 +235,8 @@ class TestMain(unittest.TestCase):
             len(self.collection.session.query(db.CRE).all()), 1
         )  # 1 cre in the db
 
-    def test_parse_file(self):
-        file = [
+    def test_parse_file(self) -> None:
+        file: List[Dict[str, Any]] = [
             {
                 "description": "Verify that approved cryptographic algorithms are used in the generation, seeding, and verification.",
                 "doctype": "CRE",
@@ -329,13 +327,14 @@ class TestMain(unittest.TestCase):
             ),
             defs.CRE(id="14", description="Desc", name="name"),
         ]
-
-        logger = logging.getLogger("")
         with self.assertLogs("application.cmd.cre_main", level=logging.FATAL) as logs:
             # negative test first parse_file accepts a list of objects
             result = main.parse_file(
-                filename="tests", yamldocs=file[0], scollection=self.collection
+                filename="tests",
+                yamldocs=file[0],  # type: ignore
+                scollection=self.collection,
             )
+
             self.assertEqual(result, None)
             self.assertIn(
                 "CRITICAL:application.cmd.cre_main:Malformed file tests, skipping",
@@ -343,12 +342,13 @@ class TestMain(unittest.TestCase):
             )
 
         self.maxDiff = None
-        result = main.parse_file(
+
+        res = main.parse_file(
             filename="tests", yamldocs=file, scollection=self.collection
         )
-        self.assertCountEqual(result, expected)
+        self.assertCountEqual(res, expected)  # type:ignore
 
-    def test_parse_standards_from_spreadsheeet(self):
+    def test_parse_standards_from_spreadsheeet(self) -> None:
         input = [
             {
                 "ASVS Item": "V1.1.1",
@@ -393,7 +393,7 @@ class TestMain(unittest.TestCase):
         self.assertEqual(len(self.collection.session.query(db.Links).all()), 8)
         self.assertEqual(len(self.collection.session.query(db.InternalLinks).all()), 4)
 
-    def test_get_standards_files_from_disk(self):
+    def test_get_standards_files_from_disk(self) -> None:
         loc = tempfile.mkdtemp()
         ymls = []
         cre = defs.CRE(name="c", description="cd")

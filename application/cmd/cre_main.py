@@ -3,16 +3,16 @@ import logging
 import os
 import shutil
 import tempfile
-from collections import namedtuple
-from pprint import pprint
+
+from typing import Any, Callable, Dict, Generator, List, Optional, Tuple
 
 import yaml
 
-from application import create_app
+from application import create_app  # type: ignore
 from application.config import CMDConfig
 from application.database import db
 from application.defs import cre_defs as defs
-from application.utils import parsers
+from application.utils import parsers  # type: ignore
 from application.utils import spreadsheet as sheet_utils
 
 logging.basicConfig()
@@ -29,7 +29,9 @@ def register_standard(
     if both don't map to anything, just add them in the db as unlinked standards
     """
     linked_standard = collection.add_standard(standard)
-    cre_less_standards = []
+
+    cre_less_standards: List[defs.Standard] = []
+
     cres_added = []
     # we need to know the cres added in case we encounter a higher level CRE, then we get the higher level CRE to link to these cres
     for link in standard.links:
@@ -45,20 +47,20 @@ def register_standard(
                     )
                     for unlinked_standard in cre_less_standards:  # if anything in this
                         collection.add_link(
-                            cre=cre, link=unlinked_standard, type=link.ltype
+                            cre=cre,
+                            standard=db.dbStandardFromStandard(unlinked_standard),
+                            type=link.ltype,
                         )
             else:
                 cres = collection.find_cres_of_standard(linked_standard)
                 if cres:
                     for cre in cres:
-                        collection.add_link(
-                            cre=cre,
-                            standard=db_link,
-                            type=link.ltype,
-                        )
+                        collection.add_link(cre=cre, standard=db_link, type=link.ltype)
                         for unlinked_standard in cre_less_standards:
                             collection.add_link(
-                                cre=cre, standard=unlinked_standard, type=link.ltype
+                                cre=cre,
+                                standard=db.dbStandardFromStandard(unlinked_standard),
+                                type=link.ltype,
                             )
                 else:  # if neither the root nor a linked standard has a CRE, add both as unlinked standards
                     cre_less_standards.append(link.document)
@@ -74,7 +76,9 @@ def register_standard(
 
 
 def register_cre(cre: defs.CRE, collection: db.Standard_collection) -> db.CRE:
-    dbcre = collection.add_cre(cre)
+
+    dbcre: db.CRE = collection.add_cre(cre)
+
     for link in cre.links:
         if type(link.document).__name__ == defs.CRE.__name__:
             collection.add_internal_link(
@@ -92,20 +96,24 @@ def register_cre(cre: defs.CRE, collection: db.Standard_collection) -> db.CRE:
 
 
 def parse_file(
-    filename: str, yamldocs: list, scollection: db.Standard_collection
-) -> [defs.Document]:
+    filename: str, yamldocs: List[Dict[str, Any]], scollection: db.Standard_collection
+) -> Optional[List[defs.Document]]:
+
     """given yaml from export format deserialise to internal standards format and add standards to db"""
 
     resulting_objects = []
     for contents in yamldocs:
         links = []
-        document = None
-        register_callback = None
+
+        document: defs.Document
+        register_callback: Callable[[Any, Any], Any]
+
         if not isinstance(
             contents, dict
         ):  # basic object matching, make sure we at least have an object, go has this build in :(
             logger.fatal("Malformed file %s, skipping" % filename)
-            return
+
+            return None
 
         if contents.get("links"):
             links = contents.pop("links")
@@ -123,21 +131,32 @@ def parse_file(
                 yamldocs=[link.get("document")],
                 scollection=scollection,
             )
-            if len(doclink) > 1:
-                logger.fatal("Parsing single document returned 2 results this is a bug")
-            doclink = doclink[0]
+
             if doclink:
+                if len(doclink) > 1:
+                    logger.fatal(
+                        "Parsing single document returned 2 results this is a bug"
+                    )
                 document.add_link(
                     defs.Link(
-                        document=doclink, ltype=link.get("type"), tags=link.get("tags")
+                        document=doclink[0],
+                        ltype=link.get("type"),
+                        tags=link.get("tags"),
                     )
                 )
-        register_callback(document, collection=scollection)
+        if register_callback:
+            register_callback(document, collection=scollection)  # type: ignore
+        else:
+            logger.warning("Callback to register Document is None, likely missing data")
+
         resulting_objects.append(document)
     return resulting_objects
 
 
-def parse_standards_from_spreadsheeet(cre_file: list, result: db.Standard_collection):
+def parse_standards_from_spreadsheeet(
+    cre_file: List[Dict[str, Any]], result: db.Standard_collection
+) -> None:
+
     """given a yaml with standards, build a list of standards in the db"""
     hi_lvl_CREs = {}
     cres = {}
@@ -169,14 +188,16 @@ def parse_standards_from_spreadsheeet(cre_file: list, result: db.Standard_collec
                 result.add_link(cre=dbgroup, standard=dbstandard, type=link.ltype)
 
 
-def get_standards_files_from_disk(cre_loc: str):
+def get_standards_files_from_disk(cre_loc: str) -> Generator[str, None, None]:
+
     for root, _, cre_docs in os.walk(cre_loc):
         for name in cre_docs:
             if name.endswith(".yaml") or name.endswith(".yml"):
                 yield os.path.join(root, name)
 
 
-def add_from_spreadsheet(spreadsheet_url: str, cache_loc: str, cre_loc: str):
+def add_from_spreadsheet(spreadsheet_url: str, cache_loc: str, cre_loc: str) -> None:
+
     """--add --from_spreadsheet <url>
     use the cre db in this repo
     import new mappings from <url>
@@ -188,13 +209,16 @@ def add_from_spreadsheet(spreadsheet_url: str, cache_loc: str, cre_loc: str):
     )
     for worksheet, contents in spreadsheet.items():
         parse_standards_from_spreadsheeet(contents, database)
-    docs = database.export(cre_loc)
+
+    database.export(cre_loc)
+
     logger.info(
         "Db located at %s got updated, files extracted at %s" % (cache_loc, cre_loc)
     )
 
 
-def add_from_disk(cache_loc: str, cre_loc: str):
+def add_from_disk(cache_loc: str, cre_loc: str) -> None:
+
     """--add --cre_loc <path>
     use the cre db in this repo
     import new mappings from <path>
@@ -211,7 +235,8 @@ def add_from_disk(cache_loc: str, cre_loc: str):
     docs = database.export(cre_loc)
 
 
-def review_from_spreadsheet(cache: str, spreadsheet_url: str, share_with: str):
+def review_from_spreadsheet(cache: str, spreadsheet_url: str, share_with: str) -> None:
+
     """--review --from_spreadsheet <url>
     copy db to new temp dir,
     import new mappings from spreadsheet
@@ -240,7 +265,8 @@ def review_from_spreadsheet(cache: str, spreadsheet_url: str, share_with: str):
     logger.info("A spreadsheet view is at %s" % sheet_url)
 
 
-def review_from_disk(cache: str, cre_file_loc: str, share_with: str):
+def review_from_disk(cache: str, cre_file_loc: str, share_with: str) -> None:
+
     """--review --cre_loc <path>
     copy db to new temp dir,
     import new mappings from yaml files defined in <cre_loc>
@@ -271,14 +297,15 @@ def review_from_disk(cache: str, cre_file_loc: str, share_with: str):
     logger.info("A spreadsheet view is at %s" % sheet_url)
 
 
-def print_graph():
+def print_graph() -> None:
+
     """export db to single json object, pass to visualise.html so it can be shown in browser"""
     raise NotImplementedError
 
 
-def run(args):
+def run(args: argparse.Namespace) -> None:
     script_path = os.path.dirname(os.path.realpath(__file__))
-    cre_loc = os.path.join(script_path, "../../../cres")
+    os.path.join(script_path, "../../../cres")
 
     if args.review and args.from_spreadsheet:
         review_from_spreadsheet(
@@ -302,7 +329,8 @@ def run(args):
         print_graph()
 
 
-def db_connect(path: str):
+def db_connect(path: str) -> db.Standard_collection:
+
     global app
     conf = CMDConfig(db_uri=path)
     app = create_app(conf=conf)
@@ -315,10 +343,11 @@ def db_connect(path: str):
 
 def create_spreadsheet(
     collection: db.Standard_collection,
-    exported_documents: list,
+    exported_documents: List[Any],
     title: str,
-    share_with: list,
-):
+    share_with: List[str],
+) -> Any:
+
     """Reads cre docs exported from a standards_collection.export()
     dumps each doc into a workbook"""
     flat_dicts = sheet_utils.prepare_spreadsheet(
@@ -329,7 +358,8 @@ def create_spreadsheet(
     )
 
 
-def prepare_for_review(cache):
+def prepare_for_review(cache: str) -> Tuple[str, str]:
+
     loc = tempfile.mkdtemp()
     cache_filename = os.path.basename(cache)
     if os.path.isfile(cache):

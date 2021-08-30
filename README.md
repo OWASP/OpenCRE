@@ -1,4 +1,11 @@
 
+
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![GitHub Super-Linter](https://github.com/OWASP/common-requirement-enumeration/workflows/Lint%20Code%20Base/badge.svg)](https://github.com/marketplace/actions/super-linter)
+[![GitHub CodeQL](https://github.com/OWASP/common-requirement-enumeration/workflows/CodeQL/badge.svg)](https://github.com/marketplace/actions/codeql-analysis)
+
+![Main Branch Build](https://github.com/OWASP/OWASP/common-requirement-enumeration/workflows/Test/badge.svg?branch=main)
+
 Common Requirements Enumeration Application
 ===============================
 
@@ -22,10 +29,10 @@ Running
 
 To run the cli application, you can run `python cre.py --help`
 To download a remote cre spreadsheet locally you can run
-`python cre.py --review --from_spreadsheet https://docs.google.com/spreadsheets/d/19YBNcZHL9BF2Dw9Ijzqogc6MUyhTcH10Cb-37rBTFbk/edit\#gid\=1975949890`
+`python cre.py --review --from_spreadsheet <google sheets url>`
 
 To add a remote spreadsheet to your local database you can run
-`python cre_main.py --add --from_spreadsheet https://docs.google.com/spreadsheets/d/1THhpJWrH7RVwEnawEOO-3ZQwuiAKEUyb_ZAdQnvHNsU`
+`python cre_main.py --add --from_spreadsheet <google sheets url>`
 
 To run the web application for development you can run
 `FLASK_APP=cre.py flask run`
@@ -68,7 +75,7 @@ add tests
 * ~   refer use case (search by cre) ~ Done
 * ~   search by standard ~ Done
 * ~ add the ability for a mapping document to have multiple yamls in it ~ Done
-* add db integration of tags ~ Done
+* ~ add db integration of tags ~ Done
 * ~ add tags in db  (search by tag, export with tags etc) ~ Done 
 * add parser integration of tags (parse the new new new spreadsheet template which incorporates tags) ~ Done
 * ~ add search by tag in rest ~ Done
@@ -77,25 +84,21 @@ add tests
 * ~ add flask cover command from here https://github.com/miguelgrinberg/flasky/blob/master/flasky.py#L33~ Done
 * ~ Make Standards versioned ~ -- Done
 * ~ write frontend  ~ Done
-* make results per page a config item from env ~ Done
+* ~ make results per page a config item from env ~ Done
+* ~ migrate to new repo ~ Done
+* ~ add black autoformater ~ Done
+* ~ merge frontend changes to master ~ Done
+* ~ Typed Python? ~ Done
 
-* Add search by tag in frontend
-* make frontend show Graph
-* migrate to new repo
-* add black autoformater
-* make heroku autodeploy from a master protected branch
-* debug frontend issues
-* merge frontend changes to master
-* make some more linktypes and make them implicit
-* rob mentioned a bug introducing cycles, investigate
-* Typed Python?
+= Future Considerations =
+
+* improve test coverage -- we are at 73%, let's increase to 80%
 
 * Make frontend show gap analysis
 * Make frontend export search results and gap analysis to spreadsheet (supply backend with an "export=True" arg)
 * Make frontned able to import from spreadsheet template.
 * Make frontend able to import from files
 * Make frontend able to import by filing in a form.
-* Make frontend show Graph
 * make pagination also for tag results and gap analysis
 * make library out of file format and spreadsheet template parsers
 * add more linkTypes, Child, Controls, Tests, others.
