@@ -1,5 +1,6 @@
 import logging
 import re
+from copy import copy
 from pprint import pprint
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -26,6 +27,7 @@ def is_empty(value: Optional[str]) -> bool:
         or value.lower() == "no"
         or value.lower() == "tbd"
         or value.lower() == "see higher level topic"
+        or value.lower() == "tbd"
     )
 
 
@@ -423,7 +425,10 @@ def parse_hierarchical_export_format(
                     higher_cre = i
                     break
         if is_empty(name):
-            logger.warning("Found entry without a cre name, skipping")
+            logger.warning(
+                f'Found entry with ID {mapping.get("CRE ID")}'
+                " without a cre name, skipping"
+            )
             continue
 
         if name in cres.keys():
@@ -553,24 +558,33 @@ def parse_hierarchical_export_format(
                     cre.add_link(defs.Link(document=cheatsheet))
 
         # link CRE to a higher level one
-        if f"CRE hierarchy {str(higher_cre)}" in mapping:
-            if cres.get(mapping[f"CRE hierarchy {str(higher_cre)}"]):
-                cre_hi = cres[mapping[f"CRE hierarchy {str(higher_cre)}"]]
 
-                existing_link = [
-                    c
-                    for c in cre_hi.links
-                    if c.document.doctype == defs.Credoctypes.CRE
-                    and c.document.name == name
-                ]
-                if existing_link:
-                    cre_hi.links[
-                        cre_hi.links.index(existing_link[0])
-                        # ugliest way ever to write "update the object in that pointer"
-                    ].document = cre
-                else:
-                    cre_hi.add_link(defs.Link(document=cre))
-                cres[cre_hi.name] = cre_hi
+        if higher_cre and cres.get(mapping[f"CRE hierarchy {str(higher_cre)}"]):
+            cre_hi = cres[mapping[f"CRE hierarchy {str(higher_cre)}"]]
+
+            existing_link = [
+                c
+                for c in cre_hi.links
+                if c.document.doctype == defs.Credoctypes.CRE
+                and c.document.name == cre.name
+            ]
+            # pprint(
+            #     f'state:{higher_cre},\n {cre_hi},\n\n {cre}, \n\n{existing_link}')
+            # input()
+            shallow_copy = copy(cre)  # we only need a shallow copy here
+            shallow_copy.links = []
+            # there is no need to capture the entirety of the cre tree, we just need to register this shallow relation
+            # the "cres" dict should contain the rest of the info
+            if existing_link:
+                cre_hi.links[
+                    cre_hi.links.index(existing_link[0])
+                    # ugliest way ever to write "update the object in that pointer"
+                ].document = shallow_copy
+            else:
+                cre_hi.add_link(defs.Link(document=shallow_copy))
+            cres[cre_hi.name] = cre_hi
+        else:
+            pass  # add the cre to cres and make the connection
         if cre:
             cres[cre.name] = cre
     return cres

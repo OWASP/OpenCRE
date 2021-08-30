@@ -76,15 +76,13 @@ def register_standard(
 
 
 def register_cre(cre: defs.CRE, collection: db.Standard_collection) -> db.CRE:
-
     dbcre: db.CRE = collection.add_cre(cre)
-
     for link in cre.links:
-        if type(link.document).__name__ == defs.CRE.__name__:
+        if type(link.document) == defs.CRE:
             collection.add_internal_link(
                 dbcre, register_cre(link.document, collection), type=link.ltype
             )
-        elif type(link.document).__name__ == defs.Standard.__name__:
+        elif type(link.document) == defs.Standard:
             collection.add_link(
                 cre=dbcre,
                 standard=register_standard(
@@ -98,7 +96,6 @@ def register_cre(cre: defs.CRE, collection: db.Standard_collection) -> db.CRE:
 def parse_file(
     filename: str, yamldocs: List[Dict[str, Any]], scollection: db.Standard_collection
 ) -> Optional[List[defs.Document]]:
-
     """given yaml from export format deserialise to internal standards format and add standards to db"""
 
     resulting_objects = []
@@ -156,7 +153,6 @@ def parse_file(
 def parse_standards_from_spreadsheeet(
     cre_file: List[Dict[str, Any]], result: db.Standard_collection
 ) -> None:
-
     """given a yaml with standards, build a list of standards in the db"""
     hi_lvl_CREs = {}
     cres = {}
@@ -197,7 +193,6 @@ def get_standards_files_from_disk(cre_loc: str) -> Generator[str, None, None]:
 
 
 def add_from_spreadsheet(spreadsheet_url: str, cache_loc: str, cre_loc: str) -> None:
-
     """--add --from_spreadsheet <url>
     use the cre db in this repo
     import new mappings from <url>
@@ -218,7 +213,6 @@ def add_from_spreadsheet(spreadsheet_url: str, cache_loc: str, cre_loc: str) -> 
 
 
 def add_from_disk(cache_loc: str, cre_loc: str) -> None:
-
     """--add --cre_loc <path>
     use the cre db in this repo
     import new mappings from <path>
@@ -236,7 +230,6 @@ def add_from_disk(cache_loc: str, cre_loc: str) -> None:
 
 
 def review_from_spreadsheet(cache: str, spreadsheet_url: str, share_with: str) -> None:
-
     """--review --from_spreadsheet <url>
     copy db to new temp dir,
     import new mappings from spreadsheet
@@ -266,7 +259,6 @@ def review_from_spreadsheet(cache: str, spreadsheet_url: str, share_with: str) -
 
 
 def review_from_disk(cache: str, cre_file_loc: str, share_with: str) -> None:
-
     """--review --cre_loc <path>
     copy db to new temp dir,
     import new mappings from yaml files defined in <cre_loc>
@@ -298,7 +290,6 @@ def review_from_disk(cache: str, cre_file_loc: str, share_with: str) -> None:
 
 
 def print_graph() -> None:
-
     """export db to single json object, pass to visualise.html so it can be shown in browser"""
     raise NotImplementedError
 
@@ -347,7 +338,6 @@ def create_spreadsheet(
     title: str,
     share_with: List[str],
 ) -> Any:
-
     """Reads cre docs exported from a standards_collection.export()
     dumps each doc into a workbook"""
     flat_dicts = sheet_utils.prepare_spreadsheet(

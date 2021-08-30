@@ -27,9 +27,11 @@ class TestDB(unittest.TestCase):
         self.collection = db.Standard_collection()
         collection = self.collection
 
-        dbcre = collection.add_cre(defs.CRE(description="CREdesc", name="CREname"))
+        dbcre = collection.add_cre(
+            defs.CRE(id="111-000", description="CREdesc", name="CREname")
+        )
         dbgroup = collection.add_cre(
-            defs.CRE(description="Groupdesc", name="GroupName")
+            defs.CRE(id="111-001", description="Groupdesc", name="GroupName")
         )
         dbstandard = collection.add_standard(
             defs.Standard(
@@ -40,7 +42,7 @@ class TestDB(unittest.TestCase):
             )
         )
 
-        unlinked = collection.add_standard(
+        collection.add_standard(
             defs.Standard(
                 subsection="4.5.6",
                 section="Unlinked",
@@ -50,7 +52,6 @@ class TestDB(unittest.TestCase):
         )
 
         collection.session.add(dbcre)
-
         collection.add_link(cre=dbcre, standard=dbstandard)
         collection.add_internal_link(cre=dbcre, group=dbgroup)
 
@@ -81,6 +82,7 @@ class TestDB(unittest.TestCase):
             section="tagsstand",
             name="tagsstand",
             link="https://example.com",
+            version="",
             tags="tag1, dots.5.5, space 6 , several spaces and newline          7        \n",
         )
         standard = db.StandardFromDB(dbstandard)
@@ -150,19 +152,26 @@ class TestDB(unittest.TestCase):
         loc = tempfile.mkdtemp()
         result = [
             defs.CRE(
+                id="111-001",
                 description="Groupdesc",
                 name="GroupName",
                 links=[
-                    defs.Link(document=defs.CRE(description="CREdesc", name="CREname"))
+                    defs.Link(
+                        document=defs.CRE(
+                            id="111-000", description="CREdesc", name="CREname"
+                        )
+                    )
                 ],
             ),
             defs.CRE(
-                id="",
+                id="111-000",
                 description="CREdesc",
                 name="CREname",
                 links=[
                     defs.Link(
-                        document=defs.CRE(description="Groupdesc", name="GroupName")
+                        document=defs.CRE(
+                            id="111-001", description="Groupdesc", name="GroupName"
+                        )
                     ),
                     defs.Link(
                         document=defs.Standard(
@@ -193,6 +202,7 @@ class TestDB(unittest.TestCase):
             doc = yaml.safe_load(f)
             self.assertDictEqual(group, doc)
         crename = result[1].name + ".yaml"
+        self.maxDiff = None
         with open(os.path.join(loc, crename), "r") as f:
             doc = yaml.safe_load(f)
             self.assertDictEqual(cre, doc)
@@ -235,7 +245,6 @@ class TestDB(unittest.TestCase):
     def test_add_cre(self) -> None:
         original_desc = str(uuid.uuid4())
         name = str(uuid.uuid4())
-        gname = str(uuid.uuid4())
 
         c = defs.CRE(
             id="cid", doctype=defs.Credoctypes.CRE, description=original_desc, name=name
@@ -264,9 +273,9 @@ class TestDB(unittest.TestCase):
             self.collection.session.query(db.CRE).filter(db.CRE.name == c.name).first()
         )
         # ensure original description
-        self.assertEqual(dbcre.description, str(original_desc))
+        self.assertEqual(dbcre.description, original_desc)
         # ensure original description
-        self.assertEqual(newCRE.description, str(original_desc))
+        self.assertEqual(newCRE.description, original_desc)
 
     def test_add_standard(self) -> None:
         original_section = str(uuid.uuid4())
