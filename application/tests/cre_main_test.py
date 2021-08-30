@@ -3,11 +3,7 @@ import os
 import tempfile
 import unittest
 from pprint import pprint
-
-from typing import Any, Dict, Iterable, List
-from unittest import skip
-
-from flask import Flask  # type: ignore
+from typing import Any, Dict, List
 
 from application import create_app, sqla  # type: ignore
 from application.cmd import cre_main as main
@@ -22,14 +18,12 @@ class TestMain(unittest.TestCase):
         sqla.drop_all(app=self.app)
         self.app_context.pop()
 
-
     def setUp(self) -> None:
         self.app = create_app(mode="test")
         sqla.create_all(app=self.app)
         self.app_context = self.app.app_context()
         self.app_context.push()
         self.collection = db.Standard_collection()
-
 
     def test_register_standard_with_links(self) -> None:
 
@@ -69,9 +63,8 @@ class TestMain(unittest.TestCase):
             metadata=defs.Metadata(labels={}),
             section="Standard With Links",
         )
-        ret = main.register_standard(
-            standard=standard_with_links, collection=self.collection
-        )
+        ret = main.register_standard(standard=standard_with_links,
+                                     collection=self.collection)
         # assert returned value makes sense
         self.assertEqual(ret.name, "standard_with_links")
         self.assertEqual(ret.section, "Standard With Links")
@@ -83,8 +76,8 @@ class TestMain(unittest.TestCase):
 
         self.assertEqual(self.collection.session.query(db.Links).all(), [])
         # 3 cre-less standards in the db
-        self.assertEqual(len(self.collection.session.query(db.Standard).all()), 3)
-
+        self.assertEqual(
+            len(self.collection.session.query(db.Standard).all()), 3)
 
     def test_register_standard_with_cre(self) -> None:
         standard_with_cre = defs.Standard(
@@ -123,9 +116,8 @@ class TestMain(unittest.TestCase):
             section="standard_with_cre",
         )
 
-        ret = main.register_standard(
-            standard=standard_with_cre, collection=self.collection
-        )
+        main.register_standard(standard=standard_with_cre,
+                               collection=self.collection)
         # assert db structure makes sense
         self.assertEqual(
             len(self.collection.session.query(db.Links).all()), 2
@@ -136,7 +128,6 @@ class TestMain(unittest.TestCase):
         self.assertEqual(
             len(self.collection.session.query(db.CRE).all()), 1
         )  # 1 cre in the db
-
 
     def test_register_standard_with_groupped_cre_links(self) -> None:
         with_groupped_cre_links = defs.Standard(
@@ -209,9 +200,8 @@ class TestMain(unittest.TestCase):
             section="Session Management",
         )
 
-        ret = main.register_standard(
-            standard=with_groupped_cre_links, collection=self.collection
-        )
+        main.register_standard(standard=with_groupped_cre_links,
+                               collection=self.collection)
         # assert db structure makes sense
         self.assertEqual(
             len(self.collection.session.query(db.Links).all()), 5
@@ -228,7 +218,6 @@ class TestMain(unittest.TestCase):
             len(self.collection.session.query(db.CRE).all()), 3
         )  # 2 cres in the db
 
-
     def test_register_cre(self) -> None:
         standard = defs.Standard(
             doctype=defs.Credoctypes.Standard,
@@ -244,12 +233,13 @@ class TestMain(unittest.TestCase):
             tags=["CREt1", "CREt2"],
             metadata=defs.Metadata(labels={"tags": ["CREl1", "CREl2"]}),
         )
-        self.assertEqual(main.register_cre(cre, self.collection).name, cre.name)
-        self.assertEqual(main.register_cre(cre, self.collection).external_id, cre.id)
+        self.assertEqual(main.register_cre(
+            cre, self.collection).name, cre.name)
+        self.assertEqual(main.register_cre(
+            cre, self.collection).external_id, cre.id)
         self.assertEqual(
             len(self.collection.session.query(db.CRE).all()), 1
         )  # 1 cre in the db
-
 
     def test_parse_file(self) -> None:
         file: List[Dict[str, Any]] = [
@@ -343,13 +333,13 @@ class TestMain(unittest.TestCase):
             ),
             defs.CRE(id="14", description="Desc", name="name"),
         ]
-
-        logger = logging.getLogger("")
-        with self.assertLogs("application.cmd.cre_main", level=logging.FATAL) as logs:
+        with self.assertLogs("application.cmd.cre_main",
+                             level=logging.FATAL) as logs:
             # negative test first parse_file accepts a list of objects
             result = main.parse_file(
-                filename="tests", yamldocs=file[0], scollection=self.collection
-            )  # type: ignore
+                filename="tests",
+                yamldocs=file[0],  # type: ignore
+                scollection=self.collection)
 
             self.assertEqual(result, None)
             self.assertIn(
@@ -403,19 +393,21 @@ class TestMain(unittest.TestCase):
             }
         ]
         main.parse_standards_from_spreadsheeet(input, self.collection)
-        self.assertEqual(len(self.collection.session.query(db.Standard).all()), 8)
+        self.assertEqual(
+            len(self.collection.session.query(db.Standard).all()), 8)
         self.assertEqual(len(self.collection.session.query(db.CRE).all()), 5)
         # assert the one CRE in the inpu externally links to all the 8 standards
         self.assertEqual(len(self.collection.session.query(db.Links).all()), 8)
-        self.assertEqual(len(self.collection.session.query(db.InternalLinks).all()), 4)
-
+        self.assertEqual(
+            len(self.collection.session.query(db.InternalLinks).all()), 4)
 
     def test_get_standards_files_from_disk(self) -> None:
         loc = tempfile.mkdtemp()
         ymls = []
         cre = defs.CRE(name="c", description="cd")
         for _ in range(1, 5):
-            ymldesc, location = tempfile.mkstemp(dir=loc, suffix=".yaml", text=True)
+            ymldesc, location = tempfile.mkstemp(
+                dir=loc, suffix=".yaml", text=True)
             os.write(ymldesc, bytes(str(cre), "utf-8"))
             ymls.append(location)
         self.assertCountEqual(

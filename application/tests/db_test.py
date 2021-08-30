@@ -1,18 +1,13 @@
-import base64
 import copy
 import os
 import tempfile
 import unittest
 import uuid
-from pprint import pprint
-
 from typing import Dict, Union
-from unittest import skip
 
 import yaml
 
-
-from application import create_app, sqla  # type: ignore; type: ignore
+from application import create_app, sqla  # type: ignore
 from application.database import db
 from application.defs import cre_defs as defs
 
@@ -23,7 +18,6 @@ class TestDB(unittest.TestCase):
         sqla.drop_all()
         self.app_context.pop()
 
-
     def setUp(self) -> None:
         self.app = create_app(mode="test")
         sqla.create_all(app=self.app)
@@ -33,7 +27,8 @@ class TestDB(unittest.TestCase):
         self.collection = db.Standard_collection()
         collection = self.collection
 
-        dbcre = collection.add_cre(defs.CRE(description="CREdesc", name="CREname"))
+        dbcre = collection.add_cre(
+            defs.CRE(description="CREdesc", name="CREname"))
         dbgroup = collection.add_cre(
             defs.CRE(description="Groupdesc", name="GroupName")
         )
@@ -57,14 +52,12 @@ class TestDB(unittest.TestCase):
 
         collection.session.add(dbcre)
 
-
         collection.add_link(cre=dbcre, standard=dbstandard)
         collection.add_internal_link(cre=dbcre, group=dbgroup)
 
         self.collection = collection
 
     def test_get_by_tags(self) -> None:
-
         """
         Given: A CRE with no links and a combination of possible tags:
                     "tag1,dash-2,underscore_3,space 4,co_mb-ination%5"
@@ -98,32 +91,38 @@ class TestDB(unittest.TestCase):
 
         self.maxDiff = None
         self.assertEqual(self.collection.get_by_tags(["dash-2"]), [cre])
-        self.assertEqual(self.collection.get_by_tags(["tag1", "underscore_3"]), [cre])
+        self.assertEqual(self.collection.get_by_tags(
+            ["tag1", "underscore_3"]), [cre])
         self.assertEqual(self.collection.get_by_tags(["space 6"]), [standard])
         self.assertEqual(
             self.collection.get_by_tags(["dots.5.5", "space 6"]), [standard]
         )
 
-        self.assertCountEqual([cre, standard], self.collection.get_by_tags(["space"]))
+        self.assertCountEqual(
+            [cre, standard], self.collection.get_by_tags(["space"]))
         self.assertCountEqual(
             [cre, standard], self.collection.get_by_tags(["space", "tag1"])
         )
-        self.assertCountEqual(self.collection.get_by_tags(["tag1"]), [cre, standard])
+        self.assertCountEqual(
+            self.collection.get_by_tags(["tag1"]), [cre, standard])
 
         self.assertEqual(self.collection.get_by_tags([]), [])
-        self.assertEqual(self.collection.get_by_tags(["this should not be a tag"]), [])
+        self.assertEqual(self.collection.get_by_tags(
+            ["this should not be a tag"]), [])
+
     def test_get_standards_names(self) -> None:
 
         result = self.collection.get_standards_names()
         expected = ["BarStand", "Unlinked"]
         self.assertEqual(expected, result)
 
-
     def test_get_max_internal_connections(self) -> None:
         self.assertEqual(self.collection.get_max_internal_connections(), 1)
 
-        dbcrelo = db.CRE(name="internal connections test lo", description="ictlo")
-        dbcrehi = db.CRE(name="internal connections test hi", description="icthi")
+        dbcrelo = db.CRE(name="internal connections test lo",
+                         description="ictlo")
+        dbcrehi = db.CRE(name="internal connections test hi",
+                         description="icthi")
         self.collection.session.add(dbcrelo)
         self.collection.session.add(dbcrehi)
         self.collection.session.commit()
@@ -147,7 +146,6 @@ class TestDB(unittest.TestCase):
         result = self.collection.get_max_internal_connections()
         self.assertEqual(result, 100)
 
-
     def test_export(self) -> None:
         """
         Given:
@@ -162,7 +160,8 @@ class TestDB(unittest.TestCase):
                 description="Groupdesc",
                 name="GroupName",
                 links=[
-                    defs.Link(document=defs.CRE(description="CREdesc", name="CREname"))
+                    defs.Link(document=defs.CRE(
+                        description="CREdesc", name="CREname"))
                 ],
             ),
             defs.CRE(
@@ -171,7 +170,8 @@ class TestDB(unittest.TestCase):
                 name="CREname",
                 links=[
                     defs.Link(
-                        document=defs.CRE(description="Groupdesc", name="GroupName")
+                        document=defs.CRE(
+                            description="Groupdesc", name="GroupName")
                     ),
                     defs.Link(
                         document=defs.Standard(
@@ -206,7 +206,6 @@ class TestDB(unittest.TestCase):
             doc = yaml.safe_load(f)
             self.assertDictEqual(cre, doc)
 
-
     def test_StandardFromDB(self) -> None:
         expected = defs.Standard(
             name="foo",
@@ -227,7 +226,6 @@ class TestDB(unittest.TestCase):
                 )
             ),
         )
-
 
     def test_CREfromDB(self) -> None:
         c = defs.CRE(
@@ -252,13 +250,15 @@ class TestDB(unittest.TestCase):
             id="cid", doctype=defs.Credoctypes.CRE, description=original_desc, name=name
         )
         self.assertIsNone(
-            self.collection.session.query(db.CRE).filter(db.CRE.name == c.name).first()
+            self.collection.session.query(db.CRE).filter(
+                db.CRE.name == c.name).first()
         )
 
         # happy path, add new cre
         newCRE = self.collection.add_cre(c)
         dbcre = (
-            self.collection.session.query(db.CRE).filter(db.CRE.name == c.name).first()
+            self.collection.session.query(db.CRE).filter(
+                db.CRE.name == c.name).first()
         )  # ensure transaction happened (commit() called)
         self.assertIsNotNone(dbcre.id)
         self.assertEqual(dbcre.name, c.name)
@@ -272,13 +272,13 @@ class TestDB(unittest.TestCase):
         c.description = "description2"
         newCRE = self.collection.add_cre(c)
         dbcre = (
-            self.collection.session.query(db.CRE).filter(db.CRE.name == c.name).first()
+            self.collection.session.query(db.CRE).filter(
+                db.CRE.name == c.name).first()
         )
         # ensure original description
         self.assertEqual(dbcre.description, str(original_desc))
         # ensure original description
         self.assertEqual(newCRE.description, str(original_desc))
-
 
     def test_add_standard(self) -> None:
         original_section = str(uuid.uuid4())
@@ -331,7 +331,8 @@ class TestDB(unittest.TestCase):
 
         internalLink = db.InternalLinks(cre=dbcre.id, group=dbgroup.id)
         internalLink2 = db.InternalLinks(cre=dbcre.id, group=dbgroup2.id)
-        internalLink3 = db.InternalLinks(cre=only_one_group.id, group=dbgroup.id)
+        internalLink3 = db.InternalLinks(
+            cre=only_one_group.id, group=dbgroup.id)
         self.collection.session.add(internalLink)
         self.collection.session.add(internalLink2)
         self.collection.session.add(internalLink3)
@@ -357,7 +358,6 @@ class TestDB(unittest.TestCase):
         groups = self.collection.find_cres_of_cre(groupless_cre)
         self.assertIsNone(groups)
 
-
     def test_find_cres_of_standard(self) -> None:
         dbcre = db.CRE(description="CREdesc1", name="CREname1")
         dbgroup = db.CRE(description="CREdesc2", name="CREname2")
@@ -372,8 +372,10 @@ class TestDB(unittest.TestCase):
         self.collection.session.add(lone_standard)
         self.collection.session.commit()
 
-        self.collection.session.add(db.Links(cre=dbcre.id, standard=dbstandard1.id))
-        self.collection.session.add(db.Links(cre=dbgroup.id, standard=dbstandard1.id))
+        self.collection.session.add(
+            db.Links(cre=dbcre.id, standard=dbstandard1.id))
+        self.collection.session.add(
+            db.Links(cre=dbgroup.id, standard=dbstandard1.id))
         self.collection.session.add(
             db.Links(cre=dbgroup.id, standard=group_standard.id)
         )
@@ -398,7 +400,6 @@ class TestDB(unittest.TestCase):
         # no links = None
         cres = self.collection.find_cres_of_standard(lone_standard)
         self.assertIsNone(cres)
-
 
     def test_get_CRE(self) -> None:
         """Given: a cre 'C1' that links to cres both as a group and a cre and other standards
@@ -450,7 +451,6 @@ class TestDB(unittest.TestCase):
         self.assertIsNone(collection.get_CRE(external_id="1234"))
         self.assertIsNone(collection.get_CRE(name="C5"))
 
-
     def test_get_standards(self) -> None:
         """Given: a Standard 'S1' that links to cres
         return the Standard in Document format"""
@@ -483,7 +483,8 @@ class TestDB(unittest.TestCase):
                 version="4",
                 links=[
                     defs.Link(
-                        document=defs.CRE(name="C1", description="CD1", id="123")
+                        document=defs.CRE(
+                            name="C1", description="CD1", id="123")
                     ),
                     defs.Link(document=defs.CRE(name="C2", description="CD2")),
                     defs.Link(document=defs.CRE(name="C3", description="CD3")),
@@ -493,7 +494,6 @@ class TestDB(unittest.TestCase):
 
         res = collection.get_standards(name="S1")
         self.assertEqual(expected, res)
-
 
     def test_get_standards_with_pagination(self) -> None:
         """Given: a Standard 'S1' that links to cres
@@ -527,7 +527,8 @@ class TestDB(unittest.TestCase):
                 version="4",
                 links=[
                     defs.Link(
-                        document=defs.CRE(name="C1", description="CD1", id="123")
+                        document=defs.CRE(
+                            name="C1", description="CD1", id="123")
                     ),
                     defs.Link(document=defs.CRE(name="C2", description="CD2")),
                     defs.Link(document=defs.CRE(name="C3", description="CD3")),
@@ -687,7 +688,6 @@ class TestDB(unittest.TestCase):
             # unfortunately named, asserts element and count equality
             self.assertCountEqual(res, expected_vals)
 
-
     def test_add_internal_link(self) -> None:
         """test that internal links are added successfully,
         edge cases:
@@ -730,7 +730,8 @@ class TestDB(unittest.TestCase):
             )
             .first()
         )
-        self.assertEqual((res.group, res.cre), (cres["dbca"].id, cres["dbcb"].id))
+        self.assertEqual((res.group, res.cre),
+                         (cres["dbca"].id, cres["dbcb"].id))
 
         res = (
             self.collection.session.query(db.InternalLinks)
@@ -740,7 +741,8 @@ class TestDB(unittest.TestCase):
             )
             .first()
         )
-        self.assertEqual((res.group, res.cre), (cres["dbcb"].id, cres["dbcc"].id))
+        self.assertEqual((res.group, res.cre),
+                         (cres["dbcb"].id, cres["dbcc"].id))
 
         # cycles are not inserted branch
         none_res = (

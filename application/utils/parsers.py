@@ -1,10 +1,10 @@
 
+import logging
+import re
+from pprint import pprint
 from typing import Any, Dict, List, Optional, Tuple
 
-import re
-import logging
 from application.defs import cre_defs as defs
-from pprint import pprint
 
 # collection of methods to parse different versions of spreadsheet standards
 # each method returns a list of cre_defs documents
@@ -13,7 +13,6 @@ from pprint import pprint
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 logging.basicConfig()
-
 
 
 def is_empty(value: Optional[str]) -> bool:
@@ -30,10 +29,12 @@ def is_empty(value: Optional[str]) -> bool:
         or value.lower() == "see higher level topic"
     )
 
+
 def recurse_print_links(cre: defs.Document) -> None:
     for link in cre.links:
         pprint(link.document)
         recurse_print_links(link.document)
+
 
 def get_linked_standards(mapping: Dict[str, str]) -> List[defs.Link]:
     standards = []
@@ -49,14 +50,19 @@ def get_linked_standards(mapping: Dict[str, str]) -> List[defs.Link]:
         name = sname
         section = mapping.pop(defs.ExportFormat.section_key(name))
         subsection = mapping.pop(defs.ExportFormat.subsection_key(name))
-ink = mapping.pop(defs.ExportFormat.hyperlink_key(name))
+        hyperlink = mapping.pop(defs.ExportFormat.hyperlink_key(name))
         link_type = mapping.pop(defs.ExportFormat.link_type_key(name))
-        standard = defs.Standard(
-            name=sname, section=section, subsection=subsection, hyperlink=hyperlink
-        )
+        standard = defs.Standard(name=sname, section=section,
+                                 subsection=subsection, hyperlink=hyperlink)
         lt: defs.LinkTypes
         if not is_empty(link_type):
-            lt = defs.LinkTypes.from_str(link_type)rt_format(lfile: List[Dict[str, Any]]) -> Dict[str, defs.Document]:
+            lt = defs.LinkTypes.from_str(link_type)
+            standards.append(defs.Link(document=standard, ltype=lt))
+    return standards
+
+
+def parse_export_format(lfile: List[Dict[str, Any]]) -> Dict[str,
+                                                             defs.Document]:
     """Given: a spreadsheet written by prepare_spreadsheet()
     return a list of CRE docs
     cases:
@@ -66,7 +72,6 @@ ink = mapping.pop(defs.ExportFormat.hyperlink_key(name))
         cre -> standards
         cre -> standards, other cres
     """
-
     cre: defs.Document
     internal_mapping: defs.Document
     cres: Dict[str, defs.Document] = {}
@@ -76,7 +81,6 @@ ink = mapping.pop(defs.ExportFormat.hyperlink_key(name))
     max_internal_cre_links = len(
         set([k for k, v in lfile[0].items() if link_types_regexp.match(k)])
     )
-
     for mapping in lfile:
         # if the line does not register a CRE
         if not mapping.get(defs.ExportFormat.cre_name_key()):
@@ -92,11 +96,12 @@ ink = mapping.pop(defs.ExportFormat.hyperlink_key(name))
         else:  # cre -> standards, other cres
             name = mapping.pop(defs.ExportFormat.cre_name_key())
             id = mapping.pop(defs.ExportFormat.cre_id_key())
-            description = mapping.pop(defs.ExportFormat.cre_description_key())
+            description = mapping.pop(
+                defs.ExportFormat.cre_description_key())
 
             if name not in cres.keys():  # register new cre
                 cre = defs.CRE(name=name, id=id, description=description)
-            else:  # it's a conflict mapping so we've seen this before, 
+            else:  # it's a conflict mapping so we've seen this before,
                 # just retrieve so we can add the new info
                 cre = cres[name]
                 if cre.id != id:
@@ -109,7 +114,7 @@ ink = mapping.pop(defs.ExportFormat.hyperlink_key(name))
                         )
                         continue
                 if is_empty(cre.description) and not is_empty(description):
-                    # might have seen the particular name/id as an internal 
+                    # might have seen the particular name/id as an internal
                     # mapping, in which case just update the description and continue
                     cre.description = description
 
@@ -203,7 +208,7 @@ def parse_uknown_key_val_spreadsheet(
                 if (
                     not is_empty(value)
                     and not is_empty(key)
-                    and not f"{key}-{value}" in standards_registered
+                    and f"{key}-{value}" not in standards_registered
                 ):
                     linked_standard = defs.Standard(name=key, section=value)
                     standards_registered.append(f"{key}-{value}")
