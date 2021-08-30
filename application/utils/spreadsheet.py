@@ -149,7 +149,6 @@ def prepare_spreadsheet(
         header[defs.ExportFormat.link_type_key(name)] = None
     maxgroups = collection.get_max_internal_connections()
     for i in range(0, maxgroups):
-
         header[defs.ExportFormat.linked_cre_id_key(str(i))] = None
         header[defs.ExportFormat.linked_cre_name_key(str(i))] = None
         header[defs.ExportFormat.linked_cre_link_type_key(str(i))] = None

@@ -48,29 +48,25 @@ def register_standard(
                     for unlinked_standard in cre_less_standards:  # if anything in this
                         collection.add_link(
                             cre=cre,
-                            standard=db.dbStandardFromStandard(
-                                unlinked_standard),
+                            standard=db.dbStandardFromStandard(unlinked_standard),
                             type=link.ltype,
                         )
             else:
                 cres = collection.find_cres_of_standard(linked_standard)
                 if cres:
                     for cre in cres:
-                        collection.add_link(
-                            cre=cre, standard=db_link, type=link.ltype)
+                        collection.add_link(cre=cre, standard=db_link, type=link.ltype)
                         for unlinked_standard in cre_less_standards:
                             collection.add_link(
                                 cre=cre,
-                                standard=db.dbStandardFromStandard(
-                                    unlinked_standard),
+                                standard=db.dbStandardFromStandard(unlinked_standard),
                                 type=link.ltype,
                             )
                 else:  # if neither the root nor a linked standard has a CRE, add both as unlinked standards
                     cre_less_standards.append(link.document)
 
             if link.document.links and len(link.document.links) > 0:
-                register_standard(standard=link.document,
-                                  collection=collection)
+                register_standard(standard=link.document, collection=collection)
 
         elif type(link.document).__name__ == defs.CRE.__name__:
             dbcre = register_cre(link.document, collection)
@@ -83,16 +79,17 @@ def register_cre(cre: defs.CRE, collection: db.Standard_collection) -> db.CRE:
     dbcre: db.CRE = collection.add_cre(cre)
     for link in cre.links:
         if type(link.document) == defs.CRE:
-            collection.add_internal_link(dbcre,
-                                         register_cre(
-                                             link.document, collection),
-                                         type=link.ltype)
+            collection.add_internal_link(
+                dbcre, register_cre(link.document, collection), type=link.ltype
+            )
         elif type(link.document) == defs.Standard:
             collection.add_link(
                 cre=dbcre,
                 standard=register_standard(
-                    standard=link.document, collection=collection),
-                type=link.ltype)
+                    standard=link.document, collection=collection
+                ),
+                type=link.ltype,
+            )
     return dbcre
 
 
@@ -147,8 +144,7 @@ def parse_file(
         if register_callback:
             register_callback(document, collection=scollection)  # type: ignore
         else:
-            logger.warning(
-                "Callback to register Document is None, likely missing data")
+            logger.warning("Callback to register Document is None, likely missing data")
 
         resulting_objects.append(document)
     return resulting_objects
@@ -181,13 +177,11 @@ def parse_standards_from_spreadsheeet(
         for link in doc.links:
             if type(link.document).__name__ == defs.CRE.__name__:
                 dbcre = register_cre(link.document, result)
-                result.add_internal_link(
-                    group=dbgroup, cre=dbcre, type=link.ltype)
+                result.add_internal_link(group=dbgroup, cre=dbcre, type=link.ltype)
 
             elif type(link.document).__name__ == defs.Standard.__name__:
                 dbstandard = register_standard(link.document, result)
-                result.add_link(
-                    cre=dbgroup, standard=dbstandard, type=link.ltype)
+                result.add_link(cre=dbgroup, standard=dbstandard, type=link.ltype)
 
 
 def get_standards_files_from_disk(cre_loc: str) -> Generator[str, None, None]:
@@ -214,8 +208,7 @@ def add_from_spreadsheet(spreadsheet_url: str, cache_loc: str, cre_loc: str) -> 
     database.export(cre_loc)
 
     logger.info(
-        "Db located at %s got updated, files extracted at %s" % (
-            cache_loc, cre_loc)
+        "Db located at %s got updated, files extracted at %s" % (cache_loc, cre_loc)
     )
 
 
@@ -362,6 +355,5 @@ def prepare_for_review(cache: str) -> Tuple[str, str]:
     if os.path.isfile(cache):
         shutil.copy(cache, loc)
     else:
-        logger.fatal(
-            "Could not copy database %s this seems like a bug" % cache)
+        logger.fatal("Could not copy database %s this seems like a bug" % cache)
     return loc, os.path.join(loc, cache_filename)
