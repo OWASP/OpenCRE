@@ -43,8 +43,6 @@ def find_standard_by_name(sname: str) -> Any:
     page = request.args.get("page") or 0
     items_per_page = request.args.get("items_per_page") or ITEMS_PER_PAGE
     
-    print("searching for standard by name")
-    
     total_pages, standards, _ = database.get_standards_with_pagination(
         name=sname,
         section=opt_section,
@@ -53,8 +51,6 @@ def find_standard_by_name(sname: str) -> Any:
         page=int(page),
         items_per_page=int(items_per_page),
     )
-    print("found standards")
-    pprint(standards)
     result = {}
     result["total_pages"] = total_pages
     result["page"] = page
