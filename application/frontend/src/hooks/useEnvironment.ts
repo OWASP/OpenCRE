@@ -5,7 +5,7 @@ interface Environment {
 
 const prodEnvironment: Environment = {
   name: 'prod',
-  apiUrl: 'https://testcredemo.herokuapp.com/rest/v1',
+  apiUrl: '/rest/v1',
 };
 
 const devEnvironment: Environment = {
