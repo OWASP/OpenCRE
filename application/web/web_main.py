@@ -93,7 +93,6 @@ def page_not_found(e) -> Any:
 @app.route("/", defaults={"path": ""})
 @app.route("/<path:path>")
 def index(path: str) -> Any:
-    print("index")
     pprint(current_app.config)
     if path != "" and os.path.exists(app.static_folder + "/" + path):
         return send_from_directory(app.static_folder, path)
