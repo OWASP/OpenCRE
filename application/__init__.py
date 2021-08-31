@@ -1,8 +1,7 @@
 # type:ignore
 from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
-
+from flask_sqlalchemy import SQLAlchemy
 
 from application.config import config
 
@@ -18,7 +17,6 @@ def create_app(mode: str = "production", conf=None):
 
     # config[mode].init_app(app)
     sqla.init_app(app=app)
-
     from application.web.web_main import app as app_blueprint
 
     app.register_blueprint(app_blueprint)
