@@ -1,8 +1,7 @@
 import logging
-
+from collections import Counter
 from typing import Any, Dict, List, Optional, Tuple
 
-from collections import Counter
 import networkx as nx  # type: ignore
 import yaml
 from flask_sqlalchemy.model import DefaultMeta
@@ -11,7 +10,6 @@ from application.defs import cre_defs
 from application.utils import file  # type: ignore
 
 from .. import sqla  # type: ignore
-
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
@@ -251,7 +249,6 @@ class Standard_collection:
     ) -> Tuple[
         Optional[int], Optional[List[cre_defs.Standard]], Optional[List[Standard]]
     ]:
-
         standards = []
         dbstands = self.__get_standards_query__(
             name, section, subsection, link, version

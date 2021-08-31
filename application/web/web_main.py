@@ -1,9 +1,10 @@
 # type: ignore
 # silence mypy for the routes file
 import os
+from pprint import pprint
 from typing import Any
 
-from flask import Blueprint, abort, jsonify, request, send_from_directory
+from flask import Blueprint, abort, current_app, jsonify, request, send_from_directory
 
 from application.database import db
 
@@ -91,7 +92,6 @@ def page_not_found(e) -> Any:
 @app.route("/", defaults={"path": ""})
 @app.route("/<path:path>")
 def index(path: str) -> Any:
-    print("index")
     if path != "" and os.path.exists(app.static_folder + "/" + path):
         return send_from_directory(app.static_folder, path)
     else:

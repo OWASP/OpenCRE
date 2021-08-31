@@ -6,15 +6,15 @@ from typing import List
 
 import click  # type: ignore
 import coverage  # type: ignore
+from flask_migrate import Migrate  # type: ignore
 
 from application import create_app, sqla  # type: ignore
 from application.cmd import cre_main
 
-
 # Hacky solutions to make this both a command line application with argparse and a flask application
 
 app = create_app(mode=os.getenv("FLASK_CONFIG") or "default")
-sqla.create_all(app=app)
+migrate = Migrate(app, sqla, render_as_batch=True)
 
 # flask <x> commands
 
