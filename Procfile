@@ -1,1 +1,1 @@
-web: cp cres/db.sqlite ./standards_cache.sqlite & wait -l; gunicorn cre:app --log-file=-
+web: cp cres/db.sqlite ./standards_cache.sqlite; gunicorn cre:app --log-file=-
