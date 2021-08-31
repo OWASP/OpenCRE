@@ -249,8 +249,6 @@ class Standard_collection:
     ) -> Tuple[
         Optional[int], Optional[List[cre_defs.Standard]], Optional[List[Standard]]
     ]:
-
-
         standards = []
         dbstands = self.__get_standards_query__(
             name, section, subsection, link, version
