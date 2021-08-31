@@ -40,7 +40,7 @@ def find_standard_by_name(sname: str) -> Any:
     opt_hyperlink = request.args.get("hyperlink")
     page = request.args.get("page") or 0
     items_per_page = request.args.get("items_per_page") or ITEMS_PER_PAGE
-    
+
     total_pages, standards, _ = database.get_standards_with_pagination(
         name=sname,
         section=opt_section,
