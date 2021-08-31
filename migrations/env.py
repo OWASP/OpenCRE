@@ -4,13 +4,13 @@ import logging
 from logging.config import fileConfig
 
 from alembic import context
-from flask import current_app
+from flask import current_app  # type: ignore
 
 from application.database.db import BaseModel
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
-config = context.config
+config = context.config # type: ignore
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.

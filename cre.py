@@ -6,7 +6,7 @@ from typing import List
 
 import click  # type: ignore
 import coverage  # type: ignore
-from flask_migrate import Migrate
+from flask_migrate import Migrate # type: ignore
 
 from application import create_app, sqla  # type: ignore
 from application.cmd import cre_main
