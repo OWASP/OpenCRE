@@ -260,8 +260,6 @@ class Standard_collection:
             name, section, subsection, link, version
         ).paginate(int(page), items_per_page, False)
         total_pages = dbstands.pages
-        from pprint import pprint
-        pprint(dbstands)
         if dbstands.items:
             for dbstand in dbstands.items:
                 standard = StandardFromDB(dbstandard=dbstand)
