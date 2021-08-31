@@ -42,7 +42,9 @@ def find_standard_by_name(sname: str) -> Any:
     opt_hyperlink = request.args.get("hyperlink")
     page = request.args.get("page") or 0
     items_per_page = request.args.get("items_per_page") or ITEMS_PER_PAGE
-
+    
+    print("searching for standard by name")
+    
     total_pages, standards, _ = database.get_standards_with_pagination(
         name=sname,
         section=opt_section,
@@ -51,6 +53,8 @@ def find_standard_by_name(sname: str) -> Any:
         page=int(page),
         items_per_page=int(items_per_page),
     )
+    print("found standards")
+    pprint(standards)
     result = {}
     result["total_pages"] = total_pages
     result["page"] = page
@@ -93,7 +97,6 @@ def page_not_found(e) -> Any:
 @app.route("/", defaults={"path": ""})
 @app.route("/<path:path>")
 def index(path: str) -> Any:
-    pprint(current_app.config)
     if path != "" and os.path.exists(app.static_folder + "/" + path):
         return send_from_directory(app.static_folder, path)
     else:

@@ -249,6 +249,8 @@ class Standard_collection:
     ) -> Tuple[
         Optional[int], Optional[List[cre_defs.Standard]], Optional[List[Standard]]
     ]:
+        
+        print('getting paginated standards')
 
         standards = []
         dbstands = self.__get_standards_query__(
