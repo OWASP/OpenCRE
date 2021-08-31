@@ -6,7 +6,7 @@ from typing import List
 
 import click  # type: ignore
 import coverage  # type: ignore
-from flask_migrate import Migrate # type: ignore
+from flask_migrate import Migrate  # type: ignore
 
 from application import create_app, sqla  # type: ignore
 from application.cmd import cre_main
@@ -96,8 +96,7 @@ def main() -> None:
     )
     parser.add_argument(
         "--cre_loc",
-        default=os.path.join(os.path.dirname(
-            os.path.realpath(__file__)), "../../cres"),
+        default=os.path.join(os.path.dirname(os.path.realpath(__file__)), "../../cres"),
         help="define location of local cre files for review/add",
     )
 

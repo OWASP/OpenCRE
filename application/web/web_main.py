@@ -4,8 +4,7 @@ import os
 from pprint import pprint
 from typing import Any
 
-from flask import (Blueprint, abort, current_app, jsonify, request,
-                   send_from_directory)
+from flask import Blueprint, abort, current_app, jsonify, request, send_from_directory
 
 from application.database import db
 
@@ -42,7 +41,7 @@ def find_standard_by_name(sname: str) -> Any:
     opt_hyperlink = request.args.get("hyperlink")
     page = request.args.get("page") or 0
     items_per_page = request.args.get("items_per_page") or ITEMS_PER_PAGE
-    
+
     total_pages, standards, _ = database.get_standards_with_pagination(
         name=sname,
         section=opt_section,
