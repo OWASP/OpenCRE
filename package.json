@@ -2,5 +2,11 @@
   "name": "make heroku happy",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js"
+  "main": "index.js",
+  "scripts": {
+    "build": "cd application/frontend && yarn install && yarn build && webpack --config webpack.prod.js",
+    "start": "gunicorn cre:app --log-file=-",
+    "postinstall": "del-cli node_modules/@types/react-dom/node_modules/@types && del-cli node_modules/webpack/types.d.ts"
+  }
+
 }
