@@ -4,10 +4,10 @@ const { TsConfigPathsPlugin } = require('awesome-typescript-loader');
 
 module.exports = {
   mode: 'production',
-  context: path.join(__dirname, 'src'),
+  context: path.join(__dirname, 'application/frontend/src'),
   entry: ['./main.tsx'],
   output: {
-    path: path.join(__dirname, 'www'),
+    path: path.join(__dirname, 'application/frontend/www'),
     filename: 'bundle.js',
     publicPath: '/',
   },
