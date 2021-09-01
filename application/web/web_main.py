@@ -1,7 +1,6 @@
 # type: ignore
 # silence mypy for the routes file
 import os
-from pprint import pprint
 from typing import Any
 
 from flask import Blueprint, abort, current_app, jsonify, request, send_from_directory
