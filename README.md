@@ -21,7 +21,7 @@ Clone the repository:
 Launch a virtual environment:
 <pre>virtualenv -p python3 venv/ && source venv/bin/activate`</pre>
 Install the dependencies with pip:
-<pre>pip install -r scripts/cre_sync/requirements.txt</pre>
+<pre>pip install -r requirements.txt</pre>
 Copy sqlite database to required location
 <pre>cp cres/db.sqlite standards_cache.sqlite</pre>
 
