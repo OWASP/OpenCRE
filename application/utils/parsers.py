@@ -568,9 +568,6 @@ def parse_hierarchical_export_format(
                 if c.document.doctype == defs.Credoctypes.CRE
                 and c.document.name == cre.name
             ]
-            # pprint(
-            #     f'state:{higher_cre},\n {cre_hi},\n\n {cre}, \n\n{existing_link}')
-            # input()
             shallow_copy = copy(cre)  # we only need a shallow copy here
             shallow_copy.links = []
             # there is no need to capture the entirety of the cre tree, we just need to register this shallow relation
