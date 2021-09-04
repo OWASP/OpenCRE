@@ -1,0 +1,35 @@
+doctype: CRE
+id: 260-200
+links:
+- document:
+    doctype: CRE
+    id: 842-876
+    name: Logging and error handling
+  type: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x10-V1-Architecture.md
+    name: ASVS
+    section: V1.7.1
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: OPC
+    section: C9
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '1009'
+    subsection: ''
+    version: ''
+  type: Linked To
+name: Common logging format
+tags:
+- architecture

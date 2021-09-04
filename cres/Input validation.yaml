@@ -1,0 +1,51 @@
+doctype: CRE
+id: 010-308
+links:
+- document:
+    doctype: CRE
+    id: 503-455
+    name: Input and output verification
+  type: Contains
+- document:
+    doctype: CRE
+    id: 176-154
+    name: Limit number of requests per user
+    tags:
+    - DOS
+  type: Contains
+- document:
+    doctype: CRE
+    id: 031-447
+    name: Whitelisting verification of all input
+  type: Contains
+- document:
+    doctype: CRE
+    id: 743-237
+    name: Ptotect against HTTP polution attack
+  type: Contains
+- document:
+    doctype: CRE
+    id: 848-711
+    name: Input validation on trusted service layer
+    tags:
+    - architecture
+  type: Contains
+- document:
+    doctype: CRE
+    id: 042-550
+    name: Protect against mass parameter assignment attack
+  type: Contains
+- document:
+    doctype: CRE
+    id: 653-242
+    name: Strongly typed and validated structured data
+  type: Contains
+- document:
+    doctype: CRE
+    id: 232-217
+    name: Whitelist redirected URLs
+  type: Contains
+name: Input validation
+tags:
+- XSS
+- Injection

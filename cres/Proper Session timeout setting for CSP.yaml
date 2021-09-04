@@ -1,0 +1,33 @@
+doctype: CRE
+id: 618-403
+links:
+- document:
+    doctype: CRE
+    id: 258-115
+    name: Re-authentication from federation or assertion
+  type: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x12-V3-Session-management.md
+    name: ASVS
+    section: V3.6.1
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: WSTG
+    section: WSTG-SESS-01
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '613'
+    subsection: ''
+    version: ''
+  type: Linked To
+name: Proper Session timeout setting for CSP

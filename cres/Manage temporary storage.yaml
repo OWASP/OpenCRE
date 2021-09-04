@@ -1,0 +1,39 @@
+doctype: CRE
+id: 208-830
+links:
+- document:
+    doctype: CRE
+    id: 126-668
+    name: Secure data storage
+  type: Contains
+- document:
+    doctype: CRE
+    id: 157-430
+    name: Protect and purge temperory copied of sensitive data
+  type: Contains
+- document:
+    doctype: CRE
+    id: 473-758
+    name: no caching of sensitive data in browser
+  type: Contains
+- document:
+    doctype: CRE
+    id: 046-257
+    name: Purge authentication data after session termination
+  type: Contains
+- document:
+    doctype: CRE
+    id: 715-304
+    name: Overwrite sensitive information with nonsense after expiry
+  type: Contains
+- document:
+    doctype: CRE
+    id: 846-302
+    name: Protect against server component caching of sensitive data
+  type: Contains
+- document:
+    doctype: CRE
+    id: 617-524
+    name: Do not store sensitive data on client storage
+  type: Contains
+name: Manage temporary storage

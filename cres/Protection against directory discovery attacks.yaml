@@ -1,0 +1,35 @@
+doctype: CRE
+id: 615-744
+links:
+- document:
+    doctype: CRE
+    id: 724-770
+    name: Authorized access
+  type: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x12-V4-Access-Control.md
+    name: ASVS
+    section: V4.3.2
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: WSTG
+    section: WSTG-CONF-03
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '548'
+    subsection: ''
+    version: ''
+  type: Linked To
+name: Protection against directory discovery attacks
+tags:
+- Configuration

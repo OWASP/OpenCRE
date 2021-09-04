@@ -1,0 +1,25 @@
+doctype: CRE
+id: 611-158
+links:
+- document:
+    doctype: CRE
+    id: 433-442
+    name: Development verification
+  type: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x18-V10-Malicious.md
+    name: ASVS
+    section: V10.1.1
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '749'
+    subsection: ''
+    version: ''
+  type: Linked To
+name: Useage of effective SAST tools

@@ -1,0 +1,53 @@
+doctype: CRE
+id: Standard NIST 800-53
+links:
+- document:
+    doctype: CRE
+    id: 503-455
+    name: Input and output verification
+  type: Contains
+- document:
+    doctype: CRE
+    id: 317-743
+    name: No unsafe execution of unsanitized user input
+  type: Contains
+- document:
+    doctype: CRE
+    id: 422-005
+    name: Protection against template injection
+  type: Contains
+- document:
+    doctype: CRE
+    id: 646-462
+    name: Sanitize, disable, or sandboxe untrusted scriptable or expression template
+      language content
+  type: Contains
+- document:
+    doctype: CRE
+    id: 145-310
+    name: Sanitize, disable, or sandboxe untrusted SVG scriptable contet
+  type: Contains
+- document:
+    doctype: CRE
+    id: 881-434
+    name: Protection against SMTP it IMAP injection
+  type: Contains
+- document:
+    doctype: CRE
+    id: 657-084
+    name: Protection against SSRF attacks
+  type: Contains
+- document:
+    doctype: CRE
+    id: 538-446
+    name: Sanitize unstructured data
+  type: Contains
+- document:
+    doctype: CRE
+    id: 542-445
+    name: Sanitize untrusted HTML input
+  type: Contains
+name: Sanitization and sandboxing
+tags:
+- XSS
+- Injection

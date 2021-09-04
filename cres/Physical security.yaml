@@ -1,0 +1,11 @@
+doctype: CRE
+id: 266-527
+links:
+- document:
+    doctype: CRE
+    id: 783-355
+    name: Deployment
+    tags:
+    - Configuration
+  type: Contains
+name: Physical security

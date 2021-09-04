@@ -1,0 +1,21 @@
+doctype: CRE
+id: 146-556
+links:
+- document:
+    doctype: CRE
+    id: 270-568
+    name: Authentication mechanism
+  type: Contains
+- document:
+    doctype: CRE
+    id: 278-413
+    name: All components authenticated and with least privileges
+    tags:
+    - Architecture
+  type: Contains
+- document:
+    doctype: CRE
+    id: 576-042
+    name: Consistent authentication strength
+  type: Contains
+name: Authenticate consistently

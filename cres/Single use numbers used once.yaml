@@ -1,0 +1,44 @@
+doctype: CRE
+id: 433-122
+links:
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x14-V6-Cryptography.md
+    name: ASVS
+    section: V6.2.6
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: WSTG
+    section: WSTG-CRYP-04
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '326'
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: Cheat_sheets
+    section: https://cheatsheetseries.owasp.org/cheatsheets/Key_Management_Cheat_Sheet.html
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: Cheat_sheets
+    section: https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html
+    subsection: ''
+    version: ''
+  type: Linked To
+name: Single use numbers used once

@@ -1,0 +1,41 @@
+doctype: CRE
+id: 863-636
+links:
+- document:
+    doctype: CRE
+    id: 513-183
+    name: Error handling
+  type: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x15-V7-Error-Logging.md
+    name: ASVS
+    section: V7.4.2
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: OPC
+    section: C10
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: WSTG
+    section: WSTG-ERRH-02
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '544'
+    subsection: ''
+    version: ''
+  type: Linked To
+name: Ubiquitous exceprion handeling

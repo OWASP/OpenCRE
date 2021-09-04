@@ -1,0 +1,49 @@
+doctype: CRE
+id: 036-810
+links:
+- document:
+    doctype: CRE
+    id: 141-555
+    name: Fail securely
+  type: Related
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x14-V6-Cryptography.md
+    name: ASVS
+    section: V6.2.1
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: WSTG
+    section: WSTG-CRYP-02
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '310'
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: Cheat_sheets
+    section: https://cheatsheetseries.owasp.org/cheatsheets/Key_Management_Cheat_Sheet.html
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: Cheat_sheets
+    section: https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html
+    subsection: ''
+    version: ''
+  type: Linked To
+name: Cryptographic modules fail securely

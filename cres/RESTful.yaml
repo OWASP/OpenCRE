@@ -1,0 +1,24 @@
+doctype: CRE
+id: 071-288
+links:
+- document:
+    doctype: CRE
+    id: 001-746
+    name: Anti-Automation protection for REST services
+  type: Contains
+- document:
+    doctype: CRE
+    id: 543-512
+    name: 'Content-type verification for REST sevises '
+  type: Contains
+- document:
+    doctype: CRE
+    id: 146-706
+    name: Timely schema validation for JSON
+  type: Contains
+- document:
+    doctype: CRE
+    id: 464-084
+    name: CSRF protection for cookie based  RESTful web services
+  type: Contains
+name: RESTful

@@ -1,0 +1,44 @@
+doctype: CRE
+id: 362-550
+links:
+- document:
+    doctype: CRE
+    id: 227-045
+    name: Identify all sensitive data/ have policy to deal with sensitive data
+  type: Contains
+- document:
+    doctype: CRE
+    id: 082-327
+    name: Attain user consent when using their data
+  type: Contains
+- document:
+    doctype: CRE
+    id: 762-451
+    name: Allow user to delete or access their data
+  type: Contains
+- document:
+    doctype: CRE
+    id: 268-272
+    name: Sensitive personal data is purged
+  type: Contains
+- document:
+    doctype: CRE
+    id: 540-566
+    name: Minimal permisions for application
+  type: Related
+- document:
+    doctype: CRE
+    id: 765-788
+    name: All sensitive data classified in protection levels
+  type: Related
+- document:
+    doctype: CRE
+    id: 731-120
+    name: Protection levels have requiements
+  type: Related
+- document:
+    doctype: CRE
+    id: 482-866
+    name: Encrypt personal data at rest
+  type: Related
+name: Personal data handling

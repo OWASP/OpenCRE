@@ -1,0 +1,35 @@
+doctype: CRE
+id: 504-340
+links:
+- document:
+    doctype: CRE
+    id: 400-007
+    name: Encrypt data at rest
+    tags:
+    - Cryptography
+  type: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x16-V8-Data-Protection.md
+    name: ASVS
+    section: V8.3.7
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: OPC
+    section: C8
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '327'
+    subsection: ''
+    version: ''
+  type: Linked To
+name: Encrypt sensitive or private information

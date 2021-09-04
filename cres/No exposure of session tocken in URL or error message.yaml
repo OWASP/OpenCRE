@@ -1,0 +1,33 @@
+doctype: CRE
+id: 402-133
+links:
+- document:
+    doctype: CRE
+    id: 177-260
+    name: Session management
+  type: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x12-V3-Session-management.md
+    name: ASVS
+    section: V3.1.1
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: WSTG
+    section: WSTG-SESS-04
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '598'
+    subsection: ''
+    version: ''
+  type: Linked To
+name: No exposure of session tocken in URL or error message
