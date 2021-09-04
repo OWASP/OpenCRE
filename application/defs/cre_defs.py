@@ -121,13 +121,18 @@ class Credoctypes(Enum):
 
 class LinkTypes(Enum):
     Same = "SAME"
+    LinkedTo = "Linked To"
+    PartOf = "Is Part Of"
+    Contains = "Contains"
 
     @staticmethod
     def from_str(name: str) -> Any:  # it returns LinkTypes but then it won't run
-
-        if name == "SAM" or name == "SAME":
-            return LinkTypes.Same
-        raise ValueError('"{}" is not a valid link type'.format(name))
+        if name.upper().startswith('SAM'):
+            name = 'SAME'
+        res = [x for x in LinkTypes if x.value == name]
+        if not res:
+            raise KeyError(f'"{name}" is not a valid Link Type')
+        return res[0]
 
 
 @dataclass
