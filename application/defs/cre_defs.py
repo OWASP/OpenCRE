@@ -2,19 +2,8 @@ import json
 from dataclasses import dataclass
 from enum import Enum
 from pprint import pprint
-from typing import (
-    Any,
-    Dict,
-    List,
-    Mapping,
-    Optional,
-    Set,
-    Tuple,
-    TypeVar,
-    Union,
-    overload,
-)
-
+from typing import (Any, Dict, List, Mapping, Optional, Set, Tuple, TypeVar,
+                    Union, overload)
 
 # used for serialising and deserialising yaml CRE documents
 
@@ -42,7 +31,6 @@ class ExportFormat(Enum):
 
     @staticmethod
     def subsection_key(sname: str) -> str:
-
         "returns <sname>:subsection"
         return "%s%s%s" % (
             sname,
@@ -52,7 +40,6 @@ class ExportFormat(Enum):
 
     @staticmethod
     def hyperlink_key(sname: str) -> str:
-
         "returns <sname>:hyperlink"
         return "%s%s%s" % (
             sname,
@@ -62,7 +49,6 @@ class ExportFormat(Enum):
 
     @staticmethod
     def link_type_key(sname: str) -> str:
-
         "returns <sname>:link_type"
         return "%s%s%s" % (
             sname,
@@ -72,7 +58,6 @@ class ExportFormat(Enum):
 
     @staticmethod
     def linked_cre_id_key(name: str) -> str:
-
         "returns Linked_CRE_<name>:id"
         return "%s%s%s%s" % (
             ExportFormat.cre_link.value,
@@ -83,7 +68,6 @@ class ExportFormat(Enum):
 
     @staticmethod
     def linked_cre_name_key(name: str) -> str:
-
         "returns Linked_CRE_<name>:name"
         return "%s%s%s%s" % (
             ExportFormat.cre_link.value,
@@ -94,7 +78,6 @@ class ExportFormat(Enum):
 
     @staticmethod
     def linked_cre_link_type_key(name: str) -> str:
-
         "returns Linked_CRE_<name>:link_type"
         return "%s%s%s%s" % (
             ExportFormat.cre_link.value,
@@ -105,7 +88,6 @@ class ExportFormat(Enum):
 
     @staticmethod
     def cre_id_key() -> str:
-
         "returns CRE:id"
         return "%s%s%s" % (
             ExportFormat.cre.value,
@@ -115,7 +97,6 @@ class ExportFormat(Enum):
 
     @staticmethod
     def cre_name_key() -> str:
-
         "returns CRE:name"
         return "%s%s%s" % (
             ExportFormat.cre.value,
@@ -125,7 +106,6 @@ class ExportFormat(Enum):
 
     @staticmethod
     def cre_description_key() -> str:
-
         "returns CRE:description"
         return "%s%s%s" % (
             ExportFormat.cre.value,
