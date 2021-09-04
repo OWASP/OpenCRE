@@ -1,9 +1,10 @@
 import collections
 import unittest
+from pprint import pprint
 
 from application.defs import cre_defs as defs
-from application.utils.parsers import (  # type: ignore
-    parse_export_format,
+from application.utils.parsers import parse_export_format  # type: ignore
+from application.utils.parsers import (
     parse_hierarchical_export_format,
     parse_uknown_key_val_spreadsheet,
     parse_v0_standards,
@@ -13,14 +14,13 @@ from application.utils.parsers import (  # type: ignore
 
 class TestParsers(unittest.TestCase):
     def test_parse_export_format(self) -> None:
-
         """Given
             * CRE "C1" -> Standard "S1" section "SE1"
-            * CRE "C2" -> CRE "C3"
-            * CRE "C3" -> "C2" ,  Standard "S3" section "SE3"
+            * CRE "C2" -> CRE "C3" linktype contains
+            * CRE "C3" -> "C2" (linktype is part of),  Standard "S3" section "SE3"
             * CRE "C5" -> Standard "S1" section "SE1" subsection "SBE1"
             * CRE "C5" -> Standard "S1" section "SE1" subsection "SBE11"
-            * CRE "C6" -> Standard "S1" section "SE11", Standard "S2" section "SE22", CRE "C7", CRE "C8"
+            * CRE "C6" -> Standard "S1" section "SE11", Standard "S2" section "SE22", CRE "C7"(linktype contains) , CRE "C8" (linktype contains)
             * Standard "SL"
             * Standard "SL2" -> Standard "SLL"
             # * CRE "C9"
@@ -29,13 +29,13 @@ class TestParsers(unittest.TestCase):
             9 standards
             appropriate links among them based on the arrows above
         """
-        input = [
+        input_data = [
             {
                 "CRE:description": "C1 description",
                 "CRE:id": "1",
                 "CRE:name": "C1",
                 "S1:hyperlink": "https://example.com/S1",
-                "S1:link_type": "SAM",
+                "S1:link_type": "Linked To",
                 "S1:section": "SE1",
                 "S1:subsection": "SBE1",
                 "S2:hyperlink": "",
@@ -82,7 +82,7 @@ class TestParsers(unittest.TestCase):
                 "S3:section": "",
                 "S3:subsection": "",
                 "Linked_CRE_0:id": "3",
-                "Linked_CRE_0:link_type": "SAM",
+                "Linked_CRE_0:link_type": "Contains",
                 "Linked_CRE_0:name": "C3",
                 "Linked_CRE_1:id": "",
                 "Linked_CRE_1:link_type": "",
@@ -113,11 +113,11 @@ class TestParsers(unittest.TestCase):
                 "S2:section": "",
                 "S2:subsection": "",
                 "S3:hyperlink": "https://example.com/S3",
-                "S3:link_type": "SAM",
+                "S3:link_type": "Linked To",
                 "S3:section": "SE3",
                 "S3:subsection": "SBE3",
                 "Linked_CRE_0:id": "2",
-                "Linked_CRE_0:link_type": "SAM",
+                "Linked_CRE_0:link_type": "Is Part Of",
                 "Linked_CRE_0:name": "C2",
                 "Linked_CRE_1:id": "",
                 "Linked_CRE_1:link_type": "",
@@ -140,7 +140,7 @@ class TestParsers(unittest.TestCase):
                 "CRE:id": "5",
                 "CRE:name": "C5",
                 "S1:hyperlink": "https://example.com/S1",
-                "S1:link_type": "SAM",
+                "S1:link_type": "Linked To",
                 "S1:section": "SE1",
                 "S1:subsection": "SBE1",
                 "S2:hyperlink": "",
@@ -175,7 +175,7 @@ class TestParsers(unittest.TestCase):
                 "CRE:id": "5",
                 "CRE:name": "C5",
                 "S1:hyperlink": "https://example.com/S1",
-                "S1:link_type": "SAM",
+                "S1:link_type": "Linked To",
                 "S1:section": "SE1",
                 "S1:subsection": "SBE11",
                 "S2:hyperlink": "",
@@ -210,11 +210,11 @@ class TestParsers(unittest.TestCase):
                 "CRE:id": "6",
                 "CRE:name": "C6",
                 "S1:hyperlink": "https://example.com/S1",
-                "S1:link_type": "SAM",
+                "S1:link_type": "Linked To",
                 "S1:section": "SE1",
                 "S1:subsection": "SBE11",
                 "S2:hyperlink": "https://example.com/S2",
-                "S2:link_type": "SAM",
+                "S2:link_type": "Linked To",
                 "S2:section": "SE2",
                 "S2:subsection": "SBE22",
                 "S3:hyperlink": "",
@@ -222,10 +222,10 @@ class TestParsers(unittest.TestCase):
                 "S3:section": "",
                 "S3:subsection": "",
                 "Linked_CRE_0:id": "7",
-                "Linked_CRE_0:link_type": "SAM",
+                "Linked_CRE_0:link_type": "Contains",
                 "Linked_CRE_0:name": "C7",
                 "Linked_CRE_1:id": "8",
-                "Linked_CRE_1:link_type": "SAM",
+                "Linked_CRE_1:link_type": "Contains",
                 "Linked_CRE_1:name": "C8",
                 "SL:hyperlink": "",
                 "SL:link_type": "",
@@ -319,12 +319,13 @@ class TestParsers(unittest.TestCase):
                 name="C1",
                 links=[
                     defs.Link(
+                        ltype=defs.LinkTypes.LinkedTo,
                         document=defs.Standard(
                             name="S1",
                             section="SE1",
                             subsection="SBE1",
                             hyperlink="https://example.com/S1",
-                        )
+                        ),
                     )
                 ],
             ),
@@ -332,7 +333,12 @@ class TestParsers(unittest.TestCase):
                 id="2",
                 description="C2 description",
                 name="C2",
-                links=[defs.Link(document=defs.CRE(id="3", name="C3"))],
+                links=[
+                    defs.Link(
+                        ltype=defs.LinkTypes.Contains,
+                        document=defs.CRE(id="3", name="C3"),
+                    )
+                ],
             ),
             "C3": defs.CRE(
                 id="3",
@@ -340,17 +346,19 @@ class TestParsers(unittest.TestCase):
                 name="C3",
                 links=[
                     defs.Link(
+                        ltype=defs.LinkTypes.PartOf,
                         document=defs.CRE(
                             id="2", description="C2 description", name="C2"
-                        )
+                        ),
                     ),
                     defs.Link(
+                        ltype=defs.LinkTypes.LinkedTo,
                         document=defs.Standard(
                             name="S3",
                             section="SE3",
                             subsection="SBE3",
                             hyperlink="https://example.com/S3",
-                        )
+                        ),
                     ),
                 ],
             ),
@@ -360,20 +368,22 @@ class TestParsers(unittest.TestCase):
                 name="C5",
                 links=[
                     defs.Link(
+                        ltype=defs.LinkTypes.LinkedTo,
                         document=defs.Standard(
                             name="S1",
                             section="SE1",
                             subsection="SBE1",
                             hyperlink="https://example.com/S1",
-                        )
+                        ),
                     ),
                     defs.Link(
+                        ltype=defs.LinkTypes.LinkedTo,
                         document=defs.Standard(
                             name="S1",
                             section="SE1",
                             subsection="SBE11",
                             hyperlink="https://example.com/S1",
-                        )
+                        ),
                     ),
                 ],
             ),
@@ -383,23 +393,31 @@ class TestParsers(unittest.TestCase):
                 name="C6",
                 links=[
                     defs.Link(
+                        ltype=defs.LinkTypes.LinkedTo,
                         document=defs.Standard(
                             name="S2",
                             section="SE2",
                             subsection="SBE22",
                             hyperlink="https://example.com/S2",
-                        )
+                        ),
                     ),
                     defs.Link(
+                        ltype=defs.LinkTypes.LinkedTo,
                         document=defs.Standard(
                             name="S1",
                             section="SE1",
                             subsection="SBE11",
                             hyperlink="https://example.com/S1",
-                        )
+                        ),
                     ),
-                    defs.Link(document=defs.CRE(id="7", name="C7")),
-                    defs.Link(document=defs.CRE(id="8", name="C8")),
+                    defs.Link(
+                        ltype=defs.LinkTypes.Contains,
+                        document=defs.CRE(id="7", name="C7"),
+                    ),
+                    defs.Link(
+                        ltype=defs.LinkTypes.Contains,
+                        document=defs.CRE(id="8", name="C8"),
+                    ),
                 ],
             ),
             "C7": defs.CRE(
@@ -407,9 +425,10 @@ class TestParsers(unittest.TestCase):
                 name="C7",
                 links=[
                     defs.Link(
+                        ltype=defs.LinkTypes.PartOf,
                         document=defs.CRE(
                             id="6", description="C6 description", name="C6"
-                        )
+                        ),
                     )
                 ],
             ),
@@ -418,9 +437,10 @@ class TestParsers(unittest.TestCase):
                 name="C8",
                 links=[
                     defs.Link(
+                        ltype=defs.LinkTypes.PartOf,
                         document=defs.CRE(
                             id="6", description="C6 description", name="C6"
-                        )
+                        ),
                     )
                 ],
             ),
@@ -444,7 +464,7 @@ class TestParsers(unittest.TestCase):
             ),
         }
 
-        result = parse_export_format(input)
+        result = parse_export_format(input_data)
 
         for key, val in result.items():
             # assert equal links, lists in python aren't ordered so normal equality doesn't work
@@ -459,7 +479,7 @@ class TestParsers(unittest.TestCase):
 
     def test_parse_uknown_key_val_spreadsheet(self) -> None:
         # OrderedDict only necessary for testing  so we can predict the root Standard, normally it wouldn't matter
-        input = [
+        input_data = [
             collections.OrderedDict(
                 {
                     "CS": "Session Management",
@@ -543,12 +563,12 @@ class TestParsers(unittest.TestCase):
             )
         }
         self.maxDiff = None
-        actual = parse_uknown_key_val_spreadsheet(input)
+        actual = parse_uknown_key_val_spreadsheet(input_data)
 
         self.assertEqual(expected, actual)
 
     def test_parse_v0_standards(self) -> None:
-        input = [
+        input_data = [
             {
                 "CRE-ID-lookup-from-taxonomy-table": "011-040-026",
                 "CS": "Session Management",
@@ -584,45 +604,51 @@ class TestParsers(unittest.TestCase):
                 description="Verify the application never reveals session tokens in URL parameters or error messages.",
                 links=[
                     defs.Link(
+                        ltype=defs.LinkTypes.LinkedTo,
                         document=defs.Standard(
                             doctype=defs.Credoctypes.Standard,
                             name="ASVS",
                             section="SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING",
                             subsection="3.1.1",
-                        )
+                        ),
                     ),
                     defs.Link(
+                        ltype=defs.LinkTypes.LinkedTo,
                         document=defs.Standard(
                             doctype=defs.Credoctypes.Standard,
                             name="CS",
                             section="Session Management",
-                        )
+                        ),
                     ),
                     defs.Link(
+                        ltype=defs.LinkTypes.LinkedTo,
                         document=defs.Standard(
                             doctype=defs.Credoctypes.Standard, name="CWE", section="598"
-                        )
+                        ),
                     ),
                     defs.Link(
+                        ltype=defs.LinkTypes.LinkedTo,
                         document=defs.Standard(
                             doctype=defs.Credoctypes.Standard,
                             name="Name",
                             section="Session",
-                        )
+                        ),
                     ),
                     defs.Link(
+                        ltype=defs.LinkTypes.LinkedTo,
                         document=defs.Standard(
                             doctype=defs.Credoctypes.Standard,
                             name="Top10 (lookup)",
                             section="https://owasp.org/www-project-top-ten/2017/A5_2017-Broken_Access_Control",
-                        )
+                        ),
                     ),
                     defs.Link(
+                        ltype=defs.LinkTypes.LinkedTo,
                         document=defs.Standard(
                             doctype=defs.Credoctypes.Standard,
                             name="WSTG",
                             section="WSTG-SESS-04",
-                        )
+                        ),
                     ),
                 ],
             ),
@@ -632,55 +658,60 @@ class TestParsers(unittest.TestCase):
                 description="Verify the application generates a new session token on user authentication.",
                 links=[
                     defs.Link(
+                        ltype=defs.LinkTypes.LinkedTo,
                         document=defs.Standard(
                             doctype=defs.Credoctypes.Standard,
                             name="ASVS",
                             section="SESSION-MGT-TOKEN-DIRECTIVES-GENERATION",
                             subsection="3.2.1",
-                        )
+                        ),
                     ),
                     defs.Link(
+                        ltype=defs.LinkTypes.LinkedTo,
                         document=defs.Standard(
                             doctype=defs.Credoctypes.Standard,
                             name="CS",
                             section="Session Management",
-                        )
+                        ),
                     ),
                     defs.Link(
+                        ltype=defs.LinkTypes.LinkedTo,
                         document=defs.Standard(
                             doctype=defs.Credoctypes.Standard, name="CWE", section="384"
-                        )
+                        ),
                     ),
                     defs.Link(
+                        ltype=defs.LinkTypes.LinkedTo,
                         document=defs.Standard(
                             doctype=defs.Credoctypes.Standard,
                             name="Name",
                             section="Session",
-                        )
+                        ),
                     ),
                     defs.Link(
+                        ltype=defs.LinkTypes.LinkedTo,
                         document=defs.Standard(
                             doctype=defs.Credoctypes.Standard, name="OPC", section="C6"
-                        )
+                        ),
                     ),
                     defs.Link(
+                        ltype=defs.LinkTypes.LinkedTo,
                         document=defs.Standard(
                             doctype=defs.Credoctypes.Standard,
                             name="WSTG",
                             section="WSTG-SESS-03",
-                        )
+                        ),
                     ),
                 ],
             ),
         }
         self.maxDiff = None
-        output = parse_v0_standards(input)
-
+        output = parse_v0_standards(input_data)
         self.assertEqual(expected, output)
 
     def test_parse_v1_standards(self) -> None:
 
-        input = [
+        input_data = [
             {
                 "ASVS Item": "V9.9.9",
                 "ASVS-L1": "X",
@@ -781,12 +812,13 @@ class TestParsers(unittest.TestCase):
                 name="GROUPLESS",
                 links=[
                     defs.Link(
+                        ltype=defs.LinkTypes.LinkedTo,
                         document=defs.Standard(
                             doctype=defs.Credoctypes.Standard,
                             name="NIST 800-53",
                             tags=["is related to"],
                             section="RA-3 RISK ASSESSMENT",
-                        )
+                        ),
                     )
                 ],
             )
@@ -799,6 +831,7 @@ class TestParsers(unittest.TestCase):
                 name="REQUIREMENTS",
                 links=[
                     defs.Link(
+                        ltype=defs.LinkTypes.Contains,
                         document=defs.CRE(
                             doctype=defs.Credoctypes.CRE,
                             id="002-036",
@@ -806,64 +839,71 @@ class TestParsers(unittest.TestCase):
                             name="SDLC_APPLY_CONSISTENTLY",
                             links=[
                                 defs.Link(
+                                    ltype=defs.LinkTypes.LinkedTo,
                                     document=defs.Standard(
                                         doctype=defs.Credoctypes.Standard,
                                         name="ASVS",
                                         tags=["L2", "L3"],
                                         section="V1.1.1",
                                         subsection="SDLC_GUIDELINES_JUSTIFICATION-REQUIREMENTS-RISK_ANALYSIS-THREAT_MODEL",
-                                    )
+                                    ),
                                 ),
                                 defs.Link(
+                                    ltype=defs.LinkTypes.LinkedTo,
                                     document=defs.Standard(
                                         doctype=defs.Credoctypes.Standard,
                                         name="CWE",
                                         section="0",
-                                    )
+                                    ),
                                 ),
                                 defs.Link(
+                                    ltype=defs.LinkTypes.LinkedTo,
                                     document=defs.Standard(
                                         doctype=defs.Credoctypes.Standard,
                                         name="Cheatsheet",
                                         section="Architecture, Design and Threat Modeling Requirements",
                                         hyperlink="https: // cheatsheetseries.owasp.org/cheatsheets/Threat_Modeling_Cheat_Sheet.html, https: // cheatsheetseries.owasp.org/cheatsheets/Abuse_Case_Cheat_Sheet.html, https: // cheatsheetseries.owasp.org/cheatsheets/Attack_Surface_Analysis_Cheat_Sheet.html",
-                                    )
+                                    ),
                                 ),
                                 defs.Link(
+                                    ltype=defs.LinkTypes.LinkedTo,
                                     document=defs.Standard(
                                         doctype=defs.Credoctypes.Standard,
                                         name="NIST 800-53",
                                         links=[],
                                         tags=["is related to"],
                                         section="RA-3 RISK ASSESSMENT",
-                                    )
+                                    ),
                                 ),
                                 defs.Link(
+                                    ltype=defs.LinkTypes.LinkedTo,
                                     document=defs.Standard(
                                         doctype=defs.Credoctypes.Standard,
                                         name="NIST 800-53",
                                         links=[],
                                         tags=["is related to"],
                                         section="PL-8 SECURITY AND PRIVACY ARCHITECTURES",
-                                    )
+                                    ),
                                 ),
                                 defs.Link(
+                                    ltype=defs.LinkTypes.LinkedTo,
                                     document=defs.Standard(
                                         doctype=defs.Credoctypes.Standard,
                                         name="OPC",
                                         links=[],
                                         section="C1",
-                                    )
+                                    ),
                                 ),
                                 defs.Link(
+                                    ltype=defs.LinkTypes.LinkedTo,
                                     document=defs.Standard(
                                         doctype=defs.Credoctypes.Standard,
                                         name="SIG ISO 25010",
                                         section="@SDLC",
-                                    )
+                                    ),
                                 ),
                             ],
-                        )
+                        ),
                     )
                 ],
             ),
@@ -873,6 +913,7 @@ class TestParsers(unittest.TestCase):
                 name="RISK_ANALYSIS",
                 links=[
                     defs.Link(
+                        ltype=defs.LinkTypes.Contains,
                         document=defs.CRE(
                             doctype=defs.Credoctypes.CRE,
                             id="002-036",
@@ -880,65 +921,72 @@ class TestParsers(unittest.TestCase):
                             name="SDLC_APPLY_CONSISTENTLY",
                             links=[
                                 defs.Link(
+                                    ltype=defs.LinkTypes.LinkedTo,
                                     document=defs.Standard(
                                         doctype=defs.Credoctypes.Standard,
                                         name="ASVS",
                                         tags=["L2", "L3"],
                                         section="V1.1.1",
                                         subsection="SDLC_GUIDELINES_JUSTIFICATION-REQUIREMENTS-RISK_ANALYSIS-THREAT_MODEL",
-                                    )
+                                    ),
                                 ),
                                 defs.Link(
+                                    ltype=defs.LinkTypes.LinkedTo,
                                     document=defs.Standard(
                                         doctype=defs.Credoctypes.Standard,
                                         name="CWE",
                                         links=[],
                                         section="0",
-                                    )
+                                    ),
                                 ),
                                 defs.Link(
+                                    ltype=defs.LinkTypes.LinkedTo,
                                     document=defs.Standard(
                                         doctype=defs.Credoctypes.Standard,
                                         name="Cheatsheet",
                                         section="Architecture, Design and Threat Modeling Requirements",
                                         hyperlink="https: // cheatsheetseries.owasp.org/cheatsheets/Threat_Modeling_Cheat_Sheet.html, https: // cheatsheetseries.owasp.org/cheatsheets/Abuse_Case_Cheat_Sheet.html, https: // cheatsheetseries.owasp.org/cheatsheets/Attack_Surface_Analysis_Cheat_Sheet.html",
-                                    )
+                                    ),
                                 ),
                                 defs.Link(
+                                    ltype=defs.LinkTypes.LinkedTo,
                                     document=defs.Standard(
                                         doctype=defs.Credoctypes.Standard,
                                         name="NIST 800-53",
                                         links=[],
                                         tags=["is related to"],
                                         section="RA-3 RISK ASSESSMENT",
-                                    )
+                                    ),
                                 ),
                                 defs.Link(
+                                    ltype=defs.LinkTypes.LinkedTo,
                                     document=defs.Standard(
                                         doctype=defs.Credoctypes.Standard,
                                         name="NIST 800-53",
                                         links=[],
                                         tags=["is related to"],
                                         section="PL-8 SECURITY AND PRIVACY ARCHITECTURES",
-                                    )
+                                    ),
                                 ),
                                 defs.Link(
+                                    ltype=defs.LinkTypes.LinkedTo,
                                     document=defs.Standard(
                                         doctype=defs.Credoctypes.Standard,
                                         name="OPC",
                                         links=[],
                                         section="C1",
-                                    )
+                                    ),
                                 ),
                                 defs.Link(
+                                    ltype=defs.LinkTypes.LinkedTo,
                                     document=defs.Standard(
                                         doctype=defs.Credoctypes.Standard,
                                         name="SIG ISO 25010",
                                         section="@SDLC",
-                                    )
+                                    ),
                                 ),
                             ],
-                        )
+                        ),
                     )
                 ],
             ),
@@ -948,6 +996,7 @@ class TestParsers(unittest.TestCase):
                 name="SDLC_GUIDELINES_JUSTIFICATION",
                 links=[
                     defs.Link(
+                        ltype=defs.LinkTypes.Contains,
                         document=defs.CRE(
                             doctype=defs.Credoctypes.CRE,
                             id="000-001",
@@ -955,33 +1004,37 @@ class TestParsers(unittest.TestCase):
                             name="OTHER_CRE",
                             links=[
                                 defs.Link(
+                                    ltype=defs.LinkTypes.LinkedTo,
                                     document=defs.Standard(
                                         doctype=defs.Credoctypes.Standard,
                                         name="ASVS",
                                         tags=["L1", "L2", "L3"],
                                         section="V1.1.2",
                                         subsection="SDLC_GUIDELINES_JUSTIFICATION-REQUIREMENTS-RISK_ANALYSIS-THREAT_MODEL",
-                                    )
+                                    ),
                                 ),
                                 defs.Link(
+                                    ltype=defs.LinkTypes.LinkedTo,
                                     document=defs.Standard(
                                         doctype=defs.Credoctypes.Standard,
                                         name="CWE",
                                         section="0",
-                                    )
+                                    ),
                                 ),
                                 defs.Link(
+                                    ltype=defs.LinkTypes.LinkedTo,
                                     document=defs.Standard(
                                         doctype=defs.Credoctypes.Standard,
                                         name="NIST 800-53",
                                         tags=["is related to"],
                                         section="RA-3 RISK ASSESSMENT",
-                                    )
+                                    ),
                                 ),
                             ],
-                        )
+                        ),
                     ),
                     defs.Link(
+                        ltype=defs.LinkTypes.Contains,
                         document=defs.CRE(
                             doctype=defs.Credoctypes.CRE,
                             id="002-036",
@@ -989,61 +1042,68 @@ class TestParsers(unittest.TestCase):
                             name="SDLC_APPLY_CONSISTENTLY",
                             links=[
                                 defs.Link(
+                                    ltype=defs.LinkTypes.LinkedTo,
                                     document=defs.Standard(
                                         doctype=defs.Credoctypes.Standard,
                                         name="ASVS",
                                         tags=["L2", "L3"],
                                         section="V1.1.1",
                                         subsection="SDLC_GUIDELINES_JUSTIFICATION-REQUIREMENTS-RISK_ANALYSIS-THREAT_MODEL",
-                                    )
+                                    ),
                                 ),
                                 defs.Link(
+                                    ltype=defs.LinkTypes.LinkedTo,
                                     document=defs.Standard(
                                         doctype=defs.Credoctypes.Standard,
                                         name="CWE",
                                         section="0",
-                                    )
+                                    ),
                                 ),
                                 defs.Link(
+                                    ltype=defs.LinkTypes.LinkedTo,
                                     document=defs.Standard(
                                         doctype=defs.Credoctypes.Standard,
                                         name="Cheatsheet",
                                         section="Architecture, Design and Threat Modeling Requirements",
                                         hyperlink="https: // cheatsheetseries.owasp.org/cheatsheets/Threat_Modeling_Cheat_Sheet.html, https: // cheatsheetseries.owasp.org/cheatsheets/Abuse_Case_Cheat_Sheet.html, https: // cheatsheetseries.owasp.org/cheatsheets/Attack_Surface_Analysis_Cheat_Sheet.html",
-                                    )
+                                    ),
                                 ),
                                 defs.Link(
+                                    ltype=defs.LinkTypes.LinkedTo,
                                     document=defs.Standard(
                                         doctype=defs.Credoctypes.Standard,
                                         name="NIST 800-53",
                                         tags=["is related to"],
                                         section="RA-3 RISK ASSESSMENT",
-                                    )
+                                    ),
                                 ),
                                 defs.Link(
+                                    ltype=defs.LinkTypes.LinkedTo,
                                     document=defs.Standard(
                                         doctype=defs.Credoctypes.Standard,
                                         name="NIST 800-53",
                                         tags=["is related to"],
                                         section="PL-8 SECURITY AND PRIVACY ARCHITECTURES",
-                                    )
+                                    ),
                                 ),
                                 defs.Link(
+                                    ltype=defs.LinkTypes.LinkedTo,
                                     document=defs.Standard(
                                         doctype=defs.Credoctypes.Standard,
                                         name="OPC",
                                         section="C1",
-                                    )
+                                    ),
                                 ),
                                 defs.Link(
+                                    ltype=defs.LinkTypes.LinkedTo,
                                     document=defs.Standard(
                                         doctype=defs.Credoctypes.Standard,
                                         name="SIG ISO 25010",
                                         section="@SDLC",
-                                    )
+                                    ),
                                 ),
                             ],
-                        )
+                        ),
                     ),
                 ],
             ),
@@ -1053,6 +1113,7 @@ class TestParsers(unittest.TestCase):
                 name="THREAT_MODEL",
                 links=[
                     defs.Link(
+                        ltype=defs.LinkTypes.Contains,
                         document=defs.CRE(
                             doctype=defs.Credoctypes.CRE,
                             id="002-036",
@@ -1060,71 +1121,77 @@ class TestParsers(unittest.TestCase):
                             name="SDLC_APPLY_CONSISTENTLY",
                             links=[
                                 defs.Link(
+                                    ltype=defs.LinkTypes.LinkedTo,
                                     document=defs.Standard(
                                         doctype=defs.Credoctypes.Standard,
                                         name="ASVS",
                                         tags=["L2", "L3"],
                                         section="V1.1.1",
                                         subsection="SDLC_GUIDELINES_JUSTIFICATION-REQUIREMENTS-RISK_ANALYSIS-THREAT_MODEL",
-                                    )
+                                    ),
                                 ),
                                 defs.Link(
+                                    ltype=defs.LinkTypes.LinkedTo,
                                     document=defs.Standard(
                                         doctype=defs.Credoctypes.Standard,
                                         name="CWE",
                                         section="0",
-                                    )
+                                    ),
                                 ),
                                 defs.Link(
+                                    ltype=defs.LinkTypes.LinkedTo,
                                     document=defs.Standard(
                                         doctype=defs.Credoctypes.Standard,
                                         name="Cheatsheet",
                                         section="Architecture, Design and Threat Modeling Requirements",
                                         hyperlink="https: // cheatsheetseries.owasp.org/cheatsheets/Threat_Modeling_Cheat_Sheet.html, https: // cheatsheetseries.owasp.org/cheatsheets/Abuse_Case_Cheat_Sheet.html, https: // cheatsheetseries.owasp.org/cheatsheets/Attack_Surface_Analysis_Cheat_Sheet.html",
-                                    )
+                                    ),
                                 ),
                                 defs.Link(
+                                    ltype=defs.LinkTypes.LinkedTo,
                                     document=defs.Standard(
                                         doctype=defs.Credoctypes.Standard,
                                         name="NIST 800-53",
                                         tags=["is related to"],
                                         section="RA-3 RISK ASSESSMENT",
-                                    )
+                                    ),
                                 ),
                                 defs.Link(
+                                    ltype=defs.LinkTypes.LinkedTo,
                                     document=defs.Standard(
                                         doctype=defs.Credoctypes.Standard,
                                         name="NIST 800-53",
                                         links=[],
                                         tags=["is related to"],
                                         section="PL-8 SECURITY AND PRIVACY ARCHITECTURES",
-                                    )
+                                    ),
                                 ),
                                 defs.Link(
+                                    ltype=defs.LinkTypes.LinkedTo,
                                     document=defs.Standard(
                                         doctype=defs.Credoctypes.Standard,
                                         name="OPC",
                                         section="C1",
-                                    )
+                                    ),
                                 ),
                                 defs.Link(
+                                    ltype=defs.LinkTypes.LinkedTo,
                                     document=defs.Standard(
                                         doctype=defs.Credoctypes.Standard,
                                         name="SIG ISO 25010",
                                         section="@SDLC",
-                                    )
+                                    ),
                                 ),
                             ],
-                        )
+                        ),
                     )
                 ],
             ),
         }
 
         self.maxDiff = None
-        output = parse_v1_standards(input)
+        output = parse_v1_standards(input_data)
         for key, value in output[0].items():
-
             self.assertEqual(
                 collections.Counter(value.links),
                 collections.Counter(expected[key].links),
@@ -1179,30 +1246,42 @@ class TestParsers(unittest.TestCase):
 
         cfoo = (
             defs.CRE(id=9, name="FooBar")
-            .add_link(defs.Link(document=cauthmech))
-            .add_link(defs.Link(document=scheatb))
-            .add_link(defs.Link(document=scheatf))
+            .add_link(
+                defs.Link(
+                    ltype=defs.LinkTypes.Related, document=cauthmech.shallow_copy()
+                )
+            )
+            .add_link(defs.Link(ltype=defs.LinkTypes.LinkedTo, document=scheatb))
+            .add_link(defs.Link(ltype=defs.LinkTypes.LinkedTo, document=scheatf))
         )
 
-        cauth.add_link(defs.Link(document=cfoo)).add_link(
-            defs.Link(document=cauthmech)
-        ).add_link(defs.Link(document=sTop10)).add_link(
-            defs.Link(document=sNIST3)
+        cauth.add_link(
+            defs.Link(ltype=defs.LinkTypes.Related, document=cfoo.shallow_copy())
         ).add_link(
-            defs.Link(document=sNIST4)
+            defs.Link(ltype=defs.LinkTypes.Contains, document=cauthmech.shallow_copy())
         ).add_link(
-            defs.Link(document=sWSTG)
+            defs.Link(ltype=defs.LinkTypes.LinkedTo, document=sTop10)
         ).add_link(
-            defs.Link(document=sCWE19876)
+            defs.Link(ltype=defs.LinkTypes.LinkedTo, document=sNIST3)
         ).add_link(
-            defs.Link(document=sOPC)
+            defs.Link(ltype=defs.LinkTypes.LinkedTo, document=sNIST4)
+        ).add_link(
+            defs.Link(ltype=defs.LinkTypes.LinkedTo, document=sWSTG)
+        ).add_link(
+            defs.Link(ltype=defs.LinkTypes.LinkedTo, document=sCWE19876)
+        ).add_link(
+            defs.Link(ltype=defs.LinkTypes.LinkedTo, document=sOPC)
         )
 
-        cauthmech.add_link(defs.Link(document=cauth4))
+        cauthmech.add_link(
+            defs.Link(ltype=defs.LinkTypes.Contains, document=cauth4.shallow_copy())
+        )
 
-        cauth4.add_link(defs.Link(document=clogging)).add_link(
-            defs.Link(document=sASVS)
-        ).add_link(defs.Link(document=sCWE))
+        cauth4.add_link(
+            defs.Link(ltype=defs.LinkTypes.Related, document=clogging.shallow_copy())
+        ).add_link(defs.Link(ltype=defs.LinkTypes.LinkedTo, document=sASVS)).add_link(
+            defs.Link(ltype=defs.LinkTypes.LinkedTo, document=sCWE)
+        )
 
         for nsection in [
             "PL-8 Information Security Architecture",
@@ -1211,7 +1290,8 @@ class TestParsers(unittest.TestCase):
         ]:
             cauth4.add_link(
                 defs.Link(
-                    document=defs.Standard(name="NIST 800-53 v5", section=nsection)
+                    ltype=defs.LinkTypes.LinkedTo,
+                    document=defs.Standard(name="NIST 800-53 v5", section=nsection),
                 )
             )
 
@@ -1233,7 +1313,7 @@ class TestParsers(unittest.TestCase):
                 "Standard CWE (from ASVS)": "",
                 "Link to other CRE": "",
                 "Standard NIST 800-53 v5": "",
-                "Standard NIST-800-63 (from ASVS)": "",
+                "Standard NIST 800-63 (from ASVS)": "",
                 "Standard OPC (ASVS source)": "",
                 "CRE Tags": "",
                 "Standard WSTG (prefilled by SR, but Elie has plan to make the administration self-maintaining)": "",
@@ -1343,7 +1423,11 @@ class TestParsers(unittest.TestCase):
 
         self.maxDiff = None
         output = parse_hierarchical_export_format(data)
-        self.assertCountEqual(output, expected)
+        for k, v in expected.items():
+            self.assertEqual(
+                collections.Counter(output[k].links), collections.Counter(v.links)
+            )
+            self.assertEqual(output[k], v)
 
 
 if __name__ == "__main__":

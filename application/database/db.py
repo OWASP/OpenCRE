@@ -377,9 +377,16 @@ class Standard_collection:
             q = self.session.query(CRE)
 
             res: CRE
+            ltype = cre_defs.LinkTypes.from_str(il.type)
 
             if il.cre == dbcre.id:
                 res = q.filter(CRE.id == il.group).first()
+                # if this CRE is the lower level cre the relationship will be tagged "Contains"
+                # in that case the implicit relationship is "Is Part Of"
+                # otherwise the relationship will be "Related" and we don't need to do anything
+                if ltype == cre_defs.LinkTypes.Contains:
+                    ltype = cre_defs.LinkTypes.PartOf
+
             elif il.group == dbcre.id:
                 res = q.filter(CRE.id == il.cre).first()
             cre.add_link(
@@ -474,7 +481,13 @@ class Standard_collection:
             entry = query.filter(CRE.description == cre.description).first()
 
         if entry is not None:
-            logger.debug("knew of %s ,skipping" % cre.name)
+            logger.debug("knew of %s ,updating" % cre.name)
+            if not entry.external_id:
+                entry.external_id = cre.id
+            if not entry.description:
+                entry.description = cre.description
+            if not entry.tags:
+                entry.tags = ",".join(cre.tags)
             return entry
         else:
             logger.debug("did not know of %s ,adding" % cre.name)

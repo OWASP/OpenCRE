@@ -1,4 +1,5 @@
 import json
+from copy import copy
 from dataclasses import dataclass
 from enum import Enum
 from pprint import pprint
@@ -254,6 +255,13 @@ class Document:
     def __hash__(self) -> int:
         return hash(json.dumps(self.todict()))
 
+    def shallow_copy(self) -> Any:
+        """Returns a copy of itself minus the Links,
+        useful when creating links between cres"""
+        res = copy(self)
+        res.links = []
+        return res
+
     def todict(self) -> Dict[str, Union[Dict[str, str], List[Any], Set[str], str]]:
         result: Dict[str, Union[Dict[str, str], List[Any], Set[str], str]] = {
             "doctype": self.doctype.value,
@@ -352,14 +360,14 @@ class Standard(Document):
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Standard):
-            return NotImplemented
+            return False
         else:
             return (
-                super().__eq__(other)
-                and self.section == other.section
+                self.section == other.section
                 and self.subsection == other.subsection
                 and self.hyperlink == other.hyperlink
                 and self.version == other.version
+                and super().__eq__(other)
             )
 
     def __init__(
