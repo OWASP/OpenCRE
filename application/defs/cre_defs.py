@@ -2,8 +2,18 @@ import json
 from dataclasses import dataclass
 from enum import Enum
 from pprint import pprint
-from typing import (Any, Dict, List, Mapping, Optional, Set, Tuple, TypeVar,
-                    Union, overload)
+from typing import (
+    Any,
+    Dict,
+    List,
+    Mapping,
+    Optional,
+    Set,
+    Tuple,
+    TypeVar,
+    Union,
+    overload,
+)
 
 # used for serialising and deserialising yaml CRE documents
 
@@ -121,14 +131,15 @@ class Credoctypes(Enum):
 
 class LinkTypes(Enum):
     Same = "SAME"
-    LinkedTo = "Linked To"
-    PartOf = "Is Part Of"
-    Contains = "Contains"
+    LinkedTo = "Linked To"  # Any standard entry is by default “linked”
+    PartOf = "Is Part Of"  # Hierarchy above: “is part of”
+    Contains = "Contains"  # Hierarchy below: “Contains”
+    Related = "Related"  # Hierarchy across (other CRE topic or Tag): “related”
 
     @staticmethod
     def from_str(name: str) -> Any:  # it returns LinkTypes but then it won't run
-        if name.upper().startswith('SAM'):
-            name = 'SAME'
+        if name.upper().startswith("SAM"):
+            name = "SAME"
         res = [x for x in LinkTypes if x.value == name]
         if not res:
             raise KeyError(f'"{name}" is not a valid Link Type')
@@ -358,7 +369,7 @@ class Standard(Document):
         hyperlink: str = "",
         version: str = "",
         *args: Any,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         self.doctype = Credoctypes.Standard
         if section is None or section == "":
