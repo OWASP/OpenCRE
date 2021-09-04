@@ -20,7 +20,7 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({ node }) => {
     const route = isStandard ? STANDARD : CRE;
     const id = isStandard ? node.name : node.id;
     const hasExternalLink = Boolean(node.hyperlink);
-
+    var hyperlink = node.hyperlink ? node.hyperlink : ""
     const linkContent = (
       <>
         <i aria-hidden="true" className="circle icon"></i>
@@ -30,15 +30,15 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({ node }) => {
     );
     return (
       <>
-        <div className={`title external-link document-node`}>
-          {hasExternalLink ? (
+
+        {hasExternalLink ? (
+          <p className={`title external-link document-node external square`}>
             <a target="_blank" href={node.hyperlink}>
               {linkContent}
-            </a>
-          ) : (
-            <Link to={`${route}/${id}`}>{linkContent}</Link>
-          )}
-        </div>
+            </a></p>
+        ) : <div className={`title external-link document-node`}>
+            <Link to={`${route}/${id}`}>{linkContent}</Link></div>
+        }
         <div className={`content`}></div>
       </>
     );
