@@ -263,7 +263,8 @@ class Standard_collection:
                     if dbcre:
                         standard.add_link(
                             cre_defs.Link(
-                                ltype=dbcre_link.type, document=CREfromDB(dbcre)
+                                ltype=cre_defs.LinkTypes.from_str(dbcre_link.type),
+                                document=CREfromDB(dbcre),
                             )
                         )
                 standards.append(standard)
@@ -293,7 +294,7 @@ class Standard_collection:
                 for dbcre_link in linked_cres:
                     standard.add_link(
                         cre_defs.Link(
-                            ltype=dbcre_link.type,
+                            ltype=cre_defs.LinkTypes.from_str(dbcre_link.type),
                             document=CREfromDB(
                                 CRE.query.filter(CRE.id == dbcre_link.cre).first()
                             ),
@@ -376,9 +377,16 @@ class Standard_collection:
             q = self.session.query(CRE)
 
             res: CRE
+            ltype = cre_defs.LinkTypes.from_str(il.type)
 
             if il.cre == dbcre.id:
                 res = q.filter(CRE.id == il.group).first()
+                # if this CRE is the lower level cre the relationship will be tagged "Contains"
+                # in that case the implicit relationship is "Is Part Of"
+                # otherwise the relationship will be "Related" and we don't need to do anything
+                if ltype == cre_defs.LinkTypes.Contains:
+                    ltype = cre_defs.LinkTypes.PartOf
+
             elif il.group == dbcre.id:
                 res = q.filter(CRE.id == il.cre).first()
             cre.add_link(
@@ -406,7 +414,11 @@ class Standard_collection:
                 grp = docs[group.name]
             else:
                 grp = CREfromDB(group)
-            grp.add_link(cre_defs.Link(ltype=type, document=CREfromDB(cre)))
+            grp.add_link(
+                cre_defs.Link(
+                    ltype=cre_defs.LinkTypes.from_str(type), document=CREfromDB(cre)
+                )
+            )
             docs[group.name] = grp
 
             # then handle cre2 -> cre1 link
@@ -416,7 +428,11 @@ class Standard_collection:
                 c = CREfromDB(cre)
             docs[cre.name] = c
             # this cannot be grp, grp already has a link to cre2
-            c.add_link(cre_defs.Link(ltype=type, document=CREfromDB(group)))
+            c.add_link(
+                cre_defs.Link(
+                    ltype=cre_defs.LinkTypes.from_str(type), document=CREfromDB(group)
+                )
+            )
 
         # external links are CRE -> standard
         for link in self.__get_external_links():
@@ -431,7 +447,10 @@ class Standard_collection:
                 cr = CREfromDB(internal_doc)
             if len(standard.name) != 0:
                 cr.add_link(
-                    cre_defs.Link(ltype=type, document=StandardFromDB(standard))
+                    cre_defs.Link(
+                        ltype=cre_defs.LinkTypes.from_str(type),
+                        document=StandardFromDB(standard),
+                    )
                 )
             docs[cr.name] = cr
 
@@ -462,7 +481,18 @@ class Standard_collection:
             entry = query.filter(CRE.description == cre.description).first()
 
         if entry is not None:
-            logger.debug("knew of %s ,skipping" % cre.name)
+            logger.debug("knew of %s ,updating" % cre.name)
+            if not entry.external_id:
+                if entry.external_id != cre.id:
+                    raise ValueError(
+                        f"Attempting to register existing CRE"
+                        f"{entry.external_id}:{entry.name} with other ID {cre.id}"
+                    )
+                entry.external_id = cre.id
+            if not entry.description:
+                entry.description = cre.description
+            if not entry.tags:
+                entry.tags = ",".join(cre.tags)
             return entry
         else:
             logger.debug("did not know of %s ,adding" % cre.name)
@@ -598,7 +628,9 @@ class Standard_collection:
             .first()
         )
         if entry is not None:
-            logger.debug(f"knew of internal link {cre.name} == {group.name} ,updating")
+            logger.debug(
+                f"knew of internal link {cre.name} == {group.name} of type {entry.type},updating to type {type.value}"
+            )
             entry.type = type.value
             self.session.commit()
 
@@ -657,7 +689,8 @@ class Standard_collection:
         if entry:
             logger.debug(
                 f"knew of link {standard.name}:{standard.section}"
-                f"=={cre.name} ,updating"
+                f"=={cre.name} of type {entry.type},"
+                f"updating type to {type.value}"
             )
             entry.type = type.value
             self.session.commit()
@@ -720,7 +753,10 @@ class Standard_collection:
                     continue
                 if self.find_path_between_standards(standard.id, other_standard.id):
                     working_standard.add_link(
-                        cre_defs.Link(document=StandardFromDB(other_standard))
+                        cre_defs.Link(
+                            ltype=cre_defs.LinkTypes.LinkedTo,
+                            document=StandardFromDB(other_standard),
+                        )
                     )
             processed_standards.append(working_standard)
         return processed_standards

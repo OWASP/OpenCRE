@@ -3,6 +3,7 @@ import os
 import tempfile
 import unittest
 import uuid
+from pprint import pprint
 from typing import Dict, Union
 
 import yaml
@@ -326,9 +327,13 @@ class TestDB(unittest.TestCase):
         self.collection.session.add(only_one_group)
         self.collection.session.commit()
 
-        internalLink = db.InternalLinks(cre=dbcre.id, group=dbgroup.id)
-        internalLink2 = db.InternalLinks(cre=dbcre.id, group=dbgroup2.id)
-        internalLink3 = db.InternalLinks(cre=only_one_group.id, group=dbgroup.id)
+        internalLink = db.InternalLinks(cre=dbcre.id, group=dbgroup.id, type="Contains")
+        internalLink2 = db.InternalLinks(
+            cre=dbcre.id, group=dbgroup2.id, type="Contains"
+        )
+        internalLink3 = db.InternalLinks(
+            cre=only_one_group.id, group=dbgroup.id, type="Contains"
+        )
         self.collection.session.add(internalLink)
         self.collection.session.add(internalLink2)
         self.collection.session.add(internalLink3)
@@ -411,9 +416,15 @@ class TestDB(unittest.TestCase):
         collection.session.add(dbc3)
         collection.session.add(dbs1)
         collection.session.commit()
-        collection.session.add(db.InternalLinks(group=dbc1.id, cre=dbc2.id))
-        collection.session.add(db.InternalLinks(group=dbc3.id, cre=dbc1.id))
-        collection.session.add(db.Links(cre=dbc1.id, standard=dbs1.id))
+        collection.session.add(
+            db.InternalLinks(type="Contains", group=dbc1.id, cre=dbc2.id)
+        )
+        collection.session.add(
+            db.InternalLinks(type="Is Part Of", group=dbc3.id, cre=dbc1.id)
+        )
+        collection.session.add(
+            db.Links(type="Linked To", cre=dbc1.id, standard=dbs1.id)
+        )
         collection.session.commit()
 
         expected = defs.CRE(
@@ -422,16 +433,23 @@ class TestDB(unittest.TestCase):
             name="C1",
             links=[
                 defs.Link(
+                    ltype=defs.LinkTypes.LinkedTo,
                     document=defs.Standard(
                         name="S2",
                         section="1",
                         subsection="2",
                         hyperlink="3",
                         version="1.1.1",
-                    )
+                    ),
                 ),
-                defs.Link(document=defs.CRE(description="CD2", name="C2")),
-                defs.Link(document=defs.CRE(description="CD3", name="C3")),
+                defs.Link(
+                    ltype=defs.LinkTypes.Contains,
+                    document=defs.CRE(description="CD2", name="C2"),
+                ),
+                defs.Link(
+                    ltype=defs.LinkTypes.PartOf,
+                    document=defs.CRE(description="CD3", name="C3"),
+                ),
             ],
         )
 
@@ -464,7 +482,7 @@ class TestDB(unittest.TestCase):
 
         for cre, standard in links:
             collection.session.add(
-                db.Links(cre=docs[cre].id, standard=docs[standard].id)
+                db.Links(type="Linked To", cre=docs[cre].id, standard=docs[standard].id)
             )
         collection.session.commit()
 
@@ -477,10 +495,17 @@ class TestDB(unittest.TestCase):
                 version="4",
                 links=[
                     defs.Link(
-                        document=defs.CRE(name="C1", description="CD1", id="123")
+                        ltype=defs.LinkTypes.LinkedTo,
+                        document=defs.CRE(name="C1", description="CD1", id="123"),
                     ),
-                    defs.Link(document=defs.CRE(name="C2", description="CD2")),
-                    defs.Link(document=defs.CRE(name="C3", description="CD3")),
+                    defs.Link(
+                        ltype=defs.LinkTypes.LinkedTo,
+                        document=defs.CRE(name="C2", description="CD2"),
+                    ),
+                    defs.Link(
+                        ltype=defs.LinkTypes.LinkedTo,
+                        document=defs.CRE(name="C3", description="CD3"),
+                    ),
                 ],
             )
         ]
@@ -594,7 +619,7 @@ class TestDB(unittest.TestCase):
         standards = {}
         for k, s in def_standards.items():
             standards["db" + k] = collection.add_standard(s)
-
+        ltype = defs.LinkTypes.LinkedTo
         collection.add_link(cre=cres["dbca"], standard=standards["dbsa1"])
         collection.add_link(cre=cres["dbca"], standard=standards["dbsaa1"])
         collection.add_link(cre=cres["dbcb"], standard=standards["dbsb1"])
@@ -613,30 +638,30 @@ class TestDB(unittest.TestCase):
             "SA": [def_standards["sa1"], def_standards["sa2"], def_standards["sa3"]],
             "SA,SAA": [
                 copy.copy(def_standards["sa1"]).add_link(
-                    defs.Link(document=def_standards["saa1"])
+                    defs.Link(ltype=ltype, document=def_standards["saa1"])
                 ),
                 copy.copy(def_standards["saa1"]).add_link(
-                    defs.Link(document=def_standards["sa1"])
+                    defs.Link(ltype=ltype, document=def_standards["sa1"])
                 ),
                 def_standards["sa2"],
                 def_standards["sa3"],
             ],
             "SAA,SA": [
                 copy.copy(def_standards["sa1"]).add_link(
-                    defs.Link(document=def_standards["saa1"])
+                    defs.Link(ltype=ltype, document=def_standards["saa1"])
                 ),
                 copy.copy(def_standards["saa1"]).add_link(
-                    defs.Link(document=def_standards["sa1"])
+                    defs.Link(ltype=ltype, document=def_standards["sa1"])
                 ),
                 def_standards["sa2"],
                 def_standards["sa3"],
             ],
             "SA,SDD": [
                 copy.copy(def_standards["sa1"]).add_link(
-                    defs.Link(document=def_standards["sdd1"])
+                    defs.Link(ltype=ltype, document=def_standards["sdd1"])
                 ),
                 copy.copy(def_standards["sdd1"]).add_link(
-                    defs.Link(document=def_standards["sa1"])
+                    defs.Link(ltype=ltype, document=def_standards["sa1"])
                 ),
                 def_standards["sa2"],
                 def_standards["sa3"],
@@ -649,14 +674,14 @@ class TestDB(unittest.TestCase):
             ],
             "SA,SB,SD,SW": [
                 copy.copy(def_standards["sa1"])
-                .add_link(defs.Link(document=def_standards["sb1"]))
-                .add_link(defs.Link(document=def_standards["sd1"])),
+                .add_link(defs.Link(ltype=ltype, document=def_standards["sb1"]))
+                .add_link(defs.Link(ltype=ltype, document=def_standards["sd1"])),
                 copy.copy(def_standards["sb1"])
-                .add_link(defs.Link(document=def_standards["sa1"]))
-                .add_link(defs.Link(document=def_standards["sd1"])),
+                .add_link(defs.Link(ltype=ltype, document=def_standards["sa1"]))
+                .add_link(defs.Link(ltype=ltype, document=def_standards["sd1"])),
                 copy.copy(def_standards["sd1"])
-                .add_link(defs.Link(document=def_standards["sa1"]))
-                .add_link(defs.Link(document=def_standards["sb1"])),
+                .add_link(defs.Link(ltype=ltype, document=def_standards["sa1"]))
+                .add_link(defs.Link(ltype=ltype, document=def_standards["sb1"])),
                 def_standards["sa2"],
                 def_standards["sa3"],
                 def_standards["sw1"],
@@ -665,10 +690,10 @@ class TestDB(unittest.TestCase):
                 def_standards["sa1"],
                 def_standards["sa2"],
                 copy.copy(def_standards["sa3"]).add_link(
-                    defs.Link(document=def_standards["sx1"])
+                    defs.Link(ltype=ltype, document=def_standards["sx1"])
                 ),
                 copy.copy(def_standards["sx1"]).add_link(
-                    defs.Link(document=def_standards["sa3"])
+                    defs.Link(ltype=ltype, document=def_standards["sa3"])
                 ),
             ],
         }

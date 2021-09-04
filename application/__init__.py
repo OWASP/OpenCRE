@@ -1,4 +1,6 @@
 # type:ignore
+from typing import Any
+
 from flask import Flask
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
@@ -8,7 +10,7 @@ from application.config import config
 sqla = SQLAlchemy()
 
 
-def create_app(mode: str = "production", conf=None):
+def create_app(mode: str = "production", conf: any = None) -> Any:
     app = Flask(__name__)
     if not conf:
         app.config.from_object(config[mode])

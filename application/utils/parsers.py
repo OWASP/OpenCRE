@@ -59,7 +59,10 @@ def get_linked_standards(mapping: Dict[str, str]) -> List[defs.Link]:
         lt: defs.LinkTypes
         if not is_empty(link_type):
             lt = defs.LinkTypes.from_str(link_type)
-            standards.append(defs.Link(document=standard, ltype=lt))
+        else:
+            lt = defs.LinkTypes.LinkedTo
+        standards.append(defs.Link(document=standard, ltype=lt))
+
     return standards
 
 
@@ -117,9 +120,7 @@ def parse_export_format(lfile: List[Dict[str, Any]]) -> Dict[str, defs.Document]
                     cre.description = description
 
             # register the standards part
-
             for standard in get_linked_standards(mapping):
-                # cre.links.append(standard)
                 cre.add_link(standard)
 
             # add the CRE links
@@ -143,6 +144,10 @@ def parse_export_format(lfile: List[Dict[str, Any]]) -> Dict[str, defs.Document]
                                 continue
                     else:
                         internal_mapping = defs.CRE(name=name, id=id)
+                        lt = defs.LinkTypes.from_str(link_type)
+                        sub_lt: defs.LinkTypes
+                        if lt == defs.LinkTypes.Contains:
+                            sub_lt = defs.LinkTypes.PartOf
                         internal_mapping.add_link(
                             defs.Link(
                                 document=defs.CRE(  # add a link to the original without the links
@@ -150,7 +155,7 @@ def parse_export_format(lfile: List[Dict[str, Any]]) -> Dict[str, defs.Document]
                                     id=cre.id,
                                     description=cre.description,
                                 ),
-                                ltype=defs.LinkTypes.from_str(link_type),
+                                ltype=sub_lt,
                             )
                         )
                         cres[name] = internal_mapping
@@ -242,6 +247,7 @@ def parse_v1_standards(
         if not is_empty(cre_mapping.get("ID-taxonomy-lookup-from-ASVS-mapping")):
             cre.add_link(
                 defs.Link(
+                    ltype=defs.LinkTypes.LinkedTo,
                     document=defs.Standard(
                         name="ASVS",
                         section=cre_mapping.pop("ASVS Item"),
@@ -249,13 +255,14 @@ def parse_v1_standards(
                             "ID-taxonomy-lookup-from-ASVS-mapping"
                         ),
                         tags=asvs_tags,
-                    )
+                    ),
                 )
             )
         if not is_empty(cre_mapping.get("CWE")):
             cre.add_link(
                 defs.Link(
-                    document=defs.Standard(name="CWE", section=cre_mapping.pop("CWE"))
+                    ltype=defs.LinkTypes.LinkedTo,
+                    document=defs.Standard(name="CWE", section=cre_mapping.pop("CWE")),
                 )
             )
 
@@ -264,11 +271,12 @@ def parse_v1_standards(
         ):
             cre.add_link(
                 defs.Link(
+                    ltype=defs.LinkTypes.LinkedTo,
                     document=defs.Standard(
                         name="Cheatsheet",
                         section=cre_mapping.pop("Cheat Sheet"),
                         hyperlink=cre_mapping.pop("cheat_sheets"),
-                    )
+                    ),
                 )
             )
 
@@ -279,59 +287,78 @@ def parse_v1_standards(
                     if element:
                         cre.add_link(
                             defs.Link(
+                                ltype=defs.LinkTypes.LinkedTo,
                                 document=defs.Standard(
                                     name="NIST 800-53",
                                     section=element,
                                     tags=["is related to"],
-                                )
+                                ),
                             )
                         )
             else:
                 cre.add_link(
                     defs.Link(
+                        ltype=defs.LinkTypes.LinkedTo,
                         document=defs.Standard(
                             name="NIST 800-53",
                             section=nist_items,
                             tags=["is related to"],
-                        )
+                        ),
                     )
                 )
         if not is_empty(cre_mapping.get("NIST 800-63")):
             cre.add_link(
                 defs.Link(
+                    ltype=defs.LinkTypes.LinkedTo,
                     document=defs.Standard(
                         name="NIST 800-63", section=cre_mapping.pop("NIST 800-63")
-                    )
+                    ),
                 )
             )
 
         if not is_empty(cre_mapping.get("OPC")):
             cre.add_link(
                 defs.Link(
-                    document=defs.Standard(name="OPC", section=cre_mapping.pop("OPC"))
+                    ltype=defs.LinkTypes.LinkedTo,
+                    document=defs.Standard(name="OPC", section=cre_mapping.pop("OPC")),
                 )
             )
 
         if not is_empty(cre_mapping.get("Top10 2017")):
             cre.add_link(
                 defs.Link(
+                    ltype=defs.LinkTypes.LinkedTo,
                     document=defs.Standard(
                         name="TOP10", section=cre_mapping.pop("Top10 2017")
-                    )
+                    ),
                 )
             )
         if not is_empty(cre_mapping.get("WSTG")):
-            cre.add_link(
-                defs.Link(
-                    document=defs.Standard(name="WSTG", section=cre_mapping.pop("WSTG"))
+            if "\n" in cre_mapping.get("WSTG"):
+                for element in cre_mapping.get("WSTG").split("\n"):
+                    if not is_empty(element):
+                        cre.add_link(
+                            defs.Link(
+                                ltype=defs.LinkTypes.LinkedTo,
+                                document=defs.Standard(name="WSTG", section=element),
+                            )
+                        )
+            else:
+                cre.add_link(
+                    defs.Link(
+                        ltype=defs.LinkTypes.LinkedTo,
+                        document=defs.Standard(
+                            name="WSTG", section=cre_mapping.pop("WSTG")
+                        ),
+                    )
                 )
-            )
         if not is_empty(cre_mapping.get("SIG ISO 25010")):
             cre.add_link(
                 defs.Link(
+                    ltype=defs.LinkTypes.LinkedTo,
                     document=defs.Standard(
                         name="SIG ISO 25010", section=cre_mapping.pop("SIG ISO 25010")
-                    )
+                    ),
                 )
             )
         cres[cre.name] = cre
@@ -357,7 +384,7 @@ def parse_v1_standards(
                     group = groups[gname]
 
                 is_in_group = True
-                group.add_link(defs.Link(document=cre))
+                group.add_link(defs.Link(ltype=defs.LinkTypes.Contains, document=cre))
                 groups[group.name] = group
         if not is_in_group:
             groupless_cres[cre.name] = cre
@@ -392,13 +419,16 @@ def parse_v0_standards(cre_file: List[Dict[str, str]]) -> Dict[str, defs.CRE]:
                 section=cre_mapping.pop("ID-taxonomy-lookup-from-ASVS-mapping"),
                 subsection=cre_mapping.pop("Item"),
             )
-
-            cre.add_link(defs.Link(document=linked_standard))
+            cre.add_link(
+                defs.Link(ltype=defs.LinkTypes.LinkedTo, document=linked_standard)
+            )
 
         for key, value in cre_mapping.items():
             if not is_empty(value) and not is_empty(key):
                 linked_standard = defs.Standard(name=key, section=value)
-                cre.add_link(defs.Link(document=linked_standard))
+                cre.add_link(
+                    defs.Link(ltype=defs.LinkTypes.LinkedTo, document=linked_standard)
+                )
         if cre:
             cres[cre.name] = cre
     return cres
@@ -419,7 +449,7 @@ def parse_hierarchical_export_format(
             key = [key for key in mapping if key.startswith("CRE hierarchy %s" % i)][0]
             if not is_empty(mapping.get(key)):
                 if current_hierarchy == 0:
-                    name = mapping.pop(key)
+                    name = mapping.pop(key).replace("\n", " ")
                     current_hierarchy = i
                 else:
                     higher_cre = i
@@ -465,16 +495,22 @@ def parse_hierarchical_export_format(
 
                     new_cre = cres[other_cre]
 
-                cre.add_link(defs.Link(document=new_cre))
+                # we only need a shallow copy here
+                cre.add_link(
+                    defs.Link(
+                        ltype=defs.LinkTypes.Related, document=new_cre.shallow_copy()
+                    )
+                )
 
         if not is_empty(mapping.get("Standard ASVS Item")):
             cre.add_link(
                 defs.Link(
+                    ltype=defs.LinkTypes.LinkedTo,
                     document=defs.Standard(
                         name="ASVS",
                         section=mapping.pop("Standard ASVS Item").strip(),
                         hyperlink=mapping.pop("Standard ASVS Hyperlink"),
-                    )
+                    ),
                 )
             )
 
@@ -484,20 +520,22 @@ def parse_hierarchical_export_format(
         ):
             cre.add_link(
                 defs.Link(
+                    ltype=defs.LinkTypes.LinkedTo,
                     document=defs.Standard(
                         name="Top10 2017",
                         section=mapping.pop("Standard Top10 2017"),
                         hyperlink=mapping.pop("Standard Top10 Hyperlink").strip(),
-                    )
+                    ),
                 )
             )
         if not is_empty(mapping.get("Standard OPC (ASVS source)")):
             cre.add_link(
                 defs.Link(
+                    ltype=defs.LinkTypes.LinkedTo,
                     document=defs.Standard(
                         name="OPC",
                         section=mapping.pop("Standard OPC (ASVS source)").strip(),
-                    )
+                    ),
                 )
             )
 
@@ -506,23 +544,39 @@ def parse_hierarchical_export_format(
                 "Standard WSTG (prefilled by SR, but Elie has plan to make the administration self-maintaining)"
             )
         ):
-            cre.add_link(
-                defs.Link(
-                    document=defs.Standard(
-                        name="WSTG",
-                        section=mapping.pop(
-                            "Standard WSTG (prefilled by SR, but Elie has plan to make the administration self-maintaining)"
-                        ).strip(),
+            section = mapping.get(
+                "Standard WSTG (prefilled by SR, but Elie has plan to make the administration self-maintaining)"
+            )
+            if "\n" in section:
+                for element in section.split("\n"):
+                    if not is_empty(element):
+                        cre.add_link(
+                            defs.Link(
+                                ltype=defs.LinkTypes.LinkedTo,
+                                document=defs.Standard(
+                                    name="WSTG",
+                                    section=element.strip(),
+                                ),
+                            )
+                        )
+            else:
+                cre.add_link(
+                    defs.Link(
+                        ltype=defs.LinkTypes.LinkedTo,
+                        document=defs.Standard(
+                            name="WSTG",
+                            section=section.strip(),
+                        ),
                     )
                 )
-            )
         if not is_empty(mapping.get("Standard CWE (from ASVS)")):
             cre.add_link(
                 defs.Link(
+                    ltype=defs.LinkTypes.LinkedTo,
                     document=defs.Standard(
                         name="CWE",
                         section=str(mapping.pop("Standard CWE (from ASVS)")).strip(),
-                    )
+                    ),
                 )
             )
 
@@ -532,9 +586,10 @@ def parse_hierarchical_export_format(
                 for nst in set(nist.split("/")):
                     cre.add_link(
                         defs.Link(
+                            ltype=defs.LinkTypes.LinkedTo,
                             document=defs.Standard(
-                                name="NIST-800-63", section=nst.strip()
-                            )
+                                name="NIST 800-63", section=nst.strip()
+                            ),
                         )
                     )
 
@@ -544,9 +599,10 @@ def parse_hierarchical_export_format(
                 for nst in set(nist.split(",")):
                     cre.add_link(
                         defs.Link(
+                            ltype=defs.LinkTypes.LinkedTo,
                             document=defs.Standard(
                                 name="NIST 800-53 v5", section=nst.strip()
-                            )
+                            ),
                         )
                     )
 
@@ -555,7 +611,9 @@ def parse_hierarchical_export_format(
             if "," in cs:
                 for csc in set(cs.split(",")):
                     cheatsheet = defs.Standard(name="Cheat_sheets", section=csc.strip())
-                    cre.add_link(defs.Link(document=cheatsheet))
+                    cre.add_link(
+                        defs.Link(ltype=defs.LinkTypes.LinkedTo, document=cheatsheet)
+                    )
 
         # link CRE to a higher level one
 
@@ -568,17 +626,20 @@ def parse_hierarchical_export_format(
                 if c.document.doctype == defs.Credoctypes.CRE
                 and c.document.name == cre.name
             ]
-            shallow_copy = copy(cre)  # we only need a shallow copy here
-            shallow_copy.links = []
+
             # there is no need to capture the entirety of the cre tree, we just need to register this shallow relation
             # the "cres" dict should contain the rest of the info
             if existing_link:
                 cre_hi.links[
                     cre_hi.links.index(existing_link[0])
                     # ugliest way ever to write "update the object in that pointer"
-                ].document = shallow_copy
+                ].document = cre.shallow_copy()
             else:
-                cre_hi.add_link(defs.Link(document=shallow_copy))
+                cre_hi.add_link(
+                    defs.Link(
+                        ltype=defs.LinkTypes.Contains, document=cre.shallow_copy()
+                    )
+                )
             cres[cre_hi.name] = cre_hi
         else:
             pass  # add the cre to cres and make the connection
