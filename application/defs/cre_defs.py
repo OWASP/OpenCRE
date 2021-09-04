@@ -1,4 +1,5 @@
 import json
+from copy import copy
 from dataclasses import dataclass
 from enum import Enum
 from pprint import pprint
@@ -14,7 +15,6 @@ from typing import (
     Union,
     overload,
 )
-
 
 # used for serialising and deserialising yaml CRE documents
 
@@ -42,7 +42,6 @@ class ExportFormat(Enum):
 
     @staticmethod
     def subsection_key(sname: str) -> str:
-
         "returns <sname>:subsection"
         return "%s%s%s" % (
             sname,
@@ -52,7 +51,6 @@ class ExportFormat(Enum):
 
     @staticmethod
     def hyperlink_key(sname: str) -> str:
-
         "returns <sname>:hyperlink"
         return "%s%s%s" % (
             sname,
@@ -62,7 +60,6 @@ class ExportFormat(Enum):
 
     @staticmethod
     def link_type_key(sname: str) -> str:
-
         "returns <sname>:link_type"
         return "%s%s%s" % (
             sname,
@@ -72,7 +69,6 @@ class ExportFormat(Enum):
 
     @staticmethod
     def linked_cre_id_key(name: str) -> str:
-
         "returns Linked_CRE_<name>:id"
         return "%s%s%s%s" % (
             ExportFormat.cre_link.value,
@@ -83,7 +79,6 @@ class ExportFormat(Enum):
 
     @staticmethod
     def linked_cre_name_key(name: str) -> str:
-
         "returns Linked_CRE_<name>:name"
         return "%s%s%s%s" % (
             ExportFormat.cre_link.value,
@@ -94,7 +89,6 @@ class ExportFormat(Enum):
 
     @staticmethod
     def linked_cre_link_type_key(name: str) -> str:
-
         "returns Linked_CRE_<name>:link_type"
         return "%s%s%s%s" % (
             ExportFormat.cre_link.value,
@@ -105,7 +99,6 @@ class ExportFormat(Enum):
 
     @staticmethod
     def cre_id_key() -> str:
-
         "returns CRE:id"
         return "%s%s%s" % (
             ExportFormat.cre.value,
@@ -115,7 +108,6 @@ class ExportFormat(Enum):
 
     @staticmethod
     def cre_name_key() -> str:
-
         "returns CRE:name"
         return "%s%s%s" % (
             ExportFormat.cre.value,
@@ -125,7 +117,6 @@ class ExportFormat(Enum):
 
     @staticmethod
     def cre_description_key() -> str:
-
         "returns CRE:description"
         return "%s%s%s" % (
             ExportFormat.cre.value,
@@ -141,13 +132,19 @@ class Credoctypes(Enum):
 
 class LinkTypes(Enum):
     Same = "SAME"
+    LinkedTo = "Linked To"  # Any standard entry is by default “linked”
+    PartOf = "Is Part Of"  # Hierarchy above: “is part of”
+    Contains = "Contains"  # Hierarchy below: “Contains”
+    Related = "Related"  # Hierarchy across (other CRE topic or Tag): “related”
 
     @staticmethod
     def from_str(name: str) -> Any:  # it returns LinkTypes but then it won't run
-
-        if name == "SAM" or name == "SAME":
-            return LinkTypes.Same
-        raise ValueError('"{}" is not a valid link type'.format(name))
+        if name.upper().startswith("SAM"):
+            name = "SAME"
+        res = [x for x in LinkTypes if x.value == name]
+        if not res:
+            raise KeyError(f'"{name}" is not a valid Link Type')
+        return res[0]
 
 
 @dataclass
@@ -258,6 +255,13 @@ class Document:
     def __hash__(self) -> int:
         return hash(json.dumps(self.todict()))
 
+    def shallow_copy(self) -> Any:
+        """Returns a copy of itself minus the Links,
+        useful when creating links between cres"""
+        res = copy(self)
+        res.links = []
+        return res
+
     def todict(self) -> Dict[str, Union[Dict[str, str], List[Any], Set[str], str]]:
         result: Dict[str, Union[Dict[str, str], List[Any], Set[str], str]] = {
             "doctype": self.doctype.value,
@@ -356,14 +360,14 @@ class Standard(Document):
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Standard):
-            return NotImplemented
+            return False
         else:
             return (
-                super().__eq__(other)
-                and self.section == other.section
+                self.section == other.section
                 and self.subsection == other.subsection
                 and self.hyperlink == other.hyperlink
                 and self.version == other.version
+                and super().__eq__(other)
             )
 
     def __init__(
@@ -373,7 +377,7 @@ class Standard(Document):
         hyperlink: str = "",
         version: str = "",
         *args: Any,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         self.doctype = Credoctypes.Standard
         if section is None or section == "":

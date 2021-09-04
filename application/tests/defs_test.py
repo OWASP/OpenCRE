@@ -1,6 +1,5 @@
 import unittest
 
-
 from application.defs import cre_defs as defs
 
 
@@ -123,6 +122,20 @@ class TestCreDefs(unittest.TestCase):
         self.assertCountEqual(cre.todict(), cre_output)
         self.assertCountEqual(group.todict(), group_output)
         self.assertCountEqual(nested.todict(), nested_output)
+
+    def test_linktype_from_str(self) -> None:
+        expected = {
+            "SAME": defs.LinkTypes.Same,
+            "SAM": defs.LinkTypes.Same,
+            "Linked To": defs.LinkTypes.LinkedTo,
+            "Is Part Of": defs.LinkTypes.PartOf,
+            "Contains": defs.LinkTypes.Contains,
+            "Related": defs.LinkTypes.Related,
+        }
+        for ke, val in expected.items():
+            self.assertEqual(defs.LinkTypes.from_str(ke), val)
+        with self.assertRaises(KeyError):
+            defs.LinkTypes.from_str("asdf")
 
 
 if __name__ == "__main__":

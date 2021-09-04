@@ -22,7 +22,5 @@ jobs:
 
           VALIDATE_PYTHON_BLACK: true
           VALIDATE_ALL_CODEBASE: false
-          VALIDATE_PYTHON_MYPY: true
-          PYTHON_MYPY_CONFIG_FILE: .mypy.ini
           DEFAULT_BRANCH: main
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
