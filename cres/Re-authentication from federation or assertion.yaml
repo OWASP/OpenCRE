@@ -1,0 +1,24 @@
+doctype: CRE
+id: 258-115
+links:
+- document:
+    doctype: CRE
+    id: 177-260
+    name: Session management
+  type: Contains
+- document:
+    doctype: CRE
+    id: 052-821
+    name: Informing relying parties on CSP's last authentication event
+  type: Contains
+- document:
+    doctype: CRE
+    id: 618-403
+    name: Proper Session timeout setting for CSP
+  type: Contains
+- document:
+    doctype: CRE
+    id: 551-400
+    name: Accompany OAuth with Referesh tokens
+  type: Contains
+name: Re-authentication from federation or assertion

@@ -1,0 +1,52 @@
+doctype: CRE
+id: 177-260
+links:
+- document:
+    doctype: CRE
+    id: 402-133
+    name: No exposure of session tocken in URL or error message
+  type: Contains
+- document:
+    doctype: CRE
+    id: 582-541
+    name: Validate befire sensitive transactions
+  type: Contains
+- document:
+    doctype: CRE
+    id: 270-568
+    name: Authentication mechanism
+  type: Related
+- document:
+    doctype: CRE
+    id: 110-531
+    name: Cookie-config
+  type: Contains
+- document:
+    doctype: CRE
+    id: 258-115
+    name: Re-authentication from federation or assertion
+  type: Contains
+- document:
+    doctype: CRE
+    id: 470-731
+    name: Session logout and timeout
+  type: Contains
+- document:
+    doctype: CRE
+    id: 470-731
+    name: Session token generation
+  type: Contains
+- document:
+    doctype: CRE
+    id: 114-277
+    name: Token-based session management
+  type: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://owasp.org/www-project-top-ten/2017/A2_2017-Broken_Authentication
+    name: Top10 2017
+    section: A2_Broken_Authenticationn
+    subsection: ''
+    version: ''
+  type: Linked To
+name: Session management

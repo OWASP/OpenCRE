@@ -1,0 +1,40 @@
+doctype: CRE
+id: 630-573
+links:
+- document:
+    doctype: CRE
+    id: 854-643
+    name: Business logic
+    tags:
+    - DOS
+  type: Contains
+- document:
+    doctype: CRE
+    id: 503-455
+    name: Input and output verification
+  type: Related
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x19-V11-BusLogic.md
+    name: ASVS
+    section: V11.1.4
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: WSTG
+    section: WSTG-BUSL-$$
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '770'
+    subsection: ''
+    version: ''
+  type: Linked To
+name: Anti-automation control

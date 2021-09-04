@@ -1,0 +1,30 @@
+doctype: CRE
+id: 138-448
+links:
+- document:
+    doctype: CRE
+    id: 586-842
+    name: Secure user management
+  type: Contains
+- document:
+    doctype: CRE
+    id: 270-568
+    name: Authentication mechanism
+  type: Related
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x11-V2-Authentication.md
+    name: ASVS
+    section: V2.3.3
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '287'
+    subsection: ''
+    version: ''
+  type: Linked To
+name: sufficient time for renewal of bound authenticators.

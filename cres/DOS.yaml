@@ -1,26 +1,9 @@
 doctype: CRE
-id: 832-684
+id: 623-550
 links:
 - document:
-    description: Verify that anti-automation controls are effective at mitigating
-      breached credential testing, brute force, and account lockout attacks. Such
-      controls include blocking the most common breached passwords, soft lockouts,
-      rate limiting, CAPTCHA, ever increasing delays between attempts, IP address
-      restrictions, or risk-based restrictions such as location, first login on a
-      device, recent attempts to unlock the account, or similar. Verify that no more
-      than 100 failed attempts per hour is possible on a single account.
     doctype: CRE
-    id: 001-005-074
-    name: ANTI_AUTOMATION_VALIDATE_DETECT_ANOMALIES
-  type: SAM
-- document:
-    doctype: CRE
-    id: 012-028
-    name: VALIDATE_MEMORY_SAFE_PROCESSING_OVERFLOWS
-  type: SAM
-- document:
-    doctype: CRE
-    id: 012-028
-    name: VALIDATE_INTEGER_OVERFLOWS
-  type: SAM
+    id: 546-564
+    name: Tags
+  type: Contains
 name: DOS

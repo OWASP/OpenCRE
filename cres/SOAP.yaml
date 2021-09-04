@@ -1,0 +1,14 @@
+doctype: CRE
+id: 080-373
+links:
+- document:
+    doctype: CRE
+    id: 611-051
+    name: XSD schema validation
+  type: Contains
+- document:
+    doctype: CRE
+    id: 456-636
+    name: Integrity check for message payload
+  type: Contains
+name: SOAP

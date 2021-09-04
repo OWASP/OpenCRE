@@ -1,0 +1,17 @@
+doctype: CRE
+id: 760-764
+links:
+- document:
+    doctype: CRE
+    id: 546-564
+    name: Tags
+  type: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://owasp.org/www-project-top-ten/2017/A1_2017-Injection
+    name: Top10 2017
+    section: A1-Injection
+    subsection: ''
+    version: ''
+  type: Linked To
+name: Injection

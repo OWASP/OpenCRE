@@ -1,0 +1,8 @@
+doctype: CRE
+links:
+- document:
+    doctype: CRE
+    id: 473-758
+    name: no caching of sensitive data in browser
+  type: Related
+name: Http headers

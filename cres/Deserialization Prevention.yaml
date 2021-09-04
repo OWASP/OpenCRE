@@ -1,0 +1,15 @@
+doctype: CRE
+links:
+- document:
+    doctype: CRE
+    id: 515-021
+    name: Network level isolation of application deployment actions
+    tags:
+    - Architecture
+  type: Related
+- document:
+    doctype: CRE
+    id: 184-284
+    name: Log all security relevant events
+  type: Related
+name: Deserialization Prevention

@@ -1,0 +1,27 @@
+doctype: CRE
+id: 633-428
+links:
+- document:
+    doctype: CRE
+    id: 270-568
+    name: Authentication mechanism
+  type: Contains
+- document:
+    doctype: CRE
+    id: 455-885
+    name: Credentials directives
+  type: Contains
+- document:
+    doctype: CRE
+    id: 065-782
+    name: Authentication timeout
+  type: Related
+- document:
+    doctype: Standard
+    hyperlink: https://owasp.org/www-project-top-ten/2017/A2_2017-Broken_Authentication
+    name: Top10 2017
+    section: A2_Broken_Authenticationn
+    subsection: ''
+    version: ''
+  type: Linked To
+name: Authentication

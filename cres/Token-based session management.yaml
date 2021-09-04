@@ -1,0 +1,19 @@
+doctype: CRE
+id: 114-277
+links:
+- document:
+    doctype: CRE
+    id: 177-260
+    name: Session management
+  type: Contains
+- document:
+    doctype: CRE
+    id: 551-054
+    name: No static secrets for session tockens
+  type: Contains
+- document:
+    doctype: CRE
+    id: 483-883
+    name: Cryptographically secure stateless tokens
+  type: Contains
+name: Token-based session management

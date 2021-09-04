@@ -1,0 +1,48 @@
+doctype: CRE
+id: 636-347
+links:
+- document:
+    doctype: CRE
+    id: 783-355
+    name: Deployment
+    tags:
+    - Configuration
+  type: Contains
+- document:
+    doctype: CRE
+    id: 736-237
+    name: 'Content-Disposition for API responses '
+  type: Contains
+- document:
+    doctype: CRE
+    id: 257-668
+    name: Proper CSP configuration
+    tags:
+    - XSS
+  type: Contains
+- document:
+    doctype: CRE
+    id: 036-147
+    name: Proper HSTS configuration
+  type: Contains
+- document:
+    doctype: CRE
+    id: 268-100
+    name: Proper Referrer-Policy configuration
+  type: Contains
+- document:
+    doctype: CRE
+    id: 065-388
+    name: Proper X-Content-Type-Options configuration
+  type: Contains
+- document:
+    doctype: CRE
+    id: 480-071
+    name: Proper X-Frame-Options for CSP conficuration
+  type: Contains
+- document:
+    doctype: CRE
+    id: 036-725
+    name: Safe character sets for HTTP response
+  type: Contains
+name: HTTP security headers

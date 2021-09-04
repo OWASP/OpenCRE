@@ -1,0 +1,35 @@
+doctype: CRE
+id: 664-571
+links:
+- document:
+    doctype: CRE
+    id: 542-270
+    name: Secure random values
+    tags:
+    - Cryptography
+  type: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x14-V6-Cryptography.md
+    name: ASVS
+    section: V6.3.3
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: WSTG
+    section: WSTG-CRYP-04
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '338'
+    subsection: ''
+    version: ''
+  type: Linked To
+name: Proper generation of secure randoms

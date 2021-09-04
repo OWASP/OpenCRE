@@ -1,0 +1,61 @@
+doctype: CRE
+id: 270-568
+links:
+- document:
+    doctype: CRE
+    id: 633-428
+    name: Authentication
+  type: Contains
+- document:
+    doctype: CRE
+    id: 146-556
+    name: Authenticate consistently
+  type: Contains
+- document:
+    doctype: CRE
+    id: 520-617
+    name: Credential recovery
+  type: Contains
+- document:
+    doctype: CRE
+    id: 585-408
+    name: Cryptographic authentication software and devices
+  type: Contains
+- document:
+    doctype: CRE
+    id: 062-850
+    name: MFA/OTP
+    tags:
+    - Cryptography
+  type: Contains
+- document:
+    doctype: CRE
+    id: 802-056
+    name: Restrict excessive authentication
+  type: Contains
+- document:
+    doctype: CRE
+    id: 138-448
+    name: sufficient time for renewal of bound authenticators.
+  type: Related
+- document:
+    doctype: CRE
+    id: 808-425
+    name: Notify users about anomalies in their usage patterns
+  type: Related
+- document:
+    doctype: CRE
+    id: 751-176
+    name: Accessible password changing functionality
+  type: Related
+- document:
+    doctype: CRE
+    id: 327-505
+    name: Change password with presence of old and new password
+  type: Related
+- document:
+    doctype: CRE
+    id: 177-260
+    name: Session management
+  type: Related
+name: Authentication mechanism

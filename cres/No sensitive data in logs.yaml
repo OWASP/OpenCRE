@@ -1,0 +1,41 @@
+doctype: CRE
+id: 240-274
+links:
+- document:
+    doctype: CRE
+    id: 843-841
+    name: Log discretely
+  type: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x15-V7-Error-Logging.md
+    name: ASVS
+    section: V7.1.2
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: OPC
+    section: C9
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: WSTG
+    section: WSTG-CONF-02
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '532'
+    subsection: ''
+    version: ''
+  type: Linked To
+name: No sensitive data in logs

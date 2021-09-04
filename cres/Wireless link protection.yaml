@@ -1,0 +1,9 @@
+doctype: CRE
+id: 683-036
+links:
+- document:
+    doctype: CRE
+    id: 278-646
+    name: Secure communication
+  type: Contains
+name: Wireless link protection

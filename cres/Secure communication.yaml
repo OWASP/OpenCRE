@@ -1,0 +1,46 @@
+doctype: CRE
+id: 278-646
+links:
+- document:
+    doctype: CRE
+    id: 634-733
+    name: Communication authentication
+  type: Contains
+- document:
+    doctype: CRE
+    id: 435-702
+    name: Communication encryption
+    tags:
+    - Cryptography
+  type: Contains
+- document:
+    doctype: CRE
+    id: 341-076
+    name: Minimize
+  type: Contains
+- document:
+    doctype: CRE
+    id: 228-551
+    name: TLS
+    tags:
+    - Cryptoghraphy
+  type: Contains
+- document:
+    doctype: CRE
+    id: 683-036
+    name: Wireless link protection
+  type: Contains
+- document:
+    doctype: CRE
+    id: 270-634
+    name: Authentication secrets sent encrypted to the user
+  type: Related
+- document:
+    doctype: Standard
+    hyperlink: https://owasp.org/www-project-top-ten/2017/A3_2017-Sensitive_Data_Exposure
+    name: Top10 2017
+    section: A3-Sensitive_Data_Exposure
+    subsection: ''
+    version: ''
+  type: Linked To
+name: Secure communication

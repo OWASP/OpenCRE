@@ -1,0 +1,22 @@
+doctype: CRE
+id: 163-518
+links:
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x20-V12-Files-Resources.md
+    name: ASVS
+    section: V12.1.2
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '409'
+    subsection: ''
+    version: ''
+  type: Linked To
+name: Check for zip bombs
+tags:
+- DOS

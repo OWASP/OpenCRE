@@ -1,0 +1,37 @@
+doctype: CRE
+id: 673-736
+links:
+- document:
+    doctype: CRE
+    id: 470-731
+    name: Session logout and timeout
+  type: Contains
+- document:
+    doctype: CRE
+    name: Secure User Management
+  type: Related
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x12-V3-Session-management.md
+    name: ASVS
+    section: V3.3.4
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: WSTG
+    section: WSTG-SESS-06
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '613'
+    subsection: ''
+    version: ''
+  type: Linked To
+name: Log out from all active session

@@ -1,0 +1,46 @@
+doctype: CRE
+id: 065-782
+links:
+- document:
+    doctype: CRE
+    id: 470-731
+    name: Session logout and timeout
+  type: Contains
+- document:
+    doctype: CRE
+    id: 633-428
+    name: Authentication
+  type: Related
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x12-V3-Session-management.md
+    name: ASVS
+    section: V3.3.2
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: OPC
+    section: C6
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: WSTG
+    section: WSTG-SESS-07
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '613'
+    subsection: ''
+    version: ''
+  type: Linked To
+name: Authentication timeout

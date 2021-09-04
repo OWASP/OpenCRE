@@ -1,0 +1,9 @@
+doctype: CRE
+id: 058-527
+links:
+- document:
+    doctype: CRE
+    id: 546-564
+    name: Tags
+  type: Contains
+name: Secure name/address resolution service

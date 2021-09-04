@@ -1,0 +1,13 @@
+doctype: CRE
+links:
+- document:
+    doctype: CRE
+    id: 817-808
+    name: Deny by default for new users
+  type: Related
+- document:
+    doctype: CRE
+    id: 673-736
+    name: Log out from all active session
+  type: Related
+name: Secure User Management

@@ -1,0 +1,29 @@
+doctype: CRE
+id: 470-731
+links:
+- document:
+    doctype: CRE
+    id: 177-260
+    name: Session management
+  type: Contains
+- document:
+    doctype: CRE
+    id: 673-736
+    name: Log out from all active session
+  type: Contains
+- document:
+    doctype: CRE
+    id: 238-346
+    name: Terminate all sessions when password is changed
+  type: Contains
+- document:
+    doctype: CRE
+    id: 457-165
+    name: Terminate session after logout
+  type: Contains
+- document:
+    doctype: CRE
+    id: 065-782
+    name: Authentication timeout
+  type: Contains
+name: Session logout and timeout

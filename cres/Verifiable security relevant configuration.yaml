@@ -1,0 +1,27 @@
+doctype: CRE
+id: 347-352
+links:
+- document:
+    doctype: CRE
+    id: 783-355
+    name: Deployment
+    tags:
+    - Configuration
+  type: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x22-V14-Config.md
+    name: ASVS
+    section: V14.1.5
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '0'
+    subsection: ''
+    version: ''
+  type: Linked To
+name: Verifiable security relevant configuration

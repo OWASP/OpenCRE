@@ -1,0 +1,19 @@
+doctype: CRE
+id: 141-555
+links:
+- document:
+    doctype: CRE
+    id: 166-151
+    name: Access control fail-safe
+  type: Related
+- document:
+    doctype: CRE
+    id: 842-876
+    name: Logging and error handling
+  type: Contains
+- document:
+    doctype: CRE
+    id: 036-810
+    name: Cryptographic modules fail securely
+  type: Related
+name: Fail securely

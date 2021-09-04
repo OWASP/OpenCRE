@@ -1,0 +1,39 @@
+doctype: CRE
+id: 726-868
+links:
+- document:
+    doctype: CRE
+    id: 515-021
+    name: Network level isolation of application deployment actions
+    tags:
+    - Architecture
+  type: Contains
+- document:
+    doctype: CRE
+    id: 330-281
+    name: Least privilege for system accounts of system components
+  type: Related
+- document:
+    doctype: CRE
+    id: 783-355
+    name: Deployment
+    tags:
+    - Configuration
+  type: Contains
+- document:
+    doctype: CRE
+    id: 814-322
+    name: Whitelisting data sources and sinks
+    tags:
+    - DOS
+  type: Related
+- document:
+    doctype: CRE
+    id: 228-551
+    name: TLS
+    tags:
+    - Cryptoghraphy
+  type: Related
+name: Deployed topology
+tags:
+- Architecture

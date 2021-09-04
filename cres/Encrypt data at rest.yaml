@@ -1,0 +1,26 @@
+doctype: CRE
+id: 400-007
+links:
+- document:
+    doctype: CRE
+    id: 126-668
+    name: Secure data storage
+  type: Contains
+- document:
+    doctype: CRE
+    id: 504-340
+    name: Encrypt sensitive or private information
+  type: Contains
+- document:
+    doctype: CRE
+    id: 275-483
+    name: Securely store regulated data
+  type: Contains
+- document:
+    doctype: CRE
+    id: 232-325
+    name: Secrets shared with clients only for low risk
+  type: Contains
+name: Encrypt data at rest
+tags:
+- Cryptography

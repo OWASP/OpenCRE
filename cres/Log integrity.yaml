@@ -1,0 +1,9 @@
+doctype: CRE
+id: 148-420
+links:
+- document:
+    doctype: CRE
+    id: 842-876
+    name: Logging and error handling
+  type: Contains
+name: Log integrity

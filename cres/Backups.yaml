@@ -1,0 +1,26 @@
+doctype: CRE
+id: 163-776
+links:
+- document:
+    doctype: CRE
+    id: 126-668
+    name: Secure data storage
+  type: Contains
+- document:
+    doctype: CRE
+    id: 783-355
+    name: Deployment
+    tags:
+    - Configuration
+  type: Related
+- document:
+    doctype: CRE
+    id: 257-117
+    name: Regular backups and test restoration
+  type: Contains
+- document:
+    doctype: CRE
+    id: 614-353
+    name: Secure backup storage
+  type: Contains
+name: Backups

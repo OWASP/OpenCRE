@@ -1,0 +1,125 @@
+doctype: CRE
+id: 724-770
+links:
+- document:
+    doctype: CRE
+    id: 540-566
+    name: Minimal permisions for application
+  type: Contains
+- document:
+    doctype: CRE
+    id: 166-151
+    name: Access control fail-safe
+  type: Contains
+- document:
+    doctype: CRE
+    id: 650-560
+    name: Access control on trusted service layer
+    tags:
+    - Architecture
+  type: Contains
+- document:
+    doctype: CRE
+    id: 284-521
+    name: Additional authorization for lower and higher value application
+  type: Contains
+- document:
+    doctype: CRE
+    id: 152-725
+    name: Admin only access to management funcitonality
+    tags:
+    - API/web services
+  type: Contains
+- document:
+    doctype: CRE
+    id: 060-472
+    name: CSRF protection against authenticated and un-authenticated functionality
+    tags:
+    - CSRF attack
+  type: Contains
+- document:
+    doctype: CRE
+    id: 817-808
+    name: Deny by default for new users
+  type: Contains
+- document:
+    doctype: CRE
+    id: 412-561
+    name: Flexible access control solution
+  type: Contains
+- document:
+    doctype: CRE
+    id: 524-603
+    name: Information used by access controls only editable by specifically authorized
+      users
+  type: Contains
+- document:
+    doctype: CRE
+    id: 368-633
+    name: Least privilage on all levels
+  type: Contains
+- document:
+    doctype: CRE
+    id: 624-716
+    name: Least privilege for resources
+  type: Contains
+- document:
+    doctype: CRE
+    id: 330-281
+    name: Least privilege for system accounts of system components
+  type: Contains
+- document:
+    doctype: CRE
+    id: 664-080
+    name: Model-based authorization decisions at URI,controller, router, and resources
+    tags:
+    - API/web services
+  type: Contains
+- document:
+    doctype: CRE
+    id: 615-744
+    name: Protection against directory discovery attacks
+    tags:
+    - Configuration
+  type: Contains
+- document:
+    doctype: CRE
+    id: 304-667
+    name: 'Protection against unauthorized modification '
+  type: Contains
+- document:
+    doctype: CRE
+    id: 801-310
+    name: Role based privilage assessment upon data/feature access
+  type: Contains
+- document:
+    doctype: CRE
+    id: 640-364
+    name: Trusted enforcement points for access controls
+  type: Contains
+- document:
+    doctype: CRE
+    id: 278-413
+    name: All components authenticated and with least privileges
+    tags:
+    - Architecture
+  type: Related
+- document:
+    doctype: CRE
+    id: 273-600
+    name: Proper segrigation of components via security controls
+  type: Related
+- document:
+    doctype: CRE
+    id: 538-770
+    name: Data access control
+  type: Related
+- document:
+    doctype: Standard
+    hyperlink: https://owasp.org/www-project-top-ten/2017/A5_2017-Broken_Access_Control
+    name: Top10 2017
+    section: A5_Broken_Access_Control
+    subsection: ''
+    version: ''
+  type: Linked To
+name: Authorized access

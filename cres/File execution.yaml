@@ -1,0 +1,39 @@
+doctype: CRE
+id: 451-082
+links:
+- document:
+    doctype: CRE
+    id: 130-550
+    name: File handling
+  type: Contains
+- document:
+    doctype: CRE
+    id: 675-168
+    name: Do not use user-submitted filename metadata directy
+  type: Contains
+- document:
+    doctype: CRE
+    id: 777-470
+    name: No execution of untrusted files or functions
+  type: Contains
+- document:
+    doctype: CRE
+    id: 683-722
+    name: Avoide usage of untrusted file metadata
+  type: Contains
+- document:
+    doctype: CRE
+    id: 421-513
+    name: Validate untrusted filenames
+  type: Contains
+- document:
+    doctype: CRE
+    id: 737-086
+    name: User submitted filenames processed to protect local files
+  type: Contains
+- document:
+    doctype: CRE
+    id: 742-056
+    name: User submitted filenames processed to protect remote files
+  type: Contains
+name: File execution

@@ -1,0 +1,25 @@
+doctype: CRE
+id: 268-100
+links:
+- document:
+    doctype: CRE
+    id: 636-347
+    name: HTTP security headers
+  type: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x22-V14-Config.md
+    name: ASVS
+    section: V14.4.6
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '116'
+    subsection: ''
+    version: ''
+  type: Linked To
+name: Proper Referrer-Policy configuration
