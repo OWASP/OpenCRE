@@ -1,0 +1,19 @@
+doctype: CRE
+id: 758-262
+links:
+- document:
+    doctype: CRE
+    id: 130-550
+    name: File handling
+  type: Contains
+- document:
+    doctype: CRE
+    id: 112-273
+    name: virus scanning of untrusted files
+  type: Contains
+- document:
+    doctype: CRE
+    id: 307-111
+    name: Unprivilaged andvalidated untrusted files
+  type: Contains
+name: File storage

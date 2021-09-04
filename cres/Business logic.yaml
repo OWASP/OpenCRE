@@ -1,0 +1,66 @@
+doctype: CRE
+id: 854-643
+links:
+- document:
+    doctype: CRE
+    id: 630-573
+    name: Anti-automation control
+  type: Contains
+- document:
+    doctype: CRE
+    id: 725-682
+    name: Configurable alert against anomalies
+  type: Contains
+- document:
+    doctype: CRE
+    id: 534-605
+    name: 'Flow integrity on business logic '
+  type: Contains
+- document:
+    doctype: CRE
+    id: 418-853
+    name: Monitor unusual activities
+  type: Contains
+- document:
+    doctype: CRE
+    id: 670-660
+    name: No sharing of unsynchronized state on high-value logic flows
+  type: Contains
+- document:
+    doctype: CRE
+    id: 660-867
+    name: Protection against identified risks
+  type: Contains
+- document:
+    doctype: CRE
+    id: 134-412
+    name: Protection against race conditions
+  type: Contains
+- document:
+    doctype: CRE
+    id: 456-535
+    name: Realistic human pase business logic flows timing
+  type: Contains
+- document:
+    doctype: CRE
+    id: 380-540
+    name: Thread safty on high value logic flows
+  type: Contains
+- document:
+    doctype: CRE
+    id: 746-705
+    name: User based functionality access limitations
+  type: Contains
+- document:
+    doctype: CRE
+    id: 082-327
+    name: Attain user consent when using their data
+  type: Related
+- document:
+    doctype: CRE
+    id: 762-451
+    name: Allow user to delete or access their data
+  type: Related
+name: Business logic
+tags:
+- DOS

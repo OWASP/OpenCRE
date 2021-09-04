@@ -1,0 +1,44 @@
+doctype: CRE
+id: 546-564
+links:
+- document:
+    doctype: CRE
+    id: 817-133
+    name: Boundary Protection
+  type: Contains
+- document:
+    doctype: CRE
+    id: 486-813
+    name: Configuration
+  type: Contains
+- document:
+    doctype: CRE
+    id: 170-772
+    name: Cryptography
+  type: Contains
+- document:
+    doctype: CRE
+    id: 623-550
+    name: DOS
+  type: Contains
+- document:
+    doctype: CRE
+    id: 760-764
+    name: Injection
+  type: Contains
+- document:
+    doctype: CRE
+    id: 058-527
+    name: Secure name/address resolution service
+  type: Contains
+- document:
+    doctype: CRE
+    id: 180-070
+    name: Security and Privacy Engineering Principles
+  type: Contains
+- document:
+    doctype: CRE
+    id: 028-726
+    name: XSS
+  type: Contains
+name: Tags

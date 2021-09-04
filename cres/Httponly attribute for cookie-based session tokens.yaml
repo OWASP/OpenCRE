@@ -1,0 +1,59 @@
+doctype: CRE
+id: 804-220
+links:
+- document:
+    doctype: CRE
+    id: 110-531
+    name: Cookie-config
+  type: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x12-V3-Session-management.md
+    name: ASVS
+    section: V3.4.2
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: OPC
+    section: C6
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: WSTG
+    section: WSTG-SESS-02
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '1004'
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: Cheat_sheets
+    section: https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: Cheat_sheets
+    section: https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html
+    subsection: ''
+    version: ''
+  type: Linked To
+name: Httponly attribute for cookie-based session tokens
+tags:
+- XSS

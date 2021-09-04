@@ -1,0 +1,27 @@
+doctype: CRE
+id: 625-323
+links:
+- document:
+    doctype: CRE
+    id: 354-846
+    name: Documentation and requirements
+  type: Contains
+- document:
+    doctype: CRE
+    id: 765-788
+    name: All sensitive data classified in protection levels
+  type: Contains
+- document:
+    doctype: CRE
+    id: 731-120
+    name: Protection levels have requiements
+  type: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://owasp.org/www-project-top-ten/2017/A3_2017-Sensitive_Data_Exposure
+    name: Top10 2017
+    section: A3-Sensitive_Data_Exposure
+    subsection: ''
+    version: ''
+  type: Linked To
+name: Data security requirement documentation

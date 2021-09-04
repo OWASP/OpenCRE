@@ -1,0 +1,29 @@
+doctype: CRE
+id: 130-550
+links:
+- document:
+    doctype: CRE
+    id: 503-455
+    name: Input and output verification
+  type: Contains
+- document:
+    doctype: CRE
+    id: 040-843
+    name: File download
+  type: Contains
+- document:
+    doctype: CRE
+    id: 451-082
+    name: File execution
+  type: Contains
+- document:
+    doctype: CRE
+    id: 758-262
+    name: File storage
+  type: Contains
+- document:
+    doctype: CRE
+    id: 621-287
+    name: File upload
+  type: Contains
+name: File handling

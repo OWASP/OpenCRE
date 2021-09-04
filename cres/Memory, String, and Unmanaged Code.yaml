@@ -1,0 +1,24 @@
+doctype: CRE
+id: 866-553
+links:
+- document:
+    doctype: CRE
+    id: 503-455
+    name: Input and output verification
+  type: Contains
+- document:
+    doctype: CRE
+    id: 824-732
+    name: Constant/validated format strings
+  type: Contains
+- document:
+    doctype: CRE
+    id: 482-771
+    name: Proteciton against integer overflows
+  type: Contains
+- document:
+    doctype: CRE
+    id: 831-570
+    name: Use memory safe strings
+  type: Contains
+name: Memory, String, and Unmanaged Code

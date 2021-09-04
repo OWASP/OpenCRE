@@ -1,27 +1,50 @@
 doctype: CRE
-id: 239-427
+id: 228-551
 links:
 - document:
-    description: Verify using online or up to date TLS testing tools that only strong
-      algorithms, ciphers, and protocols are enabled, with the strongest algorithms
-      and ciphers set as preferred.
     doctype: CRE
-    id: 005-022-025
-    name: PROTECT_DATA_IN_TRANSIT_TLS_DIRECTIVES_NO_FALLBACK
-  type: SAM
+    id: 278-646
+    name: Secure communication
+  type: Contains
 - document:
-    description: Verify that connections to and from the server use trusted TLS certificates.
-      Where internally generated or self-signed certificates are used, the server
-      must be configured to only trust specific internal CAs and specific self-signed
-      certificates. All others should be rejected.
     doctype: CRE
-    id: 005-022-025
-    name: PROTECT_DATA_IN_TRANSIT_TLS_CERTIFICATE_VERIFY
-  type: SAM
+    id: 726-868
+    name: Deployed topology
+    tags:
+    - Architecture
+  type: Related
 - document:
-    description: Verify that backend TLS connection failures are logged.
     doctype: CRE
-    id: 005-022-025
-    name: PROTECT_DATA_IN_TRANSIT_TLS_CONNECTION_LOG_FAILURES
-  type: SAM
+    id: 745-045
+    name: No fall back to insecure protocols in TCP
+  type: Contains
+- document:
+    doctype: CRE
+    id: 636-854
+    name: Encrypt all communications
+  type: Contains
+- document:
+    doctype: CRE
+    id: 430-636
+    name: Proper certificate trust chain
+    tags:
+    - Configuration
+  type: Contains
+- document:
+    doctype: CRE
+    id: 668-364
+    name: Logg failed TLS connections
+  type: Contains
+- document:
+    doctype: CRE
+    id: 767-701
+    name: Use only strong Comunication encryption protocols
+  type: Contains
+- document:
+    doctype: CRE
+    id: 248-646
+    name: Disable insecure SSL/TLS versions
+  type: Contains
 name: TLS
+tags:
+- Cryptoghraphy

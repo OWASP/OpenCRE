@@ -1,0 +1,37 @@
+doctype: CRE
+id: 836-068
+links:
+- document:
+    doctype: CRE
+    id: 503-455
+    name: Input and output verification
+  type: Contains
+- document:
+    doctype: CRE
+    id: 736-554
+    name: Serialization of untrusted communication
+  type: Contains
+- document:
+    doctype: CRE
+    id: 831-563
+    name: Deserialization of untrusted communication
+  type: Contains
+- document:
+    doctype: CRE
+    id: 387-848
+    name: Parsing and evaluating JSON
+  type: Contains
+- document:
+    doctype: CRE
+    id: 762-616
+    name: Integrity check and encryption of serialized objects
+  type: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://owasp.org/www-project-top-ten/2017/A8_2017-Insecure_Deserialization
+    name: Top10 2017
+    section: A8_Insecure_Deserialization
+    subsection: ''
+    version: ''
+  type: Linked To
+name: 'Deserialization Prevention '

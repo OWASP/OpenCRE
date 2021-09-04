@@ -1,0 +1,27 @@
+doctype: CRE
+id: 636-854
+links:
+- document:
+    doctype: CRE
+    id: 228-551
+    name: TLS
+    tags:
+    - Cryptoghraphy
+  type: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x17-V9-Communications.md
+    name: ASVS
+    section: V9.2.2
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '319'
+    subsection: ''
+    version: ''
+  type: Linked To
+name: Encrypt all communications

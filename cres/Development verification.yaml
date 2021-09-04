@@ -1,0 +1,19 @@
+doctype: CRE
+id: 433-442
+links:
+- document:
+    doctype: CRE
+    id: 153-513
+    name: Development & operations
+  type: Contains
+- document:
+    doctype: CRE
+    id: 340-754
+    name: 'Threat model every design change or sprint '
+  type: Contains
+- document:
+    doctype: CRE
+    id: 611-158
+    name: Useage of effective SAST tools
+  type: Contains
+name: Development verification

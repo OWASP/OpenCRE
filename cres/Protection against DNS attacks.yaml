@@ -1,0 +1,30 @@
+doctype: CRE
+id: 336-512
+links:
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x18-V10-Malicious.md
+    name: ASVS
+    section: V10.3.3
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: WSTG
+    section: WSTG-CONF-10
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '350'
+    subsection: ''
+    version: ''
+  type: Linked To
+name: Protection against DNS attacks
+tags:
+- Secure name/address resolution service

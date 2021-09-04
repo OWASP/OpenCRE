@@ -1,0 +1,57 @@
+doctype: CRE
+id: 464-084
+links:
+- document:
+    doctype: CRE
+    id: 071-288
+    name: RESTful
+  type: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x21-V13-API.md
+    name: ASVS
+    section: V13.2.3
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: WSTG
+    section: WSTG-SESS-05
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '352'
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: Cheat_sheets
+    section: https://cheatsheetseries.owasp.org/cheatsheets/REST_Security_Cheat_Sheet.html
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: Cheat_sheets
+    section: https://cheatsheetseries.owasp.org/cheatsheets/REST_Assessment_Cheat_Sheet.html
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: Cheat_sheets
+    section: https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html
+    subsection: ''
+    version: ''
+  type: Linked To
+name: CSRF protection for cookie based  RESTful web services

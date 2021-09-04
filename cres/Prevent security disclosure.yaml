@@ -1,0 +1,34 @@
+doctype: CRE
+id: 308-515
+links:
+- document:
+    doctype: CRE
+    id: 503-455
+    name: Input and output verification
+  type: Contains
+- document:
+    doctype: CRE
+    id: 208-805
+    name: Disable debug mode in production
+  type: Contains
+- document:
+    doctype: CRE
+    id: 743-110
+    name: No information disclosure through error message
+  type: Contains
+- document:
+    doctype: CRE
+    id: 403-005
+    name: No information disclosure through HTTP header or responce
+  type: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://owasp.org/www-project-top-ten/2017/A3_2017-Sensitive_Data_Exposure
+    name: Top10 2017
+    section: A3-Sensitive_Data_Exposure
+    subsection: ''
+    version: ''
+  type: Linked To
+name: Prevent security disclosure
+tags:
+- Configuration

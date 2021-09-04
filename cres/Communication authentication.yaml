@@ -1,0 +1,24 @@
+doctype: CRE
+id: 634-733
+links:
+- document:
+    doctype: CRE
+    id: 278-646
+    name: Secure communication
+  type: Contains
+- document:
+    doctype: CRE
+    id: 605-735
+    name: Authenticate all extenrnal connections
+  type: Contains
+- document:
+    doctype: CRE
+    id: 537-367
+    name: properly enable certification revocation
+  type: Contains
+- document:
+    doctype: CRE
+    id: 530-671
+    name: Verify TLS authenticity
+  type: Contains
+name: Communication authentication

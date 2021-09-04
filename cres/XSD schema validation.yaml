@@ -1,0 +1,33 @@
+doctype: CRE
+id: 611-051
+links:
+- document:
+    doctype: CRE
+    id: 080-373
+    name: SOAP
+  type: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x21-V13-API.md
+    name: ASVS
+    section: V13.3.1
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: WSTG
+    section: WSTG-INPV-07
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '20'
+    subsection: ''
+    version: ''
+  type: Linked To
+name: XSD schema validation

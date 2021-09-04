@@ -1,0 +1,62 @@
+doctype: CRE
+id: 166-151
+links:
+- document:
+    doctype: CRE
+    id: 724-770
+    name: Authorized access
+  type: Contains
+- document:
+    doctype: CRE
+    id: 141-555
+    name: Fail securely
+  type: Related
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x12-V4-Access-Control.md
+    name: ASVS
+    section: V4.1.5
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: OPC
+    section: C10
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: WSTG
+    section: WSTG-ERRH-01
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '285'
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: Cheat_sheets
+    section: https://cheatsheetseries.owasp.org/cheatsheets/Access_Control_Cheat_Sheet.html
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: Cheat_sheets
+    section: https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Testing_Automation_Cheat_Sheet.html
+    subsection: ''
+    version: ''
+  type: Linked To
+name: Access control fail-safe

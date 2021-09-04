@@ -1,0 +1,51 @@
+doctype: CRE
+id: 615-188
+links:
+- document:
+    doctype: CRE
+    id: 263-184
+    name: Automatic verification of deployment procedure
+  type: Contains
+- document:
+    doctype: CRE
+    id: 307-507
+    name: Integrity check on all resources and code
+  type: Contains
+- document:
+    doctype: CRE
+    id: 171-222
+    name: Integrity check on deployment binaries
+  type: Contains
+- document:
+    doctype: CRE
+    id: 314-131
+    name: Properly configured compiler flags
+  type: Contains
+- document:
+    doctype: CRE
+    id: 208-355
+    name: Repeatable deployment procedures
+  type: Contains
+- document:
+    doctype: CRE
+    id: 253-452
+    name: Secure and repeatable application build
+  type: Contains
+- document:
+    doctype: CRE
+    id: 028-254
+    name: Secure auto-update over full stack
+  type: Contains
+- document:
+    doctype: CRE
+    id: 053-751
+    name: Control outdated/insecure componencts
+  type: Related
+- document:
+    doctype: CRE
+    id: 783-355
+    name: Deployment
+    tags:
+    - Configuration
+  type: Contains
+name: Deployment process

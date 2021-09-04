@@ -1,0 +1,75 @@
+doctype: CRE
+id: 161-451
+links:
+- document:
+    doctype: CRE
+    id: 503-455
+    name: Input and output verification
+  type: Contains
+- document:
+    doctype: CRE
+    id: 620-101
+    name: 'Relevant output encoding for interpreter '
+  type: Contains
+- document:
+    doctype: CRE
+    id: 533-516
+    name: Preserve user input format when encoding Unicode
+  type: Contains
+- document:
+    doctype: CRE
+    id: 366-835
+    name: Escape output against XSS
+  type: Contains
+- document:
+    doctype: CRE
+    id: 806-367
+    name: Output encoding near the interpreter
+  type: Contains
+- document:
+    doctype: CRE
+    id: 064-808
+    name: Context-specific output encoding against SQL injection
+  type: Contains
+- document:
+    doctype: CRE
+    id: 607-671
+    name: Protection against JavaScript or JSON injection attacks
+  type: Contains
+- document:
+    doctype: CRE
+    id: 531-558
+    name: Protection against LDAP injection
+  type: Contains
+- document:
+    doctype: CRE
+    id: 547-283
+    name: Protection against LFI or RFI attacks
+  type: Contains
+- document:
+    doctype: CRE
+    id: 857-718
+    name: protection against OS command injection attack
+  type: Contains
+- document:
+    doctype: CRE
+    id: 732-873
+    name: Use parameterization to create queries
+  type: Contains
+- document:
+    doctype: CRE
+    id: 134-207
+    name: Protect against Xpath injection
+  type: Contains
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: WSTG
+    section: WSTG-APPE-D
+    subsection: ''
+    version: ''
+  type: Linked To
+name: Output encoding and injection prevention
+tags:
+- XSS
+- Injection

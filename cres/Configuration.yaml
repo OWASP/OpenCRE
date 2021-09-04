@@ -1,0 +1,9 @@
+doctype: CRE
+id: 486-813
+links:
+- document:
+    doctype: CRE
+    id: 546-564
+    name: Tags
+  type: Contains
+name: Configuration

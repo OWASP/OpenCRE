@@ -1,0 +1,41 @@
+doctype: CRE
+id: 002-630
+links:
+- document:
+    doctype: CRE
+    id: 470-731
+    name: Session token generation
+  type: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x12-V3-Session-management.md
+    name: ASVS
+    section: V3.2.1
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: OPC
+    section: C6
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: WSTG
+    section: WSTG-SESS-03
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: CWE
+    section: '384'
+    subsection: ''
+    version: ''
+  type: Linked To
+name: New session tocken upon authentication

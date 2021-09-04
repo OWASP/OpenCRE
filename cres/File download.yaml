@@ -1,0 +1,23 @@
+doctype: CRE
+id: 040-843
+links:
+- document:
+    doctype: CRE
+    id: 130-550
+    name: File handling
+  type: Contains
+- document:
+    doctype: CRE
+    id: 314-701
+    name: Whitelisting file extentions
+    tags:
+    - DOS
+  type: Contains
+- document:
+    doctype: CRE
+    id: 545-243
+    name: No execution of uploaded files
+    tags:
+    - DOS
+  type: Contains
+name: File download

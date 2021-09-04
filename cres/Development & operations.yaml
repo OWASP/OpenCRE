@@ -1,0 +1,70 @@
+doctype: CRE
+id: 153-513
+links:
+- document:
+    doctype: CRE
+    id: 616-305
+    name: Secure SDLC in every step
+  type: Contains
+- document:
+    doctype: CRE
+    id: 783-355
+    name: Deployment
+    tags:
+    - Configuration
+  type: Contains
+- document:
+    doctype: CRE
+    id: 601-155
+    name: Developer Configuration Management
+  type: Contains
+- document:
+    doctype: CRE
+    id: 817-658
+    name: Developer Testing and Evaluation
+  type: Contains
+- document:
+    doctype: CRE
+    id: 433-442
+    name: Development verification
+  type: Contains
+- document:
+    doctype: CRE
+    id: 354-846
+    name: Documentation and requirements
+  type: Contains
+- document:
+    doctype: CRE
+    id: 577-260
+    name: Integrity ckeck for externally hosted assets
+  type: Related
+- document:
+    doctype: CRE
+    id: 863-521
+    name: Maintained inventory catalog for third party repositories
+  type: Related
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53 v5
+    section: SA-15 Development Process
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53 v5
+    section: and Tools
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-53 v5
+    section: Standards
+    subsection: ''
+    version: ''
+  type: Linked To
+name: Development & operations

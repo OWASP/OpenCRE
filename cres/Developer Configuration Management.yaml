@@ -1,0 +1,19 @@
+doctype: CRE
+id: 601-155
+links:
+- document:
+    doctype: CRE
+    id: 153-513
+    name: Development & operations
+  type: Contains
+- document:
+    doctype: CRE
+    id: 757-271
+    name: Usage of proper source code control systems
+  type: Contains
+- document:
+    doctype: CRE
+    id: 715-334
+    name: Updated third party components
+  type: Related
+name: Developer Configuration Management

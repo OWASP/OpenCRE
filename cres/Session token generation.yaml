@@ -1,0 +1,33 @@
+doctype: CRE
+id: 470-731
+links:
+- document:
+    doctype: CRE
+    id: 177-260
+    name: Session management
+  type: Contains
+- document:
+    doctype: CRE
+    id: 455-358
+    name: Secure storage of session cossies
+  type: Contains
+- document:
+    doctype: CRE
+    id: 704-530
+    name: High entropy session tokens
+    tags:
+    - Cryptography
+  type: Contains
+- document:
+    doctype: CRE
+    id: 727-043
+    name: Cryptographically secure session tockens
+    tags:
+    - Cryptography
+  type: Contains
+- document:
+    doctype: CRE
+    id: 002-630
+    name: New session tocken upon authentication
+  type: Contains
+name: Session token generation
