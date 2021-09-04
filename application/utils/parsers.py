@@ -334,14 +334,24 @@ def parse_v1_standards(
                 )
             )
         if not is_empty(cre_mapping.get("WSTG")):
-            cre.add_link(
-                defs.Link(
-                    ltype=defs.LinkTypes.LinkedTo,
-                    document=defs.Standard(
-                        name="WSTG", section=cre_mapping.pop("WSTG")
-                    ),
+            if "\n" in cre_mapping.get("WSTG"):
+                for element in cre_mapping.get("WSTG").split("\n"):
+                    if not is_empty(element):
+                        cre.add_link(
+                            defs.Link(
+                                ltype=defs.LinkTypes.LinkedTo,
+                                document=defs.Standard(name="WSTG", section=element),
+                            )
+                        )
+            else:
+                cre.add_link(
+                    defs.Link(
+                        ltype=defs.LinkTypes.LinkedTo,
+                        document=defs.Standard(
+                            name="WSTG", section=cre_mapping.pop("WSTG")
+                        ),
+                    )
                 )
-            )
         if not is_empty(cre_mapping.get("SIG ISO 25010")):
             cre.add_link(
                 defs.Link(
@@ -439,7 +449,7 @@ def parse_hierarchical_export_format(
             key = [key for key in mapping if key.startswith("CRE hierarchy %s" % i)][0]
             if not is_empty(mapping.get(key)):
                 if current_hierarchy == 0:
-                    name = mapping.pop(key)
+                    name = mapping.pop(key).replace("\n", " ")
                     current_hierarchy = i
                 else:
                     higher_cre = i
@@ -534,17 +544,31 @@ def parse_hierarchical_export_format(
                 "Standard WSTG (prefilled by SR, but Elie has plan to make the administration self-maintaining)"
             )
         ):
-            cre.add_link(
-                defs.Link(
-                    ltype=defs.LinkTypes.LinkedTo,
-                    document=defs.Standard(
-                        name="WSTG",
-                        section=mapping.pop(
-                            "Standard WSTG (prefilled by SR, but Elie has plan to make the administration self-maintaining)"
-                        ).strip(),
-                    ),
-                )
+            section = mapping.get(
+                "Standard WSTG (prefilled by SR, but Elie has plan to make the administration self-maintaining)"
             )
+            if "\n" in section:
+                for element in section.split("\n"):
+                    if not is_empty(element):
+                        cre.add_link(
+                            defs.Link(
+                                ltype=defs.LinkTypes.LinkedTo,
+                                document=defs.Standard(
+                                    name="WSTG",
+                                    section=element.strip(),
+                                ),
+                            )
+                        )
+            else:
+                cre.add_link(
+                    defs.Link(
+                        ltype=defs.LinkTypes.LinkedTo,
+                        document=defs.Standard(
+                            name="WSTG",
+                            section=section.strip(),
+                        ),
+                    )
+                )
         if not is_empty(mapping.get("Standard CWE (from ASVS)")):
             cre.add_link(
                 defs.Link(
