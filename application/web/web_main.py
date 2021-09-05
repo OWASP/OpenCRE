@@ -80,7 +80,7 @@ def gap_analysis() -> Any:  # TODO (spyros): add export result to spreadsheet
         return jsonify(res)
 
 
-@app.route("/rest/v1/text-search", methods=["GET"])
+@app.route("/rest/v1/text_search", methods=["GET"])
 def text_search() -> Any:
     """
     Performs arbitrary text search among all known documents.
@@ -94,7 +94,7 @@ def text_search() -> Any:
         Anything else will be a case insensitive LIKE query in the database
     """
     database = db.Standard_collection()
-    text = request.args.getlist("text")
+    text = request.args.get("text")
     documents = database.text_search(text)
     if documents:
         res = [doc.todict() for doc in documents]
