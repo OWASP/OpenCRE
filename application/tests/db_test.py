@@ -1,8 +1,8 @@
-import copy
 import os
 import tempfile
 import unittest
 import uuid
+from copy import copy
 from pprint import pprint
 from typing import Dict, Union
 
@@ -400,15 +400,15 @@ class TestDB(unittest.TestCase):
         cres = self.collection.find_cres_of_standard(lone_standard)
         self.assertIsNone(cres)
 
-    def test_get_CRE(self) -> None:
+    def test_get_CREs(self) -> None:
         """Given: a cre 'C1' that links to cres both as a group and a cre and other standards
         return the CRE in Document format"""
         collection = db.Standard_collection()
-        dbc1 = db.CRE(external_id="123", description="CD1", name="C1")
-        dbc2 = db.CRE(description="CD2", name="C2")
-        dbc3 = db.CRE(description="CD3", name="C3")
+        dbc1 = db.CRE(external_id="123", description="gcCD1", name="gcC1")
+        dbc2 = db.CRE(description="gcCD2", name="gcC2")
+        dbc3 = db.CRE(description="gcCD3", name="gcC3")
         dbs1 = db.Standard(
-            name="S2", section="1", subsection="2", link="3", version="1.1.1"
+            name="gcS2", section="gc1", subsection="gc2", link="gc3", version="gc1.1.1"
         )
 
         collection.session.add(dbc1)
@@ -420,48 +420,70 @@ class TestDB(unittest.TestCase):
             db.InternalLinks(type="Contains", group=dbc1.id, cre=dbc2.id)
         )
         collection.session.add(
-            db.InternalLinks(type="Is Part Of", group=dbc3.id, cre=dbc1.id)
+            db.InternalLinks(type="Contains", group=dbc1.id, cre=dbc3.id)
         )
         collection.session.add(
             db.Links(type="Linked To", cre=dbc1.id, standard=dbs1.id)
         )
         collection.session.commit()
-
-        expected = defs.CRE(
-            id="123",
-            description="CD1",
-            name="C1",
-            links=[
+        cd1 = defs.CRE(id="123", description="gcCD1", name="gcC1", links=[])
+        cd2 = defs.CRE(description="gcCD2", name="gcC2")
+        cd3 = defs.CRE(description="gcCD3", name="gcC3")
+        expected = [
+            copy(cd1)
+            .add_link(
                 defs.Link(
                     ltype=defs.LinkTypes.LinkedTo,
                     document=defs.Standard(
-                        name="S2",
-                        section="1",
-                        subsection="2",
-                        hyperlink="3",
-                        version="1.1.1",
+                        name="gcS2",
+                        section="gc1",
+                        subsection="gc2",
+                        hyperlink="gc3",
+                        version="gc1.1.1",
                     ),
-                ),
+                )
+            )
+            .add_link(
                 defs.Link(
                     ltype=defs.LinkTypes.Contains,
-                    document=defs.CRE(description="CD2", name="C2"),
-                ),
-                defs.Link(
-                    ltype=defs.LinkTypes.PartOf,
-                    document=defs.CRE(description="CD3", name="C3"),
-                ),
-            ],
+                    document=copy(cd2),
+                )
+            )
+            .add_link(defs.Link(ltype=defs.LinkTypes.Contains, document=copy(cd3)))
+        ]
+
+        shallow_cd1 = copy(cd1)
+        shallow_cd1.links = []
+        cd2.add_link(defs.Link(ltype=defs.LinkTypes.PartOf, document=shallow_cd1))
+        cd3.add_link(defs.Link(ltype=defs.LinkTypes.PartOf, document=shallow_cd1))
+        self.assertIsNone(collection.get_CREs())
+
+        res = collection.get_CREs(name="gcC1")
+        self.assertEqual(expected, res)
+
+        res = collection.get_CREs(external_id="123")
+        self.assertEqual(expected, res)
+
+        self.assertEqual(collection.get_CREs(external_id="12%", partial=True), expected)
+
+        self.assertCountEqual(
+            collection.get_CREs(name="gcC%", partial=True), [expected[0], cd2, cd3]
         )
-
-        res = collection.get_CRE(name="C1")
-        self.assertEqual(expected, res)
-
-        res = collection.get_CRE(external_id="123")
-        self.assertEqual(expected, res)
-
-        self.assertIsNone(collection.get_CRE(external_id="123", name="C5"))
-        self.assertIsNone(collection.get_CRE(external_id="1234"))
-        self.assertIsNone(collection.get_CRE(name="C5"))
+        self.assertEqual(
+            collection.get_CREs(external_id="1%", name="gcC%", partial=True), expected
+        )
+        self.assertEqual(collection.get_CREs(description="gcCD1"), expected)
+        self.assertEqual(
+            collection.get_CREs(external_id="1%", description="gcC%", partial=True),
+            expected,
+        )
+        self.assertCountEqual(
+            collection.get_CREs(description="gcC%", name="gcC%", partial=True),
+            [expected[0], cd2, cd3],
+        )
+        self.assertIsNone(collection.get_CREs(external_id="123", name="gcC5"))
+        self.assertIsNone(collection.get_CREs(external_id="1234"))
+        self.assertIsNone(collection.get_CREs(name="gcC5"))
 
     def test_get_standards(self) -> None:
         """Given: a Standard 'S1' that links to cres
@@ -637,30 +659,30 @@ class TestDB(unittest.TestCase):
         expected = {
             "SA": [def_standards["sa1"], def_standards["sa2"], def_standards["sa3"]],
             "SA,SAA": [
-                copy.copy(def_standards["sa1"]).add_link(
+                copy(def_standards["sa1"]).add_link(
                     defs.Link(ltype=ltype, document=def_standards["saa1"])
                 ),
-                copy.copy(def_standards["saa1"]).add_link(
+                copy(def_standards["saa1"]).add_link(
                     defs.Link(ltype=ltype, document=def_standards["sa1"])
                 ),
                 def_standards["sa2"],
                 def_standards["sa3"],
             ],
             "SAA,SA": [
-                copy.copy(def_standards["sa1"]).add_link(
+                copy(def_standards["sa1"]).add_link(
                     defs.Link(ltype=ltype, document=def_standards["saa1"])
                 ),
-                copy.copy(def_standards["saa1"]).add_link(
+                copy(def_standards["saa1"]).add_link(
                     defs.Link(ltype=ltype, document=def_standards["sa1"])
                 ),
                 def_standards["sa2"],
                 def_standards["sa3"],
             ],
             "SA,SDD": [
-                copy.copy(def_standards["sa1"]).add_link(
+                copy(def_standards["sa1"]).add_link(
                     defs.Link(ltype=ltype, document=def_standards["sdd1"])
                 ),
-                copy.copy(def_standards["sdd1"]).add_link(
+                copy(def_standards["sdd1"]).add_link(
                     defs.Link(ltype=ltype, document=def_standards["sa1"])
                 ),
                 def_standards["sa2"],
@@ -673,13 +695,13 @@ class TestDB(unittest.TestCase):
                 def_standards["sw1"],
             ],
             "SA,SB,SD,SW": [
-                copy.copy(def_standards["sa1"])
+                copy(def_standards["sa1"])
                 .add_link(defs.Link(ltype=ltype, document=def_standards["sb1"]))
                 .add_link(defs.Link(ltype=ltype, document=def_standards["sd1"])),
-                copy.copy(def_standards["sb1"])
+                copy(def_standards["sb1"])
                 .add_link(defs.Link(ltype=ltype, document=def_standards["sa1"]))
                 .add_link(defs.Link(ltype=ltype, document=def_standards["sd1"])),
-                copy.copy(def_standards["sd1"])
+                copy(def_standards["sd1"])
                 .add_link(defs.Link(ltype=ltype, document=def_standards["sa1"]))
                 .add_link(defs.Link(ltype=ltype, document=def_standards["sb1"])),
                 def_standards["sa2"],
@@ -689,10 +711,10 @@ class TestDB(unittest.TestCase):
             "SA,SX": [
                 def_standards["sa1"],
                 def_standards["sa2"],
-                copy.copy(def_standards["sa3"]).add_link(
+                copy(def_standards["sa3"]).add_link(
                     defs.Link(ltype=ltype, document=def_standards["sx1"])
                 ),
-                copy.copy(def_standards["sx1"]).add_link(
+                copy(def_standards["sx1"]).add_link(
                     defs.Link(ltype=ltype, document=def_standards["sa3"])
                 ),
             ],
@@ -769,6 +791,84 @@ class TestDB(unittest.TestCase):
             .one_or_none()
         )
         self.assertIsNone(none_res)
+
+    def test_text_search(self) -> None:
+        """Given:
+         a cre(id=123-456,name=foo,description='lorem ipsum foo+bar')
+         a standard(name=Bar,section=blah,subsection=foo, hyperlink='https://example.com/blah/foo')
+         a standard(name=Bar,section=blah,subsection=foo1, hyperlink='https://example.com/blah/foo1')
+         a standard(name=Bar,section=blah1,subsection=foo, hyperlink='https://example.com/blah1/foo')
+
+        full_text_search('123-456') returns cre:foo
+        full_text_search('CRE:foo') and full_text_search('CRE foo') returns cre:foo
+        full_text_search('CRE:123-456') and full_text_search('CRE 123-456') returns cre:foo
+
+        full_text_search('Standard:Bar') and full_text_search('Standard Bar') returns: [standard:Bar:blah:foo,
+                                                   standard:Bar:blah:foo1,
+                                                   standard:Bar:blah1:foo]
+
+        full_text_search('Standard:blah') and full_text_search('Standard blah')  returns [standard:Bar::blah:foo,
+                                                                                          standard:Bar:blah:foo1]
+        full_text_search('Standard:blah:foo') returns [standard:Bar:blah:foo]
+        full_text_search('Standard:foo') returns [standard:Bar:blah:foo,
+                                                  standard:Bar:blah1:foo]
+        <Same for searching with hyperlink>
+
+        full_text_search('ipsum') returns cre:foo
+        full_text_search('foo') returns [cre:foo,standard:Bar:blah:foo, standard:Bar:blah:foo1,standard:Bar:blah1:foo]
+        """
+        collection = db.Standard_collection()
+        cre = defs.CRE(
+            id="123-456", name="textSearchCRE", description="lorem ipsum tsSection+tsC"
+        )
+        collection.add_cre(cre)
+
+        s1 = defs.Standard(
+            name="textSearchStandard",
+            section="tsSection",
+            subsection="tsSubSection",
+            hyperlink="https://example.com/tsSection/tsSubSection",
+        )
+        collection.add_standard(s1)
+        s2 = defs.Standard(
+            name="textSearchStandard",
+            section="tsSection",
+            subsection="tsSubSection1",
+            hyperlink="https://example.com/tsSection/tsSubSection1",
+        )
+        collection.add_standard(s2)
+        s3 = defs.Standard(
+            name="textSearchStandard",
+            section="tsSection1",
+            subsection="tsSubSection1",
+            hyperlink="https://example.com/tsSection1/tsSubSection1",
+        )
+
+        collection.add_standard(s3)
+        collection.session.commit()
+        expected = {
+            "123-456": [cre],
+            "CRE:textSearchCRE": [cre],
+            "CRE textSearchCRE": [cre],
+            "CRE:123-456": [cre],
+            "CRE 123-456": [cre],
+            "Standard:textSearchStandard": [s1, s2, s3],
+            "Standard textSearchStandard": [s1, s2, s3],
+            "Standard:tsSection": [s1, s2],
+            "Standard tsSection": [s1, s2],
+            "Standard:tsSection:tsSubSection1": [s2],
+            "Standard tsSection tsSubSection1": [s2],
+            "Standard:tsSubSection1": [s2, s3],
+            "Standard tsSubSection1": [s2, s3],
+            "Standard:https://example.com/tsSection/tsSubSection1": [s2],
+            "Standard https://example.com/tsSection1/tsSubSection1": [s3],
+            "https://example.com/tsSection": [s1, s2, s3],
+            "ipsum": [cre],
+            "tsSection": [cre, s1, s2, s3],
+        }
+        self.maxDiff = None
+        for k, val in expected.items():
+            self.assertCountEqual(self.collection.text_search(k), val)
 
 
 if __name__ == "__main__":
