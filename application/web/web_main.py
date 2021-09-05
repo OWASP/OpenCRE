@@ -91,7 +91,7 @@ def text_search() -> Any:
               all entries of <name> and optionally, section/subsection
         * '\d\d\d-\d\d\d' (two sets of 3 digits) will first try to match
                            CRE ids before it performs a free text search
-        Anything else will be a case sensitive LIKE query in the database
+        Anything else will be a case insensitive LIKE query in the database
     """
     database = db.Standard_collection()
     text = request.args.getlist("text")
