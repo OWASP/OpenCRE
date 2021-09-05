@@ -38,7 +38,8 @@ class Standard(BaseModel):  # type: ignore
     # some external link to where this is, usually a URL with an anchor
     link = sqla.Column(sqla.String, default="")
     __table_args__ = (
-        sqla.UniqueConstraint(name, section, subsection, name="standard_section"),
+        sqla.UniqueConstraint(name, section, subsection,
+                              name="standard_section"),
     )
 
 
@@ -62,15 +63,18 @@ class InternalLinks(BaseModel):  # type: ignore
     __tablename__ = "crelinks"
     type = sqla.Column(sqla.String, default="SAME")
 
-    group = sqla.Column(sqla.Integer, sqla.ForeignKey("cre.id"), primary_key=True)
-    cre = sqla.Column(sqla.Integer, sqla.ForeignKey("cre.id"), primary_key=True)
+    group = sqla.Column(sqla.Integer, sqla.ForeignKey(
+        "cre.id"), primary_key=True)
+    cre = sqla.Column(sqla.Integer, sqla.ForeignKey(
+        "cre.id"), primary_key=True)
 
 
 class Links(BaseModel):  # type: ignore
 
     __tablename__ = "links"
     type = sqla.Column(sqla.String, default="SAM")
-    cre = sqla.Column(sqla.Integer, sqla.ForeignKey("cre.id"), primary_key=True)
+    cre = sqla.Column(sqla.Integer, sqla.ForeignKey(
+        "cre.id"), primary_key=True)
     standard = sqla.Column(
         sqla.Integer, sqla.ForeignKey("standard.id"), primary_key=True
     )
@@ -150,15 +154,18 @@ class Standard_collection:
     def find_cres_of_cre(self, cre: CRE) -> Optional[List[CRE]]:
         """returns the higher level CREs of the cre or none
         if no higher level cres link to it"""
-        cre_id = self.session.query(CRE.id).filter(CRE.name == cre.name).first()
+        cre_id = self.session.query(CRE.id).filter(
+            CRE.name == cre.name).first()
         links = (
-            self.session.query(InternalLinks).filter(InternalLinks.cre == cre_id).all()
+            self.session.query(InternalLinks).filter(
+                InternalLinks.cre == cre_id).all()
         )
         if links:
             result = []
             for link in links:
                 result.append(
-                    self.session.query(CRE).filter(CRE.id == link.group).first()
+                    self.session.query(CRE).filter(
+                        CRE.id == link.group).first()
                 )
             return result
 
@@ -185,9 +192,11 @@ class Standard_collection:
             return None
         result: List[CRE] = []
         for link in (
-            self.session.query(Links).filter(Links.standard == standard.id).all()
+            self.session.query(Links).filter(
+                Links.standard == standard.id).all()
         ):
-            result.append(self.session.query(CRE).filter(CRE.id == link.cre).first())
+            result.append(self.session.query(
+                CRE).filter(CRE.id == link.cre).first())
         return result or None
 
     def get_by_tags(self, tags: List[str]) -> List[cre_defs.Document]:
@@ -208,7 +217,8 @@ class Standard_collection:
             standards_where_clause.append(
                 sqla.and_(Standard.tags.like("%{}%".format(tag)))
             )
-            cre_where_clause.append(sqla.and_(CRE.tags.like("%{}%".format(tag))))
+            cre_where_clause.append(
+                sqla.and_(CRE.tags.like("%{}%".format(tag))))
 
         standards = Standard.query.filter(*standards_where_clause).all() or []
         for standard in standards:
@@ -250,7 +260,8 @@ class Standard_collection:
         page: int = 0,
         items_per_page: Optional[int] = None,
     ) -> Tuple[
-        Optional[int], Optional[List[cre_defs.Standard]], Optional[List[Standard]]
+        Optional[int], Optional[List[cre_defs.Standard]
+                                ], Optional[List[Standard]]
     ]:
         standards = []
         dbstands = self.__get_standards_query__(
@@ -260,13 +271,15 @@ class Standard_collection:
         if dbstands.items:
             for dbstand in dbstands.items:
                 standard = StandardFromDB(dbstandard=dbstand)
-                linked_cres = Links.query.filter(Links.standard == dbstand.id).all()
+                linked_cres = Links.query.filter(
+                    Links.standard == dbstand.id).all()
                 for dbcre_link in linked_cres:
                     dbcre = CRE.query.filter(CRE.id == dbcre_link.cre).first()
                     if dbcre:
                         standard.add_link(
                             cre_defs.Link(
-                                ltype=cre_defs.LinkTypes.from_str(dbcre_link.type),
+                                ltype=cre_defs.LinkTypes.from_str(
+                                    dbcre_link.type),
                                 document=CREfromDB(dbcre),
                             )
                         )
@@ -299,13 +312,15 @@ class Standard_collection:
         if dbstands:
             for dbstand in dbstands:
                 standard = StandardFromDB(dbstandard=dbstand)
-                linked_cres = Links.query.filter(Links.standard == dbstand.id).all()
+                linked_cres = Links.query.filter(
+                    Links.standard == dbstand.id).all()
                 for dbcre_link in linked_cres:
                     standard.add_link(
                         cre_defs.Link(
                             ltype=cre_defs.LinkTypes.from_str(dbcre_link.type),
                             document=CREfromDB(
-                                CRE.query.filter(CRE.id == dbcre_link.cre).first()
+                                CRE.query.filter(
+                                    CRE.id == dbcre_link.cre).first()
                             ),
                         )
                     )
@@ -330,19 +345,25 @@ class Standard_collection:
         query = Standard.query
         if name:
             if not partial:
-                query = Standard.query.filter(Standard.name == name)
+                query = Standard.query.filter(
+                    func.lower(Standard.name) == name.lower())
             else:
-                query = Standard.query.filter(Standard.name.like(name))
+                query = Standard.query.filter(
+                    func.lower(Standard.name).like(name.lower()))
         if section:
             if not partial:
-                query = query.filter(Standard.section == section)
+                query = query.filter(func.lower(
+                    Standard.section) == section.lower())
             else:
-                query = query.filter(Standard.section.like(section))
+                query = query.filter(func.lower(
+                    Standard.section).like(section.lower()))
         if subsection:
             if not partial:
-                query = query.filter(Standard.subsection == subsection)
+                query = query.filter(func.lower(
+                    Standard.subsection) == subsection.lower())
             else:
-                query = query.filter(Standard.subsection.like(subsection))
+                query = query.filter(func.lower(
+                    Standard.subsection).like(subsection.lower()))
         if link:
             if not partial:
                 query = query.filter(Standard.link == link)
@@ -365,7 +386,8 @@ class Standard_collection:
         cres: Optional[List[cre_defs.CRE]] = []
         query = CRE.query
         if not external_id and not name and not description:
-            logger.error("You need to search by external_id name or description")
+            logger.error(
+                "You need to search by external_id name or description")
             return None
 
         if external_id:
@@ -375,12 +397,13 @@ class Standard_collection:
                 query = query.filter(CRE.external_id.like(external_id))
         if name:
             if not partial:
-                query = query.filter(CRE.name == name)
+                query = query.filter(func.lower(CRE.name) == name.lower())
             else:
-                query = query.filter(CRE.name.like(name))
+                query = query.filter(func.lower(CRE.name).like(name.lower()))
         if description:
             if not partial:
-                query = query.filter(func.lower(CRE.description) == description.lower())
+                query = query.filter(func.lower(CRE.description)
+                                     == description.lower())
             else:
                 query = query.filter(
                     func.lower(CRE.description).like(description.lower())
@@ -443,7 +466,8 @@ class Standard_collection:
                 elif il.group == dbcre.id:
                     res = q.filter(CRE.id == il.cre).first()
                     ltype = cre_defs.LinkTypes.from_str(il.type)
-                cre.add_link(cre_defs.Link(document=CREfromDB(res), ltype=ltype))
+                cre.add_link(cre_defs.Link(
+                    document=CREfromDB(res), ltype=ltype))
             cres.append(cre)
         return cres
 
@@ -524,11 +548,13 @@ class Standard_collection:
 
     def add_cre(self, cre: cre_defs.CRE) -> CRE:
         entry: CRE
-        query: sqla.Query = self.session.query(CRE).filter(CRE.name == cre.name)
+        query: sqla.Query = self.session.query(CRE).filter(
+            func.lower(CRE.name) == cre.name.lower())
         if cre.id:
             entry = query.filter(CRE.external_id == cre.id).first()
         else:
-            entry = query.filter(CRE.description == cre.description).first()
+            entry = query.filter(func.lower(CRE.description)
+                                 == cre.description.lower()).first()
 
         if entry is not None:
             logger.debug("knew of %s ,updating" % cre.name)
@@ -560,10 +586,10 @@ class Standard_collection:
     def add_standard(self, standard: cre_defs.Standard) -> Standard:
         entry: Standard = Standard.query.filter(
             sqla.and_(
-                Standard.name == standard.name,
-                Standard.section == standard.section,
-                Standard.subsection == standard.subsection,
-                Standard.version == standard.version,
+                func.lower(Standard.name) == standard.name.lower(),
+                func.lower(Standard.section) == standard.section.lower(),
+                func.lower(Standard.subsection) == standard.subsection.lower(),
+                func.lower(Standard.version) == standard.version.lower(),
             )
         ).first()
         if entry is not None:
@@ -572,7 +598,8 @@ class Standard_collection:
             self.session.commit()
             return entry
         else:
-            logger.debug(f"did not know of {standard.name}:{standard.section} ,adding")
+            logger.debug(
+                f"did not know of {standard.name}:{standard.section} ,adding")
             entry = Standard(
                 name=standard.name,
                 section=standard.section,
@@ -692,7 +719,8 @@ class Standard_collection:
                 f" {group.external_id}:{group.name}"
                 f" == {cre.external_id}:{cre.name} ,adding"
             )
-            cycle = self.__introduces_cycle(f"CRE: {group.id}", f"CRE: {cre.id}")
+            cycle = self.__introduces_cycle(
+                f"CRE: {group.id}", f"CRE: {cre.id}")
             if not cycle:
                 self.session.add(
                     InternalLinks(type=type.value, cre=cre.id, group=group.id)
@@ -715,7 +743,8 @@ class Standard_collection:
 
         if cre.id is None:
             cre = (
-                self.session.query(CRE).filter(sqla.and_(CRE.name == cre.name)).first()
+                self.session.query(CRE).filter(
+                    sqla.and_(CRE.name == cre.name)).first()
             )
         if standard.id is None:
             standard = (
@@ -793,7 +822,8 @@ class Standard_collection:
         dbstands = []
         for stand in standards:
             dbstands.extend(
-                self.session.query(Standard).filter(Standard.name == stand).all()
+                self.session.query(Standard).filter(
+                    Standard.name == stand).all()
             )
 
         for standard in dbstands:
@@ -846,7 +876,8 @@ class Standard_collection:
         match = re.search(standard_search, text, re.IGNORECASE)
         if match:
             link = match.group("link")
-            args = [match.group("val1"), match.group("val2"), match.group("val3")]
+            args = [match.group("val1"), match.group(
+                "val2"), match.group("val3")]
             results = []
             for combo in permutations(args, 3):
                 stands = self.get_standards(

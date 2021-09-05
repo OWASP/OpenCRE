@@ -370,7 +370,7 @@ class TestMain(unittest.TestCase):
                 "CRE Group 6 Lookup": "",
                 "CRE Group 7": "",
                 "CRE Group 7 Lookup": "",
-                "CWE": 0,
+                "CWE": "0",
                 "Cheat Sheet": "Architecture, Design and Threat Modeling Requirements",
                 "Core-CRE (high-level description/summary)": "SDLC_APPLY_CONSISTENTLY",
                 "Description": "Verify the use of a secure software development lifecycle that addresses security in all stages of development. (C1)",
