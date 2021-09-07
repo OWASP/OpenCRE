@@ -16,7 +16,7 @@ app = Blueprint("web", __name__, static_folder="../frontend/www")
 def find_by_id(creid: str) -> Any:  # refer
 
     database = db.Standard_collection()
-    cre = database.get_CRE(external_id=creid)
+    cre = database.get_CREs(external_id=creid)[0]
     if cre:
         return jsonify({"data": cre.todict()})
     abort(404)
@@ -26,7 +26,7 @@ def find_by_id(creid: str) -> Any:  # refer
 def find_by_name(crename: str) -> Any:
 
     database = db.Standard_collection()
-    cre = database.get_CRE(name=crename)
+    cre = database.get_CREs(name=crename)[0]
     if cre:
         return jsonify(cre.todict())
     abort(404)
@@ -75,6 +75,27 @@ def gap_analysis() -> Any:  # TODO (spyros): add export result to spreadsheet
     database = db.Standard_collection()
     standards = request.args.getlist("standard")
     documents = database.gap_analysis(standards=standards)
+    if documents:
+        res = [doc.todict() for doc in documents]
+        return jsonify(res)
+
+
+@app.route("/rest/v1/text_search", methods=["GET"])
+def text_search() -> Any:
+    """
+    Performs arbitrary text search among all known documents.
+    Formats supported:
+        * 'CRE:<id>' will search for the <id> in cre ids
+        * 'CRE:<name>' will search for the <name> in cre names
+        * 'Standard:<name>[:<section>:subsection]' will search for
+              all entries of <name> and optionally, section/subsection
+        * '\d\d\d-\d\d\d' (two sets of 3 digits) will first try to match
+                           CRE ids before it performs a free text search
+        Anything else will be a case insensitive LIKE query in the database
+    """
+    database = db.Standard_collection()
+    text = request.args.get("text")
+    documents = database.text_search(text)
     if documents:
         res = [doc.todict() for doc in documents]
         return jsonify(res)

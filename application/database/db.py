@@ -1,10 +1,13 @@
 import logging
+import re
 from collections import Counter
+from itertools import permutations
 from typing import Any, Dict, List, Optional, Tuple
 
 import networkx as nx  # type: ignore
 import yaml
 from flask_sqlalchemy.model import DefaultMeta
+from sqlalchemy import func
 
 from application.defs import cre_defs
 from application.utils import file  # type: ignore
@@ -227,7 +230,7 @@ class Standard_collection:
 
         cres = CRE.query.filter(*cre_where_clause).all() or []
         for c in cres:
-            cre = self.get_CRE(external_id=c.external_id, name=c.name)
+            cre = self.get_CREs(external_id=c.external_id, name=c.name)[0]
             if cre:
                 documents.append(cre)
             else:
@@ -275,16 +278,22 @@ class Standard_collection:
 
     def get_standards(
         self,
-        name: str,
+        name: Optional[str] = None,
         section: Optional[str] = None,
         subsection: Optional[str] = None,
         link: Optional[str] = None,
         version: Optional[str] = None,
+        partial: Optional[bool] = False,
     ) -> Optional[List[cre_defs.Standard]]:
 
         standards = []
         standards_query = self.__get_standards_query__(
-            name, section, subsection, link, version
+            name=name,
+            section=section,
+            subsection=subsection,
+            link=link,
+            version=version,
+            partial=partial,
         )
         dbstands = standards_query.all()
         if dbstands:
@@ -309,93 +318,140 @@ class Standard_collection:
 
     def __get_standards_query__(
         self,
-        name: str,
+        name: Optional[str] = None,
         section: Optional[str] = None,
         subsection: Optional[str] = None,
         link: Optional[str] = None,
         version: Optional[str] = None,
-        page: int = 0,
-        items_per_page: Optional[int] = None,
+        partial: Optional[bool] = False,
     ) -> sqla.Query:
-        query = Standard.query.filter(Standard.name == name)
+        if not name and not section and not subsection and not link and not version:
+            raise ValueError("tried to retrieve standard with no values")
+        query = Standard.query
+        if name:
+            if not partial:
+                query = Standard.query.filter(func.lower(Standard.name) == name.lower())
+            else:
+                query = Standard.query.filter(
+                    func.lower(Standard.name).like(name.lower())
+                )
         if section:
-            query = query.filter(Standard.section == section)
+            if not partial:
+                query = query.filter(func.lower(Standard.section) == section.lower())
+            else:
+                query = query.filter(func.lower(Standard.section).like(section.lower()))
         if subsection:
-            query = query.filter(Standard.subsection == subsection)
+            if not partial:
+                query = query.filter(
+                    func.lower(Standard.subsection) == subsection.lower()
+                )
+            else:
+                query = query.filter(
+                    func.lower(Standard.subsection).like(subsection.lower())
+                )
         if link:
-            query = query.filter(Standard.link == link)
+            if not partial:
+                query = query.filter(Standard.link == link)
+            else:
+                query = query.filter(Standard.link.like(link))
         if version:
-            query = query.filter(Standard.version == version)
+            if not partial:
+                query = query.filter(Standard.version == version)
+            else:
+                query = query.filter(Standard.version.like(version))
         return query
 
-    def get_CRE(
-        self, external_id: Optional[str] = None, name: Optional[str] = None
-    ) -> Optional[cre_defs.CRE]:
-        cre = None
+    def get_CREs(
+        self,
+        external_id: Optional[str] = None,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        partial: Optional[bool] = False,
+    ) -> Optional[List[cre_defs.CRE]]:
+        cres: Optional[List[cre_defs.CRE]] = []
         query = CRE.query
-        if not external_id and not name:
-            logger.error("You need to search by either external_id or name")
+        if not external_id and not name and not description:
+            logger.error("You need to search by external_id name or description")
             return None
 
         if external_id:
-            query = query.filter(CRE.external_id == external_id)
+            if not partial:
+                query = query.filter(CRE.external_id == external_id)
+            else:
+                query = query.filter(CRE.external_id.like(external_id))
         if name:
-            query = query.filter(CRE.name == name)
-
-        dbcre = query.first()
-        if dbcre:
-            cre = CREfromDB(dbcre)
-        else:
-            logger.warning("CRE %s:%s does not exist in the db" % (external_id, name))
-
+            if not partial:
+                query = query.filter(func.lower(CRE.name) == name.lower())
+            else:
+                query = query.filter(func.lower(CRE.name).like(name.lower()))
+        if description:
+            if not partial:
+                query = query.filter(func.lower(CRE.description) == description.lower())
+            else:
+                query = query.filter(
+                    func.lower(CRE.description).like(description.lower())
+                )
+        dbcres = query.all()
+        if not dbcres:
+            logger.warning(
+                "CRE %s:%s:%s does not exist in the db"
+                % (external_id, name, description)
+            )
             return None
 
         # todo figure a way to return both the Standard
         # and the link_type for that link
-        linked_standards = self.session.query(Links).filter(Links.cre == dbcre.id).all()
-        for ls in linked_standards:
-            cre.add_link(
-                cre_defs.Link(
-                    document=StandardFromDB(
-                        self.session.query(Standard)
-                        .filter(Standard.id == ls.standard)
-                        .first()
-                    ),
-                    ltype=cre_defs.LinkTypes.from_str(ls.type),
+        for dbcre in dbcres:
+            cre = CREfromDB(dbcre)
+            linked_standards = (
+                self.session.query(Links).filter(Links.cre == dbcre.id).all()
+            )
+            for ls in linked_standards:
+                cre.add_link(
+                    cre_defs.Link(
+                        document=StandardFromDB(
+                            self.session.query(Standard)
+                            .filter(Standard.id == ls.standard)
+                            .first()
+                        ),
+                        ltype=cre_defs.LinkTypes.from_str(ls.type),
+                    )
                 )
-            )
 
-        # todo figure the query to merge the following two
-        internal_links = (
-            self.session.query(InternalLinks)
-            .filter(
-                sqla.or_(InternalLinks.cre == dbcre.id, InternalLinks.group == dbcre.id)
-            )
-            .all()
-        )
-        for il in internal_links:
-            q = self.session.query(CRE)
-
-            res: CRE
-            ltype = cre_defs.LinkTypes.from_str(il.type)
-
-            if il.cre == dbcre.id:
-                res = q.filter(CRE.id == il.group).first()
-                # if this CRE is the lower level cre the relationship will be tagged "Contains"
-                # in that case the implicit relationship is "Is Part Of"
-                # otherwise the relationship will be "Related" and we don't need to do anything
-                if ltype == cre_defs.LinkTypes.Contains:
-                    ltype = cre_defs.LinkTypes.PartOf
-
-            elif il.group == dbcre.id:
-                res = q.filter(CRE.id == il.cre).first()
-            cre.add_link(
-                cre_defs.Link(
-                    document=CREfromDB(res), ltype=cre_defs.LinkTypes.from_str(il.type)
+            # todo figure the query to merge the following two
+            internal_links = (
+                self.session.query(InternalLinks)
+                .filter(
+                    sqla.or_(
+                        InternalLinks.cre == dbcre.id, InternalLinks.group == dbcre.id
+                    )
                 )
+                .all()
             )
+            for il in internal_links:
+                q = self.session.query(CRE)
 
-        return cre
+                res: CRE
+                ltype = cre_defs.LinkTypes.from_str(il.type)
+
+                if il.cre == dbcre.id:
+                    res = q.filter(CRE.id == il.group).first()
+                    # if this CRE is the lower level cre the relationship will be tagged "Contains"
+                    # in that case the implicit relationship is "Is Part Of"
+                    # otherwise the relationship will be "Related" and we don't need to do anything
+                    if ltype == cre_defs.LinkTypes.Contains:
+                        # important, this is the only implicit link we have for now
+                        ltype = cre_defs.LinkTypes.PartOf
+                    else:
+                        logger.Fatal(
+                            f"LinkType was {ltype.value} this is not recognized and looks like a bug"
+                        )
+                elif il.group == dbcre.id:
+                    res = q.filter(CRE.id == il.cre).first()
+                    ltype = cre_defs.LinkTypes.from_str(il.type)
+                cre.add_link(cre_defs.Link(document=CREfromDB(res), ltype=ltype))
+            cres.append(cre)
+        return cres
 
     def export(self, dir: str) -> List[cre_defs.Document]:
         """Exports the database to a CRE file collection on disk"""
@@ -474,11 +530,15 @@ class Standard_collection:
 
     def add_cre(self, cre: cre_defs.CRE) -> CRE:
         entry: CRE
-        query: sqla.Query = self.session.query(CRE).filter(CRE.name == cre.name)
+        query: sqla.Query = self.session.query(CRE).filter(
+            func.lower(CRE.name) == cre.name.lower()
+        )
         if cre.id:
             entry = query.filter(CRE.external_id == cre.id).first()
         else:
-            entry = query.filter(CRE.description == cre.description).first()
+            entry = query.filter(
+                func.lower(CRE.description) == cre.description.lower()
+            ).first()
 
         if entry is not None:
             logger.debug("knew of %s ,updating" % cre.name)
@@ -510,10 +570,10 @@ class Standard_collection:
     def add_standard(self, standard: cre_defs.Standard) -> Standard:
         entry: Standard = Standard.query.filter(
             sqla.and_(
-                Standard.name == standard.name,
-                Standard.section == standard.section,
-                Standard.subsection == standard.subsection,
-                Standard.version == standard.version,
+                func.lower(Standard.name) == standard.name.lower(),
+                func.lower(Standard.section) == standard.section.lower(),
+                func.lower(Standard.subsection) == standard.subsection.lower(),
+                func.lower(Standard.version) == standard.version.lower(),
             )
         ).first()
         if entry is not None:
@@ -760,6 +820,73 @@ class Standard_collection:
                     )
             processed_standards.append(working_standard)
         return processed_standards
+
+    def text_search(self, text: str) -> List[Optional[cre_defs.Document]]:
+        """Given a piece of text, tries to find the best match
+        for the text in the database.
+        Shortcuts:
+           'CRE:<id>' will search for the <id> in cre external ids
+           'CRE:<name>' will search for the <name> in cre names
+           'Standard:<name>[:<section>:subsection]' will search for
+               all entries of <name> and optionally, section/subsection
+           '\d\d\d-\d\d\d' (two sets of 3 digits) will first try to match
+                CRE ids before it performs a free text search
+           Anything else will be a case insensitive LIKE query in the database
+        """
+        # structured text search first
+        cre_id_search = r"CRE(:| )(?P<id>\d+-\d+)"
+        cre_naked_id_search = r"\d\d\d-\d\d\d"
+        cre_name_search = r"CRE(:| )(?P<name>\w+)"
+        standard_search = r"Standard((:| )(?P<link>https?://[^\s]+))?((:| )(?P<val1>\w+))?((:| )(?P<val2>.+))?((:| )(?P<val3>.+))?"
+        match = re.search(cre_id_search, text, re.IGNORECASE)
+        if match:
+            print("id")
+            return self.get_CREs(external_id=match.group("id"))
+
+        match = re.search(cre_naked_id_search, text, re.IGNORECASE)
+        if match:
+            print("naked id")
+            return self.get_CREs(external_id=match.group())
+
+        match = re.search(cre_name_search, text, re.IGNORECASE)
+        if match:
+            print("name")
+            return self.get_CREs(name=match.group("name"))
+
+        match = re.search(standard_search, text, re.IGNORECASE)
+        if match:
+            link = match.group("link")
+            args = [match.group("val1"), match.group("val2"), match.group("val3")]
+            results = []
+            for combo in permutations(args, 3):
+                stands = self.get_standards(
+                    name=combo[0], section=combo[1], subsection=combo[2], link=link
+                )
+                if stands:
+                    results.extend(stands)
+            return list(set(results))
+
+        # fuzzy matches second
+        args = [f"%{text}%", None, None, None]
+        results = []
+        for combo in permutations(args, 4):
+            stands = self.get_standards(
+                name=combo[0],
+                section=combo[1],
+                subsection=combo[2],
+                link=combo[3],
+                partial=True,
+            )
+            if stands:
+                results.extend(stands)
+        args = [f"%{text}%", None, None]
+        for combo in permutations(args, 3):
+            cres = self.get_CREs(
+                name=combo[0], external_id=combo[1], description=combo[2], partial=True
+            )
+            if cres:
+                results.extend(cres)
+        return list(set(results))
 
 
 def dbStandardFromStandard(standard: cre_defs.Standard) -> Standard:

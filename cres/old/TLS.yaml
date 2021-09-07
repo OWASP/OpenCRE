@@ -1,0 +1,27 @@
+doctype: CRE
+id: 239-427
+links:
+- document:
+    description: Verify using online or up to date TLS testing tools that only strong
+      algorithms, ciphers, and protocols are enabled, with the strongest algorithms
+      and ciphers set as preferred.
+    doctype: CRE
+    id: 005-022-025
+    name: PROTECT_DATA_IN_TRANSIT_TLS_DIRECTIVES_NO_FALLBACK
+  type: SAM
+- document:
+    description: Verify that connections to and from the server use trusted TLS certificates.
+      Where internally generated or self-signed certificates are used, the server
+      must be configured to only trust specific internal CAs and specific self-signed
+      certificates. All others should be rejected.
+    doctype: CRE
+    id: 005-022-025
+    name: PROTECT_DATA_IN_TRANSIT_TLS_CERTIFICATE_VERIFY
+  type: SAM
+- document:
+    description: Verify that backend TLS connection failures are logged.
+    doctype: CRE
+    id: 005-022-025
+    name: PROTECT_DATA_IN_TRANSIT_TLS_CONNECTION_LOG_FAILURES
+  type: SAM
+name: TLS
