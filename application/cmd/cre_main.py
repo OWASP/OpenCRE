@@ -3,7 +3,6 @@ import logging
 import os
 import shutil
 import tempfile
-
 from typing import Any, Callable, Dict, Generator, List, Optional, Tuple
 
 import yaml
@@ -296,7 +295,7 @@ def print_graph() -> None:
 
 def run(args: argparse.Namespace) -> None:
     script_path = os.path.dirname(os.path.realpath(__file__))
-    os.path.join(script_path, "../../../cres")
+    os.path.join(script_path, "../cres")
 
     if args.review and args.from_spreadsheet:
         review_from_spreadsheet(

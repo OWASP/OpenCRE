@@ -96,7 +96,7 @@ def main() -> None:
     )
     parser.add_argument(
         "--cre_loc",
-        default=os.path.join(os.path.dirname(os.path.realpath(__file__)), "../../cres"),
+        default=os.path.join(os.path.dirname(os.path.realpath(__file__)), "./cres/"),
         help="define location of local cre files for review/add",
     )
 
