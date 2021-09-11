@@ -146,5 +146,14 @@ def before_request():
         return redirect(url, code=code)
 
 
+@app.after_request
+def add_header(response):
+    if current_app.config["ENVIRONMENT"] != "PRODUCTION":
+        return
+
+    response.cache_control.max_age = 300
+    return response
+
+
 if __name__ == "__main__":
     app.run(use_reloader=False, debug=False)
