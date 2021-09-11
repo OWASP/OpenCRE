@@ -13,6 +13,7 @@ from flask import (
     send_from_directory,
 )
 
+from application import cache
 from application.database import db
 
 ITEMS_PER_PAGE = 20
@@ -21,6 +22,7 @@ app = Blueprint("web", __name__, static_folder="../frontend/www")
 
 
 @app.route("/rest/v1/id/<creid>", methods=["GET"])
+@cache.cached(timeout=50)
 def find_by_id(creid: str) -> Any:  # refer
 
     database = db.Standard_collection()
@@ -31,6 +33,7 @@ def find_by_id(creid: str) -> Any:  # refer
 
 
 @app.route("/rest/v1/name/<crename>", methods=["GET"])
+@cache.cached(timeout=50)
 def find_by_name(crename: str) -> Any:
 
     database = db.Standard_collection()
@@ -41,6 +44,7 @@ def find_by_name(crename: str) -> Any:
 
 
 @app.route("/rest/v1/standard/<sname>", methods=["GET"])
+@cache.cached(timeout=50)
 def find_standard_by_name(sname: str) -> Any:
     database = db.Standard_collection()
     opt_section = request.args.get("section")
@@ -69,6 +73,7 @@ def find_standard_by_name(sname: str) -> Any:
 
 # TODO: (spyros) paginate
 @app.route("/rest/v1/tags", methods=["GET"])
+@cache.cached(timeout=50)
 def find_document_by_tag(sname: str) -> Any:
     database = db.Standard_collection()
     tags = request.args.getlist("tag")
@@ -79,6 +84,7 @@ def find_document_by_tag(sname: str) -> Any:
 
 
 @app.route("/rest/v1/gap_analysis", methods=["GET"])
+@cache.cached(timeout=50)
 def gap_analysis() -> Any:  # TODO (spyros): add export result to spreadsheet
     database = db.Standard_collection()
     standards = request.args.getlist("standard")
@@ -89,6 +95,7 @@ def gap_analysis() -> Any:  # TODO (spyros): add export result to spreadsheet
 
 
 @app.route("/rest/v1/text_search", methods=["GET"])
+@cache.cached(timeout=50)
 def text_search() -> Any:
     """
     Performs arbitrary text search among all known documents.
@@ -119,6 +126,7 @@ def page_not_found(e) -> Any:
 # If no other routes are matched, serve the react app, or any other static files (like bundle.js)
 @app.route("/", defaults={"path": ""})
 @app.route("/<path:path>")
+@cache.cached(timeout=50)
 def index(path: str) -> Any:
     if path != "" and os.path.exists(app.static_folder + "/" + path):
         return send_from_directory(app.static_folder, path)

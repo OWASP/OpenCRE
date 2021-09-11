@@ -4,10 +4,12 @@ from typing import Any
 from flask import Flask
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
+from flask_caching import Cache
 
 from application.config import config
 
 sqla = SQLAlchemy()
+cache = Cache()
 
 
 def create_app(mode: str = "production", conf: any = None) -> Any:
@@ -25,5 +27,5 @@ def create_app(mode: str = "production", conf: any = None) -> Any:
 
     CORS(app)
     app.config["CORS_HEADERS"] = "Content-Type"
-
+    cache.init_app(app)
     return app
