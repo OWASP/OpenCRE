@@ -5,10 +5,11 @@ from flask import Flask
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from flask_caching import Cache
-
+from flask_compress import Compress
 from application.config import config
 
 sqla = SQLAlchemy()
+compress = Compress()
 cache = Cache()
 
 
@@ -27,5 +28,7 @@ def create_app(mode: str = "production", conf: any = None) -> Any:
 
     CORS(app)
     app.config["CORS_HEADERS"] = "Content-Type"
+
+    compress.init_app(app)
     cache.init_app(app)
     return app
