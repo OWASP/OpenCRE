@@ -148,9 +148,6 @@ def before_request():
 
 @app.after_request
 def add_header(response):
-    if current_app.config["ENVIRONMENT"] != "PRODUCTION":
-        return
-
     response.cache_control.max_age = 300
     return response
 
