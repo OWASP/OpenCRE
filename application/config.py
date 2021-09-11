@@ -43,6 +43,7 @@ class CMDConfig(Config):
 config = {
     "development": DevelopmentConfig,
     "testing": TestingConfig,
+    "test": TestingConfig,
     "production": ProductionConfig,
     "default": ProductionConfig,
 }
