@@ -3,15 +3,8 @@
 import os
 from typing import Any
 
-from flask import (
-    Blueprint,
-    abort,
-    current_app,
-    jsonify,
-    redirect,
-    request,
-    send_from_directory,
-)
+from flask import (Blueprint, abort, current_app, jsonify, redirect, request,
+                   send_from_directory)
 
 from application import cache
 from application.database import db
@@ -148,9 +141,6 @@ def before_request():
 
 @app.after_request
 def add_header(response):
-    if current_app.config["ENVIRONMENT"] != "PRODUCTION":
-        return
-
     response.cache_control.max_age = 300
     return response
 
