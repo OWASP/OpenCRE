@@ -52,7 +52,7 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({ node }) => {
       <div className={`title${active} document-node`} onClick={() => setExpanded(!expanded)}>
         <i aria-hidden="true" className="dropdown icon"></i>
         <a href={node.hyperlink}>
-        {getDocumentDisplayName(node)}
+          {getDocumentDisplayName(node)}
         </a>
       </div>
       <div className={`content${active} document-node`}>
@@ -62,8 +62,7 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({ node }) => {
               <div className="document-node__link-type-container" key={type}>
                 <div>
                   <a href={node.hyperlink}>
-                  {node.name} - {node.section} is <b>{DOCUMENT_TYPE_NAMES[type]}</b>:
-                  </a>
+                    {node.name} - {node.section}  </a> <b>{DOCUMENT_TYPE_NAMES[type]}</b>:
                 </div>
                 <div>
                   <div className="accordion ui fluid styled f0">
