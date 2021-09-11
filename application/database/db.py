@@ -442,10 +442,6 @@ class Standard_collection:
                     if ltype == cre_defs.LinkTypes.Contains:
                         # important, this is the only implicit link we have for now
                         ltype = cre_defs.LinkTypes.PartOf
-                    else:
-                        logger.Fatal(
-                            f"LinkType was {ltype.value} this is not recognized and looks like a bug"
-                        )
                 elif il.group == dbcre.id:
                     res = q.filter(CRE.id == il.cre).first()
                     ltype = cre_defs.LinkTypes.from_str(il.type)
