@@ -63,7 +63,6 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({ node }) => {
                 <div>
                   <a href={node.hyperlink}>
                     {node.name} - {node.section}  </a> <b>{DOCUMENT_TYPE_NAMES[type]}</b>:
-
                 </div>
                 <div>
                   <div className="accordion ui fluid styled f0">
