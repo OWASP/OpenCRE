@@ -3,7 +3,15 @@
 import os
 from typing import Any
 
-from flask import Blueprint, abort, current_app, jsonify, request, send_from_directory
+from flask import (
+    Blueprint,
+    abort,
+    current_app,
+    jsonify,
+    redirect,
+    request,
+    send_from_directory,
+)
 
 from application.database import db
 
@@ -116,6 +124,18 @@ def index(path: str) -> Any:
         return send_from_directory(app.static_folder, path)
     else:
         return send_from_directory(app.static_folder, "index.html")
+
+
+@app.before_request
+def before_request():
+    if current_app.config["ENVIRONMENT"] != "PRODUCTION":
+        return
+
+    if not request.is_secure:
+        print("https redir")
+        url = request.url.replace("http://", "https://", 1)
+        code = 301
+        return redirect(url, code=code)
 
 
 if __name__ == "__main__":
