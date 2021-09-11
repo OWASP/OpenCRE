@@ -13,6 +13,7 @@ class Config:
 class DevelopmentConfig(Config):
     DEBUG = True
     ENVIRONMENT = "DEVELOPMENT"
+    CACHE_TYPE = "NullCache"
     SQLALCHEMY_DATABASE_URI = (
         os.environ.get("DEV_DATABASE_URL")
         or f'sqlite:///{os.path.join(basedir, "../standards_cache.sqlite")}'
@@ -21,12 +22,15 @@ class DevelopmentConfig(Config):
 
 class TestingConfig(Config):
     ENVIRONMENT = "TESTING"
+    CACHE_TYPE = "NullCache"
     TESTING = True
     SQLALCHEMY_DATABASE_URI = os.environ.get("TEST_DATABASE_URL") or "sqlite://"
 
 
 class ProductionConfig(Config):
     ENVIRONMENT = "PRODUCTION"
+    CACHE_TYPE = "SimpleCache"
+    CACHE_DEFAULT_TIMEOUT = 3000
     SQLALCHEMY_DATABASE_URI = (
         os.environ.get("PROD_DATABASE_URL")
         or f'sqlite:///{os.path.join(basedir, "../standards_cache.sqlite")}'
