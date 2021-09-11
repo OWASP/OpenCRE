@@ -32,11 +32,11 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({ node }) => {
       <>
 
         {hasExternalLink ? (
-          <p className={`title external-link document-node external square`}>
-            <a target="_blank" href={node.hyperlink}>
+          <p className={`title external-link document-node external square f1`}>
+            <a target="_blank" href={hyperlink}>
               {linkContent}
             </a></p>
-        ) : <div className={`title external-link document-node`}>
+        ) : <div className={`title external-link document-node f2`}>
             <Link to={`${route}/${id}`}>{linkContent}</Link></div>
         }
         <div className={`content`}></div>
@@ -51,7 +51,9 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({ node }) => {
     <>
       <div className={`title${active} document-node`} onClick={() => setExpanded(!expanded)}>
         <i aria-hidden="true" className="dropdown icon"></i>
+        <a href={node.hyperlink}>
         {getDocumentDisplayName(node)}
+        </a>
       </div>
       <div className={`content${active} document-node`}>
         {expanded &&
@@ -59,10 +61,12 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({ node }) => {
             return (
               <div className="document-node__link-type-container" key={type}>
                 <div>
+                  <a href={node.hyperlink}>
                   {node.name} - {node.section} is <b>{DOCUMENT_TYPE_NAMES[type]}</b>:
+                  </a>
                 </div>
                 <div>
-                  <div className="accordion ui fluid styled">
+                  <div className="accordion ui fluid styled f0">
                     {links.map((link, i) => (
                       <DocumentNode node={link.document} key={i} />
                     ))}
