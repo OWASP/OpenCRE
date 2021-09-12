@@ -34,7 +34,7 @@ export const Standard = () => {
     refetch();
   }, [page, id]);
 
-  const documents = data?.standards || [];
+  const documents = data?.data || [];
 
   return (
     <>

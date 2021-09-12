@@ -32,7 +32,7 @@ def find_by_name(crename: str) -> Any:
     database = db.Standard_collection()
     cre = database.get_CREs(name=crename)[0]
     if cre:
-        return jsonify(cre.todict())
+        return jsonify({"data": cre.todict()})
     abort(404)
 
 
@@ -59,7 +59,7 @@ def find_standard_by_name(sname: str) -> Any:
     result["page"] = page
     if standards:
         res = [stand.todict() for stand in standards]
-        result["standards"] = res
+        result["data"] = res
         return jsonify(result)
     abort(404)
 
@@ -68,23 +68,27 @@ def find_standard_by_name(sname: str) -> Any:
 @app.route("/rest/v1/tags", methods=["GET"])
 @cache.cached(timeout=50)
 def find_document_by_tag(sname: str) -> Any:
+    result = {}
     database = db.Standard_collection()
     tags = request.args.getlist("tag")
     documents = database.get_by_tags(tags)
     if documents:
         res = [doc.todict() for doc in documents]
-        return jsonify(res)
+        result['data'] = res
+        return jsonify(result)
 
 
 @app.route("/rest/v1/gap_analysis", methods=["GET"])
 @cache.cached(timeout=50)
 def gap_analysis() -> Any:  # TODO (spyros): add export result to spreadsheet
+    result = {}
     database = db.Standard_collection()
     standards = request.args.getlist("standard")
     documents = database.gap_analysis(standards=standards)
     if documents:
         res = [doc.todict() for doc in documents]
-        return jsonify(res)
+        result['data'] = res
+        return jsonify(result)
 
 
 @app.route("/rest/v1/text_search", methods=["GET"])
@@ -101,12 +105,14 @@ def text_search() -> Any:
                            CRE ids before it performs a free text search
         Anything else will be a case insensitive LIKE query in the database
     """
+    result = {}
     database = db.Standard_collection()
     text = request.args.get("text")
     documents = database.text_search(text)
     if documents:
         res = [doc.todict() for doc in documents]
-        return jsonify(res)
+        result['data'] = res
+        return jsonify(result)
 
 
 @app.errorhandler(404)
