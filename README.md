@@ -36,7 +36,7 @@ To download a remote cre spreadsheet locally you can run
 <pre>python cre.py --review --from_spreadsheet < google sheets url></pre>
 
 To add a remote spreadsheet to your local database you can run
-<pre>python cre_main.py --add --from_spreadsheet < google sheets url></pre>
+<pre>python cre.py --add --from_spreadsheet < google sheets url></pre>
 
 To run the web application for development you can run
 <pre>make dev-run</pre>
