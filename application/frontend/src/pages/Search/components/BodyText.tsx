@@ -9,21 +9,63 @@ export const SearchBody = () => {
 
   return (
     <div className="index-text">
-      <h1>OPEN CRE</h1>
-Linking standards. By the community, for the community.
-Open Common Requirement Enumeration links standards and guidelines at the level of topics that need to be taken into account when procuring, designing, building and testing great software.
-      <h2>WHY?</h2>
-<p>CRE follows up on the ENISA recommendation for a repository to bring the fragmented landscape of security knowledge resources together.
-This initiative was taken by an independent group of software security experts who got together to make it 1) easier to create and maintain standards and guidelines, and 2) easier to find relevant information.
-No more endless searches for relevant rules and information, no more broken links, no more need to cover every topic everywhere - just link.
-</p>
-   <h2>WHAT?</h2>
-<p>The idea of CRE is to link each section of a resource to a shared topic identifier (a Common Requirement), instead of linking to just 1 or 2 other resources. Through this shared link, all resources map to eachother. This 1) enables standard and guideline makers to work efficiently, 2) it enables users to find the information they need, and 3) it facilitates a shared understanding in the industry of what cyber security is. The key element is self-maintainability: the CRE topic links in the resource can be automatically parsed and used to map everything together. No more manual mapping labour. Furthermore, because the topics are linked as well, users can quickly find more relevant material through related topics.
-For example the topic of session time-out will take the user not only to relevant criteria in several standards, but also to testing guides, development tips, more technical detail, threat descriptions, articles etc. Plus, from there the user can navigate to resources about session management in general.
-The CRE only links and therefore does not create a new standard of requirements. It is simply a standard on how standards can link together.
-</p>   <h2>WHEN?</h2>
-<p>Currently, CRE has linked several OWASP standards together, and included other standards (CWE, NIST-800 53, NIST-800 63b), as part of the OWASP Integration standard project.
-Join the movement.</p>
+      <h1>
+        OPEN CRE
+      </h1>
+      <p>
+        The CRE is a mechanism connecting standards and guidelines at all topic levels. It offers easy access to relevant information when designing, developing, testing and procuring secure software.
+      </p>
+
+      <h2>
+        WHY?
+      </h2>
+      <p>
+        Independent software security professionals (Spyros Gasteratos, Elie Saad, Rob van der Veer and friends, in close collaboration with the SKF project) got together to find a solution for the complexity and fragmentation in today’s landscape of security standards and guidelines.
+      </p>
+
+      <h2>
+        HOW?
+      </h2>
+      <p>
+        The CRE links each section of a standard to a shared topic (a Common Requirement), causing that section to also link with all other resources that map to the same topic. This 1) enables users to find all combined information from relevant sources, 2) it facilitates a shared and better understanding of cyber security, and 3) it allows standard makers to have links that keep working and offer all the information that readers need, so they don’t have to cover it all themselves. The CRE maintains itself: topic links in the standard text are scanned automatically. Furthermore, topics are linked with related other topics, creating a semantic web for security.
+      </p>
+      <p>
+      <b>Example</b>: the session time-out topic will take the user to relevant criteria in several standards, and to testing guides, development tips, more technical detail, threat descriptions, articles etc. From there, the user can navigate to resources about session management in general.
+      </p>
+
+      <h2>
+        WHEN?
+      </h2>
+      <p>
+        CRE is currently in beta and has linked OWASP standards (Top 10, ASVS, Proactive Controls, Cheat sheets, Testing guide), plus several other sources (CWE, NIST-800 53, NIST-800 63b), as part of the
+        <a href="https://owasp.org/www-project-integration-standards/"> OWASP Integration standard project</a>
+        .
+      </p>
+
+      <h2>
+        Join us
+      </h2>
+      <p>
+        Contact us (rob.vanderveer@owasp.org) to join the movement. Currently, a stakeholder group is being formed.
+      </p>
+      <p>
+        For more details, see this 
+        <a href="https://www.youtube.com/watch?v=MnUR08LOFO0"> introduction video</a>
+        , or read the
+        <a href="https://github.com/OWASP/www-project-integration-standards/raw/master/writeups/CRE-Explained6.pdf"> CRE explanation document</a>
+        .
+      </p>
+
+      <h2>
+        TRY
+      </h2>
+      <p>
+        See the CRE search bar (beta version). Try searching for
+        <a href="https://opencreorg.herokuapp.com/standard/Top10%202017"> Top10 2017 </a>
+        as standard and click around, or
+        <a href="https://opencreorg.herokuapp.com/cre/482-866"> 482-866 </a>
+        as CRE-ID, to get an idea.
+      </p>
     </div>
   );
 };
