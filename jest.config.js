@@ -5,7 +5,7 @@ module.exports = {
     '\\.(css|scss)$': 'identity-obj-proxy',
   },
   testRegex: 'src/.*/.*spec\\.tsx?$',
-  roots: ['./src'],
+  roots: ['./application/frontend/'],
   moduleDirectories: ['node_modules', 'src'],
-  snapshotResolver: './snapshotResolver.js',
+  // snapshotResolver: 'application/frontend/snapshotResolver.js',
 };

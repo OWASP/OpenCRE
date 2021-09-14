@@ -3,8 +3,15 @@
 import os
 from typing import Any
 
-from flask import (Blueprint, abort, current_app, jsonify, redirect, request,
-                   send_from_directory)
+from flask import (
+    Blueprint,
+    abort,
+    current_app,
+    jsonify,
+    redirect,
+    request,
+    send_from_directory,
+)
 
 from application import cache
 from application.database import db
