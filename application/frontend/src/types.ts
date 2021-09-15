@@ -15,3 +15,11 @@ export interface LinkedDocument {
   document: Document;
   type: string;
 }
+
+export enum LinkTypes{
+  "SAME" = 1,
+  "LinkedTo",
+  "Is Part Of",
+  "Contains",
+  "Related",
+}

@@ -16,7 +16,7 @@ export const Standard = () => {
   const [page, setPage] = useState<number>(1);
   const [loading, setLoading] = useState<boolean>(false);
 
-  const { error, data, refetch } = useQuery<{ standards: Document[]; total_pages: number }, string>(
+  const { error, data, refetch } = useQuery<{ data: Document[]; total_pages: number }, string>(
     'standard',
     () => fetch(`${apiUrl}/standard/${id}?page=${page - 1}`).then((res) => res.json()),
     {
@@ -34,7 +34,7 @@ export const Standard = () => {
     refetch();
   }, [page, id]);
 
-  const documents = data?.standards || [];
+  const documents = data?.data || [];
 
   return (
     <>

@@ -16,7 +16,7 @@ export const CommonRequirementEnumeration = () => {
   const { apiUrl } = useEnvironment();
   const [loading, setLoading] = useState<boolean>(false);
 
-  const { error, data, refetch } = useQuery<{ data: Document;}, string>(
+  const { error, data, refetch } = useQuery<{ data: Document[]; }, string>(
     'cre',
     () => fetch(`${apiUrl}/id/${id}`).then((res) => res.json()),
     {
@@ -34,7 +34,10 @@ export const CommonRequirementEnumeration = () => {
     refetch();
   }, [id]);
 
-  const cre = data?.data;
+  var cre
+  if (data && data.data && data.data.length > 0) {
+    cre = data.data[0]
+  }
   const linksByType = useMemo(() => (cre ? getLinksByType(cre) : {}), [cre]);
 
   return (

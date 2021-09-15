@@ -28,7 +28,7 @@ def find_by_id(creid: str) -> Any:  # refer
     database = db.Standard_collection()
     cre = database.get_CREs(external_id=creid)[0]
     if cre:
-        return jsonify({"data": cre.todict()})
+        return jsonify({"data": [cre.todict()]})
     abort(404)
 
 
@@ -39,7 +39,7 @@ def find_by_name(crename: str) -> Any:
     database = db.Standard_collection()
     cre = database.get_CREs(name=crename)[0]
     if cre:
-        return jsonify(cre.todict())
+        return jsonify({"data": [cre.todict()]})
     abort(404)
 
 
@@ -66,7 +66,7 @@ def find_standard_by_name(sname: str) -> Any:
     result["page"] = page
     if standards:
         res = [stand.todict() for stand in standards]
-        result["standards"] = res
+        result["data"] = res
         return jsonify(result)
     abort(404)
 
@@ -80,7 +80,7 @@ def find_document_by_tag(sname: str) -> Any:
     documents = database.get_by_tags(tags)
     if documents:
         res = [doc.todict() for doc in documents]
-        return jsonify(res)
+        return jsonify({'data':res})
 
 
 @app.route("/rest/v1/gap_analysis", methods=["GET"])
@@ -91,7 +91,7 @@ def gap_analysis() -> Any:  # TODO (spyros): add export result to spreadsheet
     documents = database.gap_analysis(standards=standards)
     if documents:
         res = [doc.todict() for doc in documents]
-        return jsonify(res)
+        return jsonify({'data':res})
 
 
 @app.route("/rest/v1/text_search", methods=["GET"])
@@ -113,7 +113,7 @@ def text_search() -> Any:
     documents = database.text_search(text)
     if documents:
         res = [doc.todict() for doc in documents]
-        return jsonify(res)
+        return jsonify({'data':res})
 
 
 @app.errorhandler(404)
