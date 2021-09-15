@@ -15,15 +15,15 @@ This python web and cli application handles adding and presenting CREs.
 Installing
 ---
 
-To install this application you need python3.
+To install this application you need python3, yarn and virtualenv.
 Clone the repository:
-<pre>git clone <repository></pre>
-Launch a virtual environment:
-<pre>virtualenv -p python3 venv/ && source venv/bin/activate`</pre>
-Install the dependencies with pip:
-<pre>pip install -r requirements.txt</pre>
+<pre>git clone https://github.com/OWASP/common-requirement-enumeration </pre>
+
 Copy sqlite database to required location
 <pre>cp cres/db.sqlite standards_cache.sqlite</pre>
+
+Install dependencies
+<pre> make install </pre>
 
 
 Running
@@ -31,30 +31,35 @@ Running
 
 To run the CLI application, you can run
 <pre>python cre.py --help</pre>
+
 To download a remote cre spreadsheet locally you can run
-<pre>python cre.py --review --from_spreadsheet <google sheets url></pre>
+<pre>python cre.py --review --from_spreadsheet < google sheets url></pre>
 
 To add a remote spreadsheet to your local database you can run
-<pre>python cre_main.py --add --from_spreadsheet <google sheets url></pre>
+<pre>python cre.py --add --from_spreadsheet < google sheets url></pre>
 
 To run the web application for development you can run
-<pre>FLASK_APP=cre.py flask run</pre>
+<pre>make dev-run</pre>
 
 Alternatively, you can use the dockerfile with
-<pre>docker build -f Dockerfile-dev -t csync . && docker run -it -p 5000:5000 csync</pre>
+<pre>make docker && make docker-run</pre>
 
 To run the web application for production you need gunicorn and you can run from within the cre_sync dir
-<pre>gunicorn cre:app --log-file=-</pre>
+<pre>make prod-run</pre>
 
 Developing
 ---
-
 You can run backend tests with
-<pre>FLASK_APP=cre.py FLASK_CONFIG=test flask test</pre>
-You can run get a coverage report with `FLASK_APP=cre.py FLASK_CONFIG=test flask test --coverage`
+<pre>make test</pre>
+You can run get a coverage report with 
+<pre>make cover</pre>
 Try to keep the coverage above 70%
 
 Repo Moved here from https://github.com/northdpole/www-project-integration-standards
+
+Contributing
+---
+Please see [Contributing](CONTRIBUTING.md) for contributing instructions
 
 
 Development Notes
