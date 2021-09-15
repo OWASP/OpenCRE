@@ -44,7 +44,7 @@ The "Issues" page lists a number of features we would like to implement, we have
 
 ### Adding CREs and Mappings
 
-You can contribute a new CRE or a new Mapping either by submitting a pull request with updated .yaml files in `/cres` or by filling in a GSuite spreadsheet that follows the [template](https://docs.google.com/spreadsheets/d/1f47aZydJ47n-iGb0fkmu880wSaFyYDM-zdkgs6oMV7I/edit#gid=1841715588) and opening a new issue requesting us to parse it. (Autoparsing and submit via website features are in the roadmap)
+You can contribute a new CRE or a new Mapping either by submitting a pull request with updated .yaml files in `/cres` or by filling in a GSuite spreadsheet that follows the [template](https://docs.google.com/spreadsheets/d/1f47aZydJ47n-iGb0fkmu880wSaFyYDM-zdkgs6oMV7I/edit?usp=sharing) and opening a new issue requesting us to parse it. (Autoparsing and submit via website features are in the roadmap)
 
 ### Reporting Bugs
 
