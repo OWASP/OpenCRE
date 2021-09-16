@@ -1,7 +1,7 @@
-import collections
 import unittest
 from pprint import pprint
 
+import collections
 from application.defs import cre_defs as defs
 from application.utils.parsers import parse_export_format  # type: ignore
 from application.utils.parsers import (
@@ -1232,7 +1232,9 @@ class TestParsers(unittest.TestCase):
         sWSTG = defs.Standard(name="WSTG", section="2.1.2.3")
         sNIST4 = defs.Standard(name="NIST 800-63", section="4444")
         sNIST3 = defs.Standard(name="NIST 800-63", section="3333")
-
+        sNIST53 = defs.Standard(
+            name="NIST 800-53 v5", section="SA-22 Unsupported System Components"
+        )
         sASVS = defs.Standard(
             name="ASVS", section="V1.2.3", hyperlink="https://example.com"
         )
@@ -1271,6 +1273,8 @@ class TestParsers(unittest.TestCase):
             defs.Link(ltype=defs.LinkTypes.LinkedTo, document=sCWE19876)
         ).add_link(
             defs.Link(ltype=defs.LinkTypes.LinkedTo, document=sOPC)
+        ).add_link(
+            defs.Link(ltype=defs.LinkTypes.LinkedTo, document=sNIST53)
         )
 
         cauthmech.add_link(
@@ -1334,7 +1338,7 @@ class TestParsers(unittest.TestCase):
                 "CRE ID": 8,
                 "Standard CWE (from ASVS)": "19876",
                 "Link to other CRE": "FooBar",
-                "Standard NIST 800-53 v5": "",
+                "Standard NIST 800-53 v5": "SA-22 Unsupported System Components",
                 "Standard NIST-800-63 (from ASVS)": "4444/3333",
                 "Standard OPC (ASVS source)": "123654",
                 "CRE Tags": "tagA, tagB, tagC, tagD",
@@ -1380,8 +1384,8 @@ class TestParsers(unittest.TestCase):
                 "CRE ID": 4,
                 "Standard CWE (from ASVS)": 306,
                 "Link to other CRE": "Logging and Error handling",
-                "Standard NIST 800-53 v5": "PL-8 Information Security Architecture,\n"
-                "SC-39 PROCESS ISOLATION,\n"
+                "Standard NIST 800-53 v5": "PL-8 Information Security Architecture\n"
+                "SC-39 PROCESS ISOLATION\n"
                 "SC-3 SECURITY FUNCTION",
                 "Standard NIST-800-63 (from ASVS)": "None",
                 "Standard OPC (ASVS source)": "None",
@@ -1423,6 +1427,7 @@ class TestParsers(unittest.TestCase):
 
         self.maxDiff = None
         output = parse_hierarchical_export_format(data)
+
         for k, v in expected.items():
             self.assertEqual(
                 collections.Counter(output[k].links), collections.Counter(v.links)
