@@ -10,6 +10,7 @@ export interface Document {
   hyperlink?: string;
   section?: string;
   subsection?: string;
+  tags?: string[];
 }
 export interface LinkedDocument {
   document: Document;
