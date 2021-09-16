@@ -3,15 +3,8 @@
 import os
 from typing import Any
 
-from flask import (
-    Blueprint,
-    abort,
-    current_app,
-    jsonify,
-    redirect,
-    request,
-    send_from_directory,
-)
+from flask import (Blueprint, abort, current_app, jsonify, redirect, request,
+                   send_from_directory)
 
 from application import cache
 from application.database import db
@@ -50,7 +43,9 @@ def find_standard_by_name(sname: str) -> Any:
     opt_section = request.args.get("section")
     opt_subsection = request.args.get("subsection")
     opt_hyperlink = request.args.get("hyperlink")
-    page = request.args.get("page") or 0
+    page = 1
+    if request.args.get("page") is not None and int(request.args.get("page")) > 0:
+        page = request.args.get("page")
     items_per_page = request.args.get("items_per_page") or ITEMS_PER_PAGE
 
     total_pages, standards, _ = database.get_standards_with_pagination(
