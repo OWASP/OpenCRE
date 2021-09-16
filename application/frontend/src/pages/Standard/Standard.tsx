@@ -16,9 +16,9 @@ export const Standard = () => {
   const [page, setPage] = useState<number>(1);
   const [loading, setLoading] = useState<boolean>(false);
 
-  const { error, data, refetch } = useQuery<{ standards: Document[]; total_pages: number }, string>(
+  const { error, data, refetch } = useQuery<{ standards: Document[]; total_pages: number; page: number }, string>(
     'standard',
-    () => fetch(`${apiUrl}/standard/${id}?page=${page - 1}`).then((res) => res.json()),
+    () => fetch(`${apiUrl}/standard/${id}?page=${page}`).then((res) => res.json()),
     {
       retry: false,
       enabled: false,
@@ -34,7 +34,7 @@ export const Standard = () => {
     refetch();
   }, [page, id]);
 
-  const documents = data?.standards || [];
+  const documents = data ?.standards || [];
 
   return (
     <>
@@ -48,9 +48,10 @@ export const Standard = () => {
               <DocumentNode node={standard} />
             </div>
           ))}
-        {data && data.total_pages > 1 && (
+        {data && data.total_pages > 0 && (
           <div className="pagination-container">
             <Pagination
+              defaultActivePage={1}
               onPageChange={(_, d) => setPage(d.activePage as number)}
               totalPages={data.total_pages}
             />
