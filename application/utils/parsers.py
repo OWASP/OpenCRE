@@ -66,6 +66,16 @@ def get_linked_standards(mapping: Dict[str, str]) -> List[defs.Link]:
     return standards
 
 
+def update_cre_in_links(
+    cres: Dict[str, defs.CRE], cre: defs.CRE
+) -> Dict[str, defs.CRE]:
+    for k, c in cres.items():
+        for link in c.links:
+            if link.document.name == cre.name:
+                link.document = cre.shallow_copy()
+    return cres
+
+
 def parse_export_format(lfile: List[Dict[str, Any]]) -> Dict[str, defs.Document]:
     """Given: a spreadsheet written by prepare_spreadsheet()
     return a list of CRE docs
@@ -462,7 +472,6 @@ def parse_hierarchical_export_format(
             continue
 
         if name in cres.keys():
-
             cre = cres[name]
         else:
             cre = defs.CRE(name=name)
@@ -476,7 +485,7 @@ def parse_hierarchical_export_format(
 
             for x in mapping.pop("CRE Tags").split(","):
                 cre.tags.add(x.strip())
-
+        update_cre_in_links(cres, cre)
         if not is_empty(mapping.get("Link to other CRE")):
             for other_cre in set(
                 [
@@ -627,8 +636,12 @@ def parse_hierarchical_export_format(
 
         # link CRE to a higher level one
 
-        if higher_cre and cres.get(mapping[f"CRE hierarchy {str(higher_cre)}"]):
-            cre_hi = cres[mapping[f"CRE hierarchy {str(higher_cre)}"]]
+        if higher_cre:
+            cre_hi: defs.CRE
+            if cres.get(mapping[f"CRE hierarchy {str(higher_cre)}"]):
+                cre_hi = cres[mapping.pop(f"CRE hierarchy {str(higher_cre)}")]
+            else:
+                cre_hi = defs.CRE(name=mapping.pop(f"CRE hierarchy {str(higher_cre)}"))
 
             existing_link = [
                 c
@@ -655,4 +668,5 @@ def parse_hierarchical_export_format(
             pass  # add the cre to cres and make the connection
         if cre:
             cres[cre.name] = cre
+
     return cres
