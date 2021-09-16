@@ -595,16 +595,26 @@ def parse_hierarchical_export_format(
 
         if not is_empty(mapping.get("Standard NIST 800-53 v5")):
             nist = str(mapping.pop("Standard NIST 800-53 v5"))
-            if "," in nist:
-                for nst in set(nist.split(",")):
-                    cre.add_link(
-                        defs.Link(
-                            ltype=defs.LinkTypes.LinkedTo,
-                            document=defs.Standard(
-                                name="NIST 800-53 v5", section=nst.strip()
-                            ),
+            if "\n" in nist:
+                for nst in set(nist.split("\n")):
+                    if not is_empty(nst):
+                        cre.add_link(
+                            defs.Link(
+                                ltype=defs.LinkTypes.LinkedTo,
+                                document=defs.Standard(
+                                    name="NIST 800-53 v5", section=nst.strip()
+                                ),
+                            )
                         )
+            else:
+                cre.add_link(
+                    defs.Link(
+                        ltype=defs.LinkTypes.LinkedTo,
+                        document=defs.Standard(
+                            name="NIST 800-53 v5", section=nist.strip()
+                        ),
                     )
+                )
 
         if not is_empty(mapping.get("Standard Cheat_sheets")):
             cs = str(mapping.pop("Standard Cheat_sheets"))
