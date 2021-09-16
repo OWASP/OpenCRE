@@ -1,7 +1,7 @@
+import collections
 import unittest
 from pprint import pprint
 
-import collections
 from application.defs import cre_defs as defs
 from application.utils.parsers import parse_export_format  # type: ignore
 from application.utils.parsers import (
@@ -1220,7 +1220,7 @@ class TestParsers(unittest.TestCase):
             tags=["Architecture"],
         )
         clogging = defs.CRE(name="Logging and Error handling")
-
+        cfp = defs.CRE(name="FooParent")
         sTop10 = defs.Standard(
             hyperlink="https://example.com",
             name="Top10 2017",
@@ -1256,7 +1256,9 @@ class TestParsers(unittest.TestCase):
             .add_link(defs.Link(ltype=defs.LinkTypes.LinkedTo, document=scheatb))
             .add_link(defs.Link(ltype=defs.LinkTypes.LinkedTo, document=scheatf))
         )
-
+        cfp.add_link(
+            defs.Link(ltype=defs.LinkTypes.Contains, document=cfoo.shallow_copy())
+        )
         cauth.add_link(
             defs.Link(ltype=defs.LinkTypes.Related, document=cfoo.shallow_copy())
         ).add_link(
@@ -1400,7 +1402,7 @@ class TestParsers(unittest.TestCase):
                 "ASVS-L1": "",
                 "ASVS-L2": "",
                 "ASVS-L3": "",
-                "CRE hierarchy 1": "Authentication",
+                "CRE hierarchy 1": "FooParent",
                 "CRE hierarchy 2": "",
                 "CRE hierarchy 3": "",
                 "CRE hierarchy 4": "FooBar",
@@ -1418,6 +1420,7 @@ class TestParsers(unittest.TestCase):
             },
         ]
         expected = {
+            "FooParent": cfp,
             "FooBar": cfoo,
             "Authentication": cauth,
             "Authentication mechanism": cauthmech,
@@ -1427,7 +1430,6 @@ class TestParsers(unittest.TestCase):
 
         self.maxDiff = None
         output = parse_hierarchical_export_format(data)
-
         for k, v in expected.items():
             self.assertEqual(
                 collections.Counter(output[k].links), collections.Counter(v.links)
