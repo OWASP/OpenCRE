@@ -1220,7 +1220,7 @@ class TestParsers(unittest.TestCase):
             tags=["Architecture"],
         )
         clogging = defs.CRE(name="Logging and Error handling")
-
+        cfp = defs.CRE(name="FooParent")
         sTop10 = defs.Standard(
             hyperlink="https://example.com",
             name="Top10 2017",
@@ -1232,7 +1232,9 @@ class TestParsers(unittest.TestCase):
         sWSTG = defs.Standard(name="WSTG", section="2.1.2.3")
         sNIST4 = defs.Standard(name="NIST 800-63", section="4444")
         sNIST3 = defs.Standard(name="NIST 800-63", section="3333")
-
+        sNIST53 = defs.Standard(
+            name="NIST 800-53 v5", section="SA-22 Unsupported System Components"
+        )
         sASVS = defs.Standard(
             name="ASVS", section="V1.2.3", hyperlink="https://example.com"
         )
@@ -1254,7 +1256,9 @@ class TestParsers(unittest.TestCase):
             .add_link(defs.Link(ltype=defs.LinkTypes.LinkedTo, document=scheatb))
             .add_link(defs.Link(ltype=defs.LinkTypes.LinkedTo, document=scheatf))
         )
-
+        cfp.add_link(
+            defs.Link(ltype=defs.LinkTypes.Contains, document=cfoo.shallow_copy())
+        )
         cauth.add_link(
             defs.Link(ltype=defs.LinkTypes.Related, document=cfoo.shallow_copy())
         ).add_link(
@@ -1271,6 +1275,8 @@ class TestParsers(unittest.TestCase):
             defs.Link(ltype=defs.LinkTypes.LinkedTo, document=sCWE19876)
         ).add_link(
             defs.Link(ltype=defs.LinkTypes.LinkedTo, document=sOPC)
+        ).add_link(
+            defs.Link(ltype=defs.LinkTypes.LinkedTo, document=sNIST53)
         )
 
         cauthmech.add_link(
@@ -1334,7 +1340,7 @@ class TestParsers(unittest.TestCase):
                 "CRE ID": 8,
                 "Standard CWE (from ASVS)": "19876",
                 "Link to other CRE": "FooBar",
-                "Standard NIST 800-53 v5": "",
+                "Standard NIST 800-53 v5": "SA-22 Unsupported System Components",
                 "Standard NIST-800-63 (from ASVS)": "4444/3333",
                 "Standard OPC (ASVS source)": "123654",
                 "CRE Tags": "tagA, tagB, tagC, tagD",
@@ -1380,8 +1386,8 @@ class TestParsers(unittest.TestCase):
                 "CRE ID": 4,
                 "Standard CWE (from ASVS)": 306,
                 "Link to other CRE": "Logging and Error handling",
-                "Standard NIST 800-53 v5": "PL-8 Information Security Architecture,\n"
-                "SC-39 PROCESS ISOLATION,\n"
+                "Standard NIST 800-53 v5": "PL-8 Information Security Architecture\n"
+                "SC-39 PROCESS ISOLATION\n"
                 "SC-3 SECURITY FUNCTION",
                 "Standard NIST-800-63 (from ASVS)": "None",
                 "Standard OPC (ASVS source)": "None",
@@ -1396,7 +1402,7 @@ class TestParsers(unittest.TestCase):
                 "ASVS-L1": "",
                 "ASVS-L2": "",
                 "ASVS-L3": "",
-                "CRE hierarchy 1": "Authentication",
+                "CRE hierarchy 1": "FooParent",
                 "CRE hierarchy 2": "",
                 "CRE hierarchy 3": "",
                 "CRE hierarchy 4": "FooBar",
@@ -1414,6 +1420,7 @@ class TestParsers(unittest.TestCase):
             },
         ]
         expected = {
+            "FooParent": cfp,
             "FooBar": cfoo,
             "Authentication": cauth,
             "Authentication mechanism": cauthmech,
