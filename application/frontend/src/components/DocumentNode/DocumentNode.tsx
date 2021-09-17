@@ -79,8 +79,8 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({ node, linkType }
       <LoadingAndErrorIndicator loading={loading} error={error} />
       <div className={`title${active} document-node`} onClick={() => setExpanded(!expanded)}>
         <i aria-hidden="true" className="dropdown icon"></i>
-        <a href={usedNode?.hyperlink}>
-          {usedNode ? getDocumentDisplayName(usedNode) : null}
+        <a href={usedNode.hyperlink}>
+          {getDocumentDisplayName(usedNode)}
         </a>
       </div>
       <div className={`content${active} document-node`}>
@@ -89,8 +89,10 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({ node, linkType }
             return (
               <div className="document-node__link-type-container" key={type}>
                 <div>
-                  <a href={usedNode?.hyperlink}>
-                    {usedNode?.name} - {usedNode?.section}  </a> <b>{DOCUMENT_TYPE_NAMES[type]}</b>:
+                  <a href={usedNode.hyperlink}>
+                    {usedNode.name} - {usedNode?.section}
+                  </a> 
+                  <b>{DOCUMENT_TYPE_NAMES[type]}</b>:
                 </div>
                 <div>
                   <div className="accordion ui fluid styled f0">
