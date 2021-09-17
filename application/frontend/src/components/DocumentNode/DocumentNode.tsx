@@ -89,10 +89,11 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({ node, linkType }
             return (
               <div className="document-node__link-type-container" key={type}>
                 <div>
-                  <a href={usedNode.hyperlink}>
-                    {usedNode.name} - {usedNode?.section}
-                  </a> 
-                  <b>{DOCUMENT_TYPE_NAMES[type]}</b>:
+                  { usedNode.hyperlink
+                    ? <a href={usedNode.hyperlink}> {usedNode.name} - {usedNode.section} </a>
+                    : <span > {usedNode.name} - {usedNode.section} </span>
+                  }
+                  <b> {DOCUMENT_TYPE_NAMES[type]}</b>:
                 </div>
                 <div>
                   <div className="accordion ui fluid styled f0">
