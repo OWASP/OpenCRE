@@ -45,7 +45,7 @@ export const Standard = () => {
           !error &&
           documents.map((standard, i) => (
             <div key={i} className="accordion ui fluid styled standard-page__links-container">
-              <DocumentNode node={standard} />
+              <DocumentNode node={standard} linkType={"Standard"}/>
             </div>
           ))}
         {data && data.total_pages > 0 && (
