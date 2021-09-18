@@ -44,7 +44,7 @@ def find_by_name(crename: str) -> Any:
 
 
 @app.route("/rest/v1/standard/<sname>", methods=["GET"])
-@cache.cached(timeout=50)
+# @cache.cached(timeout=50)
 def find_standard_by_name(sname: str) -> Any:
     database = db.Standard_collection()
     opt_section = request.args.get("section")
