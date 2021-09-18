@@ -55,7 +55,7 @@ export const CommonRequirementEnumeration = () => {
                   </div>
                   {links.map((link, i) => (
                     <div key={i} className="accordion ui fluid styled cre-page__links-container">
-                      <DocumentNode node={link.document} />
+                      <DocumentNode node={link.document} linkType={type} />
                     </div>
                   ))}
                 </div>

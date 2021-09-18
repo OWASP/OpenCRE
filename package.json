@@ -45,6 +45,7 @@
     "@types/react-dom": "^17.0.3",
     "@wojtekmaj/enzyme-adapter-react-17": "^0.6.1",
     "awesome-typescript-loader": "5.2.1",
+    "axios": "^0.21.4",
     "d3-dag": "^0.6.3",
     "date-fns": "^2.16.1",
     "del-cli": "^3.0.1",
