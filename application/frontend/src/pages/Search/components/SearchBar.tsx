@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useHistory } from 'react-router-dom';
 import { Button, Dropdown, Form, Icon, Input } from 'semantic-ui-react';
 
-import { CRE, STANDARD } from '../../../routes';
+import { CRE, STANDARD, SEARCH } from '../../../routes';
 
 const SEARCH_TYPES = [
   { key: 'standard', text: 'Standard', value: 'standard' },
@@ -24,6 +24,10 @@ export const SearchBar = () => {
 
   const onClick = () => {
     if (Boolean(search.term)) {
+      if ( search.type == "creName") {
+        history.push(`${SEARCH}/${search.term}`);
+        return;
+      }
       const path = search.type === 'standard' ? STANDARD : CRE;
       setSearch(DEFAULT_SEARCH_BAR_STATE);
       history.push(`${path}/${search.term}`);
