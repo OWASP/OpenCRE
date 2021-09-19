@@ -13,7 +13,7 @@ export const SearchBody = () => {
         OPEN CRE
       </h1>
       <p>
-        The CRE is a mechanism connecting standards and guidelines at all topic levels. It offers easy access to relevant information when designing, developing, testing and procuring secure software.
+        The CRE is a mechanism connecting security standards and guidelines at all topic levels. It offers easy access to relevant information when designing, developing, testing and procuring secure software.
       </p>
 
       <h2>
@@ -61,9 +61,9 @@ export const SearchBody = () => {
       </h2>
       <p>
         See the CRE search bar (beta version). Try searching for
-        <a href="https://opencreorg.herokuapp.com/standard/Top10%202017"> Top10 2017 </a>
+        <a href="https://www.opencre.org/standard/Top10%202017"> Top10 2017 </a>
         as standard and click around, or
-        <a href="https://opencreorg.herokuapp.com/cre/482-866"> 482-866 </a>
+        <a href="https://www.opencre.org/cre/482-866"> 482-866 </a>
         as CRE-ID, to get an idea.
       </p>
     </div>
