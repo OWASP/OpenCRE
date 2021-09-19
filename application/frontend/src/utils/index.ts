@@ -1,1 +1,1 @@
-export { getLinksByType, LinksByType, getDocumentDisplayName } from './document';
+export { groupLinksByType as groupLinksByType, LinksByType, getDocumentDisplayName } from './document';
