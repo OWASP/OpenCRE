@@ -1,6 +1,7 @@
 import { ReactNode } from 'react';
 
 import { CommonRequirementEnumeration, Graph, Search, Standard } from './pages';
+import { SearchName } from './pages/Search/SearchName';
 
 export interface IRoute {
   // The url to this route
@@ -13,6 +14,7 @@ export interface IRoute {
 
 export const INDEX = '/';
 export const STANDARD = '/standard';
+export const SEARCH = '/search';
 export const CRE = '/cre';
 export const GRAPH = '/graph';
 
@@ -35,6 +37,11 @@ export const ROUTES: IRoute[] = [
   {
     path: `${GRAPH}/:id`,
     component: Graph,
+    showHeader: true,
+  },
+  {
+    path: `${SEARCH}/:searchTerm`,
+    component: SearchName,
     showHeader: true,
   },
 ];
