@@ -9,7 +9,7 @@ import { LoadingAndErrorIndicator } from '../../components/LoadingAndErrorIndica
 import { DOCUMENT_TYPE_NAMES } from '../../const';
 import { useEnvironment } from '../../hooks';
 import { Document } from '../../types';
-import { getLinksByType } from '../../utils';
+import { groupLinksByType } from '../../utils';
 
 export const CommonRequirementEnumeration = () => {
   const { id } = useParams();
@@ -35,7 +35,7 @@ export const CommonRequirementEnumeration = () => {
   }, [id]);
 
   const cre = data?.data;
-  const linksByType = useMemo(() => (cre ? getLinksByType(cre) : {}), [cre]);
+  const linksByType = useMemo(() => (cre ? groupLinksByType(cre) : {}), [cre]);
 
   return (
     <div className="cre-page">

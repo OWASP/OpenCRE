@@ -6,7 +6,7 @@ import { Link } from 'react-router-dom';
 import { DOCUMENT_TYPE_NAMES, TYPE_IS_PART_OF } from '../../const';
 import { CRE, STANDARD } from '../../routes';
 import { Document } from '../../types';
-import { getDocumentDisplayName, getLinksByType } from '../../utils';
+import { getDocumentDisplayName, groupLinksByType } from '../../utils';
 import { useEnvironment } from '../../hooks';
 import axios from 'axios';
 import { LoadingAndErrorIndicator } from '../LoadingAndErrorIndicator';
@@ -28,7 +28,7 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({ node, linkType }
   const id = isStandard ? node.name : node.id;
 
   var usedNode = nestedNode || node;
-  const linksByType = useMemo(() => getLinksByType(usedNode), [usedNode]);
+  const linksByType = useMemo(() => groupLinksByType(usedNode), [usedNode]);
 
   useEffect( () => {
     if ( !isStandard && nestedDocumentLinkTypes.includes(linkType) ) {
