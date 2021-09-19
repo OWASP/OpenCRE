@@ -15,10 +15,25 @@ from flask import (
 
 from application import cache
 from application.database import db
+from application.defs import cre_defs as defs
 
 ITEMS_PER_PAGE = 20
 
 app = Blueprint("web", __name__, static_folder="../frontend/www")
+
+
+def extend_cre_with_tag_links(
+    cre: defs.CRE, collection: db.Standard_collection
+) -> defs.CRE:
+    others = []
+    # for each tag: get by tag, append results as "RELATED TO" links
+    for tag in cre.tags:
+        others.extend(collection.get_by_tags([tag]))
+    others = list(frozenset(others))
+    for o in others:
+        o.links = []
+        cre.add_link(defs.Link(ltype=defs.LinkTypes.Related, document=o))
+    return cre
 
 
 @app.route("/rest/v1/id/<creid>", methods=["GET"])
@@ -27,7 +42,9 @@ def find_by_id(creid: str) -> Any:  # refer
 
     database = db.Standard_collection()
     cre = database.get_CREs(external_id=creid)[0]
+
     if cre:
+        cre = extend_cre_with_tag_links(cre=cre, collection=database)
         return jsonify({"data": cre.todict()})
     abort(404)
 
@@ -39,6 +56,7 @@ def find_by_name(crename: str) -> Any:
     database = db.Standard_collection()
     cre = database.get_CREs(name=crename)[0]
     if cre:
+        cre = extend_cre_with_tag_links(cre=cre, collection=database)
         return jsonify(cre.todict())
     abort(404)
 
