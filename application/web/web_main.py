@@ -115,7 +115,7 @@ def gap_analysis() -> Any:  # TODO (spyros): add export result to spreadsheet
 
 
 @app.route("/rest/v1/text_search", methods=["GET"])
-@cache.cached(timeout=50)
+#@cache.cached(timeout=50)
 def text_search() -> Any:
     """
     Performs arbitrary text search among all known documents.
