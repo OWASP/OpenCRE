@@ -134,6 +134,8 @@ def text_search() -> Any:
     if documents:
         res = [doc.todict() for doc in documents]
         return jsonify(res)
+    else:
+        abort(404)
 
 
 @app.errorhandler(404)
