@@ -1,3 +1,6 @@
+body{
+  background-color: #242e4c;
+}
 .search-page {
   background-color: #242e4c;
   display: flex;
@@ -21,4 +24,10 @@
     margin-bottom: 30px;
     color: #eee;
   }
+}
+.SearchBar {
+  margin: auto;
+}
+.Search{
+  margin: auto;
 }

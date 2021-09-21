@@ -115,7 +115,7 @@ def gap_analysis() -> Any:  # TODO (spyros): add export result to spreadsheet
 
 
 @app.route("/rest/v1/text_search", methods=["GET"])
-#@cache.cached(timeout=50)
+# @cache.cached(timeout=50)
 def text_search() -> Any:
     """
     Performs arbitrary text search among all known documents.
@@ -146,7 +146,7 @@ def page_not_found(e) -> Any:
 # If no other routes are matched, serve the react app, or any other static files (like bundle.js)
 @app.route("/", defaults={"path": ""})
 @app.route("/<path:path>")
-@cache.cached(timeout=50)
+# @cache.cached(timeout=50)
 def index(path: str) -> Any:
     if path != "" and os.path.exists(app.static_folder + "/" + path):
         return send_from_directory(app.static_folder, path)
