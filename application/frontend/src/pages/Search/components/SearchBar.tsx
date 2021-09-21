@@ -6,9 +6,9 @@ import { CRE, STANDARD, SEARCH } from '../../../routes';
 import './SearchBar.scss'
 
 const SEARCH_TYPES = [
+  { key: 'topicText', text: 'Topic text', value: 'topicText' },
   { key: 'standard', text: 'Standard', value: 'standard' },
   { key: 'creId', text: 'CRE ID', value: 'creId' },
-  { key: 'creName', text: 'CRE Name', value: 'creName' },
 ];
 
 interface SearchBarState {
@@ -25,7 +25,7 @@ export const SearchBar = () => {
 
   const onClick = () => {
     if (Boolean(search.term)) {
-      if (search.type == "creName") {
+      if (search.type == "topicText") {
         history.push(`${SEARCH}/${search.term}`);
         return;
       }
