@@ -3,6 +3,7 @@ import { useHistory } from 'react-router-dom';
 import { Button, Dropdown, Form, Icon, Input } from 'semantic-ui-react';
 
 import { CRE, STANDARD, SEARCH } from '../../../routes';
+import './SearchBar.scss'
 
 const SEARCH_TYPES = [
   { key: 'standard', text: 'Standard', value: 'standard' },
@@ -24,7 +25,7 @@ export const SearchBar = () => {
 
   const onClick = () => {
     if (Boolean(search.term)) {
-      if ( search.type == "creName") {
+      if (search.type == "creName") {
         history.push(`${SEARCH}/${search.term}`);
         return;
       }
@@ -49,7 +50,8 @@ export const SearchBar = () => {
   return (
     <Form>
       <Form.Group>
-        <Form.Field>
+        <Form.Field
+          id="SearchBar">
           <Input
             error={Boolean(search.error)}
             value={search.term}
@@ -70,11 +72,11 @@ export const SearchBar = () => {
             placeholder="Search..."
           />
         </Form.Field>
-        <Form.Field>
+        <Form.Field
+          id="SearchButton">
           <Button
             primary
-            onClick={onClick}
-          >
+            onClick={onClick}>
             <Icon name="search" />
             Search
           </Button>
