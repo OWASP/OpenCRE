@@ -9,8 +9,8 @@ import { SearchBar } from '../../pages/Search/components/SearchBar';
 
 const getLinks = (): { to: string; name: string }[] => [
   {
-    to: `#`,
-    name: 'Document View',
+    to: `/`,
+    name: 'Open CRE',
   },
 ];
 
