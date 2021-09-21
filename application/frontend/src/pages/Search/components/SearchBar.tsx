@@ -23,15 +23,20 @@ export const SearchBar = () => {
   const [search, setSearch] = useState<SearchBarState>(DEFAULT_SEARCH_BAR_STATE);
   const history = useHistory();
 
-  const onClick = () => {
+  const onSubmit = () => {
+    var path
     if (Boolean(search.term)) {
       if (search.type == "topicText") {
-        history.push(`${SEARCH}/${search.term}`);
-        return;
+        path = SEARCH
+      } else if (search.type === 'standard') {
+        path = STANDARD
+      } else if (search.type == 'creId') {
+        path = CRE
       }
-      const path = search.type === 'standard' ? STANDARD : CRE;
       setSearch(DEFAULT_SEARCH_BAR_STATE);
       history.push(`${path}/${search.term}`);
+      window.location.href = window.location.href // horrible hack, but on the search results page
+                                                 //react will not do any requests otherwise
     } else {
       setSearch({
         ...search,
@@ -48,7 +53,10 @@ export const SearchBar = () => {
   }
 
   return (
-    <Form>
+
+    <Form
+      onSubmit={onSubmit}
+    >
       <Form.Group>
         <Form.Field
           id="SearchBar">
@@ -76,12 +84,13 @@ export const SearchBar = () => {
           id="SearchButton">
           <Button
             primary
-            onClick={onClick}>
+            onSubmit={onSubmit}>
             <Icon name="search" />
             Search
           </Button>
         </Form.Field>
       </Form.Group>
     </Form>
+
   );
 };
