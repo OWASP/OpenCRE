@@ -52,20 +52,21 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({ node, linkType }
     const linkContent = (
       <>
         <i aria-hidden="true" className="circle icon"></i>
-        {getDocumentDisplayName(usedNode)}
+        { getDocumentDisplayName(usedNode) }
         <i aria-hidden="true" className={`${hasExternalLink ? 'external' : 'external square'} icon`}></i>
       </>
     );
     return (
       <>
 
-        {hasExternalLink ? (
-          <p className={`title external-link document-node external square f1`}>
-            <a target="_blank" href={hyperlink}>
-              {linkContent}
-            </a></p>
-        ) : <div className={`title external-link document-node f2`}>
-            <Link to={`${route}/${id}`}>{linkContent}</Link></div>
+        { hasExternalLink 
+          ? <p className={`title external-link document-node external square f1`}>
+              <a target="_blank" href={hyperlink}>
+                {linkContent}
+              </a>
+            </p>
+          : <div className={`title external-link document-node f2`}>
+              <Link to={`${route}/${id}`}>{linkContent}</Link></div>
         }
         <div className={`content`}></div>
       </>
@@ -81,14 +82,14 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({ node, linkType }
       <div className={`title${active} document-node`} onClick={() => setExpanded(!expanded)}>
         <i aria-hidden="true" className="dropdown icon"></i>
         <a href={usedNode.hyperlink}>
-          {getDocumentDisplayName(usedNode)}
+          { getDocumentDisplayName(usedNode) }
         </a>
       </div>
       <div className={`content${active} document-node`}>
         { expanded 
           && Object.entries(linksByType)
-            .filter( ([type, _]) => !linkTypesExcludedInNesting.includes(type))
-            .map(([type, links]) => {
+            .filter( ([type, _]) => !linkTypesExcludedInNesting.includes(type) )
+            .map( ([type, links] ) => {
             return (
               <div className="document-node__link-type-container" key={type}>
                 <div>
