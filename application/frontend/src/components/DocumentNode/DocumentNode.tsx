@@ -3,7 +3,7 @@ import './documentNode.scss';
 import React, { FunctionComponent, useMemo, useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 
-import { DOCUMENT_TYPE_NAMES, TYPE_IS_PART_OF } from '../../const';
+import { DOCUMENT_TYPE_NAMES, TYPE_IS_PART_OF, TYPE_CONTAINS } from '../../const';
 import { CRE, STANDARD } from '../../routes';
 import { Document } from '../../types';
 import { getDocumentDisplayName, groupLinksByType } from '../../utils';
@@ -16,7 +16,8 @@ interface DocumentNode {
   linkType: string;
 }
 
-const nestedDocumentLinkTypes = [TYPE_IS_PART_OF]
+const linkTypesToNest = [TYPE_IS_PART_OF]
+const linkTypesExcludedInNesting = [TYPE_CONTAINS]
 
 export const DocumentNode: FunctionComponent<DocumentNode> = ({ node, linkType }) => {
   const [expanded, setExpanded] = useState<boolean>(false);
@@ -31,7 +32,7 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({ node, linkType }
   const linksByType = useMemo(() => groupLinksByType(usedNode), [usedNode]);
 
   useEffect( () => {
-    if ( !isStandard && nestedDocumentLinkTypes.includes(linkType) ) {
+    if ( !isStandard && linkTypesToNest.includes(linkType) ) {
       axios.get(`${apiUrl}/id/${id}`)
       .then(function (response) {
         setNestedNode(response.data.data);
@@ -84,8 +85,10 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({ node, linkType }
         </a>
       </div>
       <div className={`content${active} document-node`}>
-        {expanded &&
-          Object.entries(linksByType).map(([type, links]) => {
+        { expanded 
+          && Object.entries(linksByType)
+            .filter( ([type, _]) => !linkTypesExcludedInNesting.includes(type))
+            .map(([type, links]) => {
             return (
               <div className="document-node__link-type-container" key={type}>
                 <div>
