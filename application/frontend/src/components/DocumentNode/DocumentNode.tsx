@@ -14,14 +14,14 @@ import { getApiEndpoint, getInternalUrl } from '../../utils/document';
 interface DocumentNode {
   node: Document,
   linkType: string,
-  isRelatedNested?: Boolean,
+  hasLinktypeRelatedParent?: Boolean,
 }
 
 const linkTypesToNest = [TYPE_IS_PART_OF, TYPE_RELATED]
 const linkTypesExcludedInNesting = [TYPE_CONTAINS]
 const linkTypesExcludedWhenNestingRelatedTo = [TYPE_RELATED, TYPE_IS_PART_OF, TYPE_CONTAINS]
 
-export const DocumentNode: FunctionComponent<DocumentNode> = ({ node, linkType, isRelatedNested}) => {
+export const DocumentNode: FunctionComponent<DocumentNode> = ({ node, linkType, hasLinktypeRelatedParent}) => {
   const [expanded, setExpanded] = useState<boolean>(false);
   const isStandard = node.doctype === 'Standard';
   const { apiUrl } = useEnvironment();
@@ -29,6 +29,7 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({ node, linkType, 
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
   const id = isStandard ? node.name : node.id;
+  const active = expanded ? ' active' : '';
 
   var usedNode = nestedNode || node;
   const hasExternalLink = Boolean(usedNode.hyperlink);
@@ -50,10 +51,41 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({ node, linkType, 
       });
     }
   }, [id]);
+  
+  const fetchedNodeHasLinks = () => {
+    return usedNode.links && usedNode.links.length > 0;
+  }
 
-  if ( ( !usedNode.links || usedNode.links.length === 0)) {
-    return (
-      <>
+  const hasActiveLinks = () => {
+    return getTopicsToDisplayOrderdByLinkType().length > 0;
+  }
+
+  const isNestedInRelated = (): Boolean => {
+    return hasLinktypeRelatedParent || ( linkType === TYPE_RELATED );
+  }
+
+  const getTopicsToDisplayOrderdByLinkType = () => {
+    return Object.entries(linksByType)
+      .filter( ([type, _]) => !linkTypesExcludedInNesting.includes(type))
+      .filter( ([type, _]) => isNestedInRelated() ? !linkTypesExcludedWhenNestingRelatedTo.includes(type) : true)
+  }
+
+  const Hyperlink = (hyperlink) => {
+    if ( !hyperlink.hyperlink ) {
+      return <></>;
+    }
+
+    return <>
+        <span>
+          Reference: 
+        </span>
+        <a href={hyperlink.hyperlink} target="_blank"> {hyperlink.hyperlink}</a>
+      </>
+    
+  }
+  
+  const SimpleView = () => {
+    return <>
         <div className={`title external-link document-node f2`}>
           <Link to={getInternalUrl(usedNode)}>
             <i aria-hidden="true" className="circle icon"></i>
@@ -62,38 +94,21 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({ node, linkType, 
         </div>
         <div className={`content`}></div>
       </>
-    );
   }
 
-  const getIsRelatedNested = () => {
-    return isRelatedNested || ( linkType === TYPE_RELATED );
-  }
-  
-  const active = expanded ? ' active' : '';
-
-  return (
-    <>
+  const NestedView = () => {
+    return <>
       <LoadingAndErrorIndicator loading={loading} error={error} />
       <div className={`title${active} document-node`} onClick={() => setExpanded(!expanded)}>
         <i aria-hidden="true" className="dropdown icon"></i>
         <Link to={getInternalUrl(usedNode)}>
-          { getDocumentDisplayName(usedNode) } {getIsRelatedNested() ? "@@@@@@@@@@@ <- NESTED @@@@@@@@@@@@@@ " : ""}
+          { getDocumentDisplayName(usedNode) }
         </Link>
       </div>
       <div className={`content${active} document-node`}>
-        { expanded && hasExternalLink &&
-          <>
-            <span>
-              Reference: 
-            </span>
-            <a href={usedNode.hyperlink} target="_blank"> { usedNode.hyperlink }</a>
-          </>
-        }
+        <Hyperlink hyperlink={usedNode.hyperlink}/>
         { expanded 
-          && Object.entries(linksByType)
-            .filter( ([type, _]) => !linkTypesExcludedInNesting.includes(type))
-            .filter( ([type, _]) => getIsRelatedNested() ? !linkTypesExcludedWhenNestingRelatedTo.includes(type) : true)
-            .map( ([type, links] ) => {
+          && getTopicsToDisplayOrderdByLinkType().map( ([type, links] ) => {
             return (
               <div className="document-node__link-type-container" key={type}>
                 <div>
@@ -103,7 +118,7 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({ node, linkType, 
                 <div>
                   <div className="accordion ui fluid styled f0">
                     { links.map( (link, i) => 
-                        <DocumentNode node={link.document} linkType={type} isRelatedNested={getIsRelatedNested()} key={i} />
+                        <DocumentNode node={link.document} linkType={type} hasLinktypeRelatedParent={isNestedInRelated()} key={i} />
                       )
                     }
                   </div>
@@ -113,5 +128,7 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({ node, linkType, 
           })}
       </div>
     </>
-  );
+  }
+
+  return hasActiveLinks() ? <NestedView/> : <SimpleView/>;
 };
