@@ -48,18 +48,12 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({ node, linkType }
   }, [id]);
 
   if ( ( !usedNode.links || usedNode.links.length === 0)) {
-    const linkContent = (
-      <>
-        <i aria-hidden="true" className="circle icon"></i>
-        { getDocumentDisplayName(usedNode) }
-        <i aria-hidden="true" className={`${hasExternalLink ? 'external' : 'external square'} icon`}></i>
-      </>
-    );
     return (
       <>
         <div className={`title external-link document-node f2`}>
           <Link to={getInternalUrl(usedNode)}>
-            {linkContent}
+            <i aria-hidden="true" className="circle icon"></i>
+            { getDocumentDisplayName(usedNode) }
           </Link>
         </div>
         <div className={`content`}></div>
