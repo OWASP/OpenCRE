@@ -50,6 +50,12 @@ export const StandardSection = () => {
       <div className="standard-page">
         <h4 className="standard-page__heading">{id}</h4>
         <h5 className="standard-page__sub-heading">Section: {document?.section}</h5>
+        { document && document.hyperlink &&
+            <>
+              <span>Reference: </span>
+              <a href={document?.hyperlink} target="_blank"> { document.hyperlink }</a>
+            </>
+          }
         <LoadingAndErrorIndicator loading={loading} error={error} />
         {!loading &&
           !error &&
