@@ -13,14 +13,14 @@ export const SearchBody = () => {
         OPEN CRE
       </h1>
       <p>
-        The CRE is a mechanism connecting security standards and guidelines at all topic levels. It offers easy access to relevant information when designing, developing, testing and procuring secure software.
+        CRE is an interactive content linking platform for uniting security standards and guidelines. It offers easy and robust access to relevant information when designing, developing, testing and procuring secure software.
       </p>
 
       <h2>
         WHY?
       </h2>
       <p>
-        Independent software security professionals (Spyros Gasteratos, Elie Saad, Rob van der Veer and friends, in close collaboration with the SKF project) got together to find a solution for the complexity and fragmentation in today’s landscape of security standards and guidelines.
+        Independent software security professionals got together to find a solution for the complexity and fragmentation in today’s landscape of security standards and guidelines. These people are Spyros Gasteratos, Elie Saad, Rob van der Veer and friends, in close collaboration with the SKF, OpenSSF and Owasp Top 10 project.
       </p>
 
       <h2>
