@@ -557,7 +557,7 @@ def parse_hierarchical_export_format(
 
         if not is_empty(mapping.get("Standard WSTG")):
             section = mapping.get("Standard WSTG")
-            separator = ';'
+            separator = ";"
             if separator in section:
                 sections = section.split(separator)
                 hyperlinks = mapping.pop("Standard WSTG-Hyperlink").split(separator)
@@ -567,7 +567,9 @@ def parse_hierarchical_export_format(
                             defs.Link(
                                 ltype=defs.LinkTypes.LinkedTo,
                                 document=defs.Standard(
-                                    name="WSTG", section=element.strip(), hyperlink=link.strip()
+                                    name="WSTG",
+                                    section=element.strip(),
+                                    hyperlink=link.strip(),
                                 ),
                             )
                         )
@@ -683,7 +685,9 @@ def parse_hierarchical_export_format(
             if cres.get(mapping[f"CRE hierarchy {str(higher_cre)}"]):
                 cre_hi = cres[mapping.pop(f"CRE hierarchy {str(higher_cre)}").strip()]
             else:
-                cre_hi = defs.CRE(name=mapping.pop(f"CRE hierarchy {str(higher_cre)}").strip())
+                cre_hi = defs.CRE(
+                    name=mapping.pop(f"CRE hierarchy {str(higher_cre)}").strip()
+                )
 
             existing_link = [
                 c
