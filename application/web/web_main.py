@@ -45,7 +45,8 @@ def find_by_id(creid: str) -> Any:  # refer
     cre = database.get_CREs(external_id=creid)[0]
 
     if cre:
-        cre = extend_cre_with_tag_links(cre=cre, collection=database)
+        # disable until we have a consensus on tag behaviour
+        # cre = extend_cre_with_tag_links(cre=cre, collection=database)
         return jsonify({"data": cre.todict()})
     abort(404)
 
@@ -66,8 +67,8 @@ def find_by_name(crename: str) -> Any:
 # @cache.cached(timeout=50)
 def find_standard_by_name(sname: str) -> Any:
     database = db.Standard_collection()
-    opt_section = (request.args.get("section"))
-    if (opt_section):
+    opt_section = request.args.get("section")
+    if opt_section:
         opt_section = urllib.parse.unquote(opt_section)
     opt_subsection = request.args.get("subsection")
     opt_hyperlink = request.args.get("hyperlink")
