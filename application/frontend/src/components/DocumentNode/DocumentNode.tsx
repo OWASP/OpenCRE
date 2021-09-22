@@ -13,14 +13,15 @@ import { getApiEndpoint, getInternalUrl } from '../../utils/document';
 
 interface DocumentNode {
   node: Document,
-  linkType: string;
+  linkType: string,
+  isRelatedNested?: Boolean,
 }
 
 const linkTypesToNest = [TYPE_IS_PART_OF, TYPE_RELATED]
 const linkTypesExcludedInNesting = [TYPE_CONTAINS]
 const linkTypesExcludedWhenNestingRelatedTo = [TYPE_RELATED, TYPE_IS_PART_OF, TYPE_CONTAINS]
 
-export const DocumentNode: FunctionComponent<DocumentNode> = ({ node, linkType }) => {
+export const DocumentNode: FunctionComponent<DocumentNode> = ({ node, linkType, isRelatedNested}) => {
   const [expanded, setExpanded] = useState<boolean>(false);
   const isStandard = node.doctype === 'Standard';
   const { apiUrl } = useEnvironment();
@@ -64,6 +65,9 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({ node, linkType }
     );
   }
 
+  const getIsRelatedNested = () => {
+    return isRelatedNested || ( linkType === TYPE_RELATED );
+  }
   
   const active = expanded ? ' active' : '';
 
@@ -73,7 +77,7 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({ node, linkType }
       <div className={`title${active} document-node`} onClick={() => setExpanded(!expanded)}>
         <i aria-hidden="true" className="dropdown icon"></i>
         <Link to={getInternalUrl(usedNode)}>
-          { getDocumentDisplayName(usedNode) }
+          { getDocumentDisplayName(usedNode) } {getIsRelatedNested() ? "@@@@@@@@@@@ <- NESTED @@@@@@@@@@@@@@ " : ""}
         </Link>
       </div>
       <div className={`content${active} document-node`}>
@@ -88,7 +92,7 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({ node, linkType }
         { expanded 
           && Object.entries(linksByType)
             .filter( ([type, _]) => !linkTypesExcludedInNesting.includes(type))
-            .filter( ([type, _]) => type == TYPE_RELATED ? !linkTypesExcludedWhenNestingRelatedTo.includes(type) : true)
+            .filter( ([type, _]) => getIsRelatedNested() ? !linkTypesExcludedWhenNestingRelatedTo.includes(type) : true)
             .map( ([type, links] ) => {
             return (
               <div className="document-node__link-type-container" key={type}>
@@ -99,7 +103,7 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({ node, linkType }
                 <div>
                   <div className="accordion ui fluid styled f0">
                     { links.map( (link, i) => 
-                        <DocumentNode node={link.document} linkType={type} key={i} />
+                        <DocumentNode node={link.document} linkType={type} isRelatedNested={getIsRelatedNested()} key={i} />
                       )
                     }
                   </div>
