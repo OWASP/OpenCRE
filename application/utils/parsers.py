@@ -459,7 +459,7 @@ def parse_hierarchical_export_format(
             key = [key for key in mapping if key.startswith("CRE hierarchy %s" % i)][0]
             if not is_empty(mapping.get(key)):
                 if current_hierarchy == 0:
-                    name = mapping.pop(key).replace("\n", " ")
+                    name = mapping.pop(key).strip().replace("\n", " ")
                     current_hierarchy = i
                 else:
                     higher_cre = i
@@ -487,18 +487,22 @@ def parse_hierarchical_export_format(
                 cre.tags.add(x.strip())
         update_cre_in_links(cres, cre)
         if not is_empty(mapping.get("Link to other CRE")):
-            for other_cre in set(
+            other_cres = set(
                 [
                     x.strip()
                     for x in mapping.pop("Link to other CRE").split(",")
                     if not is_empty(x.strip())
                 ]
-            ):
+            )
+            # temporary until we agree what we want to do with tags
+            other_cres = list(other_cres)
+            other_cres.extend(list(cre.tags))
+            for other_cre in other_cres:
                 if not cres.get(other_cre):
                     logger.warning(
                         "%s linking to not yet existent cre %s" % (cre.name, other_cre)
                     )
-                    new_cre = defs.CRE(name=other_cre)
+                    new_cre = defs.CRE(name=other_cre.strip())
                     cres[new_cre.name] = new_cre
                 else:
 
@@ -544,20 +548,20 @@ def parse_hierarchical_export_format(
                     document=defs.Standard(
                         name="OPC",
                         section=mapping.pop("Standard OPC (ASVS source)").strip(),
+                        hyperlink=str(
+                            mapping.pop("Standard OPC (ASVS source)-hyperlink")
+                        ).strip(),
                     ),
                 )
             )
 
-        if not is_empty(
-            mapping.get(
-                "Standard WSTG (prefilled by SR, but Elie has plan to make the administration self-maintaining)"
-            )
-        ):
-            section = mapping.get(
-                "Standard WSTG (prefilled by SR, but Elie has plan to make the administration self-maintaining)"
-            )
-            if "\n" in section:
-                for element in section.split("\n"):
+        if not is_empty(mapping.get("Standard WSTG")):
+            section = mapping.get("Standard WSTG")
+            separator = ";"
+            if separator in section:
+                sections = section.split(separator)
+                hyperlinks = mapping.pop("Standard WSTG-Hyperlink").split(separator)
+                for element, link in zip(sections, hyperlinks):
                     if not is_empty(element):
                         cre.add_link(
                             defs.Link(
@@ -565,6 +569,7 @@ def parse_hierarchical_export_format(
                                 document=defs.Standard(
                                     name="WSTG",
                                     section=element.strip(),
+                                    hyperlink=link.strip(),
                                 ),
                             )
                         )
@@ -575,6 +580,9 @@ def parse_hierarchical_export_format(
                         document=defs.Standard(
                             name="WSTG",
                             section=section.strip(),
+                            hyperlink=str(
+                                mapping.pop("Standard WSTG-Hyperlink")
+                            ).strip(),
                         ),
                     )
                 )
@@ -585,6 +593,9 @@ def parse_hierarchical_export_format(
                     document=defs.Standard(
                         name="CWE",
                         section=str(mapping.pop("Standard CWE (from ASVS)")).strip(),
+                        hyperlink=str(
+                            mapping.pop("Standard CWE (from ASVS)-hyperlink")
+                        ).strip(),
                     ),
                 )
             )
@@ -604,44 +615,79 @@ def parse_hierarchical_export_format(
 
         if not is_empty(mapping.get("Standard NIST 800-53 v5")):
             nist = str(mapping.pop("Standard NIST 800-53 v5"))
+
             if "\n" in nist:
-                for nst in set(nist.split("\n")):
+                i = 0
+                hyperlinks = mapping.get("Standard NIST 800-53 v5-hyperlink").split(
+                    "\n"
+                )
+                nists = nist.split("\n")
+                for nst, link in zip(nists, hyperlinks):
                     if not is_empty(nst):
                         cre.add_link(
                             defs.Link(
                                 ltype=defs.LinkTypes.LinkedTo,
                                 document=defs.Standard(
-                                    name="NIST 800-53 v5", section=nst.strip()
+                                    name="NIST 800-53 v5",
+                                    section=nst.strip(),
+                                    hyperlink=link,
                                 ),
                             )
                         )
+                    i += 1
             else:
                 cre.add_link(
                     defs.Link(
                         ltype=defs.LinkTypes.LinkedTo,
                         document=defs.Standard(
-                            name="NIST 800-53 v5", section=nist.strip()
+                            name="NIST 800-53 v5",
+                            section=nist.strip(),
+                            hyperlink=str(
+                                mapping.pop("Standard NIST 800-53 v5-hyperlink")
+                            ).strip(),
                         ),
                     )
                 )
 
         if not is_empty(mapping.get("Standard Cheat_sheets")):
             cs = str(mapping.pop("Standard Cheat_sheets"))
-            if "," in cs:
-                for csc in set(cs.split(",")):
-                    cheatsheet = defs.Standard(name="Cheat_sheets", section=csc.strip())
+            separator = ";"
+            if separator in cs:
+                i = 0
+                hyperlinks = mapping.get("Standard Cheat_sheets-Hyperlink").split(
+                    separator
+                )
+                sheets = cs.split(separator)
+                for csc, link in zip(sheets, hyperlinks):
+                    if len(hyperlinks) > i and not is_empty(hyperlinks[i]):
+                        link = hyperlinks[i].strip()
+                    cheatsheet = defs.Standard(
+                        name="Cheat_sheets", section=csc.strip(), hyperlink=link
+                    )
                     cre.add_link(
                         defs.Link(ltype=defs.LinkTypes.LinkedTo, document=cheatsheet)
                     )
+                    i += 1
+            else:
+                cheatsheet = defs.Standard(
+                    name="Cheat_sheets",
+                    section=cs.strip(),
+                    hyperlink=mapping.get("Standard Cheat_sheets-Hyperlink"),
+                )
+                cre.add_link(
+                    defs.Link(ltype=defs.LinkTypes.LinkedTo, document=cheatsheet)
+                )
 
         # link CRE to a higher level one
 
         if higher_cre:
             cre_hi: defs.CRE
             if cres.get(mapping[f"CRE hierarchy {str(higher_cre)}"]):
-                cre_hi = cres[mapping.pop(f"CRE hierarchy {str(higher_cre)}")]
+                cre_hi = cres[mapping.pop(f"CRE hierarchy {str(higher_cre)}").strip()]
             else:
-                cre_hi = defs.CRE(name=mapping.pop(f"CRE hierarchy {str(higher_cre)}"))
+                cre_hi = defs.CRE(
+                    name=mapping.pop(f"CRE hierarchy {str(higher_cre)}").strip()
+                )
 
             existing_link = [
                 c

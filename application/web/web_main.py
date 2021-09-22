@@ -45,7 +45,8 @@ def find_by_id(creid: str) -> Any:  # refer
     cre = database.get_CREs(external_id=creid)[0]
 
     if cre:
-        cre = extend_cre_with_tag_links(cre=cre, collection=database)
+        # disable until we have a consensus on tag behaviour
+        # cre = extend_cre_with_tag_links(cre=cre, collection=database)
         return jsonify({"data": cre.todict()})
     abort(404)
 

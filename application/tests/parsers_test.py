@@ -1209,41 +1209,55 @@ class TestParsers(unittest.TestCase):
             self.assertEqual(groupless[key], value)
 
     def test_parse_hierarchical_export_format(self) -> None:
-        cauth = defs.CRE(
-            id=8, name="Authentication", tags=["tagA", "tagB", "tagC", "tagD"]
-        )
+        #  todo add a tags linking test
+        ctag = defs.CRE(id="123", name="tag-connection")
+        cauth = defs.CRE(id=8, name="Authentication", tags=["tag-connection"])
         cauthmech = defs.CRE(id=3, name="Authentication mechanism")
 
         cauth4 = defs.CRE(
             id=4,
             name="Verify that the application uses a single vetted authentication mechanism",
-            tags=["Architecture"],
+            tags=[],
         )
         clogging = defs.CRE(name="Logging and Error handling")
         cfp = defs.CRE(name="FooParent")
         sTop10 = defs.Standard(
-            hyperlink="https://example.com",
+            hyperlink="https://example.com/top102017",
             name="Top10 2017",
             section="A2_Broken_Authentication",
         )
 
-        sOPC = defs.Standard(name="OPC", section="123654")
-        sCWE19876 = defs.Standard(name="CWE", section="19876")
-        sWSTG = defs.Standard(name="WSTG", section="2.1.2.3")
+        sOPC = defs.Standard(
+            name="OPC", section="123654", hyperlink="https://example.com/opc"
+        )
+        sCWE19876 = defs.Standard(
+            name="CWE", section="19876", hyperlink="https://example.com/cwe19876"
+        )
+        sWSTG = defs.Standard(
+            name="WSTG", section="2.1.2.3", hyperlink="https://example.com/wstg"
+        )
         sNIST4 = defs.Standard(name="NIST 800-63", section="4444")
         sNIST3 = defs.Standard(name="NIST 800-63", section="3333")
         sNIST53 = defs.Standard(
-            name="NIST 800-53 v5", section="SA-22 Unsupported System Components"
+            name="NIST 800-53 v5",
+            section="SA-22 Unsupported System Components",
+            hyperlink="https://example.com/nist-800-53-v5",
         )
         sASVS = defs.Standard(
-            name="ASVS", section="V1.2.3", hyperlink="https://example.com"
+            name="ASVS", section="V1.2.3", hyperlink="https://example.com/asvs"
         )
-        sCWE = defs.Standard(name="CWE", section="306")
+        sCWE = defs.Standard(
+            name="CWE", section="306", hyperlink="https://example.com/cwe306"
+        )
         scheatf = defs.Standard(
-            name="Cheat_sheets", section="https://example.com/cheatsheetf/foo"
+            name="Cheat_sheets",
+            section="foo",
+            hyperlink="https://example.com/cheatsheetf/foo",
         )
         scheatb = defs.Standard(
-            name="Cheat_sheets", section="https://example.com/cheatsheetb/bar"
+            name="Cheat_sheets",
+            section="bar",
+            hyperlink="https://example.com/cheatsheetb/bar",
         )
 
         cfoo = (
@@ -1277,6 +1291,8 @@ class TestParsers(unittest.TestCase):
             defs.Link(ltype=defs.LinkTypes.LinkedTo, document=sOPC)
         ).add_link(
             defs.Link(ltype=defs.LinkTypes.LinkedTo, document=sNIST53)
+        ).add_link(
+            defs.Link(ltype=defs.LinkTypes.Related, document=ctag)
         )
 
         cauthmech.add_link(
@@ -1297,7 +1313,11 @@ class TestParsers(unittest.TestCase):
             cauth4.add_link(
                 defs.Link(
                     ltype=defs.LinkTypes.LinkedTo,
-                    document=defs.Standard(name="NIST 800-53 v5", section=nsection),
+                    document=defs.Standard(
+                        name="NIST 800-53 v5",
+                        section=nsection,
+                        hyperlink="https://example.com/nist-800-53-v5",
+                    ),
                 )
             )
 
@@ -1314,15 +1334,49 @@ class TestParsers(unittest.TestCase):
                 "CRE hierarchy 3": "",
                 "CRE hierarchy 4": "",
                 "Standard Top10 2017": "A2_Broken_Authentication",
-                "Standard Top10 Hyperlink": "https://example.com",
+                "Standard Top10 Hyperlink": "https://example.com/top102017",
                 "CRE ID": "",
                 "Standard CWE (from ASVS)": "",
+                "Standard CWE (from ASVS)-hyperlink": "",
                 "Link to other CRE": "",
                 "Standard NIST 800-53 v5": "",
+                "Standard NIST 800-53 v5-hyperlink": "",
                 "Standard NIST 800-63 (from ASVS)": "",
                 "Standard OPC (ASVS source)": "",
+                "Standard OPC (ASVS source)-hyperlink": "",
                 "CRE Tags": "",
-                "Standard WSTG (prefilled by SR, but Elie has plan to make the administration self-maintaining)": "",
+                "Standard WSTG": "",
+                "Standard WSTG-Hyperlink": "",
+                "Standard Cheat_sheets": "",
+                "Standard Cheat_sheets-Hyperlink": "",
+            },
+            {
+                "Standard ASVS Item": "",
+                "ASVS sequence": 0,
+                "Standard ASVS Hyperlink": "",
+                "ASVS-L1": "",
+                "ASVS-L2": "",
+                "ASVS-L3": "",
+                "CRE hierarchy 1": "",
+                "CRE hierarchy 2": "",
+                "CRE hierarchy 3": "",
+                "CRE hierarchy 4": "tag-connection",
+                "Standard Top10 2017": "",
+                "Standard Top10 Hyperlink": "",
+                "CRE ID": "123",
+                "Standard CWE (from ASVS)": "",
+                "Standard CWE (from ASVS)-hyperlink": "",
+                "Link to other CRE": "",
+                "Standard NIST 800-53 v5": "",
+                "Standard NIST 800-53 v5-hyperlink": "",
+                "Standard NIST 800-63 (from ASVS)": "",
+                "Standard OPC (ASVS source)": "",
+                "Standard OPC (ASVS source)-hyperlink": "",
+                "CRE Tags": "",
+                "Standard WSTG": "",
+                "Standard WSTG-Hyperlink": "",
+                "Standard Cheat_sheets": "",
+                "Standard Cheat_sheets-Hyperlink": "",
             },
             {
                 "Standard ASVS Item": "",
@@ -1336,16 +1390,21 @@ class TestParsers(unittest.TestCase):
                 "CRE hierarchy 3": "",
                 "CRE hierarchy 4": "",
                 "Standard Top10 2017": "A2_Broken_Authentication",
-                "Standard Top10 Hyperlink": "https://example.com",
+                "Standard Top10 Hyperlink": "https://example.com/top102017",
                 "CRE ID": 8,
                 "Standard CWE (from ASVS)": "19876",
+                "Standard CWE (from ASVS)-hyperlink": "https://example.com/cwe19876",
                 "Link to other CRE": "FooBar",
                 "Standard NIST 800-53 v5": "SA-22 Unsupported System Components",
+                "Standard NIST 800-53 v5-hyperlink": "https://example.com/nist-800-53-v5",
                 "Standard NIST-800-63 (from ASVS)": "4444/3333",
                 "Standard OPC (ASVS source)": "123654",
-                "CRE Tags": "tagA, tagB, tagC, tagD",
-                "Standard WSTG (prefilled by SR, but Elie has plan to make the administration self-maintaining)": "2.1.2.3",
+                "Standard OPC (ASVS source)-hyperlink": "https://example.com/opc",
+                "CRE Tags": "tag-connection",
+                "Standard WSTG": "2.1.2.3",
+                "Standard WSTG-Hyperlink": "https://example.com/wstg",
                 "Standard Cheat_sheets": "",
+                "Standard Cheat_sheets-Hyperlink": "",
             },
             {
                 "Standard ASVS Item": "",
@@ -1359,21 +1418,26 @@ class TestParsers(unittest.TestCase):
                 "CRE hierarchy 3": "",
                 "CRE hierarchy 4": "",
                 "Standard Top10 2017": "See higher level topic",
-                "Standard Top10 Hyperlink": "https://example.com",
+                "Standard Top10 Hyperlink": "https://example.com/top102017",
                 "CRE ID": 3,
                 "Standard CWE (from ASVS)": "",
+                "Standard CWE (from ASVS)-hyperlink": "",
                 "Link to other CRE": "",
                 "Standard NIST 800-53 v5": "",
+                "Standard NIST 800-53 v5-hyperlink": "https://example.com/nist-800-53-v5",
                 "Standard NIST-800-63 (from ASVS)": "1111",
                 "Standard OPC (ASVS source)": "",
+                "Standard OPC (ASVS source)-hyperlink": "",
                 "CRE Tags": "",
-                "Standard WSTG (prefilled by SR, but Elie has plan to make the administration self-maintaining)": "",
+                "Standard WSTG": "",
+                "Standard WSTG-Hyperlink": "",
                 "Standard Cheat_sheets": "",
+                "Standard Cheat_sheets-Hyperlink": "",
             },
             {
                 "Standard ASVS Item": "V1.2.3",
                 "ASVS sequence": 10,
-                "Standard ASVS Hyperlink": "https://example.com",
+                "Standard ASVS Hyperlink": "https://example.com/asvs",
                 "ASVS-L1": "",
                 "ASVS-L2": "X",
                 "ASVS-L3": "X",
@@ -1382,18 +1446,25 @@ class TestParsers(unittest.TestCase):
                 "CRE hierarchy 3": "",
                 "CRE hierarchy 4": "Verify that the application uses a single vetted authentication mechanism",
                 "Standard Top10 2017": "See higher level topic",
-                "Standard Top10 Hyperlink": "https://example.com",
+                "Standard Top10 Hyperlink": "https://example.com/top102017",
                 "CRE ID": 4,
                 "Standard CWE (from ASVS)": 306,
+                "Standard CWE (from ASVS)-hyperlink": "https://example.com/cwe306",
                 "Link to other CRE": "Logging and Error handling",
                 "Standard NIST 800-53 v5": "PL-8 Information Security Architecture\n"
                 "SC-39 PROCESS ISOLATION\n"
                 "SC-3 SECURITY FUNCTION",
+                "Standard NIST 800-53 v5-hyperlink": "https://example.com/nist-800-53-v5\n"
+                "https://example.com/nist-800-53-v5\n"
+                "https://example.com/nist-800-53-v5",
                 "Standard NIST-800-63 (from ASVS)": "None",
                 "Standard OPC (ASVS source)": "None",
-                "CRE Tags": "Architecture",
-                "Standard WSTG (prefilled by SR, but Elie has plan to make the administration self-maintaining)": "",
+                "Standard OPC (ASVS source)-hyperlink": "",
+                "CRE Tags": "",
+                "Standard WSTG": "",
+                "Standard WSTG-Hyperlink": "",
                 "Standard Cheat_sheets": "",
+                "Standard Cheat_sheets-Hyperlink": "",
             },
             {
                 "Standard ASVS Item": "",
@@ -1410,13 +1481,18 @@ class TestParsers(unittest.TestCase):
                 "Standard Top10 Hyperlink": "",
                 "CRE ID": 9,
                 "Standard CWE (from ASVS)": "",
+                "Standard CWE (from ASVS)-hyperlink": "",
                 "Link to other CRE": "Authentication mechanism",
                 "Standard NIST 800-53 v5": "",
+                "Standard NIST 800-53 v5-hyperlink": "",
                 "Standard NIST-800-63 (from ASVS)": "",
                 "Standard OPC (ASVS source)": "",
+                "Standard OPC (ASVS source)-hyperlink": "",
                 "CRE Tags": "",
-                "Standard WSTG (prefilled by SR, but Elie has plan to make the administration self-maintaining)": "",
-                "Standard Cheat_sheets": "https://example.com/cheatsheetf/foo,https://example.com/cheatsheetb/bar",
+                "Standard WSTG": "",
+                "Standard WSTG-Hyperlink": "",
+                "Standard Cheat_sheets": "foo; bar",
+                "Standard Cheat_sheets-Hyperlink": "https://example.com/cheatsheetf/foo; https://example.com/cheatsheetb/bar",
             },
         ]
         expected = {
@@ -1431,10 +1507,20 @@ class TestParsers(unittest.TestCase):
         self.maxDiff = None
         output = parse_hierarchical_export_format(data)
         for k, v in expected.items():
-            self.assertEqual(
-                collections.Counter(output[k].links), collections.Counter(v.links)
-            )
-            self.assertEqual(output[k], v)
+            try:
+
+                self.assertEqual(
+                    collections.Counter(output[k].links), collections.Counter(v.links)
+                )
+                self.assertEqual(output[k], v)
+            except Exception as e:
+                print("*" * 88)
+                pprint(output[k].todict())
+                print("*" * 88)
+                pprint(v.todict())
+                print("*" * 88)
+                print("*" * 88)
+                raise e
 
 
 if __name__ == "__main__":

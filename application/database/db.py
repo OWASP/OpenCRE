@@ -836,17 +836,14 @@ class Standard_collection:
         standard_search = r"Standard((:| )(?P<link>https?://[^\s]+))?((:| )(?P<val1>\w+))?((:| )(?P<val2>.+))?((:| )(?P<val3>.+))?"
         match = re.search(cre_id_search, text, re.IGNORECASE)
         if match:
-            print("id")
             return self.get_CREs(external_id=match.group("id"))
 
         match = re.search(cre_naked_id_search, text, re.IGNORECASE)
         if match:
-            print("naked id")
             return self.get_CREs(external_id=match.group())
 
         match = re.search(cre_name_search, text, re.IGNORECASE)
         if match:
-            print("name")
             return self.get_CREs(name=match.group("name"))
 
         match = re.search(standard_search, text, re.IGNORECASE)
