@@ -614,7 +614,6 @@ def parse_hierarchical_export_format(
 
         if not is_empty(mapping.get("Standard NIST 800-53 v5")):
             nist = str(mapping.pop("Standard NIST 800-53 v5"))
-
             if "\n" in nist:
                 i = 0
                 hyperlinks = mapping.get("Standard NIST 800-53 v5-hyperlink").split(
