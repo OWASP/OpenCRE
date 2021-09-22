@@ -3,7 +3,7 @@ import './documentNode.scss';
 import React, { FunctionComponent, useMemo, useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 
-import { DOCUMENT_TYPE_NAMES, TYPE_IS_PART_OF, TYPE_CONTAINS, TYPE_LINKED_TO } from '../../const';
+import { DOCUMENT_TYPE_NAMES, TYPE_IS_PART_OF, TYPE_CONTAINS, TYPE_LINKED_TO, TYPE_RELATED } from '../../const';
 import { Document } from '../../types';
 import { getDocumentDisplayName, groupLinksByType } from '../../utils';
 import { useEnvironment } from '../../hooks';
@@ -16,8 +16,9 @@ interface DocumentNode {
   linkType: string;
 }
 
-const linkTypesToNest = [TYPE_IS_PART_OF]
+const linkTypesToNest = [TYPE_IS_PART_OF, TYPE_RELATED]
 const linkTypesExcludedInNesting = [TYPE_CONTAINS]
+const linkTypesExcludedWhenNestingRelatedTo = [TYPE_RELATED, TYPE_IS_PART_OF, TYPE_CONTAINS]
 
 export const DocumentNode: FunctionComponent<DocumentNode> = ({ node, linkType }) => {
   const [expanded, setExpanded] = useState<boolean>(false);
@@ -86,7 +87,8 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({ node, linkType }
         }
         { expanded 
           && Object.entries(linksByType)
-            .filter( ([type, _]) => !linkTypesExcludedInNesting.includes(type) )
+            .filter( ([type, _]) => !linkTypesExcludedInNesting.includes(type))
+            .filter( ([type, _]) => type == TYPE_RELATED ? !linkTypesExcludedWhenNestingRelatedTo.includes(type) : true)
             .map( ([type, links] ) => {
             return (
               <div className="document-node__link-type-container" key={type}>
