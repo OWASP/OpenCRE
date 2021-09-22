@@ -8,13 +8,11 @@
 
   .search-page__heading {
     text-align: center;
-    font-size: 4rem !important;
   }
 
   .search-page__heading,
   .search-page__sub-heading {
     color: white;
-    font-weight: 300 !important;
   }
 
   .search-page__sub-heading {
@@ -23,9 +21,18 @@
     color: #eee;
   }
 }
+
+.cre-page {
+  .standard-page__heading {
+    color: white;
+  }
+}
+
 .SearchBar {
   margin: auto;
 }
+
 .Search{
   margin: auto;
 }
+
