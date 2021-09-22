@@ -553,7 +553,7 @@ def parse_hierarchical_export_format(
 
         if not is_empty(mapping.get("Standard WSTG")):
             section = mapping.get("Standard WSTG")
-            separator = ';'
+            separator = ";"
             if separator in section:
                 sections = section.split(separator)
                 hyperlinks = mapping.pop("Standard WSTG-Hyperlink").split(separator)
