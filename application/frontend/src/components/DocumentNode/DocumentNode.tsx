@@ -4,7 +4,6 @@ import React, { FunctionComponent, useMemo, useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 
 import { DOCUMENT_TYPE_NAMES, TYPE_IS_PART_OF, TYPE_CONTAINS, TYPE_LINKED_TO } from '../../const';
-import { CRE, STANDARD } from '../../routes';
 import { Document } from '../../types';
 import { getDocumentDisplayName, groupLinksByType } from '../../utils';
 import { useEnvironment } from '../../hooks';
@@ -35,13 +34,16 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({ node, linkType }
 
   useEffect( () => {
     if ( !isStandard && linkTypesToNest.includes(linkType) ) {
+      setLoading(true);
       axios.get(getApiEndpoint(node, apiUrl))
       .then(function (response) {
+        setLoading(false);
         setNestedNode(response.data.data);
         setExpanded(true);
         setError('');
       })
       .catch(function (axiosError) {
+        setLoading(false);
         setError(axiosError);
       });
     }
