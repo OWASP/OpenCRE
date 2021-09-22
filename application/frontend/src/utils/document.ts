@@ -17,3 +17,27 @@ export const groupBy = <T, K extends keyof any>(list: T[], getKey: (item: T) => 
     previous[group].push(currentItem);
     return previous;
 }, {} as Record<K, T[]>);
+
+export const getInternalUrl = (doc: Document): String => {
+  if (doc.doctype === 'Standard') {
+    var standardAPIPath = `/standard/${doc.name}/`;
+    if ( doc && doc.section){
+      standardAPIPath += `section/${encodeURIComponent(doc.section)}`;
+    }
+    return standardAPIPath
+  }
+
+  return `/cre/${doc.id}`
+}
+
+export const getApiEndpoint = (doc: Document, apiUrl: string): string => {
+  if (doc.doctype === 'Standard') {
+    var standardAPIPath = `${apiUrl}/standard/${doc.name}`;
+    if ( doc && doc.section){
+      standardAPIPath += `?section=${encodeURIComponent(doc.section)}`;
+    }
+    return standardAPIPath
+  }
+  
+  return `${apiUrl}/id/${doc.id}`
+}
