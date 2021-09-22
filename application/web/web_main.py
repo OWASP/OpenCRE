@@ -67,7 +67,7 @@ def find_by_name(crename: str) -> Any:
 def find_standard_by_name(sname: str) -> Any:
     database = db.Standard_collection()
     opt_section = request.args.get("section")
-    if (opt_section):
+    if opt_section:
         opt_section = urllib.parse.unquote(opt_section)
     opt_subsection = request.args.get("subsection")
     opt_hyperlink = request.args.get("hyperlink")
