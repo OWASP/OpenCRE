@@ -45,12 +45,18 @@ export const CommonRequirementEnumeration = () => {
           <h4 className="cre-page__heading">{cre.name}</h4>
           <h5 className="cre-page__sub-heading">{cre.id}</h5>
           <div className="cre-page__description">{cre.description}</div>
+          { cre && cre.hyperlink &&
+            <>
+              <span>Reference: </span>
+              <a href={cre?.hyperlink} target="_blank"> { cre.hyperlink }</a>
+            </>
+          }
           <div className="cre-page__tags">Tags: {cre.tags?cre.tags.map((tag) => (<b>{tag} </b>)):""}</div>
           <div className="cre-page__links-container">
             {Object.keys(linksByType).length > 0 &&
               Object.entries(linksByType).map(([type, links]) => (
                 <div className="cre-page__links" key={type}>
-                  <div className="cre-page__links-header">
+                  <div className="cre-page__links-eader">
                     {cre.id}: {cre.name} <b>{DOCUMENT_TYPE_NAMES[type]}</b>:
                   </div>
                   {links.map((link, i) => (
