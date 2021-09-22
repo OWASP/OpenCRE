@@ -61,9 +61,9 @@ export const SearchBody = () => {
       </h2>
       <p>
         See the CRE search bar (beta version). Try searching for
-        <a href="https://www.opencre.org/standard/Top10%202017"> Top10 2017 </a>
+        <a href="/standard/Top10%202017"> Top10 2017 </a>
         as standard and click around, or
-        <a href="https://www.opencre.org/cre/482-866"> 482-866 </a>
+        <a href="/cre/482-866"> 482-866 </a>
         as CRE-ID, to get an idea.
       </p>
     </div>

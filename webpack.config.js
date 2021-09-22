@@ -56,9 +56,11 @@ module.exports = {
 };
 
 module.exports.devServer = {
+  historyApiFallback: {
+    disableDotRule: true
+  },
   contentBase: './www',
   port: 9001,
-  historyApiFallback: true,
 };
 
 module.exports.devtool = 'inline-source-map';
