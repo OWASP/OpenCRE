@@ -7,14 +7,9 @@
 
 Common Requirements Enumeration Application
 ===============================
-This project
-
 This is work in progress. See the application working at https://www.opencre.org
-
-This python web and cli application handles adding and presenting CREs.
-
-
 CRE is an interactive content linking platform for uniting security standards and guidelines. It offers easy and robust access to relevant information when designing, developing, testing and procuring secure software.
+This python web and cli application handles adding and presenting CREs.
 
 WHY?
 ==========
