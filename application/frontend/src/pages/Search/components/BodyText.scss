@@ -1,6 +1,14 @@
-.index-text{
+.index-text {
     margin-top: 2rem;
-    width: 67%;
+    padding: 15px;
+    width: 70%;
     background: white;
-    padding: 1%;
 }
+
+// mobile
+@media (min-width: 0px) and (max-width: 599px) {
+    .index-text {
+        width: 90%;
+    }
+}
+

@@ -1,4 +1,5 @@
 .header__nav-bar {
+
   &.ui.secondary.menu {
     margin-top: 0px;
     border-bottom: none;
@@ -7,7 +8,6 @@
     padding-left: 20px;
 
     .item {
-      // padding: 0px !important;
       .ui.form {
         .fields {
           margin-bottom: 0px !important;
@@ -48,3 +48,22 @@
     }
   }
 }
+
+
+// mobile
+@media (min-width: 0px) and (max-width: 599px) {
+
+  .ui.menu:not(.vertical) .right.menu {
+    display: block;
+  }
+
+  .header__nav-bar {
+    flex-wrap: wrap;
+
+    &__link {
+      padding-top: 0;
+      padding-bottom: 0;
+    }
+  }
+}
+

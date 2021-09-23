@@ -6,6 +6,13 @@
   &__links-container {
     margin-top: 10px;
   }
+
+  .pagination-container {
+    margin-top: 15px;
+    display: flex;
+    justify-content: center;
+
+  }
 }
 
 .standard-page .standard-page {
@@ -17,5 +24,12 @@
     color: #999;
     margin-top: 0px;
     font-size: 1.2rem;
+  }
+}
+
+// mobile
+@media (min-width: 0px) and (max-width: 599px) {
+  .standard-page__links-container {
+      word-break: break-word;
   }
 }
