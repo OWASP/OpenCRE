@@ -5,6 +5,8 @@
   align-items: center;
   flex-direction: column;
   justify-content: center;
+  padding-top: 40px;
+  padding-bottom: 40px;
 
   .search-page__heading {
     text-align: center;
@@ -22,17 +24,8 @@
   }
 }
 
-.cre-page {
-  .standard-page__heading {
-    color: white;
-  }
+// mobile
+.search-page {
+  padding-top: 30px;
+  padding-bottom: 30px;
 }
-
-.SearchBar {
-  margin: auto;
-}
-
-.Search{
-  margin: auto;
-}
-
