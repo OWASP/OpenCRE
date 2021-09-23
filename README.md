@@ -30,7 +30,7 @@ WHEN?
 
 CRE is currently in beta and has linked OWASP standards (Top 10, ASVS, Proactive Controls, Cheat sheets, Testing guide), plus several other sources (CWE, NIST-800 53, NIST-800 63b), as part of the OWASP Integration standard project.
 
-Data has been kindly contributed by SKF and ASVS
+Data has been kindly contributed by the SKF and ASVS projects
 
 Installing
 ---
