@@ -7,10 +7,30 @@
 
 Common Requirements Enumeration Application
 ===============================
+This project
 
 This is work in progress. See the application working at https://www.opencre.org
 
 This python web and cli application handles adding and presenting CREs.
+
+
+CRE is an interactive content linking platform for uniting security standards and guidelines. It offers easy and robust access to relevant information when designing, developing, testing and procuring secure software.
+
+WHY?
+==========
+
+Independent software security professionals got together to find a solution for the complexity and fragmentation in today’s landscape of security standards and guidelines. These people are Spyros Gasteratos, Elie Saad, Rob van der Veer and friends, in close collaboration with the SKF, OpenSSF and Owasp Top 10 project.
+
+HOW?
+======
+The CRE links each section of a standard to a shared topic (a Common Requirement), causing that section to also link with all other resources that map to the same topic. This 1) enables users to find all combined information from relevant sources, 2) it facilitates a shared and better understanding of cyber security, and 3) it allows standard makers to have links that keep working and offer all the information that readers need, so they don’t have to cover it all themselves. The CRE maintains itself: topic links in the standard text are scanned automatically. Furthermore, topics are linked with related other topics, creating a semantic web for security.
+
+Example: the session time-out topic will take the user to relevant criteria in several standards, and to testing guides, development tips, more technical detail, threat descriptions, articles etc. From there, the user can navigate to resources about session management in general.
+WHEN?
+
+CRE is currently in beta and has linked OWASP standards (Top 10, ASVS, Proactive Controls, Cheat sheets, Testing guide), plus several other sources (CWE, NIST-800 53, NIST-800 63b), as part of the OWASP Integration standard project.
+
+Data has been kindly contributed by SKF and ASVS
 
 Installing
 ---
