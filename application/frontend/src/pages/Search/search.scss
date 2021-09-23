@@ -25,7 +25,9 @@
 }
 
 // mobile
-.search-page {
-  padding-top: 30px;
-  padding-bottom: 30px;
+@media (min-width: 0px) and (max-width: 599px) {
+  .search-page {
+    padding-top: 30px;
+    padding-bottom: 30px;
+  }
 }
