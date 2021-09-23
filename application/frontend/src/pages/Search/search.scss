@@ -5,16 +5,16 @@
   align-items: center;
   flex-direction: column;
   justify-content: center;
+  padding-top: 40px;
+  padding-bottom: 40px;
 
   .search-page__heading {
     text-align: center;
-    font-size: 4rem !important;
   }
 
   .search-page__heading,
   .search-page__sub-heading {
     color: white;
-    font-weight: 300 !important;
   }
 
   .search-page__sub-heading {
@@ -23,9 +23,11 @@
     color: #eee;
   }
 }
-.SearchBar {
-  margin: auto;
-}
-.Search{
-  margin: auto;
+
+// mobile
+@media (min-width: 0px) and (max-width: 599px) {
+  .search-page {
+    padding-top: 30px;
+    padding-bottom: 30px;
+  }
 }

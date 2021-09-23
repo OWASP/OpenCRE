@@ -1,12 +1,31 @@
-.app {
-  height: 100vh;
-  width: 100vw;
-  margin:auto;
+
+* {
+  box-sizing: border-box;
 }
 
-.pagination-container {
+html,
+body {
+  height: 100%;
   width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  text-size-adjust: 100%;
+}
+
+body {
+  background-color: white;
+}
+
+.mount {
   display: flex;
-  justify-content: center;
-  padding-top: 10px;
+  justify-content: flex-start;
+  align-items: stretch;
+  flex-direction: row-reverse;
+  height: 100vh;
+  width: 100vw;
+  position: relative;
+  z-index: 1;
 }
