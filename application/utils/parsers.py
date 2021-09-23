@@ -487,13 +487,15 @@ def parse_hierarchical_export_format(
                 cre.tags.add(x.strip())
         update_cre_in_links(cres, cre)
         # temporary until we agree what we want to do with tags
-        mapping["Link to other CRE"] = f'{mapping["Link to other CRE"]},{",".join(cre.tags)}'
+        mapping[
+            "Link to other CRE"
+        ] = f'{mapping["Link to other CRE"]},{",".join(cre.tags)}'
         if not is_empty(mapping.get("Link to other CRE")):
             other_cres = [
-                    x.strip()
-                    for x in mapping.pop("Link to other CRE").split(",")
-                    if not is_empty(x.strip())
-                ]
+                x.strip()
+                for x in mapping.pop("Link to other CRE").split(",")
+                if not is_empty(x.strip())
+            ]
             for other_cre in set(other_cres):
                 if not cres.get(other_cre):
                     logger.warning(
