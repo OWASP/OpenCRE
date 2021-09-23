@@ -486,14 +486,15 @@ def parse_hierarchical_export_format(
             for x in mapping.pop("CRE Tags").split(","):
                 cre.tags.add(x.strip())
         update_cre_in_links(cres, cre)
+        # temporary until we agree what we want to do with tags
+        mapping["Link to other CRE"] = f'{mapping["Link to other CRE"]},{",".join(cre.tags)}'
         if not is_empty(mapping.get("Link to other CRE")):
-            other_cres = set(
-                [
+            other_cres = [
                     x.strip()
                     for x in mapping.pop("Link to other CRE").split(",")
                     if not is_empty(x.strip())
                 ]
-            ):
+            for other_cre in set(other_cres):
                 if not cres.get(other_cre):
                     logger.warning(
                         "%s linking to not yet existent cre %s" % (cre.name, other_cre)
@@ -611,6 +612,7 @@ def parse_hierarchical_export_format(
 
         if not is_empty(mapping.get("Standard NIST 800-53 v5")):
             nist = str(mapping.pop("Standard NIST 800-53 v5"))
+
             if "\n" in nist:
                 i = 0
                 hyperlinks = mapping.get("Standard NIST 800-53 v5-hyperlink").split(
