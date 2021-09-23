@@ -13,3 +13,11 @@ export const DOCUMENT_TYPE_NAMES = {
   [TYPE_CONTAINS]: "contains",
   [TYPE_RELATED]: "is related to",
 };
+
+// Routes
+export const INDEX = '/';
+export const STANDARD = '/standard';
+export const SECTION = '/section';
+export const SEARCH = '/search';
+export const CRE = '/cre';
+export const GRAPH = '/graph';

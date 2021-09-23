@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { useHistory } from 'react-router-dom';
 import { Button, Dropdown, Form, Icon, Input } from 'semantic-ui-react';
 
-import { CRE, STANDARD, SEARCH } from '../../../routes';
+import { STANDARD, CRE, SEARCH } from '../../../const';
+
 import './SearchBar.scss'
 
 const SEARCH_TYPES = [
