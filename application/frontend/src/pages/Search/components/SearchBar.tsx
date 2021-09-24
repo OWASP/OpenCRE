@@ -2,14 +2,15 @@ import React, { useState } from 'react';
 import { useHistory } from 'react-router-dom';
 import { Button, Dropdown, Form, Icon, Input } from 'semantic-ui-react';
 
-import { CRE, STANDARD, SEARCH } from '../../../routes';
+import { CRE, SEARCH, STANDARD } from '../../../const';
+
 import './SearchBar.scss'
 
-const SEARCH_TYPES = [
-  { key: 'topicText', text: 'Topic text', value: 'topicText' },
-  { key: 'standard', text: 'Standard', value: 'standard' },
-  { key: 'creId', text: 'CRE ID', value: 'creId' },
-];
+const SEARCH_TYPES = {
+  topicText: { key: 'topicText', text: 'Topic text', value: 'topicText', path: SEARCH },
+  standard: { key: 'standard', text: 'Standard', value: 'standard', path: STANDARD },
+  creId: { key: 'creId', text: 'CRE ID', value: 'creId', path: CRE  },
+};
 
 interface SearchBarState {
   term: string;
@@ -17,26 +18,18 @@ interface SearchBarState {
   error: string;
 }
 
-const DEFAULT_SEARCH_BAR_STATE: SearchBarState = { term: '', type: SEARCH_TYPES[0].key, error: '' };
+const DEFAULT_SEARCH_BAR_STATE: SearchBarState = { term: '', type: SEARCH_TYPES['topicText'].key, error: '' };
 
 export const SearchBar = () => {
   const [search, setSearch] = useState<SearchBarState>(DEFAULT_SEARCH_BAR_STATE);
   const history = useHistory();
 
   const onSubmit = () => {
-    var path
+    const {term, type} = search;
+
     if (Boolean(search.term)) {
-      if (search.type == "topicText") {
-        path = SEARCH
-      } else if (search.type === 'standard') {
-        path = STANDARD
-      } else if (search.type == 'creId') {
-        path = CRE
-      }
       setSearch(DEFAULT_SEARCH_BAR_STATE);
-      history.push(`${path}/${search.term}`);
-      window.location.href = window.location.href // horrible hack, but on the search results page
-                                                 //react will not do any requests otherwise
+      history.push(`${SEARCH_TYPES[type].path}/${term}`);
     } else {
       setSearch({
         ...search,
@@ -53,13 +46,9 @@ export const SearchBar = () => {
   }
 
   return (
-
-    <Form
-      onSubmit={onSubmit}
-    >
+    <Form onSubmit={onSubmit}>
       <Form.Group>
-        <Form.Field
-          id="SearchBar">
+        <Form.Field id="SearchBar">
           <Input
             error={Boolean(search.error)}
             value={search.term}
@@ -71,7 +60,7 @@ export const SearchBar = () => {
             }}
             label={
               <Dropdown
-                options={SEARCH_TYPES}
+                options={Object.values(SEARCH_TYPES)}
                 value={search.type}
                 onChange={onChange}
               />
@@ -80,17 +69,16 @@ export const SearchBar = () => {
             placeholder="Search..."
           />
         </Form.Field>
-        <Form.Field
-          id="SearchButton">
+        <Form.Field id="SearchButton">
           <Button
             primary
-            onSubmit={onSubmit}>
+            onSubmit={onSubmit}
+          >
             <Icon name="search" />
             Search
           </Button>
         </Form.Field>
       </Form.Group>
     </Form>
-
   );
 };
