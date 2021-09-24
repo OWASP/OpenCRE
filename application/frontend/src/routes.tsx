@@ -5,20 +5,14 @@ import { SearchName } from './pages/Search/SearchName';
 import { StandardSection } from './pages/Standard/StandardSection';
 
 export interface IRoute {
-  // The url to this route
   path: string;
-  // What component(s) this will render
   component: ReactNode | ReactNode[];
-  // Whether to show the header on this route
   showHeader: boolean;
 }
 
-export const INDEX = '/';
-export const STANDARD = '/standard';
-export const SECTION = '/section';
-export const SEARCH = '/search';
-export const CRE = '/cre';
-export const GRAPH = '/graph';
+import {
+  INDEX, STANDARD, SECTION, CRE, GRAPH, SEARCH
+} from './const';
 
 export const ROUTES: IRoute[] = [
   {
