@@ -495,7 +495,9 @@ def parse_hierarchical_export_format(
                 ]
             )
             # TODO(spyros): temporary until we agree what we want to do with tags
-            mapping["Link to other CRE"] = f'{mapping["Link to other CRE"]},{",".join(cre.tags)}'
+            mapping[
+                "Link to other CRE"
+            ] = f'{mapping["Link to other CRE"]},{",".join(cre.tags)}'
             other_cres = list(other_cres)
             for other_cre in other_cres:
                 if not cres.get(other_cre):
@@ -555,6 +557,8 @@ def parse_hierarchical_export_format(
             cres[cre.name] = cre
 
     return cres
+
+
 def parse_standards(
     mapping: Dict[str, str], standards_mapping: Dict[str, Dict[str, str]] = None
 ) -> Dict[str, defs.CRE]:
