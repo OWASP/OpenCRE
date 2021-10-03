@@ -495,8 +495,8 @@ def parse_hierarchical_export_format(
                 ]
             )
             # TODO(spyros): temporary until we agree what we want to do with tags
+            mapping["Link to other CRE"] = f'{mapping["Link to other CRE"]},{",".join(cre.tags)}'
             other_cres = list(other_cres)
-            other_cres.extend(list(cre.tags))
             for other_cre in other_cres:
                 if not cres.get(other_cre):
                     logger.warning(
