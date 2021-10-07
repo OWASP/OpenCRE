@@ -1425,7 +1425,7 @@ class TestParsers(unittest.TestCase):
                 "Link to other CRE": "",
                 "Standard NIST 800-53 v5": "",
                 "Standard NIST 800-53 v5-hyperlink": "https://example.com/nist-800-53-v5",
-                "Standard NIST-800-63 (from ASVS)": "1111",
+                "Standard NIST-800-63 (from ASVS)": "",
                 "Standard OPC (ASVS source)": "",
                 "Standard OPC (ASVS source)-hyperlink": "",
                 "CRE Tags": "",
@@ -1514,9 +1514,9 @@ class TestParsers(unittest.TestCase):
                 )
                 self.assertEqual(output[k], v)
             except Exception as e:
-                print("*" * 88)
+                print("*" * 44 + " Actual " + "*" * 44)
                 pprint(output[k].todict())
-                print("*" * 88)
+                print("*" * 44 + " Expected " + "*" * 44)
                 pprint(v.todict())
                 print("*" * 88)
                 print("*" * 88)

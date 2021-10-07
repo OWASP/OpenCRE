@@ -486,17 +486,20 @@ def parse_hierarchical_export_format(
             for x in mapping.pop("CRE Tags").split(","):
                 cre.tags.add(x.strip())
         update_cre_in_links(cres, cre)
-        # temporary until we agree what we want to do with tags
-        mapping[
-            "Link to other CRE"
-        ] = f'{mapping["Link to other CRE"]},{",".join(cre.tags)}'
         if not is_empty(mapping.get("Link to other CRE")):
-            other_cres = [
-                x.strip()
-                for x in mapping.pop("Link to other CRE").split(",")
-                if not is_empty(x.strip())
-            ]
-            for other_cre in set(other_cres):
+            other_cres = set(
+                [
+                    x.strip()
+                    for x in mapping.pop("Link to other CRE").split(",")
+                    if not is_empty(x.strip())
+                ]
+            )
+            # TODO(spyros): temporary until we agree what we want to do with tags
+            mapping[
+                "Link to other CRE"
+            ] = f'{mapping["Link to other CRE"]},{",".join(cre.tags)}'
+            other_cres = list(other_cres)
+            for other_cre in other_cres:
                 if not cres.get(other_cre):
                     logger.warning(
                         "%s linking to not yet existent cre %s" % (cre.name, other_cre)
@@ -514,168 +517,7 @@ def parse_hierarchical_export_format(
                     )
                 )
 
-        if not is_empty(mapping.get("Standard ASVS Item")):
-            cre.add_link(
-                defs.Link(
-                    ltype=defs.LinkTypes.LinkedTo,
-                    document=defs.Standard(
-                        name="ASVS",
-                        section=mapping.pop("Standard ASVS Item").strip(),
-                        hyperlink=mapping.pop("Standard ASVS Hyperlink"),
-                    ),
-                )
-            )
-
-        if (
-            not is_empty(mapping.get("Standard Top10 2017"))
-            and mapping.get("Standard Top10 2017") != "See higher level topic"
-        ):
-            cre.add_link(
-                defs.Link(
-                    ltype=defs.LinkTypes.LinkedTo,
-                    document=defs.Standard(
-                        name="Top10 2017",
-                        section=mapping.pop("Standard Top10 2017"),
-                        hyperlink=mapping.pop("Standard Top10 Hyperlink").strip(),
-                    ),
-                )
-            )
-        if not is_empty(mapping.get("Standard OPC (ASVS source)")):
-            cre.add_link(
-                defs.Link(
-                    ltype=defs.LinkTypes.LinkedTo,
-                    document=defs.Standard(
-                        name="OPC",
-                        section=mapping.pop("Standard OPC (ASVS source)").strip(),
-                        hyperlink=str(
-                            mapping.pop("Standard OPC (ASVS source)-hyperlink")
-                        ).strip(),
-                    ),
-                )
-            )
-
-        if not is_empty(mapping.get("Standard WSTG")):
-            section = mapping.get("Standard WSTG")
-            separator = ";"
-            if separator in section:
-                sections = section.split(separator)
-                hyperlinks = mapping.pop("Standard WSTG-Hyperlink").split(separator)
-                for element, link in zip(sections, hyperlinks):
-                    if not is_empty(element):
-                        cre.add_link(
-                            defs.Link(
-                                ltype=defs.LinkTypes.LinkedTo,
-                                document=defs.Standard(
-                                    name="WSTG",
-                                    section=element.strip(),
-                                    hyperlink=link.strip(),
-                                ),
-                            )
-                        )
-            else:
-                cre.add_link(
-                    defs.Link(
-                        ltype=defs.LinkTypes.LinkedTo,
-                        document=defs.Standard(
-                            name="WSTG",
-                            section=section.strip(),
-                            hyperlink=str(
-                                mapping.pop("Standard WSTG-Hyperlink")
-                            ).strip(),
-                        ),
-                    )
-                )
-        if not is_empty(mapping.get("Standard CWE (from ASVS)")):
-            cre.add_link(
-                defs.Link(
-                    ltype=defs.LinkTypes.LinkedTo,
-                    document=defs.Standard(
-                        name="CWE",
-                        section=str(mapping.pop("Standard CWE (from ASVS)")).strip(),
-                        hyperlink=str(
-                            mapping.pop("Standard CWE (from ASVS)-hyperlink")
-                        ).strip(),
-                    ),
-                )
-            )
-
-        if not is_empty(mapping.get("Standard NIST-800-63 (from ASVS)")):
-            nist = str(mapping.pop("Standard NIST-800-63 (from ASVS)"))
-            if "/" in nist:
-                for nst in set(nist.split("/")):
-                    cre.add_link(
-                        defs.Link(
-                            ltype=defs.LinkTypes.LinkedTo,
-                            document=defs.Standard(
-                                name="NIST 800-63", section=nst.strip()
-                            ),
-                        )
-                    )
-
-        if not is_empty(mapping.get("Standard NIST 800-53 v5")):
-            nist = str(mapping.pop("Standard NIST 800-53 v5"))
-
-            if "\n" in nist:
-                i = 0
-                hyperlinks = mapping.get("Standard NIST 800-53 v5-hyperlink").split(
-                    "\n"
-                )
-                nists = nist.split("\n")
-                for nst, link in zip(nists, hyperlinks):
-                    if not is_empty(nst):
-                        cre.add_link(
-                            defs.Link(
-                                ltype=defs.LinkTypes.LinkedTo,
-                                document=defs.Standard(
-                                    name="NIST 800-53 v5",
-                                    section=nst.strip(),
-                                    hyperlink=link,
-                                ),
-                            )
-                        )
-                    i += 1
-            else:
-                cre.add_link(
-                    defs.Link(
-                        ltype=defs.LinkTypes.LinkedTo,
-                        document=defs.Standard(
-                            name="NIST 800-53 v5",
-                            section=nist.strip(),
-                            hyperlink=str(
-                                mapping.pop("Standard NIST 800-53 v5-hyperlink")
-                            ).strip(),
-                        ),
-                    )
-                )
-
-        if not is_empty(mapping.get("Standard Cheat_sheets")):
-            cs = str(mapping.pop("Standard Cheat_sheets"))
-            separator = ";"
-            if separator in cs:
-                i = 0
-                hyperlinks = mapping.get("Standard Cheat_sheets-Hyperlink").split(
-                    separator
-                )
-                sheets = cs.split(separator)
-                for csc, link in zip(sheets, hyperlinks):
-                    if len(hyperlinks) > i and not is_empty(hyperlinks[i]):
-                        link = hyperlinks[i].strip()
-                    cheatsheet = defs.Standard(
-                        name="Cheat_sheets", section=csc.strip(), hyperlink=link
-                    )
-                    cre.add_link(
-                        defs.Link(ltype=defs.LinkTypes.LinkedTo, document=cheatsheet)
-                    )
-                    i += 1
-            else:
-                cheatsheet = defs.Standard(
-                    name="Cheat_sheets",
-                    section=cs.strip(),
-                    hyperlink=mapping.get("Standard Cheat_sheets-Hyperlink"),
-                )
-                cre.add_link(
-                    defs.Link(ltype=defs.LinkTypes.LinkedTo, document=cheatsheet)
-                )
+        [cre.add_link(link) for link in parse_standards(mapping)]
 
         # link CRE to a higher level one
 
@@ -715,3 +557,103 @@ def parse_hierarchical_export_format(
             cres[cre.name] = cre
 
     return cres
+
+
+def parse_standards(
+    mapping: Dict[str, str], standards_mapping: Dict[str, Dict[str, str]] = None
+) -> Dict[str, defs.CRE]:
+    standards_mapping = {
+        "CRE": {
+            "id": "CRE ID",
+            "name": "CRE hierarchy",
+            "tags": "CRE Tags",
+            "links": "Link to other CRE",
+            "description": "",
+        },
+        "Standards": {
+            "ASVS": {
+                "section": "Standard ASVS Item",
+                "subsection": "",
+                "hyperlink": "Standard ASVS Hyperlink",
+            },
+            "OPC": {
+                "section": "Standard OPC (ASVS source)",
+                "subsection": "",
+                "hyperlink": "Standard OPC (ASVS source)-hyperlink",
+            },
+            "CWE": {
+                "section": "Standard CWE (from ASVS)",
+                "subsection": "",
+                "hyperlink": "Standard CWE (from ASVS)-hyperlink",
+            },
+            "NIST 800-53 v5": {
+                "section": "Standard NIST 800-53 v5",
+                "subsection": "",
+                "hyperlink": "Standard NIST 800-53 v5-hyperlink",
+                "separator": "\n",
+            },
+            "WSTG": {
+                "section": "Standard WSTG",
+                "subsection": "",
+                "hyperlink": "Standard WSTG-Hyperlink",
+                "separator": "\n",
+            },
+            "Cheat_sheets": {
+                "section": "Standard Cheat_sheets",
+                "subsection": "",
+                "hyperlink": "Standard Cheat_sheets-Hyperlink",
+                "separator": ";",
+            },
+            "NIST 800-63": {
+                "section": "Standard NIST-800-63 (from ASVS)",
+                "subsection": "",
+                "hyperlink": "",
+                "separator": "/",
+            },
+            "Top10 2017": {
+                "section": "Standard Top10 2017",
+                "subsection": "",
+                "hyperlink": "Standard Top10 Hyperlink",
+            },
+        },
+    }
+    links: [defs.Link] = []
+    for name, struct in standards_mapping.get("Standards").items():
+        if not is_empty(mapping.get(struct["section"])):
+            if "separator" in struct:
+                separator = struct["separator"]
+                sections = mapping.pop(struct["section"]).split(separator)
+                subsections = mapping.get(struct["subsection"], "").split(separator)
+                hyperlinks = mapping.get(struct["hyperlink"], "").split(separator)
+                if len(sections) > len(subsections):
+                    subsections.extend([""] * (len(sections) - len(subsections)))
+                if len(sections) > len(hyperlinks):
+                    hyperlinks.extend([""] * (len(sections) - len(hyperlinks)))
+                for section, subsection, link in zip(sections, subsections, hyperlinks):
+                    if not is_empty(section):
+                        links.append(
+                            defs.Link(
+                                ltype=defs.LinkTypes.LinkedTo,
+                                document=defs.Standard(
+                                    name=name,
+                                    section=section.strip(),
+                                    hyperlink=link.strip(),
+                                ),
+                            )
+                        )
+            else:
+                section = str(mapping.pop(struct["section"]))
+                subsection = mapping.get(struct["subsection"], "")
+                hyperlink = mapping.get(struct["hyperlink"], "")
+                links.append(
+                    defs.Link(
+                        ltype=defs.LinkTypes.LinkedTo,
+                        document=defs.Standard(
+                            name=name,
+                            section=section.strip(),
+                            subsection=subsection.strip(),
+                            hyperlink=hyperlink.strip(),
+                        ),
+                    )
+                )
+    return links
