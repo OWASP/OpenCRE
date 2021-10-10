@@ -2,7 +2,7 @@ import os
 import tempfile
 import unittest
 import uuid
-from copy import copy
+from copy import copy, deepcopy
 from pprint import pprint
 from typing import Dict, Union
 
@@ -411,11 +411,17 @@ class TestDB(unittest.TestCase):
             name="gcS2", section="gc1", subsection="gc2", link="gc3", version="gc1.1.1"
         )
 
+        dbs2 = db.Standard(
+            name="gcS3", section="gc1", subsection="gc2", link="gc3", version="gc3.1.2"
+        )
+
         collection.session.add(dbc1)
         collection.session.add(dbc2)
         collection.session.add(dbc3)
         collection.session.add(dbs1)
+        collection.session.add(dbs2)
         collection.session.commit()
+
         collection.session.add(
             db.InternalLinks(type="Contains", group=dbc1.id, cre=dbc2.id)
         )
@@ -425,7 +431,9 @@ class TestDB(unittest.TestCase):
         collection.session.add(
             db.Links(type="Linked To", cre=dbc1.id, standard=dbs1.id)
         )
+
         collection.session.commit()
+
         cd1 = defs.CRE(id="123", description="gcCD1", name="gcC1", links=[])
         cd2 = defs.CRE(description="gcCD2", name="gcC2")
         cd3 = defs.CRE(description="gcCD3", name="gcC3")
@@ -484,6 +492,46 @@ class TestDB(unittest.TestCase):
         self.assertIsNone(collection.get_CREs(external_id="123", name="gcC5"))
         self.assertIsNone(collection.get_CREs(external_id="1234"))
         self.assertIsNone(collection.get_CREs(name="gcC5"))
+
+        collection.session.add(
+            db.Links(type="Linked To", cre=dbc1.id, standard=dbs2.id)
+        )
+
+        only_gcS2 = deepcopy(expected)
+        expected[0].add_link(
+            defs.Link(
+                ltype=defs.LinkTypes.LinkedTo,
+                document=defs.Standard(
+                    name="gcS3",
+                    section="gc1",
+                    subsection="gc2",
+                    hyperlink="gc3",
+                    version="gc3.1.2",
+                ),
+            )
+        )
+        res = collection.get_CREs(name="gcC1")
+        self.assertEqual(expected, res)
+
+        res = collection.get_CREs(name="gcC1", include_only=["gcS2"])
+        self.assertEqual(only_gcS2, res)
+
+        ccd2 = copy(cd2)
+        ccd2.links = []
+        ccd3 = copy(cd3)
+        ccd3.links = []
+        no_standards = [
+            copy(cd1)
+            .add_link(
+                defs.Link(
+                    ltype=defs.LinkTypes.Contains,
+                    document=ccd2,
+                )
+            )
+            .add_link(defs.Link(ltype=defs.LinkTypes.Contains, document=ccd3))
+        ]
+        res = collection.get_CREs(name="gcC1", include_only=["gcS0"])
+        self.assertEqual(no_standards, res)
 
     def test_get_standards(self) -> None:
         """Given: a Standard 'S1' that links to cres
@@ -579,6 +627,27 @@ class TestDB(unittest.TestCase):
         )
         self.assertEqual(total_pages, 1)
         self.assertEqual(expected, res)
+
+        only_c1 = [
+            defs.Standard(
+                name="S1",
+                section="1",
+                subsection="2",
+                hyperlink="3",
+                version="4",
+                links=[
+                    defs.Link(document=defs.CRE(name="C1", description="CD1", id="123"))
+                ],
+            )
+        ]
+        _, res, _ = collection.get_standards_with_pagination(
+            name="S1", include_only=["C1"]
+        )
+        self.assertEqual(only_c1, res)
+        _, res, _ = collection.get_standards_with_pagination(
+            name="S1", include_only=["123"]
+        )
+        self.assertEqual(only_c1, res)
 
     def test_gap_analysis(self) -> None:
         """Given
