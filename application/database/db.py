@@ -247,14 +247,21 @@ class Standard_collection:
         subsection: Optional[str] = None,
         link: Optional[str] = None,
         version: Optional[str] = None,
+        partial: Optional[bool] = False,
         page: int = 0,
         items_per_page: Optional[int] = None,
+        include_only: Optional[List[str]] = None,
     ) -> Tuple[
         Optional[int], Optional[List[cre_defs.Standard]], Optional[List[Standard]]
     ]:
+        """
+        Returns the relevant standard entries and their linked CREs
+        include_only: If set, only the CRE ids in the list provided will be returned
+        If a standard entry is not linked to by a CRE in the list the Standard entry will be returned empty.
+        """
         standards = []
         dbstands = self.__get_standards_query__(
-            name, section, subsection, link, version
+            name, section, subsection, link, version, partial
         ).paginate(int(page), items_per_page, False)
         total_pages = dbstands.pages
         if dbstands.items:
@@ -264,18 +271,26 @@ class Standard_collection:
                 for dbcre_link in linked_cres:
                     dbcre = CRE.query.filter(CRE.id == dbcre_link.cre).first()
                     if dbcre:
-                        standard.add_link(
-                            cre_defs.Link(
-                                ltype=cre_defs.LinkTypes.from_str(dbcre_link.type),
-                                document=CREfromDB(dbcre),
+                        if not include_only or (
+                            include_only
+                            and (
+                                dbcre.external_id in include_only
+                                or dbcre.name in include_only
                             )
-                        )
+                        ):
+                            standard.add_link(
+                                cre_defs.Link(
+                                    ltype=cre_defs.LinkTypes.from_str(dbcre_link.type),
+                                    document=CREfromDB(dbcre),
+                                )
+                            )
                 standards.append(standard)
             return total_pages, standards, dbstands
         else:
             logger.warning("Standard %s does not exist in the db" % (name))
             return None, None, None
 
+    # TODO(spyros): merge with above and make "paginate" a boolean switch
     def get_standards(
         self,
         name: Optional[str] = None,
@@ -284,6 +299,7 @@ class Standard_collection:
         link: Optional[str] = None,
         version: Optional[str] = None,
         partial: Optional[bool] = False,
+        include_only: Optional[List[str]] = None,
     ) -> Optional[List[cre_defs.Standard]]:
 
         standards = []
@@ -301,14 +317,20 @@ class Standard_collection:
                 standard = StandardFromDB(dbstandard=dbstand)
                 linked_cres = Links.query.filter(Links.standard == dbstand.id).all()
                 for dbcre_link in linked_cres:
-                    standard.add_link(
-                        cre_defs.Link(
-                            ltype=cre_defs.LinkTypes.from_str(dbcre_link.type),
-                            document=CREfromDB(
-                                CRE.query.filter(CRE.id == dbcre_link.cre).first()
-                            ),
+                    dbcre = CRE.query.filter(CRE.id == dbcre_link.cre).first()
+                    if not include_only or (
+                        include_only
+                        and (
+                            dbcre.external_id in include_only
+                            or dbcre.name in include_only
                         )
-                    )
+                    ):
+                        standard.add_link(
+                            cre_defs.Link(
+                                ltype=cre_defs.LinkTypes.from_str(dbcre_link.type),
+                                document=CREfromDB(dbcre),
+                            )
+                        )
                 standards.append(standard)
             return standards
         else:
@@ -367,6 +389,7 @@ class Standard_collection:
         name: Optional[str] = None,
         description: Optional[str] = None,
         partial: Optional[bool] = False,
+        include_only: Optional[List[str]] = None,
     ) -> Optional[List[cre_defs.CRE]]:
         cres: Optional[List[cre_defs.CRE]] = []
         query = CRE.query
@@ -407,17 +430,18 @@ class Standard_collection:
                 self.session.query(Links).filter(Links.cre == dbcre.id).all()
             )
             for ls in linked_standards:
-                cre.add_link(
-                    cre_defs.Link(
-                        document=StandardFromDB(
-                            self.session.query(Standard)
-                            .filter(Standard.id == ls.standard)
-                            .first()
-                        ),
-                        ltype=cre_defs.LinkTypes.from_str(ls.type),
-                    )
+                stnd = (
+                    self.session.query(Standard)
+                    .filter(Standard.id == ls.standard)
+                    .first()
                 )
-
+                if not include_only or (include_only and stnd.name in include_only):
+                    cre.add_link(
+                        cre_defs.Link(
+                            document=StandardFromDB(stnd),
+                            ltype=cre_defs.LinkTypes.from_str(ls.type),
+                        )
+                    )
             # todo figure the query to merge the following two
             internal_links = (
                 self.session.query(InternalLinks)
