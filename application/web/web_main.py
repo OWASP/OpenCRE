@@ -42,8 +42,8 @@ def extend_cre_with_tag_links(
 def find_by_id(creid: str) -> Any:  # refer
 
     database = db.Standard_collection()
-    inlude_only = request.args.getlist("inlude_only")
-    cre = database.get_CREs(external_id=creid, inlude_only=inlude_only)[0]
+    include_only = request.args.getlist("include_only")
+    cre = database.get_CREs(external_id=creid, include_only=include_only)[0]
 
     if cre:
         # disable until we have a consensus on tag behaviour
@@ -78,7 +78,7 @@ def find_standard_by_name(sname: str) -> Any:
         page = request.args.get("page")
     items_per_page = request.args.get("items_per_page") or ITEMS_PER_PAGE
 
-    inlude_only = request.args.getlist("inlude_only")
+    include_only = request.args.getlist("include_only")
 
     total_pages, standards, _ = database.get_standards_with_pagination(
         name=sname,
@@ -87,7 +87,7 @@ def find_standard_by_name(sname: str) -> Any:
         link=opt_hyperlink,
         page=int(page),
         items_per_page=int(items_per_page),
-        inlude_only=inlude_only,
+        include_only=include_only,
     )
     result = {}
     result["total_pages"] = total_pages
