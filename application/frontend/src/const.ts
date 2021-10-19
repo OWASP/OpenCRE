@@ -21,3 +21,4 @@ export const SECTION = '/section';
 export const SEARCH = '/search';
 export const CRE = '/cre';
 export const GRAPH = '/graph';
+export const DEEPLINK = '/deeplink'
