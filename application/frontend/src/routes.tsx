@@ -1,9 +1,9 @@
-import { ReactNode } from 'react';
+import { Component, ReactNode } from 'react';
 
 import { CommonRequirementEnumeration, Graph, Search, Standard } from './pages';
 import { SearchName } from './pages/Search/SearchName';
 import { StandardSection } from './pages/Standard/StandardSection';
-
+import {Deeplink} from './pages/Deeplink/Deeplink';
 export interface IRoute {
   path: string;
   component: ReactNode | ReactNode[];
@@ -11,7 +11,7 @@ export interface IRoute {
 }
 
 import {
-  INDEX, STANDARD, SECTION, CRE, GRAPH, SEARCH
+  INDEX, STANDARD, SECTION, CRE, GRAPH, SEARCH, DEEPLINK,
 } from './const';
 
 export const ROUTES: IRoute[] = [
@@ -45,4 +45,9 @@ export const ROUTES: IRoute[] = [
     component: SearchName,
     showHeader: true,
   },
+  {
+    path: `${DEEPLINK}/:standardName`,
+    component: Deeplink,
+    showHeader: true,
+  }
 ];
