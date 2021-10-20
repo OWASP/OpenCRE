@@ -48,6 +48,6 @@ export const ROUTES: IRoute[] = [
   {
     path: `${DEEPLINK}/:standardName`,
     component: Deeplink,
-    showHeader: false,
+    showHeader: true,
   }
 ];
