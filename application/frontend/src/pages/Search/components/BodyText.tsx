@@ -30,7 +30,14 @@ export const SearchBody = () => {
         The CRE links each section of a standard to a shared topic (a Common Requirement), causing that section to also link with all other resources that map to the same topic. This 1) enables users to find all combined information from relevant sources, 2) it facilitates a shared and better understanding of cyber security, and 3) it allows standard makers to have links that keep working and offer all the information that readers need, so they don’t have to cover it all themselves. The CRE maintains itself: topic links in the standard text are scanned automatically. Furthermore, topics are linked with related other topics, creating a semantic web for security.
       </p>
       <p>
-      <b>Example</b>: the session time-out topic will take the user to relevant criteria in several standards, and to testing guides, development tips, more technical detail, threat descriptions, articles etc. From there, the user can navigate to resources about session management in general.
+      <b>Example</b>: the session time-out topic will take the user to relevant criteria in several standards
+      , and to testing guides, development tips, more technical detail, threat descriptions, articles etc. 
+      From there, the user can navigate to resources about session management in general.
+      </p>
+      <p>
+      Moreover, standards can use the CRE project to maintain permanent links to other standards.
+      For example <a href="https://www.opencre.org/deeplink/ASVS">ASVS Deeplink</a> could be maintained by ASVS and always redirect to an ASVS entry on github
+      while the following will redirect to the specific section <a href="https://www.opencre.org/deeplink/ASVS?section=v9.2.5">ASVS v9.2.5</a>
       </p>
 
       <h2>
