@@ -1,8 +1,9 @@
-import { Component, ReactNode } from 'react';
+import { ReactNode } from 'react';
 
 import { CommonRequirementEnumeration, Graph, Search, Standard } from './pages';
 import { SearchName } from './pages/Search/SearchName';
 import { StandardSection } from './pages/Standard/StandardSection';
+
 import {Deeplink} from './pages/Deeplink/Deeplink';
 export interface IRoute {
   path: string;
