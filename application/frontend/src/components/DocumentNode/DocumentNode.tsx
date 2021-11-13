@@ -1,7 +1,7 @@
 import './documentNode.scss';
 
 import React, { FunctionComponent, useMemo, useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useHistory } from 'react-router-dom';
 
 import { DOCUMENT_TYPE_NAMES, TYPE_IS_PART_OF, TYPE_CONTAINS, TYPE_LINKED_TO, TYPE_RELATED } from '../../const';
 import { Document } from '../../types';
@@ -32,10 +32,12 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({ node, linkType, 
   const [filters, setFilters] = useState<string[]>();
   const id = isStandard ? node.name : node.id;
   const active = expanded ? ' active' : '';
-
+  const history = useHistory();
   var usedNode = nestedNode || node;
   const hasExternalLink = Boolean(usedNode.hyperlink);
   const linksByType = useMemo(() => groupLinksByType(usedNode), [usedNode]);
+
+  let currentUrlParams = new URLSearchParams(window.location.search);
 
   useEffect(() => {
     if (!isStandard && linkTypesToNest.includes(linkType)) {
@@ -53,11 +55,19 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({ node, linkType, 
         });
     }
   }, [id]);
+
   const handleFilter = (document) => {
-    console.log(document)    
-    const fltrs = filters && filters.length ? [...filters, document.id] : [document.id] // todo make this a set
-    console.log(fltrs)    
-    setFilters(fltrs)
+
+    const fltrs = filters && filters.length ? new Set([...filters, document.id]) : [document.id]
+    // if (currentUrlParams.get("applyFilters") != "false") {
+    fltrs.forEach(f => {
+      if (!currentUrlParams.getAll("filters").includes(f)) {
+        currentUrlParams.append('filters', f);
+      }
+    })
+    history.push(window.location.pathname + "?" + currentUrlParams.toString());
+    // }
+    setFilters(Array.from(fltrs))
   }
   const fetchedNodeHasLinks = () => {
     return usedNode.links && usedNode.links.length > 0;
@@ -104,6 +114,7 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({ node, linkType, 
 
   const NestedView = () => {
     return <>
+
       <LoadingAndErrorIndicator loading={loading} error={error} />
       <div className={`title${active} document-node`} onClick={() => setExpanded(!expanded)}>
         <i aria-hidden="true" className="dropdown icon"></i>
@@ -123,11 +134,18 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({ node, linkType, 
                 </div>
                 <div>
                   <div className="accordion ui fluid styled f0">
-                    {links.map((link, i) => 
+                    {links.map((link, i) =>
+                      (!(currentUrlParams.has("filters")) ||
+                        !currentUrlParams.has("applyFilters") ||
+                        currentUrlParams.get("applyFilters") == "false") ||
+                        (currentUrlParams.get("applyFilters") == "true" &&
+                          currentUrlParams.has("filters") &&
+                          link.document.id &&
+                          currentUrlParams.getAll("filters").includes(link.document.id)) ?
                         <div key={link.document.name}>
                           <DocumentNode node={link.document} linkType={type} hasLinktypeRelatedParent={isNestedInRelated()} key={i} />
-                          <Button onClick={() => { handleFilter(link.document) }} content="Filter only this item"></Button>
-                        </div>
+                          <Button onClick={() => { handleFilter(link.document) }} content="Filter this item"></Button>
+                        </div> : ""
                     )
                     }
                   </div>
@@ -137,6 +155,7 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({ node, linkType, 
           })}
       </div>
     </>
+
   }
 
   return hasActiveLinks() ? <NestedView /> : <SimpleView />;
