@@ -2,7 +2,8 @@ import { DocumentNode } from '../components/DocumentNode';
 import { Document, LinkedDocument } from '../types';
 import { createContext } from 'react';
 const filterLinks = (document:Document, filters:string[]): Document | undefined => { // TODO(spyros): this can be merged with the one below and avoid code duplication
-  let identifier = document.doctype == "CRE" ? "c:" + document.id : "s:" + document.name
+  // let identifier = document.doctype == "CRE" ? "c:" + document.id : "s:" + document.name
+  let identifier = document.doctype == "CRE" ? "" + document.id : "" + document.name
   let links: LinkedDocument[] = []
   document?.links?.forEach(link => {
     const newDoc: Document | undefined = filterLinks(link.document, filters)

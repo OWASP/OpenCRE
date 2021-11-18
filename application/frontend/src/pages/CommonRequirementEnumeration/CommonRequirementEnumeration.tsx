@@ -11,7 +11,7 @@ import { useEnvironment } from '../../hooks';
 import { Document } from '../../types';
 import { groupLinksByType } from '../../utils';
 import { applyFilters, filterContext } from '../../hooks/applyFilters';
-import { FilterButton } from '../../components/FilterButton/FilterButton';
+import { ClearFilterButton, FilterButton } from '../../components/FilterButton/FilterButton';
 
 export const CommonRequirementEnumeration = () => {
   const { id } = useParams();
@@ -44,7 +44,8 @@ export const CommonRequirementEnumeration = () => {
   }
   let currentUrlParams = new URLSearchParams(window.location.search);
   let display:Document
-  display = currentUrlParams.get("applyFilters") == "true"? filteredCRE:cre 
+  display = currentUrlParams.get("applyFilters") === "true"? filteredCRE:cre 
+  
   const linksByType = useMemo(() => (display ? groupLinksByType(display) : {}), [display]);
 
   return (
@@ -61,7 +62,17 @@ export const CommonRequirementEnumeration = () => {
               <a href={display?.hyperlink} target="_blank"> { display.hyperlink }</a>
             </>
           }
-          <div className="cre-page__tags">Tags: {display.tags?display.tags.map((tag) => (<b>{tag} </b>)):""}</div>
+          {display.tags?
+          <div className="cre-page__tags">Tags:{display.tags.map((tag) => ( <b>{tag} </b>))}</div>:""}
+
+          {currentUrlParams.get("applyFilters")==="true"?
+          <div className="cre-page__filters">  
+          Filtering on:
+            {currentUrlParams.getAll("filters").map((filter)=>(
+              <b key={filter}>{filter.replace("s:","").replace("c:","")}, </b>))}
+              
+          <ClearFilterButton/>
+          </div>:""}
           <div className="cre-page__links-container">
             {Object.keys(linksByType).length > 0 &&
               Object.entries(linksByType).map(([type, links]) => (
