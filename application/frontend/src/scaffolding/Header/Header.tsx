@@ -20,12 +20,14 @@ export const Header = () => {
   const HandleDoFilter = () => {
     currentUrlParams.set("applyFilters", "true");
     history.push(window.location.pathname + "?" + currentUrlParams.toString());
+    window.location.href = window.location.href
   }
 
   const ClearFilter = () => {
     currentUrlParams.set("applyFilters", "false");
     currentUrlParams.delete('filters')
     history.push(window.location.pathname + "?" + currentUrlParams.toString());
+    window.location.href = window.location.href
   }
 
   const history = useHistory();
