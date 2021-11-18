@@ -18,7 +18,6 @@ export const useLocationFromOutsideRoute = (): UseLocationFromOutsideRouteReturn
     ...matchPath(pathname, path),
     showHeader, showFilter,
   })).find((matchedPath) => matchedPath?.isExact);
-  console.log(currentRoute)
   return {
     params: currentRoute?.params || {},
     url: currentRoute?.url || '',

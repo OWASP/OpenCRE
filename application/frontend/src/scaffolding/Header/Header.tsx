@@ -15,7 +15,9 @@ const getLinks = (): { to: string; name: string }[] => [
 ];
 
 export const Header = () => {
-const HandleDoFilter = () => {
+  let currentUrlParams = new URLSearchParams(window.location.search);
+
+  const HandleDoFilter = () => {
     currentUrlParams.set("applyFilters", "true");
     history.push(window.location.pathname + "?" + currentUrlParams.toString());
   }
@@ -28,8 +30,7 @@ const HandleDoFilter = () => {
 
   const history = useHistory();
 
-  let currentUrlParams = new URLSearchParams(window.location.search);
- 
+
 
   const { params, url, showHeader, showFilter } = useLocationFromOutsideRoute();
   // console.log(useLocationFromOutsideRoute())
@@ -55,15 +56,15 @@ const HandleDoFilter = () => {
         ))}
         <Menu.Menu position="right">
           <Menu.Item>
-            
+
             <SearchBar />
 
             {showFilter ? <div className="foo"><Button onClick={() => { HandleDoFilter() }} content="Apply Filters"></Button>
-          <Button onClick={() => { ClearFilter() }} content="Clear Filters"></Button></div>
-          : console.log(showFilter)}
+              <Button onClick={() => { ClearFilter() }} content="Clear Filters"></Button></div>
+              :""}
           </Menu.Item>
         </Menu.Menu>
-        
+
 
       </Menu>
     </div>

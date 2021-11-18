@@ -38,7 +38,7 @@ export const ROUTES: IRoute[] = [
     path: `${CRE}/:id`,
     component: CommonRequirementEnumeration,
     showHeader: true,
-    showFilter: false,
+    showFilter: true,
   },
   {
     path: `${GRAPH}/:id`,
