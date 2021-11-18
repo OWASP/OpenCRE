@@ -1,6 +1,6 @@
 import './documentNode.scss';
 
-import React, { FunctionComponent, useMemo, useState, useEffect } from 'react';
+import React, { FunctionComponent, useMemo, useState, useEffect, useContext } from 'react';
 import { Link, useHistory } from 'react-router-dom';
 
 import { DOCUMENT_TYPE_NAMES, TYPE_IS_PART_OF, TYPE_CONTAINS, TYPE_LINKED_TO, TYPE_RELATED } from '../../const';
@@ -11,8 +11,10 @@ import axios from 'axios';
 import { LoadingAndErrorIndicator } from '../LoadingAndErrorIndicator';
 import { getApiEndpoint, getInternalUrl } from '../../utils/document';
 import { Button } from 'semantic-ui-react';
+import { FilterButton } from '../FilterButton/FilterButton';
+import { applyFilters } from '../../hooks/applyFilters';
 
-interface DocumentNode {
+export interface DocumentNode {
   node: Document,
   linkType: string,
   hasLinktypeRelatedParent?: Boolean,
@@ -29,11 +31,10 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({ node, linkType, 
   const [nestedNode, setNestedNode] = useState<Document>();
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
-  const [filters, setFilters] = useState<string[]>();
   const id = isStandard ? node.name : node.id;
   const active = expanded ? ' active' : '';
   const history = useHistory();
-  var usedNode = nestedNode || node;
+  var usedNode = applyFilters(nestedNode || node);
   const hasExternalLink = Boolean(usedNode.hyperlink);
   const linksByType = useMemo(() => groupLinksByType(usedNode), [usedNode]);
 
@@ -56,19 +57,8 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({ node, linkType, 
     }
   }, [id]);
 
-  const handleFilter = (document) => {
+  
 
-    const fltrs = filters && filters.length ? new Set([...filters, document.id]) : [document.id]
-    // if (currentUrlParams.get("applyFilters") != "false") {
-    fltrs.forEach(f => {
-      if (!currentUrlParams.getAll("filters").includes(f)) {
-        currentUrlParams.append('filters', f);
-      }
-    })
-    history.push(window.location.pathname + "?" + currentUrlParams.toString());
-    // }
-    setFilters(Array.from(fltrs))
-  }
   const fetchedNodeHasLinks = () => {
     return usedNode.links && usedNode.links.length > 0;
   }
@@ -111,6 +101,7 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({ node, linkType, 
 
     </>
   }
+// TODO (spyros) : bug, this doesn't work well with nested view as it removes nodes prematurely, instead write a hook to custom-iterate through nodes and return a new structure with filtering applied
 
   const NestedView = () => {
     return <>
@@ -135,17 +126,11 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({ node, linkType, 
                 <div>
                   <div className="accordion ui fluid styled f0">
                     {links.map((link, i) =>
-                      (!(currentUrlParams.has("filters")) ||
-                        !currentUrlParams.has("applyFilters") ||
-                        currentUrlParams.get("applyFilters") == "false") ||
-                        (currentUrlParams.get("applyFilters") == "true" &&
-                          currentUrlParams.has("filters") &&
-                          link.document.id &&
-                          currentUrlParams.getAll("filters").includes(link.document.id)) ?
-                        <div key={link.document.name}>
+                        <div key={Math.random()}>
                           <DocumentNode node={link.document} linkType={type} hasLinktypeRelatedParent={isNestedInRelated()} key={i} />
-                          <Button onClick={() => { handleFilter(link.document) }} content="Filter this item"></Button>
-                        </div> : ""
+                          <FilterButton document={link.document}/>
+                        </div> 
+
                     )
                     }
                   </div>
@@ -153,6 +138,7 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({ node, linkType, 
               </div>
             );
           })}
+          {/* <FilterButton/> */}
       </div>
     </>
 
