@@ -79,7 +79,7 @@ class Node_attributes(_Status):
         default=""
     )  # Unique id name by source, e.g. document
     links: List[_Link] = field(compare=False, default_factory=list)
-    category: Optional[str] = field(compare=False, default=None)
+    categories: Optional[List[str]] = field(compare=False, default=None)
     maturity: Optional[str] = field(compare=False, default=None)
     sources_i18n: Dict[Lang, Optional[_Source]] = field(
         compare=False, default_factory=dict
@@ -91,7 +91,7 @@ class Osib_node(_Osib_base):
 
     """Object-Node for building the OSIB tree"""
 
-    alias: Optional[Osib_id] = field(compare=False, default=None)
+    aliases: Optional[List[Osib_id]] = field(compare=False, default=None)
     attributes: Optional[Node_attributes] = field(compare=False, default=None)
     children: Optional[Dict[Union[int, str], "Osib_node"]] = field(
         compare=False, default=None
