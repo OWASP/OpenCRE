@@ -36,7 +36,7 @@ Lang = NewType("Lang", str)
 
 @dataclass
 class _Osib_base:
-    def to_dict(self)->Dict[str,Any]:
+    def to_dict(self) -> Dict[str, Any]:
         return asdict(
             self,
             dict_factory=lambda x: {
@@ -116,7 +116,7 @@ def read_osib_yaml(yaml_file: str = "") -> List[Dict[str, Any]]:
         return [y for y in osib_yaml]
 
 
-def try_from_file(data: List[Dict[str, Any]] = [])->List[Osib_tree]:
+def try_from_file(data: List[Dict[str, Any]] = []) -> List[Osib_tree]:
     result = []
     for dat in data:
         result.append(from_dict(data_class=Osib_tree, data=dat))
