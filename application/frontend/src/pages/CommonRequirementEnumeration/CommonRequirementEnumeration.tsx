@@ -1,6 +1,6 @@
 import './commonRequirementEnumeration.scss';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useContext } from 'react';
 import { useQuery } from 'react-query';
 import { useParams } from 'react-router-dom';
 
@@ -10,11 +10,14 @@ import { DOCUMENT_TYPE_NAMES } from '../../const';
 import { useEnvironment } from '../../hooks';
 import { Document } from '../../types';
 import { groupLinksByType } from '../../utils';
+import { applyFilters, filterContext } from '../../hooks/applyFilters';
+import { ClearFilterButton, FilterButton } from '../../components/FilterButton/FilterButton';
 
 export const CommonRequirementEnumeration = () => {
   const { id } = useParams();
   const { apiUrl } = useEnvironment();
   const [loading, setLoading] = useState<boolean>(false);
+  const globalState = useContext(filterContext)
 
   const { error, data, refetch } = useQuery<{ data: Document; }, string>(
     'cre',
@@ -35,33 +38,52 @@ export const CommonRequirementEnumeration = () => {
   }, [id]);
 
   const cre = data?.data;
-  const linksByType = useMemo(() => (cre ? groupLinksByType(cre) : {}), [cre]);
+  let filteredCRE
+  if(cre != undefined){
+    filteredCRE = applyFilters(JSON.parse(JSON.stringify(cre))) // dirty deepcopy
+  }
+  let currentUrlParams = new URLSearchParams(window.location.search);
+  let display:Document
+  display = currentUrlParams.get("applyFilters") === "true"? filteredCRE:cre 
+  
+  const linksByType = useMemo(() => (display ? groupLinksByType(display) : {}), [display]);
 
   return (
     <div className="cre-page">
       <LoadingAndErrorIndicator loading={loading} error={error} />
-      {!loading && !error && cre && (
+      {!loading && !error && display && (
         <>
-          <h4 className="cre-page__heading">{cre.name}</h4>
-          <h5 className="cre-page__sub-heading">{cre.id}</h5>
-          <div className="cre-page__description">{cre.description}</div>
-          { cre && cre.hyperlink &&
+          <h4 className="cre-page__heading">{display.name}</h4>
+          <h5 className="cre-page__sub-heading">{display.id}</h5>
+          <div className="cre-page__description">{display.description}</div>
+          { display && display.hyperlink &&
             <>
               <span>Reference: </span>
-              <a href={cre?.hyperlink} target="_blank"> { cre.hyperlink }</a>
+              <a href={display?.hyperlink} target="_blank"> { display.hyperlink }</a>
             </>
           }
-          <div className="cre-page__tags">Tags: {cre.tags?cre.tags.map((tag) => (<b>{tag} </b>)):""}</div>
+          {display.tags?
+          <div className="cre-page__tags">Tags:{display.tags.map((tag) => ( <b>{tag} </b>))}</div>:""}
+
+          {currentUrlParams.get("applyFilters")==="true"?
+          <div className="cre-page__filters">  
+          Filtering on:
+            {currentUrlParams.getAll("filters").map((filter)=>(
+              <b key={filter}>{filter.replace("s:","").replace("c:","")}, </b>))}
+              
+          <ClearFilterButton/>
+          </div>:""}
           <div className="cre-page__links-container">
             {Object.keys(linksByType).length > 0 &&
               Object.entries(linksByType).map(([type, links]) => (
                 <div className="cre-page__links" key={type}>
                   <div className="cre-page__links-eader">
-                    {cre.id}: {cre.name} <b>{DOCUMENT_TYPE_NAMES[type]}</b>:
+                    {display.id}: {display.name} <b>{DOCUMENT_TYPE_NAMES[type]}</b>:
                   </div>
                   {links.map((link, i) => (
                     <div key={i} className="accordion ui fluid styled cre-page__links-container">
                       <DocumentNode node={link.document} linkType={type} />
+                      <FilterButton document={link.document}/>
                     </div>
                   ))}
                 </div>

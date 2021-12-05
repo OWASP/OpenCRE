@@ -1,7 +1,7 @@
 import './documentNode.scss';
 
-import React, { FunctionComponent, useMemo, useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import React, { FunctionComponent, useMemo, useState, useEffect, useContext } from 'react';
+import { Link, useHistory } from 'react-router-dom';
 
 import { DOCUMENT_TYPE_NAMES, TYPE_IS_PART_OF, TYPE_CONTAINS, TYPE_LINKED_TO, TYPE_RELATED } from '../../const';
 import { Document } from '../../types';
@@ -10,8 +10,11 @@ import { useEnvironment } from '../../hooks';
 import axios from 'axios';
 import { LoadingAndErrorIndicator } from '../LoadingAndErrorIndicator';
 import { getApiEndpoint, getInternalUrl } from '../../utils/document';
+import { Button } from 'semantic-ui-react';
+import { FilterButton } from '../FilterButton/FilterButton';
+import { applyFilters } from '../../hooks/applyFilters';
 
-interface DocumentNode {
+export interface DocumentNode {
   node: Document,
   linkType: string,
   hasLinktypeRelatedParent?: Boolean,
@@ -21,7 +24,7 @@ const linkTypesToNest = [TYPE_IS_PART_OF, TYPE_RELATED]
 const linkTypesExcludedInNesting = [TYPE_CONTAINS]
 const linkTypesExcludedWhenNestingRelatedTo = [TYPE_RELATED, TYPE_IS_PART_OF, TYPE_CONTAINS]
 
-export const DocumentNode: FunctionComponent<DocumentNode> = ({ node, linkType, hasLinktypeRelatedParent}) => {
+export const DocumentNode: FunctionComponent<DocumentNode> = ({ node, linkType, hasLinktypeRelatedParent }) => {
   const [expanded, setExpanded] = useState<boolean>(false);
   const isStandard = node.doctype === 'Standard';
   const { apiUrl } = useEnvironment();
@@ -30,28 +33,32 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({ node, linkType, 
   const [error, setError] = useState<string>('');
   const id = isStandard ? node.name : node.id;
   const active = expanded ? ' active' : '';
-
-  var usedNode = nestedNode || node;
+  const history = useHistory();
+  var usedNode = applyFilters(nestedNode || node);
   const hasExternalLink = Boolean(usedNode.hyperlink);
   const linksByType = useMemo(() => groupLinksByType(usedNode), [usedNode]);
 
-  useEffect( () => {
-    if ( !isStandard && linkTypesToNest.includes(linkType) ) {
+  let currentUrlParams = new URLSearchParams(window.location.search);
+
+  useEffect(() => {
+    if (!isStandard && linkTypesToNest.includes(linkType)) {
       setLoading(true);
       axios.get(getApiEndpoint(node, apiUrl))
-      .then(function (response) {
-        setLoading(false);
-        setNestedNode(response.data.data);
-        setExpanded(true);
-        setError('');
-      })
-      .catch(function (axiosError) {
-        setLoading(false);
-        setError(axiosError);
-      });
+        .then(function (response) {
+          setLoading(false);
+          setNestedNode(response.data.data);
+          setExpanded(true);
+          setError('');
+        })
+        .catch(function (axiosError) {
+          setLoading(false);
+          setError(axiosError);
+        });
     }
   }, [id]);
+
   
+
   const fetchedNodeHasLinks = () => {
     return usedNode.links && usedNode.links.length > 0;
   }
@@ -61,54 +68,55 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({ node, linkType, 
   }
 
   const isNestedInRelated = (): Boolean => {
-    return hasLinktypeRelatedParent || ( linkType === TYPE_RELATED );
+    return hasLinktypeRelatedParent || (linkType === TYPE_RELATED);
   }
 
   const getTopicsToDisplayOrderdByLinkType = () => {
     return Object.entries(linksByType)
-      .filter( ([type, _]) => !linkTypesExcludedInNesting.includes(type))
-      .filter( ([type, _]) => isNestedInRelated() ? !linkTypesExcludedWhenNestingRelatedTo.includes(type) : true)
+      .filter(([type, _]) => !linkTypesExcludedInNesting.includes(type))
+      .filter(([type, _]) => isNestedInRelated() ? !linkTypesExcludedWhenNestingRelatedTo.includes(type) : true)
   }
 
   const Hyperlink = (hyperlink) => {
-    if ( !hyperlink.hyperlink ) {
+    if (!hyperlink.hyperlink) {
       return <></>;
     }
 
     return <>
-        <span>
-          Reference: 
-        </span>
-        <a href={hyperlink.hyperlink} target="_blank"> {hyperlink.hyperlink}</a>
-      </>
-    
+      <span>
+        Reference:
+      </span>
+      <a href={hyperlink.hyperlink} target="_blank"> {hyperlink.hyperlink}</a>
+    </>
   }
-  
   const SimpleView = () => {
     return <>
-        <div className={`title external-link document-node f2`}>
-          <Link to={getInternalUrl(usedNode)}>
-            <i aria-hidden="true" className="circle icon"></i>
-            { getDocumentDisplayName(usedNode) }
-          </Link>
-        </div>
-        <div className={`content`}></div>
-      </>
+      <div className={`title external-link document-node f2`}>
+        <Link to={getInternalUrl(usedNode)}>
+          <i aria-hidden="true" className="circle icon"></i>
+          {getDocumentDisplayName(usedNode)}
+        </Link>
+      </div>
+      <div className={`content`}></div>
+
+    </>
   }
+// TODO (spyros) : bug, this doesn't work well with nested view as it removes nodes prematurely, instead write a hook to custom-iterate through nodes and return a new structure with filtering applied
 
   const NestedView = () => {
     return <>
+
       <LoadingAndErrorIndicator loading={loading} error={error} />
       <div className={`title${active} document-node`} onClick={() => setExpanded(!expanded)}>
         <i aria-hidden="true" className="dropdown icon"></i>
         <Link to={getInternalUrl(usedNode)}>
-          { getDocumentDisplayName(usedNode) }
+          {getDocumentDisplayName(usedNode)}
         </Link>
       </div>
       <div className={`content${active} document-node`}>
-        <Hyperlink hyperlink={usedNode.hyperlink}/>
-        { expanded 
-          && getTopicsToDisplayOrderdByLinkType().map( ([type, links] ) => {
+        <Hyperlink hyperlink={usedNode.hyperlink} />
+        {expanded
+          && getTopicsToDisplayOrderdByLinkType().map(([type, links]) => {
             return (
               <div className="document-node__link-type-container" key={type}>
                 <div>
@@ -117,18 +125,24 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({ node, linkType, 
                 </div>
                 <div>
                   <div className="accordion ui fluid styled f0">
-                    { links.map( (link, i) => 
-                        <DocumentNode node={link.document} linkType={type} hasLinktypeRelatedParent={isNestedInRelated()} key={i} />
-                      )
+                    {links.map((link, i) =>
+                        <div key={Math.random()}>
+                          <DocumentNode node={link.document} linkType={type} hasLinktypeRelatedParent={isNestedInRelated()} key={i} />
+                          <FilterButton document={link.document}/>
+                        </div> 
+
+                    )
                     }
                   </div>
                 </div>
               </div>
             );
           })}
+          {/* <FilterButton/> */}
       </div>
     </>
+
   }
 
-  return hasActiveLinks() ? <NestedView/> : <SimpleView/>;
+  return hasActiveLinks() ? <NestedView /> : <SimpleView />;
 };
