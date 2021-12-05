@@ -1,11 +1,12 @@
 import './header.scss';
 
-import React, { useMemo } from 'react';
-import { Link } from 'react-router-dom';
-import { Menu } from 'semantic-ui-react';
+import React, { useMemo, useState } from 'react';
+import { Link, useHistory } from 'react-router-dom';
+import { Menu, Button } from 'semantic-ui-react';
 
 import { useLocationFromOutsideRoute } from '../../hooks/useLocationFromOutsideRoute';
 import { SearchBar } from '../../pages/Search/components/SearchBar';
+import { ClearFilterButton } from '../../components/FilterButton/FilterButton';
 
 const getLinks = (): { to: string; name: string }[] => [
   {
@@ -15,8 +16,22 @@ const getLinks = (): { to: string; name: string }[] => [
 ];
 
 export const Header = () => {
-  const { params, url, showHeader } = useLocationFromOutsideRoute();
+  let currentUrlParams = new URLSearchParams(window.location.search);
+
+  const HandleDoFilter = () => {
+    currentUrlParams.set("applyFilters", "true");
+    history.push(window.location.pathname + "?" + currentUrlParams.toString());
+    window.location.href = window.location.href
+  }
+
+  const history = useHistory();
+
+
+
+  const { params, url, showHeader, showFilter } = useLocationFromOutsideRoute();
+  // console.log(useLocationFromOutsideRoute())
   const links = useMemo(() => getLinks(), [params]);
+  
 
   if (!showHeader) {
     return null;
@@ -31,16 +46,24 @@ export const Header = () => {
             className={`header__nav-bar__link ${url === to || true ? 'header__nav-bar__link--active' : ''}`}
             to={to}
           >
-            <Menu.Item as="span" onClick={() => {}}>
+            <Menu.Item as="span" onClick={() => { }}>
               {name}
             </Menu.Item>
           </Link>
         ))}
         <Menu.Menu position="right">
           <Menu.Item>
+
             <SearchBar />
+
+            {showFilter&& currentUrlParams.has("showButtons")? <div className="foo">
+              <Button onClick={() => { HandleDoFilter() }} content="Apply Filters"></Button>
+              <ClearFilterButton/></div>
+              :""}
           </Menu.Item>
         </Menu.Menu>
+
+
       </Menu>
     </div>
   );
