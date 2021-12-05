@@ -1,3 +1,5 @@
+from pprint import pprint
+
 import tempfile
 import unittest
 
@@ -58,12 +60,14 @@ class TestDB(unittest.TestCase):
             section="ConflictStandSection",
             name="ConflictStandName",
             link="https://example.com/1",
+            type="Standard",
         )
         conflict2 = db.Standard(
             subsection="4.5.2",
             section="ConflictStandSection",
             name="ConflictStandName",
             link="https://example.com/2",
+            type="Standard",
         )
         collection.session.add(conflict1)
         collection.session.add(conflict2)
@@ -76,30 +80,35 @@ class TestDB(unittest.TestCase):
             section="NormalStandSection1",
             name="NormalStand1",
             link="https://example.com/1",
+            type="Standard",
         )
         dbs2 = db.Standard(
             subsection="4.5.2",
             section="NormalStandSection2",
             name="NormalStand2",
             link="https://example.com/2",
+            type="Standard",
         )
         dbsg = db.Standard(
             subsection="4.5.2",
             section="GroupStandSection2",
             name="GroupStand2",
             link="https://example.com/g2",
+            type="Standard",
         )
         dbls1 = db.Standard(
             subsection="4.5.2",
             section="LoneStandSection",
             name="LoneStand",
             link="https://example.com/ls1",
+            type="Standard",
         )
         dbls2 = db.Standard(
             subsection="4.5.2",
             section="OtherLoneStandSection",
             name="OtherLoneStand",
             link="https://example.com/ls2",
+            type="Standard",
         )
         collection.session.add(dbs1)
         collection.session.add(dbs2)

@@ -1,6 +1,6 @@
 import json
 from copy import copy
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass, field
 from enum import Enum
 from pprint import pprint
 from typing import (
@@ -125,17 +125,24 @@ class ExportFormat(Enum):
         )
 
 
-class Credoctypes(Enum):
+class Credoctypes(str, Enum):
     CRE = "CRE"
     Standard = "Standard"
+    Tool = "Tool"
+    Code = "Code"
 
 
-class LinkTypes(Enum):
+class LinkTypes(str, Enum):
     Same = "SAME"
     LinkedTo = "Linked To"  # Any standard entry is by default “linked”
     PartOf = "Is Part Of"  # Hierarchy above: “is part of”
     Contains = "Contains"  # Hierarchy below: “Contains”
     Related = "Related"  # Hierarchy across (other CRE topic or Tag): “related”
+    RemediatedBy = "Remediated by"
+    Remediates = "Remediates"
+
+    TestedBy = "TestedBy"
+    Tests = "Tests"
 
     @staticmethod
     def from_str(name: str) -> Any:  # it returns LinkTypes but then it won't run
@@ -147,17 +154,19 @@ class LinkTypes(Enum):
         return res[0]
 
 
+
+
 @dataclass
 class Link:
     ltype: LinkTypes
     tags: Set[str]
-    document: Any
+    document: "Document"
 
     def __init__(
         self,
         ltype: Union[str, LinkTypes] = LinkTypes.Same,
         tags: Set[str] = set(),
-        document=None,  # type: Optional[Document]
+        document: Optional["Document"] = None,
     ) -> None:
         if document is None:
             raise_MandatoryFieldException("Links need to link to a Document")
@@ -212,7 +221,7 @@ class Document:
     name: str
     links: List[Link]
     tags: Set[str]
-    metadata: Optional[Dict[str, Any]]
+    metadata: Optional[Metadata]
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, type(self)):
@@ -252,27 +261,20 @@ class Document:
         return res
 
     def todict(self) -> Dict[str, Union[Dict[str, str], List[Any], Set[str], str]]:
-        result: Dict[str, Union[Dict[str, str], List[Any], Set[str], str]] = {
-            "doctype": self.doctype.value,
-            "name": self.name,
-        }
-        if self.description:
-            result["description"] = self.description
-        if self.id:
-            result["id"] = self.id
-        if self.links:
-            result["links"] = []
-
-            [
-                result["links"].append(link.todict())  # type: ignore
-                for link in self.links
-            ]  # links is of type Link
-        if self.tags:
-            # purposefully make this a list instead of a set since sets are not json serializable
-            result["tags"] = list(self.tags)
-        if self.metadata:
-            result["metadata"] = self.metadata
-        return result
+        # result: Dict[str, Union[Dict[str, str], List[Any], Set[str], str]] = {
+        #     "doctype": self.doctype.value,
+        #     "name": self.name,
+        # }
+        res = asdict(
+            self,
+            dict_factory=lambda x: {
+                k: v for (k, v) in x if v not in ["", {}, [], None, set()]
+            },
+        )
+        res["doctype"] = self.doctype.value
+        if "tags" in res:
+            res["tags"] = list(self.tags)
+        return res
 
     def add_link(self, link: Link) -> Any:  # it returns Document but then it won't run
         if not self.links:
@@ -328,12 +330,16 @@ class CRE(Document):
 
 
 @dataclass
-class Standard(Document):
+class Node(Document):
+    hyperlink: Optional[str] = ""
+
+
+class Standard(Node):
+    section: str = ""
     doctype = Credoctypes.Standard
-    section: str
-    subsection: str
-    hyperlink: str
-    version: str
+    subsection: Optional[str] = None
+    hyperlink: Optional[str] = None
+    version: Optional[str] = None
 
     def todict(self) -> Dict[Any, Any]:
         result: Dict[Any, Any] = super().todict()
@@ -359,28 +365,28 @@ class Standard(Document):
                 and super().__eq__(other)
             )
 
+@dataclass
+class Tool(Node):
+    class ToolTypes(Enum):
+        Offensive = "Offensive"
+        Defensive = "Defensive"
+        Code = "Code"
+        Unknown = "Unknown"
+
+    doctype = Credoctypes.Tool
+    toolType: ToolTypes = ToolTypes.Unknown
+
     def __init__(
-        self,
-        section: str = "",
-        subsection: str = "",
-        hyperlink: str = "",
-        version: str = "",
-        *args: Any,
-        **kwargs: Any,
+        self, toolType: ToolTypes = ToolTypes.Unknown, *args: Any, **kwargs: Any
     ) -> None:
-        self.doctype = Credoctypes.Standard
-        if section is None or section == "":
-            raise MandatoryFieldException(
-                "%s:%s is an invalid standard entry,"
-                "you can't register an entire standard at once, it needs to have sections"
-                % (kwargs.get("name"), section)
-            )
-        self.section = section
-        self.subsection = subsection
-        self.hyperlink = hyperlink
-        self.version = version
+        self.doctype = Credoctypes.Tool
+        self.toolType = toolType
         super().__init__(*args, **kwargs)
 
+
+@dataclass
+class Code(Tool):
+    pass
 
 class MandatoryFieldException(Exception):
     pass

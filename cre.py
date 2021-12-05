@@ -99,6 +99,14 @@ def main() -> None:
         default=os.path.join(os.path.dirname(os.path.realpath(__file__)), "./cres/"),
         help="define location of local cre files for review/add",
     )
+
+    parser.add_argument(
+        "--owasp_proj_meta",
+        default=os.path.join(
+            os.path.dirname(os.path.realpath(__file__)), "./cres/owasp/projects.yaml"
+        ),
+        help="define location of owasp project metadata",
+    )
     parser.add_argument(
         "--osib_in",
         default=None,

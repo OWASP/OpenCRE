@@ -1,3 +1,5 @@
+from pprint import pprint
+from dataclasses import asdict
 import unittest
 
 from application.defs import cre_defs as defs
@@ -14,7 +16,6 @@ class TestCreDefs(unittest.TestCase):
         )
         standard_output = {
             "doctype": "Standard",
-            "hyperlink": "",
             "name": "ASVS",
             "section": "SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING",
             "subsection": "3.1.1",
@@ -110,18 +111,23 @@ class TestCreDefs(unittest.TestCase):
         )
         nested_output = {
             "doctype": "Standard",
-            "hyperlink": "",
             "name": "ASVS",
             "section": "SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING",
             "subsection": "3.1.1",
-            "version": "",
         }
         self.maxDiff = None
-        self.assertEqual(standard.todict(), standard_output)
+        self.assertEqual(standard.to_dict(), standard_output)
+        try:
+            self.assertCountEqual(nested.todict(), nested_output)
+        except Exception as e:
+            pprint("9" * 89)
+            pprint(asdict(nested))
+            pprint("9" * 89)
+            pprint(nested_output)
+            pprint("9" * 89)
 
         self.assertCountEqual(cre.todict(), cre_output)
         self.assertCountEqual(group.todict(), group_output)
-        self.assertCountEqual(nested.todict(), nested_output)
 
     def test_linktype_from_str(self) -> None:
         expected = {

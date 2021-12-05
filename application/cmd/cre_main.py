@@ -1,6 +1,3 @@
-from pprint import pprint
-
-import json
 import argparse
 import logging
 import os
@@ -91,6 +88,12 @@ def register_cre(cre: defs.CRE, collection: db.Standard_collection) -> db.CRE:
                 standard=register_standard(
                     standard=link.document, collection=collection
                 ),
+                type=link.ltype,
+            )
+        elif type(link.document) == defs.Tool:
+            collection.add_link(
+                cre=dbcre,
+                tool=register_tool(tool=link.document, collection=collection),
                 type=link.ltype,
             )
     return dbcre
@@ -321,7 +324,6 @@ def run(args: argparse.Namespace) -> None:
         add_from_disk(cache_loc=args.cache_file, cre_loc=args.cre_loc)
     elif args.print_graph:
         print_graph()
-
     elif args.review and args.osib_in:
         review_osib_from_file(
             file_loc=args.osib_in, cache=args.cache_file, cre_loc=args.cre_loc
@@ -334,6 +336,8 @@ def run(args: argparse.Namespace) -> None:
 
     elif args.osib_out:
         export_to_osib(file_loc=args.osib_out, cache=args.cache_file)
+    elif args.owasp_proj_meta:
+        owasp_metadata_to_cre(args.owasp_proj_meta)
 
 
 def db_connect(path: str) -> db.Standard_collection:
@@ -365,6 +369,7 @@ def create_spreadsheet(
 
 
 def prepare_for_review(cache: str) -> Tuple[str, str]:
+
     loc = tempfile.mkdtemp()
     cache_filename = os.path.basename(cache)
     if os.path.isfile(cache):
@@ -372,8 +377,6 @@ def prepare_for_review(cache: str) -> Tuple[str, str]:
     else:
         logger.fatal("Could not copy database %s this seems like a bug" % cache)
     return loc, os.path.join(loc, cache_filename)
-
-
 def review_osib_from_file(file_loc: str, cache: str, cre_loc: str) -> None:
     """Given the location of an osib.yaml, parse osib, convert to cres and add to db
     export db to yamls and spreadsheet for review"""
@@ -398,20 +401,20 @@ def review_osib_from_file(file_loc: str, cache: str, cre_loc: str) -> None:
     logger.info(f"A spreadsheet view is at {sheet_url}")
 
 
-def add_osib_from_file(file_loc: str, cache: str, cre_loc: str) -> None:
-    database = db_connect(path=cache)
-    ymls = odefs.read_osib_yaml(file_loc)
-    osibs = odefs.try_from_file(ymls)
-    for osib in osibs:
-        cre, standard = odefs.osib2cre(osib)
-        [register_cre(c, database) for c in cre]
-        [register_standard(s, database) for s in standard]
-    database.export(cre_loc)
-
-
-def export_to_osib(file_loc: str, cache: str) -> None:
-    docs = db_connect(path=cache).export(file_loc, dry_run=True)
-    tree = odefs.cre2osib(docs)
-    with open(file_loc, "x"):
-        with open(file_loc, "w") as f:
-            f.write(json.dumps(tree.to_dict()))
+def owasp_metadata_to_cre(meta_file: str):
+    """given a file with entries like below
+    parse projects of type "tool" in file into "tool" data.
+    {
+        "name": "Security Qualitative Metrics",
+        "url": "https://owasp.org/www-project-security-qualitative-metrics/",
+        "created": "2020-07-20",
+        "updated": "2021-04-20",
+        "build": "built",
+        "title": "OWASP Security Qualitative Metrics",
+        "level": "2",
+        "type": "documentation",
+        "region": "Unknown",
+        "pitch": "The OWASP Security Qualitative Metrics is the most detailed list of metrics which evaluate security level of web projects. It shows the level of coverage of OWASP ASVS."
+    },
+    """
+    raise NotImplementedError("someone needs to work on this")

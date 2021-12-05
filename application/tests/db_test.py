@@ -85,6 +85,7 @@ class TestDB(unittest.TestCase):
             link="https://example.com",
             version="",
             tags="tag1, dots.5.5, space 6 , several spaces and newline          7        \n",
+            type=defs.Standard.__name__,
         )
         standard = db.StandardFromDB(dbstandard)
         self.collection.session.add(dbcre)
@@ -225,6 +226,7 @@ class TestDB(unittest.TestCase):
                     subsection="foobar",
                     link="https://example.com/foo/bar",
                     version="1.1.1",
+                    type=defs.Standard.__name__,
                 )
             ),
         )
@@ -307,6 +309,7 @@ class TestDB(unittest.TestCase):
         self.assertEqual(dbstandard.name, s.name)
         self.assertEqual(dbstandard.section, s.section)
         self.assertEqual(dbstandard.subsection, s.subsection)
+        self.assertEqual(dbstandard.type, type(s).__name__)
         # ensure the right thing got returned
         self.assertEqual(newStandard.name, s.name)
 
@@ -362,9 +365,21 @@ class TestDB(unittest.TestCase):
     def test_find_cres_of_standard(self) -> None:
         dbcre = db.CRE(description="CREdesc1", name="CREname1")
         dbgroup = db.CRE(description="CREdesc2", name="CREname2")
-        dbstandard1 = db.Standard(section="section1", name="standard1")
-        group_standard = db.Standard(section="section2", name="standard2")
-        lone_standard = db.Standard(section="section3", name="standard3")
+        dbstandard1 = db.Standard(
+            section="section1",
+            name="standard1",
+            type=defs.Standard.__name__,
+        )
+        group_standard = db.Standard(
+            section="section2",
+            name="standard2",
+            type=defs.Standard.__name__,
+        )
+        lone_standard = db.Standard(
+            section="section3",
+            name="standard3",
+            type=defs.Standard.__name__,
+        )
 
         self.collection.session.add(dbcre)
         self.collection.session.add(dbgroup)
@@ -408,11 +423,21 @@ class TestDB(unittest.TestCase):
         dbc2 = db.CRE(description="gcCD2", name="gcC2")
         dbc3 = db.CRE(description="gcCD3", name="gcC3")
         dbs1 = db.Standard(
-            name="gcS2", section="gc1", subsection="gc2", link="gc3", version="gc1.1.1"
+            type=defs.Standard.__name__,
+            name="gcS2",
+            section="gc1",
+            subsection="gc2",
+            link="gc3",
+            version="gc1.1.1",
         )
 
         dbs2 = db.Standard(
-            name="gcS3", section="gc1", subsection="gc2", link="gc3", version="gc3.1.2"
+            type=defs.Standard.__name__,
+            name="gcS3",
+            section="gc1",
+            subsection="gc2",
+            link="gc3",
+            version="gc3.1.2",
         )
 
         collection.session.add(dbc1)
@@ -541,7 +566,12 @@ class TestDB(unittest.TestCase):
             "dbc2": db.CRE(description="CD2", name="C2"),
             "dbc3": db.CRE(description="CD3", name="C3"),
             "dbs1": db.Standard(
-                name="S1", section="1", subsection="2", link="3", version="4"
+                type=defs.Standard.__name__,
+                name="S1",
+                section="1",
+                subsection="2",
+                link="3",
+                version="4",
             ),
         }
         links = [("dbc1", "dbs1"), ("dbc2", "dbs1"), ("dbc3", "dbs1")]
@@ -591,7 +621,12 @@ class TestDB(unittest.TestCase):
             "dbc2": db.CRE(description="CD2", name="C2"),
             "dbc3": db.CRE(description="CD3", name="C3"),
             "dbs1": db.Standard(
-                name="S1", section="1", subsection="2", link="3", version="4"
+                name="S1",
+                section="1",
+                subsection="2",
+                link="3",
+                version="4",
+                type=defs.Standard.__name__,
             ),
         }
         links = [("dbc1", "dbs1"), ("dbc2", "dbs1"), ("dbc3", "dbs1")]
@@ -936,7 +971,18 @@ class TestDB(unittest.TestCase):
         }
         self.maxDiff = None
         for k, val in expected.items():
-            self.assertCountEqual(self.collection.text_search(k), val)
+            res = self.collection.text_search(k)
+            try:
+                self.assertCountEqual(res, val)
+            except Exception as e:
+                pprint(k)
+                pprint("|" * 99)
+                pprint(res)
+                pprint("|" * 99)
+                pprint(val)
+                pprint("|" * 99)
+                input()
+                raise e
 
 
 if __name__ == "__main__":

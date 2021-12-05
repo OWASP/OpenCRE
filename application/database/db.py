@@ -32,8 +32,10 @@ class Standard(BaseModel):  # type: ignore
     section = sqla.Column(sqla.String, nullable=False)
     # which subpart of <name> are we linking to
     subsection = sqla.Column(sqla.String)
-    tags = sqla.Column(sqla.String, default="")  # coma separated tags
-    version = sqla.Column(sqla.String, default="")
+    tags = sqla.Column(sqla.String)  # coma separated tags
+    version = sqla.Column(sqla.String)
+    description = sqla.Column(sqla.String)
+    type = sqla.Column(sqla.String)
 
     # some external link to where this is, usually a URL with an anchor
     link = sqla.Column(sqla.String, default="")
@@ -251,6 +253,8 @@ class Standard_collection:
         page: int = 0,
         items_per_page: Optional[int] = None,
         include_only: Optional[List[str]] = None,
+        type: Optional[List[str]] = None,
+        description: Optional[List[str]] = None,
     ) -> Tuple[
         Optional[int], Optional[List[cre_defs.Standard]], Optional[List[Standard]]
     ]:
@@ -261,7 +265,14 @@ class Standard_collection:
         """
         standards = []
         dbstands = self.__get_standards_query__(
-            name, section, subsection, link, version, partial
+            name=name,
+            section=section,
+            subsection=subsection,
+            link=link,
+            version=version,
+            partial=[partial],
+            type=type,
+            description=description,
         ).paginate(int(page), items_per_page, False)
         total_pages = dbstands.pages
         if dbstands.items:
@@ -300,6 +311,8 @@ class Standard_collection:
         version: Optional[str] = None,
         partial: Optional[bool] = False,
         include_only: Optional[List[str]] = None,
+        description: Optional[str] = None,
+        type: Optional[str] = None,
     ) -> Optional[List[cre_defs.Standard]]:
 
         standards = []
@@ -310,6 +323,8 @@ class Standard_collection:
             link=link,
             version=version,
             partial=partial,
+            type=type,
+            description=description,
         )
         dbstands = standards_query.all()
         if dbstands:
@@ -346,6 +361,8 @@ class Standard_collection:
         link: Optional[str] = None,
         version: Optional[str] = None,
         partial: Optional[bool] = False,
+        type: Optional[str] = None,
+        description: Optional[str] = None,
     ) -> sqla.Query:
         if not name and not section and not subsection and not link and not version:
             raise ValueError("tried to retrieve standard with no values")
@@ -381,6 +398,16 @@ class Standard_collection:
                 query = query.filter(Standard.version == version)
             else:
                 query = query.filter(Standard.version.like(version))
+        if type:
+            if not partial:
+                query = query.filter(Standard.type == type)
+            else:
+                query = query.filter(Standard.type.like(type))
+        if description:
+            if not partial:
+                query = query.filter(Standard.description == description)
+            else:
+                query = query.filter(Standard.description.like(description))
         return query
 
     def get_CREs(
@@ -588,13 +615,25 @@ class Standard_collection:
             self.cre_graph.add_node(f"CRE: {entry.id}")
         return entry
 
-    def add_standard(self, standard: cre_defs.Standard) -> Standard:
+    def add_standard(self, standard: cre_defs.Node) -> Standard:
         entry: Standard = Standard.query.filter(
             sqla.and_(
                 func.lower(Standard.name) == standard.name.lower(),
-                func.lower(Standard.section) == standard.section.lower(),
-                func.lower(Standard.subsection) == standard.subsection.lower(),
-                func.lower(Standard.version) == standard.version.lower(),
+                func.lower(Standard.section) == standard.section.lower()
+                if standard.section
+                else None,
+                func.lower(Standard.subsection) == standard.subsection.lower()
+                if standard.subsection
+                else None,
+                func.lower(Standard.version) == standard.version.lower()
+                if standard.version
+                else None,
+                func.lower(Standard.link) == standard.hyperlink.lower()
+                if standard.hyperlink
+                else None,
+                func.lower(Standard.description) == standard.description.lower()
+                if standard.description
+                else None,
             )
         ).first()
         if entry is not None:
@@ -604,6 +643,11 @@ class Standard_collection:
             return entry
         else:
             logger.debug(f"did not know of {standard.name}:{standard.section} ,adding")
+            ntype = type(standard).__name__
+            description = None
+            if isinstance(standard, cre_defs.Tool):
+                standard.tags.add(standard.toolType)
+                description = standard.description
             entry = Standard(
                 name=standard.name,
                 section=standard.section,
@@ -611,6 +655,8 @@ class Standard_collection:
                 link=standard.hyperlink,
                 version=standard.version,
                 tags=",".join([str(t) for t in standard.tags]),
+                type=ntype,
+                description=description,
             )
             self.session.add(entry)
             self.session.commit()
@@ -897,7 +943,7 @@ class Standard_collection:
             )
             if stands:
                 results.extend(stands)
-        args = [f"%{text}%", "", ""]
+        args = [f"%{text}%", None, None]
         for combo in permutations(args, 3):
             cres = self.get_CREs(
                 name=combo[0], external_id=combo[1], description=combo[2], partial=True
@@ -909,27 +955,50 @@ class Standard_collection:
 
 def dbStandardFromStandard(standard: cre_defs.Standard) -> Standard:
     """Returns a db Standard object dropping the links"""
+    ntype = standard.toolType.value if isinstance(standard, cre_defs.Tool) else None
     return Standard(
         name=standard.name,
         section=standard.section,
         subsection=standard.subsection,
         version=standard.version,
+        type=ntype,
+        description=standard.description,
     )
 
 
+def __nodeFromDB(dbnode: Standard) -> Union[None, cre_defs.Node]:
+    tags = set()
+    if dbnode.tags:
+        tags = set(dbnode.tags.split(","))
+    if dbnode.type == cre_defs.Standard.__name__:
+        return cre_defs.Standard(
+            name=dbnode.name,
+            section=dbnode.section,
+            subsection=dbnode.subsection,
+            hyperlink=dbnode.link,
+            tags=tags,
+            version=dbnode.version,
+        )
+    elif dbnode.type == cre_defs.Tool.__name__:
+        for tag in tags:
+            if tag in cre_defs.Tool.ToolTypes:
+                tag = cre_defs.Tool.ToolTypes[tag].value
+        return cre_defs.Tool(
+            name=dbnode.name,
+            hyperlink=dbnode.link,
+            tags=tags,
+            version=dbnode.version,
+            description=dbnode.description,
+            toolType=tag,
+        )
+    return None
+
+
+def ToolFromDB(dbtool: Standard) -> cre_defs.Tool:
+    return cast(cre_defs.Tool, __nodeFromDB(dbtool))
 def StandardFromDB(dbstandard: Standard) -> cre_defs.Standard:
 
-    tags = set()
-    if dbstandard.tags:
-        tags = set(dbstandard.tags.split(","))
-    return cre_defs.Standard(
-        name=dbstandard.name,
-        section=dbstandard.section,
-        subsection=dbstandard.subsection,
-        hyperlink=dbstandard.link,
-        tags=tags,
-        version=dbstandard.version,
-    )
+    return cast(cre_defs.Standard, __nodeFromDB(dbstandard))
 
 
 def CREfromDB(dbcre: CRE) -> cre_defs.CRE:
