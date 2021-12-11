@@ -344,8 +344,3 @@ children:
                           sources_i18n:
                               en:
                                 name:   "Portswigger"
-                        children:
-                          1:
-                            attributes:
-                              sources_i18n:
-                                  en:

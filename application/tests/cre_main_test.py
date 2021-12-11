@@ -40,7 +40,7 @@ class TestMain(unittest.TestCase):
                         name="CWE",
                         links=[],
                         tags=set(),
-                        metadata=defs.Metadata(labels={}),
+                        metadata={},
                         section="598",
                     )
                 ),
@@ -52,13 +52,13 @@ class TestMain(unittest.TestCase):
                         name="ASVS",
                         links=[],
                         tags=set(),
-                        metadata=defs.Metadata(labels={}),
+                        metadata={},
                         section="SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING",
                     )
                 ),
             ],
             tags=set(),
-            metadata=defs.Metadata(labels={}),
+            metadata={},
             section="Standard With Links",
         )
         ret = main.register_standard(
@@ -92,7 +92,7 @@ class TestMain(unittest.TestCase):
                         name="crename",
                         links=[],
                         tags=set(),
-                        metadata=defs.Metadata(labels={}),
+                        metadata={},
                     )
                 ),
                 defs.Link(
@@ -103,13 +103,13 @@ class TestMain(unittest.TestCase):
                         name="ASVS",
                         links=[],
                         tags=set(),
-                        metadata=defs.Metadata(labels={}),
+                        metadata={},
                         section="SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING",
                     )
                 ),
             ],
             tags=set(),
-            metadata=defs.Metadata(labels={}),
+            metadata={},
             section="standard_with_cre",
         )
 
@@ -146,12 +146,12 @@ class TestMain(unittest.TestCase):
                                     name="crename2",
                                     links=[],
                                     tags=set(),
-                                    metadata=defs.Metadata(labels={}),
+                                    metadata={},
                                 )
                             )
                         ],
                         tags=set(),
-                        metadata=defs.Metadata(labels={}),
+                        metadata={},
                     )
                 ),
                 defs.Link(
@@ -162,7 +162,7 @@ class TestMain(unittest.TestCase):
                         name="CWE",
                         links=[],
                         tags=set(),
-                        metadata=defs.Metadata(labels={}),
+                        metadata={},
                         section="598",
                     )
                 ),
@@ -174,7 +174,7 @@ class TestMain(unittest.TestCase):
                         name="crename",
                         links=[],
                         tags=set(),
-                        metadata=defs.Metadata(labels={}),
+                        metadata={},
                     )
                 ),
                 defs.Link(
@@ -185,13 +185,13 @@ class TestMain(unittest.TestCase):
                         name="ASVS",
                         links=[],
                         tags=set(),
-                        metadata=defs.Metadata(labels={}),
+                        metadata={},
                         section="SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING",
                     )
                 ),
             ],
             tags=set(),
-            metadata=defs.Metadata(labels={}),
+            metadata={},
             section="Session Management",
         )
 
@@ -227,7 +227,7 @@ class TestMain(unittest.TestCase):
             name="CREname",
             links=[defs.Link(document=standard)],
             tags=["CREt1", "CREt2"],
-            metadata=defs.Metadata(labels={"tags": ["CREl1", "CREl2"]}),
+            metadata={"tags": ["CREl1", "CREl2"]},
         )
         self.assertEqual(main.register_cre(cre, self.collection).name, cre.name)
         self.assertEqual(main.register_cre(cre, self.collection).external_id, cre.id)

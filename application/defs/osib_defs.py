@@ -1,4 +1,4 @@
-from pprint import pprint
+from pprint import pp, pprint
 import logging
 import os
 import re
@@ -134,15 +134,24 @@ def resolve_path(osib_link: _Link = None) -> Tuple[Optional[str], Optional[str]]
     return None, None
 
 
-def parse_node(
+def find_doc(link: _Link = None) -> defs.Document:
+    # TODO (spyros): given a list of existing docs, find if the link exists in the list, otherwise create a new doc and return1.
+    docname, docsection = resolve_path(link)
+    return defs.Standard(section=docsection, name=docname)
+
+
+def _parse_node(
     orgname: str = None,
     root: str = "OSIB",
     name: str = None,
     osib: Osib_node = None,
-    current_path: str = None,
+    current_path: str = "",
     node_type: defs.Credoctypes = None,
 ):
-    result = []
+    result: List[defs.Document] = []
+    if not osib:
+        return result
+
     if (
         osib
         and osib.attributes
@@ -152,56 +161,76 @@ def parse_node(
         and root
     ):
         "register the standard with the current path as subsection"
-        p = current_path.replace(f"{root}.{orgname}.", "")
         english_attrs = osib.attributes.sources_i18n.get("en")
         if english_attrs:
-            res = defs.Document(
-                doctype=node_type,
-                name=name,
-                section=p,
-                hyperlink=english_attrs.get("source"),
-            )
-            res.metadata = defs.Metadata()
+            res: defs.Document
+            if node_type == defs.Credoctypes.Standard:
+                res = defs.Standard(
+                    name=name,
+                    section=current_path.replace(f"{root}.{orgname}.", ""),
+                    hyperlink=english_attrs.source,
+                    metadata={},
+                )
+            elif node_type == defs.Credoctypes.CRE:
+                res = defs.CRE(
+                    name=name,
+                    description="",
+                    hyperlink=english_attrs.source,
+                    metadata={},
+                )
+            else:
+                defs.raise_MandatoryFieldException("OSIB node type unknown")
+
             if osib.aliases:
-                res.metadata.labels["alias"] = [x for x in osib.aliases]
+                res.metadata["alias"] = [x for x in osib.aliases]
             if osib.attributes.source_id:
-                res.metadata.labels["source_id"] = osib.attributes.source_id
+                res.metadata["source_id"] = osib.attributes.source_id
             if osib.attributes.maturity:
-                res.metadata.labels["maturity"] = osib.attributes.maturity
+                res.metadata["maturity"] = osib.attributes.maturity
             if osib.attributes.categories:
-                res.metadata.labels["categories"] = [
-                    x for x in osib.attributes.categories
-                ]
+                res.metadata["categories"] = [x for x in osib.attributes.categories]
 
             for olink in osib.attributes.links:
-                docname, docsection = resolve_path(olink)
+                linked_doc = find_doc(olink)
                 if olink.type:
                     if olink.type.lower() == "parent":
                         res.add_link(
-                            link=defs.Link(document=res, ltype=defs.LinkTypes.PartOf)
+                            link=defs.Link(
+                                document=linked_doc, ltype=defs.LinkTypes.PartOf
+                            )
                         )
                     elif olink.type.lower() == "child":
                         res.add_link(
-                            link=defs.Link(document=res, ltype=defs.LinkTypes.Contains)
+                            link=defs.Link(
+                                document=linked_doc, ltype=defs.LinkTypes.Contains
+                            )
                         )
                     elif olink.type.lower() == "related":
                         res.add_link(
-                            link=defs.Link(document=res, ltype=defs.LinkTypes.Related)
+                            link=defs.Link(
+                                document=linked_doc, ltype=defs.LinkTypes.Related
+                            )
                         )
-        return res
-
-    for section, child in osib.children.items():
-        if child.children:
+            return [res]
+        else:
+            logger.warning("OSIB has no english attributes, parsing skipped")
+    if osib.children:
+        for section, child in osib.children.items():
+            cpath = current_path.replace(f"{root}.{orgname}.", "")
             result.extend(
-                parse_node(
+                _parse_node(
                     orgname=orgname,
                     root=root,
                     name=name,
                     osib=child,
-                    current_path=f"{current_path}.{section}",
+                    current_path=f"{cpath}.{section}" if len(cpath) else f"{section}",
                     node_type=node_type,
                 )
             )
+    else:
+        logger.error(
+            "OSIB doesn't have children but leaf branch not followed this is a bug"
+        )
     return result
 
 
@@ -218,7 +247,7 @@ def osib2cre(tree: Osib_tree) -> Optional[Tuple[List[defs.CRE], List[defs.Docume
             for pname, project in org.children.items():
                 if str(pname).lower() != "cre":
                     standards.extend(
-                        parse_node(
+                        _parse_node(
                             root=root,
                             orgname=str(orgname),
                             name=str(pname),
@@ -228,7 +257,7 @@ def osib2cre(tree: Osib_tree) -> Optional[Tuple[List[defs.CRE], List[defs.Docume
                     )
                 else:
                     cres.extend(
-                        parse_node(
+                        _parse_node(
                             root=root,
                             orgname=str(orgname),
                             osib=project,
