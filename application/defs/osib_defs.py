@@ -1,3 +1,4 @@
+from networkx import networkx as nx
 from pprint import pp, pprint
 import logging
 import os
@@ -7,6 +8,8 @@ from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from enum import Enum
 from typing import Any, Dict, List, NewType, Optional, Tuple, Union
+
+from networkx.algorithms.simple_paths import all_simple_paths
 from application.defs import cre_defs as defs
 
 import semver
@@ -106,7 +109,7 @@ class Osib_tree(Osib_node):
 
     doctype: str = field(compare=False, default="OSIB")
     schema: Optional[str] = field(
-        compare=False, default=semver.VersionInfo.parse("0.0.0")
+        compare=False, default=str(semver.VersionInfo(major=0, minor=0, patch=0))
     )
     # Date, when the tree has been comiled as int: YYYYMMDD
     date: Optional[str] = field(compare=False, default=None)
@@ -267,5 +270,142 @@ def osib2cre(tree: Osib_tree) -> Optional[Tuple[List[defs.CRE], List[defs.Docume
     return (cres, standards)
 
 
+def update_paths(paths: Optional[nx.DiGraph], pid: str, cid: str) -> nx.DiGraph:
+    if not paths:
+        paths = nx.DiGraph()
+    paths.add_edge(pid, cid)
+    return paths
+
+    # def update_paths(osib_paths:List[str],pid:str,cid:str)->List[str]:
+    paths = nx.DiGraph()
+    # paths.add_node(pid)
+    # paths.add_node(cid)
+
+    paths.add_edge(pid, cid)
+
+    # path = f"{pid}.{cid}"
+    # if [pt for pt in osib_paths if path in pt]:
+    #     return osib_paths
+
+    # to_append = [pt for pt in osib_paths if pt.endswith(pid)]
+    # if to_append:
+    #     for pt in to_append:
+    #         osib_paths[osib_paths.index(pt)] = f"{pt}.{cid}"
+    #     return osib_paths
+
+    # # find parents of pid
+
+    # parents = set()
+    # found = False
+    # for pt in osib_paths:
+    #     match = re.search(r"^(?P<predicate>.+\.)"+pid+"\..+$",pt)
+    #     if match:
+    #         parents.add(match.group("predicate"))
+    #         found=True
+    # for p in parents:
+    #     osib_paths.append(f"{p}.{pid}.{cid}")
+    # if found:
+    #     return osib_paths
+
+    # cid_start = [ps for ps in osib_paths if ps.startswith(f"{cid}.")]
+    # if cid_start:
+    #     for cs in cid_start:
+    #         osib_paths[osib_paths.index(cs)] = f"{pid}.{cs}"
+    #     return osib_paths
+    # osib_paths.append(f"{pid}.{cid}")
+    # return osib_paths
+
+
+def paths_to_osib(osib_paths: List[str], cres: Dict[str, defs.Document]) -> Osib_tree:
+    # TODO: this doesn't add links (although, the child/parent structure IS the link)
+    result: Dict[str, Osib_node] = {}
+    osibs = {}
+    owasp = Osib_node(
+        attributes=Node_attributes(
+            sources_i18n={
+                Lang("en"): _Source(
+                    name="Open Web Application Security Project",
+                    source="https://owasp.org",
+                )
+            }
+        )
+    )
+    root = Osib_node(
+        attributes=Node_attributes(
+            sources_i18n={
+                Lang("en"): _Source(
+                    name="Common Requirements Enumeration",
+                    source="https://www.opencre.org",
+                )
+            }
+        )
+    )
+    for id, cre in cres.items():
+        o = Osib_node(
+            children={},
+            attributes=Node_attributes(
+                source_id=cre.id,
+                sources_i18n={
+                    Lang("en"): _Source(
+                        description=cre.description,
+                        name=cre.name,
+                        source="",  # todo: make source point to opencre.org deeplink
+                    )
+                },
+                links=[],
+            ),
+        )
+        osibs[id] = o
+    for osib_path in sorted(osib_paths, key=len):
+        pwo = None
+        for oid in osib_path.split("."):
+            if pwo is not None:
+                if oid not in pwo.children:
+                    pwo.children[oid] = osibs[oid]
+            else:
+                result[oid] = osibs[oid]
+            pwo = osibs[oid]
+    root.children = result
+    owasp.children = {"CRE": root}
+    return Osib_tree(children={"OWASP": owasp})
+
+
 def cre2osib(docs: List[defs.Document]) -> List[Osib_tree]:
-    pass
+    # TODO: This only works with a link depth of 1, this is the general assumption for CREs but would be nice to make it work recursively
+    osib_paths: List[str] = []
+    cres = {}
+    root = "OSIB"
+    org = "OWASP"
+    project = "CRE"
+    base_path = f"{root}.{org}.{project}"
+    osib_graph = nx.DiGraph()
+
+    for doc in docs:
+        cres[doc.id] = doc
+        for link in doc.links:
+            cres[link.document.id] = link.document
+            if link.ltype == defs.LinkTypes.PartOf:
+
+                osib_paths = update_paths(
+                    paths=osib_graph, pid=link.document.id, cid=doc.id
+                )
+
+                # osib_paths = update_paths(osib_paths=osib_paths,pid=link.document.id, cid=doc.id)
+            elif link.ltype == defs.LinkTypes.Contains:
+
+                osib_paths = update_paths(
+                    paths=osib_graph, pid=doc.id, cid=link.document.id
+                )
+
+                # osib_paths = update_paths(osib_paths=osib_paths,pid=doc.id, cid=link.document.id)
+            elif link.ltype == defs.LinkTypes.Related:
+                # if there isn't an existing path with this ID add this under the Root
+                # else just register the same level link relationship
+                pass
+            elif link.ltype == defs.LinkTypes.LinkedTo:
+                # no idea what to do here, this is a standard so perhaps it should be equal to related
+                pass
+    pprint(all_simple_paths(osib_graph))
+    input()
+    return paths_to_osib(osib_paths=[".".join(p) for p in osib_paths], cres=cres)
+    raise NotImplementedError("make this")
