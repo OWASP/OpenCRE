@@ -473,7 +473,7 @@ class Standard_collection:
             cres.append(cre)
         return cres
 
-    def export(self, dir: str) -> List[cre_defs.Document]:
+    def export(self, dir: str, dry_run: bool = False) -> List[cre_defs.Document]:
         """Exports the database to a CRE file collection on disk"""
         docs: Dict[str, cre_defs.Document] = {}
         cre, standard = None, None
@@ -540,11 +540,12 @@ class Standard_collection:
 
         for _, doc in docs.items():
             title = doc.name.replace("/", "-") + ".yaml"
-            file.writeToDisk(
-                file_title=title,
-                file_content=yaml.safe_dump(doc.todict()),
-                cres_loc=dir,
-            )
+            if not dry_run:
+                file.writeToDisk(
+                    file_title=title,
+                    file_content=yaml.safe_dump(doc.todict()),
+                    cres_loc=dir,
+                )
 
         return list(docs.values())
 

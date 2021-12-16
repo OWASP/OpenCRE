@@ -237,14 +237,14 @@ def _parse_node(
     return result
 
 
-def osib2cre(tree: Osib_tree) -> Optional[Tuple[List[defs.CRE], List[defs.Document]]]:
+def osib2cre(tree: Osib_tree) -> Tuple[List[defs.CRE], List[defs.Document]]:
     tree_aliases = tree.aliases
     attrs = tree.attributes
     standards: List[defs.Document] = []
     cres: List[defs.CRE] = []
     root = tree.doctype
     if not tree.children:
-        return None
+        return [], []
     for orgname, org in tree.children.items():
         if org.children:
             for pname, project in org.children.items():
