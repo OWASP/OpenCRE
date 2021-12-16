@@ -399,4 +399,3 @@ def cre2osib(docs: List[defs.Document]) -> Osib_tree:
         cres=cres,
         related_nodes=related_nodes,
     )
-    raise NotImplementedError("make this")
