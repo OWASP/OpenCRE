@@ -160,28 +160,28 @@ def _parse_node(
         return result
 
     if (
-        osib
-        and osib.attributes
-        and not osib.children
-        and current_path
-        and orgname
-        and root
+        osib is not None
+        and osib.attributes is not None
+        and osib.children in ({}, None)
+        and current_path not in (None, "")
+        and orgname not in (None, "")
+        and root not in (None, "")
     ):
         res: defs.Document
         "register the standard with the current path as subsection"
         english_attrs = osib.attributes.sources_i18n.get("en")
-        if english_attrs and english_attrs.source:
+        if english_attrs:
             if node_type == defs.Credoctypes.Standard:
                 res = defs.Standard(
                     name=name,
                     section=current_path.replace(f"{root}.{orgname}.", ""),
-                    hyperlink=english_attrs.source,
+                    hyperlink=english_attrs.source if english_attrs.source else "",
                 )
             elif node_type == defs.Credoctypes.CRE:
                 res = defs.CRE(
                     name=name,
                     description="",
-                    hyperlink=english_attrs.source,
+                    hyperlink=english_attrs.source if english_attrs.source else "",
                 )
             else:
                 defs.raise_MandatoryFieldException("OSIB node type unknown")
@@ -220,7 +220,8 @@ def _parse_node(
             return [res]
         else:
             logger.warning("OSIB has no english attributes, parsing skipped")
-    if osib.children:
+
+    elif osib.children:
         for section, child in osib.children.items():
             cpath = current_path.replace(f"{root}.{orgname}.", "")
             result.extend(
@@ -237,7 +238,6 @@ def _parse_node(
         logger.error(
             "OSIB doesn't have children but leaf branch not followed this is a bug"
         )
-        pprint(osib.to_dict())
     return result
 
 

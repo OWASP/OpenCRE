@@ -33,10 +33,10 @@ docker-run:
 	 docker run -it -p 5000:5000 opencre:$(shell git rev-parse HEAD)
 
 lint:
-	black .
+	[ -d "./venv" ] && . ./venv/bin/activate && black .
 
 mypy:
-	mypy --ignore-missing-imports --implicit-reexport --no-strict-optional --strict application
+	[ -d "./venv" ] && . ./venv/bin/activate &&  mypy --ignore-missing-imports --implicit-reexport --no-strict-optional --strict application
 
 frontend:
 	yarn build
