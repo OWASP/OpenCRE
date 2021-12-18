@@ -15,8 +15,8 @@ from application.config import CMDConfig
 from application.database import db
 from application.defs import cre_defs as defs
 from application.defs import osib_defs as odefs
-from application.utils import parsers  # type: ignore
 from application.utils import spreadsheet as sheet_utils
+from application.utils import parsers
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
@@ -374,7 +374,7 @@ def prepare_for_review(cache: str) -> Tuple[str, str]:
     return loc, os.path.join(loc, cache_filename)
 
 
-def review_osib_from_file(file_loc: str, cache: str, cre_loc: str):
+def review_osib_from_file(file_loc: str, cache: str, cre_loc: str) -> None:
     """Given the location of an osib.yaml, parse osib, convert to cres and add to db
     export db to yamls and spreadsheet for review"""
     loc, cache = prepare_for_review(cache)
@@ -398,7 +398,7 @@ def review_osib_from_file(file_loc: str, cache: str, cre_loc: str):
     logger.info(f"A spreadsheet view is at {sheet_url}")
 
 
-def add_osib_from_file(file_loc: str, cache: str, cre_loc: str):
+def add_osib_from_file(file_loc: str, cache: str, cre_loc: str) -> None:
     database = db_connect(path=cache)
     ymls = odefs.read_osib_yaml(file_loc)
     osibs = odefs.try_from_file(ymls)
@@ -409,7 +409,7 @@ def add_osib_from_file(file_loc: str, cache: str, cre_loc: str):
     database.export(cre_loc)
 
 
-def export_to_osib(file_loc: str, cache: str):
+def export_to_osib(file_loc: str, cache: str) -> None:
     docs = db_connect(path=cache).export(file_loc, dry_run=True)
     tree = odefs.cre2osib(docs)
     with open(file_loc, "x"):

@@ -5,23 +5,25 @@ import tempfile
 import unittest
 from pprint import pprint
 from typing import Any, Dict, List
-from unittest.mock import patch
+from unittest.mock import patch, Mock
 from application import create_app, sqla  # type: ignore
 from application.cmd import cre_main as main
 from application.database import db
 from application.defs import cre_defs as defs
 from application.defs import osib_defs as odefs
+from application.defs.osib_defs import Osib_id, Osib_tree
 
 
 class TestMain(unittest.TestCase):
     def tearDown(self) -> None:
-        [shutil.rmtree(tmpdir) for tmpdir in self.tmpdirs]
+        for tmpdir in self.tmpdirs:
+            shutil.rmtree(tmpdir)
         sqla.session.remove()
         sqla.drop_all(app=self.app)
         self.app_context.pop()
 
     def setUp(self) -> None:
-        self.tmpdirs = []
+        self.tmpdirs: List[str] = []
         self.app = create_app(mode="test")
         sqla.create_all(app=self.app)
         self.app_context = self.app.app_context()
@@ -350,7 +352,7 @@ class TestMain(unittest.TestCase):
         res = main.parse_file(
             filename="tests", yamldocs=file, scollection=self.collection
         )
-        self.assertCountEqual(res, expected)  # type:ignore
+        self.assertCountEqual(res, expected)
 
     def test_parse_standards_from_spreadsheeet(self) -> None:
         input = [
@@ -415,11 +417,11 @@ class TestMain(unittest.TestCase):
     @patch("application.database.db.Standard_collection.export")
     def test_add_from_spreadsheet(
         self,
-        mocked_export,
-        mocked_readSpreadsheet,
-        mocked_parse_standards_from_spreadsheeet,
-        mocked_db_connect,
-    ):
+        mocked_export: Mock,
+        mocked_readSpreadsheet: Mock,
+        mocked_parse_standards_from_spreadsheeet: Mock,
+        mocked_db_connect: Mock,
+    ) -> None:
         dir = tempfile.mkdtemp()
         self.tmpdirs.append(dir)
         cache = tempfile.mkstemp(dir=dir, suffix=".sqlite")[1]
@@ -455,13 +457,13 @@ class TestMain(unittest.TestCase):
     @patch("application.database.db.Standard_collection.export")
     def test_review_from_spreadsheet(
         self,
-        mocked_export,
-        mocked_create_spreadsheet,
-        mocked_readSpreadsheet,
-        mocked_parse_standards_from_spreadsheeet,
-        mocked_db_connect,
-        mocked_prepare_for_review,
-    ):
+        mocked_export: Mock,
+        mocked_create_spreadsheet: Mock,
+        mocked_readSpreadsheet: Mock,
+        mocked_parse_standards_from_spreadsheeet: Mock,
+        mocked_db_connect: Mock,
+        mocked_prepare_for_review: Mock,
+    ) -> None:
         dir = tempfile.mkdtemp()
         self.tmpdirs.append(dir)
         loc = tempfile.mkstemp(dir=dir)[1]
@@ -506,13 +508,13 @@ class TestMain(unittest.TestCase):
     @patch("application.database.db.Standard_collection.export")
     def test_review_from_disk(
         self,
-        mocked_export,
-        mocked_create_spreadsheet,
-        mocked_parse_file,
-        mocked_get_standards_files_from_disk,
-        mocked_db_connect,
-        mocked_prepare_for_review,
-    ):
+        mocked_export: Mock,
+        mocked_create_spreadsheet: Mock,
+        mocked_parse_file: Mock,
+        mocked_get_standards_files_from_disk: Mock,
+        mocked_db_connect: Mock,
+        mocked_prepare_for_review: Mock,
+    ) -> None:
         dir = tempfile.mkdtemp()
         self.tmpdirs.append(dir)
         yml = tempfile.mkstemp(dir=dir, suffix=".yaml")[1]
@@ -552,11 +554,11 @@ class TestMain(unittest.TestCase):
     @patch("application.database.db.Standard_collection.export")
     def test_add_from_disk(
         self,
-        mocked_export,
-        mocked_parse_file,
-        mocked_get_standards_files_from_disk,
-        mocked_db_connect,
-    ):
+        mocked_export: Mock,
+        mocked_parse_file: Mock,
+        mocked_get_standards_files_from_disk: Mock,
+        mocked_db_connect: Mock,
+    ) -> None:
         dir = tempfile.mkdtemp()
         self.tmpdirs.append(dir)
         yml = tempfile.mkstemp(dir=dir, suffix=".yaml")[1]
@@ -588,27 +590,27 @@ class TestMain(unittest.TestCase):
     @patch("application.database.db.Standard_collection.export")
     def test_review_osib_from_file(
         self,
-        mocked_export,
-        mocked_create_spreadsheet,
-        mocked_register_standard,
-        mocked_register_cre,
-        mocked_osib2cre,
-        mocked_try_from_file,
-        mocked_read_osib_yaml,
-        mocked_db_connect,
-        mocked_prepare_for_review,
-    ):
+        mocked_export: Mock,
+        mocked_create_spreadsheet: Mock,
+        mocked_register_standard: Mock,
+        mocked_register_cre: Mock,
+        mocked_osib2cre: Mock,
+        mocked_try_from_file: Mock,
+        mocked_read_osib_yaml: Mock,
+        mocked_db_connect: Mock,
+        mocked_prepare_for_review: Mock,
+    ) -> None:
         dir = tempfile.mkdtemp()
         self.tmpdirs.append(dir)
-        osib_yaml = tempfile.mkstemp(dir=dir, suffix=".yaml")
+        osib_yaml = tempfile.mkstemp(dir=dir, suffix=".yaml")[1]
         loc = tempfile.mkstemp(dir=dir)[1]
         cach = tempfile.mkstemp(dir=dir)[1]
         mocked_prepare_for_review.return_value = (loc, cach)
         mocked_db_connect.return_value = self.collection
         mocked_read_osib_yaml.return_value = [{"osib": "osib"}]
         mocked_try_from_file.return_value = [
-            odefs.Osib_tree(aliases=["t1"]),
-            odefs.Osib_tree(aliases=["t2"]),
+            Osib_tree(aliases=[Osib_id("t1")]),
+            Osib_tree(aliases=[Osib_id("t2")]),
         ]
 
         mocked_osib2cre.return_value = (
@@ -629,8 +631,8 @@ class TestMain(unittest.TestCase):
         mocked_db_connect.assert_called_with(path=cach)
         mocked_read_osib_yaml.assert_called_with(osib_yaml)
         mocked_try_from_file.assert_called_with([{"osib": "osib"}])
-        mocked_osib2cre.assert_called_with(odefs.Osib_tree(aliases=["t1"]))
-        mocked_osib2cre.assert_called_with(odefs.Osib_tree(aliases=["t2"]))
+        mocked_osib2cre.assert_called_with(odefs.Osib_tree(aliases=[Osib_id("t1")]))
+        mocked_osib2cre.assert_called_with(odefs.Osib_tree(aliases=[Osib_id("t2")]))
         mocked_register_cre.assert_called_with(defs.CRE(name="c0"), self.collection)
         mocked_register_standard.assert_called_with(
             defs.Standard(name="s0", section="s1"), self.collection
@@ -656,14 +658,14 @@ class TestMain(unittest.TestCase):
     @patch("application.database.db.Standard_collection.export")
     def test_add_osib_from_file(
         self,
-        mocked_export,
-        mocked_register_standard,
-        mocked_register_cre,
-        mocked_osib2cre,
-        mocked_try_from_file,
-        mocked_read_osib_yaml,
-        mocked_db_connect,
-    ):
+        mocked_export: Mock,
+        mocked_register_standard: Mock,
+        mocked_register_cre: Mock,
+        mocked_osib2cre: Mock,
+        mocked_try_from_file: Mock,
+        mocked_read_osib_yaml: Mock,
+        mocked_db_connect: Mock,
+    ) -> None:
         dir = tempfile.mkdtemp()
         self.tmpdirs.append(dir)
         osib_yaml = tempfile.mkstemp(dir=dir, suffix=".yaml")[1]
@@ -672,8 +674,8 @@ class TestMain(unittest.TestCase):
         mocked_db_connect.return_value = self.collection
         mocked_read_osib_yaml.return_value = [{"osib": "osib"}]
         mocked_try_from_file.return_value = [
-            odefs.Osib_tree(aliases=["t1"]),
-            odefs.Osib_tree(aliases=["t2"]),
+            odefs.Osib_tree(aliases=[Osib_id("t1")]),
+            odefs.Osib_tree(aliases=[Osib_id("t2")]),
         ]
         mocked_osib2cre.return_value = (
             [defs.CRE(name="c0")],
@@ -691,8 +693,8 @@ class TestMain(unittest.TestCase):
         mocked_db_connect.assert_called_with(path=cache)
         mocked_read_osib_yaml.assert_called_with(osib_yaml)
         mocked_try_from_file.assert_called_with([{"osib": "osib"}])
-        mocked_osib2cre.assert_called_with(odefs.Osib_tree(aliases=["t1"]))
-        mocked_osib2cre.assert_called_with(odefs.Osib_tree(aliases=["t2"]))
+        mocked_osib2cre.assert_called_with(odefs.Osib_tree(aliases=[Osib_id("t1")]))
+        mocked_osib2cre.assert_called_with(odefs.Osib_tree(aliases=[Osib_id("t2")]))
         mocked_register_cre.assert_called_with(defs.CRE(name="c0"), self.collection)
         mocked_register_standard.assert_called_with(
             defs.Standard(name="s0", section="s1"), self.collection
@@ -702,14 +704,19 @@ class TestMain(unittest.TestCase):
     @patch("application.database.db.Standard_collection.export")
     @patch("application.cmd.cre_main.db_connect")
     @patch("application.defs.osib_defs.cre2osib")
-    def test_export_to_osib(self, mocked_cre2osib, mocked_db_connect, mocked_export):
+    def test_export_to_osib(
+        self,
+        mocked_cre2osib: Mock,
+        mocked_db_connect: Mock,
+        mocked_export: Mock,
+    ) -> None:
         dir = tempfile.mkdtemp()
         self.tmpdirs.append(dir)
         # osib_yaml = tempfile.mkstemp(dir=dir,suffix=".yaml")[1]
         loc = tempfile.mkstemp(dir=dir)[1]
         cache = tempfile.mkstemp(dir=dir, suffix=".sqlite")[1]
         mocked_db_connect.return_value = self.collection
-        mocked_cre2osib.return_value = odefs.Osib_tree(aliases=["t1"])
+        mocked_cre2osib.return_value = odefs.Osib_tree(aliases=[Osib_id("t1")])
         mocked_export.return_value = [defs.CRE(name="c0")]
 
         main.export_to_osib(file_loc=f"{dir}/osib.yaml", cache=cache)

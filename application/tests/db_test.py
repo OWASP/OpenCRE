@@ -4,7 +4,7 @@ import unittest
 import uuid
 from copy import copy, deepcopy
 from pprint import pprint
-from typing import Dict, Union
+from typing import Any, Dict, List, Union
 
 import yaml
 
@@ -464,7 +464,7 @@ class TestDB(unittest.TestCase):
         shallow_cd1.links = []
         cd2.add_link(defs.Link(ltype=defs.LinkTypes.PartOf, document=shallow_cd1))
         cd3.add_link(defs.Link(ltype=defs.LinkTypes.PartOf, document=shallow_cd1))
-        self.assertIsNone(collection.get_CREs())
+        self.assertEqual([], collection.get_CREs())
 
         res = collection.get_CREs(name="gcC1")
         self.assertEqual(expected, res)
@@ -474,9 +474,8 @@ class TestDB(unittest.TestCase):
 
         self.assertEqual(collection.get_CREs(external_id="12%", partial=True), expected)
 
-        self.assertCountEqual(
-            collection.get_CREs(name="gcC%", partial=True), [expected[0], cd2, cd3]
-        )
+        cres = collection.get_CREs(name="gcC%", partial=True)
+        self.assertCountEqual(cres, [expected[0], cd2, cd3])
         self.assertEqual(
             collection.get_CREs(external_id="1%", name="gcC%", partial=True), expected
         )
@@ -489,9 +488,9 @@ class TestDB(unittest.TestCase):
             collection.get_CREs(description="gcC%", name="gcC%", partial=True),
             [expected[0], cd2, cd3],
         )
-        self.assertIsNone(collection.get_CREs(external_id="123", name="gcC5"))
-        self.assertIsNone(collection.get_CREs(external_id="1234"))
-        self.assertIsNone(collection.get_CREs(name="gcC5"))
+        self.assertEqual([], collection.get_CREs(external_id="123", name="gcC5"))
+        self.assertEqual([], collection.get_CREs(external_id="1234"))
+        self.assertEqual([], collection.get_CREs(name="gcC5"))
 
         collection.session.add(
             db.Links(type="Linked To", cre=dbc1.id, standard=dbs2.id)
@@ -915,7 +914,7 @@ class TestDB(unittest.TestCase):
 
         collection.add_standard(s3)
         collection.session.commit()
-        expected = {
+        expected: Dict[str, List[Any]] = {
             "123-456": [cre],
             "CRE:textSearchCRE": [cre],
             "CRE textSearchCRE": [cre],

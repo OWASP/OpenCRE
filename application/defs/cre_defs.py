@@ -212,7 +212,7 @@ class Document:
     name: str
     links: List[Link]
     tags: Set[str]
-    metadata: Optional[Dict]
+    metadata: Optional[Dict[str, Any]]
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, type(self)):
@@ -291,7 +291,7 @@ class Document:
         description: str = "",
         links: List[Link] = [],
         tags: List[str] = [],
-        metadata: Optional[Dict] = None,
+        metadata: Optional[Dict[str, Any]] = None,
     ) -> None:
         self.description = str(description)
         if not name:

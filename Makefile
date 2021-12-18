@@ -32,9 +32,11 @@ docker-run:
 lint:
 	black .
 
+mypy:
+	mypy --ignore-missing-imports --implicit-reexport --no-strict-optional --strict application
+
 frontend:
 	yarn build
-
 
 clean:
 	find . -type f -name '*.pyc' -delete

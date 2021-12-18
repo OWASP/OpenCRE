@@ -7,7 +7,7 @@ import warnings
 from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, List, NewType, Optional, Tuple, Union
+from typing import Any, Collection, Dict, List, Mapping, NewType, Optional, Tuple, Union
 
 from networkx.algorithms.simple_paths import all_simple_paths
 from application.defs import cre_defs as defs
@@ -86,7 +86,7 @@ class Node_attributes(_Status):
     links: List[_Link] = field(compare=False, default_factory=list)
     categories: Optional[List[str]] = field(compare=False, default=None)
     maturity: Optional[str] = field(compare=False, default=None)
-    sources_i18n: Dict[Lang, Optional[_Source]] = field(
+    sources_i18n: Dict[Union[str, Lang], Optional[_Source]] = field(
         compare=False, default_factory=dict
     )
 
@@ -98,9 +98,7 @@ class Osib_node(_Osib_base):
 
     aliases: Optional[List[Osib_id]] = field(compare=False, default=None)
     attributes: Optional[Node_attributes] = field(compare=False, default=None)
-    children: Optional[Dict[Union[int, str], "Osib_node"]] = field(
-        compare=False, default=None
-    )
+    children: Optional[Dict[str, "Osib_node"]] = field(compare=False, default=None)
 
 
 @dataclass
@@ -124,11 +122,15 @@ def read_osib_yaml(yaml_file: str = "") -> List[Dict[str, Any]]:
 def try_from_file(data: List[Dict[str, Any]] = []) -> List[Osib_tree]:
     result = []
     for dat in data:
-        result.append(from_dict(data_class=Osib_tree, data=dat))
+        result.append(
+            from_dict(data_class=Osib_tree, data=dat, config=Config(check_types=False))
+        )  # check_Types=False on purpose as everything is a str
     return result
 
 
-def resolve_path(osib_link: _Link = None) -> Tuple[Optional[str], Optional[str]]:
+def resolve_path(
+    osib_link: Optional[_Link] = None,
+) -> Tuple[Optional[str], Optional[str]]:
     if osib_link and osib_link.link:
         reg = r"\w+\.\w+\.(?P<name>\w+)\.(?P<section>.+$)"
         match = re.search(reg, osib_link.link)
@@ -137,21 +139,23 @@ def resolve_path(osib_link: _Link = None) -> Tuple[Optional[str], Optional[str]]
     return None, None
 
 
-def find_doc(link: _Link = None) -> defs.Document:
+def find_doc(link: Optional[_Link] = None) -> Optional[defs.Document]:
     # TODO (spyros): given a list of existing docs, find if the link exists in the list, otherwise create a new doc and return1.
     docname, docsection = resolve_path(link)
-    return defs.Standard(section=docsection, name=docname)
+    if docname and docsection:
+        return defs.Standard(section=docsection, name=docname)
+    return None
 
 
 def _parse_node(
-    orgname: str = None,
+    orgname: Optional[str] = None,
     root: str = "OSIB",
-    name: str = None,
-    osib: Osib_node = None,
+    name: Optional[str] = None,
+    osib: Optional[Osib_node] = None,
     current_path: str = "",
-    node_type: defs.Credoctypes = None,
-):
-    result: List[defs.Document] = []
+    node_type: Optional[defs.Credoctypes] = None,
+) -> List[Union[defs.Document, defs.CRE, defs.Standard]]:
+    result: List[Union[defs.Document, defs.CRE, defs.Standard]] = []
     if not osib:
         return result
 
@@ -163,27 +167,26 @@ def _parse_node(
         and orgname
         and root
     ):
+        res: defs.Document
         "register the standard with the current path as subsection"
         english_attrs = osib.attributes.sources_i18n.get("en")
-        if english_attrs:
-            res: defs.Document
+        if english_attrs and english_attrs.source:
             if node_type == defs.Credoctypes.Standard:
                 res = defs.Standard(
                     name=name,
                     section=current_path.replace(f"{root}.{orgname}.", ""),
                     hyperlink=english_attrs.source,
-                    metadata={},
                 )
             elif node_type == defs.Credoctypes.CRE:
                 res = defs.CRE(
                     name=name,
                     description="",
                     hyperlink=english_attrs.source,
-                    metadata={},
                 )
             else:
                 defs.raise_MandatoryFieldException("OSIB node type unknown")
 
+            res.metadata = {}
             if osib.aliases:
                 res.metadata["alias"] = [x for x in osib.aliases]
             if osib.attributes.source_id:
@@ -237,11 +240,11 @@ def _parse_node(
     return result
 
 
-def osib2cre(tree: Osib_tree) -> Tuple[List[defs.CRE], List[defs.Document]]:
+def osib2cre(tree: Osib_tree) -> Tuple[List[defs.CRE], List[defs.Standard]]:
     tree_aliases = tree.aliases
     attrs = tree.attributes
-    standards: List[defs.Document] = []
-    cres: List[defs.CRE] = []
+    standards: List[defs.Standard] = []
+    cres = []
     root = tree.doctype
     if not tree.children:
         return [], []
@@ -250,7 +253,7 @@ def osib2cre(tree: Osib_tree) -> Tuple[List[defs.CRE], List[defs.Document]]:
             for pname, project in org.children.items():
                 if str(pname).lower() != "cre":
                     standards.extend(
-                        _parse_node(
+                        _parse_node(  # type: ignore  # I know what i'm doing just this once
                             root=root,
                             orgname=str(orgname),
                             name=str(pname),
@@ -260,12 +263,15 @@ def osib2cre(tree: Osib_tree) -> Tuple[List[defs.CRE], List[defs.Document]]:
                     )
                 else:
                     cres.extend(
-                        _parse_node(
-                            root=root,
-                            orgname=str(orgname),
-                            osib=project,
-                            node_type=defs.Credoctypes.CRE,
-                        )
+                        [
+                            defs.CRE(d)
+                            for d in _parse_node(
+                                root=root,
+                                orgname=str(orgname),
+                                osib=project,
+                                node_type=defs.Credoctypes.CRE,
+                            )
+                        ]
                     )
     return (cres, standards)
 
@@ -281,7 +287,7 @@ def update_paths(
 
 def paths_to_osib(
     osib_paths: List[str],
-    cres: Dict[str, defs.Document],
+    cres: Mapping[str, defs.Document],
     related_nodes: List[Tuple[str, str]],
 ) -> Osib_tree:
     # TODO: this doesn't add links (although, the child/parent structure IS the link)
@@ -335,6 +341,7 @@ def paths_to_osib(
         else:
             path = f"OSIB.OWASP.CRE.{r[0]}"
             result[r[0]] = osibs[r[0]]
+
         osibs[r[0]].attributes.links.append(_Link(link=path, type="Related"))
 
         path = ""

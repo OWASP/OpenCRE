@@ -1,5 +1,6 @@
 import os
 import tempfile
+from typing import Any, Dict, List, Tuple
 import unittest
 from pprint import pprint
 
@@ -69,7 +70,7 @@ class TestCreDefs(unittest.TestCase):
                     hyperlink=top10_hyperlinks[i - 1],
                 )
             )
-        expected = ([], top10)
+        expected: Tuple[List[cdefs.CRE], List[cdefs.Standard]] = ([], top10)
         cre_arr = defs.osib2cre(data[0])
         for x, y in zip(expected[1], cre_arr[1]):
             self.assertEquals(x, y)
@@ -78,14 +79,13 @@ class TestCreDefs(unittest.TestCase):
     def test_cre2osib(self) -> None:
         cres = {}
         osibs = {}
-        res = {}
+        res: Dict[str, Osib_node] = {}
         for i in range(0, 13):
             cres[i] = cdefs.CRE(
                 name=f"cre-{i}", id=f"{i}", description=f"description-{i}"
             )
             osibs[i] = defs.Osib_node(
                 attributes=defs.Node_attributes(
-                    links=[],
                     source_id=str(i),
                     sources_i18n={
                         Lang("en"): defs._Source(
@@ -97,25 +97,22 @@ class TestCreDefs(unittest.TestCase):
             )
 
         res = {
-            0: osibs[0],
-            1: osibs[1],
-            2: osibs[2],
-            9: osibs[9],
-            10: osibs[10],
-            11: osibs[11],
-            12: osibs[12],
+            "0": osibs[0],
+            "1": osibs[1],
+            "2": osibs[2],
+            "9": osibs[9],
+            "10": osibs[10],
+            "11": osibs[11],
+            "12": osibs[12],
         }
-
-        res[0].attributes.links = [
+        res["0"].attributes.links = [
             _Link(type=LinkTypes.LinkedTo.value, link=f"OSIB.OWASP.CRE.1")
         ]
-        res[1].attributes.links = [
-            _Link(type=LinkTypes.LinkedTo.value, link=f"OSIB.OWASP.CRE.0")
+        res["1"].attributes.links = [
+            _Link(type=LinkTypes.LinkedTo.value, link=f"OSIB.OWASP.CRE.0"),
+            _Link(type=LinkTypes.LinkedTo.value, link=f"OSIB.OWASP.CRE.2"),
         ]
-        res[1].attributes.links = [
-            _Link(type=LinkTypes.LinkedTo.value, link=f"OSIB.OWASP.CRE.2")
-        ]
-        res[2].attributes.links = [
+        res["2"].attributes.links = [
             _Link(type=LinkTypes.LinkedTo.value, link=f"OSIB.OWASP.CRE.1")
         ]
         osibs[8].attributes.links = [
@@ -126,27 +123,27 @@ class TestCreDefs(unittest.TestCase):
         osibs[5].children = {"6": osibs[6]}
         osibs[4].children = {"5": osibs[5]}
         osibs[3].children = {"4": osibs[4]}
-        res[2].children = {"3": osibs[3]}
-        res[9].attributes.links = [
+        res["2"].children = {"3": osibs[3]}
+        res["9"].attributes.links = [
             _Link(type=LinkTypes.Related.value, link="OSIB.OWASP.CRE.2.3.4.5.6.7.8")
         ]
 
-        res[9].attributes.links = [
+        res["9"].attributes.links = [
             _Link(type=LinkTypes.Related.value, link="OSIB.OWASP.CRE.10")
         ]
-        res[10].attributes.links = [
+        res["10"].attributes.links = [
             _Link(type=LinkTypes.Related.value, link="OSIB.OWASP.CRE.9")
         ]
-        res[10].attributes.links = [
+        res["10"].attributes.links = [
             _Link(type=LinkTypes.Related.value, link="OSIB.OWASP.CRE.11")
         ]
-        res[11].attributes.links = [
+        res["11"].attributes.links = [
             _Link(type=LinkTypes.Related.value, link="OSIB.OWASP.CRE.10")
         ]
-        res[11].attributes.links = [
+        res["11"].attributes.links = [
             _Link(type=LinkTypes.Related.value, link="OSIB.OWASP.CRE.12")
         ]
-        res[12].attributes.links = [
+        res["12"].attributes.links = [
             _Link(type=LinkTypes.Related.value, link="OSIB.OWASP.CRE.11")
         ]
 
