@@ -11,4 +11,4 @@ jobs:
       - name: Install python dependencies
         run: sudo apt-get update && sudo apt-get install -y python3-setuptools python3-pip && make install-deps
       - name: Test
-        run: flask routes && make test
+        run: make test
