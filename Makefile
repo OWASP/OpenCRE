@@ -19,7 +19,8 @@ cover:
 	. ./venv/bin/activate && FLASK_APP=cre.py FLASK_CONFIG=testing flask test --coverage
 
 install-deps:
-	. ./venv/bin/activate; pip install -r requirements.txt& yarn install
+	[ -d "./venv" ] && . ./venv/bin/activate 
+	pip install -r requirements.txt& yarn install
 
 install:
 	virtualenv venv && . ./venv/bin/activate && make install-deps && yarn build
