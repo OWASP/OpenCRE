@@ -237,6 +237,7 @@ def _parse_node(
         logger.error(
             "OSIB doesn't have children but leaf branch not followed this is a bug"
         )
+        pprint(osib.to_dict())
     return result
 
 
