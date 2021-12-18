@@ -1,3 +1,6 @@
+from pprint import pprint
+
+import json
 import argparse
 import logging
 import os
@@ -11,8 +14,9 @@ from application import create_app  # type: ignore
 from application.config import CMDConfig
 from application.database import db
 from application.defs import cre_defs as defs
-from application.utils import parsers  # type: ignore
+from application.defs import osib_defs as odefs
 from application.utils import spreadsheet as sheet_utils
+from application.utils import parsers
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
@@ -318,6 +322,19 @@ def run(args: argparse.Namespace) -> None:
     elif args.print_graph:
         print_graph()
 
+    elif args.review and args.osib_in:
+        review_osib_from_file(
+            file_loc=args.osib_in, cache=args.cache_file, cre_loc=args.cre_loc
+        )
+
+    elif args.add and args.osib_in:
+        add_osib_from_file(
+            file_loc=args.osib_in, cache=args.cache_file, cre_loc=args.cre_loc
+        )
+
+    elif args.osib_out:
+        export_to_osib(file_loc=args.osib_out, cache=args.cache_file)
+
 
 def db_connect(path: str) -> db.Standard_collection:
 
@@ -348,7 +365,6 @@ def create_spreadsheet(
 
 
 def prepare_for_review(cache: str) -> Tuple[str, str]:
-
     loc = tempfile.mkdtemp()
     cache_filename = os.path.basename(cache)
     if os.path.isfile(cache):
@@ -356,3 +372,46 @@ def prepare_for_review(cache: str) -> Tuple[str, str]:
     else:
         logger.fatal("Could not copy database %s this seems like a bug" % cache)
     return loc, os.path.join(loc, cache_filename)
+
+
+def review_osib_from_file(file_loc: str, cache: str, cre_loc: str) -> None:
+    """Given the location of an osib.yaml, parse osib, convert to cres and add to db
+    export db to yamls and spreadsheet for review"""
+    loc, cache = prepare_for_review(cache)
+    database = db_connect(path=cache)
+    ymls = odefs.read_osib_yaml(file_loc)
+    osibs = odefs.try_from_file(ymls)
+    for osib in osibs:
+        cres, standards = odefs.osib2cre(osib)
+        [register_cre(c, database) for c in cres]
+        [register_standard(s, database) for s in standards]
+
+    sheet_url = create_spreadsheet(
+        collection=database,
+        exported_documents=database.export(loc),
+        title="osib_review",
+        share_with=[],
+    )
+    logger.info(
+        f"Stored temporary files and database in {loc} if you want to use them next time, set cache to the location of the database in that dir"
+    )
+    logger.info(f"A spreadsheet view is at {sheet_url}")
+
+
+def add_osib_from_file(file_loc: str, cache: str, cre_loc: str) -> None:
+    database = db_connect(path=cache)
+    ymls = odefs.read_osib_yaml(file_loc)
+    osibs = odefs.try_from_file(ymls)
+    for osib in osibs:
+        cre, standard = odefs.osib2cre(osib)
+        [register_cre(c, database) for c in cre]
+        [register_standard(s, database) for s in standard]
+    database.export(cre_loc)
+
+
+def export_to_osib(file_loc: str, cache: str) -> None:
+    docs = db_connect(path=cache).export(file_loc, dry_run=True)
+    tree = odefs.cre2osib(docs)
+    with open(file_loc, "x"):
+        with open(file_loc, "w") as f:
+            f.write(json.dumps(tree.to_dict()))

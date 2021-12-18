@@ -344,8 +344,8 @@ def parse_v1_standards(
                 )
             )
         if not is_empty(cre_mapping.get("WSTG")):
-            if "\n" in cre_mapping.get("WSTG"):
-                for element in cre_mapping.get("WSTG").split("\n"):
+            if "\n" in cre_mapping.get("WSTG", ""):
+                for element in cre_mapping.get("WSTG", "").split("\n"):
                     if not is_empty(element):
                         cre.add_link(
                             defs.Link(
@@ -492,15 +492,15 @@ def parse_hierarchical_export_format(
             "Link to other CRE"
         ] = f'{mapping["Link to other CRE"]},{",".join(cre.tags)}'
         if not is_empty(mapping.get("Link to other CRE")):
-            other_cres = set(
-                [
-                    x.strip()
-                    for x in mapping.pop("Link to other CRE").split(",")
-                    if not is_empty(x.strip())
-                ]
+            other_cres = list(
+                set(
+                    [
+                        x.strip()
+                        for x in mapping.pop("Link to other CRE").split(",")
+                        if not is_empty(x.strip())
+                    ]
+                )
             )
-
-            other_cres = list(other_cres)
             for other_cre in other_cres:
                 if not cres.get(other_cre):
                     logger.warning(
@@ -562,65 +562,66 @@ def parse_hierarchical_export_format(
 
 
 def parse_standards(
-    mapping: Dict[str, str], standards_mapping: Dict[str, Dict[str, str]] = None
-) -> Dict[str, defs.CRE]:
-    standards_mapping = {
-        "CRE": {
-            "id": "CRE ID",
-            "name": "CRE hierarchy",
-            "tags": "CRE Tags",
-            "links": "Link to other CRE",
-            "description": "",
-        },
-        "Standards": {
-            "ASVS": {
-                "section": "Standard ASVS Item",
-                "subsection": "",
-                "hyperlink": "Standard ASVS Hyperlink",
+    mapping: Dict[str, str], standards_mapping: Dict[str, Dict[str, Any]] = None
+) -> List[defs.Link]:
+    if not standards_mapping:
+        standards_mapping = {
+            "CRE": {
+                "id": "CRE ID",
+                "name": "CRE hierarchy",
+                "tags": "CRE Tags",
+                "links": "Link to other CRE",
+                "description": "",
             },
-            "OPC": {
-                "section": "Standard OPC (ASVS source)",
-                "subsection": "",
-                "hyperlink": "Standard OPC (ASVS source)-hyperlink",
+            "Standards": {
+                "ASVS": {
+                    "section": "Standard ASVS Item",
+                    "subsection": "",
+                    "hyperlink": "Standard ASVS Hyperlink",
+                },
+                "OPC": {
+                    "section": "Standard OPC (ASVS source)",
+                    "subsection": "",
+                    "hyperlink": "Standard OPC (ASVS source)-hyperlink",
+                },
+                "CWE": {
+                    "section": "Standard CWE (from ASVS)",
+                    "subsection": "",
+                    "hyperlink": "Standard CWE (from ASVS)-hyperlink",
+                },
+                "NIST 800-53 v5": {
+                    "section": "Standard NIST 800-53 v5",
+                    "subsection": "",
+                    "hyperlink": "Standard NIST 800-53 v5-hyperlink",
+                    "separator": "\n",
+                },
+                "WSTG": {
+                    "section": "Standard WSTG",
+                    "subsection": "",
+                    "hyperlink": "Standard WSTG-Hyperlink",
+                    "separator": "\n",
+                },
+                "Cheat_sheets": {
+                    "section": "Standard Cheat_sheets",
+                    "subsection": "",
+                    "hyperlink": "Standard Cheat_sheets-Hyperlink",
+                    "separator": ";",
+                },
+                "NIST 800-63": {
+                    "section": "Standard NIST-800-63 (from ASVS)",
+                    "subsection": "",
+                    "hyperlink": "",
+                    "separator": "/",
+                },
+                "Top10 2017": {
+                    "section": "Standard Top10 2017",
+                    "subsection": "",
+                    "hyperlink": "Standard Top10 Hyperlink",
+                },
             },
-            "CWE": {
-                "section": "Standard CWE (from ASVS)",
-                "subsection": "",
-                "hyperlink": "Standard CWE (from ASVS)-hyperlink",
-            },
-            "NIST 800-53 v5": {
-                "section": "Standard NIST 800-53 v5",
-                "subsection": "",
-                "hyperlink": "Standard NIST 800-53 v5-hyperlink",
-                "separator": "\n",
-            },
-            "WSTG": {
-                "section": "Standard WSTG",
-                "subsection": "",
-                "hyperlink": "Standard WSTG-Hyperlink",
-                "separator": "\n",
-            },
-            "Cheat_sheets": {
-                "section": "Standard Cheat_sheets",
-                "subsection": "",
-                "hyperlink": "Standard Cheat_sheets-Hyperlink",
-                "separator": ";",
-            },
-            "NIST 800-63": {
-                "section": "Standard NIST-800-63 (from ASVS)",
-                "subsection": "",
-                "hyperlink": "",
-                "separator": "/",
-            },
-            "Top10 2017": {
-                "section": "Standard Top10 2017",
-                "subsection": "",
-                "hyperlink": "Standard Top10 Hyperlink",
-            },
-        },
-    }
-    links: [defs.Link] = []
-    for name, struct in standards_mapping.get("Standards").items():
+        }
+    links: List[defs.Link] = []
+    for name, struct in standards_mapping.get("Standards", {}).items():
         if not is_empty(mapping.get(struct["section"])):
             if "separator" in struct:
                 separator = struct["separator"]

@@ -99,7 +99,16 @@ def main() -> None:
         default=os.path.join(os.path.dirname(os.path.realpath(__file__)), "./cres/"),
         help="define location of local cre files for review/add",
     )
-
+    parser.add_argument(
+        "--osib_in",
+        default=None,
+        help="define location of local osib file for review/add",
+    )
+    parser.add_argument(
+        "--osib_out",
+        default=None,
+        help="define location of local directory to export database in OSIB format to",
+    )
     args = parser.parse_args()
     cre_main.run(args)
 

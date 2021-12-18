@@ -80,6 +80,8 @@ class TestMain(unittest.TestCase):
         }
 
         for c, v in cres.items():
-            res = web_main.extend_cre_with_tag_links(v, collection=collection)
+            res = web_main.extend_cre_with_tag_links(  # type:ignore # mypy bug
+                v, collection=collection
+            )
             self.assertCountEqual(res.links, v.links)
             self.assertEqual(res, v)
