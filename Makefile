@@ -10,7 +10,7 @@ dev-run:
 	. ./venv/bin/activate && FLASK_APP=cre.py FLASK_CONFIG=development flask run
 
 test:
-	. ./venv/bin/activate &&\
+	[ -d "$DIR" ] && . ./venv/bin/activate
 	FLASK_APP=cre.py FLASK_CONFIG=testing flask test &&\
 	yarn test --passWithNoTests
 
