@@ -10,15 +10,18 @@ dev-run:
 	. ./venv/bin/activate && FLASK_APP=cre.py FLASK_CONFIG=development flask run
 
 test:
-	. ./venv/bin/activate &&\
-	FLASK_APP=cre.py FLASK_CONFIG=testing flask test &&\
+	[ -d "./venv" ] && . ./venv/bin/activate
+	export FLASK_APP=$(CURDIR)/cre.py
+	flask routes
+	flask test
 	yarn test --passWithNoTests
 
 cover:
 	. ./venv/bin/activate && FLASK_APP=cre.py FLASK_CONFIG=testing flask test --coverage
 
 install-deps:
-	. ./venv/bin/activate; pip install -r requirements.txt& yarn install
+	[ -d "./venv" ] && . ./venv/bin/activate 
+	pip install -r requirements.txt& yarn install
 
 install:
 	virtualenv venv && . ./venv/bin/activate && make install-deps && yarn build
@@ -30,11 +33,13 @@ docker-run:
 	 docker run -it -p 5000:5000 opencre:$(shell git rev-parse HEAD)
 
 lint:
-	black .
+	[ -d "./venv" ] && . ./venv/bin/activate && black .
+
+mypy:
+	[ -d "./venv" ] && . ./venv/bin/activate &&  mypy --ignore-missing-imports --implicit-reexport --no-strict-optional --strict application
 
 frontend:
 	yarn build
-
 
 clean:
 	find . -type f -name '*.pyc' -delete

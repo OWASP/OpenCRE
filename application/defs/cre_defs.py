@@ -148,17 +148,6 @@ class LinkTypes(Enum):
 
 
 @dataclass
-class Metadata:
-    labels: Dict[str, Any]
-
-    def __init__(self, labels: Dict[str, Any] = {}) -> None:
-        self.labels = labels
-
-    def todict(self) -> Dict[str, str]:
-        return self.labels
-
-
-@dataclass
 class Link:
     ltype: LinkTypes
     tags: Set[str]
@@ -223,7 +212,7 @@ class Document:
     name: str
     links: List[Link]
     tags: Set[str]
-    metadata: Optional[Metadata]
+    metadata: Optional[Dict[str, Any]]
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, type(self)):
@@ -282,7 +271,7 @@ class Document:
             # purposefully make this a list instead of a set since sets are not json serializable
             result["tags"] = list(self.tags)
         if self.metadata:
-            result["metadata"] = self.metadata.todict()
+            result["metadata"] = self.metadata
         return result
 
     def add_link(self, link: Link) -> Any:  # it returns Document but then it won't run
@@ -302,7 +291,7 @@ class Document:
         description: str = "",
         links: List[Link] = [],
         tags: List[str] = [],
-        metadata: Optional[Metadata] = None,
+        metadata: Optional[Dict[str, Any]] = None,
     ) -> None:
         self.description = str(description)
         if not name:

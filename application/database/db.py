@@ -2,15 +2,15 @@ import logging
 import re
 from collections import Counter
 from itertools import permutations
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
-import networkx as nx  # type: ignore
+import networkx as nx
 import yaml
 from flask_sqlalchemy.model import DefaultMeta
 from sqlalchemy import func
 
 from application.defs import cre_defs
-from application.utils import file  # type: ignore
+from application.utils import file
 
 from .. import sqla  # type: ignore
 
@@ -390,12 +390,12 @@ class Standard_collection:
         description: Optional[str] = None,
         partial: Optional[bool] = False,
         include_only: Optional[List[str]] = None,
-    ) -> Optional[List[cre_defs.CRE]]:
-        cres: Optional[List[cre_defs.CRE]] = []
+    ) -> List[cre_defs.CRE]:
+        cres: List[cre_defs.CRE] = []
         query = CRE.query
         if not external_id and not name and not description:
             logger.error("You need to search by external_id name or description")
-            return None
+            return []
 
         if external_id:
             if not partial:
@@ -420,7 +420,7 @@ class Standard_collection:
                 "CRE %s:%s:%s does not exist in the db"
                 % (external_id, name, description)
             )
-            return None
+            return []
 
         # todo figure a way to return both the Standard
         # and the link_type for that link
@@ -473,7 +473,7 @@ class Standard_collection:
             cres.append(cre)
         return cres
 
-    def export(self, dir: str) -> List[cre_defs.Document]:
+    def export(self, dir: str, dry_run: bool = False) -> List[cre_defs.Document]:
         """Exports the database to a CRE file collection on disk"""
         docs: Dict[str, cre_defs.Document] = {}
         cre, standard = None, None
@@ -540,11 +540,12 @@ class Standard_collection:
 
         for _, doc in docs.items():
             title = doc.name.replace("/", "-") + ".yaml"
-            file.writeToDisk(
-                file_title=title,
-                file_content=yaml.safe_dump(doc.todict()),
-                cres_loc=dir,
-            )
+            if not dry_run:
+                file.writeToDisk(
+                    file_title=title,
+                    file_content=yaml.safe_dump(doc.todict()),
+                    cres_loc=dir,
+                )
 
         return list(docs.values())
 
@@ -841,7 +842,7 @@ class Standard_collection:
             processed_standards.append(working_standard)
         return processed_standards
 
-    def text_search(self, text: str) -> List[Optional[cre_defs.Document]]:
+    def text_search(self, text: str) -> Sequence[cre_defs.Document]:
         """Given a piece of text, tries to find the best match
         for the text in the database.
         Shortcuts:
@@ -874,7 +875,7 @@ class Standard_collection:
         if match:
             link = match.group("link")
             args = [match.group("val1"), match.group("val2"), match.group("val3")]
-            results = []
+            results: List[cre_defs.Document] = []
             for combo in permutations(args, 3):
                 stands = self.get_standards(
                     name=combo[0], section=combo[1], subsection=combo[2], link=link
@@ -884,7 +885,7 @@ class Standard_collection:
             return list(set(results))
 
         # fuzzy matches second
-        args = [f"%{text}%", None, None, None]
+        args = [f"%{text}%", "", "", ""]
         results = []
         for combo in permutations(args, 4):
             stands = self.get_standards(
@@ -896,7 +897,7 @@ class Standard_collection:
             )
             if stands:
                 results.extend(stands)
-        args = [f"%{text}%", None, None]
+        args = [f"%{text}%", "", ""]
         for combo in permutations(args, 3):
             cres = self.get_CREs(
                 name=combo[0], external_id=combo[1], description=combo[2], partial=True

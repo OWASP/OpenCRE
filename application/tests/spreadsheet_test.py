@@ -3,7 +3,7 @@ import unittest
 
 from application import create_app, sqla  # type: ignore
 from application.database import db
-from application.utils.spreadsheet import prepare_spreadsheet  # type: ignore
+from application.utils.spreadsheet import prepare_spreadsheet
 
 
 class TestDB(unittest.TestCase):

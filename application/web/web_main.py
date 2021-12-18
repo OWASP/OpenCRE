@@ -17,6 +17,7 @@ from flask import (
 from application import cache
 from application.database import db
 from application.defs import cre_defs as defs
+from application.defs import osib_defs as odefs
 
 ITEMS_PER_PAGE = 20
 
@@ -40,15 +41,17 @@ def extend_cre_with_tag_links(
 @app.route("/rest/v1/id/<creid>", methods=["GET"])
 @cache.cached(timeout=50)
 def find_by_id(creid: str) -> Any:  # refer
-
     database = db.Standard_collection()
     include_only = request.args.getlist("include_only")
+    opt_osib = request.args.get("osib")
     cre = database.get_CREs(external_id=creid, include_only=include_only)[0]
-
     if cre:
+        result = {"data": cre.todict}
         # disable until we have a consensus on tag behaviour
         # cre = extend_cre_with_tag_links(cre=cre, collection=database)
-        return jsonify({"data": cre.todict()})
+        if opt_osib:
+            result["osib"] = odefs.cre2osib(cre).to_dict()
+        return jsonify(result)
     abort(404)
 
 
@@ -57,6 +60,7 @@ def find_by_id(creid: str) -> Any:  # refer
 def find_by_name(crename: str) -> Any:
 
     database = db.Standard_collection()
+    opt_osib = request.args.get("osib")
     cre = database.get_CREs(name=crename)[0]
     if cre:
         cre = extend_cre_with_tag_links(cre=cre, collection=database)
@@ -69,6 +73,7 @@ def find_by_name(crename: str) -> Any:
 def find_standard_by_name(sname: str) -> Any:
     database = db.Standard_collection()
     opt_section = request.args.get("section")
+    opt_osib = request.args.get("osib")
     if opt_section:
         opt_section = urllib.parse.unquote(opt_section)
     opt_subsection = request.args.get("subsection")
@@ -93,6 +98,8 @@ def find_standard_by_name(sname: str) -> Any:
     result["total_pages"] = total_pages
     result["page"] = page
     if standards:
+        if opt_osib:
+            result["osib"] = odefs.cre2osib(standards).to_dict()
         res = [stand.todict() for stand in standards]
         result["standards"] = res
         return jsonify(result)

@@ -4,7 +4,7 @@ import logging
 from copy import deepcopy
 from typing import Any, Dict, List, Optional
 
-import gspread  # type: ignore
+import gspread
 
 import yaml
 
