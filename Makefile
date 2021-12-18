@@ -11,7 +11,7 @@ dev-run:
 
 test:
 	[ -d "$DIR" ] && . ./venv/bin/activate
-	FLASK_APP=./cre.py FLASK_CONFIG=testing flask test &&\
+	FLASK_APP=$(CURDIR)/cre.py FLASK_CONFIG=testing flask test &&\
 	yarn test --passWithNoTests
 
 cover:
