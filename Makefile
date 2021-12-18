@@ -11,7 +11,7 @@ dev-run:
 
 test:
 	[ -d "./venv" ] && . ./venv/bin/activate
-	ls -lah $(CURDIR)/cre.py
+	flask routes
 	FLASK_APP=$(CURDIR)/cre.py flask test &&\
 	yarn test --passWithNoTests
 
