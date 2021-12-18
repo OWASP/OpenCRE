@@ -9,6 +9,6 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Install python dependencies
-        run: sudo apt-get update && sudo apt-get install -y python3-setuptools python3-pip && pip install -r requirements.txt
+        run: sudo apt-get update && sudo apt-get install -y python3-setuptools python3-pip && make install-deps
       - name: Test
-        run: export FLASK_APP=$(pwd)/cre.py; export FLASK_CONFIG=testing; flask routes; make install-deps; make test
+        run: flask routes && make test
