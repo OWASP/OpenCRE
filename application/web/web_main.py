@@ -46,7 +46,7 @@ def find_by_id(creid: str) -> Any:  # refer
     opt_osib = request.args.get("osib")
     cre = database.get_CREs(external_id=creid, include_only=include_only)[0]
     if cre:
-        result = {"data": cre.todict}
+        result = {"data": cre.todict()}
         # disable until we have a consensus on tag behaviour
         # cre = extend_cre_with_tag_links(cre=cre, collection=database)
         if opt_osib:
