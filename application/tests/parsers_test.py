@@ -565,7 +565,7 @@ class TestParsers(unittest.TestCase):
         self.maxDiff = None
         actual = parse_uknown_key_val_spreadsheet(input_data)
 
-        self.assertEqual(expected, actual)
+        self.assertCountEqual(expected, actual)
 
     def test_parse_v0_standards(self) -> None:
         input_data = [
@@ -1509,9 +1509,7 @@ class TestParsers(unittest.TestCase):
         for k, v in expected.items():
             try:
 
-                self.assertEqual(
-                    collections.Counter(output[k].links), collections.Counter(v.links)
-                )
+                self.assertCountEqual(output[k].links, v.links)
                 self.assertEqual(output[k], v)
             except Exception as e:
                 print("*" * 44 + " Actual " + "*" * 44)
@@ -1519,7 +1517,10 @@ class TestParsers(unittest.TestCase):
                 print("*" * 44 + " Expected " + "*" * 44)
                 pprint(v.todict())
                 print("*" * 88)
+                pprint(len(output[k].links))
+                pprint(len(v.links))
                 print("*" * 88)
+                input()
                 raise e
 
 

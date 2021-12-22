@@ -250,40 +250,22 @@ class TestMain(unittest.TestCase):
                 "links": [
                     {
                         "type": "SAM",
-                        "tags": [],
                         "document": {
-                            "description": "",
                             "doctype": "Standard",
-                            "hyperlink": "None",
-                            "id": "",
-                            "links": [],
-                            "metadata": {},
                             "name": "TOP10",
                             "section": "https://owasp.org/www-project-top-ten/2017/A5_2017-Broken_Access_Control",
-                            "subsection": "None",
-                            "tags": [],
                         },
                     },
                     {
                         "type": "SAM",
-                        "tags": [],
                         "document": {
-                            "description": "",
                             "doctype": "Standard",
-                            "hyperlink": "None",
-                            "id": "",
-                            "links": [],
-                            "metadata": {},
                             "name": "ISO 25010",
                             "section": "Secure data storage",
-                            "subsection": "None",
-                            "tags": [],
                         },
                     },
                 ],
-                "metadata": {},
                 "name": "CREDENTIALS_MANAGEMENT_CRYPTOGRAPHIC_DIRECTIVES",
-                "tags": [],
             },
             {
                 "description": "Desc",
@@ -302,34 +284,18 @@ class TestMain(unittest.TestCase):
                     defs.Link(
                         document=defs.Standard(
                             doctype=defs.Credoctypes.Standard,
-                            id="",
-                            description="",
                             name="TOP10",
-                            links=[],
-                            tags=set(),
-                            metadata={},
                             section="https://owasp.org/www-project-top-ten/2017/A5_2017-Broken_Access_Control",
-                            subsection="None",
-                            hyperlink="None",
                         )
                     ),
                     defs.Link(
                         document=defs.Standard(
                             doctype=defs.Credoctypes.Standard,
-                            id="",
-                            description="",
                             name="ISO 25010",
-                            links=[],
-                            tags=set(),
-                            metadata={},
                             section="Secure data storage",
-                            subsection="None",
-                            hyperlink="None",
                         )
                     ),
                 ],
-                tags=set(),
-                metadata={},
             ),
             defs.CRE(id="14", description="Desc", name="name"),
         ]

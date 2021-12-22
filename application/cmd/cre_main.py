@@ -1,9 +1,11 @@
+from dacite import from_dict
 import argparse
 import logging
 import os
 import shutil
 import tempfile
 from typing import Any, Callable, Dict, Generator, List, Optional, Tuple
+from dacite.config import Config
 
 import yaml
 
@@ -113,19 +115,28 @@ def parse_file(
 
         if not isinstance(
             contents, dict
-        ):  # basic object matching, make sure we at least have an object, go has this build in :(
+        ):  # basic object matching, make sure we at least have an object, golang has this build in :(
             logger.fatal("Malformed file %s, skipping" % filename)
-
             return None
 
         if contents.get("links"):
             links = contents.pop("links")
 
         if contents.get("doctype") == defs.Credoctypes.CRE.value:
-            document = defs.CRE(**contents)
+            document = from_dict(
+                data_class=defs.CRE,
+                data=contents,
+                config=Config(cast=[defs.Credoctypes, defs.Metadata]),
+            )
+            # document = defs.CRE(**contents)
             register_callback = register_cre
         elif contents.get("doctype") == defs.Credoctypes.Standard.value:
-            document = defs.Standard(**contents)
+            # document = defs.Standard(**contents)
+            document = from_dict(
+                data_class=defs.Standard,
+                data=contents,
+                config=Config(cast=[defs.Credoctypes, defs.Metadata]),
+            )
             register_callback = register_standard
 
         for link in links:
@@ -151,7 +162,6 @@ def parse_file(
             register_callback(document, collection=scollection)  # type: ignore
         else:
             logger.warning("Callback to register Document is None, likely missing data")
-
         resulting_objects.append(document)
     return resulting_objects
 

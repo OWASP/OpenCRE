@@ -1,3 +1,6 @@
+from typing import cast
+from pprint import pprint
+
 import logging
 import re
 from collections import Counter
@@ -5,6 +8,7 @@ from itertools import permutations
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 import networkx as nx
+from sqlalchemy.sql.expression import desc  # type: ignore
 import yaml
 from flask_sqlalchemy.model import DefaultMeta
 from sqlalchemy import func
@@ -408,6 +412,7 @@ class Standard_collection:
                 query = query.filter(Standard.description == description)
             else:
                 query = query.filter(Standard.description.like(description))
+
         return query
 
     def get_CREs(
@@ -616,26 +621,34 @@ class Standard_collection:
         return entry
 
     def add_standard(self, standard: cre_defs.Node) -> Standard:
-        entry: Standard = Standard.query.filter(
-            sqla.and_(
-                func.lower(Standard.name) == standard.name.lower(),
-                func.lower(Standard.section) == standard.section.lower()
-                if standard.section
-                else None,
-                func.lower(Standard.subsection) == standard.subsection.lower()
-                if standard.subsection
-                else None,
-                func.lower(Standard.version) == standard.version.lower()
-                if standard.version
-                else None,
-                func.lower(Standard.link) == standard.hyperlink.lower()
-                if standard.hyperlink
-                else None,
-                func.lower(Standard.description) == standard.description.lower()
-                if standard.description
-                else None,
+        clause = Standard.query.filter(
+            sqla.and_(func.lower(Standard.name) == standard.name.lower())
+        )
+        if standard.section:
+            clause = clause.filter(
+                sqla.and_(func.lower(Standard.section) == standard.section.lower())
             )
-        ).first()
+        if standard.subsection:
+            clause = clause.filter(
+                sqla.and_(
+                    func.lower(Standard.subsection) == standard.subsection.lower()
+                )
+            )
+        if standard.version:
+            clause = clause.filter(
+                sqla.and_(func.lower(Standard.version) == standard.version.lower())
+            )
+        if standard.hyperlink:
+            clause = clause.filter(
+                sqla.and_(func.lower(Standard.link) == standard.hyperlink.lower())
+            )
+        if standard.description:
+            clause = clause.filter(
+                sqla.and_(
+                    func.lower(Standard.description) == standard.description.lower()
+                )
+            )
+        entry = clause.first()
         if entry is not None:
             logger.debug(f"knew of {entry.name}:{entry.section} ,updating")
             entry.link = standard.hyperlink
@@ -648,6 +661,7 @@ class Standard_collection:
             if isinstance(standard, cre_defs.Tool):
                 standard.tags.add(standard.toolType)
                 description = standard.description
+
             entry = Standard(
                 name=standard.name,
                 section=standard.section,
@@ -888,7 +902,7 @@ class Standard_collection:
             processed_standards.append(working_standard)
         return processed_standards
 
-    def text_search(self, text: str) -> Sequence[cre_defs.Document]:
+    def text_search(self, text: str) -> List[Optional[cre_defs.Document]]:
         """Given a piece of text, tries to find the best match
         for the text in the database.
         Shortcuts:
@@ -966,7 +980,7 @@ def dbStandardFromStandard(standard: cre_defs.Standard) -> Standard:
     )
 
 
-def __nodeFromDB(dbnode: Standard) -> Union[None, cre_defs.Node]:
+def __nodeFromDB(dbnode: Standard) -> cre_defs.Node:
     tags = set()
     if dbnode.tags:
         tags = set(dbnode.tags.split(","))
@@ -991,13 +1005,15 @@ def __nodeFromDB(dbnode: Standard) -> Union[None, cre_defs.Node]:
             description=dbnode.description,
             toolType=tag,
         )
-    return None
+    else:
+        raise ValueError(
+            f"Db node {dbnode.name} has an unrecognised type {dbnode.type}"
+        )
 
 
 def ToolFromDB(dbtool: Standard) -> cre_defs.Tool:
     return cast(cre_defs.Tool, __nodeFromDB(dbtool))
 def StandardFromDB(dbstandard: Standard) -> cre_defs.Standard:
-
     return cast(cre_defs.Standard, __nodeFromDB(dbstandard))
 
 

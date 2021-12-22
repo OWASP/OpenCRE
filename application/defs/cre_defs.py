@@ -138,6 +138,7 @@ class LinkTypes(str, Enum):
     PartOf = "Is Part Of"  # Hierarchy above: “is part of”
     Contains = "Contains"  # Hierarchy below: “Contains”
     Related = "Related"  # Hierarchy across (other CRE topic or Tag): “related”
+
     RemediatedBy = "Remediated by"
     Remediates = "Remediates"
 
@@ -152,8 +153,6 @@ class LinkTypes(str, Enum):
         if not res:
             raise KeyError(f'"{name}" is not a valid Link Type')
         return res[0]
-
-
 
 
 @dataclass
@@ -178,7 +177,7 @@ class Link:
             self.ltype = ltype or LinkTypes.Same  # type: ignore
             # "ltype will always be either str or LinkTypes"
 
-        self.tags = tags if isinstance(tags, set) else set(tags)
+        self.tags = tags if isinstance(tags, set) else set(tags) if tags else set()
 
     def __hash__(self) -> int:
         return hash(json.dumps(self.todict()))
@@ -215,13 +214,13 @@ class Link:
 
 @dataclass
 class Document:
-    doctype: Credoctypes
-    id: str
-    description: str
     name: str
-    links: List[Link]
-    tags: Set[str]
-    metadata: Optional[Metadata]
+    doctype: Credoctypes
+    id: Optional[str] = None
+    description: Optional[str] = None
+    links: List[Link] = field(default_factory=list)
+    tags: Set[str] = field(default_factory=set)
+    metadata: Optional[Metadata] = field(default_factory=Metadata)
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, type(self)):
@@ -261,20 +260,19 @@ class Document:
         return res
 
     def todict(self) -> Dict[str, Union[Dict[str, str], List[Any], Set[str], str]]:
-        # result: Dict[str, Union[Dict[str, str], List[Any], Set[str], str]] = {
-        #     "doctype": self.doctype.value,
-        #     "name": self.name,
-        # }
         res = asdict(
             self,
             dict_factory=lambda x: {
-                k: v for (k, v) in x if v not in ["", {}, [], None, set()]
+                k: v if type(v) == list or type(v) == set or type(v) == dict else str(v)
+                for (k, v) in x
+                if v not in ["", {}, [], None, set()]
             },
         )
-        res["doctype"] = self.doctype.value
+        res["doctype"] = "" + self.doctype.value
         if "tags" in res:
             res["tags"] = list(self.tags)
         return res
+
 
     def add_link(self, link: Link) -> Any:  # it returns Document but then it won't run
         if not self.links:
@@ -312,6 +310,18 @@ class Document:
         if not doctype and not self.doctype:
             raise_MandatoryFieldException("You need to set doctype")
 
+        if not self.doctype:
+            if isinstance(doctype, str):
+                t = [dt for dt in Credoctypes if dt.value == doctype]
+                if not t:
+                    raise ValueError(f"Unsupported document type {doctype}")
+                self.doctype = t[0]
+            elif isinstance(doctype, Credoctypes):
+                self.doctype = doctype
+            else:
+                raise ValueError(
+                    f"doctype is of unsupported type {type(doctype)} this is most likely a bug"
+                )
 
 @dataclass
 class CRE(Document):
@@ -334,11 +344,11 @@ class Node(Document):
     hyperlink: Optional[str] = ""
 
 
+@dataclass
 class Standard(Node):
     section: str = ""
-    doctype = Credoctypes.Standard
+    doctype: Credoctypes = Credoctypes.Standard
     subsection: Optional[str] = None
-    hyperlink: Optional[str] = None
     version: Optional[str] = None
 
     def todict(self) -> Dict[Any, Any]:
@@ -349,9 +359,10 @@ class Standard(Node):
         result["hyperlink"] = self.hyperlink
         result["version"] = self.version
         return result
-
     def __hash__(self) -> int:
-        return super().__hash__()
+        return hash(json.dumps(self.todict()))
+
+
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Standard):
@@ -364,6 +375,7 @@ class Standard(Node):
                 and self.version == other.version
                 and super().__eq__(other)
             )
+
 
 @dataclass
 class Tool(Node):
@@ -387,6 +399,7 @@ class Tool(Node):
 @dataclass
 class Code(Tool):
     pass
+
 
 class MandatoryFieldException(Exception):
     pass

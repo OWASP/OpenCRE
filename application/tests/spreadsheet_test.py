@@ -320,12 +320,14 @@ class TestDB(unittest.TestCase):
             section="ConflictStandSection",
             name="ConflictStandName",
             link="https://example.com/1",
+            type="Standard",
         )
         conflict2 = db.Standard(
             subsection="4.5.2",
             section="ConflictStandSection",
             name="ConflictStandName",
             link="https://example.com/2",
+            type="Standard",
         )
         collection.session.add(conflict1)
         collection.session.add(conflict2)
@@ -338,18 +340,21 @@ class TestDB(unittest.TestCase):
             section="NormalStandSection1",
             name="NormalStand1",
             link="https://example.com/1",
+            type="Standard",
         )
         dbs2 = db.Standard(
             subsection="4.5.2",
             section="NormalStandSection2",
             name="NormalStand2",
             link="https://example.com/2",
+            type="Standard",
         )
         dbsg = db.Standard(
             subsection="4.5.2",
             section="GroupStandSection2",
             name="GroupStand2",
             link="https://example.com/g2",
+            type="Standard",
         )
         collection.session.add(dbs1)
         collection.session.add(dbs2)
@@ -462,12 +467,14 @@ class TestDB(unittest.TestCase):
             section="ConflictStandSection",
             name="ConflictStandName",
             link="https://example.com/0",
+            type="Standard",
         )
         conflict1 = db.Standard(
             subsection="4.5.1",
             section="ConflictStandSection",
             name="ConflictStandName",
             link="https://example.com/1",
+            type="Standard",
         )
         collection.session.add(conflict0)
         collection.session.add(conflict1)
@@ -480,12 +487,14 @@ class TestDB(unittest.TestCase):
             section="NormalStandSection0",
             name="NormalStand0",
             link="https://example.com/0",
+            type="Standard",
         )
         dbs1 = db.Standard(
             subsection="4.5.1",
             section="NormalStandSection1",
             name="NormalStand1",
             link="https://example.com/1",
+            type="Standard",
         )
         collection.session.add(dbs0)
         collection.session.add(dbs1)
