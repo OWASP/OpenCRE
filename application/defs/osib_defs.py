@@ -41,7 +41,7 @@ Lang = NewType("Lang", str)
 
 @dataclass
 class _Osib_base:
-    def to_dict(self) -> Dict[str, Any]:
+    def todict(self) -> Dict[str, Any]:
         return asdict(
             self,
             dict_factory=lambda x: {

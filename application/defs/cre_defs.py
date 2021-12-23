@@ -220,7 +220,7 @@ class Document:
     description: Optional[str] = None
     links: List[Link] = field(default_factory=list)
     tags: Set[str] = field(default_factory=set)
-    metadata: Optional[Metadata] = field(default_factory=Metadata)
+    metadata: Dict[str, Any] = field(default_factory=dict)
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, type(self)):
@@ -292,7 +292,7 @@ class Document:
         description: str = "",
         links: List[Link] = [],
         tags: List[str] = [],
-        metadata: Optional[Dict[str, Any]] = None,
+        metadata: Dict[str, Any] = {},
     ) -> None:
         self.description = str(description)
         if not name:
@@ -355,13 +355,15 @@ class Standard(Node):
     version: Optional[str] = ""
 
     def todict(self) -> Dict[Any, Any]:
-        result: Dict[Any, Any] = super().todict()
-
-        result["section"] = self.section
-        result["subsection"] = self.subsection
-        result["hyperlink"] = self.hyperlink
-        result["version"] = self.version
-        return result
+        res = asdict(
+            self,
+            dict_factory=lambda x: {
+                k: v if type(v) == list or type(v) == set or type(v) == dict else str(v) if not type(v)==Credoctypes else str(v.value)
+                for (k, v) in x
+                if v not in ["", {}, [], None, set()]
+            },
+        )
+        return res
     def __hash__(self) -> int:
         return hash(json.dumps(self.todict()))
 

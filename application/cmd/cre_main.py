@@ -1,3 +1,4 @@
+import json
 from dacite import from_dict
 import argparse
 import logging
@@ -126,7 +127,7 @@ def parse_file(
             document = from_dict(
                 data_class=defs.CRE,
                 data=contents,
-                config=Config(cast=[defs.Credoctypes, defs.Metadata]),
+                config=Config(cast=[defs.Credoctypes]),
             )
             # document = defs.CRE(**contents)
             register_callback = register_cre
@@ -135,7 +136,7 @@ def parse_file(
             document = from_dict(
                 data_class=defs.Standard,
                 data=contents,
-                config=Config(cast=[defs.Credoctypes, defs.Metadata]),
+                config=Config(cast=[defs.Credoctypes]),
             )
             register_callback = register_standard
 
@@ -387,6 +388,7 @@ def prepare_for_review(cache: str) -> Tuple[str, str]:
     else:
         logger.fatal("Could not copy database %s this seems like a bug" % cache)
     return loc, os.path.join(loc, cache_filename)
+
 def review_osib_from_file(file_loc: str, cache: str, cre_loc: str) -> None:
     """Given the location of an osib.yaml, parse osib, convert to cres and add to db
     export db to yamls and spreadsheet for review"""
@@ -410,6 +412,23 @@ def review_osib_from_file(file_loc: str, cache: str, cre_loc: str) -> None:
     )
     logger.info(f"A spreadsheet view is at {sheet_url}")
 
+def add_osib_from_file(file_loc: str, cache: str, cre_loc: str) -> None:
+    database = db_connect(path=cache)
+    ymls = odefs.read_osib_yaml(file_loc)
+    osibs = odefs.try_from_file(ymls)
+    for osib in osibs:
+        cre, standard = odefs.osib2cre(osib)
+        [register_cre(c, database) for c in cre]
+        [register_standard(s, database) for s in standard]
+    database.export(cre_loc)
+
+
+def export_to_osib(file_loc: str, cache: str) -> None:
+    docs = db_connect(path=cache).export(file_loc, dry_run=True)
+    tree = odefs.cre2osib(docs)
+    with open(file_loc, "x"):
+        with open(file_loc, "w") as f:
+            f.write(json.dumps(tree.todict()))
 
 def owasp_metadata_to_cre(meta_file: str):
     """given a file with entries like below

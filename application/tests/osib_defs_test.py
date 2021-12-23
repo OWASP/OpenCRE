@@ -35,7 +35,7 @@ class TestCreDefs(unittest.TestCase):
     def test_from_yml_to_classes(self) -> None:
         datad = defs.read_osib_yaml(self.location)
         osib = defs.try_from_file(datad)
-        self.assertDictEqual(yaml.safe_load(self.yaml_file), osib[0].to_dict())
+        self.assertDictEqual(yaml.safe_load(self.yaml_file), osib[0].todict())
 
     def test_osib2cre(self) -> None:
         data = defs.try_from_file(defs.read_osib_yaml(self.location))
@@ -265,7 +265,7 @@ class TestCreDefs(unittest.TestCase):
         cre.children = {"0": osibs["0"], "1": osibs["1"]}
         exprected_tree = defs.Osib_tree(children={"OWASP": owasp})
         tree = defs.paths_to_osib(osib_paths=paths, cres=cres, related_nodes=[])
-        self.assertDictEqual(tree.to_dict(), exprected_tree.to_dict())
+        self.assertDictEqual(tree.todict(), exprected_tree.todict())
 
 
 if __name__ == "__main__":

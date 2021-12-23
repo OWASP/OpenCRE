@@ -50,7 +50,7 @@ def find_by_id(creid: str) -> Any:  # refer
         # disable until we have a consensus on tag behaviour
         # cre = extend_cre_with_tag_links(cre=cre, collection=database)
         if opt_osib:
-            result["osib"] = odefs.cre2osib(cre).to_dict()
+            result["osib"] = odefs.cre2osib(cre).todict()
         return jsonify(result)
     abort(404)
 
@@ -99,7 +99,7 @@ def find_standard_by_name(sname: str) -> Any:
     result["page"] = page
     if standards:
         if opt_osib:
-            result["osib"] = odefs.cre2osib(standards).to_dict()
+            result["osib"] = odefs.cre2osib(standards).todict()
         res = [stand.todict() for stand in standards]
         result["standards"] = res
         return jsonify(result)

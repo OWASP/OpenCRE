@@ -6,7 +6,7 @@ from application.defs import cre_defs as defs
 
 
 class TestCreDefs(unittest.TestCase):
-    def test_document_to_dict(self) -> None:
+    def test_document_todict(self) -> None:
         standard = defs.Standard(
             doctype=defs.Credoctypes.Standard,
             name="ASVS",
@@ -116,7 +116,7 @@ class TestCreDefs(unittest.TestCase):
             "subsection": "3.1.1",
         }
         self.maxDiff = None
-        self.assertEqual(standard.to_dict(), standard_output)
+        self.assertEqual(standard.todict(), standard_output)
         try:
             self.assertCountEqual(nested.todict(), nested_output)
         except Exception as e:
