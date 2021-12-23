@@ -163,9 +163,9 @@ class Link:
 
     def __init__(
         self,
+        document: "Document",
         ltype: Union[str, LinkTypes] = LinkTypes.Same,
         tags: Set[str] = set(),
-        document: Optional["Document"] = None,
     ) -> None:
         if document is None:
             raise_MandatoryFieldException("Links need to link to a Document")
@@ -187,10 +187,10 @@ class Link:
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Link):
-            return NotImplemented
+            return False
         else:
             return (
-                self.ltype == other.ltype
+                self.ltype.value == other.ltype.value
                 and all(
                     [
                         a in other.tags and b in self.tags
@@ -198,7 +198,7 @@ class Link:
                         for b in other.tags
                     ]
                 )
-                and self.document == other.document
+                and self.document.__eq__(other.document)
             )
 
     def todict(self) -> Dict[str, Union[Set[str], str, Dict[Any, Any]]]:
@@ -272,7 +272,8 @@ class Document:
         if "tags" in res:
             res["tags"] = list(self.tags)
         return res
-
+    def __repr__(self):
+        return f"{self.todict()}"
 
     def add_link(self, link: Link) -> Any:  # it returns Document but then it won't run
         if not self.links:
@@ -307,6 +308,7 @@ class Document:
         self.tags = tags if isinstance(tags, set) else set(tags)
         self.id = id
         self.metadata = metadata
+
         if not doctype and not self.doctype:
             raise_MandatoryFieldException("You need to set doctype")
 
@@ -322,6 +324,7 @@ class Document:
                 raise ValueError(
                     f"doctype is of unsupported type {type(doctype)} this is most likely a bug"
                 )
+
 
 @dataclass
 class CRE(Document):
@@ -348,8 +351,8 @@ class Node(Document):
 class Standard(Node):
     section: str = ""
     doctype: Credoctypes = Credoctypes.Standard
-    subsection: Optional[str] = None
-    version: Optional[str] = None
+    subsection: Optional[str] = ""
+    version: Optional[str] = ""
 
     def todict(self) -> Dict[Any, Any]:
         result: Dict[Any, Any] = super().todict()
@@ -361,7 +364,6 @@ class Standard(Node):
         return result
     def __hash__(self) -> int:
         return hash(json.dumps(self.todict()))
-
 
 
     def __eq__(self, other: object) -> bool:

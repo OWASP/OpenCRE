@@ -1504,24 +1504,10 @@ class TestParsers(unittest.TestCase):
             "Logging and Error handling": clogging,
         }
 
-        self.maxDiff = None
         output = parse_hierarchical_export_format(data)
+        self.maxDiff = None
         for k, v in expected.items():
-            try:
-
-                self.assertCountEqual(output[k].links, v.links)
-                self.assertEqual(output[k], v)
-            except Exception as e:
-                print("*" * 44 + " Actual " + "*" * 44)
-                pprint(output[k].todict())
-                print("*" * 44 + " Expected " + "*" * 44)
-                pprint(v.todict())
-                print("*" * 88)
-                pprint(len(output[k].links))
-                pprint(len(v.links))
-                print("*" * 88)
-                input()
-                raise e
+            self.assertEqual(output[k], v)
 
 
 if __name__ == "__main__":

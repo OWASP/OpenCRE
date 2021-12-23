@@ -643,6 +643,7 @@ def parse_standards(
                                     name=name,
                                     section=section.strip(),
                                     hyperlink=link.strip(),
+                                    subsection=subsection.strip(),
                                 ),
                             )
                         )
