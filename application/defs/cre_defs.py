@@ -215,11 +215,11 @@ class Link:
 @dataclass
 class Document:
     name: str
-    doctype: Credoctypes
-    id: Optional[str] = None
-    description: Optional[str] = None
+    doctype: Credoctypes 
+    id: Optional[str] = ""
+    description: Optional[str] = ""
     links: List[Link] = field(default_factory=list)
-    tags: Set[str] = field(default_factory=set)
+    tags:  List[str] = field(default_factory=list)
     metadata: Dict[str, Any] = field(default_factory=dict)
 
     def __eq__(self, other: object) -> bool:

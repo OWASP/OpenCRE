@@ -981,9 +981,9 @@ def dbStandardFromStandard(standard: cre_defs.Standard) -> Standard:
 
 
 def __nodeFromDB(dbnode: Standard) -> cre_defs.Node:
-    tags = set()
+    tags = []
     if dbnode.tags:
-        tags = set(dbnode.tags.split(","))
+        tags = list(set(dbnode.tags.split(",")))
     if dbnode.type == cre_defs.Standard.__name__:
         return cre_defs.Standard(
             name=dbnode.name,
@@ -994,9 +994,10 @@ def __nodeFromDB(dbnode: Standard) -> cre_defs.Node:
             version=dbnode.version,
         )
     elif dbnode.type == cre_defs.Tool.__name__:
+        ttype = None
         for tag in tags:
-            if tag in cre_defs.Tool.ToolTypes:
-                tag = cre_defs.Tool.ToolTypes[tag].value
+            if tag in cre_defs.ToolTypes:
+                ttype = cre_defs.ToolTypes[tag].value
         return cre_defs.Tool(
             name=dbnode.name,
             hyperlink=dbnode.link,
@@ -1018,10 +1019,9 @@ def StandardFromDB(dbstandard: Standard) -> cre_defs.Standard:
 
 
 def CREfromDB(dbcre: CRE) -> cre_defs.CRE:
-
-    tags = set()
+    tags = []
     if dbcre.tags:
-        tags = set(dbcre.tags.split(","))
+        tags = list(set(dbcre.tags.split(",")))
     return cre_defs.CRE(
         name=dbcre.name, description=dbcre.description, id=dbcre.external_id, tags=tags
     )

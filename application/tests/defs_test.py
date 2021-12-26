@@ -1,7 +1,10 @@
+import copy
 from pprint import pprint
 from dataclasses import asdict
+from typing import Set
 import unittest
-
+import dacite
+from dacite import Config, from_dict
 from application.defs import cre_defs as defs
 
 
@@ -142,6 +145,52 @@ class TestCreDefs(unittest.TestCase):
             self.assertEqual(defs.LinkTypes.from_str(ke), val)
         with self.assertRaises(KeyError):
             defs.LinkTypes.from_str("asdf")
+    def test_doc_equality(self) -> None:
+        d1 = defs.Code(name="c1",description="d1",tags=["t1","t2","t3"], metadata={"m1":"m1.1","m2":"m2.2"},hyperlink="https://example.com/c1",)
+        self.assertEqual(d1, copy.deepcopy(d1)) # happy path
+        self.assertNotEqual(d1, dacite.from_dict(data_class=defs.Tool, data=copy.deepcopy(d1).todict(),config=Config(cast=[defs.ToolTypes, defs.Credoctypes]))) # happy path
+
+        s = []
+        for v in vars(d1).keys(): # create a list of standards  they all differ from s1 on one attribute
+            stand = copy.deepcopy(d1)
+            vars(stand)[v] = f"{vars(d1)[v]}_a"
+            s.append(stand)
+        for stand in s:
+            self.assertNotEqual(stand, d1)
+    
+        s2 = defs.Standard(name="s2",section="s2.2",subsection="2.2",tags=["t1","t2","t3"], metadata={"m1":"m1.1","m2":"m2.2"},hyperlink="https://example.com/s2",version="v2")
+        s1_with_link = copy.deepcopy(d1).add_link(defs.Link(document=s2))
+        self.assertNotEqual(s1_with_link, d1)
+
+        # assert recursive link equality works
+        s1_with_link.links[0].document.add_link(defs.Link(document=s[0]))
+        self.assertEquals(s1_with_link, copy.deepcopy(s1_with_link))
+        s1_with_link_copy = copy.deepcopy(s1_with_link)
+        s1_with_link_copy.links[0].document.links[0].document.add_link(defs.Link(document=s[1]))
+        self.assertFalse(s1_with_link.__eq__(s1_with_link_copy))
+
+    def test_standards_equality(self) -> None:
+        s1 = defs.Standard(name="s1",section="s1.1",subsection="1.1",tags=["t1","t2","t3",""],metadata={"m1":"m1.1","m2":"m2.2"},hyperlink="https://example.com/s1",version="v1")
+        self.assertEqual(s1, copy.deepcopy(s1)) # happy path
+        self.assertNotEqual(s1, dacite.from_dict(data_class=defs.Tool, data=copy.deepcopy(s1).todict(),config=Config(cast=[defs.Credoctypes]))) # happy path
+        s = []
+        for v in vars(s1).keys(): # create a list of standards  they all differ from s1 on one attribute
+            stand = copy.deepcopy(s1)
+            vars(stand)[v] = f"{vars(s1)[v]}_a"
+            s.append(stand)
+        for stand in s:
+            self.assertNotEqual(stand, s1)
+    
+        s2 = defs.Standard(name="s2",section="s2.2",subsection="2.2",tags=["t1","t2","t3"],metadata={"m1":"m1.1","m2":"m2.2"},hyperlink="https://example.com/s2",version="v2")
+        s1_with_link = copy.deepcopy(s1).add_link(defs.Link(document=s2))
+        self.assertNotEqual(s1_with_link, s1)
+
+        # assert recursive link equality works
+        s1_with_link.links[0].document.add_link(defs.Link(document=s[0]))
+        self.assertEquals(s1_with_link, copy.deepcopy(s1_with_link))
+        s1_with_link_copy = copy.deepcopy(s1_with_link)
+        s1_with_link_copy.links[0].document.links[0].document.add_link(defs.Link(document=s[1]))
+        self.assertFalse(s1_with_link.__eq__(s1_with_link_copy))
 
 
 if __name__ == "__main__":

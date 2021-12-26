@@ -482,9 +482,11 @@ def parse_hierarchical_export_format(
             logger.warning(f"empty Id for {name}")
 
         if not is_empty(mapping.get("CRE Tags")):
-
+            ts = set()
             for x in mapping.pop("CRE Tags").split(","):
-                cre.tags.add(x.strip())
+                ts.add(x.strip())
+            cre.tags= list(ts)
+
         update_cre_in_links(cres, cre)
 
         # TODO(spyros): temporary until we agree what we want to do with tags
