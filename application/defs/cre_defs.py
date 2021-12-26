@@ -1,3 +1,4 @@
+
 import json
 from copy import copy
 from dataclasses import asdict, dataclass, field
@@ -151,7 +152,7 @@ class LinkTypes(str, Enum):
             name = "SAME"
         res = [x for x in LinkTypes if x.value == name]
         if not res:
-            raise KeyError(f'"{name}" is not a valid Link Type')
+            raise KeyError(f"{name} is not a valid linktype, supported linktypes are {[t for t in LinkTypes]}")
         return res[0]
 
 class ToolTypes(str, Enum):
@@ -159,57 +160,40 @@ class ToolTypes(str, Enum):
         Defensive = "Defensive"
         Unknown = "Unknown"
 
-@dataclass
+@dataclass(eq=False)
 class Link:
-    ltype: LinkTypes
-    tags: Set[str]
     document: "Document"
+    ltype: LinkTypes = LinkTypes.Same
+    tags: List[str] = field(default_factory=list)
+    
+    def __post_init__(self):
+        if self.tags is None:
+            self.tags = []
 
-    def __init__(
-        self,
-        document: "Document",
-        ltype: Union[str, LinkTypes] = LinkTypes.Same,
-        tags: Set[str] = set(),
-    ) -> None:
-        if document is None:
-            raise_MandatoryFieldException("Links need to link to a Document")
-        self.document = document
+        if type(self.ltype) == str:
+            self.ltype = LinkTypes.from_str(self.ltype)
 
-        if type(ltype) == str:
-            self.ltype = LinkTypes.from_str(ltype) or LinkTypes.Same
-        else:
-            self.ltype = ltype or LinkTypes.Same  # type: ignore
-            # "ltype will always be either str or LinkTypes"
-
-        self.tags = tags if isinstance(tags, set) else set(tags) if tags else set()
 
     def __hash__(self) -> int:
         return hash(json.dumps(self.todict()))
 
-    def __str__(self) -> str:
+    def __repr__(self) -> str:
         return json.dumps(self.todict())
 
     def __eq__(self, other: object) -> bool:
-        if not isinstance(other, Link):
-            return False
-        else:
-            return (
-                self.ltype.value == other.ltype.value
-                and all(
-                    [
-                        a in other.tags and b in self.tags
-                        for a in self.tags
-                        for b in other.tags
-                    ]
-                )
-                and self.document.__eq__(other.document)
-            )
+    
+        return (
+            type(other) is Link
+            and self.ltype.value == other.ltype.value
+            and self.tags == other.tags
+            and self.document.__eq__(other.document)
+        )
 
-    def todict(self) -> Dict[str, Union[Set[str], str, Dict[Any, Any]]]:
-        res: Dict[str, Union[Set[str], str, Dict[Any, Any]]] = {}
+    def todict(self) -> Dict[str, Union[List[str], str, Dict[Any, Any]]]:
+        res: Dict[str, Union[List[str], str, Dict[Any, Any]]] = {}
         if self.document:
             res["document"] = self.document.todict()
-        if len(self.tags):
+        if self.tags and len(self.tags):
             res["tags"] = self.tags
 
         res["type"] = self.ltype.value
@@ -227,31 +211,23 @@ class Document:
     metadata: Dict[str, Any] = field(default_factory=dict)
 
     def __eq__(self, other: object) -> bool:
-        if not isinstance(other, type(self)):
-            return False
-        else:
-            return (
-                self.id == other.id
-                and self.name == other.name
-                and self.doctype.value == other.doctype.value
-                and self.description == other.description
-                and len(self.links) == len(other.links)
-                and all(
-                    [
-                        a in other.links and b in self.links
-                        for a in self.links
-                        for b in other.links
-                    ]
-                )
-                and all(
-                    [
-                        a in other.tags and b in self.tags
-                        for a in self.tags
-                        for b in other.tags
-                    ]
-                )
-                and self.metadata == other.metadata
+        return (
+            isinstance(other, type(self))
+            and self.id == other.id
+            and self.name == other.name
+            and self.doctype.value == other.doctype.value
+            and self.description == other.description
+            and len(self.links) == len(other.links)
+            and all(
+                [
+                    a in other.links and b in self.links
+                    for a in self.links
+                    for b in other.links
+                ]
             )
+            and self.tags==other.tags
+            and self.metadata == other.metadata
+        )
 
     def __hash__(self) -> int:
         return hash(json.dumps(self.todict()))
@@ -280,74 +256,31 @@ class Document:
     def __repr__(self):
         return f"{self.todict()}"
 
-    def add_link(self, link: Link) -> Any:  # it returns Document but then it won't run
+    def add_link(self, link: Link) -> "Document":
         if not self.links:
             self.links = []
-        if type(link).__name__ != Link.__name__:
+        if not isinstance(link,Link):
             raise ValueError("add_link only takes Link() types")
 
         self.links.append(link)
         return self
 
-    def __init__(
-        self,
-        name: str,
-        doctype: Optional[Credoctypes] = None,
-        id: str = "",
-        description: str = "",
-        links: List[Link] = [],
-        tags: List[str] = [],
-        metadata: Dict[str, Any] = {},
-    ) -> None:
-        self.description = str(description)
-        if not name:
-            raise_MandatoryFieldException(
-                "Document name not defined for document of doctype %s" % doctype
-            )
-        else:
-            self.name = str(name)
-        self.links = links or []
-        if isinstance(tags, set) and "" in tags:
-            tags.remove("")
-
-        self.tags = tags if isinstance(tags, set) else set(tags)
-        self.id = id
-        self.metadata = metadata
-
-        if not doctype and not self.doctype:
-            raise_MandatoryFieldException("You need to set doctype")
-
-        if not self.doctype:
-            if isinstance(doctype, str):
-                t = [dt for dt in Credoctypes if dt.value == doctype]
-                if not t:
-                    raise ValueError(f"Unsupported document type {doctype}")
-                self.doctype = t[0]
-            elif isinstance(doctype, Credoctypes):
-                self.doctype = doctype
-            else:
-                raise ValueError(
-                    f"doctype is of unsupported type {type(doctype)} this is most likely a bug"
-                )
 
 
-@dataclass
+@dataclass(eq=False)
 class CRE(Document):
     doctype: Credoctypes = Credoctypes.CRE
-  
-    def __hash__(self) -> int:
-        return super().__hash__()
-
-    def __eq__(self, other: object) -> bool:
-        if not isinstance(other, CRE):
-            return False
-        else:
-            return super().__eq__(other)
-
 
 @dataclass
 class Node(Document):
     hyperlink: Optional[str] = ""
+
+    def __eq__(self, other: object) -> bool:
+        return (
+                isinstance(other, type(self))
+                and super().__eq__(other)
+                and self.hyperlink == other.hyperlink
+            )
 
 
 @dataclass
@@ -373,11 +306,10 @@ class Standard(Node):
 
     def __eq__(self, other: object) -> bool:
         return (
-                isinstance(other, Standard)
+                type(other) is Standard
                 and super().__eq__(other)
                 and self.section == other.section
                 and self.subsection == other.subsection
-                and self.hyperlink == other.hyperlink
                 and self.version == other.version
             )
 
@@ -386,10 +318,13 @@ class Standard(Node):
 class Tool(Node):
     toolType: ToolTypes = ToolTypes.Unknown
     doctype:Credoctypes = Credoctypes.Tool
-
-    def __init__(self, toolType:ToolTypes= ToolTypes.Unknown, *args: Any, **kwargs: Any) -> None:
-        self.toolType = toolType
-        super().__init__( *args, **kwargs)
+  
+    def __eq__(self, other: object) -> bool:
+        return (
+                type(other) is Tool
+                and super().__eq__(other)
+                and self.toolType == other.toolType
+            )
    
     def todict(self) -> Dict[Any, Any]: # TODO: BUG This needs to also serialise toolType to str properly, same for Code ( very likely we need a ToolBase class)
         res = asdict(
@@ -402,6 +337,6 @@ class Tool(Node):
         )
         return res
 
-@dataclass
+@dataclass(eq=False)
 class Code(Node):
     doctype:Credoctypes = Credoctypes.Code
