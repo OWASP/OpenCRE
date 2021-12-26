@@ -17,7 +17,7 @@ test:
 	yarn test --passWithNoTests
 
 cover:
-	. ./venv/bin/activate && FLASK_APP=cre.py FLASK_CONFIG=testing flask test --coverage
+	. ./venv/bin/activate && FLASK_APP=cre.py FLASK_CONFIG=testing flask test --cover
 
 install-deps:
 	[ -d "./venv" ] && . ./venv/bin/activate 

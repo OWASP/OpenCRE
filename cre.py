@@ -18,24 +18,17 @@ migrate = Migrate(app, sqla, render_as_batch=True)
 
 # flask <x> commands
 
-COV = None
-if os.environ.get("FLASK_COVERAGE"):
-    COV = coverage.coverage(branch=True, include="application/*")
-    COV.start()
-
 
 @app.cli.command()  # type: ignore
 @click.option(
-    "--coverage/--no-coverage", default=False, help="Run tests under code coverage."
+    "--cover/--no-cover", default=False, help="Run tests under code coverage."
 )  # type: ignore
 @click.argument("test_names", nargs=-1)  # type: ignore
-def test(coverage: coverage.Coverage, test_names: List[str]) -> None:
-
-    if coverage and not os.environ.get("FLASK_COVERAGE"):
-        import subprocess
-
-        os.environ["FLASK_COVERAGE"] = "1"
-        sys.exit(subprocess.call(sys.argv))
+def test(cover: coverage.Coverage, test_names: List[str]) -> None:
+    COV = None
+    if cover or os.environ.get("FLASK_COVERAGE"):
+        COV = coverage.coverage(branch=True, include="application/*")
+        COV.start()
 
     if test_names:
         tests = unittest.TestLoader().loadTestsFromNames(test_names)
