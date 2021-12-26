@@ -154,6 +154,10 @@ class LinkTypes(str, Enum):
             raise KeyError(f'"{name}" is not a valid Link Type')
         return res[0]
 
+class ToolTypes(str, Enum):
+        Offensive = "Offensive"
+        Defensive = "Defensive"
+        Unknown = "Unknown"
 
 @dataclass
 class Link:
@@ -272,6 +276,7 @@ class Document:
         if "tags" in res:
             res["tags"] = list(self.tags)
         return res
+    
     def __repr__(self):
         return f"{self.todict()}"
 
@@ -328,10 +333,8 @@ class Document:
 
 @dataclass
 class CRE(Document):
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        self.doctype = Credoctypes.CRE
-        super().__init__(*args, **kwargs)
-
+    doctype: Credoctypes = Credoctypes.CRE
+  
     def __hash__(self) -> int:
         return super().__hash__()
 
@@ -369,45 +372,36 @@ class Standard(Node):
 
 
     def __eq__(self, other: object) -> bool:
-        if not isinstance(other, Standard):
-            return False
-        else:
-            return (
-                self.section == other.section
+        return (
+                isinstance(other, Standard)
+                and super().__eq__(other)
+                and self.section == other.section
                 and self.subsection == other.subsection
                 and self.hyperlink == other.hyperlink
                 and self.version == other.version
-                and super().__eq__(other)
             )
 
 
 @dataclass
 class Tool(Node):
-    class ToolTypes(Enum):
-        Offensive = "Offensive"
-        Defensive = "Defensive"
-        Code = "Code"
-        Unknown = "Unknown"
-
-    doctype = Credoctypes.Tool
     toolType: ToolTypes = ToolTypes.Unknown
+    doctype:Credoctypes = Credoctypes.Tool
 
-    def __init__(
-        self, toolType: ToolTypes = ToolTypes.Unknown, *args: Any, **kwargs: Any
-    ) -> None:
-        self.doctype = Credoctypes.Tool
+    def __init__(self, toolType:ToolTypes= ToolTypes.Unknown, *args: Any, **kwargs: Any) -> None:
         self.toolType = toolType
-        super().__init__(*args, **kwargs)
-
+        super().__init__( *args, **kwargs)
+   
+    def todict(self) -> Dict[Any, Any]: # TODO: BUG This needs to also serialise toolType to str properly, same for Code ( very likely we need a ToolBase class)
+        res = asdict(
+            self,
+            dict_factory=lambda x: {
+                k: v if type(v) == list or type(v) == set or type(v) == dict else str(v) if not type(v)==Credoctypes else str(v.value)
+                for (k, v) in x
+                if v not in ["", {}, [], None, set()]
+            },
+        )
+        return res
 
 @dataclass
-class Code(Tool):
-    pass
-
-
-class MandatoryFieldException(Exception):
-    pass
-
-
-def raise_MandatoryFieldException(msg: str = "") -> None:
-    raise MandatoryFieldException(msg)
+class Code(Node):
+    doctype:Credoctypes = Credoctypes.Code
