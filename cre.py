@@ -27,7 +27,12 @@ migrate = Migrate(app, sqla, render_as_batch=True)
 def test(cover: coverage.Coverage, test_names: List[str]) -> None:
     COV = None
     if cover or os.environ.get("FLASK_COVERAGE"):
-        COV = coverage.coverage(branch=True, include="application/*",check_preimported=True, config_file="application/tests/.coveragerc")
+        COV = coverage.coverage(
+            branch=True,
+            include="application/*",
+            check_preimported=True,
+            config_file="application/tests/.coveragerc",
+        )
         COV.start()
 
     if test_names:
