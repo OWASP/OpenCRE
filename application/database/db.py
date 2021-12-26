@@ -1014,6 +1014,8 @@ def __nodeFromDB(dbnode: Standard) -> cre_defs.Node:
 
 def ToolFromDB(dbtool: Standard) -> cre_defs.Tool:
     return cast(cre_defs.Tool, __nodeFromDB(dbtool))
+
+
 def StandardFromDB(dbstandard: Standard) -> cre_defs.Standard:
     return cast(cre_defs.Standard, __nodeFromDB(dbstandard))
 

@@ -303,7 +303,15 @@ class TestMain(unittest.TestCase):
             # negative test first parse_file accepts a list of objects
             result = main.parse_file(
                 filename="tests",
-                yamldocs=["no","valid","objects","here",{1:2,}],
+                yamldocs=[
+                    "no",
+                    "valid",
+                    "objects",
+                    "here",
+                    {
+                        1: 2,
+                    },
+                ],
                 scollection=self.collection,
             )
 

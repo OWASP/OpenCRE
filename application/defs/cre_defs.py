@@ -1,4 +1,3 @@
-
 import json
 from copy import copy
 from dataclasses import asdict, dataclass, field
@@ -152,27 +151,30 @@ class LinkTypes(str, Enum):
             name = "SAME"
         res = [x for x in LinkTypes if x.value == name]
         if not res:
-            raise KeyError(f"{name} is not a valid linktype, supported linktypes are {[t for t in LinkTypes]}")
+            raise KeyError(
+                f"{name} is not a valid linktype, supported linktypes are {[t for t in LinkTypes]}"
+            )
         return res[0]
 
+
 class ToolTypes(str, Enum):
-        Offensive = "Offensive"
-        Defensive = "Defensive"
-        Unknown = "Unknown"
+    Offensive = "Offensive"
+    Defensive = "Defensive"
+    Unknown = "Unknown"
+
 
 @dataclass(eq=False)
 class Link:
     document: "Document"
     ltype: LinkTypes = LinkTypes.Same
     tags: List[str] = field(default_factory=list)
-    
+
     def __post_init__(self):
         if self.tags is None:
             self.tags = []
 
         if type(self.ltype) == str:
             self.ltype = LinkTypes.from_str(self.ltype)
-
 
     def __hash__(self) -> int:
         return hash(json.dumps(self.todict()))
@@ -181,7 +183,7 @@ class Link:
         return json.dumps(self.todict())
 
     def __eq__(self, other: object) -> bool:
-    
+
         return (
             type(other) is Link
             and self.ltype.value == other.ltype.value
@@ -203,11 +205,11 @@ class Link:
 @dataclass
 class Document:
     name: str
-    doctype: Credoctypes 
+    doctype: Credoctypes
     id: Optional[str] = ""
     description: Optional[str] = ""
     links: List[Link] = field(default_factory=list)
-    tags:  List[str] = field(default_factory=list)
+    tags: List[str] = field(default_factory=list)
     metadata: Dict[str, Any] = field(default_factory=dict)
 
     def __eq__(self, other: object) -> bool:
@@ -225,7 +227,7 @@ class Document:
                     for b in other.links
                 ]
             )
-            and self.tags==other.tags
+            and self.tags == other.tags
             and self.metadata == other.metadata
         )
 
@@ -252,24 +254,24 @@ class Document:
         if "tags" in res:
             res["tags"] = list(self.tags)
         return res
-    
+
     def __repr__(self):
         return f"{self.todict()}"
 
     def add_link(self, link: Link) -> "Document":
         if not self.links:
             self.links = []
-        if not isinstance(link,Link):
+        if not isinstance(link, Link):
             raise ValueError("add_link only takes Link() types")
 
         self.links.append(link)
         return self
 
 
-
 @dataclass(eq=False)
 class CRE(Document):
     doctype: Credoctypes = Credoctypes.CRE
+
 
 @dataclass
 class Node(Document):
@@ -277,10 +279,10 @@ class Node(Document):
 
     def __eq__(self, other: object) -> bool:
         return (
-                isinstance(other, type(self))
-                and super().__eq__(other)
-                and self.hyperlink == other.hyperlink
-            )
+            isinstance(other, type(self))
+            and super().__eq__(other)
+            and self.hyperlink == other.hyperlink
+        )
 
 
 @dataclass
@@ -294,49 +296,62 @@ class Standard(Node):
         res = asdict(
             self,
             dict_factory=lambda x: {
-                k: v if type(v) == list or type(v) == set or type(v) == dict else str(v) if not type(v)==Credoctypes else str(v.value)
+                k: v
+                if type(v) == list or type(v) == set or type(v) == dict
+                else str(v)
+                if not type(v) == Credoctypes
+                else str(v.value)
                 for (k, v) in x
                 if v not in ["", {}, [], None, set()]
             },
         )
         return res
+
     def __hash__(self) -> int:
         return hash(json.dumps(self.todict()))
 
-
     def __eq__(self, other: object) -> bool:
         return (
-                type(other) is Standard
-                and super().__eq__(other)
-                and self.section == other.section
-                and self.subsection == other.subsection
-                and self.version == other.version
-            )
+            type(other) is Standard
+            and super().__eq__(other)
+            and self.section == other.section
+            and self.subsection == other.subsection
+            and self.version == other.version
+        )
 
 
 @dataclass
 class Tool(Node):
     toolType: ToolTypes = ToolTypes.Unknown
-    doctype:Credoctypes = Credoctypes.Tool
-  
+    doctype: Credoctypes = Credoctypes.Tool
+
     def __eq__(self, other: object) -> bool:
         return (
-                type(other) is Tool
-                and super().__eq__(other)
-                and self.toolType == other.toolType
-            )
-   
-    def todict(self) -> Dict[Any, Any]: # TODO: BUG This needs to also serialise toolType to str properly, same for Code ( very likely we need a ToolBase class)
+            type(other) is Tool
+            and super().__eq__(other)
+            and self.toolType == other.toolType
+        )
+
+    def todict(
+        self,
+    ) -> Dict[
+        Any, Any
+    ]:  # TODO: BUG This needs to also serialise toolType to str properly, same for Code ( very likely we need a ToolBase class)
         res = asdict(
             self,
             dict_factory=lambda x: {
-                k: v if type(v) == list or type(v) == set or type(v) == dict else str(v) if not type(v)==Credoctypes else str(v.value)
+                k: v
+                if type(v) == list or type(v) == set or type(v) == dict
+                else str(v)
+                if not type(v) == Credoctypes
+                else str(v.value)
                 for (k, v) in x
                 if v not in ["", {}, [], None, set()]
             },
         )
         return res
 
+
 @dataclass(eq=False)
 class Code(Node):
-    doctype:Credoctypes = Credoctypes.Code
+    doctype: Credoctypes = Credoctypes.Code

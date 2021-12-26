@@ -389,6 +389,7 @@ def prepare_for_review(cache: str) -> Tuple[str, str]:
         logger.fatal("Could not copy database %s this seems like a bug" % cache)
     return loc, os.path.join(loc, cache_filename)
 
+
 def review_osib_from_file(file_loc: str, cache: str, cre_loc: str) -> None:
     """Given the location of an osib.yaml, parse osib, convert to cres and add to db
     export db to yamls and spreadsheet for review"""
@@ -412,6 +413,7 @@ def review_osib_from_file(file_loc: str, cache: str, cre_loc: str) -> None:
     )
     logger.info(f"A spreadsheet view is at {sheet_url}")
 
+
 def add_osib_from_file(file_loc: str, cache: str, cre_loc: str) -> None:
     database = db_connect(path=cache)
     ymls = odefs.read_osib_yaml(file_loc)
@@ -429,6 +431,7 @@ def export_to_osib(file_loc: str, cache: str) -> None:
     with open(file_loc, "x"):
         with open(file_loc, "w") as f:
             f.write(json.dumps(tree.todict()))
+
 
 def owasp_metadata_to_cre(meta_file: str):
     """given a file with entries like below

@@ -485,7 +485,7 @@ def parse_hierarchical_export_format(
             ts = set()
             for x in mapping.pop("CRE Tags").split(","):
                 ts.add(x.strip())
-            cre.tags= list(ts)
+            cre.tags = list(ts)
 
         update_cre_in_links(cres, cre)
 
