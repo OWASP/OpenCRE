@@ -1,11 +1,12 @@
 import copy
-from pprint import pprint
-from dataclasses import asdict
-from typing import Set
 import unittest
+from dataclasses import asdict
+from pprint import pprint
+from typing import Set
+
 import dacite
-from dacite import Config, from_dict
 from application.defs import cre_defs as defs
+from dacite import Config, from_dict
 
 
 class TestCreDefs(unittest.TestCase):
@@ -38,13 +39,13 @@ class TestCreDefs(unittest.TestCase):
             "id": "100",
             "links": [
                 {
-                    "type": "SAM",
+                    "ltype": "SAME",
                     "document": {
                         "doctype": "Standard",
-                        "hyperlink": "",
                         "name": "ASVS",
                         "section": "SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING",
                         "subsection": "3.1.1",
+                        "version": "0.0.0",
                     },
                 }
             ],
@@ -71,20 +72,20 @@ class TestCreDefs(unittest.TestCase):
             "id": "500",
             "links": [
                 {
-                    "type": "SAM",
+                    "ltype": "SAME",
                     "document": {
                         "description": "CREdesc",
                         "doctype": "CRE",
                         "id": "100",
                         "links": [
                             {
-                                "type": "SAM",
+                                "ltype": "SAME",
                                 "document": {
                                     "doctype": "Standard",
-                                    "hyperlink": "",
                                     "name": "ASVS",
                                     "section": "SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING",
                                     "subsection": "3.1.1",
+                                    "version": "0.0.0",
                                 },
                             }
                         ],
@@ -93,10 +94,9 @@ class TestCreDefs(unittest.TestCase):
                     },
                 },
                 {
-                    "type": "SAM",
+                    "ltype": "SAME",
                     "document": {
                         "doctype": "Standard",
-                        "hyperlink": "",
                         "name": "Standard",
                         "section": "StandardSection",
                         "subsection": "3.1.1",
@@ -119,18 +119,10 @@ class TestCreDefs(unittest.TestCase):
             "subsection": "3.1.1",
         }
         self.maxDiff = None
-        self.assertEqual(standard.todict(), standard_output)
-        try:
-            self.assertCountEqual(nested.todict(), nested_output)
-        except Exception as e:
-            pprint("9" * 89)
-            pprint(asdict(nested))
-            pprint("9" * 89)
-            pprint(nested_output)
-            pprint("9" * 89)
-
-        self.assertCountEqual(cre.todict(), cre_output)
-        self.assertCountEqual(group.todict(), group_output)
+        self.assertDictEqual(standard.todict(), standard_output)
+        self.assertDictEqual(nested.todict(), nested_output)
+        self.assertDictEqual(cre.todict(), cre_output)
+        self.assertDictEqual(group.todict(), group_output)
 
     def test_linktype_from_str(self) -> None:
         expected = {
@@ -257,6 +249,9 @@ class TestCreDefs(unittest.TestCase):
         tool.links = [lnk]
         self.assertEqual(actual, tool)
 
+        with self.assertRaises(ValueError):
+            tool.add_link(link=tool2)  # type: ignore # this is on purpose
+
     def test_link_equality(self) -> None:
         l0 = defs.Link(
             document=defs.Code(name="foo"),
@@ -290,6 +285,41 @@ class TestCreDefs(unittest.TestCase):
             tags=["t1", "t3"],
         )
         self.assertNotEqual(l0, l5)
+
+    def test_link_todict(self) -> None:
+        tool = defs.Code(name="Code")
+        link = defs.Link(
+            ltype=defs.LinkTypes.Contains, document=tool, tags=["1", "2", "3", ""]
+        )
+
+        expected = {
+            "document": {"doctype": "Code", "name": "Code"},
+            "tags": ["1", "2", "3"],
+            "ltype": "Contains",
+        }
+        expected_ignore_empty = {
+            "document": {"doctype": "Code", "name": "Code"},
+            "ltype": "Contains",
+        }
+
+        self.assertDictEqual(link.todict(), expected)
+
+        link.tags = ["", ""]
+        self.assertDictEqual(link.todict(), expected_ignore_empty)
+        with self.assertRaises(ValueError):
+            link.document = None  # type: ignore #this is on purpose
+            link.todict()
+
+    def test_tool_todict(self) -> None:
+        t0 = defs.Tool(name="toolmctoolface", tooltype=defs.ToolTypes.Offensive)
+        expected = {
+            "doctype": "Tool",
+            "name": "toolmctoolface",
+            "tooltype": "Offensive",
+        }
+        self.assertDictEqual(t0.todict(), expected)
+        expected["toolType"] = "Defensive"
+        self.assertNotEqual(expected, t0.todict())
 
 
 if __name__ == "__main__":

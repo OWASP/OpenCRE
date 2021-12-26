@@ -2,21 +2,7 @@ import json
 from copy import copy
 from dataclasses import asdict, dataclass, field
 from enum import Enum
-from pprint import pprint
-from typing import (
-    Any,
-    Dict,
-    List,
-    Mapping,
-    Optional,
-    Set,
-    Tuple,
-    TypeVar,
-    Union,
-    overload,
-)
-
-# used for serialising and deserialising yaml CRE documents
+from typing import Any, Dict, List, Optional, Set, Union
 
 
 class ExportFormat(Enum):
@@ -163,7 +149,7 @@ class ToolTypes(str, Enum):
     Unknown = "Unknown"
 
 
-@dataclass(eq=False)
+@dataclass
 class Link:
     document: "Document"
     ltype: LinkTypes = LinkTypes.Same
@@ -195,10 +181,15 @@ class Link:
         res: Dict[str, Union[List[str], str, Dict[Any, Any]]] = {}
         if self.document:
             res["document"] = self.document.todict()
+        else:
+            raise ValueError(
+                f"Found Link not containing a document, this is a bug, for debugging, the tags for this Link are {self.tags}"
+            )
+        self.tags = [x for x in self.tags if x != ""]
         if self.tags and len(self.tags):
             res["tags"] = self.tags
 
-        res["type"] = self.ltype.value
+        res["ltype"] = "" + self.ltype.value
         return res
 
 
@@ -250,7 +241,9 @@ class Document:
                 if v not in ["", {}, [], None, set()]
             },
         )
-        res["doctype"] = "" + self.doctype.value
+        res["doctype"] = self.doctype.value + ""
+        if "links" in res:
+            res["links"] = [l.todict() for l in self.links]
         if "tags" in res:
             res["tags"] = list(self.tags)
         return res
@@ -277,6 +270,12 @@ class CRE(Document):
 class Node(Document):
     hyperlink: Optional[str] = ""
 
+    def todict(self):
+        res = super().todict()
+        if self.hyperlink:
+            res["hyperlink"] = self.hyperlink
+        return res
+
     def __eq__(self, other: object) -> bool:
         return (
             isinstance(other, type(self))
@@ -293,18 +292,12 @@ class Standard(Node):
     version: Optional[str] = ""
 
     def todict(self) -> Dict[Any, Any]:
-        res = asdict(
-            self,
-            dict_factory=lambda x: {
-                k: v
-                if type(v) == list or type(v) == set or type(v) == dict
-                else str(v)
-                if not type(v) == Credoctypes
-                else str(v.value)
-                for (k, v) in x
-                if v not in ["", {}, [], None, set()]
-            },
-        )
+        res = super().todict()
+        res["section"] = self.section
+        if self.subsection:
+            res["subsection"] = self.subsection
+        if self.version:
+            res["version"] = self.version
         return res
 
     def __hash__(self) -> int:
@@ -322,33 +315,19 @@ class Standard(Node):
 
 @dataclass
 class Tool(Node):
-    toolType: ToolTypes = ToolTypes.Unknown
+    tooltype: ToolTypes = ToolTypes.Unknown
     doctype: Credoctypes = Credoctypes.Tool
 
     def __eq__(self, other: object) -> bool:
         return (
             type(other) is Tool
             and super().__eq__(other)
-            and self.toolType == other.toolType
+            and self.tooltype == other.tooltype
         )
 
-    def todict(
-        self,
-    ) -> Dict[
-        Any, Any
-    ]:  # TODO: BUG This needs to also serialise toolType to str properly, same for Code ( very likely we need a ToolBase class)
-        res = asdict(
-            self,
-            dict_factory=lambda x: {
-                k: v
-                if type(v) == list or type(v) == set or type(v) == dict
-                else str(v)
-                if not type(v) == Credoctypes
-                else str(v.value)
-                for (k, v) in x
-                if v not in ["", {}, [], None, set()]
-            },
-        )
+    def todict(self) -> Dict[str, Any]:
+        res = super().todict()
+        res["tooltype"] = self.tooltype.value + ""
         return res
 
 
