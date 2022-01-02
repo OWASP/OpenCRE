@@ -22,7 +22,7 @@ class TestMain(unittest.TestCase):
         sqla.create_all(app=self.app)
         self.app_context = self.app.app_context()
         self.app_context.push()
-        self.collection = db.Standard_collection()
+        self.collection = db.Node_collection()
 
     def test_extend_cre_with_tag_links(self) -> None:
         """
@@ -38,7 +38,7 @@ class TestMain(unittest.TestCase):
         extending cd should return ca, cb
 
         """
-        collection = db.Standard_collection()
+        collection = db.Node_collection()
         cres = {
             "ca": defs.CRE(id="1", description="CA", name="CA", tags=["ta"]),
             "cb": defs.CRE(id="2", description="CB", name="CB", tags=["ta", "td"]),

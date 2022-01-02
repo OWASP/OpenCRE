@@ -1,22 +1,21 @@
-import json
 import argparse
+import json
 import logging
 import os
 import shutil
 import tempfile
 from typing import Any, Callable, Dict, Generator, List, Optional, Tuple
-from dacite import from_dict
-from dacite.config import Config
 
 import yaml
-
 from application import create_app  # type: ignore
 from application.config import CMDConfig
 from application.database import db
 from application.defs import cre_defs as defs
 from application.defs import osib_defs as odefs
-from application.utils import spreadsheet as sheet_utils
 from application.utils import parsers
+from application.utils import spreadsheet as sheet_utils
+from dacite import from_dict
+from dacite.config import Config
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
@@ -26,12 +25,12 @@ app = None
 
 
 def register_standard(
-    standard: defs.Standard, collection: db.Standard_collection
-) -> db.Standard:
+    standard: defs.Standard, collection: db.Node_collection
+) -> db.Node:
     """for each link find if either the root standard or the link have a CRE, then map the one who doesn't to the CRE
     if both don't map to anything, just add them in the db as unlinked standards
     """
-    linked_standard = collection.add_standard(standard)
+    linked_standard = collection.add_node(standard)
 
     cre_less_standards: List[defs.Standard] = []
 
@@ -41,28 +40,26 @@ def register_standard(
         if type(link.document).__name__ == defs.Standard.__name__:
             # if a standard links another standard it is likely that a standards writer wants to reference something
             # in that case, find which of the two standards has at least one CRE attached to it and link both to the parent CRE
-            cres = collection.find_cres_of_standard(link.document)
-            db_link = collection.add_standard(link.document)
+            cres = collection.find_cres_of_node(link.document)
+            db_link = collection.add_node(link.document)
             if cres:
                 for cre in cres:
-                    collection.add_link(
-                        cre=cre, standard=linked_standard, type=link.ltype
-                    )
+                    collection.add_link(cre=cre, node=linked_standard, type=link.ltype)
                     for unlinked_standard in cre_less_standards:  # if anything in this
                         collection.add_link(
                             cre=cre,
-                            standard=db.dbStandardFromStandard(unlinked_standard),
+                            node=db.dbNodeFromNode(unlinked_standard),
                             type=link.ltype,
                         )
             else:
-                cres = collection.find_cres_of_standard(linked_standard)
+                cres = collection.find_cres_of_node(linked_standard)
                 if cres:
                     for cre in cres:
-                        collection.add_link(cre=cre, standard=db_link, type=link.ltype)
+                        collection.add_link(cre=cre, node=db_link, type=link.ltype)
                         for unlinked_standard in cre_less_standards:
                             collection.add_link(
                                 cre=cre,
-                                standard=db.dbStandardFromStandard(unlinked_standard),
+                                node=db.dbNodeFromNode(unlinked_standard),
                                 type=link.ltype,
                             )
                 else:  # if neither the root nor a linked standard has a CRE, add both as unlinked standards
@@ -78,7 +75,7 @@ def register_standard(
     return linked_standard
 
 
-def register_cre(cre: defs.CRE, collection: db.Standard_collection) -> db.CRE:
+def register_cre(cre: defs.CRE, collection: db.Node_collection) -> db.CRE:
     dbcre: db.CRE = collection.add_cre(cre)
     for link in cre.links:
         if type(link.document) == defs.CRE:
@@ -88,9 +85,7 @@ def register_cre(cre: defs.CRE, collection: db.Standard_collection) -> db.CRE:
         elif type(link.document) == defs.Standard:
             collection.add_link(
                 cre=dbcre,
-                standard=register_standard(
-                    standard=link.document, collection=collection
-                ),
+                node=register_standard(standard=link.document, collection=collection),
                 type=link.ltype,
             )
         elif type(link.document) == defs.Tool:
@@ -103,7 +98,7 @@ def register_cre(cre: defs.CRE, collection: db.Standard_collection) -> db.CRE:
 
 
 def parse_file(
-    filename: str, yamldocs: List[Dict[str, Any]], scollection: db.Standard_collection
+    filename: str, yamldocs: List[Dict[str, Any]], scollection: db.Node_collection
 ) -> Optional[List[defs.Document]]:
     """given yaml from export format deserialise to internal standards format and add standards to db"""
 
@@ -168,7 +163,7 @@ def parse_file(
 
 
 def parse_standards_from_spreadsheeet(
-    cre_file: List[Dict[str, Any]], result: db.Standard_collection
+    cre_file: List[Dict[str, Any]], result: db.Node_collection
 ) -> None:
     """given a yaml with standards, build a list of standards in the db"""
     hi_lvl_CREs = {}
@@ -198,7 +193,7 @@ def parse_standards_from_spreadsheeet(
 
             elif type(link.document).__name__ == defs.Standard.__name__:
                 dbstandard = register_standard(link.document, result)
-                result.add_link(cre=dbgroup, standard=dbstandard, type=link.ltype)
+                result.add_link(cre=dbgroup, node=dbstandard, type=link.ltype)
 
 
 def get_standards_files_from_disk(cre_loc: str) -> Generator[str, None, None]:
@@ -351,12 +346,12 @@ def run(args: argparse.Namespace) -> None:
         owasp_metadata_to_cre(args.owasp_proj_meta)
 
 
-def db_connect(path: str) -> db.Standard_collection:
+def db_connect(path: str) -> db.Node_collection:
 
     global app
     conf = CMDConfig(db_uri=path)
     app = create_app(conf=conf)
-    collection = db.Standard_collection()
+    collection = db.Node_collection()
     app_context = app.app_context()
     app_context.push()
 
@@ -364,7 +359,7 @@ def db_connect(path: str) -> db.Standard_collection:
 
 
 def create_spreadsheet(
-    collection: db.Standard_collection,
+    collection: db.Node_collection,
     exported_documents: List[Any],
     title: str,
     share_with: List[str],

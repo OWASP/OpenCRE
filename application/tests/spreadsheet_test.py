@@ -22,7 +22,7 @@ class TestDB(unittest.TestCase):
 
         self.app_context = self.app.app_context()
         self.app_context.push()
-        self.collection = db.Standard_collection()
+        self.collection = db.Node_collection()
 
     def test_prepare_spreadsheet_standards(self) -> None:
 
@@ -55,60 +55,60 @@ class TestDB(unittest.TestCase):
         collection.session.commit()
         collection.session.add(db.InternalLinks(cre=dbcre.id, group=dbgroup.id))
 
-        conflict1 = db.Standard(
+        conflict1 = db.Node(
             subsection="4.5.1",
             section="ConflictStandSection",
             name="ConflictStandName",
             link="https://example.com/1",
-            type="Standard",
+            ntype="Standard",
         )
-        conflict2 = db.Standard(
+        conflict2 = db.Node(
             subsection="4.5.2",
             section="ConflictStandSection",
             name="ConflictStandName",
             link="https://example.com/2",
-            type="Standard",
+            ntype="Standard",
         )
         collection.session.add(conflict1)
         collection.session.add(conflict2)
         collection.session.commit()
-        collection.session.add(db.Links(cre=dbcre.id, standard=conflict1.id))
-        collection.session.add(db.Links(cre=dbcre.id, standard=conflict2.id))
+        collection.session.add(db.Links(cre=dbcre.id, node=conflict1.id))
+        collection.session.add(db.Links(cre=dbcre.id, node=conflict2.id))
 
-        dbs1 = db.Standard(
+        dbs1 = db.Node(
             subsection="4.5.1",
             section="NormalStandSection1",
             name="NormalStand1",
             link="https://example.com/1",
-            type="Standard",
+            ntype="Standard",
         )
-        dbs2 = db.Standard(
+        dbs2 = db.Node(
             subsection="4.5.2",
             section="NormalStandSection2",
             name="NormalStand2",
             link="https://example.com/2",
-            type="Standard",
+            ntype="Standard",
         )
-        dbsg = db.Standard(
+        dbsg = db.Node(
             subsection="4.5.2",
             section="GroupStandSection2",
             name="GroupStand2",
             link="https://example.com/g2",
-            type="Standard",
+            ntype="Standard",
         )
-        dbls1 = db.Standard(
+        dbls1 = db.Node(
             subsection="4.5.2",
             section="LoneStandSection",
             name="LoneStand",
             link="https://example.com/ls1",
-            type="Standard",
+            ntype="Standard",
         )
-        dbls2 = db.Standard(
+        dbls2 = db.Node(
             subsection="4.5.2",
             section="OtherLoneStandSection",
             name="OtherLoneStand",
             link="https://example.com/ls2",
-            type="Standard",
+            ntype="Standard",
         )
         collection.session.add(dbs1)
         collection.session.add(dbs2)
@@ -116,9 +116,9 @@ class TestDB(unittest.TestCase):
         collection.session.add(dbls1)
         collection.session.add(dbls2)
         collection.session.commit()
-        collection.session.add(db.Links(cre=dbcre.id, standard=dbs1.id))
-        collection.session.add(db.Links(cre=dbcre.id, standard=dbs2.id))
-        collection.session.add(db.Links(cre=dbgroup.id, standard=dbsg.id))
+        collection.session.add(db.Links(cre=dbcre.id, node=dbs1.id))
+        collection.session.add(db.Links(cre=dbcre.id, node=dbs2.id))
+        collection.session.add(db.Links(cre=dbgroup.id, node=dbsg.id))
         collection.session.commit()
 
         expected = [
@@ -315,54 +315,54 @@ class TestDB(unittest.TestCase):
         collection.session.commit()
         collection.session.add(db.InternalLinks(cre=dbcre.id, group=dbgroup.id))
 
-        conflict1 = db.Standard(
+        conflict1 = db.Node(
             subsection="4.5.1",
             section="ConflictStandSection",
             name="ConflictStandName",
             link="https://example.com/1",
-            type="Standard",
+            ntype="Standard",
         )
-        conflict2 = db.Standard(
+        conflict2 = db.Node(
             subsection="4.5.2",
             section="ConflictStandSection",
             name="ConflictStandName",
             link="https://example.com/2",
-            type="Standard",
+            ntype="Standard",
         )
         collection.session.add(conflict1)
         collection.session.add(conflict2)
         collection.session.commit()
-        collection.session.add(db.Links(cre=dbcre.id, standard=conflict1.id))
-        collection.session.add(db.Links(cre=dbcre.id, standard=conflict2.id))
+        collection.session.add(db.Links(cre=dbcre.id, node=conflict1.id))
+        collection.session.add(db.Links(cre=dbcre.id, node=conflict2.id))
 
-        dbs1 = db.Standard(
+        dbs1 = db.Node(
             subsection="4.5.1",
             section="NormalStandSection1",
             name="NormalStand1",
             link="https://example.com/1",
-            type="Standard",
+            ntype="Standard",
         )
-        dbs2 = db.Standard(
+        dbs2 = db.Node(
             subsection="4.5.2",
             section="NormalStandSection2",
             name="NormalStand2",
             link="https://example.com/2",
-            type="Standard",
+            ntype="Standard",
         )
-        dbsg = db.Standard(
+        dbsg = db.Node(
             subsection="4.5.2",
             section="GroupStandSection2",
             name="GroupStand2",
             link="https://example.com/g2",
-            type="Standard",
+            ntype="Standard",
         )
         collection.session.add(dbs1)
         collection.session.add(dbs2)
         collection.session.add(dbsg)
         collection.session.commit()
-        collection.session.add(db.Links(cre=dbcre.id, standard=dbs1.id))
-        collection.session.add(db.Links(cre=dbcre.id, standard=dbs2.id))
-        collection.session.add(db.Links(cre=dbgroup.id, standard=dbsg.id))
+        collection.session.add(db.Links(cre=dbcre.id, node=dbs1.id))
+        collection.session.add(db.Links(cre=dbcre.id, node=dbs2.id))
+        collection.session.add(db.Links(cre=dbgroup.id, node=dbsg.id))
         collection.session.commit()
 
         expected = [
@@ -462,45 +462,45 @@ class TestDB(unittest.TestCase):
         dbcre = db.CRE(description="CREdesc", name="CREname", external_id="123-321-0")
         collection.session.add(dbcre)
 
-        conflict0 = db.Standard(
+        conflict0 = db.Node(
             subsection="4.5.0",
             section="ConflictStandSection",
             name="ConflictStandName",
             link="https://example.com/0",
-            type="Standard",
+            ntype="Standard",
         )
-        conflict1 = db.Standard(
+        conflict1 = db.Node(
             subsection="4.5.1",
             section="ConflictStandSection",
             name="ConflictStandName",
             link="https://example.com/1",
-            type="Standard",
+            ntype="Standard",
         )
         collection.session.add(conflict0)
         collection.session.add(conflict1)
         collection.session.commit()
-        collection.session.add(db.Links(cre=dbcre.id, standard=conflict0.id))
-        collection.session.add(db.Links(cre=dbcre.id, standard=conflict1.id))
+        collection.session.add(db.Links(cre=dbcre.id, node=conflict0.id))
+        collection.session.add(db.Links(cre=dbcre.id, node=conflict1.id))
 
-        dbs0 = db.Standard(
+        dbs0 = db.Node(
             subsection="4.5.0",
             section="NormalStandSection0",
             name="NormalStand0",
             link="https://example.com/0",
-            type="Standard",
+            ntype="Standard",
         )
-        dbs1 = db.Standard(
+        dbs1 = db.Node(
             subsection="4.5.1",
             section="NormalStandSection1",
             name="NormalStand1",
             link="https://example.com/1",
-            type="Standard",
+            ntype="Standard",
         )
         collection.session.add(dbs0)
         collection.session.add(dbs1)
         collection.session.commit()
-        collection.session.add(db.Links(cre=dbcre.id, standard=dbs0.id))
-        collection.session.add(db.Links(cre=dbcre.id, standard=dbs1.id))
+        collection.session.add(db.Links(cre=dbcre.id, node=dbs0.id))
+        collection.session.add(db.Links(cre=dbcre.id, node=dbs1.id))
 
         expected = [
             {

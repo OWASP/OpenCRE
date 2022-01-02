@@ -127,15 +127,13 @@ def __add_cre_to_spreadsheet(
 
 
 def prepare_spreadsheet(
-    collection: db.Standard_collection, docs: List[defs.Document]
+    collection: db.Node_collection, docs: List[defs.Document]
 ) -> List[Dict[str, Any]]:
     """
     Given a list of cre_defs.Document will create a list
      of key,value dict representing the mappings
     """
-    standard_names = (
-        collection.get_standards_names()
-    )  # get header from db (cheap enough)
+    standard_names = collection.get_node_names()  # get header from db (cheap enough)
 
     header: Dict[str, Optional[str]] = {
         defs.ExportFormat.cre_name_key(): None,

@@ -5,7 +5,8 @@ import tempfile
 import unittest
 from pprint import pprint
 from typing import Any, Dict, List
-from unittest.mock import patch, Mock
+from unittest.mock import Mock, patch
+
 from application import create_app, sqla  # type: ignore
 from application.cmd import cre_main as main
 from application.database import db
@@ -28,7 +29,7 @@ class TestMain(unittest.TestCase):
         sqla.create_all(app=self.app)
         self.app_context = self.app.app_context()
         self.app_context.push()
-        self.collection = db.Standard_collection()
+        self.collection = db.Node_collection()
 
     def test_register_standard_with_links(self) -> None:
 
@@ -81,7 +82,7 @@ class TestMain(unittest.TestCase):
 
         self.assertEqual(self.collection.session.query(db.Links).all(), [])
         # 3 cre-less standards in the db
-        self.assertEqual(len(self.collection.session.query(db.Standard).all()), 3)
+        self.assertEqual(len(self.collection.session.query(db.Node).all()), 3)
 
     def test_register_standard_with_cre(self) -> None:
         standard_with_cre = defs.Standard(
@@ -125,7 +126,7 @@ class TestMain(unittest.TestCase):
             len(self.collection.session.query(db.Links).all()), 2
         )  # 2 links in the db
         self.assertEqual(
-            len(self.collection.session.query(db.Standard).all()), 2
+            len(self.collection.session.query(db.Node).all()), 2
         )  # 2 standards in the db
         self.assertEqual(
             len(self.collection.session.query(db.CRE).all()), 1
@@ -214,7 +215,7 @@ class TestMain(unittest.TestCase):
         )  # 1 internal link in the db
 
         self.assertEqual(
-            len(self.collection.session.query(db.Standard).all()), 3
+            len(self.collection.session.query(db.Node).all()), 3
         )  # 3 standards in the db
         self.assertEqual(
             len(self.collection.session.query(db.CRE).all()), 3
@@ -367,7 +368,7 @@ class TestMain(unittest.TestCase):
             }
         ]
         main.parse_standards_from_spreadsheeet(input, self.collection)
-        self.assertEqual(len(self.collection.session.query(db.Standard).all()), 8)
+        self.assertEqual(len(self.collection.session.query(db.Node).all()), 8)
         self.assertEqual(len(self.collection.session.query(db.CRE).all()), 5)
         # assert the one CRE in the inpu externally links to all the 8 standards
         self.assertEqual(len(self.collection.session.query(db.Links).all()), 8)
@@ -388,7 +389,7 @@ class TestMain(unittest.TestCase):
     @patch("application.cmd.cre_main.db_connect")
     @patch("application.cmd.cre_main.parse_standards_from_spreadsheeet")
     @patch("application.utils.spreadsheet.readSpreadsheet")
-    @patch("application.database.db.Standard_collection.export")
+    @patch("application.database.db.Node_collection.export")
     def test_add_from_spreadsheet(
         self,
         mocked_export: Mock,
@@ -428,7 +429,7 @@ class TestMain(unittest.TestCase):
     @patch("application.cmd.cre_main.parse_standards_from_spreadsheeet")
     @patch("application.utils.spreadsheet.readSpreadsheet")
     @patch("application.cmd.cre_main.create_spreadsheet")
-    @patch("application.database.db.Standard_collection.export")
+    @patch("application.database.db.Node_collection.export")
     def test_review_from_spreadsheet(
         self,
         mocked_export: Mock,
@@ -479,7 +480,7 @@ class TestMain(unittest.TestCase):
     @patch("application.cmd.cre_main.get_standards_files_from_disk")
     @patch("application.cmd.cre_main.parse_file")
     @patch("application.cmd.cre_main.create_spreadsheet")
-    @patch("application.database.db.Standard_collection.export")
+    @patch("application.database.db.Node_collection.export")
     def test_review_from_disk(
         self,
         mocked_export: Mock,
@@ -525,7 +526,7 @@ class TestMain(unittest.TestCase):
     @patch("application.cmd.cre_main.db_connect")
     @patch("application.cmd.cre_main.get_standards_files_from_disk")
     @patch("application.cmd.cre_main.parse_file")
-    @patch("application.database.db.Standard_collection.export")
+    @patch("application.database.db.Node_collection.export")
     def test_add_from_disk(
         self,
         mocked_export: Mock,
@@ -561,7 +562,7 @@ class TestMain(unittest.TestCase):
     @patch("application.cmd.cre_main.register_cre")
     @patch("application.cmd.cre_main.register_standard")
     @patch("application.cmd.cre_main.create_spreadsheet")
-    @patch("application.database.db.Standard_collection.export")
+    @patch("application.database.db.Node_collection.export")
     def test_review_osib_from_file(
         self,
         mocked_export: Mock,
@@ -592,7 +593,7 @@ class TestMain(unittest.TestCase):
             [defs.Standard(name="s0", section="s1")],
         )
         mocked_register_cre.return_value = db.CRE(name="c0")
-        mocked_register_standard.return_value = db.Standard(name="s0", section="s1")
+        mocked_register_standard.return_value = db.Node(name="s0", section="s1")
         mocked_create_spreadsheet.return_value = "https://example.com/sheeet"
         mocked_export.return_value = [
             defs.CRE(name="c0"),
@@ -629,7 +630,7 @@ class TestMain(unittest.TestCase):
     @patch("application.defs.osib_defs.osib2cre")
     @patch("application.cmd.cre_main.register_cre")
     @patch("application.cmd.cre_main.register_standard")
-    @patch("application.database.db.Standard_collection.export")
+    @patch("application.database.db.Node_collection.export")
     def test_add_osib_from_file(
         self,
         mocked_export: Mock,
@@ -656,7 +657,7 @@ class TestMain(unittest.TestCase):
             [defs.Standard(name="s0", section="s1")],
         )
         mocked_register_cre.return_value = db.CRE(name="c0")
-        mocked_register_standard.return_value = db.Standard(name="s0", section="s1")
+        mocked_register_standard.return_value = db.Node(name="s0", section="s1")
         mocked_export.return_value = [
             defs.CRE(name="c0"),
             defs.Standard(name="s0", section="s1"),
@@ -675,7 +676,7 @@ class TestMain(unittest.TestCase):
         )
         mocked_export.assert_called_with(dir)
 
-    @patch("application.database.db.Standard_collection.export")
+    @patch("application.database.db.Node_collection.export")
     @patch("application.cmd.cre_main.db_connect")
     @patch("application.defs.osib_defs.cre2osib")
     def test_export_to_osib(

@@ -25,7 +25,7 @@ app = Blueprint("web", __name__, static_folder="../frontend/www")
 
 
 def extend_cre_with_tag_links(
-    cre: defs.CRE, collection: db.Standard_collection
+    cre: defs.CRE, collection: db.Node_collection
 ) -> defs.CRE:
     others = []
     # for each tag: get by tag, append results as "RELATED TO" links
@@ -41,7 +41,7 @@ def extend_cre_with_tag_links(
 @app.route("/rest/v1/id/<creid>", methods=["GET"])
 @cache.cached(timeout=50)
 def find_by_id(creid: str) -> Any:  # refer
-    database = db.Standard_collection()
+    database = db.Node_collection()
     include_only = request.args.getlist("include_only")
     opt_osib = request.args.get("osib")
     cre = database.get_CREs(external_id=creid, include_only=include_only)[0]
@@ -59,7 +59,7 @@ def find_by_id(creid: str) -> Any:  # refer
 @cache.cached(timeout=50)
 def find_by_name(crename: str) -> Any:
 
-    database = db.Standard_collection()
+    database = db.Node_collection()
     opt_osib = request.args.get("osib")
     cre = database.get_CREs(name=crename)[0]
     if cre:
@@ -71,7 +71,7 @@ def find_by_name(crename: str) -> Any:
 @app.route("/rest/v1/standard/<sname>", methods=["GET"])
 # @cache.cached(timeout=50)
 def find_standard_by_name(sname: str) -> Any:
-    database = db.Standard_collection()
+    database = db.Node_collection()
     opt_section = request.args.get("section")
     opt_osib = request.args.get("osib")
     if opt_section:
@@ -110,7 +110,7 @@ def find_standard_by_name(sname: str) -> Any:
 @app.route("/rest/v1/tags", methods=["GET"])
 @cache.cached(timeout=50)
 def find_document_by_tag(sname: str) -> Any:
-    database = db.Standard_collection()
+    database = db.Node_collection()
     tags = request.args.getlist("tag")
     documents = database.get_by_tags(tags)
     if documents:
@@ -121,7 +121,7 @@ def find_document_by_tag(sname: str) -> Any:
 @app.route("/rest/v1/gap_analysis", methods=["GET"])
 @cache.cached(timeout=50)
 def gap_analysis() -> Any:  # TODO (spyros): add export result to spreadsheet
-    database = db.Standard_collection()
+    database = db.Node_collection()
     standards = request.args.getlist("standard")
     documents = database.gap_analysis(standards=standards)
     if documents:
@@ -143,7 +143,7 @@ def text_search() -> Any:
                            CRE ids before it performs a free text search
         Anything else will be a case insensitive LIKE query in the database
     """
-    database = db.Standard_collection()
+    database = db.Node_collection()
     text = request.args.get("text")
     documents = database.text_search(text)
     if documents:
