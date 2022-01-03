@@ -86,7 +86,7 @@ class TestDB(unittest.TestCase):
             tags="tag1, dots.5.5, space 6 , several spaces and newline          7        \n",
             ntype=defs.Standard.__name__,
         )
-        standard = db.StandardFromDB(dbstandard)
+        standard = db.nodeFromDB(dbstandard)
         self.collection.session.add(dbcre)
         self.collection.session.add(dbstandard)
         self.collection.session.commit()
@@ -218,7 +218,7 @@ class TestDB(unittest.TestCase):
         )
         self.assertEqual(
             expected,
-            db.StandardFromDB(
+            db.nodeFromDB(
                 db.Node(
                     name="foo",
                     section="bar",
@@ -284,7 +284,6 @@ class TestDB(unittest.TestCase):
         name = str(uuid.uuid4())
 
         s = defs.Standard(
-            id="sid",
             doctype=defs.Credoctypes.Standard,
             section=original_section,
             subsection=original_section,
@@ -299,6 +298,8 @@ class TestDB(unittest.TestCase):
 
         # happy path, add new standard
         newStandard = self.collection.add_node(s)
+        self.assertIsNotNone(newStandard)
+
         dbstandard = (
             self.collection.session.query(db.Node)
             .filter(db.Node.name == s.name)
@@ -308,9 +309,7 @@ class TestDB(unittest.TestCase):
         self.assertEqual(dbstandard.name, s.name)
         self.assertEqual(dbstandard.section, s.section)
         self.assertEqual(dbstandard.subsection, s.subsection)
-        self.assertEqual(
-            newStandard.name, s.name
-        )  # ensure the right thing got returned
+        self.assertEqual(newStandard.name, s.name)  # ensure the right thing got returned
         self.assertEqual(dbstandard.ntype, s.doctype.value)
         # standards match on all of name,section, subsection <-- if you change even one of them it's a new entry
 
@@ -816,7 +815,6 @@ class TestDB(unittest.TestCase):
         for args, expected_vals in expected.items():
             stands = args.split(",")
             res = collection.gap_analysis(stands)
-            # unfortunately named, asserts element and count equality
             self.assertCountEqual(res, expected_vals)
 
     def test_add_internal_link(self) -> None:

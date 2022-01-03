@@ -135,6 +135,44 @@ class Node_collection:
 
         return nodes
 
+    def __introduces_cycle(self, node_from: str, node_to: str) -> Any:
+        try:
+            existing_cycle = nx.find_cycle(self.cre_graph)
+            if existing_cycle:
+                logger.fatal(
+                    "Existing graph contains cycle,"
+                    "this not a recoverable error,"
+                    f" manual database actions are required {existing_cycle}"
+                )
+                raise ValueError(
+                    "Existing graph contains cycle,"
+                    "this not a recoverable error,"
+                    f" manual database actions are required {existing_cycle}"
+                )
+        except nx.exception.NetworkXNoCycle:
+            pass  # happy path, we don't want cycles
+        new_graph = self.cre_graph.copy()
+        new_graph.add_edge(node_from, node_to)
+        try:
+            return nx.find_cycle(new_graph)
+        except nx.NetworkXNoCycle:
+            return False
+
+    @classmethod
+    def object_select(cls, node: Node) -> List[Node]:
+        if not node:
+            return []
+        qu = Node.query.filter()
+
+        for vk, v in vars(node).items():
+            if hasattr(Node, vk):
+                if v:
+                    attr = getattr(Node, vk)
+                    qu = qu.filter(attr == v)
+            else:
+                logger.debug(f"{vk} not in Node")
+        return qu.all()
+
     def get_node_names(self, ntype: str = cre_defs.Standard.__name__) -> List[str]:
 
         # this returns a tuple of (str,nothing)
@@ -250,7 +288,7 @@ class Node_collection:
         items_per_page: Optional[int] = None,
         include_only: Optional[List[str]] = None,
         ntype: str = cre_defs.Standard.__name__,
-        description: Optional[List[str]] = None,
+        description: Optional[str] = None,
     ) -> Tuple[Optional[int], Optional[List[cre_defs.Standard]], Optional[List[Node]]]:
         """
         Returns the relevant node entries of a singular ntype (or ntype irrelevant if ntype==None) and their linked CREs
@@ -537,7 +575,7 @@ class Node_collection:
                 cr.add_link(
                     cre_defs.Link(
                         ltype=cre_defs.LinkTypes.from_str(type),
-                        document=StandardFromDB(standard),
+                        document=nodeFromDB(standard),
                     )
                 )
             docs[cr.name] = cr
@@ -600,85 +638,33 @@ class Node_collection:
             self.cre_graph.add_node(f"CRE: {entry.id}")
         return entry
 
-    def add_node(self, node: cre_defs.Node) -> Node:
-        # TODO: BUG!!! only standards have section/subsection
-        # how do we map Non-CRE Documents to DB without creating endless If statements or CRUD methods for each?
+  
 
-        clause = Node.query.filter(
-            sqla.and_(func.lower(Node.name) == node.name.lower())
-        )
-        if node.section:
-            clause = clause.filter(
-                sqla.and_(func.lower(Node.section) == node.section.lower())
-            )
-        if node.subsection:
-            clause = clause.filter(
-                sqla.and_(func.lower(Node.subsection) == node.subsection.lower())
-            )
-        if node.version:
-            clause = clause.filter(
-                sqla.and_(func.lower(Node.version) == node.version.lower())
-            )
-        if node.hyperlink:
-            clause = clause.filter(
-                sqla.and_(func.lower(Node.link) == node.hyperlink.lower())
-            )
-        if node.description:
-            clause = clause.filter(
-                sqla.and_(func.lower(Node.description) == node.description.lower())
-            )
-        entry = clause.first()
-        if entry is not None:
-            logger.debug(f"knew of {entry.name}:{entry.section} ,updating")
+    def add_node(self, node: cre_defs.Node) -> Optional[Node]:
+        dbnode = dbNodeFromNode(node)
+        if not dbnode:
+            logger.warning(f"{node} could not be transformed to a DB object")
+            return None
+        if not dbnode.ntype:
+            logger.warning(f"{node} has no registered type, cannot add, skipping")
+            return None
+
+        entries = self.object_select(dbnode)
+        if entries:
+            entry = entries[0]
+
+            logger.debug(f"knew of {entry.name}:{entry.section}:{entry.link} ,updating")
             entry.link = node.hyperlink
             self.session.commit()
             return entry
         else:
-            logger.debug(f"did not know of {node.name}:{node.section} ,adding")
-            ntype = type(node).__name__
-            description = None
-            if isinstance(node, cre_defs.Tool):
-                node.tags.add(node.toolType)
-                description = node.description
-
-            entry = Node(
-                name=node.name,
-                section=node.section,
-                subsection=node.subsection,
-                link=node.hyperlink,
-                version=node.version,
-                tags=",".join([str(t) for t in node.tags]),
-                ntype=ntype,
-                description=description,
-            )
-            self.session.add(entry)
+            logger.debug(f"did not know of {dbnode.name}:{dbnode.section} ,adding")
+            self.session.add(dbnode)
             self.session.commit()
-            self.cre_graph.add_node("Node: " + str(entry.id))
-        return entry
+            self.cre_graph.add_node("Node: " + str(dbnode.id))
+        return dbnode
 
-    def __introduces_cycle(self, node_from: str, node_to: str) -> Any:
-
-        try:
-            existing_cycle = nx.find_cycle(self.cre_graph)
-            if existing_cycle:
-                logger.fatal(
-                    "Existing graph contains cycle,"
-                    "this not a recoverable error,"
-                    f" manual database actions are required {existing_cycle}"
-                )
-                raise ValueError(
-                    "Existing graph contains cycle,"
-                    "this not a recoverable error,"
-                    f" manual database actions are required {existing_cycle}"
-                )
-        except nx.exception.NetworkXNoCycle:
-            pass  # happy path, we don't want cycles
-        new_graph = self.cre_graph.copy()
-        new_graph.add_edge(node_from, node_to)
-        try:
-            return nx.find_cycle(new_graph)
-        except nx.NetworkXNoCycle:
-            return False
+   
 
     def add_internal_link(
         self, group: CRE, cre: CRE, type: cre_defs.LinkTypes = cre_defs.LinkTypes.Same
@@ -788,18 +774,7 @@ class Node_collection:
                 self.session.query(CRE).filter(sqla.and_(CRE.name == cre.name)).first()
             )
         if node.id is None:
-            node = (
-                self.session.query(Node)
-                .filter(
-                    sqla.and_(
-                        Node.name == node.name,
-                        Node.section == node.section,
-                        Node.subsection == node.subsection,
-                        Node.version == node.version,
-                    )
-                )
-                .first()
-            )
+            node = self.object_select(node=node)[0]
 
         entry = (
             self.session.query(Links)
@@ -850,15 +825,15 @@ class Node_collection:
 
         return res
 
-    def gap_analysis(self, nodes: List[str]) -> List[cre_defs.Node]:
+    def gap_analysis(self, node_names: List[str]) -> List[cre_defs.Node]:
         """Since the CRE structure is a tree-like graph with
         leaves being nodes we can find the paths between nodes
         find_path_between_nodes() is a graph-path-finding method
         """
         processed_nodes = []
         dbnodes: List[Node] = []
-        for node in nodes:
-            dbnodes.extend(self.session.query(Node).filter(Node.name == node).all())
+        for name in node_names:
+            dbnodes.extend(self.session.query(Node).filter(Node.name == name).all())
 
         for node in dbnodes:
             working_node = nodeFromDB(node)
@@ -955,20 +930,63 @@ class Node_collection:
         return list(set(results))
 
 
-def dbNodeFromNode(node: cre_defs.Node) -> Node:
-    """Returns a db node object dropping the links"""
-    ntype = node.toolType.value if isinstance(node, cre_defs.Tool) else None
+def dbNodeFromNode(doc: cre_defs.Node) -> Optional[Node]:
+    if doc.doctype == cre_defs.Credoctypes.Standard:
+        return dbNodeFromStandard(doc)
+    elif doc.doctype == cre_defs.Credoctypes.Code:
+        return dbNodeFromCode(doc)
+    elif doc.doctype == cre_defs.Credoctypes.Tool:
+        return dbNodeFromTool(doc)
+    else:
+        return None
+
+
+def dbNodeFromCode(code: cre_defs.Node) -> Node:
+    code = cast(cre_defs.Code, code)
+    tags = ""
+    if code.tags:
+        tags = ",".join(tags)
     return Node(
-        name=node.name,
-        section=node.section,
-        subsection=node.subsection,
-        version=node.version,
-        ntype=ntype,
-        description=node.description,
+        name=code.name,
+        ntype=code.doctype.value,
+        tags=tags,
+        description=code.description,
+        link=code.hyperlink,
     )
 
 
-# TODO: Make this also cast based on type
+def dbNodeFromStandard(standard: cre_defs.Node) -> Node:
+    standard = cast(cre_defs.Standard, standard)
+    tags = ""
+    if standard.tags:
+        tags = ",".join(tags)
+    return Node(
+        name=standard.name,
+        ntype=standard.doctype.value,
+        tags=tags,
+        description=standard.description,
+        link=standard.hyperlink,
+        section=standard.section,
+        subsection=standard.subsection,
+        version=standard.version,
+    )
+
+
+def dbNodeFromTool(tool: cre_defs.Node) -> Node:
+    tool = cast(cre_defs.Tool, tool)
+    tgs = [tool.tooltype.value]
+    if tool.tags:
+        tgs.extend(tool.tags)
+    tags = ",".join(tgs)
+    return Node(
+        name=tool.name,
+        tags=tags,
+        ntype=tool.doctype.value,
+        description=tool.description,
+        link=tool.hyperlink,
+    )
+
+
 def nodeFromDB(dbnode: Node) -> cre_defs.Node:
     tags = []
     if dbnode.tags:
@@ -991,23 +1009,29 @@ def nodeFromDB(dbnode: Node) -> cre_defs.Node:
             name=dbnode.name,
             hyperlink=dbnode.link,
             tags=tags,
-            version=dbnode.version,
             description=dbnode.description,
-            toolType=tag,
+            tooltype=tag,
+        )
+    elif dbnode.ntype == cre_defs.Code.__name__:
+        return cre_defs.Code(
+            name=dbnode.name,
+            hyperlink=dbnode.link,
+            tags=tags,
+            description=dbnode.description,
         )
     else:
         raise ValueError(
             f"Db node {dbnode.name} has an unrecognised ntype {dbnode.ntype}"
         )
 
+# def ToolFromDB(dbtool: Node) -> cre_defs.Tool:
+#     return cast(cre_defs.Tool, __nodeFromDB(dbtool))
 
-def ToolFromDB(dbtool: Node) -> cre_defs.Tool:
-    return cast(cre_defs.Tool, nodeFromDB(dbtool))
+# def StandardFromDB(dbstandard: Node) -> cre_defs.Standard:
+#     return cast(cre_defs.Standard, __nodeFromDB(dbstandard))
 
-
-def StandardFromDB(dbstandard: Node) -> cre_defs.Standard:
-    return cast(cre_defs.Standard, nodeFromDB(dbstandard))
-
+# def CodeFromDB(dbcode: Node) -> cre_defs.Code:
+#     return cast(cre_defs.Code, __nodeFromDB(dbcode))
 
 def CREfromDB(dbcre: CRE) -> cre_defs.CRE:
     tags = []
