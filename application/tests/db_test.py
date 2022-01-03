@@ -309,7 +309,9 @@ class TestDB(unittest.TestCase):
         self.assertEqual(dbstandard.name, s.name)
         self.assertEqual(dbstandard.section, s.section)
         self.assertEqual(dbstandard.subsection, s.subsection)
-        self.assertEqual(newStandard.name, s.name)  # ensure the right thing got returned
+        self.assertEqual(
+            newStandard.name, s.name
+        )  # ensure the right thing got returned
         self.assertEqual(dbstandard.ntype, s.doctype.value)
         # standards match on all of name,section, subsection <-- if you change even one of them it's a new entry
 
@@ -604,7 +606,7 @@ class TestDB(unittest.TestCase):
         res = collection.get_nodes(name="S1")
         self.assertEqual(expected, res)
 
-    def test_get_standards_with_pagination(self) -> None:
+    def test_get_nodes_with_pagination(self) -> None:
         """Given: a Standard 'S1' that links to cres
         return the Standard in Document format and the total pages and the page we are in"""
         collection = db.Node_collection()
@@ -670,6 +672,11 @@ class TestDB(unittest.TestCase):
             name="S1", include_only=["123"]
         )
         self.assertEqual(only_c1, res)
+
+        self.assertEqual(
+            collection.get_nodes_with_pagination(name="this should not exit"),
+            (None, None, None),
+        )
 
     def test_gap_analysis(self) -> None:
         """Given
@@ -970,6 +977,77 @@ class TestDB(unittest.TestCase):
                 pprint("|" * 99)
                 input()
                 raise e
+
+    def test_nodeFromDB(self) -> None:
+        data = {
+            "tool": defs.Tool(
+                name="fooTool",
+                description="lorem ipsum tsSection+tsC",
+                tooltype=defs.ToolTypes.Defensive,
+                tags=["1", "2", "3"],
+            ),
+            "standard": defs.Standard(
+                name="stand", section="s1", subsection="s2", version="s3"
+            ),
+            "code": defs.Code(
+                name="c",
+                description="c2",
+                hyperlink="https://example.com/code/hyperlink",
+                tags=["1", "2"],
+            ),
+        }
+        expected = {
+            "tool": db.Node(
+                name="fooTool",
+                description="lorem ipsum tsSection+tsC",
+                tags=",".join([defs.ToolTypes.Defensive.value, "1", "2", "3"]),
+                ntype=defs.Credoctypes.Tool.value,
+            ),
+            "standard": db.Node(
+                name="stand",
+                section="s1",
+                subsection="s2",
+                version="s3",
+                ntype=defs.Credoctypes.Standard.value,
+            ),
+            "code": db.Node(
+                name="c",
+                description="c2",
+                link="https://example.com/code/hyperlink",
+                tags="1,2",
+                ntype=defs.Credoctypes.Code.value,
+            ),
+        }
+        for k, v in data.items():
+            nd = db.dbNodeFromNode(v)
+            for vname, var in vars(nd).items():
+                if var and not vname.startswith("_"):
+                    self.assertEqual(var, vars(expected[k]).get(vname))
+
+    def test_object_select(self) -> None:
+        dbnode1 = db.Node(
+            name="fooTool",
+            description="lorem ipsum tsSection+tsC",
+            tags=f"{defs.ToolTypes.Defensive.value},1",
+        )
+        dbnode2 = db.Node(
+            name="fooTool",
+            description="lorem2",
+            link="https://example.com/foo/bar",
+            tags=f"{defs.ToolTypes.Defensive.value},1",
+        )
+
+        self.collection = db.Node_collection()
+        collection = db.Node_collection()
+        collection.session.add(dbnode1)
+        collection.session.add(dbnode2)
+        self.assertEqual(collection.object_select(dbnode1), [dbnode1])
+        self.assertEqual(collection.object_select(dbnode2), [dbnode2])
+        self.assertCountEqual(
+            collection.object_select(db.Node(name="fooTool")), [dbnode1, dbnode2]
+        )
+
+        self.assertEqual(collection.object_select(None), [])
 
 
 if __name__ == "__main__":

@@ -33,7 +33,7 @@ class Node(BaseModel):  # type: ignore
     # ASVS or standard name,  what are we linking to
     name = sqla.Column(sqla.String)
     # which part of <name> are we linking to
-    section = sqla.Column(sqla.String, nullable=False)
+    section = sqla.Column(sqla.String, nullable=True)
     # which subpart of <name> are we linking to
     subsection = sqla.Column(sqla.String)
     tags = sqla.Column(sqla.String)  # coma separated tags
@@ -44,7 +44,15 @@ class Node(BaseModel):  # type: ignore
     # some external link to where this is, usually a URL with an anchor
     link = sqla.Column(sqla.String, default="")
     __table_args__ = (
-        sqla.UniqueConstraint(name, section, subsection, name="standard_section"),
+        sqla.UniqueConstraint(
+            name,
+            section,
+            subsection,
+            ntype,
+            description,
+            version,
+            name="standard_section",
+        ),
     )
 
 
@@ -638,8 +646,6 @@ class Node_collection:
             self.cre_graph.add_node(f"CRE: {entry.id}")
         return entry
 
-  
-
     def add_node(self, node: cre_defs.Node) -> Optional[Node]:
         dbnode = dbNodeFromNode(node)
         if not dbnode:
@@ -663,8 +669,6 @@ class Node_collection:
             self.session.commit()
             self.cre_graph.add_node("Node: " + str(dbnode.id))
         return dbnode
-
-   
 
     def add_internal_link(
         self, group: CRE, cre: CRE, type: cre_defs.LinkTypes = cre_defs.LinkTypes.Same
@@ -1024,14 +1028,6 @@ def nodeFromDB(dbnode: Node) -> cre_defs.Node:
             f"Db node {dbnode.name} has an unrecognised ntype {dbnode.ntype}"
         )
 
-# def ToolFromDB(dbtool: Node) -> cre_defs.Tool:
-#     return cast(cre_defs.Tool, __nodeFromDB(dbtool))
-
-# def StandardFromDB(dbstandard: Node) -> cre_defs.Standard:
-#     return cast(cre_defs.Standard, __nodeFromDB(dbstandard))
-
-# def CodeFromDB(dbcode: Node) -> cre_defs.Code:
-#     return cast(cre_defs.Code, __nodeFromDB(dbcode))
 
 def CREfromDB(dbcre: CRE) -> cre_defs.CRE:
     tags = []
