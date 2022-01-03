@@ -3,6 +3,7 @@
 import os
 import urllib.parse
 from typing import Any
+import logging
 
 from flask import (
     Blueprint,
@@ -22,6 +23,10 @@ from application.defs import osib_defs as odefs
 ITEMS_PER_PAGE = 20
 
 app = Blueprint("web", __name__, static_folder="../frontend/www")
+
+logging.basicConfig()
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 
 def extend_cre_with_tag_links(
@@ -44,13 +49,17 @@ def find_by_id(creid: str) -> Any:  # refer
     database = db.Node_collection()
     include_only = request.args.getlist("include_only")
     opt_osib = request.args.get("osib")
-    cre = database.get_CREs(external_id=creid, include_only=include_only)[0]
-    if cre:
+
+    cres = database.get_CREs(external_id=creid, include_only=include_only)
+    if cres:
+        if len(cres) > 1:
+            logger.error("get by id returned more than one results? This looks buggy")
+        cre = cres[0]
         result = {"data": cre.todict()}
         # disable until we have a consensus on tag behaviour
         # cre = extend_cre_with_tag_links(cre=cre, collection=database)
         if opt_osib:
-            result["osib"] = odefs.cre2osib(cre).todict()
+            result["osib"] = odefs.cre2osib([cre]).todict()
         return jsonify(result)
     abort(404)
 
@@ -58,7 +67,6 @@ def find_by_id(creid: str) -> Any:  # refer
 @app.route("/rest/v1/name/<crename>", methods=["GET"])
 @cache.cached(timeout=50)
 def find_by_name(crename: str) -> Any:
-
     database = db.Node_collection()
     opt_osib = request.args.get("osib")
     cre = database.get_CREs(name=crename)[0]
@@ -68,16 +76,24 @@ def find_by_name(crename: str) -> Any:
     abort(404)
 
 
-@app.route("/rest/v1/standard/<sname>", methods=["GET"])
+@app.route("/rest/v1/<ntype>/<name>", methods=["GET"])
+@app.route("/rest/v1/standard/<name>", methods=["GET"])
 # @cache.cached(timeout=50)
-def find_standard_by_name(sname: str) -> Any:
+def find_node_by_name(name: str, ntype: str = defs.Credoctypes.Standard.value) -> Any:
     database = db.Node_collection()
     opt_section = request.args.get("section")
     opt_osib = request.args.get("osib")
+    opt_version = request.args.get("version")
     if opt_section:
         opt_section = urllib.parse.unquote(opt_section)
     opt_subsection = request.args.get("subsection")
     opt_hyperlink = request.args.get("hyperlink")
+
+    # match ntype to the credoctypes case-insensitive
+    typ = [t for t in defs.Credoctypes if t.value.lower() == ntype.lower()]
+    if typ:
+        ntype = typ[0]
+
     page = 1
     if request.args.get("page") is not None and int(request.args.get("page")) > 0:
         page = request.args.get("page")
@@ -85,25 +101,28 @@ def find_standard_by_name(sname: str) -> Any:
 
     include_only = request.args.getlist("include_only")
 
-    total_pages, standards, _ = database.get_standards_with_pagination(
-        name=sname,
+    total_pages, nodes, _ = database.get_nodes_with_pagination(
+        name=name,
         section=opt_section,
         subsection=opt_subsection,
         link=opt_hyperlink,
         page=int(page),
         items_per_page=int(items_per_page),
         include_only=include_only,
+        version=opt_version,
+        ntype=ntype,
     )
     result = {}
     result["total_pages"] = total_pages
     result["page"] = page
-    if standards:
+    if nodes:
         if opt_osib:
-            result["osib"] = odefs.cre2osib(standards).todict()
-        res = [stand.todict() for stand in standards]
+            result["osib"] = odefs.cre2osib(nodes).todict()
+        res = [node.todict() for node in nodes]
         result["standards"] = res
         return jsonify(result)
-    abort(404)
+    else:
+        abort(404)
 
 
 # TODO: (spyros) paginate
