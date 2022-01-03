@@ -106,9 +106,12 @@ class TestMain(unittest.TestCase):
 
         collection.add_internal_link(group=dca, cre=dcd, type=defs.LinkTypes.Contains)
         collection.add_internal_link(group=dcb, cre=dcd, type=defs.LinkTypes.Contains)
-        expected = {"data": cres["ca"].todict()}
 
         with self.app.test_client() as client:
+            response = client.get(f"/rest/v1/id/9999999999")
+            self.assertEqual(404, response.status_code)
+
+            expected = {"data": cres["ca"].todict()}
             response = client.get(
                 f"/rest/v1/id/{cres['ca'].id}",
                 headers={"Content-Type": "application/json"},
@@ -151,16 +154,21 @@ class TestMain(unittest.TestCase):
             collection.add_node(v)
 
         self.maxDiff = None
-        expected = {
-            "total_pages": 1,
-            "page": 1,
-            "standards": [
-                s.todict()
-                for _, s in nodes.items()
-                if s.doctype == defs.Credoctypes.Standard
-            ],
-        }
         with self.app.test_client() as client:
+            response = client.get(f"/rest/v1/standard/9999999999")
+            self.assertEqual(404, response.status_code)
+            response = client.get(f"/rest/v1/foobar/9999999999")
+            self.assertEqual(404, response.status_code)
+
+            expected = {
+                "total_pages": 1,
+                "page": 1,
+                "standards": [
+                    s.todict()
+                    for _, s in nodes.items()
+                    if s.doctype == defs.Credoctypes.Standard
+                ],
+            }
             response = client.get(
                 f"/rest/v1/standard/{nodes['sa'].name}",
                 headers={"Content-Type": "application/json"},
@@ -258,3 +266,13 @@ class TestMain(unittest.TestCase):
                 json.loads(non_standards_response.data.decode()), non_standards_expected
             )
             self.assertEqual(200, non_standards_response.status_code)
+
+            osib_expected = {
+                "total_pages": 1,
+                "page": 1,
+                "standards": [nodes["c0"].todict()],
+                "osib": osib_defs.cre2osib([nodes["c0"]]).todict(),
+            }
+            osib_response = client.get(f"/rest/v1/code/{nodes['c0'].name}?osib=true")
+            self.assertEqual(json.loads(osib_response.data.decode()), osib_expected)
+            self.assertEqual(200, osib_response.status_code)
