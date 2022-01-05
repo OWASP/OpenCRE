@@ -46,7 +46,7 @@ class TestMain(unittest.TestCase):
                         description="",
                         name="CWE",
                         links=[],
-                        tags=set(),
+                        tags=[],
                         metadata={},
                         section="598",
                     )
@@ -58,18 +58,18 @@ class TestMain(unittest.TestCase):
                         description="",
                         name="ASVS",
                         links=[],
-                        tags=set(),
+                        tags=[],
                         metadata={},
                         section="SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING",
                     )
                 ),
             ],
-            tags=set(),
+            tags=[],
             metadata={},
             section="Standard With Links",
         )
-        ret = main.register_standard(
-            standard=standard_with_links, collection=self.collection
+        ret = main.register_node(
+            node=standard_with_links, collection=self.collection
         )
         # assert returned value makes sense
         self.assertEqual(ret.name, "standard_with_links")
@@ -98,7 +98,7 @@ class TestMain(unittest.TestCase):
                         description="cre desc",
                         name="crename",
                         links=[],
-                        tags=set(),
+                        tags=[],
                         metadata={},
                     )
                 ),
@@ -109,18 +109,18 @@ class TestMain(unittest.TestCase):
                         description="",
                         name="ASVS",
                         links=[],
-                        tags=set(),
+                        tags=[],
                         metadata={},
                         section="SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING",
                     )
                 ),
             ],
-            tags=set(),
+            tags=[],
             metadata={},
             section="standard_with_cre",
         )
 
-        main.register_standard(standard=standard_with_cre, collection=self.collection)
+        main.register_node(node=standard_with_cre, collection=self.collection)
         # assert db structure makes sense
         self.assertEqual(
             len(self.collection.session.query(db.Links).all()), 2
@@ -152,12 +152,12 @@ class TestMain(unittest.TestCase):
                                     description="cre2 desc",
                                     name="crename2",
                                     links=[],
-                                    tags=set(),
+                                    tags=[],
                                     metadata={},
                                 )
                             )
                         ],
-                        tags=set(),
+                        tags=[],
                         metadata={},
                     )
                 ),
@@ -168,7 +168,7 @@ class TestMain(unittest.TestCase):
                         description="",
                         name="CWE",
                         links=[],
-                        tags=set(),
+                        tags=[],
                         metadata={},
                         section="598",
                     )
@@ -180,7 +180,7 @@ class TestMain(unittest.TestCase):
                         description="cre desc",
                         name="crename",
                         links=[],
-                        tags=set(),
+                        tags=[],
                         metadata={},
                     )
                 ),
@@ -191,19 +191,19 @@ class TestMain(unittest.TestCase):
                         description="",
                         name="ASVS",
                         links=[],
-                        tags=set(),
+                        tags=[],
                         metadata={},
                         section="SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING",
                     )
                 ),
             ],
-            tags=set(),
+            tags=[],
             metadata={},
             section="Session Management",
         )
 
-        main.register_standard(
-            standard=with_groupped_cre_links, collection=self.collection
+        main.register_node(
+            node=with_groupped_cre_links, collection=self.collection
         )
         # assert db structure makes sense
         self.assertEqual(
@@ -560,7 +560,7 @@ class TestMain(unittest.TestCase):
     @patch("application.defs.osib_defs.try_from_file")
     @patch("application.defs.osib_defs.osib2cre")
     @patch("application.cmd.cre_main.register_cre")
-    @patch("application.cmd.cre_main.register_standard")
+    @patch("application.cmd.cre_main.register_node")
     @patch("application.cmd.cre_main.create_spreadsheet")
     @patch("application.database.db.Node_collection.export")
     def test_review_osib_from_file(
@@ -629,7 +629,7 @@ class TestMain(unittest.TestCase):
     @patch("application.defs.osib_defs.try_from_file")
     @patch("application.defs.osib_defs.osib2cre")
     @patch("application.cmd.cre_main.register_cre")
-    @patch("application.cmd.cre_main.register_standard")
+    @patch("application.cmd.cre_main.register_node")
     @patch("application.database.db.Node_collection.export")
     def test_add_osib_from_file(
         self,

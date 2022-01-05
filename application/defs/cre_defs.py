@@ -113,7 +113,7 @@ class ExportFormat(Enum):
 
 
 class EnumMetaWithContains(EnumMeta):
-    def __contains__(cls, item):
+    def __contains__(cls:Enum, item:Any)->bool:
         return item in [v.value for v in cls.__members__.values()]
 
 

@@ -24,55 +24,55 @@ logger.setLevel(logging.INFO)
 app = None
 
 
-def register_standard(
-    standard: defs.Standard, collection: db.Node_collection
+def register_node(
+    node: defs.Node, collection: db.Node_collection
 ) -> db.Node:
-    """for each link find if either the root standard or the link have a CRE, then map the one who doesn't to the CRE
-    if both don't map to anything, just add them in the db as unlinked standards
+    """for each link find if either the root node or the link have a CRE, then map the one who doesn't to the CRE
+    if both don't map to anything, just add them in the db as unlinked nodes
     """
-    linked_standard = collection.add_node(standard)
+    linked_node = collection.add_node(node)
 
-    cre_less_standards: List[defs.Standard] = []
+    cre_less_nodes: List[defs.Node] = []
 
     cres_added = []
     # we need to know the cres added in case we encounter a higher level CRE, then we get the higher level CRE to link to these cres
-    for link in standard.links:
-        if type(link.document).__name__ == defs.Standard.__name__:
-            # if a standard links another standard it is likely that a standards writer wants to reference something
-            # in that case, find which of the two standards has at least one CRE attached to it and link both to the parent CRE
+    for link in node.links:
+        if type(link.document).__name__ in [defs.Standard.__name__, defs.Code.__name__,defs.Tool.__name__]:
+            # if a node links another node it is likely that a writer wants to reference something
+            # in that case, find which of the two nodes has at least one CRE attached to it and link both to the parent CRE
             cres = collection.find_cres_of_node(link.document)
             db_link = collection.add_node(link.document)
             if cres:
                 for cre in cres:
-                    collection.add_link(cre=cre, node=linked_standard, type=link.ltype)
-                    for unlinked_standard in cre_less_standards:  # if anything in this
+                    collection.add_link(cre=cre, node=linked_node, type=link.ltype)
+                    for unlinked_standard in cre_less_nodes:  # if anything in this
                         collection.add_link(
                             cre=cre,
                             node=db.dbNodeFromNode(unlinked_standard),
                             type=link.ltype,
                         )
             else:
-                cres = collection.find_cres_of_node(linked_standard)
+                cres = collection.find_cres_of_node(linked_node)
                 if cres:
                     for cre in cres:
                         collection.add_link(cre=cre, node=db_link, type=link.ltype)
-                        for unlinked_standard in cre_less_standards:
+                        for unlinked_node in cre_less_nodes:
                             collection.add_link(
                                 cre=cre,
-                                node=db.dbNodeFromNode(unlinked_standard),
+                                node=db.dbNodeFromNode(unlinked_node),
                                 type=link.ltype,
                             )
-                else:  # if neither the root nor a linked standard has a CRE, add both as unlinked standards
-                    cre_less_standards.append(link.document)
+                else:  # if neither the root nor a linked node has a CRE, add both as unlinked nodes
+                    cre_less_nodes.append(link.document)
 
             if link.document.links and len(link.document.links) > 0:
-                register_standard(standard=link.document, collection=collection)
+                register_node(node=link.document, collection=collection)
 
         elif type(link.document).__name__ == defs.CRE.__name__:
             dbcre = register_cre(link.document, collection)
-            collection.add_link(dbcre, linked_standard, type=link.ltype)
+            collection.add_link(dbcre, linked_node, type=link.ltype)
             cres_added.append(dbcre)
-    return linked_standard
+    return linked_node
 
 
 def register_cre(cre: defs.CRE, collection: db.Node_collection) -> db.CRE:
@@ -85,7 +85,7 @@ def register_cre(cre: defs.CRE, collection: db.Node_collection) -> db.CRE:
         elif type(link.document) == defs.Standard:
             collection.add_link(
                 cre=dbcre,
-                node=register_standard(standard=link.document, collection=collection),
+                node=register_node(node=link.document, collection=collection),
                 type=link.ltype,
             )
         elif type(link.document) == defs.Tool:
@@ -133,7 +133,7 @@ def parse_file(
                 data=contents,
                 config=Config(cast=[defs.Credoctypes]),
             )
-            register_callback = register_standard
+            register_callback = register_node
 
         for link in links:
             doclink = parse_file(
@@ -192,7 +192,7 @@ def parse_standards_from_spreadsheeet(
                 result.add_internal_link(group=dbgroup, cre=dbcre, type=link.ltype)
 
             elif type(link.document).__name__ == defs.Standard.__name__:
-                dbstandard = register_standard(link.document, result)
+                dbstandard = register_node(link.document, result)
                 result.add_link(cre=dbgroup, node=dbstandard, type=link.ltype)
 
 
@@ -395,7 +395,7 @@ def review_osib_from_file(file_loc: str, cache: str, cre_loc: str) -> None:
     for osib in osibs:
         cres, standards = odefs.osib2cre(osib)
         [register_cre(c, database) for c in cres]
-        [register_standard(s, database) for s in standards]
+        [register_node(s, database) for s in standards]
 
     sheet_url = create_spreadsheet(
         collection=database,
@@ -416,7 +416,7 @@ def add_osib_from_file(file_loc: str, cache: str, cre_loc: str) -> None:
     for osib in osibs:
         cre, standard = odefs.osib2cre(osib)
         [register_cre(c, database) for c in cre]
-        [register_standard(s, database) for s in standard]
+        [register_node(s, database) for s in standard]
     database.export(cre_loc)
 
 

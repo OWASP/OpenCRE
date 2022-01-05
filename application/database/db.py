@@ -215,6 +215,12 @@ class Node_collection:
         """returns the CREs that link to this node or none
         if none link to it"""
         if not node.id:
+            if "subsection" not in vars(node):
+                node.subsection = ""
+            if "section" not in vars(node):
+                node.section = ""
+            if "version" not in vars(node):
+                node.version = ""
             node = (
                 self.session.query(Node)
                 .filter(
