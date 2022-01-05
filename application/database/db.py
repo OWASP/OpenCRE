@@ -404,7 +404,14 @@ class Node_collection:
         ntype: Optional[str] = None,
         description: Optional[str] = None,
     ) -> sqla.Query:
-        if not name and not section and not subsection and not link and not version:
+        if (
+            not name
+            and not section
+            and not subsection
+            and not link
+            and not version
+            and not description
+        ):
             raise ValueError("tried to retrieve node with no values")
         query = Node.query
         if name:
@@ -874,7 +881,7 @@ class Node_collection:
         node_search = (
             r"(Node|(?P<ntype>"
             + types
-            + "))?((:| )?(?P<link>https?://\S+))?((:| )(?P<val1>\w+))?((:| )(?P<val2>.+))?((:| )(?P<val3>.+))?"
+            + "))?((:| )?(?P<link>https?://\S+))?((:| )(?P<val>.+$))?"
         )
         match = re.search(cre_id_search, text, re.IGNORECASE)
         if match:
@@ -892,10 +899,14 @@ class Node_collection:
         if match:
             link = match.group("link")
             ntype = match.group("ntype")
-            args = [match.group("val1"), match.group("val2"), match.group("val3")]
+            txt = match.group("val")
             results: List[cre_defs.Document] = []
-            if any(args):
-                for combo in permutations(args, 3):
+            if txt:
+                args = txt.split(":") if ":" in txt else txt.split(" ")
+                if len(args) < 3:
+                    args += [""] * (3 - len(args))
+                s = set([p for p in permutations(args, 3)])
+                for combo in s:
                     nodes = self.get_nodes(
                         name=combo[0],
                         section=combo[1],
@@ -912,15 +923,18 @@ class Node_collection:
             if results:
                 return list(set(results))
         # fuzzy matches second
-        args = [f"%{text}%", "", "", ""]
+        args = [f"%{text}%", "", "", "", ""]
         results = []
-        for combo in permutations(args, 4):
+        s = set([p for p in permutations(args, 5)])
+        for combo in s:
             nodes = self.get_nodes(
                 name=combo[0],
                 section=combo[1],
                 subsection=combo[2],
                 link=combo[3],
+                description=combo[4],
                 partial=True,
+                ntype=None,  # type: ignore
             )
             if nodes:
                 results.extend(nodes)
@@ -963,7 +977,7 @@ def dbNodeFromStandard(standard: cre_defs.Node) -> Node:
     standard = cast(cre_defs.Standard, standard)
     tags = ""
     if standard.tags:
-        tags = ",".join(tags)
+        tags = ",".join(standard.tags)
     return Node(
         name=standard.name,
         ntype=standard.doctype.value,
@@ -1005,16 +1019,17 @@ def nodeFromDB(dbnode: Node) -> cre_defs.Node:
             version=dbnode.version,
         )
     elif dbnode.ntype == cre_defs.Tool.__name__:
-        ttype = None
+        ttype = cre_defs.ToolTypes.Unknown
         for tag in tags:
             if tag in cre_defs.ToolTypes:
-                ttype = cre_defs.ToolTypes[tag].value
+                ttype = cre_defs.ToolTypes[tag]
+                tags.remove(tag)
         return cre_defs.Tool(
             name=dbnode.name,
             hyperlink=dbnode.link,
             tags=tags,
             description=dbnode.description,
-            tooltype=tag,
+            tooltype=ttype,
         )
     elif dbnode.ntype == cre_defs.Code.__name__:
         return cre_defs.Code(

@@ -44,13 +44,14 @@ def extend_cre_with_tag_links(
 
 
 @app.route("/rest/v1/id/<creid>", methods=["GET"])
+@app.route("/rest/v1/name/<crename>", methods=["GET"])
 @cache.cached(timeout=50)
-def find_by_id(creid: str) -> Any:  # refer
+def find_cre(creid: str = None, crename: str = None) -> Any:  # refer
     database = db.Node_collection()
     include_only = request.args.getlist("include_only")
     opt_osib = request.args.get("osib")
 
-    cres = database.get_CREs(external_id=creid, include_only=include_only)
+    cres = database.get_CREs(external_id=creid, name=crename, include_only=include_only)
     if cres:
         if len(cres) > 1:
             logger.error("get by id returned more than one results? This looks buggy")
@@ -61,18 +62,6 @@ def find_by_id(creid: str) -> Any:  # refer
         if opt_osib:
             result["osib"] = odefs.cre2osib([cre]).todict()
         return jsonify(result)
-    abort(404)
-
-
-@app.route("/rest/v1/name/<crename>", methods=["GET"])
-@cache.cached(timeout=50)
-def find_by_name(crename: str) -> Any:
-    database = db.Node_collection()
-    opt_osib = request.args.get("osib")
-    cre = database.get_CREs(name=crename)[0]
-    if cre:
-        cre = extend_cre_with_tag_links(cre=cre, collection=database)
-        return jsonify(cre.todict())
     abort(404)
 
 
@@ -127,14 +116,18 @@ def find_node_by_name(name: str, ntype: str = defs.Credoctypes.Standard.value) -
 
 # TODO: (spyros) paginate
 @app.route("/rest/v1/tags", methods=["GET"])
-@cache.cached(timeout=50)
-def find_document_by_tag(sname: str) -> Any:
+def find_document_by_tag() -> Any:
     database = db.Node_collection()
     tags = request.args.getlist("tag")
+    opt_osib = request.args.get("osib")
     documents = database.get_by_tags(tags)
     if documents:
         res = [doc.todict() for doc in documents]
-        return jsonify(res)
+        result = {"data": res}
+        if opt_osib:
+            result["osib"] = odefs.cre2osib(documents).todict()
+        return jsonify(result)
+    abort(404)
 
 
 @app.route("/rest/v1/gap_analysis", methods=["GET"])

@@ -130,6 +130,48 @@ class TestMain(unittest.TestCase):
             self.assertEqual(json.loads(osib_response.data.decode()), osib_expected)
             self.assertEqual(200, osib_response.status_code)
 
+    def test_find_by_name(self) -> None:
+        collection = db.Node_collection()
+        cres = {
+            "ca": defs.CRE(id="1", description="CA", name="CA", tags=["ta"]),
+            "cd": defs.CRE(id="2", description="CD", name="CD", tags=["td"]),
+            "cb": defs.CRE(id="3", description="CB", name="CB", tags=["tb"]),
+        }
+        cres["ca"].add_link(
+            defs.Link(ltype=defs.LinkTypes.Contains, document=cres["cd"].shallow_copy())
+        )
+        cres["cb"].add_link(
+            defs.Link(ltype=defs.LinkTypes.Contains, document=cres["cd"].shallow_copy())
+        )
+        dca = collection.add_cre(cres["ca"])
+        dcb = collection.add_cre(cres["cb"])
+        dcd = collection.add_cre(cres["cd"])
+
+        collection.add_internal_link(group=dca, cre=dcd, type=defs.LinkTypes.Contains)
+        collection.add_internal_link(group=dcb, cre=dcd, type=defs.LinkTypes.Contains)
+        self.maxDiff = None
+        with self.app.test_client() as client:
+            response = client.get(f"/rest/v1/name/CW")
+            self.assertEqual(404, response.status_code)
+
+            expected = {"data": cres["ca"].todict()}
+            response = client.get(
+                f"/rest/v1/name/{cres['ca'].name}",
+                headers={"Content-Type": "application/json"},
+            )
+            self.assertEqual(200, response.status_code)
+            self.assertEqual(json.loads(response.data.decode()), expected)
+            osib_response = client.get(
+                f"/rest/v1/name/{cres['cb'].name}?osib=true",
+                headers={"Content-Type": "application/json"},
+            )
+            osib_expected = {
+                "data": cres["cb"].todict(),
+                "osib": osib_defs.cre2osib([cres["cb"]]).todict(),
+            }
+            self.assertEqual(json.loads(osib_response.data.decode()), osib_expected)
+            self.assertEqual(200, osib_response.status_code)
+
     def test_find_node_by_name(self) -> None:
         collection = db.Node_collection()
         nodes = {
@@ -276,3 +318,72 @@ class TestMain(unittest.TestCase):
             osib_response = client.get(f"/rest/v1/code/{nodes['c0'].name}?osib=true")
             self.assertEqual(json.loads(osib_response.data.decode()), osib_expected)
             self.assertEqual(200, osib_response.status_code)
+
+    def test_find_document_by_tag(self) -> None:
+        collection = db.Node_collection()
+        cres = {
+            "ca": defs.CRE(id="1", description="CA", name="CA", tags=["ta"]),
+            "cb": defs.CRE(
+                id="3", description="CB", name="CB", tags=["ta", "tb", "tc"]
+            ),
+        }
+
+        collection.add_cre(cres["ca"])
+        collection.add_cre(cres["cb"])
+
+        with self.app.test_client() as client:
+            response = client.get(f"/rest/v1/tags?tag=CW")
+            self.assertEqual(404, response.status_code)
+
+            expected = {"data": [cres["ca"].todict(), cres["cb"].todict()]}
+
+            response = client.get(f"/rest/v1/tags?tag=ta")
+            self.assertEqual(200, response.status_code)
+            self.assertCountEqual(json.loads(response.data.decode()), expected)
+
+            osib_response = client.get(
+                f"/rest/v1/tags?tag=tb&tag=tc&osib=true",
+                headers={"Content-Type": "application/json"},
+            )
+            osib_expected = {
+                "data": cres["cb"].todict(),
+                "osib": osib_defs.cre2osib([cres["cb"]]).todict(),
+            }
+            self.assertCountEqual(osib_response.json, osib_expected)
+            self.assertEqual(200, osib_response.status_code)
+
+    def test_test_search(self) -> None:
+        collection = db.Node_collection()
+        docs = {
+            "ca": defs.CRE(id="111-111", description="CA", name="CA", tags=["ta"]),
+            "sa": defs.Standard(section="sa", subsection="sbb", name="SB"),
+        }
+
+        collection.add_cre(docs["ca"])
+        collection.add_node(docs["sa"])
+
+        with self.app.test_client() as client:
+            response = client.get(f"/rest/v1/text_search?text='CRE:2'")
+            self.assertEqual(404, response.status_code)
+
+            expected = [docs["ca"].todict()]
+            requests = [
+                "/rest/v1/text_search?text='CRE:111-111'",
+                "/rest/v1/text_search?text='CRE:CA'" "/rest/v1/text_search?text='CA'",
+            ]
+            for r in requests:
+                response = client.get(r)
+                self.assertEqual(200, response.status_code)
+                self.assertCountEqual(response.json, expected)
+
+            expected = [docs["sa"].todict()]
+            srequests = [
+                "/rest/v1/text_search?text=Standard:SB",
+                "/rest/v1/text_search?text=Standard:SB:sa",
+                "/rest/v1/text_search?text=Standard:SB:sa:sbb",
+                "/rest/v1/text_search?text=SB",
+            ]
+            for r in srequests:
+                resp = client.get(r)
+                self.assertEqual(200, resp.status_code)
+                self.assertDictEqual(resp.json[0], expected[0])

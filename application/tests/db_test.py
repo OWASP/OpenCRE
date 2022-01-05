@@ -39,6 +39,7 @@ class TestDB(unittest.TestCase):
                 section="FooStand",
                 name="BarStand",
                 hyperlink="https://example.com",
+                tags=["a", "b", "c"],
             )
         )
 
@@ -151,7 +152,7 @@ class TestDB(unittest.TestCase):
             with a link to "BarStand" and "GroupName" and one for "GroupName" with a link to "CREName"
         """
         loc = tempfile.mkdtemp()
-        result = [
+        expected = [
             defs.CRE(
                 id="111-001",
                 description="Groupdesc",
@@ -180,6 +181,7 @@ class TestDB(unittest.TestCase):
                             section="FooStand",
                             subsection="4.5.6",
                             hyperlink="https://example.com",
+                            tags=["a", "b", "c"],
                         )
                     ),
                 ],
@@ -195,18 +197,19 @@ class TestDB(unittest.TestCase):
 
         # load yamls from loc, parse,
         #  ensure yaml1 is result[0].todict and
-        #  yaml2 is result[1].todic
-        group = result[0].todict()
-        cre = result[1].todict()
-        groupname = result[0].name + ".yaml"
+        #  yaml2 is expected[1].todic
+        group = expected[0].todict()
+        cre = expected[1].todict()
+        groupname = expected[0].name + ".yaml"
         with open(os.path.join(loc, groupname), "r") as f:
             doc = yaml.safe_load(f)
             self.assertDictEqual(group, doc)
-        crename = result[1].name + ".yaml"
+
+        crename = expected[1].name + ".yaml"
         self.maxDiff = None
         with open(os.path.join(loc, crename), "r") as f:
             doc = yaml.safe_load(f)
-            self.assertDictEqual(cre, doc)
+            self.assertCountEqual(cre, doc)
 
     def test_StandardFromDB(self) -> None:
         expected = defs.Standard(
@@ -279,7 +282,7 @@ class TestDB(unittest.TestCase):
         # ensure original description
         self.assertEqual(newCRE.description, original_desc)
 
-    def test_add_standard(self) -> None:
+    def test_add_node(self) -> None:
         original_section = str(uuid.uuid4())
         name = str(uuid.uuid4())
 
@@ -288,6 +291,7 @@ class TestDB(unittest.TestCase):
             section=original_section,
             subsection=original_section,
             name=name,
+            tags=["a", "b", "c"],
         )
 
         self.assertIsNone(
@@ -313,6 +317,7 @@ class TestDB(unittest.TestCase):
             newStandard.name, s.name
         )  # ensure the right thing got returned
         self.assertEqual(dbstandard.ntype, s.doctype.value)
+        self.assertEqual(dbstandard.tags, ",".join(s.tags))
         # standards match on all of name,section, subsection <-- if you change even one of them it's a new entry
 
     def find_cres_of_cre(self) -> None:
@@ -940,8 +945,14 @@ class TestDB(unittest.TestCase):
             subsection="tsSubSection1",
             hyperlink="https://example.com/tsSection1/tsSubSection1",
         )
-
         collection.add_node(s3)
+        t1 = defs.Tool(
+            name="textSearchTool",
+            tooltype=defs.ToolTypes.Offensive,
+            hyperlink="https://example.com/textSearchTool",
+            description="test text search with tool",
+        )
+        collection.add_node(t1)
         collection.session.commit()
         expected: Dict[str, List[Any]] = {
             "123-456": [cre],
@@ -962,6 +973,8 @@ class TestDB(unittest.TestCase):
             "https://example.com/tsSection": [s1, s2, s3],
             "ipsum": [cre],
             "tsSection": [cre, s1, s2, s3],
+            "https://example.com/textSearchTool": [t1],
+            "text search": [t1],
         }
         self.maxDiff = None
         for k, val in expected.items():
@@ -978,7 +991,7 @@ class TestDB(unittest.TestCase):
                 input()
                 raise e
 
-    def test_nodeFromDB(self) -> None:
+    def test_dbNodeFromNode(self) -> None:
         data = {
             "tool": defs.Tool(
                 name="fooTool",
@@ -1023,6 +1036,52 @@ class TestDB(unittest.TestCase):
             for vname, var in vars(nd).items():
                 if var and not vname.startswith("_"):
                     self.assertEqual(var, vars(expected[k]).get(vname))
+
+    def test_nodeFromDB(self) -> None:
+        expected = {
+            "tool": defs.Tool(
+                name="fooTool",
+                description="lorem ipsum tsSection+tsC",
+                tooltype=defs.ToolTypes.Defensive,
+                tags=["1", "2", "3"],
+            ),
+            "standard": defs.Standard(
+                name="stand", section="s1", subsection="s2", version="s3"
+            ),
+            "code": defs.Code(
+                name="c",
+                description="c2",
+                hyperlink="https://example.com/code/hyperlink",
+                tags=["1", "2"],
+            ),
+        }
+        data = {
+            "tool": db.Node(
+                name="fooTool",
+                description="lorem ipsum tsSection+tsC",
+                tags=",".join([defs.ToolTypes.Defensive.value, "1", "2", "3"]),
+                ntype=defs.Credoctypes.Tool.value,
+            ),
+            "standard": db.Node(
+                name="stand",
+                section="s1",
+                subsection="s2",
+                version="s3",
+                ntype=defs.Credoctypes.Standard.value,
+            ),
+            "code": db.Node(
+                name="c",
+                description="c2",
+                link="https://example.com/code/hyperlink",
+                tags="1,2",
+                ntype=defs.Credoctypes.Code.value,
+            ),
+        }
+        for k, v in data.items():
+            nd = db.nodeFromDB(v)
+            for vname, var in vars(nd).items():
+                if var and not vname.startswith("_"):
+                    self.assertCountEqual(var, vars(expected[k]).get(vname))
 
     def test_object_select(self) -> None:
         dbnode1 = db.Node(

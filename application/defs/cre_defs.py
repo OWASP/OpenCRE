@@ -1,7 +1,8 @@
+import collections
 import json
 from copy import copy
 from dataclasses import asdict, dataclass, field
-from enum import Enum
+from enum import Enum, EnumMeta
 from typing import Any, Dict, List, Optional, Set, Union
 
 
@@ -111,14 +112,19 @@ class ExportFormat(Enum):
         )
 
 
-class Credoctypes(str, Enum):
+class EnumMetaWithContains(EnumMeta):
+    def __contains__(cls, item):
+        return item in [v.value for v in cls.__members__.values()]
+
+
+class Credoctypes(str, Enum, metaclass=EnumMetaWithContains):
     CRE = "CRE"
     Standard = "Standard"
     Tool = "Tool"
     Code = "Code"
 
 
-class LinkTypes(str, Enum):
+class LinkTypes(str, Enum, metaclass=EnumMetaWithContains):
     Same = "SAME"
     LinkedTo = "Linked To"  # Any standard entry is by default “linked”
     PartOf = "Is Part Of"  # Hierarchy above: “is part of”
@@ -143,10 +149,13 @@ class LinkTypes(str, Enum):
         return res[0]
 
 
-class ToolTypes(str, Enum):
+class ToolTypes(str, Enum, metaclass=EnumMetaWithContains):
     Offensive = "Offensive"
     Defensive = "Defensive"
     Unknown = "Unknown"
+
+    def __contains__(cls, item):
+        return item in [v.value for v in cls.__members__.values()]
 
 
 @dataclass
@@ -218,7 +227,13 @@ class Document:
                     for b in other.links
                 ]
             )
-            and self.tags == other.tags
+            and all(
+                [
+                    a in other.tags and b in self.tags
+                    for a in self.tags
+                    for b in other.tags
+                ]
+            )
             and self.metadata == other.metadata
         )
 
@@ -329,6 +344,9 @@ class Tool(Node):
         res = super().todict()
         res["tooltype"] = self.tooltype.value + ""
         return res
+
+    def __hash__(self) -> int:
+        return hash(json.dumps(self.todict()))
 
 
 @dataclass(eq=False)
