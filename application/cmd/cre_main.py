@@ -24,9 +24,7 @@ logger.setLevel(logging.INFO)
 app = None
 
 
-def register_node(
-    node: defs.Node, collection: db.Node_collection
-) -> db.Node:
+def register_node(node: defs.Node, collection: db.Node_collection) -> db.Node:
     """for each link find if either the root node or the link have a CRE, then map the one who doesn't to the CRE
     if both don't map to anything, just add them in the db as unlinked nodes
     """
@@ -37,7 +35,11 @@ def register_node(
     cres_added = []
     # we need to know the cres added in case we encounter a higher level CRE, then we get the higher level CRE to link to these cres
     for link in node.links:
-        if type(link.document).__name__ in [defs.Standard.__name__, defs.Code.__name__,defs.Tool.__name__]:
+        if type(link.document).__name__ in [
+            defs.Standard.__name__,
+            defs.Code.__name__,
+            defs.Tool.__name__,
+        ]:
             # if a node links another node it is likely that a writer wants to reference something
             # in that case, find which of the two nodes has at least one CRE attached to it and link both to the parent CRE
             cres = collection.find_cres_of_node(link.document)

@@ -68,9 +68,7 @@ class TestMain(unittest.TestCase):
             metadata={},
             section="Standard With Links",
         )
-        ret = main.register_node(
-            node=standard_with_links, collection=self.collection
-        )
+        ret = main.register_node(node=standard_with_links, collection=self.collection)
         # assert returned value makes sense
         self.assertEqual(ret.name, "standard_with_links")
         self.assertEqual(ret.section, "Standard With Links")
@@ -202,9 +200,7 @@ class TestMain(unittest.TestCase):
             section="Session Management",
         )
 
-        main.register_node(
-            node=with_groupped_cre_links, collection=self.collection
-        )
+        main.register_node(node=with_groupped_cre_links, collection=self.collection)
         # assert db structure makes sense
         self.assertEqual(
             len(self.collection.session.query(db.Links).all()), 5

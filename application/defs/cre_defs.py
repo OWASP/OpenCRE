@@ -113,7 +113,7 @@ class ExportFormat(Enum):
 
 
 class EnumMetaWithContains(EnumMeta):
-    def __contains__(cls:Enum, item:Any)->bool:
+    def __contains__(cls: Enum, item: Any) -> bool:
         return item in [v.value for v in cls.__members__.values()]
 
 
@@ -153,9 +153,6 @@ class ToolTypes(str, Enum, metaclass=EnumMetaWithContains):
     Offensive = "Offensive"
     Defensive = "Defensive"
     Unknown = "Unknown"
-
-    def __contains__(cls, item):
-        return item in [v.value for v in cls.__members__.values()]
 
 
 @dataclass

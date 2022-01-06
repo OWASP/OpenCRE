@@ -54,6 +54,21 @@ class TestCreDefs(unittest.TestCase):
             "https://owasp.org/Top10/A10_2021-Server-Side_Request_Forgery_%28SSRF%29",
             "https://owasp.org/Top10/A11_2021-Next_Steps",
         ]
+        tools = [
+            cdefs.Tool(
+                tooltype=cdefs.ToolTypes.Offensive,
+                name="ZAP",
+                description="zed attack proxy",
+                hyperlink="https://www.zaproxy.org/",
+            ),
+            cdefs.Tool(
+                tooltype=cdefs.ToolTypes.Defensive,
+                name="SKF",
+                description="security knowledge framework",
+                hyperlink="https://www.securityknowledgeframework.org/",
+            ),
+        ]
+
         for i in range(1, 11):
             top10.append(
                 cdefs.Standard(
@@ -70,12 +85,36 @@ class TestCreDefs(unittest.TestCase):
                     hyperlink=top10_hyperlinks[i - 1],
                 )
             )
-        expected: Tuple[List[cdefs.CRE], List[cdefs.Standard]] = ([], top10)
-        cre_arr = defs.osib2cre(data[0])
-        for x, y in zip(expected[1], cre_arr[1]):
-            self.assertEquals(x, y)
+        top10.extend(
+            [
+                cdefs.Standard(
+                    name="top10",
+                    doctype=cdefs.Credoctypes.Standard,
+                    metadata={"source_id": "Portswigger"},
+                    section="202110.references.portswigger",
+                ),
+                cdefs.Standard(
+                    name="top10",
+                    doctype=cdefs.Credoctypes.Standard,
+                    links=[
+                        cdefs.Link(
+                            ltype=cdefs.LinkTypes.PartOf,
+                            document=cdefs.Standard(name="top10", section="202110"),
+                        )
+                    ],
+                    metadata={"source_id": "A11:2021"},
+                    hyperlink="https://owasp.org/Top10/A11_2021-Next_Steps",
+                    section="202110.11",
+                ),
+            ]
+        )
 
-    # @unittest.skip("tmp")
+        tools.extend(top10)
+        self.maxDiff = None
+        expected: Tuple[List[cdefs.CRE], List[cdefs.Standard]] = ([], tools)
+        cre_arr = defs.osib2cre(data[0])
+        self.assertCountEqual(expected[1], cre_arr[1])
+
     def test_cre2osib(self) -> None:
         cres = {}
         osibs = {}
@@ -95,7 +134,26 @@ class TestCreDefs(unittest.TestCase):
                 ),
                 children={},
             )
-
+        # osibs[14] =  # TODO:
+        cres[14] = cdefs.CRE(
+            name="LinksTool",
+            id="999-999",
+            links=[
+                cdefs.Link(
+                    ltype=cdefs.LinkTypes.LinkedTo,
+                    document=cdefs.Tool(
+                        tooltype=cdefs.ToolTypes.Defensive,
+                        name="SKF",
+                        hyperlink="https://example.com/skf",
+                    ),
+                )
+            ],
+        )
+        cres[15] = cdefs.Tool(
+            tooltype=cdefs.ToolTypes.Offensive,
+            name="zp",
+            hyperlink="https://example.com/zap",
+        )
         res = {
             "0": osibs[0],
             "1": osibs[1],
@@ -188,7 +246,7 @@ class TestCreDefs(unittest.TestCase):
             )
         )
         root.children = res
-        owasp.children = {"CRE": root}
+        owasp.children = {"CRE": root, "ZAP": zap}
         tree = Osib_tree(children={"OWASP": owasp})
         self.assertEqual(tree, defs.cre2osib(list(cres.values())))
         # self.fail()
@@ -219,6 +277,7 @@ class TestCreDefs(unittest.TestCase):
             )
             osibs[f"{i}"] = defs.Osib_node(
                 attributes=defs.Node_attributes(
+                    categories=[cdefs.Credoctypes.CRE],
                     source_id=str(i),
                     sources_i18n={
                         "en": defs._Source(
@@ -263,9 +322,9 @@ class TestCreDefs(unittest.TestCase):
         }
         osibs["6"].children = {"7": osibs["7"]}
         cre.children = {"0": osibs["0"], "1": osibs["1"]}
-        exprected_tree = defs.Osib_tree(children={"OWASP": owasp})
+        expected_tree = defs.Osib_tree(children={"OWASP": owasp})
         tree = defs.paths_to_osib(osib_paths=paths, cres=cres, related_nodes=[])
-        self.assertDictEqual(tree.todict(), exprected_tree.todict())
+        self.assertDictEqual(tree.todict(), expected_tree.todict())
 
 
 if __name__ == "__main__":
