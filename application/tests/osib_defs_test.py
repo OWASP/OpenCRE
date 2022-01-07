@@ -134,7 +134,16 @@ class TestCreDefs(unittest.TestCase):
                 ),
                 children={},
             )
-        # osibs[14] =  # TODO:
+        osibs[14] =  defs.Osib_node(
+                attributes=defs.Node_attributes(
+                    source_id="999-999",
+                    sources_i18n={Lang("en"): defs._Source(name=f"LinksTool")},),
+                children={"SKF":  defs.Osib_node(
+                    attributes=defs.Node_attributes(
+                    categories = ["Defensive","Tool"],
+                    sources_i18n={Lang("en"): defs._Source(
+                        source="https://example.com/skf",
+                        name=f"SKF")}))})
         cres[14] = cdefs.CRE(
             name="LinksTool",
             id="999-999",
@@ -149,9 +158,16 @@ class TestCreDefs(unittest.TestCase):
                 )
             ],
         )
+        osibs["ZAP"] = defs.Osib_node(
+                    attributes=defs.Node_attributes(
+                    categories = ["Offensive","Tool"],
+                    sources_i18n={Lang("en"): defs._Source(
+                        source="https://example.com/zap",
+                        name=f"zap")}))
+
         cres[15] = cdefs.Tool(
             tooltype=cdefs.ToolTypes.Offensive,
-            name="zp",
+            name="zap",
             hyperlink="https://example.com/zap",
         )
         res = {
@@ -246,7 +262,7 @@ class TestCreDefs(unittest.TestCase):
             )
         )
         root.children = res
-        owasp.children = {"CRE": root, "ZAP": zap}
+        owasp.children = {"CRE": root, "ZAP": osibs["ZAP"]}
         tree = Osib_tree(children={"OWASP": owasp})
         self.assertEqual(tree, defs.cre2osib(list(cres.values())))
         # self.fail()
