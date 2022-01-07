@@ -128,10 +128,24 @@ def parse_file(
             )
             # document = defs.CRE(**contents)
             register_callback = register_cre
-        elif contents.get("doctype") == defs.Credoctypes.Standard.value:
+        elif contents.get("doctype") in (
+            defs.Credoctypes.Standard.value,
+            defs.Credoctypes.Code.value,
+            defs.Credoctypes.Tool.value,
+        ):
             # document = defs.Standard(**contents)
+            doctype = contents.get("doctype")
+            data_class = (
+                defs.Standard
+                if doctype == defs.Credoctypes.Standard.value
+                else defs.Code
+                if doctype == defs.Credoctypes.Code.value
+                else defs.Tool
+                if doctype == defs.Credoctypes.Tool.value
+                else None
+            )
             document = from_dict(
-                data_class=defs.Standard,
+                data_class=data_class,
                 data=contents,
                 config=Config(cast=[defs.Credoctypes]),
             )
@@ -198,7 +212,7 @@ def parse_standards_from_spreadsheeet(
                 result.add_link(cre=dbgroup, node=dbstandard, type=link.ltype)
 
 
-def get_standards_files_from_disk(cre_loc: str) -> Generator[str, None, None]:
+def get_cre_files_from_disk(cre_loc: str) -> Generator[str, None, None]:
 
     for root, _, cre_docs in os.walk(cre_loc):
         for name in cre_docs:
@@ -233,7 +247,7 @@ def add_from_disk(cache_loc: str, cre_loc: str) -> None:
     export db to ../../cres/
     """
     database = db_connect(path=cache_loc)
-    for file in get_standards_files_from_disk(cre_loc):
+    for file in get_cre_files_from_disk(cre_loc):
         with open(file, "rb") as standard:
             parse_file(
                 filename=file,
@@ -281,7 +295,7 @@ def review_from_disk(cache: str, cre_file_loc: str, share_with: str) -> None:
     """
     loc, cache = prepare_for_review(cache)
     database = db_connect(path=cache)
-    for file in get_standards_files_from_disk(cre_file_loc):
+    for file in get_cre_files_from_disk(cre_file_loc):
         with open(file, "rb") as standard:
             parse_file(
                 filename=file,
