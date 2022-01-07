@@ -605,8 +605,7 @@ class Node_collection:
         for unode in self.__get_unlinked_nodes():
             unode = nodeFromDB(unode)
             docs[
-                "%s-%s:%s:%s"
-                % (unode.name, unode.section, unode.subsection, unode.version)
+                "%s-%s:%s:%s" % (unode.name, unode.doctype, unode.id, unode.description)
             ] = unode
 
         for _, doc in docs.items():

@@ -30,6 +30,7 @@ class TestDB(unittest.TestCase):
         dbcre = collection.add_cre(
             defs.CRE(id="111-000", description="CREdesc", name="CREname")
         )
+        self.dbcre = dbcre
         dbgroup = collection.add_cre(
             defs.CRE(id="111-001", description="Groupdesc", name="GroupName")
         )
@@ -152,6 +153,13 @@ class TestDB(unittest.TestCase):
             with a link to "BarStand" and "GroupName" and one for "GroupName" with a link to "CREName"
         """
         loc = tempfile.mkdtemp()
+        code0 = defs.Code(name="co0")
+        code1 = defs.Code(name="co1")
+        tool0 = defs.Tool(name="t0", tooltype=defs.ToolTypes.Unknown)
+        self.collection.add_link(self.dbcre, self.collection.add_node(code0))
+        self.collection.add_node(code1)
+        self.collection.add_node(tool0)
+
         expected = [
             defs.CRE(
                 id="111-001",
@@ -184,6 +192,7 @@ class TestDB(unittest.TestCase):
                             tags=["a", "b", "c"],
                         )
                     ),
+                    defs.Link(document=defs.Code(name="co0")),
                 ],
             ),
             defs.Standard(
@@ -192,6 +201,8 @@ class TestDB(unittest.TestCase):
                 name="Unlinked",
                 hyperlink="https://example.com",
             ),
+            defs.Tool(name="t0", tooltype=defs.ToolTypes.Unknown),
+            defs.Code(name="co1"),
         ]
         self.collection.export(loc)
 
