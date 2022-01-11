@@ -25,6 +25,8 @@ links:
     doctype: CRE
     id: 760-764
     name: Injection
+    tags:
+    - XSS
   type: Contains
 - document:
     doctype: CRE

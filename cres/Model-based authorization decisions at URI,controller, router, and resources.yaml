@@ -16,7 +16,7 @@ links:
   type: Linked To
 - document:
     doctype: Standard
-    hyperlink: ''
+    hyperlink: https://cwe.mitre.org/data/definitions/285.html
     name: CWE
     section: '285'
     subsection: ''
@@ -26,7 +26,7 @@ links:
     doctype: Standard
     hyperlink: ''
     name: Cheat_sheets
-    section: https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html
+    section: https://cheatsheetseries.owasp.org/cheatsheets/Web_Service_Security_Cheat_Sheet.html
     subsection: ''
     version: ''
   type: Linked To
@@ -34,7 +34,7 @@ links:
     doctype: Standard
     hyperlink: ''
     name: Cheat_sheets
-    section: https://cheatsheetseries.owasp.org/cheatsheets/Web_Service_Security_Cheat_Sheet.html
+    section: https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html
     subsection: ''
     version: ''
   type: Linked To

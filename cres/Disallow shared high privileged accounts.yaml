@@ -1,0 +1,57 @@
+doctype: CRE
+id: 623-347
+links:
+- document:
+    doctype: CRE
+    id: 586-842
+    name: '>>Secure user management'
+  type: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x11-V2-Authentication.md
+    name: ASVS
+    section: V2.5.4
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/16.html
+    name: CWE
+    section: '16'
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Choosing_and_Using_Security_Questions_Cheat_Sheet.html
+    name: Cheat_sheets
+    section: Choosing and Using Security Questions Cheat Sheet
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Forgot_Password_Cheat_Sheet.html
+    name: Cheat_sheets
+    section: Forgot Password Cheat Sheet
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-63
+    section: 5.1.1.2
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-63
+    section: A.3
+    subsection: ''
+    version: ''
+  type: Linked To
+name: Disallow shared high privileged accounts

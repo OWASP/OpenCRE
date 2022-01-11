@@ -1,0 +1,41 @@
+doctype: CRE
+id: 377-680
+links:
+- document:
+    doctype: CRE
+    id: 118-110
+    name: API/web services
+  type: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x21-V13-API.md
+    name: ASVS
+    section: V13.1.5
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/434.html
+    name: CWE
+    section: '434'
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Web_Service_Security_Cheat_Sheet.html
+    name: Cheat_sheets
+    section: Web Service Security Cheat Sheet
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html
+    name: Cheat_sheets
+    section: Server Side Request Forgery Prevention Cheat Sheet
+    subsection: ''
+    version: ''
+  type: Linked To
+name: Reject non-whitelisted content types

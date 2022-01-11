@@ -6,8 +6,8 @@ links:
     id: 010-308
     name: Input validation
     tags:
-    - XSS
     - Injection
+    - XSS
   type: Contains
 - document:
     doctype: Standard
@@ -19,7 +19,7 @@ links:
   type: Linked To
 - document:
     doctype: Standard
-    hyperlink: ''
+    hyperlink: https://owasp.org/www-project-web-security-testing-guide/v41/4-Web_Application_Security_Testing/11-Client_Side_Testing/04-Testing_for_Client_Side_URL_Redirect.html
     name: WSTG
     section: WSTG-CLNT-04
     subsection: ''
@@ -27,7 +27,7 @@ links:
   type: Linked To
 - document:
     doctype: Standard
-    hyperlink: ''
+    hyperlink: https://cwe.mitre.org/data/definitions/601.html
     name: CWE
     section: '601'
     subsection: ''
@@ -37,7 +37,7 @@ links:
     doctype: Standard
     hyperlink: ''
     name: Cheat_sheets
-    section: https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html
+    section: https://cheatsheetseries.owasp.org/cheatsheets/Mass_Assignment_Cheat_Sheet.html
     subsection: ''
     version: ''
   type: Linked To
@@ -45,7 +45,7 @@ links:
     doctype: Standard
     hyperlink: ''
     name: Cheat_sheets
-    section: https://cheatsheetseries.owasp.org/cheatsheets/Mass_Assignment_Cheat_Sheet.html
+    section: https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html
     subsection: ''
     version: ''
   type: Linked To

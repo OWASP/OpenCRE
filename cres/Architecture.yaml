@@ -1,0 +1,107 @@
+doctype: CRE
+id: 155-155
+links:
+- document:
+    doctype: CRE
+    id: 113-133
+    name: Use centralized authentication mechanism
+    tags:
+    - Architecture
+  type: Related
+- document:
+    doctype: CRE
+    id: 278-413
+    name: Mutually authenticate application components. Minimize privileges
+    tags:
+    - Architecture
+  type: Related
+- document:
+    doctype: CRE
+    id: 650-560
+    name: Enforce access control on trusted service layer
+    tags:
+    - Architecture
+  type: Related
+- document:
+    doctype: CRE
+    id: 726-868
+    name: Deployed topology
+    tags:
+    - Architecture
+  type: Related
+- document:
+    doctype: CRE
+    id: 515-021
+    name: Sandbox, containerize and/or isolate applications at the network level
+    tags:
+    - Architecture
+  type: Related
+- document:
+    doctype: CRE
+    id: 340-754
+    name: Threat model every design change or sprint
+    tags:
+    - Architecture
+  type: Related
+- document:
+    doctype: CRE
+    id: 625-323
+    name: Documentation and requirements
+    tags:
+    - Architecture
+  type: Related
+- document:
+    doctype: CRE
+    id: 344-611
+    name: Centralize security controls
+    tags:
+    - Architecture
+  type: Related
+- document:
+    doctype: CRE
+    id: 004-130
+    name: Define High-level architecture and perform security analysis on it
+    tags:
+    - Architecture
+  type: Related
+- document:
+    doctype: CRE
+    id: 820-877
+    name: Document all trust boundaries and significant data flows
+    tags:
+    - Architecture
+  type: Related
+- document:
+    doctype: CRE
+    id: 612-252
+    name: Separate GraphQL (or similar) authorization logic from data layer
+    tags:
+    - Architecture
+  type: Related
+- document:
+    doctype: CRE
+    id: 848-711
+    name: Enforce input validation on a trusted service layer
+    tags:
+    - Architecture
+  type: Related
+- document:
+    doctype: CRE
+    id: 260-200
+    name: Log in consistent format across system
+    tags:
+    - Architecture
+  type: Related
+- document:
+    doctype: CRE
+    id: 117-371
+    name: Use a centralized access control mechanism
+    tags:
+    - Architecture
+  type: Related
+- document:
+    doctype: CRE
+    id: 546-564
+    name: '>>Tags'
+  type: Contains
+name: Architecture

@@ -1,0 +1,48 @@
+doctype: CRE
+id: 743-110
+links:
+- document:
+    doctype: CRE
+    id: 308-515
+    name: Prevent security disclosure
+    tags:
+    - Configuration
+  type: Contains
+- document:
+    doctype: CRE
+    id: 843-841
+    name: Log discretely
+  type: Related
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x22-V14-Config.md
+    name: ASVS
+    section: V14.3.1
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/209.html
+    name: CWE
+    section: '209'
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owasp.org/www-project-web-security-testing-guide/v41/4-Web_Application_Security_Testing/08-Testing_for_Error_Handling/01-Testing_for_Error_Code.html
+    name: WSTG
+    section: WSTG-ERRH-01
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Error_Handling_Cheat_Sheet.html
+    name: Cheat_sheets
+    section: Error Handling Cheat Sheet
+    subsection: ''
+    version: ''
+  type: Linked To
+name: Do not disclose technical information in error message

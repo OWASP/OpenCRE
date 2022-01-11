@@ -4,23 +4,29 @@ links:
 - document:
     doctype: CRE
     id: 126-668
-    name: Secure data storage
+    name: '>>Secure data storage'
   type: Contains
 - document:
     doctype: CRE
+    id: 170-772
+    name: Cryptography
+  type: Related
+- document:
+    doctype: CRE
     id: 542-488
-    name: All random elements are generated using approved cryptographic secure randum
-      numbers if intention is not to be guessable
+    name: Use cryptographically secure random number generators
   type: Contains
 - document:
     doctype: CRE
     id: 664-571
-    name: Proper generation of secure randoms
+    name: Ensure proper generation of secure random
+    tags:
+    - Cryptography
   type: Contains
 - document:
     doctype: CRE
     id: 027-210
-    name: proper generation of GUIDs
+    name: Create random GUIDs with cryptographically secure random number generators
   type: Contains
 name: Secure random values
 tags:

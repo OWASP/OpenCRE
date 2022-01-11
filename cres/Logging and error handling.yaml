@@ -67,25 +67,65 @@ links:
   type: Related
 - document:
     doctype: Standard
-    hyperlink: ''
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=AU-1
     name: NIST 800-53 v5
-    section: and Reporting
+    section: AU-1 Policy and Procedures
     subsection: ''
     version: ''
   type: Linked To
 - document:
     doctype: Standard
-    hyperlink: ''
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=AU-11
     name: NIST 800-53 v5
-    section: AU-6 Audit Record Review
+    section: AU-11 Audit Record Retention
     subsection: ''
     version: ''
   type: Linked To
 - document:
     doctype: Standard
-    hyperlink: ''
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=AU-12
     name: NIST 800-53 v5
-    section: Analysis
+    section: AU-12 Audit Record Generation
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=AU-16
+    name: NIST 800-53 v5
+    section: AU-16 Cross-organizational Audit Logging
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=AU-4
+    name: NIST 800-53 v5
+    section: AU-4 Audit Log Storage Capacity
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=AU-5
+    name: NIST 800-53 v5
+    section: AU-5 Response to Audit Logging Process Failures
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=AU-6
+    name: NIST 800-53 v5
+    section: AU-6 Audit Record Review, Analysis, and Reporting
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=AU-7
+    name: NIST 800-53 v5
+    section: AU-7 Audit Record Reduction and Report Generation
     subsection: ''
     version: ''
   type: Linked To

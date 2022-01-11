@@ -4,30 +4,25 @@ links:
 - document:
     doctype: CRE
     id: 177-260
-    name: Session management
-  type: Contains
-- document:
-    doctype: CRE
-    id: 455-358
-    name: Secure storage of session cossies
+    name: '>>Session management'
   type: Contains
 - document:
     doctype: CRE
     id: 704-530
-    name: High entropy session tokens
+    name: Enforce high entropy session tokens
     tags:
     - Cryptography
   type: Contains
 - document:
     doctype: CRE
     id: 727-043
-    name: Cryptographically secure session tockens
+    name: Ensure secure algorithms for generating session tokens
     tags:
     - Cryptography
   type: Contains
 - document:
     doctype: CRE
     id: 002-630
-    name: New session tocken upon authentication
+    name: Generate a new session token after authentication
   type: Contains
 name: Session token generation

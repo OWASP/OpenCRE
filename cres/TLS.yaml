@@ -3,9 +3,8 @@ id: 228-551
 links:
 - document:
     doctype: CRE
-    id: 278-646
-    name: Secure communication
-  type: Contains
+    name: Cryptoghraphy
+  type: Related
 - document:
     doctype: CRE
     id: 726-868
@@ -16,7 +15,7 @@ links:
 - document:
     doctype: CRE
     id: 745-045
-    name: No fall back to insecure protocols in TCP
+    name: Do not fall back to insecure protocols in TCP
   type: Contains
 - document:
     doctype: CRE
@@ -26,24 +25,36 @@ links:
 - document:
     doctype: CRE
     id: 430-636
-    name: Proper certificate trust chain
+    name: Verify TLS certificates and trust chain
     tags:
     - Configuration
   type: Contains
 - document:
     doctype: CRE
     id: 668-364
-    name: Logg failed TLS connections
+    name: Log TLS connection failures
   type: Contains
 - document:
     doctype: CRE
     id: 767-701
-    name: Use only strong Comunication encryption protocols
+    name: Verify strong TLS algorithms by testing
   type: Contains
 - document:
     doctype: CRE
     id: 248-646
     name: Disable insecure SSL/TLS versions
+    tags:
+    - Cryptography
+  type: Contains
+- document:
+    doctype: CRE
+    id: 558-807
+    name: Mutually authenticate application and credential service provider
+  type: Related
+- document:
+    doctype: CRE
+    id: 278-646
+    name: '>>Secure communication'
   type: Contains
 name: TLS
 tags:

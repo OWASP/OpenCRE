@@ -1,0 +1,19 @@
+doctype: CRE
+id: 114-277
+links:
+- document:
+    doctype: CRE
+    id: 177-260
+    name: '>>Session management'
+  type: Contains
+- document:
+    doctype: CRE
+    id: 551-054
+    name: Use ephemeral secrets rather than static secrets
+  type: Contains
+- document:
+    doctype: CRE
+    id: 483-883
+    name: When using stateless tokens, ensure cryptographically secure characteristics
+  type: Contains
+name: Session integrity

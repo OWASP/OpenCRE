@@ -23,7 +23,7 @@ links:
   type: Linked To
 - document:
     doctype: Standard
-    hyperlink: ''
+    hyperlink: https://cwe.mitre.org/data/definitions/212.html
     name: CWE
     section: '212'
     subsection: ''

@@ -2,6 +2,10 @@ doctype: CRE
 id: 441-132
 links:
 - document:
+    doctype: CRE
+    name: Encryption algorithms
+  type: Contains
+- document:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x14-V6-Cryptography.md
     name: ASVS
@@ -11,7 +15,7 @@ links:
   type: Linked To
 - document:
     doctype: Standard
-    hyperlink: ''
+    hyperlink: https://owasp.org/www-project-web-security-testing-guide/v41/4-Web_Application_Security_Testing/09-Testing_for_Weak_Cryptography/04-Testing_for_Weak_Encryption.html
     name: WSTG
     section: WSTG-CRYP-04
     subsection: ''
@@ -19,7 +23,7 @@ links:
   type: Linked To
 - document:
     doctype: Standard
-    hyperlink: ''
+    hyperlink: https://cwe.mitre.org/data/definitions/326.html
     name: CWE
     section: '326'
     subsection: ''

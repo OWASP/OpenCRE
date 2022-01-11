@@ -8,7 +8,8 @@ links:
   type: Contains
 - document:
     doctype: CRE
-    name: secure communication
+    id: 278-646
+    name: Secure communication
   type: Related
 - document:
     doctype: Standard
@@ -20,7 +21,7 @@ links:
   type: Linked To
 - document:
     doctype: Standard
-    hyperlink: ''
+    hyperlink: https://cwe.mitre.org/data/definitions/345.html
     name: CWE
     section: '345'
     subsection: ''

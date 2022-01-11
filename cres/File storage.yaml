@@ -9,11 +9,11 @@ links:
 - document:
     doctype: CRE
     id: 112-273
-    name: virus scanning of untrusted files
+    name: Scan untrusted files for malware
   type: Contains
 - document:
     doctype: CRE
     id: 307-111
-    name: Unprivilaged andvalidated untrusted files
+    name: Securely store files with untrusted origin
   type: Contains
 name: File storage

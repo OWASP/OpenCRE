@@ -1,0 +1,35 @@
+doctype: CRE
+id: 483-715
+links:
+- document:
+    doctype: CRE
+    id: 541-441
+    name: Validate HTTP request headers
+    tags:
+    - Injection
+  type: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x22-V14-Config.md
+    name: ASVS
+    section: V14.5.1
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/749.html
+    name: CWE
+    section: '749'
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owasp.org/www-project-web-security-testing-guide/v41/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/06-Test_HTTP_Methods.html
+    name: WSTG
+    section: WSTG-CONF-06
+    subsection: ''
+    version: ''
+  type: Linked To
+name: White-list HTTP methods

@@ -3,6 +3,11 @@ id: 814-322
 links:
 - document:
     doctype: CRE
+    id: 130-550
+    name: File handling
+  type: Contains
+- document:
+    doctype: CRE
     id: 726-868
     name: Deployed topology
     tags:
@@ -18,7 +23,7 @@ links:
   type: Linked To
 - document:
     doctype: Standard
-    hyperlink: ''
+    hyperlink: https://owasp.org/www-project-web-security-testing-guide/v41/4-Web_Application_Security_Testing/10-Business_Logic_Testing/09-Test_Upload_of_Malicious_Files.html
     name: WSTG
     section: WSTG-BUSL-09
     subsection: ''
@@ -26,7 +31,7 @@ links:
   type: Linked To
 - document:
     doctype: Standard
-    hyperlink: ''
+    hyperlink: https://cwe.mitre.org/data/definitions/918.html
     name: CWE
     section: '918'
     subsection: ''

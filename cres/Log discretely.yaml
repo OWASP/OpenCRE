@@ -4,29 +4,26 @@ links:
 - document:
     doctype: CRE
     id: 842-876
-    name: Logging and error handling
+    name: '>>Logging and error handling'
   type: Contains
 - document:
     doctype: CRE
     id: 240-274
-    name: No sensitive data in logs
+    name: Log only non-sensitive data
   type: Contains
 - document:
     doctype: CRE
     id: 067-050
-    name: No credentials or paymend details in logs
+    name: Do not log credentials or payment details
   type: Contains
 - document:
     doctype: CRE
-    id: 015-063
-    name: log access to sensitive data
+    id: 743-110
+    name: Do not disclose technical information in error message
   type: Related
 - document:
-    doctype: Standard
-    hyperlink: https://owasp.org/www-project-top-ten/2017/A3_2017-Sensitive_Data_Exposure
-    name: Top10 2017
-    section: A3-Sensitive_Data_Exposure
-    subsection: ''
-    version: ''
-  type: Linked To
+    doctype: CRE
+    id: 015-063
+    name: Log access to sensitive data
+  type: Related
 name: Log discretely

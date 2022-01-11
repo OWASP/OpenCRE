@@ -9,15 +9,6 @@ links:
 - document:
     doctype: CRE
     id: 314-701
-    name: Whitelisting file extentions
-    tags:
-    - DOS
-  type: Contains
-- document:
-    doctype: CRE
-    id: 545-243
-    name: No execution of uploaded files
-    tags:
-    - DOS
+    name: Whitelist file extensions served by web tier
   type: Contains
 name: File download

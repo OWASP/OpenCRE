@@ -3,6 +3,10 @@ id: 048-612
 links:
 - document:
     doctype: CRE
+    name: Log injection protection
+  type: Contains
+- document:
+    doctype: CRE
     id: 503-455
     name: Input and output verification
   type: Related
@@ -16,7 +20,7 @@ links:
   type: Linked To
 - document:
     doctype: Standard
-    hyperlink: ''
+    hyperlink: https://owasp-top-10-proactive-controls-2018.readthedocs.io/en/latest/c9-implement-security-logging-monitoring.html
     name: OPC
     section: C9
     subsection: ''
@@ -24,7 +28,7 @@ links:
   type: Linked To
 - document:
     doctype: Standard
-    hyperlink: ''
+    hyperlink: https://owasp.org/www-project-web-security-testing-guide/v41/4-Web_Application_Security_Testing/10-Business_Logic_Testing/03-Test_Integrity_Checks.html
     name: WSTG
     section: WSTG-BUSL-03
     subsection: ''
@@ -32,7 +36,7 @@ links:
   type: Linked To
 - document:
     doctype: Standard
-    hyperlink: ''
+    hyperlink: https://cwe.mitre.org/data/definitions/117.html
     name: CWE
     section: '117'
     subsection: ''

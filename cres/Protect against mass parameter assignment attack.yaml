@@ -19,7 +19,7 @@ links:
   type: Linked To
 - document:
     doctype: Standard
-    hyperlink: ''
+    hyperlink: https://owasp-top-10-proactive-controls-2018.readthedocs.io/en/latest/c5-validate-all-inputs.html
     name: OPC
     section: C5
     subsection: ''
@@ -27,15 +27,7 @@ links:
   type: Linked To
 - document:
     doctype: Standard
-    hyperlink: ''
-    name: WSTG
-    section: Empty
-    subsection: ''
-    version: ''
-  type: Linked To
-- document:
-    doctype: Standard
-    hyperlink: ''
+    hyperlink: https://cwe.mitre.org/data/definitions/915.html
     name: CWE
     section: '915'
     subsection: ''
@@ -43,17 +35,17 @@ links:
   type: Linked To
 - document:
     doctype: Standard
-    hyperlink: ''
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Mass_Assignment_Cheat_Sheet.html
     name: Cheat_sheets
-    section: https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html
+    section: Mass Assignment Cheat Sheet
     subsection: ''
     version: ''
   type: Linked To
 - document:
     doctype: Standard
-    hyperlink: ''
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html
     name: Cheat_sheets
-    section: https://cheatsheetseries.owasp.org/cheatsheets/Mass_Assignment_Cheat_Sheet.html
+    section: Input Validation Cheat Sheet
     subsection: ''
     version: ''
   type: Linked To

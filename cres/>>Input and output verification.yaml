@@ -1,0 +1,98 @@
+doctype: CRE
+id: 503-455
+links:
+- document:
+    doctype: CRE
+    id: 118-110
+    name: API/web services
+  type: Contains
+- document:
+    doctype: CRE
+    id: 836-068
+    name: Deserialization Prevention
+  type: Contains
+- document:
+    doctype: CRE
+    id: 130-550
+    name: File handling
+  type: Contains
+- document:
+    doctype: CRE
+    id: 010-308
+    name: Input validation
+    tags:
+    - XSS
+    - Injection
+  type: Contains
+- document:
+    doctype: CRE
+    id: 866-553
+    name: Memory, String, and Unmanaged Code
+    tags:
+    - Injection
+  type: Contains
+- document:
+    doctype: CRE
+    id: 161-451
+    name: Output encoding and injection prevention
+    tags:
+    - XSS
+    - Injection
+  type: Contains
+- document:
+    doctype: CRE
+    id: 308-515
+    name: Prevent security disclosure
+    tags:
+    - Configuration
+  type: Contains
+- document:
+    doctype: CRE
+    id: 764-765
+    name: Sanitization and sandboxing
+    tags:
+    - XSS
+    - Injection
+  type: Contains
+- document:
+    doctype: CRE
+    id: 541-441
+    name: Validate HTTP request headers
+    tags:
+    - Injection
+  type: Contains
+- document:
+    doctype: CRE
+    id: 630-573
+    name: Monitor suspected automation abuse
+    tags:
+    - DOS
+  type: Related
+- document:
+    doctype: CRE
+    id: 782-234
+    name: Clear policy compliant I/O requirements
+  type: Related
+- document:
+    doctype: CRE
+    id: 821-540
+    name: Protect logs against log injection
+    tags:
+    - Injection
+  type: Related
+- document:
+    doctype: CRE
+    id: 048-612
+    name: Encode user input before logging
+    tags:
+    - Injection
+  type: Related
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=SI-10
+    name: NIST 800-53 v5
+    section: SI-10 INFORMATION INPUT VALIDATION
+    subsection: ''
+    version: ''
+  type: Linked To
+name: '>>Input and output verification'

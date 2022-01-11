@@ -116,6 +116,70 @@ links:
   type: Related
 - document:
     doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=AC-1
+    name: NIST 800-53 v5
+    section: AC-1 POLICY AND PROCEDURES
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=AC-14
+    name: NIST 800-53 v5
+    section: AC-14 PERMITTED ACTIONS WITHOUT IDENTIFICATION OR AUTHENTICATION
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=AC-2
+    name: NIST 800-53 v5
+    section: AC-2 ACCOUNT MANAGEMENT
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=AC-24
+    name: NIST 800-53 v5
+    section: AC-24 Access Control Decisions
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=AC-3
+    name: NIST 800-53 v5
+    section: AC-3 ACCESS ENFORCEMENT
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=AC-5
+    name: NIST 800-53 v5
+    section: AC-5 SEPARATION OF DUTIES
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=AC-6
+    name: NIST 800-53 v5
+    section: AC-6 LEAST PRIVILEGE
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=SC-2
+    name: NIST 800-53 v5
+    section: SC-2 Separation of System and User Functionality
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
     hyperlink: https://owasp.org/www-project-top-ten/2017/A5_2017-Broken_Access_Control
     name: Top10 2017
     section: A5_Broken_Access_Control

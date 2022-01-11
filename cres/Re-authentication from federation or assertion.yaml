@@ -4,21 +4,23 @@ links:
 - document:
     doctype: CRE
     id: 177-260
-    name: Session management
+    name: '>>Session management'
   type: Contains
 - document:
     doctype: CRE
     id: 052-821
-    name: Informing relying parties on CSP's last authentication event
+    name: When using an authentication third party (CSP), relay last authentication
+      event to other parties in the chain
   type: Contains
 - document:
     doctype: CRE
     id: 618-403
-    name: Proper Session timeout setting for CSP
+    name: Enforce authentication timeout when dealing with an authentication third
+      party (CSP)
   type: Contains
 - document:
     doctype: CRE
     id: 551-400
-    name: Accompany OAuth with Referesh tokens
+    name: Allow user revocation of Oauth tokens
   type: Contains
 name: Re-authentication from federation or assertion

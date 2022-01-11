@@ -3,7 +3,30 @@ id: 058-527
 links:
 - document:
     doctype: CRE
+    id: 336-512
+    name: Ensure integrity of DNS entries and domains
+    tags:
+    - Secure name/address resolution service
+  type: Related
+- document:
+    doctype: CRE
     id: 546-564
-    name: Tags
+    name: '>>Tags'
   type: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=SC-20
+    name: NIST 800-53 v5
+    section: SC-20 Secure Name/address Resolution Service (authoritative Source)
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=SC-21
+    name: NIST 800-53 v5
+    section: SC-21 Secure Name/address Resolution Service (recursive or Caching Resolver)
+    subsection: ''
+    version: ''
+  type: Linked To
 name: Secure name/address resolution service

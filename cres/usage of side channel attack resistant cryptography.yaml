@@ -2,6 +2,10 @@ doctype: CRE
 id: 878-880
 links:
 - document:
+    doctype: CRE
+    name: Encryption algorithms
+  type: Contains
+- document:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x14-V6-Cryptography.md
     name: ASVS
@@ -11,7 +15,7 @@ links:
   type: Linked To
 - document:
     doctype: Standard
-    hyperlink: ''
+    hyperlink: https://cwe.mitre.org/data/definitions/385.html
     name: CWE
     section: '385'
     subsection: ''

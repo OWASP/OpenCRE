@@ -1,17 +1,63 @@
 doctype: CRE
-id: 028-726
+id: 760-765
 links:
 - document:
     doctype: CRE
-    id: 546-564
-    name: Tags
-  type: Contains
+    id: 257-668
+    name: Configure CSP configuration properly
+    tags:
+    - XSS
+  type: Related
 - document:
-    doctype: Standard
-    hyperlink: https://owasp.org/www-project-top-ten/2017/A7_2017-Cross-Site_Scripting_(XSS)
-    name: Top10 2017
-    section: A7-Cross-Site_Scripting_(XSS)
-    subsection: ''
-    version: ''
-  type: Linked To
+    doctype: CRE
+    id: 764-765
+    name: Sanitization and sandboxing
+    tags:
+    - XSS
+    - Injection
+  type: Related
+- document:
+    doctype: CRE
+    id: 010-308
+    name: Input validation
+    tags:
+    - XSS
+    - Injection
+  type: Related
+- document:
+    doctype: CRE
+    id: 760-764
+    name: Injection
+    tags:
+    - XSS
+  type: Related
+- document:
+    doctype: CRE
+    id: 384-344
+    name: Store and serve user-uploaded files such that they cannot execute/damage
+      server or client
+    tags:
+    - XSS
+    - Injection
+  type: Related
+- document:
+    doctype: CRE
+    id: 161-451
+    name: Output encoding and injection prevention
+    tags:
+    - XSS
+    - Injection
+  type: Related
+- document:
+    doctype: CRE
+    id: 804-220
+    name: Set httponly attribute for cookie-based session tokens
+    tags:
+    - XSS
+  type: Related
+- document:
+    doctype: CRE
+    id: 546-564
+    name: '>>Tags'
+  type: Contains
 name: XSS

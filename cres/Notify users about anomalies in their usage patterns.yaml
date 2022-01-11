@@ -4,13 +4,8 @@ links:
 - document:
     doctype: CRE
     id: 586-842
-    name: Secure user management
+    name: '>>Secure user management'
   type: Contains
-- document:
-    doctype: CRE
-    id: 270-568
-    name: Authentication mechanism
-  type: Related
 - document:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x11-V2-Authentication.md
@@ -21,7 +16,7 @@ links:
   type: Linked To
 - document:
     doctype: Standard
-    hyperlink: ''
+    hyperlink: https://cwe.mitre.org/data/definitions/620.html
     name: CWE
     section: '620'
     subsection: ''
@@ -29,25 +24,25 @@ links:
   type: Linked To
 - document:
     doctype: Standard
-    hyperlink: ''
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html
     name: Cheat_sheets
-    section: https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html
+    section: Authentication Cheat Sheet
     subsection: ''
     version: ''
   type: Linked To
 - document:
     doctype: Standard
-    hyperlink: ''
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Protection_Cheat_Sheet.html
     name: Cheat_sheets
-    section: https://cheatsheetseries.owasp.org/cheatsheets/TLS_Cipher_String_Cheat_Sheet.html
+    section: Transport Layer Protection Cheat Sheet
     subsection: ''
     version: ''
   type: Linked To
 - document:
     doctype: Standard
-    hyperlink: ''
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/TLS_Cipher_String_Cheat_Sheet.html
     name: Cheat_sheets
-    section: https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Protection_Cheat_Sheet.html
+    section: TLS Cipher String Cheat Sheet
     subsection: ''
     version: ''
   type: Linked To

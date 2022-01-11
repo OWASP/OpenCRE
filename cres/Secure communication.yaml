@@ -36,10 +36,55 @@ links:
     name: Authentication secrets sent encrypted to the user
   type: Related
 - document:
+    doctype: CRE
+    id: 456-636
+    name: Integrity check for message payload
+  type: Related
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=IA-9
+    name: NIST 800-53 v5
+    section: IA-9 Service Identification and Authentication
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=SC-16
+    name: NIST 800-53 v5
+    section: SC-16 Transmission of Security and Privacy Attributes
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=SC-8
+    name: NIST 800-53 v5
+    section: SC-8 TRANSMISSION CONFIDENTIALITY AND INTEGRITY
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
     doctype: Standard
     hyperlink: https://owasp.org/www-project-top-ten/2017/A3_2017-Sensitive_Data_Exposure
     name: Top10 2017
     section: A3-Sensitive_Data_Exposure
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=CA-3
+    name: NIST 800-53 v5
+    section: CA-3 Information Exchange
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=CA-9
+    name: NIST 800-53 v5
+    section: CA-9 Internal System Connections
     subsection: ''
     version: ''
   type: Linked To

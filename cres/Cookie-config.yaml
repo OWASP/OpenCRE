@@ -4,33 +4,13 @@ links:
 - document:
     doctype: CRE
     id: 177-260
-    name: Session management
-  type: Contains
-- document:
-    doctype: CRE
-    id: 232-034
-    name: ' ''__Host''  prefix for cookie-based session tokens'
-  type: Contains
-- document:
-    doctype: CRE
-    id: 804-220
-    name: Httponly attribute for cookie-based session tokens
-    tags:
-    - XSS
+    name: '>>Session management'
   type: Contains
 - document:
     doctype: CRE
     id: 342-055
-    name: SameSite attribute for cookie-based session tokens
-  type: Contains
-- document:
-    doctype: CRE
-    id: 688-081
-    name: Secret attribute for cookie-based session tokens
-  type: Contains
-- document:
-    doctype: CRE
-    id: 705-182
-    name: Set path attribute in cookie-bases session tokens precise if different domains
+    name: Set "samesite" attribute for cookie-based session tokens
+    tags:
+    - CSRF
   type: Contains
 name: Cookie-config

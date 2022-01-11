@@ -4,20 +4,26 @@ links:
 - document:
     doctype: CRE
     id: 278-646
-    name: Secure communication
+    name: '>>Secure communication'
   type: Contains
 - document:
     doctype: CRE
+    id: 170-772
+    name: Cryptography
+  type: Related
+- document:
+    doctype: CRE
     id: 527-034
-    name: Protect data in transit between components
+    name: Protect communication between application components
+    tags:
+    - Cryptography
   type: Contains
 - document:
     doctype: CRE
     id: 426-842
-    name: Protect both headers and payload
+    name: Verify the authenticity of both headers and payload
     tags:
-    - API/web services
-    - RESTful
+    - Cryptography
   type: Contains
 name: Communication encryption
 tags:

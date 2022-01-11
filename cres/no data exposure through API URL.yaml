@@ -2,6 +2,11 @@ doctype: CRE
 id: 333-888
 links:
 - document:
+    doctype: CRE
+    id: 341-076
+    name: Minimize
+  type: Contains
+- document:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x21-V13-API.md
     name: ASVS
@@ -11,7 +16,7 @@ links:
   type: Linked To
 - document:
     doctype: Standard
-    hyperlink: ''
+    hyperlink: https://owasp.org/www-project-web-security-testing-guide/v41/4-Web_Application_Security_Testing/06-Session_Management_Testing/04-Testing_for_Exposed_Session_Variables.html
     name: WSTG
     section: WSTG-SESS-04
     subsection: ''
@@ -19,17 +24,9 @@ links:
   type: Linked To
 - document:
     doctype: Standard
-    hyperlink: ''
+    hyperlink: https://cwe.mitre.org/data/definitions/598.html
     name: CWE
     section: '598'
-    subsection: ''
-    version: ''
-  type: Linked To
-- document:
-    doctype: Standard
-    hyperlink: ''
-    name: Cheat_sheets
-    section: https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html
     subsection: ''
     version: ''
   type: Linked To
@@ -41,7 +38,15 @@ links:
     subsection: ''
     version: ''
   type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: Cheat_sheets
+    section: https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html
+    subsection: ''
+    version: ''
+  type: Linked To
 name: no data exposure through API URL
 tags:
-- API/web services
 - Configuration
+- API/web services

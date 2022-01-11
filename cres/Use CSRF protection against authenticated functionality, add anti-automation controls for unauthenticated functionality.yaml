@@ -1,0 +1,65 @@
+doctype: CRE
+id: 060-472
+links:
+- document:
+    doctype: CRE
+    id: 724-770
+    name: '>>Authorized access'
+  type: Contains
+- document:
+    doctype: CRE
+    id: 028-727
+    name: CSRF
+  type: Related
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x12-V4-Access-Control.md
+    name: ASVS
+    section: V4.2.2
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/352.html
+    name: CWE
+    section: '352'
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owasp.org/www-project-web-security-testing-guide/v41/4-Web_Application_Security_Testing/06-Session_Management_Testing/05-Testing_for_Cross_Site_Request_Forgery.html
+    name: WSTG
+    section: WSTG-SESS-05
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Insecure_Direct_Object_Reference_Prevention_Cheat_Sheet.html
+    name: Cheat_sheets
+    section: Insecure Direct Object Reference Prevention Cheat Sheet
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html
+    name: Cheat_sheets
+    section: Cross-Site Request Forgery Prevention Cheat Sheet
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Testing_Automation_Cheat_Sheet.html
+    name: Cheat_sheets
+    section: Authorization Testing Automation Cheat Sheet
+    subsection: ''
+    version: ''
+  type: Linked To
+name: Use CSRF protection against authenticated functionality, add anti-automation
+  controls for unauthenticated functionality
+tags:
+- CSRF

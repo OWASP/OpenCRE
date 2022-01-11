@@ -3,6 +3,11 @@ id: 113-133
 links:
 - document:
     doctype: CRE
+    id: 270-568
+    name: Authentication mechanism
+  type: Contains
+- document:
+    doctype: CRE
     id: 402-706
     name: Log relevant
   type: Related
@@ -16,7 +21,7 @@ links:
   type: Linked To
 - document:
     doctype: Standard
-    hyperlink: ''
+    hyperlink: https://cwe.mitre.org/data/definitions/306.html
     name: CWE
     section: '306'
     subsection: ''

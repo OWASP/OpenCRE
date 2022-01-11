@@ -3,6 +3,11 @@ id: 782-234
 links:
 - document:
     doctype: CRE
+    id: 354-846
+    name: Documentation and requirements
+  type: Contains
+- document:
+    doctype: CRE
     id: 503-455
     name: Input and output verification
   type: Related
@@ -16,7 +21,7 @@ links:
   type: Linked To
 - document:
     doctype: Standard
-    hyperlink: ''
+    hyperlink: https://cwe.mitre.org/data/definitions/1029.html
     name: CWE
     section: '1029'
     subsection: ''
@@ -26,7 +31,7 @@ links:
     doctype: Standard
     hyperlink: ''
     name: Cheat_sheets
-    section: https://cheatsheetseries.owasp.org/cheatsheets/Abuse_Case_Cheat_Sheet.html
+    section: https://cheatsheetseries.owasp.org/cheatsheets/Deserialization_Cheat_Sheet.html
     subsection: ''
     version: ''
   type: Linked To
@@ -34,7 +39,7 @@ links:
     doctype: Standard
     hyperlink: ''
     name: Cheat_sheets
-    section: https://cheatsheetseries.owasp.org/cheatsheets/Deserialization_Cheat_Sheet.html
+    section: https://cheatsheetseries.owasp.org/cheatsheets/Abuse_Case_Cheat_Sheet.html
     subsection: ''
     version: ''
   type: Linked To

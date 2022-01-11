@@ -2,6 +2,13 @@ doctype: CRE
 id: 822-100
 links:
 - document:
+    doctype: CRE
+    id: 625-323
+    name: Documentation and requirements
+    tags:
+    - Architecture
+  type: Contains
+- document:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x10-V1-Architecture.md
     name: ASVS
@@ -11,7 +18,7 @@ links:
   type: Linked To
 - document:
     doctype: Standard
-    hyperlink: ''
+    hyperlink: https://cwe.mitre.org/data/definitions/1110.html
     name: CWE
     section: '1110'
     subsection: ''
@@ -19,25 +26,25 @@ links:
   type: Linked To
 - document:
     doctype: Standard
-    hyperlink: ''
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Threat_Modeling_Cheat_Sheet.html
     name: Cheat_sheets
-    section: https://cheatsheetseries.owasp.org/cheatsheets/Attack_Surface_Analysis_Cheat_Sheet.html
+    section: Threat Modeling Cheat Sheet
     subsection: ''
     version: ''
   type: Linked To
 - document:
     doctype: Standard
-    hyperlink: ''
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Abuse_Case_Cheat_Sheet.html
     name: Cheat_sheets
-    section: https://cheatsheetseries.owasp.org/cheatsheets/Threat_Modeling_Cheat_Sheet.html
+    section: Abuse Case Cheat Sheet
     subsection: ''
     version: ''
   type: Linked To
 - document:
     doctype: Standard
-    hyperlink: ''
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Attack_Surface_Analysis_Cheat_Sheet.html
     name: Cheat_sheets
-    section: https://cheatsheetseries.owasp.org/cheatsheets/Abuse_Case_Cheat_Sheet.html
+    section: Attack Surface Analysis Cheat Sheet
     subsection: ''
     version: ''
   type: Linked To

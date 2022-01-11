@@ -4,7 +4,26 @@ links:
 - document:
     doctype: CRE
     id: 633-428
-    name: Authentication
+    name: '>>Authentication'
+  type: Contains
+- document:
+    doctype: CRE
+    id: 558-807
+    name: Mutually authenticate application and credential service provider
+  type: Contains
+- document:
+    doctype: CRE
+    id: 333-858
+    name: Resist stolen credentials
+    tags:
+    - Cryptography
+  type: Contains
+- document:
+    doctype: CRE
+    id: 113-133
+    name: Use centralized authentication mechanism
+    tags:
+    - Architecture
   type: Contains
 - document:
     doctype: CRE
@@ -19,7 +38,12 @@ links:
 - document:
     doctype: CRE
     id: 585-408
-    name: Cryptographic authentication software and devices
+    name: Cryptographic directives
+  type: Contains
+- document:
+    doctype: CRE
+    id: 789-320
+    name: Login functionality
   type: Contains
 - document:
     doctype: CRE
@@ -35,27 +59,28 @@ links:
   type: Contains
 - document:
     doctype: CRE
-    id: 138-448
-    name: sufficient time for renewal of bound authenticators.
-  type: Related
-- document:
-    doctype: CRE
-    id: 808-425
-    name: Notify users about anomalies in their usage patterns
-  type: Related
-- document:
-    doctype: CRE
-    id: 751-176
-    name: Accessible password changing functionality
-  type: Related
-- document:
-    doctype: CRE
-    id: 327-505
-    name: Change password with presence of old and new password
-  type: Related
-- document:
-    doctype: CRE
     id: 177-260
-    name: Session management
+    name: '>>Session management'
   type: Related
+- document:
+    doctype: CRE
+    id: 551-054
+    name: Use ephemeral secrets rather than static secrets
+  type: Related
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=IA-6
+    name: NIST 800-53 v5
+    section: IA-6 Authentication Feedback
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=IA-7
+    name: NIST 800-53 v5
+    section: IA-7 Cryptographic Module Authentication
+    subsection: ''
+    version: ''
+  type: Linked To
 name: Authentication mechanism

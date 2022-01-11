@@ -1,9 +1,20 @@
 doctype: CRE
+id: 836-068
 links:
 - document:
     doctype: CRE
+    id: 503-455
+    name: '>>Input and output verification'
+  type: Contains
+- document:
+    doctype: CRE
+    id: 762-616
+    name: Secure serialized objects (e.g. integrity checks)
+  type: Contains
+- document:
+    doctype: CRE
     id: 515-021
-    name: Network level isolation of application deployment actions
+    name: Sandbox, containerize and/or isolate applications at the network level
     tags:
     - Architecture
   type: Related

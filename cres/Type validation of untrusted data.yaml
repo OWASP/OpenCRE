@@ -2,6 +2,11 @@ doctype: CRE
 id: 175-235
 links:
 - document:
+    doctype: CRE
+    id: 130-550
+    name: File handling
+  type: Contains
+- document:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x20-V12-Files-Resources.md
     name: ASVS
@@ -11,7 +16,7 @@ links:
   type: Linked To
 - document:
     doctype: Standard
-    hyperlink: ''
+    hyperlink: https://cwe.mitre.org/data/definitions/434.html
     name: CWE
     section: '434'
     subsection: ''
@@ -21,7 +26,7 @@ links:
     doctype: Standard
     hyperlink: ''
     name: Cheat_sheets
-    section: https://cheatsheetseries.owasp.org/cheatsheets/File_Upload_Cheat_Sheet.html
+    section: https://cheatsheetseries.owasp.org/cheatsheets/Third_Party_Javascript_Management_Cheat_Sheet.html
     subsection: ''
     version: ''
   type: Linked To
@@ -29,7 +34,7 @@ links:
     doctype: Standard
     hyperlink: ''
     name: Cheat_sheets
-    section: https://cheatsheetseries.owasp.org/cheatsheets/Third_Party_Javascript_Management_Cheat_Sheet.html
+    section: https://cheatsheetseries.owasp.org/cheatsheets/File_Upload_Cheat_Sheet.html
     subsection: ''
     version: ''
   type: Linked To

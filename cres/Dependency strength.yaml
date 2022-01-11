@@ -68,6 +68,30 @@ links:
   type: Contains
 - document:
     doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=SA-22
+    name: NIST 800-53 v5
+    section: SA-22 Unsupported System Components
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=SA-23
+    name: NIST 800-53 v5
+    section: SA-23 Specialization
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=SA-4
+    name: NIST 800-53 v5
+    section: SA-4 Acquisition Process
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
     hyperlink: https://owasp.org/www-project-top-ten/2017/A9_2017-Using_Components_with_Known_Vulnerabilities
     name: Top10 2017
     section: A9-Using_Components_with_Known_Vulnerabilities

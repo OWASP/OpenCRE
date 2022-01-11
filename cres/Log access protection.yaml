@@ -1,0 +1,8 @@
+doctype: CRE
+links:
+- document:
+    doctype: CRE
+    id: 713-683
+    name: Protect logs against unauthorized access
+  type: Contains
+name: Log access protection

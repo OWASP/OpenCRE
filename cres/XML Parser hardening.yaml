@@ -1,0 +1,11 @@
+doctype: CRE
+links:
+- document:
+    doctype: CRE
+    id: 764-507
+    name: Restrict XML parsing (against XXE)
+    tags:
+    - Configuration
+    - Injection
+  type: Contains
+name: XML Parser hardening

@@ -1,0 +1,18 @@
+doctype: CRE
+links:
+- document:
+    doctype: CRE
+    id: 227-045
+    name: Identify sensitive data and subject it to a policy
+    tags:
+    - Personal data handling
+  type: Contains
+- document:
+    doctype: CRE
+    id: 268-272
+    name: Classify personal data regarding retention so that old or outdated data
+      is deleted
+    tags:
+    - Personal data handling
+  type: Contains
+name: '>>Documentation and requirements'

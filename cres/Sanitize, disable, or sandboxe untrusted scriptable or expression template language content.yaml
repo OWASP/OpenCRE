@@ -6,8 +6,8 @@ links:
     id: Standard NIST 800-53
     name: Sanitization and sandboxing
     tags:
-    - XSS
     - Injection
+    - XSS
   type: Contains
 - document:
     doctype: Standard
@@ -19,7 +19,7 @@ links:
   type: Linked To
 - document:
     doctype: Standard
-    hyperlink: ''
+    hyperlink: https://owasp.org/www-project-web-security-testing-guide/v41/4-Web_Application_Security_Testing/11-Client_Side_Testing/05-Testing_for_CSS_Injection.html
     name: WSTG
     section: WSTG-CLNT-05
     subsection: ''
@@ -27,7 +27,7 @@ links:
   type: Linked To
 - document:
     doctype: Standard
-    hyperlink: ''
+    hyperlink: https://cwe.mitre.org/data/definitions/94.html
     name: CWE
     section: '94'
     subsection: ''
@@ -37,7 +37,7 @@ links:
     doctype: Standard
     hyperlink: ''
     name: Cheat_sheets
-    section: https://cheatsheetseries.owasp.org/cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.html
+    section: https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html
     subsection: ''
     version: ''
   type: Linked To
@@ -53,7 +53,7 @@ links:
     doctype: Standard
     hyperlink: ''
     name: Cheat_sheets
-    section: https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html
+    section: https://cheatsheetseries.owasp.org/cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.html
     subsection: ''
     version: ''
   type: Linked To
