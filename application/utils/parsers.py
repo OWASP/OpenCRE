@@ -626,7 +626,9 @@ def parse_standards(
             if "separator" in struct:
                 separator = struct["separator"]
                 sections = str(mapping.pop(struct["section"])).split(separator)
-                subsections = str(mapping.get(struct["subsection"], "")).split(separator)
+                subsections = str(mapping.get(struct["subsection"], "")).split(
+                    separator
+                )
                 hyperlinks = mapping.get(struct["hyperlink"], "").split(separator)
                 if len(sections) > len(subsections):
                     subsections.extend([""] * (len(sections) - len(subsections)))
