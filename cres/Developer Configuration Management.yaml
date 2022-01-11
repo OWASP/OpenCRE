@@ -3,17 +3,25 @@ id: 601-155
 links:
 - document:
     doctype: CRE
-    id: 153-513
-    name: Development & operations
-  type: Contains
-- document:
-    doctype: CRE
     id: 757-271
-    name: Usage of proper source code control systems
+    name: Use proper source code control system
   type: Contains
 - document:
     doctype: CRE
     id: 715-334
-    name: Updated third party components
+    name: Update third party components build- or compile time
   type: Related
+- document:
+    doctype: CRE
+    id: 153-513
+    name: '>>Development & operations'
+  type: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=SA-10
+    name: NIST 800-53 v5
+    section: SA-10 Developer Configuration Management
+    subsection: ''
+    version: ''
+  type: Linked To
 name: Developer Configuration Management

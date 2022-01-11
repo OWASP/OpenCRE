@@ -1,0 +1,59 @@
+doctype: CRE
+id: 848-711
+links:
+- document:
+    doctype: CRE
+    id: 010-308
+    name: Input validation
+    tags:
+    - XSS
+    - Injection
+  type: Contains
+- document:
+    doctype: CRE
+    id: 155-155
+    name: Architecture
+  type: Related
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x10-V1-Architecture.md
+    name: ASVS
+    section: V1.5.3
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owasp-top-10-proactive-controls-2018.readthedocs.io/en/latest/c5-validate-all-inputs.html
+    name: OPC
+    section: C5
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/602.html
+    name: CWE
+    section: '602'
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Abuse_Case_Cheat_Sheet.html
+    name: Cheat_sheets
+    section: Abuse Case Cheat Sheet
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Deserialization_Cheat_Sheet.html
+    name: Cheat_sheets
+    section: Deserialization Cheat Sheet
+    subsection: ''
+    version: ''
+  type: Linked To
+name: Enforce input validation on a trusted service layer
+tags:
+- Architecture

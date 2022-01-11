@@ -2,6 +2,12 @@ doctype: CRE
 id: 377-680
 links:
 - document:
+    doctype: CRE
+    name: '
+
+      API/web services'
+  type: Contains
+- document:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x21-V13-API.md
     name: ASVS
@@ -11,7 +17,7 @@ links:
   type: Linked To
 - document:
     doctype: Standard
-    hyperlink: ''
+    hyperlink: https://cwe.mitre.org/data/definitions/434.html
     name: CWE
     section: '434'
     subsection: ''
@@ -21,7 +27,7 @@ links:
     doctype: Standard
     hyperlink: ''
     name: Cheat_sheets
-    section: https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html
+    section: https://cheatsheetseries.owasp.org/cheatsheets/Web_Service_Security_Cheat_Sheet.html
     subsection: ''
     version: ''
   type: Linked To
@@ -29,7 +35,7 @@ links:
     doctype: Standard
     hyperlink: ''
     name: Cheat_sheets
-    section: https://cheatsheetseries.owasp.org/cheatsheets/Web_Service_Security_Cheat_Sheet.html
+    section: https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html
     subsection: ''
     version: ''
   type: Linked To

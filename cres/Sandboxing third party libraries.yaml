@@ -16,7 +16,7 @@ links:
   type: Linked To
 - document:
     doctype: Standard
-    hyperlink: ''
+    hyperlink: https://owasp-top-10-proactive-controls-2018.readthedocs.io/en/latest/c2-leverage-security-frameworks-libraries.html
     name: OPC
     section: C2
     subsection: ''
@@ -24,7 +24,7 @@ links:
   type: Linked To
 - document:
     doctype: Standard
-    hyperlink: ''
+    hyperlink: https://cwe.mitre.org/data/definitions/265.html
     name: CWE
     section: '265'
     subsection: ''

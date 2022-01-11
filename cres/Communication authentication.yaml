@@ -4,21 +4,23 @@ links:
 - document:
     doctype: CRE
     id: 278-646
-    name: Secure communication
+    name: '>>Secure communication'
   type: Contains
 - document:
     doctype: CRE
     id: 605-735
-    name: Authenticate all extenrnal connections
+    name: Authenticate all external connections
+    tags:
+    - Cryptography
   type: Contains
 - document:
     doctype: CRE
     id: 537-367
-    name: properly enable certification revocation
+    name: Enable certification revocation
   type: Contains
 - document:
     doctype: CRE
     id: 530-671
-    name: Verify TLS authenticity
+    name: Mutually authenticate application components
   type: Contains
 name: Communication authentication

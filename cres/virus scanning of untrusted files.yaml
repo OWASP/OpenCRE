@@ -16,7 +16,7 @@ links:
   type: Linked To
 - document:
     doctype: Standard
-    hyperlink: ''
+    hyperlink: https://owasp.org/www-project-web-security-testing-guide/v41/4-Web_Application_Security_Testing/10-Business_Logic_Testing/09-Test_Upload_of_Malicious_Files.html
     name: WSTG
     section: WSTG-BUSL-09
     subsection: ''
@@ -24,7 +24,7 @@ links:
   type: Linked To
 - document:
     doctype: Standard
-    hyperlink: ''
+    hyperlink: https://cwe.mitre.org/data/definitions/509.html
     name: CWE
     section: '509'
     subsection: ''

@@ -3,7 +3,94 @@ id: 486-813
 links:
 - document:
     doctype: CRE
+    id: 615-744
+    name: Protect against directory browsing/discovery attacks
+    tags:
+    - Configuration
+  type: Related
+- document:
+    doctype: CRE
+    id: 462-245
+    name: Remove unnecessary features, documentation, configuration etc
+    tags:
+    - Configuration
+  type: Related
+- document:
+    doctype: CRE
+    id: 154-031
+    name: Harden application by excluding unwanted functionality
+    tags:
+    - Configuration
+  type: Related
+- document:
+    doctype: CRE
+    id: 783-355
+    name: Deployment
+    tags:
+    - Configuration
+  type: Related
+- document:
+    doctype: CRE
+    id: 180-488
+    name: Proper Configuration for all applications and frameworks
+    tags:
+    - Configuration
+  type: Related
+- document:
+    doctype: CRE
+    id: 308-515
+    name: Prevent security disclosure
+    tags:
+    - Configuration
+  type: Related
+- document:
+    doctype: CRE
+    id: 764-507
+    name: Restrict XML parsing (against XXE)
+    tags:
+    - Configuration
+    - Injection
+  type: Related
+- document:
+    doctype: CRE
+    id: 333-888
+    name: Do not expose data through API URLs
+    tags:
+    - Configuration
+  type: Related
+- document:
+    doctype: CRE
+    id: 186-540
+    name: Do not expose data through HTTP verb
+    tags:
+    - Configuration
+  type: Related
+- document:
+    doctype: CRE
+    id: 430-636
+    name: Verify TLS certificates and trust chain
+    tags:
+    - Configuration
+  type: Related
+- document:
+    doctype: CRE
     id: 546-564
-    name: Tags
+    name: '>>Tags'
   type: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=CM-2
+    name: NIST 800-53 v5
+    section: CM-2 BASELINE CONFIGURATION
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=CM-6
+    name: NIST 800-53 v5
+    section: CM-6 Configuration Settings
+    subsection: ''
+    version: ''
+  type: Linked To
 name: Configuration

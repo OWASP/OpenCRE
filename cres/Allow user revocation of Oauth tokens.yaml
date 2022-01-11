@@ -1,0 +1,53 @@
+doctype: CRE
+id: 551-400
+links:
+- document:
+    doctype: CRE
+    id: 258-115
+    name: Re-authentication from federation or assertion
+  type: Contains
+- document:
+    doctype: CRE
+    name: '>>Authorization'
+  type: Related
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x12-V3-Session-management.md
+    name: ASVS
+    section: V3.5.1
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/290.html
+    name: CWE
+    section: '290'
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/JSON_Web_Token_for_Java_Cheat_Sheet.html
+    name: Cheat_sheets
+    section: JSON Web Token for Java Cheat Sheet
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/REST_Security_Cheat_Sheet.html
+    name: Cheat_sheets
+    section: REST Security Cheat Sheet
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: ''
+    name: NIST 800-63
+    section: 7.1.2
+    subsection: ''
+    version: ''
+  type: Linked To
+name: Allow user revocation of Oauth tokens

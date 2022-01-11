@@ -1,0 +1,30 @@
+doctype: CRE
+links:
+- document:
+    doctype: CRE
+    id: 232-034
+    name: Set '_Host'  prefix for cookie-based session tokens
+  type: Contains
+- document:
+    doctype: CRE
+    id: 804-220
+    name: Set httponly attribute for cookie-based session tokens
+    tags:
+    - XSS
+  type: Contains
+- document:
+    doctype: CRE
+    id: 688-081
+    name: Set "secure" attribute for cookie-based session tokens
+  type: Contains
+- document:
+    doctype: CRE
+    id: 705-182
+    name: Set path attribute in cookie-based session tokens as precise as possible
+  type: Contains
+- document:
+    doctype: CRE
+    id: 455-358
+    name: When storing session tokens in browser, use secure methods only
+  type: Contains
+name: Protect session ID

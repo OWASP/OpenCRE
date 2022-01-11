@@ -4,18 +4,18 @@ links:
 - document:
     doctype: CRE
     id: 126-668
-    name: Secure data storage
+    name: '>>Secure data storage'
   type: Contains
 - document:
     doctype: CRE
     id: 724-770
-    name: Authorized access
+    name: '>>Authorized access'
   type: Related
 - document:
     doctype: CRE
     id: 117-371
-    name: Data access control mechanism
+    name: Use a centralized access control mechanism
     tags:
-    - architecture
+    - Architecture
   type: Contains
 name: Data access control

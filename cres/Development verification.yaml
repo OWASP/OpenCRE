@@ -3,17 +3,24 @@ id: 433-442
 links:
 - document:
     doctype: CRE
-    id: 153-513
-    name: Development & operations
-  type: Contains
-- document:
-    doctype: CRE
     id: 340-754
-    name: 'Threat model every design change or sprint '
+    name: Threat model every design change or sprint
+    tags:
+    - Architecture
   type: Contains
 - document:
     doctype: CRE
     id: 611-158
-    name: Useage of effective SAST tools
+    name: Use SAST for malicious content
+  type: Contains
+- document:
+    doctype: CRE
+    id: 053-751
+    name: Force pipeline to check outdated/insecure components
+  type: Related
+- document:
+    doctype: CRE
+    id: 153-513
+    name: '>>Development & operations'
   type: Contains
 name: Development verification

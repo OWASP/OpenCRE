@@ -18,7 +18,7 @@ links:
   type: Linked To
 - document:
     doctype: Standard
-    hyperlink: ''
+    hyperlink: https://cwe.mitre.org/data/definitions/319.html
     name: CWE
     section: '319'
     subsection: ''

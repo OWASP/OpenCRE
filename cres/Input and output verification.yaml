@@ -21,21 +21,23 @@ links:
     id: 010-308
     name: Input validation
     tags:
-    - XSS
     - Injection
+    - XSS
   type: Contains
 - document:
     doctype: CRE
     id: 866-553
     name: Memory, String, and Unmanaged Code
+    tags:
+    - Injection
   type: Contains
 - document:
     doctype: CRE
     id: 161-451
     name: Output encoding and injection prevention
     tags:
-    - XSS
     - Injection
+    - XSS
   type: Contains
 - document:
     doctype: CRE
@@ -49,13 +51,15 @@ links:
     id: Standard NIST 800-53
     name: Sanitization and sandboxing
     tags:
-    - XSS
     - Injection
+    - XSS
   type: Contains
 - document:
     doctype: CRE
     id: 541-441
-    name: Validate HTTP reqeuest headers
+    name: Validate HTTP request headers
+    tags:
+    - Injection
   type: Contains
 - document:
     doctype: CRE
@@ -81,4 +85,12 @@ links:
     tags:
     - Injection
   type: Related
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=SI-10
+    name: NIST 800-53 v5
+    section: SI-10 INFORMATION INPUT VALIDATION
+    subsection: ''
+    version: ''
+  type: Linked To
 name: Input and output verification

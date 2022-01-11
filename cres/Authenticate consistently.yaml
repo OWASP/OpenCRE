@@ -9,13 +9,13 @@ links:
 - document:
     doctype: CRE
     id: 278-413
-    name: All components authenticated and with least privileges
+    name: Mutually authenticate application components. Minimize privileges
     tags:
     - Architecture
   type: Contains
 - document:
     doctype: CRE
     id: 576-042
-    name: Consistent authentication strength
+    name: Consistently apply authentication strength
   type: Contains
 name: Authenticate consistently

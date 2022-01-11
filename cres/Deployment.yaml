@@ -4,12 +4,17 @@ links:
 - document:
     doctype: CRE
     id: 153-513
-    name: Development & operations
+    name: '>>Development & operations'
   type: Contains
 - document:
     doctype: CRE
+    id: 486-813
+    name: Configuration
+  type: Related
+- document:
+    doctype: CRE
     id: 347-352
-    name: Verifiable security relevant configuration
+    name: Set and confirm integrity of security deployment configuration
   type: Contains
 - document:
     doctype: CRE
@@ -30,7 +35,7 @@ links:
   type: Contains
 - document:
     doctype: CRE
-    id: 015-770
+    id: 840-757
     name: Guidelines
   type: Contains
 - document:
@@ -51,23 +56,34 @@ links:
 - document:
     doctype: CRE
     id: 273-600
-    name: Proper segrigation of components via security controls
+    name: Segregate components of differing trust levels
   type: Contains
+- document:
+    doctype: CRE
+    id: 268-272
+    name: Classify personal data regarding retention so that old or outdated data
+      is deleted
+    tags:
+    - Personal data handling
+  type: Related
 - document:
     doctype: CRE
     id: 163-776
     name: Backups
   type: Related
 - document:
-    doctype: CRE
-    id: 623-347
-    name: No shared high privilage accounts
-  type: Related
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=SC-29
+    name: NIST 800-53 v5
+    section: SC-29 Heterogeneity
+    subsection: ''
+    version: ''
+  type: Linked To
 - document:
     doctype: Standard
-    hyperlink: https://owasp.org/www-project-top-ten/2017/A6_2017-Security_Misconfiguration
-    name: Top10 2017
-    section: A6_Security_Misconfiguration
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=SC-27
+    name: NIST 800-53 v5
+    section: SC-27 Platform-independent Applications
     subsection: ''
     version: ''
   type: Linked To

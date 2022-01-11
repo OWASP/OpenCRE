@@ -1,0 +1,68 @@
+doctype: CRE
+id: 177-260
+links:
+- document:
+    doctype: CRE
+    id: 402-133
+    name: Do not expose session token in URL
+  type: Contains
+- document:
+    doctype: CRE
+    id: 582-541
+    name: Re-authenticate before sensitive transactions
+  type: Contains
+- document:
+    doctype: CRE
+    id: 270-568
+    name: Authentication mechanism
+  type: Related
+- document:
+    doctype: CRE
+    id: 110-531
+    name: Cookie-config
+  type: Contains
+- document:
+    doctype: CRE
+    id: 258-115
+    name: Re-authentication from federation or assertion
+  type: Contains
+- document:
+    doctype: CRE
+    id: 470-731
+    name: Session lifecycle
+  type: Contains
+- document:
+    doctype: CRE
+    id: 470-731
+    name: Session token generation
+  type: Contains
+- document:
+    doctype: CRE
+    id: 114-277
+    name: Session integrity
+  type: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=AC-10
+    name: NIST 800-53 v5
+    section: AC-10 CONCURRENT SESSION CONTROL
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=IA-11
+    name: NIST 800-53 v5
+    section: IA-11 RE-AUTHENTICATION
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=SC-23
+    name: NIST 800-53 v5
+    section: SC-23 SESSION AUTHENTICITY
+    subsection: ''
+    version: ''
+  type: Linked To
+name: '>>Session management'

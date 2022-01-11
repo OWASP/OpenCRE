@@ -1,0 +1,10 @@
+doctype: CRE
+links:
+- document:
+    doctype: CRE
+    id: 180-488
+    name: Proper Configuration for all applications and frameworks
+    tags:
+    - Configuration
+  type: Contains
+name: Server protection

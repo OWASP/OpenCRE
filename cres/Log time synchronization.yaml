@@ -1,0 +1,8 @@
+doctype: CRE
+links:
+- document:
+    doctype: CRE
+    id: 770-361
+    name: Synchronize time zones for logs
+  type: Contains
+name: Log time synchronization

@@ -1,0 +1,24 @@
+doctype: CRE
+id: 613-286
+links:
+- document:
+    doctype: CRE
+    id: 613-285
+    name: '>>Dependency strength'
+  type: Contains
+- document:
+    doctype: CRE
+    id: 053-751
+    name: Force pipeline to check outdated/insecure components
+  type: Contains
+- document:
+    doctype: CRE
+    id: 715-334
+    name: Update third party components build- or compile time
+  type: Contains
+- document:
+    doctype: CRE
+    id: 863-521
+    name: Maintain/manage inventory of third party repositories
+  type: Contains
+name: Dependency management

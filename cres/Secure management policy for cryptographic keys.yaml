@@ -3,6 +3,11 @@ id: 287-305
 links:
 - document:
     doctype: CRE
+    id: 354-846
+    name: Documentation and requirements
+  type: Contains
+- document:
+    doctype: CRE
     id: 223-780
     name: Secret storage
     tags:
@@ -18,7 +23,7 @@ links:
   type: Linked To
 - document:
     doctype: Standard
-    hyperlink: ''
+    hyperlink: https://cwe.mitre.org/data/definitions/320.html
     name: CWE
     section: '320'
     subsection: ''

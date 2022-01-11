@@ -16,7 +16,7 @@ links:
   type: Linked To
 - document:
     doctype: Standard
-    hyperlink: ''
+    hyperlink: https://owasp.org/www-project-web-security-testing-guide/v41/4-Web_Application_Security_Testing/11-Client_Side_Testing/12-Testing_Browser_Storage.html
     name: WSTG
     section: WSTG-CLNT-12
     subsection: ''
@@ -24,7 +24,7 @@ links:
   type: Linked To
 - document:
     doctype: Standard
-    hyperlink: ''
+    hyperlink: https://cwe.mitre.org/data/definitions/922.html
     name: CWE
     section: '922'
     subsection: ''

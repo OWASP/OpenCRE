@@ -3,12 +3,17 @@ id: 080-373
 links:
 - document:
     doctype: CRE
+    id: 118-110
+    name: API/web services
+  type: Contains
+- document:
+    doctype: CRE
     id: 611-051
-    name: XSD schema validation
+    name: Enforce schema on XML structure/field
   type: Contains
 - document:
     doctype: CRE
     id: 456-636
-    name: Integrity check for message payload
+    name: Add integrity check to SOAP payload
   type: Contains
 name: SOAP

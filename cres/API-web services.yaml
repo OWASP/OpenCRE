@@ -1,0 +1,53 @@
+doctype: CRE
+id: 118-110
+links:
+- document:
+    doctype: CRE
+    id: 532-878
+    name: Limit REST HTTP methods
+  type: Contains
+- document:
+    doctype: CRE
+    id: 377-680
+    name: Reject non-whitelisted content types
+  type: Contains
+- document:
+    doctype: CRE
+    id: 061-186
+    name: Force uniform encoders and parsers throughout system
+    tags:
+    - SSRF
+  type: Contains
+- document:
+    doctype: CRE
+    id: 612-252
+    name: Separate GraphQL (or similar) authorization logic from data layer
+    tags:
+    - Architecture
+  type: Contains
+- document:
+    doctype: CRE
+    id: 071-288
+    name: RESTful
+  type: Contains
+- document:
+    doctype: CRE
+    id: 080-373
+    name: SOAP
+  type: Contains
+- document:
+    doctype: CRE
+    id: 152-725
+    name: Limit access to admin/management functionality
+  type: Related
+- document:
+    doctype: CRE
+    id: 664-080
+    name: Enforce model-based authorization both at URI and final resource
+  type: Related
+- document:
+    doctype: CRE
+    id: 503-455
+    name: '>>Input and output verification'
+  type: Contains
+name: API/web services
