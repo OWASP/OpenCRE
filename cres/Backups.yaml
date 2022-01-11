@@ -4,7 +4,7 @@ links:
 - document:
     doctype: CRE
     id: 126-668
-    name: Secure data storage
+    name: '>>Secure data storage'
   type: Contains
 - document:
     doctype: CRE
@@ -16,11 +16,11 @@ links:
 - document:
     doctype: CRE
     id: 257-117
-    name: Regular backups and test restoration
+    name: Perform regular backups of important data and test restoration
   type: Contains
 - document:
     doctype: CRE
     id: 614-353
-    name: Secure backup storage
+    name: Store backups securely
   type: Contains
 name: Backups

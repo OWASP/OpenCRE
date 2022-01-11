@@ -1,0 +1,33 @@
+doctype: CRE
+id: 314-131
+links:
+- document:
+    doctype: CRE
+    id: 615-188
+    name: Deployment process
+  type: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x22-V14-Config.md
+    name: ASVS
+    section: V14.1.2
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/120.html
+    name: CWE
+    section: '120'
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html
+    name: Cheat_sheets
+    section: Docker Security Cheat Sheet
+    subsection: ''
+    version: ''
+  type: Linked To
+name: Set proper (C) compiler flags

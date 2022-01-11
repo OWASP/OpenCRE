@@ -2,6 +2,10 @@ doctype: CRE
 id: 764-507
 links:
 - document:
+    doctype: CRE
+    name: XML Parser hardening
+  type: Contains
+- document:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x13-V5-Validation-Sanitization-Encoding.md
     name: ASVS
@@ -19,7 +23,7 @@ links:
   type: Linked To
 - document:
     doctype: Standard
-    hyperlink: ''
+    hyperlink: https://owasp.org/www-project-web-security-testing-guide/v41/4-Web_Application_Security_Testing/07-Input_Validation_Testing/07-Testing_for_XML_Injection.html
     name: WSTG
     section: WSTG-INPV-07
     subsection: ''
@@ -27,7 +31,7 @@ links:
   type: Linked To
 - document:
     doctype: Standard
-    hyperlink: ''
+    hyperlink: https://cwe.mitre.org/data/definitions/611.html
     name: CWE
     section: '611'
     subsection: ''
@@ -45,7 +49,7 @@ links:
     doctype: Standard
     hyperlink: ''
     name: Cheat_sheets
-    section: https://cheatsheetseries.owasp.org/cheatsheets/XML_External_Entity_Prevention_Cheat_Sheet.html
+    section: https://cheatsheetseries.owasp.org/cheatsheets/Deserialization_Cheat_Sheet.html
     subsection: ''
     version: ''
   type: Linked To
@@ -53,7 +57,7 @@ links:
     doctype: Standard
     hyperlink: ''
     name: Cheat_sheets
-    section: https://cheatsheetseries.owasp.org/cheatsheets/Deserialization_Cheat_Sheet.html
+    section: https://cheatsheetseries.owasp.org/cheatsheets/XML_External_Entity_Prevention_Cheat_Sheet.html
     subsection: ''
     version: ''
   type: Linked To

@@ -11,38 +11,38 @@ links:
 - document:
     doctype: CRE
     id: 736-237
-    name: 'Content-Disposition for API responses '
+    name: Set metadata/content-Disposition for API responses
   type: Contains
 - document:
     doctype: CRE
     id: 257-668
-    name: Proper CSP configuration
+    name: Configure CSP configuration properly
     tags:
     - XSS
   type: Contains
 - document:
     doctype: CRE
     id: 036-147
-    name: Proper HSTS configuration
+    name: Configure HSTS configuration properly
   type: Contains
 - document:
     doctype: CRE
     id: 268-100
-    name: Proper Referrer-Policy configuration
+    name: Configure Referrer-Policy properly
   type: Contains
 - document:
     doctype: CRE
     id: 065-388
-    name: Proper X-Content-Type-Options configuration
+    name: Configure X-Content-Type-Options properly
   type: Contains
 - document:
     doctype: CRE
     id: 480-071
-    name: Proper X-Frame-Options for CSP conficuration
+    name: Prevent Click jacking through X-Frame-Options or CSP
   type: Contains
 - document:
     doctype: CRE
     id: 036-725
-    name: Safe character sets for HTTP response
+    name: Set content HTTP response type
   type: Contains
 name: HTTP security headers

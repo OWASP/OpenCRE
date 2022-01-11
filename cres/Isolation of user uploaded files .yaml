@@ -2,6 +2,11 @@ doctype: CRE
 id: 384-344
 links:
 - document:
+    doctype: CRE
+    id: 621-287
+    name: File upload
+  type: Contains
+- document:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x10-V1-Architecture.md
     name: ASVS
@@ -11,7 +16,7 @@ links:
   type: Linked To
 - document:
     doctype: Standard
-    hyperlink: ''
+    hyperlink: https://cwe.mitre.org/data/definitions/646.html
     name: CWE
     section: '646'
     subsection: ''
@@ -19,5 +24,5 @@ links:
   type: Linked To
 name: 'Isolation of user uploaded files '
 tags:
-- XSS
 - Injection
+- XSS

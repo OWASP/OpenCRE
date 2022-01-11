@@ -4,21 +4,30 @@ links:
 - document:
     doctype: CRE
     id: 503-455
-    name: Input and output verification
+    name: '>>Input and output verification'
   type: Contains
 - document:
     doctype: CRE
+    id: 760-764
+    name: Injection
+    tags:
+    - XSS
+  type: Related
+- document:
+    doctype: CRE
     id: 824-732
-    name: Constant/validated format strings
+    name: Force format strings as constants
   type: Contains
 - document:
     doctype: CRE
     id: 482-771
-    name: Proteciton against integer overflows
+    name: Check boundaries against integer overflow weaknesses
   type: Contains
 - document:
     doctype: CRE
     id: 831-570
-    name: Use memory safe strings
+    name: Use memory-safe functions exclusively
   type: Contains
 name: Memory, String, and Unmanaged Code
+tags:
+- Injection

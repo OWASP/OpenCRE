@@ -43,6 +43,30 @@ links:
   type: Contains
 - document:
     doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=AC-10
+    name: NIST 800-53 v5
+    section: AC-10 CONCURRENT SESSION CONTROL
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=IA-11
+    name: NIST 800-53 v5
+    section: IA-11 RE-AUTHENTICATION
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=SC-23
+    name: NIST 800-53 v5
+    section: SC-23 SESSION AUTHENTICITY
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
     hyperlink: https://owasp.org/www-project-top-ten/2017/A2_2017-Broken_Authentication
     name: Top10 2017
     section: A2_Broken_Authenticationn

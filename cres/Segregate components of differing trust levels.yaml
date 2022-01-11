@@ -1,0 +1,32 @@
+doctype: CRE
+id: 273-600
+links:
+- document:
+    doctype: CRE
+    id: 783-355
+    name: Deployment
+    tags:
+    - Configuration
+  type: Contains
+- document:
+    doctype: CRE
+    id: 724-770
+    name: '>>Authorized access'
+  type: Related
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x10-V1-Architecture.md
+    name: ASVS
+    section: V1.14.1
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/923.html
+    name: CWE
+    section: '923'
+    subsection: ''
+    version: ''
+  type: Linked To
+name: Segregate components of differing trust levels

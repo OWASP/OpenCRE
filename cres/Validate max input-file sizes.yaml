@@ -1,0 +1,48 @@
+doctype: CRE
+id: 660-052
+links:
+- document:
+    doctype: CRE
+    id: 621-287
+    name: File upload
+  type: Contains
+- document:
+    doctype: CRE
+    id: 623-550
+    name: DOS
+  type: Related
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x20-V12-Files-Resources.md
+    name: ASVS
+    section: V12.1.1
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/400.html
+    name: CWE
+    section: '400'
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owasp.org/www-project-web-security-testing-guide/v41/4-Web_Application_Security_Testing/10-Business_Logic_Testing/09-Test_Upload_of_Malicious_Files.html
+    name: WSTG
+    section: WSTG-BUSL-09
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/File_Upload_Cheat_Sheet.html
+    name: Cheat_sheets
+    section: File Upload Cheat Sheet
+    subsection: ''
+    version: ''
+  type: Linked To
+name: Validate max input/file sizes
+tags:
+- DOS

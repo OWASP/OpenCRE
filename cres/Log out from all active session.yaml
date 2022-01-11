@@ -20,7 +20,7 @@ links:
   type: Linked To
 - document:
     doctype: Standard
-    hyperlink: ''
+    hyperlink: https://owasp.org/www-project-web-security-testing-guide/v41/4-Web_Application_Security_Testing/06-Session_Management_Testing/06-Testing_for_Logout_Functionality.html#testing-for-server-side-session-termination
     name: WSTG
     section: WSTG-SESS-06
     subsection: ''
@@ -28,7 +28,7 @@ links:
   type: Linked To
 - document:
     doctype: Standard
-    hyperlink: ''
+    hyperlink: https://cwe.mitre.org/data/definitions/613.html
     name: CWE
     section: '613'
     subsection: ''

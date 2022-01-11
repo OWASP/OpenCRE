@@ -3,6 +3,6 @@ links:
 - document:
     doctype: CRE
     id: 473-758
-    name: no caching of sensitive data in browser
+    name: Set sufficient anti-caching headers
   type: Related
 name: Http headers

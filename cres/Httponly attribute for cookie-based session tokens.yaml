@@ -16,7 +16,7 @@ links:
   type: Linked To
 - document:
     doctype: Standard
-    hyperlink: ''
+    hyperlink: https://owasp-top-10-proactive-controls-2018.readthedocs.io/en/latest/c6-implement-digital-identity.html
     name: OPC
     section: C6
     subsection: ''
@@ -24,7 +24,7 @@ links:
   type: Linked To
 - document:
     doctype: Standard
-    hyperlink: ''
+    hyperlink: https://owasp.org/www-project-web-security-testing-guide/v41/4-Web_Application_Security_Testing/06-Session_Management_Testing/02-Testing_for_Cookies_Attributes.html#domain-attribute
     name: WSTG
     section: WSTG-SESS-02
     subsection: ''
@@ -32,7 +32,7 @@ links:
   type: Linked To
 - document:
     doctype: Standard
-    hyperlink: ''
+    hyperlink: https://cwe.mitre.org/data/definitions/1004.html
     name: CWE
     section: '1004'
     subsection: ''
@@ -42,7 +42,7 @@ links:
     doctype: Standard
     hyperlink: ''
     name: Cheat_sheets
-    section: https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html
+    section: https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html
     subsection: ''
     version: ''
   type: Linked To
@@ -50,7 +50,7 @@ links:
     doctype: Standard
     hyperlink: ''
     name: Cheat_sheets
-    section: https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html
+    section: https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html
     subsection: ''
     version: ''
   type: Linked To

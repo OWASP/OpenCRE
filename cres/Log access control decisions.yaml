@@ -16,9 +16,17 @@ links:
   type: Linked To
 - document:
     doctype: Standard
-    hyperlink: ''
+    hyperlink: https://cwe.mitre.org/data/definitions/285.html
     name: CWE
     section: '285'
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html
+    name: Cheat_sheets
+    section: Logging Cheat Sheet
     subsection: ''
     version: ''
   type: Linked To

@@ -9,7 +9,7 @@ links:
 - document:
     doctype: CRE
     id: 841-710
-    name: Log authentication decisions
+    name: Log authentication decisions without exposing sensitive data
   type: Contains
 - document:
     doctype: CRE
@@ -19,23 +19,39 @@ links:
 - document:
     doctype: CRE
     id: 555-048
-    name: log times of the events
+    name: Log events sufficiently to recreate their order
   type: Contains
 - document:
     doctype: CRE
     id: 015-063
-    name: log access to sensitive data
+    name: Log access to sensitive data
   type: Contains
 - document:
     doctype: CRE
     id: 113-133
-    name: Single vetted mature authentication mechanism
+    name: Use centralized authentication mechanism
     tags:
     - Architecture
   type: Related
 - document:
     doctype: CRE
     id: 842-876
-    name: Logging and error handling
+    name: '>>Logging and error handling'
   type: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=AU-2
+    name: NIST 800-53 v5
+    section: AU-2 Event Logging
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=AU-3
+    name: NIST 800-53 v5
+    section: AU-3 Content of Audit Records
+    subsection: ''
+    version: ''
+  type: Linked To
 name: Log relevant

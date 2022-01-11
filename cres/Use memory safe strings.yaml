@@ -5,6 +5,8 @@ links:
     doctype: CRE
     id: 866-553
     name: Memory, String, and Unmanaged Code
+    tags:
+    - Injection
   type: Contains
 - document:
     doctype: Standard
@@ -16,7 +18,7 @@ links:
   type: Linked To
 - document:
     doctype: Standard
-    hyperlink: ''
+    hyperlink: https://owasp.org/www-project-web-security-testing-guide/v41/4-Web_Application_Security_Testing/07-Input_Validation_Testing/13-Testing_for_Buffer_Overflow.html
     name: WSTG
     section: WSTG-INPV-13
     subsection: ''
@@ -24,7 +26,7 @@ links:
   type: Linked To
 - document:
     doctype: Standard
-    hyperlink: ''
+    hyperlink: https://cwe.mitre.org/data/definitions/120.html
     name: CWE
     section: '120'
     subsection: ''

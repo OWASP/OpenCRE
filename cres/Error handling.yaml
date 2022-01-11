@@ -4,21 +4,21 @@ links:
 - document:
     doctype: CRE
     id: 842-876
-    name: Logging and error handling
+    name: '>>Logging and error handling'
   type: Contains
 - document:
     doctype: CRE
     id: 612-435
-    name: No sensitive data exposure through error message
+    name: Show generic message for security exceptions or unanticipated exceptions
   type: Contains
 - document:
     doctype: CRE
     id: 863-636
-    name: Ubiquitous exceprion handeling
+    name: Use exception handling uniformly
   type: Contains
 - document:
     doctype: CRE
     id: 118-602
-    name: No unhandeled exceptions
+    name: Use a standard last-resort error handler for unhandled errors
   type: Contains
 name: Error handling

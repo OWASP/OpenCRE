@@ -16,7 +16,7 @@ links:
   type: Linked To
 - document:
     doctype: Standard
-    hyperlink: ''
+    hyperlink: https://cwe.mitre.org/data/definitions/770.html
     name: CWE
     section: '770'
     subsection: ''
@@ -24,25 +24,25 @@ links:
   type: Linked To
 - document:
     doctype: Standard
-    hyperlink: ''
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/REST_Assessment_Cheat_Sheet.html
     name: Cheat_sheets
-    section: https://cheatsheetseries.owasp.org/cheatsheets/REST_Security_Cheat_Sheet.html
+    section: REST Assessment Cheat Sheet
     subsection: ''
     version: ''
   type: Linked To
 - document:
     doctype: Standard
-    hyperlink: ''
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/REST_Security_Cheat_Sheet.html
     name: Cheat_sheets
-    section: https://cheatsheetseries.owasp.org/cheatsheets/REST_Assessment_Cheat_Sheet.html
+    section: REST Security Cheat Sheet
     subsection: ''
     version: ''
   type: Linked To
 - document:
     doctype: Standard
-    hyperlink: ''
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html
     name: Cheat_sheets
-    section: https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html
+    section: Cross-Site Request Forgery Prevention Cheat Sheet
     subsection: ''
     version: ''
   type: Linked To

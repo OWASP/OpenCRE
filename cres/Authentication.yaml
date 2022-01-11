@@ -18,6 +18,94 @@ links:
   type: Related
 - document:
     doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=AC-7
+    name: NIST 800-53 v5
+    section: AC-7 UNSUCCESSFUL LOGON ATTEMPTS
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=AC-8
+    name: NIST 800-53 v5
+    section: AC-8 SYSTEM USE NOTIFICATION
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=AC-9
+    name: NIST 800-53 v5
+    section: AC-9 PREVIOUS LOGON NOTIFICATION
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=IA-1
+    name: NIST 800-53 v5
+    section: IA-1 Policy and Procedures
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=IA-10
+    name: NIST 800-53 v5
+    section: IA-10 Adaptive Authentication
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=IA-12
+    name: NIST 800-53 v5
+    section: IA-12 Identity Proofing
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=IA-2
+    name: NIST 800-53 v5
+    section: IA-2 Identification and Authentication (organizational Users)
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=IA-3
+    name: NIST 800-53 v5
+    section: IA-3 Device Identification and Authentication
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=IA-4
+    name: NIST 800-53 v5
+    section: IA-4 Identifier Management
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=IA-5
+    name: NIST 800-53 v5
+    section: IA-5 AUTHENTICATOR MANAGEMENT
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=IA-8
+    name: NIST 800-53 v5
+    section: IA-8 Identification and Authentication (non-organizational Users)
+    subsection: ''
+    version: ''
+  type: Linked To
+- document:
+    doctype: Standard
     hyperlink: https://owasp.org/www-project-top-ten/2017/A2_2017-Broken_Authentication
     name: Top10 2017
     section: A2_Broken_Authenticationn

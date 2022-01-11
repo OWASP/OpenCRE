@@ -3,49 +3,53 @@ id: 615-188
 links:
 - document:
     doctype: CRE
-    id: 263-184
-    name: Automatic verification of deployment procedure
-  type: Contains
-- document:
-    doctype: CRE
-    id: 307-507
-    name: Integrity check on all resources and code
-  type: Contains
-- document:
-    doctype: CRE
-    id: 171-222
-    name: Integrity check on deployment binaries
-  type: Contains
-- document:
-    doctype: CRE
-    id: 314-131
-    name: Properly configured compiler flags
-  type: Contains
-- document:
-    doctype: CRE
-    id: 208-355
-    name: Repeatable deployment procedures
-  type: Contains
-- document:
-    doctype: CRE
-    id: 253-452
-    name: Secure and repeatable application build
-  type: Contains
-- document:
-    doctype: CRE
-    id: 028-254
-    name: Secure auto-update over full stack
-  type: Contains
-- document:
-    doctype: CRE
-    id: 053-751
-    name: Control outdated/insecure componencts
-  type: Related
-- document:
-    doctype: CRE
     id: 783-355
     name: Deployment
     tags:
     - Configuration
   type: Contains
+- document:
+    doctype: CRE
+    id: 263-184
+    name: Automate secure build and deployment, especially with SDI
+  type: Contains
+- document:
+    doctype: CRE
+    id: 307-507
+    name: Allow only trusted sources both build time and runtime; therefore perform
+      integrity checks on all resources and code
+  type: Contains
+- document:
+    doctype: CRE
+    id: 171-222
+    name: Check binary integrity before deployment
+  type: Contains
+- document:
+    doctype: CRE
+    id: 314-131
+    name: Set proper (C) compiler flags
+  type: Contains
+- document:
+    doctype: CRE
+    id: 208-355
+    name: Ensure repeatability of deployment
+  type: Contains
+- document:
+    doctype: CRE
+    id: 253-452
+    name: Securely automate build and deployment in pipeline
+  type: Contains
+- document:
+    doctype: CRE
+    id: 028-254
+    name: Secure auto-updates over full stack
+  type: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=SC-51
+    name: NIST 800-53 v5
+    section: SC-51 Hardware-based Protection
+    subsection: ''
+    version: ''
+  type: Linked To
 name: Deployment process

@@ -4,31 +4,48 @@ links:
 - document:
     doctype: CRE
     id: 503-455
-    name: Input and output verification
+    name: '>>Input and output verification'
   type: Contains
 - document:
     doctype: CRE
+    id: 146-706
+    name: Enforce JSON schema before processing
+  type: Contains
+- document:
+    doctype: CRE
+    id: 760-765
+    name: XSS
+  type: Related
+- document:
+    doctype: CRE
+    id: 760-764
+    name: Injection
+    tags:
+    - XSS
+  type: Related
+- document:
+    doctype: CRE
     id: 176-154
-    name: Limit number of requests per user
+    name: Monitor expectation of usage intensity (e.g. number of requests)
     tags:
     - DOS
   type: Contains
 - document:
     doctype: CRE
     id: 031-447
-    name: Whitelisting verification of all input
+    name: Whitelist all external (HTTP) input
   type: Contains
 - document:
     doctype: CRE
     id: 743-237
-    name: Ptotect against HTTP polution attack
+    name: Validatie/enforce HTTP inputs (against HTTP parameter pollution attacks)
   type: Contains
 - document:
     doctype: CRE
     id: 848-711
-    name: Input validation on trusted service layer
+    name: Enforce input validation on a trusted service layer
     tags:
-    - architecture
+    - Architecture
   type: Contains
 - document:
     doctype: CRE
@@ -38,12 +55,12 @@ links:
 - document:
     doctype: CRE
     id: 653-242
-    name: Strongly typed and validated structured data
+    name: Enforce schema on type/contents of structured data
   type: Contains
 - document:
     doctype: CRE
     id: 232-217
-    name: Whitelist redirected URLs
+    name: Whitelist redirected/forwarded URLs
   type: Contains
 name: Input validation
 tags:

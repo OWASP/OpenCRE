@@ -16,7 +16,7 @@ links:
   type: Linked To
 - document:
     doctype: Standard
-    hyperlink: ''
+    hyperlink: https://cwe.mitre.org/data/definitions/502.html
     name: CWE
     section: '502'
     subsection: ''
@@ -34,7 +34,7 @@ links:
     doctype: Standard
     hyperlink: ''
     name: Cheat_sheets
-    section: https://cheatsheetseries.owasp.org/cheatsheets/XML_External_Entity_Prevention_Cheat_Sheet.html
+    section: https://cheatsheetseries.owasp.org/cheatsheets/Deserialization_Cheat_Sheet.html
     subsection: ''
     version: ''
   type: Linked To
@@ -42,7 +42,7 @@ links:
     doctype: Standard
     hyperlink: ''
     name: Cheat_sheets
-    section: https://cheatsheetseries.owasp.org/cheatsheets/Deserialization_Cheat_Sheet.html
+    section: https://cheatsheetseries.owasp.org/cheatsheets/XML_External_Entity_Prevention_Cheat_Sheet.html
     subsection: ''
     version: ''
   type: Linked To

@@ -1,0 +1,10 @@
+doctype: CRE
+links:
+- document:
+    doctype: CRE
+    id: 228-551
+    name: TLS
+    tags:
+    - Cryptoghraphy
+  type: Related
+name: Cryptoghraphy

@@ -4,7 +4,9 @@ links:
 - document:
     doctype: CRE
     id: 541-441
-    name: Validate HTTP reqeuest headers
+    name: Validate HTTP request headers
+    tags:
+    - Injection
   type: Contains
 - document:
     doctype: Standard
@@ -16,7 +18,7 @@ links:
   type: Linked To
 - document:
     doctype: Standard
-    hyperlink: ''
+    hyperlink: https://owasp.org/www-project-web-security-testing-guide/v41/4-Web_Application_Security_Testing/11-Client_Side_Testing/07-Testing_Cross_Origin_Resource_Sharing.html
     name: WSTG
     section: WSTG-CLNT-07
     subsection: ''
@@ -24,7 +26,7 @@ links:
   type: Linked To
 - document:
     doctype: Standard
-    hyperlink: ''
+    hyperlink: https://cwe.mitre.org/data/definitions/346.html
     name: CWE
     section: '346'
     subsection: ''
