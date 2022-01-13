@@ -57,7 +57,7 @@ export const SearchBody = () => {
       </p>
       <p>
         For more details, see this 
-        <a href="https://www.youtube.com/watch?v=MnUR08LOFO0"> introduction video</a>
+        <a href="https://www.youtube.com/watch?v=4-HTa1pTEVI&list=PLpr-xdpM8wG8CX91aE_LV3OxmtT9lvUW5&index=92"> presentation video</a>
         , or read the
         <a href="https://github.com/OWASP/www-project-integration-standards/raw/master/writeups/CRE-Explained6.pdf"> CRE explanation document</a>
         .
