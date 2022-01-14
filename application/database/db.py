@@ -181,12 +181,12 @@ class Node_collection:
                 logger.debug(f"{vk} not in Node")
         return qu.all()
 
-    def get_node_names(self, ntype: str = cre_defs.Standard.__name__) -> List[str]:
+    def get_node_names(self, ntype: str = cre_defs.Standard.__name__) -> List[Tuple[str,str]]:
 
-        # this returns a tuple of (str,nothing)
-        q = self.session.query(Node.name).distinct().all()
-        res = [i[0] for i in q]
-        return res
+        q = self.session.query(Node.ntype, Node.name).distinct().all()
+        if q:
+            return [i for i in q]
+        return []
 
     def get_max_internal_connections(self) -> int:
         q = self.session.query(InternalLinks).all()

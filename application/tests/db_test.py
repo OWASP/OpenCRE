@@ -113,7 +113,7 @@ class TestDB(unittest.TestCase):
     def test_get_standards_names(self) -> None:
 
         result = self.collection.get_node_names()
-        expected = ["BarStand", "Unlinked"]
+        expected = [("Standard","BarStand"), ("Standard","Unlinked")]
         self.assertEqual(expected, result)
 
     def test_get_max_internal_connections(self) -> None:

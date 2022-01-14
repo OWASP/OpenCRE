@@ -17,38 +17,86 @@ class ExportFormat(Enum):
     description = "description"
     cre_link = "Linked_CRE_"
     cre = "CRE"
+    tooltype="ToolType"
 
     @staticmethod
-    def section_key(sname: str) -> str:
-        "returns <sname>:section"
-        return "%s%s%s" % (
+    def get_doctype(header:str)->Optional["Credoctypes"]:
+        """Given a header of type 
+        <doctype>:<name>:<>
+        return the doctype
+        """
+        typ = [t for t in Credoctypes if t in header]
+        if not typ:
+            return None
+        else:
+            return typ[0]
+    @staticmethod
+    def node_name_key(sname:str)->str:
+        """ returns :<sname>: used mostly for matching"""
+        return "%s%s%s"%(
+            ExportFormat.separator.value,
+            sname,
+            ExportFormat.separator.value,
+        )
+    @staticmethod
+    def tooltype_key(sname: str,doctype:"Credoctypes") -> str:
+        "returns <doctype>:<name>:tooltype"
+        return "%s%s%s%s%s" % (
+            doctype.value,
+            ExportFormat.separator.value,
+            sname,
+            ExportFormat.separator.value,
+            ExportFormat.tooltype.value,
+        )
+    @staticmethod
+    def description_key(sname: str,doctype:"Credoctypes") -> str:
+        "returns <doctype>:<name>:description"
+        return "%s%s%s%s%s" % (
+            doctype.value,
+            ExportFormat.separator.value,
+            sname,
+            ExportFormat.separator.value,
+            ExportFormat.description.value,
+        )
+    @staticmethod
+    def section_key(sname: str,doctype:"Credoctypes") -> str:
+        "returns <doctype>:<name>:section"
+        return "%s%s%s%s%s" % (
+            doctype.value,
+            ExportFormat.separator.value,
             sname,
             ExportFormat.separator.value,
             ExportFormat.section.value,
         )
 
     @staticmethod
-    def subsection_key(sname: str) -> str:
-        "returns <sname>:subsection"
-        return "%s%s%s" % (
+    def subsection_key(sname: str, doctype:"Credoctypes") -> str:
+        "returns <doctype>:<sname>:subsection"
+        return "%s%s%s%s%s" % (
+            doctype.value,
+            ExportFormat.separator.value,
             sname,
             ExportFormat.separator.value,
             ExportFormat.subsection.value,
         )
 
     @staticmethod
-    def hyperlink_key(sname: str) -> str:
+    def hyperlink_key(sname: str,doctype:"Credoctypes") -> str:
         "returns <sname>:hyperlink"
-        return "%s%s%s" % (
+        return "%s%s%s%s%s" % (
+            doctype.value,
+            ExportFormat.separator.value,
             sname,
             ExportFormat.separator.value,
             ExportFormat.hyperlink.value,
         )
 
     @staticmethod
-    def link_type_key(sname: str) -> str:
+    def link_type_key(sname: str,doctype:"Credoctypes") -> str:
         "returns <sname>:link_type"
-        return "%s%s%s" % (
+        return "%s%s%s%s%s" % (
+            doctype.value,
+            ExportFormat.separator.value,
             sname,
             ExportFormat.separator.value,
             ExportFormat.link_type.value,
@@ -123,6 +171,14 @@ class Credoctypes(str, Enum, metaclass=EnumMetaWithContains):
     Tool = "Tool"
     Code = "Code"
 
+    @staticmethod
+    def from_str(typ:str)->"Credoctypes":
+        typ = [t for t in Credoctypes if t in typ]
+        if not typ:
+            return None
+        else:
+            return typ[0]
+
 
 class LinkTypes(str, Enum, metaclass=EnumMetaWithContains):
     Same = "SAME"
@@ -153,6 +209,14 @@ class ToolTypes(str, Enum, metaclass=EnumMetaWithContains):
     Offensive = "Offensive"
     Defensive = "Defensive"
     Unknown = "Unknown"
+
+    @staticmethod
+    def from_str(tooltype:str)->Optional["ToolTypes"]:
+        if tooltype:
+            ttype = [t for t in ToolTypes if t.value.lower() == tooltype.lower()]
+            if ttype:
+                return ttype[0]
+        return None
 
 
 @dataclass
