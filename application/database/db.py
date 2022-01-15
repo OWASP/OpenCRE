@@ -181,7 +181,9 @@ class Node_collection:
                 logger.debug(f"{vk} not in Node")
         return qu.all()
 
-    def get_node_names(self, ntype: str = cre_defs.Standard.__name__) -> List[Tuple[str,str]]:
+    def get_node_names(
+        self, ntype: str = cre_defs.Standard.__name__
+    ) -> List[Tuple[str, str]]:
 
         q = self.session.query(Node.ntype, Node.name).distinct().all()
         if q:

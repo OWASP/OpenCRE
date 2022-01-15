@@ -43,27 +43,42 @@ def get_linked_nodes(mapping: Dict[str, str]) -> List[defs.Link]:
         [
             k.split(defs.ExportFormat.separator.value)[1]
             for k, v in mapping.items()
-            if not is_empty(v) and "CRE" not in k.upper() and len(k.split(defs.ExportFormat.separator.value)) >=3
+            if not is_empty(v)
+            and "CRE" not in k.upper()
+            and len(k.split(defs.ExportFormat.separator.value)) >= 3
         ]
     )
 
     for name in names:
-        type = defs.ExportFormat.get_doctype([m for m in mapping.keys() if name in m][0])
+        type = defs.ExportFormat.get_doctype(
+            [m for m in mapping.keys() if name in m][0]
+        )
         if not type:
-            raise ValueError(f"Mapping of {name} not in format of <type>:{name}:<attribute>")
-        section = mapping.get(defs.ExportFormat.section_key(name,type))
-        subsection = mapping.get(defs.ExportFormat.subsection_key(name,type))
-        hyperlink = mapping.get(defs.ExportFormat.hyperlink_key(name,type))
-        link_type = mapping.get(defs.ExportFormat.link_type_key(name,type))
-        tooltype =  defs.ToolTypes.from_str(mapping.get(defs.ExportFormat.tooltype_key(name,type)))
-        description =  mapping.get(defs.ExportFormat.description_key(name,type))
-        node = None 
+            raise ValueError(
+                f"Mapping of {name} not in format of <type>:{name}:<attribute>"
+            )
+        section = mapping.get(defs.ExportFormat.section_key(name, type))
+        subsection = mapping.get(defs.ExportFormat.subsection_key(name, type))
+        hyperlink = mapping.get(defs.ExportFormat.hyperlink_key(name, type))
+        link_type = mapping.get(defs.ExportFormat.link_type_key(name, type))
+        tooltype = defs.ToolTypes.from_str(
+            mapping.get(defs.ExportFormat.tooltype_key(name, type))
+        )
+        description = mapping.get(defs.ExportFormat.description_key(name, type))
+        node = None
         if type == defs.Credoctypes.Standard:
-            node = defs.Standard(name=name, section=section,subsection=subsection,hyperlink=hyperlink)
+            node = defs.Standard(
+                name=name, section=section, subsection=subsection, hyperlink=hyperlink
+            )
         elif type == defs.Credoctypes.Code:
-            node = defs.Code(description=description,hyperlink=hyperlink,name=name)
+            node = defs.Code(description=description, hyperlink=hyperlink, name=name)
         elif type == defs.Credoctypes.Tool:
-            node = defs.Tool(tooltype=tooltype,name=name,description=description,hyperlink=hyperlink)
+            node = defs.Tool(
+                tooltype=tooltype,
+                name=name,
+                description=description,
+                hyperlink=hyperlink,
+            )
 
         lt: defs.LinkTypes
         if not is_empty(link_type):
@@ -109,8 +124,10 @@ def parse_export_format(lfile: List[Dict[str, Any]]) -> Dict[str, defs.Document]
             # standard -> nothing | standard
             for st in get_linked_nodes(mapping):
 
-                lone_nodes[f"{st.document.doctype}:{st.document.name}:{st.document.section}"] = st.document
-            
+                lone_nodes[
+                    f"{st.document.doctype}:{st.document.name}:{st.document.section}"
+                ] = st.document
+
         else:  # cre -> standards, other cres
             name = mapping.pop(defs.ExportFormat.cre_name_key())
             id = mapping.pop(defs.ExportFormat.cre_id_key())

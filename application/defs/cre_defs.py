@@ -6,7 +6,10 @@ from enum import Enum, EnumMeta
 from typing import Any, Dict, List, Optional, Set, Union
 
 
-class ExportFormat(Enum):
+class ExportFormat(
+    Enum
+):  # TODO: this can likely be replaced with a method that iterates over an object's vars and formats headers to
+    #  <doctype>:<name>:<varname>
     separator = ":"
     section = "section"
     subsection = "subsection"
@@ -17,11 +20,11 @@ class ExportFormat(Enum):
     description = "description"
     cre_link = "Linked_CRE_"
     cre = "CRE"
-    tooltype="ToolType"
+    tooltype = "ToolType"
 
     @staticmethod
-    def get_doctype(header:str)->Optional["Credoctypes"]:
-        """Given a header of type 
+    def get_doctype(header: str) -> Optional["Credoctypes"]:
+        """Given a header of type
         <doctype>:<name>:<>
         return the doctype
         """
@@ -30,16 +33,18 @@ class ExportFormat(Enum):
             return None
         else:
             return typ[0]
+
     @staticmethod
-    def node_name_key(sname:str)->str:
-        """ returns :<sname>: used mostly for matching"""
-        return "%s%s%s"%(
+    def node_name_key(sname: str) -> str:
+        """returns :<sname>: used mostly for matching"""
+        return "%s%s%s" % (
             ExportFormat.separator.value,
             sname,
             ExportFormat.separator.value,
         )
+
     @staticmethod
-    def tooltype_key(sname: str,doctype:"Credoctypes") -> str:
+    def tooltype_key(sname: str, doctype: "Credoctypes") -> str:
         "returns <doctype>:<name>:tooltype"
         return "%s%s%s%s%s" % (
             doctype.value,
@@ -48,8 +53,9 @@ class ExportFormat(Enum):
             ExportFormat.separator.value,
             ExportFormat.tooltype.value,
         )
+
     @staticmethod
-    def description_key(sname: str,doctype:"Credoctypes") -> str:
+    def description_key(sname: str, doctype: "Credoctypes") -> str:
         "returns <doctype>:<name>:description"
         return "%s%s%s%s%s" % (
             doctype.value,
@@ -58,8 +64,9 @@ class ExportFormat(Enum):
             ExportFormat.separator.value,
             ExportFormat.description.value,
         )
+
     @staticmethod
-    def section_key(sname: str,doctype:"Credoctypes") -> str:
+    def section_key(sname: str, doctype: "Credoctypes") -> str:
         "returns <doctype>:<name>:section"
         return "%s%s%s%s%s" % (
             doctype.value,
@@ -70,7 +77,7 @@ class ExportFormat(Enum):
         )
 
     @staticmethod
-    def subsection_key(sname: str, doctype:"Credoctypes") -> str:
+    def subsection_key(sname: str, doctype: "Credoctypes") -> str:
         "returns <doctype>:<sname>:subsection"
         return "%s%s%s%s%s" % (
             doctype.value,
@@ -81,7 +88,7 @@ class ExportFormat(Enum):
         )
 
     @staticmethod
-    def hyperlink_key(sname: str,doctype:"Credoctypes") -> str:
+    def hyperlink_key(sname: str, doctype: "Credoctypes") -> str:
         "returns <sname>:hyperlink"
         return "%s%s%s%s%s" % (
             doctype.value,
@@ -92,7 +99,7 @@ class ExportFormat(Enum):
         )
 
     @staticmethod
-    def link_type_key(sname: str,doctype:"Credoctypes") -> str:
+    def link_type_key(sname: str, doctype: "Credoctypes") -> str:
         "returns <sname>:link_type"
         return "%s%s%s%s%s" % (
             doctype.value,
@@ -172,7 +179,7 @@ class Credoctypes(str, Enum, metaclass=EnumMetaWithContains):
     Code = "Code"
 
     @staticmethod
-    def from_str(typ:str)->"Credoctypes":
+    def from_str(typ: str) -> "Credoctypes":
         typ = [t for t in Credoctypes if t in typ]
         if not typ:
             return None
@@ -211,7 +218,7 @@ class ToolTypes(str, Enum, metaclass=EnumMetaWithContains):
     Unknown = "Unknown"
 
     @staticmethod
-    def from_str(tooltype:str)->Optional["ToolTypes"]:
+    def from_str(tooltype: str) -> Optional["ToolTypes"]:
         if tooltype:
             ttype = [t for t in ToolTypes if t.value.lower() == tooltype.lower()]
             if ttype:
