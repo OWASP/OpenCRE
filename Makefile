@@ -46,4 +46,8 @@ clean:
 	find . -type f -name '*.log' -delete
 	find . -type f -name '*.orig' -delete
 
+migrate-upgrade:
+	FLASK_APP=cre.py flask db upgrade  
+migrate-downgrade:
+	FLASK_APP=cre.py flask db downgrade
 all: clean lint test dev dev-run

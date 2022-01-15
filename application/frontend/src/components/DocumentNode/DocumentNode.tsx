@@ -101,7 +101,6 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({ node, linkType, 
 
     </>
   }
-// TODO (spyros) : bug, this doesn't work well with nested view as it removes nodes prematurely, instead write a hook to custom-iterate through nodes and return a new structure with filtering applied
 
   const NestedView = () => {
     return <>
@@ -120,7 +119,7 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({ node, linkType, 
             return (
               <div className="document-node__link-type-container" key={type}>
                 <div>
-                  <span > {usedNode.name} - {usedNode.section} </span>
+                  <span >{usedNode.doctype}: {usedNode.name} - {usedNode.section} </span>
                   <b> {DOCUMENT_TYPE_NAMES[type]}</b>:
                 </div>
                 <div>
@@ -130,7 +129,6 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({ node, linkType, 
                           <DocumentNode node={link.document} linkType={type} hasLinktypeRelatedParent={isNestedInRelated()} key={i} />
                           <FilterButton document={link.document}/>
                         </div> 
-
                     )
                     }
                   </div>

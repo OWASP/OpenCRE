@@ -51,7 +51,7 @@ class Node(BaseModel):  # type: ignore
             ntype,
             description,
             version,
-            name="standard_section",
+            name="node_section",
         ),
     )
 
