@@ -51,7 +51,7 @@ class Node(BaseModel):  # type: ignore
             ntype,
             description,
             version,
-            name="node_section",
+            name="uq_node",
         ),
     )
 
@@ -73,19 +73,33 @@ class CRE(BaseModel):  # type: ignore
 
 class InternalLinks(BaseModel):  # type: ignore
     # model cre-groups linking cres
-    __tablename__ = "crelinks"
+    __tablename__ = "cre_links"
     type = sqla.Column(sqla.String, default="SAME")
 
     group = sqla.Column(sqla.Integer, sqla.ForeignKey("cre.id"), primary_key=True)
     cre = sqla.Column(sqla.Integer, sqla.ForeignKey("cre.id"), primary_key=True)
+    __table_args__ = (
+        sqla.UniqueConstraint(
+            group,
+            cre,
+            name="uq_pair",
+        ),
+    )
 
 
 class Links(BaseModel):  # type: ignore
 
-    __tablename__ = "links"
+    __tablename__ = "cre_node_links"
     type = sqla.Column(sqla.String, default="SAM")
     cre = sqla.Column(sqla.Integer, sqla.ForeignKey("cre.id"), primary_key=True)
     node = sqla.Column(sqla.Integer, sqla.ForeignKey("node.id"), primary_key=True)
+    __table_args__ = (
+        sqla.UniqueConstraint(
+            cre,
+            node,
+            name="uq_pair",
+        ),
+    )
 
 
 class Node_collection:

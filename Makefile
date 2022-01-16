@@ -47,7 +47,11 @@ clean:
 	find . -type f -name '*.orig' -delete
 
 migrate-upgrade:
-	FLASK_APP=cre.py flask db upgrade  
+	[ -d "./venv" ] && . ./venv/bin/activate
+	export FLASK_APP=$(CURDIR)/cre.py
+	flask db upgrade  
 migrate-downgrade:
-	FLASK_APP=cre.py flask db downgrade
+	[ -d "./venv" ] && . ./venv/bin/activate
+	export FLASK_APP=$(CURDIR)/cre.py
+	flask db downgrade
 all: clean lint test dev dev-run
