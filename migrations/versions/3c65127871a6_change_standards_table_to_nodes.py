@@ -34,7 +34,7 @@ def migrate_data_between_standards_and_node(new_table, old_table_name):
                 "section": dat[2],
                 "subsection": dat[3],
                 "link": dat[4],
-                "ntype":"Standard",
+                "ntype": "Standard",
             }
             for dat in standards_data
         ]
