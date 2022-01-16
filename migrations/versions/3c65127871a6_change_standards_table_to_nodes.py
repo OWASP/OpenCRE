@@ -26,16 +26,29 @@ def migrate_data_between_standards_and_node(new_table, old_table_name):
     standards_data = connection.execute(
         f"Select id,name,section,subsection,link from {old_table_name}"
     ).fetchall()
-    nodes = [
-        {
-            "id": dat[0],
-            "name": dat[1],
-            "section": dat[2],
-            "subsection": dat[3],
-            "link": dat[4],
-        }
-        for dat in standards_data
-    ]
+    if old_table_name == "standard":
+        nodes = [
+            {
+                "id": dat[0],
+                "name": dat[1],
+                "section": dat[2],
+                "subsection": dat[3],
+                "link": dat[4],
+                "ntype":"Standard",
+            }
+            for dat in standards_data
+        ]
+    else:
+        nodes = [
+            {
+                "id": dat[0],
+                "name": dat[1],
+                "section": dat[2],
+                "subsection": dat[3],
+                "link": dat[4],
+            }
+            for dat in standards_data
+        ]
     op.bulk_insert(new_table, nodes)
 
 
@@ -70,7 +83,7 @@ def upgrade():
         sa.Column("tags", sa.String(), nullable=True),
         sa.Column("version", sa.String(), nullable=True),
         sa.Column("description", sa.String(), nullable=True),
-        sa.Column("ntype", sa.String(), nullable=True),
+        sa.Column("ntype", sa.String(), nullable=False),
         sa.Column("link", sa.String(), nullable=True),
         sa.PrimaryKeyConstraint("id", name=op.f("pk_node")),
         sa.UniqueConstraint(

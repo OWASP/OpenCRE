@@ -26,7 +26,7 @@ const linkTypesExcludedWhenNestingRelatedTo = [TYPE_RELATED, TYPE_IS_PART_OF, TY
 
 export const DocumentNode: FunctionComponent<DocumentNode> = ({ node, linkType, hasLinktypeRelatedParent }) => {
   const [expanded, setExpanded] = useState<boolean>(false);
-  const isStandard = node.doctype === 'Standard';
+  const isStandard = node.doctype in ["Tool","Code", "Standard"];
   const { apiUrl } = useEnvironment();
   const [nestedNode, setNestedNode] = useState<Document>();
   const [loading, setLoading] = useState<boolean>(false);
