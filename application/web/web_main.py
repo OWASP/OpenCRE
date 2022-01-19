@@ -167,8 +167,6 @@ def text_search() -> Any:
 
 @app.errorhandler(404)
 def page_not_found(e) -> Any:
-    # Even though Flask logs it by default,
-    # I prefer to have a logger dedicated to 404
     return "Resource Not found", 404
 
 

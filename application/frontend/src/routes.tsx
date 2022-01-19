@@ -13,7 +13,7 @@ export interface IRoute {
 }
 
 import {
-  INDEX, STANDARD, SECTION, CRE, GRAPH, SEARCH, DEEPLINK,
+  INDEX, STANDARD, SECTION, CRE, GRAPH, SEARCH, DEEPLINK
 } from './const';
 
 export const ROUTES: IRoute[] = [
@@ -24,13 +24,13 @@ export const ROUTES: IRoute[] = [
     showHeader: false,
   },
   {
-    path: `${STANDARD}/:id${SECTION}/:section`,
+    path: `/node${STANDARD}/:id${SECTION}/:section`,
     component: StandardSection,
     showHeader: true,
     showFilter: true,
   },
   {
-    path: `${STANDARD}/:id`,
+    path: `/node/:type/:id`,
     component: Standard,
     showHeader: true,
     showFilter: true,
@@ -54,9 +54,16 @@ export const ROUTES: IRoute[] = [
     showFilter: true,
   },
   {
-    path: `${DEEPLINK}/:standardName`,
+    path: `${DEEPLINK}/node/:type/:nodeName`,
     component: Deeplink,
     showHeader: true,
     showFilter: false,
-  }
+  },
+  {
+    path: `${DEEPLINK}/:nodeName`,
+    component: Deeplink,
+    showHeader: true,
+    showFilter: false,
+  },
+
 ];

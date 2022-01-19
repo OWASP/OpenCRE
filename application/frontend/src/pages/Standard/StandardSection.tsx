@@ -47,7 +47,7 @@ export const StandardSection = () => {
 
   return (
     <>
-      <div className="standard-page">
+      <div className="standard-page section-page">
         <h4 className="standard-page__heading">{id}</h4>
         <h5 className="standard-page__sub-heading">Section: {document?.section}</h5>
         { document && document.hyperlink &&
@@ -64,7 +64,7 @@ export const StandardSection = () => {
               Object.entries(linksByType).map(([type, links]) => (
                 <div className="cre-page__links" key={type}>
                   <div className="cre-page__links-header">
-                    {document.name} - {document.section} <b>{DOCUMENT_TYPE_NAMES[type]}</b>:
+                    {document.doctype}: {document.name} - {document.section} <b>{DOCUMENT_TYPE_NAMES[type]}</b>:
                   </div>
                   {links.map((link, i) => (
                     <div key={i} className="accordion ui fluid styled cre-page__links-container">
