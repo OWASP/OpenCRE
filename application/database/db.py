@@ -360,7 +360,7 @@ class Node_collection:
                 nodes.append(node)
             return total_pages, nodes, dbnodes
         else:
-            logger.warning("Node %s does not exist in the db" % (name))
+            logger.warning(f"Node {name} of type {ntype} does not exist in the db")
             return None, None, None
 
     # TODO(spyros): merge with above and make "paginate" a boolean switch
@@ -411,7 +411,7 @@ class Node_collection:
                 nodes.append(node)
             return nodes
         else:
-            logger.warning(f"Node {name} does not exist in the db")
+            logger.warning(f"Node {name} of type {ntype} does not exist in the db")
 
             return None
 
