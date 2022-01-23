@@ -8,9 +8,9 @@ import './SearchBar.scss'
 
 const SEARCH_TYPES = {
   topicText: { key: 'topicText', text: 'Topic text', value: 'topicText', path: SEARCH },
-  standard: { key: 'standard', text: 'Standard', value: 'standard', path: '/node/'+STANDARD },
-  tool: { key: 'tool', text: 'tool', value: 'tool', path: '/node/'+TOOL },
-  code: { key: 'code', text: 'code', value: 'code', path: '/node/'+CODE },
+  standard: { key: 'standard', text: 'Standard', value: 'standard', path: '/node'+STANDARD },
+  tool: { key: 'tool', text: 'tool', value: 'tool', path: '/node'+TOOL },
+  code: { key: 'code', text: 'code', value: 'code', path: '/node'+CODE },
   creId: { key: 'creId', text: 'CRE ID', value: 'creId', path: CRE  },
 };
 

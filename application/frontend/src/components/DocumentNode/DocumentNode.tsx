@@ -37,7 +37,6 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({ node, linkType, 
   var usedNode = applyFilters(nestedNode || node);
   const hasExternalLink = Boolean(usedNode.hyperlink);
   const linksByType = useMemo(() => groupLinksByType(usedNode), [usedNode]);
-
   let currentUrlParams = new URLSearchParams(window.location.search);
 
   useEffect(() => {
@@ -126,7 +125,7 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({ node, linkType, 
                   <div className="accordion ui fluid styled f0">
                     {links.map((link, i) =>
                         <div key={Math.random()}>
-                          <DocumentNode node={link.document} linkType={type} hasLinktypeRelatedParent={isNestedInRelated()} key={i} />
+                          <DocumentNode node={link.document} linkType={type} hasLinktypeRelatedParent={isNestedInRelated()} key={Math.random()} />
                           <FilterButton document={link.document}/>
                         </div> 
                     )
