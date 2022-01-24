@@ -23,7 +23,6 @@ test:
 	export FLASK_APP=$(CURDIR)/cre.py
 	flask routes
 	flask test
-	yarn test --passWithNoTests
 
 cover:
 	. ./venv/bin/activate && FLASK_APP=cre.py FLASK_CONFIG=testing flask test --cover
