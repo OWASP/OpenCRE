@@ -134,17 +134,21 @@ describe("App.js", () => {
     });
 
     it("can filter", async ()=>{
-      await page.goto("http://127.0.0.1:5000/cre/558-807?applyFilters=true&filters=ASVS");
-      await page.waitForSelector(".content",{ timeout: 1000 });
+      await page.goto("http://127.0.0.1:5000/cre/558-807?applyFilters=true&filters=asvs");
       await page.waitForSelector(".cre-page__links-container",{ timeout: 2000 });
-      const text = await page.$$(".content", (e) => e.textContent);
-      expect(text).not.toContain('Document could not be loaded')
-      
       // Get inner text
-      const innerText = await page.evaluate(() => (document.querySelector('.content')as HTMLElement)?.innerText);
+      const innerText = await page.evaluate(() => (document.querySelector('.cre-page__links-container')as HTMLElement)?.innerText);
       expect(innerText).toContain("ASVS")
       expect(innerText).toContain("CRE")
       expect(innerText).not.toContain("NIST")
+
+      // ensure case insensitive filtering
+      await page.goto("http://127.0.0.1:5000/cre/558-807?applyFilters=true&filters=ASVS");
+      await page.waitForSelector(".cre-page__links-container",{ timeout: 2000 });
+      const intxt = await page.evaluate(() => (document.querySelector('.cre-page__links-container')as HTMLElement)?.innerText);
+      expect(intxt).toContain("ASVS")
+      expect(intxt).toContain("CRE")
+      expect(intxt).not.toContain("NIST")
 
       const clearFilters = await page.evaluate(() => (document.querySelector('#clearFilterButton')as HTMLElement)?.innerText);
       expect(clearFilters).toContain("Clear Filters")
