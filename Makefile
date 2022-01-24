@@ -9,7 +9,7 @@ prod-run:
 dev-run:
 	. ./venv/bin/activate && FLASK_APP=cre.py FLASK_CONFIG=development flask run
 e2e:
-	# yarn build
+	yarn build
 	[ -d "./venv" ] && . ./venv/bin/activate
 	export FLASK_APP=$(CURDIR)/cre.py
 	export FLASK_CONFIG=development
