@@ -141,12 +141,12 @@ describe("App.js", () => {
       expect(text).not.toContain('Document could not be loaded')
       
       // Get inner text
-      const innerText = await page.evaluate(() => document.querySelector('.content').innerText);
+      const innerText = await page.evaluate(() => (document.querySelector('.content')as HTMLElement)?.innerText);
       expect(innerText).toContain("ASVS")
       expect(innerText).toContain("CRE")
       expect(innerText).not.toContain("NIST")
 
-      const clearFilters = await page.evaluate(() => document.querySelector('#clearFilterButton').innerText);
+      const clearFilters = await page.evaluate(() => (document.querySelector('#clearFilterButton')as HTMLElement)?.innerText);
       expect(clearFilters).toContain("Clear Filters")
 
     })

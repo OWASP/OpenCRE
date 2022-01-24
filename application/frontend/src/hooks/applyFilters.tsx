@@ -29,10 +29,8 @@ export const applyFilters = (node:Document): Document => {
   if (!currentUrlParams.has("filters") || !doFilter){
     return node
   }
-  let filters = currentUrlParams.getAll("filters")
+  let filters = currentUrlParams.getAll("filters").map(v=>v.toLowerCase())
   nodes.forEach(node => {
-
-
     const newNode = filterLinks(node.document,filters)
     if (newNode){
       const newDocNode: LinkedDocument = { document: newNode, ltype: node.ltype}
