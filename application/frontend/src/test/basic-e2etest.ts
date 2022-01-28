@@ -35,7 +35,7 @@ describe("App.js", () => {
       expect(text).toContain('Document could not be loaded')
     });
 
-    it("can search for cryptograph using the free text method and it returns both Nodes and CRES", async () => {
+    it("can search for cryptography using the free text method and it returns both Nodes and CRES", async () => {
       await page.goto("http://127.0.0.1:5000");
       await page.waitForSelector("#SearchBar",{ timeout: 1000 });
       await page.waitForSelector("#SearchButton",{ timeout: 1000 });
