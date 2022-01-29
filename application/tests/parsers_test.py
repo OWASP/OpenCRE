@@ -6,7 +6,7 @@ from application.defs import cre_defs as defs
 from application.utils.parsers import parse_export_format
 from application.utils.parsers import (
     parse_hierarchical_export_format,
-    parse_uknown_key_val_spreadsheet,
+    parse_uknown_key_val_standards_spreadsheet,
     parse_v0_standards,
     parse_v1_standards,
 )
@@ -34,18 +34,17 @@ class TestParsers(unittest.TestCase):
                 "CRE:description": "C1 description",
                 "CRE:id": "1",
                 "CRE:name": "C1",
-                "S1:hyperlink": "https://example.com/S1",
-                "S1:link_type": "Linked To",
-                "S1:section": "SE1",
-                "S1:subsection": "SBE1",
-                "S2:hyperlink": "",
-                "S2:link_type": "",
-                "S2:section": "",
-                "S2:subsection": "",
-                "S3:hyperlink": "",
-                "S3:link_type": "",
-                "S3:section": "",
-                "S3:subsection": "",
+                "Standard:S1:hyperlink": "https://example.com/S1",
+                "Standard:S1:link_type": "Linked To",
+                "Standard:S1:section": "SE1",
+                "Standard:S1:subsection": "SBE1",
+                "Tool:S2:hyperlink": "",
+                "Tool:S2:link_type": "",
+                "Tool:S2:description": "",
+                "Tool:S2:ToolType": "",
+                "Code:S3:hyperlink": "",
+                "Code:S3:link_type": "",
+                "Code:S3:description": "",
                 "Linked_CRE_0:id": "",
                 "Linked_CRE_0:link_type": "",
                 "Linked_CRE_0:name": "",
@@ -69,18 +68,17 @@ class TestParsers(unittest.TestCase):
                 "CRE:description": "C2 description",
                 "CRE:id": "2",
                 "CRE:name": "C2",
-                "S1:hyperlink": "",
-                "S1:link_type": "",
-                "S1:section": "",
-                "S1:subsection": "",
-                "S2:hyperlink": "",
-                "S2:link_type": "",
-                "S2:section": "",
-                "S2:subsection": "",
-                "S3:hyperlink": "",
-                "S3:link_type": "",
-                "S3:section": "",
-                "S3:subsection": "",
+                "Standard:S1:hyperlink": "",
+                "Standard:S1:link_type": "",
+                "Standard:S1:section": "",
+                "Standard:S1:subsection": "",
+                "Tool:S2:hyperlink": "",
+                "Tool:S2:link_type": "",
+                "Tool:S2:description": "",
+                "Tool:S2:ToolType": "",
+                "Code:S3:hyperlink": "",
+                "Code:S3:link_type": "",
+                "Code:S3:description": "",
                 "Linked_CRE_0:id": "3",
                 "Linked_CRE_0:link_type": "Contains",
                 "Linked_CRE_0:name": "C3",
@@ -104,18 +102,17 @@ class TestParsers(unittest.TestCase):
                 "CRE:description": "C3 description",
                 "CRE:id": "3",
                 "CRE:name": "C3",
-                "S1:hyperlink": "",
-                "S1:link_type": "",
-                "S1:section": "",
-                "S1:subsection": "",
-                "S2:hyperlink": "",
-                "S2:link_type": "",
-                "S2:section": "",
-                "S2:subsection": "",
-                "S3:hyperlink": "https://example.com/S3",
-                "S3:link_type": "Linked To",
-                "S3:section": "SE3",
-                "S3:subsection": "SBE3",
+                "Standard:S1:hyperlink": "",
+                "Standard:S1:link_type": "",
+                "Standard:S1:section": "",
+                "Standard:S1:subsection": "",
+                "Tool:S2:hyperlink": "",
+                "Tool:S2:link_type": "",
+                "Tool:S2:description": "",
+                "Tool:S2:ToolType": "",
+                "Code:S3:hyperlink": "https://example.com/S3",
+                "Code:S3:link_type": "Linked To",
+                "Code:S3:description": "SE3",
                 "Linked_CRE_0:id": "2",
                 "Linked_CRE_0:link_type": "Is Part Of",
                 "Linked_CRE_0:name": "C2",
@@ -139,18 +136,17 @@ class TestParsers(unittest.TestCase):
                 "CRE:description": "C5 description",
                 "CRE:id": "5",
                 "CRE:name": "C5",
-                "S1:hyperlink": "https://example.com/S1",
-                "S1:link_type": "Linked To",
-                "S1:section": "SE1",
-                "S1:subsection": "SBE1",
-                "S2:hyperlink": "",
-                "S2:link_type": "",
-                "S2:section": "",
-                "S2:subsection": "",
-                "S3:hyperlink": "",
-                "S3:link_type": "",
-                "S3:section": "",
-                "S3:subsection": "",
+                "Standard:S1:hyperlink": "https://example.com/S1",
+                "Standard:S1:link_type": "Linked To",
+                "Standard:S1:section": "SE1",
+                "Standard:S1:subsection": "SBE1",
+                "Tool:S2:hyperlink": "",
+                "Tool:S2:link_type": "",
+                "Tool:S2:description": "",
+                "Tool:S2:ToolType": "",
+                "Code:S3:hyperlink": "",
+                "Code:S3:link_type": "",
+                "Code:S3:description": "",
                 "Linked_CRE_0:id": "",
                 "Linked_CRE_0:link_type": "",
                 "Linked_CRE_0:name": "",
@@ -174,18 +170,17 @@ class TestParsers(unittest.TestCase):
                 "CRE:description": "C5 description",
                 "CRE:id": "5",
                 "CRE:name": "C5",
-                "S1:hyperlink": "https://example.com/S1",
-                "S1:link_type": "Linked To",
-                "S1:section": "SE1",
-                "S1:subsection": "SBE11",
-                "S2:hyperlink": "",
-                "S2:link_type": "",
-                "S2:section": "",
-                "S2:subsection": "",
-                "S3:hyperlink": "",
-                "S3:link_type": "",
-                "S3:section": "",
-                "S3:subsection": "",
+                "Standard:S1:hyperlink": "https://example.com/S1",
+                "Standard:S1:link_type": "Linked To",
+                "Standard:S1:section": "SE1",
+                "Standard:S1:subsection": "SBE11",
+                "Tool:S2:hyperlink": "",
+                "Tool:S2:link_type": "",
+                "Tool:S2:description": "",
+                "Tool:S2:ToolType": "",
+                "Code:S3:hyperlink": "",
+                "Code:S3:link_type": "",
+                "Code:S3:description": "",
                 "Linked_CRE_0:id": "",
                 "Linked_CRE_0:link_type": "",
                 "Linked_CRE_0:name": "",
@@ -209,18 +204,17 @@ class TestParsers(unittest.TestCase):
                 "CRE:description": "C6 description",
                 "CRE:id": "6",
                 "CRE:name": "C6",
-                "S1:hyperlink": "https://example.com/S1",
-                "S1:link_type": "Linked To",
-                "S1:section": "SE1",
-                "S1:subsection": "SBE11",
-                "S2:hyperlink": "https://example.com/S2",
-                "S2:link_type": "Linked To",
-                "S2:section": "SE2",
-                "S2:subsection": "SBE22",
-                "S3:hyperlink": "",
-                "S3:link_type": "",
-                "S3:section": "",
-                "S3:subsection": "",
+                "Standard:S1:hyperlink": "https://example.com/S1",
+                "Standard:S1:link_type": "Linked To",
+                "Standard:S1:section": "SE1",
+                "Standard:S1:subsection": "SBE11",
+                "Tool:S2:hyperlink": "https://example.com/S2",
+                "Tool:S2:link_type": "Linked To",
+                "Tool:S2:description": "SE2",
+                "Tool:S2:ToolType": "Offensive",
+                "Code:S3:hyperlink": "",
+                "Code:S3:link_type": "",
+                "Code:S3:description": "",
                 "Linked_CRE_0:id": "7",
                 "Linked_CRE_0:link_type": "Contains",
                 "Linked_CRE_0:name": "C7",
@@ -244,18 +238,17 @@ class TestParsers(unittest.TestCase):
                 "CRE:description": "",
                 "CRE:id": "",
                 "CRE:name": "",
-                "S1:hyperlink": "",
-                "S1:link_type": "",
-                "S1:section": "",
-                "S1:subsection": "",
+                "Standard:S1:hyperlink": "",
+                "Standard:S1:link_type": "",
+                "Standard:S1:section": "",
+                "Standard:S1:subsection": "",
                 "S2:hyperlink": "",
                 "S2:link_type": "",
                 "S2:section": "",
                 "S2:subsection": "",
-                "S3:hyperlink": "",
-                "S3:link_type": "",
-                "S3:section": "",
-                "S3:subsection": "",
+                "Code:S3:hyperlink": "",
+                "Code:S3:link_type": "",
+                "Code:S3:description": "",
                 "Linked_CRE_0:id": "",
                 "Linked_CRE_0:link_type": "",
                 "Linked_CRE_0:name": "",
@@ -279,18 +272,17 @@ class TestParsers(unittest.TestCase):
                 "CRE:description": "",
                 "CRE:id": "",
                 "CRE:name": "",
-                "S1:hyperlink": "",
-                "S1:link_type": "",
-                "S1:section": "",
-                "S1:subsection": "",
+                "Standard:S1:hyperlink": "",
+                "Standard:S1:link_type": "",
+                "Standard:S1:section": "",
+                "Standard:S1:subsection": "",
                 "S2:hyperlink": "",
                 "S2:link_type": "",
                 "S2:section": "",
                 "S2:subsection": "",
-                "S3:hyperlink": "",
-                "S3:link_type": "",
-                "S3:section": "",
-                "S3:subsection": "",
+                "Code:S3:hyperlink": "",
+                "Code:S3:link_type": "",
+                "Code:S3:description": "",
                 "Linked_CRE_0:id": "",
                 "Linked_CRE_0:link_type": "",
                 "Linked_CRE_0:name": "",
@@ -353,10 +345,9 @@ class TestParsers(unittest.TestCase):
                     ),
                     defs.Link(
                         ltype=defs.LinkTypes.LinkedTo,
-                        document=defs.Standard(
+                        document=defs.Code(
                             name="S3",
-                            section="SE3",
-                            subsection="SBE3",
+                            description="SE3",
                             hyperlink="https://example.com/S3",
                         ),
                     ),
@@ -394,10 +385,10 @@ class TestParsers(unittest.TestCase):
                 links=[
                     defs.Link(
                         ltype=defs.LinkTypes.LinkedTo,
-                        document=defs.Standard(
+                        document=defs.Tool(
                             name="S2",
-                            section="SE2",
-                            subsection="SBE22",
+                            tooltype=defs.ToolTypes.Offensive,
+                            description="SE2",
                             hyperlink="https://example.com/S2",
                         ),
                     ),
@@ -467,17 +458,14 @@ class TestParsers(unittest.TestCase):
         result = parse_export_format(input_data)
 
         for key, val in result.items():
-            # assert equal links, lists in python aren't ordered so normal equality doesn't work
-            self.assertEqual(
-                collections.Counter(expected[key].links), collections.Counter(val.links)
-            )
+            self.assertEqual(expected[key], val)
 
             expected[key].links = []
             val.links = []
 
             self.assertDictEqual(val.todict(), expected[key].todict())
 
-    def test_parse_uknown_key_val_spreadsheet(self) -> None:
+    def test_parse_uknown_key_val_standards_spreadsheet(self) -> None:
         # OrderedDict only necessary for testing  so we can predict the root Standard, normally it wouldn't matter
         input_data = [
             collections.OrderedDict(
@@ -563,9 +551,9 @@ class TestParsers(unittest.TestCase):
             )
         }
         self.maxDiff = None
-        actual = parse_uknown_key_val_spreadsheet(input_data)
+        actual = parse_uknown_key_val_standards_spreadsheet(input_data)
 
-        self.assertEqual(expected, actual)
+        self.assertCountEqual(expected, actual)
 
     def test_parse_v0_standards(self) -> None:
         input_data = [
@@ -1504,23 +1492,10 @@ class TestParsers(unittest.TestCase):
             "Logging and Error handling": clogging,
         }
 
-        self.maxDiff = None
         output = parse_hierarchical_export_format(data)
+        self.maxDiff = None
         for k, v in expected.items():
-            try:
-
-                self.assertEqual(
-                    collections.Counter(output[k].links), collections.Counter(v.links)
-                )
-                self.assertEqual(output[k], v)
-            except Exception as e:
-                print("*" * 44 + " Actual " + "*" * 44)
-                pprint(output[k].todict())
-                print("*" * 44 + " Expected " + "*" * 44)
-                pprint(v.todict())
-                print("*" * 88)
-                print("*" * 88)
-                raise e
+            self.assertEqual(output[k], v)
 
 
 if __name__ == "__main__":

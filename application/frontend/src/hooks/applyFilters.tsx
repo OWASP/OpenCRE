@@ -8,11 +8,11 @@ const filterLinks = (document:Document, filters:string[]): Document | undefined 
   document?.links?.forEach(link => {
     const newDoc: Document | undefined = filterLinks(link.document, filters)
     if (newDoc) {
-      const ldoc: LinkedDocument = { document: newDoc, type: link.type }
+      const ldoc: LinkedDocument = { document: newDoc, ltype: link.ltype }
       links.push(ldoc)
     }
   })
-  if (links.length > 0 || filters?.includes(identifier) || document.doctype=="CRE") {
+  if (links.length > 0 || filters?.includes(identifier.toLowerCase()) || document.doctype=="CRE") {
     return {
       doctype: document.doctype, name: document.name, description: document.description, hyperlink: document.hyperlink, id: document.id, section: document.section,
       subsection: document.subsection, tags: document.tags,
@@ -29,13 +29,11 @@ export const applyFilters = (node:Document): Document => {
   if (!currentUrlParams.has("filters") || !doFilter){
     return node
   }
-  let filters = currentUrlParams.getAll("filters")
+  let filters = currentUrlParams.getAll("filters").map(v=>v.toLowerCase())
   nodes.forEach(node => {
-
-
     const newNode = filterLinks(node.document,filters)
     if (newNode){
-      const newDocNode: LinkedDocument = { document: newNode, type: node.type}
+      const newDocNode: LinkedDocument = { document: newNode, ltype: node.ltype}
       filteredNodes.push(newDocNode)
     }
   });

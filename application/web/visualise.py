@@ -1,5 +1,5 @@
 # type: ignore #unused file
-from application.database import Standard_collection, Links
+from application.database import Node_collection, Links
 from application.defs.cre_defs import Standard, CRE
 import json
 
@@ -8,7 +8,7 @@ def export_json():
     """exports graph to json object, can be used for javascript visualisation"""
     graph = {"nodes": {"cres": [], "standards": []}, "edges": []}
 
-    collection = Standard_collection(cache=True, cache_file="standards_cache.sqlite")
+    collection = Node_collection(cache=True, cache_file="standards_cache.sqlite")
     cres = collection.session.query(CRE).all()
     for cre in cres:
         graph["nodes"]["cres"].append(

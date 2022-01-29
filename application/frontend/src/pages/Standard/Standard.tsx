@@ -2,7 +2,7 @@ import './standard.scss';
 
 import React, { useEffect, useState } from 'react';
 import { useQuery } from 'react-query';
-import { useParams } from 'react-router-dom';
+import { useParams, useLocation } from 'react-router-dom';
 import { Pagination } from 'semantic-ui-react';
 
 import { DocumentNode } from '../../components/DocumentNode';
@@ -11,14 +11,14 @@ import { useEnvironment } from '../../hooks';
 import { Document } from '../../types';
 
 export const Standard = () => {
-  const { id } = useParams();
+  let { type, id } = useParams();
   const { apiUrl } = useEnvironment();
   const [page, setPage] = useState<number>(1);
   const [loading, setLoading] = useState<boolean>(false);
-
+  if (!type) { type = "standard" }
   const { error, data, refetch } = useQuery<{ standards: Document[]; total_pages: number; page: number }, string>(
     'standard',
-    () => fetch(`${apiUrl}/standard/${id}?page=${page}`).then((res) => res.json()),
+    () => fetch(`${apiUrl}/${type}/${id}?page=${page}`).then((res) => res.json()),
     {
       retry: false,
       enabled: false,
@@ -34,7 +34,8 @@ export const Standard = () => {
     refetch();
   }, [page, id]);
 
-  const documents = data ?.standards || [];
+  const documents = data?.standards || [];
+
 
   return (
     <>
@@ -45,7 +46,7 @@ export const Standard = () => {
           !error &&
           documents.map((standard, i) => (
             <div key={i} className="accordion ui fluid styled standard-page__links-container">
-              <DocumentNode node={standard} linkType={"Standard"}/>
+              <DocumentNode node={standard} linkType={"Standard"} />
             </div>
           ))}
         {data && data.total_pages > 0 && (

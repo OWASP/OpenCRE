@@ -8,16 +8,24 @@ prod-run:
 
 dev-run:
 	. ./venv/bin/activate && FLASK_APP=cre.py FLASK_CONFIG=development flask run
-
+e2e:
+	yarn build
+	[ -d "./venv" ] && . ./venv/bin/activate
+	export FLASK_APP=$(CURDIR)/cre.py
+	export FLASK_CONFIG=development
+	fFLASK_CONFIG=development flask run&
+	
+	yarn test:e2e
+	killall yarn
+	killall flask
 test:
 	[ -d "./venv" ] && . ./venv/bin/activate
 	export FLASK_APP=$(CURDIR)/cre.py
 	flask routes
 	flask test
-	yarn test --passWithNoTests
 
 cover:
-	. ./venv/bin/activate && FLASK_APP=cre.py FLASK_CONFIG=testing flask test --coverage
+	. ./venv/bin/activate && FLASK_APP=cre.py FLASK_CONFIG=testing flask test --cover
 
 install-deps:
 	[ -d "./venv" ] && . ./venv/bin/activate 
@@ -46,4 +54,12 @@ clean:
 	find . -type f -name '*.log' -delete
 	find . -type f -name '*.orig' -delete
 
+migrate-upgrade:
+	[ -d "./venv" ] && . ./venv/bin/activate
+	export FLASK_APP=$(CURDIR)/cre.py
+	flask db upgrade  
+migrate-downgrade:
+	[ -d "./venv" ] && . ./venv/bin/activate
+	export FLASK_APP=$(CURDIR)/cre.py
+	flask db downgrade
 all: clean lint test dev dev-run

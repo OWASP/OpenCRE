@@ -2,7 +2,7 @@ import logging
 import re
 from copy import copy
 from pprint import pprint
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, cast
 
 from application.defs import cre_defs as defs
 
@@ -37,33 +37,57 @@ def recurse_print_links(cre: defs.Document) -> None:
         recurse_print_links(link.document)
 
 
-def get_linked_standards(mapping: Dict[str, str]) -> List[defs.Link]:
-    standards = []
+def get_linked_nodes(mapping: Dict[str, str]) -> List[defs.Link]:
+    nodes = []
     names = set(
         [
-            k.split(defs.ExportFormat.separator.value)[0]
+            k.split(defs.ExportFormat.separator.value)[1]
             for k, v in mapping.items()
-            if not is_empty(v) and defs.ExportFormat.section_key("") in k
+            if not is_empty(v)
+            and "CRE" not in k.upper()
+            and len(k.split(defs.ExportFormat.separator.value)) >= 3
         ]
     )
 
-    for sname in names:
-        name = sname
-        section = mapping.pop(defs.ExportFormat.section_key(name))
-        subsection = mapping.pop(defs.ExportFormat.subsection_key(name))
-        hyperlink = mapping.pop(defs.ExportFormat.hyperlink_key(name))
-        link_type = mapping.pop(defs.ExportFormat.link_type_key(name))
-        standard = defs.Standard(
-            name=sname, section=section, subsection=subsection, hyperlink=hyperlink
+    for name in names:
+        type = defs.ExportFormat.get_doctype(
+            [m for m in mapping.keys() if name in m][0]
         )
+        if not type:
+            raise ValueError(
+                f"Mapping of {name} not in format of <type>:{name}:<attribute>"
+            )
+        section = mapping.get(defs.ExportFormat.section_key(name, type))
+        subsection = mapping.get(defs.ExportFormat.subsection_key(name, type))
+        hyperlink = mapping.get(defs.ExportFormat.hyperlink_key(name, type))
+        link_type = mapping.get(defs.ExportFormat.link_type_key(name, type))
+        tooltype = defs.ToolTypes.from_str(
+            mapping.get(defs.ExportFormat.tooltype_key(name, type))
+        )
+        description = mapping.get(defs.ExportFormat.description_key(name, type))
+        node = None
+        if type == defs.Credoctypes.Standard:
+            node = defs.Standard(
+                name=name, section=section, subsection=subsection, hyperlink=hyperlink
+            )
+        elif type == defs.Credoctypes.Code:
+            node = defs.Code(description=description, hyperlink=hyperlink, name=name)
+        elif type == defs.Credoctypes.Tool:
+            node = defs.Tool(
+                tooltype=tooltype,
+                name=name,
+                description=description,
+                hyperlink=hyperlink,
+            )
+
         lt: defs.LinkTypes
         if not is_empty(link_type):
             lt = defs.LinkTypes.from_str(link_type)
         else:
             lt = defs.LinkTypes.LinkedTo
-        standards.append(defs.Link(document=standard, ltype=lt))
+        nodes.append(defs.Link(document=node, ltype=lt))
 
-    return standards
+    return nodes
 
 
 def update_cre_in_links(
@@ -89,7 +113,7 @@ def parse_export_format(lfile: List[Dict[str, Any]]) -> Dict[str, defs.Document]
     cre: defs.Document
     internal_mapping: defs.Document
     cres: Dict[str, defs.Document] = {}
-    lone_standards: Dict[str, defs.Standard] = {}
+    lone_nodes: Dict[str, defs.Node] = {}
     link_types_regexp = re.compile(defs.ExportFormat.linked_cre_name_key("(\d+)"))
     max_internal_cre_links = len(
         set([k for k, v in lfile[0].items() if link_types_regexp.match(k)])
@@ -98,13 +122,12 @@ def parse_export_format(lfile: List[Dict[str, Any]]) -> Dict[str, defs.Document]
         # if the line does not register a CRE
         if not mapping.get(defs.ExportFormat.cre_name_key()):
             # standard -> nothing | standard
-            for st in get_linked_standards(mapping):
-                if type(st.document) == defs.Standard:
-                    lone_standards[
-                        st.document.name + ":" + st.document.section
-                    ] = st.document
-                else:
-                    logger.fatal(f"Got a {type(st.document)} expected Standard")
+            for st in get_linked_nodes(mapping):
+
+                lone_nodes[
+                    f"{st.document.doctype}:{st.document.name}:{st.document.section}"
+                ] = st.document
+
         else:  # cre -> standards, other cres
             name = mapping.pop(defs.ExportFormat.cre_name_key())
             id = mapping.pop(defs.ExportFormat.cre_id_key())
@@ -130,7 +153,7 @@ def parse_export_format(lfile: List[Dict[str, Any]]) -> Dict[str, defs.Document]
                     cre.description = description
 
             # register the standards part
-            for standard in get_linked_standards(mapping):
+            for standard in get_linked_nodes(mapping):
                 cre.add_link(standard)
 
             # add the CRE links
@@ -182,11 +205,11 @@ def parse_export_format(lfile: List[Dict[str, Any]]) -> Dict[str, defs.Document]
                             )
                         )
             cres[cre.name] = cre
-    cres.update(lone_standards)
+    cres.update(lone_nodes)
     return cres
 
 
-def parse_uknown_key_val_spreadsheet(
+def parse_uknown_key_val_standards_spreadsheet(
     link_file: List[Dict[str, str]]
 ) -> Dict[str, defs.Standard]:
     """parses a cre-less spreadsheet into a list of Standards documents"""
@@ -482,9 +505,11 @@ def parse_hierarchical_export_format(
             logger.warning(f"empty Id for {name}")
 
         if not is_empty(mapping.get("CRE Tags")):
-
+            ts = set()
             for x in mapping.pop("CRE Tags").split(","):
-                cre.tags.add(x.strip())
+                ts.add(x.strip())
+            cre.tags = list(ts)
+
         update_cre_in_links(cres, cre)
 
         # TODO(spyros): temporary until we agree what we want to do with tags
@@ -643,6 +668,7 @@ def parse_standards(
                                     name=name,
                                     section=section.strip(),
                                     hyperlink=link.strip(),
+                                    subsection=subsection.strip(),
                                 ),
                             )
                         )

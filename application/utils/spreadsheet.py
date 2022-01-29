@@ -61,13 +61,17 @@ def __add_cre_to_spreadsheet(
     elif document.doctype == defs.Credoctypes.Standard:
 
         working_array[
-            defs.ExportFormat.section_key(document.name)
+            defs.ExportFormat.section_key(sname=document.name, doctype=document.doctype)
         ] = document.section  # type: ignore
         working_array[
-            defs.ExportFormat.subsection_key(document.name)
+            defs.ExportFormat.subsection_key(
+                sname=document.name, doctype=document.doctype
+            )
         ] = document.subsection  # type: ignore
         working_array[
-            defs.ExportFormat.hyperlink_key(document.name)
+            defs.ExportFormat.hyperlink_key(
+                sname=document.name, doctype=document.doctype
+            )
         ] = document.hyperlink  # type: ignore
 
     for link in document.links:
@@ -77,20 +81,32 @@ def __add_cre_to_spreadsheet(
 
             # a single CRE can link to multiple subsections of the same
             # standard hence we can have conflicts
-            if working_array[defs.ExportFormat.section_key(link.document.name)]:
+            if working_array[
+                defs.ExportFormat.section_key(
+                    sname=link.document.name, doctype=link.document.doctype
+                )
+            ]:
                 conflicts.append(link)
             else:
                 working_array[
-                    defs.ExportFormat.section_key(link.document.name)
+                    defs.ExportFormat.section_key(
+                        sname=link.document.name, doctype=link.document.doctype
+                    )
                 ] = link.document.section
                 working_array[
-                    defs.ExportFormat.subsection_key(link.document.name)
+                    defs.ExportFormat.subsection_key(
+                        sname=link.document.name, doctype=link.document.doctype
+                    )
                 ] = link.document.subsection
                 working_array[
-                    defs.ExportFormat.hyperlink_key(link.document.name)
+                    defs.ExportFormat.hyperlink_key(
+                        sname=link.document.name, doctype=link.document.doctype
+                    )
                 ] = link.document.hyperlink
                 working_array[
-                    defs.ExportFormat.link_type_key(link.document.name)
+                    defs.ExportFormat.link_type_key(
+                        sname=link.document.name, doctype=link.document.doctype
+                    )
                 ] = link.ltype.value
         elif link.document.doctype == defs.Credoctypes.CRE:
             # linking to another CRE
@@ -127,26 +143,33 @@ def __add_cre_to_spreadsheet(
 
 
 def prepare_spreadsheet(
-    collection: db.Standard_collection, docs: List[defs.Document]
+    collection: db.Node_collection, docs: List[defs.Document]
 ) -> List[Dict[str, Any]]:
     """
     Given a list of cre_defs.Document will create a list
      of key,value dict representing the mappings
     """
-    standard_names = (
-        collection.get_standards_names()
-    )  # get header from db (cheap enough)
+    nodes = collection.get_node_names()  # get header from db (cheap enough)
 
     header: Dict[str, Optional[str]] = {
         defs.ExportFormat.cre_name_key(): None,
         defs.ExportFormat.cre_id_key(): None,
         defs.ExportFormat.cre_description_key(): None,
     }
-    for name in standard_names:
-        header[defs.ExportFormat.section_key(name)] = None
-        header[defs.ExportFormat.subsection_key(name)] = None
-        header[defs.ExportFormat.hyperlink_key(name)] = None
-        header[defs.ExportFormat.link_type_key(name)] = None
+    if nodes:
+        for typ, name in nodes:
+            header[
+                defs.ExportFormat.section_key(name, defs.Credoctypes.from_str(typ))
+            ] = None
+            header[
+                defs.ExportFormat.subsection_key(name, defs.Credoctypes.from_str(typ))
+            ] = None
+            header[
+                defs.ExportFormat.hyperlink_key(name, defs.Credoctypes.from_str(typ))
+            ] = None
+            header[
+                defs.ExportFormat.link_type_key(name, defs.Credoctypes.from_str(typ))
+            ] = None
     maxgroups = collection.get_max_internal_connections()
     for i in range(0, maxgroups):
         header[defs.ExportFormat.linked_cre_id_key(str(i))] = None

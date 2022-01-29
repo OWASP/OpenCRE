@@ -10,9 +10,30 @@ children:
         en:
           name:             "Open Web Application Security Project&reg; (OWASP)"
     children:
+      "ZAP":
+        attributes:
+          categories:
+              - "Tool"
+              - "Offensive"
+          sources_i18n:
+            en:
+              name:         "OWASP Zed Attack Proxy"
+              source:       "https://www.zaproxy.org/"
+              description:  "zed attack proxy"
+      "SKF":
+        attributes:
+          categories:
+            - "Tool"
+            - "Defensive"
+          sources_i18n:
+            en:
+              name:         "OWASP Security Knowledge Framework"
+              description:  "security knowledge framework"
+              source:       "https://www.securityknowledgeframework.org/"
       "ASVS":
         aliases: ["Application Security Verification Standard", "Standard_ASVS"]
         attributes:
+          categories: ["Standard"]
           sources_i18n:
             en:
               name:         "OWASP Application Security Verification Standard (ASVS)"
@@ -186,9 +207,11 @@ children:
                           type:   "child"
       "top10":        
         attributes:
+          categories:
+            - "Standard"
           sources_i18n:
             en:
-              name:         "OWASP Top10 - The Ten Most Critical Web Application Security Risks"
+              name:         "OWASP Security Knowledge Framework"
               source:       "https://owasp.org/www-project-top-ten/"
         children:
           202110:

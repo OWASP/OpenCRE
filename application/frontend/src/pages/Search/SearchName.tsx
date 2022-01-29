@@ -50,7 +50,7 @@ export const SearchName = () => {
                     {groupedByType[CRE] && <SearchResults results={groupedByType[CRE]}/>}
                 </div>
                 <div className="eight wide column">
-                    <h1 className="standard-page__heading">Related standards</h1>
+                    <h1 className="standard-page__heading">Related Documents</h1>
                     {groupedByType[STANDARD] && <SearchResults results={groupedByType[STANDARD]}/>}
                 </div>
             </div>

@@ -41,7 +41,7 @@ Lang = NewType("Lang", str)
 
 @dataclass
 class _Osib_base:
-    def to_dict(self) -> Dict[str, Any]:
+    def todict(self) -> Dict[str, Any]:
         return asdict(
             self,
             dict_factory=lambda x: {
@@ -132,13 +132,14 @@ def resolve_path(
     osib_link: Optional[_Link] = None,
 ) -> Tuple[Optional[str], Optional[str]]:
     if osib_link and osib_link.link:
-        reg = r"\w+\.\w+\.(?P<name>\w+)\.(?P<section>.+$)"
+        reg = r"\w+\.\w+\.(?P<name>\w+)(\.(?P<section>.+$))?"
         match = re.search(reg, osib_link.link)
         if match:
             return (match["name"], match["section"])
     return None, None
 
 
+# TODO: get this to return tools and code depending on type
 def find_doc(link: Optional[_Link] = None) -> Optional[defs.Document]:
     # TODO (spyros): given a list of existing docs, find if the link exists in the list, otherwise create a new doc and return1.
     docname, docsection = resolve_path(link)
@@ -162,10 +163,12 @@ def _parse_node(
     if (
         osib is not None
         and osib.attributes is not None
-        and osib.children in ({}, None)
+        and (
+            "children" not in vars(osib)
+            or not osib.children
+            or osib.children in ({}, None)
+        )
         and current_path not in (None, "")
-        and orgname not in (None, "")
-        and root not in (None, "")
     ):
         res: defs.Document
         "register the standard with the current path as subsection"
@@ -177,14 +180,39 @@ def _parse_node(
                     section=current_path.replace(f"{root}.{orgname}.", ""),
                     hyperlink=english_attrs.source if english_attrs.source else "",
                 )
+            elif node_type == defs.Credoctypes.Code:
+                res = defs.Code(
+                    name=name,
+                    description=english_attrs.description,
+                    hyperlink=english_attrs.source if english_attrs.source else "",
+                )
+            elif node_type == defs.Credoctypes.Tool:
+                ttype = [
+                    t
+                    for t in defs.ToolTypes
+                    if "categories" in vars(osib.attributes)
+                    and osib.attributes.categories
+                    and t in osib.attributes.categories
+                ]
+                if ttype:
+                    ttype = ttype[0]
+                    osib.attributes.categories.remove(ttype)
+                    osib.attributes.categories.remove(node_type)
+                res = defs.Tool(
+                    name=name,
+                    description=english_attrs.description,
+                    hyperlink=english_attrs.source if english_attrs.source else "",
+                    tooltype=ttype if ttype else defs.ToolTypes.Unknown,
+                )
+
             elif node_type == defs.Credoctypes.CRE:
                 res = defs.CRE(
                     name=name,
-                    description="",
+                    description=english_attrs.description,
                     hyperlink=english_attrs.source if english_attrs.source else "",
                 )
             else:
-                defs.raise_MandatoryFieldException("OSIB node type unknown")
+                raise ValueError("OSIB node type unknown")
 
             res.metadata = {}
             if osib.aliases:
@@ -238,6 +266,9 @@ def _parse_node(
         logger.error(
             "OSIB doesn't have children but leaf branch not followed this is a bug"
         )
+        raise Exception(
+            "OSIB doesn't have children but leaf branch not followed this is a bug"
+        )
     return result
 
 
@@ -253,13 +284,23 @@ def osib2cre(tree: Osib_tree) -> Tuple[List[defs.CRE], List[defs.Standard]]:
         if org.children:
             for pname, project in org.children.items():
                 if str(pname).lower() != "cre":
+                    node_type = None
+                    if project and project.attributes and project.attributes.categories:
+                        t = [
+                            c
+                            for c in defs.Credoctypes
+                            if c in project.attributes.categories
+                        ]
+                        if t:
+                            node_type = t[0]
                     standards.extend(
                         _parse_node(  # type: ignore  # I know what i'm doing just this once
                             root=root,
                             orgname=str(orgname),
                             name=str(pname),
                             osib=project,
-                            node_type=defs.Credoctypes.Standard,
+                            node_type=node_type,
+                            current_path=f"{root}.{orgname}",
                         )
                     )
                 else:
@@ -271,6 +312,7 @@ def osib2cre(tree: Osib_tree) -> Tuple[List[defs.CRE], List[defs.Standard]]:
                                 orgname=str(orgname),
                                 osib=project,
                                 node_type=defs.Credoctypes.CRE,
+                                current_path=f"{root}.{orgname}",
                             )
                         ]
                     )
@@ -321,6 +363,7 @@ def paths_to_osib(
             children={},
             attributes=Node_attributes(
                 source_id=cre.id,
+                categories=[cre.doctype],
                 sources_i18n={
                     Lang("en"): _Source(
                         description=cre.description,
@@ -379,6 +422,7 @@ def cre2osib(docs: List[defs.Document]) -> Osib_tree:
     base_path = f"{root}.{org}.{project}"
     osib_graph = nx.DiGraph()
 
+    # TODO: get this to update paths attaching the TYPE of document that is in this path somehow, maybe as part of node attrs(?)
     for doc in docs:
         cres[doc.id] = doc
         for link in doc.links:
