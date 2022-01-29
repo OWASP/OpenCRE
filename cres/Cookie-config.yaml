@@ -5,12 +5,12 @@ links:
     doctype: CRE
     id: 177-260
     name: '>>Session management'
-  type: Contains
+  ltype: Contains
 - document:
     doctype: CRE
     id: 342-055
     name: Set "samesite" attribute for cookie-based session tokens
     tags:
     - CSRF
-  type: Contains
+  ltype: Contains
 name: Cookie-config
