@@ -129,6 +129,6 @@ Development Notes
 - [ ] make pagination also for tag results and gap analysis
 - [ ] make library out of file format and spreadsheet template parsers
 - [ ] add more linkTypes, Child, Controls, Tests, others.
-- [ ] Add more Document types, Tool, Library
+- [x] Add more Document types, Tool, Library
 - [ ] Figure a way to dynamically register new Custom Resource Definitions and register custom logic on what to do on import/export and search.
 - [ ] write docs and record usage gif

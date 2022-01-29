@@ -1,8 +1,4 @@
 import React, { useState } from 'react';
-import { useHistory } from 'react-router-dom';
-import { Button, Dropdown, Form, Icon, Input } from 'semantic-ui-react';
-
-import { CRE, STANDARD } from '../../../const';
 import './BodyText.scss';
 
 export const SearchBody = () => {
@@ -68,7 +64,7 @@ export const SearchBody = () => {
       </h2>
       <p>
         See the CRE search bar (beta version). Try searching for
-        <a href="/standard/Top10%202017"> Top10 2017 </a>
+        <a href="/node/standard/Top10%202017"> Top10 2017 </a>
         as standard and click around, or
         <a href="/cre/482-866"> 482-866 </a>
         as CRE-ID, to get an idea, or <a href="https://www.opencre.org/search/session">search for "Session"</a>, or an overview of <a href="https://www.opencre.org/search/%3E%3E">all top-level topics</a>.

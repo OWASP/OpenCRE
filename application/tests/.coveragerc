@@ -1,0 +1,11 @@
+[run]
+branch=True
+omit = */tests/*
+
+[report]
+exclude_lines =
+    # Don't complain if non-runnable code isn't run:
+    if __name__ == .__main__.:
+    import *
+    
+ignore_errors = False

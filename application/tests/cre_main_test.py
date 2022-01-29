@@ -5,7 +5,9 @@ import tempfile
 import unittest
 from pprint import pprint
 from typing import Any, Dict, List
-from unittest.mock import patch, Mock
+from unittest import mock
+from unittest.mock import Mock, patch
+
 from application import create_app, sqla  # type: ignore
 from application.cmd import cre_main as main
 from application.database import db
@@ -28,9 +30,9 @@ class TestMain(unittest.TestCase):
         sqla.create_all(app=self.app)
         self.app_context = self.app.app_context()
         self.app_context.push()
-        self.collection = db.Standard_collection()
+        self.collection = db.Node_collection()
 
-    def test_register_standard_with_links(self) -> None:
+    def test_register_node_with_links(self) -> None:
 
         standard_with_links = defs.Standard(
             doctype=defs.Credoctypes.Standard,
@@ -41,49 +43,35 @@ class TestMain(unittest.TestCase):
                 defs.Link(
                     document=defs.Standard(
                         doctype=defs.Credoctypes.Standard,
-                        id="",
-                        description="",
                         name="CWE",
-                        links=[],
-                        tags=set(),
-                        metadata={},
                         section="598",
                     )
                 ),
                 defs.Link(
-                    document=defs.Standard(
-                        doctype=defs.Credoctypes.Standard,
-                        id="",
-                        description="",
-                        name="ASVS",
-                        links=[],
-                        tags=set(),
-                        metadata={},
-                        section="SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING",
+                    document=defs.Code(
+                        doctype=defs.Credoctypes.Code,
+                        description="print(10)",
+                        name="CodemcCodeFace",
                     )
                 ),
             ],
-            tags=set(),
-            metadata={},
             section="Standard With Links",
         )
-        ret = main.register_standard(
-            standard=standard_with_links, collection=self.collection
-        )
+        ret = main.register_node(node=standard_with_links, collection=self.collection)
         # assert returned value makes sense
         self.assertEqual(ret.name, "standard_with_links")
         self.assertEqual(ret.section, "Standard With Links")
 
         # assert db structure makes sense
-        # no links since our standards don't have a CRE to map to
+        # no links since our nodes don't have a CRE to map to
         for thing in self.collection.session.query(db.Links).all():
-            pprint(thing.cre)
+            self.assertIsNone(thing.cre)
 
         self.assertEqual(self.collection.session.query(db.Links).all(), [])
-        # 3 cre-less standards in the db
-        self.assertEqual(len(self.collection.session.query(db.Standard).all()), 3)
+        # 3 cre-less nodes in the db
+        self.assertEqual(len(self.collection.session.query(db.Node).all()), 3)
 
-    def test_register_standard_with_cre(self) -> None:
+    def test_register_node_with_cre(self) -> None:
         standard_with_cre = defs.Standard(
             doctype=defs.Credoctypes.Standard,
             id="",
@@ -97,35 +85,28 @@ class TestMain(unittest.TestCase):
                         description="cre desc",
                         name="crename",
                         links=[],
-                        tags=set(),
+                        tags=[],
                         metadata={},
                     )
                 ),
                 defs.Link(
-                    document=defs.Standard(
-                        doctype=defs.Credoctypes.Standard,
-                        id="",
-                        description="",
-                        name="ASVS",
-                        links=[],
-                        tags=set(),
-                        metadata={},
-                        section="SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING",
+                    document=defs.Tool(
+                        doctype=defs.Credoctypes.Tool,
+                        tooltype=defs.ToolTypes.Offensive,
+                        name="zap",
                     )
                 ),
             ],
-            tags=set(),
-            metadata={},
             section="standard_with_cre",
         )
 
-        main.register_standard(standard=standard_with_cre, collection=self.collection)
+        main.register_node(node=standard_with_cre, collection=self.collection)
         # assert db structure makes sense
         self.assertEqual(
             len(self.collection.session.query(db.Links).all()), 2
         )  # 2 links in the db
         self.assertEqual(
-            len(self.collection.session.query(db.Standard).all()), 2
+            len(self.collection.session.query(db.Node).all()), 2
         )  # 2 standards in the db
         self.assertEqual(
             len(self.collection.session.query(db.CRE).all()), 1
@@ -150,25 +131,15 @@ class TestMain(unittest.TestCase):
                                     id="101-001",
                                     description="cre2 desc",
                                     name="crename2",
-                                    links=[],
-                                    tags=set(),
-                                    metadata={},
                                 )
                             )
                         ],
-                        tags=set(),
-                        metadata={},
                     )
                 ),
                 defs.Link(
                     document=defs.Standard(
                         doctype=defs.Credoctypes.Standard,
-                        id="",
-                        description="",
                         name="CWE",
-                        links=[],
-                        tags=set(),
-                        metadata={},
                         section="598",
                     )
                 ),
@@ -178,32 +149,20 @@ class TestMain(unittest.TestCase):
                         id="101-000",
                         description="cre desc",
                         name="crename",
-                        links=[],
-                        tags=set(),
-                        metadata={},
                     )
                 ),
                 defs.Link(
                     document=defs.Standard(
                         doctype=defs.Credoctypes.Standard,
-                        id="",
-                        description="",
                         name="ASVS",
-                        links=[],
-                        tags=set(),
-                        metadata={},
                         section="SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING",
                     )
                 ),
             ],
-            tags=set(),
-            metadata={},
             section="Session Management",
         )
 
-        main.register_standard(
-            standard=with_groupped_cre_links, collection=self.collection
-        )
+        main.register_node(node=with_groupped_cre_links, collection=self.collection)
         # assert db structure makes sense
         self.assertEqual(
             len(self.collection.session.query(db.Links).all()), 5
@@ -214,7 +173,7 @@ class TestMain(unittest.TestCase):
         )  # 1 internal link in the db
 
         self.assertEqual(
-            len(self.collection.session.query(db.Standard).all()), 3
+            len(self.collection.session.query(db.Node).all()), 3
         )  # 3 standards in the db
         self.assertEqual(
             len(self.collection.session.query(db.CRE).all()), 3
@@ -250,40 +209,22 @@ class TestMain(unittest.TestCase):
                 "links": [
                     {
                         "type": "SAM",
-                        "tags": [],
                         "document": {
-                            "description": "",
                             "doctype": "Standard",
-                            "hyperlink": "None",
-                            "id": "",
-                            "links": [],
-                            "metadata": {},
                             "name": "TOP10",
                             "section": "https://owasp.org/www-project-top-ten/2017/A5_2017-Broken_Access_Control",
-                            "subsection": "None",
-                            "tags": [],
                         },
                     },
                     {
                         "type": "SAM",
-                        "tags": [],
                         "document": {
-                            "description": "",
                             "doctype": "Standard",
-                            "hyperlink": "None",
-                            "id": "",
-                            "links": [],
-                            "metadata": {},
                             "name": "ISO 25010",
                             "section": "Secure data storage",
-                            "subsection": "None",
-                            "tags": [],
                         },
                     },
                 ],
-                "metadata": {},
                 "name": "CREDENTIALS_MANAGEMENT_CRYPTOGRAPHIC_DIRECTIVES",
-                "tags": [],
             },
             {
                 "description": "Desc",
@@ -302,34 +243,18 @@ class TestMain(unittest.TestCase):
                     defs.Link(
                         document=defs.Standard(
                             doctype=defs.Credoctypes.Standard,
-                            id="",
-                            description="",
                             name="TOP10",
-                            links=[],
-                            tags=set(),
-                            metadata={},
                             section="https://owasp.org/www-project-top-ten/2017/A5_2017-Broken_Access_Control",
-                            subsection="None",
-                            hyperlink="None",
                         )
                     ),
                     defs.Link(
                         document=defs.Standard(
                             doctype=defs.Credoctypes.Standard,
-                            id="",
-                            description="",
                             name="ISO 25010",
-                            links=[],
-                            tags=set(),
-                            metadata={},
                             section="Secure data storage",
-                            subsection="None",
-                            hyperlink="None",
                         )
                     ),
                 ],
-                tags=set(),
-                metadata={},
             ),
             defs.CRE(id="14", description="Desc", name="name"),
         ]
@@ -337,7 +262,15 @@ class TestMain(unittest.TestCase):
             # negative test first parse_file accepts a list of objects
             result = main.parse_file(
                 filename="tests",
-                yamldocs=file[0],  # type: ignore
+                yamldocs=[
+                    "no",
+                    "valid",
+                    "objects",
+                    "here",
+                    {
+                        1: 2,
+                    },
+                ],
                 scollection=self.collection,
             )
 
@@ -393,7 +326,7 @@ class TestMain(unittest.TestCase):
             }
         ]
         main.parse_standards_from_spreadsheeet(input, self.collection)
-        self.assertEqual(len(self.collection.session.query(db.Standard).all()), 8)
+        self.assertEqual(len(self.collection.session.query(db.Node).all()), 8)
         self.assertEqual(len(self.collection.session.query(db.CRE).all()), 5)
         # assert the one CRE in the inpu externally links to all the 8 standards
         self.assertEqual(len(self.collection.session.query(db.Links).all()), 8)
@@ -407,14 +340,12 @@ class TestMain(unittest.TestCase):
             ymldesc, location = tempfile.mkstemp(dir=loc, suffix=".yaml", text=True)
             os.write(ymldesc, bytes(str(cre), "utf-8"))
             ymls.append(location)
-        self.assertCountEqual(
-            ymls, [x for x in main.get_standards_files_from_disk(loc)]
-        )
+        self.assertCountEqual(ymls, [x for x in main.get_cre_files_from_disk(loc)])
 
     @patch("application.cmd.cre_main.db_connect")
     @patch("application.cmd.cre_main.parse_standards_from_spreadsheeet")
     @patch("application.utils.spreadsheet.readSpreadsheet")
-    @patch("application.database.db.Standard_collection.export")
+    @patch("application.database.db.Node_collection.export")
     def test_add_from_spreadsheet(
         self,
         mocked_export: Mock,
@@ -454,7 +385,7 @@ class TestMain(unittest.TestCase):
     @patch("application.cmd.cre_main.parse_standards_from_spreadsheeet")
     @patch("application.utils.spreadsheet.readSpreadsheet")
     @patch("application.cmd.cre_main.create_spreadsheet")
-    @patch("application.database.db.Standard_collection.export")
+    @patch("application.database.db.Node_collection.export")
     def test_review_from_spreadsheet(
         self,
         mocked_export: Mock,
@@ -502,10 +433,10 @@ class TestMain(unittest.TestCase):
 
     @patch("application.cmd.cre_main.prepare_for_review")
     @patch("application.cmd.cre_main.db_connect")
-    @patch("application.cmd.cre_main.get_standards_files_from_disk")
+    @patch("application.cmd.cre_main.get_cre_files_from_disk")
     @patch("application.cmd.cre_main.parse_file")
     @patch("application.cmd.cre_main.create_spreadsheet")
-    @patch("application.database.db.Standard_collection.export")
+    @patch("application.database.db.Node_collection.export")
     def test_review_from_disk(
         self,
         mocked_export: Mock,
@@ -526,6 +457,10 @@ class TestMain(unittest.TestCase):
         mocked_export.return_value = [
             defs.CRE(name="c0"),
             defs.Standard(name="s0", section="s1"),
+            defs.Code(name="code0", description="code1"),
+            defs.Tool(
+                name="t0", tooltype=defs.ToolTypes.Offensive, description="tool0"
+            ),
         ]
         mocked_create_spreadsheet.return_value = "https://example.com/sheeet"
 
@@ -540,18 +475,15 @@ class TestMain(unittest.TestCase):
         mocked_export.assert_called_with(loc)
         mocked_create_spreadsheet.assert_called_with(
             collection=self.collection,
-            exported_documents=[
-                defs.CRE(name="c0"),
-                defs.Standard(name="s0", section="s1"),
-            ],
+            exported_documents=mocked_export.return_value,
             title="cre_review",
             share_with=["foo@example.com"],
         )
 
     @patch("application.cmd.cre_main.db_connect")
-    @patch("application.cmd.cre_main.get_standards_files_from_disk")
+    @patch("application.cmd.cre_main.get_cre_files_from_disk")
     @patch("application.cmd.cre_main.parse_file")
-    @patch("application.database.db.Standard_collection.export")
+    @patch("application.database.db.Node_collection.export")
     def test_add_from_disk(
         self,
         mocked_export: Mock,
@@ -569,6 +501,10 @@ class TestMain(unittest.TestCase):
         mocked_export.return_value = [
             defs.CRE(name="c0"),
             defs.Standard(name="s0", section="s1"),
+            defs.Code(name="code0", description="code1"),
+            defs.Tool(
+                name="t0", tooltype=defs.ToolTypes.Offensive, description="tool0"
+            ),
         ]
 
         main.add_from_disk(cache_loc=cache, cre_loc=dir)
@@ -585,14 +521,14 @@ class TestMain(unittest.TestCase):
     @patch("application.defs.osib_defs.try_from_file")
     @patch("application.defs.osib_defs.osib2cre")
     @patch("application.cmd.cre_main.register_cre")
-    @patch("application.cmd.cre_main.register_standard")
+    @patch("application.cmd.cre_main.register_node")
     @patch("application.cmd.cre_main.create_spreadsheet")
-    @patch("application.database.db.Standard_collection.export")
+    @patch("application.database.db.Node_collection.export")
     def test_review_osib_from_file(
         self,
         mocked_export: Mock,
         mocked_create_spreadsheet: Mock,
-        mocked_register_standard: Mock,
+        mocked_register_node: Mock,
         mocked_register_cre: Mock,
         mocked_osib2cre: Mock,
         mocked_try_from_file: Mock,
@@ -618,7 +554,7 @@ class TestMain(unittest.TestCase):
             [defs.Standard(name="s0", section="s1")],
         )
         mocked_register_cre.return_value = db.CRE(name="c0")
-        mocked_register_standard.return_value = db.Standard(name="s0", section="s1")
+        mocked_register_node.return_value = db.Node(name="s0", section="s1")
         mocked_create_spreadsheet.return_value = "https://example.com/sheeet"
         mocked_export.return_value = [
             defs.CRE(name="c0"),
@@ -634,16 +570,13 @@ class TestMain(unittest.TestCase):
         mocked_osib2cre.assert_called_with(odefs.Osib_tree(aliases=[Osib_id("t1")]))
         mocked_osib2cre.assert_called_with(odefs.Osib_tree(aliases=[Osib_id("t2")]))
         mocked_register_cre.assert_called_with(defs.CRE(name="c0"), self.collection)
-        mocked_register_standard.assert_called_with(
-            defs.Standard(name="s0", section="s1"), self.collection
+        mocked_register_node.assert_called_with(
+            mocked_osib2cre.return_value[1][0], self.collection
         )
 
         mocked_create_spreadsheet.assert_called_with(
             collection=self.collection,
-            exported_documents=[
-                defs.CRE(name="c0"),
-                defs.Standard(name="s0", section="s1"),
-            ],
+            exported_documents=mocked_export.return_value,
             title="osib_review",
             share_with=[],
         )
@@ -654,12 +587,12 @@ class TestMain(unittest.TestCase):
     @patch("application.defs.osib_defs.try_from_file")
     @patch("application.defs.osib_defs.osib2cre")
     @patch("application.cmd.cre_main.register_cre")
-    @patch("application.cmd.cre_main.register_standard")
-    @patch("application.database.db.Standard_collection.export")
+    @patch("application.cmd.cre_main.register_node")
+    @patch("application.database.db.Node_collection.export")
     def test_add_osib_from_file(
         self,
         mocked_export: Mock,
-        mocked_register_standard: Mock,
+        mocked_register_node: Mock,
         mocked_register_cre: Mock,
         mocked_osib2cre: Mock,
         mocked_try_from_file: Mock,
@@ -682,7 +615,7 @@ class TestMain(unittest.TestCase):
             [defs.Standard(name="s0", section="s1")],
         )
         mocked_register_cre.return_value = db.CRE(name="c0")
-        mocked_register_standard.return_value = db.Standard(name="s0", section="s1")
+        mocked_register_node.return_value = db.Node(name="s0", section="s1")
         mocked_export.return_value = [
             defs.CRE(name="c0"),
             defs.Standard(name="s0", section="s1"),
@@ -696,12 +629,12 @@ class TestMain(unittest.TestCase):
         mocked_osib2cre.assert_called_with(odefs.Osib_tree(aliases=[Osib_id("t1")]))
         mocked_osib2cre.assert_called_with(odefs.Osib_tree(aliases=[Osib_id("t2")]))
         mocked_register_cre.assert_called_with(defs.CRE(name="c0"), self.collection)
-        mocked_register_standard.assert_called_with(
+        mocked_register_node.assert_called_with(
             defs.Standard(name="s0", section="s1"), self.collection
         )
         mocked_export.assert_called_with(dir)
 
-    @patch("application.database.db.Standard_collection.export")
+    @patch("application.database.db.Node_collection.export")
     @patch("application.cmd.cre_main.db_connect")
     @patch("application.defs.osib_defs.cre2osib")
     def test_export_to_osib(

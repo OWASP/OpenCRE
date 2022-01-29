@@ -7,7 +7,6 @@ from pprint import pprint
 from typing import Any, Dict, List, Union
 
 import yaml
-
 from application import create_app, sqla  # type: ignore
 from application.database import db
 from application.defs import cre_defs as defs
@@ -25,25 +24,27 @@ class TestDB(unittest.TestCase):
 
         self.app_context = self.app.app_context()
         self.app_context.push()
-        self.collection = db.Standard_collection()
+        self.collection = db.Node_collection()
         collection = self.collection
 
         dbcre = collection.add_cre(
             defs.CRE(id="111-000", description="CREdesc", name="CREname")
         )
+        self.dbcre = dbcre
         dbgroup = collection.add_cre(
             defs.CRE(id="111-001", description="Groupdesc", name="GroupName")
         )
-        dbstandard = collection.add_standard(
+        dbstandard = collection.add_node(
             defs.Standard(
                 subsection="4.5.6",
                 section="FooStand",
                 name="BarStand",
                 hyperlink="https://example.com",
+                tags=["a", "b", "c"],
             )
         )
 
-        collection.add_standard(
+        collection.add_node(
             defs.Standard(
                 subsection="4.5.6",
                 section="Unlinked",
@@ -53,7 +54,7 @@ class TestDB(unittest.TestCase):
         )
 
         collection.session.add(dbcre)
-        collection.add_link(cre=dbcre, standard=dbstandard)
+        collection.add_link(cre=dbcre, node=dbstandard)
         collection.add_internal_link(cre=dbcre, group=dbgroup)
 
         self.collection = collection
@@ -78,15 +79,16 @@ class TestDB(unittest.TestCase):
         )
         cre = db.CREfromDB(dbcre)
         cre.id = ""
-        dbstandard = db.Standard(
+        dbstandard = db.Node(
             subsection="4.5.6.7",
             section="tagsstand",
             name="tagsstand",
             link="https://example.com",
             version="",
             tags="tag1, dots.5.5, space 6 , several spaces and newline          7        \n",
+            ntype=defs.Standard.__name__,
         )
-        standard = db.StandardFromDB(dbstandard)
+        standard = db.nodeFromDB(dbstandard)
         self.collection.session.add(dbcre)
         self.collection.session.add(dbstandard)
         self.collection.session.commit()
@@ -110,8 +112,8 @@ class TestDB(unittest.TestCase):
 
     def test_get_standards_names(self) -> None:
 
-        result = self.collection.get_standards_names()
-        expected = ["BarStand", "Unlinked"]
+        result = self.collection.get_node_names()
+        expected = [("Standard", "BarStand"), ("Standard", "Unlinked")]
         self.assertEqual(expected, result)
 
     def test_get_max_internal_connections(self) -> None:
@@ -151,7 +153,14 @@ class TestDB(unittest.TestCase):
             with a link to "BarStand" and "GroupName" and one for "GroupName" with a link to "CREName"
         """
         loc = tempfile.mkdtemp()
-        result = [
+        code0 = defs.Code(name="co0")
+        code1 = defs.Code(name="co1")
+        tool0 = defs.Tool(name="t0", tooltype=defs.ToolTypes.Unknown)
+        self.collection.add_link(self.dbcre, self.collection.add_node(code0))
+        self.collection.add_node(code1)
+        self.collection.add_node(tool0)
+
+        expected = [
             defs.CRE(
                 id="111-001",
                 description="Groupdesc",
@@ -180,8 +189,10 @@ class TestDB(unittest.TestCase):
                             section="FooStand",
                             subsection="4.5.6",
                             hyperlink="https://example.com",
+                            tags=["a", "b", "c"],
                         )
                     ),
+                    defs.Link(document=defs.Code(name="co0")),
                 ],
             ),
             defs.Standard(
@@ -190,23 +201,26 @@ class TestDB(unittest.TestCase):
                 name="Unlinked",
                 hyperlink="https://example.com",
             ),
+            defs.Tool(name="t0", tooltype=defs.ToolTypes.Unknown),
+            defs.Code(name="co1"),
         ]
         self.collection.export(loc)
 
         # load yamls from loc, parse,
         #  ensure yaml1 is result[0].todict and
-        #  yaml2 is result[1].todic
-        group = result[0].todict()
-        cre = result[1].todict()
-        groupname = result[0].name + ".yaml"
+        #  yaml2 is expected[1].todic
+        group = expected[0].todict()
+        cre = expected[1].todict()
+        groupname = expected[0].name + ".yaml"
         with open(os.path.join(loc, groupname), "r") as f:
             doc = yaml.safe_load(f)
             self.assertDictEqual(group, doc)
-        crename = result[1].name + ".yaml"
+
+        crename = expected[1].name + ".yaml"
         self.maxDiff = None
         with open(os.path.join(loc, crename), "r") as f:
             doc = yaml.safe_load(f)
-            self.assertDictEqual(cre, doc)
+            self.assertCountEqual(cre, doc)
 
     def test_StandardFromDB(self) -> None:
         expected = defs.Standard(
@@ -218,13 +232,14 @@ class TestDB(unittest.TestCase):
         )
         self.assertEqual(
             expected,
-            db.StandardFromDB(
-                db.Standard(
+            db.nodeFromDB(
+                db.Node(
                     name="foo",
                     section="bar",
                     subsection="foobar",
                     link="https://example.com/foo/bar",
                     version="1.1.1",
+                    ntype=defs.Standard.__name__,
                 )
             ),
         )
@@ -278,38 +293,42 @@ class TestDB(unittest.TestCase):
         # ensure original description
         self.assertEqual(newCRE.description, original_desc)
 
-    def test_add_standard(self) -> None:
+    def test_add_node(self) -> None:
         original_section = str(uuid.uuid4())
         name = str(uuid.uuid4())
 
         s = defs.Standard(
-            id="sid",
             doctype=defs.Credoctypes.Standard,
             section=original_section,
             subsection=original_section,
             name=name,
+            tags=["a", "b", "c"],
         )
 
         self.assertIsNone(
-            self.collection.session.query(db.Standard)
-            .filter(db.Standard.name == s.name)
+            self.collection.session.query(db.Node)
+            .filter(db.Node.name == s.name)
             .first()
         )
 
         # happy path, add new standard
-        newStandard = self.collection.add_standard(s)
+        newStandard = self.collection.add_node(s)
+        self.assertIsNotNone(newStandard)
+
         dbstandard = (
-            self.collection.session.query(db.Standard)
-            .filter(db.Standard.name == s.name)
+            self.collection.session.query(db.Node)
+            .filter(db.Node.name == s.name)
             .first()
         )  # ensure transaction happened (commit() called)
         self.assertIsNotNone(dbstandard.id)
         self.assertEqual(dbstandard.name, s.name)
         self.assertEqual(dbstandard.section, s.section)
         self.assertEqual(dbstandard.subsection, s.subsection)
-        # ensure the right thing got returned
-        self.assertEqual(newStandard.name, s.name)
-
+        self.assertEqual(
+            newStandard.name, s.name
+        )  # ensure the right thing got returned
+        self.assertEqual(dbstandard.ntype, s.doctype.value)
+        self.assertEqual(dbstandard.tags, ",".join(s.tags))
         # standards match on all of name,section, subsection <-- if you change even one of them it's a new entry
 
     def find_cres_of_cre(self) -> None:
@@ -362,9 +381,21 @@ class TestDB(unittest.TestCase):
     def test_find_cres_of_standard(self) -> None:
         dbcre = db.CRE(description="CREdesc1", name="CREname1")
         dbgroup = db.CRE(description="CREdesc2", name="CREname2")
-        dbstandard1 = db.Standard(section="section1", name="standard1")
-        group_standard = db.Standard(section="section2", name="standard2")
-        lone_standard = db.Standard(section="section3", name="standard3")
+        dbstandard1 = db.Node(
+            section="section1",
+            name="standard1",
+            ntype=defs.Standard.__name__,
+        )
+        group_standard = db.Node(
+            section="section2",
+            name="standard2",
+            ntype=defs.Standard.__name__,
+        )
+        lone_standard = db.Node(
+            section="section3",
+            name="standard3",
+            ntype=defs.Standard.__name__,
+        )
 
         self.collection.session.add(dbcre)
         self.collection.session.add(dbgroup)
@@ -373,15 +404,13 @@ class TestDB(unittest.TestCase):
         self.collection.session.add(lone_standard)
         self.collection.session.commit()
 
-        self.collection.session.add(db.Links(cre=dbcre.id, standard=dbstandard1.id))
-        self.collection.session.add(db.Links(cre=dbgroup.id, standard=dbstandard1.id))
-        self.collection.session.add(
-            db.Links(cre=dbgroup.id, standard=group_standard.id)
-        )
+        self.collection.session.add(db.Links(cre=dbcre.id, node=dbstandard1.id))
+        self.collection.session.add(db.Links(cre=dbgroup.id, node=dbstandard1.id))
+        self.collection.session.add(db.Links(cre=dbgroup.id, node=group_standard.id))
         self.collection.session.commit()
 
         # happy path, 1 group and 1 cre link to 1 standard
-        cres = self.collection.find_cres_of_standard(dbstandard1)
+        cres = self.collection.find_cres_of_node(dbstandard1)
 
         if not cres:
             self.fail("Expected 2 cres")
@@ -389,7 +418,7 @@ class TestDB(unittest.TestCase):
         self.assertEqual(cres, [dbcre, dbgroup])
 
         # group links to standard
-        cres = self.collection.find_cres_of_standard(group_standard)
+        cres = self.collection.find_cres_of_node(group_standard)
 
         if not cres:
             self.fail("Expected 1 cre")
@@ -397,22 +426,32 @@ class TestDB(unittest.TestCase):
         self.assertEqual(cres, [dbgroup])
 
         # no links = None
-        cres = self.collection.find_cres_of_standard(lone_standard)
+        cres = self.collection.find_cres_of_node(lone_standard)
         self.assertIsNone(cres)
 
     def test_get_CREs(self) -> None:
         """Given: a cre 'C1' that links to cres both as a group and a cre and other standards
         return the CRE in Document format"""
-        collection = db.Standard_collection()
+        collection = db.Node_collection()
         dbc1 = db.CRE(external_id="123", description="gcCD1", name="gcC1")
         dbc2 = db.CRE(description="gcCD2", name="gcC2")
         dbc3 = db.CRE(description="gcCD3", name="gcC3")
-        dbs1 = db.Standard(
-            name="gcS2", section="gc1", subsection="gc2", link="gc3", version="gc1.1.1"
+        dbs1 = db.Node(
+            ntype=defs.Standard.__name__,
+            name="gcS2",
+            section="gc1",
+            subsection="gc2",
+            link="gc3",
+            version="gc1.1.1",
         )
 
-        dbs2 = db.Standard(
-            name="gcS3", section="gc1", subsection="gc2", link="gc3", version="gc3.1.2"
+        dbs2 = db.Node(
+            ntype=defs.Standard.__name__,
+            name="gcS3",
+            section="gc1",
+            subsection="gc2",
+            link="gc3",
+            version="gc3.1.2",
         )
 
         collection.session.add(dbc1)
@@ -428,9 +467,7 @@ class TestDB(unittest.TestCase):
         collection.session.add(
             db.InternalLinks(type="Contains", group=dbc1.id, cre=dbc3.id)
         )
-        collection.session.add(
-            db.Links(type="Linked To", cre=dbc1.id, standard=dbs1.id)
-        )
+        collection.session.add(db.Links(type="Linked To", cre=dbc1.id, node=dbs1.id))
 
         collection.session.commit()
 
@@ -492,9 +529,7 @@ class TestDB(unittest.TestCase):
         self.assertEqual([], collection.get_CREs(external_id="1234"))
         self.assertEqual([], collection.get_CREs(name="gcC5"))
 
-        collection.session.add(
-            db.Links(type="Linked To", cre=dbc1.id, standard=dbs2.id)
-        )
+        collection.session.add(db.Links(type="Linked To", cre=dbc1.id, node=dbs2.id))
 
         only_gcS2 = deepcopy(expected)
         expected[0].add_link(
@@ -535,13 +570,18 @@ class TestDB(unittest.TestCase):
     def test_get_standards(self) -> None:
         """Given: a Standard 'S1' that links to cres
         return the Standard in Document format"""
-        collection = db.Standard_collection()
-        docs: Dict[str, Union[db.CRE, db.Standard]] = {
+        collection = db.Node_collection()
+        docs: Dict[str, Union[db.CRE, db.Node]] = {
             "dbc1": db.CRE(external_id="123", description="CD1", name="C1"),
             "dbc2": db.CRE(description="CD2", name="C2"),
             "dbc3": db.CRE(description="CD3", name="C3"),
-            "dbs1": db.Standard(
-                name="S1", section="1", subsection="2", link="3", version="4"
+            "dbs1": db.Node(
+                ntype=defs.Standard.__name__,
+                name="S1",
+                section="1",
+                subsection="2",
+                link="3",
+                version="4",
             ),
         }
         links = [("dbc1", "dbs1"), ("dbc2", "dbs1"), ("dbc3", "dbs1")]
@@ -551,7 +591,7 @@ class TestDB(unittest.TestCase):
 
         for cre, standard in links:
             collection.session.add(
-                db.Links(type="Linked To", cre=docs[cre].id, standard=docs[standard].id)
+                db.Links(type="Linked To", cre=docs[cre].id, node=docs[standard].id)
             )
         collection.session.commit()
 
@@ -579,19 +619,24 @@ class TestDB(unittest.TestCase):
             )
         ]
 
-        res = collection.get_standards(name="S1")
+        res = collection.get_nodes(name="S1")
         self.assertEqual(expected, res)
 
-    def test_get_standards_with_pagination(self) -> None:
+    def test_get_nodes_with_pagination(self) -> None:
         """Given: a Standard 'S1' that links to cres
         return the Standard in Document format and the total pages and the page we are in"""
-        collection = db.Standard_collection()
-        docs: Dict[str, Union[db.Standard, db.CRE]] = {
+        collection = db.Node_collection()
+        docs: Dict[str, Union[db.Node, db.CRE]] = {
             "dbc1": db.CRE(external_id="123", description="CD1", name="C1"),
             "dbc2": db.CRE(description="CD2", name="C2"),
             "dbc3": db.CRE(description="CD3", name="C3"),
-            "dbs1": db.Standard(
-                name="S1", section="1", subsection="2", link="3", version="4"
+            "dbs1": db.Node(
+                name="S1",
+                section="1",
+                subsection="2",
+                link="3",
+                version="4",
+                ntype=defs.Standard.__name__,
             ),
         }
         links = [("dbc1", "dbs1"), ("dbc2", "dbs1"), ("dbc3", "dbs1")]
@@ -600,9 +645,7 @@ class TestDB(unittest.TestCase):
         collection.session.commit()
 
         for cre, standard in links:
-            collection.session.add(
-                db.Links(cre=docs[cre].id, standard=docs[standard].id)
-            )
+            collection.session.add(db.Links(cre=docs[cre].id, node=docs[standard].id))
         collection.session.commit()
 
         expected = [
@@ -621,7 +664,7 @@ class TestDB(unittest.TestCase):
                 ],
             )
         ]
-        total_pages, res, pagination_object = collection.get_standards_with_pagination(
+        total_pages, res, pagination_object = collection.get_nodes_with_pagination(
             name="S1"
         )
         self.assertEqual(total_pages, 1)
@@ -639,14 +682,17 @@ class TestDB(unittest.TestCase):
                 ],
             )
         ]
-        _, res, _ = collection.get_standards_with_pagination(
-            name="S1", include_only=["C1"]
-        )
+        _, res, _ = collection.get_nodes_with_pagination(name="S1", include_only=["C1"])
         self.assertEqual(only_c1, res)
-        _, res, _ = collection.get_standards_with_pagination(
+        _, res, _ = collection.get_nodes_with_pagination(
             name="S1", include_only=["123"]
         )
         self.assertEqual(only_c1, res)
+
+        self.assertEqual(
+            collection.get_nodes_with_pagination(name="this should not exit"),
+            (None, None, None),
+        )
 
     def test_gap_analysis(self) -> None:
         """Given
@@ -682,7 +728,7 @@ class TestDB(unittest.TestCase):
 
         """
 
-        collection = db.Standard_collection()
+        collection = db.Node_collection()
 
         cres = {
             "dbca": collection.add_cre(defs.CRE(id="1", description="CA", name="CA")),
@@ -708,16 +754,16 @@ class TestDB(unittest.TestCase):
         }
         standards = {}
         for k, s in def_standards.items():
-            standards["db" + k] = collection.add_standard(s)
+            standards["db" + k] = collection.add_node(s)
         ltype = defs.LinkTypes.LinkedTo
-        collection.add_link(cre=cres["dbca"], standard=standards["dbsa1"])
-        collection.add_link(cre=cres["dbca"], standard=standards["dbsaa1"])
-        collection.add_link(cre=cres["dbcb"], standard=standards["dbsb1"])
-        collection.add_link(cre=cres["dbcd"], standard=standards["dbsd1"])
-        collection.add_link(cre=cres["dbcdd"], standard=standards["dbsdd1"])
-        collection.add_link(cre=cres["dbcw"], standard=standards["dbsw1"])
-        collection.add_link(cre=cres["dbcx"], standard=standards["dbsa3"])
-        collection.add_link(cre=cres["dbcx"], standard=standards["dbsx1"])
+        collection.add_link(cre=cres["dbca"], node=standards["dbsa1"])
+        collection.add_link(cre=cres["dbca"], node=standards["dbsaa1"])
+        collection.add_link(cre=cres["dbcb"], node=standards["dbsb1"])
+        collection.add_link(cre=cres["dbcd"], node=standards["dbsd1"])
+        collection.add_link(cre=cres["dbcdd"], node=standards["dbsdd1"])
+        collection.add_link(cre=cres["dbcw"], node=standards["dbsw1"])
+        collection.add_link(cre=cres["dbcx"], node=standards["dbsa3"])
+        collection.add_link(cre=cres["dbcx"], node=standards["dbsx1"])
 
         collection.add_internal_link(group=cres["dbcc"], cre=cres["dbca"])
         collection.add_internal_link(group=cres["dbcc"], cre=cres["dbcb"])
@@ -792,7 +838,6 @@ class TestDB(unittest.TestCase):
         for args, expected_vals in expected.items():
             stands = args.split(",")
             res = collection.gap_analysis(stands)
-            # unfortunately named, asserts element and count equality
             self.assertCountEqual(res, expected_vals)
 
     def test_add_internal_link(self) -> None:
@@ -885,7 +930,7 @@ class TestDB(unittest.TestCase):
         full_text_search('ipsum') returns cre:foo
         full_text_search('foo') returns [cre:foo,standard:Bar:blah:foo, standard:Bar:blah:foo1,standard:Bar:blah1:foo]
         """
-        collection = db.Standard_collection()
+        collection = db.Node_collection()
         cre = defs.CRE(
             id="123-456", name="textSearchCRE", description="lorem ipsum tsSection+tsC"
         )
@@ -897,22 +942,28 @@ class TestDB(unittest.TestCase):
             subsection="tsSubSection",
             hyperlink="https://example.com/tsSection/tsSubSection",
         )
-        collection.add_standard(s1)
+        collection.add_node(s1)
         s2 = defs.Standard(
             name="textSearchStandard",
             section="tsSection",
             subsection="tsSubSection1",
             hyperlink="https://example.com/tsSection/tsSubSection1",
         )
-        collection.add_standard(s2)
+        collection.add_node(s2)
         s3 = defs.Standard(
             name="textSearchStandard",
             section="tsSection1",
             subsection="tsSubSection1",
             hyperlink="https://example.com/tsSection1/tsSubSection1",
         )
-
-        collection.add_standard(s3)
+        collection.add_node(s3)
+        t1 = defs.Tool(
+            name="textSearchTool",
+            tooltype=defs.ToolTypes.Offensive,
+            hyperlink="https://example.com/textSearchTool",
+            description="test text search with tool",
+        )
+        collection.add_node(t1)
         collection.session.commit()
         expected: Dict[str, List[Any]] = {
             "123-456": [cre],
@@ -933,10 +984,140 @@ class TestDB(unittest.TestCase):
             "https://example.com/tsSection": [s1, s2, s3],
             "ipsum": [cre],
             "tsSection": [cre, s1, s2, s3],
+            "https://example.com/textSearchTool": [t1],
+            "text search": [t1],
         }
         self.maxDiff = None
         for k, val in expected.items():
-            self.assertCountEqual(self.collection.text_search(k), val)
+            res = self.collection.text_search(k)
+            try:
+                self.assertCountEqual(res, val)
+            except Exception as e:
+                pprint(k)
+                pprint("|" * 99)
+                pprint(res)
+                pprint("|" * 99)
+                pprint(val)
+                pprint("|" * 99)
+                input()
+                raise e
+
+    def test_dbNodeFromNode(self) -> None:
+        data = {
+            "tool": defs.Tool(
+                name="fooTool",
+                description="lorem ipsum tsSection+tsC",
+                tooltype=defs.ToolTypes.Defensive,
+                tags=["1", "2", "3"],
+            ),
+            "standard": defs.Standard(
+                name="stand", section="s1", subsection="s2", version="s3"
+            ),
+            "code": defs.Code(
+                name="c",
+                description="c2",
+                hyperlink="https://example.com/code/hyperlink",
+                tags=["1", "2"],
+            ),
+        }
+        expected = {
+            "tool": db.Node(
+                name="fooTool",
+                description="lorem ipsum tsSection+tsC",
+                tags=",".join([defs.ToolTypes.Defensive.value, "1", "2", "3"]),
+                ntype=defs.Credoctypes.Tool.value,
+            ),
+            "standard": db.Node(
+                name="stand",
+                section="s1",
+                subsection="s2",
+                version="s3",
+                ntype=defs.Credoctypes.Standard.value,
+            ),
+            "code": db.Node(
+                name="c",
+                description="c2",
+                link="https://example.com/code/hyperlink",
+                tags="1,2",
+                ntype=defs.Credoctypes.Code.value,
+            ),
+        }
+        for k, v in data.items():
+            nd = db.dbNodeFromNode(v)
+            for vname, var in vars(nd).items():
+                if var and not vname.startswith("_"):
+                    self.assertEqual(var, vars(expected[k]).get(vname))
+
+    def test_nodeFromDB(self) -> None:
+        expected = {
+            "tool": defs.Tool(
+                name="fooTool",
+                description="lorem ipsum tsSection+tsC",
+                tooltype=defs.ToolTypes.Defensive,
+                tags=["1", "2", "3"],
+            ),
+            "standard": defs.Standard(
+                name="stand", section="s1", subsection="s2", version="s3"
+            ),
+            "code": defs.Code(
+                name="c",
+                description="c2",
+                hyperlink="https://example.com/code/hyperlink",
+                tags=["1", "2"],
+            ),
+        }
+        data = {
+            "tool": db.Node(
+                name="fooTool",
+                description="lorem ipsum tsSection+tsC",
+                tags=",".join([defs.ToolTypes.Defensive.value, "1", "2", "3"]),
+                ntype=defs.Credoctypes.Tool.value,
+            ),
+            "standard": db.Node(
+                name="stand",
+                section="s1",
+                subsection="s2",
+                version="s3",
+                ntype=defs.Credoctypes.Standard.value,
+            ),
+            "code": db.Node(
+                name="c",
+                description="c2",
+                link="https://example.com/code/hyperlink",
+                tags="1,2",
+                ntype=defs.Credoctypes.Code.value,
+            ),
+        }
+        for k, v in data.items():
+            nd = db.nodeFromDB(v)
+            for vname, var in vars(nd).items():
+                if var and not vname.startswith("_"):
+                    self.assertCountEqual(var, vars(expected[k]).get(vname))
+
+    def test_object_select(self) -> None:
+        dbnode1 = db.Node(
+            name="fooTool",
+            description="lorem ipsum tsSection+tsC",
+            tags=f"{defs.ToolTypes.Defensive.value},1",
+        )
+        dbnode2 = db.Node(
+            name="fooTool",
+            description="lorem2",
+            link="https://example.com/foo/bar",
+            tags=f"{defs.ToolTypes.Defensive.value},1",
+        )
+
+        self.collection = db.Node_collection()
+        collection = db.Node_collection()
+        collection.session.add(dbnode1)
+        collection.session.add(dbnode2)
+        self.assertEqual(collection.object_select(dbnode1), [dbnode1])
+        self.assertEqual(collection.object_select(dbnode2), [dbnode2])
+        self.assertCountEqual(
+            collection.object_select(db.Node(name="fooTool")), [dbnode1, dbnode2]
+        )
+
+        self.assertEqual(collection.object_select(None), [])
 
 
 if __name__ == "__main__":

@@ -17,6 +17,8 @@ export const DOCUMENT_TYPE_NAMES = {
 // Routes
 export const INDEX = '/';
 export const STANDARD = '/standard';
+export const TOOL = '/tool';
+export const CODE = '/code';
 export const SECTION = '/section';
 export const SUBSECTION = '/subsection';
 export const SEARCH = '/search';

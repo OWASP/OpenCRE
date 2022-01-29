@@ -41,7 +41,7 @@ export const FilterButton: FunctionComponent<FilterButton> = props => {
     if (document.doctype == "CRE") {
       fltrs = filters && filters.length ? new Set([...filters, "" + document.id]) : ["" + document.id]
       // fltrs = filters && filters.length ? new Set([...filters, "c:" + document.id]) : ["c:" + document.id]
-    } else if (document.doctype == "Standard") {
+    } else if (document.doctype in ["Tool", "Code", "Standard"]) {
       fltrs = filters && filters.length ? new Set([...filters, "" + document.name]) : ["" + document.name]
       // fltrs = filters && filters.length ? new Set([...filters, "s:" + document.name]) : ["s:" + document.name]
     }
@@ -54,7 +54,7 @@ export const FilterButton: FunctionComponent<FilterButton> = props => {
     setFilters(Array.from(fltrs))
   }
   if (currentUrlParams.has("showButtons")) {
-    return document.doctype === "Standard" ? <Button onClick={() => { handleFilter(document) }} content="Filter this item"></Button> : <></>
+    return document.doctype in ["Tool", "Code", "Standard"] ? <Button onClick={() => { handleFilter(document) }} content="Filter this item"></Button> : <></>
   }
   return <></>
 

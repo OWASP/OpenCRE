@@ -1,7 +1,5 @@
-from pprint import pprint
-
-import json
 import argparse
+import json
 import logging
 import os
 import shutil
@@ -9,14 +7,15 @@ import tempfile
 from typing import Any, Callable, Dict, Generator, List, Optional, Tuple
 
 import yaml
-
 from application import create_app  # type: ignore
 from application.config import CMDConfig
 from application.database import db
 from application.defs import cre_defs as defs
 from application.defs import osib_defs as odefs
-from application.utils import spreadsheet as sheet_utils
 from application.utils import parsers
+from application.utils import spreadsheet as sheet_utils
+from dacite import from_dict
+from dacite.config import Config
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
@@ -25,60 +24,60 @@ logger.setLevel(logging.INFO)
 app = None
 
 
-def register_standard(
-    standard: defs.Standard, collection: db.Standard_collection
-) -> db.Standard:
-    """for each link find if either the root standard or the link have a CRE, then map the one who doesn't to the CRE
-    if both don't map to anything, just add them in the db as unlinked standards
+def register_node(node: defs.Node, collection: db.Node_collection) -> db.Node:
+    """for each link find if either the root node or the link have a CRE, then map the one who doesn't to the CRE
+    if both don't map to anything, just add them in the db as unlinked nodes
     """
-    linked_standard = collection.add_standard(standard)
+    linked_node = collection.add_node(node)
 
-    cre_less_standards: List[defs.Standard] = []
+    cre_less_nodes: List[defs.Node] = []
 
     cres_added = []
     # we need to know the cres added in case we encounter a higher level CRE, then we get the higher level CRE to link to these cres
-    for link in standard.links:
-        if type(link.document).__name__ == defs.Standard.__name__:
-            # if a standard links another standard it is likely that a standards writer wants to reference something
-            # in that case, find which of the two standards has at least one CRE attached to it and link both to the parent CRE
-            cres = collection.find_cres_of_standard(link.document)
-            db_link = collection.add_standard(link.document)
+    for link in node.links:
+        if type(link.document).__name__ in [
+            defs.Standard.__name__,
+            defs.Code.__name__,
+            defs.Tool.__name__,
+        ]:
+            # if a node links another node it is likely that a writer wants to reference something
+            # in that case, find which of the two nodes has at least one CRE attached to it and link both to the parent CRE
+            cres = collection.find_cres_of_node(link.document)
+            db_link = collection.add_node(link.document)
             if cres:
                 for cre in cres:
-                    collection.add_link(
-                        cre=cre, standard=linked_standard, type=link.ltype
-                    )
-                    for unlinked_standard in cre_less_standards:  # if anything in this
+                    collection.add_link(cre=cre, node=linked_node, type=link.ltype)
+                    for unlinked_standard in cre_less_nodes:  # if anything in this
                         collection.add_link(
                             cre=cre,
-                            standard=db.dbStandardFromStandard(unlinked_standard),
+                            node=db.dbNodeFromNode(unlinked_standard),
                             type=link.ltype,
                         )
             else:
-                cres = collection.find_cres_of_standard(linked_standard)
+                cres = collection.find_cres_of_node(linked_node)
                 if cres:
                     for cre in cres:
-                        collection.add_link(cre=cre, standard=db_link, type=link.ltype)
-                        for unlinked_standard in cre_less_standards:
+                        collection.add_link(cre=cre, node=db_link, type=link.ltype)
+                        for unlinked_node in cre_less_nodes:
                             collection.add_link(
                                 cre=cre,
-                                standard=db.dbStandardFromStandard(unlinked_standard),
+                                node=db.dbNodeFromNode(unlinked_node),
                                 type=link.ltype,
                             )
-                else:  # if neither the root nor a linked standard has a CRE, add both as unlinked standards
-                    cre_less_standards.append(link.document)
+                else:  # if neither the root nor a linked node has a CRE, add both as unlinked nodes
+                    cre_less_nodes.append(link.document)
 
             if link.document.links and len(link.document.links) > 0:
-                register_standard(standard=link.document, collection=collection)
+                register_node(node=link.document, collection=collection)
 
         elif type(link.document).__name__ == defs.CRE.__name__:
             dbcre = register_cre(link.document, collection)
-            collection.add_link(dbcre, linked_standard, type=link.ltype)
+            collection.add_link(dbcre, linked_node, type=link.ltype)
             cres_added.append(dbcre)
-    return linked_standard
+    return linked_node
 
 
-def register_cre(cre: defs.CRE, collection: db.Standard_collection) -> db.CRE:
+def register_cre(cre: defs.CRE, collection: db.Node_collection) -> db.CRE:
     dbcre: db.CRE = collection.add_cre(cre)
     for link in cre.links:
         if type(link.document) == defs.CRE:
@@ -88,16 +87,20 @@ def register_cre(cre: defs.CRE, collection: db.Standard_collection) -> db.CRE:
         elif type(link.document) == defs.Standard:
             collection.add_link(
                 cre=dbcre,
-                standard=register_standard(
-                    standard=link.document, collection=collection
-                ),
+                node=register_node(node=link.document, collection=collection),
+                type=link.ltype,
+            )
+        elif type(link.document) == defs.Tool:
+            collection.add_link(
+                cre=dbcre,
+                tool=register_tool(tool=link.document, collection=collection),
                 type=link.ltype,
             )
     return dbcre
 
 
 def parse_file(
-    filename: str, yamldocs: List[Dict[str, Any]], scollection: db.Standard_collection
+    filename: str, yamldocs: List[Dict[str, Any]], scollection: db.Node_collection
 ) -> Optional[List[defs.Document]]:
     """given yaml from export format deserialise to internal standards format and add standards to db"""
 
@@ -110,20 +113,43 @@ def parse_file(
 
         if not isinstance(
             contents, dict
-        ):  # basic object matching, make sure we at least have an object, go has this build in :(
+        ):  # basic object matching, make sure we at least have an object, golang has this build in :(
             logger.fatal("Malformed file %s, skipping" % filename)
-
             return None
 
         if contents.get("links"):
             links = contents.pop("links")
 
         if contents.get("doctype") == defs.Credoctypes.CRE.value:
-            document = defs.CRE(**contents)
+            document = from_dict(
+                data_class=defs.CRE,
+                data=contents,
+                config=Config(cast=[defs.Credoctypes]),
+            )
+            # document = defs.CRE(**contents)
             register_callback = register_cre
-        elif contents.get("doctype") == defs.Credoctypes.Standard.value:
-            document = defs.Standard(**contents)
-            register_callback = register_standard
+        elif contents.get("doctype") in (
+            defs.Credoctypes.Standard.value,
+            defs.Credoctypes.Code.value,
+            defs.Credoctypes.Tool.value,
+        ):
+            # document = defs.Standard(**contents)
+            doctype = contents.get("doctype")
+            data_class = (
+                defs.Standard
+                if doctype == defs.Credoctypes.Standard.value
+                else defs.Code
+                if doctype == defs.Credoctypes.Code.value
+                else defs.Tool
+                if doctype == defs.Credoctypes.Tool.value
+                else None
+            )
+            document = from_dict(
+                data_class=data_class,
+                data=contents,
+                config=Config(cast=[defs.Credoctypes]),
+            )
+            register_callback = register_node
 
         for link in links:
             doclink = parse_file(
@@ -148,13 +174,12 @@ def parse_file(
             register_callback(document, collection=scollection)  # type: ignore
         else:
             logger.warning("Callback to register Document is None, likely missing data")
-
         resulting_objects.append(document)
     return resulting_objects
 
 
 def parse_standards_from_spreadsheeet(
-    cre_file: List[Dict[str, Any]], result: db.Standard_collection
+    cre_file: List[Dict[str, Any]], result: db.Node_collection
 ) -> None:
     """given a yaml with standards, build a list of standards in the db"""
     hi_lvl_CREs = {}
@@ -183,11 +208,11 @@ def parse_standards_from_spreadsheeet(
                 result.add_internal_link(group=dbgroup, cre=dbcre, type=link.ltype)
 
             elif type(link.document).__name__ == defs.Standard.__name__:
-                dbstandard = register_standard(link.document, result)
-                result.add_link(cre=dbgroup, standard=dbstandard, type=link.ltype)
+                dbstandard = register_node(link.document, result)
+                result.add_link(cre=dbgroup, node=dbstandard, type=link.ltype)
 
 
-def get_standards_files_from_disk(cre_loc: str) -> Generator[str, None, None]:
+def get_cre_files_from_disk(cre_loc: str) -> Generator[str, None, None]:
 
     for root, _, cre_docs in os.walk(cre_loc):
         for name in cre_docs:
@@ -222,7 +247,7 @@ def add_from_disk(cache_loc: str, cre_loc: str) -> None:
     export db to ../../cres/
     """
     database = db_connect(path=cache_loc)
-    for file in get_standards_files_from_disk(cre_loc):
+    for file in get_cre_files_from_disk(cre_loc):
         with open(file, "rb") as standard:
             parse_file(
                 filename=file,
@@ -270,7 +295,7 @@ def review_from_disk(cache: str, cre_file_loc: str, share_with: str) -> None:
     """
     loc, cache = prepare_for_review(cache)
     database = db_connect(path=cache)
-    for file in get_standards_files_from_disk(cre_file_loc):
+    for file in get_cre_files_from_disk(cre_file_loc):
         with open(file, "rb") as standard:
             parse_file(
                 filename=file,
@@ -321,7 +346,6 @@ def run(args: argparse.Namespace) -> None:
         add_from_disk(cache_loc=args.cache_file, cre_loc=args.cre_loc)
     elif args.print_graph:
         print_graph()
-
     elif args.review and args.osib_in:
         review_osib_from_file(
             file_loc=args.osib_in, cache=args.cache_file, cre_loc=args.cre_loc
@@ -334,14 +358,16 @@ def run(args: argparse.Namespace) -> None:
 
     elif args.osib_out:
         export_to_osib(file_loc=args.osib_out, cache=args.cache_file)
+    elif args.owasp_proj_meta:
+        owasp_metadata_to_cre(args.owasp_proj_meta)
 
 
-def db_connect(path: str) -> db.Standard_collection:
+def db_connect(path: str) -> db.Node_collection:
 
     global app
     conf = CMDConfig(db_uri=path)
     app = create_app(conf=conf)
-    collection = db.Standard_collection()
+    collection = db.Node_collection()
     app_context = app.app_context()
     app_context.push()
 
@@ -349,7 +375,7 @@ def db_connect(path: str) -> db.Standard_collection:
 
 
 def create_spreadsheet(
-    collection: db.Standard_collection,
+    collection: db.Node_collection,
     exported_documents: List[Any],
     title: str,
     share_with: List[str],
@@ -365,6 +391,7 @@ def create_spreadsheet(
 
 
 def prepare_for_review(cache: str) -> Tuple[str, str]:
+
     loc = tempfile.mkdtemp()
     cache_filename = os.path.basename(cache)
     if os.path.isfile(cache):
@@ -384,7 +411,7 @@ def review_osib_from_file(file_loc: str, cache: str, cre_loc: str) -> None:
     for osib in osibs:
         cres, standards = odefs.osib2cre(osib)
         [register_cre(c, database) for c in cres]
-        [register_standard(s, database) for s in standards]
+        [register_node(s, database) for s in standards]
 
     sheet_url = create_spreadsheet(
         collection=database,
@@ -405,7 +432,7 @@ def add_osib_from_file(file_loc: str, cache: str, cre_loc: str) -> None:
     for osib in osibs:
         cre, standard = odefs.osib2cre(osib)
         [register_cre(c, database) for c in cre]
-        [register_standard(s, database) for s in standard]
+        [register_node(s, database) for s in standard]
     database.export(cre_loc)
 
 
@@ -414,4 +441,23 @@ def export_to_osib(file_loc: str, cache: str) -> None:
     tree = odefs.cre2osib(docs)
     with open(file_loc, "x"):
         with open(file_loc, "w") as f:
-            f.write(json.dumps(tree.to_dict()))
+            f.write(json.dumps(tree.todict()))
+
+
+def owasp_metadata_to_cre(meta_file: str):
+    """given a file with entries like below
+    parse projects of type "tool" in file into "tool" data.
+    {
+        "name": "Security Qualitative Metrics",
+        "url": "https://owasp.org/www-project-security-qualitative-metrics/",
+        "created": "2020-07-20",
+        "updated": "2021-04-20",
+        "build": "built",
+        "title": "OWASP Security Qualitative Metrics",
+        "level": "2",
+        "type": "documentation",
+        "region": "Unknown",
+        "pitch": "The OWASP Security Qualitative Metrics is the most detailed list of metrics which evaluate security level of web projects. It shows the level of coverage of OWASP ASVS."
+    },
+    """
+    raise NotImplementedError("someone needs to work on this")

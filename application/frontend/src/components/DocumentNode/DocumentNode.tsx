@@ -26,7 +26,7 @@ const linkTypesExcludedWhenNestingRelatedTo = [TYPE_RELATED, TYPE_IS_PART_OF, TY
 
 export const DocumentNode: FunctionComponent<DocumentNode> = ({ node, linkType, hasLinktypeRelatedParent }) => {
   const [expanded, setExpanded] = useState<boolean>(false);
-  const isStandard = node.doctype === 'Standard';
+  const isStandard = node.doctype in ["Tool","Code", "Standard"];
   const { apiUrl } = useEnvironment();
   const [nestedNode, setNestedNode] = useState<Document>();
   const [loading, setLoading] = useState<boolean>(false);
@@ -37,7 +37,6 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({ node, linkType, 
   var usedNode = applyFilters(nestedNode || node);
   const hasExternalLink = Boolean(usedNode.hyperlink);
   const linksByType = useMemo(() => groupLinksByType(usedNode), [usedNode]);
-
   let currentUrlParams = new URLSearchParams(window.location.search);
 
   useEffect(() => {
@@ -101,7 +100,6 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({ node, linkType, 
 
     </>
   }
-// TODO (spyros) : bug, this doesn't work well with nested view as it removes nodes prematurely, instead write a hook to custom-iterate through nodes and return a new structure with filtering applied
 
   const NestedView = () => {
     return <>
@@ -120,17 +118,16 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({ node, linkType, 
             return (
               <div className="document-node__link-type-container" key={type}>
                 <div>
-                  <span > {usedNode.name} - {usedNode.section} </span>
+                  <span >{usedNode.doctype}: {usedNode.name} - {usedNode.section} </span>
                   <b> {DOCUMENT_TYPE_NAMES[type]}</b>:
                 </div>
                 <div>
                   <div className="accordion ui fluid styled f0">
                     {links.map((link, i) =>
                         <div key={Math.random()}>
-                          <DocumentNode node={link.document} linkType={type} hasLinktypeRelatedParent={isNestedInRelated()} key={i} />
+                          <DocumentNode node={link.document} linkType={type} hasLinktypeRelatedParent={isNestedInRelated()} key={Math.random()} />
                           <FilterButton document={link.document}/>
                         </div> 
-
                     )
                     }
                   </div>
