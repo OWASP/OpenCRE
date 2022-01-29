@@ -1,0 +1,31 @@
+doctype: CRE
+id: 082-327
+links:
+- document:
+    doctype: CRE
+    id: 854-643
+    name: '>>Business logic'
+    tags:
+    - DOS
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 028-728
+    name: Personal data handling
+  ltype: Related
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x16-V8-Data-Protection.md
+    name: ASVS
+    section: V8.3.3
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/285.html
+    name: CWE
+    section: '285'
+  ltype: Linked To
+name: Inform users clearly about the collection and use of personal data,  and use
+  it only after opt-in consent.
+tags:
+- Personal data handling

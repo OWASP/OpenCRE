@@ -1,0 +1,73 @@
+doctype: CRE
+id: 278-646
+links:
+- document:
+    doctype: CRE
+    id: 634-733
+    name: Communication authentication
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 435-702
+    name: Communication encryption
+    tags:
+    - Cryptography
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 341-076
+    name: Minimize communication
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 228-551
+    name: TLS
+    tags:
+    - Cryptoghraphy
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 683-036
+    name: Wireless link protection
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 270-634
+    name: Send authentication secrets encrypted
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 456-636
+    name: Add integrity check to SOAP payload
+  ltype: Related
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=IA-9
+    name: NIST 800-53 v5
+    section: IA-9 Service Identification and Authentication
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=SC-16
+    name: NIST 800-53 v5
+    section: SC-16 Transmission of Security and Privacy Attributes
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=SC-8
+    name: NIST 800-53 v5
+    section: SC-8 TRANSMISSION CONFIDENTIALITY AND INTEGRITY
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=CA-3
+    name: NIST 800-53 v5
+    section: CA-3 Information Exchange
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=CA-9
+    name: NIST 800-53 v5
+    section: CA-9 Internal System Connections
+  ltype: Linked To
+name: '>>Secure communication'

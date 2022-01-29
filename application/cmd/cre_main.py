@@ -13,6 +13,7 @@ from application.database import db
 from application.defs import cre_defs as defs
 from application.defs import osib_defs as odefs
 from application.utils import parsers
+from application.utils.parsers import zap_alerts_parser
 from application.utils import spreadsheet as sheet_utils
 from dacite import from_dict
 from dacite.config import Config
@@ -108,8 +109,8 @@ def parse_file(
     for contents in yamldocs:
         links = []
 
-        document: defs.Document
-        register_callback: Callable[[Any, Any], Any]
+        document: Optional[defs.Document] = None
+        register_callback: Optional[Callable[[Any, Any], Any]] = None
 
         if not isinstance(
             contents, dict
@@ -358,6 +359,10 @@ def run(args: argparse.Namespace) -> None:
 
     elif args.osib_out:
         export_to_osib(file_loc=args.osib_out, cache=args.cache_file)
+
+    elif args.zap_in:
+        zap_alerts_parser.parse_zap_alerts(db_connect(args.cache_file))
+
     elif args.owasp_proj_meta:
         owasp_metadata_to_cre(args.owasp_proj_meta)
 

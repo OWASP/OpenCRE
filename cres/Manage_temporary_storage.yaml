@@ -1,0 +1,45 @@
+doctype: CRE
+id: 208-830
+links:
+- document:
+    doctype: CRE
+    id: 126-668
+    name: '>>Secure data storage'
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 157-430
+    name: Protect and clear cached sensitive data
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 473-758
+    name: Set sufficient anti-caching headers
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 046-257
+    name: Clear authentication data from client storage
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 715-304
+    name: Zeroize sensitive information in memory after use
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 846-302
+    name: Prevent caching of sensitive data in server components
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 617-524
+    name: Do not store sensitive data on client (browser) storage
+  ltype: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=SC-4
+    name: NIST 800-53 v5
+    section: SC-4 Information in Shared System Resources
+  ltype: Linked To
+name: Manage temporary storage

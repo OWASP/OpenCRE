@@ -1,0 +1,33 @@
+doctype: CRE
+id: 175-235
+links:
+- document:
+    doctype: CRE
+    id: 130-550
+    name: File handling
+  ltype: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x20-V12-Files-Resources.md
+    name: ASVS
+    section: V12.2.1
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/434.html
+    name: CWE
+    section: '434'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/File_Upload_Cheat_Sheet.html
+    name: Cheat_sheets
+    section: File Upload Cheat Sheet
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Third_Party_Javascript_Management_Cheat_Sheet.html
+    name: Cheat_sheets
+    section: Third Party Javascript Management Cheat Sheet
+  ltype: Linked To
+name: Validate file type of data from untrusted sources

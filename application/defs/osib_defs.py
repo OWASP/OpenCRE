@@ -1,5 +1,4 @@
 from networkx import networkx as nx
-from pprint import pp, pprint
 import logging
 import os
 import re

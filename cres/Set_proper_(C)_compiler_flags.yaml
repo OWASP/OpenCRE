@@ -1,0 +1,36 @@
+doctype: CRE
+id: 314-131
+links:
+- document:
+    doctype: CRE
+    id: 615-188
+    name: Deployment process
+  ltype: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x22-V14-Config.md
+    name: ASVS
+    section: V14.1.2
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/120.html
+    name: CWE
+    section: '120'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html
+    name: Cheat_sheets
+    section: Docker Security Cheat Sheet
+  ltype: Linked To
+- document:
+    description: '"Rewrite the background program using proper return length checking.  This
+      will require a recompile of the background executable."'
+    doctype: Tool
+    name: 'ZAP Alert: "Buffer Overflow"'
+    tags:
+    - '"Active"'
+    tooltype: Offensive
+  ltype: SAME
+name: Set proper (C) compiler flags

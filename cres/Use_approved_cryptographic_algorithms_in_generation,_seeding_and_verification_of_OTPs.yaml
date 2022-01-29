@@ -1,0 +1,43 @@
+doctype: CRE
+id: 841-757
+links:
+- document:
+    doctype: CRE
+    id: 062-850
+    name: MFA/OTP
+    tags:
+    - Cryptography
+  ltype: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x11-V2-Authentication.md
+    name: ASVS
+    section: V2.8.3
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/326.html
+    name: CWE
+    section: '326'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    name: NIST 800-63
+    section: 5.1.4.2
+  ltype: Linked To
+- document:
+    doctype: Standard
+    name: NIST 800-63
+    section: 5.1.5.2
+  ltype: Linked To
+- document:
+    description: '"Protect the connection using HTTPS or use a stronger authentication
+      mechanism"'
+    doctype: Tool
+    name: 'ZAP Alert: "Weak Authentication Method"'
+    tags:
+    - '"Passive"'
+    tooltype: Offensive
+  ltype: SAME
+name: Use approved cryptographic algorithms in generation, seeding and verification
+  of OTPs
