@@ -1,0 +1,13 @@
+links:
+  - linkType: Linked To
+    document:
+      name: CWE
+      section: 1021
+  - linkType: Linked To
+    document:
+      name: WASC
+      section: 15
+toolType: Offensive
+docType: Tool
+id: 10020-4
+name: 'Zaproxy-Alert: X-Frame-Options Setting Malformed'

@@ -1,0 +1,13 @@
+links:
+  - linkType: Linked To
+    document:
+      name: CWE
+      section: 917
+  - linkType: Linked To
+    document:
+      name: WASC
+      section: 20
+toolType: Offensive
+docType: Tool
+id: 90025
+name: 'Zaproxy-Alert: Expression Language Injection'

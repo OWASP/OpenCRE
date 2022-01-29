@@ -1,0 +1,5 @@
+links: []
+toolType: Offensive
+docType: Tool
+id: 10041
+name: 'Zaproxy-Alert: HTTP to HTTPS Insecure Transition in Form Post'
