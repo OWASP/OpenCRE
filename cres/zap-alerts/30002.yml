@@ -1,0 +1,13 @@
+links:
+  - linkType: Linked To
+    document:
+      name: CWE
+      section: 134
+  - linkType: Linked To
+    document:
+      name: WASC
+      section: 6
+toolType: Offensive
+docType: Tool
+id: 30002
+name: 'Zaproxy-Alert: Format String Error'

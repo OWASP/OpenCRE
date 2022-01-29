@@ -1,0 +1,13 @@
+links:
+  - linkType: Linked To
+    document:
+      name: CWE
+      section: 436
+  - linkType: Linked To
+    document:
+      name: WASC
+      section: 15
+toolType: Offensive
+docType: Tool
+id: 90011
+name: 'Zaproxy-Alert: Charset Mismatch'

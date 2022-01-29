@@ -1,0 +1,13 @@
+links:
+  - linkType: Linked To
+    document:
+      name: CWE
+      section: 20
+  - linkType: Linked To
+    document:
+      name: WASC
+      section: 20
+toolType: Offensive
+docType: Tool
+id: 20018
+name: 'Zaproxy-Alert: Remote Code Execution - CVE-2012-1823'

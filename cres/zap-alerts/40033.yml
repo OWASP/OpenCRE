@@ -1,0 +1,13 @@
+links:
+  - linkType: Linked To
+    document:
+      name: CWE
+      section: 943
+  - linkType: Linked To
+    document:
+      name: WASC
+      section: 19
+toolType: Offensive
+docType: Tool
+id: 40033
+name: 'Zaproxy-Alert: NoSQL Injection - MongoDB'
