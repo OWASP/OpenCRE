@@ -71,7 +71,7 @@ def createPullRequest(
     )
 
 
-def clone(source:str,dest:Optional[str]=None):
+def clone(source: str, dest: Optional[str] = None):
     if not dest:
         dest = tempfile.mkdtemp()
     with git.Git().custom_environment():

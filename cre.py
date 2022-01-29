@@ -115,7 +115,11 @@ def main() -> None:
         help="define location of local directory to export database in OSIB format to",
     )
 
-    parser.add_argument("--zap_in",action="store_true", help="import zap alerts by cloning zap's website and parsing the alert .md files")
+    parser.add_argument(
+        "--zap_in",
+        action="store_true",
+        help="import zap alerts by cloning zap's website and parsing the alert .md files",
+    )
     args = parser.parse_args()
     cre_main.run(args)
 

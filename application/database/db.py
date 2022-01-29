@@ -142,9 +142,7 @@ class Node_collection:
     def __get_unlinked_nodes(self) -> List[Node]:
 
         linked_nodes = (
-            self.session.query(Node.id)
-            .join(Links)
-            .filter(Node.id == Links.node)
+            self.session.query(Node.id).join(Links).filter(Node.id == Links.node)
         )
 
         nodes: List[Node] = (
@@ -407,7 +405,9 @@ class Node_collection:
                 nodes.append(node)
             return nodes
         else:
-            logger.warning(f"Node {name} of type {ntype} and section {section} does not exist in the db")
+            logger.warning(
+                f"Node {name} of type {ntype} and section {section} does not exist in the db"
+            )
 
             return []
 
@@ -622,7 +622,13 @@ class Node_collection:
             logger.info(f"{unode.name} is unlinked?")
 
         for _, doc in docs.items():
-            title = doc.name.replace("/", "-").replace(" ","_").replace("\"","").replace("'","") + ".yaml"
+            title = (
+                doc.name.replace("/", "-")
+                .replace(" ", "_")
+                .replace('"', "")
+                .replace("'", "")
+                + ".yaml"
+            )
             if not dry_run:
                 file.writeToDisk(
                     file_title=title,
@@ -1070,6 +1076,12 @@ def CREfromDB(dbcre: CRE) -> cre_defs.CRE:
         name=dbcre.name, description=dbcre.description, id=dbcre.external_id, tags=tags
     )
 
-def dbCREfromCRE(cre:cre_defs.CRE)->CRE:
+
+def dbCREfromCRE(cre: cre_defs.CRE) -> CRE:
     tags = cre.tags if cre.tags else []
-    return CRE(name=cre.name,description=cre.description,external_id=cre.id,tags=",".join(tags))
+    return CRE(
+        name=cre.name,
+        description=cre.description,
+        external_id=cre.id,
+        tags=",".join(tags),
+    )
