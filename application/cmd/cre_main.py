@@ -12,8 +12,8 @@ from application.config import CMDConfig
 from application.database import db
 from application.defs import cre_defs as defs
 from application.defs import osib_defs as odefs
-from application.utils import parsers
-from application.utils.parsers import zap_alerts_parser
+from application.utils import spreadsheet_parsers
+from application.utils.external_project_parsers import zap_alerts_parser
 from application.utils import spreadsheet as sheet_utils
 from dacite import from_dict
 from dacite.config import Config
@@ -186,13 +186,13 @@ def parse_standards_from_spreadsheeet(
     hi_lvl_CREs = {}
     cres = {}
     if "CRE Group 1" in cre_file[0].keys():
-        hi_lvl_CREs, cres = parsers.parse_v1_standards(cre_file)
+        hi_lvl_CREs, cres = spreadsheet_parsers.parse_v1_standards(cre_file)
     elif "CRE:name" in cre_file[0].keys():
-        cres = parsers.parse_export_format(cre_file)
+        cres = spreadsheet_parsers.parse_export_format(cre_file)
     elif any(key.startswith("CRE hierarchy") for key in cre_file[0].keys()):
-        cres = parsers.parse_hierarchical_export_format(cre_file)
+        cres = spreadsheet_parsers.parse_hierarchical_export_format(cre_file)
     else:
-        cres = parsers.parse_v0_standards(cre_file)
+        cres = spreadsheet_parsers.parse_v0_standards(cre_file)
 
     # register groupless cres first
     for _, cre in cres.items():
