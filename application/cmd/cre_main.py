@@ -13,7 +13,7 @@ from application.database import db
 from application.defs import cre_defs as defs
 from application.defs import osib_defs as odefs
 from application.utils import spreadsheet_parsers
-from application.utils.external_project_parsers import zap_alerts_parser
+from application.utils.external_project_parsers import zap_alerts_parser, skf_content_parser
 from application.utils import spreadsheet as sheet_utils
 from dacite import from_dict
 from dacite.config import Config
@@ -362,6 +362,9 @@ def run(args: argparse.Namespace) -> None:
 
     elif args.zap_in:
         zap_alerts_parser.parse_zap_alerts(db_connect(args.cache_file))
+
+    elif args.skf_in:
+        skf_content_parser.parse_skf_code_samples(db_connect(args.cache_file))
 
     elif args.owasp_proj_meta:
         owasp_metadata_to_cre(args.owasp_proj_meta)

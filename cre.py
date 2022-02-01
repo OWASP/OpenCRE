@@ -120,6 +120,11 @@ def main() -> None:
         action="store_true",
         help="import zap alerts by cloning zap's website and parsing the alert .md files",
     )
+    parser.add_argument(
+        "--skf_in",
+        action="store_true",
+        help="import skf code by cloning skf repo website and parsing the relevant files",
+    )
     args = parser.parse_args()
     cre_main.run(args)
 
