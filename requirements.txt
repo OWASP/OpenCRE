@@ -1,13 +1,9 @@
 alembic==1.7.1
-amqp==5.0.6
 astroid==2.7.2
 attrs==20.2.0
-autopep8==1.5.6
-billiard==3.6.4.0
 black==21.11b1
 Brotli==1.0.9
 cachetools==4.1.1
-celery==5.2.2
 certifi==2020.6.20
 chardet==3.0.4
 click==7.1.2
@@ -19,7 +15,6 @@ dacite==1.6.0
 dataclasses-json==0.5.6
 decorator==4.4.2
 Deprecated==1.2.10
-flake8==3.9.2
 Flask==1.1.2
 Flask-Cache==0.13.1
 Flask-Caching==1.10.1
@@ -33,8 +28,6 @@ github2==0.6.2
 GitPython==3.1.9
 google-auth==1.22.1
 google-auth-oauthlib==0.4.1
-graphviz==0.16
-greenlet==1.1.1
 gspread==3.6.0
 gunicorn==20.1.0
 httplib2==0.19.0
@@ -45,7 +38,6 @@ isort==5.9.3
 itsdangerous==1.1.0
 Jinja2==2.11.3
 jsonschema==3.2.0
-kombu==5.1.0
 lazy-object-proxy==1.6.0
 Mako==1.1.5
 MarkupSafe==1.1.1
@@ -69,15 +61,13 @@ pycodestyle==2.7.0
 pyflakes==2.3.1
 PyGithub==1.53
 PyJWT==1.7.1
-pylint==2.10.2
 pyparsing==2.4.6
 pyrsistent==0.17.3
 python-dateutil==2.8.1
-pytz==2021.1
 PyYAML==5.3.1
 regex==2021.11.10
-requests==2.24.0
-requests-oauthlib==1.3.0
+requests==2.27.1
+requests-oauthlib==1.3.1
 rsa==4.7
 semver==2.13.0
 six==1.15.0
@@ -91,8 +81,7 @@ typed-ast==1.4.3
 types-PyYAML==5.4.8
 typing-extensions==3.10.0.0
 typing-inspect==0.7.1
-urllib3==1.26.5
-vine==5.0.0
+urllib3==1.26.8
 wcwidth==0.2.5
 Werkzeug==1.0.1
 wrapt==1.12.1
