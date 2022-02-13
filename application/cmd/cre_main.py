@@ -273,12 +273,12 @@ def review_from_spreadsheet(cache: str, spreadsheet_url: str, share_with: str) -
         parse_standards_from_spreadsheeet(contents, database)
     docs = database.export(loc)
 
-    sheet_url = create_spreadsheet(
-        collection=database,
-        exported_documents=docs,
-        title="cre_review",
-        share_with=[share_with],
-    )
+    # sheet_url = create_spreadsheet(
+    #     collection=database,
+    #     exported_documents=docs,
+    #     title="cre_review",
+    #     share_with=[share_with],
+    # )
     logger.info(
         "Stored temporary files and database in %s if you want to use them next time, set cache to the location of the database in that dir"
         % loc

@@ -470,6 +470,7 @@ def parse_v0_standards(cre_file: List[Dict[str, str]]) -> Dict[str, defs.CRE]:
 def parse_hierarchical_export_format(
     cre_file: List[Dict[str, str]]
 ) -> Dict[str, defs.CRE]:
+    logger.info("Spreadsheet is hierarchical export format")
     cres: Dict[str, defs.CRE] = {}
     max_hierarchy = len([key for key in cre_file[0].keys() if "CRE hierarchy" in key])
     for mapping in cre_file:
@@ -638,6 +639,11 @@ def parse_standards(
                     "hyperlink": "",
                     "separator": "/",
                 },
+                "OWASP Top 10 2021": {
+                    "section": "OWASP Top 10 2021",
+                    "subsection": "",
+                    "hyperlink": "OWASP Top 10 hyperlink",
+                },
                 "Top10 2017": {
                     "section": "Standard Top10 2017",
                     "subsection": "",
@@ -659,6 +665,10 @@ def parse_standards(
                     subsections.extend([""] * (len(sections) - len(subsections)))
                 if len(sections) > len(hyperlinks):
                     hyperlinks.extend([""] * (len(sections) - len(hyperlinks)))
+
+                if "Top" in name:
+                    pprint("found top 10")
+
                 for section, subsection, link in zip(sections, subsections, hyperlinks):
                     if not is_empty(section):
                         links.append(
