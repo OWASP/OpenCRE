@@ -1,5 +1,4 @@
-# script to parse zaproxy website md files describing alerts find the CWE ids
-#  and add the alerts to CRE
+# script to parse cheatsheet md files find the links to opencre.org and add the cheatsheets to CRE
 from typing import List
 from application.database import db
 from application.utils import git
