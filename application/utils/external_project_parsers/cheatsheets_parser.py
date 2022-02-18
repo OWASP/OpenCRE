@@ -7,8 +7,7 @@ import os
 import re
 
 
-def cheatsheet(
-    section: str, hyperlink:str) -> defs.Standard:
+def cheatsheet(section: str, hyperlink: str, tags: List[str]) -> defs.Standard:
     return defs.Standard(
         name=f"Cheat_sheets",
         section=section,
@@ -21,29 +20,31 @@ def parse_cheatsheets(cache: db.Node_collection):
     c_repo = "https://github.com/OWASP/CheatSheetSeries.git"
     cheasheets_path = "cheatsheets/"
     title_regexp = r"# (?P<title>.+)"
-    cre_link = r"opencre.org/cre/(?P<cre>.+)$"
+    cre_link = r"(https://www\.)?opencre.org/cre/(?P<cre>\d+-\d+)"
     repo = git.clone(c_repo)
-    for mdfile in os.listdir(os.path.join(repo.working_dir, cheasheets_path)):
+    files = os.listdir(os.path.join(repo.working_dir, cheasheets_path))
+    for mdfile in files:
         pth = os.path.join(repo.working_dir, cheasheets_path, mdfile)
         name = None
         tag = None
         section = None
+
         with open(pth) as mdf:
             mdtext = mdf.read()
             if "opencre.org" not in mdtext:
                 continue
             title = re.search(title_regexp, mdtext)
-            if title:
-                name = title.group("title")
             cre = re.search(cre_link, mdtext)
-            if cre:
+            if cre and title:
+                name = title.group("title")
                 cre_id = cre.group("cre")
                 cres = cache.get_CREs(external_id=cre_id)
-                hyperlink = c_repo.replace(".git","")+"/"+cheasheets_path+"/"+mdfile
+                hyperlink = f"{c_repo.replace('.git','')}/{cheasheets_path}{mdfile}"
                 for dbcre in cres:
                     cs = cheatsheet(
-                       section=title,
-                       hyperlink=hyperlink
+                        section=name,
+                        hyperlink=hyperlink,
+                        tags=[],
                     )
                     dbnode = cache.add_node(cs)
-                    cache.add_link(cre=dbcre, node=dbnode)
+                    cache.add_link(cre=db.dbCREfromCRE(dbcre), node=dbnode)
