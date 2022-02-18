@@ -36,8 +36,6 @@ def parse_cheatsheets(cache: db.Node_collection):
             input("cre")
             title = re.search(title_regexp, mdtext)
             cre = re.search(cre_link, mdtext)
-            pprint(title)
-            pprint(cre)
             if cre and title:
                 name = title.group("title")
                 cre_id = cre.group("cre")
