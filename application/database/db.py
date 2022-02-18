@@ -1,4 +1,5 @@
 from typing import cast
+from pprint import pprint
 
 import logging
 import re
@@ -139,10 +140,15 @@ class Node_collection:
             internal_links.append((group, cre, il.type))
         return internal_links
 
-    def __get_unlinked_nodes(self) -> List[Node]:
+    def __get_unlinked_nodes(
+        self, ntype: str = cre_defs.Standard.__name__
+    ) -> List[Node]:
 
         linked_nodes = (
-            self.session.query(Node.id).join(Links).filter(Node.id == Links.node)
+            self.session.query(Node.id)
+            .join(Links)
+            .filter(Node.id == Links.node)
+            .filter(Node.ntype == ntype)
         )
 
         nodes: List[Node] = (

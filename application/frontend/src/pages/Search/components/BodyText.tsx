@@ -1,4 +1,8 @@
 import React, { useState } from 'react';
+import { useHistory } from 'react-router-dom';
+import { Button, Dropdown, Form, Icon, Input } from 'semantic-ui-react';
+
+import { CRE, STANDARD } from '../../../const';
 import './BodyText.scss';
 
 export const SearchBody = () => {
