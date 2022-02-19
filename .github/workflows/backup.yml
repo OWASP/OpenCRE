@@ -10,6 +10,7 @@ on:
         default: 'warning'
 jobs:
   backup:
+    environment: Heroku-DB-Backup
     name: Download Heroku Backup Replace Oldest Local Backup
     runs-on: ubuntu-latest
     steps:
