@@ -1,0 +1,23 @@
+name: Backup
+on: 
+  schedule:
+    - cron: '0 0 * * *'  # every day at midnight
+jobs:
+  backup:
+    name: Download Heroku Backup Replace Oldest Local Backup
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Backup
+        env: 
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+        run: |
+          mkdir -p /backups
+          filname=$(date +"%m_%d_%y").dump
+          heroku pg:backups:capture
+          heroku pg:backup:download --output=/backups/"${filename}"
+      - uses: actions/upload-artifact@v2
+        with:
+          name: $(date +"%m_%d_%y").dump
+          path: backups/*.dump
+          if-no-files-found: error
+          retention-days: 180 # six months of backups should be enough
