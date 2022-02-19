@@ -2,6 +2,12 @@ name: Backup
 on: 
   schedule:
     - cron: '0 0 * * *'  # every day at midnight
+  workflow_dispatch: # allow manual triggering
+    inputs:
+      logLevel:
+        description: 'Log level'     
+        required: true
+        default: 'warning'
 jobs:
   backup:
     name: Download Heroku Backup Replace Oldest Local Backup
