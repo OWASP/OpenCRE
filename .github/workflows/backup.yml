@@ -27,4 +27,4 @@ jobs:
           name: opencreorg_db_backup
           path: ./backups/*.dump
           if-no-files-found: error
-          retention-days: 180 # six months of backups should be enough
+          retention-days: 90 # 3 months of backups should be enough
