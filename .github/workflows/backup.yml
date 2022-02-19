@@ -18,8 +18,8 @@ jobs:
           HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
         run: |
           filname=$(date +"%m_%d_%y").dump
-          heroku pg:backups:capture
-          heroku pg:backup:download --output=/backups/"${filename}"
+          heroku -a opencreorg pg:backups:capture
+          heroku -a opencreorg pg:backup:download --output=/backups/"${filename}"
       - uses: actions/upload-artifact@v2
         with:
           name: $(date +"%m_%d_%y").dump
