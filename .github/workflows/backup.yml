@@ -17,7 +17,6 @@ jobs:
         env: 
           HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
         run: |
-          mkdir -p /backups
           filname=$(date +"%m_%d_%y").dump
           heroku pg:backups:capture
           heroku pg:backup:download --output=/backups/"${filename}"
