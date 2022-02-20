@@ -64,6 +64,8 @@
     "react-d3-library": "^1.1.8",
     "react-digraph": "^8.0.0-beta.2",
     "react-dom": "^17.0.2",
+    "react-flow": "^1.0.3",
+    "react-flow-renderer": "^9.7.4",
     "react-force-graph-2d": "^1.23.2",
     "react-hot-toast": "^1.0.0",
     "react-query": "^3.15.2",
