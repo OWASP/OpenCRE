@@ -32,7 +32,7 @@ install-deps:
 	pip install -r requirements.txt& yarn install
 
 install:
-	virtualenv venv && . ./venv/bin/activate && make install-deps && yarn build
+	virtualenv -p python3 venv && . ./venv/bin/activate && make install-deps && yarn build
 
 docker:
 	docker build -f Dockerfile-dev -t opencre:$(shell git rev-parse HEAD) .
