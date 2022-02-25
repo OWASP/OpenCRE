@@ -11,7 +11,7 @@ dev-run:
 e2e:
 	yarn build
 	[ -d "./venv" ] && . ./venv/bin/activate
-	export FLASK_APP=$(CURDIR)/cre.py
+	export FLASK_APP=cre
 	export FLASK_CONFIG=development
 	fFLASK_CONFIG=development flask run&
 	
@@ -20,7 +20,7 @@ e2e:
 	killall flask
 test:
 	[ -d "./venv" ] && . ./venv/bin/activate
-	export FLASK_APP=$(CURDIR)/cre.py
+	export FLASK_APP=cre
 	flask routes
 	flask test
 
