@@ -2,7 +2,7 @@
 # silence mypy for the routes file
 import os
 import urllib.parse
-from typing import Any
+from typing import Any, List
 import logging
 
 from flask import (
@@ -19,6 +19,7 @@ from application import cache
 from application.database import db
 from application.defs import cre_defs as defs
 from application.defs import osib_defs as odefs
+from application.utils.spreadsheet import prepare_spreadsheet, write_spreadsheet
 
 ITEMS_PER_PAGE = 20
 
@@ -43,8 +44,20 @@ def extend_cre_with_tag_links(
     return cre
 
 
+def export_results_as_spreadsheet(collection: db.Node_collection, docs: List[defs.Document]):
+    prepared_spreadsheet_docs = prepare_spreadsheet(collection=collection, docs=docs)
+    spreadsheet_url = write_spreadsheet(
+        title='Export from CRE',
+        docs=prepared_spreadsheet_docs,
+        emails=[]
+    )
+    return {"spreadsheetURL": spreadsheet_url, "status": "ok"}
+
+
 @app.route("/rest/v1/id/<creid>", methods=["GET"])
+@app.route("/rest/v1/id/<creid>/export", methods=["GET"])
 @app.route("/rest/v1/name/<crename>", methods=["GET"])
+@app.route("/rest/v1/name/<crename>/export", methods=["GET"])
 @cache.cached(timeout=50)
 def find_cre(creid: str = None, crename: str = None) -> Any:  # refer
     database = db.Node_collection()
@@ -57,8 +70,16 @@ def find_cre(creid: str = None, crename: str = None) -> Any:  # refer
             logger.error("get by id returned more than one results? This looks buggy")
         cre = cres[0]
         result = {"data": cre.todict()}
+
+        if 'export' in request.path:
+            return export_results_as_spreadsheet(
+                collection=database,
+                docs=[cre]
+            )
+
         # disable until we have a consensus on tag behaviour
         # cre = extend_cre_with_tag_links(cre=cre, collection=database)
+
         if opt_osib:
             result["osib"] = odefs.cre2osib([cre]).todict()
         return jsonify(result)
