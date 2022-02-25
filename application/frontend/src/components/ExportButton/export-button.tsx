@@ -5,7 +5,7 @@ import { Loader } from 'semantic-ui-react';
 
 interface IExportButton {
   fetchURL: string;
-  fetchParams?: string[][];
+  fetchParams?: any;
 }
 
 const openURLInNewTab = (url: string): void => {
