@@ -87,7 +87,9 @@ def find_cre(creid: str = None, crename: str = None) -> Any:  # refer
 
 
 @app.route("/rest/v1/<ntype>/<name>", methods=["GET"])
+@app.route("/rest/v1/<ntype>/<name>/export", methods=["GET"])
 @app.route("/rest/v1/standard/<name>", methods=["GET"])
+@app.route("/rest/v1/standard/<name>/export", methods=["GET"])
 # @cache.cached(timeout=50)
 def find_node_by_name(name: str, ntype: str = defs.Credoctypes.Standard.value) -> Any:
     database = db.Node_collection()
@@ -130,6 +132,10 @@ def find_node_by_name(name: str, ntype: str = defs.Credoctypes.Standard.value) -
             result["osib"] = odefs.cre2osib(nodes).todict()
         res = [node.todict() for node in nodes]
         result["standards"] = res
+
+        if 'export' in request.path:
+            return export_results_as_spreadsheet(collection=database, docs=nodes)
+
         return jsonify(result)
     else:
         abort(404)
@@ -163,6 +169,7 @@ def gap_analysis() -> Any:  # TODO (spyros): add export result to spreadsheet
 
 
 @app.route("/rest/v1/text_search", methods=["GET"])
+@app.route("/rest/v1/text_search/export", methods=["GET"])
 # @cache.cached(timeout=50)
 def text_search() -> Any:
     """
@@ -181,6 +188,10 @@ def text_search() -> Any:
     documents = database.text_search(text)
     if documents:
         res = [doc.todict() for doc in documents]
+
+        if 'export' in request.path:
+            return export_results_as_spreadsheet(collection=database, docs=documents)
+
         return jsonify(res)
     else:
         abort(404)
