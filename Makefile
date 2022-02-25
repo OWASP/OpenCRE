@@ -56,10 +56,10 @@ clean:
 
 migrate-upgrade:
 	[ -d "./venv" ] && . ./venv/bin/activate
-	export FLASK_APP=$(CURDIR)/cre.py
+	export FLASK_APP=cre
 	flask db upgrade  
 migrate-downgrade:
 	[ -d "./venv" ] && . ./venv/bin/activate
-	export FLASK_APP=$(CURDIR)/cre.py
+	export FLASK_APP=cre
 	flask db downgrade
 all: clean lint test dev dev-run
