@@ -1,0 +1,17 @@
+doctype: CRE
+links:
+- document:
+    doctype: CRE
+    id: 821-540
+    name: Protect logs against log injection
+    tags:
+    - Injection
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 048-612
+    name: Encode user input before logging
+    tags:
+    - Injection
+  ltype: Contains
+name: Log injection protection

@@ -1,0 +1,13 @@
+links:
+  - linkType: Linked To
+    document:
+      name: CWE
+      section: 359
+  - linkType: Linked To
+    document:
+      name: WASC
+      section: 13
+toolType: Offensive
+docType: Tool
+id: 110005
+name: 'Zaproxy-Alert: Personally Identifiable Information via WebSocket'

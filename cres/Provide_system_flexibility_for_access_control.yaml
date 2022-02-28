@@ -1,0 +1,49 @@
+doctype: CRE
+id: 412-561
+links:
+- document:
+    doctype: CRE
+    id: 724-770
+    name: '>>Authorized access'
+  ltype: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x10-V1-Architecture.md
+    name: ASVS
+    section: V1.4.2
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/284.html
+    name: CWE
+    section: '284'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html
+    name: Cheat_sheets
+    section: Docker Security Cheat Sheet
+  ltype: Linked To
+- document:
+    description: '"Use per user or session indirect object references (create a temporary
+      mapping at time of use). Or, ensure that each use of a direct object reference
+      is tied to an authorization check to ensure the user is authorized for the requested
+      object. "'
+    doctype: Tool
+    name: 'ZAP Alert: "Username Hash Found"'
+    tags:
+    - '"Passive"'
+    tooltype: Offensive
+  ltype: SAME
+- document:
+    description: '"Use per user or session indirect object references (create a temporary
+      mapping at time of use). Or, ensure that each use of a direct object reference
+      is tied to an authorization check to ensure the user is authorized for the requested
+      object."'
+    doctype: Tool
+    name: 'ZAP Alert: "Username Hash Found in WebSocket message"'
+    tags:
+    - '"WebSocket Passive"'
+    tooltype: Offensive
+  ltype: SAME
+name: Provide system flexibility for access control

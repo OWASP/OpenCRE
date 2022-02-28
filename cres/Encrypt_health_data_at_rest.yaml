@@ -1,0 +1,64 @@
+doctype: CRE
+id: 224-321
+links:
+- document:
+    doctype: CRE
+    id: 275-483
+    name: Securely store regulated data
+  ltype: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x14-V6-Cryptography.md
+    name: ASVS
+    section: V6.1.2
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/311.html
+    name: CWE
+    section: '311'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owasp.org/www-project-web-security-testing-guide/v41/4-Web_Application_Security_Testing/09-Testing_for_Weak_Cryptography/04-Testing_for_Weak_Encryption.html
+    name: WSTG
+    section: WSTG-CRYP-04
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Abuse_Case_Cheat_Sheet.html
+    name: Cheat_sheets
+    section: Abuse Case Cheat Sheet
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/User_Privacy_Protection_Cheat_Sheet.html
+    name: Cheat_sheets
+    section: User Privacy Protection Cheat Sheet
+  ltype: Linked To
+- document:
+    doctype: Tool
+    name: 'ZAP Alert: "Secure Pages Include Mixed Content"'
+    tags:
+    - '"Passive"'
+    tooltype: Offensive
+  ltype: SAME
+- document:
+    description: '"Configure your web or application server to use SSL (https)."'
+    doctype: Tool
+    name: 'ZAP Alert: "HTTP Only Site"'
+    tags:
+    - '"Active"'
+    tooltype: Offensive
+  ltype: SAME
+- document:
+    description: '"Ensure that your web server, application server, load balancer,
+      etc. is configured to only serve such content via HTTPS. Consider implementing
+      HTTP Strict Transport Security."'
+    doctype: Tool
+    name: 'ZAP Alert: "HTTPS Content Available via HTTP"'
+    tags:
+    - '"Active"'
+    tooltype: Offensive
+  ltype: SAME
+name: Encrypt health data at rest

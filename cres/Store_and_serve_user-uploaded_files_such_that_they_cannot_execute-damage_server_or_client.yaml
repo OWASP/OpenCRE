@@ -1,0 +1,37 @@
+doctype: CRE
+id: 384-344
+links:
+- document:
+    doctype: CRE
+    id: 621-287
+    name: File upload
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 760-765
+    name: XSS
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 760-764
+    name: Injection
+    tags:
+    - XSS
+  ltype: Related
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x10-V1-Architecture.md
+    name: ASVS
+    section: V1.12.2
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/646.html
+    name: CWE
+    section: '646'
+  ltype: Linked To
+name: Store and serve user-uploaded files such that they cannot execute/damage server
+  or client
+tags:
+- Injection
+- XSS

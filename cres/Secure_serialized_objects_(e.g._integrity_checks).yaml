@@ -1,0 +1,45 @@
+doctype: CRE
+id: 762-616
+links:
+- document:
+    doctype: CRE
+    id: 836-068
+    name: Deserialization Prevention
+  ltype: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x13-V5-Validation-Sanitization-Encoding.md
+    name: ASVS
+    section: V5.5.1
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owasp-top-10-proactive-controls-2018.readthedocs.io/en/latest/c5-validate-all-inputs.html
+    name: OPC
+    section: C5
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/502.html
+    name: CWE
+    section: '502'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Deserialization_Cheat_Sheet.html
+    name: Cheat_sheets
+    section: Deserialization Cheat Sheet
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/XML_External_Entity_Prevention_Cheat_Sheet.html
+    name: Cheat_sheets
+    section: XML External Entity Prevention Cheat Sheet
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/XML_Security_Cheat_Sheet.html
+    name: Cheat_sheets
+    section: XML Security Cheat Sheet
+  ltype: Linked To
+name: Secure serialized objects (e.g. integrity checks)

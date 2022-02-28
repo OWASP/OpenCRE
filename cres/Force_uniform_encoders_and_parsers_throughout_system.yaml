@@ -1,0 +1,40 @@
+doctype: CRE
+id: 061-186
+links:
+- document:
+    doctype: CRE
+    id: 118-110
+    name: API/web services
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 028-727
+    name: SSRF
+  ltype: Related
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x21-V13-API.md
+    name: ASVS
+    section: V13.1.1
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/116.html
+    name: CWE
+    section: '116'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Web_Service_Security_Cheat_Sheet.html
+    name: Cheat_sheets
+    section: Web Service Security Cheat Sheet
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html
+    name: Cheat_sheets
+    section: Server Side Request Forgery Prevention Cheat Sheet
+  ltype: Linked To
+name: Force uniform encoders and parsers throughout system
+tags:
+- SSRF

@@ -1,0 +1,49 @@
+doctype: CRE
+id: 615-744
+links:
+- document:
+    doctype: CRE
+    id: 724-770
+    name: '>>Authorized access'
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 486-813
+    name: Configuration
+  ltype: Related
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x12-V4-Access-Control.md
+    name: ASVS
+    section: V4.3.2
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/548.html
+    name: CWE
+    section: '548'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owasp.org/www-project-web-security-testing-guide/v41/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/03-Test_File_Extensions_Handling_for_Sensitive_Information.html
+    name: WSTG
+    section: WSTG-CONF-03
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/REST_Assessment_Cheat_Sheet.html
+    name: Cheat_sheets
+    section: REST Assessment Cheat Sheet
+  ltype: Linked To
+- document:
+    description: '"Disable directory browsing.  If this is required, make sure the
+      listed files does not induce risks."'
+    doctype: Tool
+    name: 'ZAP Alert: "Directory Browsing"'
+    tags:
+    - '"Active"'
+    tooltype: Offensive
+  ltype: SAME
+name: Protect against directory browsing/discovery attacks
+tags:
+- Configuration

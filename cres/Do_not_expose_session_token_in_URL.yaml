@@ -1,0 +1,27 @@
+doctype: CRE
+id: 402-133
+links:
+- document:
+    doctype: CRE
+    id: 177-260
+    name: '>>Session management'
+  ltype: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x12-V3-Session-management.md
+    name: ASVS
+    section: V3.1.1
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/598.html
+    name: CWE
+    section: '598'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owasp.org/www-project-web-security-testing-guide/v41/4-Web_Application_Security_Testing/06-Session_Management_Testing/04-Testing_for_Exposed_Session_Variables.html
+    name: WSTG
+    section: WSTG-SESS-04
+  ltype: Linked To
+name: Do not expose session token in URL

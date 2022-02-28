@@ -1,0 +1,173 @@
+doctype: CRE
+id: 724-770
+links:
+- document:
+    doctype: CRE
+    id: 540-566
+    name: Let application request minimal permissions
+    tags:
+    - Personal data handling
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 166-151
+    name: Ensure that secure fail-safe is in place for access control
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 650-560
+    name: Enforce access control on trusted service layer
+    tags:
+    - Architecture
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 284-521
+    name: Enforce additional authorization and segregation of duties
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 152-725
+    name: Limit access to admin/management functionality
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 060-472
+    name: Use CSRF protection against authenticated functionality, add anti-automation
+      controls for unauthenticated functionality
+    tags:
+    - CSRF
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 817-808
+    name: Deny new users by default
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 412-561
+    name: Provide system flexibility for access control
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 524-603
+    name: Limit modification of access controls to specifically authorized actors/users
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 368-633
+    name: Enforce least privilege
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 368-633
+    name: Use least privilege for resources
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 330-281
+    name: Use least privilege OS accounts for system (components)
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 664-080
+    name: Enforce model-based authorization both at URI and final resource
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 615-744
+    name: Protect against directory browsing/discovery attacks
+    tags:
+    - Configuration
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 304-667
+    name: Protect API against unauthorized access/modification (IDOR)
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 801-310
+    name: Use ABAC/FBAC on data/feature level, even when using RBAC for permissions
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 640-364
+    name: Enforce access control on trusted parts/serverside
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 651-530
+    name: 'Was: TBD'
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 278-413
+    name: Mutually authenticate application components. Minimize privileges
+    tags:
+    - Architecture
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 746-705
+    name: Limit/authorize user's access to functionality
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 273-600
+    name: Segregate components of differing trust levels
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 538-770
+    name: Data access control
+  ltype: Related
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=AC-1
+    name: NIST 800-53 v5
+    section: AC-1 POLICY AND PROCEDURES
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=AC-14
+    name: NIST 800-53 v5
+    section: AC-14 PERMITTED ACTIONS WITHOUT IDENTIFICATION OR AUTHENTICATION
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=AC-2
+    name: NIST 800-53 v5
+    section: AC-2 ACCOUNT MANAGEMENT
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=AC-24
+    name: NIST 800-53 v5
+    section: AC-24 Access Control Decisions
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=AC-3
+    name: NIST 800-53 v5
+    section: AC-3 ACCESS ENFORCEMENT
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=AC-5
+    name: NIST 800-53 v5
+    section: AC-5 SEPARATION OF DUTIES
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=AC-6
+    name: NIST 800-53 v5
+    section: AC-6 LEAST PRIVILEGE
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=SC-2
+    name: NIST 800-53 v5
+    section: SC-2 Separation of System and User Functionality
+  ltype: Linked To
+name: '>>Authorized access'

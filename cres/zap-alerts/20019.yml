@@ -1,0 +1,13 @@
+links:
+  - linkType: Linked To
+    document:
+      name: CWE
+      section: 601
+  - linkType: Linked To
+    document:
+      name: WASC
+      section: 38
+toolType: Offensive
+docType: Tool
+id: 20019
+name: 'Zaproxy-Alert: External Redirect'

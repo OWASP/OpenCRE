@@ -1,0 +1,39 @@
+doctype: CRE
+id: 001-746
+links:
+- document:
+    doctype: CRE
+    id: 071-288
+    name: RESTful
+  ltype: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x21-V13-API.md
+    name: ASVS
+    section: V13.2.4
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/770.html
+    name: CWE
+    section: '770'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/REST_Assessment_Cheat_Sheet.html
+    name: Cheat_sheets
+    section: REST Assessment Cheat Sheet
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/REST_Security_Cheat_Sheet.html
+    name: Cheat_sheets
+    section: REST Security Cheat Sheet
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html
+    name: Cheat_sheets
+    section: Cross-Site Request Forgery Prevention Cheat Sheet
+  ltype: Linked To
+name: Anti-Automation protection for REST services

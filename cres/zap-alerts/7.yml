@@ -1,0 +1,13 @@
+links:
+  - linkType: Linked To
+    document:
+      name: CWE
+      section: 98
+  - linkType: Linked To
+    document:
+      name: WASC
+      section: 5
+toolType: Offensive
+docType: Tool
+id: 7
+name: 'Zaproxy-Alert: Remote File Inclusion'

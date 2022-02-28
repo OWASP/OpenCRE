@@ -5,22 +5,22 @@ links:
     doctype: CRE
     id: 126-668
     name: '>>Secure data storage'
-  type: Contains
+  ltype: Contains
 - document:
     doctype: CRE
     id: 783-355
     name: Deployment
     tags:
     - Configuration
-  type: Related
+  ltype: Related
 - document:
     doctype: CRE
     id: 257-117
     name: Perform regular backups of important data and test restoration
-  type: Contains
+  ltype: Contains
 - document:
     doctype: CRE
     id: 614-353
     name: Store backups securely
-  type: Contains
+  ltype: Contains
 name: Backups

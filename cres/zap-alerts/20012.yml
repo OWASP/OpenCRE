@@ -1,0 +1,13 @@
+links:
+  - linkType: Linked To
+    document:
+      name: CWE
+      section: 352
+  - linkType: Linked To
+    document:
+      name: WASC
+      section: 9
+toolType: Offensive
+docType: Tool
+id: 20012
+name: 'Zaproxy-Alert: Anti-CSRF Tokens Check'

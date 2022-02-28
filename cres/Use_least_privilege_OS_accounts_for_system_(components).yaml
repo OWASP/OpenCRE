@@ -1,0 +1,34 @@
+doctype: CRE
+id: 330-281
+links:
+- document:
+    doctype: CRE
+    id: 724-770
+    name: '>>Authorized access'
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 726-868
+    name: Deployed topology
+    tags:
+    - Architecture
+  ltype: Related
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x10-V1-Architecture.md
+    name: ASVS
+    section: V1.2.1
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owasp-top-10-proactive-controls-2018.readthedocs.io/en/latest/c3-secure-database-access.html
+    name: OPC
+    section: C3
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/250.html
+    name: CWE
+    section: '250'
+  ltype: Linked To
+name: Use least privilege OS accounts for system (components)

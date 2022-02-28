@@ -1,0 +1,5 @@
+links: []
+toolType: Offensive
+docType: Tool
+id: 10020
+name: 'Zaproxy-Alert: Missing Anti-clickjacking Header'

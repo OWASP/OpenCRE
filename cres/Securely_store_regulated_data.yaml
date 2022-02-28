@@ -1,0 +1,28 @@
+doctype: CRE
+id: 275-483
+links:
+- document:
+    doctype: CRE
+    id: 400-007
+    name: Encrypt data at rest
+    tags:
+    - Cryptography
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 267-468
+    name: Encrypt financial data at rest
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 224-321
+    name: Encrypt health data at rest
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 482-866
+    name: Encrypt personal data at rest
+    tags:
+    - Personal data handling
+  ltype: Contains
+name: Securely store regulated data

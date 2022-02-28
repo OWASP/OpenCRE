@@ -7,57 +7,57 @@ links:
     name: Configure CSP configuration properly
     tags:
     - XSS
-  type: Related
+  ltype: Related
 - document:
     doctype: CRE
     id: 764-765
     name: Sanitization and sandboxing
     tags:
-    - XSS
     - Injection
-  type: Related
+    - XSS
+  ltype: Related
 - document:
     doctype: CRE
     id: 010-308
     name: Input validation
     tags:
-    - XSS
     - Injection
-  type: Related
+    - XSS
+  ltype: Related
 - document:
     doctype: CRE
     id: 760-764
     name: Injection
     tags:
     - XSS
-  type: Related
+  ltype: Related
 - document:
     doctype: CRE
     id: 384-344
     name: Store and serve user-uploaded files such that they cannot execute/damage
       server or client
     tags:
-    - XSS
     - Injection
-  type: Related
+    - XSS
+  ltype: Related
 - document:
     doctype: CRE
     id: 161-451
     name: Output encoding and injection prevention
     tags:
-    - XSS
     - Injection
-  type: Related
+    - XSS
+  ltype: Related
 - document:
     doctype: CRE
     id: 804-220
     name: Set httponly attribute for cookie-based session tokens
     tags:
     - XSS
-  type: Related
+  ltype: Related
 - document:
     doctype: CRE
     id: 546-564
     name: '>>Tags'
-  type: Contains
+  ltype: Contains
 name: XSS

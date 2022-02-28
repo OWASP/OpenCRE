@@ -1,0 +1,27 @@
+doctype: CRE
+id: 368-633
+links:
+- document:
+    doctype: CRE
+    id: 724-770
+    name: '>>Authorized access'
+  ltype: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x10-V1-Architecture.md
+    name: ASVS
+    section: V1.4.3
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/272.html
+    name: CWE
+    section: '272'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html
+    name: Cheat_sheets
+    section: Docker Security Cheat Sheet
+  ltype: Linked To
+name: Use least privilege for resources

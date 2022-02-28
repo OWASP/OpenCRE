@@ -1,0 +1,21 @@
+doctype: CRE
+id: 538-770
+links:
+- document:
+    doctype: CRE
+    id: 126-668
+    name: '>>Secure data storage'
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 724-770
+    name: '>>Authorized access'
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 117-371
+    name: Use a centralized access control mechanism
+    tags:
+    - Architecture
+  ltype: Contains
+name: Data access control

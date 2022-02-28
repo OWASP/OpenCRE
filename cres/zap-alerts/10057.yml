@@ -1,0 +1,13 @@
+links:
+  - linkType: Linked To
+    document:
+      name: CWE
+      section: 284
+  - linkType: Linked To
+    document:
+      name: WASC
+      section: 2
+toolType: Offensive
+docType: Tool
+id: 10057
+name: 'Zaproxy-Alert: Username Hash Found'

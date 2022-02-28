@@ -1,0 +1,63 @@
+doctype: CRE
+id: 248-646
+links:
+- document:
+    doctype: CRE
+    id: 228-551
+    name: TLS
+    tags:
+    - Cryptoghraphy
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 170-772
+    name: Cryptography
+  ltype: Related
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x17-V9-Communications.md
+    name: ASVS
+    section: V9.1.3
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/326.html
+    name: CWE
+    section: '326'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owasp.org/www-project-web-security-testing-guide/v41/4-Web_Application_Security_Testing/09-Testing_for_Weak_Cryptography/01-Testing_for_Weak_SSL_TLS_Ciphers_Insufficient_Transport_Layer_Protection.html
+    name: WSTG
+    section: WSTG-CRYP-01
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/HTTP_Strict_Transport_Security_Cheat_Sheet.html
+    name: Cheat_sheets
+    section: HTTP Strict Transport Security Cheat Sheet
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Protection_Cheat_Sheet.html
+    name: Cheat_sheets
+    section: Transport Layer Protection Cheat Sheet
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/TLS_Cipher_String_Cheat_Sheet.html
+    name: Cheat_sheets
+    section: TLS Cipher String Cheat Sheet
+  ltype: Linked To
+- document:
+    description: '"Protect the connection using HTTPS or use a stronger authentication
+      mechanism"'
+    doctype: Tool
+    name: 'ZAP Alert: "Weak Authentication Method"'
+    tags:
+    - '"Passive"'
+    tooltype: Offensive
+  ltype: SAME
+name: Disable insecure SSL/TLS versions
+tags:
+- Cryptography

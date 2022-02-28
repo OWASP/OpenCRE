@@ -1,0 +1,194 @@
+doctype: CRE
+id: 227-045
+links:
+- document:
+    doctype: CRE
+    name: '>>Documentation and requirements'
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 028-728
+    name: Personal data handling
+  ltype: Related
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x16-V8-Data-Protection.md
+    name: ASVS
+    section: V8.3.4
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owasp-top-10-proactive-controls-2018.readthedocs.io/en/latest/c8-protect-data-everywhere.html
+    name: OPC
+    section: C8
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/200.html
+    name: CWE
+    section: '200'
+  ltype: Linked To
+- document:
+    description: '"Review the source code of this page. Implement custom error pages.
+      Consider implementing a mechanism to provide a unique error reference/identifier
+      to the client (browser) while logging the details on the server side and not
+      exposing them to the user."'
+    doctype: Tool
+    name: 'ZAP Alert: "Application Error Disclosure"'
+    tags:
+    - '"Passive"'
+    tooltype: Offensive
+  ltype: SAME
+- document:
+    description: '"Do not divulge details of whether a username is valid or invalid.
+      In particular, for unsuccessful login attempts, do not differentiate between
+      an invalid user and an invalid password in the error message, page title, page
+      contents, HTTP headers, or redirection logic."'
+    doctype: Tool
+    name: 'ZAP Alert: "Possible Username Enumeration"'
+    tags:
+    - '"Active"'
+    tooltype: Offensive
+  ltype: SAME
+- document:
+    description: '"Limit access to Symfony''s Profiler, either via authentication/authorization
+      or limiting inclusion of the header to specific clients (by IP, etc.)."'
+    doctype: Tool
+    name: 'ZAP Alert: "X-Debug-Token Information Leak"'
+    tags:
+    - '"Passive"'
+    tooltype: Offensive
+  ltype: SAME
+- document:
+    description: '"Remove all comments that return information that may help an attacker
+      and fix any underlying problems they refer to."'
+    doctype: Tool
+    name: 'ZAP Alert: "Information Disclosure - Suspicious Comments in XML via WebSocket"'
+    tags:
+    - '"WebSocket Passive"'
+    tooltype: Offensive
+  ltype: SAME
+- document:
+    description: '"Remove all comments that return information that may help an attacker
+      and fix any underlying problems they refer to."'
+    doctype: Tool
+    name: 'ZAP Alert: "Information Disclosure - Suspicious Comments"'
+    tags:
+    - '"Passive"'
+    tooltype: Offensive
+  ltype: SAME
+- document:
+    description: '"Do not pass sensitive information in URIs."'
+    doctype: Tool
+    name: 'ZAP Alert: "Information Disclosure - Sensitive Information in HTTP Referrer
+      Header"'
+    tags:
+    - '"Passive"'
+    tooltype: Offensive
+  ltype: SAME
+- document:
+    description: '"Disable debugging messages before pushing to production."'
+    doctype: Tool
+    name: 'ZAP Alert: "Information Disclosure - Debug Error Messages via WebSocket"'
+    tags:
+    - '"WebSocket Passive"'
+    tooltype: Offensive
+  ltype: SAME
+- document:
+    doctype: Tool
+    name: 'ZAP Alert: "Proxy Disclosure"'
+    tags:
+    - '"Active"'
+    tooltype: Offensive
+  ltype: SAME
+- document:
+    doctype: Tool
+    name: 'ZAP Alert: "Cookie Slack Detector"'
+    tags:
+    - '"Active"'
+    tooltype: Offensive
+  ltype: SAME
+- document:
+    description: '"Disable debugging messages before pushing to production."'
+    doctype: Tool
+    name: 'ZAP Alert: "Information Disclosure - Debug Error Messages"'
+    tags:
+    - '"Passive"'
+    tooltype: Offensive
+  ltype: SAME
+- document:
+    description: '"Before allowing images to be stored on the server and/or transmitted
+      to the browser, strip out the embedded location information from image.  This
+      could mean removing all Exif data or just the GPS component.  Other data, like
+      serial numbers, should also be removed."'
+    doctype: Tool
+    name: 'ZAP Alert: "Image Exposes Location or Privacy Data"'
+    tags:
+    - '"Passive"'
+    tooltype: Offensive
+  ltype: SAME
+- document:
+    description: '"Do not pass sensitive information in URIs."'
+    doctype: Tool
+    name: 'ZAP Alert: "Information Disclosure - Sensitive Information in URL"'
+    tags:
+    - '"Passive"'
+    tooltype: Offensive
+  ltype: SAME
+- document:
+    description: '"TBA"'
+    doctype: Tool
+    name: 'ZAP Alert: "Insecure HTTP Method"'
+    tags:
+    - '"Active"'
+    tooltype: Offensive
+  ltype: SAME
+- document:
+    description: '"Remove emails that are not public."'
+    doctype: Tool
+    name: 'ZAP Alert: "Email address found in WebSocket message"'
+    tags:
+    - '"WebSocket Passive"'
+    tooltype: Offensive
+  ltype: SAME
+- document:
+    description: '"For secure content, put session ID in a cookie. To be even more
+      secure consider using a combination of cookie and URL rewrite."'
+    doctype: Tool
+    name: 'ZAP Alert: "Session ID in URL Rewrite"'
+    tags:
+    - '"Passive"'
+    tooltype: Offensive
+  ltype: SAME
+- document:
+    description: '"Remove the private IP address from the HTTP response body.  For
+      comments, use JSP/ASP/PHP comment instead of HTML/JavaScript comment which can
+      be seen by client browsers."'
+    doctype: Tool
+    name: 'ZAP Alert: "Private IP Disclosure"'
+    tags:
+    - '"Passive"'
+    tooltype: Offensive
+  ltype: SAME
+- document:
+    description: '"Ensure that your web server, application server, load balancer,
+      etc. is configured to suppress ''X-Powered-By'' headers."'
+    doctype: Tool
+    name: 'ZAP Alert: "Server Leaks Information via ''X-Powered-By'' HTTP Response
+      Header Field(s)"'
+    tags:
+    - '"Passive"'
+    tooltype: Offensive
+  ltype: SAME
+- document:
+    description: '"Manually confirm that the timestamp data is not sensitive, and
+      that the data cannot be aggregated to disclose exploitable patterns."'
+    doctype: Tool
+    name: 'ZAP Alert: "Timestamp Disclosure"'
+    tags:
+    - '"Passive"'
+    tooltype: Offensive
+  ltype: SAME
+name: Identify sensitive data and subject it to a policy
+tags:
+- Personal data handling

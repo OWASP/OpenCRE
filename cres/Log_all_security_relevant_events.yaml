@@ -1,0 +1,32 @@
+doctype: CRE
+id: 184-284
+links:
+- document:
+    doctype: CRE
+    id: 402-706
+    name: Log relevant
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 836-068
+    name: Deserialization Prevention
+  ltype: Related
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x15-V7-Error-Logging.md
+    name: ASVS
+    section: V7.1.3
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/778.html
+    name: CWE
+    section: '778'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html
+    name: Cheat_sheets
+    section: Logging Cheat Sheet
+  ltype: Linked To
+name: Log all security relevant events

@@ -1,0 +1,13 @@
+links:
+  - linkType: Linked To
+    document:
+      name: CWE
+      section: 94
+  - linkType: Linked To
+    document:
+      name: WASC
+      section: 14
+toolType: Offensive
+docType: Tool
+id: 40032
+name: 'Zaproxy-Alert: .htaccess Information Leak'

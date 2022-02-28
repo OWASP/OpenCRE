@@ -1,0 +1,21 @@
+doctype: CRE
+id: 715-304
+links:
+- document:
+    doctype: CRE
+    id: 208-830
+    name: Manage temporary storage
+  ltype: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x16-V8-Data-Protection.md
+    name: ASVS
+    section: V8.3.6
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/226.html
+    name: CWE
+    section: '226'
+  ltype: Linked To
+name: Zeroize sensitive information in memory after use

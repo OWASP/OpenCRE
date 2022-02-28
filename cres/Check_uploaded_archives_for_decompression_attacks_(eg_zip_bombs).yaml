@@ -1,0 +1,34 @@
+doctype: CRE
+id: 163-518
+links:
+- document:
+    doctype: CRE
+    id: 621-287
+    name: File upload
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 623-550
+    name: DOS
+  ltype: Related
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x20-V12-Files-Resources.md
+    name: ASVS
+    section: V12.1.2
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/409.html
+    name: CWE
+    section: '409'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/File_Upload_Cheat_Sheet.html
+    name: Cheat_sheets
+    section: File Upload Cheat Sheet
+  ltype: Linked To
+name: Check uploaded archives for decompression attacks (eg zip bombs)
+tags:
+- DOS

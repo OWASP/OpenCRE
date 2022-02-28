@@ -7,7 +7,7 @@ links:
     name: Force uniform encoders and parsers throughout system
     tags:
     - SSRF
-  type: Related
+  ltype: Related
 - document:
     doctype: CRE
     id: 742-056
@@ -15,7 +15,7 @@ links:
       file context, eg RFI)
     tags:
     - SSRF
-  type: Related
+  ltype: Related
 - document:
     doctype: CRE
     id: 657-084
@@ -23,10 +23,10 @@ links:
       and whitelisting
     tags:
     - SSRF
-  type: Related
+  ltype: Related
 - document:
     doctype: CRE
     id: 546-564
     name: '>>Tags'
-  type: Contains
+  ltype: Contains
 name: SSRF

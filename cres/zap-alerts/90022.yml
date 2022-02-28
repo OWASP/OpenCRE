@@ -1,0 +1,13 @@
+links:
+  - linkType: Linked To
+    document:
+      name: CWE
+      section: 200
+  - linkType: Linked To
+    document:
+      name: WASC
+      section: 13
+toolType: Offensive
+docType: Tool
+id: 90022
+name: 'Zaproxy-Alert: Application Error Disclosure'

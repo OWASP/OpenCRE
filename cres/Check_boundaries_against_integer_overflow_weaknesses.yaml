@@ -1,0 +1,33 @@
+doctype: CRE
+id: 482-771
+links:
+- document:
+    doctype: CRE
+    id: 866-553
+    name: Memory, String, and Unmanaged Code
+    tags:
+    - Injection
+  ltype: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x13-V5-Validation-Sanitization-Encoding.md
+    name: ASVS
+    section: V5.4.3
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/190.html
+    name: CWE
+    section: '190'
+  ltype: Linked To
+- document:
+    description: '"Rewrite the background program using proper checking of the size
+      of integer being input to prevent overflows and divide by 0 errors.  This will
+      require a recompile of the background executable."'
+    doctype: Tool
+    name: 'ZAP Alert: "Integer Overflow Error"'
+    tags:
+    - '"Active"'
+    tooltype: Offensive
+  ltype: SAME
+name: Check boundaries against integer overflow weaknesses

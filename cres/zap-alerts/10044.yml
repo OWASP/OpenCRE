@@ -1,0 +1,5 @@
+links: []
+toolType: Offensive
+docType: Tool
+id: 10044
+name: 'Zaproxy-Alert: Big Redirect Detected (Potential Sensitive Information Leak)'

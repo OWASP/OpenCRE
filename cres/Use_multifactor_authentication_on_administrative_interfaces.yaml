@@ -1,0 +1,29 @@
+doctype: CRE
+id: 201-246
+links:
+- document:
+    doctype: CRE
+    id: 062-850
+    name: MFA/OTP
+    tags:
+    - Cryptography
+  ltype: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x12-V4-Access-Control.md
+    name: ASVS
+    section: V4.3.1
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/419.html
+    name: CWE
+    section: '419'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/REST_Assessment_Cheat_Sheet.html
+    name: Cheat_sheets
+    section: REST Assessment Cheat Sheet
+  ltype: Linked To
+name: Use multifactor authentication on administrative interfaces

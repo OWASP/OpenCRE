@@ -1,0 +1,39 @@
+doctype: CRE
+id: 118-602
+links:
+- document:
+    doctype: CRE
+    id: 513-183
+    name: Error handling
+  ltype: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x15-V7-Error-Logging.md
+    name: ASVS
+    section: V7.4.3
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owasp-top-10-proactive-controls-2018.readthedocs.io/en/latest/c10-handle-errors-exceptions.html
+    name: OPC
+    section: C10
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/431.html
+    name: CWE
+    section: '431'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owasp.org/www-project-web-security-testing-guide/v41/4-Web_Application_Security_Testing/08-Testing_for_Error_Handling/02-Testing_for_Stack_Traces.html
+    name: WSTG
+    section: WSTG-ERRH-02
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Error_Handling_Cheat_Sheet.html
+    name: Cheat_sheets
+    section: Error Handling Cheat Sheet
+  ltype: Linked To
+name: Use a standard last-resort error handler for unhandled errors

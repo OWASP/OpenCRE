@@ -1,0 +1,28 @@
+doctype: CRE
+id: 834-645
+links:
+- document:
+    doctype: CRE
+    id: 613-287
+    name: Dependency integrity
+  ltype: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x18-V10-Malicious.md
+    name: ASVS
+    section: V10.2.1
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/359.html
+    name: CWE
+    section: '359'
+  ltype: Linked To
+- document:
+    doctype: Tool
+    name: 'ZAP Alert: "Personally Identifiable Information via WebSocket"'
+    tags:
+    - '"WebSocket Passive"'
+    tooltype: Offensive
+  ltype: SAME
+name: Avoid unauthorized client data collection

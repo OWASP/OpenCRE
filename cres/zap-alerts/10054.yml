@@ -1,0 +1,13 @@
+links:
+  - linkType: Linked To
+    document:
+      name: CWE
+      section: 1275
+  - linkType: Linked To
+    document:
+      name: WASC
+      section: 13
+toolType: Offensive
+docType: Tool
+id: 10054
+name: 'Zaproxy-Alert: Cookie without SameSite Attribute'

@@ -1,0 +1,27 @@
+doctype: CRE
+id: 545-243
+links:
+- document:
+    doctype: CRE
+    id: 130-550
+    name: File handling
+  ltype: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x20-V12-Files-Resources.md
+    name: ASVS
+    section: V12.5.2
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/434.html
+    name: CWE
+    section: '434'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owasp.org/www-project-web-security-testing-guide/v41/4-Web_Application_Security_Testing/10-Business_Logic_Testing/09-Test_Upload_of_Malicious_Files.html
+    name: WSTG
+    section: WSTG-BUSL-09
+  ltype: Linked To
+name: Block execution/output of uploaded files

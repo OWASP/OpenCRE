@@ -1,0 +1,79 @@
+doctype: CRE
+id: 646-462
+links:
+- document:
+    doctype: CRE
+    id: 764-765
+    name: Sanitization and sandboxing
+    tags:
+    - Injection
+    - XSS
+  ltype: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x13-V5-Validation-Sanitization-Encoding.md
+    name: ASVS
+    section: V5.2.8
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/94.html
+    name: CWE
+    section: '94'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owasp.org/www-project-web-security-testing-guide/v41/4-Web_Application_Security_Testing/11-Client_Side_Testing/05-Testing_for_CSS_Injection.html
+    name: WSTG
+    section: WSTG-CLNT-05
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html
+    name: Cheat_sheets
+    section: Server Side Request Forgery Prevention Cheat Sheet
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html
+    name: Cheat_sheets
+    section: Cross Site Scripting Prevention Cheat Sheet
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.html
+    name: Cheat_sheets
+    section: DOM based XSS Prevention Cheat Sheet
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.html
+    name: Cheat_sheets
+    section: Unvalidated Redirects and Forwards Cheat Sheet
+  ltype: Linked To
+- document:
+    description: '"Ensure the .htaccess file is not accessible."'
+    doctype: Tool
+    name: 'ZAP Alert: ".htaccess Information Leak"'
+    tags:
+    - '"Active"'
+    tooltype: Offensive
+  ltype: SAME
+- document:
+    doctype: Tool
+    name: 'ZAP Alert: "Server Side Code Injection"'
+    tags:
+    - '"Active"'
+    tooltype: Offensive
+  ltype: SAME
+- document:
+    description: '"Consider whether or not ELMAH is actually required in production,
+      if it isn''t then disable it. If it is then ensure access to it requires authentication
+      and authorization. See also: https://elmah.github.io/a/securing-error-log-pages/"'
+    doctype: Tool
+    name: 'ZAP Alert: "ELMAH Information Leak"'
+    tags:
+    - '"Active"'
+    tooltype: Offensive
+  ltype: SAME
+name: Sanitize, disable, or sandbox untrusted scriptable or template language content

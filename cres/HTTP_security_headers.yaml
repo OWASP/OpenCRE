@@ -1,0 +1,48 @@
+doctype: CRE
+id: 636-347
+links:
+- document:
+    doctype: CRE
+    id: 783-355
+    name: Deployment
+    tags:
+    - Configuration
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 736-237
+    name: Set metadata/content-Disposition for API responses
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 257-668
+    name: Configure CSP configuration properly
+    tags:
+    - XSS
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 036-147
+    name: Configure HSTS configuration properly
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 268-100
+    name: Configure Referrer-Policy properly
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 065-388
+    name: Configure X-Content-Type-Options properly
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 480-071
+    name: Prevent Click jacking through X-Frame-Options or CSP
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 036-725
+    name: Set content HTTP response type
+  ltype: Contains
+name: HTTP security headers

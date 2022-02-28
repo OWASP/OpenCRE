@@ -1,0 +1,13 @@
+links:
+  - linkType: Linked To
+    document:
+      name: CWE
+      section: 78
+  - linkType: Linked To
+    document:
+      name: WASC
+      section: 31
+toolType: Offensive
+docType: Tool
+id: 10048
+name: 'Zaproxy-Alert: Remote Code Execution - Shell Shock'

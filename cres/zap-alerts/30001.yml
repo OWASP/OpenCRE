@@ -1,0 +1,13 @@
+links:
+  - linkType: Linked To
+    document:
+      name: CWE
+      section: 120
+  - linkType: Linked To
+    document:
+      name: WASC
+      section: 7
+toolType: Offensive
+docType: Tool
+id: 30001
+name: 'Zaproxy-Alert: Buffer Overflow'

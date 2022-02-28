@@ -1,0 +1,47 @@
+doctype: CRE
+id: 418-853
+links:
+- document:
+    doctype: CRE
+    id: 854-643
+    name: '>>Business logic'
+    tags:
+    - DOS
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 623-550
+    name: DOS
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 842-876
+    name: '>>Logging and error handling'
+  ltype: Related
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x19-V11-BusLogic.md
+    name: ASVS
+    section: V11.1.7
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owasp-top-10-proactive-controls-2018.readthedocs.io/en/latest/c9-implement-security-logging-monitoring.html
+    name: OPC
+    section: C9
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/754.html
+    name: CWE
+    section: '754'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Abuse_Case_Cheat_Sheet.html
+    name: Cheat_sheets
+    section: Abuse Case Cheat Sheet
+  ltype: Linked To
+name: Monitor unusual activities on system
+tags:
+- DOS

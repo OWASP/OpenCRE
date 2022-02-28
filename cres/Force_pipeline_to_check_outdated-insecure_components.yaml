@@ -1,0 +1,26 @@
+doctype: CRE
+id: 053-751
+links:
+- document:
+    doctype: CRE
+    id: 613-286
+    name: Dependency management
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 433-442
+    name: Development verification
+  ltype: Related
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x10-V1-Architecture.md
+    name: ASVS
+    section: V1.14.3
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/1104.html
+    name: CWE
+    section: '1104'
+  ltype: Linked To
+name: Force pipeline to check outdated/insecure components
