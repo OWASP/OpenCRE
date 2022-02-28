@@ -1,0 +1,103 @@
+doctype: CRE
+id: 842-876
+links:
+- document:
+    doctype: CRE
+    id: 148-420
+    name: Log integrity
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 843-841
+    name: Log discretely
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 402-706
+    name: Log relevant
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 513-183
+    name: Error handling
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 141-555
+    name: Fail securely
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 725-682
+    name: Enable configurable alert against usage anomalies
+    tags:
+    - DOS
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 418-853
+    name: Monitor unusual activities on system
+    tags:
+    - DOS
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 176-154
+    name: Monitor expectation of usage intensity (e.g. number of requests)
+    tags:
+    - DOS
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 668-364
+    name: Log TLS connection failures
+  ltype: Related
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=AU-1
+    name: NIST 800-53 v5
+    section: AU-1 Policy and Procedures
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=AU-11
+    name: NIST 800-53 v5
+    section: AU-11 Audit Record Retention
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=AU-12
+    name: NIST 800-53 v5
+    section: AU-12 Audit Record Generation
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=AU-16
+    name: NIST 800-53 v5
+    section: AU-16 Cross-organizational Audit Logging
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=AU-4
+    name: NIST 800-53 v5
+    section: AU-4 Audit Log Storage Capacity
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=AU-5
+    name: NIST 800-53 v5
+    section: AU-5 Response to Audit Logging Process Failures
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=AU-6
+    name: NIST 800-53 v5
+    section: AU-6 Audit Record Review, Analysis, and Reporting
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=AU-7
+    name: NIST 800-53 v5
+    section: AU-7 Audit Record Reduction and Report Generation
+  ltype: Linked To
+name: '>>Logging and error handling'

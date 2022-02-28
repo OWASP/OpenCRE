@@ -1,0 +1,17 @@
+doctype: CRE
+id: 612-364
+links:
+- document:
+    doctype: CRE
+    id: 783-355
+    name: Deployment
+    tags:
+    - Configuration
+  ltype: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=SC-45
+    name: NIST 800-53 v5
+    section: SC-45 System Time Synchronization
+  ltype: Linked To
+name: System time synchronization

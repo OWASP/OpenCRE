@@ -12,7 +12,8 @@ from application.config import CMDConfig
 from application.database import db
 from application.defs import cre_defs as defs
 from application.defs import osib_defs as odefs
-from application.utils import parsers
+from application.utils import spreadsheet_parsers
+from application.utils.external_project_parsers import zap_alerts_parser
 from application.utils import spreadsheet as sheet_utils
 from dacite import from_dict
 from dacite.config import Config
@@ -108,8 +109,8 @@ def parse_file(
     for contents in yamldocs:
         links = []
 
-        document: defs.Document
-        register_callback: Callable[[Any, Any], Any]
+        document: Optional[defs.Document] = None
+        register_callback: Optional[Callable[[Any, Any], Any]] = None
 
         if not isinstance(
             contents, dict
@@ -185,13 +186,13 @@ def parse_standards_from_spreadsheeet(
     hi_lvl_CREs = {}
     cres = {}
     if "CRE Group 1" in cre_file[0].keys():
-        hi_lvl_CREs, cres = parsers.parse_v1_standards(cre_file)
+        hi_lvl_CREs, cres = spreadsheet_parsers.parse_v1_standards(cre_file)
     elif "CRE:name" in cre_file[0].keys():
-        cres = parsers.parse_export_format(cre_file)
+        cres = spreadsheet_parsers.parse_export_format(cre_file)
     elif any(key.startswith("CRE hierarchy") for key in cre_file[0].keys()):
-        cres = parsers.parse_hierarchical_export_format(cre_file)
+        cres = spreadsheet_parsers.parse_hierarchical_export_format(cre_file)
     else:
-        cres = parsers.parse_v0_standards(cre_file)
+        cres = spreadsheet_parsers.parse_v0_standards(cre_file)
 
     # register groupless cres first
     for _, cre in cres.items():
@@ -358,6 +359,10 @@ def run(args: argparse.Namespace) -> None:
 
     elif args.osib_out:
         export_to_osib(file_loc=args.osib_out, cache=args.cache_file)
+
+    elif args.zap_in:
+        zap_alerts_parser.parse_zap_alerts(db_connect(args.cache_file))
+
     elif args.owasp_proj_meta:
         owasp_metadata_to_cre(args.owasp_proj_meta)
 

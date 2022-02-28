@@ -7,88 +7,86 @@ links:
     name: '>>Business logic'
     tags:
     - DOS
-  type: Related
+  ltype: Related
 - document:
     doctype: CRE
     id: 630-573
     name: Monitor suspected automation abuse
     tags:
     - DOS
-  type: Related
+  ltype: Related
 - document:
     doctype: CRE
     id: 725-682
     name: Enable configurable alert against usage anomalies
     tags:
     - DOS
-  type: Related
+  ltype: Related
 - document:
     doctype: CRE
     id: 418-853
     name: Monitor unusual activities on system
     tags:
     - DOS
-  type: Related
+  ltype: Related
 - document:
     doctype: CRE
     id: 456-535
     name: Monitor for realistic "human time" business logic flows
     tags:
     - DOS
-  type: Related
+  ltype: Related
 - document:
     doctype: CRE
     id: 268-088
     name: Limit query impact GraphQL/data layer expression DoS
     tags:
     - DOS
-  type: Related
+  ltype: Related
 - document:
     doctype: CRE
     id: 814-322
     name: Whitelist data sources and sinks
     tags:
     - DOS
-  type: Related
+  ltype: Related
 - document:
     doctype: CRE
     id: 163-518
     name: Check uploaded archives for decompression attacks (eg zip bombs)
     tags:
     - DOS
-  type: Related
+  ltype: Related
 - document:
     doctype: CRE
     id: 660-052
     name: Validate max input/file sizes
     tags:
     - DOS
-  type: Related
+  ltype: Related
 - document:
     doctype: CRE
     id: 463-820
     name: Limit size and number of uploaded files
     tags:
     - DOS
-  type: Related
+  ltype: Related
 - document:
     doctype: CRE
     id: 176-154
     name: Monitor expectation of usage intensity (e.g. number of requests)
     tags:
     - DOS
-  type: Related
+  ltype: Related
 - document:
     doctype: CRE
     id: 546-564
     name: '>>Tags'
-  type: Contains
+  ltype: Contains
 - document:
     doctype: Standard
     hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=SC-5
     name: NIST 800-53 v5
     section: SC-5 DENIAL-OF-SERVICE PROTECTION
-    subsection: ''
-    version: ''
-  type: Linked To
+  ltype: Linked To
 name: DOS

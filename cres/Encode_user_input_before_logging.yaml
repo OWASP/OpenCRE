@@ -1,0 +1,66 @@
+doctype: CRE
+id: 048-612
+links:
+- document:
+    doctype: CRE
+    name: Log injection protection
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 503-455
+    name: '>>Input and output verification'
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 760-764
+    name: Injection
+    tags:
+    - XSS
+  ltype: Related
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x15-V7-Error-Logging.md
+    name: ASVS
+    section: V7.3.1
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owasp-top-10-proactive-controls-2018.readthedocs.io/en/latest/c9-implement-security-logging-monitoring.html
+    name: OPC
+    section: C9
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/117.html
+    name: CWE
+    section: '117'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owasp.org/www-project-web-security-testing-guide/v41/4-Web_Application_Security_Testing/10-Business_Logic_Testing/03-Test_Integrity_Checks.html
+    name: WSTG
+    section: WSTG-BUSL-03
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html
+    name: Cheat_sheets
+    section: Logging Cheat Sheet
+  ltype: Linked To
+- document:
+    description: '"Upgrade Log4j2 to version 2.15.0 or newer. In previous releases
+      (>2.10) this behavior can be mitigated by setting system property ''log4j2.formatMsgNoLookups''
+      to ''true'' or by removing the JndiLookup class from the classpath (example:
+      zip -q -d log4j-core-*.jar org/apache/logging/log4j/core/lookup/JndiLookup.class).
+      Java 8u121 (see https://www.oracle.com/java/technologies/javase/8u121-relnotes.html)
+      protects against remote code execution by defaulting ''com.sun.jndi.rmi.object.trustURLCodebase''
+      and ''com.sun.jndi.cosnaming.object.trustURLCodebase'' to ''false''."'
+    doctype: Tool
+    name: 'ZAP Alert: "Log4Shell (CVE-2021-44228)"'
+    tags:
+    - '"Active"'
+    tooltype: Offensive
+  ltype: SAME
+name: Encode user input before logging
+tags:
+- Injection

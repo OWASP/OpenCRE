@@ -1,0 +1,26 @@
+doctype: CRE
+id: 258-115
+links:
+- document:
+    doctype: CRE
+    id: 177-260
+    name: '>>Session management'
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 052-821
+    name: When using an authentication third party (CSP), relay last authentication
+      event to other parties in the chain
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 618-403
+    name: Enforce authentication timeout when dealing with an authentication third
+      party (CSP)
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 551-400
+    name: Allow user revocation of Oauth tokens
+  ltype: Contains
+name: Re-authentication from federation or assertion

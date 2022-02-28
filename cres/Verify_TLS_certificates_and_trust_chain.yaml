@@ -1,0 +1,30 @@
+doctype: CRE
+id: 430-636
+links:
+- document:
+    doctype: CRE
+    id: 228-551
+    name: TLS
+    tags:
+    - Cryptoghraphy
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 486-813
+    name: Configuration
+  ltype: Related
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x17-V9-Communications.md
+    name: ASVS
+    section: V9.2.1
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/295.html
+    name: CWE
+    section: '295'
+  ltype: Linked To
+name: Verify TLS certificates and trust chain
+tags:
+- Configuration

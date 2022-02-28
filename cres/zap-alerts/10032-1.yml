@@ -1,0 +1,13 @@
+links:
+  - linkType: Linked To
+    document:
+      name: CWE
+      section: 642
+  - linkType: Linked To
+    document:
+      name: WASC
+      section: 14
+toolType: Offensive
+docType: Tool
+id: 10032-1
+name: 'Zaproxy-Alert: Potential IP Addresses Found in the Viewstate'

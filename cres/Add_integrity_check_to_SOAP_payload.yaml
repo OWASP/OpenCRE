@@ -1,0 +1,41 @@
+doctype: CRE
+id: 456-636
+links:
+- document:
+    doctype: CRE
+    id: 080-373
+    name: SOAP
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 278-646
+    name: '>>Secure communication'
+  ltype: Related
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x21-V13-API.md
+    name: ASVS
+    section: V13.3.2
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/345.html
+    name: CWE
+    section: '345'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/XML_Security_Cheat_Sheet.html
+    name: Cheat_sheets
+    section: XML Security Cheat Sheet
+  ltype: Linked To
+- document:
+    description: '"Ensure each page is setting the specific and appropriate content-type
+      value for the content being delivered."'
+    doctype: Tool
+    name: 'ZAP Alert: "Content-Type Header Missing"'
+    tags:
+    - '"Passive"'
+    tooltype: Offensive
+  ltype: SAME
+name: Add integrity check to SOAP payload

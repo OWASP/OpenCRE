@@ -1,10 +1,12 @@
+from typing import Optional
 import logging
 
 import os
 from datetime import datetime
+import tempfile
 
 import git
-
+from git.repo.base import Repo
 from github import Github
 
 logger = logging.getLogger(__name__)
@@ -67,3 +69,11 @@ def createPullRequest(
     pr = github.get_repo(repo).create_pull(
         title=title, body=body, head=srcBranch, base="master"
     )
+
+
+def clone(source: str, dest: Optional[str] = None):
+    if not dest:
+        dest = tempfile.mkdtemp()
+    with git.Git().custom_environment():
+        repo = Repo.clone_from(url=source, to_path=dest)
+        return repo

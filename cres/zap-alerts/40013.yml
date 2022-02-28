@@ -1,0 +1,13 @@
+links:
+  - linkType: Linked To
+    document:
+      name: CWE
+      section: 384
+  - linkType: Linked To
+    document:
+      name: WASC
+      section: 37
+toolType: Offensive
+docType: Tool
+id: 40013
+name: 'Zaproxy-Alert: Session Fixation'

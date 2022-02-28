@@ -1,5 +1,4 @@
 from typing import cast
-from pprint import pprint
 
 import logging
 import re
@@ -140,15 +139,10 @@ class Node_collection:
             internal_links.append((group, cre, il.type))
         return internal_links
 
-    def __get_unlinked_nodes(
-        self, ntype: str = cre_defs.Standard.__name__
-    ) -> List[Node]:
+    def __get_unlinked_nodes(self) -> List[Node]:
 
         linked_nodes = (
-            self.session.query(Node.id)
-            .join(Links)
-            .filter(Node.id == Links.node)
-            .filter(Node.ntype == ntype)
+            self.session.query(Node.id).join(Links).filter(Node.id == Links.node)
         )
 
         nodes: List[Node] = (
@@ -411,9 +405,11 @@ class Node_collection:
                 nodes.append(node)
             return nodes
         else:
-            logger.warning(f"Node {name} of type {ntype} does not exist in the db")
+            logger.warning(
+                f"Node {name} of type {ntype} and section {section} does not exist in the db"
+            )
 
-            return None
+            return []
 
     def __get_nodes_query__(
         self,
@@ -623,9 +619,16 @@ class Node_collection:
             docs[
                 "%s-%s:%s:%s" % (unode.name, unode.doctype, unode.id, unode.description)
             ] = unode
+            logger.info(f"{unode.name} is unlinked?")
 
         for _, doc in docs.items():
-            title = doc.name.replace("/", "-") + ".yaml"
+            title = (
+                doc.name.replace("/", "-")
+                .replace(" ", "_")
+                .replace('"', "")
+                .replace("'", "")
+                + ".yaml"
+            )
             if not dry_run:
                 file.writeToDisk(
                     file_title=title,
@@ -1071,4 +1074,14 @@ def CREfromDB(dbcre: CRE) -> cre_defs.CRE:
         tags = list(set(dbcre.tags.split(",")))
     return cre_defs.CRE(
         name=dbcre.name, description=dbcre.description, id=dbcre.external_id, tags=tags
+    )
+
+
+def dbCREfromCRE(cre: cre_defs.CRE) -> CRE:
+    tags = cre.tags if cre.tags else []
+    return CRE(
+        name=cre.name,
+        description=cre.description,
+        external_id=cre.id,
+        tags=",".join(tags),
     )

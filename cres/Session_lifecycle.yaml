@@ -1,0 +1,47 @@
+doctype: CRE
+id: 470-731
+links:
+- document:
+    doctype: CRE
+    id: 177-260
+    name: '>>Session management'
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 673-736
+    name: Enable option to log out from all active session
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 238-346
+    name: Terminate all sessions when password is changed
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 457-165
+    name: Terminate session after logout
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 065-782
+    name: Ensure session timeout (soft/hard)
+  ltype: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=SC-10
+    name: NIST 800-53 v5
+    section: SC-10 NETWORK DISCONNECT
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=AC-11
+    name: NIST 800-53 v5
+    section: AC-11 DEVICE LOCK
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=AC-12
+    name: NIST 800-53 v5
+    section: AC-12 SESSION TERMINATION
+  ltype: Linked To
+name: Session lifecycle

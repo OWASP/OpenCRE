@@ -1,0 +1,54 @@
+doctype: CRE
+id: 586-842
+links:
+- document:
+    doctype: CRE
+    id: 235-658
+    name: Notify user about credential change
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 623-347
+    name: Disallow shared high privileged accounts
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 065-183
+    name: Disallow default credentials
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 813-610
+    name: Do not use static secrets
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 138-448
+    name: Inform users for authentication renewal
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 808-425
+    name: Notify users about anomalies in their usage patterns
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 751-176
+    name: Offer password changing functionality
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 327-505
+    name: Change password with presence of old and new password
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 817-808
+    name: Deny new users by default
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 673-736
+    name: Enable option to log out from all active session
+  ltype: Related
+name: '>>Secure user management'

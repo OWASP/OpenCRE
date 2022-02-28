@@ -1,0 +1,13 @@
+links:
+  - linkType: Linked To
+    document:
+      name: CWE
+      section: 200
+  - linkType: Linked To
+    document:
+      name: WASC
+      section: 13
+toolType: Offensive
+docType: Tool
+id: 10056
+name: 'Zaproxy-Alert: X-Debug-Token Information Leak'
