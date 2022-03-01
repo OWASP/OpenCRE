@@ -287,7 +287,7 @@ def review_from_spreadsheet(cache: str, spreadsheet_url: str, share_with: str) -
         "Stored temporary files and database in %s if you want to use them next time, set cache to the location of the database in that dir"
         % loc
     )
-    logger.info("A spreadsheet view is at %s" % sheet_url)
+    # logger.info("A spreadsheet view is at %s" % sheet_url)
 
 
 def review_from_disk(cache: str, cre_file_loc: str, share_with: str) -> None:
