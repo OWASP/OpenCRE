@@ -72,8 +72,12 @@ def createPullRequest(
 
 
 def clone(source: str, dest: Optional[str] = None):
+    class Progress(git.remote.RemoteProgress):
+        def update(self, op_code, cur_count, max_count=None, message=""):
+            print(f"update({op_code}, {cur_count}, {max_count}, {message})")
+
     if not dest:
         dest = tempfile.mkdtemp()
     with git.Git().custom_environment():
-        repo = Repo.clone_from(url=source, to_path=dest)
+        repo = Repo.clone_from(url=source, to_path=dest, progress=Progress())
         return repo

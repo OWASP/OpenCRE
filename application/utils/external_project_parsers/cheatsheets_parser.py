@@ -47,4 +47,8 @@ def parse_cheatsheets(cache: db.Node_collection):
                         tags=[],
                     )
                     dbnode = cache.add_node(cs)
-                    cache.add_link(cre=db.dbCREfromCRE(dbcre), node=dbnode)
+                    cache.add_link(
+                        cre=db.dbCREfromCRE(dbcre),
+                        node=dbnode,
+                        type=defs.LinkTypes.LinkedTo,
+                    )
