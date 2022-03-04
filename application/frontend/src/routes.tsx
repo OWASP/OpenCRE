@@ -54,16 +54,34 @@ export const ROUTES: IRoute[] = [
     showFilter: true,
   },
   {
-    path: `${DEEPLINK}/node/:type/:nodeName`,
+    path: `${DEEPLINK}/node/:type/:nodeName/section/:section`,
     component: Deeplink,
     showHeader: true,
     showFilter: false,
   },
   {
+    path: `${DEEPLINK}/node/:type/:nodeName/section/:section/subsection/:subsection`,
+    component: Deeplink,
+    showHeader: true,
+    showFilter: false,
+  },
+  {
+    path: `${DEEPLINK}/node/:type/:nodeName/tooltype/:tooltype`,
+    component: Deeplink,
+    showHeader: true,
+    showFilter: false,
+  },
+  {
+    path: `${DEEPLINK}/node/:type/:nodeName`,
+    component: Deeplink,
+    showHeader: true,
+    showFilter: false,
+  },
+   {
     path: `${DEEPLINK}/:nodeName`,
     component: Deeplink,
     showHeader: true,
     showFilter: false,
   },
-
+ 
 ];

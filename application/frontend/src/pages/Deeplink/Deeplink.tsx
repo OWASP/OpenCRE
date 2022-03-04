@@ -6,17 +6,19 @@ import { useEnvironment } from '../../hooks';
 import { LoadingAndErrorIndicator } from '../../components/LoadingAndErrorIndicator';
 import { Document } from '../../types';
 export const Deeplink = () => {
-  let { type, nodeName } = useParams();
+  let { type, nodeName, section,subsection,tooltype } = useParams();
   const { apiUrl } = useEnvironment();
   const [loading, setLoading] = useState<boolean>(false);
   const search = useLocation().search;
-  const section = new URLSearchParams(search).get('section')
-  const subsection = new URLSearchParams(search).get('subsection')
+  section = section?section:new URLSearchParams(search).get('section')
+  subsection = subsection?subsection:new URLSearchParams(search).get('subsection')
+  tooltype = tooltype?tooltype:new URLSearchParams(search).get('tooltype')
   if (!type) { // Backwards compatible fix, the url used to be /deeplink/:nodename, new url is /deeplink/:type/:nodename
     type = "Standard"
   }
 
-  var url = `${apiUrl}/${type}/${nodeName}` + (section != null ? `?section=${section}&` : "") + (subsection != null ? `subsection=${subsection}&` : "")
+  var url = `${apiUrl}/${type}/${nodeName}` + (section != null ? `?section=${section}&` : "") + (subsection != null ? `subsection=${subsection}&` : "") + (tooltype !=null? `tooltype=${tooltype}&`:"")
+  
   const { error, data, refetch } = useQuery<{ standards: Document[]; }, string>('deeplink', () => fetch(url).then((res) => res.json()), {
     retry: false,
     enabled: false,
@@ -40,6 +42,7 @@ export const Deeplink = () => {
       {!error &&
         !loading &&
         documents.map((standard, i) => (
+          // console.log(  (standard && standard.hyperlink && standard.hyperlink.length > 0) ? standard.hyperlink : window.location.href)
           window.location.href = (standard && standard.hyperlink && standard.hyperlink.length > 0) ? standard.hyperlink : window.location.href
 
         ))}
