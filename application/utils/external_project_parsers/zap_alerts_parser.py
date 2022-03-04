@@ -66,7 +66,9 @@ def parse_zap_alerts(cache: db.Node_collection):
             if cd:
                 code = cd.group("code")
             else:
-                logger.error(f"Alert id: {externalId} titled {name} could not be parsed, missing link to code")
+                logger.error(
+                    f"Alert id: {externalId} titled {name} could not be parsed, missing link to code"
+                )
                 continue
             cwe = re.search(zap_md_cwe_regexp, mdtext)
             if cwe:
@@ -80,7 +82,7 @@ def parse_zap_alerts(cache: db.Node_collection):
                                 id=externalId,
                                 description=description,
                                 tags=[tag],
-                                code=code
+                                code=code,
                             )
                             dbnode = cache.add_node(alert)
                             cache.add_link(
