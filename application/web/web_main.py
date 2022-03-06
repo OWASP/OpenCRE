@@ -1,10 +1,14 @@
 # type: ignore
 # silence mypy for the routes file
+import logging
 import os
 import urllib.parse
 from typing import Any
-import logging
 
+from application import cache
+from application.database import db
+from application.defs import cre_defs as defs
+from application.defs import osib_defs as odefs
 from flask import (
     Blueprint,
     abort,
@@ -14,11 +18,6 @@ from flask import (
     request,
     send_from_directory,
 )
-
-from application import cache
-from application.database import db
-from application.defs import cre_defs as defs
-from application.defs import osib_defs as odefs
 
 ITEMS_PER_PAGE = 20
 
@@ -163,6 +162,21 @@ def text_search() -> Any:
         return jsonify(res)
     else:
         abort(404)
+
+
+@app.route("/rest/v1/root_cres", methods=["GET"])
+def find_root_cres() -> Any:
+    """Useful for fast browsing the graph from the top"""
+    database = db.Node_collection()
+    opt_osib = request.args.get("osib")
+    documents = database.get_root_cres()
+    if documents:
+        res = [doc.todict() for doc in documents]
+        result = {"data": res}
+        if opt_osib:
+            result["osib"] = odefs.cre2osib(documents).todict()
+        return jsonify(result)
+    abort(404)
 
 
 @app.errorhandler(404)

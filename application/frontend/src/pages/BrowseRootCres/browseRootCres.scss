@@ -1,0 +1,37 @@
+.cre-page {
+  padding-left: 20px;
+  padding-right: 20px;
+  padding-bottom: 20px;
+
+  &__links-container {
+    margin-top: 10px;
+  }
+}
+
+.cre-page .cre-page {
+  &__heading {
+    font-size: 2rem;
+    margin-bottom: 0px;
+  }
+  &__sub-heading {
+    color: #999;
+    margin-top: 0px;
+    font-size: 1.2rem;
+  }
+
+  &__description {
+    width: 50%;
+  }
+
+  &__links-header {
+    margin-bottom: 10px;
+  }
+
+  &__links {
+    padding-top: 10px;
+  }
+
+  &__links:not(:first-child) {
+    padding-top: 20px;
+  }
+}
