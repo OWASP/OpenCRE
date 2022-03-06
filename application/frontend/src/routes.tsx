@@ -13,8 +13,9 @@ export interface IRoute {
 }
 
 import {
-  INDEX, STANDARD, SECTION, CRE, GRAPH, SEARCH, DEEPLINK
+  INDEX, STANDARD, SECTION, CRE, GRAPH, SEARCH, DEEPLINK, BROWSEROOT
 } from './const';
+import { BrowseRootCres } from './pages/BrowseRootCres/browseRootCres';
 
 export const ROUTES: IRoute[] = [
   {
@@ -83,5 +84,11 @@ export const ROUTES: IRoute[] = [
     showHeader: true,
     showFilter: false,
   },
- 
+ {
+    path: `${BROWSEROOT}`,
+    component: BrowseRootCres,
+    showHeader: true,
+    showFilter: false,
+  },
+
 ];
