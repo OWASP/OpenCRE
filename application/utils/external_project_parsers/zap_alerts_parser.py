@@ -1,12 +1,13 @@
 # script to parse zaproxy website md files describing alerts find the CWE ids
 #  and add the alerts to CRE
-from typing import List
-from application.database import db
-from application.utils import git
-from application.defs import cre_defs as defs
+import logging
 import os
 import re
-import logging
+from typing import List
+
+from application.database import db
+from application.defs import cre_defs as defs
+from application.utils import git
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
@@ -18,7 +19,7 @@ def zap_alert(
 ) -> defs.Tool:
     return defs.Tool(
         tooltype=defs.ToolTypes.Offensive,
-        name=f"ZAP Alert: {name}",
+        name=f"ZAP Rule: {name}",
         id=id,
         description=description,
         tags=tags,
