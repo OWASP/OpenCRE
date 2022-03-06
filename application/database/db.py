@@ -208,13 +208,13 @@ class Node_collection:
             return False
 
     @classmethod
-    def object_select(cls, node: Node) -> List[Node]:
+    def object_select(cls, node: Node, skip_attributes: List = []) -> List[Node]:
         if not node:
             return []
         qu = Node.query.filter()
 
         for vk, v in vars(node).items():
-            if hasattr(Node, vk):
+            if vk not in skip_attributes and hasattr(Node, vk):
                 if v:
                     attr = getattr(Node, vk)
                     qu = qu.filter(attr == v)
@@ -727,7 +727,7 @@ class Node_collection:
             logger.warning(f"{node} has no registered type, cannot add, skipping")
             return None
 
-        entries = self.object_select(dbnode)
+        entries = self.object_select(dbnode, skip_attributes=["link"])
         if entries:
             entry = entries[0]
 
