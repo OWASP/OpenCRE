@@ -13,8 +13,9 @@ export interface IRoute {
 }
 
 import {
-  INDEX, STANDARD, SECTION, CRE, GRAPH, SEARCH, DEEPLINK
+  INDEX, STANDARD, SECTION, CRE, GRAPH, SEARCH, DEEPLINK, BROWSEROOT
 } from './const';
+import { BrowseRootCres } from './pages/BrowseRootCres/browseRootCres';
 
 export const ROUTES: IRoute[] = [
   {
@@ -54,14 +55,38 @@ export const ROUTES: IRoute[] = [
     showFilter: true,
   },
   {
-    path: `${DEEPLINK}/node/:type/:nodeName`,
+    path: `${DEEPLINK}/node/:type/:nodeName/section/:section`,
     component: Deeplink,
     showHeader: true,
     showFilter: false,
   },
   {
+    path: `${DEEPLINK}/node/:type/:nodeName/section/:section/subsection/:subsection`,
+    component: Deeplink,
+    showHeader: true,
+    showFilter: false,
+  },
+  {
+    path: `${DEEPLINK}/node/:type/:nodeName/tooltype/:tooltype`,
+    component: Deeplink,
+    showHeader: true,
+    showFilter: false,
+  },
+  {
+    path: `${DEEPLINK}/node/:type/:nodeName`,
+    component: Deeplink,
+    showHeader: true,
+    showFilter: false,
+  },
+   {
     path: `${DEEPLINK}/:nodeName`,
     component: Deeplink,
+    showHeader: true,
+    showFilter: false,
+  },
+ {
+    path: `${BROWSEROOT}`,
+    component: BrowseRootCres,
     showHeader: true,
     showFilter: false,
   },
