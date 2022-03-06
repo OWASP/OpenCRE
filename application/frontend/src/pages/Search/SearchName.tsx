@@ -10,7 +10,7 @@ import { Document } from '../../types';
 import { SearchResults } from './components/SearchResults';
 
 const CRE = "CRE";
-const STANDARD = "Standard";
+const NODES = ["Standard", "Tool", "Code"]
 
 export const SearchName = () => {
   const { searchTerm } = useParams();
@@ -36,6 +36,14 @@ export const SearchName = () => {
   }, [searchTerm]);
 
   const groupedByType = groupBy(documents, doc => doc.doctype);
+  const cres = groupedByType[CRE]
+  
+  let nodes
+  for (var NODE of NODES){
+      if(groupedByType[NODE]){
+        nodes = nodes?nodes.concat(groupedByType[NODE]):groupedByType[NODE]
+      }
+  }
 
   return (
     <div className="cre-page">
@@ -47,11 +55,11 @@ export const SearchName = () => {
             <div className="ui grid">
                 <div className="eight wide column">
                     <h1 className="standard-page__heading">Related CRE's</h1>
-                    {groupedByType[CRE] && <SearchResults results={groupedByType[CRE]}/>}
+                    {cres && <SearchResults results={cres}/>}
                 </div>
                 <div className="eight wide column">
                     <h1 className="standard-page__heading">Related Documents</h1>
-                    {groupedByType[STANDARD] && <SearchResults results={groupedByType[STANDARD]}/>}
+                    {nodes && <SearchResults results={nodes}/>}
                 </div>
             </div>
         }

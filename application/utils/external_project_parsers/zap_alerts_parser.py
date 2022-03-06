@@ -6,6 +6,11 @@ from application.utils import git
 from application.defs import cre_defs as defs
 import os
 import re
+import logging
+
+logging.basicConfig()
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 
 def zap_alert(
@@ -29,7 +34,7 @@ def parse_zap_alerts(cache: db.Node_collection):
     zap_md_alert_id_regexp = r"alertid: ?(?P<id>\d+)"
     zap_md_alert_type_regexp = r"alerttype: ?(?P<type>\".+\")"
     zap_md_solution_regexp = r"solution: ?(?P<solution>\".+\")"
-    zap_md_code_regexp = r"code: ?(?P<code>\".+\")"
+    zap_md_code_regexp = r"code: ?(?P<code>.+)"
 
     repo = git.clone(zaproxy_website)
     for mdfile in os.listdir(os.path.join(repo.working_dir, alerts_path)):
@@ -56,10 +61,15 @@ def parse_zap_alerts(cache: db.Node_collection):
             desc = re.search(zap_md_solution_regexp, mdtext)
             if desc:
                 description = desc.group("solution")
+
             cd = re.search(zap_md_code_regexp, mdtext)
             if cd:
-                code = desc.group("code")
-
+                code = cd.group("code")
+            else:
+                logger.error(
+                    f"Alert id: {externalId} titled {name} could not be parsed, missing link to code"
+                )
+                continue
             cwe = re.search(zap_md_cwe_regexp, mdtext)
             if cwe:
                 cweId = cwe.group("cweId")
