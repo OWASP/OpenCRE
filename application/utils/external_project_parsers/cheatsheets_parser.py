@@ -39,7 +39,9 @@ def parse_cheatsheets(cache: db.Node_collection):
                 name = title.group("title")
                 cre_id = cre.group("cre")
                 cres = cache.get_CREs(external_id=cre_id)
-                hyperlink = f"{c_repo.replace('.git','')}/{cheasheets_path}{mdfile}"
+                hyperlink = (
+                    f"{c_repo.replace('.git','')}/tree/master/{cheasheets_path}{mdfile}"
+                )
                 for dbcre in cres:
                     cs = cheatsheet(
                         section=name,
