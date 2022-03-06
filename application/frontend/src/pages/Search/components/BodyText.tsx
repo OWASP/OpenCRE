@@ -32,8 +32,8 @@ export const SearchBody = () => {
       </p>
       <p>
       Moreover, standards can use the CRE project to maintain permanent links to other standards.
-      For example <a href="https://www.opencre.org/deeplink/ASVS">ASVS Deeplink</a> could be maintained by ASVS and always redirect to an ASVS entry on github
-      while the following will redirect to the specific section <a href="https://www.opencre.org/deeplink/ASVS?section=v9.2.5">ASVS v9.2.5</a>
+      For example <a href="/deeplink/ASVS">ASVS Deeplink</a> could be maintained by ASVS and always redirect to an ASVS entry on github
+      while the following will redirect to the specific section <a href="/deeplink/ASVS?section=v9.2.5">ASVS v9.2.5</a>
       </p>
 
       <h2>
@@ -64,10 +64,10 @@ export const SearchBody = () => {
       </h2>
       <p>
         See the CRE search bar (beta version). Try searching for
-        <a href="/standard/OWASP%20Top%2010%202021"> Top10 2021 </a>
+        <a href="node/standard/Top10 2017"> Top10 2017 </a>
         as standard and click around, or
         <a href="/cre/482-866"> 482-866 </a>
-        as CRE-ID, to get an idea, or <a href="https://www.opencre.org/search/session">search for "Session"</a>, or an overview of <a href="https://www.opencre.org/search/%3E%3E">all top-level topics</a>.
+        as CRE-ID, to get an idea, or <a href="/search/session">search for "Session"</a>, or an overview of <a href="/root_cres">all top-level topics</a>.
       </p>
     </div>
   );
