@@ -208,7 +208,7 @@ class Node_collection:
             return False
 
     @classmethod
-    def object_select(cls, node: Node, skip_attributes:List=[]) -> List[Node]:
+    def object_select(cls, node: Node, skip_attributes: List = []) -> List[Node]:
         if not node:
             return []
         qu = Node.query.filter()
@@ -727,7 +727,7 @@ class Node_collection:
             logger.warning(f"{node} has no registered type, cannot add, skipping")
             return None
 
-        entries = self.object_select(dbnode,skip_attributes=['link'])
+        entries = self.object_select(dbnode, skip_attributes=["link"])
         if entries:
             entry = entries[0]
 
