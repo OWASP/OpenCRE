@@ -25,3 +25,4 @@ export const SEARCH = '/search';
 export const CRE = '/cre';
 export const GRAPH = '/graph';
 export const DEEPLINK = '/deeplink'
+export const BROWSEROOT = '/root_cres'

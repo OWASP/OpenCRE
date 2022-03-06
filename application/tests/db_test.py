@@ -4,6 +4,7 @@ import unittest
 import uuid
 from copy import copy, deepcopy
 from pprint import pprint
+from pydoc import doc
 from typing import Any, Dict, List, Union
 
 import yaml
@@ -436,6 +437,7 @@ class TestDB(unittest.TestCase):
         dbc1 = db.CRE(external_id="123", description="gcCD1", name="gcC1")
         dbc2 = db.CRE(description="gcCD2", name="gcC2")
         dbc3 = db.CRE(description="gcCD3", name="gcC3")
+        db_id_only = db.CRE(description="c_get_by_internal_id_only", name="cgbiio")
         dbs1 = db.Node(
             ntype=defs.Standard.__name__,
             name="gcS2",
@@ -459,6 +461,7 @@ class TestDB(unittest.TestCase):
         collection.session.add(dbc3)
         collection.session.add(dbs1)
         collection.session.add(dbs2)
+        collection.session.add(db_id_only)
         collection.session.commit()
 
         collection.session.add(
@@ -474,6 +477,8 @@ class TestDB(unittest.TestCase):
         cd1 = defs.CRE(id="123", description="gcCD1", name="gcC1", links=[])
         cd2 = defs.CRE(description="gcCD2", name="gcC2")
         cd3 = defs.CRE(description="gcCD3", name="gcC3")
+        c_id_only = defs.CRE(description="c_get_by_internal_id_only", name="cgbiio")
+
         expected = [
             copy(cd1)
             .add_link(
@@ -566,6 +571,8 @@ class TestDB(unittest.TestCase):
         ]
         res = collection.get_CREs(name="gcC1", include_only=["gcS0"])
         self.assertEqual(no_standards, res)
+
+        self.assertEqual([c_id_only], collection.get_CREs(internal_id=db_id_only.id))
 
     def test_get_standards(self) -> None:
         """Given: a Standard 'S1' that links to cres
@@ -1118,6 +1125,73 @@ class TestDB(unittest.TestCase):
         )
 
         self.assertEqual(collection.object_select(None), [])
+
+    def test_get_root_cres(self):
+        """Given:
+        5 CRES:
+            * C0 <-- Root
+            * C1 <-- Root
+            * C2 Part Of C0
+            * C3 Part Of C1
+            * C4 Part Of C2
+        3 Nodes:
+            * N0  Unlinked
+            * N1 Linked To C1
+            * N2 Linked to C2
+            * N3 Linked to C3
+            * N4 Linked to C4
+        Get_root_cres should return C0, C1
+        """
+        cres = []
+        nodes = []
+        dbcres = []
+        dbnodes = []
+        sqla.session.remove()
+        sqla.drop_all()
+        sqla.create_all(app=self.app)
+        self.collection = db.Node_collection()
+        collection = self.collection
+        collection = db.Node_collection()
+        for i in range(0, 5):
+            if i == 0 or i == 1:
+                cres.append(defs.CRE(name=f">> C{i}", id=f"{i}"))
+            else:
+                cres.append(defs.CRE(name=f"C{i}", id=f"{i}"))
+
+            dbcres.append(collection.add_cre(cres[i]))
+            nodes.append(defs.Standard(section=f"S{i}", name=f"N{i}"))
+            dbnodes.append(collection.add_node(nodes[i]))
+            cres[i].add_link(
+                defs.Link(document=copy(nodes[i]), ltype=defs.LinkTypes.LinkedTo)
+            )
+            collection.add_link(
+                cre=dbcres[i], node=dbnodes[i], type=defs.LinkTypes.LinkedTo
+            )
+
+        cres[0].add_link(
+            defs.Link(document=cres[2].shallow_copy(), ltype=defs.LinkTypes.Contains)
+        )
+        cres[1].add_link(
+            defs.Link(document=cres[3].shallow_copy(), ltype=defs.LinkTypes.Contains)
+        )
+        cres[2].add_link(
+            defs.Link(document=cres[4].shallow_copy(), ltype=defs.LinkTypes.Contains)
+        )
+
+        collection.add_internal_link(
+            group=dbcres[0], cre=dbcres[2], type=defs.LinkTypes.Contains
+        )
+        collection.add_internal_link(
+            group=dbcres[1], cre=dbcres[3], type=defs.LinkTypes.Contains
+        )
+        collection.add_internal_link(
+            group=dbcres[2], cre=dbcres[4], type=defs.LinkTypes.Contains
+        )
+        collection.session.commit()
+
+        root_cres = collection.get_root_cres()
+        self.maxDiff = None
+        self.assertEqual(root_cres, [cres[0], cres[1]])
 
 
 if __name__ == "__main__":
