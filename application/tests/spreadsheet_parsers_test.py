@@ -4,11 +4,11 @@ from pprint import pprint
 
 from application.defs import cre_defs as defs
 from application.utils.spreadsheet_parsers import (
+    parse_export_format,
     parse_hierarchical_export_format,
     parse_uknown_key_val_standards_spreadsheet,
     parse_v0_standards,
     parse_v1_standards,
-    parse_export_format,
 )
 
 
@@ -1216,13 +1216,17 @@ class TestParsers(unittest.TestCase):
         )
 
         sOPC = defs.Standard(
-            name="OPC", section="123654", hyperlink="https://example.com/opc"
+            name="OWASP Proactive Controls",
+            section="123654",
+            hyperlink="https://example.com/opc",
         )
         sCWE19876 = defs.Standard(
             name="CWE", section="19876", hyperlink="https://example.com/cwe19876"
         )
         sWSTG = defs.Standard(
-            name="WSTG", section="2.1.2.3", hyperlink="https://example.com/wstg"
+            name="(WSTG) Web Security Testing Guide",
+            section="2.1.2.3",
+            hyperlink="https://example.com/wstg",
         )
         sNIST4 = defs.Standard(name="NIST 800-63", section="4444")
         sNIST3 = defs.Standard(name="NIST 800-63", section="3333")
