@@ -605,7 +605,7 @@ def parse_standards(
                     "subsection": "",
                     "hyperlink": "Standard ASVS Hyperlink",
                 },
-                "OPC": {
+                "OWASP Proactive Controls": {
                     "section": "Standard OPC (ASVS source)",
                     "subsection": "",
                     "hyperlink": "Standard OPC (ASVS source)-hyperlink",
@@ -621,7 +621,7 @@ def parse_standards(
                     "hyperlink": "Standard NIST 800-53 v5-hyperlink",
                     "separator": "\n",
                 },
-                "WSTG": {
+                "(WSTG) Web Security Testing Guide": {
                     "section": "Standard WSTG",
                     "subsection": "",
                     "hyperlink": "Standard WSTG-Hyperlink",
