@@ -12,9 +12,12 @@ from application.utils import git
 tool_urls = [
     "https://github.com/commjoen/wrongsecrets.git",
     # "https://github.com/northdpole/wrongsecrets.git",
-
 ]
-def Project(name: str, hyperlink: str, tags: List[str],ttype:str,description:str) -> defs.Tool:
+
+
+def Project(
+    name: str, hyperlink: str, tags: List[str], ttype: str, description: str
+) -> defs.Tool:
     pprint(name)
     print(ttype)
     print(" ".join(tags))
@@ -24,16 +27,18 @@ def Project(name: str, hyperlink: str, tags: List[str],ttype:str,description:str
         tooltype=defs.ToolTypes.from_str(ttype),
         tags=tags,
         hyperlink=hyperlink,
-        description=description
+        description=description,
     )
 
 
-def parse_tool(tool_repo:str, cache: db.Node_collection):
+def parse_tool(tool_repo: str, cache: db.Node_collection):
 
     repo = git.clone(tool_repo)
     readme = os.path.join(repo.working_dir, "README.md")
     title_regexp = r"# (?P<title>(\w+ )+)"
-    cre_link = r".*\[.*\]\((?P<url>(https\:\/\/www\.)?opencre\.org\/cre\/(?P<cre>\d+-\d+).*)"
+    cre_link = (
+        r".*\[.*\]\((?P<url>(https\:\/\/www\.)?opencre\.org\/cre\/(?P<cre>\d+-\d+).*)"
+    )
 
     with open(readme) as rdf:
         mdtext = rdf.read()
@@ -42,24 +47,24 @@ def parse_tool(tool_repo:str, cache: db.Node_collection):
             pprint("didn't find a link, bye")
             return
         title = re.search(title_regexp, mdtext)
-        cre = re.search(cre_link, mdtext,flags=re.IGNORECASE)
+        cre = re.search(cre_link, mdtext, flags=re.IGNORECASE)
 
         if cre and title:
             parsed = urllib.parse.urlparse(cre.group("url"))
             values = urllib.parse.parse_qs(parsed.query)
-            
+
             name = title.group("title").strip()
             cre_id = cre.group("cre").strip()
-            register = True if 'register' in values else False
-            type = values.get("type")[0] or "Tool" # this parser matches tools so this is really optional
-            tool_type =  values.get("tool_type")[0] or "Unknown"
+            register = True if "register" in values else False
+            type = (
+                values.get("type")[0] or "Tool"
+            )  # this parser matches tools so this is really optional
+            tool_type = values.get("tool_type")[0] or "Unknown"
             description = values.get("description")[0] or ""
             tags = values.get("tags")[0].split(",") if "tags" in values else []
             if cre_id and register:
                 cres = cache.get_CREs(external_id=cre_id)
-                hyperlink = (
-                        f"{tool_repo.replace('.git','')}"
-                    )
+                hyperlink = f"{tool_repo.replace('.git','')}"
                 for dbcre in cres:
                     cs = Project(
                         name=name,
