@@ -1,0 +1,39 @@
+doctype: CRE
+id: 336-512
+links:
+- document:
+    doctype: CRE
+    name: Network protection
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 058-527
+    name: Secure name/address resolution service
+  ltype: Related
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x18-V10-Malicious.md
+    name: ASVS
+    section: V10.3.3
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/350.html
+    name: CWE
+    section: '350'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owasp.org/www-project-web-security-testing-guide/v41/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/10-Test_for_Subdomain_Takeover.html
+    name: WSTG
+    section: WSTG-CONF-10
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html
+    name: Cheat_sheets
+    section: Docker Security Cheat Sheet
+  ltype: Linked To
+name: Ensure integrity of DNS entries and domains
+tags:
+- Secure name/address resolution service

@@ -4,58 +4,58 @@ links:
 - document:
     doctype: CRE
     name: Cryptoghraphy
-  type: Related
+  ltype: Related
 - document:
     doctype: CRE
     id: 726-868
     name: Deployed topology
     tags:
     - Architecture
-  type: Related
+  ltype: Related
 - document:
     doctype: CRE
     id: 745-045
     name: Do not fall back to insecure protocols in TCP
-  type: Contains
+  ltype: Contains
 - document:
     doctype: CRE
     id: 636-854
     name: Encrypt all communications
-  type: Contains
+  ltype: Contains
 - document:
     doctype: CRE
     id: 430-636
     name: Verify TLS certificates and trust chain
     tags:
     - Configuration
-  type: Contains
+  ltype: Contains
 - document:
     doctype: CRE
     id: 668-364
     name: Log TLS connection failures
-  type: Contains
+  ltype: Contains
 - document:
     doctype: CRE
     id: 767-701
     name: Verify strong TLS algorithms by testing
-  type: Contains
+  ltype: Contains
 - document:
     doctype: CRE
     id: 248-646
     name: Disable insecure SSL/TLS versions
     tags:
     - Cryptography
-  type: Contains
+  ltype: Contains
 - document:
     doctype: CRE
     id: 558-807
     name: Mutually authenticate application and credential service provider
-  type: Related
+  ltype: Related
 - document:
     doctype: CRE
     id: 278-646
     name: '>>Secure communication'
-  type: Contains
+  ltype: Contains
 name: TLS
 tags:
 - Cryptoghraphy

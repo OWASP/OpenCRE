@@ -420,15 +420,15 @@ class TestMain(unittest.TestCase):
         mocked_parse_standards_from_spreadsheeet.assert_called_with(
             [{"cre": "cre"}], self.collection
         )
-        mocked_create_spreadsheet.assert_called_with(
-            collection=self.collection,
-            exported_documents=[
-                defs.CRE(name="c0"),
-                defs.Standard(name="s0", section="s1"),
-            ],
-            title="cre_review",
-            share_with=["foo@example.com"],
-        )
+        # mocked_create_spreadsheet.assert_called_with(
+        #     collection=self.collection,
+        #     exported_documents=[
+        #         defs.CRE(name="c0"),
+        #         defs.Standard(name="s0", section="s1"),
+        #     ],
+        #     title="cre_review",
+        #     share_with=["foo@example.com"],
+        # )
         mocked_export.assert_called_with(loc)
 
     @patch("application.cmd.cre_main.prepare_for_review")

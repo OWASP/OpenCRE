@@ -1,0 +1,13 @@
+links:
+  - linkType: Linked To
+    document:
+      name: CWE
+      section: 79
+  - linkType: Linked To
+    document:
+      name: WASC
+      section: 8
+toolType: Offensive
+docType: Tool
+id: 40026
+name: 'Zaproxy-Alert: Cross Site Scripting (DOM Based)'

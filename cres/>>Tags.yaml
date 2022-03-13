@@ -5,62 +5,62 @@ links:
     doctype: CRE
     id: 817-133
     name: Boundary Protection
-  type: Contains
+  ltype: Contains
 - document:
     doctype: CRE
     id: 486-813
     name: Configuration
-  type: Contains
+  ltype: Contains
 - document:
     doctype: CRE
     id: 170-772
     name: Cryptography
-  type: Contains
+  ltype: Contains
 - document:
     doctype: CRE
     id: 623-550
     name: DOS
-  type: Contains
+  ltype: Contains
 - document:
     doctype: CRE
     id: 760-764
     name: Injection
     tags:
     - XSS
-  type: Contains
+  ltype: Contains
 - document:
     doctype: CRE
     id: 760-765
     name: XSS
-  type: Contains
+  ltype: Contains
 - document:
     doctype: CRE
     id: 058-527
     name: Secure name/address resolution service
-  type: Contains
+  ltype: Contains
 - document:
     doctype: CRE
     id: 180-070
     name: Security and Privacy Engineering Principles
-  type: Contains
+  ltype: Contains
 - document:
     doctype: CRE
     id: 155-155
     name: Architecture
-  type: Contains
+  ltype: Contains
 - document:
     doctype: CRE
     id: 028-727
     name: SSRF
-  type: Contains
+  ltype: Contains
 - document:
     doctype: CRE
     id: 028-727
     name: CSRF
-  type: Contains
+  ltype: Contains
 - document:
     doctype: CRE
     id: 028-728
     name: Personal data handling
-  type: Contains
+  ltype: Contains
 name: '>>Tags'

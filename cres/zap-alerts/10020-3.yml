@@ -1,0 +1,13 @@
+links:
+  - linkType: Linked To
+    document:
+      name: CWE
+      section: 1021
+  - linkType: Linked To
+    document:
+      name: WASC
+      section: 15
+toolType: Offensive
+docType: Tool
+id: 10020-3
+name: 'Zaproxy-Alert: X-Frame-Options Defined via META (Non-compliant with Spec)'

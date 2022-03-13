@@ -5,138 +5,138 @@ links:
     doctype: CRE
     id: 270-568
     name: Authentication mechanism
-  type: Contains
+  ltype: Contains
 - document:
     doctype: CRE
     id: 170-772
     name: Cryptography
-  type: Related
+  ltype: Related
 - document:
     doctype: CRE
     id: 076-470
     name: Biometric authenticators only as secondary factors
-  type: Contains
+  ltype: Contains
 - document:
     doctype: CRE
     id: 201-246
     name: Use multifactor authentication on administrative interfaces
-  type: Contains
+  ltype: Contains
 - document:
     doctype: CRE
     id: 841-757
     name: Use approved cryptographic algorithms in generation, seeding and verification
       of OTPs
-  type: Contains
+  ltype: Contains
 - document:
     doctype: CRE
     id: 525-361
     name: Authenticate by OTP token entry or user-initiated action on multi factor
       device
-  type: Contains
+  ltype: Contains
 - document:
     doctype: CRE
     id: 646-227
     name: Log and reject re-use of valid time-based OTP tokens and notify device holder.
-  type: Contains
+  ltype: Contains
 - document:
     doctype: CRE
     id: 206-254
     name: Use secure random to generate initial authentication codes
     tags:
     - Cryptography
-  type: Contains
+  ltype: Contains
 - document:
     doctype: CRE
     id: 543-428
     name: Use security module to store one-time password verification keys
     tags:
     - Cryptography
-  type: Contains
+  ltype: Contains
 - document:
     doctype: CRE
     id: 513-845
     name: Use unpredictable lookup secrets
-  type: Contains
+  ltype: Contains
 - document:
     doctype: CRE
     id: 101-217
     name: Use lookup secrets only once
-  type: Contains
+  ltype: Contains
 - document:
     doctype: CRE
     id: 346-640
     name: Generate lookup secrets with sufficient entropy
-  type: Contains
+  ltype: Contains
 - document:
     doctype: CRE
     id: 524-446
     name: Mandate using multi factor authentication
-  type: Contains
+  ltype: Contains
 - document:
     doctype: CRE
     id: 622-835
     name: Generate initial passwords with sufficient secure random, short expiration
       time and do not allow to reuse the initial password.
-  type: Contains
+  ltype: Contains
 - document:
     doctype: CRE
     id: 342-764
     name: Only store hashed authentication codes
-  type: Contains
+  ltype: Contains
 - document:
     doctype: CRE
     id: 102-811
     name: Communicate out of band authentication requests, codes or tokens independently
       and securely
-  type: Contains
+  ltype: Contains
 - document:
     doctype: CRE
     id: 816-631
     name: Ensure timely expiration of out of band authentication request, code, or
       tokens
-  type: Contains
+  ltype: Contains
 - document:
     doctype: CRE
     id: 168-186
     name: Use out of band authentication requests, codes or tokens only once
-  type: Contains
+  ltype: Contains
 - document:
     doctype: CRE
     id: 440-361
     name: Ensure that physical single factor OTP generator can be revoked fully immediately
       when lost
-  type: Contains
+  ltype: Contains
 - document:
     doctype: CRE
     id: 354-752
     name: Use strong authenticators with priority and weak authenticators only for
       less secure access
-  type: Contains
+  ltype: Contains
 - document:
     doctype: CRE
     id: 553-413
     name: Support subscriber-provided authentication devices
-  type: Contains
+  ltype: Contains
 - document:
     doctype: CRE
     id: 681-823
     name: Defined lifetime of time-based one-time password
-  type: Contains
+  ltype: Contains
 - document:
     doctype: CRE
     id: 404-126
     name: Use time-based OTP only once
-  type: Contains
+  ltype: Contains
 - document:
     doctype: CRE
     id: 354-752
     name: Do not offer weak (clear text) authenticators by default
-  type: Contains
+  ltype: Contains
 - document:
     doctype: CRE
     id: 270-634
     name: Send authentication secrets encrypted
-  type: Related
+  ltype: Related
 name: MFA/OTP
 tags:
 - Cryptography

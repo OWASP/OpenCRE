@@ -1,0 +1,34 @@
+doctype: CRE
+id: 668-364
+links:
+- document:
+    doctype: CRE
+    id: 228-551
+    name: TLS
+    tags:
+    - Cryptoghraphy
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 842-876
+    name: '>>Logging and error handling'
+  ltype: Related
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x17-V9-Communications.md
+    name: ASVS
+    section: V9.2.5
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/544.html
+    name: CWE
+    section: '544'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=SC-28
+    name: NIST 800-53 v5
+    section: SC-28 PROTECTION OF INFORMATION AT REST
+  ltype: Linked To
+name: Log TLS connection failures

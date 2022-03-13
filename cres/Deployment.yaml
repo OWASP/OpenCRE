@@ -5,59 +5,59 @@ links:
     doctype: CRE
     id: 153-513
     name: '>>Development & operations'
-  type: Contains
+  ltype: Contains
 - document:
     doctype: CRE
     id: 486-813
     name: Configuration
-  type: Related
+  ltype: Related
 - document:
     doctype: CRE
     id: 347-352
     name: Set and confirm integrity of security deployment configuration
-  type: Contains
+  ltype: Contains
 - document:
     doctype: CRE
     id: 381-501
     name: Binary integrity
-  type: Contains
+  ltype: Contains
 - document:
     doctype: CRE
     id: 726-868
     name: Deployed topology
     tags:
     - Architecture
-  type: Contains
+  ltype: Contains
 - document:
     doctype: CRE
     id: 615-188
     name: Deployment process
-  type: Contains
+  ltype: Contains
 - document:
     doctype: CRE
     id: 840-757
     name: Guidelines
-  type: Contains
+  ltype: Contains
 - document:
     doctype: CRE
     id: 636-347
     name: HTTP security headers
-  type: Contains
+  ltype: Contains
 - document:
     doctype: CRE
     id: 266-527
     name: Physical security
-  type: Contains
+  ltype: Contains
 - document:
     doctype: CRE
     id: 612-364
     name: System time synchronization
-  type: Contains
+  ltype: Contains
 - document:
     doctype: CRE
     id: 273-600
     name: Segregate components of differing trust levels
-  type: Contains
+  ltype: Contains
 - document:
     doctype: CRE
     id: 268-272
@@ -65,28 +65,24 @@ links:
       is deleted
     tags:
     - Personal data handling
-  type: Related
+  ltype: Related
 - document:
     doctype: CRE
     id: 163-776
     name: Backups
-  type: Related
+  ltype: Related
 - document:
     doctype: Standard
     hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=SC-29
     name: NIST 800-53 v5
     section: SC-29 Heterogeneity
-    subsection: ''
-    version: ''
-  type: Linked To
+  ltype: Linked To
 - document:
     doctype: Standard
     hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=SC-27
     name: NIST 800-53 v5
     section: SC-27 Platform-independent Applications
-    subsection: ''
-    version: ''
-  type: Linked To
+  ltype: Linked To
 name: Deployment
 tags:
 - Configuration
