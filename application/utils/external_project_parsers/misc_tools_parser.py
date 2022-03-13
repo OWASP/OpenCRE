@@ -10,7 +10,7 @@ from application.defs import cre_defs as defs
 from application.utils import git
 
 tool_urls = [
-    "https://github.com/commjoen/wrongsecrets",
+    "https://github.com/commjoen/wrongsecrets.git",
     # "https://github.com/northdpole/wrongsecrets.git",
 
 ]
