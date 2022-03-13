@@ -5,7 +5,7 @@ export interface Document {
   links?: LinkedDocument[];
   // For CREs
   description?: string;
-  id?: string;
+  id: string;
   // For Standards
   hyperlink?: string;
   section?: string;
