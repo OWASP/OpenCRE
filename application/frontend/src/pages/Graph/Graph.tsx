@@ -39,7 +39,7 @@ const documentToReactFlowNode = (cDoc: (Document | any)): CREGraph => {
     id: cDoc.id,
     type: cDoc.doctype,
     position: { x: 0, y: 0 },
-    data: { label: <a href={cDoc.hyperlink}> {cDoc.id} - {cDoc.name}</a> }, 
+    data: { label: <a target="_blank" href={cDoc.hyperlink}> {cDoc.id} - {cDoc.name}</a> }, 
   }
   root.push(node)
   result.nodes.push(node)
@@ -53,7 +53,7 @@ const documentToReactFlowNode = (cDoc: (Document | any)): CREGraph => {
         id: unique_node_id,
         type: doctype,
         position: { x: 0, y: 0 },
-        data: { label: <a href={hyperlink}> {node_label}</a> }, // TODO: add section/subsection
+        data: { label: <a target="_blank" href={hyperlink}> {node_label}</a> }, // TODO: add section/subsection
       }
       let edge = {
         type: link.ltype,
