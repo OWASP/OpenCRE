@@ -44,8 +44,8 @@ export const CommonRequirementEnumeration = () => {
   }
   let currentUrlParams = new URLSearchParams(window.location.search);
   let display:Document
-  display = currentUrlParams.get("applyFilters") === "true"? filteredCRE:cre 
-  
+  display = currentUrlParams.get("applyFilters") === "true"? filteredCRE:cre
+
   const linksByType = useMemo(() => (display ? groupLinksByType(display) : {}), [display]);
 
   return (
@@ -66,11 +66,11 @@ export const CommonRequirementEnumeration = () => {
           <div className="cre-page__tags">Tags:{display.tags.map((tag) => ( <b>{tag} </b>))}</div>:""}
 
           {currentUrlParams.get("applyFilters")==="true"?
-          <div className="cre-page__filters">  
+          <div className="cre-page__filters">
           Filtering on:
             {currentUrlParams.getAll("filters").map((filter)=>(
               <b key={filter}>{filter.replace("s:","").replace("c:","")}, </b>))}
-              
+
           <ClearFilterButton/>
           </div>:""}
           <div className="cre-page__links-container">
