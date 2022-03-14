@@ -209,7 +209,7 @@ class TestDB(unittest.TestCase):
 
         # load yamls from loc, parse,
         #  ensure yaml1 is result[0].todict and
-        #  yaml2 is expected[1].todic
+        #  yaml2 is expected[1].todict
         group = expected[0].todict()
         cre = expected[1].todict()
         groupname = expected[0].name + ".yaml"

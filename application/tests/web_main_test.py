@@ -107,7 +107,7 @@ class TestMain(unittest.TestCase):
 
         collection.add_internal_link(group=dca, cre=dcd, type=defs.LinkTypes.Contains)
         collection.add_internal_link(group=dcb, cre=dcd, type=defs.LinkTypes.Contains)
-
+        self.maxDiff = None
         with self.app.test_client() as client:
             response = client.get(f"/rest/v1/id/9999999999")
             self.assertEqual(404, response.status_code)
@@ -128,6 +128,7 @@ class TestMain(unittest.TestCase):
                 "data": cres["cb"].todict(),
                 "osib": osib_defs.cre2osib([cres["cb"]]).todict(),
             }
+
             self.assertEqual(json.loads(osib_response.data.decode()), osib_expected)
             self.assertEqual(200, osib_response.status_code)
 
