@@ -8,7 +8,8 @@ from typing import Any, Dict, List
 
 from application import create_app, sqla  # type: ignore
 from application.database import db
-from application.defs import cre_defs as defs, osib_defs
+from application.defs import cre_defs as defs
+from application.defs import osib_defs
 from application.web import web_main
 
 
@@ -187,7 +188,9 @@ class TestMain(unittest.TestCase):
             "sd": defs.Standard(
                 name="s1", section="s22", subsection="s333", version="4.0.0"
             ),
-            "se": defs.Standard(name="s1", hyperlink="https://example.com/foo"),
+            "se": defs.Standard(
+                name="s1", hyperlink="https://example.com/foo", tags=["s1"]
+            ),
             "c0": defs.Code(
                 name="C0", description="print(0)", hyperlink="https://example.com/c0"
             ),
@@ -196,6 +199,7 @@ class TestMain(unittest.TestCase):
             collection.add_node(v)
 
         self.maxDiff = None
+
         with self.app.test_client() as client:
             response = client.get(f"/rest/v1/standard/9999999999")
             self.assertEqual(404, response.status_code)
@@ -215,6 +219,7 @@ class TestMain(unittest.TestCase):
                 f"/rest/v1/standard/{nodes['sa'].name}",
                 headers={"Content-Type": "application/json"},
             )
+
             self.assertEqual(json.loads(response.data.decode()), expected)
             self.assertEqual(200, response.status_code)
 

@@ -353,6 +353,7 @@ class Node_collection:
         If a standard entry is not linked to by a CRE in the list the Standard entry will be returned empty.
         """
         nodes = []
+
         dbnodes = self.__get_nodes_query__(
             name=name,
             section=section,
@@ -385,6 +386,7 @@ class Node_collection:
                                 )
                             )
                 nodes.append(node)
+
             return total_pages, nodes, dbnodes
         else:
             logger.warning(f"Node {name} of type {ntype} does not exist in the db")
