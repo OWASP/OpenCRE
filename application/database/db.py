@@ -1,9 +1,8 @@
-import os
 import logging
 import re
 from collections import Counter
 from itertools import permutations
-from typing import Any, Dict, List, Optional, Sequence, Tuple, cast
+from typing import Any, Dict, List, Optional, Tuple, cast
 
 import networkx as nx
 import yaml
@@ -210,6 +209,17 @@ class Node_collection:
             self.session.query(Node).filter(Node.id.notin_(linked_nodes)).all()
         )
         return nodes
+
+    def __get_unlinked_cres(self) -> List[CRE]:
+
+        linked_cres = self.session.query(CRE.id).join(
+            InternalLinks,
+            sqla.or_(InternalLinks.group == CRE.id, InternalLinks.cre == CRE.id),
+        )
+        cres: List[CRE] = (
+            self.session.query(CRE).filter(CRE.id.notin_(linked_cres)).all()
+        )
+        return cres
 
     def __introduces_cycle(self, node_from: str, node_to: str) -> Any:
         try:
@@ -630,10 +640,7 @@ class Node_collection:
         cre, standard = None, None
 
         # internal links are Group/HigherLevelCRE -> CRE
-        for link in self.__get_internal_links():
-            group = link[0]
-            cre = link[1]
-            type = link[2]
+        for group, cre, type in self.__get_internal_links():
             grp = None
             # when cres link to each other it's a two way link
             # so handle cre1(group) -> cre2 link first
@@ -681,13 +688,15 @@ class Node_collection:
                 )
             docs[cr.name] = cr
 
+        # unlinked cres next
+        for ucre in self.__get_unlinked_cres():
+            docs[ucre.name] = CREfromDB(ucre)
+
         # unlinked nodes last
         for unode in self.__get_unlinked_nodes():
-            unode = nodeFromDB(unode)
-            docs[
-                "%s-%s:%s:%s" % (unode.name, unode.doctype, unode.id, unode.description)
-            ] = unode
-            logger.info(f"{unode.name} is unlinked?")
+            nde = nodeFromDB(unode)
+            docs["%s-%s:%s:%s" % (nde.name, nde.doctype, nde.id, nde.description)] = nde
+            logger.info(f"{nde.name} is unlinked?")
 
         for _, doc in docs.items():
             title = (

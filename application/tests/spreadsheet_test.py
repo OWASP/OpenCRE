@@ -539,6 +539,7 @@ class TestDB(unittest.TestCase):
         result = prepare_spreadsheet(
             collection, collection.export(dir=tempfile.mkdtemp())
         )
+        self.maxDiff = None
         self.assertCountEqual(result, expected)
 
 

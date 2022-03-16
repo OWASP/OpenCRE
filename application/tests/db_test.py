@@ -27,6 +27,7 @@ class TestDB(unittest.TestCase):
         self.app_context.push()
         self.collection = db.Node_collection()
         collection = self.collection
+        collection.graph.graph = db.CRE_Graph.load_cre_graph(sqla.session)
 
         dbcre = collection.add_cre(
             defs.CRE(id="111-000", description="CREdesc", name="CREname")
@@ -154,9 +155,33 @@ class TestDB(unittest.TestCase):
             with a link to "BarStand" and "GroupName" and one for "GroupName" with a link to "CREName"
         """
         loc = tempfile.mkdtemp()
+        collection = db.Node_collection()
+        collection = self.collection
+        collection.graph.graph = db.CRE_Graph.load_cre_graph(sqla.session)
+
         code0 = defs.Code(name="co0")
         code1 = defs.Code(name="co1")
         tool0 = defs.Tool(name="t0", tooltype=defs.ToolTypes.Unknown)
+
+        dbstandard = collection.add_node(
+            defs.Standard(
+                subsection="4.5.6",
+                section="FooStand",
+                name="BarStand",
+                hyperlink="https://example.com",
+                tags=["a", "b", "c"],
+            )
+        )
+
+        collection.add_node(
+            defs.Standard(
+                subsection="4.5.6",
+                section="Unlinked",
+                name="Unlinked",
+                hyperlink="https://example.com",
+            )
+        )
+
         self.collection.add_link(self.dbcre, self.collection.add_node(code0))
         self.collection.add_node(code1)
         self.collection.add_node(tool0)
@@ -181,7 +206,7 @@ class TestDB(unittest.TestCase):
                 links=[
                     defs.Link(
                         document=defs.CRE(
-                            id="111-001", description="Groupdesc", name="GroupName"
+                            id="112-001", description="Groupdesc", name="GroupName"
                         )
                     ),
                     defs.Link(
@@ -205,7 +230,6 @@ class TestDB(unittest.TestCase):
             defs.Tool(name="t0", tooltype=defs.ToolTypes.Unknown),
             defs.Code(name="co1"),
         ]
-        os.environ["foo"] = "bar"
         self.collection.export(loc)
 
         # load yamls from loc, parse,
@@ -221,9 +245,6 @@ class TestDB(unittest.TestCase):
             .replace("'", "")
             + ".yaml"
         )
-        # print(groupname)
-        # print(expected[0].name)
-        # input(loc)  # BUG for reasons GroupName never gets exported?
 
         with open(os.path.join(loc, groupname), "r") as f:
             doc = yaml.safe_load(f)
