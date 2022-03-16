@@ -205,6 +205,7 @@ class TestDB(unittest.TestCase):
             defs.Tool(name="t0", tooltype=defs.ToolTypes.Unknown),
             defs.Code(name="co1"),
         ]
+        os.environ["foo"] = "bar"
         self.collection.export(loc)
 
         # load yamls from loc, parse,
@@ -212,12 +213,30 @@ class TestDB(unittest.TestCase):
         #  yaml2 is expected[1].todict
         group = expected[0].todict()
         cre = expected[1].todict()
-        groupname = expected[0].name + ".yaml"
+        groupname = (
+            expected[0]
+            .name.replace("/", "-")
+            .replace(" ", "_")
+            .replace('"', "")
+            .replace("'", "")
+            + ".yaml"
+        )
+        # print(groupname)
+        # print(expected[0].name)
+        # input(loc)  # BUG for reasons GroupName never gets exported?
+
         with open(os.path.join(loc, groupname), "r") as f:
             doc = yaml.safe_load(f)
             self.assertDictEqual(group, doc)
 
-        crename = expected[1].name + ".yaml"
+        crename = (
+            expected[1]
+            .name.replace("/", "-")
+            .replace(" ", "_")
+            .replace('"', "")
+            .replace("'", "")
+            + ".yaml"
+        )
         self.maxDiff = None
         with open(os.path.join(loc, crename), "r") as f:
             doc = yaml.safe_load(f)
@@ -736,6 +755,7 @@ class TestDB(unittest.TestCase):
         """
 
         collection = db.Node_collection()
+        collection.graph.graph = db.CRE_Graph.load_cre_graph(sqla.session)
 
         cres = {
             "dbca": collection.add_cre(defs.CRE(id="1", description="CA", name="CA")),
@@ -1149,9 +1169,10 @@ class TestDB(unittest.TestCase):
         sqla.session.remove()
         sqla.drop_all()
         sqla.create_all(app=self.app)
-        self.collection = db.Node_collection()
-        collection = self.collection
+
         collection = db.Node_collection()
+        collection.graph.graph = db.CRE_Graph.load_cre_graph(sqla.session)
+
         for i in range(0, 5):
             if i == 0 or i == 1:
                 cres.append(defs.CRE(name=f">> C{i}", id=f"{i}"))

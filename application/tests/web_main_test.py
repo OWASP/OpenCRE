@@ -24,7 +24,6 @@ class TestMain(unittest.TestCase):
         sqla.create_all(app=self.app)
         self.app_context = self.app.app_context()
         self.app_context.push()
-        self.collection = db.Node_collection()
 
     def test_extend_cre_with_tag_links(self) -> None:
         """
@@ -90,6 +89,8 @@ class TestMain(unittest.TestCase):
 
     def test_find_by_id(self) -> None:
         collection = db.Node_collection()
+        collection.graph.graph = db.CRE_Graph.load_cre_graph(sqla.session)
+
         cres = {
             "ca": defs.CRE(id="1", description="CA", name="CA", tags=["ta"]),
             "cd": defs.CRE(id="2", description="CD", name="CD", tags=["td"]),
@@ -134,6 +135,8 @@ class TestMain(unittest.TestCase):
 
     def test_find_by_name(self) -> None:
         collection = db.Node_collection()
+        collection.graph.graph = db.CRE_Graph.load_cre_graph(sqla.session)
+
         cres = {
             "ca": defs.CRE(id="1", description="CA", name="CA", tags=["ta"]),
             "cd": defs.CRE(id="2", description="CD", name="CD", tags=["td"]),
@@ -148,9 +151,9 @@ class TestMain(unittest.TestCase):
         dca = collection.add_cre(cres["ca"])
         dcb = collection.add_cre(cres["cb"])
         dcd = collection.add_cre(cres["cd"])
-
         collection.add_internal_link(group=dca, cre=dcd, type=defs.LinkTypes.Contains)
         collection.add_internal_link(group=dcb, cre=dcd, type=defs.LinkTypes.Contains)
+
         self.maxDiff = None
         with self.app.test_client() as client:
             response = client.get(f"/rest/v1/name/CW")
@@ -163,6 +166,7 @@ class TestMain(unittest.TestCase):
             )
             self.assertEqual(200, response.status_code)
             self.assertEqual(json.loads(response.data.decode()), expected)
+
             osib_response = client.get(
                 f"/rest/v1/name/{cres['cb'].name}?osib=true",
                 headers={"Content-Type": "application/json"},

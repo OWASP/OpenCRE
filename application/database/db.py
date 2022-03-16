@@ -1,3 +1,4 @@
+import os
 import logging
 import re
 from collections import Counter
@@ -106,7 +107,7 @@ class CRE_Graph:
     def instance(cls, session):
         if cls.__instance is None:
             cls.__instance = cls.__new__(cls)
-            cls.graph = cls.__load_cre_graph(session)
+            cls.graph = cls.load_cre_graph(session)
         return cls.__instance
 
     def __init__(sel):
@@ -142,7 +143,7 @@ class CRE_Graph:
         return graph
 
     @classmethod
-    def __load_cre_graph(cls, session) -> nx.Graph:
+    def load_cre_graph(cls, session) -> nx.Graph:
 
         graph = nx.DiGraph()
         for il in session.query(InternalLinks).all():
@@ -167,7 +168,7 @@ class CRE_Graph:
             cre = session.query(CRE).filter(CRE.id == lnk.cre).first()
             graph = cls.add_cre(dbcre=cre, graph=graph)
 
-            graph.add_edge(f"CRE: {lnk.cre}", f"Node: {str(lnk.node)}", ltype=il.type)
+            graph.add_edge(f"CRE: {lnk.cre}", f"Node: {str(lnk.node)}", ltype=lnk.type)
         return graph
 
 
@@ -176,7 +177,8 @@ class Node_collection:
     session = sqla.session
 
     def __init__(self) -> None:
-        self.graph = CRE_Graph.instance(session=sqla.session)
+        self.graph = CRE_Graph.instance(sqla.session)
+        # self.graph = CRE_Graph.instance(session=sqla.session)
         self.session = sqla.session
 
     def __get_external_links(self) -> List[Tuple[CRE, Node, str]]:
@@ -740,9 +742,7 @@ class Node_collection:
             )
             self.session.add(entry)
             self.session.commit()
-            self.graph = self.graph.add_cre(
-                dbcre=entry, graph=self.graph
-            )
+            self.graph = self.graph.add_cre(dbcre=entry, graph=self.graph)
         return entry
 
     def add_node(self, node: cre_defs.Node) -> Optional[Node]:
@@ -767,9 +767,7 @@ class Node_collection:
             self.session.add(dbnode)
             self.session.commit()
 
-            self.graph = self.graph.add_dbnode(
-                dbnode=dbnode, graph=self.graph
-            )
+            self.graph = self.graph.add_dbnode(dbnode=dbnode, graph=self.graph)
         return dbnode
 
     def add_internal_link(
@@ -863,10 +861,11 @@ class Node_collection:
                 self.graph.add_edge(
                     f"CRE: {group.id}", f"CRE: {cre.id}", ltype=type.value
                 )
+                return 1
             else:
                 logger.warning(
-                    f"A link between CREs {group.external_id} and"
-                    f" {cre.external_id} "
+                    f"A link between CREs {group.external_id}-{group.name} and"
+                    f" {cre.external_id}-{cre.name} "
                     f"would introduce cycle {cycle}, skipping"
                 )
 
@@ -1056,9 +1055,7 @@ class Node_collection:
         result = []
         for nodeid in nodes:
             result.extend(
-                self.get_CREs(
-                    internal_id=self.graph.graph.nodes[nodeid]["internal_id"]
-                )
+                self.get_CREs(internal_id=self.graph.graph.nodes[nodeid]["internal_id"])
             )
         return result
 
