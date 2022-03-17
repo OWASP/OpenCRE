@@ -397,3 +397,57 @@ class TestMain(unittest.TestCase):
                 resp = client.get(r)
                 self.assertEqual(200, resp.status_code)
                 self.assertDictEqual(resp.json[0], expected[0])
+
+    def test_find_root_cres(self) -> None:
+        self.maxDiff = None
+        collection = db.Node_collection()
+        with self.app.test_client() as client:
+            response = client.get(
+                "/rest/v1/root_cres",
+                headers={"Content-Type": "application/json"},
+            )
+            self.assertEqual(404, response.status_code)
+
+            cres = {
+                "ca": defs.CRE(id="1", description="CA", name="CA", tags=["ta"]),
+                "cd": defs.CRE(id="2", description="CD", name="CD", tags=["td"]),
+                "cb": defs.CRE(id="3", description="CB", name="CB", tags=["tb"]),
+            }
+            cres["ca"].add_link(
+                defs.Link(
+                    ltype=defs.LinkTypes.Contains, document=cres["cd"].shallow_copy()
+                )
+            )
+            cres["cb"].add_link(
+                defs.Link(
+                    ltype=defs.LinkTypes.Contains, document=cres["cd"].shallow_copy()
+                )
+            )
+            dca = collection.add_cre(cres["ca"])
+            dcb = collection.add_cre(cres["cb"])
+            dcd = collection.add_cre(cres["cd"])
+            collection.add_internal_link(
+                group=dca, cre=dcd, type=defs.LinkTypes.Contains
+            )
+            collection.add_internal_link(
+                group=dcb, cre=dcd, type=defs.LinkTypes.Contains
+            )
+
+            expected = {"data": [cres["ca"].todict(), cres["cb"].todict()]}
+            response = client.get(
+                "/rest/v1/root_cres",
+                headers={"Content-Type": "application/json"},
+            )
+            self.assertEqual(json.loads(response.data.decode()), expected)
+            self.assertEqual(200, response.status_code)
+
+            osib_response = client.get(
+                "/rest/v1/root_cres?osib=true",
+                headers={"Content-Type": "application/json"},
+            )
+            osib_expected = {
+                "data": [cres["ca"].todict(), cres["cb"].todict()],
+                "osib": osib_defs.cre2osib([cres["ca"], cres["cb"]]).todict(),
+            }
+            self.assertEqual(json.loads(osib_response.data.decode()), osib_expected)
+            self.assertEqual(200, osib_response.status_code)
