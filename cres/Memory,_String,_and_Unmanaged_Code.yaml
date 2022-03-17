@@ -8,13 +8,6 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 760-764
-    name: Injection
-    tags:
-    - XSS
-  ltype: Related
-- document:
-    doctype: CRE
     id: 824-732
     name: Force format strings as constants
   ltype: Contains
@@ -29,5 +22,3 @@ links:
     name: Use memory-safe functions exclusively
   ltype: Contains
 name: Memory, String, and Unmanaged Code
-tags:
-- Injection

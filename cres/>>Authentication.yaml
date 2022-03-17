@@ -13,6 +13,11 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
+    id: 634-733
+    name: Communication authentication
+  ltype: Related
+- document:
+    doctype: CRE
     id: 065-782
     name: Ensure session timeout (soft/hard)
   ltype: Related
@@ -81,5 +86,11 @@ links:
     hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=IA-8
     name: NIST 800-53 v5
     section: IA-8 Identification and Authentication (non-organizational Users)
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: Loading...
+    name: Top10 2017
+    section: A2_Broken_Authentication
   ltype: Linked To
 name: '>>Authentication'

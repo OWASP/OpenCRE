@@ -3,13 +3,13 @@ id: 053-751
 links:
 - document:
     doctype: CRE
-    id: 613-286
-    name: Dependency management
+    id: 613-285
+    name: '>>Dependency strength'
   ltype: Contains
 - document:
     doctype: CRE
-    id: 433-442
-    name: Development verification
+    id: 615-188
+    name: Deployment process
   ltype: Related
 - document:
     doctype: Standard

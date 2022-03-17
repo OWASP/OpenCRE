@@ -8,8 +8,8 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 028-728
-    name: Personal data handling
+    id: 362-550
+    name: '>>Personal data handling'
   ltype: Related
 - document:
     doctype: Standard
@@ -26,7 +26,7 @@ links:
 - document:
     doctype: Standard
     hyperlink: https://owasp.org/www-project-web-security-testing-guide/v41/4-Web_Application_Security_Testing/09-Testing_for_Weak_Cryptography/04-Testing_for_Weak_Encryption.html
-    name: WSTG
+    name: (WSTG) Web Security Testing Guide
     section: WSTG-CRYP-04
   ltype: Linked To
 - document:
@@ -41,31 +41,4 @@ links:
     name: Cheat_sheets
     section: User Privacy Protection Cheat Sheet
   ltype: Linked To
-- document:
-    doctype: Tool
-    name: 'ZAP Alert: "Secure Pages Include Mixed Content"'
-    tags:
-    - '"Passive"'
-    tooltype: Offensive
-  ltype: SAME
-- document:
-    description: '"Configure your web or application server to use SSL (https)."'
-    doctype: Tool
-    name: 'ZAP Alert: "HTTP Only Site"'
-    tags:
-    - '"Active"'
-    tooltype: Offensive
-  ltype: SAME
-- document:
-    description: '"Ensure that your web server, application server, load balancer,
-      etc. is configured to only serve such content via HTTPS. Consider implementing
-      HTTP Strict Transport Security."'
-    doctype: Tool
-    name: 'ZAP Alert: "HTTPS Content Available via HTTP"'
-    tags:
-    - '"Active"'
-    tooltype: Offensive
-  ltype: SAME
 name: Encrypt personal data at rest
-tags:
-- Personal data handling

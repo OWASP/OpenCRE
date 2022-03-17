@@ -20,7 +20,7 @@ links:
 - document:
     doctype: Standard
     hyperlink: https://owasp-top-10-proactive-controls-2018.readthedocs.io/en/latest/c7-enforce-access-controls.html
-    name: OPC
+    name: OWASP Proactive Controls
     section: C7
   ltype: Linked To
 - document:
@@ -29,28 +29,6 @@ links:
     name: CWE
     section: '284'
   ltype: Linked To
-- document:
-    description: '"Use per user or session indirect object references (create a temporary
-      mapping at time of use). Or, ensure that each use of a direct object reference
-      is tied to an authorization check to ensure the user is authorized for the requested
-      object. "'
-    doctype: Tool
-    name: 'ZAP Alert: "Username Hash Found"'
-    tags:
-    - '"Passive"'
-    tooltype: Offensive
-  ltype: SAME
-- document:
-    description: '"Use per user or session indirect object references (create a temporary
-      mapping at time of use). Or, ensure that each use of a direct object reference
-      is tied to an authorization check to ensure the user is authorized for the requested
-      object."'
-    doctype: Tool
-    name: 'ZAP Alert: "Username Hash Found in WebSocket message"'
-    tags:
-    - '"WebSocket Passive"'
-    tooltype: Offensive
-  ltype: SAME
 name: Use a centralized access control mechanism
 tags:
 - Architecture

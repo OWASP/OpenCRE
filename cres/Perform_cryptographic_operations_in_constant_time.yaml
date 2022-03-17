@@ -5,8 +5,6 @@ links:
     doctype: CRE
     id: 742-432
     name: Encryption algorithms
-    tags:
-    - Cryptography
   ltype: Contains
 - document:
     doctype: Standard

@@ -9,11 +9,6 @@ links:
     - Cryptography
   ltype: Contains
 - document:
-    doctype: CRE
-    id: 170-772
-    name: Cryptography
-  ltype: Related
-- document:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x14-V6-Cryptography.md
     name: ASVS
@@ -28,9 +23,7 @@ links:
 - document:
     doctype: Standard
     hyperlink: https://owasp.org/www-project-web-security-testing-guide/v41/4-Web_Application_Security_Testing/09-Testing_for_Weak_Cryptography/04-Testing_for_Weak_Encryption.html
-    name: WSTG
+    name: (WSTG) Web Security Testing Guide
     section: WSTG-CRYP-04
   ltype: Linked To
 name: Ensure proper generation of secure random
-tags:
-- Cryptography

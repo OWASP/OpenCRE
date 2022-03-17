@@ -21,12 +21,13 @@ links:
 - document:
     doctype: Standard
     hyperlink: https://owasp.org/www-project-web-security-testing-guide/v41/4-Web_Application_Security_Testing/07-Input_Validation_Testing/12-Testing_for_Command_Injection.html
-    name: WSTG
+    name: (WSTG) Web Security Testing Guide
     section: WSTG-INPV-12
   ltype: Linked To
 - document:
     doctype: Tool
-    name: 'ZAP Alert: "Remote OS Command Injection"'
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrules/src/main/java/org/zaproxy/zap/extension/ascanrules/CommandInjectionScanRule.java
+    name: 'ZAP Rule: "Remote OS Command Injection"'
     tags:
     - '"Active"'
     tooltype: Offensive
@@ -34,7 +35,8 @@ links:
 - document:
     description: '"Update Bash on the server to the latest version"'
     doctype: Tool
-    name: 'ZAP Alert: "Remote Code Execution - Shell Shock"'
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/ShellShockScanRule.java
+    name: 'ZAP Rule: "Remote Code Execution - Shell Shock"'
     tags:
     - '"Active"'
     tooltype: Offensive

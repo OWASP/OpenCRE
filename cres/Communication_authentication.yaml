@@ -8,10 +8,13 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
+    id: 633-428
+    name: '>>Authentication'
+  ltype: Related
+- document:
+    doctype: CRE
     id: 605-735
     name: Authenticate all external connections
-    tags:
-    - Cryptography
   ltype: Contains
 - document:
     doctype: CRE

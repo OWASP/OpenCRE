@@ -27,7 +27,8 @@ links:
 - document:
     description: '"Ensure that only POST is accepted where POST is expected."'
     doctype: Tool
-    name: 'ZAP Alert: "GET for POST"'
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/GetForPostScanRule.java
+    name: 'ZAP Rule: "GET for POST"'
     tags:
     - '"Active"'
     tooltype: Offensive

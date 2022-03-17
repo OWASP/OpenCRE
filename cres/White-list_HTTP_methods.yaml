@@ -5,8 +5,6 @@ links:
     doctype: CRE
     id: 541-441
     name: Validate HTTP request headers
-    tags:
-    - Injection
   ltype: Contains
 - document:
     doctype: Standard
@@ -23,7 +21,7 @@ links:
 - document:
     doctype: Standard
     hyperlink: https://owasp.org/www-project-web-security-testing-guide/v41/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/06-Test_HTTP_Methods.html
-    name: WSTG
+    name: (WSTG) Web Security Testing Guide
     section: WSTG-CONF-06
   ltype: Linked To
 name: White-list HTTP methods
