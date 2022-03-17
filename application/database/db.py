@@ -2,7 +2,7 @@ import logging
 import re
 from collections import Counter
 from itertools import permutations
-from typing import Any, Dict, List, Optional, Sequence, Tuple, cast
+from typing import Any, Dict, List, Optional, Tuple, cast
 
 import networkx as nx
 import yaml
@@ -98,12 +98,28 @@ class Links(BaseModel):  # type: ignore
     )
 
 
-class Node_collection:
-    def __init__(self) -> None:
-        self.session = sqla.session
-        self.cre_graph = self.__load_cre_graph()
+class CRE_Graph:
+    graph: nx.Graph = None
+    __instance = None
 
-    def __add_cre_graph_node(self, dbcre: CRE, graph: nx.DiGraph) -> nx.DiGraph:
+    @classmethod
+    def instance(cls, session):
+        if cls.__instance is None:
+            cls.__instance = cls.__new__(cls)
+            cls.graph = cls.load_cre_graph(session)
+        return cls.__instance
+
+    def __init__(sel):
+        raise ValueError("CRE_Graph is a singleton, please call instance() instead")
+
+    def add_edge(self, *args, **kwargs):
+        return self.graph.add_edge(*args, **kwargs)
+
+    def add_node(self, *args, **kwargs):
+        return self.graph.add_node(*args, **kwargs)
+
+    @classmethod
+    def add_cre(cls, dbcre: CRE, graph: nx.DiGraph) -> nx.DiGraph:
         if dbcre:
             graph.add_node(
                 f"CRE: {dbcre.id}", internal_id=dbcre.id, external_id=dbcre.external_id
@@ -112,7 +128,8 @@ class Node_collection:
             logger.error("Called with dbcre being none")
         return graph
 
-    def __add_node_graph_node(self, dbnode: Node, graph: nx.DiGraph) -> nx.DiGraph:
+    @classmethod
+    def add_dbnode(cls, dbnode: Node, graph: nx.DiGraph) -> nx.DiGraph:
         if dbnode:
             graph.add_node(
                 "Node: " + str(dbnode.id),
@@ -124,33 +141,44 @@ class Node_collection:
             logger.error("Called with dbnode being none")
         return graph
 
-    def __load_cre_graph(self) -> nx.Graph:
+    @classmethod
+    def load_cre_graph(cls, session) -> nx.Graph:
 
         graph = nx.DiGraph()
-        for il in self.session.query(InternalLinks).all():
-            group = self.session.query(CRE).filter(CRE.id == il.group).first()
+        for il in session.query(InternalLinks).all():
+            group = session.query(CRE).filter(CRE.id == il.group).first()
             if not group:
                 logger.error(f"CRE {il.group} does not exist?")
-            graph = self.__add_cre_graph_node(dbcre=group, graph=graph)
+            graph = cls.add_cre(dbcre=group, graph=graph)
 
-            cre = self.session.query(CRE).filter(CRE.id == il.cre).first()
+            cre = session.query(CRE).filter(CRE.id == il.cre).first()
             if not cre:
                 logger.error(f"CRE {il.cre} does not exist?")
-            graph = self.__add_cre_graph_node(dbcre=cre, graph=graph)
+            graph = cls.add_cre(dbcre=cre, graph=graph)
 
             graph.add_edge(f"CRE: {il.group}", f"CRE: {il.cre}", ltype=il.type)
 
-        for lnk in self.session.query(Links).all():
-            node = self.session.query(Node).filter(Node.id == lnk.node).first()
+        for lnk in session.query(Links).all():
+            node = session.query(Node).filter(Node.id == lnk.node).first()
             if not node:
                 logger.error(f"Node {lnk.node} does not exist?")
-            graph = self.__add_node_graph_node(dbnode=node, graph=graph)
+            graph = cls.add_dbnode(dbnode=node, graph=graph)
 
-            cre = self.session.query(CRE).filter(CRE.id == lnk.cre).first()
-            graph = self.__add_cre_graph_node(dbcre=cre, graph=graph)
+            cre = session.query(CRE).filter(CRE.id == lnk.cre).first()
+            graph = cls.add_cre(dbcre=cre, graph=graph)
 
-            graph.add_edge(f"CRE: {lnk.cre}", f"Node: {str(lnk.node)}", ltype=il.type)
+            graph.add_edge(f"CRE: {lnk.cre}", f"Node: {str(lnk.node)}", ltype=lnk.type)
         return graph
+
+
+class Node_collection:
+    graph: nx.Graph = None
+    session = sqla.session
+
+    def __init__(self) -> None:
+        self.graph = CRE_Graph.instance(sqla.session)
+        # self.graph = CRE_Graph.instance(session=sqla.session)
+        self.session = sqla.session
 
     def __get_external_links(self) -> List[Tuple[CRE, Node, str]]:
         external_links: List[Tuple[CRE, Node, str]] = []
@@ -177,16 +205,33 @@ class Node_collection:
         linked_nodes = (
             self.session.query(Node.id).join(Links).filter(Node.id == Links.node)
         )
-
         nodes: List[Node] = (
             self.session.query(Node).filter(Node.id.notin_(linked_nodes)).all()
         )
-
         return nodes
+
+    def __get_unlinked_cres(self) -> List[CRE]:
+        internally_linked_cres = self.session.query(CRE.id).join(
+            InternalLinks,
+            sqla.or_(InternalLinks.group == CRE.id, InternalLinks.cre == CRE.id),
+        )
+        externally_linked_cres = (
+            self.session.query(CRE.id).join(Links).filter(Links.cre == CRE.id)
+        )
+
+        cres = (
+            self.session.query(CRE)
+            .filter(
+                CRE.id.notin_(internally_linked_cres),
+                CRE.id.notin_(externally_linked_cres),
+            )
+            .all()
+        )
+        return cres
 
     def __introduces_cycle(self, node_from: str, node_to: str) -> Any:
         try:
-            existing_cycle = nx.find_cycle(self.cre_graph)
+            existing_cycle = nx.find_cycle(self.graph.graph)
             if existing_cycle:
                 logger.fatal(
                     "Existing graph contains cycle,"
@@ -200,7 +245,7 @@ class Node_collection:
                 )
         except nx.exception.NetworkXNoCycle:
             pass  # happy path, we don't want cycles
-        new_graph = self.cre_graph.copy()
+        new_graph = self.graph.graph.copy()
         new_graph.add_edge(node_from, node_to)
         try:
             return nx.find_cycle(new_graph)
@@ -353,6 +398,7 @@ class Node_collection:
         If a standard entry is not linked to by a CRE in the list the Standard entry will be returned empty.
         """
         nodes = []
+
         dbnodes = self.__get_nodes_query__(
             name=name,
             section=section,
@@ -385,6 +431,7 @@ class Node_collection:
                                 )
                             )
                 nodes.append(node)
+
             return total_pages, nodes, dbnodes
         else:
             logger.warning(f"Node {name} of type {ntype} does not exist in the db")
@@ -595,16 +642,13 @@ class Node_collection:
             cres.append(cre)
         return cres
 
-    def export(self, dir: str, dry_run: bool = False) -> List[cre_defs.Document]:
+    def export(self, dir: str = None, dry_run: bool = False) -> List[cre_defs.Document]:
         """Exports the database to a CRE file collection on disk"""
         docs: Dict[str, cre_defs.Document] = {}
         cre, standard = None, None
 
         # internal links are Group/HigherLevelCRE -> CRE
-        for link in self.__get_internal_links():
-            group = link[0]
-            cre = link[1]
-            type = link[2]
+        for group, cre, type in self.__get_internal_links():
             grp = None
             # when cres link to each other it's a two way link
             # so handle cre1(group) -> cre2 link first
@@ -633,10 +677,7 @@ class Node_collection:
             )
 
         # external links are CRE -> standard
-        for link in self.__get_external_links():
-            internal_doc = link[0]
-            standard = link[1]
-            type = link[2]
+        for internal_doc, standard, type in self.__get_external_links():
             cr = None
             grp = None
             if internal_doc.name in docs.keys():
@@ -644,31 +685,31 @@ class Node_collection:
             else:
                 cr = CREfromDB(internal_doc)
             if len(standard.name) != 0:
-                cr.add_link(
+                docs[cr.name] = cr.add_link(
                     cre_defs.Link(
                         ltype=cre_defs.LinkTypes.from_str(type),
                         document=nodeFromDB(standard),
                     )
                 )
-            docs[cr.name] = cr
+        # unlinked cres next
+        for ucre in self.__get_unlinked_cres():
+            docs[ucre.name] = CREfromDB(ucre)
 
         # unlinked nodes last
         for unode in self.__get_unlinked_nodes():
-            unode = nodeFromDB(unode)
-            docs[
-                "%s-%s:%s:%s" % (unode.name, unode.doctype, unode.id, unode.description)
-            ] = unode
-            logger.info(f"{unode.name} is unlinked?")
+            nde = nodeFromDB(unode)
+            docs["%s-%s:%s:%s" % (nde.name, nde.doctype, nde.id, nde.description)] = nde
+            logger.info(f"{nde.name} is unlinked?")
 
-        for _, doc in docs.items():
-            title = (
-                doc.name.replace("/", "-")
-                .replace(" ", "_")
-                .replace('"', "")
-                .replace("'", "")
-                + ".yaml"
-            )
-            if not dry_run:
+        if not dry_run:
+            for _, doc in docs.items():
+                title = (
+                    doc.name.replace("/", "-")
+                    .replace(" ", "_")
+                    .replace('"', "")
+                    .replace("'", "")
+                    + ".yaml"
+                )
                 file.writeToDisk(
                     file_title=title,
                     file_content=yaml.safe_dump(doc.todict()),
@@ -713,9 +754,7 @@ class Node_collection:
             )
             self.session.add(entry)
             self.session.commit()
-            self.cre_graph = self.__add_cre_graph_node(
-                dbcre=entry, graph=self.cre_graph
-            )
+            self.graph = self.graph.add_cre(dbcre=entry, graph=self.graph)
         return entry
 
     def add_node(self, node: cre_defs.Node) -> Optional[Node]:
@@ -740,9 +779,7 @@ class Node_collection:
             self.session.add(dbnode)
             self.session.commit()
 
-            self.cre_graph = self.__add_node_graph_node(
-                dbnode=dbnode, graph=self.cre_graph
-            )
+            self.graph = self.graph.add_dbnode(dbnode=dbnode, graph=self.graph)
         return dbnode
 
     def add_internal_link(
@@ -833,13 +870,13 @@ class Node_collection:
                     InternalLinks(type=type.value, cre=cre.id, group=group.id)
                 )
                 self.session.commit()
-                self.cre_graph.add_edge(
+                self.graph.add_edge(
                     f"CRE: {group.id}", f"CRE: {cre.id}", ltype=type.value
                 )
             else:
                 logger.warning(
-                    f"A link between CREs {group.external_id} and"
-                    f" {cre.external_id} "
+                    f"A link between CREs {group.external_id}-{group.name} and"
+                    f" {cre.external_id}-{cre.name} "
                     f"would introduce cycle {cycle}, skipping"
                 )
 
@@ -882,7 +919,7 @@ class Node_collection:
                     " ,adding"
                 )
                 self.session.add(Links(type=type.value, cre=cre.id, node=node.id))
-                self.cre_graph.add_edge(
+                self.graph.add_edge(
                     f"CRE: {cre.id}", f"Node: {str(node.id)}", ltype=type.value
                 )
             else:
@@ -901,7 +938,7 @@ class Node_collection:
         """One line method to return paths in a graph,
         this starts getting complicated when we have more linktypes"""
         res: bool = nx.has_path(
-            self.cre_graph.to_undirected(),
+            self.graph.graph.to_undirected(),
             "Node: " + str(node_source_id),
             "Node: " + str(node_destination_id),
         )
@@ -1023,13 +1060,13 @@ class Node_collection:
         """Returns CRES that only have "Contains" links"""
         nodes = [
             node
-            for node in self.cre_graph.nodes
-            if self.cre_graph.in_degree(node) == 0 and node.startswith("CRE")
+            for node in self.graph.graph.nodes
+            if self.graph.graph.in_degree(node) == 0 and node.startswith("CRE")
         ]
         result = []
         for nodeid in nodes:
             result.extend(
-                self.get_CREs(internal_id=self.cre_graph.nodes[nodeid]["internal_id"])
+                self.get_CREs(internal_id=self.graph.graph.nodes[nodeid]["internal_id"])
             )
         return result
 
