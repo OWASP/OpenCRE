@@ -8,20 +8,13 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 760-764
-    name: Injection
-    tags:
-    - XSS
-  ltype: Related
-- document:
-    doctype: CRE
     id: 405-411
     name: Avoid using of Origin header for authentication of access control
   ltype: Contains
 - document:
     doctype: CRE
     id: 316-272
-    name: Whitelist CORS resources
+    name: White-list CORS resources
   ltype: Contains
 - document:
     doctype: CRE
@@ -33,6 +26,10 @@ links:
     id: 483-715
     name: White-list HTTP methods
   ltype: Contains
+- document:
+    doctype: Standard
+    hyperlink: Loading...
+    name: Top10 2017
+    section: A6_Security_Misconfiguration
+  ltype: Linked To
 name: Validate HTTP request headers
-tags:
-- Injection

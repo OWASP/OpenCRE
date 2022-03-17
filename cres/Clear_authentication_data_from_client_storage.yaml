@@ -21,7 +21,7 @@ links:
 - document:
     doctype: Standard
     hyperlink: https://owasp.org/www-project-web-security-testing-guide/v41/4-Web_Application_Security_Testing/11-Client_Side_Testing/12-Testing_Browser_Storage.html
-    name: WSTG
+    name: (WSTG) Web Security Testing Guide
     section: WSTG-CLNT-12
   ltype: Linked To
 name: Clear authentication data from client storage

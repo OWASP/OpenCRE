@@ -36,7 +36,8 @@ links:
       is tied to an authorization check to ensure the user is authorized for the requested
       object. "'
     doctype: Tool
-    name: 'ZAP Alert: "Username Hash Found"'
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/UsernameIdorScanRule.java
+    name: 'ZAP Rule: "Username Hash Found"'
     tags:
     - '"Passive"'
     tooltype: Offensive
@@ -47,7 +48,8 @@ links:
       is tied to an authorization check to ensure the user is authorized for the requested
       object."'
     doctype: Tool
-    name: 'ZAP Alert: "Username Hash Found in WebSocket message"'
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/websocket/src/main/zapHomeFiles/scripts/templates/websocketpassive/Username%20Idor%20Scanner.js
+    name: 'ZAP Rule: "Username Hash Found in WebSocket message"'
     tags:
     - '"WebSocket Passive"'
     tooltype: Offensive

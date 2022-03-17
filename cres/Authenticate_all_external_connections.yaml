@@ -7,11 +7,6 @@ links:
     name: Communication authentication
   ltype: Contains
 - document:
-    doctype: CRE
-    id: 170-772
-    name: Cryptography
-  ltype: Related
-- document:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x17-V9-Communications.md
     name: ASVS
@@ -24,5 +19,3 @@ links:
     section: '287'
   ltype: Linked To
 name: Authenticate all external connections
-tags:
-- Cryptography

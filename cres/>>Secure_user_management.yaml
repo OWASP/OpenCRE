@@ -9,7 +9,7 @@ links:
 - document:
     doctype: CRE
     id: 623-347
-    name: Disallow shared high privileged accounts
+    name: Disallow shared high privilige accounts
   ltype: Contains
 - document:
     doctype: CRE
@@ -51,4 +51,10 @@ links:
     id: 673-736
     name: Enable option to log out from all active session
   ltype: Related
+- document:
+    doctype: Standard
+    hyperlink: Loading...
+    name: Top10 2017
+    section: A2_Broken_Authentication
+  ltype: Linked To
 name: '>>Secure user management'

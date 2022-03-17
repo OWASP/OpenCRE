@@ -1,0 +1,8 @@
+doctype: CRE
+links:
+- document:
+    doctype: CRE
+    id: 270-634
+    name: Send authentication secrets encrypted
+  ltype: Related
+name: Secure communication

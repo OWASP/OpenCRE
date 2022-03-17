@@ -21,7 +21,7 @@ links:
 - document:
     doctype: Standard
     hyperlink: https://owasp.org/www-project-web-security-testing-guide/v41/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/07-Test_HTTP_Strict_Transport_Security.html
-    name: WSTG
+    name: (WSTG) Web Security Testing Guide
     section: WSTG-CONF-07
   ltype: Linked To
 - document:

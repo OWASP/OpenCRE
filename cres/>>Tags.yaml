@@ -25,13 +25,6 @@ links:
     doctype: CRE
     id: 760-764
     name: Injection
-    tags:
-    - XSS
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 760-765
-    name: XSS
   ltype: Contains
 - document:
     doctype: CRE
@@ -45,22 +38,12 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
+    id: 028-726
+    name: XSS
+  ltype: Contains
+- document:
+    doctype: CRE
     id: 155-155
     name: Architecture
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 028-727
-    name: SSRF
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 028-727
-    name: CSRF
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 028-728
-    name: Personal data handling
   ltype: Contains
 name: '>>Tags'

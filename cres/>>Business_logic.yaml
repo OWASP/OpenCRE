@@ -10,15 +10,11 @@ links:
     doctype: CRE
     id: 630-573
     name: Monitor suspected automation abuse
-    tags:
-    - DOS
   ltype: Contains
 - document:
     doctype: CRE
     id: 725-682
     name: Enable configurable alert against usage anomalies
-    tags:
-    - DOS
   ltype: Contains
 - document:
     doctype: CRE
@@ -29,8 +25,6 @@ links:
     doctype: CRE
     id: 418-853
     name: Monitor unusual activities on system
-    tags:
-    - DOS
   ltype: Contains
 - document:
     doctype: CRE
@@ -51,8 +45,6 @@ links:
     doctype: CRE
     id: 456-535
     name: Monitor for realistic "human time" business logic flows
-    tags:
-    - DOS
   ltype: Contains
 - document:
     doctype: CRE
@@ -67,18 +59,14 @@ links:
 - document:
     doctype: CRE
     id: 082-327
-    name: Inform users clearly about the collection and use of personal data,  and
+    name: Inform users clearly about the collection and use of personal data, and
       use it only after opt-in consent.
-    tags:
-    - Personal data handling
-  ltype: Contains
+  ltype: Related
 - document:
     doctype: CRE
     id: 762-451
     name: Ensure users can remove or export their data
-    tags:
-    - Personal data handling
-  ltype: Contains
+  ltype: Related
 name: '>>Business logic'
 tags:
 - DOS

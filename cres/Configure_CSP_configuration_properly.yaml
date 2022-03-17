@@ -8,7 +8,7 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 760-765
+    id: 028-726
     name: XSS
   ltype: Related
 - document:
@@ -28,7 +28,7 @@ links:
     hyperlink: https://owasp.org/www-project-web-security-testing-guide/v41/4-Web_Application_Security_Testing/07-Input_Validation_Testing/01-Testing_for_Reflected_Cross_Site_Scripting.html;
       https://owasp.org/www-project-web-security-testing-guide/v41/4-Web_Application_Security_Testing/07-Input_Validation_Testing/02-Testing_for_Stored_Cross_Site_Scripting.html;
       https://owasp.org/www-project-web-security-testing-guide/v41/4-Web_Application_Security_Testing/11-Client_Side_Testing/01-Testing_for_DOM-based_Cross_Site_Scripting.html
-    name: WSTG
+    name: (WSTG) Web Security Testing Guide
     section: WSTG-INPV-01; WSTG-INPV-02; WSTG-CLNT-01
   ltype: Linked To
 - document:
@@ -44,7 +44,8 @@ links:
       you never expect the page to be framed, you should use DENY.  Alternatively
       consider implementing Content Security Policy''s ''frame-ancestors'' directive."'
     doctype: Tool
-    name: 'ZAP Alert: "X-Frame-Options Setting Malformed"'
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/AntiClickjackingScanRule.java
+    name: 'ZAP Rule: "X-Frame-Options Setting Malformed"'
     tags:
     - '"Passive"'
     tooltype: Offensive
@@ -52,7 +53,8 @@ links:
 - document:
     description: '"Ensure only a single X-Frame-Options header is present in the response."'
     doctype: Tool
-    name: 'ZAP Alert: "Multiple X-Frame-Options Header Entries"'
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/AntiClickjackingScanRule.java
+    name: 'ZAP Rule: "Multiple X-Frame-Options Header Entries"'
     tags:
     - '"Passive"'
     tooltype: Offensive
@@ -61,14 +63,16 @@ links:
     description: '"Ensure X-Frame-Options is set via a response header field.  Alternatively
       consider implementing Content Security Policy''s ''frame-ancestors'' directive."'
     doctype: Tool
-    name: 'ZAP Alert: "X-Frame-Options Defined via META (Non-compliant with Spec)"'
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/AntiClickjackingScanRule.java
+    name: 'ZAP Rule: "X-Frame-Options Defined via META (Non-compliant with Spec)"'
     tags:
     - '"Passive"'
     tooltype: Offensive
   ltype: SAME
 - document:
     doctype: Tool
-    name: 'ZAP Alert: "Missing Anti-clickjacking Header"'
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/AntiClickjackingScanRule.java
+    name: 'ZAP Rule: "Missing Anti-clickjacking Header"'
     tags:
     - '"Passive"'
     tooltype: Offensive

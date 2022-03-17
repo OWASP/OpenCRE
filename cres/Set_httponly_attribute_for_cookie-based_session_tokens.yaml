@@ -3,11 +3,12 @@ id: 804-220
 links:
 - document:
     doctype: CRE
-    name: Protect session ID
+    id: 110-531
+    name: Cookie-config
   ltype: Contains
 - document:
     doctype: CRE
-    id: 760-765
+    id: 028-726
     name: XSS
   ltype: Related
 - document:
@@ -19,7 +20,7 @@ links:
 - document:
     doctype: Standard
     hyperlink: https://owasp-top-10-proactive-controls-2018.readthedocs.io/en/latest/c6-implement-digital-identity.html
-    name: OPC
+    name: OWASP Proactive Controls
     section: C6
   ltype: Linked To
 - document:
@@ -31,7 +32,7 @@ links:
 - document:
     doctype: Standard
     hyperlink: https://owasp.org/www-project-web-security-testing-guide/v41/4-Web_Application_Security_Testing/06-Session_Management_Testing/02-Testing_for_Cookies_Attributes.html#domain-attribute
-    name: WSTG
+    name: (WSTG) Web Security Testing Guide
     section: WSTG-SESS-02
   ltype: Linked To
 - document:
@@ -51,14 +52,6 @@ links:
     name: NIST 800-63
     section: 7.1.1
   ltype: Linked To
-- document:
-    description: '"Ensure that the HttpOnly flag is set for all cookies."'
-    doctype: Tool
-    name: 'ZAP Alert: "Cookie No HttpOnly Flag"'
-    tags:
-    - '"Passive"'
-    tooltype: Offensive
-  ltype: SAME
 name: Set httponly attribute for cookie-based session tokens
 tags:
 - XSS

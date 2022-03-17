@@ -14,7 +14,7 @@ links:
 - document:
     doctype: CRE
     id: 076-470
-    name: Biometric authenticators only as secondary factors
+    name: Biometric autheticators only as seconday factors
   ltype: Contains
 - document:
     doctype: CRE
@@ -25,7 +25,6 @@ links:
     doctype: CRE
     id: 841-757
     name: Use approved cryptographic algorithms in generation, seeding and verification
-      of OTPs
   ltype: Contains
 - document:
     doctype: CRE
@@ -55,7 +54,7 @@ links:
 - document:
     doctype: CRE
     id: 513-845
-    name: Use unpredictable lookup secrets
+    name: Use upredictable lookup secrets
   ltype: Contains
 - document:
     doctype: CRE
@@ -86,7 +85,7 @@ links:
 - document:
     doctype: CRE
     id: 102-811
-    name: Communicate out of band authentication requests, codes or tokens independently
+    name: Communicate out of band authentication requests, codes or tokens Iindependently
       and securely
   ltype: Contains
 - document:
@@ -115,12 +114,12 @@ links:
 - document:
     doctype: CRE
     id: 553-413
-    name: Support subscriber-provided authentication devices
+    name: Support subsciber-provided authentication devices
   ltype: Contains
 - document:
     doctype: CRE
     id: 681-823
-    name: Defined lifetime of time-based one-time password
+    name: Defined lifetime of time-based one-time passowrd
   ltype: Contains
 - document:
     doctype: CRE
@@ -129,14 +128,9 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 354-752
+    id: 320-618
     name: Do not offer weak (clear text) authenticators by default
   ltype: Contains
-- document:
-    doctype: CRE
-    id: 270-634
-    name: Send authentication secrets encrypted
-  ltype: Related
 name: MFA/OTP
 tags:
 - Cryptography
