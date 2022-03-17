@@ -3,6 +3,7 @@ import unittest
 
 from application import create_app, sqla  # type: ignore
 from application.database import db
+from application.defs import cre_defs as defs
 from application.utils.spreadsheet import prepare_spreadsheet
 
 
@@ -453,51 +454,44 @@ class TestDB(unittest.TestCase):
                 * 1 element contains ONLY the mapping of "CREname" to the remaining subsection of "ConflictStandName"
         """
         # empty string means temporary db
-        collection = self.collection
+        collection = db.Node_collection()
 
-        # test 0, single CRE, connects to several standards, 1 cre maps to the same standard in multiple sections/subsections
-        dbcre = db.CRE(description="CREdesc", name="CREname", external_id="123-321-0")
-        collection.session.add(dbcre)
-
-        conflict0 = db.Node(
+        # test 0, single CRE, connects to several standards
+        # 1 cre maps to the same standard in multiple sections/subsections
+        cre = defs.CRE(description="CREdesc", name="CREname", id="123-321-0")
+        conflict0 = defs.Standard(
             subsection="4.5.0",
             section="ConflictStandSection",
             name="ConflictStandName",
-            link="https://example.com/0",
-            ntype="Standard",
+            hyperlink="https://example.com/0",
         )
-        conflict1 = db.Node(
+        conflict1 = defs.Standard(
             subsection="4.5.1",
             section="ConflictStandSection",
             name="ConflictStandName",
-            link="https://example.com/1",
-            ntype="Standard",
+            hyperlink="https://example.com/1",
         )
-        collection.session.add(conflict0)
-        collection.session.add(conflict1)
-        collection.session.commit()
-        collection.session.add(db.Links(cre=dbcre.id, node=conflict0.id))
-        collection.session.add(db.Links(cre=dbcre.id, node=conflict1.id))
-
-        dbs0 = db.Node(
+        s0 = defs.Standard(
             subsection="4.5.0",
             section="NormalStandSection0",
             name="NormalStand0",
-            link="https://example.com/0",
-            ntype="Standard",
+            hyperlink="https://example.com/0",
         )
-        dbs1 = db.Node(
+        s1 = defs.Standard(
             subsection="4.5.1",
             section="NormalStandSection1",
             name="NormalStand1",
-            link="https://example.com/1",
-            ntype="Standard",
+            hyperlink="https://example.com/1",
         )
-        collection.session.add(dbs0)
-        collection.session.add(dbs1)
-        collection.session.commit()
-        collection.session.add(db.Links(cre=dbcre.id, node=dbs0.id))
-        collection.session.add(db.Links(cre=dbcre.id, node=dbs1.id))
+        dbcre = collection.add_cre(cre)
+        dbc0 = collection.add_node(conflict0)
+        dbc1 = collection.add_node(conflict1)
+        dbs0 = collection.add_node(s0)
+        dbs1 = collection.add_node(s1)
+        collection.add_link(dbcre, dbc0)
+        collection.add_link(dbcre, dbc1)
+        collection.add_link(dbcre, dbs0)
+        collection.add_link(dbcre, dbs1)
 
         expected = [
             {
@@ -535,10 +529,10 @@ class TestDB(unittest.TestCase):
                 "Standard:NormalStand1:subsection": None,
             },
         ]
+        export = collection.export(dry_run=True)
+        result = prepare_spreadsheet(collection, export)
+        self.maxDiff = None
 
-        result = prepare_spreadsheet(
-            collection, collection.export(dir=tempfile.mkdtemp())
-        )
         self.assertCountEqual(result, expected)
 
 

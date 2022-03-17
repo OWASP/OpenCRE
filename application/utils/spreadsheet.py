@@ -5,9 +5,7 @@ from copy import deepcopy
 from typing import Any, Dict, List, Optional
 
 import gspread
-
 import yaml
-
 from application.database import db
 from application.defs import cre_defs as defs
 
@@ -150,7 +148,6 @@ def prepare_spreadsheet(
      of key,value dict representing the mappings
     """
     nodes = collection.get_node_names()  # get header from db (cheap enough)
-
     header: Dict[str, Optional[str]] = {
         defs.ExportFormat.cre_name_key(): None,
         defs.ExportFormat.cre_id_key(): None,

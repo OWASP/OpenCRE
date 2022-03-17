@@ -100,6 +100,7 @@ def find_node_by_name(name: str, ntype: str = defs.Credoctypes.Standard.value) -
         version=opt_version,
         ntype=ntype,
     )
+
     result = {}
     result["total_pages"] = total_pages
     result["page"] = page
@@ -201,7 +202,7 @@ def before_request():
         return
 
     if not request.is_secure:
-        print("https redir")
+
         url = request.url.replace("http://", "https://", 1)
         code = 301
         return redirect(url, code=code)
