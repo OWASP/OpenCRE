@@ -64,10 +64,10 @@ export const SearchBody = () => {
       </h2>
       <p>
         See the CRE search bar (beta version). Try searching for
-        <a href="node/standard/Top10 2017"> Top10 2017 </a>
+        <a href="/node/standard/Top10%202017/"> Top10 2017 </a>
         as standard and click around, or
         <a href="/cre/482-866"> 482-866 </a>
-        as CRE-ID, to get an idea, or <a href="/search/session">search for "Session"</a>, or an overview of <a href="/search/>>">all top-level topics</a>.
+        as CRE-ID, to get an idea, or <a href="/search/session">search for "Session"</a>, or an overview of <a href="/root_cres">all top-level topics</a>.
       </p>
     </div>
   );
