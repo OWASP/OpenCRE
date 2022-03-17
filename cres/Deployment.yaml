@@ -45,8 +45,18 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
+    id: 336-511
+    name: Network protection
+  ltype: Contains
+- document:
+    doctype: CRE
     id: 266-527
     name: Physical security
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 180-487
+    name: Server protection
   ltype: Contains
 - document:
     doctype: CRE
@@ -60,28 +70,28 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 268-272
-    name: Classify personal data regarding retention so that old or outdated data
-      is deleted
-    tags:
-    - Personal data handling
-  ltype: Related
-- document:
-    doctype: CRE
     id: 163-776
     name: Backups
   ltype: Related
 - document:
     doctype: Standard
+    hyperlink: Loading...
+    name: Top10 2017
+    section: A6_Security_Misconfiguration
+  ltype: Linked To
+- document:
+    doctype: Standard
     hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=SC-29
     name: NIST 800-53 v5
     section: SC-29 Heterogeneity
+    subsection: mapped under deployment process
   ltype: Linked To
 - document:
     doctype: Standard
     hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=SC-27
     name: NIST 800-53 v5
     section: SC-27 Platform-independent Applications
+    subsection: This addresses a portability concern, which is a topic in architecture.
   ltype: Linked To
 name: Deployment
 tags:

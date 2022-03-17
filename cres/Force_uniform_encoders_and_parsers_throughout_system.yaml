@@ -7,11 +7,6 @@ links:
     name: API/web services
   ltype: Contains
 - document:
-    doctype: CRE
-    id: 028-727
-    name: SSRF
-  ltype: Related
-- document:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x21-V13-API.md
     name: ASVS
@@ -36,5 +31,3 @@ links:
     section: Server Side Request Forgery Prevention Cheat Sheet
   ltype: Linked To
 name: Force uniform encoders and parsers throughout system
-tags:
-- SSRF

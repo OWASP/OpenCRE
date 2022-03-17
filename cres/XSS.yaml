@@ -1,33 +1,10 @@
 doctype: CRE
-id: 760-765
+id: 028-726
 links:
 - document:
     doctype: CRE
     id: 257-668
     name: Configure CSP configuration properly
-    tags:
-    - XSS
-  ltype: Related
-- document:
-    doctype: CRE
-    id: 764-765
-    name: Sanitization and sandboxing
-    tags:
-    - Injection
-    - XSS
-  ltype: Related
-- document:
-    doctype: CRE
-    id: 010-308
-    name: Input validation
-    tags:
-    - Injection
-    - XSS
-  ltype: Related
-- document:
-    doctype: CRE
-    id: 760-764
-    name: Injection
     tags:
     - XSS
   ltype: Related
@@ -42,8 +19,24 @@ links:
   ltype: Related
 - document:
     doctype: CRE
+    id: 010-308
+    name: Input validation
+    tags:
+    - Injection
+    - XSS
+  ltype: Related
+- document:
+    doctype: CRE
     id: 161-451
     name: Output encoding and injection prevention
+    tags:
+    - Injection
+    - XSS
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 764-765
+    name: Sanitization and sandboxing
     tags:
     - Injection
     - XSS
@@ -60,4 +53,10 @@ links:
     id: 546-564
     name: '>>Tags'
   ltype: Contains
+- document:
+    doctype: Standard
+    hyperlink: Loading...
+    name: Top10 2017
+    section: A7-Cross-Site_Scripting_(XSS)
+  ltype: Linked To
 name: XSS

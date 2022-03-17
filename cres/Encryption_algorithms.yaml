@@ -10,18 +10,13 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 170-772
-    name: Cryptography
-  ltype: Related
-- document:
-    doctype: CRE
     id: 742-431
     name: Use approved cryptographic algorithms
   ltype: Contains
 - document:
     doctype: CRE
     id: 786-224
-    name: Authenticate encrypted data
+    name: Autenticate encrypted data
   ltype: Contains
 - document:
     doctype: CRE
@@ -54,5 +49,3 @@ links:
     name: Use weak crypto only for backwards compatibility
   ltype: Contains
 name: Encryption algorithms
-tags:
-- Cryptography

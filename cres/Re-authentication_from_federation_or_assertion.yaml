@@ -15,7 +15,7 @@ links:
 - document:
     doctype: CRE
     id: 618-403
-    name: Enforce authentication timeout when dealing with an authentication third
+    name: Enforce authentication time-out when dealing with an authentication third
       party (CSP)
   ltype: Contains
 - document:

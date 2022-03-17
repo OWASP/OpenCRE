@@ -3,19 +3,13 @@ id: 764-507
 links:
 - document:
     doctype: CRE
+    id: 764-508
     name: XML Parser hardening
   ltype: Contains
 - document:
     doctype: CRE
     id: 486-813
     name: Configuration
-  ltype: Related
-- document:
-    doctype: CRE
-    id: 760-764
-    name: Injection
-    tags:
-    - XSS
   ltype: Related
 - document:
     doctype: Standard
@@ -32,7 +26,7 @@ links:
 - document:
     doctype: Standard
     hyperlink: https://owasp.org/www-project-web-security-testing-guide/v41/4-Web_Application_Security_Testing/07-Input_Validation_Testing/07-Testing_for_XML_Injection.html
-    name: WSTG
+    name: (WSTG) Web Security Testing Guide
     section: WSTG-INPV-07
   ltype: Linked To
 - document:
@@ -54,14 +48,11 @@ links:
     section: XML Security Cheat Sheet
   ltype: Linked To
 - document:
-    description: '"TBA"'
-    doctype: Tool
-    name: 'ZAP Alert: "XML External Entity Attack"'
-    tags:
-    - '"Active"'
-    tooltype: Offensive
-  ltype: SAME
+    doctype: Standard
+    hyperlink: Loading...
+    name: Top10 2017
+    section: A4-XML_External_Entities_(XXE)
+  ltype: Linked To
 name: Restrict XML parsing (against XXE)
 tags:
-- Injection
 - Configuration

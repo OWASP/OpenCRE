@@ -14,7 +14,7 @@ links:
 - document:
     doctype: CRE
     id: 473-758
-    name: Set sufficient anti-caching headers
+    name: Set sufficient anti-chaching headers
   ltype: Contains
 - document:
     doctype: CRE
@@ -41,5 +41,7 @@ links:
     hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=SC-4
     name: NIST 800-53 v5
     section: SC-4 Information in Shared System Resources
+    subsection: mapped under manage cache for now because that section contains associated
+      ASVS items. Note that SC-4 is broader than cache.
   ltype: Linked To
 name: Manage temporary storage

@@ -8,8 +8,8 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 028-728
-    name: Personal data handling
+    id: 362-550
+    name: '>>Personal data handling'
   ltype: Related
 - document:
     doctype: Standard
@@ -30,5 +30,3 @@ links:
     section: User Privacy Protection Cheat Sheet
   ltype: Linked To
 name: Document requirements for (data) protection levels
-tags:
-- Personal data handling

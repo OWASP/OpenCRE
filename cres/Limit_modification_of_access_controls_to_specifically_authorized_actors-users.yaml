@@ -21,7 +21,7 @@ links:
 - document:
     doctype: Standard
     hyperlink: https://owasp.org/www-project-web-security-testing-guide/v41/4-Web_Application_Security_Testing/05-Authorization_Testing/02-Testing_for_Bypassing_Authorization_Schema.html
-    name: WSTG
+    name: (WSTG) Web Security Testing Guide
     section: WSTG-ATHZ-02
   ltype: Linked To
 - document:

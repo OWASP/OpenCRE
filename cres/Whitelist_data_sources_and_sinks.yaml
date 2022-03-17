@@ -8,15 +8,15 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 623-550
-    name: DOS
-  ltype: Related
-- document:
-    doctype: CRE
     id: 726-868
     name: Deployed topology
     tags:
     - Architecture
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 623-550
+    name: DOS
   ltype: Related
 - document:
     doctype: Standard
@@ -33,7 +33,7 @@ links:
 - document:
     doctype: Standard
     hyperlink: https://owasp.org/www-project-web-security-testing-guide/v41/4-Web_Application_Security_Testing/10-Business_Logic_Testing/09-Test_Upload_of_Malicious_Files.html
-    name: WSTG
+    name: (WSTG) Web Security Testing Guide
     section: WSTG-BUSL-09
   ltype: Linked To
 - document:

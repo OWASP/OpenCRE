@@ -3,15 +3,15 @@ id: 762-451
 links:
 - document:
     doctype: CRE
+    id: 362-550
+    name: '>>Personal data handling'
+  ltype: Contains
+- document:
+    doctype: CRE
     id: 854-643
     name: '>>Business logic'
     tags:
     - DOS
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 028-728
-    name: Personal data handling
   ltype: Related
 - document:
     doctype: Standard
@@ -26,5 +26,3 @@ links:
     section: '212'
   ltype: Linked To
 name: Ensure users can remove or export their data
-tags:
-- Personal data handling

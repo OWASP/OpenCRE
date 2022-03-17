@@ -8,6 +8,21 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
+    id: 736-554
+    name: Block serialization of content from untrusted clients
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 831-563
+    name: Avoid deserialization logic
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 387-848
+    name: Parse JSON safely
+  ltype: Contains
+- document:
+    doctype: CRE
     id: 762-616
     name: Secure serialized objects (e.g. integrity checks)
   ltype: Contains
@@ -23,4 +38,10 @@ links:
     id: 184-284
     name: Log all security relevant events
   ltype: Related
+- document:
+    doctype: Standard
+    hyperlink: Loading...
+    name: Top10 2017
+    section: A8_Insecure_Deserialization
+  ltype: Linked To
 name: Deserialization Prevention

@@ -7,6 +7,11 @@ links:
     name: File download
   ltype: Contains
 - document:
+    doctype: CRE
+    id: 623-550
+    name: DOS
+  ltype: Related
+- document:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x20-V12-Files-Resources.md
     name: ASVS
@@ -21,7 +26,9 @@ links:
 - document:
     doctype: Standard
     hyperlink: https://owasp.org/www-project-web-security-testing-guide/v41/4-Web_Application_Security_Testing/10-Business_Logic_Testing/08-Test_Upload_of_Unexpected_File_Types.html
-    name: WSTG
+    name: (WSTG) Web Security Testing Guide
     section: WSTG-BUSL-08
   ltype: Linked To
 name: Whitelist file extensions served by web tier
+tags:
+- DOS
