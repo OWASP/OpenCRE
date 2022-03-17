@@ -211,13 +211,21 @@ class Node_collection:
         return nodes
 
     def __get_unlinked_cres(self) -> List[CRE]:
-
-        linked_cres = self.session.query(CRE.id).join(
+        internally_linked_cres = self.session.query(CRE.id).join(
             InternalLinks,
             sqla.or_(InternalLinks.group == CRE.id, InternalLinks.cre == CRE.id),
         )
-        cres: List[CRE] = (
-            self.session.query(CRE).filter(CRE.id.notin_(linked_cres)).all()
+        externally_linked_cres = (
+            self.session.query(CRE.id).join(Links).filter(Links.cre == CRE.id)
+        )
+
+        cres = (
+            self.session.query(CRE)
+            .filter(
+                CRE.id.notin_(internally_linked_cres),
+                CRE.id.notin_(externally_linked_cres),
+            )
+            .all()
         )
         return cres
 
@@ -634,7 +642,7 @@ class Node_collection:
             cres.append(cre)
         return cres
 
-    def export(self, dir: str, dry_run: bool = False) -> List[cre_defs.Document]:
+    def export(self, dir: str = None, dry_run: bool = False) -> List[cre_defs.Document]:
         """Exports the database to a CRE file collection on disk"""
         docs: Dict[str, cre_defs.Document] = {}
         cre, standard = None, None
@@ -669,10 +677,7 @@ class Node_collection:
             )
 
         # external links are CRE -> standard
-        for link in self.__get_external_links():
-            internal_doc = link[0]
-            standard = link[1]
-            type = link[2]
+        for internal_doc, standard, type in self.__get_external_links():
             cr = None
             grp = None
             if internal_doc.name in docs.keys():
@@ -680,14 +685,12 @@ class Node_collection:
             else:
                 cr = CREfromDB(internal_doc)
             if len(standard.name) != 0:
-                cr.add_link(
+                docs[cr.name] = cr.add_link(
                     cre_defs.Link(
                         ltype=cre_defs.LinkTypes.from_str(type),
                         document=nodeFromDB(standard),
                     )
                 )
-            docs[cr.name] = cr
-
         # unlinked cres next
         for ucre in self.__get_unlinked_cres():
             docs[ucre.name] = CREfromDB(ucre)
@@ -698,15 +701,15 @@ class Node_collection:
             docs["%s-%s:%s:%s" % (nde.name, nde.doctype, nde.id, nde.description)] = nde
             logger.info(f"{nde.name} is unlinked?")
 
-        for _, doc in docs.items():
-            title = (
-                doc.name.replace("/", "-")
-                .replace(" ", "_")
-                .replace('"', "")
-                .replace("'", "")
-                + ".yaml"
-            )
-            if not dry_run:
+        if not dry_run:
+            for _, doc in docs.items():
+                title = (
+                    doc.name.replace("/", "-")
+                    .replace(" ", "_")
+                    .replace('"', "")
+                    .replace("'", "")
+                    + ".yaml"
+                )
                 file.writeToDisk(
                     file_title=title,
                     file_content=yaml.safe_dump(doc.todict()),
@@ -870,7 +873,6 @@ class Node_collection:
                 self.graph.add_edge(
                     f"CRE: {group.id}", f"CRE: {cre.id}", ltype=type.value
                 )
-                return 1
             else:
                 logger.warning(
                     f"A link between CREs {group.external_id}-{group.name} and"
