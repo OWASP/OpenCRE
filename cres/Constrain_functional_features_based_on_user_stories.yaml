@@ -3,10 +3,8 @@ id: 822-100
 links:
 - document:
     doctype: CRE
-    id: 625-323
+    id: 354-846
     name: Documentation and requirements
-    tags:
-    - Architecture
   ltype: Contains
 - document:
     doctype: Standard

@@ -7,11 +7,6 @@ links:
     name: '>>Authorized access'
   ltype: Contains
 - document:
-    doctype: CRE
-    id: 028-727
-    name: CSRF
-  ltype: Related
-- document:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x12-V4-Access-Control.md
     name: ASVS
@@ -26,7 +21,7 @@ links:
 - document:
     doctype: Standard
     hyperlink: https://owasp.org/www-project-web-security-testing-guide/v41/4-Web_Application_Security_Testing/06-Session_Management_Testing/05-Testing_for_Cross_Site_Request_Forgery.html
-    name: WSTG
+    name: (WSTG) Web Security Testing Guide
     section: WSTG-SESS-05
   ltype: Linked To
 - document:
@@ -49,19 +44,19 @@ links:
   ltype: Linked To
 - document:
     doctype: Tool
-    name: 'ZAP Alert: "Anti-CSRF Tokens Check"'
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/CsrfTokenScanRule.java
+    name: 'ZAP Rule: "Anti-CSRF Tokens Check"'
     tags:
     - '"Active"'
     tooltype: Offensive
   ltype: SAME
 - document:
     doctype: Tool
-    name: 'ZAP Alert: "Absence of Anti-CSRF Tokens"'
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/CsrfCountermeasuresScanRule.java
+    name: 'ZAP Rule: "Absence of Anti-CSRF Tokens"'
     tags:
     - '"Passive"'
     tooltype: Offensive
   ltype: SAME
 name: Use CSRF protection against authenticated functionality, add anti-automation
   controls for unauthenticated functionality
-tags:
-- CSRF

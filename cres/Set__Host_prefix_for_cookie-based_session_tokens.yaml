@@ -1,0 +1,44 @@
+doctype: CRE
+id: 232-034
+links:
+- document:
+    doctype: CRE
+    id: 110-531
+    name: Cookie-config
+  ltype: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x12-V3-Session-management.md
+    name: ASVS
+    section: V3.4.4
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/16.html
+    name: CWE
+    section: '16'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owasp.org/www-project-web-security-testing-guide/v41/4-Web_Application_Security_Testing/06-Session_Management_Testing/02-Testing_for_Cookies_Attributes.html#domain-attribute
+    name: (WSTG) Web Security Testing Guide
+    section: WSTG-SESS-02
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html
+    name: Cheat_sheets
+    section: Session Management Cheat Sheet
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html
+    name: Cheat_sheets
+    section: Cross-Site Request Forgery Prevention Cheat Sheet
+  ltype: Linked To
+- document:
+    doctype: Standard
+    name: NIST 800-63
+    section: 7.1.1
+  ltype: Linked To
+name: Set '_Host' prefix for cookie-based session tokens

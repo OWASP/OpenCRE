@@ -10,11 +10,6 @@ links:
     - XSS
   ltype: Contains
 - document:
-    doctype: CRE
-    id: 028-727
-    name: SSRF
-  ltype: Related
-- document:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x13-V5-Validation-Sanitization-Encoding.md
     name: ASVS
@@ -29,7 +24,7 @@ links:
 - document:
     doctype: Standard
     hyperlink: https://owasp.org/www-project-web-security-testing-guide/v41/4-Web_Application_Security_Testing/07-Input_Validation_Testing/11-Testing_for_Code_Injection.html
-    name: WSTG
+    name: (WSTG) Web Security Testing Guide
     section: WSTG-INPV-11
   ltype: Linked To
 - document:
@@ -58,5 +53,3 @@ links:
   ltype: Linked To
 name: (SSRF) When depending on internal server input, use validation sanitization
   and whitelisting
-tags:
-- SSRF

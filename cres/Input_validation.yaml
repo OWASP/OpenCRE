@@ -8,20 +8,13 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 146-706
-    name: Enforce JSON schema before processing
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 760-765
-    name: XSS
+    id: 760-764
+    name: Injection
   ltype: Related
 - document:
     doctype: CRE
-    id: 760-764
-    name: Injection
-    tags:
-    - XSS
+    id: 028-726
+    name: XSS
   ltype: Related
 - document:
     doctype: CRE
@@ -38,7 +31,7 @@ links:
 - document:
     doctype: CRE
     id: 743-237
-    name: Validatie/enforce HTTP inputs (against HTTP parameter pollution attacks)
+    name: Validatie/enforce HTTP inputs (against HTTP parameter polution attacks)
   ltype: Contains
 - document:
     doctype: CRE

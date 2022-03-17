@@ -3,11 +3,8 @@ id: 146-706
 links:
 - document:
     doctype: CRE
-    id: 010-308
-    name: Input validation
-    tags:
-    - Injection
-    - XSS
+    id: 071-288
+    name: RESTful
   ltype: Contains
 - document:
     doctype: Standard
@@ -41,21 +38,24 @@ links:
   ltype: Linked To
 - document:
     doctype: Tool
-    name: 'ZAP Alert: "Remote Code Execution - CVE-2012-1823"'
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/RemoteCodeExecutionCve20121823ScanRule.java
+    name: 'ZAP Rule: "Remote Code Execution - CVE-2012-1823"'
     tags:
     - '"Active"'
     tooltype: Offensive
   ltype: SAME
 - document:
     doctype: Tool
-    name: 'ZAP Alert: "Relative Path Confusion"'
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/RelativePathConfusionScanRule.java
+    name: 'ZAP Rule: "Relative Path Confusion"'
     tags:
     - '"Active"'
     tooltype: Offensive
   ltype: SAME
 - document:
     doctype: Tool
-    name: 'ZAP Alert: "Source Code Disclosure - CVE-2012-1823"'
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/SourceCodeDisclosureCve20121823ScanRule.java
+    name: 'ZAP Rule: "Source Code Disclosure - CVE-2012-1823"'
     tags:
     - '"Active"'
     tooltype: Offensive
@@ -64,7 +64,8 @@ links:
     description: '"The best immediate mitigation is to block Proxy request headers
       as early as possible, and before they hit your application."'
     doctype: Tool
-    name: 'ZAP Alert: "Httpoxy - Proxy Header Misuse"'
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/HttPoxyScanRule.java
+    name: 'ZAP Rule: "Httpoxy - Proxy Header Misuse"'
     tags:
     - '"Active"'
     tooltype: Offensive
@@ -72,7 +73,8 @@ links:
 - document:
     description: '"Properly sanitize the user input for parameter delimiters"'
     doctype: Tool
-    name: 'ZAP Alert: "HTTP Parameter Pollution"'
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/HttpParameterPollutionScanRule.java
+    name: 'ZAP Rule: "HTTP Parameter Pollution"'
     tags:
     - '"Active"'
     tooltype: Offensive

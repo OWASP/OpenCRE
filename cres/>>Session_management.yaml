@@ -29,7 +29,7 @@ links:
 - document:
     doctype: CRE
     id: 470-731
-    name: Session lifecycle
+    name: Session logout and timeout
   ltype: Contains
 - document:
     doctype: CRE
@@ -39,7 +39,7 @@ links:
 - document:
     doctype: CRE
     id: 114-277
-    name: Session integrity
+    name: Token-based session management
   ltype: Contains
 - document:
     doctype: Standard
@@ -58,5 +58,11 @@ links:
     hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=SC-23
     name: NIST 800-53 v5
     section: SC-23 SESSION AUTHENTICITY
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: Loading...
+    name: Top10 2017
+    section: A2_Broken_Authentication
   ltype: Linked To
 name: '>>Session management'

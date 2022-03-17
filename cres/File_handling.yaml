@@ -25,11 +25,6 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 545-243
-    name: Block execution/output of uploaded files
-  ltype: Contains
-- document:
-    doctype: CRE
     id: 451-082
     name: File execution
   ltype: Contains

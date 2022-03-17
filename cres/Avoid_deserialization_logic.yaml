@@ -2,6 +2,11 @@ doctype: CRE
 id: 831-563
 links:
 - document:
+    doctype: CRE
+    id: 836-068
+    name: Deserialization Prevention
+  ltype: Contains
+- document:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x13-V5-Validation-Sanitization-Encoding.md
     name: ASVS

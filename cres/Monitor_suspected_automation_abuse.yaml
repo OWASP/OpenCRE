@@ -14,11 +14,6 @@ links:
     name: '>>Input and output verification'
   ltype: Related
 - document:
-    doctype: CRE
-    id: 623-550
-    name: DOS
-  ltype: Related
-- document:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x19-V11-BusLogic.md
     name: ASVS
@@ -33,7 +28,7 @@ links:
 - document:
     doctype: Standard
     hyperlink: https://owasp.org/www-project-web-security-testing-guide/v41/4-Web_Application_Security_Testing/10-Business_Logic_Testing/README.html
-    name: WSTG
+    name: (WSTG) Web Security Testing Guide
     section: WSTG-BUSL-$$
   ltype: Linked To
 - document:
@@ -43,5 +38,3 @@ links:
     section: Abuse Case Cheat Sheet
   ltype: Linked To
 name: Monitor suspected automation abuse
-tags:
-- DOS

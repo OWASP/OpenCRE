@@ -22,7 +22,8 @@ links:
     description: '"Ensure JavaScript source files are loaded from only trusted sources,
       and the sources can''t be controlled by end users of the application."'
     doctype: Tool
-    name: 'ZAP Alert: "Cross-Domain JavaScript Source File Inclusion"'
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/CrossDomainScriptInclusionScanRule.java
+    name: 'ZAP Rule: "Cross-Domain JavaScript Source File Inclusion"'
     tags:
     - '"Passive"'
     tooltype: Offensive

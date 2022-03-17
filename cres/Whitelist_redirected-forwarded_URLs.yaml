@@ -24,7 +24,7 @@ links:
 - document:
     doctype: Standard
     hyperlink: https://owasp.org/www-project-web-security-testing-guide/v41/4-Web_Application_Security_Testing/11-Client_Side_Testing/04-Testing_for_Client_Side_URL_Redirect.html
-    name: WSTG
+    name: (WSTG) Web Security Testing Guide
     section: WSTG-CLNT-04
   ltype: Linked To
 - document:
@@ -41,7 +41,8 @@ links:
   ltype: Linked To
 - document:
     doctype: Tool
-    name: 'ZAP Alert: "External Redirect"'
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrules/src/main/java/org/zaproxy/zap/extension/ascanrules/ExternalRedirectScanRule.java
+    name: 'ZAP Rule: "External Redirect"'
     tags:
     - '"Active"'
     tooltype: Offensive

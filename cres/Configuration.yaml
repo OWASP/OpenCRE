@@ -10,29 +10,8 @@ links:
   ltype: Related
 - document:
     doctype: CRE
-    id: 462-245
-    name: Remove unnecessary features, documentation, configuration etc
-    tags:
-    - Configuration
-  ltype: Related
-- document:
-    doctype: CRE
-    id: 154-031
-    name: Harden application by excluding unwanted functionality
-    tags:
-    - Configuration
-  ltype: Related
-- document:
-    doctype: CRE
     id: 783-355
     name: Deployment
-    tags:
-    - Configuration
-  ltype: Related
-- document:
-    doctype: CRE
-    id: 180-488
-    name: Proper Configuration for all applications and frameworks
     tags:
     - Configuration
   ltype: Related
@@ -48,7 +27,6 @@ links:
     id: 764-507
     name: Restrict XML parsing (against XXE)
     tags:
-    - Injection
     - Configuration
   ltype: Related
 - document:

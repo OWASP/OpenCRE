@@ -18,7 +18,7 @@ links:
 - document:
     doctype: Standard
     hyperlink: https://owasp-top-10-proactive-controls-2018.readthedocs.io/en/latest/c4-encode-escape-data.html
-    name: OPC
+    name: OWASP Proactive Controls
     section: C4
   ltype: Linked To
 - document:
@@ -30,7 +30,7 @@ links:
 - document:
     doctype: Standard
     hyperlink: https://owasp.org/www-project-web-security-testing-guide/v41/4-Web_Application_Security_Testing/07-Input_Validation_Testing/01-Testing_for_Reflected_Cross_Site_Scripting.html
-    name: WSTG
+    name: (WSTG) Web Security Testing Guide
     section: WSTG-INPV-01
   ltype: Linked To
 - document:
@@ -125,22 +125,16 @@ links:
   ltype: Linked To
 - document:
     doctype: Tool
-    name: 'ZAP Alert: "Cross Site Scripting (Reflected)"'
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrules/src/main/java/org/zaproxy/zap/extension/ascanrules/CrossSiteScriptingScanRule.java
+    name: 'ZAP Rule: "Cross Site Scripting (Reflected)"'
     tags:
     - '"Active"'
     tooltype: Offensive
   ltype: SAME
 - document:
     doctype: Tool
-    name: 'ZAP Alert: "Cross Site Scripting (Persistent)"'
-    tags:
-    - '"Active"'
-    tooltype: Offensive
-  ltype: SAME
-- document:
-    description: '"N/A"'
-    doctype: Tool
-    name: 'ZAP Alert: "Cross Site Scripting (Persistent) - Prime"'
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrules/src/main/java/org/zaproxy/zap/extension/ascanrules/PersistentXssScanRule.java
+    name: 'ZAP Rule: "Cross Site Scripting (Persistent)"'
     tags:
     - '"Active"'
     tooltype: Offensive
@@ -148,14 +142,33 @@ links:
 - document:
     description: '"N/A"'
     doctype: Tool
-    name: 'ZAP Alert: "Cross Site Scripting (Persistent) - Spider"'
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrules/src/main/java/org/zaproxy/zap/extension/ascanrules/PersistentXssPrimeScanRule.java
+    name: 'ZAP Rule: "Cross Site Scripting (Persistent) - Prime"'
+    tags:
+    - '"Active"'
+    tooltype: Offensive
+  ltype: SAME
+- document:
+    description: '"N/A"'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrules/src/main/java/org/zaproxy/zap/extension/ascanrules/PersistentXssSpiderScanRule.java
+    name: 'ZAP Rule: "Cross Site Scripting (Persistent) - Spider"'
     tags:
     - '"Active"'
     tooltype: Offensive
   ltype: SAME
 - document:
     doctype: Tool
-    name: 'ZAP Alert: "Cross Site Scripting (DOM Based)"'
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesAlpha/src/main/java/org/zaproxy/zap/extension/ascanrulesAlpha/OutOfBandXssScanRule.java
+    name: 'ZAP Rule: "Out of Band XSS"'
+    tags:
+    - '"Active"'
+    tooltype: Offensive
+  ltype: SAME
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/domxss/src/main/java/org/zaproxy/zap/extension/domxss/DomXssScanRule.java
+    name: 'ZAP Rule: "Cross Site Scripting (DOM Based)"'
     tags:
     - '"Active"'
     tooltype: Offensive

@@ -18,9 +18,12 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
+    id: 146-706
+    name: Enforce JSON schema before processing
+  ltype: Contains
+- document:
+    doctype: CRE
     id: 464-084
     name: Add CSRF protection for cookie based REST services
-    tags:
-    - CSRF
   ltype: Contains
 name: RESTful

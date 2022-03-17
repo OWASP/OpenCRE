@@ -28,7 +28,7 @@ links:
 - document:
     doctype: Standard
     hyperlink: https://owasp.org/www-project-web-security-testing-guide/v41/4-Web_Application_Security_Testing/08-Testing_for_Error_Handling/01-Testing_for_Error_Code.html
-    name: WSTG
+    name: (WSTG) Web Security Testing Guide
     section: WSTG-ERRH-01
   ltype: Linked To
 - document:
@@ -41,7 +41,8 @@ links:
     description: '"Update the affected server software, or modify the scripts so that
       they properly validate encrypted data before attempting decryption."'
     doctype: Tool
-    name: 'ZAP Alert: "Generic Padding Oracle"'
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/PaddingOracleScanRule.java
+    name: 'ZAP Rule: "Generic Padding Oracle"'
     tags:
     - '"Active"'
     tooltype: Offensive
@@ -52,7 +53,8 @@ links:
       a unique error reference/identifier to the client (browser) while logging the
       details on the server side and not exposing them to the user."'
     doctype: Tool
-    name: 'ZAP Alert: "Application Error Disclosure via WebSockets"'
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/websocket/src/main/zapHomeFiles/scripts/templates/websocketpassive/Application%20Error%20Scanner.js
+    name: 'ZAP Rule: "Application Error Disclosure via WebSockets"'
     tags:
     - '"WebSocket Passive"'
     tooltype: Offensive

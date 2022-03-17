@@ -8,15 +8,18 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 260-200
-    name: Log in consistent format across system
-    tags:
-    - Architecture
+    id: 713-684
+    name: Log access protection
   ltype: Contains
 - document:
     doctype: CRE
-    id: 026-280
-    name: Securely transfer logs (remotely)
+    id: 821-541
+    name: Log injection protection
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 770-362
+    name: Log time synchronization
   ltype: Contains
 - document:
     doctype: Standard

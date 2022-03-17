@@ -3,8 +3,9 @@ id: 760-764
 links:
 - document:
     doctype: CRE
-    id: 764-765
-    name: Sanitization and sandboxing
+    id: 384-344
+    name: Store and serve user-uploaded files such that they cannot execute/damage
+      server or client
     tags:
     - Injection
     - XSS
@@ -19,27 +20,6 @@ links:
   ltype: Related
 - document:
     doctype: CRE
-    id: 760-765
-    name: XSS
-  ltype: Related
-- document:
-    doctype: CRE
-    id: 384-344
-    name: Store and serve user-uploaded files such that they cannot execute/damage
-      server or client
-    tags:
-    - Injection
-    - XSS
-  ltype: Related
-- document:
-    doctype: CRE
-    id: 866-553
-    name: Memory, String, and Unmanaged Code
-    tags:
-    - Injection
-  ltype: Related
-- document:
-    doctype: CRE
     id: 161-451
     name: Output encoding and injection prevention
     tags:
@@ -48,18 +28,11 @@ links:
   ltype: Related
 - document:
     doctype: CRE
-    id: 541-441
-    name: Validate HTTP request headers
+    id: 764-765
+    name: Sanitization and sandboxing
     tags:
     - Injection
-  ltype: Related
-- document:
-    doctype: CRE
-    id: 764-507
-    name: Restrict XML parsing (against XXE)
-    tags:
-    - Injection
-    - Configuration
+    - XSS
   ltype: Related
 - document:
     doctype: CRE
@@ -80,6 +53,10 @@ links:
     id: 546-564
     name: '>>Tags'
   ltype: Contains
+- document:
+    doctype: Standard
+    hyperlink: Loading...
+    name: Top10 2017
+    section: A1-Injection
+  ltype: Linked To
 name: Injection
-tags:
-- XSS

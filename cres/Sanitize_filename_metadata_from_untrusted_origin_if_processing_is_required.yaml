@@ -21,12 +21,13 @@ links:
 - document:
     doctype: Standard
     hyperlink: https://owasp.org/www-project-web-security-testing-guide/v41/4-Web_Application_Security_Testing/05-Authorization_Testing/01-Testing_Directory_Traversal_File_Include.html
-    name: WSTG
+    name: (WSTG) Web Security Testing Guide
     section: WSTG-ATHZ-01
   ltype: Linked To
 - document:
     doctype: Tool
-    name: 'ZAP Alert: "Path Traversal"'
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrules/src/main/java/org/zaproxy/zap/extension/ascanrules/PathTraversalScanRule.java
+    name: 'ZAP Rule: "Path Traversal"'
     tags:
     - '"Active"'
     tooltype: Offensive

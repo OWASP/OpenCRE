@@ -3,23 +3,23 @@ id: 625-323
 links:
 - document:
     doctype: CRE
-    id: 625-323
+    id: 354-846
     name: Documentation and requirements
-    tags:
-    - Architecture
   ltype: Contains
 - document:
     doctype: CRE
     id: 765-788
     name: Classify sensitive data in protection levels
-    tags:
-    - Personal data handling
   ltype: Contains
 - document:
     doctype: CRE
     id: 731-120
     name: Document requirements for (data) protection levels
-    tags:
-    - Personal data handling
   ltype: Contains
+- document:
+    doctype: Standard
+    hyperlink: Loading...
+    name: Top10 2017
+    section: A3-Sensitive_Data_Exposure
+  ltype: Linked To
 name: Data security requirement documentation

@@ -4,9 +4,7 @@ links:
 - document:
     doctype: CRE
     id: 540-566
-    name: Let application request minimal permissions
-    tags:
-    - Personal data handling
+    name: Let application request minimal permisions
   ltype: Contains
 - document:
     doctype: CRE
@@ -16,7 +14,7 @@ links:
 - document:
     doctype: CRE
     id: 650-560
-    name: Enforce access control on trusted service layer
+    name: Enfroce access control on trusted service layer
     tags:
     - Architecture
   ltype: Contains
@@ -35,8 +33,6 @@ links:
     id: 060-472
     name: Use CSRF protection against authenticated functionality, add anti-automation
       controls for unauthenticated functionality
-    tags:
-    - CSRF
   ltype: Contains
 - document:
     doctype: CRE
@@ -60,7 +56,7 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 368-633
+    id: 624-716
     name: Use least privilege for resources
   ltype: Contains
 - document:
@@ -71,7 +67,7 @@ links:
 - document:
     doctype: CRE
     id: 664-080
-    name: Enforce model-based authorization both at URI and final resource
+    name: Enforce model-based authorization both at URI and final resourc
   ltype: Contains
 - document:
     doctype: CRE
@@ -95,23 +91,6 @@ links:
     id: 640-364
     name: Enforce access control on trusted parts/serverside
   ltype: Contains
-- document:
-    doctype: CRE
-    id: 651-530
-    name: 'Was: TBD'
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 278-413
-    name: Mutually authenticate application components. Minimize privileges
-    tags:
-    - Architecture
-  ltype: Related
-- document:
-    doctype: CRE
-    id: 746-705
-    name: Limit/authorize user's access to functionality
-  ltype: Related
 - document:
     doctype: CRE
     id: 273-600
@@ -169,5 +148,11 @@ links:
     hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=SC-2
     name: NIST 800-53 v5
     section: SC-2 Separation of System and User Functionality
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: Loading...
+    name: Top10 2017
+    section: A5_Broken_Access_Control
   ltype: Linked To
 name: '>>Authorized access'

@@ -1,5 +1,5 @@
 doctype: CRE
-id: 625-323
+id: 354-846
 links:
 - document:
     doctype: CRE
@@ -13,22 +13,25 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 004-130
-    name: Define High-level architecture and perform security analysis on it
+    id: 344-611
+    name: Centralize security controls
     tags:
     - Architecture
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 004-130
+    name: Define High-level architecture and perform security analysis on it
   ltype: Contains
 - document:
     doctype: CRE
     id: 820-877
     name: Document all trust boundaries and significant data flows
-    tags:
-    - Architecture
   ltype: Contains
 - document:
     doctype: CRE
     id: 782-234
-    name: Clear policy compliant I/O requirements
+    name: Clear policy complient I/O requirements
   ltype: Contains
 - document:
     doctype: CRE
@@ -38,12 +41,12 @@ links:
 - document:
     doctype: CRE
     id: 162-655
-    name: Documentation of all components' business or security function
+    name: Docuymentation of all components' business or security function
   ltype: Contains
 - document:
     doctype: CRE
     id: 287-305
-    name: Document explicit key/secret management
+    name: Document explicit key/secret managementt
   ltype: Contains
 - document:
     doctype: CRE
@@ -51,16 +54,9 @@ links:
     name: Data security requirement documentation
   ltype: Contains
 - document:
-    doctype: CRE
-    id: 155-155
-    name: Architecture
-  ltype: Related
-- document:
     doctype: Standard
     hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=SA-5
     name: NIST 800-53 v5
     section: SA-5 System Documentation
   ltype: Linked To
 name: Documentation and requirements
-tags:
-- Architecture

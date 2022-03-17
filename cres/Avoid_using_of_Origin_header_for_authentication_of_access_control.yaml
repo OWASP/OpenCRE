@@ -5,8 +5,6 @@ links:
     doctype: CRE
     id: 541-441
     name: Validate HTTP request headers
-    tags:
-    - Injection
   ltype: Contains
 - document:
     doctype: Standard

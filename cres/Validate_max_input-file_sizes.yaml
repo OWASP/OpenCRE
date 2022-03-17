@@ -26,7 +26,7 @@ links:
 - document:
     doctype: Standard
     hyperlink: https://owasp.org/www-project-web-security-testing-guide/v41/4-Web_Application_Security_Testing/10-Business_Logic_Testing/09-Test_Upload_of_Malicious_Files.html
-    name: WSTG
+    name: (WSTG) Web Security Testing Guide
     section: WSTG-BUSL-09
   ltype: Linked To
 - document:
@@ -39,7 +39,8 @@ links:
     description: '"Upgrade your Apache server to a currently stable version. Alternative
       solutions or workarounds are outlined in the references. "'
     doctype: Tool
-    name: 'ZAP Alert: "Apache Range Header DoS (CVE-2011-3192)"'
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/ApacheRangeHeaderDosScanRule.java
+    name: 'ZAP Rule: "Apache Range Header DoS (CVE-2011-3192)"'
     tags:
     - '"Active"'
     tooltype: Offensive

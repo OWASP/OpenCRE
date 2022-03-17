@@ -3,8 +3,8 @@ id: 418-525
 links:
 - document:
     doctype: CRE
-    id: 613-287
-    name: Dependency integrity
+    id: 613-285
+    name: '>>Dependency strength'
   ltype: Contains
 - document:
     doctype: Standard

@@ -1,5 +1,11 @@
 doctype: CRE
+id: 821-541
 links:
+- document:
+    doctype: CRE
+    id: 148-420
+    name: Log integrity
+  ltype: Contains
 - document:
     doctype: CRE
     id: 821-540

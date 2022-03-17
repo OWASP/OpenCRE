@@ -3,6 +3,7 @@ id: 770-361
 links:
 - document:
     doctype: CRE
+    id: 770-362
     name: Log time synchronization
   ltype: Contains
 - document:
@@ -14,7 +15,7 @@ links:
 - document:
     doctype: Standard
     hyperlink: https://owasp-top-10-proactive-controls-2018.readthedocs.io/en/latest/c9-implement-security-logging-monitoring.html
-    name: OPC
+    name: OWASP Proactive Controls
     section: C9
   ltype: Linked To
 - document:

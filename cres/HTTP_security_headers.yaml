@@ -11,7 +11,7 @@ links:
 - document:
     doctype: CRE
     id: 736-237
-    name: Set metadata/content-Disposition for API responses
+    name: Set metadate/content-Disposition for API responses
   ltype: Contains
 - document:
     doctype: CRE
@@ -38,7 +38,7 @@ links:
 - document:
     doctype: CRE
     id: 480-071
-    name: Prevent Click jacking through X-Frame-Options or CSP
+    name: Configure X-Frame-Options for CSP properly
   ltype: Contains
 - document:
     doctype: CRE

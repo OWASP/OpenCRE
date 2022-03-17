@@ -5,8 +5,6 @@ links:
     doctype: CRE
     id: 866-553
     name: Memory, String, and Unmanaged Code
-    tags:
-    - Injection
   ltype: Contains
 - document:
     doctype: Standard
@@ -24,7 +22,8 @@ links:
     description: '"Rewrite the background program using proper deletion of bad character
       strings.  This will require a recompile of the background executable."'
     doctype: Tool
-    name: 'ZAP Alert: "Format String Error"'
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrules/src/main/java/org/zaproxy/zap/extension/ascanrules/FormatStringScanRule.java
+    name: 'ZAP Rule: "Format String Error"'
     tags:
     - '"Active"'
     tooltype: Offensive

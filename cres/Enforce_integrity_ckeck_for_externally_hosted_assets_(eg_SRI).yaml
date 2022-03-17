@@ -1,0 +1,48 @@
+doctype: CRE
+id: 577-260
+links:
+- document:
+    doctype: CRE
+    id: 613-285
+    name: '>>Dependency strength'
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 153-513
+    name: '>>Development & operations'
+  ltype: Related
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x22-V14-Config.md
+    name: ASVS
+    section: V14.2.3
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/829.html
+    name: CWE
+    section: '829'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html
+    name: Cheat_sheets
+    section: Docker Security Cheat Sheet
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Vulnerable_Dependency_Management_Cheat_Sheet.html
+    name: Cheat_sheets
+    section: Vulnerable Dependency Management Cheat Sheet
+  ltype: Linked To
+- document:
+    description: '"Ensure JavaScript source files are loaded from only trusted sources,
+      and the sources can''t be controlled by end users of the application."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/CrossDomainScriptInclusionScanRule.java
+    name: 'ZAP Rule: "Cross-Domain JavaScript Source File Inclusion"'
+    tags:
+    - '"Passive"'
+    tooltype: Offensive
+  ltype: SAME
+name: Enforce integrity ckeck for externally hosted assets (eg SRI)

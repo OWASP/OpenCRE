@@ -10,11 +10,6 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 623-550
-    name: DOS
-  ltype: Related
-- document:
-    doctype: CRE
     id: 842-876
     name: '>>Logging and error handling'
   ltype: Related
@@ -37,5 +32,3 @@ links:
     section: Abuse Case Cheat Sheet
   ltype: Linked To
 name: Enable configurable alert against usage anomalies
-tags:
-- DOS

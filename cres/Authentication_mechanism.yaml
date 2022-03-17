@@ -38,7 +38,7 @@ links:
 - document:
     doctype: CRE
     id: 585-408
-    name: Cryptographic directives
+    name: Cryptographic authentication software and devices
   ltype: Contains
 - document:
     doctype: CRE
@@ -59,13 +59,28 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 177-260
-    name: '>>Session management'
+    id: 138-448
+    name: Inform users for authentication renewal
   ltype: Related
 - document:
     doctype: CRE
-    id: 551-054
-    name: Use ephemeral secrets rather than static secrets
+    id: 808-425
+    name: Notify users about anomalies in their usage patterns
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 751-176
+    name: Offer password changing functionality
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 327-505
+    name: Change password with presence of old and new password
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 177-260
+    name: '>>Session management'
   ltype: Related
 - document:
     doctype: Standard

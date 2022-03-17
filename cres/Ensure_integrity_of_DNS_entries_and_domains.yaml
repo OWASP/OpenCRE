@@ -3,6 +3,7 @@ id: 336-512
 links:
 - document:
     doctype: CRE
+    id: 336-511
     name: Network protection
   ltype: Contains
 - document:
@@ -25,7 +26,7 @@ links:
 - document:
     doctype: Standard
     hyperlink: https://owasp.org/www-project-web-security-testing-guide/v41/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/10-Test_for_Subdomain_Takeover.html
-    name: WSTG
+    name: (WSTG) Web Security Testing Guide
     section: WSTG-CONF-10
   ltype: Linked To
 - document:

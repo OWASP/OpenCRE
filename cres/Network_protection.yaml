@@ -1,5 +1,13 @@
 doctype: CRE
+id: 336-511
 links:
+- document:
+    doctype: CRE
+    id: 783-355
+    name: Deployment
+    tags:
+    - Configuration
+  ltype: Contains
 - document:
     doctype: CRE
     id: 336-512

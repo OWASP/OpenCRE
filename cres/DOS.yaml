@@ -10,34 +10,6 @@ links:
   ltype: Related
 - document:
     doctype: CRE
-    id: 630-573
-    name: Monitor suspected automation abuse
-    tags:
-    - DOS
-  ltype: Related
-- document:
-    doctype: CRE
-    id: 725-682
-    name: Enable configurable alert against usage anomalies
-    tags:
-    - DOS
-  ltype: Related
-- document:
-    doctype: CRE
-    id: 418-853
-    name: Monitor unusual activities on system
-    tags:
-    - DOS
-  ltype: Related
-- document:
-    doctype: CRE
-    id: 456-535
-    name: Monitor for realistic "human time" business logic flows
-    tags:
-    - DOS
-  ltype: Related
-- document:
-    doctype: CRE
     id: 268-088
     name: Limit query impact GraphQL/data layer expression DoS
     tags:
@@ -47,6 +19,20 @@ links:
     doctype: CRE
     id: 814-322
     name: Whitelist data sources and sinks
+    tags:
+    - DOS
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 314-701
+    name: Whitelist file extensions served by web tier
+    tags:
+    - DOS
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 545-243
+    name: Block execution/output of uploaded files
     tags:
     - DOS
   ltype: Related

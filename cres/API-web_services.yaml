@@ -15,15 +15,18 @@ links:
     doctype: CRE
     id: 061-186
     name: Force uniform encoders and parsers throughout system
-    tags:
-    - SSRF
   ltype: Contains
 - document:
     doctype: CRE
     id: 612-252
     name: Separate GraphQL (or similar) authorization logic from data layer
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 268-088
+    name: Limit query impact GraphQL/data layer expression DoS
     tags:
-    - Architecture
+    - DOS
   ltype: Contains
 - document:
     doctype: CRE
@@ -43,7 +46,7 @@ links:
 - document:
     doctype: CRE
     id: 664-080
-    name: Enforce model-based authorization both at URI and final resource
+    name: Enforce model-based authorization both at URI and final resourc
   ltype: Related
 - document:
     doctype: CRE

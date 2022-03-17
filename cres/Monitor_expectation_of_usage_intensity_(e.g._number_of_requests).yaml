@@ -11,13 +11,13 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 623-550
-    name: DOS
+    id: 842-876
+    name: '>>Logging and error handling'
   ltype: Related
 - document:
     doctype: CRE
-    id: 842-876
-    name: '>>Logging and error handling'
+    id: 623-550
+    name: DOS
   ltype: Related
 - document:
     doctype: Standard

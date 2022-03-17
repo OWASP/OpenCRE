@@ -26,4 +26,10 @@ links:
     id: 015-063
     name: Log access to sensitive data
   ltype: Related
+- document:
+    doctype: Standard
+    hyperlink: Loading...
+    name: Top10 2017
+    section: A3-Sensitive_Data_Exposure
+  ltype: Linked To
 name: Log discretely

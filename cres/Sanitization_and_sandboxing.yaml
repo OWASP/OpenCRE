@@ -8,22 +8,13 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 268-088
-    name: Limit query impact GraphQL/data layer expression DoS
-    tags:
-    - DOS
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 760-765
-    name: XSS
+    id: 760-764
+    name: Injection
   ltype: Related
 - document:
     doctype: CRE
-    id: 760-764
-    name: Injection
-    tags:
-    - XSS
+    id: 028-726
+    name: XSS
   ltype: Related
 - document:
     doctype: CRE
@@ -56,8 +47,6 @@ links:
     id: 657-084
     name: (SSRF) When depending on internal server input, use validation sanitization
       and whitelisting
-    tags:
-    - SSRF
   ltype: Contains
 - document:
     doctype: CRE

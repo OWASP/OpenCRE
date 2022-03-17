@@ -5,8 +5,6 @@ links:
     doctype: CRE
     id: 866-553
     name: Memory, String, and Unmanaged Code
-    tags:
-    - Injection
   ltype: Contains
 - document:
     doctype: Standard
@@ -25,7 +23,8 @@ links:
       of integer being input to prevent overflows and divide by 0 errors.  This will
       require a recompile of the background executable."'
     doctype: Tool
-    name: 'ZAP Alert: "Integer Overflow Error"'
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/IntegerOverflowScanRule.java
+    name: 'ZAP Rule: "Integer Overflow Error"'
     tags:
     - '"Active"'
     tooltype: Offensive

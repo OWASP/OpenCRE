@@ -3,16 +3,9 @@ id: 820-877
 links:
 - document:
     doctype: CRE
-    id: 625-323
+    id: 354-846
     name: Documentation and requirements
-    tags:
-    - Architecture
   ltype: Contains
-- document:
-    doctype: CRE
-    id: 155-155
-    name: Architecture
-  ltype: Related
 - document:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x10-V1-Architecture.md
@@ -44,5 +37,3 @@ links:
     section: Attack Surface Analysis Cheat Sheet
   ltype: Linked To
 name: Document all trust boundaries and significant data flows
-tags:
-- Architecture

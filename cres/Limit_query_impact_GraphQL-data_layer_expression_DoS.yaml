@@ -3,11 +3,8 @@ id: 268-088
 links:
 - document:
     doctype: CRE
-    id: 764-765
-    name: Sanitization and sandboxing
-    tags:
-    - Injection
-    - XSS
+    id: 118-110
+    name: API/web services
   ltype: Contains
 - document:
     doctype: CRE

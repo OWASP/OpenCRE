@@ -15,7 +15,7 @@ links:
 - document:
     doctype: Standard
     hyperlink: https://owasp-top-10-proactive-controls-2018.readthedocs.io/en/latest/c7-enforce-access-controls.html
-    name: OPC
+    name: OWASP Proactive Controls
     section: C7
   ltype: Linked To
 - document:

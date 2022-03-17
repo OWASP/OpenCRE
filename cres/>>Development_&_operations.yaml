@@ -30,27 +30,23 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 344-611
-    name: Centralize security controls
-    tags:
-    - Architecture
+    id: 354-846
+    name: Documentation and requirements
   ltype: Contains
 - document:
     doctype: CRE
-    id: 625-323
-    name: Documentation and requirements
-    tags:
-    - Architecture
+    id: 840-758
+    name: Secure Development
   ltype: Contains
+- document:
+    doctype: CRE
+    id: 577-260
+    name: Enforce integrity ckeck for externally hosted assets (eg SRI)
+  ltype: Related
 - document:
     doctype: CRE
     id: 863-521
     name: Maintain/manage inventory of third party repositories
-  ltype: Related
-- document:
-    doctype: CRE
-    id: 577-260
-    name: Enforce integrity check for externally hosted assets (eg SRI)
   ltype: Related
 - document:
     doctype: Standard

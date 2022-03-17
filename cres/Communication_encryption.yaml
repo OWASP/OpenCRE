@@ -15,15 +15,11 @@ links:
     doctype: CRE
     id: 527-034
     name: Protect communication between application components
-    tags:
-    - Cryptography
   ltype: Contains
 - document:
     doctype: CRE
     id: 426-842
     name: Verify the authenticity of both headers and payload
-    tags:
-    - Cryptography
   ltype: Contains
 name: Communication encryption
 tags:

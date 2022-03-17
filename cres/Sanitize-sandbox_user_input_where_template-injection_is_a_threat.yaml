@@ -24,7 +24,7 @@ links:
 - document:
     doctype: Standard
     hyperlink: https://owasp.org/www-project-web-security-testing-guide/v41/4-Web_Application_Security_Testing/07-Input_Validation_Testing/18-Testing_for_Server_Side_Template_Injection.html
-    name: WSTG
+    name: (WSTG) Web Security Testing Guide
     section: WSTG-INPV-18
   ltype: Linked To
 - document:
@@ -54,14 +54,16 @@ links:
 - document:
     description: '"Ensure the .htaccess file is not accessible."'
     doctype: Tool
-    name: 'ZAP Alert: ".htaccess Information Leak"'
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrules/src/main/java/org/zaproxy/zap/extension/ascanrules/HtAccessScanRule.java
+    name: 'ZAP Rule: ".htaccess Information Leak"'
     tags:
     - '"Active"'
     tooltype: Offensive
   ltype: SAME
 - document:
     doctype: Tool
-    name: 'ZAP Alert: "Server Side Code Injection"'
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrules/src/main/java/org/zaproxy/zap/extension/ascanrules/CodeInjectionScanRule.java
+    name: 'ZAP Rule: "Server Side Code Injection"'
     tags:
     - '"Active"'
     tooltype: Offensive
@@ -71,7 +73,8 @@ links:
       if it isn''t then disable it. If it is then ensure access to it requires authentication
       and authorization. See also: https://elmah.github.io/a/securing-error-log-pages/"'
     doctype: Tool
-    name: 'ZAP Alert: "ELMAH Information Leak"'
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrules/src/main/java/org/zaproxy/zap/extension/ascanrules/ElmahScanRule.java
+    name: 'ZAP Rule: "ELMAH Information Leak"'
     tags:
     - '"Active"'
     tooltype: Offensive

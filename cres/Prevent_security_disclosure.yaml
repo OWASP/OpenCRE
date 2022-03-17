@@ -24,8 +24,14 @@ links:
 - document:
     doctype: CRE
     id: 403-005
-    name: Do not disclose technical information in HTTP header or response
+    name: Do not disclose technical information in HTTP header or responce
   ltype: Contains
+- document:
+    doctype: Standard
+    hyperlink: Loading...
+    name: Top10 2017
+    section: A3-Sensitive_Data_Exposure
+  ltype: Linked To
 name: Prevent security disclosure
 tags:
 - Configuration

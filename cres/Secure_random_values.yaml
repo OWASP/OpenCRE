@@ -20,8 +20,6 @@ links:
     doctype: CRE
     id: 664-571
     name: Ensure proper generation of secure random
-    tags:
-    - Cryptography
   ltype: Contains
 - document:
     doctype: CRE

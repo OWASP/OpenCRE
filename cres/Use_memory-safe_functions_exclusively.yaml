@@ -5,8 +5,6 @@ links:
     doctype: CRE
     id: 866-553
     name: Memory, String, and Unmanaged Code
-    tags:
-    - Injection
   ltype: Contains
 - document:
     doctype: Standard
@@ -23,14 +21,15 @@ links:
 - document:
     doctype: Standard
     hyperlink: https://owasp.org/www-project-web-security-testing-guide/v41/4-Web_Application_Security_Testing/07-Input_Validation_Testing/13-Testing_for_Buffer_Overflow.html
-    name: WSTG
+    name: (WSTG) Web Security Testing Guide
     section: WSTG-INPV-13
   ltype: Linked To
 - document:
     description: '"Rewrite the background program using proper return length checking.  This
       will require a recompile of the background executable."'
     doctype: Tool
-    name: 'ZAP Alert: "Buffer Overflow"'
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrules/src/main/java/org/zaproxy/zap/extension/ascanrules/BufferOverflowScanRule.java
+    name: 'ZAP Rule: "Buffer Overflow"'
     tags:
     - '"Active"'
     tooltype: Offensive

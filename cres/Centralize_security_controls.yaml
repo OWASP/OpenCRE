@@ -3,8 +3,8 @@ id: 344-611
 links:
 - document:
     doctype: CRE
-    id: 153-513
-    name: '>>Development & operations'
+    id: 354-846
+    name: Documentation and requirements
   ltype: Contains
 - document:
     doctype: CRE
@@ -20,7 +20,7 @@ links:
 - document:
     doctype: Standard
     hyperlink: https://owasp-top-10-proactive-controls-2018.readthedocs.io/en/latest/c10-handle-errors-exceptions.html
-    name: OPC
+    name: OWASP Proactive Controls
     section: C10
   ltype: Linked To
 - document:

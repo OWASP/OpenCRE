@@ -8,6 +8,11 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
+    id: 455-358
+    name: When storing session tokens in browers, use secure methods only
+  ltype: Contains
+- document:
+    doctype: CRE
     id: 704-530
     name: Enforce high entropy session tokens
     tags:

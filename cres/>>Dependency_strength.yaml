@@ -3,10 +3,43 @@ id: 613-285
 links:
 - document:
     doctype: CRE
+    id: 053-751
+    name: Force pipeline to check outdated/insecure components
+  ltype: Contains
+- document:
+    doctype: CRE
     id: 462-245
-    name: Remove unnecessary features, documentation, configuration etc
-    tags:
-    - Configuration
+    name: Remove dead code
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 577-260
+    name: Enforce integrity ckeck for externally hosted assets (eg SRI)
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 863-521
+    name: Maintain/manage inventory of third party repositories
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 838-636
+    name: Check source code to not contain backdoors
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 265-800
+    name: Check source code to not contain malicious code
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 418-525
+    name: Check source code to not contain timebombs
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 834-645
+    name: Avoid unauthorized client data collection
   ltype: Contains
 - document:
     doctype: CRE
@@ -16,19 +49,22 @@ links:
 - document:
     doctype: CRE
     id: 154-031
-    name: Harden application by excluding unwanted functionality
-    tags:
-    - Configuration
+    name: Harden application by excluding unwanted functiuonality
   ltype: Contains
 - document:
     doctype: CRE
-    id: 613-286
-    name: Dependency management
+    id: 860-084
+    name: Sandbox third party libraries
   ltype: Contains
 - document:
     doctype: CRE
-    id: 613-287
-    name: Dependency integrity
+    id: 715-223
+    name: Ensure trusted origin of third party resources
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 715-334
+    name: Update third party components build- or compiletime
   ltype: Contains
 - document:
     doctype: Standard
@@ -47,5 +83,11 @@ links:
     hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=SA-4
     name: NIST 800-53 v5
     section: SA-4 Acquisition Process
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: Loading...
+    name: Top10 2017
+    section: A9-Using_Components_with_Known_Vulnerabilities
   ltype: Linked To
 name: '>>Dependency strength'

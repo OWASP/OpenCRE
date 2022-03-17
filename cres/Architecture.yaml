@@ -18,7 +18,7 @@ links:
 - document:
     doctype: CRE
     id: 650-560
-    name: Enforce access control on trusted service layer
+    name: Enfroce access control on trusted service layer
     tags:
     - Architecture
   ltype: Related
@@ -38,43 +38,8 @@ links:
   ltype: Related
 - document:
     doctype: CRE
-    id: 340-754
-    name: Threat model every design change or sprint
-    tags:
-    - Architecture
-  ltype: Related
-- document:
-    doctype: CRE
-    id: 625-323
-    name: Documentation and requirements
-    tags:
-    - Architecture
-  ltype: Related
-- document:
-    doctype: CRE
     id: 344-611
     name: Centralize security controls
-    tags:
-    - Architecture
-  ltype: Related
-- document:
-    doctype: CRE
-    id: 004-130
-    name: Define High-level architecture and perform security analysis on it
-    tags:
-    - Architecture
-  ltype: Related
-- document:
-    doctype: CRE
-    id: 820-877
-    name: Document all trust boundaries and significant data flows
-    tags:
-    - Architecture
-  ltype: Related
-- document:
-    doctype: CRE
-    id: 612-252
-    name: Separate GraphQL (or similar) authorization logic from data layer
     tags:
     - Architecture
   ltype: Related
@@ -88,7 +53,7 @@ links:
 - document:
     doctype: CRE
     id: 260-200
-    name: Log in consistent format across system
+    name: Log consistent format across system
     tags:
     - Architecture
   ltype: Related

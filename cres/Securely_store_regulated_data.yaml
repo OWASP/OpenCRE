@@ -22,7 +22,5 @@ links:
     doctype: CRE
     id: 482-866
     name: Encrypt personal data at rest
-    tags:
-    - Personal data handling
   ltype: Contains
 name: Securely store regulated data

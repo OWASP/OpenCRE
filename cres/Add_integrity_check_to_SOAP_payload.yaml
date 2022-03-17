@@ -33,7 +33,8 @@ links:
     description: '"Ensure each page is setting the specific and appropriate content-type
       value for the content being delivered."'
     doctype: Tool
-    name: 'ZAP Alert: "Content-Type Header Missing"'
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/ContentTypeMissingScanRule.java
+    name: 'ZAP Rule: "Content-Type Header Missing"'
     tags:
     - '"Passive"'
     tooltype: Offensive

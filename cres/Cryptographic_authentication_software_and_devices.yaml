@@ -1,0 +1,21 @@
+doctype: CRE
+id: 585-408
+links:
+- document:
+    doctype: CRE
+    id: 270-568
+    name: Authentication mechanism
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 002-801
+    name: Use approved cryptographic algorithms for generation, seeding and verification
+    tags:
+    - Cryptography
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 287-251
+    name: Use a unique challenge nonce of sufficient size
+  ltype: Contains
+name: Cryptographic authentication software and devices

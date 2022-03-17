@@ -3,18 +3,15 @@ id: 842-876
 links:
 - document:
     doctype: CRE
-    id: 148-420
-    name: Log integrity
+    id: 260-200
+    name: Log consistent format across system
+    tags:
+    - Architecture
   ltype: Contains
 - document:
     doctype: CRE
-    id: 843-841
-    name: Log discretely
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 402-706
-    name: Log relevant
+    id: 026-280
+    name: Secure transfer of logs (remotely)
   ltype: Contains
 - document:
     doctype: CRE
@@ -28,17 +25,28 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
+    id: 843-841
+    name: Log discretely
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 148-420
+    name: Log integrity
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 402-706
+    name: Log relevant
+  ltype: Contains
+- document:
+    doctype: CRE
     id: 725-682
     name: Enable configurable alert against usage anomalies
-    tags:
-    - DOS
   ltype: Related
 - document:
     doctype: CRE
     id: 418-853
     name: Monitor unusual activities on system
-    tags:
-    - DOS
   ltype: Related
 - document:
     doctype: CRE
@@ -99,5 +107,11 @@ links:
     hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=AU-7
     name: NIST 800-53 v5
     section: AU-7 Audit Record Reduction and Report Generation
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: Loading...
+    name: Top10 2017
+    section: A10_Insufficient_Logging&Monitoring
   ltype: Linked To
 name: '>>Logging and error handling'

@@ -28,7 +28,8 @@ links:
     description: '"Rewrite the background program using proper return length checking.  This
       will require a recompile of the background executable."'
     doctype: Tool
-    name: 'ZAP Alert: "Buffer Overflow"'
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrules/src/main/java/org/zaproxy/zap/extension/ascanrules/BufferOverflowScanRule.java
+    name: 'ZAP Rule: "Buffer Overflow"'
     tags:
     - '"Active"'
     tooltype: Offensive

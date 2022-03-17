@@ -32,11 +32,6 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 270-634
-    name: Send authentication secrets encrypted
-  ltype: Related
-- document:
-    doctype: CRE
     id: 456-636
     name: Add integrity check to SOAP payload
   ltype: Related
@@ -57,6 +52,12 @@ links:
     hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=SC-8
     name: NIST 800-53 v5
     section: SC-8 TRANSMISSION CONFIDENTIALITY AND INTEGRITY
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: Loading...
+    name: Top10 2017
+    section: A3-Sensitive_Data_Exposure
   ltype: Linked To
 - document:
     doctype: Standard

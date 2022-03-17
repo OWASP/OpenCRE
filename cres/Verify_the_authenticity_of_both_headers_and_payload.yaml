@@ -9,11 +9,6 @@ links:
     - Cryptography
   ltype: Contains
 - document:
-    doctype: CRE
-    id: 170-772
-    name: Cryptography
-  ltype: Related
-- document:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x21-V13-API.md
     name: ASVS
@@ -43,15 +38,4 @@ links:
     name: Cheat_sheets
     section: Cross-Site Request Forgery Prevention Cheat Sheet
   ltype: Linked To
-- document:
-    description: '"Ensure each page is setting the specific and appropriate content-type
-      value for the content being delivered."'
-    doctype: Tool
-    name: 'ZAP Alert: "Content-Type Header Missing"'
-    tags:
-    - '"Passive"'
-    tooltype: Offensive
-  ltype: SAME
 name: Verify the authenticity of both headers and payload
-tags:
-- Cryptography

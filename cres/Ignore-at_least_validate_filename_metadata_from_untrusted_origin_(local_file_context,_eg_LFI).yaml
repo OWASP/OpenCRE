@@ -1,0 +1,28 @@
+doctype: CRE
+id: 737-086
+links:
+- document:
+    doctype: CRE
+    id: 451-082
+    name: File execution
+  ltype: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x20-V12-Files-Resources.md
+    name: ASVS
+    section: V12.3.2
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/73.html
+    name: CWE
+    section: '73'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owasp.org/www-project-web-security-testing-guide/v41/4-Web_Application_Security_Testing/05-Authorization_Testing/01-Testing_Directory_Traversal_File_Include.html
+    name: (WSTG) Web Security Testing Guide
+    section: WSTG-ATHZ-01
+  ltype: Linked To
+name: Ignore/at least validate filename metadata from untrusted origin (local file
+  context, eg LFI)

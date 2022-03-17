@@ -29,15 +29,13 @@ links:
 - document:
     doctype: CRE
     id: 737-086
-    name: Ignore/at least validate  filename metadata from untrusted origin (local
+    name: Ignore/at least validate filename metadata from untrusted origin (local
       file context, eg LFI)
   ltype: Contains
 - document:
     doctype: CRE
     id: 742-056
-    name: Ignore/at least validate  filename metadata from untrusted origin (remote
+    name: Ignore/at least validate filename metadata from untrusted origin (remote
       file context, eg RFI)
-    tags:
-    - SSRF
   ltype: Contains
 name: File execution

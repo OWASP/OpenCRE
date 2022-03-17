@@ -3,8 +3,8 @@ id: 834-645
 links:
 - document:
     doctype: CRE
-    id: 613-287
-    name: Dependency integrity
+    id: 613-285
+    name: '>>Dependency strength'
   ltype: Contains
 - document:
     doctype: Standard
@@ -20,7 +20,8 @@ links:
   ltype: Linked To
 - document:
     doctype: Tool
-    name: 'ZAP Alert: "Personally Identifiable Information via WebSocket"'
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/websocket/src/main/zapHomeFiles/scripts/templates/websocketpassive/PII%20Disclosure.js
+    name: 'ZAP Rule: "Personally Identifiable Information via WebSocket"'
     tags:
     - '"WebSocket Passive"'
     tooltype: Offensive

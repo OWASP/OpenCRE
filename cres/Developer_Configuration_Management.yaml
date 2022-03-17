@@ -3,19 +3,19 @@ id: 601-155
 links:
 - document:
     doctype: CRE
+    id: 153-513
+    name: '>>Development & operations'
+  ltype: Contains
+- document:
+    doctype: CRE
     id: 757-271
     name: Use proper source code control system
   ltype: Contains
 - document:
     doctype: CRE
     id: 715-334
-    name: Update third party components build- or compile time
+    name: Update third party components build- or compiletime
   ltype: Related
-- document:
-    doctype: CRE
-    id: 153-513
-    name: '>>Development & operations'
-  ltype: Contains
 - document:
     doctype: Standard
     hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=SA-10

@@ -37,4 +37,10 @@ links:
     tags:
     - Cryptography
   ltype: Contains
+- document:
+    doctype: Standard
+    hyperlink: Loading...
+    name: Top10 2017
+    section: A3-Sensitive_Data_Exposure
+  ltype: Linked To
 name: '>>Secure data storage'

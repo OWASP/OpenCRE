@@ -23,7 +23,7 @@ links:
 - document:
     doctype: Standard
     hyperlink: https://owasp.org/www-project-web-security-testing-guide/v41/4-Web_Application_Security_Testing/09-Testing_for_Weak_Cryptography/01-Testing_for_Weak_SSL_TLS_Ciphers_Insufficient_Transport_Layer_Protection.html
-    name: WSTG
+    name: (WSTG) Web Security Testing Guide
     section: WSTG-CRYP-01
   ltype: Linked To
 - document:
@@ -44,13 +44,4 @@ links:
     name: Cheat_sheets
     section: TLS Cipher String Cheat Sheet
   ltype: Linked To
-- document:
-    description: '"Protect the connection using HTTPS or use a stronger authentication
-      mechanism"'
-    doctype: Tool
-    name: 'ZAP Alert: "Weak Authentication Method"'
-    tags:
-    - '"Passive"'
-    tooltype: Offensive
-  ltype: SAME
 name: Verify strong TLS algorithms by testing
