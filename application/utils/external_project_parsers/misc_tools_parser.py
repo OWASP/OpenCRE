@@ -3,7 +3,8 @@ import os
 import re
 import urllib
 from pprint import pprint
-from typing import List
+from typing import List, NamedTuple
+from xmlrpc.client import boolean
 
 from application.database import db
 from application.defs import cre_defs as defs
@@ -30,10 +31,13 @@ def Project(
         description=description,
     )
 
-
-def parse_tool(tool_repo: str, cache: db.Node_collection):
-
-    repo = git.clone(tool_repo)
+# TODO (spyros): need to decouple git ops from parsing in order to make this testable
+# although i could just mock the git ops :$ 
+def parse_tool(tool_repo: str, cache: db.Node_collection, dry_run:boolean=False):
+    if not dry_run:
+        repo = git.clone(tool_repo)
+    else:
+        repo = NamedTuple("working_dir")
     readme = os.path.join(repo.working_dir, "README.md")
     title_regexp = r"# (?P<title>(\w+ )+)"
     cre_link = (
