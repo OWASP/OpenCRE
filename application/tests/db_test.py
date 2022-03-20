@@ -158,11 +158,9 @@ class TestDB(unittest.TestCase):
         collection = db.Node_collection()
         collection = self.collection
         collection.graph.graph = db.CRE_Graph.load_cre_graph(sqla.session)
-
         code0 = defs.Code(name="co0")
         code1 = defs.Code(name="co1")
         tool0 = defs.Tool(name="t0", tooltype=defs.ToolTypes.Unknown)
-
         dbstandard = collection.add_node(
             defs.Standard(
                 subsection="4.5.6",
@@ -181,7 +179,6 @@ class TestDB(unittest.TestCase):
                 hyperlink="https://example.com",
             )
         )
-
         self.collection.add_link(self.dbcre, self.collection.add_node(code0))
         self.collection.add_node(code1)
         self.collection.add_node(tool0)
@@ -245,7 +242,6 @@ class TestDB(unittest.TestCase):
             .replace("'", "")
             + ".yaml"
         )
-
         with open(os.path.join(loc, groupname), "r") as f:
             doc = yaml.safe_load(f)
             self.assertDictEqual(group, doc)
@@ -1169,12 +1165,13 @@ class TestDB(unittest.TestCase):
 
     def test_get_root_cres(self):
         """Given:
-        5 CRES:
+        6 CRES:
             * C0 <-- Root
             * C1 <-- Root
             * C2 Part Of C0
             * C3 Part Of C1
             * C4 Part Of C2
+            * C5 Related to C0
         3 Nodes:
             * N0  Unlinked
             * N1 Linked To C1
@@ -1190,11 +1187,10 @@ class TestDB(unittest.TestCase):
         sqla.session.remove()
         sqla.drop_all()
         sqla.create_all(app=self.app)
-
         collection = db.Node_collection()
         collection.graph.graph = db.CRE_Graph.load_cre_graph(sqla.session)
 
-        for i in range(0, 5):
+        for i in range(0, 6):
             if i == 0 or i == 1:
                 cres.append(defs.CRE(name=f">> C{i}", id=f"{i}"))
             else:
@@ -1213,6 +1209,9 @@ class TestDB(unittest.TestCase):
         cres[0].add_link(
             defs.Link(document=cres[2].shallow_copy(), ltype=defs.LinkTypes.Contains)
         )
+        cres[0].add_link(
+            defs.Link(document=cres[5].shallow_copy(), ltype=defs.LinkTypes.Related)
+        )
         cres[1].add_link(
             defs.Link(document=cres[3].shallow_copy(), ltype=defs.LinkTypes.Contains)
         )
@@ -1220,6 +1219,9 @@ class TestDB(unittest.TestCase):
             defs.Link(document=cres[4].shallow_copy(), ltype=defs.LinkTypes.Contains)
         )
 
+        cres[3].add_link(
+            defs.Link(document=cres[5].shallow_copy(), ltype=defs.LinkTypes.Contains)
+        )
         collection.add_internal_link(
             group=dbcres[0], cre=dbcres[2], type=defs.LinkTypes.Contains
         )
@@ -1228,6 +1230,12 @@ class TestDB(unittest.TestCase):
         )
         collection.add_internal_link(
             group=dbcres[2], cre=dbcres[4], type=defs.LinkTypes.Contains
+        )
+        collection.add_internal_link(
+            group=dbcres[5], cre=dbcres[0], type=defs.LinkTypes.Related
+        )
+        collection.add_internal_link(
+            group=dbcres[3], cre=dbcres[5], type=defs.LinkTypes.Contains
         )
         collection.session.commit()
 
