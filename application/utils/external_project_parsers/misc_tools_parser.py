@@ -31,13 +31,12 @@ def Project(
         description=description,
     )
 
+
 # TODO (spyros): need to decouple git ops from parsing in order to make this testable
-# although i could just mock the git ops :$ 
-def parse_tool(tool_repo: str, cache: db.Node_collection, dry_run:boolean=False):
+# although i could just mock the git ops :$
+def parse_tool(tool_repo: str, cache: db.Node_collection, dry_run: boolean = False):
     if not dry_run:
         repo = git.clone(tool_repo)
-    else:
-        repo = NamedTuple("working_dir")
     readme = os.path.join(repo.working_dir, "README.md")
     title_regexp = r"# (?P<title>(\w+ )+)"
     cre_link = (
@@ -77,11 +76,9 @@ def parse_tool(tool_repo: str, cache: db.Node_collection, dry_run:boolean=False)
                         ttype=tool_type,
                         description=description,
                     )
-                    pprint(cs)
-                    pprint(cres)
-                    # dbnode = cache.add_node(cs)
-                    # cache.add_link(
-                    #     cre=db.dbCREfromCRE(dbcre),
-                    #     node=dbnode,
-                    #     type=defs.LinkTypes.LinkedTo,
-                    # )
+                    dbnode = cache.add_node(node=cs)
+                    cache.add_link(
+                        cre=db.dbCREfromCRE(dbcre),
+                        node=dbnode,
+                        type=defs.LinkTypes.LinkedTo,
+                    )
