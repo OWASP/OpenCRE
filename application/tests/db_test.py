@@ -1209,6 +1209,9 @@ class TestDB(unittest.TestCase):
         cres[0].add_link(
             defs.Link(document=cres[2].shallow_copy(), ltype=defs.LinkTypes.Contains)
         )
+        cres[0].add_link(
+            defs.Link(document=cres[5].shallow_copy(), ltype=defs.LinkTypes.Related)
+        )
         cres[1].add_link(
             defs.Link(document=cres[3].shallow_copy(), ltype=defs.LinkTypes.Contains)
         )
@@ -1216,8 +1219,9 @@ class TestDB(unittest.TestCase):
             defs.Link(document=cres[4].shallow_copy(), ltype=defs.LinkTypes.Contains)
         )
 
-        cres[5].add_link(defs.Link(document=cres[0].shallow_copy(), ltype=defs.LinkTypes.Related))
-        cres[3].add_link(defs.Link(document=cres[5].shallow_copy(),ltype=defs.LinkTypes.Contains))
+        cres[3].add_link(
+            defs.Link(document=cres[5].shallow_copy(), ltype=defs.LinkTypes.Contains)
+        )
         collection.add_internal_link(
             group=dbcres[0], cre=dbcres[2], type=defs.LinkTypes.Contains
         )
@@ -1227,8 +1231,12 @@ class TestDB(unittest.TestCase):
         collection.add_internal_link(
             group=dbcres[2], cre=dbcres[4], type=defs.LinkTypes.Contains
         )
-        collection.add_internal_link(group=dbcres[5],cre=dbcres[0],type=defs.LinkTypes.Related)
-        collection.add_internal_link(group=dbcres[3],cre=dbcres[5],type=defs.LinkTypes.Related)
+        collection.add_internal_link(
+            group=dbcres[5], cre=dbcres[0], type=defs.LinkTypes.Related
+        )
+        collection.add_internal_link(
+            group=dbcres[3], cre=dbcres[5], type=defs.LinkTypes.Contains
+        )
         collection.session.commit()
 
         root_cres = collection.get_root_cres()

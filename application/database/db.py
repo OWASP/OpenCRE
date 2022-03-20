@@ -1057,12 +1057,23 @@ class Node_collection:
         return list(set(results))
 
     def get_root_cres(self):
-        """Returns CRES that only have "Contains" links"""
-        nodes = [
-            node
-            for node in self.graph.graph.nodes
-            if self.graph.graph.in_degree(node) == 0 and node.startswith("CRE")
-        ]
+        """Returns CRES that only have "Contains" links
+        Implemented via filtering graph nodes whose incoming edges are only "RELATED" type links
+        """
+
+        def node_is_root(node):
+            return node.startswith("CRE") and (
+                self.graph.graph.in_degree(node) == 0
+                or not [
+                    edge
+                    for edge in self.graph.graph.in_edges(node)
+                    if self.graph.graph.get_edge_data(*edge)["ltype"]
+                    != cre_defs.LinkTypes.Related.value
+                ]
+            )  # there are no incoming edges with relationships other than RELATED
+
+        nodes = filter(node_is_root, self.graph.graph.nodes)
+
         result = []
         for nodeid in nodes:
             result.extend(
