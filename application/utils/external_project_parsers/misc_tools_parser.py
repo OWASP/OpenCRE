@@ -1,14 +1,19 @@
 # script to parse CRE links from  README.md files of a given list of projects
+import logging
 import os
 import re
 import urllib
-from pprint import pprint
 from typing import List, NamedTuple
 from xmlrpc.client import boolean
 
 from application.database import db
 from application.defs import cre_defs as defs
 from application.utils import git
+
+logging.basicConfig()
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
 
 tool_urls = [
     "https://github.com/commjoen/wrongsecrets.git",
@@ -19,10 +24,6 @@ tool_urls = [
 def Project(
     name: str, hyperlink: str, tags: List[str], ttype: str, description: str
 ) -> defs.Tool:
-    pprint(name)
-    print(ttype)
-    print(" ".join(tags))
-    print(description)
     return defs.Tool(
         name=name,
         tooltype=defs.ToolTypes.from_str(ttype),
@@ -47,7 +48,7 @@ def parse_tool(tool_repo: str, cache: db.Node_collection, dry_run: boolean = Fal
         mdtext = rdf.read()
 
         if "opencre.org" not in mdtext:
-            pprint("didn't find a link, bye")
+            logging.error("didn't find a link, bye")
             return
         title = re.search(title_regexp, mdtext)
         cre = re.search(cre_link, mdtext, flags=re.IGNORECASE)
@@ -81,4 +82,8 @@ def parse_tool(tool_repo: str, cache: db.Node_collection, dry_run: boolean = Fal
                         cre=db.dbCREfromCRE(dbcre),
                         node=dbnode,
                         type=defs.LinkTypes.LinkedTo,
+                    )
+                    print(
+                        f"Registered new Document of type:Tool, toolType: {tool_type}, name:{name} and hyperlink:{hyperlink},"
+                        f"linked to cre:{dbcre.id}"
                     )
