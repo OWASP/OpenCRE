@@ -125,6 +125,11 @@ def main() -> None:
         action="store_true",
         help="import cheatsheets by cloning the repo website and parsing the .md files",
     )
+    parser.add_argument(
+        "--github_tools_in",
+        action="store_true",
+        help="import supported github tools, urls can be found in misc_tools_parser.py",
+    )
     args = parser.parse_args()
     cre_main.run(args)
 

@@ -16,6 +16,7 @@ from application.utils import spreadsheet as sheet_utils
 from application.utils import spreadsheet_parsers
 from application.utils.external_project_parsers import (
     cheatsheets_parser,
+    misc_tools_parser,
     zap_alerts_parser,
 )
 from dacite import from_dict
@@ -366,6 +367,11 @@ def run(args: argparse.Namespace) -> None:
         zap_alerts_parser.parse_zap_alerts(db_connect(args.cache_file))
     elif args.cheatsheets_in:
         cheatsheets_parser.parse_cheatsheets(db_connect(args.cache_file))
+    elif args.github_tools_in:
+        for url in misc_tools_parser.tool_urls:
+            misc_tools_parser.parse_tool(
+                cache=db_connect(args.cache_file), tool_repo=url
+            )
     elif args.owasp_proj_meta:
         owasp_metadata_to_cre(args.owasp_proj_meta)
 

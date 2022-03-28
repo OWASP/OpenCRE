@@ -215,6 +215,7 @@ class LinkTypes(str, Enum, metaclass=EnumMetaWithContains):
 class ToolTypes(str, Enum, metaclass=EnumMetaWithContains):
     Offensive = "Offensive"
     Defensive = "Defensive"
+    Training = "Training"
     Unknown = "Unknown"
 
     @staticmethod
