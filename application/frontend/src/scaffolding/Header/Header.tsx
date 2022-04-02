@@ -39,15 +39,6 @@ export const Header = () => {
 
   return (
     <div className="header">
-      <!-- Global site tag (gtag.js) - Google Analytics -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-RGH65Z6QWE"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-
-  gtag('config', 'G-RGH65Z6QWE');
-</script>
       <Menu className="header__nav-bar" secondary>
         {links.map(({ to, name }) => (
           <Link
