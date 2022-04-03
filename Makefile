@@ -55,6 +55,7 @@ clean:
 	find . -type f -name '*.orig' -delete
 
 migrate-upgrade:
+	if ! [ -f "standards_cache.sqlite" ]; then cp cres/db.sqlite standards_cache.sqlite; fi
 	[ -d "./venv" ] && . ./venv/bin/activate
 	export FLASK_APP=$(CURDIR)/cre.py
 	flask db upgrade  
