@@ -11,6 +11,7 @@ from application.utils import file
 from flask_sqlalchemy.model import DefaultMeta
 from sqlalchemy import func
 from sqlalchemy.sql.expression import desc  # type: ignore
+import uuid
 
 from .. import sqla  # type: ignore
 
@@ -22,10 +23,14 @@ logger.setLevel(logging.INFO)
 BaseModel: DefaultMeta = sqla.Model
 
 
+def generate_uuid():
+    return str(uuid.uuid4())
+
+
 class Node(BaseModel):  # type: ignore
 
     __tablename__ = "node"
-    id = sqla.Column(sqla.Integer, primary_key=True)
+    id = sqla.Column(sqla.String, primary_key=True, default=generate_uuid)
     # ASVS or standard name,  what are we linking to
     name = sqla.Column(sqla.String)
     # which part of <name> are we linking to
@@ -55,7 +60,7 @@ class Node(BaseModel):  # type: ignore
 class CRE(BaseModel):  # type: ignore
 
     __tablename__ = "cre"
-    id = sqla.Column(sqla.Integer, primary_key=True)
+    id = sqla.Column(sqla.String, primary_key=True, default=generate_uuid)
 
     external_id = sqla.Column(sqla.String, default="")
     description = sqla.Column(sqla.String, default="")
@@ -72,8 +77,16 @@ class InternalLinks(BaseModel):  # type: ignore
     __tablename__ = "cre_links"
     type = sqla.Column(sqla.String, default="SAME")
 
-    group = sqla.Column(sqla.Integer, sqla.ForeignKey("cre.id"), primary_key=True)
-    cre = sqla.Column(sqla.Integer, sqla.ForeignKey("cre.id"), primary_key=True)
+    group = sqla.Column(
+        sqla.String,
+        sqla.ForeignKey("cre.id", onupdate="CASCADE", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    cre = sqla.Column(
+        sqla.String,
+        sqla.ForeignKey("cre.id", onupdate="CASCADE", ondelete="CASCADE"),
+        primary_key=True,
+    )
     __table_args__ = (
         sqla.UniqueConstraint(
             group,
@@ -86,9 +99,17 @@ class InternalLinks(BaseModel):  # type: ignore
 class Links(BaseModel):  # type: ignore
 
     __tablename__ = "cre_node_links"
-    type = sqla.Column(sqla.String, default="SAM")
-    cre = sqla.Column(sqla.Integer, sqla.ForeignKey("cre.id"), primary_key=True)
-    node = sqla.Column(sqla.Integer, sqla.ForeignKey("node.id"), primary_key=True)
+    type = sqla.Column(sqla.String, default="SAME")
+    cre = sqla.Column(
+        sqla.String,
+        sqla.ForeignKey("cre.id", onupdate="CASCADE", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    node = sqla.Column(
+        sqla.String,
+        sqla.ForeignKey("node.id", onupdate="CASCADE", ondelete="CASCADE"),
+        primary_key=True,
+    )
     __table_args__ = (
         sqla.UniqueConstraint(
             cre,
