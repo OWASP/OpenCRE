@@ -55,11 +55,19 @@ clean:
 	find . -type f -name '*.orig' -delete
 
 migrate-upgrade:
+	if ! [ -f "standards_cache.sqlite" ]; then cp cres/db.sqlite standards_cache.sqlite; fi
 	[ -d "./venv" ] && . ./venv/bin/activate
 	export FLASK_APP=$(CURDIR)/cre.py
 	flask db upgrade  
+
 migrate-downgrade:
 	[ -d "./venv" ] && . ./venv/bin/activate
 	export FLASK_APP=$(CURDIR)/cre.py
 	flask db downgrade
+
+import-all:
+	[ -d "./venv" ] && . ./venv/bin/activate
+	export FLASK_APP=$(CURDIR)/cre.py
+	python cre.py --zap_in --cheatsheets_in --github_tools_in --add --from_spreadsheet https://docs.google.com/spreadsheets/d/1eZOEYgts7d_-Dr-1oAbogPfzBLh6511b58pX3b59kvg/edit#gid=260321921
+
 all: clean lint test dev dev-run

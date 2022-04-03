@@ -23,9 +23,10 @@ def migrate_data_between_standards_and_node(new_table, old_table_name):
         config.get_section(config.config_ini_section), prefix="sqlalchemy."
     )
     connection = op.get_bind()
-    standards_data = connection.execute(
+    standards = connection.execute(
         f"Select id,name,section,subsection,link from {old_table_name}"
-    ).fetchall()
+    )
+    standards_data = standards.fetchall() if standards else []
     if old_table_name == "standard":
         nodes = [
             {
@@ -63,9 +64,10 @@ def migrate_data_between_links_and_cre_node_links(
         config.get_section(config.config_ini_section), prefix="sqlalchemy."
     )
     connection = op.get_bind()
-    links_data = connection.execute(
+    links = connection.execute(
         f"Select type,cre,{standard_column_name} from {old_table_name}"
-    ).fetchall()
+    )
+    links_data = links.fetchall() if links else []
     cre_node_links = [
         {"type": dat[0], "cre": dat[1], new_column_name: dat[2]} for dat in links_data
     ]
@@ -131,15 +133,17 @@ def downgrade():
 
     standard = op.create_table(
         "standard",
-        sa.Column("id", sa.INTEGER(), nullable=False),
+        sa.Column("id", sa.INTEGER(), primary_key=True),
         sa.Column("name", sa.VARCHAR(), nullable=True),
         sa.Column("section", sa.VARCHAR(), nullable=False),
         sa.Column("subsection", sa.VARCHAR(), nullable=True),
         sa.Column("tags", sa.VARCHAR(), nullable=True),
         sa.Column("version", sa.VARCHAR(), nullable=True),
         sa.Column("link", sa.VARCHAR(), nullable=True),
-        sa.PrimaryKeyConstraint("id", name="pk_standard"),
-        sa.UniqueConstraint("name", "section", "subsection", name="standard_section"),
+        sa.UniqueConstraint(
+            columns=["name", "section", "subsection"],
+            constraint_name="standard_section",
+        ),
     )
     links = op.create_table(
         "links",
