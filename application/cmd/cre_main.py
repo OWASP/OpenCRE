@@ -363,16 +363,16 @@ def run(args: argparse.Namespace) -> None:
 
     elif args.osib_out:
         export_to_osib(file_loc=args.osib_out, cache=args.cache_file)
-    elif args.zap_in:
+    if args.zap_in:
         zap_alerts_parser.parse_zap_alerts(db_connect(args.cache_file))
-    elif args.cheatsheets_in:
+    if args.cheatsheets_in:
         cheatsheets_parser.parse_cheatsheets(db_connect(args.cache_file))
-    elif args.github_tools_in:
+    if args.github_tools_in:
         for url in misc_tools_parser.tool_urls:
             misc_tools_parser.parse_tool(
                 cache=db_connect(args.cache_file), tool_repo=url
             )
-    elif args.owasp_proj_meta:
+    if args.owasp_proj_meta:
         owasp_metadata_to_cre(args.owasp_proj_meta)
 
 

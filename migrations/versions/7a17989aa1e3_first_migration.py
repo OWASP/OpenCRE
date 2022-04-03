@@ -43,30 +43,30 @@ def upgrade():
     op.create_table(
         "crelinks",
         sa.Column("type", sa.String(), nullable=True),
-        sa.Column("group", sa.Integer(), nullable=False),
-        sa.Column("cre", sa.Integer(), nullable=False),
-        sa.ForeignKeyConstraint(
-            ["cre"],
-            ["cre.id"],
+        sa.Column(
+            "group",
+            sa.Integer(),
+            sa.ForeignKey("cre.id", onupdate="CASCADE", ondelete="CASCADE"),
         ),
-        sa.ForeignKeyConstraint(
-            ["group"],
-            ["cre.id"],
+        sa.Column(
+            "cre",
+            sa.Integer(),
+            sa.ForeignKey("cre.id", onupdate="CASCADE", ondelete="CASCADE"),
         ),
         sa.PrimaryKeyConstraint("group", "cre"),
     )
     op.create_table(
         "links",
         sa.Column("type", sa.String(), nullable=True),
-        sa.Column("cre", sa.Integer(), nullable=False),
-        sa.Column("standard", sa.Integer(), nullable=False),
-        sa.ForeignKeyConstraint(
-            ["cre"],
-            ["cre.id"],
+        sa.Column(
+            "cre",
+            sa.Integer(),
+            sa.ForeignKey("cre.id", onupdate="CASCADE", ondelete="CASCADE"),
         ),
-        sa.ForeignKeyConstraint(
-            ["standard"],
-            ["standard.id"],
+        sa.Column(
+            "standard",
+            sa.Integer(),
+            sa.ForeignKey("standard.id", onupdate="CASCADE", ondelete="CASCADE"),
         ),
         sa.PrimaryKeyConstraint("cre", "standard"),
     )
