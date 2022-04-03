@@ -140,7 +140,10 @@ def downgrade():
         sa.Column("tags", sa.VARCHAR(), nullable=True),
         sa.Column("version", sa.VARCHAR(), nullable=True),
         sa.Column("link", sa.VARCHAR(), nullable=True),
-        sa.UniqueConstraint(columns=["name", "section", "subsection"], constraint_name="standard_section"),
+        sa.UniqueConstraint(
+            columns=["name", "section", "subsection"],
+            constraint_name="standard_section",
+        ),
     )
     links = op.create_table(
         "links",

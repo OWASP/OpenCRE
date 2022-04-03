@@ -16,7 +16,8 @@ revision = "0d267ae11945"
 down_revision = "455f052a44ea"
 branch_labels = None
 depends_on = None
-temp_table_number = randint(1,100)
+temp_table_number = randint(1, 100)
+
 
 def copy_tables(cre_table, node_table, cre_link_table, cre_node_link_table):
     config = op.get_context().config
@@ -91,15 +92,21 @@ def update_ids_to_uuid():
 
     for id in nodes_data:
         node_uuid = generate_uuid()
-        connection.execute(f"UPDATE  node{temp_table_number} set id='{node_uuid}' WHERE id={id[0]}")
+        connection.execute(
+            f"UPDATE  node{temp_table_number} set id='{node_uuid}' WHERE id={id[0]}"
+        )
         connection.execute(
             f"UPDATE cre_node_links{temp_table_number} set node='{node_uuid}' WHERE node={id[0]}"
         )
 
     for id in cre_data:
         cre_uuid = generate_uuid()
-        connection.execute(f"UPDATE cre{temp_table_number} set id='{cre_uuid}' WHERE id={id[0]}")
-        connection.execute(f"UPDATE cre_links{temp_table_number} set cre='{cre_uuid}' WHERE cre={id[0]}")
+        connection.execute(
+            f"UPDATE cre{temp_table_number} set id='{cre_uuid}' WHERE id={id[0]}"
+        )
+        connection.execute(
+            f"UPDATE cre_links{temp_table_number} set cre='{cre_uuid}' WHERE cre={id[0]}"
+        )
         connection.execute(
             f'UPDATE cre_links{temp_table_number} set "group"=\'{cre_uuid}\' WHERE "group"={id[0]}'
         )
@@ -122,7 +129,9 @@ def downgrade_uuid_to_id():
 
     node_id = 1
     for id in nodes_data:
-        connection.execute(f"UPDATE node{temp_table_number} set id='{node_id}' WHERE id='{id[0]}'")
+        connection.execute(
+            f"UPDATE node{temp_table_number} set id='{node_id}' WHERE id='{id[0]}'"
+        )
         connection.execute(
             f"UPDATE cre_node_links set node{temp_table_number}='{node_id}' WHERE node='{id[0]}'"
         )
@@ -130,8 +139,12 @@ def downgrade_uuid_to_id():
 
     cre_id = 1
     for id in cre_data:
-        connection.execute(f"UPDATE cre{temp_table_number} set id='{cre_id}' WHERE id='{id[0]}'")
-        connection.execute(f"UPDATE cre_links{temp_table_number} set cre='{cre_id}' WHERE cre='{id[0]}'")
+        connection.execute(
+            f"UPDATE cre{temp_table_number} set id='{cre_id}' WHERE id='{id[0]}'"
+        )
+        connection.execute(
+            f"UPDATE cre_links{temp_table_number} set cre='{cre_id}' WHERE cre='{id[0]}'"
+        )
         connection.execute(
             f"UPDATE cre_links{temp_table_number} set \"group\"='{cre_id}' WHERE \"group\"='{id[0]}'"
         )
@@ -168,13 +181,17 @@ def create_tmp_tables(id_datatype):
         sa.Column(
             "group",
             id_datatype,
-            sa.ForeignKey(f"cre{temp_table_number}.id", onupdate="CASCADE", ondelete="CASCADE"),
+            sa.ForeignKey(
+                f"cre{temp_table_number}.id", onupdate="CASCADE", ondelete="CASCADE"
+            ),
             primary_key=True,
         ),
         sa.Column(
             "cre",
             id_datatype,
-            sa.ForeignKey(f"cre{temp_table_number}.id", onupdate="CASCADE", ondelete="CASCADE"),
+            sa.ForeignKey(
+                f"cre{temp_table_number}.id", onupdate="CASCADE", ondelete="CASCADE"
+            ),
             primary_key=True,
         ),
     )
@@ -184,13 +201,17 @@ def create_tmp_tables(id_datatype):
         sa.Column(
             "cre",
             id_datatype,
-            sa.ForeignKey(f"cre{temp_table_number}.id", onupdate="CASCADE", ondelete="CASCADE"),
+            sa.ForeignKey(
+                f"cre{temp_table_number}.id", onupdate="CASCADE", ondelete="CASCADE"
+            ),
             primary_key=True,
         ),
         sa.Column(
             "node",
             id_datatype,
-            sa.ForeignKey(f"node{temp_table_number}.id", onupdate="CASCADE", ondelete="CASCADE"),
+            sa.ForeignKey(
+                f"node{temp_table_number}.id", onupdate="CASCADE", ondelete="CASCADE"
+            ),
             primary_key=True,
         ),
     )
@@ -203,8 +224,6 @@ def drop_old_tables():
     op.drop_table("cre")
     op.drop_table("node")
 
-    
-
 
 def cleanup():
     # op.drop_table("cre_links2")
@@ -213,12 +232,14 @@ def cleanup():
     # op.drop_table("node2")
     pass
 
+
 def rename_tables():
     op.rename_table(f"cre{temp_table_number}", "cre")
     op.rename_table(f"node{temp_table_number}", "node")
     op.rename_table(f"cre_links{temp_table_number}", "cre_links")
     op.rename_table(f"cre_node_links{temp_table_number}", "cre_node_links")
-    
+
+
 def add_constraints():
     with op.batch_alter_table("cre") as batch_op:
         batch_op.create_unique_constraint(
