@@ -39,6 +39,7 @@ class TestMain(unittest.TestCase):
             id="",
             description="",
             name="standard_with_links",
+            section="Standard With Links",
             links=[
                 defs.Link(
                     document=defs.Standard(
@@ -54,9 +55,15 @@ class TestMain(unittest.TestCase):
                         name="CodemcCodeFace",
                     )
                 ),
+                defs.Link(
+                    document=defs.Tool(
+                        description="awesome hacking tool",
+                        name="ToolmcToolFace",
+                    )
+                ),
             ],
-            section="Standard With Links",
         )
+
         ret = main.register_node(node=standard_with_links, collection=self.collection)
         # assert returned value makes sense
         self.assertEqual(ret.name, "standard_with_links")
@@ -68,46 +75,51 @@ class TestMain(unittest.TestCase):
             self.assertIsNone(thing.cre)
 
         self.assertEqual(self.collection.session.query(db.Links).all(), [])
-        # 3 cre-less nodes in the db
-        self.assertEqual(len(self.collection.session.query(db.Node).all()), 3)
+
+        # 4 cre-less nodes in the db
+        self.assertEqual(len(self.collection.session.query(db.Node).all()), 4)
 
     def test_register_node_with_cre(self) -> None:
+        known_standard_with_cre = defs.Standard(
+            name="CWE",
+            section="598",
+            links=[
+                defs.Link(document=defs.CRE(id="101-202", name="crename")),
+            ],
+        )
         standard_with_cre = defs.Standard(
-            doctype=defs.Credoctypes.Standard,
             id="",
             description="",
             name="standard_with_cre",
             links=[
                 defs.Link(
-                    document=defs.CRE(
-                        doctype=defs.Credoctypes.CRE,
-                        id="101-202",
-                        description="cre desc",
-                        name="crename",
-                        links=[],
-                        tags=[],
-                        metadata={},
+                    document=defs.Tool(
+                        tooltype=defs.ToolTypes.Offensive,
+                        name="zap",
                     )
                 ),
                 defs.Link(
-                    document=defs.Tool(
-                        doctype=defs.Credoctypes.Tool,
-                        tooltype=defs.ToolTypes.Offensive,
-                        name="zap",
+                    document=defs.Standard(
+                        name="CWE",
+                        section="598",
+                        links=[
+                            defs.Link(document=defs.CRE(id="101-202", name="crename")),
+                        ],
                     )
                 ),
             ],
             section="standard_with_cre",
         )
 
+        main.register_node(node=known_standard_with_cre, collection=self.collection)
         main.register_node(node=standard_with_cre, collection=self.collection)
         # assert db structure makes sense
         self.assertEqual(
-            len(self.collection.session.query(db.Links).all()), 2
-        )  # 2 links in the db
+            len(self.collection.session.query(db.Links).all()), 3
+        )  # 3 links in the db
         self.assertEqual(
-            len(self.collection.session.query(db.Node).all()), 2
-        )  # 2 standards in the db
+            len(self.collection.session.query(db.Node).all()), 3
+        )  # 3 standards in the db
         self.assertEqual(
             len(self.collection.session.query(db.CRE).all()), 1
         )  # 1 cre in the db
@@ -181,16 +193,16 @@ class TestMain(unittest.TestCase):
 
     def test_register_cre(self) -> None:
         standard = defs.Standard(
-            doctype=defs.Credoctypes.Standard,
             name="ASVS",
             section="SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING",
             subsection="3.1.1",
         )
+        tool = defs.Tool(name="Tooly", tooltype=defs.ToolTypes.Defensive)
         cre = defs.CRE(
             id="100",
             description="CREdesc",
             name="CREname",
-            links=[defs.Link(document=standard)],
+            links=[defs.Link(document=standard), defs.Link(document=tool)],
             tags=["CREt1", "CREt2"],
             metadata={"tags": ["CREl1", "CREl2"]},
         )
@@ -199,6 +211,9 @@ class TestMain(unittest.TestCase):
         self.assertEqual(
             len(self.collection.session.query(db.CRE).all()), 1
         )  # 1 cre in the db
+        self.assertEqual(
+            len(self.collection.session.query(db.Node).all()), 2
+        )  # 2 nodes in the db
 
     def test_parse_file(self) -> None:
         file: List[Dict[str, Any]] = [
