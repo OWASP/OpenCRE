@@ -9,7 +9,6 @@ import coverage  # type: ignore
 from flask_migrate import Migrate  # type: ignore
 
 from application import create_app, sqla  # type: ignore
-from application.cmd import cre_main
 
 # Hacky solutions to make this both a command line application with argparse and a flask application
 
@@ -34,6 +33,9 @@ def test(cover: coverage.Coverage, test_names: List[str]) -> None:
             config_file="application/tests/.coveragerc",
         )
         COV.start()
+        # Hack to get coverage to cover method and class defs
+        from application import create_app, sqla  # type: ignore
+        from application.cmd import cre_main
 
     if test_names:
         tests = unittest.TestLoader().loadTestsFromNames(test_names)
@@ -131,6 +133,9 @@ def main() -> None:
         help="import supported github tools, urls can be found in misc_tools_parser.py",
     )
     args = parser.parse_args()
+
+    from application.cmd import cre_main
+
     cre_main.run(args)
 
 

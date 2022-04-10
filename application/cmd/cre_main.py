@@ -89,16 +89,10 @@ def register_cre(cre: defs.CRE, collection: db.Node_collection) -> db.CRE:
             collection.add_internal_link(
                 dbcre, register_cre(link.document, collection), type=link.ltype
             )
-        elif type(link.document) == defs.Standard:
+        else:
             collection.add_link(
                 cre=dbcre,
                 node=register_node(node=link.document, collection=collection),
-                type=link.ltype,
-            )
-        elif type(link.document) == defs.Tool:
-            collection.add_link(
-                cre=dbcre,
-                tool=register_tool(tool=link.document, collection=collection),
                 type=link.ltype,
             )
     return dbcre
@@ -327,7 +321,7 @@ def print_graph() -> None:
     raise NotImplementedError
 
 
-def run(args: argparse.Namespace) -> None:
+def run(args: argparse.Namespace) -> None:  # pragma: no cover
     script_path = os.path.dirname(os.path.realpath(__file__))
     os.path.join(script_path, "../cres")
 
