@@ -376,7 +376,8 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
         owasp_metadata_to_cre(args.owasp_proj_meta)
 
     if args.compare_datasets:
-        compare_datasets(args.dataset1,args.dataset2)
+        compare_datasets(args.dataset1, args.dataset2)
+
 
 def db_connect(path: str) -> db.Node_collection:
 
@@ -459,52 +460,88 @@ def export_to_osib(file_loc: str, cache: str) -> None:
         with open(file_loc, "w") as f:
             f.write(json.dumps(tree.todict()))
 
-def compare_datasets(db1:str,db2:str)->Dict:
+
+def compare_datasets(db1: str, db2: str) -> List[Dict]:
     """
     Given two CRE datasets in databases with connection strings db1 and db2
-    Print their differences.
+    Print their differefnces.
 
     (make db load descriptions etc in memory)
     ensure that both graphs have same number of nodes and edges
-
-    for every cre node in g1 
-        find node in g2 with same external_id
-        compare metadata dicts
-        get g1 edges and compare to g2 edges  <-- this will be interesting, need to compare which "unique" info it leads to and whatS the edge typs as i can't trust ids
-    
-    do the same for g2
     """
-    # def graph_nodes_equal(g1,node1,g2,node2):
-    #     if node1.startswith("CRE"):
-    #         if g1.nodes[node1]["external_id"] != g2.nodes[node2]["external_id"]:
-    #             return False
-    #     elif node1.startswith("Node"):
-    #         if g1.nodes[node1]["name"] != g2.nodes[node2]["name"] or\
-    #            g1.nodes[node1]["section"] != g2.nodes[node2]["section"] or \
-    #            g1.nodes[node1]["subsection"] != g2.nodes[node2]["subsection"] or \
-    #            g1.nodes[node1]["description"] != g2.nodes[node2]["description"] or \
-    #            g1.nodes[node1]["version"] != g2.nodes[node2]["version"] or\
-    #            g1.nodes[node1]["infosum"] != g2.nodes[node2]["infosum"]:
-    #            return False
-    #     # TODO: i think i need to change the way i tag nodes,
-    #     # currently it's DB ids which are mutable
-    #     # it needs to be infosums of nodes so that I can compare nodes and edges simply
-    #     # but then i need to update the node and all it's edges when I import CREs or nodes and the infosum changes
 
-    #     [ (edge) for edge in g1.edges(node1)
-    #                 if g1.get_edge_data(*edge)["infosum"] == g2.get_edge_data
+    database1 = db_connect(path=db1)
+    database2 = db_connect(path=db2)
 
-    # print('connecting db1')
-    # database1 = db_connect(path=db1)
-    # print('connecting db2')
-    # database2 = db_connect(path=db2)
-    # import networkx as nx
-    # from pprint import pprint
-    # pprint([node for node in database1.graph.graph ])
-    # pprint([node for node in database2.graph.graph ])
-    # print("calculating equality")
-    # pprint(graphs_equal(database1.graph.graph,database2.graph.graph))
-    input()
+    def make_hashtable(graph):
+        nodes = {}
+        edges = {}
+        for node in graph.nodes():
+            if node.startswith("CRE"):
+                nodes[graph.nodes[node]["external_id"]] = node
+            elif node.startswith("Node"):
+                nodes[graph.nodes[node]["infosum"]] = node
+            else:
+                logger.fatal("Graph seems corrupted")
+
+        for edge in graph.edges():
+            key = graph.nodes[edge[0]]["external_id"]
+            if edge[1].startswith("CRE"):
+                key = key + "-" + graph.nodes[edge[1]]["external_id"]
+            else:
+                key = key + "-" + graph.nodes[edge[1]]["infosum"]
+            edges[key] = edge
+        return nodes, edges
+
+    def node_differences(nodes1, nodes2, db2):
+        # get n1 nodes not in n2 and n1 nodes with different attrs than n2
+        differences = {}
+        for node, attrs in nodes1.items():
+            if node not in nodes2:
+                logger.error(f"{node} not present in {db2}")
+                differences["not_present"] = (node, db2)
+            elif nodes2[node] != attrs:
+                logger.error(
+                    f"Dataset 2 {db2} node:{node} has different data from dataset 1 equivalent, data1 is {attrs} data 2 is {nodes2[node]} "
+                )
+                differences["different data"] = {
+                    "node": node,
+                    "attributes1": attrs,
+                    "attributes2": nodes2[node],
+                }
+        return differences
+
+    def edge_differences(edges1, edges2, db2):
+        # get n1 nodes not in n2 and n1 nodes with different attrs than n2
+        differences = {}
+        for edge, attrs in edges1.items():
+            if edge not in edges2:
+                logger.error(f"{edge} not present in {db2}")
+                differences["not_present"] = (edge, db2)
+            else:
+                if edges2[edge] != attrs:
+                    logger.error(
+                        f"Dataset 2{db2} edge:{edge} has different data from dataset 1 equivalent, data1 is {attrs} data 2 is {edges2[edge]}"
+                    )
+                    differences["different data"] = {
+                        "edge": edge,
+                        "attributes1": attrs,
+                        "attributes2": edges2[edge],
+                    }
+        return differences
+
+    g1 = database1.graph.graph
+    g2 = database2.graph.graph
+    n1, e1 = make_hashtable(g1)
+    n2, e2 = make_hashtable(g2)
+
+    d1 = node_differences(n1, n2, db2)
+    d2 = node_differences(n2, n1, db1)
+
+    ed1 = edge_differences(e1, e2, db2)
+    ed2 = edge_differences(e2, e1, db1)
+    return [d1, d2, ed1, ed2]
+
 
 def owasp_metadata_to_cre(meta_file: str):
     """given a file with entries like below

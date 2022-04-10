@@ -1,4 +1,5 @@
 import logging
+import hashlib
 import re
 from collections import Counter
 from itertools import permutations
@@ -28,6 +29,18 @@ def generate_uuid():
 
 
 class Node(BaseModel):  # type: ignore
+    def serialise(self):
+        return "".join(
+            [
+                self.name,
+                self.section or "",
+                self.subsection or "",
+                self.tags or "",
+                self.ntype,
+                self.description or "",
+                self.version or "",
+            ]
+        ).encode()
 
     __tablename__ = "node"
     id = sqla.Column(sqla.String, primary_key=True, default=generate_uuid)
@@ -58,6 +71,10 @@ class Node(BaseModel):  # type: ignore
 
 
 class CRE(BaseModel):  # type: ignore
+    def serialise(self):
+        return "".join(
+            [self.name, self.external_id or "", self.description or "", self.tags or ""]
+        ).encode()
 
     __tablename__ = "cre"
     id = sqla.Column(sqla.String, primary_key=True, default=generate_uuid)
@@ -152,11 +169,19 @@ class CRE_Graph:
     @classmethod
     def add_dbnode(cls, dbnode: Node, graph: nx.DiGraph) -> nx.DiGraph:
         if dbnode:
+            sum = hashlib.sha256(
+                dbnode.serialise()
+            )  # using md5 would have been way more performant but then I'd have to triage every beg-hunter's SAST scanner results
             graph.add_node(
-                "Node: " + str(dbnode.id),
+                f"Node: {dbnode.id}",
                 internal_id=dbnode.id,
                 name=dbnode.name,
                 section=dbnode.section,
+                subsection=dbnode.subsection,
+                type=dbnode.ntype,
+                description=dbnode.description,
+                version=dbnode.version,
+                infosum=sum.hexdigest(),
             )
         else:
             logger.error("Called with dbnode being none")

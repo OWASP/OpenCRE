@@ -4,7 +4,7 @@ import shutil
 import tempfile
 import unittest
 from pprint import pprint
-from typing import Any, Dict, List
+from typing import Any, Dict, List, NamedTuple
 from unittest import mock
 from unittest.mock import Mock, patch
 
@@ -670,6 +670,41 @@ class TestMain(unittest.TestCase):
         main.export_to_osib(file_loc=f"{dir}/osib.yaml", cache=cache)
         mocked_db_connect.assert_called_with(path=cache)
         mocked_cre2osib.assert_called_with([defs.CRE(name="c0")])
+
+    @patch("application.cmd.cre_main.db_connect")
+    def test_compare_datasets(self, mock_connect):
+        import networkx as nx
+
+        g1 = nx.DiGraph()
+
+        c0 = db.CRE(external_id="111-000", description="CREdesc", name="CREname")
+        c1 = db.CRE(external_id="111-001", description="Groupdesc", name="GroupName")
+        s456 = db.Node(
+            ntype="Standard",
+            subsection="4.5.6",
+            section="FooStand",
+            name="BarStand",
+            link="https://example.com",
+            tags="a,b,c",
+        )
+        s_unlinked = db.Node(
+            ntype="Standard",
+            subsection="4.5.6",
+            section="Unlinked",
+            name="Unlinked",
+            link="https://example.com",
+        )
+        g1 = db.CRE_Graph.add_cre(c0, g1)
+        g1 = db.CRE_Graph.add_cre(c1, g1)
+        g1 = db.CRE_Graph.add_node(s456, g1)
+        g1 = db.CRE_Graph.add_node(s_unlinked, g1)
+
+        CREGraph = NamedTuple("CREGraph", ("graph"))
+        Graph = NamedTuple("Graph", ("graph"))
+        graph = Graph(graph=CREGraph(graph=g1))
+        mock_connect.return_value = graph
+
+        self.assertEqual(main.compare_datasets("foo", "bar"), [])
 
     # def test_prepare_for_Review(self):
     #     raise NotImplementedError
