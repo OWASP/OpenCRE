@@ -142,7 +142,21 @@ def main() -> None:
         default=None,
         help="export all data into yaml files under the directory pointed to by this argument",
     )
-
+    parser.add_argument(
+        "--compare_datasets",
+        action="store_true",
+        help="compare the CRE datasets pointed to by --dataset1 and --dataset2",
+    )
+    parser.add_argument(
+        "--dataset1",
+        default=None,
+        help="used with --compare_datasets, dataset1",
+    )
+    parser.add_argument(
+        "--dataset2",
+        default=None,
+        help="used with --compare_datasets, dataset2",
+    )
     args = parser.parse_args()
 
     from application.cmd import cre_main
