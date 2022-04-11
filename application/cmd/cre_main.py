@@ -467,7 +467,7 @@ def compare_datasets(db1: str, db2: str) -> List[Dict]:
     Print their differefnces.
 
     (make db load descriptions etc in memory)
-    ensure that both graphs have same number of nodes and edges
+    ensure that both graphs have same number of nodes and edges and both graphs have the same data
     """
 
     database1 = db_connect(path=db1)
@@ -540,7 +540,9 @@ def compare_datasets(db1: str, db2: str) -> List[Dict]:
 
     ed1 = edge_differences(e1, e2, db2)
     ed2 = edge_differences(e2, e1, db1)
-    return [d1, d2, ed1, ed2]
+    if len(d1) or len(d2) or len(ed1) or len(ed2):
+        exit(1)
+    # return [d1, d2, ed1, ed2] # TODO uncomment when this becomes a library method
 
 
 def owasp_metadata_to_cre(meta_file: str):
