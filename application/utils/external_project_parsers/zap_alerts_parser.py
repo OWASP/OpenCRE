@@ -27,14 +27,14 @@ def zap_alert(
     )
 
 
-def setup(cache: db.Node_collection):
+def parse_zap_alerts(cache: db.Node_collection):
     zaproxy_website = "https://github.com/zaproxy/zaproxy-website.git"
     alerts_path = "site/content/docs/alerts/"
     repo = git.clone(zaproxy_website)
-    parse_zap_alerts(repo=repo, cache=cache, alerts_path=alerts_path)
+    register_alerts(repo=repo, cache=cache, alerts_path=alerts_path)
 
 
-def parse_zap_alerts(cache: db.Node_collection, repo: git.git, alerts_path: str):
+def register_alerts(cache: db.Node_collection, repo: git.git, alerts_path: str):
     zap_md_cwe_regexp = r"cwe: ?(?P<cweId>\d+)"
     zap_md_title_regexp = r"title: ?(?P<title>\".+\")"
     zap_md_alert_id_regexp = r"alertid: ?(?P<id>\d+)"
