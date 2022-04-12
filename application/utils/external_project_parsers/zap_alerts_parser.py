@@ -103,7 +103,9 @@ def register_alerts(cache: db.Node_collection, repo: git.git, alerts_path: str):
                             if nl.document.doctype == defs.Credoctypes.CRE
                         ]:
                             cache.add_link(
-                                cre=db.dbCREfromCRE(cre.document), node=dbnode
+                                cre=db.dbCREfromCRE(cre.document),
+                                node=dbnode,
+                                type=defs.LinkTypes.LinkedTo,
                             )
                     else:
                         logger.error(
@@ -118,7 +120,9 @@ def register_alerts(cache: db.Node_collection, repo: git.git, alerts_path: str):
                         if link.document.doctype == defs.Credoctypes.CRE:
 
                             cache.add_link(
-                                cre=db.dbCREfromCRE(link.document), node=dbnode
+                                cre=db.dbCREfromCRE(link.document),
+                                node=dbnode,
+                                type=defs.LinkTypes.LinkedTo,
                             )
             else:
                 logger.info(f"CWE id not found in alert {externalId}, skipping linking")
