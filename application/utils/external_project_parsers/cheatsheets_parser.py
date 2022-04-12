@@ -18,13 +18,18 @@ def cheatsheet(section: str, hyperlink: str, tags: List[str]) -> defs.Standard:
 
 def parse_cheatsheets(cache: db.Node_collection):
     c_repo = "https://github.com/OWASP/CheatSheetSeries.git"
-    cheasheets_path = "cheatsheets/"
+    cheatsheets_path = "cheatsheets/"
+    repo = git.clone(c_repo)
+    register_cheatsheets(repo=repo, cache=cache, cheatsheets_path=cheatsheets_path)
+
+
+def register_cheatsheets(cache: db.Node_collection, repo, cheatsheets_path, repo_path):
+
     title_regexp = r"# (?P<title>.+)"
     cre_link = r"(https://www\.)?opencre.org/cre/(?P<cre>\d+-\d+)"
-    repo = git.clone(c_repo)
-    files = os.listdir(os.path.join(repo.working_dir, cheasheets_path))
+    files = os.listdir(os.path.join(repo.working_dir, cheatsheets_path))
     for mdfile in files:
-        pth = os.path.join(repo.working_dir, cheasheets_path, mdfile)
+        pth = os.path.join(repo.working_dir, cheatsheets_path, mdfile)
         name = None
         tag = None
         section = None
@@ -39,9 +44,7 @@ def parse_cheatsheets(cache: db.Node_collection):
                 name = title.group("title")
                 cre_id = cre.group("cre")
                 cres = cache.get_CREs(external_id=cre_id)
-                hyperlink = (
-                    f"{c_repo.replace('.git','')}/tree/master/{cheasheets_path}{mdfile}"
-                )
+                hyperlink = f"{repo_path.replace('.git','')}/tree/master/{cheatsheets_path}{mdfile}"
                 for dbcre in cres:
                     cs = cheatsheet(
                         section=name,
