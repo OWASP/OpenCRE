@@ -76,8 +76,6 @@ def register_alerts(cache: db.Node_collection, repo: git.git, alerts_path: str):
                     f"Alert id: {externalId} titled {name} could not be parsed, missing link to code"
                 )
                 continue
-            top10 = re.search(zap_md_top10_regexp, mdtext)
-
             cwe = re.search(zap_md_cwe_regexp, mdtext)
             alert = zap_alert(
                 name=name,
@@ -88,11 +86,32 @@ def register_alerts(cache: db.Node_collection, repo: git.git, alerts_path: str):
             )
             dbnode = cache.add_node(alert)
 
-            # if top10:
-            #     for entry in top10: # TODO figure out how to iterate matches
-            #         pass #TODO extract and reconstruct entry, search and link
+            top10 = re.finditer(zap_md_top10_regexp, mdtext)
+            if top10:
+                for match in top10:
+                    year = match.group("year")
+                    num = match.group("num")
+                    entries = cache.get_nodes(name=f"Top10 {year}", ntype="Standard")
+                    entry = [e for e in entries if str(int(num)) in e.section]
+                    if entry:
+                        logger.info(
+                            f"Found zap alert {name} linking to {entry[0].name}{entry[0].section}"
+                        )
+                        for cre in [
+                            nl
+                            for nl in entry[0].links
+                            if nl.document.doctype == defs.Credoctypes.CRE
+                        ]:
+                            cache.add_link(
+                                cre=db.dbCREfromCRE(cre.document), node=dbnode
+                            )
+                    else:
+                        logger.error(
+                            f"Zap Alert {name} links to OWASP top 10 {year}:{num} but CRE doesn't know about it, incomplete data?"
+                        )
             if cwe:
                 cweId = cwe.group("cweId")
+                logger.info(f"Found zap alert {name} linking to CWE {cweId}")
                 cwe_nodes = cache.get_nodes(name="CWE", section=cweId)
                 for node in cwe_nodes:
                     for link in node.links:
