@@ -9,6 +9,7 @@ from application import cache
 from application.database import db
 from application.defs import cre_defs as defs
 from application.defs import osib_defs as odefs
+from application.utils import mdutils
 from flask import (
     Blueprint,
     abort,
@@ -72,6 +73,7 @@ def find_node_by_name(name: str, ntype: str = defs.Credoctypes.Standard.value) -
     opt_section = request.args.get("section")
     opt_osib = request.args.get("osib")
     opt_version = request.args.get("version")
+    opt_mdformat = request.args.get("format_md")
     if opt_section:
         opt_section = urllib.parse.unquote(opt_section)
     opt_subsection = request.args.get("subsection")
@@ -105,6 +107,8 @@ def find_node_by_name(name: str, ntype: str = defs.Credoctypes.Standard.value) -
     result["total_pages"] = total_pages
     result["page"] = page
     if nodes:
+        if opt_mdformat:
+            return mdutils.cre_to_md(nodes)
         if opt_osib:
             result["osib"] = odefs.cre2osib(nodes).todict()
         res = [node.todict() for node in nodes]
