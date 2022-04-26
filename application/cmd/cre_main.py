@@ -226,7 +226,7 @@ def add_from_spreadsheet(spreadsheet_url: str, cache_loc: str, cre_loc: str) -> 
     import new mappings from <url>
     export db to ../../cres/
     """
-    database = db_connect(path=cache_loc)
+    database, _, _ = db_connect(path=cache_loc)
     spreadsheet = sheet_utils.readSpreadsheet(
         url=spreadsheet_url, cres_loc=cre_loc, alias="new spreadsheet", validate=False
     )
@@ -246,7 +246,7 @@ def add_from_disk(cache_loc: str, cre_loc: str) -> None:
     import new mappings from <path>
     export db to ../../cres/
     """
-    database = db_connect(path=cache_loc)
+    database, _, _ = db_connect(path=cache_loc)
     for file in get_cre_files_from_disk(cre_loc):
         with open(file, "rb") as standard:
             parse_file(
@@ -265,7 +265,7 @@ def review_from_spreadsheet(cache: str, spreadsheet_url: str, share_with: str) -
     create new spreadsheet of the new CRE landscape for review
     """
     loc, cache = prepare_for_review(cache)
-    database = db_connect(path=cache)
+    database, _, _ = db_connect(path=cache)
     spreadsheet = sheet_utils.readSpreadsheet(
         url=spreadsheet_url, cres_loc=loc, alias="new spreadsheet", validate=False
     )
@@ -294,7 +294,7 @@ def review_from_disk(cache: str, cre_file_loc: str, share_with: str) -> None:
     create new spreadsheet of the new CRE landscape for review
     """
     loc, cache = prepare_for_review(cache)
-    database = db_connect(path=cache)
+    database, _, _ = db_connect(path=cache)
     for file in get_cre_files_from_disk(cre_file_loc):
         with open(file, "rb") as standard:
             parse_file(
@@ -359,27 +359,25 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
     elif args.osib_out:
         export_to_osib(file_loc=args.osib_out, cache=args.cache_file)
     if args.zap_in:
-        zap_alerts_parser.parse_zap_alerts(db_connect(args.cache_file))
+        cache, _, _ = db_connect(args.cache_file)
+        zap_alerts_parser.parse_zap_alerts(cache)
     if args.cheatsheets_in:
-        cheatsheets_parser.parse_cheatsheets(db_connect(args.cache_file))
+        cache, _, _ = db_connect(args.cache_file)
+        cheatsheets_parser.parse_cheatsheets(cache)
     if args.github_tools_in:
         for url in misc_tools_parser.tool_urls:
-            misc_tools_parser.parse_tool(
-                cache=db_connect(args.cache_file), tool_repo=url
-            )
-    if args.capec_in:
-        capec_parser.parse_capec(cache=db_connect(args.cache_file))
-    if args.export:
-        cache = db_connect(args.cache_file)
-        cache.export(args.export)
+            cache, _, _ = db_connect(args.cache_file)
+            misc_tools_parser.parse_tool(cache=cache, tool_repo=url)
     if args.owasp_proj_meta:
         owasp_metadata_to_cre(args.owasp_proj_meta)
 
     if args.compare_datasets:
-        compare_datasets(args.dataset1, args.dataset2)
+        d1, d2, ed1, ed2 = compare_datasets(args.dataset1, args.dataset2)
+        if len(d1) or len(d2) or len(ed1) or len(ed2):
+            exit(1)
 
 
-def db_connect(path: str) -> db.Node_collection:
+def db_connect(path: str) -> Tuple[db.Node_collection, Any, Any]:
 
     global app
     conf = CMDConfig(db_uri=path)
@@ -387,8 +385,7 @@ def db_connect(path: str) -> db.Node_collection:
     collection = db.Node_collection()
     app_context = app.app_context()
     app_context.push()
-
-    return collection
+    return (collection, app, app_context)
 
 
 def create_spreadsheet(
@@ -422,7 +419,7 @@ def review_osib_from_file(file_loc: str, cache: str, cre_loc: str) -> None:
     """Given the location of an osib.yaml, parse osib, convert to cres and add to db
     export db to yamls and spreadsheet for review"""
     loc, cache = prepare_for_review(cache)
-    database = db_connect(path=cache)
+    database, _, _ = db_connect(path=cache)
     ymls = odefs.read_osib_yaml(file_loc)
     osibs = odefs.try_from_file(ymls)
     for osib in osibs:
@@ -443,7 +440,7 @@ def review_osib_from_file(file_loc: str, cache: str, cre_loc: str) -> None:
 
 
 def add_osib_from_file(file_loc: str, cache: str, cre_loc: str) -> None:
-    database = db_connect(path=cache)
+    database, _, _ = db_connect(path=cache)
     ymls = odefs.read_osib_yaml(file_loc)
     osibs = odefs.try_from_file(ymls)
     for osib in osibs:
@@ -454,7 +451,8 @@ def add_osib_from_file(file_loc: str, cache: str, cre_loc: str) -> None:
 
 
 def export_to_osib(file_loc: str, cache: str) -> None:
-    docs = db_connect(path=cache).export(file_loc, dry_run=True)
+    cache, _, _ = db_connect(path=cache)
+    docs = cache.export(file_loc, dry_run=True)
     tree = odefs.cre2osib(docs)
     with open(file_loc, "x"):
         with open(file_loc, "w") as f:
@@ -478,18 +476,18 @@ def compare_datasets(db1: str, db2: str) -> List[Dict]:
         edges = {}
         for node in graph.nodes():
             if node.startswith("CRE"):
-                nodes[graph.nodes[node]["external_id"]] = node
+                nodes[graph.nodes[node].get("external_id")] = node
             elif node.startswith("Node"):
-                nodes[graph.nodes[node]["infosum"]] = node
+                nodes[graph.nodes[node].get("infosum")] = node
             else:
                 logger.fatal("Graph seems corrupted")
 
         for edge in graph.edges():
-            key = graph.nodes[edge[0]]["external_id"]
+            key = graph.nodes[edge[0]].get("external_id")
             if edge[1].startswith("CRE"):
-                key = key + "-" + graph.nodes[edge[1]]["external_id"]
+                key = f"{key}-{graph.nodes[edge[1]].get('external_id')}"
             else:
-                key = key + "-" + graph.nodes[edge[1]]["infosum"]
+                key = f"{key}-{graph.nodes[edge[1]].get('infosum')}"
             edges[key] = edge
         return nodes, edges
 
@@ -530,9 +528,22 @@ def compare_datasets(db1: str, db2: str) -> List[Dict]:
                     }
         return differences
 
+    database1, _, _ = db_connect(path=db1)
     g1 = database1.graph.graph
-    g2 = database2.graph.graph
     n1, e1 = make_hashtable(g1)
+
+    print("$" * 90)
+    database1.graph.print_graph()
+    print("$" * 90)
+    database1.graph._instance = None
+    database1.graph = None
+
+    database2, _, _ = db_connect(path=db2)
+    g2 = database2.graph.graph
+    print("$" * 90)
+    database2.graph.print_graph()
+    print("$" * 90)
+    input()
     n2, e2 = make_hashtable(g2)
 
     d1 = node_differences(n1, n2, db2)
@@ -540,9 +551,7 @@ def compare_datasets(db1: str, db2: str) -> List[Dict]:
 
     ed1 = edge_differences(e1, e2, db2)
     ed2 = edge_differences(e2, e1, db1)
-    if len(d1) or len(d2) or len(ed1) or len(ed2):
-        exit(1)
-    # return [d1, d2, ed1, ed2] # TODO uncomment when this becomes a library method
+    return [d1, d2, ed1, ed2]  # TODO uncomment when this becomes a library method
 
 
 def owasp_metadata_to_cre(meta_file: str):

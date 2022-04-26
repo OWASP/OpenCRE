@@ -13,6 +13,7 @@ from flask_sqlalchemy.model import DefaultMeta
 from sqlalchemy import func
 from sqlalchemy.sql.expression import desc  # type: ignore
 import uuid
+from matplotlib import pyplot
 
 from .. import sqla  # type: ignore
 
@@ -140,6 +141,15 @@ class CRE_Graph:
     graph: nx.Graph = None
     __instance = None
 
+    def print_graph(self, png_path: str = None):
+        """DEbug method to dump the graph, if png_path is provided it shows the graph in png format
+        if not, it returns the graph as dict of dicts"""
+        if png_path:
+            nx.draw(self.graph, with_labels=True)
+            pyplot.savefig(png_path)
+            pyplot.show()
+        return nx.to_dict_of_dicts(self.graph)
+
     @classmethod
     def instance(cls, session):
         if cls.__instance is None:
@@ -219,12 +229,11 @@ class CRE_Graph:
 
 class Node_collection:
     graph: nx.Graph = None
-    session = sqla.session
+    session = None
 
-    def __init__(self) -> None:
+    def __init__(self, session=sqla.session) -> None:
         self.graph = CRE_Graph.instance(sqla.session)
-        # self.graph = CRE_Graph.instance(session=sqla.session)
-        self.session = sqla.session
+        self.session = session
 
     def __get_external_links(self) -> List[Tuple[CRE, Node, str]]:
         external_links: List[Tuple[CRE, Node, str]] = []
