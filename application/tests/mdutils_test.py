@@ -5,7 +5,6 @@ import unittest
 from application import create_app, sqla  # type: ignore
 
 
-
 class TestMdutilsParser(unittest.TestCase):
     def tearDown(self) -> None:
         self.app_context.pop()
@@ -17,23 +16,44 @@ class TestMdutilsParser(unittest.TestCase):
         self.app_context.push()
 
     def test_cre_to_md(self) -> None:
-        standards = [defs.Standard(name=f"sname",section=f"section_{s}",hyperlink=f"https://example.com/sname/{s}") for s in range(1,10)]
-        standards2 = [defs.Standard(name=f"sname_other",section=f"section_{s}",hyperlink=f"https://example.com/sname/{s}") for s in range(1,10)]
-        cres = [defs.CRE(name=f"cname_{s}",description=f"description_{s}",
-                         id=f"000-00{s}") for s in range(1,10)]
-        tools = [defs.Tool(name=f"tname_{s}",
-                           tooltype=defs.ToolTypes.Training,
-                           hyperlink=f"https://example.com/tnae/{s}") for s in range(1,10)]
-        
-        for i in range(0,9):
+        standards = [
+            defs.Standard(
+                name=f"sname",
+                section=f"section_{s}",
+                hyperlink=f"https://example.com/sname/{s}",
+            )
+            for s in range(1, 10)
+        ]
+        standards2 = [
+            defs.Standard(
+                name=f"sname_other",
+                section=f"section_{s}",
+                hyperlink=f"https://example.com/sname/{s}",
+            )
+            for s in range(1, 10)
+        ]
+        cres = [
+            defs.CRE(name=f"cname_{s}", description=f"description_{s}", id=f"000-00{s}")
+            for s in range(1, 10)
+        ]
+        tools = [
+            defs.Tool(
+                name=f"tname_{s}",
+                tooltype=defs.ToolTypes.Training,
+                hyperlink=f"https://example.com/tnae/{s}",
+            )
+            for s in range(1, 10)
+        ]
+
+        for i in range(0, 9):
             standards[i].add_link(defs.Link(document=cres[i]))
             if not i % 2:
                 standards[i].add_link(defs.Link(document=tools[i]))
             else:
                 standards[i].add_link(defs.Link(document=standards2[i]))
-        self.maxDiff = None                
+        self.maxDiff = None
         self.assertEqual(mdutils.cre_to_md(standards), self.result)
-        
+
     result = """sname | CRE | tname_1 | sname_other | tname_3 | tname_5 | tname_7 | tname_9
 ----- | --- | ------- | ----------- | ------- | ------- | ------- | -------
 [sname-section_1](https://example.com/sname/1) | [000-001-cname_1](https://www.opencre.org/cre/000-001) | [tname_1](https://example.com/tnae/1) |   |   |   |   |  
