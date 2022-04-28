@@ -31,7 +31,6 @@ jobs:
          patch=$((patch+1))
          new_tag="v${major}.${minor}.${patch}"
 
-         git add .
-         git commit -m "${new_tag} -- ${commit_sha}"
+         git commit -am "${new_tag} -- ${commit_sha}"
          git tag --annotate "${new_tag}" --message "${new_tag}" "${commit_sha}"
          git push --force heroku master
