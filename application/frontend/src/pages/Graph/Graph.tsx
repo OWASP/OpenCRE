@@ -1,97 +1,245 @@
-import React from 'react';
-import ForceGraph2D from 'react-force-graph-2d';
+import React, { useEffect, useState } from 'react';
+import { LoadingAndErrorIndicator } from '../../components/LoadingAndErrorIndicator';
 
-// import { Document, PROD_DATA } from '../../data';
+import ReactFlow, {
+  removeElements,
+  addEdge,
+  MiniMap,
+  Controls,
+  Background,
+  FlowElement,
+  Node,
+  Edge,
+  ReactFlowProps,
+  isNode,
+  isEdge,
+  Elements,
+} from 'react-flow-renderer';
 
-interface GraphData {
-  nodes: GraphNode[];
-  links: GraphLink[];
+import { Document, LinkedDocument } from '../../types';
+import { useQuery } from 'react-query';
+import { useParams } from 'react-router-dom';
+import { useEnvironment } from '../../hooks';
+import Elk, { ElkNode, ElkEdge, ElkPort, ElkPrimitiveEdge } from "elkjs";
+import { FlowNode } from 'typescript';
+
+
+interface ReactFlowNode { }
+interface CREGraph {
+  nodes: Node<ReactFlowNode>[],
+  edges: Edge<ReactFlowNode>[],
+  root: (Node<ReactFlowNode> | Edge<ReactFlowNode>)[],
 }
 
-interface GraphNode {
-  id: string;
-  group: number;
-}
+const documentToReactFlowNode = (cDoc: (Document | any)): CREGraph => {
 
-interface GraphLink {
-  source: string;
-  target: string;
-  value: number;
-}
+  let result: CREGraph = { nodes: [], edges: [], root: [] }
+  let root: (Node<ReactFlowNode> | Edge<ReactFlowNode>)[] = []
+  let node = {
+    id: cDoc.id,
+    type: cDoc.doctype,
+    position: { x: 0, y: 0 },
+    data: { label: <a target="_blank" href={cDoc.hyperlink}> {cDoc.id} - {cDoc.name}</a> }, 
+  }
+  root.push(node)
+  result.nodes.push(node)
 
-// const convertToGraphData = (documents: Document[]): GraphData => {
-//   const graphNodes: GraphNode[] = [];
-//   const graphLinks: GraphLink[] = [];
+  if (cDoc.links) {
+    for (let link of cDoc.links) {
+      const { id, doctype, hyperlink, name, section, subsection } = link.document
+      const unique_node_id = id || section || name
+      const node_label = name + " - " + section || id
+      let node = {
+        id: unique_node_id,
+        type: doctype,
+        position: { x: 0, y: 0 },
+        data: { label: <a target="_blank" href={hyperlink}> {node_label}</a> }, // TODO: add section/subsection
+      }
+      let edge = {
+        type: link.ltype,
+        data: { label: <></> },
+        id: cDoc.id + '-' + unique_node_id,
+        source: cDoc.id,
+        target: unique_node_id,
+        label: link.ltype,
+        animated: true,
+      }
+      result.root.push(node)
+      result.nodes.push(node)
 
-//   documents.forEach((document) => {
-//     const documentId = `${document.name} ${document.section}`;
-//     graphNodes.push({
-//       id: documentId,
-//       group: 1,
-//     });
+      result.edges.push(edge)
+      result.root.push(edge)
+    }
+  }
+  return result;
+};
 
-//     document.links.forEach((linkedDocument) => {
-//       const linkedDocumentId = linkedDocument.document.name;
-//       graphNodes.push({
-//         id: linkedDocumentId,
-//         group: 1,
-//       });
-//       graphLinks.push({
-//         source: documentId,
-//         target: linkedDocumentId,
-//         value: 1,
-//       });
-//     });
-//   });
-
-//   return {
-//     nodes: graphNodes,
-//     links: graphLinks,
-//   };
-// };
+const onLoad = (reactFlowInstance) => {
+  reactFlowInstance.fitView();
+};
 
 export const Graph = () => {
-  // const data = convertToGraphData(PROD_DATA);
+
+  const { id } = useParams();
+  const { apiUrl } = useEnvironment();
+  const [loading, setLoading] = useState<boolean>(true);
+
+
+  const { error, data, refetch } = useQuery<{ data: Document; }, string>(
+    'cre',
+    () => fetch(`${apiUrl}/id/${id}`).then((res) => res.json()),
+    {
+      retry: false,
+      enabled: false,
+      onSettled: () => {
+        setLoading(false);
+      },
+    }
+  );
+  useEffect(() => {
+    window.scrollTo(0, 0);
+    setLoading(true);
+    refetch();
+  }, [id]);
+
+
+
+  const [layout, setLayout] = useState<(Node<ReactFlowNode> | Edge<ReactFlowNode>)[]>();
+
+  useEffect(() => {
+    async function draw() {
+      if (data) {
+  console.log('flow running:', id);
+
+        let cre = data.data
+        let graph = documentToReactFlowNode(cre)
+        const els = await createGraphLayoutElk(graph.nodes, graph.edges);
+        setLayout(els);
+      }
+    }
+    draw();
+  }, [data]);
+
   return (
-    <ForceGraph2D
-      graphData={{ nodes: [], links: [] }}
-      nodeAutoColorBy="group"
-      nodeCanvasObject={(node, ctx, globalScale) => {
-        const label = node.id;
-        const fontSize = 12 / globalScale;
-        ctx.font = `${fontSize}px Sans-Serif`;
-        const textWidth = ctx.measureText(label as string).width;
-        const backgroundDimensions = [textWidth, fontSize].map((n) => n + fontSize);
+    loading || error ?
+      <LoadingAndErrorIndicator loading={loading} error={error} />
+      :
+      layout ? (
+        <ReactFlow
+          elements={layout}
+          // onConnect={onConnect}
+          onLoad={onLoad}
+          snapToGrid={true}
+          snapGrid={[15, 15]}
+        >
+          <MiniMap
+            nodeStrokeColor='#0041d0'
+            nodeColor='#00FF00'
+            nodeBorderRadius={2}
+          />
+          <Controls />
+          <Background color="#ffff" gap={16} />
+        </ReactFlow>
 
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-        ctx.fillRect(
-          (node.x || 0) - backgroundDimensions[0] / 2,
-          (node.y || 0) - backgroundDimensions[1] / 2,
-          backgroundDimensions[0],
-          backgroundDimensions[1]
-        );
-
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        // @ts-ignore
-        ctx.fillStyle = node.color;
-        ctx.fillText(label as string, node.x || 0, node.y || 0);
-
-        // @ts-ignore
-        node.__bckgDimensions = backgroundDimensions; // to re-use in nodePointerAreaPaint
-      }}
-      nodePointerAreaPaint={(node, color, ctx) => {
-        ctx.fillStyle = color;
-        // @ts-ignore
-        const backgroundDimensions = node.__bckgDimensions;
-        backgroundDimensions &&
-          ctx.fillRect(
-            (node.x || 0) - backgroundDimensions[0] / 2,
-            (node.y || 0) - backgroundDimensions[1] / 2,
-            backgroundDimensions[0],
-            backgroundDimensions[1]
-          );
-      }}
-    />
+      ) : <div />
   );
 };
+
+
+const createGraphLayoutElk = async (
+  flowNodes: Node<ReactFlowNode>[],
+  flowEdges: Edge<ReactFlowNode>[]
+): Promise<(Node<ReactFlowNode> | Edge<ReactFlowNode>)[]> => {
+  const elkNodes: ElkNode[] = []
+  const elkEdges: ElkPrimitiveEdge[] = []
+
+  flowNodes.forEach((node) => {
+    let ports: ElkPort[] = []
+    ports = [{
+      id: `${node.id}`,
+      layoutOptions: {
+        'org.eclipse.elk.port.side': 'EAST',
+        'org.eclipse.elk.port.index': '10',
+      }
+    },
+    // {
+   
+  ]
+
+    elkNodes.push({
+      id: `${node.id}`,
+      width: 200,
+      height: 50,
+      ports,
+      // layoutOptions: { 'org.eclipse.elk.portConstraints': 'FIXED_SIDE' },
+    })
+  })
+
+  flowEdges.forEach((edge) => {
+    let sourcePort
+
+    if (edge.source) {
+      // Create a link with the node port on branch node type
+      // sourcePort = `${edge.source}`
+      let edg = {
+        id: edge.id,
+        source: edge.source,
+        target: edge.target,
+        // sourcePort,
+      }
+      console.log(edg)
+      elkEdges.push(edg)
+    }else{
+      console.log("edge does not have a source?")
+      console.log(edge)
+    }
+
+
+  })
+  let elk = new Elk();
+  console.log(elkEdges)
+  console.log(elkNodes)
+  console.log(flowNodes)
+  const newGraph = await elk.layout({
+    id: 'root',
+    layoutOptions: {
+      'spacing.nodeNodeBetweenLayers': '100',
+      // 'elk.direction': 'DOWN',
+      
+      'org.eclipse.elk.algorithm': 'org.eclipse.elk.radial', //'org.eclipse.elk.layered',
+      'org.eclipse.elk.aspectRatio': '1.0f',
+      'org.eclipse.elk.force.repulsion': '1.0',
+      'org.eclipse.elk.spacing.nodeNode':'100',
+      'org.eclipse.elk.padding': '10',
+      "elk.spacing.edgeNode": '30',
+      "elk.edgeRouting": "ORTHOGONAL",
+      'elk.partitioning.activate': 'true',
+      "nodeFlexibility": "NODE_SIZE",
+      'org.eclipse.elk.layered.allowNonFlowPortsToSwitchSides': 'true',
+    },
+    children: elkNodes,
+    edges: elkEdges,
+  })
+
+  return [
+    ...flowNodes.map((nodeState) => {
+      const node = newGraph?.children?.find((n) => n.id === nodeState.id)
+
+      if (node?.x && node?.y && node?.width && node?.height) {
+        nodeState.position = {
+          x: node.x + Math.random() / 1000, // unfortunately we need this little hack to pass a slightly different position so react-flow react to the changes
+          y: node.y,
+        }
+        // if (nodeState?.data?.elementType !== 'Hidden') {
+        //   nodeState.style = {}
+        // }
+      }
+      nodeState.style = {border: '1px solid', padding:'0.5%', margin:'0.5%'}
+      return nodeState
+    }),
+    ...flowEdges.map((e) => {
+      e.style = {}
+      return e
+    }),
+  ]
+}

@@ -1,0 +1,13 @@
+links:
+  - linkType: Linked To
+    document:
+      name: CWE
+      section: 829
+  - linkType: Linked To
+    document:
+      name: WASC
+      section: 15
+toolType: Offensive
+docType: Tool
+id: 10017
+name: 'Zaproxy-Alert: Cross-Domain JavaScript Source File Inclusion'

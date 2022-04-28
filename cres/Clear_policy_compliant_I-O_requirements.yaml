@@ -1,0 +1,40 @@
+doctype: CRE
+id: 782-234
+links:
+- document:
+    doctype: CRE
+    id: 625-323
+    name: Documentation and requirements
+    tags:
+    - Architecture
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 503-455
+    name: '>>Input and output verification'
+  ltype: Related
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x10-V1-Architecture.md
+    name: ASVS
+    section: V1.5.1
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/1029.html
+    name: CWE
+    section: '1029'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Abuse_Case_Cheat_Sheet.html
+    name: Cheat_sheets
+    section: Abuse Case Cheat Sheet
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Deserialization_Cheat_Sheet.html
+    name: Cheat_sheets
+    section: Deserialization Cheat Sheet
+  ltype: Linked To
+name: Clear policy compliant I/O requirements

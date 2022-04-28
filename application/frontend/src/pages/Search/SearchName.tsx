@@ -9,8 +9,8 @@ import { Document } from '../../types';
 import { groupBy } from '../../utils/document';
 import { SearchResults } from './components/SearchResults';
 
-const CRE = 'CRE';
-const STANDARD = 'Standard';
+const CRE = "CRE";
+const NODES = ["Standard", "Tool", "Code"]
 
 export const SearchName = () => {
   const { searchTerm } = useParams();
@@ -39,30 +39,38 @@ export const SearchName = () => {
         setLoading(false);
       });
   }, [searchTerm]);
-
-  const groupedByType = groupBy(documents, (doc) => doc.doctype);
+  
+  const groupedByType = groupBy(documents, doc => doc.doctype);
+  const cres = groupedByType[CRE]
+  
+  let nodes
+  for (var NODE of NODES){
+      if(groupedByType[NODE]){
+        nodes = nodes?nodes.concat(groupedByType[NODE]):groupedByType[NODE]
+      }
+  }
 
   return (
     <div className="cre-page">
-      <h1 className="standard-page__heading">
-        Results matching : <i>{searchTerm}</i>
-      </h1>
-      <LoadingAndErrorIndicator loading={loading} error={error} />
-      {!loading && !error && (
-        <div className="ui grid">
-          <div className="eight wide column">
-            <h1 className="standard-page__heading">
-              Related CRE's
-              <ExportButton fetchURL={FETCH_URL} fetchParams={FETCH_PARAMS} />
-            </h1>
-            {groupedByType[CRE] && <SearchResults results={groupedByType[CRE]} />}
-          </div>
-          <div className="eight wide column">
-            <h1 className="standard-page__heading">Related Documents</h1>
-            {groupedByType[STANDARD] && <SearchResults results={groupedByType[STANDARD]} />}
-          </div>
-        </div>
-      )}
+        <h1 className="standard-page__heading">
+            Results matching : <i>{searchTerm}</i>
+        </h1>
+        <LoadingAndErrorIndicator loading={loading} error={error} />
+        {!loading && !error &&
+            <div className="ui grid">
+                <div className="eight wide column">
+                    <h1 className="standard-page__heading">Related CRE's
+                                <ExportButton fetchURL={FETCH_URL} fetchParams={FETCH_PARAMS} />
+                  </h1>
+                    {groupedByType[CRE] && <SearchResults results={cres}/>}
+                </div>
+                <div className="eight wide column">
+                    <h1 className="standard-page__heading">Related Documents</h1>
+                    {nodes && <SearchResults results={nodes}/>}
+                </div>
+            </div>
+        }
+
     </div>
   );
 };

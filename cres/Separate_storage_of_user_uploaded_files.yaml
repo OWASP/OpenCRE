@@ -1,0 +1,21 @@
+doctype: CRE
+id: 634-883
+links:
+- document:
+    doctype: CRE
+    id: 621-287
+    name: File upload
+  ltype: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x10-V1-Architecture.md
+    name: ASVS
+    section: V1.12.1
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/552.html
+    name: CWE
+    section: '552'
+  ltype: Linked To
+name: Separate storage of user uploaded files

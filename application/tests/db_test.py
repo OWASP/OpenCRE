@@ -4,6 +4,7 @@ import unittest
 import uuid
 from copy import copy, deepcopy
 from pprint import pprint
+from pydoc import doc
 from typing import Any, Dict, List, Union
 
 import yaml
@@ -26,6 +27,7 @@ class TestDB(unittest.TestCase):
         self.app_context.push()
         self.collection = db.Node_collection()
         collection = self.collection
+        collection.graph.graph = db.CRE_Graph.load_cre_graph(sqla.session)
 
         dbcre = collection.add_cre(
             defs.CRE(id="111-000", description="CREdesc", name="CREname")
@@ -153,9 +155,30 @@ class TestDB(unittest.TestCase):
             with a link to "BarStand" and "GroupName" and one for "GroupName" with a link to "CREName"
         """
         loc = tempfile.mkdtemp()
+        collection = db.Node_collection()
+        collection = self.collection
+        collection.graph.graph = db.CRE_Graph.load_cre_graph(sqla.session)
         code0 = defs.Code(name="co0")
         code1 = defs.Code(name="co1")
         tool0 = defs.Tool(name="t0", tooltype=defs.ToolTypes.Unknown)
+        dbstandard = collection.add_node(
+            defs.Standard(
+                subsection="4.5.6",
+                section="FooStand",
+                name="BarStand",
+                hyperlink="https://example.com",
+                tags=["a", "b", "c"],
+            )
+        )
+
+        collection.add_node(
+            defs.Standard(
+                subsection="4.5.6",
+                section="Unlinked",
+                name="Unlinked",
+                hyperlink="https://example.com",
+            )
+        )
         self.collection.add_link(self.dbcre, self.collection.add_node(code0))
         self.collection.add_node(code1)
         self.collection.add_node(tool0)
@@ -180,7 +203,7 @@ class TestDB(unittest.TestCase):
                 links=[
                     defs.Link(
                         document=defs.CRE(
-                            id="111-001", description="Groupdesc", name="GroupName"
+                            id="112-001", description="Groupdesc", name="GroupName"
                         )
                     ),
                     defs.Link(
@@ -208,15 +231,29 @@ class TestDB(unittest.TestCase):
 
         # load yamls from loc, parse,
         #  ensure yaml1 is result[0].todict and
-        #  yaml2 is expected[1].todic
+        #  yaml2 is expected[1].todict
         group = expected[0].todict()
         cre = expected[1].todict()
-        groupname = expected[0].name + ".yaml"
+        groupname = (
+            expected[0]
+            .name.replace("/", "-")
+            .replace(" ", "_")
+            .replace('"', "")
+            .replace("'", "")
+            + ".yaml"
+        )
         with open(os.path.join(loc, groupname), "r") as f:
             doc = yaml.safe_load(f)
             self.assertDictEqual(group, doc)
 
-        crename = expected[1].name + ".yaml"
+        crename = (
+            expected[1]
+            .name.replace("/", "-")
+            .replace(" ", "_")
+            .replace('"', "")
+            .replace("'", "")
+            + ".yaml"
+        )
         self.maxDiff = None
         with open(os.path.join(loc, crename), "r") as f:
             doc = yaml.safe_load(f)
@@ -436,6 +473,7 @@ class TestDB(unittest.TestCase):
         dbc1 = db.CRE(external_id="123", description="gcCD1", name="gcC1")
         dbc2 = db.CRE(description="gcCD2", name="gcC2")
         dbc3 = db.CRE(description="gcCD3", name="gcC3")
+        db_id_only = db.CRE(description="c_get_by_internal_id_only", name="cgbiio")
         dbs1 = db.Node(
             ntype=defs.Standard.__name__,
             name="gcS2",
@@ -459,6 +497,7 @@ class TestDB(unittest.TestCase):
         collection.session.add(dbc3)
         collection.session.add(dbs1)
         collection.session.add(dbs2)
+        collection.session.add(db_id_only)
         collection.session.commit()
 
         collection.session.add(
@@ -474,6 +513,8 @@ class TestDB(unittest.TestCase):
         cd1 = defs.CRE(id="123", description="gcCD1", name="gcC1", links=[])
         cd2 = defs.CRE(description="gcCD2", name="gcC2")
         cd3 = defs.CRE(description="gcCD3", name="gcC3")
+        c_id_only = defs.CRE(description="c_get_by_internal_id_only", name="cgbiio")
+
         expected = [
             copy(cd1)
             .add_link(
@@ -566,6 +607,8 @@ class TestDB(unittest.TestCase):
         ]
         res = collection.get_CREs(name="gcC1", include_only=["gcS0"])
         self.assertEqual(no_standards, res)
+
+        self.assertEqual([c_id_only], collection.get_CREs(internal_id=db_id_only.id))
 
     def test_get_standards(self) -> None:
         """Given: a Standard 'S1' that links to cres
@@ -729,6 +772,7 @@ class TestDB(unittest.TestCase):
         """
 
         collection = db.Node_collection()
+        collection.graph.graph = db.CRE_Graph.load_cre_graph(sqla.session)
 
         cres = {
             "dbca": collection.add_cre(defs.CRE(id="1", description="CA", name="CA")),
@@ -1118,6 +1162,86 @@ class TestDB(unittest.TestCase):
         )
 
         self.assertEqual(collection.object_select(None), [])
+
+    def test_get_root_cres(self):
+        """Given:
+        6 CRES:
+            * C0 <-- Root
+            * C1 <-- Root
+            * C2 Part Of C0
+            * C3 Part Of C1
+            * C4 Part Of C2
+            * C5 Related to C0
+        3 Nodes:
+            * N0  Unlinked
+            * N1 Linked To C1
+            * N2 Linked to C2
+            * N3 Linked to C3
+            * N4 Linked to C4
+        Get_root_cres should return C0, C1
+        """
+        cres = []
+        nodes = []
+        dbcres = []
+        dbnodes = []
+        sqla.session.remove()
+        sqla.drop_all()
+        sqla.create_all(app=self.app)
+        collection = db.Node_collection()
+        collection.graph.graph = db.CRE_Graph.load_cre_graph(sqla.session)
+
+        for i in range(0, 6):
+            if i == 0 or i == 1:
+                cres.append(defs.CRE(name=f">> C{i}", id=f"{i}"))
+            else:
+                cres.append(defs.CRE(name=f"C{i}", id=f"{i}"))
+
+            dbcres.append(collection.add_cre(cres[i]))
+            nodes.append(defs.Standard(section=f"S{i}", name=f"N{i}"))
+            dbnodes.append(collection.add_node(nodes[i]))
+            cres[i].add_link(
+                defs.Link(document=copy(nodes[i]), ltype=defs.LinkTypes.LinkedTo)
+            )
+            collection.add_link(
+                cre=dbcres[i], node=dbnodes[i], type=defs.LinkTypes.LinkedTo
+            )
+
+        cres[0].add_link(
+            defs.Link(document=cres[2].shallow_copy(), ltype=defs.LinkTypes.Contains)
+        )
+        cres[0].add_link(
+            defs.Link(document=cres[5].shallow_copy(), ltype=defs.LinkTypes.Related)
+        )
+        cres[1].add_link(
+            defs.Link(document=cres[3].shallow_copy(), ltype=defs.LinkTypes.Contains)
+        )
+        cres[2].add_link(
+            defs.Link(document=cres[4].shallow_copy(), ltype=defs.LinkTypes.Contains)
+        )
+
+        cres[3].add_link(
+            defs.Link(document=cres[5].shallow_copy(), ltype=defs.LinkTypes.Contains)
+        )
+        collection.add_internal_link(
+            group=dbcres[0], cre=dbcres[2], type=defs.LinkTypes.Contains
+        )
+        collection.add_internal_link(
+            group=dbcres[1], cre=dbcres[3], type=defs.LinkTypes.Contains
+        )
+        collection.add_internal_link(
+            group=dbcres[2], cre=dbcres[4], type=defs.LinkTypes.Contains
+        )
+        collection.add_internal_link(
+            group=dbcres[5], cre=dbcres[0], type=defs.LinkTypes.Related
+        )
+        collection.add_internal_link(
+            group=dbcres[3], cre=dbcres[5], type=defs.LinkTypes.Contains
+        )
+        collection.session.commit()
+
+        root_cres = collection.get_root_cres()
+        self.maxDiff = None
+        self.assertEqual(root_cres, [cres[0], cres[1]])
 
 
 if __name__ == "__main__":

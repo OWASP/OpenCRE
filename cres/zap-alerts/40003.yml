@@ -1,0 +1,13 @@
+links:
+  - linkType: Linked To
+    document:
+      name: CWE
+      section: 113
+  - linkType: Linked To
+    document:
+      name: WASC
+      section: 25
+toolType: Offensive
+docType: Tool
+id: 40003
+name: 'Zaproxy-Alert: CRLF Injection'

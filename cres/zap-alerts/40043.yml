@@ -1,0 +1,5 @@
+links: []
+toolType: Offensive
+docType: Tool
+id: 40043
+name: 'Zaproxy-Alert: Log4Shell (CVE-2021-44228)'

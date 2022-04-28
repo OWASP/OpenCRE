@@ -1,0 +1,13 @@
+links:
+  - linkType: Linked To
+    document:
+      name: CWE
+      section: 89
+  - linkType: Linked To
+    document:
+      name: WASC
+      section: 19
+toolType: Offensive
+docType: Tool
+id: 40022
+name: 'Zaproxy-Alert: SQL Injection - PostgreSQL'

@@ -9,7 +9,6 @@ import coverage  # type: ignore
 from flask_migrate import Migrate  # type: ignore
 
 from application import create_app, sqla  # type: ignore
-from application.cmd import cre_main
 
 # Hacky solutions to make this both a command line application with argparse and a flask application
 
@@ -34,6 +33,9 @@ def test(cover: coverage.Coverage, test_names: List[str]) -> None:
             config_file="application/tests/.coveragerc",
         )
         COV.start()
+        # Hack to get coverage to cover method and class defs
+        from application import create_app, sqla  # type: ignore
+        from application.cmd import cre_main
 
     if test_names:
         tests = unittest.TestLoader().loadTestsFromNames(test_names)
@@ -100,9 +102,8 @@ def main() -> None:
 
     parser.add_argument(
         "--owasp_proj_meta",
-        default=os.path.join(
-            os.path.dirname(os.path.realpath(__file__)), "./cres/owasp/projects.yaml"
-        ),
+        default=None,
+        # default=os.path.join(os.path.dirname(os.path.realpath(__file__)), "./cres/owasp/projects.yaml"),
         help="define location of owasp project metadata",
     )
     parser.add_argument(
@@ -115,7 +116,26 @@ def main() -> None:
         default=None,
         help="define location of local directory to export database in OSIB format to",
     )
+
+    parser.add_argument(
+        "--zap_in",
+        action="store_true",
+        help="import zap alerts by cloning zap's website and parsing the alert .md files",
+    )
+    parser.add_argument(
+        "--cheatsheets_in",
+        action="store_true",
+        help="import cheatsheets by cloning the repo website and parsing the .md files",
+    )
+    parser.add_argument(
+        "--github_tools_in",
+        action="store_true",
+        help="import supported github tools, urls can be found in misc_tools_parser.py",
+    )
     args = parser.parse_args()
+
+    from application.cmd import cre_main
+
     cre_main.run(args)
 
 

@@ -12,8 +12,13 @@ from application.config import CMDConfig
 from application.database import db
 from application.defs import cre_defs as defs
 from application.defs import osib_defs as odefs
-from application.utils import parsers
 from application.utils import spreadsheet as sheet_utils
+from application.utils import spreadsheet_parsers
+from application.utils.external_project_parsers import (
+    cheatsheets_parser,
+    misc_tools_parser,
+    zap_alerts_parser,
+)
 from dacite import from_dict
 from dacite.config import Config
 
@@ -84,16 +89,10 @@ def register_cre(cre: defs.CRE, collection: db.Node_collection) -> db.CRE:
             collection.add_internal_link(
                 dbcre, register_cre(link.document, collection), type=link.ltype
             )
-        elif type(link.document) == defs.Standard:
+        else:
             collection.add_link(
                 cre=dbcre,
                 node=register_node(node=link.document, collection=collection),
-                type=link.ltype,
-            )
-        elif type(link.document) == defs.Tool:
-            collection.add_link(
-                cre=dbcre,
-                tool=register_tool(tool=link.document, collection=collection),
                 type=link.ltype,
             )
     return dbcre
@@ -108,8 +107,8 @@ def parse_file(
     for contents in yamldocs:
         links = []
 
-        document: defs.Document
-        register_callback: Callable[[Any, Any], Any]
+        document: Optional[defs.Document] = None
+        register_callback: Optional[Callable[[Any, Any], Any]] = None
 
         if not isinstance(
             contents, dict
@@ -185,13 +184,13 @@ def parse_standards_from_spreadsheeet(
     hi_lvl_CREs = {}
     cres = {}
     if "CRE Group 1" in cre_file[0].keys():
-        hi_lvl_CREs, cres = parsers.parse_v1_standards(cre_file)
+        hi_lvl_CREs, cres = spreadsheet_parsers.parse_v1_standards(cre_file)
     elif "CRE:name" in cre_file[0].keys():
-        cres = parsers.parse_export_format(cre_file)
+        cres = spreadsheet_parsers.parse_export_format(cre_file)
     elif any(key.startswith("CRE hierarchy") for key in cre_file[0].keys()):
-        cres = parsers.parse_hierarchical_export_format(cre_file)
+        cres = spreadsheet_parsers.parse_hierarchical_export_format(cre_file)
     else:
-        cres = parsers.parse_v0_standards(cre_file)
+        cres = spreadsheet_parsers.parse_v0_standards(cre_file)
 
     # register groupless cres first
     for _, cre in cres.items():
@@ -283,7 +282,7 @@ def review_from_spreadsheet(cache: str, spreadsheet_url: str, share_with: str) -
         "Stored temporary files and database in %s if you want to use them next time, set cache to the location of the database in that dir"
         % loc
     )
-    logger.info("A spreadsheet view is at %s" % sheet_url)
+    # logger.info("A spreadsheet view is at %s" % sheet_url)
 
 
 def review_from_disk(cache: str, cre_file_loc: str, share_with: str) -> None:
@@ -322,7 +321,7 @@ def print_graph() -> None:
     raise NotImplementedError
 
 
-def run(args: argparse.Namespace) -> None:
+def run(args: argparse.Namespace) -> None:  # pragma: no cover
     script_path = os.path.dirname(os.path.realpath(__file__))
     os.path.join(script_path, "../cres")
 
@@ -358,7 +357,16 @@ def run(args: argparse.Namespace) -> None:
 
     elif args.osib_out:
         export_to_osib(file_loc=args.osib_out, cache=args.cache_file)
-    elif args.owasp_proj_meta:
+    if args.zap_in:
+        zap_alerts_parser.parse_zap_alerts(db_connect(args.cache_file))
+    if args.cheatsheets_in:
+        cheatsheets_parser.parse_cheatsheets(db_connect(args.cache_file))
+    if args.github_tools_in:
+        for url in misc_tools_parser.tool_urls:
+            misc_tools_parser.parse_tool(
+                cache=db_connect(args.cache_file), tool_repo=url
+            )
+    if args.owasp_proj_meta:
         owasp_metadata_to_cre(args.owasp_proj_meta)
 
 

@@ -1,0 +1,13 @@
+links:
+  - linkType: Linked To
+    document:
+      name: CWE
+      section: 264
+  - linkType: Linked To
+    document:
+      name: WASC
+      section: 14
+toolType: Offensive
+docType: Tool
+id: 20016
+name: 'Zaproxy-Alert: Cross-Domain Misconfiguration'

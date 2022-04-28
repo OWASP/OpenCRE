@@ -1,0 +1,44 @@
+doctype: CRE
+id: 613-287
+links:
+- document:
+    doctype: CRE
+    id: 613-285
+    name: '>>Dependency strength'
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 577-260
+    name: Enforce integrity check for externally hosted assets (eg SRI)
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 838-636
+    name: Check source code and third party libraries to not contain backdoors
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 265-800
+    name: Check source code to not contain malicious code
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 418-525
+    name: Check source code to not contain timebombs
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 834-645
+    name: Avoid unauthorized client data collection
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 860-084
+    name: Sandbox third party libraries
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 715-223
+    name: Ensure trusted origin of third party resources
+  ltype: Contains
+name: Dependency integrity
