@@ -1,0 +1,24 @@
+---
+name: "Deploy to OPENCREORG"
+on:
+  workflow_run:
+    workflows: ["Test-e2e","Lint Code Base","Test"]
+    types:
+      - completed
+    branches:
+      - main
+jobs:
+  deploy:
+    environment: opencreorg
+    name: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+      - name: Add remote origin
+        env: 
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+          HEROKU_APP_NAME: opencreorg
+        run: git remote add heroku https://heroku:${{ secrets.HEROKU_API_KEY }}@git.heroku.com/$HEROKU_APP_NAME.git
+      - name: Deploy backend to heroku
+        run: git push --force heroku master
