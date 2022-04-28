@@ -36,4 +36,4 @@ jobs:
          new_tag="v${major}.${minor}.${patch}"
          echo "new tag is ${new_tag}"
          git tag --annotate "${new_tag}" --message "${new_tag}" "${commit_sha}"
-         git push --force heroku master --follow-tags
+         git push --force heroku main --follow-tags
