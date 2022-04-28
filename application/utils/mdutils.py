@@ -14,7 +14,7 @@ def make_header(documents: List[defs.Document]) -> List[str]:
         else:
             name = doc.name
         if name not in header:
-            header.append(doc.name)
+            header.append(name)
         for link in doc.links:
             lnkdoc = link.document
             if lnkdoc.doctype == defs.Credoctypes.CRE:
