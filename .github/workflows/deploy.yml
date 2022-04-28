@@ -16,6 +16,8 @@ jobs:
     steps:
       - name: checkout
         uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
       - name: Deploy backend to heroku
         env: 
           HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
@@ -23,7 +25,7 @@ jobs:
         run: |
          git config user.name spyros
          git config user.email "foo.bar.baz@example.com" # git just needs AN email, it doesn't matter which
-         git fetch --all --unshallow --tags
+         # git fetch --all --unshallow --tags
          
          highest_tag="$(git tag -l --sort=-v:refname | grep ^v | sed 1q)"
          echo "highest tag is ${highest_tag}"
