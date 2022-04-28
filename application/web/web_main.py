@@ -26,6 +26,7 @@ from application.database import db
 from application.defs import cre_defs as defs
 from application.defs import osib_defs as odefs
 from application.utils.spreadsheet import prepare_spreadsheet, write_spreadsheet
+
 ITEMS_PER_PAGE = 20
 
 app = Blueprint("web", __name__, static_folder="../frontend/www")
@@ -49,12 +50,12 @@ def extend_cre_with_tag_links(
     return cre
 
 
-def export_results_as_spreadsheet(collection: db.Node_collection, docs: List[defs.Document]):
+def export_results_as_spreadsheet(
+    collection: db.Node_collection, docs: List[defs.Document]
+):
     prepared_spreadsheet_docs = prepare_spreadsheet(collection=collection, docs=docs)
     spreadsheet_url = write_spreadsheet(
-        title='Export from CRE',
-        docs=prepared_spreadsheet_docs,
-        emails=[]
+        title="Export from CRE", docs=prepared_spreadsheet_docs, emails=[]
     )
     return {"spreadsheetURL": spreadsheet_url, "status": "ok"}
 
@@ -76,10 +77,7 @@ def find_cre(creid: str = None, crename: str = None) -> Any:  # refer
         result = {"data": cre.todict()}
 
         if opt_export:
-            return export_results_as_spreadsheet(
-                collection=database,
-                docs=[cre]
-            )
+            return export_results_as_spreadsheet(collection=database, docs=[cre])
 
         # disable until we have a consensus on tag behaviour
         # cre = extend_cre_with_tag_links(cre=cre, collection=database)
