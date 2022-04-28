@@ -26,17 +26,19 @@ def make_header(documents: List[defs.Document]) -> List[str]:
     return header
 
 
-def make_entry(doc: defs.Document, header: List[str], item: List[str]) -> List[str]:
+def add_entry(doc: defs.Document, header: List[str], item: List[str]) -> List[str]:
     if doc.doctype == defs.Credoctypes.CRE:
-        item[header.index("CRE")] = links(
-            f"https://www.opencre.org/cre/{doc.id}", f"{doc.id} {doc.name}"
+        item[header.index("CRE")].append(
+            links(f"https://www.opencre.org/cre/{doc.id}", f"{doc.id} {doc.name}")
         )
     elif doc.doctype == defs.Credoctypes.Standard:
-        item[header.index(doc.name)] = links(doc.hyperlink, f"{doc.name} {doc.section}")
+        (item[header.index(doc.name)]).append(
+            links(doc.hyperlink, f"{doc.name} {doc.section}")
+        )
     elif doc.doctype == defs.Credoctypes.Tool:
-        item[header.index(doc.name)] = links(doc.hyperlink, f"{doc.name}")
+        item[header.index(doc.name)].append(links(doc.hyperlink, f"{doc.name}"))
     elif doc.doctype == defs.Credoctypes.Code:
-        item[header.index(doc.name)] = links(doc.hyperlink, f"{doc.name}")
+        item[header.index(doc.name)].append(links(doc.hyperlink, f"{doc.name}"))
     return item
 
 
@@ -53,9 +55,10 @@ def cre_to_md(documents: List[defs.Document]) -> str:
         if name not in header:
             header.append(doc.name)
 
-        item = [" "] * len(header)
-        item = make_entry(doc=doc, header=header, item=item)
+        item = [[] for x in range(0, len(header))]
+        item = add_entry(doc=doc, header=header, item=item)
         for link in doc.links:
-            item = make_entry(doc=link.document, header=header, item=item)
-        result.add_item(item)
+            item = add_entry(doc=link.document, header=header, item=item)
+        result.add_item([", ".join(it) for it in item])
+
     return result.render()
