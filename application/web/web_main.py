@@ -3,7 +3,8 @@
 import logging
 import os
 import urllib.parse
-from typing import Any
+from typing import Any, List
+import logging
 
 from application import cache
 from application.database import db
@@ -19,6 +20,12 @@ from flask import (
     request,
     send_from_directory,
 )
+
+from application import cache
+from application.database import db
+from application.defs import cre_defs as defs
+from application.defs import osib_defs as odefs
+from application.utils.spreadsheet import prepare_spreadsheet, write_spreadsheet
 
 ITEMS_PER_PAGE = 20
 
@@ -43,6 +50,16 @@ def extend_cre_with_tag_links(
     return cre
 
 
+def export_results_as_spreadsheet(
+    collection: db.Node_collection, docs: List[defs.Document]
+):
+    prepared_spreadsheet_docs = prepare_spreadsheet(collection=collection, docs=docs)
+    spreadsheet_url = write_spreadsheet(
+        title="Export from CRE", docs=prepared_spreadsheet_docs, emails=[]
+    )
+    return {"spreadsheetURL": spreadsheet_url, "status": "ok"}
+
+
 @app.route("/rest/v1/id/<creid>", methods=["GET"])
 @app.route("/rest/v1/name/<crename>", methods=["GET"])
 @cache.cached(timeout=50)
@@ -51,14 +68,20 @@ def find_cre(creid: str = None, crename: str = None) -> Any:  # refer
     include_only = request.args.getlist("include_only")
     opt_osib = request.args.get("osib")
     opt_md = request.args.get("format_md")
+    opt_export = request.args.get("export")
     cres = database.get_CREs(external_id=creid, name=crename, include_only=include_only)
     if cres:
         if len(cres) > 1:
             logger.error("get by id returned more than one results? This looks buggy")
         cre = cres[0]
         result = {"data": cre.todict()}
+
+        if opt_export:
+            return export_results_as_spreadsheet(collection=database, docs=[cre])
+
         # disable until we have a consensus on tag behaviour
         # cre = extend_cre_with_tag_links(cre=cre, collection=database)
+
         if opt_osib:
             result["osib"] = odefs.cre2osib([cre]).todict()
         if opt_md:
@@ -76,6 +99,7 @@ def find_node_by_name(name: str, ntype: str = defs.Credoctypes.Standard.value) -
     opt_osib = request.args.get("osib")
     opt_version = request.args.get("version")
     opt_mdformat = request.args.get("format_md")
+    opt_export = request.args.get("export")
     if opt_section:
         opt_section = urllib.parse.unquote(opt_section)
     opt_subsection = request.args.get("subsection")
@@ -115,6 +139,10 @@ def find_node_by_name(name: str, ntype: str = defs.Credoctypes.Standard.value) -
             result["osib"] = odefs.cre2osib(nodes).todict()
         res = [node.todict() for node in nodes]
         result["standards"] = res
+
+        if opt_export:
+            return export_results_as_spreadsheet(collection=database, docs=nodes)
+
         return jsonify(result)
     else:
         abort(404)
@@ -167,11 +195,14 @@ def text_search() -> Any:
     database = db.Node_collection()
     text = request.args.get("text")
     opt_md = reques.args.get("format_md")
+    opt_export = request.args.get("export")
     documents = database.text_search(text)
     if documents:
         if opt_md:
             return mdutils.cre_to_md(documents)
         res = [doc.todict() for doc in documents]
+        if opt_export:
+            return export_results_as_spreadsheet(collection=database, docs=documents)
         return jsonify(res)
     else:
         abort(404)

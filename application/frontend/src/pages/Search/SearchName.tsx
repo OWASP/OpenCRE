@@ -1,12 +1,12 @@
+import axios from 'axios';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import axios from 'axios';
 
-import { useEnvironment } from '../../hooks';
+import ExportButton from '../../components/ExportButton/export-button';
 import { LoadingAndErrorIndicator } from '../../components/LoadingAndErrorIndicator';
-import { groupBy } from '../../utils/document';
+import { useEnvironment } from '../../hooks';
 import { Document } from '../../types';
-
+import { groupBy } from '../../utils/document';
 import { SearchResults } from './components/SearchResults';
 
 const CRE = "CRE";
@@ -19,22 +19,27 @@ export const SearchName = () => {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [error, setError] = useState<string | null>(null);
 
+  const FETCH_URL = `${apiUrl}/text_search`;
+  const FETCH_PARAMS = { params: { text: searchTerm } };
+
   useEffect(() => {
     setLoading(true);
-    axios.get(`${apiUrl}/text_search`, {params: {text: searchTerm}})
-        .then(function (response) {
-            setError(null);
-            setDocuments(response.data);
-        })
-        .catch(function (axiosError) {
-            // TODO: backend errors if no matches, shoudl return
-            //       proper error instead.
-            setError(axiosError);
-        }).finally( () => {
-            setLoading(false);
-        });
+    axios
+      .get(FETCH_URL, FETCH_PARAMS)
+      .then(function (response) {
+        setError(null);
+        setDocuments(response.data);
+      })
+      .catch(function (axiosError) {
+        // TODO: backend errors if no matches, shoudl return
+        //       proper error instead.
+        setError(axiosError);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   }, [searchTerm]);
-
+  
   const groupedByType = groupBy(documents, doc => doc.doctype);
   const cres = groupedByType[CRE]
   
@@ -54,8 +59,10 @@ export const SearchName = () => {
         {!loading && !error &&
             <div className="ui grid">
                 <div className="eight wide column">
-                    <h1 className="standard-page__heading">Related CRE's</h1>
-                    {cres && <SearchResults results={cres}/>}
+                    <h1 className="standard-page__heading">Related CRE's
+                                <ExportButton fetchURL={FETCH_URL} fetchParams={FETCH_PARAMS} />
+                  </h1>
+                    {groupedByType[CRE] && <SearchResults results={cres}/>}
                 </div>
                 <div className="eight wide column">
                     <h1 className="standard-page__heading">Related Documents</h1>
@@ -63,6 +70,7 @@ export const SearchName = () => {
                 </div>
             </div>
         }
+
     </div>
   );
 };
