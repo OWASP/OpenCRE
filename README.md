@@ -4,12 +4,12 @@
 [![GitHub Super-Linter](https://github.com/OWASP/common-requirement-enumeration/workflows/Lint%20Code%20Base/badge.svg)](https://github.com/marketplace/actions/super-linter)
 [![GitHub CodeQL](https://github.com/OWASP/common-requirement-enumeration/workflows/CodeQL/badge.svg)](https://github.com/marketplace/actions/codeql-analysis)
 [![Main Branch Build](https://github.com/OWASP/common-requirement-enumeration/workflows/Test/badge.svg?branch=main)](https://github.com/OWASP/OWASP/common-requirement-enumeration/workflows/Test)
-[![Issues](https://img.shields.io/github/issues/owasp/common-requirement-enumeration)](https://github.com/OWASP/common-requirement-enumeration/issues)  
 
+[![Issues](https://img.shields.io/github/issues/owasp/common-requirement-enumeration)](https://github.com/OWASP/common-requirement-enumeration/issues)  
 [![PR's Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat)](http://makeapullrequest.com)  
-![GitHub contributors](https://img.shields.io/github/contributors/owasp/common-requirement-enumeration)
-![GitHub last commit](https://img.shields.io/github/last-commit/owasp/common-requirement-enumeration)
-![GitHub commit activity](https://img.shields.io/github/commit-activity/y/owasp/common-requirement-enumeration)
+[!GitHub contributors](https://img.shields.io/github/contributors/owasp/common-requirement-enumeration)
+[!GitHub last commit](https://img.shields.io/github/last-commit/owasp/common-requirement-enumeration)
+[!GitHub commit activity](https://img.shields.io/github/commit-activity/y/owasp/common-requirement-enumeration)
 
 Common Requirements Enumeration Application
 ===============================
