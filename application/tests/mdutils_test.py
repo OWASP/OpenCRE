@@ -56,13 +56,13 @@ class TestMdutilsParser(unittest.TestCase):
 
     result = """sname | CRE | tname_1 | sname_other | tname_3 | tname_5 | tname_7 | tname_9
 ----- | --- | ------- | ----------- | ------- | ------- | ------- | -------
-[sname-section_1](https://example.com/sname/1) | [000-001-cname_1](https://www.opencre.org/cre/000-001) | [tname_1](https://example.com/tnae/1) |   |   |   |   |  
-[sname-section_2](https://example.com/sname/2) | [000-002-cname_2](https://www.opencre.org/cre/000-002) |   | [sname_other-section_2](https://example.com/sname/2) |   |   |   |  
-[sname-section_3](https://example.com/sname/3) | [000-003-cname_3](https://www.opencre.org/cre/000-003) |   |   | [tname_3](https://example.com/tnae/3) |   |   |  
-[sname-section_4](https://example.com/sname/4) | [000-004-cname_4](https://www.opencre.org/cre/000-004) |   | [sname_other-section_4](https://example.com/sname/4) |   |   |   |  
-[sname-section_5](https://example.com/sname/5) | [000-005-cname_5](https://www.opencre.org/cre/000-005) |   |   |   | [tname_5](https://example.com/tnae/5) |   |  
-[sname-section_6](https://example.com/sname/6) | [000-006-cname_6](https://www.opencre.org/cre/000-006) |   | [sname_other-section_6](https://example.com/sname/6) |   |   |   |  
-[sname-section_7](https://example.com/sname/7) | [000-007-cname_7](https://www.opencre.org/cre/000-007) |   |   |   |   | [tname_7](https://example.com/tnae/7) |  
-[sname-section_8](https://example.com/sname/8) | [000-008-cname_8](https://www.opencre.org/cre/000-008) |   | [sname_other-section_8](https://example.com/sname/8) |   |   |   |  
-[sname-section_9](https://example.com/sname/9) | [000-009-cname_9](https://www.opencre.org/cre/000-009) |   |   |   |   |   | [tname_9](https://example.com/tnae/9)
+[sname section_1](https://example.com/sname/1) | [000-001 cname_1](https://www.opencre.org/cre/000-001) | [tname_1](https://example.com/tnae/1) |   |   |   |   |  
+[sname section_2](https://example.com/sname/2) | [000-002 cname_2](https://www.opencre.org/cre/000-002) |   | [sname_other section_2](https://example.com/sname/2) |   |   |   |  
+[sname section_3](https://example.com/sname/3) | [000-003 cname_3](https://www.opencre.org/cre/000-003) |   |   | [tname_3](https://example.com/tnae/3) |   |   |  
+[sname section_4](https://example.com/sname/4) | [000-004 cname_4](https://www.opencre.org/cre/000-004) |   | [sname_other section_4](https://example.com/sname/4) |   |   |   |  
+[sname section_5](https://example.com/sname/5) | [000-005 cname_5](https://www.opencre.org/cre/000-005) |   |   |   | [tname_5](https://example.com/tnae/5) |   |  
+[sname section_6](https://example.com/sname/6) | [000-006 cname_6](https://www.opencre.org/cre/000-006) |   | [sname_other section_6](https://example.com/sname/6) |   |   |   |  
+[sname section_7](https://example.com/sname/7) | [000-007 cname_7](https://www.opencre.org/cre/000-007) |   |   |   |   | [tname_7](https://example.com/tnae/7) |  
+[sname section_8](https://example.com/sname/8) | [000-008 cname_8](https://www.opencre.org/cre/000-008) |   | [sname_other section_8](https://example.com/sname/8) |   |   |   |  
+[sname section_9](https://example.com/sname/9) | [000-009 cname_9](https://www.opencre.org/cre/000-009) |   |   |   |   |   | [tname_9](https://example.com/tnae/9)
 """
