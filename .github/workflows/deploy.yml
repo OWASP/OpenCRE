@@ -25,13 +25,13 @@ jobs:
          git config user.email "foo.bar.baz@example.com" # git just needs AN email, it doesn't matter which
          git remote add heroku https://heroku:${{ secrets.HEROKU_API_KEY }}@git.heroku.com/opencreorg.git
          highest_tag="$(git tag -l --sort=-v:refname | grep ^v | sed 1q)"
-         echo "${highest_tag}"
+         echo "highest tag is ${highest_tag}"
          commit_sha=$(git rev-parse origin/main)
          major=$(echo "${highest_tag}" | cut -f1 -d. | tr -dc '0-9')
          minor=$(echo "${highest_tag}" | cut -f2 -d. | tr -dc '0-9')
          patch=$(echo "${highest_tag}" | cut -f3 -d. | tr -dc '0-9')
          patch=$((patch+1))
          new_tag="v${major}.${minor}.${patch}"
-         echo "${new_tag}"
+         echo "new tag is ${new_tag}"
          git tag --annotate "${new_tag}" --message "${new_tag}" "${commit_sha}"
          git push --force heroku master --follow-tags
