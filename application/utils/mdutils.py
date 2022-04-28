@@ -14,7 +14,7 @@ def make_header(documents: List[defs.Document]) -> List[str]:
         else:
             name = doc.name
         if name not in header:
-            header.append(doc.name)
+            header.append(name)
         for link in doc.links:
             lnkdoc = link.document
             if lnkdoc.doctype == defs.Credoctypes.CRE:
@@ -24,6 +24,20 @@ def make_header(documents: List[defs.Document]) -> List[str]:
             if name not in header:
                 header.append(name)
     return header
+
+
+def make_entry(doc: defs.Document, header: List[str], item: List[str]) -> List[str]:
+    if doc.doctype == defs.Credoctypes.CRE:
+        item[header.index("CRE")] = links(
+            f"https://www.opencre.org/cre/{doc.id}", f"{doc.id} {doc.name}"
+        )
+    elif doc.doctype == defs.Credoctypes.Standard:
+        item[header.index(doc.name)] = links(doc.hyperlink, f"{doc.name} {doc.section}")
+    elif doc.doctype == defs.Credoctypes.Tool:
+        item[header.index(doc.name)] = links(doc.hyperlink, f"{doc.name}")
+    elif doc.doctype == defs.Credoctypes.Code:
+        item[header.index(doc.name)] = links(doc.hyperlink, f"{doc.name}")
+    return item
 
 
 def cre_to_md(documents: List[defs.Document]) -> str:
@@ -40,25 +54,8 @@ def cre_to_md(documents: List[defs.Document]) -> str:
             header.append(doc.name)
 
         item = [" "] * len(header)
-        item[header.index(doc.name)] = links(doc.hyperlink, f"{doc.name}-{doc.section}")
+        item = make_entry(doc=doc, header=header, item=item)
         for link in doc.links:
-            lnkdoc = link.document
-            if lnkdoc.doctype == defs.Credoctypes.CRE:
-                item[header.index("CRE")] = links(
-                    f"https://www.opencre.org/cre/{lnkdoc.id}",
-                    f"{lnkdoc.id} {lnkdoc.name}",
-                )
-            elif lnkdoc.doctype == defs.Credoctypes.Standard:
-                item[header.index(lnkdoc.name)] = links(
-                    lnkdoc.hyperlink, f"{lnkdoc.name}-{lnkdoc.section}"
-                )
-            elif lnkdoc.doctype == defs.Credoctypes.Tool:
-                item[header.index(lnkdoc.name)] = links(
-                    lnkdoc.hyperlink, f"{lnkdoc.name}"
-                )
-            elif lnkdoc.doctype == defs.Credoctypes.Code:
-                item[header.index(lnkdoc.name)] = links(
-                    lnkdoc.hyperlink, f"{lnkdoc.name}"
-                )
+            item = make_entry(doc=link.document, header=header, item=item)
         result.add_item(item)
     return result.render()
