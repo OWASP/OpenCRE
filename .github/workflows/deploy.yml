@@ -22,7 +22,7 @@ jobs:
           HEROKU_APP_NAME: opencreorg
         run: git remote add heroku https://heroku:${{ secrets.HEROKU_API_KEY }}@git.heroku.com/opencreorg.git
       - name: Deploy backend to heroku
-        run:
+        run: |
          highest_tag="$(git tag -l --sort=-v:refname | grep ^v | sed 1q)"
          commit_sha=$(git rev-parse origin/main)
          major=$(echo "${highest_tag}" | cut -f1 -d. | tr -dc '0-9')
