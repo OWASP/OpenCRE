@@ -60,15 +60,14 @@ def export_results_as_spreadsheet(collection: db.Node_collection, docs: List[def
 
 
 @app.route("/rest/v1/id/<creid>", methods=["GET"])
-@app.route("/rest/v1/id/<creid>/export", methods=["GET"])
 @app.route("/rest/v1/name/<crename>", methods=["GET"])
-@app.route("/rest/v1/name/<crename>/export", methods=["GET"])
 @cache.cached(timeout=50)
 def find_cre(creid: str = None, crename: str = None) -> Any:  # refer
     database = db.Node_collection()
     include_only = request.args.getlist("include_only")
     opt_osib = request.args.get("osib")
     opt_md = request.args.get("format_md")
+    opt_export = request.args.get("export")
     cres = database.get_CREs(external_id=creid, name=crename, include_only=include_only)
     if cres:
         if len(cres) > 1:
@@ -76,7 +75,7 @@ def find_cre(creid: str = None, crename: str = None) -> Any:  # refer
         cre = cres[0]
         result = {"data": cre.todict()}
 
-        if 'export' in request.path:
+        if opt_export:
             return export_results_as_spreadsheet(
                 collection=database,
                 docs=[cre]
@@ -94,9 +93,7 @@ def find_cre(creid: str = None, crename: str = None) -> Any:  # refer
 
 
 @app.route("/rest/v1/<ntype>/<name>", methods=["GET"])
-@app.route("/rest/v1/<ntype>/<name>/export", methods=["GET"])
 @app.route("/rest/v1/standard/<name>", methods=["GET"])
-@app.route("/rest/v1/standard/<name>/export", methods=["GET"])
 # @cache.cached(timeout=50)
 def find_node_by_name(name: str, ntype: str = defs.Credoctypes.Standard.value) -> Any:
     database = db.Node_collection()
@@ -104,6 +101,7 @@ def find_node_by_name(name: str, ntype: str = defs.Credoctypes.Standard.value) -
     opt_osib = request.args.get("osib")
     opt_version = request.args.get("version")
     opt_mdformat = request.args.get("format_md")
+    opt_export = request.args.get("export")
     if opt_section:
         opt_section = urllib.parse.unquote(opt_section)
     opt_subsection = request.args.get("subsection")
@@ -144,7 +142,7 @@ def find_node_by_name(name: str, ntype: str = defs.Credoctypes.Standard.value) -
         res = [node.todict() for node in nodes]
         result["standards"] = res
 
-        if 'export' in request.path:
+        if opt_export:
             return export_results_as_spreadsheet(collection=database, docs=nodes)
 
         return jsonify(result)
@@ -183,7 +181,6 @@ def gap_analysis() -> Any:  # TODO (spyros): add export result to spreadsheet
 
 
 @app.route("/rest/v1/text_search", methods=["GET"])
-@app.route("/rest/v1/text_search/export", methods=["GET"])
 # @cache.cached(timeout=50)
 def text_search() -> Any:
     """
@@ -200,15 +197,14 @@ def text_search() -> Any:
     database = db.Node_collection()
     text = request.args.get("text")
     opt_md = reques.args.get("format_md")
+    opt_export = request.args.get("export")
     documents = database.text_search(text)
     if documents:
         if opt_md:
             return mdutils.cre_to_md(documents)
         res = [doc.todict() for doc in documents]
-
-        if 'export' in request.path:
+        if opt_export:
             return export_results_as_spreadsheet(collection=database, docs=documents)
-
         return jsonify(res)
     else:
         abort(404)
