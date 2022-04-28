@@ -39,6 +39,7 @@ def add_entry(doc: defs.Document, header: List[str], item: List[str]) -> List[st
         item[header.index(doc.name)].append(links(doc.hyperlink, f"{doc.name}"))
     return item
 
+
 def cre_to_md(documents: List[defs.Document]) -> str:
     header = make_header(documents)
     result = Table(header)
@@ -57,4 +58,5 @@ def cre_to_md(documents: List[defs.Document]) -> str:
         for link in doc.links:
             item = add_entry(doc=link.document, header=header, item=item)
         result.add_item([", ".join(it) for it in item])
+
     return result.render()
