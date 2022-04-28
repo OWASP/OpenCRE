@@ -1,6 +1,7 @@
 ---
 name: "Deploy to OPENCREORG"
 on:
+  workflow_dispatch: # allow manual triggering
   workflow_run:
     workflows: ["Test-e2e","Lint Code Base","Test"]
     types:
@@ -21,4 +22,16 @@ jobs:
           HEROKU_APP_NAME: opencreorg
         run: git remote add heroku https://heroku:${{ secrets.HEROKU_API_KEY }}@git.heroku.com/opencreorg.git
       - name: Deploy backend to heroku
-        run: git push --force heroku master
+        run:
+         highest_tag="$(git tag -l --sort=-v:refname | grep ^v | sed 1q)"
+         commit_sha=$(git rev-parse origin/main)
+         major=$(echo "${highest_tag}" | cut -f1 -d. | tr -dc '0-9')
+         minor=$(echo "${highest_tag}" | cut -f2 -d. | tr -dc '0-9')
+         patch=$(echo "${highest_tag}" | cut -f3 -d. | tr -dc '0-9')
+         patch=$((patch+1))
+         new_tag="v${major}.${minor}.${patch}"
+
+         git add .
+         git commit -m "${new_tag} -- ${commit_sha}"
+         git tag --annotate "${new_tag}" --message "${new_tag}" "${commit_sha}"
+         git push --force heroku master
