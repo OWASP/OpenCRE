@@ -19,6 +19,6 @@ jobs:
         env: 
           HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
           HEROKU_APP_NAME: opencreorg
-        run: git remote add heroku https://heroku:${{ secrets.HEROKU_API_KEY }}@git.heroku.com/$HEROKU_APP_NAME.git
+        run: git remote add heroku https://heroku:${{ secrets.HEROKU_API_KEY }}@git.heroku.com/opencreorg.git
       - name: Deploy backend to heroku
         run: git push --force heroku master
