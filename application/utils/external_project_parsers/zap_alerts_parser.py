@@ -124,6 +124,10 @@ def register_alerts(cache: db.Node_collection, repo: git.git, alerts_path: str):
                                 type=defs.LinkTypes.LinkedTo,
                             )
                 if not cwe_nodes:
-                    logger.error(f"opencre.org does not know of CWE {cweId}, it is linked to by zap alert: {dbnode.name}")
+                    logger.error(
+                        f"opencre.org does not know of CWE {cweId}, it is linked to by zap alert: {dbnode.name}"
+                    )
             else:
-                logger.error(f"CWE id not found in alert {externalId}:{dbnode.name}, skipping linking")
+                logger.error(
+                    f"CWE id not found in alert {externalId}:{dbnode.name}, skipping linking"
+                )
