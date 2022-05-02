@@ -166,7 +166,7 @@ def text_search() -> Any:
     """
     database = db.Node_collection()
     text = request.args.get("text")
-    opt_mdformat = reques.args.get("format_md")
+    opt_mdformat = request.args.get("format_md")
     documents = database.text_search(text)
     if documents:
         if opt_mdformat:
