@@ -21,11 +21,12 @@ def parse_capec(cache: db.Node_collection):
     xml = requests.get(capec_xml)
     if xml.status_code == 200:
         handle, fname = tempfile.mkstemp(suffix=".xml")
-        with os.fdopen(handle,'w') as xmlfile:
+        with os.fdopen(handle, "w") as xmlfile:
             xmlfile.write(xml.text)
         register_capec(xml_file=fname, cache=cache)
     else:
         logger.fatal(f"Could not get CAPEC's XML data, error was {xml.text}")
+
 
 def make_hyperlink(capec_id: int):
     return f"https://capec.mitre.org/data/definitions/{capec_id}.html"
@@ -39,7 +40,9 @@ def link_capec_to_cwe_cre(capec: db.Node, cache: db.Node_collection, cwe_id: str
             for c in cwes[0].links
             if c.document.doctype == defs.Credoctypes.CRE
         ]:
-            logger.debug(f"linked CAPEC with id {capec.section} to CRE with ID {cre.id}")
+            logger.debug(
+                f"linked CAPEC with id {capec.section} to CRE with ID {cre.id}"
+            )
             cache.add_link(cre=db.dbCREfromCRE(cre), node=capec)
 
 
@@ -79,4 +82,6 @@ def register_capec(cache: db.Node_collection, xml_file: str):
                                     capec=dbcapec, cache=cache, cwe_id=id
                                 )
                 else:
-                    logger.error(f"CAPEC {capec.section} does not have any related CWE weaknesses, skipping automated linking")
+                    logger.error(
+                        f"CAPEC {capec.section} does not have any related CWE weaknesses, skipping automated linking"
+                    )
