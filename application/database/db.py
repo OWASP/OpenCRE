@@ -490,6 +490,10 @@ class Node_collection:
                 linked_cres = Links.query.filter(Links.node == dbnode.id).all()
                 for dbcre_link in linked_cres:
                     dbcre = CRE.query.filter(CRE.id == dbcre_link.cre).first()
+                    if not dbcre:
+                        logger.fatal(
+                            f"CRE {dbcre_link.cre} exists in the links but not in the cre table, database corrupt?"
+                        )
                     if not include_only or (
                         include_only
                         and (
