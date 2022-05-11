@@ -15,6 +15,7 @@ from application.defs import osib_defs as odefs
 from application.utils import spreadsheet as sheet_utils
 from application.utils import spreadsheet_parsers
 from application.utils.external_project_parsers import (
+    capec_parser,
     cheatsheets_parser,
     misc_tools_parser,
     zap_alerts_parser,
@@ -366,6 +367,8 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
             misc_tools_parser.parse_tool(
                 cache=db_connect(args.cache_file), tool_repo=url
             )
+    if args.capec_in:
+        capec_parser.parse_capec(cache=db_connect(args.cache_file))
     if args.owasp_proj_meta:
         owasp_metadata_to_cre(args.owasp_proj_meta)
 

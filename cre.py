@@ -132,6 +132,12 @@ def main() -> None:
         action="store_true",
         help="import supported github tools, urls can be found in misc_tools_parser.py",
     )
+    parser.add_argument(
+        "--capec_in",
+        action="store_true",
+        help="import CAPEC",
+    )
+
     args = parser.parse_args()
 
     from application.cmd import cre_main
