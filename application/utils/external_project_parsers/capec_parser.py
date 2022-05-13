@@ -1,15 +1,10 @@
-import imp
 import logging
 import os
 import tempfile
 import requests
-from typing import Dict, Iterable, List
-import untangle
+from typing import Dict
 from application.database import db
 from application.defs import cre_defs as defs
-from application.utils import git
-
-from pprint import pp, pprint
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
