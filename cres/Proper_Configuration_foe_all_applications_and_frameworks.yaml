@@ -24,13 +24,4 @@ links:
     name: Cheat_sheets
     section: Docker Security Cheat Sheet
   ltype: Linked To
-- document:
-    description: '"Ensure that only POST is accepted where POST is expected."'
-    doctype: Tool
-    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/GetForPostScanRule.java
-    name: 'ZAP Rule: "GET for POST"'
-    tags:
-    - '"Active"'
-    tooltype: Offensive
-  ltype: SAME
 name: Proper Configuration foe all applications and frameworks

@@ -31,5 +31,5 @@ links:
 name: Store and serve user-uploaded files such that they cannot execute/damage server
   or client
 tags:
-- Injection
 - XSS
+- Injection

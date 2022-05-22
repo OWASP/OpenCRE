@@ -24,13 +24,5 @@ links:
     name: (WSTG) Web Security Testing Guide
     section: WSTG-ATHZ-01
   ltype: Linked To
-- document:
-    doctype: Tool
-    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrules/src/main/java/org/zaproxy/zap/extension/ascanrules/RemoteFileIncludeScanRule.java
-    name: 'ZAP Rule: "Remote File Inclusion"'
-    tags:
-    - '"Active"'
-    tooltype: Offensive
-  ltype: SAME
 name: Ignore/at least validate filename metadata from untrusted origin (remote file
   context, eg RFI)

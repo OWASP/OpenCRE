@@ -53,7 +53,7 @@ links:
   ltype: Related
 - document:
     doctype: Standard
-    hyperlink: Loading...
+    hyperlink: https://owasp.org/www-project-top-ten/2017/A2_2017-Broken_Authentication
     name: Top10 2017
     section: A2_Broken_Authentication
   ltype: Linked To

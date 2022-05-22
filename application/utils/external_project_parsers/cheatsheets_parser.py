@@ -20,7 +20,9 @@ def parse_cheatsheets(cache: db.Node_collection):
     c_repo = "https://github.com/OWASP/CheatSheetSeries.git"
     cheatsheets_path = "cheatsheets/"
     repo = git.clone(c_repo)
-    register_cheatsheets(repo=repo, cache=cache, cheatsheets_path=cheatsheets_path)
+    register_cheatsheets(
+        repo=repo, cache=cache, cheatsheets_path=cheatsheets_path, repo_path=c_repo
+    )
 
 
 def register_cheatsheets(cache: db.Node_collection, repo, cheatsheets_path, repo_path):

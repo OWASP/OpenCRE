@@ -3,14 +3,15 @@ id: 228-551
 links:
 - document:
     doctype: CRE
+    id: 170-772
+    name: Cryptography
+  ltype: Related
+- document:
+    doctype: CRE
     id: 726-868
     name: Deployed topology
     tags:
     - Architecture
-  ltype: Related
-- document:
-    doctype: CRE
-    name: Cryptoghraphy
   ltype: Related
 - document:
     doctype: CRE
@@ -56,4 +57,4 @@ links:
   ltype: Contains
 name: TLS
 tags:
-- Cryptoghraphy
+- Cryptography

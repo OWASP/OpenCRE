@@ -1,0 +1,8 @@
+description: '"See the references for security advice on the use of these functions."'
+doctype: Tool
+hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrulesAlpha/src/main/java/org/zaproxy/zap/extension/pscanrulesAlpha/JsFunctionScanRule.java
+name: 'ZAP Rule: "Dangerous JS Functions"'
+tags:
+- '10110'
+- '"Passive"'
+tooltype: Offensive

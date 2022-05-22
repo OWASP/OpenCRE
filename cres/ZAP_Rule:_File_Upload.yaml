@@ -1,0 +1,9 @@
+description: '"Follow the suggestions mentioned in following links: 1. https://portswigger.net/kb/issues/00500980_file-upload-functionality
+  2. https://www.youtube.com/watch?v=CmF9sEyKZNo"'
+doctype: Tool
+hyperlink: https://github.com/SasanLabs/owasp-zap-fileupload-addon/blob/main/src/main/java/org/sasanlabs/fileupload/FileUploadScanRule.java
+name: 'ZAP Rule: "File Upload"'
+tags:
+- '"Active"'
+- '40041'
+tooltype: Offensive

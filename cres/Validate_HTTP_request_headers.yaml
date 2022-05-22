@@ -28,7 +28,7 @@ links:
   ltype: Contains
 - document:
     doctype: Standard
-    hyperlink: Loading...
+    hyperlink: https://owasp.org/www-project-top-ten/2017/A6_2017-Security_Misconfiguration
     name: Top10 2017
     section: A6_Security_Misconfiguration
   ltype: Linked To
