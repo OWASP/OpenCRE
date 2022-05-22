@@ -29,14 +29,4 @@ links:
     name: Cheat_sheets
     section: XML Security Cheat Sheet
   ltype: Linked To
-- document:
-    description: '"Ensure each page is setting the specific and appropriate content-type
-      value for the content being delivered."'
-    doctype: Tool
-    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/ContentTypeMissingScanRule.java
-    name: 'ZAP Rule: "Content-Type Header Missing"'
-    tags:
-    - '"Passive"'
-    tooltype: Offensive
-  ltype: SAME
 name: Add integrity check to SOAP payload

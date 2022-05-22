@@ -10,13 +10,13 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 836-068
-    name: Deserialization Prevention
+    id: 155-155
+    name: Architecture
   ltype: Related
 - document:
     doctype: CRE
-    id: 155-155
-    name: Architecture
+    id: 836-068
+    name: Deserialization Prevention
   ltype: Related
 - document:
     doctype: Standard

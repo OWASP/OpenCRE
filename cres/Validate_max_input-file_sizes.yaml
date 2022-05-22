@@ -35,16 +35,6 @@ links:
     name: Cheat_sheets
     section: File Upload Cheat Sheet
   ltype: Linked To
-- document:
-    description: '"Upgrade your Apache server to a currently stable version. Alternative
-      solutions or workarounds are outlined in the references. "'
-    doctype: Tool
-    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/ApacheRangeHeaderDosScanRule.java
-    name: 'ZAP Rule: "Apache Range Header DoS (CVE-2011-3192)"'
-    tags:
-    - '"Active"'
-    tooltype: Offensive
-  ltype: SAME
 name: Validate max input/file sizes
 tags:
 - DOS

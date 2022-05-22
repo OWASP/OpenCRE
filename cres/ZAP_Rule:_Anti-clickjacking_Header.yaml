@@ -1,0 +1,7 @@
+doctype: Tool
+hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/AntiClickjackingScanRule.java
+name: 'ZAP Rule: "Anti-clickjacking Header"'
+tags:
+- '10020'
+- '"Passive"'
+tooltype: Offensive

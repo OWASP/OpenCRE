@@ -1,0 +1,7 @@
+doctype: Tool
+hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesAlpha/src/main/java/org/zaproxy/zap/extension/ascanrulesAlpha/Log4ShellScanRule.java
+name: 'ZAP Rule: "Log4Shell"'
+tags:
+- '40043'
+- '"Active"'
+tooltype: Offensive

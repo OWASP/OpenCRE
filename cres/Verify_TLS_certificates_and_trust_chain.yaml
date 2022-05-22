@@ -6,7 +6,7 @@ links:
     id: 228-551
     name: TLS
     tags:
-    - Cryptoghraphy
+    - Cryptography
   ltype: Contains
 - document:
     doctype: CRE

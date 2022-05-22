@@ -3,121 +3,121 @@ id: 863-250
 links:
 - document:
     doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=AC-13
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=AC-13
     name: NIST 800-53 v5
     section: "AC-13 Supervision and Review \u2014 Access Control"
   ltype: Linked To
 - document:
     doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=AC-15
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=AC-15
     name: NIST 800-53 v5
     section: AC-15 Automated Marking
   ltype: Linked To
 - document:
     doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=AU-15
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=AU-15
     name: NIST 800-53 v5
     section: AU-15 Alternate Audit Logging Capability
   ltype: Linked To
 - document:
     doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=CA-4
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=CA-4
     name: NIST 800-53 v5
     section: CA-4 Security Certification
   ltype: Linked To
 - document:
     doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=PL-3
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=PL-3
     name: NIST 800-53 v5
     section: PL-3 System Security Plan Update
   ltype: Linked To
 - document:
     doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=PL-5
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=PL-5
     name: NIST 800-53 v5
     section: PL-5 Privacy Impact Assessment
   ltype: Linked To
 - document:
     doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=PL-6
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=PL-6
     name: NIST 800-53 v5
     section: PL-6 Security-related Activity Planning
   ltype: Linked To
 - document:
     doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=RA-4
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=RA-4
     name: NIST 800-53 v5
     section: RA-4 Risk Assessment Update
   ltype: Linked To
 - document:
     doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=SA-12
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=SA-12
     name: NIST 800-53 v5
     section: SA-12 Supply Chain Protection
   ltype: Linked To
 - document:
     doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=SA-13
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=SA-13
     name: NIST 800-53 v5
     section: SA-13 Trustworthiness
   ltype: Linked To
 - document:
     doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=SA-14
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=SA-14
     name: NIST 800-53 v5
     section: SA-14 Criticality Analysis
   ltype: Linked To
 - document:
     doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=SA-18
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=SA-18
     name: NIST 800-53 v5
     section: SA-18 Tamper Resistance and Detection
   ltype: Linked To
 - document:
     doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=SA-19
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=SA-19
     name: NIST 800-53 v5
     section: SA-19 Component Authenticity
   ltype: Linked To
 - document:
     doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=SA-6
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=SA-6
     name: NIST 800-53 v5
     section: SA-6 Software Usage Restrictions
   ltype: Linked To
 - document:
     doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=SA-7
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=SA-7
     name: NIST 800-53 v5
     section: SA-7 User-installed Software
   ltype: Linked To
 - document:
     doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=SC-14
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=SC-14
     name: NIST 800-53 v5
     section: SC-14 Public Access Protections
   ltype: Linked To
 - document:
     doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=SC-19
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=SC-19
     name: NIST 800-53 v5
     section: SC-19 Voice Over Internet Protocol
   ltype: Linked To
 - document:
     doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=SC-33
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=SC-33
     name: NIST 800-53 v5
     section: SC-33 Transmission Preparation Integrity
   ltype: Linked To
 - document:
     doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=SC-9
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=SC-9
     name: NIST 800-53 v5
     section: SC-9 Transmission Confidentiality
   ltype: Linked To
 - document:
     doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=SI-9
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=SI-9
     name: NIST 800-53 v5
     section: SI-9 Information Input Restrictions
   ltype: Linked To

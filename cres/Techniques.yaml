@@ -8,26 +8,26 @@ links:
   ltype: Contains
 - document:
     doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=SC-44
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=SC-44
     name: NIST 800-53 v5
     section: SC-44 Detonation Chambers
     subsection: mapped to new section secure development/techniques
   ltype: Linked To
 - document:
     doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=SC-39
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=SC-39
     name: NIST 800-53 v5
     section: SC-39 Process Isolation
   ltype: Linked To
 - document:
     doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=SC-3
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=SC-3
     name: NIST 800-53 v5
     section: SC-3 Security Function Isolation
   ltype: Linked To
 - document:
     doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=SC-32
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=SC-32
     name: NIST 800-53 v5
     section: SC-32 System Partitioning
   ltype: Linked To

@@ -6,8 +6,8 @@ links:
     id: 161-451
     name: Output encoding and injection prevention
     tags:
-    - Injection
     - XSS
+    - Injection
   ltype: Contains
 - document:
     doctype: Standard
@@ -123,54 +123,4 @@ links:
     name: Cheat_sheets
     section: XML Security Cheat Sheet
   ltype: Linked To
-- document:
-    doctype: Tool
-    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrules/src/main/java/org/zaproxy/zap/extension/ascanrules/CrossSiteScriptingScanRule.java
-    name: 'ZAP Rule: "Cross Site Scripting (Reflected)"'
-    tags:
-    - '"Active"'
-    tooltype: Offensive
-  ltype: SAME
-- document:
-    doctype: Tool
-    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrules/src/main/java/org/zaproxy/zap/extension/ascanrules/PersistentXssScanRule.java
-    name: 'ZAP Rule: "Cross Site Scripting (Persistent)"'
-    tags:
-    - '"Active"'
-    tooltype: Offensive
-  ltype: SAME
-- document:
-    description: '"N/A"'
-    doctype: Tool
-    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrules/src/main/java/org/zaproxy/zap/extension/ascanrules/PersistentXssPrimeScanRule.java
-    name: 'ZAP Rule: "Cross Site Scripting (Persistent) - Prime"'
-    tags:
-    - '"Active"'
-    tooltype: Offensive
-  ltype: SAME
-- document:
-    description: '"N/A"'
-    doctype: Tool
-    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrules/src/main/java/org/zaproxy/zap/extension/ascanrules/PersistentXssSpiderScanRule.java
-    name: 'ZAP Rule: "Cross Site Scripting (Persistent) - Spider"'
-    tags:
-    - '"Active"'
-    tooltype: Offensive
-  ltype: SAME
-- document:
-    doctype: Tool
-    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesAlpha/src/main/java/org/zaproxy/zap/extension/ascanrulesAlpha/OutOfBandXssScanRule.java
-    name: 'ZAP Rule: "Out of Band XSS"'
-    tags:
-    - '"Active"'
-    tooltype: Offensive
-  ltype: SAME
-- document:
-    doctype: Tool
-    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/domxss/src/main/java/org/zaproxy/zap/extension/domxss/DomXssScanRule.java
-    name: 'ZAP Rule: "Cross Site Scripting (DOM Based)"'
-    tags:
-    - '"Active"'
-    tooltype: Offensive
-  ltype: SAME
 name: Escape output against XSS

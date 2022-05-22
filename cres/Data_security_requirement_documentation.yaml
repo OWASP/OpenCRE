@@ -18,7 +18,7 @@ links:
   ltype: Contains
 - document:
     doctype: Standard
-    hyperlink: Loading...
+    hyperlink: https://owasp.org/www-project-top-ten/2017/A3_2017-Sensitive_Data_Exposure
     name: Top10 2017
     section: A3-Sensitive_Data_Exposure
   ltype: Linked To

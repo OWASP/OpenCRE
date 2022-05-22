@@ -3,67 +3,67 @@ id: 328-113
 links:
 - document:
     doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=RA-1
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=RA-1
     name: NIST 800-53 v5
     section: RA-1 Policy and Procedures
   ltype: Linked To
 - document:
     doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=RA-10
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=RA-10
     name: NIST 800-53 v5
     section: RA-10 Threat Hunting
   ltype: Linked To
 - document:
     doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=RA-2
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=RA-2
     name: NIST 800-53 v5
     section: RA-2 Security Categorization
   ltype: Linked To
 - document:
     doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=RA-3
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=RA-3
     name: NIST 800-53 v5
     section: RA-3 Risk Assessment
   ltype: Linked To
 - document:
     doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=RA-5
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=RA-5
     name: NIST 800-53 v5
     section: RA-5 Vulnerability Monitoring and Scanning
   ltype: Linked To
 - document:
     doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=RA-6
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=RA-6
     name: NIST 800-53 v5
     section: RA-6 Technical Surveillance Countermeasures Survey
   ltype: Linked To
 - document:
     doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=RA-7
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=RA-7
     name: NIST 800-53 v5
     section: RA-7 Risk Response
   ltype: Linked To
 - document:
     doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=RA-8
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=RA-8
     name: NIST 800-53 v5
     section: RA-8 Privacy Impact Assessments
   ltype: Linked To
 - document:
     doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=RA-9
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=RA-9
     name: NIST 800-53 v5
     section: RA-9 Criticality Analysis
   ltype: Linked To
 - document:
     doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=SA-1
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=SA-1
     name: NIST 800-53 v5
     section: SA-1 Policy and Procedures
   ltype: Linked To
 - document:
     doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=SA-9
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=SA-9
     name: NIST 800-53 v5
     section: SA-9 External System Services
   ltype: Linked To

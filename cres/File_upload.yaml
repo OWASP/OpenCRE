@@ -26,8 +26,8 @@ links:
     name: Store and serve user-uploaded files such that they cannot execute/damage
       server or client
     tags:
-    - Injection
     - XSS
+    - Injection
   ltype: Contains
 - document:
     doctype: CRE

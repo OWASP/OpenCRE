@@ -1,0 +1,8 @@
+description: '"_Unavailable_"'
+doctype: Tool
+hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrulesAlpha/src/main/java/org/zaproxy/zap/extension/pscanrulesAlpha/CacheableScanRule.java
+name: 'ZAP Rule: "Content Cacheability"'
+tags:
+- '10049'
+- '"Passive"'
+tooltype: Offensive

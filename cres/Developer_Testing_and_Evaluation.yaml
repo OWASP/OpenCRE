@@ -8,7 +8,7 @@ links:
   ltype: Contains
 - document:
     doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=SA-11
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=SA-11
     name: NIST 800-53 v5
     section: SA-11 Developer Testing and Evaluation
   ltype: Linked To

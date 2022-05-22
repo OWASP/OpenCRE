@@ -55,7 +55,7 @@ links:
   ltype: Contains
 - document:
     doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=SA-5
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=SA-5
     name: NIST 800-53 v5
     section: SA-5 System Documentation
   ltype: Linked To

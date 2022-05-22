@@ -40,7 +40,7 @@ links:
   ltype: Related
 - document:
     doctype: Standard
-    hyperlink: Loading...
+    hyperlink: https://owasp.org/www-project-top-ten/2017/A8_2017-Insecure_Deserialization
     name: Top10 2017
     section: A8_Insecure_Deserialization
   ltype: Linked To

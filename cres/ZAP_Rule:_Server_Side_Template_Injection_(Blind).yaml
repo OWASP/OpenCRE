@@ -1,0 +1,9 @@
+description: '"Instead of inserting the user input in the template, use it as rendering
+  argument."'
+doctype: Tool
+hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesAlpha/src/main/java/org/zaproxy/zap/extension/ascanrulesAlpha/SstiBlindScanRule.java
+name: 'ZAP Rule: "Server Side Template Injection (Blind)"'
+tags:
+- '90036'
+- '"Active"'
+tooltype: Offensive

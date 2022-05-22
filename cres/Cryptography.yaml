@@ -3,6 +3,13 @@ id: 170-772
 links:
 - document:
     doctype: CRE
+    id: 228-551
+    name: TLS
+    tags:
+    - Cryptography
+  ltype: Related
+- document:
+    doctype: CRE
     id: 333-858
     name: Resist stolen credentials
     tags:
@@ -85,7 +92,7 @@ links:
   ltype: Contains
 - document:
     doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=SC-17
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=SC-17
     name: NIST 800-53 v5
     section: SC-17 Public Key Infrastructure Certificates
     subsection: Mapped to Tag cryptography. I believe cryptography deserves a chapter
@@ -93,13 +100,13 @@ links:
   ltype: Linked To
 - document:
     doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=SC-12
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=SC-12
     name: NIST 800-53 v5
     section: SC-12 CRYPTOGRAPHIC KEY ESTABLISHMENT AND MANAGEMENT
   ltype: Linked To
 - document:
     doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=SC-13
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=SC-13
     name: NIST 800-53 v5
     section: SC-13 Cryptographic Protection
   ltype: Linked To

@@ -59,38 +59,18 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 138-448
-    name: Inform users for authentication renewal
-  ltype: Related
-- document:
-    doctype: CRE
-    id: 808-425
-    name: Notify users about anomalies in their usage patterns
-  ltype: Related
-- document:
-    doctype: CRE
-    id: 751-176
-    name: Offer password changing functionality
-  ltype: Related
-- document:
-    doctype: CRE
-    id: 327-505
-    name: Change password with presence of old and new password
-  ltype: Related
-- document:
-    doctype: CRE
     id: 177-260
     name: '>>Session management'
   ltype: Related
 - document:
     doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=IA-6
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=IA-6
     name: NIST 800-53 v5
     section: IA-6 Authentication Feedback
   ltype: Linked To
 - document:
     doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=IA-7
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=IA-7
     name: NIST 800-53 v5
     section: IA-7 Cryptographic Module Authentication
   ltype: Linked To

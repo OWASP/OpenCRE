@@ -6,8 +6,8 @@ links:
     id: 161-451
     name: Output encoding and injection prevention
     tags:
-    - Injection
     - XSS
+    - Injection
   ltype: Contains
 - document:
     doctype: Standard
@@ -117,14 +117,4 @@ links:
     name: Cheat_sheets
     section: XML Security Cheat Sheet
   ltype: Linked To
-- document:
-    description: '"Ensure JavaScript source files are loaded from only trusted sources,
-      and the sources can''t be controlled by end users of the application."'
-    doctype: Tool
-    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/CrossDomainScriptInclusionScanRule.java
-    name: 'ZAP Rule: "Cross-Domain JavaScript Source File Inclusion"'
-    tags:
-    - '"Passive"'
-    tooltype: Offensive
-  ltype: SAME
 name: Protect against LFI / RFI

@@ -60,5 +60,5 @@ links:
   ltype: Contains
 name: Sanitization and sandboxing
 tags:
-- Injection
 - XSS
+- Injection

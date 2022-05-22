@@ -1,0 +1,9 @@
+description: '"See reference for further information. The solution depends on implementation
+  details"'
+doctype: Tool
+hyperlink: https://github.com/SasanLabs/owasp-zap-jwt-addon/blob/master/src/main/java/org/zaproxy/zap/extension/jwt/JWTActiveScanRule.java
+name: 'ZAP Rule: "JWT Scan Rule"'
+tags:
+- '40036'
+- '"Active"'
+tooltype: Offensive
