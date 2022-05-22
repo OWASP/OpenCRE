@@ -6,8 +6,8 @@ links:
     id: 764-765
     name: Sanitization and sandboxing
     tags:
-    - Injection
     - XSS
+    - Injection
   ltype: Contains
 - document:
     doctype: Standard
@@ -51,32 +51,4 @@ links:
     name: Cheat_sheets
     section: Unvalidated Redirects and Forwards Cheat Sheet
   ltype: Linked To
-- document:
-    description: '"Ensure the .htaccess file is not accessible."'
-    doctype: Tool
-    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrules/src/main/java/org/zaproxy/zap/extension/ascanrules/HtAccessScanRule.java
-    name: 'ZAP Rule: ".htaccess Information Leak"'
-    tags:
-    - '"Active"'
-    tooltype: Offensive
-  ltype: SAME
-- document:
-    doctype: Tool
-    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrules/src/main/java/org/zaproxy/zap/extension/ascanrules/CodeInjectionScanRule.java
-    name: 'ZAP Rule: "Server Side Code Injection"'
-    tags:
-    - '"Active"'
-    tooltype: Offensive
-  ltype: SAME
-- document:
-    description: '"Consider whether or not ELMAH is actually required in production,
-      if it isn''t then disable it. If it is then ensure access to it requires authentication
-      and authorization. See also: https://elmah.github.io/a/securing-error-log-pages/"'
-    doctype: Tool
-    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrules/src/main/java/org/zaproxy/zap/extension/ascanrules/ElmahScanRule.java
-    name: 'ZAP Rule: "ELMAH Information Leak"'
-    tags:
-    - '"Active"'
-    tooltype: Offensive
-  ltype: SAME
 name: Sanitize/sandbox user input where template-injection is a threat

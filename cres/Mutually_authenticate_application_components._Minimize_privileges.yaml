@@ -13,7 +13,8 @@ links:
   ltype: Related
 - document:
     doctype: CRE
-    name: Authorized access
+    id: 724-770
+    name: '>>Authorized access'
   ltype: Related
 - document:
     doctype: Standard

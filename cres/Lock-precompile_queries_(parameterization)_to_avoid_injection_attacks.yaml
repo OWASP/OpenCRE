@@ -6,8 +6,8 @@ links:
     id: 161-451
     name: Output encoding and injection prevention
     tags:
-    - Injection
     - XSS
+    - Injection
   ltype: Contains
 - document:
     doctype: Standard
@@ -123,68 +123,4 @@ links:
     name: Cheat_sheets
     section: XML Security Cheat Sheet
   ltype: Linked To
-- document:
-    doctype: Tool
-    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/SqlInjectionOracleScanRule.java
-    name: 'ZAP Rule: "SQL Injection - Oracle"'
-    tags:
-    - '"Active"'
-    tooltype: Offensive
-  ltype: SAME
-- document:
-    doctype: Tool
-    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/sqliplugin/src/main/java/org/zaproxy/zap/extension/sqliplugin/SQLInjectionScanRule.java
-    name: 'ZAP Rule: "Advanced SQL Injection"'
-    tags:
-    - '"Active"'
-    tooltype: Offensive
-  ltype: SAME
-- document:
-    doctype: Tool
-    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/SqlInjectionHypersonicScanRule.java
-    name: 'ZAP Rule: "SQL Injection - Hypersonic SQL"'
-    tags:
-    - '"Active"'
-    tooltype: Offensive
-  ltype: SAME
-- document:
-    doctype: Tool
-    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/SqlInjectionMsSqlScanRule.java
-    name: 'ZAP Rule: "SQL Injection - MsSQL"'
-    tags:
-    - '"Active"'
-    tooltype: Offensive
-  ltype: SAME
-- document:
-    doctype: Tool
-    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/SqlInjectionMySqlScanRule.java
-    name: 'ZAP Rule: "SQL Injection - MySQL"'
-    tags:
-    - '"Active"'
-    tooltype: Offensive
-  ltype: SAME
-- document:
-    doctype: Tool
-    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/SqlInjectionPostgreScanRule.java
-    name: 'ZAP Rule: "SQL Injection - PostgreSQL"'
-    tags:
-    - '"Active"'
-    tooltype: Offensive
-  ltype: SAME
-- document:
-    doctype: Tool
-    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrules/src/main/java/org/zaproxy/zap/extension/ascanrules/SqlInjectionScanRule.java
-    name: 'ZAP Rule: "SQL Injection"'
-    tags:
-    - '"Active"'
-    tooltype: Offensive
-  ltype: SAME
-- document:
-    doctype: Tool
-    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/SqlInjectionSqLiteScanRule.java
-    name: 'ZAP Rule: "SQL Injection - SQLite"'
-    tags:
-    - '"Active"'
-    tooltype: Offensive
-  ltype: SAME
 name: Lock/precompile queries (parameterization) to avoid injection attacks

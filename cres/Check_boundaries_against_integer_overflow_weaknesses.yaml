@@ -18,15 +18,4 @@ links:
     name: CWE
     section: '190'
   ltype: Linked To
-- document:
-    description: '"Rewrite the background program using proper checking of the size
-      of integer being input to prevent overflows and divide by 0 errors.  This will
-      require a recompile of the background executable."'
-    doctype: Tool
-    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/IntegerOverflowScanRule.java
-    name: 'ZAP Rule: "Integer Overflow Error"'
-    tags:
-    - '"Active"'
-    tooltype: Offensive
-  ltype: SAME
 name: Check boundaries against integer overflow weaknesses

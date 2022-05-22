@@ -57,5 +57,5 @@ links:
   ltype: Contains
 name: Input validation
 tags:
-- Injection
 - XSS
+- Injection

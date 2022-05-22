@@ -49,7 +49,7 @@ links:
   ltype: Linked To
 - document:
     doctype: Standard
-    hyperlink: Loading...
+    hyperlink: https://owasp.org/www-project-top-ten/2017/A4_2017-XML_External_Entities_(XXE)
     name: Top10 2017
     section: A4-XML_External_Entities_(XXE)
   ltype: Linked To

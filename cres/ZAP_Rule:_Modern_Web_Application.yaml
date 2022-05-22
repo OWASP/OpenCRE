@@ -1,0 +1,8 @@
+description: '"This is an informational alert and so no changes are required."'
+doctype: Tool
+hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrulesBeta/src/main/java/org/zaproxy/zap/extension/pscanrulesBeta/ModernAppDetectionScanRule.java
+name: 'ZAP Rule: "Modern Web Application"'
+tags:
+- '10109'
+- '"Passive"'
+tooltype: Offensive
