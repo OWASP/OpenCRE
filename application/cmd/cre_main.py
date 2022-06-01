@@ -23,6 +23,10 @@ from application.utils.external_project_parsers import (
 from dacite import from_dict
 from dacite.config import Config
 
+from application import sqla
+from sqlalchemy import create_engine
+from sqlalchemy.orm import scoped_session, sessionmaker
+
 logging.basicConfig()
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -377,14 +381,17 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
             exit(1)
 
 
-def db_connect(path: str) -> Tuple[db.Node_collection, Any, Any]:
-
+def db_connect(
+    path: str, session=None, mk_app=True
+) -> Tuple[db.Node_collection, Any, Any]:
     global app
+    app_context = None
     conf = CMDConfig(db_uri=path)
     app = create_app(conf=conf)
-    collection = db.Node_collection()
     app_context = app.app_context()
     app_context.push()
+    collection = db.Node_collection()
+
     return (collection, app, app_context)
 
 
@@ -527,8 +534,13 @@ def compare_datasets(db1: str, db2: str) -> List[Dict]:
                         "attributes2": edges2[edge],
                     }
         return differences
-
-    database1, _, _ = db_connect(path=db1)
+    # sqla = create_engine(db1)
+    # session1 = scoped_session(
+    #     sessionmaker(autocommit=False, autoflush=False, bind=sqla)
+    # )
+    # database1 = db.Node_collection(session=session1)
+    database1, app1, context1 = db_connect(path=db1)
+    database1.graph.graph = db.CRE_Graph.load_cre_graph(session=database1.session)
     g1 = database1.graph.graph
     n1, e1 = make_hashtable(g1)
 
@@ -538,7 +550,11 @@ def compare_datasets(db1: str, db2: str) -> List[Dict]:
     database1.graph._instance = None
     database1.graph = None
 
-    database2, _, _ = db_connect(path=db2)
+    engine2 = create_engine(db2)
+    session2 = scoped_session(
+        sessionmaker(autocommit=False, autoflush=False, bind=engine2)
+    )
+    database2 = db.Node_collection (session=session2)
     g2 = database2.graph.graph
     print("$" * 90)
     database2.graph.print_graph()

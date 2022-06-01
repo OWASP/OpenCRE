@@ -676,7 +676,7 @@ class TestMain(unittest.TestCase):
         _, t1 = tempfile.mkstemp()
         _, t2 = tempfile.mkstemp()
         _, tdiff = tempfile.mkstemp()
-        self.tmpdirs.extend([t1, t2, tdiff])
+        # self.tmpdirs.extend([t1, t2, tdiff])
 
         c0 = defs.CRE(id="111-000", description="CREdesc", name="CREname")
         s456 = defs.Standard(
@@ -698,6 +698,7 @@ class TestMain(unittest.TestCase):
             name="Unlinked",
             hyperlink="https://example.com",
         )
+        
         connection_1, app1, context1 = main.db_connect(path=t1)
         sqla.create_all(app=app1)
         connection_1.graph.graph = db.CRE_Graph.load_cre_graph(connection_1.session)
@@ -733,7 +734,9 @@ class TestMain(unittest.TestCase):
 
         # self.assertEqual(main.compare_datasets("foo", "bar"), [{},{},{},{}])
         # self.assertEqual(main.compare_datasets(t1,t2), [{},{},{},{}])
-        self.assertNotEqual(main.compare_datasets(t1, tdiff), [{}, {}, {}, {}])
+        pprint("sqlite://"+t1)
+        pprint("sqlite://"+tdiff)
+        self.assertNotEqual(main.compare_datasets("sqlite://"+t1, "sqlite://"+tdiff), [{}, {}, {}, {}])
 
         contextdiff.pop()
         # context2.pop()

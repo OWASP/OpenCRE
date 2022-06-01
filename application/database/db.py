@@ -231,8 +231,11 @@ class Node_collection:
     graph: nx.Graph = None
     session = None
 
-    def __init__(self, session=sqla.session) -> None:
-        self.graph = CRE_Graph.instance(sqla.session)
+    def __init__(self, session=sqla.session, graph:CRE_Graph=None) -> None:
+        if graph:
+            self.graph = graph
+        else:
+            self.graph = CRE_Graph.instance(sqla.session)
         self.session = session
 
     def __get_external_links(self) -> List[Tuple[CRE, Node, str]]:
