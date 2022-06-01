@@ -24,5 +24,13 @@ links:
     name: (WSTG) Web Security Testing Guide
     section: WSTG-ATHZ-01
   ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/13.html
+    name: CAPEC
+    section: '13'
+    subsection: Subverting Environment Variable Values
+    version: '3.7'
+  ltype: SAME
 name: Ignore/at least validate filename metadata from untrusted origin (local file
   context, eg LFI)

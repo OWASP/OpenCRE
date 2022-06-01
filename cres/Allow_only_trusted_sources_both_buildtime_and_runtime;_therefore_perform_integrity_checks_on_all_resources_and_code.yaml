@@ -24,5 +24,29 @@ links:
     name: Cheat_sheets
     section: Docker Security Cheat Sheet
   ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/13.html
+    name: CAPEC
+    section: '13'
+    subsection: Subverting Environment Variable Values
+    version: '3.7'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/665.html
+    name: CAPEC
+    section: '665'
+    subsection: Exploitation of Thunderbolt Protection Flaws
+    version: '3.7'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/74.html
+    name: CAPEC
+    section: '74'
+    subsection: Manipulating State
+    version: '3.7'
+  ltype: SAME
 name: Allow only trusted sources both buildtime and runtime; therefore perform integrity
   checks on all resources and code

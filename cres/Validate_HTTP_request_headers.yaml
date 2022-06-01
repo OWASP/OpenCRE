@@ -32,4 +32,598 @@ links:
     name: Top10 2017
     section: A6_Security_Misconfiguration
   ltype: Linked To
+- document:
+    description: '"Do not use a target attribute, or if you have to then also add
+      the attribute: rel=''noopener noreferrer''."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrulesBeta/src/main/java/org/zaproxy/zap/extension/pscanrulesBeta/LinkTargetScanRule.java
+    name: 'ZAP Rule: "Reverse Tabnabbing"'
+    tags:
+    - '10108'
+    - '"Passive"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"Ensure sensitive data is only sent over secured HTTPS channels."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrulesBeta/src/main/java/org/zaproxy/zap/extension/pscanrulesBeta/InsecureFormPostScanRule.java
+    name: 'ZAP Rule: "HTTPS to HTTP Insecure Transition in Form Post"'
+    tags:
+    - '10042'
+    - '"Passive"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"Consider whether or not the component is actually required in production,
+      if it isn''t then disable it. If it is then ensure access to it requires appropriate
+      authentication and authorization, or limit exposure to internal systems or specific
+      source IPs, etc."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/HiddenFilesScanRule.java
+    name: 'ZAP Rule: "Hidden File Finder"'
+    tags:
+    - '40035'
+    - '"Active"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"Configure your web or application server to use SSL (https)."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/HttpOnlySiteScanRule.java
+    name: 'ZAP Rule: "HTTP Only Site"'
+    tags:
+    - '10106'
+    - '"Active"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"Ensure X-Frame-Options is set via a response header field.  Alternatively
+      consider implementing Content Security Policy''s ''frame-ancestors'' directive."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/AntiClickjackingScanRule.java
+    name: 'ZAP Rule: "X-Frame-Options Defined via META (Non-compliant with Spec)"'
+    tags:
+    - '10020'
+    - '"Passive"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"Consider whether or not Trace Viewer is actually required in production,
+      if it isn''t then disable it. If it is then ensure access to it requires authentication
+      and authorization."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/TraceAxdScanRule.java
+    name: 'ZAP Rule: "Trace.axd Information Leak"'
+    tags:
+    - '40029'
+    - '"Active"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/SourceCodeDisclosureFileInclusionScanRule.java
+    name: 'ZAP Rule: "Source Code Disclosure - File Inclusion"'
+    tags:
+    - '43'
+    - '"Active"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"Ensure a valid setting is used on all web pages returned by your
+      site (if you expect the page to be framed only by pages on your server (e.g.
+      it''s part of a FRAMESET) then you''ll want to use SAMEORIGIN, otherwise if
+      you never expect the page to be framed, you should use DENY.  Alternatively
+      consider implementing Content Security Policy''s ''frame-ancestors'' directive."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/AntiClickjackingScanRule.java
+    name: 'ZAP Rule: "X-Frame-Options Setting Malformed"'
+    tags:
+    - '10020'
+    - '"Passive"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"Provide a valid integrity attribute to the tag."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrulesAlpha/src/main/java/org/zaproxy/zap/extension/pscanrulesAlpha/SubResourceIntegrityAttributeScanRule.java
+    name: 'ZAP Rule: "Sub Resource Integrity Attribute Missing"'
+    tags:
+    - '90003'
+    - '"Passive"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/RelativePathConfusionScanRule.java
+    name: 'ZAP Rule: "Relative Path Confusion"'
+    tags:
+    - '10051'
+    - '"Active"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"Ensure the engaged framework is still supported by Microsoft."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/ViewstateScanRule.java
+    name: 'ZAP Rule: "Old Asp.Net Version in Use"'
+    tags:
+    - '10032'
+    - '"Passive"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/AntiClickjackingScanRule.java
+    name: 'ZAP Rule: "Missing Anti-clickjacking Header"'
+    tags:
+    - '10020'
+    - '"Passive"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"Make your WSDL files visible only for technical issues (ex: testing
+      purposes)."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/soap/src/main/java/org/zaproxy/zap/extension/soap/WSDLFilePassiveScanRule.java
+    name: 'ZAP Rule: "WSDL File Detection"'
+    tags:
+    - '90030'
+    - '"Passive"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"Ensure that only POST is accepted where POST is expected."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/GetForPostScanRule.java
+    name: 'ZAP Rule: "GET for POST"'
+    tags:
+    - '10058'
+    - '"Active"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"Ensure that your web server, application server, load balancer,
+      etc. is configured to set the Content-Security-Policy header, to achieve optimal
+      browser support: ''Content-Security-Policy'' for Chrome 25+, Firefox 23+ and
+      Safari 7+, ''X-Content-Security-Policy'' for Firefox 4.0+ and Internet Explorer
+      10+, and ''X-WebKit-CSP'' for Chrome 14+ and Safari 6+."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/ContentSecurityPolicyMissingScanRule.java
+    name: 'ZAP Rule: "Content Security Policy (CSP) Header Not Set"'
+    tags:
+    - '10038'
+    - '"Passive"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"Secure VIEWSTATE with a MAC specific to your environment"'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/InsecureJsfViewStatePassiveScanRule.java
+    name: 'ZAP Rule: "Insecure JSF ViewState"'
+    tags:
+    - '90001'
+    - '"Passive"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"Ensure that Git metadata files are not deployed to the web server
+      or application server"'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/SourceCodeDisclosureGitScanRule.java
+    name: 'ZAP Rule: "Source Code Disclosure - Git "'
+    tags:
+    - '41'
+    - '"Active"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/ProxyDisclosureScanRule.java
+    name: 'ZAP Rule: "Proxy Disclosure"'
+    tags:
+    - '40025'
+    - '"Active"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"Before allowing images to be stored on the server and/or transmitted
+      to the browser, strip out the embedded location information from image.  This
+      could mean removing all Exif data or just the GPS component.  Other data, like
+      serial numbers, should also be removed."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/imagelocationscanner/src/main/java/org/zaproxy/zap/extension/imagelocationscanner/ImageLocationScanRule.java
+    name: 'ZAP Rule: "Image Exposes Location or Privacy Data"'
+    tags:
+    - '10103'
+    - '"Passive"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"All forms must specify the action URL."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrulesBeta/src/main/java/org/zaproxy/zap/extension/pscanrulesBeta/ServletParameterPollutionScanRule.java
+    name: 'ZAP Rule: "HTTP Parameter Override"'
+    tags:
+    - '10026'
+    - '"Passive"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"Verify the provided information isn''t confidential."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/ViewstateScanRule.java
+    name: 'ZAP Rule: "Potential IP Addresses Found in the Viewstate"'
+    tags:
+    - '10032'
+    - '"Passive"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"Consider whether or not ELMAH is actually required in production,
+      if it isn''t then disable it. If it is then ensure access to it requires authentication
+      and authorization. See also: https://elmah.github.io/a/securing-error-log-pages/"'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrules/src/main/java/org/zaproxy/zap/extension/ascanrules/ElmahScanRule.java
+    name: 'ZAP Rule: "ELMAH Information Leak"'
+    tags:
+    - '40028'
+    - '"Active"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"Always scope cookies to a FQDN (Fully Qualified Domain Name)."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/CookieLooselyScopedScanRule.java
+    name: 'ZAP Rule: "Loosely Scoped Cookie"'
+    tags:
+    - '90033'
+    - '"Passive"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"Ensure only a single X-Frame-Options header is present in the response."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/AntiClickjackingScanRule.java
+    name: 'ZAP Rule: "Multiple X-Frame-Options Header Entries"'
+    tags:
+    - '10020'
+    - '"Passive"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"Update the affected server software, or modify the scripts so that
+      they properly validate encrypted data before attempting decryption."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/PaddingOracleScanRule.java
+    name: 'ZAP Rule: "Generic Padding Oracle"'
+    tags:
+    - '90024'
+    - '"Active"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/XContentTypeOptionsScanRule.java
+    name: 'ZAP Rule: "X-Content-Type-Options Header Missing"'
+    tags:
+    - '10021'
+    - '"Passive"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"None - the guys running the server may have tuned the configuration
+      as this isn''t the default setting."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/ViewstateScanRule.java
+    name: 'ZAP Rule: "Split Viewstate in Use"'
+    tags:
+    - '10032'
+    - '"Passive"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrulesAlpha/src/main/java/org/zaproxy/zap/extension/pscanrulesAlpha/InPageBannerInfoLeakScanRule.java
+    name: 'ZAP Rule: "In Page Banner Information Leak"'
+    tags:
+    - '10009'
+    - '"Passive"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"Ensure the MAC is set for all pages on this website."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/ViewstateScanRule.java
+    name: 'ZAP Rule: "Viewstate without MAC Signature (Sure)"'
+    tags:
+    - '10032'
+    - '"Passive"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"Configure the web server to disable directory browsing. "'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrulesBeta/src/main/java/org/zaproxy/zap/extension/pscanrulesBeta/DirectoryBrowsingScanRule.java
+    name: 'ZAP Rule: "Directory Browsing"'
+    tags:
+    - '10033'
+    - '"Passive"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"Use HTTPS for landing pages that host secure forms."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrulesBeta/src/main/java/org/zaproxy/zap/extension/pscanrulesBeta/InsecureFormLoadScanRule.java
+    name: 'ZAP Rule: "HTTP to HTTPS Insecure Transition in Form Post"'
+    tags:
+    - '10041'
+    - '"Passive"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"Ensure the MAC is set for all pages on this website."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/ViewstateScanRule.java
+    name: 'ZAP Rule: "Viewstate without MAC Signature (Unsure)"'
+    tags:
+    - '10032'
+    - '"Passive"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"Ensure that your web server, application server, load balancer,
+      etc. is properly configured to set the Content-Security-Policy header."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/ContentSecurityPolicyScanRule.java
+    name: 'ZAP Rule: "CSP"'
+    tags:
+    - '10055'
+    - '"Passive"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/CrossDomainScanRule.java
+    name: 'ZAP Rule: "Cross-Domain Misconfiguration"'
+    tags:
+    - '20016'
+    - '"Active"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"Ensure that your web server, application server, load balancer,
+      etc. is configured to suppress X-Backend-Server headers."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrulesBeta/src/main/java/org/zaproxy/zap/extension/pscanrulesBeta/XBackendServerInformationLeakScanRule.java
+    name: 'ZAP Rule: "X-Backend-Server Header Information Leak"'
+    tags:
+    - '10039'
+    - '"Passive"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/CsrfTokenScanRule.java
+    name: 'ZAP Rule: "Anti-CSRF Tokens Check"'
+    tags:
+    - '"Active"'
+    - '20012'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"Ensure that application Source Code is not available with alternative
+      extensions, and ensure that source code is not present within other files or
+      data deployed to the web server, or served by the web server. "'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrulesAlpha/src/main/java/org/zaproxy/zap/extension/pscanrulesAlpha/SourceCodeDisclosureScanRule.java
+    name: 'ZAP Rule: "Source Code Disclosure"'
+    tags:
+    - '10099'
+    - '"Passive"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"Ensure that your web server, application server, load balancer,
+      etc. is configured to enforce Strict-Transport-Security."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrulesBeta/src/main/java/org/zaproxy/zap/extension/pscanrulesBeta/StrictTransportSecurityScanRule.java
+    name: 'ZAP Rule: "Strict-Transport-Security Header"'
+    tags:
+    - '10035'
+    - '"Passive"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"TBA"'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/InsecureHttpMethodScanRule.java
+    name: 'ZAP Rule: "Insecure HTTP Method"'
+    tags:
+    - '90028'
+    - '"Active"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/MixedContentScanRule.java
+    name: 'ZAP Rule: "Secure Pages Include Mixed Content"'
+    tags:
+    - '10040'
+    - '"Passive"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"_Unavailable_"'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrulesBeta/src/main/java/org/zaproxy/zap/extension/pscanrulesBeta/ServerHeaderInfoLeakScanRule.java
+    name: 'ZAP Rule: "HTTP Server Response Header"'
+    tags:
+    - '10036'
+    - '"Passive"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrules/src/main/java/org/zaproxy/zap/extension/ascanrules/SourceCodeDisclosureWebInfScanRule.java
+    name: 'ZAP Rule: "Source Code Disclosure - /WEB-INF folder"'
+    tags:
+    - '10045'
+    - '"Active"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"Whenever a cookie contains sensitive information or is a session
+      token, then it should always be passed using an encrypted channel. Ensure that
+      the secure flag is set for cookies containing such sensitive information."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/CookieSecureFlagScanRule.java
+    name: 'ZAP Rule: "Cookie Without Secure Flag"'
+    tags:
+    - '10011'
+    - '"Passive"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"Configure the server so it will not return those headers."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/XAspNetVersionScanRule.java
+    name: 'ZAP Rule: "X-AspNet-Version Response Header"'
+    tags:
+    - '10061'
+    - '"Passive"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"Ensure that SVN metadata files are not deployed to the web server
+      or application server"'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/SourceCodeDisclosureSvnScanRule.java
+    name: 'ZAP Rule: "Source Code Disclosure - SVN"'
+    tags:
+    - '42'
+    - '"Active"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"It is strongly advised to refrain from classifying file types,
+      such as images or stylesheets solely by their URL and file extension. Instead
+      you should make sure that files are cached based on their Content-Type header."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesAlpha/src/main/java/org/zaproxy/zap/extension/ascanrulesAlpha/WebCacheDeceptionScanRule.java
+    name: 'ZAP Rule: "Web Cache Deception"'
+    tags:
+    - '40039'
+    - '"Active"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/SlackerCookieScanRule.java
+    name: 'ZAP Rule: "Cookie Slack Detector"'
+    tags:
+    - '90027'
+    - '"Active"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"Ensure that the HttpOnly flag is set for all cookies."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/CookieHttpOnlyScanRule.java
+    name: 'ZAP Rule: "Cookie No HttpOnly Flag"'
+    tags:
+    - '10010'
+    - '"Passive"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"Ensure that your web server, application server, load balancer,
+      etc. is configured to only serve such content via HTTPS. Consider implementing
+      HTTP Strict Transport Security."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/HttpsAsHttpScanRule.java
+    name: 'ZAP Rule: "HTTPS Content Available via HTTP"'
+    tags:
+    - '"Active"'
+    - '10047'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"Do not trust any user data in NGINX configs. In this case it is
+      probably the use of the $host variable which is set from the ''Host'' header
+      and can be controlled by an attacker."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/CloudMetadataScanRule.java
+    name: 'ZAP Rule: "Cloud Metadata Potentially Exposed"'
+    tags:
+    - '90034'
+    - '"Active"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"Ensure the .env file is not accessible."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/EnvFileScanRule.java
+    name: 'ZAP Rule: ".env Information Leak"'
+    tags:
+    - '40034'
+    - '"Active"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"Ensure each page is setting the specific and appropriate content-type
+      value for the content being delivered."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/ContentTypeMissingScanRule.java
+    name: 'ZAP Rule: "Content-Type Header Missing"'
+    tags:
+    - '10019'
+    - '"Passive"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"Do not divulge details of whether a username is valid or invalid.
+      In particular, for unsuccessful login attempts, do not differentiate between
+      an invalid user and an invalid password in the error message, page title, page
+      contents, HTTP headers, or redirection logic."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/UsernameEnumerationScanRule.java
+    name: 'ZAP Rule: "Possible Username Enumeration"'
+    tags:
+    - '"Active"'
+    - '40023'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"Verify the provided information isn''t confidential."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/ViewstateScanRule.java
+    name: 'ZAP Rule: "Emails Found in the Viewstate"'
+    tags:
+    - '10032'
+    - '"Passive"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"Review the source code of this page. Implement custom error pages.
+      Consider implementing a mechanism to provide a unique error reference/identifier
+      to the client (browser) while logging the details on the server side and not
+      exposing them to the user."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/ApplicationErrorScanRule.java
+    name: 'ZAP Rule: "Application Error Disclosure"'
+    tags:
+    - '90022'
+    - '"Passive"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"Ensure the .htaccess file is not accessible."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrules/src/main/java/org/zaproxy/zap/extension/ascanrules/HtAccessScanRule.java
+    name: 'ZAP Rule: ".htaccess Information Leak"'
+    tags:
+    - '40032'
+    - '"Active"'
+    tooltype: Offensive
+  ltype: Linked To
 name: Validate HTTP request headers

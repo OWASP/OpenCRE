@@ -114,4 +114,330 @@ links:
     name: Top10 2017
     section: A10_Insufficient_Logging&Monitoring
   ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrules/src/main/java/org/zaproxy/zap/extension/ascanrules/ExternalRedirectScanRule.java
+    name: 'ZAP Rule: "External Redirect"'
+    tags:
+    - '"Active"'
+    - '20019'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/SqlInjectionMySqlScanRule.java
+    name: 'ZAP Rule: "SQL Injection - MySQL"'
+    tags:
+    - '40019'
+    - '"Active"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"Rewrite the background program using proper return length checking.  This
+      will require a recompile of the background executable."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrules/src/main/java/org/zaproxy/zap/extension/ascanrules/BufferOverflowScanRule.java
+    name: 'ZAP Rule: "Buffer Overflow"'
+    tags:
+    - '30001'
+    - '"Active"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"Rewrite the background program using proper deletion of bad character
+      strings.  This will require a recompile of the background executable."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrules/src/main/java/org/zaproxy/zap/extension/ascanrules/FormatStringScanRule.java
+    name: 'ZAP Rule: "Format String Error"'
+    tags:
+    - '30002'
+    - '"Active"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"Upgrade Spring Framework to versions 5.3.18, 5.2.20, or newer."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesAlpha/src/main/java/org/zaproxy/zap/extension/ascanrulesAlpha/Spring4ShellScanRule.java
+    name: 'ZAP Rule: "Spring4Shell"'
+    tags:
+    - '40045'
+    - '"Active"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/SqlInjectionHypersonicScanRule.java
+    name: 'ZAP Rule: "SQL Injection - Hypersonic SQL"'
+    tags:
+    - '"Active"'
+    - '40020'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrules/src/main/java/org/zaproxy/zap/extension/ascanrules/ServerSideIncludeScanRule.java
+    name: 'ZAP Rule: "Server Side Include"'
+    tags:
+    - '"Active"'
+    - '40009'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesAlpha/src/main/java/org/zaproxy/zap/extension/ascanrulesAlpha/LdapInjectionScanRule.java
+    name: 'ZAP Rule: "LDAP Injection"'
+    tags:
+    - '40015'
+    - '"Active"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/SqlInjectionMsSqlScanRule.java
+    name: 'ZAP Rule: "SQL Injection - MsSQL"'
+    tags:
+    - '40027'
+    - '"Active"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"Perform data validation best practice against untrusted input and
+      to ensure that output encoding is applied when data arrives on the EL layer,
+      so that no metacharacter is found by the interpreter within the user content
+      before evaluation. The most obvious patterns to detect include ${ and #{, but
+      it may be possible to encode or fragment this data."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/ExpressionLanguageInjectionScanRule.java
+    name: 'ZAP Rule: "Expression Language Injection"'
+    tags:
+    - '90025'
+    - '"Active"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"Force UTF-8 in all charset declarations. If user-input is required
+      to decide a charset declaration, ensure that only an allowed list is used."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrulesBeta/src/main/java/org/zaproxy/zap/extension/pscanrulesBeta/UserControlledCharsetScanRule.java
+    name: 'ZAP Rule: "User Controllable Charset"'
+    tags:
+    - '10030'
+    - '"Passive"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/SqlInjectionSqLiteScanRule.java
+    name: 'ZAP Rule: "SQL Injection - SQLite"'
+    tags:
+    - '"Active"'
+    - '40024'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrules/src/main/java/org/zaproxy/zap/extension/ascanrules/RemoteFileIncludeScanRule.java
+    name: 'ZAP Rule: "Remote File Inclusion"'
+    tags:
+    - '7'
+    - '"Active"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"Do not allow user input to control cookie names and values. If
+      some query string parameters must be set in cookie values, be sure to filter
+      out semicolon''s that can serve as name/value pair delimiters."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrulesBeta/src/main/java/org/zaproxy/zap/extension/pscanrulesBeta/UserControlledCookieScanRule.java
+    name: 'ZAP Rule: "Cookie Poisoning"'
+    tags:
+    - '10029'
+    - '"Passive"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"Validate all input and sanitize output it before writing to any
+      Javascript on* events."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrulesBeta/src/main/java/org/zaproxy/zap/extension/pscanrulesBeta/UserControlledJavascriptEventScanRule.java
+    name: 'ZAP Rule: "User Controllable JavaScript Event (XSS)"'
+    tags:
+    - '10043'
+    - '"Passive"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"Properly sanitize the user input for parameter delimiters"'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/HttpParameterPollutionScanRule.java
+    name: 'ZAP Rule: "HTTP Parameter Pollution"'
+    tags:
+    - '20014'
+    - '"Active"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"Validate all input and sanitize output it before writing to any
+      HTML attributes."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrulesBeta/src/main/java/org/zaproxy/zap/extension/pscanrulesBeta/UserControlledHTMLAttributesScanRule.java
+    name: 'ZAP Rule: "User Controllable HTML Element Attribute (Potential XSS)"'
+    tags:
+    - '10031'
+    - '"Passive"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/XpathInjectionScanRule.java
+    name: 'ZAP Rule: "XPath Injection"'
+    tags:
+    - '"Active"'
+    - '90021'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrules/src/main/java/org/zaproxy/zap/extension/ascanrules/CodeInjectionScanRule.java
+    name: 'ZAP Rule: "Server Side Code Injection"'
+    tags:
+    - '90019'
+    - '"Active"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/sqliplugin/src/main/java/org/zaproxy/zap/extension/sqliplugin/SQLInjectionScanRule.java
+    name: 'ZAP Rule: "Advanced SQL Injection"'
+    tags:
+    - '90018'
+    - '"Active"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/SqlInjectionPostgreScanRule.java
+    name: 'ZAP Rule: "SQL Injection - PostgreSQL"'
+    tags:
+    - '40022'
+    - '"Active"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"Rewrite the background program using proper checking of the size
+      of integer being input to prevent overflows and divide by 0 errors.  This will
+      require a recompile of the background executable."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/IntegerOverflowScanRule.java
+    name: 'ZAP Rule: "Integer Overflow Error"'
+    tags:
+    - '"Active"'
+    - '30003'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/SqlInjectionOracleScanRule.java
+    name: 'ZAP Rule: "SQL Injection - Oracle"'
+    tags:
+    - '40021'
+    - '"Active"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesAlpha/src/main/java/org/zaproxy/zap/extension/ascanrulesAlpha/MongoDbInjectionScanRule.java
+    name: 'ZAP Rule: "NoSQL Injection - MongoDB"'
+    tags:
+    - '40033'
+    - '"Active"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"Type check the submitted parameter carefully.  Do not allow CRLF
+      to be injected by filtering CRLF."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrules/src/main/java/org/zaproxy/zap/extension/ascanrules/CrlfInjectionScanRule.java
+    name: 'ZAP Rule: "CRLF Injection"'
+    tags:
+    - '40003'
+    - '"Active"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"To avoid the open redirect vulnerability, parameters of the application
+      script/program must be validated before sending 302 HTTP code (redirect) to
+      the client browser. Implement safe redirect functionality that only redirects
+      to relative URI''s, or a list of trusted domains"'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrulesBeta/src/main/java/org/zaproxy/zap/extension/pscanrulesBeta/UserControlledOpenRedirectScanRule.java
+    name: 'ZAP Rule: "Open Redirect"'
+    tags:
+    - '10028'
+    - '"Passive"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"If not required, the SOAPAction attribute should be disabled. If
+      needed, the operation within the SOAPAction and the SOAP body should always
+      be compared before executing any operation. Any mismatch should be regarded
+      as an attack."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/soap/src/main/java/org/zaproxy/zap/extension/soap/SOAPActionSpoofingActiveScanRule.java
+    name: 'ZAP Rule: "SOAP Action Spoofing"'
+    tags:
+    - '90026'
+    - '"Active"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"Sanitize and analyze every user input coming from any client-side."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/XsltInjectionScanRule.java
+    name: 'ZAP Rule: "XSLT Injection"'
+    tags:
+    - '90017'
+    - '"Active"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"Use a detailed description of SOAP attributes in the WSDL file."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/soap/src/main/java/org/zaproxy/zap/extension/soap/SOAPXMLInjectionActiveScanRule.java
+    name: 'ZAP Rule: "SOAP XML Injection"'
+    tags:
+    - '90029'
+    - '"Active"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"Identify the cause of the error and fix it.  Do not trust client
+      side input and enforce a tight check in the server side.  Besides, catch the
+      exception properly.  Use a generic 500 error page for internal server error."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrules/src/main/java/org/zaproxy/zap/extension/ascanrules/ParameterTamperScanRule.java
+    name: 'ZAP Rule: "Parameter Tampering"'
+    tags:
+    - '40008'
+    - '"Active"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrules/src/main/java/org/zaproxy/zap/extension/ascanrules/SqlInjectionScanRule.java
+    name: 'ZAP Rule: "SQL Injection"'
+    tags:
+    - '"Active"'
+    - '40018'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrules/src/main/java/org/zaproxy/zap/extension/ascanrules/CommandInjectionScanRule.java
+    name: 'ZAP Rule: "Remote OS Command Injection"'
+    tags:
+    - '90020'
+    - '"Active"'
+    tooltype: Offensive
+  ltype: Linked To
 name: '>>Logging and error handling'

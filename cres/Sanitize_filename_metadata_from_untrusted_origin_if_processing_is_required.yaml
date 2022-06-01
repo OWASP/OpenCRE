@@ -24,4 +24,13 @@ links:
     name: (WSTG) Web Security Testing Guide
     section: WSTG-ATHZ-01
   ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrules/src/main/java/org/zaproxy/zap/extension/ascanrules/PathTraversalScanRule.java
+    name: 'ZAP Rule: "Path Traversal"'
+    tags:
+    - '6'
+    - '"Active"'
+    tooltype: Offensive
+  ltype: Linked To
 name: Sanitize filename metadata from untrusted origin if processing is required

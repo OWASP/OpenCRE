@@ -162,4 +162,132 @@ links:
     name: Top10 2017
     section: A5_Broken_Access_Control
   ltype: Linked To
+- document:
+    description: '"Ensure that the SameSite attribute is set to either ''lax'' or
+      ideally ''strict'' for all cookies."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/CookieSameSiteScanRule.java
+    name: 'ZAP Rule: "Cookie without SameSite Attribute"'
+    tags:
+    - '10054'
+    - '"Passive"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"Ensure that your web server, application server, load balancer,
+      etc. is configured to set the Permissions-Policy header."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrulesAlpha/src/main/java/org/zaproxy/zap/extension/pscanrulesAlpha/PermissionsPolicyScanRule.java
+    name: 'ZAP Rule: "Permissions Policy Header Not Set"'
+    tags:
+    - '10063'
+    - '"Passive"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesAlpha/src/main/java/org/zaproxy/zap/extension/ascanrulesAlpha/ForbiddenBypassScanRule.java
+    name: 'ZAP Rule: "Bypassing 403"'
+    tags:
+    - '40038'
+    - '"Active"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"If a web resource contains sensitive information, the origin should
+      be properly specified in the Access-Control-Allow-Origin header. Only trusted
+      websites needing this resource should be specified in this header, with the
+      most secured protocol supported."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesAlpha/src/main/java/org/zaproxy/zap/extension/ascanrulesAlpha/CorsScanRule.java
+    name: 'ZAP Rule: "CORS Misconfiguration"'
+    tags:
+    - '40040'
+    - '"Active"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"If a web resource contains sensitive information, the origin should
+      be properly specified in the Access-Control-Allow-Origin header. Only trusted
+      websites needing this resource should be specified in this header, with the
+      most secured protocol supported."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesAlpha/src/main/java/org/zaproxy/zap/extension/ascanrulesAlpha/CorsScanRule.java
+    name: 'ZAP Rule: "CORS Header"'
+    tags:
+    - '40040'
+    - '"Active"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/SessionFixationScanRule.java
+    name: 'ZAP Rule: "Session Fixation"'
+    tags:
+    - '40013'
+    - '"Active"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/CsrfCountermeasuresScanRule.java
+    name: 'ZAP Rule: "Absence of Anti-CSRF Tokens"'
+    tags:
+    - '10202'
+    - '"Passive"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrules/src/main/java/org/zaproxy/zap/extension/ascanrules/PathTraversalScanRule.java
+    name: 'ZAP Rule: "Path Traversal"'
+    tags:
+    - '6'
+    - '"Active"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"Disable the Health Actuators and other actuators, or restrict them
+      to administrative users."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesAlpha/src/main/java/org/zaproxy/zap/extension/ascanrulesAlpha/SpringActuatorScanRule.java
+    name: 'ZAP Rule: "Spring Actuator Information Leak"'
+    tags:
+    - '40042'
+    - '"Active"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"Disable directory browsing.  If this is required, make sure the
+      listed files does not induce risks."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrules/src/main/java/org/zaproxy/zap/extension/ascanrules/DirectoryBrowsingScanRule.java
+    name: 'ZAP Rule: "Directory Browsing"'
+    tags:
+    - '0'
+    - '"Active"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/CrossDomainMisconfigurationScanRule.java
+    name: 'ZAP Rule: "Cross-Domain Misconfiguration"'
+    tags:
+    - '10098'
+    - '"Passive"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"Use per user or session indirect object references (create a temporary
+      mapping at time of use). Or, ensure that each use of a direct object reference
+      is tied to an authorization check to ensure the user is authorized for the requested
+      object. "'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/UsernameIdorScanRule.java
+    name: 'ZAP Rule: "Username Hash Found"'
+    tags:
+    - '10057'
+    - '"Passive"'
+    tooltype: Offensive
+  ltype: Linked To
 name: '>>Authorized access'

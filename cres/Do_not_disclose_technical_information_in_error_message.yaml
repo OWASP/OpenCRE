@@ -37,4 +37,28 @@ links:
     name: Cheat_sheets
     section: Error Handling Cheat Sheet
   ltype: Linked To
+- document:
+    description: '"Review the error payloads which are piped directly to WebSockets.
+      Handle the related exceptions. Consider implementing a mechanism to provide
+      a unique error reference/identifier to the client (browser) while logging the
+      details on the server side and not exposing them to the user."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/websocket/src/main/zapHomeFiles/scripts/templates/websocketpassive/Application%20Error%20Scanner.js
+    name: 'ZAP Rule: "Application Error Disclosure via WebSockets"'
+    tags:
+    - '"WebSocket Passive"'
+    - '110001'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"Update the affected server software, or modify the scripts so that
+      they properly validate encrypted data before attempting decryption."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/PaddingOracleScanRule.java
+    name: 'ZAP Rule: "Generic Padding Oracle"'
+    tags:
+    - '90024'
+    - '"Active"'
+    tooltype: Offensive
+  ltype: Linked To
 name: Do not disclose technical information in error message

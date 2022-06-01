@@ -29,4 +29,16 @@ links:
     name: (WSTG) Web Security Testing Guide
     section: WSTG-ATHN-06
   ltype: Linked To
+- document:
+    description: '"For secure content, ensure the cache-control HTTP header is set
+      with ''no-cache, no-store, must-revalidate''. If an asset should be cached consider
+      setting the directives ''public, max-age, immutable''."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/CacheControlScanRule.java
+    name: 'ZAP Rule: "Re-examine Cache-control Directives"'
+    tags:
+    - '10015'
+    - '"Passive"'
+    tooltype: Offensive
+  ltype: Linked To
 name: Set sufficient anti-chaching headers

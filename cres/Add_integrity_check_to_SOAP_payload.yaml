@@ -29,4 +29,31 @@ links:
     name: Cheat_sheets
     section: XML Security Cheat Sheet
   ltype: Linked To
+- document:
+    description: '"Ensure each page is setting the specific and appropriate content-type
+      value for the content being delivered."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/ContentTypeMissingScanRule.java
+    name: 'ZAP Rule: "Content-Type Header Missing"'
+    tags:
+    - '10019'
+    - '"Passive"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/148.html
+    name: CAPEC
+    section: '148'
+    subsection: Content Spoofing
+    version: '3.7'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/665.html
+    name: CAPEC
+    section: '665'
+    subsection: Exploitation of Thunderbolt Protection Flaws
+    version: '3.7'
+  ltype: SAME
 name: Add integrity check to SOAP payload

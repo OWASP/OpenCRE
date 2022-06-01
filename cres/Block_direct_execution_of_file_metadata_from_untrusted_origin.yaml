@@ -24,4 +24,33 @@ links:
     name: (WSTG) Web Security Testing Guide
     section: WSTG-INPV-12
   ltype: Linked To
+- document:
+    description: '"Update Bash on the server to the latest version"'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/ShellShockScanRule.java
+    name: 'ZAP Rule: "Remote Code Execution - Shell Shock"'
+    tags:
+    - '10048'
+    - '"Active"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"Upgrade Spring Framework to versions 5.3.18, 5.2.20, or newer."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesAlpha/src/main/java/org/zaproxy/zap/extension/ascanrulesAlpha/Spring4ShellScanRule.java
+    name: 'ZAP Rule: "Spring4Shell"'
+    tags:
+    - '40045'
+    - '"Active"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrules/src/main/java/org/zaproxy/zap/extension/ascanrules/CommandInjectionScanRule.java
+    name: 'ZAP Rule: "Remote OS Command Injection"'
+    tags:
+    - '90020'
+    - '"Active"'
+    tooltype: Offensive
+  ltype: Linked To
 name: Block direct execution of file metadata from untrusted origin
