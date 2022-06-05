@@ -35,4 +35,12 @@ links:
     name: Cheat_sheets
     section: Server Side Request Forgery Prevention Cheat Sheet
   ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/13.html
+    name: CAPEC
+    section: '13'
+    subsection: Subverting Environment Variable Values
+    version: '3.7'
+  ltype: SAME
 name: Enforce model-based authorization both at URI and final resourc

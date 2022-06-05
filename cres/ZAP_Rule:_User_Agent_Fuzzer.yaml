@@ -1,7 +1,0 @@
-doctype: Tool
-hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/UserAgentScanRule.java
-name: 'ZAP Rule: "User Agent Fuzzer"'
-tags:
-- '"Active"'
-- '10104'
-tooltype: Offensive

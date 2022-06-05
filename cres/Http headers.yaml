@@ -1,8 +1,0 @@
-doctype: CRE
-links:
-- document:
-    doctype: CRE
-    id: 473-758
-    name: Set sufficient anti-caching headers
-  type: Related
-name: Http headers

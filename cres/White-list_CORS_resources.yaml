@@ -24,4 +24,12 @@ links:
     name: (WSTG) Web Security Testing Guide
     section: WSTG-CLNT-07
   ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/21.html
+    name: CAPEC
+    section: '21'
+    subsection: Exploitation of Trusted Identifiers
+    version: '3.7'
+  ltype: SAME
 name: White-list CORS resources

@@ -1,8 +1,0 @@
-doctype: CRE
-links:
-- document:
-    doctype: CRE
-    id: 551-400
-    name: Allow user revocation of Oauth tokens
-  ltype: Related
-name: '>>Authorization'

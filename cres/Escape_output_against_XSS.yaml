@@ -123,4 +123,84 @@ links:
     name: Cheat_sheets
     section: XML Security Cheat Sheet
   ltype: Linked To
+- document:
+    description: '"N/A"'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrules/src/main/java/org/zaproxy/zap/extension/ascanrules/PersistentXssPrimeScanRule.java
+    name: 'ZAP Rule: "Cross Site Scripting (Persistent) - Prime"'
+    tags:
+    - '40016'
+    - '"Active"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/domxss/src/main/java/org/zaproxy/zap/extension/domxss/DomXssScanRule.java
+    name: 'ZAP Rule: "Cross Site Scripting (DOM Based)"'
+    tags:
+    - '40026'
+    - '"Active"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrules/src/main/java/org/zaproxy/zap/extension/ascanrules/CrossSiteScriptingScanRule.java
+    name: 'ZAP Rule: "Cross Site Scripting (Reflected)"'
+    tags:
+    - '40012'
+    - '"Active"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"N/A"'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrules/src/main/java/org/zaproxy/zap/extension/ascanrules/PersistentXssSpiderScanRule.java
+    name: 'ZAP Rule: "Cross Site Scripting (Persistent) - Spider"'
+    tags:
+    - '40017'
+    - '"Active"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesAlpha/src/main/java/org/zaproxy/zap/extension/ascanrulesAlpha/OutOfBandXssScanRule.java
+    name: 'ZAP Rule: "Out of Band XSS"'
+    tags:
+    - '40031'
+    - '"Active"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrules/src/main/java/org/zaproxy/zap/extension/ascanrules/PersistentXssScanRule.java
+    name: 'ZAP Rule: "Cross Site Scripting (Persistent)"'
+    tags:
+    - '40014'
+    - '"Active"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/588.html
+    name: CAPEC
+    section: '588'
+    subsection: DOM-Based XSS
+    version: '3.7'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/591.html
+    name: CAPEC
+    section: '591'
+    subsection: Reflected XSS
+    version: '3.7'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/592.html
+    name: CAPEC
+    section: '592'
+    subsection: Stored XSS
+    version: '3.7'
+  ltype: SAME
 name: Escape output against XSS

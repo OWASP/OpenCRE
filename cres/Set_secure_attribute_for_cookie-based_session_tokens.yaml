@@ -47,4 +47,16 @@ links:
     name: NIST 800-63
     section: 7.1.1
   ltype: Linked To
+- document:
+    description: '"Whenever a cookie contains sensitive information or is a session
+      token, then it should always be passed using an encrypted channel. Ensure that
+      the secure flag is set for cookies containing such sensitive information."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/CookieSecureFlagScanRule.java
+    name: 'ZAP Rule: "Cookie Without Secure Flag"'
+    tags:
+    - '10011'
+    - '"Passive"'
+    tooltype: Offensive
+  ltype: Linked To
 name: Set "secure" attribute for cookie-based session tokens

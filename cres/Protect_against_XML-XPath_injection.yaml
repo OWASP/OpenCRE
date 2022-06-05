@@ -124,4 +124,13 @@ links:
     name: Cheat_sheets
     section: XML Security Cheat Sheet
   ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/XpathInjectionScanRule.java
+    name: 'ZAP Rule: "XPath Injection"'
+    tags:
+    - '"Active"'
+    - '90021'
+    tooltype: Offensive
+  ltype: Linked To
 name: Protect against XML/XPath injection

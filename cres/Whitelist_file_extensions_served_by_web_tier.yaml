@@ -29,6 +29,14 @@ links:
     name: (WSTG) Web Security Testing Guide
     section: WSTG-BUSL-08
   ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/639.html
+    name: CAPEC
+    section: '639'
+    subsection: Probe System Files
+    version: '3.7'
+  ltype: SAME
 name: Whitelist file extensions served by web tier
 tags:
 - DOS

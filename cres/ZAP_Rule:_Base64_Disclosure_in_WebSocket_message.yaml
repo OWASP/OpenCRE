@@ -1,8 +1,0 @@
-description: '"Base64-encoding should not be used to store or send sensitive information."'
-doctype: Tool
-hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/websocket/src/main/zapHomeFiles/scripts/templates/websocketpassive/Base64%20Disclosure.js
-name: 'ZAP Rule: "Base64 Disclosure in WebSocket message"'
-tags:
-- '"WebSocket Passive"'
-- '110002'
-tooltype: Offensive

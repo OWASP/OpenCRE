@@ -90,4 +90,113 @@ links:
     name: Top10 2017
     section: A9-Using_Components_with_Known_Vulnerabilities
   ltype: Linked To
+- document:
+    description: '"Update Bash on the server to the latest version"'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/ShellShockScanRule.java
+    name: 'ZAP Rule: "Remote Code Execution - Shell Shock"'
+    tags:
+    - '10048'
+    - '"Active"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"Upgrade Spring Framework to versions 5.3.18, 5.2.20, or newer."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesAlpha/src/main/java/org/zaproxy/zap/extension/ascanrulesAlpha/Spring4ShellScanRule.java
+    name: 'ZAP Rule: "Spring4Shell"'
+    tags:
+    - '40045'
+    - '"Active"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"Upgrade Log4j2 to version 2.17.1 or newer. In previous releases
+      (>2.10) this behavior can be mitigated by setting system property ''log4j2.formatMsgNoLookups''
+      to ''true'' or by removing the JndiLookup class from the classpath (example:
+      zip -q -d log4j-core-*.jar org/apache/logging/log4j/core/lookup/JndiLookup.class).
+      Java 8u121 (see https://www.oracle.com/java/technologies/javase/8u121-relnotes.html)
+      protects against remote code execution by defaulting ''com.sun.jndi.rmi.object.trustURLCodebase''
+      and ''com.sun.jndi.cosnaming.object.trustURLCodebase'' to ''false''."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesAlpha/src/main/java/org/zaproxy/zap/extension/ascanrulesAlpha/Log4ShellScanRule.java
+    name: 'ZAP Rule: "Log4Shell (CVE-2021-44228)"'
+    tags:
+    - '40043'
+    - '"Active"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"Update to OpenSSL 1.0.1g or later. Re-issue HTTPS certificates.
+      Change asymmetric private keys and shared secret keys, since these may have
+      been compromised, with no evidence of compromise in the server log files."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/HeartBleedActiveScanRule.java
+    name: 'ZAP Rule: "Heartbleed OpenSSL Vulnerability"'
+    tags:
+    - '20015'
+    - '"Active"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"Update to OpenSSL 1.0.1g or later. Re-issue HTTPS certificates.
+      Change asymmetric private keys and shared secret keys, since these may have
+      been compromised, with no evidence of compromise in the server log files."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrulesBeta/src/main/java/org/zaproxy/zap/extension/pscanrulesBeta/HeartBleedScanRule.java
+    name: 'ZAP Rule: "Heartbleed OpenSSL Vulnerability (Indicative)"'
+    tags:
+    - '10034'
+    - '"Passive"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"_Unavailable_"'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/retire/src/main/java/org/zaproxy/addon/retire/RetireScanRule.java
+    name: 'ZAP Rule: "Vulnerable JS Library"'
+    tags:
+    - '10003'
+    - '"Passive"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/RemoteCodeExecutionCve20121823ScanRule.java
+    name: 'ZAP Rule: "Remote Code Execution - CVE-2012-1823"'
+    tags:
+    - '"Active"'
+    - '20018'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/SourceCodeDisclosureCve20121823ScanRule.java
+    name: 'ZAP Rule: "Source Code Disclosure - CVE-2012-1823"'
+    tags:
+    - '20017'
+    - '"Active"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"The best immediate mitigation is to block Proxy request headers
+      as early as possible, and before they hit your application."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/HttPoxyScanRule.java
+    name: 'ZAP Rule: "Httpoxy - Proxy Header Misuse"'
+    tags:
+    - '10107'
+    - '"Active"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"Upgrade Log4j2 to version 2.17.1 or newer."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesAlpha/src/main/java/org/zaproxy/zap/extension/ascanrulesAlpha/Log4ShellScanRule.java
+    name: 'ZAP Rule: "Log4Shell (CVE-2021-45046)"'
+    tags:
+    - '40043'
+    - '"Active"'
+    tooltype: Offensive
+  ltype: Linked To
 name: '>>Dependency strength'

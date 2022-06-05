@@ -88,4 +88,15 @@ links:
     name: Top10 2017
     section: A2_Broken_Authentication
   ltype: Linked To
+- document:
+    description: '"Protect the connection using HTTPS or use a stronger authentication
+      mechanism"'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/InsecureAuthenticationScanRule.java
+    name: 'ZAP Rule: "Weak Authentication Method"'
+    tags:
+    - '10105'
+    - '"Passive"'
+    tooltype: Offensive
+  ltype: Linked To
 name: '>>Authentication'

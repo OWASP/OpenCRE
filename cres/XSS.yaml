@@ -59,4 +59,40 @@ links:
     name: Top10 2017
     section: A7-Cross-Site_Scripting_(XSS)
   ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/domxss/src/main/java/org/zaproxy/zap/extension/domxss/DomXssScanRule.java
+    name: 'ZAP Rule: "Cross Site Scripting (DOM Based)"'
+    tags:
+    - '40026'
+    - '"Active"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrules/src/main/java/org/zaproxy/zap/extension/ascanrules/CrossSiteScriptingScanRule.java
+    name: 'ZAP Rule: "Cross Site Scripting (Reflected)"'
+    tags:
+    - '40012'
+    - '"Active"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesAlpha/src/main/java/org/zaproxy/zap/extension/ascanrulesAlpha/OutOfBandXssScanRule.java
+    name: 'ZAP Rule: "Out of Band XSS"'
+    tags:
+    - '40031'
+    - '"Active"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrules/src/main/java/org/zaproxy/zap/extension/ascanrules/PersistentXssScanRule.java
+    name: 'ZAP Rule: "Cross Site Scripting (Persistent)"'
+    tags:
+    - '40014'
+    - '"Active"'
+    tooltype: Offensive
+  ltype: Linked To
 name: XSS

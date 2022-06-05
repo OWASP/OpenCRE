@@ -39,4 +39,13 @@ links:
     name: Cheat_sheets
     section: Input Validation Cheat Sheet
   ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrules/src/main/java/org/zaproxy/zap/extension/ascanrules/ExternalRedirectScanRule.java
+    name: 'ZAP Rule: "External Redirect"'
+    tags:
+    - '"Active"'
+    - '20019'
+    tooltype: Offensive
+  ltype: Linked To
 name: Whitelist redirected/forwarded URLs

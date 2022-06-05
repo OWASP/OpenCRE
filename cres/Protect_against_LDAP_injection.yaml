@@ -123,4 +123,13 @@ links:
     name: Cheat_sheets
     section: XML Security Cheat Sheet
   ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesAlpha/src/main/java/org/zaproxy/zap/extension/ascanrulesAlpha/LdapInjectionScanRule.java
+    name: 'ZAP Rule: "LDAP Injection"'
+    tags:
+    - '40015'
+    - '"Active"'
+    tooltype: Offensive
+  ltype: Linked To
 name: Protect against LDAP injection

@@ -1,8 +1,0 @@
-description: '"_Unavailable_"'
-doctype: Tool
-hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/saml/src/main/java/org/zaproxy/zap/extension/saml/SAMLPassiveScanner.java
-name: 'ZAP Rule: "Use of SAML"'
-tags:
-- '"Passive"'
-- '10070'
-tooltype: Offensive

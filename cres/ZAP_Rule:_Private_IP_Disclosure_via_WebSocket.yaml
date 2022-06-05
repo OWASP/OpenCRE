@@ -1,8 +1,0 @@
-description: '"Remove the private IP address from the WebSocket messages."'
-doctype: Tool
-hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/websocket/src/main/zapHomeFiles/scripts/templates/websocketpassive/Private%20IP%20Disclosure.js
-name: 'ZAP Rule: "Private IP Disclosure via WebSocket"'
-tags:
-- '"WebSocket Passive"'
-- '110006'
-tooltype: Offensive

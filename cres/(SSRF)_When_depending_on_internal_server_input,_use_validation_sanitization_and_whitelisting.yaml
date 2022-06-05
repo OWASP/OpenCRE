@@ -51,5 +51,13 @@ links:
     name: Cheat_sheets
     section: Unvalidated Redirects and Forwards Cheat Sheet
   ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/664.html
+    name: CAPEC
+    section: '664'
+    subsection: Server Side Request Forgery
+    version: '3.7'
+  ltype: SAME
 name: (SSRF) When depending on internal server input, use validation sanitization
   and whitelisting
