@@ -48,7 +48,6 @@ def get_linked_nodes(mapping: Dict[str, str]) -> List[defs.Link]:
             and len(k.split(defs.ExportFormat.separator.value)) >= 3
         ]
     )
-
     for name in names:
         type = defs.ExportFormat.get_doctype(
             [m for m in mapping.keys() if name in m][0]
@@ -86,7 +85,6 @@ def get_linked_nodes(mapping: Dict[str, str]) -> List[defs.Link]:
         else:
             lt = defs.LinkTypes.LinkedTo
         nodes.append(defs.Link(document=node, ltype=lt))
-
     return nodes
 
 
@@ -127,11 +125,15 @@ def parse_export_format(lfile: List[Dict[str, Any]]) -> Dict[str, defs.Document]
                 lone_nodes[
                     f"{st.document.doctype}:{st.document.name}:{st.document.section}"
                 ] = st.document
-
+                logger.info(
+                    f"adding node: {st.document.doctype}:{st.document.name}:{st.document.section}"
+                )
         else:  # cre -> standards, other cres
             name = mapping.pop(defs.ExportFormat.cre_name_key())
             id = mapping.pop(defs.ExportFormat.cre_id_key())
-            description = mapping.pop(defs.ExportFormat.cre_description_key())
+            description = ""
+            if defs.ExportFormat.cre_description_key() in mapping:
+                description = mapping.pop(defs.ExportFormat.cre_description_key())
 
             if name not in cres.keys():  # register new cre
                 cre = defs.CRE(name=name, id=id, description=description)
