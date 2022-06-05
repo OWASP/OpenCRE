@@ -1,5 +1,0 @@
-links: []
-toolType: Offensive
-docType: Tool
-id: 110002
-name: 'Zaproxy-Alert: Base64 Disclosure in WebSocket message'

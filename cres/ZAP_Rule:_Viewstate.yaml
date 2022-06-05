@@ -1,7 +1,0 @@
-doctype: Tool
-hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/ViewstateScanRule.java
-name: 'ZAP Rule: "Viewstate"'
-tags:
-- '10032'
-- '"Passive"'
-tooltype: Offensive

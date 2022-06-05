@@ -11,13 +11,13 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 842-876
-    name: '>>Logging and error handling'
+    id: 623-550
+    name: DOS
   ltype: Related
 - document:
     doctype: CRE
-    id: 623-550
-    name: DOS
+    id: 842-876
+    name: '>>Logging and error handling'
   ltype: Related
 - document:
     doctype: Standard
@@ -31,6 +31,22 @@ links:
     name: CWE
     section: '770'
   ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/125.html
+    name: CAPEC
+    section: '125'
+    subsection: Flooding
+    version: '3.7'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/130.html
+    name: CAPEC
+    section: '130'
+    subsection: Excessive Allocation
+    version: '3.7'
+  ltype: SAME
 name: Monitor expectation of usage intensity (e.g. number of requests)
 tags:
 - DOS

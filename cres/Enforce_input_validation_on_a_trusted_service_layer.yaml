@@ -44,6 +44,14 @@ links:
     name: Cheat_sheets
     section: Deserialization Cheat Sheet
   ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/21.html
+    name: CAPEC
+    section: '21'
+    subsection: Exploitation of Trusted Identifiers
+    version: '3.7'
+  ltype: SAME
 name: Enforce input validation on a trusted service layer
 tags:
 - Architecture

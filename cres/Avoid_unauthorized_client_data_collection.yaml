@@ -18,4 +18,13 @@ links:
     name: CWE
     section: '359'
   ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/websocket/src/main/zapHomeFiles/scripts/templates/websocketpassive/PII%20Disclosure.js
+    name: 'ZAP Rule: "Personally Identifiable Information via WebSocket"'
+    tags:
+    - '"WebSocket Passive"'
+    - '110005'
+    tooltype: Offensive
+  ltype: Linked To
 name: Avoid unauthorized client data collection

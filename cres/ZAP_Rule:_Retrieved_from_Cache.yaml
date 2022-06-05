@@ -1,7 +1,0 @@
-doctype: Tool
-hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrulesBeta/src/main/java/org/zaproxy/zap/extension/pscanrulesBeta/RetrievedFromCacheScanRule.java
-name: 'ZAP Rule: "Retrieved from Cache"'
-tags:
-- '"Passive"'
-- '10050'
-tooltype: Offensive

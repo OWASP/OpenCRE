@@ -1,5 +1,0 @@
-links: []
-toolType: Offensive
-docType: Tool
-id: 10052
-name: 'Zaproxy-Alert: X-ChromeLogger-Data (XCOLD) Header Information Leak'

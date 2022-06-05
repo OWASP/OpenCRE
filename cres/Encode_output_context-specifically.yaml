@@ -117,4 +117,76 @@ links:
     name: Cheat_sheets
     section: XML Security Cheat Sheet
   ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/SqlInjectionMySqlScanRule.java
+    name: 'ZAP Rule: "SQL Injection - MySQL"'
+    tags:
+    - '40019'
+    - '"Active"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/SqlInjectionHypersonicScanRule.java
+    name: 'ZAP Rule: "SQL Injection - Hypersonic SQL"'
+    tags:
+    - '"Active"'
+    - '40020'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/SqlInjectionMsSqlScanRule.java
+    name: 'ZAP Rule: "SQL Injection - MsSQL"'
+    tags:
+    - '40027'
+    - '"Active"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/SqlInjectionSqLiteScanRule.java
+    name: 'ZAP Rule: "SQL Injection - SQLite"'
+    tags:
+    - '"Active"'
+    - '40024'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/sqliplugin/src/main/java/org/zaproxy/zap/extension/sqliplugin/SQLInjectionScanRule.java
+    name: 'ZAP Rule: "Advanced SQL Injection"'
+    tags:
+    - '90018'
+    - '"Active"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/SqlInjectionPostgreScanRule.java
+    name: 'ZAP Rule: "SQL Injection - PostgreSQL"'
+    tags:
+    - '40022'
+    - '"Active"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/SqlInjectionOracleScanRule.java
+    name: 'ZAP Rule: "SQL Injection - Oracle"'
+    tags:
+    - '40021'
+    - '"Active"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrules/src/main/java/org/zaproxy/zap/extension/ascanrules/SqlInjectionScanRule.java
+    name: 'ZAP Rule: "SQL Injection"'
+    tags:
+    - '"Active"'
+    - '40018'
+    tooltype: Offensive
+  ltype: Linked To
 name: Encode output context-specifically

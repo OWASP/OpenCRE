@@ -53,6 +53,16 @@ links:
     name: Top10 2017
     section: A4-XML_External_Entities_(XXE)
   ltype: Linked To
+- document:
+    description: '"TBA"'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/XxeScanRule.java
+    name: 'ZAP Rule: "XML External Entity Attack"'
+    tags:
+    - '90023'
+    - '"Active"'
+    tooltype: Offensive
+  ltype: Linked To
 name: Restrict XML parsing (against XXE)
 tags:
 - Configuration

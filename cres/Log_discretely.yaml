@@ -32,4 +32,190 @@ links:
     name: Top10 2017
     section: A3-Sensitive_Data_Exposure
   ltype: Linked To
+- document:
+    description: '"Manually confirm that the Base64 data does not leak sensitive information,
+      and that the data cannot be aggregated/used to exploit other vulnerabilities."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrulesAlpha/src/main/java/org/zaproxy/zap/extension/pscanrulesAlpha/Base64Disclosure.java
+    name: 'ZAP Rule: "Base64 Disclosure"'
+    tags:
+    - '10094'
+    - '"Passive"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrulesAlpha/src/main/java/org/zaproxy/zap/extension/pscanrulesAlpha/SiteIsolationScanRule.java
+    name: 'ZAP Rule: "Insufficient Site Isolation Against Spectre Vulnerability"'
+    tags:
+    - '90004'
+    - '"Passive"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"Manually confirm that the timestamp data is not sensitive, and
+      that the data cannot be aggregated to disclose exploitable patterns."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/TimestampDisclosureScanRule.java
+    name: 'ZAP Rule: "Timestamp Disclosure"'
+    tags:
+    - '10096'
+    - '"Passive"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"For secure content, put session ID in a cookie. To be even more
+      secure consider using a combination of cookie and URL rewrite."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/InfoSessionIdUrlScanRule.java
+    name: 'ZAP Rule: "Session ID in URL Rewrite"'
+    tags:
+    - '3'
+    - '"Passive"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"Protect the connection using HTTPS or use a stronger authentication
+      mechanism"'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/InsecureAuthenticationScanRule.java
+    name: 'ZAP Rule: "Weak Authentication Method"'
+    tags:
+    - '10105'
+    - '"Passive"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"Ensure that no sensitive information is leaked via redirect responses.
+      Redirect responses should have almost no content."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrulesBeta/src/main/java/org/zaproxy/zap/extension/pscanrulesBeta/BigRedirectsScanRule.java
+    name: 'ZAP Rule: "Big Redirect Detected (Potential Sensitive Information Leak)"'
+    tags:
+    - '10044'
+    - '"Passive"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/BackupFileDisclosureScanRule.java
+    name: 'ZAP Rule: "Backup File Disclosure"'
+    tags:
+    - '10095'
+    - '"Active"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"Disable debugging messages before pushing to production."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/InformationDisclosureDebugErrorsScanRule.java
+    name: 'ZAP Rule: "Information Disclosure - Debug Error Messages"'
+    tags:
+    - '10023'
+    - '"Passive"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"Remove the private IP address from the HTTP response body.  For
+      comments, use JSP/ASP/PHP comment instead of HTML/JavaScript comment which can
+      be seen by client browsers."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/InfoPrivateAddressDisclosureScanRule.java
+    name: 'ZAP Rule: "Private IP Disclosure"'
+    tags:
+    - '2'
+    - '"Passive"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"Do not pass sensitive information in URIs."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/InformationDisclosureReferrerScanRule.java
+    name: 'ZAP Rule: "Information Disclosure - Sensitive Information in HTTP Referrer
+      Header"'
+    tags:
+    - '10025'
+    - '"Passive"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"_Unavailable_"'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrulesBeta/src/main/java/org/zaproxy/zap/extension/pscanrulesBeta/PiiScanRule.java
+    name: 'ZAP Rule: "PII Disclosure"'
+    tags:
+    - '10062'
+    - '"Passive"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"Ensure that hashes that are used to protect credentials or other
+      resources are not leaked by the web server or database. There is typically no
+      requirement for password hashes to be accessible to the web browser.      "'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrulesBeta/src/main/java/org/zaproxy/zap/extension/pscanrulesBeta/HashDisclosureScanRule.java
+    name: 'ZAP Rule: "Hash Disclosure"'
+    tags:
+    - '10097'
+    - '"Passive"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"Limit access to Symfony''s Profiler, either via authentication/authorization
+      or limiting inclusion of the header to specific clients (by IP, etc.)."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/XDebugTokenScanRule.java
+    name: 'ZAP Rule: "X-Debug-Token Information Leak"'
+    tags:
+    - '10056'
+    - '"Passive"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"Disable this functionality in Production when it might leak information
+      that could be leveraged by an attacker. Alternatively ensure that use of the
+      functionality is tied to a strong authorization check and only available to
+      administrators or support personnel for troubleshooting purposes not general
+      users."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrulesBeta/src/main/java/org/zaproxy/zap/extension/pscanrulesBeta/XChromeLoggerDataInfoLeakScanRule.java
+    name: 'ZAP Rule: "X-ChromeLogger-Data (XCOLD) Header Information Leak"'
+    tags:
+    - '10052'
+    - '"Passive"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"Ensure that your web server, application server, load balancer,
+      etc. is configured to suppress ''X-Powered-By'' headers."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/XPoweredByHeaderInfoLeakScanRule.java
+    name: 'ZAP Rule: "Server Leaks Information via ''X-Powered-By'' HTTP Response
+      Header Field(s)"'
+    tags:
+    - '10037'
+    - '"Passive"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"Do not pass sensitive information in URIs."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/InformationDisclosureInUrlScanRule.java
+    name: 'ZAP Rule: "Information Disclosure - Sensitive Information in URL"'
+    tags:
+    - '10024'
+    - '"Passive"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"Remove all comments that return information that may help an attacker
+      and fix any underlying problems they refer to."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/InformationDisclosureSuspiciousCommentsScanRule.java
+    name: 'ZAP Rule: "Information Disclosure - Suspicious Comments"'
+    tags:
+    - '10027'
+    - '"Passive"'
+    tooltype: Offensive
+  ltype: Linked To
 name: Log discretely

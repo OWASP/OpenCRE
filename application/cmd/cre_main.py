@@ -369,6 +369,9 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
             )
     if args.capec_in:
         capec_parser.parse_capec(cache=db_connect(args.cache_file))
+    if args.export:
+        cache = db_connect(args.cache_file)
+        cache.export(args.export)
     if args.owasp_proj_meta:
         owasp_metadata_to_cre(args.owasp_proj_meta)
 

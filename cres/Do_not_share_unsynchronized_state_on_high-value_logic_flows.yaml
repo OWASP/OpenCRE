@@ -26,4 +26,12 @@ links:
     name: Cheat_sheets
     section: Abuse Case Cheat Sheet
   ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/26.html
+    name: CAPEC
+    section: '26'
+    subsection: Leveraging Race Conditions
+    version: '3.7'
+  ltype: SAME
 name: Do not share unsynchronized state on high-value logic flows

@@ -47,4 +47,14 @@ links:
     name: NIST 800-63
     section: are g
   ltype: Linked To
+- document:
+    description: '"Ensure that only POST is accepted where POST is expected."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/GetForPostScanRule.java
+    name: 'ZAP Rule: "GET for POST"'
+    tags:
+    - '10058'
+    - '"Active"'
+    tooltype: Offensive
+  ltype: Linked To
 name: Set "samesite" attribute for cookie-based session tokens

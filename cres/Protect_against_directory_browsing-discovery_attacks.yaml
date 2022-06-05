@@ -35,6 +35,17 @@ links:
     name: Cheat_sheets
     section: REST Assessment Cheat Sheet
   ltype: Linked To
+- document:
+    description: '"Disable directory browsing.  If this is required, make sure the
+      listed files does not induce risks."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrules/src/main/java/org/zaproxy/zap/extension/ascanrules/DirectoryBrowsingScanRule.java
+    name: 'ZAP Rule: "Directory Browsing"'
+    tags:
+    - '0'
+    - '"Active"'
+    tooltype: Offensive
+  ltype: Linked To
 name: Protect against directory browsing/discovery attacks
 tags:
 - Configuration

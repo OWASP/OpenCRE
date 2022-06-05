@@ -44,4 +44,15 @@ links:
     name: Top10 2017
     section: A8_Insecure_Deserialization
   ltype: Linked To
+- document:
+    description: '"Deserialization of untrusted data is inherently dangerous and should
+      be avoided."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrulesAlpha/src/main/java/org/zaproxy/zap/extension/pscanrulesAlpha/JsoScanRule.java
+    name: 'ZAP Rule: "Java Serialization Object"'
+    tags:
+    - '90002'
+    - '"Passive"'
+    tooltype: Offensive
+  ltype: Linked To
 name: Deserialization Prevention

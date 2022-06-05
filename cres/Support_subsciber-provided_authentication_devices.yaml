@@ -25,4 +25,52 @@ links:
     name: NIST 800-63
     section: 6.1.3
   ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/509.html
+    name: CAPEC
+    section: '509'
+    subsection: Kerberoasting
+    version: '3.7'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/555.html
+    name: CAPEC
+    section: '555'
+    subsection: Remote Services with Stolen Credentials
+    version: '3.7'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/560.html
+    name: CAPEC
+    section: '560'
+    subsection: Use of Known Domain Credentials
+    version: '3.7'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/600.html
+    name: CAPEC
+    section: '600'
+    subsection: Credential Stuffing
+    version: '3.7'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/644.html
+    name: CAPEC
+    section: '644'
+    subsection: Use of Captured Hashes (Pass The Hash)
+    version: '3.7'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/645.html
+    name: CAPEC
+    section: '645'
+    subsection: Use of Captured Tickets (Pass The Ticket)
+    version: '3.7'
+  ltype: SAME
 name: Support subsciber-provided authentication devices

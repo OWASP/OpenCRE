@@ -51,4 +51,54 @@ links:
     name: Cheat_sheets
     section: Unvalidated Redirects and Forwards Cheat Sheet
   ltype: Linked To
+- document:
+    description: '"Instead of inserting the user input in the template, use it as
+      rendering argument."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesAlpha/src/main/java/org/zaproxy/zap/extension/ascanrulesAlpha/SstiScanRule.java
+    name: 'ZAP Rule: "Server Side Template Injection"'
+    tags:
+    - '"Active"'
+    - '90035'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"Consider whether or not ELMAH is actually required in production,
+      if it isn''t then disable it. If it is then ensure access to it requires authentication
+      and authorization. See also: https://elmah.github.io/a/securing-error-log-pages/"'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrules/src/main/java/org/zaproxy/zap/extension/ascanrules/ElmahScanRule.java
+    name: 'ZAP Rule: "ELMAH Information Leak"'
+    tags:
+    - '40028'
+    - '"Active"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrules/src/main/java/org/zaproxy/zap/extension/ascanrules/CodeInjectionScanRule.java
+    name: 'ZAP Rule: "Server Side Code Injection"'
+    tags:
+    - '90019'
+    - '"Active"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: '"Ensure the .htaccess file is not accessible."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrules/src/main/java/org/zaproxy/zap/extension/ascanrules/HtAccessScanRule.java
+    name: 'ZAP Rule: ".htaccess Information Leak"'
+    tags:
+    - '40032'
+    - '"Active"'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/242.html
+    name: CAPEC
+    section: '242'
+    subsection: Code Injection
+    version: '3.7'
+  ltype: SAME
 name: Sanitize/sandbox user input where template-injection is a threat

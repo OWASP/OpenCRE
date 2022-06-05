@@ -18,4 +18,12 @@ links:
     name: CWE
     section: '285'
   ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/13.html
+    name: CAPEC
+    section: '13'
+    subsection: Subverting Environment Variable Values
+    version: '3.7'
+  ltype: SAME
 name: Separate GraphQL (or similar) authorization logic from data layer

@@ -8,15 +8,15 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
+    id: 623-550
+    name: DOS
+  ltype: Related
+- document:
+    doctype: CRE
     id: 726-868
     name: Deployed topology
     tags:
     - Architecture
-  ltype: Related
-- document:
-    doctype: CRE
-    id: 623-550
-    name: DOS
   ltype: Related
 - document:
     doctype: Standard
@@ -48,6 +48,14 @@ links:
     name: Cheat_sheets
     section: Unvalidated Redirects and Forwards Cheat Sheet
   ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/664.html
+    name: CAPEC
+    section: '664'
+    subsection: Server Side Request Forgery
+    version: '3.7'
+  ltype: SAME
 name: Whitelist data sources and sinks
 tags:
 - DOS

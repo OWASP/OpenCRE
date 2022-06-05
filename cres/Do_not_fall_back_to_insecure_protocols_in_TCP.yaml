@@ -50,4 +50,12 @@ links:
     name: Cheat_sheets
     section: TLS Cipher String Cheat Sheet
   ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/117.html
+    name: CAPEC
+    section: '117'
+    subsection: Interception
+    version: '3.7'
+  ltype: SAME
 name: Do not fall back to insecure protocols in TCP

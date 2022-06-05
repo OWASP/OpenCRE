@@ -18,4 +18,12 @@ links:
     name: CWE
     section: '552'
   ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/639.html
+    name: CAPEC
+    section: '639'
+    subsection: Probe System Files
+    version: '3.7'
+  ltype: SAME
 name: Separate storage of user uploaded files

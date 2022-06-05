@@ -47,4 +47,12 @@ links:
     name: Cheat_sheets
     section: Authorization Testing Automation Cheat Sheet
   ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/13.html
+    name: CAPEC
+    section: '13'
+    subsection: Subverting Environment Variable Values
+    version: '3.7'
+  ltype: SAME
 name: Ensure that secure fail-safe is in place for access control

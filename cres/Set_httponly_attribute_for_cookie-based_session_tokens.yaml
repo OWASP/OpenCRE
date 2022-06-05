@@ -52,6 +52,16 @@ links:
     name: NIST 800-63
     section: 7.1.1
   ltype: Linked To
+- document:
+    description: '"Ensure that the HttpOnly flag is set for all cookies."'
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/CookieHttpOnlyScanRule.java
+    name: 'ZAP Rule: "Cookie No HttpOnly Flag"'
+    tags:
+    - '10010'
+    - '"Passive"'
+    tooltype: Offensive
+  ltype: Linked To
 name: Set httponly attribute for cookie-based session tokens
 tags:
 - XSS
