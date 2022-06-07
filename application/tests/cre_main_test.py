@@ -19,14 +19,15 @@ from application.defs.osib_defs import Osib_id, Osib_tree
 
 class TestMain(unittest.TestCase):
     def tearDown(self) -> None:
-        for tmpdir in self.tmpdirs:
-            shutil.rmtree(tmpdir)
+        [shutil.rmtree(tmpdir) for tmpdir in self.tmpdirs]
+        [os.remove(tmpfile) for tmpfile in self.tmpfiles]
         sqla.session.remove()
         sqla.drop_all(app=self.app)
         self.app_context.pop()
 
     def setUp(self) -> None:
         self.tmpdirs: List[str] = []
+        self.tmpfiles: List[str] = []
         self.app = create_app(mode="test")
         sqla.create_all(app=self.app)
         self.app_context = self.app.app_context()
@@ -676,7 +677,8 @@ class TestMain(unittest.TestCase):
         _, t1 = tempfile.mkstemp()
         _, t2 = tempfile.mkstemp()
         _, tdiff = tempfile.mkstemp()
-        # self.tmpdirs.extend([t1, t2, tdiff])
+        self.tmpfiles.extend([t1, t2, tdiff])
+        self.maxDiff = None
 
         c0 = defs.CRE(id="111-000", description="CREdesc", name="CREname")
         s456 = defs.Standard(
@@ -705,18 +707,18 @@ class TestMain(unittest.TestCase):
         connection_1.add_cre(c0)
         connection_1.add_node(s_unlinked)
         connection_1.add_link(connection_1.add_cre(c1), connection_1.add_node(s456))
+        context1.pop()
 
-        pprint("%" * 90)
-        pprint(t1)
-        pprint(connection_1.graph.print_graph())
-        input()
+        self.assertNotEqual(main.compare_datasets(t1, tdiff), [{}, {}, {}, {}])
+        
 
-        # connection_2,app2,context2 = main.db_connect(path=t2)
-        # sqla.create_all(app=app2)
-        # connection_2.graph.graph = db.CRE_Graph.load_cre_graph(sqla.session)
-        # connection_2.add_cre(c0)
-        # connection_2.add_node(s_unlinked)
-        # connection_2.add_link(connection_2.add_cre(c1),connection_2.add_node(s456))
+        connection_2,app2,context2 = main.db_connect(path=t2)
+        sqla.create_all(app=app2)
+        connection_2.graph.graph = db.CRE_Graph.load_cre_graph(sqla.session)
+        connection_2.add_cre(c0)
+        connection_2.add_node(s_unlinked)
+        connection_2.add_link(connection_2.add_cre(c1),connection_2.add_node(s456))
+        context2.pop()
 
         connection_diff, appdiff, contextdiff = main.db_connect(path=tdiff)
         connection_diff.graph.graph = db.CRE_Graph.load_cre_graph(
@@ -725,22 +727,22 @@ class TestMain(unittest.TestCase):
         sqla.create_all(app=appdiff)
         connection_diff.add_cre(c0)
         connection_diff.add_cre(defs.CRE(id="000-111", name="asdfa232332sdf"))
-
-        pprint("#" * 90)
-        pprint(tdiff)
-        pprint(connection_diff.graph.print_graph())
-        input()
-        pprint("#" * 90)
-
-        # self.assertEqual(main.compare_datasets("foo", "bar"), [{},{},{},{}])
-        # self.assertEqual(main.compare_datasets(t1,t2), [{},{},{},{}])
-        pprint("sqlite://"+t1)
-        pprint("sqlite://"+tdiff)
-        self.assertNotEqual(main.compare_datasets("sqlite://"+t1, "sqlite://"+tdiff), [{}, {}, {}, {}])
-
         contextdiff.pop()
+        
+        # pprint("#" * 90)
+        # pprint(tdiff)
+        # pprint(connection_diff.graph.print_graph())
+        # input()
+        # pprint("#" * 90)
+
+        self.assertEqual(main.compare_datasets("foo", "bar"), [{},{},{},{}])
+        self.assertEqual(main.compare_datasets(t1,t2), [{},{},{},{}])
+        # pprint("sqlite://"+t1)
+        # pprint("sqlite://"+tdiff)
+        self.assertNotEqual(main.compare_datasets(t1, tdiff), [{}, {}, {}, {}])
+
+        # contextdiff.pop()
         # context2.pop()
-        context1.pop()
 
     # def test_prepare_for_Review(self):
     #     raise NotImplementedError

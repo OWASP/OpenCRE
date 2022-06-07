@@ -1,3 +1,4 @@
+from pprint import pprint
 import argparse
 import json
 import logging
@@ -385,7 +386,6 @@ def db_connect(
     path: str, session=None, mk_app=True
 ) -> Tuple[db.Node_collection, Any, Any]:
     global app
-    app_context = None
     conf = CMDConfig(db_uri=path)
     app = create_app(conf=conf)
     app_context = app.app_context()
@@ -482,16 +482,16 @@ def compare_datasets(db1: str, db2: str) -> List[Dict]:
         nodes = {}
         edges = {}
         for node in graph.nodes():
-            if node.startswith("CRE"):
+            if node.startswith("CRE-id"):
                 nodes[graph.nodes[node].get("external_id")] = node
-            elif node.startswith("Node"):
+            elif node.startswith("Node-id"):
                 nodes[graph.nodes[node].get("infosum")] = node
             else:
                 logger.fatal("Graph seems corrupted")
 
         for edge in graph.edges():
             key = graph.nodes[edge[0]].get("external_id")
-            if edge[1].startswith("CRE"):
+            if edge[1].startswith("CRE-id"):
                 key = f"{key}-{graph.nodes[edge[1]].get('external_id')}"
             else:
                 key = f"{key}-{graph.nodes[edge[1]].get('infosum')}"
@@ -505,7 +505,8 @@ def compare_datasets(db1: str, db2: str) -> List[Dict]:
             if node not in nodes2:
                 logger.error(f"{node} not present in {db2}")
                 differences["not_present"] = (node, db2)
-            elif nodes2[node] != attrs:
+            elif not (attrs.startswith("CRE") nodes2[node] != attrs:
+                
                 logger.error(
                     f"Dataset 2 {db2} node:{node} has different data from dataset 1 equivalent, data1 is {attrs} data 2 is {nodes2[node]} "
                 )
@@ -540,27 +541,32 @@ def compare_datasets(db1: str, db2: str) -> List[Dict]:
     # )
     # database1 = db.Node_collection(session=session1)
     database1, app1, context1 = db_connect(path=db1)
+    sqla.create_all(app=app1)
     database1.graph.graph = db.CRE_Graph.load_cre_graph(session=database1.session)
-    g1 = database1.graph.graph
-    n1, e1 = make_hashtable(g1)
+    n1, e1 = make_hashtable(database1.graph.graph)
+    database1.session.remove()
+    context1.pop()
+    
+    # print("$" * 90)
+    # pprint(database1.get_node_names())
+    # pprint(database1.graph.print_graph())
+    # print("$" * 90)
+    # # database1.graph.__instance = None
+    # database1.graph = None
 
-    print("$" * 90)
-    database1.graph.print_graph()
-    print("$" * 90)
-    database1.graph._instance = None
-    database1.graph = None
-
-    engine2 = create_engine(db2)
-    session2 = scoped_session(
-        sessionmaker(autocommit=False, autoflush=False, bind=engine2)
-    )
-    database2 = db.Node_collection (session=session2)
-    g2 = database2.graph.graph
-    print("$" * 90)
-    database2.graph.print_graph()
-    print("$" * 90)
-    input()
-    n2, e2 = make_hashtable(g2)
+    database2, app2, context2 = db_connect(path=db2)
+    sqla.create_all(app=app2)    
+    database2.graph.graph = db.CRE_Graph.load_cre_graph(session=database2.session)
+    context2.pop()
+    # print("$" * 90)
+    # pprint(database2.get_node_names())
+    # pprint(database2.graph.print_graph())
+    # print("$" * 90)
+    # input()
+    
+    # database2.session.remove()
+    
+    n2, e2 = make_hashtable(database2.graph.graph)
 
     d1 = node_differences(n1, n2, db2)
     d2 = node_differences(n2, n1, db1)

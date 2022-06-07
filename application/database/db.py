@@ -170,7 +170,9 @@ class CRE_Graph:
     def add_cre(cls, dbcre: CRE, graph: nx.DiGraph) -> nx.DiGraph:
         if dbcre:
             graph.add_node(
-                f"CRE: {dbcre.id}", internal_id=dbcre.id, external_id=dbcre.external_id
+                f"CRE-id: {dbcre.id}",
+                internal_id=dbcre.id,
+                external_id=dbcre.external_id
             )
         else:
             logger.error("Called with dbcre being none")
@@ -183,7 +185,7 @@ class CRE_Graph:
                 dbnode.serialise()
             )  # using md5 would have been way more performant but then I'd have to triage every beg-hunter's SAST scanner results
             graph.add_node(
-                f"Node: {dbnode.id}",
+                f"Node-id: {dbnode.id}",
                 internal_id=dbnode.id,
                 name=dbnode.name,
                 section=dbnode.section,
@@ -212,7 +214,7 @@ class CRE_Graph:
                 logger.error(f"CRE {il.cre} does not exist?")
             graph = cls.add_cre(dbcre=cre, graph=graph)
 
-            graph.add_edge(f"CRE: {il.group}", f"CRE: {il.cre}", ltype=il.type)
+            graph.add_edge(f"CRE-id: {il.group}", f"CRE-id: {il.cre}", ltype=il.type)
 
         for lnk in session.query(Links).all():
             node = session.query(Node).filter(Node.id == lnk.node).first()
@@ -223,7 +225,7 @@ class CRE_Graph:
             cre = session.query(CRE).filter(CRE.id == lnk.cre).first()
             graph = cls.add_cre(dbcre=cre, graph=graph)
 
-            graph.add_edge(f"CRE: {lnk.cre}", f"Node: {str(lnk.node)}", ltype=lnk.type)
+            graph.add_edge(f"CRE-id: {lnk.cre}", f"Node-id: {str(lnk.node)}", ltype=lnk.type)
         return graph
 
 
@@ -926,14 +928,16 @@ class Node_collection:
                 f" {group.external_id}:{group.name}"
                 f" == {cre.external_id}:{cre.name} ,adding"
             )
-            cycle = self.__introduces_cycle(f"CRE: {group.id}", f"CRE: {cre.id}")
+            cycle = self.__introduces_cycle(f"CRE-id: {group.id}", f"CRE-id: {cre.id}")
             if not cycle:
                 self.session.add(
                     InternalLinks(type=type.value, cre=cre.id, group=group.id)
                 )
                 self.session.commit()
                 self.graph.add_edge(
-                    f"CRE: {group.id}", f"CRE: {cre.id}", ltype=type.value
+                    f"CRE-id: {group.id}",
+                    f"CRE-id: {cre.id}",
+                    ltype=type.value
                 )
             else:
                 logger.warning(
@@ -972,7 +976,7 @@ class Node_collection:
             return
         else:
             cycle = self.__introduces_cycle(
-                f"CRE: {cre.id}", f"Standard: {str(node.id)}"
+                f"CRE-id: {cre.id}", f"Node-id: {str(node.id)}"
             )
             if not cycle:
                 logger.debug(
@@ -982,7 +986,7 @@ class Node_collection:
                 )
                 self.session.add(Links(type=type.value, cre=cre.id, node=node.id))
                 self.graph.add_edge(
-                    f"CRE: {cre.id}", f"Node: {str(node.id)}", ltype=type.value
+                    f"CRE-id: {cre.id}", f"Node-id: {str(node.id)}", ltype=type.value
                 )
             else:
                 logger.warning(
@@ -1001,8 +1005,8 @@ class Node_collection:
         this starts getting complicated when we have more linktypes"""
         res: bool = nx.has_path(
             self.graph.graph.to_undirected(),
-            "Node: " + str(node_source_id),
-            "Node: " + str(node_destination_id),
+            "Node-id: " + str(node_source_id),
+            "Node-id: " + str(node_destination_id),
         )
 
         return res
