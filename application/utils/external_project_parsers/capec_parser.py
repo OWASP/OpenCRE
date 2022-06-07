@@ -1,5 +1,6 @@
 import logging
 import os
+from pprint import pprint
 import tempfile
 import requests
 from typing import Dict
@@ -52,7 +53,7 @@ def register_capec(cache: db.Node_collection, xml_file: str):
         version = attack_pattern_catalogue["@Version"]
     for _, attack_pattern in attack_pattern_catalogue.get("Attack_Patterns").items():
         for pattern in attack_pattern:  # attack_pattern is an array with 1 element
-            if pattern["@Status"] == "Stable":
+            if pattern["@Status"] in ["Stable", "Usable", "Draft"]:
                 capec = defs.Standard(
                     name="CAPEC",
                     section=pattern["@ID"],
