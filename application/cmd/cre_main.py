@@ -505,8 +505,10 @@ def compare_datasets(db1: str, db2: str) -> List[Dict]:
             if node not in nodes2:
                 logger.error(f"{node} not present in {db2}")
                 differences["not_present"] = (node, db2)
-            elif not (attrs.startswith("CRE") nodes2[node] != attrs:
-                
+            elif nodes2[node] != attrs and not (
+                attrs.startswith("CRE-id") or attrs.startswith("Node-id")
+            ):
+
                 logger.error(
                     f"Dataset 2 {db2} node:{node} has different data from dataset 1 equivalent, data1 is {attrs} data 2 is {nodes2[node]} "
                 )
@@ -525,7 +527,11 @@ def compare_datasets(db1: str, db2: str) -> List[Dict]:
                 logger.error(f"{edge} not present in {db2}")
                 differences["not_present"] = (edge, db2)
             else:
-                if edges2[edge] != attrs:
+                if edges2[edge] != attrs and [
+                    e
+                    for e in attrs
+                    if not (e.startswith("CRE-id") or e.startswith("Node-id"))
+                ]:
                     logger.error(
                         f"Dataset 2{db2} edge:{edge} has different data from dataset 1 equivalent, data1 is {attrs} data 2 is {edges2[edge]}"
                     )
@@ -535,45 +541,26 @@ def compare_datasets(db1: str, db2: str) -> List[Dict]:
                         "attributes2": edges2[edge],
                     }
         return differences
-    # sqla = create_engine(db1)
-    # session1 = scoped_session(
-    #     sessionmaker(autocommit=False, autoflush=False, bind=sqla)
-    # )
-    # database1 = db.Node_collection(session=session1)
+
     database1, app1, context1 = db_connect(path=db1)
     sqla.create_all(app=app1)
     database1.graph.graph = db.CRE_Graph.load_cre_graph(session=database1.session)
     n1, e1 = make_hashtable(database1.graph.graph)
     database1.session.remove()
     context1.pop()
-    
-    # print("$" * 90)
-    # pprint(database1.get_node_names())
-    # pprint(database1.graph.print_graph())
-    # print("$" * 90)
-    # # database1.graph.__instance = None
-    # database1.graph = None
 
     database2, app2, context2 = db_connect(path=db2)
-    sqla.create_all(app=app2)    
+    sqla.create_all(app=app2)
     database2.graph.graph = db.CRE_Graph.load_cre_graph(session=database2.session)
-    context2.pop()
-    # print("$" * 90)
-    # pprint(database2.get_node_names())
-    # pprint(database2.graph.print_graph())
-    # print("$" * 90)
-    # input()
-    
-    # database2.session.remove()
-    
     n2, e2 = make_hashtable(database2.graph.graph)
+    database2.session.remove()
+    context2.pop()
 
     d1 = node_differences(n1, n2, db2)
     d2 = node_differences(n2, n1, db1)
-
     ed1 = edge_differences(e1, e2, db2)
     ed2 = edge_differences(e2, e1, db1)
-    return [d1, d2, ed1, ed2]  # TODO uncomment when this becomes a library method
+    return [d1, d2, ed1, ed2]
 
 
 def owasp_metadata_to_cre(meta_file: str):

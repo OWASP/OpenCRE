@@ -674,9 +674,9 @@ class TestMain(unittest.TestCase):
         mocked_cre2osib.assert_called_with([defs.CRE(name="c0")])
 
     def test_compare_datasets(self):
-        _, t1 = tempfile.mkstemp()
-        _, t2 = tempfile.mkstemp()
-        _, tdiff = tempfile.mkstemp()
+        _, t1 = tempfile.mkstemp(suffix="dataset1")
+        _, t2 = tempfile.mkstemp(suffix="dataset2")
+        _, tdiff = tempfile.mkstemp(suffix="datasetdiff")
         self.tmpfiles.extend([t1, t2, tdiff])
         self.maxDiff = None
 
@@ -700,7 +700,7 @@ class TestMain(unittest.TestCase):
             name="Unlinked",
             hyperlink="https://example.com",
         )
-        
+
         connection_1, app1, context1 = main.db_connect(path=t1)
         sqla.create_all(app=app1)
         connection_1.graph.graph = db.CRE_Graph.load_cre_graph(connection_1.session)
@@ -709,15 +709,22 @@ class TestMain(unittest.TestCase):
         connection_1.add_link(connection_1.add_cre(c1), connection_1.add_node(s456))
         context1.pop()
 
-        self.assertNotEqual(main.compare_datasets(t1, tdiff), [{}, {}, {}, {}])
-        
+        self.assertEqual(
+            main.compare_datasets(t1, tdiff),
+            [
+                {"not_present": (c1, id, tdiff)},
+                {},
+                {"not_present": (f"{c1.id}-<some infosum>", tdiff)},
+                {},
+            ],
+        )
 
-        connection_2,app2,context2 = main.db_connect(path=t2)
+        connection_2, app2, context2 = main.db_connect(path=t2)
         sqla.create_all(app=app2)
         connection_2.graph.graph = db.CRE_Graph.load_cre_graph(sqla.session)
         connection_2.add_cre(c0)
         connection_2.add_node(s_unlinked)
-        connection_2.add_link(connection_2.add_cre(c1),connection_2.add_node(s456))
+        connection_2.add_link(connection_2.add_cre(c1), connection_2.add_node(s456))
         context2.pop()
 
         connection_diff, appdiff, contextdiff = main.db_connect(path=tdiff)
@@ -728,21 +735,20 @@ class TestMain(unittest.TestCase):
         connection_diff.add_cre(c0)
         connection_diff.add_cre(defs.CRE(id="000-111", name="asdfa232332sdf"))
         contextdiff.pop()
-        
-        # pprint("#" * 90)
-        # pprint(tdiff)
-        # pprint(connection_diff.graph.print_graph())
-        # input()
-        # pprint("#" * 90)
 
-        self.assertEqual(main.compare_datasets("foo", "bar"), [{},{},{},{}])
-        self.assertEqual(main.compare_datasets(t1,t2), [{},{},{},{}])
-        # pprint("sqlite://"+t1)
-        # pprint("sqlite://"+tdiff)
-        self.assertNotEqual(main.compare_datasets(t1, tdiff), [{}, {}, {}, {}])
-
-        # contextdiff.pop()
-        # context2.pop()
+        self.assertEqual(main.compare_datasets("foo", "bar"), [{}, {}, {}, {}])
+        self.assertEqual(main.compare_datasets(t1, t2), [{}, {}, {}, {}])
+        self.assertEqual(
+            main.compare_datasets(t1, tdiff),
+            [
+                {"not_present": (c1.id, tdiff)},
+                {},
+                {
+                    "not_present": (f"{c1.id}-", tdiff)
+                },  # here the make_hashtable method creates edges with the format of <originating_cre_id>-<node infosum> so need to find the infosum of the node conencted to  c1
+                {},
+            ],
+        )
 
     # def test_prepare_for_Review(self):
     #     raise NotImplementedError

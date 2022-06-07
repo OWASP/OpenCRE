@@ -172,7 +172,7 @@ class CRE_Graph:
             graph.add_node(
                 f"CRE-id: {dbcre.id}",
                 internal_id=dbcre.id,
-                external_id=dbcre.external_id
+                external_id=dbcre.external_id,
             )
         else:
             logger.error("Called with dbcre being none")
@@ -225,7 +225,9 @@ class CRE_Graph:
             cre = session.query(CRE).filter(CRE.id == lnk.cre).first()
             graph = cls.add_cre(dbcre=cre, graph=graph)
 
-            graph.add_edge(f"CRE-id: {lnk.cre}", f"Node-id: {str(lnk.node)}", ltype=lnk.type)
+            graph.add_edge(
+                f"CRE-id: {lnk.cre}", f"Node-id: {str(lnk.node)}", ltype=lnk.type
+            )
         return graph
 
 
@@ -233,7 +235,7 @@ class Node_collection:
     graph: nx.Graph = None
     session = None
 
-    def __init__(self, session=sqla.session, graph:CRE_Graph=None) -> None:
+    def __init__(self, session=sqla.session, graph: CRE_Graph = None) -> None:
         if graph:
             self.graph = graph
         else:
@@ -935,9 +937,7 @@ class Node_collection:
                 )
                 self.session.commit()
                 self.graph.add_edge(
-                    f"CRE-id: {group.id}",
-                    f"CRE-id: {cre.id}",
-                    ltype=type.value
+                    f"CRE-id: {group.id}", f"CRE-id: {cre.id}", ltype=type.value
                 )
             else:
                 logger.warning(
