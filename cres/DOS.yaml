@@ -3,36 +3,13 @@ id: 623-550
 links:
 - document:
     doctype: CRE
+    id: 546-564
+    name: '>>Tags'
+  ltype: Contains
+- document:
+    doctype: CRE
     id: 854-643
     name: '>>Business logic'
-    tags:
-    - DOS
-  ltype: Related
-- document:
-    doctype: CRE
-    id: 268-088
-    name: Limit query impact GraphQL/data layer expression DoS
-    tags:
-    - DOS
-  ltype: Related
-- document:
-    doctype: CRE
-    id: 814-322
-    name: Whitelist data sources and sinks
-    tags:
-    - DOS
-  ltype: Related
-- document:
-    doctype: CRE
-    id: 314-701
-    name: Whitelist file extensions served by web tier
-    tags:
-    - DOS
-  ltype: Related
-- document:
-    doctype: CRE
-    id: 545-243
-    name: Block execution/output of uploaded files
     tags:
     - DOS
   ltype: Related
@@ -45,8 +22,15 @@ links:
   ltype: Related
 - document:
     doctype: CRE
-    id: 660-052
-    name: Validate max input/file sizes
+    id: 176-154
+    name: Monitor expectation of usage intensity (e.g. number of requests)
+    tags:
+    - DOS
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 268-088
+    name: Limit query impact GraphQL/data layer expression DoS
     tags:
     - DOS
   ltype: Related
@@ -59,16 +43,18 @@ links:
   ltype: Related
 - document:
     doctype: CRE
-    id: 176-154
-    name: Monitor expectation of usage intensity (e.g. number of requests)
+    id: 660-052
+    name: Validate max input/file sizes
     tags:
     - DOS
   ltype: Related
 - document:
     doctype: CRE
-    id: 546-564
-    name: '>>Tags'
-  ltype: Contains
+    id: 814-322
+    name: Whitelist data sources and sinks
+    tags:
+    - DOS
+  ltype: Related
 - document:
     doctype: Standard
     hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=SC-5

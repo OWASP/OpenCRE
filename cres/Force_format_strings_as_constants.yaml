@@ -18,15 +18,4 @@ links:
     name: CWE
     section: '134'
   ltype: Linked To
-- document:
-    description: '"Rewrite the background program using proper deletion of bad character
-      strings.  This will require a recompile of the background executable."'
-    doctype: Tool
-    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrules/src/main/java/org/zaproxy/zap/extension/ascanrules/FormatStringScanRule.java
-    name: 'ZAP Rule: "Format String Error"'
-    tags:
-    - '30002'
-    - '"Active"'
-    tooltype: Offensive
-  ltype: Linked To
 name: Force format strings as constants

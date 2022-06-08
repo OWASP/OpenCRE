@@ -27,16 +27,4 @@ links:
     name: CWE
     section: '116'
   ltype: Linked To
-- document:
-    doctype: Standard
-    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Abuse_Case_Cheat_Sheet.html
-    name: Cheat_sheets
-    section: Abuse Case Cheat Sheet
-  ltype: Linked To
-- document:
-    doctype: Standard
-    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Deserialization_Cheat_Sheet.html
-    name: Cheat_sheets
-    section: Deserialization Cheat Sheet
-  ltype: Linked To
 name: Encode output near the consuming interpreter

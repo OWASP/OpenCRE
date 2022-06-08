@@ -8,6 +8,11 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
+    id: 426-842
+    name: Verify the authenticity of both headers and payload
+  ltype: Contains
+- document:
+    doctype: CRE
     id: 170-772
     name: Cryptography
   ltype: Related
@@ -15,11 +20,6 @@ links:
     doctype: CRE
     id: 527-034
     name: Protect communication between application components
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 426-842
-    name: Verify the authenticity of both headers and payload
   ltype: Contains
 name: Communication encryption
 tags:

@@ -3,11 +3,6 @@ id: 141-555
 links:
 - document:
     doctype: CRE
-    id: 166-151
-    name: Ensure that secure fail-safe is in place for access control
-  ltype: Related
-- document:
-    doctype: CRE
     id: 842-876
     name: '>>Logging and error handling'
   ltype: Contains
@@ -17,10 +12,14 @@ links:
     name: Let cryptographic modules fail securely
   ltype: Related
 - document:
+    doctype: CRE
+    id: 166-151
+    name: Ensure that secure fail-safe is in place for access control
+  ltype: Related
+- document:
     doctype: Standard
     hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=SC-24
     name: NIST 800-53 v5
     section: SC-24 Fail in Known State
-    subsection: mapped under fail securely
   ltype: Linked To
 name: Fail securely

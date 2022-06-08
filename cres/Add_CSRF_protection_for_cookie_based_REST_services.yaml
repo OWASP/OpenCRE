@@ -42,22 +42,4 @@ links:
     name: Cheat_sheets
     section: Cross-Site Request Forgery Prevention Cheat Sheet
   ltype: Linked To
-- document:
-    doctype: Tool
-    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/CsrfCountermeasuresScanRule.java
-    name: 'ZAP Rule: "Absence of Anti-CSRF Tokens"'
-    tags:
-    - '10202'
-    - '"Passive"'
-    tooltype: Offensive
-  ltype: Linked To
-- document:
-    doctype: Tool
-    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/CsrfTokenScanRule.java
-    name: 'ZAP Rule: "Anti-CSRF Tokens Check"'
-    tags:
-    - '"Active"'
-    - '20012'
-    tooltype: Offensive
-  ltype: Linked To
 name: Add CSRF protection for cookie based REST services

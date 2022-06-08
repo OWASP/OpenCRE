@@ -44,23 +44,4 @@ links:
     name: Cheat_sheets
     section: TLS Cipher String Cheat Sheet
   ltype: Linked To
-- document:
-    description: '"Protect the connection using HTTPS or use a stronger authentication
-      mechanism"'
-    doctype: Tool
-    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/InsecureAuthenticationScanRule.java
-    name: 'ZAP Rule: "Weak Authentication Method"'
-    tags:
-    - '10105'
-    - '"Passive"'
-    tooltype: Offensive
-  ltype: Linked To
-- document:
-    doctype: Standard
-    hyperlink: https://capec.mitre.org/data/definitions/192.html
-    name: CAPEC
-    section: '192'
-    subsection: Protocol Analysis
-    version: '3.7'
-  ltype: SAME
 name: Disable insecure SSL/TLS versions

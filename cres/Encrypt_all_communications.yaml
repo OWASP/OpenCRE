@@ -20,12 +20,4 @@ links:
     name: CWE
     section: '319'
   ltype: Linked To
-- document:
-    doctype: Standard
-    hyperlink: https://capec.mitre.org/data/definitions/117.html
-    name: CAPEC
-    section: '117'
-    subsection: Interception
-    version: '3.7'
-  ltype: SAME
 name: Encrypt all communications

@@ -8,23 +8,8 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 462-245
-    name: Remove dead code
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 577-260
-    name: Enforce integrity ckeck for externally hosted assets (eg SRI)
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 863-521
-    name: Maintain/manage inventory of third party repositories
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 838-636
-    name: Check source code to not contain backdoors
+    id: 154-031
+    name: Harden application by excluding unwanted functionality
   ltype: Contains
 - document:
     doctype: CRE
@@ -38,23 +23,20 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 834-645
-    name: Avoid unauthorized client data collection
+    id: 462-245
+    name: Remove unnecessary features, documentation, configuration etc
+    tags:
+    - Configuration
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 577-260
+    name: Enforce integrity check for externally hosted assets (eg SRI)
   ltype: Contains
 - document:
     doctype: CRE
     id: 673-475
     name: Disallow unsupported/deprecated client-side technologies
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 154-031
-    name: Harden application by excluding unwanted functiuonality
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 860-084
-    name: Sandbox third party libraries
   ltype: Contains
 - document:
     doctype: CRE
@@ -64,7 +46,27 @@ links:
 - document:
     doctype: CRE
     id: 715-334
-    name: Update third party components build- or compiletime
+    name: Update third party components build- or compile time
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 834-645
+    name: Avoid unauthorized client data collection
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 838-636
+    name: Check source code and third party libraries to not contain backdoors
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 860-084
+    name: Sandbox third party libraries
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 863-521
+    name: Maintain/manage inventory of third party repositories
   ltype: Contains
 - document:
     doctype: Standard
@@ -86,117 +88,7 @@ links:
   ltype: Linked To
 - document:
     doctype: Standard
-    hyperlink: https://owasp.org/www-project-top-ten/2017/A9_2017-Using_Components_with_Known_Vulnerabilities
     name: Top10 2017
     section: A9-Using_Components_with_Known_Vulnerabilities
-  ltype: Linked To
-- document:
-    description: '"Update Bash on the server to the latest version"'
-    doctype: Tool
-    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/ShellShockScanRule.java
-    name: 'ZAP Rule: "Remote Code Execution - Shell Shock"'
-    tags:
-    - '10048'
-    - '"Active"'
-    tooltype: Offensive
-  ltype: Linked To
-- document:
-    description: '"Upgrade Spring Framework to versions 5.3.18, 5.2.20, or newer."'
-    doctype: Tool
-    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesAlpha/src/main/java/org/zaproxy/zap/extension/ascanrulesAlpha/Spring4ShellScanRule.java
-    name: 'ZAP Rule: "Spring4Shell"'
-    tags:
-    - '40045'
-    - '"Active"'
-    tooltype: Offensive
-  ltype: Linked To
-- document:
-    description: '"Upgrade Log4j2 to version 2.17.1 or newer. In previous releases
-      (>2.10) this behavior can be mitigated by setting system property ''log4j2.formatMsgNoLookups''
-      to ''true'' or by removing the JndiLookup class from the classpath (example:
-      zip -q -d log4j-core-*.jar org/apache/logging/log4j/core/lookup/JndiLookup.class).
-      Java 8u121 (see https://www.oracle.com/java/technologies/javase/8u121-relnotes.html)
-      protects against remote code execution by defaulting ''com.sun.jndi.rmi.object.trustURLCodebase''
-      and ''com.sun.jndi.cosnaming.object.trustURLCodebase'' to ''false''."'
-    doctype: Tool
-    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesAlpha/src/main/java/org/zaproxy/zap/extension/ascanrulesAlpha/Log4ShellScanRule.java
-    name: 'ZAP Rule: "Log4Shell (CVE-2021-44228)"'
-    tags:
-    - '40043'
-    - '"Active"'
-    tooltype: Offensive
-  ltype: Linked To
-- document:
-    description: '"Update to OpenSSL 1.0.1g or later. Re-issue HTTPS certificates.
-      Change asymmetric private keys and shared secret keys, since these may have
-      been compromised, with no evidence of compromise in the server log files."'
-    doctype: Tool
-    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/HeartBleedActiveScanRule.java
-    name: 'ZAP Rule: "Heartbleed OpenSSL Vulnerability"'
-    tags:
-    - '20015'
-    - '"Active"'
-    tooltype: Offensive
-  ltype: Linked To
-- document:
-    description: '"Update to OpenSSL 1.0.1g or later. Re-issue HTTPS certificates.
-      Change asymmetric private keys and shared secret keys, since these may have
-      been compromised, with no evidence of compromise in the server log files."'
-    doctype: Tool
-    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrulesBeta/src/main/java/org/zaproxy/zap/extension/pscanrulesBeta/HeartBleedScanRule.java
-    name: 'ZAP Rule: "Heartbleed OpenSSL Vulnerability (Indicative)"'
-    tags:
-    - '10034'
-    - '"Passive"'
-    tooltype: Offensive
-  ltype: Linked To
-- document:
-    description: '"_Unavailable_"'
-    doctype: Tool
-    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/retire/src/main/java/org/zaproxy/addon/retire/RetireScanRule.java
-    name: 'ZAP Rule: "Vulnerable JS Library"'
-    tags:
-    - '10003'
-    - '"Passive"'
-    tooltype: Offensive
-  ltype: Linked To
-- document:
-    doctype: Tool
-    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/RemoteCodeExecutionCve20121823ScanRule.java
-    name: 'ZAP Rule: "Remote Code Execution - CVE-2012-1823"'
-    tags:
-    - '"Active"'
-    - '20018'
-    tooltype: Offensive
-  ltype: Linked To
-- document:
-    doctype: Tool
-    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/SourceCodeDisclosureCve20121823ScanRule.java
-    name: 'ZAP Rule: "Source Code Disclosure - CVE-2012-1823"'
-    tags:
-    - '20017'
-    - '"Active"'
-    tooltype: Offensive
-  ltype: Linked To
-- document:
-    description: '"The best immediate mitigation is to block Proxy request headers
-      as early as possible, and before they hit your application."'
-    doctype: Tool
-    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/HttPoxyScanRule.java
-    name: 'ZAP Rule: "Httpoxy - Proxy Header Misuse"'
-    tags:
-    - '10107'
-    - '"Active"'
-    tooltype: Offensive
-  ltype: Linked To
-- document:
-    description: '"Upgrade Log4j2 to version 2.17.1 or newer."'
-    doctype: Tool
-    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesAlpha/src/main/java/org/zaproxy/zap/extension/ascanrulesAlpha/Log4ShellScanRule.java
-    name: 'ZAP Rule: "Log4Shell (CVE-2021-45046)"'
-    tags:
-    - '40043'
-    - '"Active"'
-    tooltype: Offensive
   ltype: Linked To
 name: '>>Dependency strength'
