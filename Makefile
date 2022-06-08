@@ -54,10 +54,15 @@ clean:
 	find . -type f -name '*.log' -delete
 	find . -type f -name '*.orig' -delete
 
-migrate-upgrade:
+migrate-restore:
 	if ! [ -f "standards_cache.sqlite" ]; then cp cres/db.sqlite standards_cache.sqlite; fi
 	[ -d "./venv" ] && . ./venv/bin/activate
-	export FLASK_APP=$(CURDIR)/cre.py
+	export FLASK_APP=$(CURDIR)/cre.py 
+	flask db upgrade  
+
+migrate-upgrade:
+	[ -d "./venv" ] && . ./venv/bin/activate
+	export FLASK_APP=$(CURDIR)/cre.py 
 	flask db upgrade  
 
 migrate-downgrade:
@@ -67,7 +72,10 @@ migrate-downgrade:
 
 import-all:
 	[ -d "./venv" ] && . ./venv/bin/activate
+	rm -rf standards_cache.sqlite
+	make migrate-upgrade
 	export FLASK_APP=$(CURDIR)/cre.py
-	python cre.py --add --from_spreadsheet https://docs.google.com/spreadsheets/d/1eZOEYgts7d_-Dr-1oAbogPfzBLh6511b58pX3b59kvg/edit#gid=260321921 --zap_in --cheatsheets_in --github_tools_in --capec_in
+	python cre.py --add --from_spreadsheet https://docs.google.com/spreadsheets/d/1eZOEYgts7d_-Dr-1oAbogPfzBLh6511b58pX3b59kvg/edit#gid=260321921 
+	python cre.py --zap_in --cheatsheets_in --github_tools_in  --capec_in
 
 all: clean lint test dev dev-run
