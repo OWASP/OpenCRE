@@ -29,7 +29,8 @@ cover:
 
 install-deps:
 	[ -d "./venv" ] && . ./venv/bin/activate 
-	pip install -r requirements.txt& yarn install
+	pip install -r requirements.txt
+	yarn install
 
 install:
 	virtualenv -p python3 venv && . ./venv/bin/activate && make install-deps && yarn build
