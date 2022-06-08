@@ -1,0 +1,27 @@
+name: AutoImport
+on: 
+  workflow_dispatch: # allow manual triggering
+    inputs:
+      logLevel:
+        description: 'Log level'     
+        required: true
+        default: 'warning'
+jobs:
+  backup:
+    environment: Heroku-DB-Backup
+    name: Import latest dataset to Heroku
+    runs-on: ubuntu-latest
+    steps:
+      - name: Refresh Data
+        env: 
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+        run: |
+          make install
+          source venv/bin/activate
+          make migrate-upgrade
+          make import-all
+          rm -rf dbdump && sqlite3 standards_cache.sqlite .dump > dbdump
+          tmp=$(cat dbdump | grep -v "BEGIN TRANSACTION;" | grep -v "PRAGMA foreign_keys=OFF;")
+          tmp=$(echo "DROP TABLE cre CASCADE; " "DROP TABLE node CASCADE;" "DROP TABLE alembic_version CASCADE;" "DROP TABLE cre_node_links CASCADE;" "DROP TABLE cre_links CASCADE;"; echo "${tmp}")
+          rm -rf dbtmp && echo $tmp >dbtmp
+          heroku pg:psql < dbtmp
