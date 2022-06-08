@@ -547,7 +547,8 @@ def parse_hierarchical_export_format(
                     )
                 )
 
-        [cre.add_link(link) for link in parse_standards(mapping)]
+        for link in parse_standards(mapping):
+            cre.add_link(link)
 
         # link CRE to a higher level one
 
