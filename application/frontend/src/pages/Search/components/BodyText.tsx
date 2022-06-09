@@ -23,7 +23,7 @@ export const SearchBody = () => {
         HOW?
       </h2>
       <p>
-        The CRE links each section of a standard to a shared topic (a Common Requirement), causing that section to also link with all other resources that map to the same topic. This 1) enables users to find all combined information from relevant sources, 2) it facilitates a shared and better understanding of cyber security, and 3) it allows standard makers to have links that keep working and offer all the information that readers need, so they don’t have to cover it all themselves. The CRE maintains itself: topic links in the standard text are scanned automatically. Furthermore, topics are linked with related other topics, creating a semantic web for security.
+        The CRE links each section of a standard to a shared topic (a Common Requirement), causing that section to also link with all other resources that link to the same topic. This 1) enables users to find all combined information from relevant sources, 2) it facilitates a shared and better understanding of cyber security, and 3) it allows standard makers to have links that keep working and offer all the information that readers need, so they don’t have to cover it all themselves. The CRE maintains itself: topic links in the standard text are scanned automatically. Furthermore, topics are linked with related other topics, creating a semantic web for security.
       </p>
       <p>
       <b>Example</b>: the session time-out topic will take the user to relevant criteria in several standards
@@ -40,7 +40,7 @@ export const SearchBody = () => {
         WHEN?
       </h2>
       <p>
-        CRE is currently in beta and has linked OWASP standards (Top 10, ASVS, Proactive Controls, Cheat sheets, Testing guide), plus several other sources (CWE, NIST-800 53, NIST-800 63b), as part of the
+        CRE is currently in beta and has linked OWASP standards (Top 10, ASVS, Proactive Controls, Cheat sheets, Testing guide, ZAP), plus several other sources (CWE, CAPEC, NIST-800 53, NIST-800 63b), as part of the
         <a href="https://owasp.org/www-project-integration-standards/"> OWASP Integration standard project</a>
         .
       </p>
@@ -53,7 +53,7 @@ export const SearchBody = () => {
       </p>
       <p>
         For more details, see this 
-        <a href="https://www.youtube.com/watch?v=4-HTa1pTEVI&list=PLpr-xdpM8wG8CX91aE_LV3OxmtT9lvUW5&index=92"> presentation video</a>
+        <a href="https://www.youtube.com/watch?v=7knF14t0Svg"> presentation video</a>
         , or read the
         <a href="https://github.com/OWASP/www-project-integration-standards/raw/master/writeups/CRE-Explained6.pdf"> CRE explanation document</a>
         .
