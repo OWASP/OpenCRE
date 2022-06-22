@@ -46,21 +46,4 @@ links:
     name: NIST 800-63
     section: '7.1'
   ltype: Linked To
-- document:
-    doctype: Tool
-    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/SessionFixationScanRule.java
-    name: 'ZAP Rule: "Session Fixation"'
-    tags:
-    - '40013'
-    - '"Active"'
-    tooltype: Offensive
-  ltype: Linked To
-- document:
-    doctype: Standard
-    hyperlink: https://capec.mitre.org/data/definitions/21.html
-    name: CAPEC
-    section: '21'
-    subsection: Exploitation of Trusted Identifiers
-    version: '3.7'
-  ltype: SAME
 name: Generate a new session token after authentication

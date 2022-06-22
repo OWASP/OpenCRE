@@ -3,19 +3,22 @@ id: 760-764
 links:
 - document:
     doctype: CRE
-    id: 384-344
-    name: Store and serve user-uploaded files such that they cannot execute/damage
-      server or client
+    id: 010-308
+    name: Input validation
     tags:
     - XSS
     - Injection
   ltype: Related
 - document:
     doctype: CRE
-    id: 010-308
-    name: Input validation
+    id: 546-564
+    name: '>>Tags'
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 048-612
+    name: Encode user input before logging
     tags:
-    - XSS
     - Injection
   ltype: Related
 - document:
@@ -36,26 +39,22 @@ links:
   ltype: Related
 - document:
     doctype: CRE
+    id: 384-344
+    name: Store and serve user-uploaded files such that they cannot execute/damage
+      server or client
+    tags:
+    - XSS
+    - Injection
+  ltype: Related
+- document:
+    doctype: CRE
     id: 821-540
     name: Protect logs against log injection
     tags:
     - Injection
   ltype: Related
 - document:
-    doctype: CRE
-    id: 048-612
-    name: Encode user input before logging
-    tags:
-    - Injection
-  ltype: Related
-- document:
-    doctype: CRE
-    id: 546-564
-    name: '>>Tags'
-  ltype: Contains
-- document:
     doctype: Standard
-    hyperlink: https://owasp.org/www-project-top-ten/2017/A1_2017-Injection
     name: Top10 2017
     section: A1-Injection
   ltype: Linked To

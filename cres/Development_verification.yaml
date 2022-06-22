@@ -10,6 +10,8 @@ links:
     doctype: CRE
     id: 340-754
     name: Threat model every design change or sprint
+    tags:
+    - Architecture
   ltype: Contains
 - document:
     doctype: CRE

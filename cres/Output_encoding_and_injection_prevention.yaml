@@ -8,9 +8,14 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 760-764
-    name: Injection
-  ltype: Related
+    id: 064-808
+    name: Encode output context-specifically
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 134-207
+    name: Protect against XML/XPath injection
+  ltype: Contains
 - document:
     doctype: CRE
     id: 028-726
@@ -18,33 +23,13 @@ links:
   ltype: Related
 - document:
     doctype: CRE
-    id: 620-101
-    name: Force output encoding for specific interpreter's context
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 533-516
-    name: Encode output while preserving user input formatting
-  ltype: Contains
+    id: 760-764
+    name: Injection
+  ltype: Related
 - document:
     doctype: CRE
     id: 366-835
     name: Escape output against XSS
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 806-367
-    name: Encode output near the consuming interpreter
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 064-808
-    name: Encode output context-specifically
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 607-671
-    name: Protect against JS or JSON injection attacks
   ltype: Contains
 - document:
     doctype: CRE
@@ -53,13 +38,23 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
+    id: 533-516
+    name: Encode output while preserving user input formatting
+  ltype: Contains
+- document:
+    doctype: CRE
     id: 547-283
     name: Protect against LFI / RFI
   ltype: Contains
 - document:
     doctype: CRE
-    id: 857-718
-    name: Protect against OS command injection attack
+    id: 607-671
+    name: Protect against JS or JSON injection attacks
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 620-101
+    name: Force output encoding for specific interpreter's context
   ltype: Contains
 - document:
     doctype: CRE
@@ -68,8 +63,13 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 134-207
-    name: Protect against XML/XPath injection
+    id: 806-367
+    name: Encode output near the consuming interpreter
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 857-718
+    name: Protect against OS command injection attack
   ltype: Contains
 name: Output encoding and injection prevention
 tags:

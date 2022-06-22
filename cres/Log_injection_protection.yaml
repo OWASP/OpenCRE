@@ -3,8 +3,10 @@ id: 821-541
 links:
 - document:
     doctype: CRE
-    id: 148-420
-    name: Log integrity
+    id: 048-612
+    name: Encode user input before logging
+    tags:
+    - Injection
   ltype: Contains
 - document:
     doctype: CRE
@@ -15,9 +17,7 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 048-612
-    name: Encode user input before logging
-    tags:
-    - Injection
+    id: 148-420
+    name: Log integrity
   ltype: Contains
 name: Log injection protection

@@ -8,12 +8,12 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 611-051
-    name: Enforce schema on XML structure/field
+    id: 456-636
+    name: Add integrity check to SOAP payload
   ltype: Contains
 - document:
     doctype: CRE
-    id: 456-636
-    name: Add integrity check to SOAP payload
+    id: 611-051
+    name: Enforce schema on XML structure/field
   ltype: Contains
 name: SOAP

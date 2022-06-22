@@ -18,12 +18,4 @@ links:
     name: CWE
     section: '494'
   ltype: Linked To
-- document:
-    doctype: Standard
-    hyperlink: https://capec.mitre.org/data/definitions/662.html
-    name: CAPEC
-    section: '662'
-    subsection: Adversary in the Browser (AiTB)
-    version: '3.7'
-  ltype: SAME
 name: Check binary integrity before deployment

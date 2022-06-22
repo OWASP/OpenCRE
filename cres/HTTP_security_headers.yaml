@@ -10,8 +10,18 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 736-237
-    name: Set metadate/content-Disposition for API responses
+    id: 036-147
+    name: Configure HSTS configuration properly
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 036-725
+    name: Set content HTTP response type
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 065-388
+    name: Configure X-Content-Type-Options properly
   ltype: Contains
 - document:
     doctype: CRE
@@ -22,27 +32,22 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 036-147
-    name: Configure HSTS configuration properly
-  ltype: Contains
-- document:
-    doctype: CRE
     id: 268-100
     name: Configure Referrer-Policy properly
   ltype: Contains
 - document:
     doctype: CRE
-    id: 065-388
-    name: Configure X-Content-Type-Options properly
-  ltype: Contains
-- document:
-    doctype: CRE
     id: 480-071
-    name: Configure X-Frame-Options for CSP properly
+    name: Prevent Click jacking through X-Frame-Options or CSP
   ltype: Contains
 - document:
     doctype: CRE
-    id: 036-725
-    name: Set content HTTP response type
+    id: 736-237
+    name: Set metadata/content-Disposition for API responses
   ltype: Contains
+- document:
+    doctype: CRE
+    id: 473-758
+    name: Set sufficient anti-caching headers
+  ltype: Related
 name: HTTP security headers

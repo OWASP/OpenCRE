@@ -11,13 +11,13 @@ links:
     id: 314-701
     name: Whitelist file extensions served by web tier
     tags:
-    - DOS
+    - XSS
   ltype: Contains
 - document:
     doctype: CRE
     id: 545-243
     name: Block execution/output of uploaded files
     tags:
-    - DOS
+    - XSS
   ltype: Contains
 name: File download

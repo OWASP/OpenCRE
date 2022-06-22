@@ -3,8 +3,8 @@ id: 542-270
 links:
 - document:
     doctype: CRE
-    id: 126-668
-    name: '>>Secure data storage'
+    id: 027-210
+    name: Create random GUIDs with cryptographically secure random number generators
   ltype: Contains
 - document:
     doctype: CRE
@@ -23,8 +23,8 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 027-210
-    name: Create random GUIDs with cryptographically secure random number generators
+    id: 126-668
+    name: '>>Secure data storage'
   ltype: Contains
 name: Secure random values
 tags:

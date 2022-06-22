@@ -9,11 +9,6 @@ links:
     - DOS
   ltype: Contains
 - document:
-    doctype: CRE
-    id: 503-455
-    name: '>>Input and output verification'
-  ltype: Related
-- document:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x19-V11-BusLogic.md
     name: ASVS
@@ -37,20 +32,4 @@ links:
     name: Cheat_sheets
     section: Abuse Case Cheat Sheet
   ltype: Linked To
-- document:
-    doctype: Standard
-    hyperlink: https://capec.mitre.org/data/definitions/125.html
-    name: CAPEC
-    section: '125'
-    subsection: Flooding
-    version: '3.7'
-  ltype: SAME
-- document:
-    doctype: Standard
-    hyperlink: https://capec.mitre.org/data/definitions/130.html
-    name: CAPEC
-    section: '130'
-    subsection: Excessive Allocation
-    version: '3.7'
-  ltype: SAME
 name: Monitor suspected automation abuse

@@ -51,20 +51,4 @@ links:
     name: Cheat_sheets
     section: Unvalidated Redirects and Forwards Cheat Sheet
   ltype: Linked To
-- document:
-    doctype: Standard
-    hyperlink: https://capec.mitre.org/data/definitions/105.html
-    name: CAPEC
-    section: '105'
-    subsection: HTTP Request Splitting
-    version: '3.7'
-  ltype: SAME
-- document:
-    doctype: Standard
-    hyperlink: https://capec.mitre.org/data/definitions/34.html
-    name: CAPEC
-    section: '34'
-    subsection: HTTP Response Splitting
-    version: '3.7'
-  ltype: SAME
 name: Sanitize unstructured data

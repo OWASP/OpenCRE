@@ -3,13 +3,13 @@ id: 817-808
 links:
 - document:
     doctype: CRE
-    id: 724-770
-    name: '>>Authorized access'
+    id: 586-842
+    name: '>>Secure user management'
   ltype: Contains
 - document:
     doctype: CRE
-    id: 586-842
-    name: '>>Secure user management'
+    id: 724-770
+    name: '>>Authorized access'
   ltype: Related
 - document:
     doctype: Standard

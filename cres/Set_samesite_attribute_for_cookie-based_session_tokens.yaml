@@ -26,7 +26,7 @@ links:
   ltype: Linked To
 - document:
     doctype: Standard
-    hyperlink: https://owasp.org/www-project-web-security-testing-guide/v41/4-Web_Application_Security_Testing/06-Session_Management_Testing/02-Testing_for_Cookies_Attributes.html#domain-attribute
+    hyperlink: https://owasp.org/www-project-web-security-testing-guide/v41/4-Web_Application_Security_Testing/06-Session_Management_Testing/02-Testing_for_Cookies_Attributes.html#httponly-attribute
     name: (WSTG) Web Security Testing Guide
     section: WSTG-SESS-02
   ltype: Linked To
@@ -45,16 +45,6 @@ links:
 - document:
     doctype: Standard
     name: NIST 800-63
-    section: are g
-  ltype: Linked To
-- document:
-    description: '"Ensure that only POST is accepted where POST is expected."'
-    doctype: Tool
-    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/GetForPostScanRule.java
-    name: 'ZAP Rule: "GET for POST"'
-    tags:
-    - '10058'
-    - '"Active"'
-    tooltype: Offensive
+    section: 7.1.1
   ltype: Linked To
 name: Set "samesite" attribute for cookie-based session tokens

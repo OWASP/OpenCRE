@@ -3,21 +3,6 @@ id: 503-455
 links:
 - document:
     doctype: CRE
-    id: 118-110
-    name: API/web services
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 836-068
-    name: Deserialization Prevention
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 130-550
-    name: File handling
-  ltype: Contains
-- document:
-    doctype: CRE
     id: 010-308
     name: Input validation
     tags:
@@ -26,8 +11,13 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 866-553
-    name: Memory, String, and Unmanaged Code
+    id: 118-110
+    name: API/web services
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 130-550
+    name: File handling
   ltype: Contains
 - document:
     doctype: CRE
@@ -46,6 +36,16 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
+    id: 541-441
+    name: Validate HTTP request headers
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 764-509
+    name: XML Parser hardening
+  ltype: Contains
+- document:
+    doctype: CRE
     id: 764-765
     name: Sanitization and sandboxing
     tags:
@@ -54,23 +54,32 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 541-441
-    name: Validate HTTP request headers
+    id: 836-068
+    name: Deserialization Prevention
   ltype: Contains
 - document:
     doctype: CRE
-    id: 764-508
-    name: XML Parser hardening
+    id: 866-553
+    name: Memory, String, and Unmanaged Code
   ltype: Contains
 - document:
     doctype: CRE
-    id: 630-573
-    name: Monitor suspected automation abuse
+    id: 048-612
+    name: Encode user input before logging
+    tags:
+    - Injection
   ltype: Related
 - document:
     doctype: CRE
     id: 782-234
-    name: Clear policy complient I/O requirements
+    name: Clear policy compliant I/O requirements
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 821-540
+    name: Protect logs against log injection
+    tags:
+    - Injection
   ltype: Related
 - document:
     doctype: Standard

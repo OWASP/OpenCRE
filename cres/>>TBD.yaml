@@ -111,6 +111,42 @@ links:
   ltype: Linked To
 - document:
     doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=CA-1
+    name: NIST 800-53 v5
+    section: CA-1 Policy and Procedures
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=CA-2
+    name: NIST 800-53 v5
+    section: CA-2 Control Assessments
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=CA-5
+    name: NIST 800-53 v5
+    section: CA-5 Plan of Action and Milestones
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=CA-6
+    name: NIST 800-53 v5
+    section: CA-6 Authorization
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=CA-7
+    name: NIST 800-53 v5
+    section: CA-7 Continuous Monitoring
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=CA-8
+    name: NIST 800-53 v5
+    section: CA-8 Penetration Testing
+  ltype: Linked To
+- document:
+    doctype: Standard
     hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=CP-1
     name: NIST 800-53 v5
     section: CP-1 Policy and Procedures
@@ -477,132 +513,6 @@ links:
   ltype: Linked To
 - document:
     doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=PL-4
-    name: NIST 800-53 v5
-    section: PL-4 Rules of Behavior
-  ltype: Linked To
-- document:
-    doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=SC-15
-    name: NIST 800-53 v5
-    section: SC-15 Collaborative Computing Devices and Applications
-  ltype: Linked To
-- document:
-    doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=SR-1
-    name: NIST 800-53 v5
-    section: SR-1 Policy and Procedures
-  ltype: Linked To
-- document:
-    doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=SR-10
-    name: NIST 800-53 v5
-    section: SR-10 Inspection of Systems or Components
-  ltype: Linked To
-- document:
-    doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=SR-11
-    name: NIST 800-53 v5
-    section: SR-11 Component Authenticity
-  ltype: Linked To
-- document:
-    doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=SR-12
-    name: NIST 800-53 v5
-    section: SR-12 Component Disposal
-  ltype: Linked To
-- document:
-    doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=SR-2
-    name: NIST 800-53 v5
-    section: SR-2 Supply Chain Risk Management Plan
-  ltype: Linked To
-- document:
-    doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=SR-3
-    name: NIST 800-53 v5
-    section: SR-3 Supply Chain Controls and Processes
-  ltype: Linked To
-- document:
-    doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=SR-4
-    name: NIST 800-53 v5
-    section: SR-4 Provenance
-  ltype: Linked To
-- document:
-    doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=SR-5
-    name: NIST 800-53 v5
-    section: SR-5 Acquisition Strategies, Tools, and Methods
-  ltype: Linked To
-- document:
-    doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=SR-6
-    name: NIST 800-53 v5
-    section: SR-6 Supplier Assessments and Reviews
-  ltype: Linked To
-- document:
-    doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=SR-7
-    name: NIST 800-53 v5
-    section: SR-7 Supply Chain Operations Security
-  ltype: Linked To
-- document:
-    doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=SR-8
-    name: NIST 800-53 v5
-    section: SR-8 Notification Agreements
-  ltype: Linked To
-- document:
-    doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=SR-9
-    name: NIST 800-53 v5
-    section: SR-9 Tamper Resistance and Detection
-  ltype: Linked To
-- document:
-    doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=SC-22
-    name: NIST 800-53 v5
-    section: SC-22 Architecture and Provisioning for Name/address Resolution Service
-  ltype: Linked To
-- document:
-    doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=CA-1
-    name: NIST 800-53 v5
-    section: CA-1 Policy and Procedures
-  ltype: Linked To
-- document:
-    doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=CA-2
-    name: NIST 800-53 v5
-    section: CA-2 Control Assessments
-  ltype: Linked To
-- document:
-    doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=CA-5
-    name: NIST 800-53 v5
-    section: CA-5 Plan of Action and Milestones
-  ltype: Linked To
-- document:
-    doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=CA-6
-    name: NIST 800-53 v5
-    section: CA-6 Authorization
-  ltype: Linked To
-- document:
-    doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=CA-7
-    name: NIST 800-53 v5
-    section: CA-7 Continuous Monitoring
-  ltype: Linked To
-- document:
-    doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=CA-8
-    name: NIST 800-53 v5
-    section: CA-8 Penetration Testing
-  ltype: Linked To
-- document:
-    doctype: Standard
     hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=PL-1
     name: NIST 800-53 v5
     section: PL-1 Policy and Procedures
@@ -621,9 +531,27 @@ links:
   ltype: Linked To
 - document:
     doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=PL-4
+    name: NIST 800-53 v5
+    section: PL-4 Rules of Behavior
+  ltype: Linked To
+- document:
+    doctype: Standard
     hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=SC-1
     name: NIST 800-53 v5
     section: SC-1 Policy and Procedures
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=SC-15
+    name: NIST 800-53 v5
+    section: SC-15 Collaborative Computing Devices and Applications
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=SC-22
+    name: NIST 800-53 v5
+    section: SC-22 Architecture and Provisioning for Name/address Resolution Service
   ltype: Linked To
 - document:
     doctype: Standard
@@ -762,5 +690,77 @@ links:
     hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=SI-8
     name: NIST 800-53 v5
     section: SI-8 Spam Protection
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=SR-1
+    name: NIST 800-53 v5
+    section: SR-1 Policy and Procedures
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=SR-10
+    name: NIST 800-53 v5
+    section: SR-10 Inspection of Systems or Components
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=SR-11
+    name: NIST 800-53 v5
+    section: SR-11 Component Authenticity
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=SR-12
+    name: NIST 800-53 v5
+    section: SR-12 Component Disposal
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=SR-2
+    name: NIST 800-53 v5
+    section: SR-2 Supply Chain Risk Management Plan
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=SR-3
+    name: NIST 800-53 v5
+    section: SR-3 Supply Chain Controls and Processes
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=SR-4
+    name: NIST 800-53 v5
+    section: SR-4 Provenance
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=SR-5
+    name: NIST 800-53 v5
+    section: SR-5 Acquisition Strategies, Tools, and Methods
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=SR-6
+    name: NIST 800-53 v5
+    section: SR-6 Supplier Assessments and Reviews
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=SR-7
+    name: NIST 800-53 v5
+    section: SR-7 Supply Chain Operations Security
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=SR-8
+    name: NIST 800-53 v5
+    section: SR-8 Notification Agreements
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=SR-9
+    name: NIST 800-53 v5
+    section: SR-9 Tamper Resistance and Detection
   ltype: Linked To
 name: '>>TBD'

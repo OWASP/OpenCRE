@@ -3,18 +3,33 @@ id: 546-564
 links:
 - document:
     doctype: CRE
-    id: 817-133
-    name: Boundary Protection
+    id: 028-726
+    name: XSS
   ltype: Contains
 - document:
     doctype: CRE
-    id: 486-813
-    name: Configuration
+    id: 058-527
+    name: Secure name/address resolution service
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 155-155
+    name: Architecture
   ltype: Contains
 - document:
     doctype: CRE
     id: 170-772
     name: Cryptography
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 180-070
+    name: Security and Privacy Engineering Principles
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 486-813
+    name: Configuration
   ltype: Contains
 - document:
     doctype: CRE
@@ -28,22 +43,7 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 058-527
-    name: Secure name/address resolution service
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 180-070
-    name: Security and Privacy Engineering Principles
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 028-726
-    name: XSS
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 155-155
-    name: Architecture
+    id: 817-133
+    name: Boundary Protection
   ltype: Contains
 name: '>>Tags'

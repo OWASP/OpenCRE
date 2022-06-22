@@ -31,44 +31,4 @@ links:
     name: NIST 800-63
     section: 5.1.3.2
   ltype: Linked To
-- document:
-    doctype: Standard
-    hyperlink: https://capec.mitre.org/data/definitions/151.html
-    name: CAPEC
-    section: '151'
-    subsection: Identity Spoofing
-    version: '3.7'
-  ltype: SAME
-- document:
-    doctype: Standard
-    hyperlink: https://capec.mitre.org/data/definitions/194.html
-    name: CAPEC
-    section: '194'
-    subsection: Fake the Source of Data
-    version: '3.7'
-  ltype: SAME
-- document:
-    doctype: Standard
-    hyperlink: https://capec.mitre.org/data/definitions/593.html
-    name: CAPEC
-    section: '593'
-    subsection: Session Hijacking
-    version: '3.7'
-  ltype: SAME
-- document:
-    doctype: Standard
-    hyperlink: https://capec.mitre.org/data/definitions/633.html
-    name: CAPEC
-    section: '633'
-    subsection: Token Impersonation
-    version: '3.7'
-  ltype: SAME
-- document:
-    doctype: Standard
-    hyperlink: https://capec.mitre.org/data/definitions/94.html
-    name: CAPEC
-    section: '94'
-    subsection: Adversary in the Middle (AiTM)
-    version: '3.7'
-  ltype: SAME
 name: Use out of band authentication requests, codes or tokens only once

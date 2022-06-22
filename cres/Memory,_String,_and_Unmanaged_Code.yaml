@@ -8,13 +8,13 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 824-732
-    name: Force format strings as constants
+    id: 482-771
+    name: Check boundaries against integer overflow weaknesses
   ltype: Contains
 - document:
     doctype: CRE
-    id: 482-771
-    name: Check boundaries against integer overflow weaknesses
+    id: 824-732
+    name: Force format strings as constants
   ltype: Contains
 - document:
     doctype: CRE

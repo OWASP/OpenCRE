@@ -8,12 +8,12 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 551-054
-    name: Use ephemeral secrets rather than static secrets
+    id: 483-883
+    name: Using stateless tokens, ensure cryptographically secure characteristics
   ltype: Contains
 - document:
     doctype: CRE
-    id: 483-883
-    name: Using stateless tokens, ensure cryptographically secure characteristics
+    id: 551-054
+    name: Use ephemeral secrets rather than static secrets
   ltype: Contains
 name: Token-based session management

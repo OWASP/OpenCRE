@@ -29,22 +29,6 @@ links:
     name: Cheat_sheets
     section: File Upload Cheat Sheet
   ltype: Linked To
-- document:
-    doctype: Standard
-    hyperlink: https://capec.mitre.org/data/definitions/125.html
-    name: CAPEC
-    section: '125'
-    subsection: Flooding
-    version: '3.7'
-  ltype: SAME
-- document:
-    doctype: Standard
-    hyperlink: https://capec.mitre.org/data/definitions/130.html
-    name: CAPEC
-    section: '130'
-    subsection: Excessive Allocation
-    version: '3.7'
-  ltype: SAME
 name: Limit size and number of uploaded files
 tags:
 - DOS

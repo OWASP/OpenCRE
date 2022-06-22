@@ -26,7 +26,7 @@ links:
   ltype: Linked To
 - document:
     doctype: Standard
-    hyperlink: https://owasp.org/www-project-web-security-testing-guide/v41/4-Web_Application_Security_Testing/06-Session_Management_Testing/02-Testing_for_Cookies_Attributes.html#domain-attribute
+    hyperlink: https://owasp.org/www-project-web-security-testing-guide/v41/4-Web_Application_Security_Testing/06-Session_Management_Testing/02-Testing_for_Cookies_Attributes.html#httponly-attribute
     name: (WSTG) Web Security Testing Guide
     section: WSTG-SESS-02
   ltype: Linked To
@@ -46,17 +46,5 @@ links:
     doctype: Standard
     name: NIST 800-63
     section: 7.1.1
-  ltype: Linked To
-- document:
-    description: '"Whenever a cookie contains sensitive information or is a session
-      token, then it should always be passed using an encrypted channel. Ensure that
-      the secure flag is set for cookies containing such sensitive information."'
-    doctype: Tool
-    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/CookieSecureFlagScanRule.java
-    name: 'ZAP Rule: "Cookie Without Secure Flag"'
-    tags:
-    - '10011'
-    - '"Passive"'
-    tooltype: Offensive
   ltype: Linked To
 name: Set "secure" attribute for cookie-based session tokens

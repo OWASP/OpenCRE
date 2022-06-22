@@ -7,6 +7,11 @@ links:
     name: '>>Secure user management'
   ltype: Contains
 - document:
+    doctype: CRE
+    id: 270-568
+    name: Authentication mechanism
+  ltype: Related
+- document:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x11-V2-Authentication.md
     name: ASVS
@@ -23,44 +28,4 @@ links:
     name: NIST 800-63
     section: 6.1.4
   ltype: Linked To
-- document:
-    doctype: Standard
-    hyperlink: https://capec.mitre.org/data/definitions/151.html
-    name: CAPEC
-    section: '151'
-    subsection: Identity Spoofing
-    version: '3.7'
-  ltype: SAME
-- document:
-    doctype: Standard
-    hyperlink: https://capec.mitre.org/data/definitions/194.html
-    name: CAPEC
-    section: '194'
-    subsection: Fake the Source of Data
-    version: '3.7'
-  ltype: SAME
-- document:
-    doctype: Standard
-    hyperlink: https://capec.mitre.org/data/definitions/593.html
-    name: CAPEC
-    section: '593'
-    subsection: Session Hijacking
-    version: '3.7'
-  ltype: SAME
-- document:
-    doctype: Standard
-    hyperlink: https://capec.mitre.org/data/definitions/633.html
-    name: CAPEC
-    section: '633'
-    subsection: Token Impersonation
-    version: '3.7'
-  ltype: SAME
-- document:
-    doctype: Standard
-    hyperlink: https://capec.mitre.org/data/definitions/94.html
-    name: CAPEC
-    section: '94'
-    subsection: Adversary in the Middle (AiTM)
-    version: '3.7'
-  ltype: SAME
 name: Inform users for authentication renewal

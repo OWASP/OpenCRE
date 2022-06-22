@@ -8,13 +8,13 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 675-168
-    name: Sanitize filename metadata from untrusted origin if processing is required
+    id: 421-513
+    name: Ignore/at least validate filenames from untrusted origin (against RFD)
   ltype: Contains
 - document:
     doctype: CRE
-    id: 777-470
-    name: Ignore/block execution logic from untrusted sources
+    id: 675-168
+    name: Sanitize filename metadata from untrusted origin if processing is required
   ltype: Contains
 - document:
     doctype: CRE
@@ -23,19 +23,19 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 421-513
-    name: Ignore/at least validate filenames from untrusted origin (against RFD)
-  ltype: Contains
-- document:
-    doctype: CRE
     id: 737-086
-    name: Ignore/at least validate filename metadata from untrusted origin (local
+    name: Ignore/at least validate  filename metadata from untrusted origin (local
       file context, eg LFI)
   ltype: Contains
 - document:
     doctype: CRE
     id: 742-056
-    name: Ignore/at least validate filename metadata from untrusted origin (remote
+    name: Ignore/at least validate  filename metadata from untrusted origin (remote
       file context, eg RFI)
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 777-470
+    name: Ignore/block execution logic from untrusted sources
   ltype: Contains
 name: File execution

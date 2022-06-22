@@ -3,6 +3,11 @@ id: 228-551
 links:
 - document:
     doctype: CRE
+    id: 278-646
+    name: '>>Secure communication'
+  ltype: Contains
+- document:
+    doctype: CRE
     id: 170-772
     name: Cryptography
   ltype: Related
@@ -15,13 +20,8 @@ links:
   ltype: Related
 - document:
     doctype: CRE
-    id: 745-045
-    name: Do not fall back to insecure protocols in TCP
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 636-854
-    name: Encrypt all communications
+    id: 248-646
+    name: Disable insecure SSL/TLS versions
   ltype: Contains
 - document:
     doctype: CRE
@@ -32,8 +32,18 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
+    id: 636-854
+    name: Encrypt all communications
+  ltype: Contains
+- document:
+    doctype: CRE
     id: 668-364
     name: Log TLS connection failures
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 745-045
+    name: Do not fall back to insecure protocols in TCP
   ltype: Contains
 - document:
     doctype: CRE
@@ -42,19 +52,9 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 248-646
-    name: Disable insecure SSL/TLS versions
-  ltype: Contains
-- document:
-    doctype: CRE
     id: 558-807
     name: Mutually authenticate application and credential service provider
   ltype: Related
-- document:
-    doctype: CRE
-    id: 278-646
-    name: '>>Secure communication'
-  ltype: Contains
 name: TLS
 tags:
 - Cryptography

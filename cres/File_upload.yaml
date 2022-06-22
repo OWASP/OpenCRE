@@ -15,13 +15,6 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 660-052
-    name: Validate max input/file sizes
-    tags:
-    - DOS
-  ltype: Contains
-- document:
-    doctype: CRE
     id: 384-344
     name: Store and serve user-uploaded files such that they cannot execute/damage
       server or client
@@ -40,5 +33,12 @@ links:
     doctype: CRE
     id: 634-883
     name: Separate storage of user uploaded files
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 660-052
+    name: Validate max input/file sizes
+    tags:
+    - DOS
   ltype: Contains
 name: File upload

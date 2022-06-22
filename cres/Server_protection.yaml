@@ -11,6 +11,8 @@ links:
 - document:
     doctype: CRE
     id: 180-488
-    name: Proper Configuration foe all applications and frameworks
+    name: Proper Configuration for all applications and frameworks
+    tags:
+    - Configuration
   ltype: Contains
 name: Server protection

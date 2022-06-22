@@ -3,10 +3,8 @@ id: 275-483
 links:
 - document:
     doctype: CRE
-    id: 400-007
-    name: Encrypt data at rest
-    tags:
-    - Cryptography
+    id: 224-321
+    name: Encrypt health data at rest
   ltype: Contains
 - document:
     doctype: CRE
@@ -15,12 +13,14 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 224-321
-    name: Encrypt health data at rest
+    id: 482-866
+    name: Encrypt personal data at rest
   ltype: Contains
 - document:
     doctype: CRE
-    id: 482-866
-    name: Encrypt personal data at rest
+    id: 726-668
+    name: Encrypt data at rest
+    tags:
+    - Cryptography
   ltype: Contains
 name: Securely store regulated data

@@ -3,13 +3,6 @@ id: 486-813
 links:
 - document:
     doctype: CRE
-    id: 615-744
-    name: Protect against directory browsing/discovery attacks
-    tags:
-    - Configuration
-  ltype: Related
-- document:
-    doctype: CRE
     id: 783-355
     name: Deployment
     tags:
@@ -17,22 +10,13 @@ links:
   ltype: Related
 - document:
     doctype: CRE
-    id: 308-515
-    name: Prevent security disclosure
-    tags:
-    - Configuration
-  ltype: Related
+    id: 546-564
+    name: '>>Tags'
+  ltype: Contains
 - document:
     doctype: CRE
-    id: 764-507
-    name: Restrict XML parsing (against XXE)
-    tags:
-    - Configuration
-  ltype: Related
-- document:
-    doctype: CRE
-    id: 333-888
-    name: Do not expose data through API URLs
+    id: 180-488
+    name: Proper Configuration for all applications and frameworks
     tags:
     - Configuration
   ltype: Related
@@ -45,6 +29,20 @@ links:
   ltype: Related
 - document:
     doctype: CRE
+    id: 308-515
+    name: Prevent security disclosure
+    tags:
+    - Configuration
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 333-888
+    name: Do not expose data through API URLs
+    tags:
+    - Configuration
+  ltype: Related
+- document:
+    doctype: CRE
     id: 430-636
     name: Verify TLS certificates and trust chain
     tags:
@@ -52,9 +50,25 @@ links:
   ltype: Related
 - document:
     doctype: CRE
-    id: 546-564
-    name: '>>Tags'
-  ltype: Contains
+    id: 462-245
+    name: Remove unnecessary features, documentation, configuration etc
+    tags:
+    - Configuration
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 615-744
+    name: Protect against directory browsing/discovery attacks
+    tags:
+    - Configuration
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 764-507
+    name: Restrict XML parsing (against XXE)
+    tags:
+    - Configuration
+  ltype: Related
 - document:
     doctype: Standard
     hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=CM-2

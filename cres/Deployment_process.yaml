@@ -3,24 +3,20 @@ id: 615-188
 links:
 - document:
     doctype: CRE
-    id: 263-184
-    name: Automate secure build and deployment, especially with SDI
+    id: 783-355
+    name: Deployment
+    tags:
+    - Configuration
   ltype: Contains
 - document:
     doctype: CRE
-    id: 307-507
-    name: Allow only trusted sources both buildtime and runtime; therefore perform
-      integrity checks on all resources and code
+    id: 028-254
+    name: Secure auto-updates over full stack
   ltype: Contains
 - document:
     doctype: CRE
     id: 171-222
     name: Check binary integrity before deployment
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 314-131
-    name: Set proper (C) compiler flags
   ltype: Contains
 - document:
     doctype: CRE
@@ -34,8 +30,19 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 028-254
-    name: Secure auto-updates over full stack
+    id: 263-184
+    name: Automate secure build and deployment, especially with SDI
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 307-507
+    name: Allow only trusted sources both build time and runtime; therefore perform
+      integrity checks on all resources and code
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 314-131
+    name: Set proper (C) compiler flags
   ltype: Contains
 - document:
     doctype: CRE
@@ -43,17 +50,9 @@ links:
     name: Force pipeline to check outdated/insecure components
   ltype: Related
 - document:
-    doctype: CRE
-    id: 783-355
-    name: Deployment
-    tags:
-    - Configuration
-  ltype: Contains
-- document:
     doctype: Standard
     hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=SC-51
     name: NIST 800-53 v5
     section: SC-51 Hardware-based Protection
-    subsection: mapped under deployment process
   ltype: Linked To
 name: Deployment process
