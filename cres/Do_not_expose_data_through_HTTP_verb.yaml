@@ -29,14 +29,6 @@ links:
     name: (WSTG) Web Security Testing Guide
     section: WSTG-CRYP-03
   ltype: Linked To
-- document:
-    doctype: Standard
-    hyperlink: https://capec.mitre.org/data/definitions/117.html
-    name: CAPEC
-    section: '117'
-    subsection: Interception
-    version: '3.7'
-  ltype: SAME
 name: Do not expose data through HTTP verb
 tags:
 - Configuration

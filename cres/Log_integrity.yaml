@@ -8,18 +8,18 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 713-684
+    id: 713-685
     name: Log access protection
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 821-541
-    name: Log injection protection
   ltype: Contains
 - document:
     doctype: CRE
     id: 770-362
     name: Log time synchronization
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 821-541
+    name: Log injection protection
   ltype: Contains
 - document:
     doctype: Standard

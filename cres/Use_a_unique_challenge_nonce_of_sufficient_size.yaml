@@ -7,6 +7,11 @@ links:
     name: Cryptographic authentication software and devices
   ltype: Contains
 - document:
+    doctype: CRE
+    id: 170-772
+    name: Cryptography
+  ltype: Related
+- document:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x11-V2-Authentication.md
     name: ASVS
@@ -36,3 +41,5 @@ links:
     section: 5.1.7.2
   ltype: Linked To
 name: Use a unique challenge nonce of sufficient size
+tags:
+- Cryptography

@@ -8,14 +8,9 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 760-764
-    name: Injection
-  ltype: Related
-- document:
-    doctype: CRE
-    id: 028-726
-    name: XSS
-  ltype: Related
+    id: 145-310
+    name: Sanitize, disable, or sandbox untrusted SVG scriptable content
+  ltype: Contains
 - document:
     doctype: CRE
     id: 317-743
@@ -28,19 +23,19 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
+    id: 538-446
+    name: Sanitize unstructured data
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 542-445
+    name: Sanitize untrusted HTML input
+  ltype: Contains
+- document:
+    doctype: CRE
     id: 646-462
     name: Sanitize, disable, or sandbox untrusted scriptable or template language
       content
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 145-310
-    name: Sanitize, disable, or sandbox untrusted SVG scriptable content
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 881-434
-    name: Sanitize user input before passing content to mail systems (SMTP/IMAP injection)
   ltype: Contains
 - document:
     doctype: CRE
@@ -50,13 +45,18 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 538-446
-    name: Sanitize unstructured data
-  ltype: Contains
+    id: 028-726
+    name: XSS
+  ltype: Related
 - document:
     doctype: CRE
-    id: 542-445
-    name: Sanitize untrusted HTML input
+    id: 760-764
+    name: Injection
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 881-434
+    name: Sanitize user input before passing content to mail systems (SMTP/IMAP injection)
   ltype: Contains
 name: Sanitization and sandboxing
 tags:

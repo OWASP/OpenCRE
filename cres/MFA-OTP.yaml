@@ -14,28 +14,28 @@ links:
 - document:
     doctype: CRE
     id: 076-470
-    name: Biometric autheticators only as seconday factors
+    name: Biometric authenticators only as secondary factors
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 101-217
+    name: Use lookup secrets only once
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 102-811
+    name: Communicate out of band authentication requests, codes or tokens independently
+      and securely
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 168-186
+    name: Use out of band authentication requests, codes or tokens only once
   ltype: Contains
 - document:
     doctype: CRE
     id: 201-246
     name: Use multifactor authentication on administrative interfaces
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 841-757
-    name: Use approved cryptographic algorithms in generation, seeding and verification
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 525-361
-    name: Authenticate by OTP token entry or user-initiated action on multi factor
-      device
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 646-227
-    name: Log and reject re-use of valid time-based OTP tokens and notify device holder.
   ltype: Contains
 - document:
     doctype: CRE
@@ -46,36 +46,8 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 543-428
-    name: Use security module to store one-time password verification keys
-    tags:
-    - Cryptography
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 513-845
-    name: Use upredictable lookup secrets
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 101-217
-    name: Use lookup secrets only once
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 346-640
-    name: Generate lookup secrets with sufficient entropy
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 524-446
-    name: Mandate using multi factor authentication
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 622-835
-    name: Generate initial passwords with sufficient secure random, short expiration
-      time and do not allow to reuse the initial password.
+    id: 320-618
+    name: Do not offer weak (clear text) authenticators by default
   ltype: Contains
 - document:
     doctype: CRE
@@ -84,26 +56,8 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 102-811
-    name: Communicate out of band authentication requests, codes or tokens Iindependently
-      and securely
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 816-631
-    name: Ensure timely expiration of out of band authentication request, code, or
-      tokens
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 168-186
-    name: Use out of band authentication requests, codes or tokens only once
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 440-361
-    name: Ensure that physical single factor OTP generator can be revoked fully immediately
-      when lost
+    id: 346-640
+    name: Generate lookup secrets with sufficient entropy
   ltype: Contains
 - document:
     doctype: CRE
@@ -113,23 +67,70 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 553-413
-    name: Support subsciber-provided authentication devices
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 681-823
-    name: Defined lifetime of time-based one-time passowrd
-  ltype: Contains
-- document:
-    doctype: CRE
     id: 404-126
     name: Use time-based OTP only once
   ltype: Contains
 - document:
     doctype: CRE
-    id: 320-618
-    name: Do not offer weak (clear text) authenticators by default
+    id: 440-361
+    name: Ensure that physical single factor OTP generator can be revoked fully immediately
+      when lost
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 513-845
+    name: Use unpredictable lookup secrets
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 524-446
+    name: Mandate using multi factor authentication
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 525-361
+    name: Authenticate by OTP token entry or user-initiated action on multi factor
+      device
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 543-428
+    name: Use security module to store one-time password verification keys
+    tags:
+    - Cryptography
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 553-413
+    name: Support subscriber-provided authentication devices
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 622-835
+    name: Generate initial passwords with sufficient secure random, short expiration
+      time and do not allow to reuse the initial password.
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 646-227
+    name: Log and reject re-use of valid time-based OTP tokens and notify device holder.
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 681-823
+    name: Defined lifetime of time-based one-time password
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 816-631
+    name: Ensure timely expiration of out of band authentication request, code, or
+      tokens
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 841-757
+    name: Use approved cryptographic algorithms in generation, seeding and verification
+      of OTPs
   ltype: Contains
 name: MFA/OTP
 tags:

@@ -18,12 +18,4 @@ links:
     name: CWE
     section: '346'
   ltype: Linked To
-- document:
-    doctype: Standard
-    hyperlink: https://capec.mitre.org/data/definitions/21.html
-    name: CAPEC
-    section: '21'
-    subsection: Exploitation of Trusted Identifiers
-    version: '3.7'
-  ltype: SAME
 name: Avoid using of Origin header for authentication of access control

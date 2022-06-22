@@ -3,19 +3,14 @@ id: 362-550
 links:
 - document:
     doctype: CRE
-    id: 227-045
-    name: Identify sensitive data and subject it to a policy
-  ltype: Contains
-- document:
-    doctype: CRE
     id: 082-327
     name: Inform users clearly about the collection and use of personal data, and
       use it only after opt-in consent.
   ltype: Contains
 - document:
     doctype: CRE
-    id: 762-451
-    name: Ensure users can remove or export their data
+    id: 227-045
+    name: Identify sensitive data and subject it to a policy
   ltype: Contains
 - document:
     doctype: CRE
@@ -25,19 +20,9 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 540-566
-    name: Let application request minimal permisions
-  ltype: Related
-- document:
-    doctype: CRE
-    id: 765-788
-    name: Classify sensitive data in protection levels
-  ltype: Related
-- document:
-    doctype: CRE
-    id: 731-120
-    name: Document requirements for (data) protection levels
-  ltype: Related
+    id: 762-451
+    name: Ensure users can remove or export their data
+  ltype: Contains
 - document:
     doctype: CRE
     id: 482-866

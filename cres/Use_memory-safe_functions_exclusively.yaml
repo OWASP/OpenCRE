@@ -24,15 +24,4 @@ links:
     name: (WSTG) Web Security Testing Guide
     section: WSTG-INPV-13
   ltype: Linked To
-- document:
-    description: '"Rewrite the background program using proper return length checking.  This
-      will require a recompile of the background executable."'
-    doctype: Tool
-    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrules/src/main/java/org/zaproxy/zap/extension/ascanrules/BufferOverflowScanRule.java
-    name: 'ZAP Rule: "Buffer Overflow"'
-    tags:
-    - '30001'
-    - '"Active"'
-    tooltype: Offensive
-  ltype: Linked To
 name: Use memory-safe functions exclusively

@@ -8,20 +8,13 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 175-235
-    name: Validate file type of data from untrusted sources
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 814-322
-    name: Whitelist data sources and sinks
-    tags:
-    - DOS
-  ltype: Contains
-- document:
-    doctype: CRE
     id: 040-843
     name: File download
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 175-235
+    name: Validate file type of data from untrusted sources
   ltype: Contains
 - document:
     doctype: CRE
@@ -30,12 +23,19 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
+    id: 621-287
+    name: File upload
+  ltype: Contains
+- document:
+    doctype: CRE
     id: 758-262
     name: File storage
   ltype: Contains
 - document:
     doctype: CRE
-    id: 621-287
-    name: File upload
+    id: 814-322
+    name: Whitelist data sources and sinks
+    tags:
+    - DOS
   ltype: Contains
 name: File handling

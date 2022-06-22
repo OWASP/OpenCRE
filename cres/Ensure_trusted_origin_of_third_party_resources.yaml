@@ -36,47 +36,4 @@ links:
     name: Cheat_sheets
     section: Vulnerable Dependency Management Cheat Sheet
   ltype: Linked To
-- document:
-    description: '"Ensure JavaScript source files are loaded from only trusted sources,
-      and the sources can''t be controlled by end users of the application."'
-    doctype: Tool
-    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/CrossDomainScriptInclusionScanRule.java
-    name: 'ZAP Rule: "Cross-Domain JavaScript Source File Inclusion"'
-    tags:
-    - '10017'
-    - '"Passive"'
-    tooltype: Offensive
-  ltype: Linked To
-- document:
-    doctype: Standard
-    hyperlink: https://capec.mitre.org/data/definitions/175.html
-    name: CAPEC
-    section: '175'
-    subsection: Code Inclusion
-    version: '3.7'
-  ltype: SAME
-- document:
-    doctype: Standard
-    hyperlink: https://capec.mitre.org/data/definitions/251.html
-    name: CAPEC
-    section: '251'
-    subsection: Local Code Inclusion
-    version: '3.7'
-  ltype: SAME
-- document:
-    doctype: Standard
-    hyperlink: https://capec.mitre.org/data/definitions/549.html
-    name: CAPEC
-    section: '549'
-    subsection: Local Execution of Code
-    version: '3.7'
-  ltype: SAME
-- document:
-    doctype: Standard
-    hyperlink: https://capec.mitre.org/data/definitions/660.html
-    name: CAPEC
-    section: '660'
-    subsection: Root/Jailbreak Detection Evasion via Hooking
-    version: '3.7'
-  ltype: SAME
 name: Ensure trusted origin of third party resources

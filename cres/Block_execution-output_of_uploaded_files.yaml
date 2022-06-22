@@ -8,8 +8,8 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 623-550
-    name: DOS
+    id: 028-726
+    name: XSS
   ltype: Related
 - document:
     doctype: Standard
@@ -31,4 +31,4 @@ links:
   ltype: Linked To
 name: Block execution/output of uploaded files
 tags:
-- DOS
+- XSS

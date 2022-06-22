@@ -8,14 +8,24 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
+    id: 028-726
+    name: XSS
+  ltype: Related
+- document:
+    doctype: CRE
     id: 760-764
     name: Injection
   ltype: Related
 - document:
     doctype: CRE
-    id: 028-726
-    name: XSS
-  ltype: Related
+    id: 031-447
+    name: Whitelist all external (HTTP) input
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 042-550
+    name: Protect against mass parameter assignment attack
+  ltype: Contains
 - document:
     doctype: CRE
     id: 176-154
@@ -25,25 +35,8 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 031-447
-    name: Whitelist all external (HTTP) input
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 743-237
-    name: Validatie/enforce HTTP inputs (against HTTP parameter polution attacks)
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 848-711
-    name: Enforce input validation on a trusted service layer
-    tags:
-    - Architecture
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 042-550
-    name: Protect against mass parameter assignment attack
+    id: 232-217
+    name: Whitelist redirected/forwarded URLs
   ltype: Contains
 - document:
     doctype: CRE
@@ -52,8 +45,15 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 232-217
-    name: Whitelist redirected/forwarded URLs
+    id: 743-237
+    name: Validate/enforce HTTP inputs (against HTTP parameter pollution attacks)
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 848-711
+    name: Enforce input validation on a trusted service layer
+    tags:
+    - Architecture
   ltype: Contains
 name: Input validation
 tags:

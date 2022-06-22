@@ -3,13 +3,13 @@ id: 177-260
 links:
 - document:
     doctype: CRE
-    id: 402-133
-    name: Do not expose session token in URL
+    id: 110-531
+    name: Cookie-config
   ltype: Contains
 - document:
     doctype: CRE
-    id: 582-541
-    name: Re-authenticate before sensitive transactions
+    id: 114-277
+    name: Token-based session management
   ltype: Contains
 - document:
     doctype: CRE
@@ -18,13 +18,13 @@ links:
   ltype: Related
 - document:
     doctype: CRE
-    id: 110-531
-    name: Cookie-config
+    id: 258-115
+    name: Re-authentication from federation or assertion
   ltype: Contains
 - document:
     doctype: CRE
-    id: 258-115
-    name: Re-authentication from federation or assertion
+    id: 402-133
+    name: Do not expose session token in URL
   ltype: Contains
 - document:
     doctype: CRE
@@ -38,8 +38,8 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 114-277
-    name: Token-based session management
+    id: 582-541
+    name: Re-authenticate before sensitive transactions
   ltype: Contains
 - document:
     doctype: Standard
@@ -61,19 +61,7 @@ links:
   ltype: Linked To
 - document:
     doctype: Standard
-    hyperlink: https://owasp.org/www-project-top-ten/2017/A2_2017-Broken_Authentication
     name: Top10 2017
     section: A2_Broken_Authentication
-  ltype: Linked To
-- document:
-    description: '"Protect the connection using HTTPS or use a stronger authentication
-      mechanism"'
-    doctype: Tool
-    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/InsecureAuthenticationScanRule.java
-    name: 'ZAP Rule: "Weak Authentication Method"'
-    tags:
-    - '10105'
-    - '"Passive"'
-    tooltype: Offensive
   ltype: Linked To
 name: '>>Session management'
