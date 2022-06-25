@@ -1,3 +1,4 @@
+import re
 import json
 import logging
 import os
@@ -11,6 +12,7 @@ from application.database import db
 from application.defs import cre_defs as defs
 from application.defs import osib_defs
 from application.web import web_main
+from application.utils import mdutils
 
 
 class TestMain(unittest.TestCase):
@@ -133,6 +135,13 @@ class TestMain(unittest.TestCase):
             self.assertEqual(json.loads(osib_response.data.decode()), osib_expected)
             self.assertEqual(200, osib_response.status_code)
 
+            md_expected = "<pre>CRE---[2CD](https://www.opencre.org/cre/2),[1CA](https://www.opencre.org/cre/1),[3CB](https://www.opencre.org/cre/3)</pre>"
+            md_response = client.get(
+                f"/rest/v1/id/{cres['cd'].id}?format=md",
+                headers={"Content-Type": "application/json"},
+            )
+            self.assertEqual(re.sub("\s", "", md_response.data.decode()), md_expected)
+
     def test_find_by_name(self) -> None:
         collection = db.Node_collection()
         collection.graph.graph = db.CRE_Graph.load_cre_graph(sqla.session)
@@ -177,6 +186,13 @@ class TestMain(unittest.TestCase):
             }
             self.assertEqual(json.loads(osib_response.data.decode()), osib_expected)
             self.assertEqual(200, osib_response.status_code)
+
+            md_expected = "<pre>CRE---[2CD](https://www.opencre.org/cre/2),[1CA](https://www.opencre.org/cre/1),[3CB](https://www.opencre.org/cre/3)</pre>"
+            md_response = client.get(
+                f"/rest/v1/name/{cres['cd'].name}?format=md",
+                headers={"Content-Type": "application/json"},
+            )
+            self.assertEqual(re.sub("\s", "", md_response.data.decode()), md_expected)
 
     def test_find_node_by_name(self) -> None:
         collection = db.Node_collection()
@@ -328,6 +344,10 @@ class TestMain(unittest.TestCase):
             osib_response = client.get(f"/rest/v1/code/{nodes['c0'].name}?osib=true")
             self.assertEqual(json.loads(osib_response.data.decode()), osib_expected)
             self.assertEqual(200, osib_response.status_code)
+
+            md_expected = "<pre>C0--[C0](https://example.com/c0)</pre>"
+            md_response = client.get(f"/rest/v1/code/{nodes['c0'].name}?format=md")
+            self.assertEqual(re.sub("\s", "", md_response.data.decode()), md_expected)
 
     def test_find_document_by_tag(self) -> None:
         collection = db.Node_collection()

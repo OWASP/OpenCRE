@@ -10,6 +10,7 @@ from application.database import db
 from application.defs import cre_defs as defs
 from application.defs import osib_defs as odefs
 from application.utils import mdutils
+from enum import Enum
 from flask import (
     Blueprint,
     abort,
@@ -27,6 +28,13 @@ app = Blueprint("web", __name__, static_folder="../frontend/www")
 logging.basicConfig()
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
+
+
+class SupportedFormats(Enum):
+    Markdown = "md"
+    CSV = "csv"
+    JSON = "json"
+    YAML = "yaml"
 
 
 def extend_cre_with_tag_links(
@@ -50,9 +58,11 @@ def find_cre(creid: str = None, crename: str = None) -> Any:  # refer
     database = db.Node_collection()
     include_only = request.args.getlist("include_only")
     opt_osib = request.args.get("osib")
-    opt_mdformat = request.args.get("format_md")
+    opt_format = request.args.get("format")
     cres = database.get_CREs(external_id=creid, name=crename, include_only=include_only)
+
     if cres:
+
         if len(cres) > 1:
             logger.error("get by id returned more than one results? This looks buggy")
         cre = cres[0]
@@ -61,7 +71,8 @@ def find_cre(creid: str = None, crename: str = None) -> Any:  # refer
         # cre = extend_cre_with_tag_links(cre=cre, collection=database)
         if opt_osib:
             result["osib"] = odefs.cre2osib([cre]).todict()
-        if opt_mdformat:
+
+        if opt_format == SupportedFormats.Markdown.value:
             return f"<pre>{mdutils.cre_to_md([cre])}</pre>"
         return jsonify(result)
     abort(404)
@@ -75,7 +86,7 @@ def find_node_by_name(name: str, ntype: str = defs.Credoctypes.Standard.value) -
     opt_section = request.args.get("section")
     opt_osib = request.args.get("osib")
     opt_version = request.args.get("version")
-    opt_mdformat = request.args.get("format_md")
+    opt_format = request.args.get("format")
     if opt_section:
         opt_section = urllib.parse.unquote(opt_section)
     opt_subsection = request.args.get("subsection")
@@ -109,7 +120,7 @@ def find_node_by_name(name: str, ntype: str = defs.Credoctypes.Standard.value) -
     result["total_pages"] = total_pages
     result["page"] = page
     if nodes:
-        if opt_mdformat:
+        if opt_format == SupportedFormats.Markdown.value:
             return f"<pre>{mdutils.cre_to_md(nodes)}</pre>"
         if opt_osib:
             result["osib"] = odefs.cre2osib(nodes).todict()
@@ -126,14 +137,14 @@ def find_document_by_tag() -> Any:
     database = db.Node_collection()
     tags = request.args.getlist("tag")
     opt_osib = request.args.get("osib")
-    opt_mdformat = request.args.get("format_md")
+    opt_format = request.args.get("format")
     documents = database.get_by_tags(tags)
     if documents:
         res = [doc.todict() for doc in documents]
         result = {"data": res}
         if opt_osib:
             result["osib"] = odefs.cre2osib(documents).todict()
-        if opt_mdformat:
+        if opt_format == SupportedFormats.Markdown.value:
             return f"<pre>{mdutils.cre_to_md(documents)}</pre>"
         return jsonify(result)
     abort(404)
@@ -166,10 +177,10 @@ def text_search() -> Any:
     """
     database = db.Node_collection()
     text = request.args.get("text")
-    opt_mdformat = request.args.get("format_md")
+    opt_format = request.args.get("format")
     documents = database.text_search(text)
     if documents:
-        if opt_mdformat:
+        if opt_format == SupportedFormats.Markdown.value:
             return f"<pre>{mdutils.cre_to_md(documents)}</pre>"
         res = [doc.todict() for doc in documents]
         return jsonify(res)
@@ -182,14 +193,14 @@ def find_root_cres() -> Any:
     """Useful for fast browsing the graph from the top"""
     database = db.Node_collection()
     opt_osib = request.args.get("osib")
-    opt_mdformat = request.args.get("format_md")
+    opt_format = request.args.get("format")
     documents = database.get_root_cres()
     if documents:
         res = [doc.todict() for doc in documents]
         result = {"data": res}
         if opt_osib:
             result["osib"] = odefs.cre2osib(documents).todict()
-        if opt_mdformat:
+        if opt_format == SupportedFormats.Markdown.value:
             return f"<pre>{mdutils.cre_to_md(documents)}</pre>"
         return jsonify(result)
     abort(404)
