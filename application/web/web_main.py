@@ -9,6 +9,7 @@ from application import cache
 from application.database import db
 from application.defs import cre_defs as defs
 from application.defs import osib_defs as odefs
+from application.utils import spreadsheet as sheet_utils
 from application.utils import mdutils
 from enum import Enum
 from flask import (
@@ -20,6 +21,8 @@ from flask import (
     request,
     send_from_directory,
 )
+
+from application.utils.spreadsheet import write_csv
 
 ITEMS_PER_PAGE = 20
 
@@ -74,6 +77,9 @@ def find_cre(creid: str = None, crename: str = None) -> Any:  # refer
 
         if opt_format == SupportedFormats.Markdown.value:
             return f"<pre>{mdutils.cre_to_md([cre])}</pre>"
+        elif opt_format == SupportedFormats.CSV.value:
+            docs = sheet_utils.prepare_spreadsheet(collection=database, docs=[cre])
+            return write_csv(docs=docs).getvalue().encode("utf-8")
         return jsonify(result)
     abort(404)
 
@@ -122,6 +128,9 @@ def find_node_by_name(name: str, ntype: str = defs.Credoctypes.Standard.value) -
     if nodes:
         if opt_format == SupportedFormats.Markdown.value:
             return f"<pre>{mdutils.cre_to_md(nodes)}</pre>"
+        elif opt_format == SupportedFormats.CSV.value:
+            docs = sheet_utils.prepare_spreadsheet(collection=database, docs=nodes)
+            return write_csv(docs=docs).getvalue().encode("utf-8")
         if opt_osib:
             result["osib"] = odefs.cre2osib(nodes).todict()
         res = [node.todict() for node in nodes]
@@ -146,6 +155,9 @@ def find_document_by_tag() -> Any:
             result["osib"] = odefs.cre2osib(documents).todict()
         if opt_format == SupportedFormats.Markdown.value:
             return f"<pre>{mdutils.cre_to_md(documents)}</pre>"
+        elif opt_format == SupportedFormats.CSV.value:
+            docs = sheet_utils.prepare_spreadsheet(collection=database, docs=documents)
+            return write_csv(docs=docs).getvalue().encode("utf-8")
         return jsonify(result)
     abort(404)
 
@@ -182,6 +194,9 @@ def text_search() -> Any:
     if documents:
         if opt_format == SupportedFormats.Markdown.value:
             return f"<pre>{mdutils.cre_to_md(documents)}</pre>"
+        elif opt_format == SupportedFormats.CSV.value:
+            docs = sheet_utils.prepare_spreadsheet(collection=database, docs=documents)
+            return write_csv(docs=docs).getvalue().encode("utf-8")
         res = [doc.todict() for doc in documents]
         return jsonify(res)
     else:
@@ -202,6 +217,10 @@ def find_root_cres() -> Any:
             result["osib"] = odefs.cre2osib(documents).todict()
         if opt_format == SupportedFormats.Markdown.value:
             return f"<pre>{mdutils.cre_to_md(documents)}</pre>"
+        elif opt_format == SupportedFormats.CSV.value:
+            docs = sheet_utils.prepare_spreadsheet(collection=database, docs=documents)
+            return write_csv(docs=docs).getvalue().encode("utf-8")
+        
         return jsonify(result)
     abort(404)
 
