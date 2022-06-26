@@ -706,18 +706,15 @@ class TestMain(unittest.TestCase):
         connection_1.graph.graph = db.CRE_Graph.load_cre_graph(connection_1.session)
         connection_1.add_cre(c0)
         connection_1.add_node(s_unlinked)
-        connection_1.add_link(connection_1.add_cre(c1), connection_1.add_node(s456))
-        context1.pop()
+        db_s456 = connection_1.add_node(s456)
+        connection_1.add_link(connection_1.add_cre(c1), db_s456)
+        infosum = [
+            connection_1.graph.graph.nodes[x].get("infosum")
+            for x in connection_1.graph.graph.nodes
+            if db_s456.id in x
+        ][0]
 
-        self.assertEqual(
-            main.compare_datasets(t1, tdiff),
-            [
-                {"not_present": (c1, id, tdiff)},
-                {},
-                {"not_present": (f"{c1.id}-<some infosum>", tdiff)},
-                {},
-            ],
-        )
+        context1.pop()
 
         connection_2, app2, context2 = main.db_connect(path=t2)
         sqla.create_all(app=app2)
@@ -743,9 +740,7 @@ class TestMain(unittest.TestCase):
             [
                 {"not_present": (c1.id, tdiff)},
                 {},
-                {
-                    "not_present": (f"{c1.id}-", tdiff)
-                },  # here the make_hashtable method creates edges with the format of <originating_cre_id>-<node infosum> so need to find the infosum of the node conencted to  c1
+                {"not_present": (f"{c1.id}-{infosum}", tdiff)},
                 {},
             ],
         )
