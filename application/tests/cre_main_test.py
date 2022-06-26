@@ -716,6 +716,16 @@ class TestMain(unittest.TestCase):
 
         context1.pop()
 
+        self.assertEqual(
+            main.compare_datasets(t1, tdiff),
+            [
+                {"not_present": (c1.id, tdiff)},
+                {},
+                {"not_present": (f"{c1.id}-{infosum}", tdiff)},
+                {},
+            ],
+        )
+
         connection_2, app2, context2 = main.db_connect(path=t2)
         sqla.create_all(app=app2)
         connection_2.graph.graph = db.CRE_Graph.load_cre_graph(sqla.session)
