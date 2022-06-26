@@ -185,16 +185,21 @@ def prepare_spreadsheet(
     return result
 
 
-def write_spreadsheet(title: str, docs: List[Dict[str, Any]], emails: List[str]) -> str:
-    """upload local array of flat yamls to url, share with email list"""
-    gc = gspread.oauth()  # oauth config,
-    # TODO (northdpole): make this configurable
-    sh = gc.create("0." + title)
+def write_csv(docs: List[Dict[str, Any]]) -> io.StringIO:
     data = io.StringIO()
     fieldnames: List[str] = list(docs[0].keys())
     writer: csv.DictWriter = csv.DictWriter(data, fieldnames=fieldnames)  # type: ignore
     writer.writeheader()
     writer.writerows(docs)
+    return data
+
+
+def write_spreadsheet(title: str, docs: List[Dict[str, Any]], emails: List[str]) -> str:
+    """upload local array of flat yamls to url, share with email list"""
+    gc = gspread.oauth()  # oauth config,
+    # TODO (northdpole): make this configurable
+    sh = gc.create("0." + title)
+    data = write_csv(docs=docs)
     gc.import_csv(sh.id, data.getvalue().encode("utf-8"))
     for email in emails:
         sh.share(email, perm_type="user", role="writer")

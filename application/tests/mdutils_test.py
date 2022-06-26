@@ -52,13 +52,12 @@ class TestMdutilsParser(unittest.TestCase):
             else:
                 standards[i].add_link(defs.Link(document=standards2[i]))
         self.maxDiff = None
-        pprint(mdutils.cre_to_md(standards))
         self.assertEqual(mdutils.cre_to_md(standards), self.result)
 
     result = """sname | CRE | tname_0 | sname_other | tname_2 | tname_4 | tname_6 | tname_8
 ----- | --- | ------- | ----------- | ------- | ------- | ------- | -------
 [sname section_1](https://example.com/sname/1) | [000-009 cname_9](https://www.opencre.org/cre/000-009) |  | [sname_other section_9](https://example.com/sname/9) |  |  |  | 
-[sname section_10](https://example.com/sname/10) | [000-002 cname_2](https://www.opencre.org/cre/000-002), [000-000 cname_0](https://www.opencre.org/cre/000-000) | [tname_0](https://example.com/tnae/0) |  |  |  |  | 
+[sname section_10](https://example.com/sname/10) | [000-002 cname_2](https://www.opencre.org/cre/000-002),[000-000 cname_0](https://www.opencre.org/cre/000-000) | [tname_0](https://example.com/tnae/0) |  |  |  |  | 
 [sname section_2](https://example.com/sname/2) | [000-008 cname_8](https://www.opencre.org/cre/000-008) |  |  |  |  |  | [tname_8](https://example.com/tnae/8)
 [sname section_3](https://example.com/sname/3) | [000-007 cname_7](https://www.opencre.org/cre/000-007) |  | [sname_other section_7](https://example.com/sname/7) |  |  |  | 
 [sname section_4](https://example.com/sname/4) | [000-006 cname_6](https://www.opencre.org/cre/000-006) |  |  |  |  | [tname_6](https://example.com/tnae/6) | 
