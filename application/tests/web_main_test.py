@@ -358,12 +358,12 @@ class TestMain(unittest.TestCase):
             md_expected = "<pre>C0--[C0](https://example.com/c0)</pre>"
             md_response = client.get(f"/rest/v1/code/{nodes['c0'].name}?format=md")
             self.assertEqual(re.sub("\s", "", md_response.data.decode()), md_expected)
-            
-            
-            csv_expected = "CRE:name,CRE:id,CRE:description,Code:C0:section,Code:C0:subsection,Code:C0:hyperlink,Code:C0:link_type,Standard:s1:section,Standard:s1:subsection,Standard:s1:hyperlink,Standard:s1:link_type,,,,,,,s11,s111,,,,,,,,,s22,s111,,,,,,,,,s22,s333,,,,,,,,,s22,s333,,,,,,,,,,,https://example.com/foo,"
-            csv_response = client.get(f"/rest/v1/standard/{nodes['sa'].name}?format=csv")
-            self.assertEqual(re.sub("\s", "", csv_response.data.decode()), csv_expected)
 
+            csv_expected = "CRE:name,CRE:id,CRE:description,Code:C0:section,Code:C0:subsection,Code:C0:hyperlink,Code:C0:link_type,Standard:s1:section,Standard:s1:subsection,Standard:s1:hyperlink,Standard:s1:link_type,,,,,,,s11,s111,,,,,,,,,s22,s111,,,,,,,,,s22,s333,,,,,,,,,s22,s333,,,,,,,,,,,https://example.com/foo,"
+            csv_response = client.get(
+                f"/rest/v1/standard/{nodes['sa'].name}?format=csv"
+            )
+            self.assertEqual(re.sub("\s", "", csv_response.data.decode()), csv_expected)
 
     def test_find_document_by_tag(self) -> None:
         collection = db.Node_collection()

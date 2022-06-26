@@ -220,7 +220,7 @@ def find_root_cres() -> Any:
         elif opt_format == SupportedFormats.CSV.value:
             docs = sheet_utils.prepare_spreadsheet(collection=database, docs=documents)
             return write_csv(docs=docs).getvalue().encode("utf-8")
-        
+
         return jsonify(result)
     abort(404)
 
