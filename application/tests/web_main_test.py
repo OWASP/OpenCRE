@@ -1,3 +1,4 @@
+import re
 import json
 import logging
 import os
@@ -11,6 +12,7 @@ from application.database import db
 from application.defs import cre_defs as defs
 from application.defs import osib_defs
 from application.web import web_main
+from application.utils import mdutils
 
 
 class TestMain(unittest.TestCase):
@@ -133,6 +135,13 @@ class TestMain(unittest.TestCase):
             self.assertEqual(json.loads(osib_response.data.decode()), osib_expected)
             self.assertEqual(200, osib_response.status_code)
 
+            md_expected = "<pre>CRE---[2CD](https://www.opencre.org/cre/2),[1CA](https://www.opencre.org/cre/1),[3CB](https://www.opencre.org/cre/3)</pre>"
+            md_response = client.get(
+                f"/rest/v1/id/{cres['cd'].id}?format=md",
+                headers={"Content-Type": "application/json"},
+            )
+            self.assertEqual(re.sub("\s", "", md_response.data.decode()), md_expected)
+
     def test_find_by_name(self) -> None:
         collection = db.Node_collection()
         collection.graph.graph = db.CRE_Graph.load_cre_graph(sqla.session)
@@ -141,6 +150,7 @@ class TestMain(unittest.TestCase):
             "ca": defs.CRE(id="1", description="CA", name="CA", tags=["ta"]),
             "cd": defs.CRE(id="2", description="CD", name="CD", tags=["td"]),
             "cb": defs.CRE(id="3", description="CB", name="CB", tags=["tb"]),
+            "cc": defs.CRE(id="4", description="CC", name="CC", tags=["tc"]),
         }
         cres["ca"].add_link(
             defs.Link(ltype=defs.LinkTypes.Contains, document=cres["cd"].shallow_copy())
@@ -148,11 +158,16 @@ class TestMain(unittest.TestCase):
         cres["cb"].add_link(
             defs.Link(ltype=defs.LinkTypes.Contains, document=cres["cd"].shallow_copy())
         )
+        cres["cc"].add_link(
+            defs.Link(ltype=defs.LinkTypes.Contains, document=cres["cd"].shallow_copy())
+        )
         dca = collection.add_cre(cres["ca"])
         dcb = collection.add_cre(cres["cb"])
+        dcc = collection.add_cre(cres["cc"])
         dcd = collection.add_cre(cres["cd"])
         collection.add_internal_link(group=dca, cre=dcd, type=defs.LinkTypes.Contains)
         collection.add_internal_link(group=dcb, cre=dcd, type=defs.LinkTypes.Contains)
+        collection.add_internal_link(group=dcc, cre=dcd, type=defs.LinkTypes.Contains)
 
         self.maxDiff = None
         with self.app.test_client() as client:
@@ -177,6 +192,17 @@ class TestMain(unittest.TestCase):
             }
             self.assertEqual(json.loads(osib_response.data.decode()), osib_expected)
             self.assertEqual(200, osib_response.status_code)
+
+            md_expected = "<pre>CRE---[2CD](https://www.opencre.org/cre/2),[1CA](https://www.opencre.org/cre/1),[3CB](https://www.opencre.org/cre/3),[4CC](https://www.opencre.org/cre/4)</pre>"
+            md_response = client.get(
+                f"/rest/v1/name/{cres['cd'].name}?format=md",
+                headers={"Content-Type": "application/json"},
+            )
+            self.assertEqual(re.sub("\s", "", md_response.data.decode()), md_expected)
+
+            csv_expected = "CRE:name,CRE:id,CRE:description,Linked_CRE_0:id,Linked_CRE_0:name,Linked_CRE_0:link_type,Linked_CRE_1:id,Linked_CRE_1:name,Linked_CRE_1:link_type,Linked_CRE_2:id,Linked_CRE_2:name,Linked_CRE_2:link_typeCC,4,CC,2,CD,Contains,,,,,,"
+            csv_response = client.get(f"/rest/v1/name/{cres['cc'].name}?format=csv")
+            self.assertEqual(re.sub("\s", "", csv_response.data.decode()), csv_expected)
 
     def test_find_node_by_name(self) -> None:
         collection = db.Node_collection()
@@ -328,6 +354,16 @@ class TestMain(unittest.TestCase):
             osib_response = client.get(f"/rest/v1/code/{nodes['c0'].name}?osib=true")
             self.assertEqual(json.loads(osib_response.data.decode()), osib_expected)
             self.assertEqual(200, osib_response.status_code)
+
+            md_expected = "<pre>C0--[C0](https://example.com/c0)</pre>"
+            md_response = client.get(f"/rest/v1/code/{nodes['c0'].name}?format=md")
+            self.assertEqual(re.sub("\s", "", md_response.data.decode()), md_expected)
+
+            csv_expected = "CRE:name,CRE:id,CRE:description,Code:C0:section,Code:C0:subsection,Code:C0:hyperlink,Code:C0:link_type,Standard:s1:section,Standard:s1:subsection,Standard:s1:hyperlink,Standard:s1:link_type,,,,,,,s11,s111,,,,,,,,,s22,s111,,,,,,,,,s22,s333,,,,,,,,,s22,s333,,,,,,,,,,,https://example.com/foo,"
+            csv_response = client.get(
+                f"/rest/v1/standard/{nodes['sa'].name}?format=csv"
+            )
+            self.assertEqual(re.sub("\s", "", csv_response.data.decode()), csv_expected)
 
     def test_find_document_by_tag(self) -> None:
         collection = db.Node_collection()
