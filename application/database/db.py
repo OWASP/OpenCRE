@@ -1,4 +1,5 @@
 import logging
+import hashlib
 import re
 from collections import Counter
 from itertools import permutations
@@ -12,6 +13,7 @@ from flask_sqlalchemy.model import DefaultMeta
 from sqlalchemy import func
 from sqlalchemy.sql.expression import desc  # type: ignore
 import uuid
+from matplotlib import pyplot
 
 from .. import sqla  # type: ignore
 
@@ -28,6 +30,18 @@ def generate_uuid():
 
 
 class Node(BaseModel):  # type: ignore
+    def serialise(self):
+        return "".join(
+            [
+                self.name,
+                self.section or "",
+                self.subsection or "",
+                self.tags or "",
+                self.ntype,
+                self.description or "",
+                self.version or "",
+            ]
+        ).encode()
 
     __tablename__ = "node"
     id = sqla.Column(sqla.String, primary_key=True, default=generate_uuid)
@@ -58,6 +72,10 @@ class Node(BaseModel):  # type: ignore
 
 
 class CRE(BaseModel):  # type: ignore
+    def serialise(self):
+        return "".join(
+            [self.name, self.external_id or "", self.description or "", self.tags or ""]
+        ).encode()
 
     __tablename__ = "cre"
     id = sqla.Column(sqla.String, primary_key=True, default=generate_uuid)
@@ -123,6 +141,15 @@ class CRE_Graph:
     graph: nx.Graph = None
     __instance = None
 
+    def print_graph(self, png_path: str = None):
+        """DEbug method to dump the graph, if png_path is provided it shows the graph in png format
+        if not, it returns the graph as dict of dicts"""
+        if png_path:
+            nx.draw(self.graph, with_labels=True)
+            pyplot.savefig(png_path)
+            pyplot.show()
+        return nx.to_dict_of_dicts(self.graph)
+
     @classmethod
     def instance(cls, session):
         if cls.__instance is None:
@@ -143,7 +170,9 @@ class CRE_Graph:
     def add_cre(cls, dbcre: CRE, graph: nx.DiGraph) -> nx.DiGraph:
         if dbcre:
             graph.add_node(
-                f"CRE: {dbcre.id}", internal_id=dbcre.id, external_id=dbcre.external_id
+                f"CRE-id: {dbcre.id}",
+                internal_id=dbcre.id,
+                external_id=dbcre.external_id,
             )
         else:
             logger.error("Called with dbcre being none")
@@ -152,11 +181,19 @@ class CRE_Graph:
     @classmethod
     def add_dbnode(cls, dbnode: Node, graph: nx.DiGraph) -> nx.DiGraph:
         if dbnode:
+            sum = hashlib.sha256(
+                dbnode.serialise()
+            )  # using md5 would have been way more performant but then I'd have to triage every beg-hunter's SAST scanner results
             graph.add_node(
-                "Node: " + str(dbnode.id),
+                f"Node-id: {dbnode.id}",
                 internal_id=dbnode.id,
                 name=dbnode.name,
                 section=dbnode.section,
+                subsection=dbnode.subsection,
+                type=dbnode.ntype,
+                description=dbnode.description,
+                version=dbnode.version,
+                infosum=sum.hexdigest(),
             )
         else:
             logger.error("Called with dbnode being none")
@@ -177,7 +214,7 @@ class CRE_Graph:
                 logger.error(f"CRE {il.cre} does not exist?")
             graph = cls.add_cre(dbcre=cre, graph=graph)
 
-            graph.add_edge(f"CRE: {il.group}", f"CRE: {il.cre}", ltype=il.type)
+            graph.add_edge(f"CRE-id: {il.group}", f"CRE-id: {il.cre}", ltype=il.type)
 
         for lnk in session.query(Links).all():
             node = session.query(Node).filter(Node.id == lnk.node).first()
@@ -188,18 +225,22 @@ class CRE_Graph:
             cre = session.query(CRE).filter(CRE.id == lnk.cre).first()
             graph = cls.add_cre(dbcre=cre, graph=graph)
 
-            graph.add_edge(f"CRE: {lnk.cre}", f"Node: {str(lnk.node)}", ltype=lnk.type)
+            graph.add_edge(
+                f"CRE-id: {lnk.cre}", f"Node-id: {str(lnk.node)}", ltype=lnk.type
+            )
         return graph
 
 
 class Node_collection:
     graph: nx.Graph = None
-    session = sqla.session
+    session = None
 
-    def __init__(self) -> None:
-        self.graph = CRE_Graph.instance(sqla.session)
-        # self.graph = CRE_Graph.instance(session=sqla.session)
-        self.session = sqla.session
+    def __init__(self, session=sqla.session, graph: CRE_Graph = None) -> None:
+        if graph:
+            self.graph = graph
+        else:
+            self.graph = CRE_Graph.instance(sqla.session)
+        self.session = session
 
     def __get_external_links(self) -> List[Tuple[CRE, Node, str]]:
         external_links: List[Tuple[CRE, Node, str]] = []
@@ -889,14 +930,14 @@ class Node_collection:
                 f" {group.external_id}:{group.name}"
                 f" == {cre.external_id}:{cre.name} ,adding"
             )
-            cycle = self.__introduces_cycle(f"CRE: {group.id}", f"CRE: {cre.id}")
+            cycle = self.__introduces_cycle(f"CRE-id: {group.id}", f"CRE-id: {cre.id}")
             if not cycle:
                 self.session.add(
                     InternalLinks(type=type.value, cre=cre.id, group=group.id)
                 )
                 self.session.commit()
                 self.graph.add_edge(
-                    f"CRE: {group.id}", f"CRE: {cre.id}", ltype=type.value
+                    f"CRE-id: {group.id}", f"CRE-id: {cre.id}", ltype=type.value
                 )
             else:
                 logger.warning(
@@ -935,7 +976,7 @@ class Node_collection:
             return
         else:
             cycle = self.__introduces_cycle(
-                f"CRE: {cre.id}", f"Standard: {str(node.id)}"
+                f"CRE-id: {cre.id}", f"Node-id: {str(node.id)}"
             )
             if not cycle:
                 logger.debug(
@@ -945,7 +986,7 @@ class Node_collection:
                 )
                 self.session.add(Links(type=type.value, cre=cre.id, node=node.id))
                 self.graph.add_edge(
-                    f"CRE: {cre.id}", f"Node: {str(node.id)}", ltype=type.value
+                    f"CRE-id: {cre.id}", f"Node-id: {str(node.id)}", ltype=type.value
                 )
             else:
                 logger.warning(
@@ -964,8 +1005,8 @@ class Node_collection:
         this starts getting complicated when we have more linktypes"""
         res: bool = nx.has_path(
             self.graph.graph.to_undirected(),
-            "Node: " + str(node_source_id),
-            "Node: " + str(node_destination_id),
+            "Node-id: " + str(node_source_id),
+            "Node-id: " + str(node_destination_id),
         )
 
         return res

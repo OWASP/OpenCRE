@@ -1,10 +1,11 @@
+import copy
 import logging
 import os
 import shutil
 import tempfile
 import unittest
 from pprint import pprint
-from typing import Any, Dict, List
+from typing import Any, Dict, List, NamedTuple
 from unittest import mock
 from unittest.mock import Mock, patch
 
@@ -18,14 +19,15 @@ from application.defs.osib_defs import Osib_id, Osib_tree
 
 class TestMain(unittest.TestCase):
     def tearDown(self) -> None:
-        for tmpdir in self.tmpdirs:
-            shutil.rmtree(tmpdir)
+        [shutil.rmtree(tmpdir) for tmpdir in self.tmpdirs]
+        [os.remove(tmpfile) for tmpfile in self.tmpfiles]
         sqla.session.remove()
         sqla.drop_all(app=self.app)
         self.app_context.pop()
 
     def setUp(self) -> None:
         self.tmpdirs: List[str] = []
+        self.tmpfiles: List[str] = []
         self.app = create_app(mode="test")
         sqla.create_all(app=self.app)
         self.app_context = self.app.app_context()
@@ -372,7 +374,7 @@ class TestMain(unittest.TestCase):
         self.tmpdirs.append(dir)
         cache = tempfile.mkstemp(dir=dir, suffix=".sqlite")[1]
 
-        mocked_db_connect.return_value = self.collection
+        mocked_db_connect.return_value = self.collection, self.app, self.app_context
         mocked_export.return_value = [
             defs.CRE(name="c0"),
             defs.Standard(name="s0", section="s1"),
@@ -415,7 +417,7 @@ class TestMain(unittest.TestCase):
         loc = tempfile.mkstemp(dir=dir)[1]
         cache = tempfile.mkstemp(dir=dir)[1]
         mocked_prepare_for_review.return_value = (loc, cache)
-        mocked_db_connect.return_value = self.collection
+        mocked_db_connect.return_value = self.collection, self.app, self.app_context
 
         mocked_create_spreadsheet.return_value = "https://example.com/sheeet"
         mocked_export.return_value = [
@@ -467,7 +469,7 @@ class TestMain(unittest.TestCase):
         loc = tempfile.mkstemp(dir=dir)[1]
         cache = tempfile.mkstemp(dir=dir, suffix=".sqlite")[1]
         mocked_prepare_for_review.return_value = (loc, cache)
-        mocked_db_connect.return_value = self.collection
+        mocked_db_connect.return_value = self.collection, self.app, self.app_context
         mocked_get_standards_files_from_disk.return_value = [yml for i in range(0, 3)]
         mocked_export.return_value = [
             defs.CRE(name="c0"),
@@ -511,7 +513,7 @@ class TestMain(unittest.TestCase):
         yml = tempfile.mkstemp(dir=dir, suffix=".yaml")[1]
         loc = tempfile.mkstemp(dir=dir)[1]
         cache = tempfile.mkstemp(dir=dir, suffix=".sqlite")[1]
-        mocked_db_connect.return_value = self.collection
+        mocked_db_connect.return_value = self.collection, self.app, self.app_context
         mocked_get_standards_files_from_disk.return_value = [yml for i in range(0, 3)]
         mocked_export.return_value = [
             defs.CRE(name="c0"),
@@ -557,7 +559,7 @@ class TestMain(unittest.TestCase):
         loc = tempfile.mkstemp(dir=dir)[1]
         cach = tempfile.mkstemp(dir=dir)[1]
         mocked_prepare_for_review.return_value = (loc, cach)
-        mocked_db_connect.return_value = self.collection
+        mocked_db_connect.return_value = self.collection, self.app, self.app_context
         mocked_read_osib_yaml.return_value = [{"osib": "osib"}]
         mocked_try_from_file.return_value = [
             Osib_tree(aliases=[Osib_id("t1")]),
@@ -619,7 +621,7 @@ class TestMain(unittest.TestCase):
         osib_yaml = tempfile.mkstemp(dir=dir, suffix=".yaml")[1]
         loc = tempfile.mkstemp(dir=dir)[1]
         cache = tempfile.mkstemp(dir=dir, suffix=".sqlite")[1]
-        mocked_db_connect.return_value = self.collection
+        mocked_db_connect.return_value = self.collection, self.app, self.app_context
         mocked_read_osib_yaml.return_value = [{"osib": "osib"}]
         mocked_try_from_file.return_value = [
             odefs.Osib_tree(aliases=[Osib_id("t1")]),
@@ -663,13 +665,95 @@ class TestMain(unittest.TestCase):
         # osib_yaml = tempfile.mkstemp(dir=dir,suffix=".yaml")[1]
         loc = tempfile.mkstemp(dir=dir)[1]
         cache = tempfile.mkstemp(dir=dir, suffix=".sqlite")[1]
-        mocked_db_connect.return_value = self.collection
+        mocked_db_connect.return_value = self.collection, self.app, self.app_context
         mocked_cre2osib.return_value = odefs.Osib_tree(aliases=[Osib_id("t1")])
         mocked_export.return_value = [defs.CRE(name="c0")]
 
         main.export_to_osib(file_loc=f"{dir}/osib.yaml", cache=cache)
         mocked_db_connect.assert_called_with(path=cache)
         mocked_cre2osib.assert_called_with([defs.CRE(name="c0")])
+
+    def test_compare_datasets(self):
+        _, t1 = tempfile.mkstemp(suffix="dataset1")
+        _, t2 = tempfile.mkstemp(suffix="dataset2")
+        _, tdiff = tempfile.mkstemp(suffix="datasetdiff")
+        self.tmpfiles.extend([t1, t2, tdiff])
+        self.maxDiff = None
+
+        c0 = defs.CRE(id="111-000", description="CREdesc", name="CREname")
+        s456 = defs.Standard(
+            subsection="4.5.6",
+            section="FooStand",
+            name="BarStand",
+            hyperlink="https://example.com",
+            tags=["a", "b", "c"],
+        )
+        c1 = defs.CRE(
+            id="111-001",
+            description="Groupdesc",
+            name="GroupName",
+            links=[defs.Link(document=s456)],
+        )
+        s_unlinked = defs.Standard(
+            subsection="4.5.6",
+            section="Unlinked",
+            name="Unlinked",
+            hyperlink="https://example.com",
+        )
+
+        connection_1, app1, context1 = main.db_connect(path=t1)
+        sqla.create_all(app=app1)
+        connection_1.graph.graph = db.CRE_Graph.load_cre_graph(connection_1.session)
+        connection_1.add_cre(c0)
+        connection_1.add_node(s_unlinked)
+        db_s456 = connection_1.add_node(s456)
+        connection_1.add_link(connection_1.add_cre(c1), db_s456)
+        infosum = [
+            connection_1.graph.graph.nodes[x].get("infosum")
+            for x in connection_1.graph.graph.nodes
+            if db_s456.id in x
+        ][0]
+
+        context1.pop()
+
+        self.assertEqual(
+            main.compare_datasets(t1, tdiff),
+            [
+                {"not_present": (c1.id, tdiff)},
+                {},
+                {"not_present": (f"{c1.id}-{infosum}", tdiff)},
+                {},
+            ],
+        )
+
+        connection_2, app2, context2 = main.db_connect(path=t2)
+        sqla.create_all(app=app2)
+        connection_2.graph.graph = db.CRE_Graph.load_cre_graph(sqla.session)
+        connection_2.add_cre(c0)
+        connection_2.add_node(s_unlinked)
+        connection_2.add_link(connection_2.add_cre(c1), connection_2.add_node(s456))
+        context2.pop()
+
+        connection_diff, appdiff, contextdiff = main.db_connect(path=tdiff)
+        connection_diff.graph.graph = db.CRE_Graph.load_cre_graph(
+            connection_diff.session
+        )
+        sqla.create_all(app=appdiff)
+        connection_diff.add_cre(c0)
+        connection_diff.add_cre(defs.CRE(id="000-111", name="asdfa232332sdf"))
+        contextdiff.pop()
+
+        self.assertEqual(main.compare_datasets("foo", "bar"), [{}, {}, {}, {}])
+        self.assertEqual(main.compare_datasets(t1, t2), [{}, {}, {}, {}])
+        self.assertEqual(
+            main.compare_datasets(t1, tdiff),
+            [
+                {"not_present": (c1.id, tdiff)},
+                {},
+                {"not_present": (f"{c1.id}-{infosum}", tdiff)},
+                {},
+            ],
+        )
 
     # def test_prepare_for_Review(self):
     #     raise NotImplementedError

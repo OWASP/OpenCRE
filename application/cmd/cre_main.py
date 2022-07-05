@@ -1,3 +1,4 @@
+from pprint import pprint
 import argparse
 import json
 import logging
@@ -22,6 +23,10 @@ from application.utils.external_project_parsers import (
 )
 from dacite import from_dict
 from dacite.config import Config
+
+from application import sqla
+from sqlalchemy import create_engine
+from sqlalchemy.orm import scoped_session, sessionmaker
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
@@ -226,7 +231,7 @@ def add_from_spreadsheet(spreadsheet_url: str, cache_loc: str, cre_loc: str) -> 
     import new mappings from <url>
     export db to ../../cres/
     """
-    database = db_connect(path=cache_loc)
+    database, _, _ = db_connect(path=cache_loc)
     spreadsheet = sheet_utils.readSpreadsheet(
         url=spreadsheet_url, cres_loc=cre_loc, alias="new spreadsheet", validate=False
     )
@@ -246,7 +251,7 @@ def add_from_disk(cache_loc: str, cre_loc: str) -> None:
     import new mappings from <path>
     export db to ../../cres/
     """
-    database = db_connect(path=cache_loc)
+    database, _, _ = db_connect(path=cache_loc)
     for file in get_cre_files_from_disk(cre_loc):
         with open(file, "rb") as standard:
             parse_file(
@@ -265,7 +270,7 @@ def review_from_spreadsheet(cache: str, spreadsheet_url: str, share_with: str) -
     create new spreadsheet of the new CRE landscape for review
     """
     loc, cache = prepare_for_review(cache)
-    database = db_connect(path=cache)
+    database, _, _ = db_connect(path=cache)
     spreadsheet = sheet_utils.readSpreadsheet(
         url=spreadsheet_url, cres_loc=loc, alias="new spreadsheet", validate=False
     )
@@ -294,7 +299,7 @@ def review_from_disk(cache: str, cre_file_loc: str, share_with: str) -> None:
     create new spreadsheet of the new CRE landscape for review
     """
     loc, cache = prepare_for_review(cache)
-    database = db_connect(path=cache)
+    database, _, _ = db_connect(path=cache)
     for file in get_cre_files_from_disk(cre_file_loc):
         with open(file, "rb") as standard:
             parse_file(
@@ -359,33 +364,35 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
     elif args.osib_out:
         export_to_osib(file_loc=args.osib_out, cache=args.cache_file)
     if args.zap_in:
-        zap_alerts_parser.parse_zap_alerts(db_connect(args.cache_file))
+        cache, _, _ = db_connect(args.cache_file)
+        zap_alerts_parser.parse_zap_alerts(cache)
     if args.cheatsheets_in:
-        cheatsheets_parser.parse_cheatsheets(db_connect(args.cache_file))
+        cache, _, _ = db_connect(args.cache_file)
+        cheatsheets_parser.parse_cheatsheets(cache)
     if args.github_tools_in:
         for url in misc_tools_parser.tool_urls:
-            misc_tools_parser.parse_tool(
-                cache=db_connect(args.cache_file), tool_repo=url
-            )
-    if args.capec_in:
-        capec_parser.parse_capec(cache=db_connect(args.cache_file))
-    if args.export:
-        cache = db_connect(args.cache_file)
-        cache.export(args.export)
+            cache, _, _ = db_connect(args.cache_file)
+            misc_tools_parser.parse_tool(cache=cache, tool_repo=url)
     if args.owasp_proj_meta:
         owasp_metadata_to_cre(args.owasp_proj_meta)
 
+    if args.compare_datasets:
+        d1, d2, ed1, ed2 = compare_datasets(args.dataset1, args.dataset2)
+        if len(d1) or len(d2) or len(ed1) or len(ed2):
+            exit(1)
 
-def db_connect(path: str) -> db.Node_collection:
 
+def db_connect(
+    path: str, session=None, mk_app=True
+) -> Tuple[db.Node_collection, Any, Any]:
     global app
     conf = CMDConfig(db_uri=path)
     app = create_app(conf=conf)
-    collection = db.Node_collection()
     app_context = app.app_context()
     app_context.push()
+    collection = db.Node_collection()
 
-    return collection
+    return (collection, app, app_context)
 
 
 def create_spreadsheet(
@@ -419,7 +426,7 @@ def review_osib_from_file(file_loc: str, cache: str, cre_loc: str) -> None:
     """Given the location of an osib.yaml, parse osib, convert to cres and add to db
     export db to yamls and spreadsheet for review"""
     loc, cache = prepare_for_review(cache)
-    database = db_connect(path=cache)
+    database, _, _ = db_connect(path=cache)
     ymls = odefs.read_osib_yaml(file_loc)
     osibs = odefs.try_from_file(ymls)
     for osib in osibs:
@@ -440,7 +447,7 @@ def review_osib_from_file(file_loc: str, cache: str, cre_loc: str) -> None:
 
 
 def add_osib_from_file(file_loc: str, cache: str, cre_loc: str) -> None:
-    database = db_connect(path=cache)
+    database, _, _ = db_connect(path=cache)
     ymls = odefs.read_osib_yaml(file_loc)
     osibs = odefs.try_from_file(ymls)
     for osib in osibs:
@@ -451,11 +458,109 @@ def add_osib_from_file(file_loc: str, cache: str, cre_loc: str) -> None:
 
 
 def export_to_osib(file_loc: str, cache: str) -> None:
-    docs = db_connect(path=cache).export(file_loc, dry_run=True)
+    cache, _, _ = db_connect(path=cache)
+    docs = cache.export(file_loc, dry_run=True)
     tree = odefs.cre2osib(docs)
     with open(file_loc, "x"):
         with open(file_loc, "w") as f:
             f.write(json.dumps(tree.todict()))
+
+
+def compare_datasets(db1: str, db2: str) -> List[Dict]:
+    """
+    Given two CRE datasets in databases with connection strings db1 and db2
+    Print their differefnces.
+
+    (make db load descriptions etc in memory)
+    ensure that both graphs have same number of nodes and edges and both graphs have the same data
+    """
+
+    database1 = db_connect(path=db1)
+    database2 = db_connect(path=db2)
+
+    def make_hashtable(graph):
+        nodes = {}
+        edges = {}
+        for node in graph.nodes():
+            if node.startswith("CRE-id"):
+                nodes[graph.nodes[node].get("external_id")] = node
+            elif node.startswith("Node-id"):
+                nodes[graph.nodes[node].get("infosum")] = node
+            else:
+                logger.fatal("Graph seems corrupted")
+
+        for edge in graph.edges():
+            key = graph.nodes[edge[0]].get("external_id")
+            if edge[1].startswith("CRE-id"):
+                key = f"{key}-{graph.nodes[edge[1]].get('external_id')}"
+            else:
+                key = f"{key}-{graph.nodes[edge[1]].get('infosum')}"
+            edges[key] = edge
+        return nodes, edges
+
+    def node_differences(nodes1, nodes2, db2):
+        # get n1 nodes not in n2 and n1 nodes with different attrs than n2
+        differences = {}
+        for node, attrs in nodes1.items():
+            if node not in nodes2:
+                logger.error(f"{node} not present in {db2}")
+                differences["not_present"] = (node, db2)
+            elif nodes2[node] != attrs and not (
+                attrs.startswith("CRE-id") or attrs.startswith("Node-id")
+            ):
+
+                logger.error(
+                    f"Dataset 2 {db2} node:{node} has different data from dataset 1 equivalent, data1 is {attrs} data 2 is {nodes2[node]} "
+                )
+                differences["different data"] = {
+                    "node": node,
+                    "attributes1": attrs,
+                    "attributes2": nodes2[node],
+                }
+        return differences
+
+    def edge_differences(edges1, edges2, db2):
+        # get n1 nodes not in n2 and n1 nodes with different attrs than n2
+        differences = {}
+        for edge, attrs in edges1.items():
+            if edge not in edges2:
+                logger.error(f"{edge} not present in {db2}")
+                differences["not_present"] = (edge, db2)
+            else:
+                if edges2[edge] != attrs and [
+                    e
+                    for e in attrs
+                    if not (e.startswith("CRE-id") or e.startswith("Node-id"))
+                ]:
+                    logger.error(
+                        f"Dataset 2{db2} edge:{edge} has different data from dataset 1 equivalent, data1 is {attrs} data 2 is {edges2[edge]}"
+                    )
+                    differences["different data"] = {
+                        "edge": edge,
+                        "attributes1": attrs,
+                        "attributes2": edges2[edge],
+                    }
+        return differences
+
+    database1, app1, context1 = db_connect(path=db1)
+    sqla.create_all(app=app1)
+    database1.graph.graph = db.CRE_Graph.load_cre_graph(session=database1.session)
+    n1, e1 = make_hashtable(database1.graph.graph)
+    database1.session.remove()
+    context1.pop()
+
+    database2, app2, context2 = db_connect(path=db2)
+    sqla.create_all(app=app2)
+    database2.graph.graph = db.CRE_Graph.load_cre_graph(session=database2.session)
+    n2, e2 = make_hashtable(database2.graph.graph)
+    database2.session.remove()
+    context2.pop()
+
+    d1 = node_differences(n1, n2, db2)
+    d2 = node_differences(n2, n1, db1)
+    ed1 = edge_differences(e1, e2, db2)
+    ed2 = edge_differences(e2, e1, db1)
+    return [d1, d2, ed1, ed2]
 
 
 def owasp_metadata_to_cre(meta_file: str):
