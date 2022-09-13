@@ -24,6 +24,8 @@ BaseModel: DefaultMeta = sqla.Model
 
 
 def generate_uuid():
+    print("foo")
+    print("bar")
     return str(uuid.uuid4())
 
 
