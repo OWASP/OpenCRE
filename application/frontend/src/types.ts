@@ -11,7 +11,7 @@ export interface Document {
   section?: string;
   subsection?: string;
   tags?: string[];
-  tooltype?:string;
+  tooltype?: string;
 }
 export interface LinkedDocument {
   document: Document;

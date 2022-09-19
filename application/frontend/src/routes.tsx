@@ -1,21 +1,18 @@
 import { ReactNode } from 'react';
 
+import { BROWSEROOT, CRE, DEEPLINK, GRAPH, INDEX, SEARCH, SECTION, STANDARD } from './const';
 import { CommonRequirementEnumeration, Graph, Search, Standard } from './pages';
+import { BrowseRootCres } from './pages/BrowseRootCres/browseRootCres';
+import { Deeplink } from './pages/Deeplink/Deeplink';
 import { SearchName } from './pages/Search/SearchName';
 import { StandardSection } from './pages/Standard/StandardSection';
 
-import {Deeplink} from './pages/Deeplink/Deeplink';
 export interface IRoute {
   path: string;
   component: ReactNode | ReactNode[];
   showHeader: boolean;
   showFilter: boolean;
 }
-
-import {
-  INDEX, STANDARD, SECTION, CRE, GRAPH, SEARCH, DEEPLINK, BROWSEROOT
-} from './const';
-import { BrowseRootCres } from './pages/BrowseRootCres/browseRootCres';
 
 export const ROUTES: IRoute[] = [
   {
@@ -78,17 +75,16 @@ export const ROUTES: IRoute[] = [
     showHeader: true,
     showFilter: false,
   },
-   {
+  {
     path: `${DEEPLINK}/:nodeName`,
     component: Deeplink,
     showHeader: true,
     showFilter: false,
   },
- {
+  {
     path: `${BROWSEROOT}`,
     component: BrowseRootCres,
     showHeader: true,
     showFilter: false,
   },
-
 ];

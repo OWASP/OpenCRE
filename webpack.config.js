@@ -3,7 +3,7 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 const { TsConfigPathsPlugin } = require('awesome-typescript-loader');
 
 module.exports = {
-  target: ["web", 'es5'],
+  target: ['web', 'es5'],
   mode: 'development',
   context: path.join(__dirname, 'application/frontend/src'),
   entry: ['./main.tsx'],
@@ -58,7 +58,7 @@ module.exports = {
 
 module.exports.devServer = {
   historyApiFallback: {
-    disableDotRule: true
+    disableDotRule: true,
   },
   contentBase: './www',
   port: 9001,
