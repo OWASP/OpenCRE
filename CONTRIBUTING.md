@@ -6,21 +6,21 @@ The following is a set of guidelines for contributing. These are mostly guidelin
 
 #### Table Of Contents
 
-[Code of Conduct](#code-of-conduct)
+* [Code of Conduct](#code-of-conduct)
 
-[I don't want to read this whole thing, I just have a question!!!](#i-dont-want-to-read-this-whole-thing-i-just-have-a-question)
+* [I don't want to read this whole thing, I just have a question!!!](#i-dont-want-to-read-this-whole-thing-i-just-have-a-question)
 
-[How Can I Contribute?](#how-can-i-contribute)
+* [How Can I Contribute?](#how-can-i-contribute)
   * [Reporting Bugs](#reporting-bugs)
   * [Suggesting Enhancements](#suggesting-enhancements)
   * [Your First Code Contribution](#your-first-code-contribution)
   * [Pull Requests](#pull-requests)
 
-[Styleguides](#styleguides)
+* [Styleguides](#styleguides)
   * [Git Commit Messages](#git-commit-messages)
   * [Documentation Styleguide](#documentation-styleguide)
 
-[Additional Notes](#additional-notes)
+* [Additional Notes](#additional-notes)
   * [Issue and Pull Request Labels](#issue-and-pull-request-labels)
 
 ## Code of Conduct
@@ -40,7 +40,7 @@ The channel name is
 
 ## How Can I Contribute?
 
-The "Issues" page lists a number of features we would like to implement, we have tagged the ones we believe are easy to pick up with the tag `good first issue` and/or `beginner`. Alternatively you can contribute content by adding a mapping.
+The "Issues" page lists a number of features we would like to implement, we have tagged the ones we believe are easy to pick up with the tag `good first issue` and/or `beginner`. Alternatively you can contribute content by adding a mapping or request features or mappings by opening an Issue.
 
 ### Adding CREs and Mappings
 
@@ -94,6 +94,8 @@ Unsure where to begin contributing? You can start by looking through these `begi
 After you submit your pull request, verify that all [status checks](https://help.github.com/articles/about-status-checks/) are passing <details><summary>What if the status checks are failing?</summary>If a status check is failing, and you believe that the failure is unrelated to your change, please leave a comment on the pull request explaining why you believe the failure is unrelated. A maintainer will re-run the status check for you. If we conclude that the failure was a false positive, then we will open an issue to track that problem with our status check suite.</details>
 
 ## Styleguides
+
+We use eslint and black to enforce style. `make lint` should fix most style problems.
 
 ### Git Commit Messages
 
