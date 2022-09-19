@@ -8,44 +8,39 @@ module.exports = {
   collectCoverage: true,
 
   // An array of glob patterns indicating a set of files for which coverage information should be collected
-  collectCoverageFrom: ["*.ts"],
+  collectCoverageFrom: ['*.ts'],
 
   // The directory where Jest should output its coverage files
-  coverageDirectory: "coverage",
+  coverageDirectory: 'coverage',
 
   // An array of regexp pattern strings used to skip coverage collection
-  coveragePathIgnorePatterns: [
-    "/node_modules/"
-  ],
+  coveragePathIgnorePatterns: ['/node_modules/'],
 
   // Indicates which provider should be used to instrument code for coverage
-  coverageProvider: "babel",
+  coverageProvider: 'babel',
 
   // A list of reporter names that Jest uses when writing coverage reports
   coverageReporters: [
-    "json",
-  //   "text",
-  //   "lcov",
-  //   "clover"
+    'json',
+    //   "text",
+    //   "lcov",
+    //   "clover"
   ],
 
   // The maximum amount of workers used to run your tests. Can be specified as % or a number. E.g. maxWorkers: 10% will use 10% of your CPU amount + 1 as the maximum worker number. maxWorkers: 2 will use a maximum of 2 workers.
-  maxWorkers: "50%",
+  maxWorkers: '50%',
 
   // An array of directory names to be searched recursively up from the requiring module's location
-  moduleDirectories: [
-    "node_modules",
-    "src",
-  ],
+  moduleDirectories: ['node_modules', 'src'],
 
   // An array of file extensions your modules use
   moduleFileExtensions: [
-    "js",
-    "jsx",
-    "ts",
-    "tsx",
-  //   "json",
-  //   "node"
+    'js',
+    'jsx',
+    'ts',
+    'tsx',
+    //   "json",
+    //   "node"
   ],
 
   // Activates notifications for test results
@@ -61,24 +56,17 @@ module.exports = {
   rootDir: 'application/frontend/src/',
 
   // A list of paths to directories that Jest should use to search for files in
-  roots: [
-  ],
+  roots: [],
 
-  
   // The number of seconds after which a test is considered as slow and reported as such in the results.
   slowTestThreshold: 5,
 
-  
   // The test environment that will be used for testing
-  testEnvironment: "jsdom",
+  testEnvironment: 'jsdom',
 
-    // The glob patterns Jest uses to detect test files
-  testMatch: [
-    "**/test/*.ts",
-    "basic-e2etests.ts"
-  ],
+  // The glob patterns Jest uses to detect test files
+  testMatch: ['**/test/*.ts', 'basic-e2etests.ts'],
 
   // Indicates whether each individual test should be reported during the run
   verbose: true,
-
 };

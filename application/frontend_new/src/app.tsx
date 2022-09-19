@@ -1,3 +1,3 @@
-import React from "react";
+import React from 'react';
 
-export const App = () => <p>Something something, sanitise your inputs!</p>
+export const App = () => <p>Something something, sanitise your inputs!</p>;
