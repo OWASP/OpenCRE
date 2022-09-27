@@ -47,6 +47,7 @@ The above will install
 * [make](https://makefiletutorial.com/) a build and execution automation tool
 
 ### Language setup
+
 ### Linux
 We install python's utilities with
 * `python3 -m pip install --upgrade pip` [pip](https://pypi.org/project/pip/) is python's package manager
@@ -67,6 +68,15 @@ Then we use `npm` nodejs, package manager to install yarn , a lightweight Javasc
 ```
 npm install --global yarn
 ```
+
+## Database installation
+openCRE uses [sqlite3](https://www.sqlite.org/index.html) for local development and [postgres](https://www.postgresql.org/) for production.
+Bothh are needed in order to run the project.
+### Linux 
+` sudo apt install sqlite3 postgresql-client `
+
+### MacOS
+` brew install sqlite3 postgresql `
 
 ## Development environment setup
 
