@@ -57,6 +57,7 @@ We install python's utilities with
 We install python's utilities with
 * `brew install python3`
 * `brew install virtualenv`
+
 Then [nodejs](https://nodejs.org/en/), used for Javascript development can be installed using the [Node Version Manager](https://github.com/nvm-sh/nvm) as such: 
 ```bash
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash && nvm install --lts
