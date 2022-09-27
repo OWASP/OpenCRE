@@ -47,12 +47,16 @@ The above will install
 * [make](https://makefiletutorial.com/) a build and execution automation tool
 
 ### Language setup
-
+### Linux
 We install python's utilities with
 * `python3 -m pip install --upgrade pip` [pip](https://pypi.org/project/pip/) is python's package manager
 * `python3 -m pip install --upgrade virtualenv`  [python virtual environment](https://docs.python.org/3/tutorial/venv.html), used for python development
 * `python3 -m pip install --upgrade setuptools` python's [setuptools](https://pypi.org/project/setuptools/) is the package containing tooling for installing further python tools
 
+### MacOS
+We install python's utilities with
+* `brew install python3`
+* `brew install virtualenv`
 Then [nodejs](https://nodejs.org/en/), used for Javascript development can be installed using the [Node Version Manager](https://github.com/nvm-sh/nvm) as such: 
 ```bash
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash && nvm install --lts
