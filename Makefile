@@ -30,10 +30,14 @@ cover:
 install-deps:
 	[ -d "./venv" ] && . ./venv/bin/activate 
 	pip install -r requirements.txt
+	cd application/frontend
 	yarn install
 
 install:
-	virtualenv -p python3 venv && . ./venv/bin/activate && make install-deps && yarn build
+	virtualenv -p python3 venv
+	. ./venv/bin/activate
+	make install-deps
+	(cd application/frontend && yarn build)
 
 docker:
 	docker build -f Dockerfile-dev -t opencre:$(shell git rev-parse HEAD) .
