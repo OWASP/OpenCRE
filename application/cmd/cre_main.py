@@ -375,7 +375,7 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
         cache.export(args.export)
     if args.csa_ccm_v3_in:
         ccm.parse_ccm(
-            file=sheet_utils.readSpreadsheet(
+            ccmFile=sheet_utils.readSpreadsheet(
                 cres_loc="",
                 alias="",
                 url="https://docs.google.com/spreadsheets/d/1b5i8OV919aiqW2KcYWOQvkLorL1bRPqjthJxLH0QpD8",

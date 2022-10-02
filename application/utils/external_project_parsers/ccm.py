@@ -19,6 +19,7 @@ def make_nist_map(cache: db.Node_collection):
 
     nist = cache.get_nodes(name="NIST 800-53 v5")
     if not nist:
+        logger.fatal("This CRE DB does not contain NIST, this is fatal")
         return
 
     for nst in nist:
@@ -28,16 +29,14 @@ def make_nist_map(cache: db.Node_collection):
     return nist_map
 
 
-#  This has a bug on the received file, it's not a list of dicts with header mapping to a value but somehow a list of str
-def parse_ccm(file:  Dict[str, Any], cache: db.Node_collection):
+def parse_ccm(ccmFile:  Dict[str, Any], cache: db.Node_collection):
     nist_map = make_nist_map(cache)
-    
-    for ccm_mapping in file.get('0. ccmv3'):
+
+    for ccm_mapping in ccmFile.get('0. ccmv3'):
         # cre: defs.CRE
         # linked_standard: defs.Standard
-        pprint(ccm_mapping)
-        input()
         if "CCM V3.0 Control ID" not in ccm_mapping:
+            logger.error("string 'CCM V3.0 Control ID' was not found in mapping line")
             continue
     
         ccm = defs.Standard(
@@ -52,20 +51,16 @@ def parse_ccm(file:  Dict[str, Any], cache: db.Node_collection):
 
         if ccm_mapping.get("NIST SP800-53 R3"):
             nist_links = ccm_mapping.pop("NIST SP800-53 R3").split("\n")
-            pprint(nist_links)
-            input()
-
+ 
             for nl in nist_links:
-                if nl not in nist_map:
-                    logger.error(f"could not find NIST {nl} in the database")
+                if nl.strip() not in nist_map.keys():
+                    logger.error(f"could not find NIST '{nl}' in the database")
                     continue
                 relevant_cres = [
-                    el
-                    for el in nist_map.get(nl)
+                    el.document
+                    for el in nist_map.get(nl.strip()).links
                     if el.document.doctype == defs.Credoctypes.CRE
                 ]
-                pprint(relevant_cres)
-                input()
                 
                 for c in relevant_cres:
                     cache.add_link(cre=dbCREfromCRE(cre=c), node=dbccm)
