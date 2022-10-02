@@ -142,6 +142,11 @@ def main() -> None:
         default=None,
         help="export all data into yaml files under the directory pointed to by this argument",
     )
+    parser.add_argument(
+        "--csa_ccm_v3_in",
+        action="store_true",
+        help="import CSA's CCM v3 from https://docs.google.com/spreadsheets/d/1b5i8OV919aiqW2KcYWOQvkLorL1bRPqjthJxLH0QpD8",
+    )
 
     args = parser.parse_args()
 

@@ -16,6 +16,7 @@ from application.utils import spreadsheet as sheet_utils
 from application.utils import spreadsheet_parsers
 from application.utils.external_project_parsers import (
     capec_parser,
+    ccm,
     cheatsheets_parser,
     misc_tools_parser,
     zap_alerts_parser,
@@ -372,6 +373,15 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
     if args.export:
         cache = db_connect(args.cache_file)
         cache.export(args.export)
+    if args.csa_ccm_v3_in:
+        ccm.parse_ccm(
+            ccmFile=sheet_utils.readSpreadsheet(
+                cres_loc="",
+                alias="",
+                url="https://docs.google.com/spreadsheets/d/1b5i8OV919aiqW2KcYWOQvkLorL1bRPqjthJxLH0QpD8",
+            ),
+            cache=db_connect(args.cache_file),
+        )
     if args.owasp_proj_meta:
         owasp_metadata_to_cre(args.owasp_proj_meta)
 
