@@ -29,16 +29,16 @@ def make_nist_map(cache: db.Node_collection):
     return nist_map
 
 
-def parse_ccm(ccmFile:  Dict[str, Any], cache: db.Node_collection):
+def parse_ccm(ccmFile: Dict[str, Any], cache: db.Node_collection):
     nist_map = make_nist_map(cache)
 
-    for ccm_mapping in ccmFile.get('0. ccmv3'):
+    for ccm_mapping in ccmFile.get("0. ccmv3"):
         # cre: defs.CRE
         # linked_standard: defs.Standard
         if "CCM V3.0 Control ID" not in ccm_mapping:
             logger.error("string 'CCM V3.0 Control ID' was not found in mapping line")
             continue
-    
+
         ccm = defs.Standard(
             name="Cloud Controls Matrix",
             section=ccm_mapping.pop("CCM V3.0 Control ID"),
@@ -51,7 +51,7 @@ def parse_ccm(ccmFile:  Dict[str, Any], cache: db.Node_collection):
 
         if ccm_mapping.get("NIST SP800-53 R3"):
             nist_links = ccm_mapping.pop("NIST SP800-53 R3").split("\n")
- 
+
             for nl in nist_links:
                 if nl.strip() not in nist_map.keys():
                     logger.error(f"could not find NIST '{nl}' in the database")
@@ -61,7 +61,7 @@ def parse_ccm(ccmFile:  Dict[str, Any], cache: db.Node_collection):
                     for el in nist_map.get(nl.strip()).links
                     if el.document.doctype == defs.Credoctypes.CRE
                 ]
-                
+
                 for c in relevant_cres:
                     cache.add_link(cre=dbCREfromCRE(cre=c), node=dbccm)
                     logger.debug(
