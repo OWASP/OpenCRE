@@ -6,6 +6,7 @@ import requests
 from typing import Dict
 from application.database import db
 from application.defs import cre_defs as defs
+from typing import Any, Dict, List, Optional, Tuple, cast
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
