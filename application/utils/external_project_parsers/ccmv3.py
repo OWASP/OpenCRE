@@ -40,7 +40,7 @@ def parse_ccm(ccmFile: Dict[str, Any], cache: db.Node_collection):
             continue
 
         ccm = defs.Standard(
-            name="Cloud Controls Matrix",
+            name="Cloud Controls Matrix v3.0",
             section=ccm_mapping.pop("CCM V3.0 Control ID"),
             subsection="",
             version="v3",
