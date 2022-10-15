@@ -57,9 +57,11 @@ def parse_ccm(ccmFile: Dict[str, Any], cache: db.Node_collection):
                 actual = ""
                 found = re_nist.search(nl.strip())
                 if found:
-                    actual=found.group(1)
+                    actual = found.group(1)
                 if actual not in nist_map.keys():
-                    logger.error(f"could not find NIST '{actual}' in the database, mapping was '{nl.strip()}'")
+                    logger.error(
+                        f"could not find NIST '{actual}' in the database, mapping was '{nl.strip()}'"
+                    )
                     continue
                 relevant_cres = [
                     el.document
