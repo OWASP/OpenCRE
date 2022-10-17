@@ -147,7 +147,11 @@ def main() -> None:
         action="store_true",
         help="import CSA's CCM v3 from https://docs.google.com/spreadsheets/d/1b5i8OV919aiqW2KcYWOQvkLorL1bRPqjthJxLH0QpD8",
     )
-
+    parser.add_argument(
+        "--csa_ccm_v4_in",
+        action="store_true",
+        help="import CSA's CCM v4 from https://docs.google.com/spreadsheets/d/1QDzQy0wt1blGjehyXS3uaHh7k5OOR12AWgAA1DeACyc",
+    )
     args = parser.parse_args()
 
     from application.cmd import cre_main

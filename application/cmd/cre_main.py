@@ -16,7 +16,8 @@ from application.utils import spreadsheet as sheet_utils
 from application.utils import spreadsheet_parsers
 from application.utils.external_project_parsers import (
     capec_parser,
-    ccm,
+    ccmv3,
+    ccmv4,
     cheatsheets_parser,
     misc_tools_parser,
     zap_alerts_parser,
@@ -374,11 +375,20 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
         cache = db_connect(args.cache_file)
         cache.export(args.export)
     if args.csa_ccm_v3_in:
-        ccm.parse_ccm(
+        ccmv3.parse_ccm(
             ccmFile=sheet_utils.readSpreadsheet(
                 cres_loc="",
                 alias="",
                 url="https://docs.google.com/spreadsheets/d/1b5i8OV919aiqW2KcYWOQvkLorL1bRPqjthJxLH0QpD8",
+            ),
+            cache=db_connect(args.cache_file),
+        )
+    if args.csa_ccm_v4_in:
+        ccmv4.parse_ccm(
+            ccmFile=sheet_utils.readSpreadsheet(
+                cres_loc="",
+                alias="",
+                url="https://docs.google.com/spreadsheets/d/1QDzQy0wt1blGjehyXS3uaHh7k5OOR12AWgAA1DeACyc",
             ),
             cache=db_connect(args.cache_file),
         )
