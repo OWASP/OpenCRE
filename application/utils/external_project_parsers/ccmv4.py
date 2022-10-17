@@ -31,39 +31,46 @@ def make_nist_map(cache: db.Node_collection):
 
 def parse_ccm(ccmFile: Dict[str, Any], cache: db.Node_collection):
     nist_map = make_nist_map(cache)
+    re_nist = re.compile("(\w+-\d+)")
 
-    for ccm_mapping in ccmFile.get("0. ccmv3"):
+    for ccm_mapping in ccmFile.get("0.ccmv4"):
         # cre: defs.CRE
         # linked_standard: defs.Standard
-        if "CCM V3.0 Control ID" not in ccm_mapping:
-            logger.error("string 'CCM V3.0 Control ID' was not found in mapping line")
+        if "Control ID" not in ccm_mapping:
+            logger.error("string 'CCM V4.0 Control ID' was not found in mapping line")
             continue
 
         ccm = defs.Standard(
-            name="Cloud Controls Matrix",
-            section=ccm_mapping.pop("CCM V3.0 Control ID"),
+            name="Cloud Controls Matrix v4.0",
+            section=ccm_mapping.pop("Control ID"),
             subsection="",
-            version="v3",
+            version="v4.0",
             hyperlink="",
         )
         dbccm = cache.add_node(ccm)
         logger.debug(f"Registered CCM with id {ccm.section}")
 
-        if ccm_mapping.get("NIST SP800-53 R3"):
-            nist_links = ccm_mapping.pop("NIST SP800-53 R3").split("\n")
+        if ccm_mapping.get("NIST 800-53 rev 5"):
+            nist_links = ccm_mapping.pop("NIST 800-53 rev 5").split("\n")
 
             for nl in nist_links:
-                if nl.strip() not in nist_map.keys():
-                    logger.error(f"could not find NIST '{nl}' in the database")
+                actual = ""
+                found = re_nist.search(nl.strip())
+                if found:
+                    actual = found.group(1)
+                if actual not in nist_map.keys():
+                    logger.error(
+                        f"could not find NIST '{actual}' in the database, mapping was '{nl.strip()}'"
+                    )
                     continue
                 relevant_cres = [
                     el.document
-                    for el in nist_map.get(nl.strip()).links
+                    for el in nist_map.get(actual).links
                     if el.document.doctype == defs.Credoctypes.CRE
                 ]
 
                 for c in relevant_cres:
                     cache.add_link(cre=dbCREfromCRE(cre=c), node=dbccm)
                     logger.debug(
-                        f"Added link between CRE {c.id} and CCM v3.0 {dbccm.section}"
+                        f"Added link between CRE {c.id} and CCM v4.0 {dbccm.section}"
                     )
