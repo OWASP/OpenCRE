@@ -10,7 +10,7 @@ from application.database import db
 from application.defs import cre_defs as defs
 from application.defs import osib_defs as odefs
 from application.utils import spreadsheet as sheet_utils
-from application.utils import mdutils
+from application.utils import mdutils, redirectors
 from enum import Enum
 from flask import (
     Blueprint,
@@ -239,6 +239,42 @@ def index(path: str) -> Any:
         return send_from_directory(app.static_folder, path)
     else:
         return send_from_directory(app.static_folder, "index.html")
+
+
+@app.route("/rest/v1/smartlink/<ntype>/<name>/<section>", methods=["GET"])
+# @cache.cached(timeout=50)
+def smartlink(
+    name: str, ntype: str = defs.Credoctypes.Standard.value, section: str = ""
+) -> Any:
+    """if node is found, show node, else redirect"""
+    database = db.Node_collection()
+    opt_version = request.args.get("version")
+
+    # match ntype to the credoctypes case-insensitive
+    typ = [t for t in defs.Credoctypes if t.value.lower() == ntype.lower()]
+    if typ:
+        ntype = typ[0]
+
+    page = 1
+    items_per_page = 1
+    _, nodes, _ = database.get_nodes_with_pagination(
+        name=name,
+        section=section,
+        page=int(page),
+        items_per_page=int(items_per_page),
+        version=opt_version,
+        ntype=ntype,
+    )
+    if nodes:
+        return redirect(
+            f"https://www.opencre.org/node/{ntype}/{name}/section/{section}"
+        )
+    elif ntype == defs.Credoctypes.Standard.value and redirectors.redirect(
+        name, section
+    ):
+        return redirect(redirectors.redirect(name, section))
+    else:
+        return abort(404)
 
 
 @app.before_request
