@@ -266,7 +266,9 @@ def smartlink(
         ntype=ntype,
     )
     if nodes:
-        return redirect(f"https://www.opencre.org/node/{ntype}/{name}/section/{section}")
+        return redirect(
+            f"https://www.opencre.org/node/{ntype}/{name}/section/{section}"
+        )
     elif ntype == defs.Credoctypes.Standard.value and redirectors.redirect(
         name, section
     ):
