@@ -241,7 +241,7 @@ def index(path: str) -> Any:
         return send_from_directory(app.static_folder, "index.html")
 
 
-@app.route("/rest/v1/smartlink/<ntype>/<name>/<section>", methods=["GET"])
+@app.route("/smartlink/<ntype>/<name>/<section>", methods=["GET"])
 # @cache.cached(timeout=50)
 def smartlink(
     name: str, ntype: str = defs.Credoctypes.Standard.value, section: str = ""
