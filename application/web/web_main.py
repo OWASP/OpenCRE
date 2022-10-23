@@ -265,7 +265,7 @@ def smartlink(
         version=opt_version,
         ntype=ntype,
     )
-    if nodes:
+    if nodes and len(nodes[0].links):
         return redirect(
             f"https://www.opencre.org/node/{ntype}/{name}/section/{section}"
         )
