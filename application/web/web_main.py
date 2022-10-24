@@ -266,14 +266,22 @@ def smartlink(
         ntype=ntype,
     )
     if nodes and len(nodes[0].links):
+        print(
+            f"found node of type {ntype}, name {name} and section {section}, redirecting to opencre"
+        )
         return redirect(
             f"https://www.opencre.org/node/{ntype}/{name}/section/{section}"
         )
     elif ntype == defs.Credoctypes.Standard.value and redirectors.redirect(
         name, section
     ):
+        print(
+            f"did not find node of type {ntype}, name {name} and section {section}, redirecting to external resource"
+        )
         return redirect(redirectors.redirect(name, section))
     else:
+        print(f"not sure what happened, 404")
+        pprint(nodes)
         return abort(404)
 
 
