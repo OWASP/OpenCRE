@@ -11,7 +11,7 @@
 ![GitHub last commit](https://img.shields.io/github/last-commit/owasp/common-requirement-enumeration)
 ![GitHub commit activity](https://img.shields.io/github/commit-activity/y/owasp/common-requirement-enumeration)
 
-![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://github.com/codespaces/new?hide_repo_select=true&ref=main&repo=400297709&machine=standardLinux32gb&devcontainer_path=.devcontainer%2Fdevcontainer.json&location=WestEurope)
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://github.com/codespaces/new?hide_repo_select=true&ref=main&repo=400297709&machine=standardLinux32gb&devcontainer_path=.devcontainer%2Fdevcontainer.json&location=WestEurope)
 
 Common Requirements Enumeration Application
 ===============================
