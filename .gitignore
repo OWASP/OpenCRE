@@ -27,3 +27,6 @@ www/
 .DS_Store
 yarn-error.log
 coverage/
+
+### Dev db
+standards_cache.sqlite
