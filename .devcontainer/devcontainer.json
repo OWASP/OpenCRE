@@ -1,10 +1,13 @@
 {
   "image": "mcr.microsoft.com/devcontainers/universal:2",
+  "postCreateCommand": "make install &&  make frontend && cp cres/db.sqlite standards_cache.sqlite",
      "extensions": [
-    "ms-python.vscode-pylance",
-    "visualstudioexptteam.vscodeintellicode",
-    "GitHub.vscode-pull-request-github"
-  ],
+		"ms-python.vscode-pylance",
+		"visualstudioexptteam.vscodeintellicode",
+		"GitHub.vscode-pull-request-github",
+		"ms-vscode.makefile-tools",
+    "dbaeumer.vscode-eslint"
+	],
   "features": {
     "ghcr.io/devcontainers/features/python:1": {
     "version":"latest",
@@ -13,5 +16,39 @@
       "ghcr.io/devcontainers/features/node:1": {
         "version":"lts"   
       }
+  },
+  "settings": {
+
+    "[json]": {
+      "editor.defaultFormatter": "vscode.json-language-features"
+    },
+    "[typescriptreact]": {
+      "editor.defaultFormatter": "vscode.typescript-language-features"
+    },
+    "typescript.updateImportsOnFileMove.enabled": "always",
+    "javascript.updateImportsOnFileMove.enabled": "always",
+    "window.zoomLevel": 1,
+    "[typescript]": {
+      "editor.defaultFormatter": "vscode.typescript-language-features"
+    },
+    "files.insertFinalNewline": true,
+    "files.trimTrailingWhitespace": true,
+    "files.watcherExclude": {
+      "**/.git/objects/**": true,
+      "**/.git/subtree-cache/**": true,
+      "**/node_modules/*/**": true
+    },
+    "files.autoSave": "afterDelay",
+    "git.autofetch": true,
+    "editor.formatOnSave": true,
+    "editor.formatOnType": true,
+    "python.formatting.provider": "black",
+    "python.formatting.blackPath": "/usr/local/bin/black",
+    "python.linting.mypyEnabled": true,
+    "terminal.integrated.profiles.linux": {
+      "zsh": {
+        "path": "/usr/bin/zsh"
+      }
+    }
   }
 }
