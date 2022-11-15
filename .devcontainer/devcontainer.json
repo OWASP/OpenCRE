@@ -1,0 +1,17 @@
+{
+  "image": "mcr.microsoft.com/devcontainers/universal:2",
+     "extensions": [
+    "ms-python.vscode-pylance",
+    "visualstudioexptteam.vscodeintellicode",
+    "GitHub.vscode-pull-request-github"
+  ],
+  "features": {
+    "ghcr.io/devcontainers/features/python:1": {
+    "version":"latest",
+    "installTools":true
+    },
+      "ghcr.io/devcontainers/features/node:1": {
+        "version":"lts"   
+      }
+  }
+}
