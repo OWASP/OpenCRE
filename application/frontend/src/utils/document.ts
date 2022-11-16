@@ -1,3 +1,4 @@
+import { TYPE_CONTAINS, TYPE_IS_PART_OF, TYPE_LINKED_TO, TYPE_RELATED, TYPE_SAM, TYPE_SAME } from '../const';
 import { Document, LinkedDocument } from '../types';
 
 export const getDocumentDisplayName = (document: Document) =>
@@ -9,6 +10,16 @@ export type LinksByType = Record<string, LinkedDocument[]>;
 export const groupLinksByType = (node: Document): LinksByType =>
   node.links ? groupBy(node.links, (link) => link.ltype) : {};
 
+export const orderLinksByType = (lbt: LinksByType): LinksByType => {
+  const order = ["Contains", "Is Part Of", "Linked To", "Related", "SAME", "SAM"]
+  const res: LinksByType = {}
+  for (const itm of order) {
+    if (lbt[itm]) {
+      res[itm] = lbt[itm]
+    }
+  }
+  return res
+}
 export const groupBy = <T, K extends keyof any>(list: T[], getKey: (item: T) => K) =>
   list.reduce((previous, currentItem) => {
     const group = getKey(currentItem);
