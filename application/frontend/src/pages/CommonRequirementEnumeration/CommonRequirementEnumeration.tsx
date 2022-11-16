@@ -12,6 +12,7 @@ import { useEnvironment } from '../../hooks';
 import { applyFilters, filterContext } from '../../hooks/applyFilters';
 import { Document } from '../../types';
 import { groupLinksByType } from '../../utils';
+import { orderLinksByType } from '../../utils/document';
 
 export const CommonRequirementEnumeration = () => {
   const { id } = useParams();
@@ -46,8 +47,7 @@ export const CommonRequirementEnumeration = () => {
   let display: Document;
   display = currentUrlParams.get('applyFilters') === 'true' ? filteredCRE : cre;
 
-  const linksByType = useMemo(() => (display ? groupLinksByType(display) : {}), [display]);
-
+  const linksByType = useMemo(() => (display ? orderLinksByType(groupLinksByType(display)) : {}), [display]);
   return (
     <div className="cre-page">
       <LoadingAndErrorIndicator loading={loading} error={error} />
@@ -101,7 +101,7 @@ export const CommonRequirementEnumeration = () => {
                     </div>
                   ))}
                 </div>
-              ))}
+            ))}
           </div>
         </>
       )}
