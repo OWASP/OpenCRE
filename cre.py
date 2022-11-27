@@ -152,6 +152,12 @@ def main() -> None:
         action="store_true",
         help="import CSA's CCM v4 from https://docs.google.com/spreadsheets/d/1QDzQy0wt1blGjehyXS3uaHh7k5OOR12AWgAA1DeACyc",
     )
+    parser.add_argument(
+        "--iso_27001_in",
+        action="store_true",
+        help="import ISO 27001 by using the NIST mappings located at https://csrc.nist.gov/CSRC/media/Publications/sp/800-53/rev-5/final/documents/sp800-53r5-to-iso-27001-mapping.docx",
+    )
+
     args = parser.parse_args()
 
     from application.cmd import cre_main

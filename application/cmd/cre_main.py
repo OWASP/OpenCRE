@@ -21,6 +21,7 @@ from application.utils.external_project_parsers import (
     cheatsheets_parser,
     misc_tools_parser,
     zap_alerts_parser,
+    iso27001,
 )
 from dacite import from_dict
 from dacite.config import Config
@@ -390,6 +391,11 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
                 alias="",
                 url="https://docs.google.com/spreadsheets/d/1QDzQy0wt1blGjehyXS3uaHh7k5OOR12AWgAA1DeACyc",
             ),
+            cache=db_connect(args.cache_file),
+        )
+    if args.iso_27001_in:
+        iso27001.parse_iso(
+            url="https://csrc.nist.gov/CSRC/media/Publications/sp/800-53/rev-5/final/documents/sp800-53r5-to-iso-27001-mapping.docx",
             cache=db_connect(args.cache_file),
         )
     if args.owasp_proj_meta:
