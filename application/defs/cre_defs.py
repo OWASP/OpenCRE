@@ -399,6 +399,7 @@ class Standard(Node):
 
 @dataclass
 class Tool(Node):
+    ruleID: str = ""
     tooltype: ToolTypes = ToolTypes.Unknown
     doctype: Credoctypes = Credoctypes.Tool
 
@@ -412,6 +413,7 @@ class Tool(Node):
     def todict(self) -> Dict[str, Any]:
         res = super().todict()
         res["tooltype"] = self.tooltype.value + ""
+        res["ruleID"] = self.ruleID
         return res
 
     def __hash__(self) -> int:

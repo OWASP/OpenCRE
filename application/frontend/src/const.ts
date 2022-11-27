@@ -14,6 +14,13 @@ export const DOCUMENT_TYPE_NAMES = {
   [TYPE_RELATED]: 'is related to',
 };
 
+export const DOCUMENT_TYPES = {
+  TYPE_TOOL: 'Tool',
+  TYPE_CRE: 'CRE',
+  TYPE_STANDARD: 'Standard',
+  TYPE_CODE: 'Code',
+};
+
 // Routes
 export const INDEX = '/';
 export const STANDARD = '/standard';

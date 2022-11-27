@@ -7,7 +7,7 @@ import { Pagination } from 'semantic-ui-react';
 
 import { DocumentNode } from '../../components/DocumentNode';
 import { LoadingAndErrorIndicator } from '../../components/LoadingAndErrorIndicator';
-import { DOCUMENT_TYPE_NAMES } from '../../const';
+import { DOCUMENT_TYPES, DOCUMENT_TYPE_NAMES, TOOL } from '../../const';
 import { useEnvironment } from '../../hooks';
 import { Document } from '../../types';
 import { groupLinksByType } from '../../utils';
@@ -68,7 +68,10 @@ export const StandardSection = () => {
               Object.entries(linksByType).map(([type, links]) => (
                 <div className="cre-page__links" key={type}>
                   <div className="cre-page__links-header">
-                    {document.doctype}: {document.name} - {document.section}{' '}
+                    {document.doctype}: {document.name} -{' '}
+                    {document.doctype.toLowerCase() === DOCUMENT_TYPES.TYPE_TOOL.toLowerCase()
+                      ? document.ruleID
+                      : document.section}{' '}
                     <b>{DOCUMENT_TYPE_NAMES[type]}</b>:
                   </div>
                   {links.map((link, i) => (
