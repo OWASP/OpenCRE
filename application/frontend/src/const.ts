@@ -15,11 +15,11 @@ export const DOCUMENT_TYPE_NAMES = {
 };
 
 export const DOCUMENT_TYPES = {
-  TYPE_TOOL: "Tool",
-  TYPE_CRE: "CRE",
-  TYPE_STANDARD: "Standard",
-  TYPE_CODE: "Code",
-}
+  TYPE_TOOL: 'Tool',
+  TYPE_CRE: 'CRE',
+  TYPE_STANDARD: 'Standard',
+  TYPE_CODE: 'Code',
+};
 
 // Routes
 export const INDEX = '/';

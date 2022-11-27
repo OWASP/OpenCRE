@@ -24,8 +24,8 @@ export const Deeplink = () => {
     `${apiUrl}/${type}/${nodeName}` +
     (section != null ? `?section=${section}&` : '') +
     (subsection != null ? `subsection=${subsection}&` : '') +
-    (tooltype != null ? `tooltype=${tooltype}&` : '')+
-    (ruleID != null ? `ruleID=${ruleID}&` : "");
+    (tooltype != null ? `tooltype=${tooltype}&` : '') +
+    (ruleID != null ? `ruleID=${ruleID}&` : '');
 
   const { error, data, refetch } = useQuery<{ standards: Document[] }, string>(
     'deeplink',

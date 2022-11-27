@@ -21,7 +21,7 @@ def zap_alert(
     return defs.Tool(
         tooltype=defs.ToolTypes.Offensive,
         name=f"ZAP Rule",
-        ruleID= name,
+        ruleID=name,
         description=description,
         tags=tags,
         hyperlink=code,
