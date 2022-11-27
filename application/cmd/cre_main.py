@@ -394,7 +394,7 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
             cache=db_connect(args.cache_file),
         )
     if args.iso_27001_in:
-            iso27001.parse_iso(
+        iso27001.parse_iso(
             url="https://csrc.nist.gov/CSRC/media/Publications/sp/800-53/rev-5/final/documents/sp800-53r5-to-iso-27001-mapping.docx",
             cache=db_connect(args.cache_file),
         )

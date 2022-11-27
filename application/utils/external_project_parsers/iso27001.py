@@ -17,6 +17,7 @@ logger.setLevel(logging.INFO)
 
 nist_id_re = re.compile("(?P<nist_id>\w\w\-\d+)")
 
+
 def download_iso_doc(url: str, location: str, filename):
     urllib.request.urlretrieve(url, f"{location}/{filename}")
 
@@ -31,12 +32,16 @@ def extract_iso_table(nist_docx_filename: str):
     for el in my_doc_as_json.get("VALUE"):
         if el.get("TYPE") == "body":
             for body_el in el.get("VALUE"):
-                if body_el.get("TYPE") == "table" and\
-                    body_el["VALUE"][0]["VALUE"][0]["VALUE"][0]["VALUE"][0]["VALUE"]=="NIST SP 800-53 CONTROLS":
+                if (
+                    body_el.get("TYPE") == "table"
+                    and body_el["VALUE"][0]["VALUE"][0]["VALUE"][0]["VALUE"][0]["VALUE"]
+                    == "NIST SP 800-53 CONTROLS"
+                ):
                     table = body_el
     return table
 
-def iso_table_to_nist_dict(table,nist_nodes):
+
+def iso_table_to_nist_dict(table, nist_nodes):
     nist_table = {}
     for el in nist_nodes:
         id_match = re.search(nist_id_re, el.section)
@@ -51,12 +56,15 @@ def iso_table_to_nist_dict(table,nist_nodes):
         cell2_text = row["VALUE"][2]["VALUE"][0]["VALUE"][0]["VALUE"]
         if cell2_text == "None" or cell2_text == "---":
             continue
-        matched = re.search(nist_id_re,cell0_text)
+        matched = re.search(nist_id_re, cell0_text)
         if matched:
-            isos = [x.replace("*","").strip() for x in cell2_text.split(",")]
+            isos = [x.replace("*", "").strip() for x in cell2_text.split(",")]
             nist_table[matched.group("nist_id")].extend(isos)
-            logger.debug(f"Found ISOs {cell2_text} linked to NIST "+ matched.group("nist_id"))
-    return nist_table    
+            logger.debug(
+                f"Found ISOs {cell2_text} linked to NIST " + matched.group("nist_id")
+            )
+    return nist_table
+
 
 def parse_iso(url: str, cache: db.Node_collection):
     nist_nodes = cache.get_nodes(name="NIST 800-53 v5")
@@ -64,8 +72,8 @@ def parse_iso(url: str, cache: db.Node_collection):
     tmpdir = tempfile.mkdtemp()
     download_iso_doc(url, tmpdir, "iso.docx")
     table = extract_iso_table(f"{tmpdir}/iso.docx")
-    nist_dict = iso_table_to_nist_dict(table,nist_nodes)
-    
+    nist_dict = iso_table_to_nist_dict(table, nist_nodes)
+
     nist_id_to_node_map = {}
     for node in nist_nodes:
         id_match = re.search(nist_id_re, node.section)
@@ -76,16 +84,19 @@ def parse_iso(url: str, cache: db.Node_collection):
         if not isos:
             continue
         node = nist_id_to_node_map.get(nist)
-        node_cres = [dbCREfromCRE(c.document) for c in node.links if c.document.doctype==defs.Credoctypes.CRE]
+        node_cres = [
+            dbCREfromCRE(c.document)
+            for c in node.links
+            if c.document.doctype == defs.Credoctypes.CRE
+        ]
         for iso in isos:
             if not iso:
                 continue
             stand = cache.add_node(defs.Standard(name="ISO 27001", section=iso))
             for cre in node_cres:
-                logger.debug(f"Added link between ISO {iso} and CRE {cre.external_id}")           
-                cache.add_link(cre,stand)
+                logger.debug(f"Added link between ISO {iso} and CRE {cre.external_id}")
+                cache.add_link(cre, stand)
 
-            
     # nist_map = make_nist_map(cache)
     # re_nist = re.compile("(\w+-\d+)")
 
