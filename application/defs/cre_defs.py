@@ -419,6 +419,7 @@ class Tool(Node):
     def __hash__(self) -> int:
         return hash(json.dumps(self.todict()))
 
+
 @dataclass(eq=False)
 class Code(Node):
     doctype: Credoctypes = Credoctypes.Code

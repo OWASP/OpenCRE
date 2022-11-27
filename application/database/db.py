@@ -1189,7 +1189,7 @@ def nodeFromDB(dbnode: Node) -> cre_defs.Node:
             tags=tags,
             description=dbnode.description,
             tooltype=ttype,
-            ruleID=dbnode.section
+            ruleID=dbnode.section,
         )
     elif dbnode.ntype == cre_defs.Code.__name__:
         return cre_defs.Code(
