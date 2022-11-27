@@ -101,7 +101,7 @@ export const CommonRequirementEnumeration = () => {
                     </div>
                   ))}
                 </div>
-            ))}
+              ))}
           </div>
         </>
       )}

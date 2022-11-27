@@ -3,7 +3,9 @@ import { Document, LinkedDocument } from '../types';
 
 export const getDocumentDisplayName = (document: Document) =>
   // [document.doctype, document.id, document.name, document.section, document.subsection].filter(Boolean).join(' - '); // format: Standard - ASVS - V1.1
-  [document.id, document.name, document.section, document.subsection].filter(Boolean).join(' - '); // format: ASVS - V1.1
+  [document.id, document.name, document.section, document.subsection, document.ruleID]
+    .filter(Boolean)
+    .join(' - '); // format: ASVS - V1.1
 
 export type LinksByType = Record<string, LinkedDocument[]>;
 
@@ -11,15 +13,15 @@ export const groupLinksByType = (node: Document): LinksByType =>
   node.links ? groupBy(node.links, (link) => link.ltype) : {};
 
 export const orderLinksByType = (lbt: LinksByType): LinksByType => {
-  const order = ["Contains", "Linked To","SAME", "SAM", "Is Part Of", "Related"]
-  const res: LinksByType = {}
+  const order = ['Contains', 'Linked To', 'SAME', 'SAM', 'Is Part Of', 'Related'];
+  const res: LinksByType = {};
   for (const itm of order) {
     if (lbt[itm]) {
-      res[itm] = lbt[itm]
+      res[itm] = lbt[itm];
     }
   }
-  return res
-}
+  return res;
+};
 export const groupBy = <T, K extends keyof any>(list: T[], getKey: (item: T) => K) =>
   list.reduce((previous, currentItem) => {
     const group = getKey(currentItem);

@@ -574,7 +574,6 @@ class Node_collection:
                 query = query.filter(Node.description == description)
             else:
                 query = query.filter(Node.description.like(description))
-
         return query
 
     def get_CREs(
@@ -1161,6 +1160,7 @@ def dbNodeFromTool(tool: cre_defs.Node) -> Node:
         ntype=tool.doctype.value,
         description=tool.description,
         link=tool.hyperlink,
+        section=tool.ruleID,
     )
 
 
@@ -1189,6 +1189,7 @@ def nodeFromDB(dbnode: Node) -> cre_defs.Node:
             tags=tags,
             description=dbnode.description,
             tooltype=ttype,
+            ruleID=dbnode.section,
         )
     elif dbnode.ntype == cre_defs.Code.__name__:
         return cre_defs.Code(

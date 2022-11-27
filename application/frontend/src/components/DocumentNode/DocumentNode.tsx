@@ -3,13 +3,12 @@ import './documentNode.scss';
 import axios from 'axios';
 import React, { FunctionComponent, useContext, useEffect, useMemo, useState } from 'react';
 import { Link, useHistory } from 'react-router-dom';
-import { Button } from 'semantic-ui-react';
 
 import {
+  DOCUMENT_TYPES,
   DOCUMENT_TYPE_NAMES,
   TYPE_CONTAINS,
   TYPE_IS_PART_OF,
-  TYPE_LINKED_TO,
   TYPE_RELATED,
 } from '../../const';
 import { useEnvironment } from '../../hooks';
@@ -132,7 +131,10 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({
                 <div className="document-node__link-type-container" key={type}>
                   <div>
                     <span>
-                      {usedNode.doctype}: {usedNode.name} - {usedNode.section}{' '}
+                      {usedNode.doctype}: {usedNode.name} -{' '}
+                      {usedNode.doctype.toLowerCase() === DOCUMENT_TYPES.TYPE_TOOL.toLowerCase()
+                        ? usedNode.ruleID
+                        : usedNode.section}{' '}
                     </span>
                     <b> {DOCUMENT_TYPE_NAMES[type]}</b>:
                   </div>

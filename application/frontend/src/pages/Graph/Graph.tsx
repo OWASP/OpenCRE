@@ -19,6 +19,7 @@ import { useParams } from 'react-router-dom';
 import { FlowNode } from 'typescript';
 
 import { LoadingAndErrorIndicator } from '../../components/LoadingAndErrorIndicator';
+import { DOCUMENT_TYPES } from '../../const';
 import { useEnvironment } from '../../hooks';
 import { Document, LinkedDocument } from '../../types';
 
@@ -50,9 +51,9 @@ const documentToReactFlowNode = (cDoc: Document | any): CREGraph => {
 
   if (cDoc.links) {
     for (let link of cDoc.links) {
-      const { id, doctype, hyperlink, name, section, subsection } = link.document;
+      const { id, doctype, hyperlink, name, section, subsection, ruleID } = link.document;
       const unique_node_id = id || section || name;
-      const node_label = name + ' - ' + section || id;
+      const node_label = name + ' - ' + doctype === DOCUMENT_TYPES.TYPE_TOOL ? ruleID : section || id;
       let node = {
         id: unique_node_id,
         type: doctype,
