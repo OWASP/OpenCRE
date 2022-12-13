@@ -1,4 +1,9 @@
 {
+  "hostRequirements": {
+  "cpus": 8,
+  "memory": "16gb",
+  "storage": "32gb"
+},
   "image": "mcr.microsoft.com/devcontainers/universal:2",
   "postCreateCommand": "make install &&  make frontend && cp cres/db.sqlite standards_cache.sqlite",
      "extensions": [
@@ -14,7 +19,7 @@
     "installTools":true
     },
       "ghcr.io/devcontainers/features/node:1": {
-        "version":"lts"   
+        "version":"lts"
       }
   },
   "settings": {
