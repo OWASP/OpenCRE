@@ -1,9 +1,0 @@
-doctype: CRE
-id: 810-212
-links:
-- document:
-    doctype: CRE
-    id: 005-038-009
-    name: DATA_PROTECTION_SENSITIVE_LOG_ACCESS_EVENTS
-  type: SAM
-name: AUDIT_LOG

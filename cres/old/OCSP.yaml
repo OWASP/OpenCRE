@@ -1,9 +1,0 @@
-doctype: CRE
-id: 881-965
-links:
-- document:
-    doctype: CRE
-    id: 005-022-025
-    name: PROTECT_DATA_IN_TRANSIT_TLS_CERTIFICATE_REVOCATION
-  type: SAM
-name: OCSP

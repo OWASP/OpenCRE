@@ -1,9 +1,0 @@
-doctype: CRE
-id: 364-896
-links:
-- document:
-    doctype: CRE
-    id: 001-023
-    name: SENSITIVE_DATA_CLASSIFICATION_ENFORCE_DIRECTIVES
-  type: SAM
-name: DATA_PROTECTION_LEVELS

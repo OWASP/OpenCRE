@@ -1,9 +1,0 @@
-doctype: CRE
-id: 315-697
-links:
-- document:
-    doctype: CRE
-    id: 008-016
-    name: VALIDATE_CONSISTENT_PARSING_ENCODING
-  type: SAM
-name: CONSISTENT_PARSING_DECODING

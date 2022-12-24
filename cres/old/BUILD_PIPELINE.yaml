@@ -1,9 +1,0 @@
-doctype: CRE
-id: 679-206
-links:
-- document:
-    doctype: CRE
-    id: 002-018
-    name: CONFIGURATION_THIRD_PARTY_DEPENDENCIES_FRESHNESS_ALERTING_PIPELINE
-  type: SAM
-name: BUILD_PIPELINE

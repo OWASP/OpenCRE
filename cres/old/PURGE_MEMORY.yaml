@@ -1,9 +1,0 @@
-doctype: CRE
-id: 541-136
-links:
-- document:
-    doctype: CRE
-    id: 005-038-054
-    name: DATA_PROTECTION_SENSITIVE_PURGE_MEMORY
-  type: SAM
-name: PURGE_MEMORY

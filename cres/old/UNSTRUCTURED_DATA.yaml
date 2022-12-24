@@ -1,9 +1,0 @@
-doctype: CRE
-id: 531-390
-links:
-- document:
-    doctype: CRE
-    id: 010-007
-    name: VALIDATE_INPUT_SANITIZE_UNSTRUCTURED_DATA
-  type: SAM
-name: UNSTRUCTURED_DATA

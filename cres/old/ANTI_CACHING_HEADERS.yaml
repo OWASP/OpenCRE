@@ -1,9 +1,0 @@
-doctype: CRE
-id: 184-854
-links:
-- document:
-    doctype: CRE
-    id: 005-038-028
-    name: DATA_PROTECTION_SENSITIVE_NO_CACHING_CLIENTSIDE_HEADERS
-  type: SAM
-name: ANTI_CACHING_HEADERS

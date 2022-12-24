@@ -1,9 +1,0 @@
-doctype: CRE
-id: 836-682
-links:
-- document:
-    doctype: CRE
-    id: 011-040-026
-    name: SESSION_MANAGEMENT_PROTECT/NOT_EXPOSE_SESSION_TOKENS_BROWSER_STORAGE
-  type: SAM
-name: SESSION_TOKENS_COOKIES/HTML5

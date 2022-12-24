@@ -1,9 +1,0 @@
-doctype: CRE
-id: 572-454
-links:
-- document:
-    doctype: CRE
-    id: 001-023
-    name: PROTECT_SENSITIVE_DATA_DIRECT_OBJECT_ATTACKS
-  type: SAM
-name: DIRECT_OBJECT_ATTACKS

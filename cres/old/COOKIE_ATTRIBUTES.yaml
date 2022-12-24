@@ -1,9 +1,0 @@
-doctype: CRE
-id: 711-610
-links:
-- document:
-    doctype: CRE
-    id: 011-040-068
-    name: SESSION_MANAGEMENT_STATEFUL_COOKIE_TOKEN_DIRECTIVES
-  type: SAM
-name: COOKIE_ATTRIBUTES

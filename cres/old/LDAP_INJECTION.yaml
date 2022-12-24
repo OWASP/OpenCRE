@@ -1,9 +1,0 @@
-doctype: CRE
-id: 381-471
-links:
-- document:
-    doctype: CRE
-    id: 012-045-010
-    name: VALIDATE_LDAP_INJECTION
-  type: SAM
-name: LDAP_INJECTION

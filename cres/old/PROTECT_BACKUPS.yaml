@@ -1,9 +1,0 @@
-doctype: CRE
-id: 186-641
-links:
-- document:
-    doctype: CRE
-    id: 005-032-053
-    name: ENCRYPT_DATA_AT_REST_BACKUP_PROTECTION
-  type: SAM
-name: PROTECT_BACKUPS

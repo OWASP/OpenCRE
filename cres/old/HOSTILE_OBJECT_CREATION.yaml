@@ -1,9 +1,0 @@
-doctype: CRE
-id: 750-984
-links:
-- document:
-    doctype: CRE
-    id: 012-030-024
-    name: VALIDATE_SERIALIZATION_INTEGRITY_CHECKS_ENCRYPTION
-  type: SAM
-name: HOSTILE_OBJECT_CREATION
