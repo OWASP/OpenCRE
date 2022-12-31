@@ -1,9 +1,0 @@
-doctype: CRE
-id: 911-346
-links:
-- document:
-    doctype: CRE
-    id: 007-042-058
-    name: FILE_HANDLING_UPLOADED_FILES_SET_USER_MAXIMA
-  type: SAM
-name: FILE_QUOTAS

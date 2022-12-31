@@ -1,9 +1,0 @@
-doctype: CRE
-id: 145-471
-links:
-- document:
-    doctype: CRE
-    id: 005-029
-    name: DATA_PROTECTION_MINIMIZE_REQUEST_PARAMETERS
-  type: SAM
-name: MINIMIZE_REQUEST_PARAMETERS

@@ -1,9 +1,0 @@
-doctype: CRE
-id: 584-519
-links:
-- document:
-    doctype: CRE
-    id: 004-006-012
-    name: CONFIGURATION_CODE_PIPELINE_DEPLOYMENT_AUTOMATION
-  type: SAM
-name: RESTORE

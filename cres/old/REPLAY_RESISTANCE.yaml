@@ -1,9 +1,0 @@
-doctype: CRE
-id: 880-848
-links:
-- document:
-    doctype: CRE
-    id: 001-005-020
-    name: AUTHENTICATION_VERIFY_WITH_MFA
-  type: SAM
-name: REPLAY_RESISTANCE

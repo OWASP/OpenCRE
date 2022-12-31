@@ -1,9 +1,0 @@
-doctype: CRE
-id: 999-100
-links:
-- document:
-    doctype: CRE
-    id: 008-048-001
-    name: VALIDATE_INPUT_GRAPHQL_AUTHORIZATION
-  type: SAM
-name: API_ACCESS_CONTROL

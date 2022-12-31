@@ -1,9 +1,0 @@
-doctype: CRE
-id: 873-865
-links:
-- document:
-    doctype: CRE
-    id: 001-023
-    name: ACCESS_CONTROL_ADMINISTER_PROPERLY
-  type: SAM
-name: ACCESS_CONTROL_ADMINISTRATION

@@ -1,9 +1,0 @@
-doctype: CRE
-id: 585-652
-links:
-- document:
-    doctype: CRE
-    id: 008-004-055
-    name: API_ANTI_AUTOMATION
-  type: SAM
-name: RATE_LIMITING

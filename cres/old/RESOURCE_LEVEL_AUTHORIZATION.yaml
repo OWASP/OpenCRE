@@ -1,9 +1,0 @@
-doctype: CRE
-id: 176-810
-links:
-- document:
-    doctype: CRE
-    id: 008-001
-    name: ACCESS_CONTROL_AUTHORIZE_URI_AND_RESOURCE_LEVEL
-  type: SAM
-name: RESOURCE_LEVEL_AUTHORIZATION

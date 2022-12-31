@@ -1,9 +1,0 @@
-doctype: CRE
-id: 973-870
-links:
-- document:
-    doctype: CRE
-    id: 005-038-016
-    name: DATA_PROTECTION_SENSITIVE_AUTHORIZE_AND_PURGE_TEMPORARY_DATA
-  type: SAM
-name: CLEAN_CACHE_SERVER

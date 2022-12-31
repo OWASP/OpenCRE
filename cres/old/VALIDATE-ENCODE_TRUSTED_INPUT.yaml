@@ -1,9 +1,0 @@
-doctype: CRE
-id: 245-689
-links:
-- document:
-    doctype: CRE
-    id: 004-015-039
-    name: VALIDATE_HTTP_HEADERS_PROXY/SSO_DEVICE
-  type: SAM
-name: VALIDATE/ENCODE_TRUSTED_INPUT

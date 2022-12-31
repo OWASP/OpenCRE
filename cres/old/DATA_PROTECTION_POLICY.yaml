@@ -1,9 +1,0 @@
-doctype: CRE
-id: 385-866
-links:
-- document:
-    doctype: CRE
-    id: 005-044-044
-    name: DATA_PROTECTION_IDENTIFY_SENSITIVE_DATA_POLICY
-  type: SAM
-name: DATA_PROTECTION_POLICY

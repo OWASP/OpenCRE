@@ -1,9 +1,0 @@
-doctype: CRE
-id: 929-161
-links:
-- document:
-    doctype: CRE
-    id: 005-021-047
-    name: VALIDATE_BUSINESS_LOGIC_RACE_CONDITIONS_TOCTOU
-  type: SAM
-name: RACE_CONDITIONS

@@ -1,9 +1,0 @@
-doctype: CRE
-id: 592-965
-links:
-- document:
-    doctype: CRE
-    id: 004-006-018
-    name: CONFIGURATION_CODE_INTEGRITY
-  type: SAM
-name: CONFIGURATION_INTEGRITY
