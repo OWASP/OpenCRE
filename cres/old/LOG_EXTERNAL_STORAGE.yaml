@@ -1,9 +1,0 @@
-doctype: CRE
-id: 341-779
-links:
-- document:
-    doctype: CRE
-    id: 001-023
-    name: LOG_TRANSFER_EXTERNAL_SYSTEM_
-  type: SAM
-name: LOG_EXTERNAL_STORAGE

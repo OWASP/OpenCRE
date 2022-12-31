@@ -1,9 +1,0 @@
-doctype: CRE
-id: 326-687
-links:
-- document:
-    doctype: CRE
-    id: 001-002-004
-    name: ACCESS_CONTROL_AUTHORIZATION_ADMINISTRATION_MFA
-  type: SAM
-name: ADDITIONAL_AUTHENTICATION

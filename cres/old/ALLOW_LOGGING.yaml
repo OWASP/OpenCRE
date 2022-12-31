@@ -1,9 +1,0 @@
-doctype: CRE
-id: 151-626
-links:
-- document:
-    doctype: CRE
-    id: 004-012-061
-    name: ARCHITECTURE_AUTHENTICATE_CONSISTENTLY_EXTENDABLE_ALLOW_LOGGING
-  type: SAM
-name: ALLOW_LOGGING

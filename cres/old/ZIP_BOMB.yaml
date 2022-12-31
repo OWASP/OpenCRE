@@ -1,9 +1,0 @@
-doctype: CRE
-id: 604-156
-links:
-- document:
-    doctype: CRE
-    id: 007-042-058
-    name: FILE_HANDLING_CHECK_ZIP_BOMB
-  type: SAM
-name: ZIP_BOMB

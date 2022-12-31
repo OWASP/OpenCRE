@@ -1,9 +1,0 @@
-doctype: CRE
-id: 981-202
-links:
-- document:
-    doctype: CRE
-    id: 004-012-050
-    name: CONFIGURATION_CODE_THIRD_PARTY_DEPENDENCIES_SCAN_MALICIOUS_CONTENT
-  type: SAM
-name: THIRD_PARTY_LIBRARIES

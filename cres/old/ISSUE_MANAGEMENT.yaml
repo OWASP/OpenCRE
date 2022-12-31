@@ -1,9 +1,0 @@
-doctype: CRE
-id: 169-503
-links:
-- document:
-    doctype: CRE
-    id: 002-026-031
-    name: CONFIGURATION_CODE_PIPELINE_TRACEABILITY
-  type: SAM
-name: ISSUE_MANAGEMENT

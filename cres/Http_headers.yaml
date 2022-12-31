@@ -1,9 +1,0 @@
-doctype: CRE
-id: 473-759
-links:
-- document:
-    doctype: CRE
-    id: 473-758
-    name: Set sufficient anti-chaching headers
-  ltype: Related
-name: Http headers

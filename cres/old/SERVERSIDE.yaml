@@ -1,9 +1,0 @@
-doctype: CRE
-id: 173-775
-links:
-- document:
-    doctype: CRE
-    id: 005-021-047
-    name: FILE_HANDLING_UPLOADED_FILES_UNPRIVILEGED_STORAGE
-  type: SAM
-name: SERVERSIDE

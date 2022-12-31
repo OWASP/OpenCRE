@@ -1,9 +1,0 @@
-doctype: CRE
-id: 992-880
-links:
-- document:
-    doctype: CRE
-    id: 002-005-051
-    name: ENCRYPT_DATA_AT_REST_KEY/SECRET_MANAGEMENT_VAULT
-  type: SAM
-name: KEY_VAULT

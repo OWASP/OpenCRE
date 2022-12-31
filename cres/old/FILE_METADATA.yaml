@@ -1,9 +1,0 @@
-doctype: CRE
-id: 810-700
-links:
-- document:
-    doctype: CRE
-    id: 007-042-023
-    name: FILE_HANDLING_UPLOADED_FILES_IGNORE_USER_SUBMITTED_FILE_METADATA
-  type: SAM
-name: FILE_METADATA

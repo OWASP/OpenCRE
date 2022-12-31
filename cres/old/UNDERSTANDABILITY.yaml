@@ -1,9 +1,0 @@
-doctype: CRE
-id: 104-917
-links:
-- document:
-    doctype: CRE
-    id: 005-044
-    name: DATA_PROTECTION_PII_USER_CONSENT
-  type: SAM
-name: UNDERSTANDABILITY

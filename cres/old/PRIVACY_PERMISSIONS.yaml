@@ -1,9 +1,0 @@
-doctype: CRE
-id: 411-312
-links:
-- document:
-    doctype: CRE
-    id: 004-012-050
-    name: CONFIGURATION_VERIFY_PRIVACY_PERMISSIONS
-  type: SAM
-name: PRIVACY_PERMISSIONS

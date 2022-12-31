@@ -1,9 +1,0 @@
-doctype: CRE
-id: 517-266
-links:
-- document:
-    doctype: CRE
-    id: 001-005-020
-    name: FILE_HANDLING_UPLOADED_FILES_SERVE_ONLY_OCTET_STREAM_OR_SEPARATE_DOMAIN
-  type: SAM
-name: OCTET_STREAM
