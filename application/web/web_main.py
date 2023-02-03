@@ -1,9 +1,11 @@
 # type: ignore
 # silence mypy for the routes file
+import json
 import logging
 import os
 import urllib.parse
 from typing import Any
+from application.utils import oscal_utils
 
 from application import cache
 from application.database import db
@@ -38,6 +40,7 @@ class SupportedFormats(Enum):
     CSV = "csv"
     JSON = "json"
     YAML = "yaml"
+    OSCAL = "oscal"
 
 
 def extend_cre_with_tag_links(
@@ -65,7 +68,6 @@ def find_cre(creid: str = None, crename: str = None) -> Any:  # refer
     cres = database.get_CREs(external_id=creid, name=crename, include_only=include_only)
 
     if cres:
-
         if len(cres) > 1:
             logger.error("get by id returned more than one results? This looks buggy")
         cre = cres[0]
@@ -77,9 +79,14 @@ def find_cre(creid: str = None, crename: str = None) -> Any:  # refer
 
         if opt_format == SupportedFormats.Markdown.value:
             return f"<pre>{mdutils.cre_to_md([cre])}</pre>"
+
         elif opt_format == SupportedFormats.CSV.value:
             docs = sheet_utils.prepare_spreadsheet(collection=database, docs=[cre])
             return write_csv(docs=docs).getvalue().encode("utf-8")
+
+        elif opt_format == SupportedFormats.OSCAL.value:
+            result = {"data": json.loads(oscal_utils.document_to_oscal(cre))}
+
         return jsonify(result)
     abort(404)
 
@@ -109,32 +116,49 @@ def find_node_by_name(name: str, ntype: str = defs.Credoctypes.Standard.value) -
     items_per_page = request.args.get("items_per_page") or ITEMS_PER_PAGE
 
     include_only = request.args.getlist("include_only")
-
-    total_pages, nodes, _ = database.get_nodes_with_pagination(
-        name=name,
-        section=opt_section,
-        subsection=opt_subsection,
-        link=opt_hyperlink,
-        page=int(page),
-        items_per_page=int(items_per_page),
-        include_only=include_only,
-        version=opt_version,
-        ntype=ntype,
-    )
-
+    total_pages, nodes = None, None
+    if not opt_format:
+        total_pages, nodes, _ = database.get_nodes_with_pagination(
+            name=name,
+            section=opt_section,
+            subsection=opt_subsection,
+            link=opt_hyperlink,
+            page=int(page),
+            items_per_page=int(items_per_page),
+            include_only=include_only,
+            version=opt_version,
+            ntype=ntype,
+        )
+    else:
+        nodes = database.get_nodes(
+            name=name,
+            section=opt_section,
+            subsection=opt_subsection,
+            link=opt_hyperlink,
+            include_only=include_only,
+            version=opt_version,
+            ntype=ntype,
+        )
     result = {}
     result["total_pages"] = total_pages
     result["page"] = page
     if nodes:
         if opt_format == SupportedFormats.Markdown.value:
             return f"<pre>{mdutils.cre_to_md(nodes)}</pre>"
+
         elif opt_format == SupportedFormats.CSV.value:
             docs = sheet_utils.prepare_spreadsheet(collection=database, docs=nodes)
             return write_csv(docs=docs).getvalue().encode("utf-8")
+
+        elif opt_format == SupportedFormats.OSCAL.value:
+            return jsonify(json.loads(oscal_utils.list_to_oscal(nodes)))
+
         if opt_osib:
             result["osib"] = odefs.cre2osib(nodes).todict()
+
         res = [node.todict() for node in nodes]
         result["standards"] = res
+
         return jsonify(result)
     else:
         abort(404)
@@ -158,6 +182,9 @@ def find_document_by_tag() -> Any:
         elif opt_format == SupportedFormats.CSV.value:
             docs = sheet_utils.prepare_spreadsheet(collection=database, docs=documents)
             return write_csv(docs=docs).getvalue().encode("utf-8")
+        elif opt_format == SupportedFormats.OSCAL.value:
+            return jsonify(json.loads(oscal_utils.list_to_oscal(documents)))
+
         return jsonify(result)
     abort(404)
 
@@ -197,6 +224,9 @@ def text_search() -> Any:
         elif opt_format == SupportedFormats.CSV.value:
             docs = sheet_utils.prepare_spreadsheet(collection=database, docs=documents)
             return write_csv(docs=docs).getvalue().encode("utf-8")
+        elif opt_format == SupportedFormats.OSCAL.value:
+            return jsonify(json.loads(oscal_utils.list_to_oscal(documents)))
+
         res = [doc.todict() for doc in documents]
         return jsonify(res)
     else:
@@ -220,6 +250,8 @@ def find_root_cres() -> Any:
         elif opt_format == SupportedFormats.CSV.value:
             docs = sheet_utils.prepare_spreadsheet(collection=database, docs=documents)
             return write_csv(docs=docs).getvalue().encode("utf-8")
+        elif opt_format == SupportedFormats.OSCAL.value:
+            return jsonify(json.loads(oscal_utils.list_to_oscal(documents)))
 
         return jsonify(result)
     abort(404)
@@ -291,7 +323,6 @@ def before_request():
         return
 
     if not request.is_secure:
-
         url = request.url.replace("http://", "https://", 1)
         code = 301
         return redirect(url, code=code)

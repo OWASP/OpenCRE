@@ -139,7 +139,7 @@ class TestCreDefs(unittest.TestCase):
             defs.LinkTypes.from_str("asdf")
 
     def test_doc_equality(self) -> None:
-        d1 = defs.Code(
+        d1 = defs.Standard(
             name="c1",
             description="d1",
             tags=["t1", "t2", "t3"],
@@ -311,11 +311,14 @@ class TestCreDefs(unittest.TestCase):
             link.todict()
 
     def test_tool_todict(self) -> None:
-        t0 = defs.Tool(name="toolmctoolface", tooltype=defs.ToolTypes.Offensive)
+        t0 = defs.Tool(
+            name="toolmctoolface", tooltype=defs.ToolTypes.Offensive, ruleID="15"
+        )
         expected = {
             "doctype": "Tool",
             "name": "toolmctoolface",
             "tooltype": "Offensive",
+            "ruleID": "15",
         }
         self.assertDictEqual(t0.todict(), expected)
         expected["toolType"] = "Defensive"

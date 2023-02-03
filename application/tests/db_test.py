@@ -113,7 +113,6 @@ class TestDB(unittest.TestCase):
         self.assertEqual(self.collection.get_by_tags(["this should not be a tag"]), [])
 
     def test_get_standards_names(self) -> None:
-
         result = self.collection.get_node_names()
         expected = [("Standard", "BarStand"), ("Standard", "Unlinked")]
         self.assertEqual(expected, result)
@@ -667,7 +666,8 @@ class TestDB(unittest.TestCase):
 
     def test_get_nodes_with_pagination(self) -> None:
         """Given: a Standard 'S1' that links to cres
-        return the Standard in Document format and the total pages and the page we are in"""
+        return the Standard in Document format and the total pages and the page we are in
+        """
         collection = db.Node_collection()
         docs: Dict[str, Union[db.Node, db.CRE]] = {
             "dbc1": db.CRE(external_id="123", description="CD1", name="C1"),

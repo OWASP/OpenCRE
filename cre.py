@@ -58,7 +58,6 @@ def test(cover: coverage.Coverage, test_names: List[str]) -> None:
 
 
 def main() -> None:
-
     app_context = app.app_context()
     app_context.push()
 

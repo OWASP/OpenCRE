@@ -26,7 +26,6 @@ def parse_cheatsheets(cache: db.Node_collection):
 
 
 def register_cheatsheets(cache: db.Node_collection, repo, cheatsheets_path, repo_path):
-
     title_regexp = r"# (?P<title>.+)"
     cre_link = r"(https://www\.)?opencre.org/cre/(?P<cre>\d+-\d+)"
     files = os.listdir(os.path.join(repo.working_dir, cheatsheets_path))

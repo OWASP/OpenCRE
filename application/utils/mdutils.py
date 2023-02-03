@@ -27,7 +27,11 @@ def make_header(documents: List[defs.Document]) -> List[str]:
 def make_node_entry(doc: defs.Node) -> str:
     if doc.doctype == defs.Credoctypes.Standard:
         return f"{doc.name} {doc.section}"
-    elif doc.doctype == defs.Credoctypes.Tool or doc.doctype == defs.Credoctypes.Code:
+    elif doc.doctype == defs.Credoctypes.Tool:
+        return f"{doc.name}-{doc.ruleID}"
+    elif doc.doctype == defs.Credoctypes.CRE:
+        return f"{doc.name}-{doc.id}"
+    else:
         return f"{doc.name}"
 
 
@@ -37,9 +41,7 @@ def add_entry(doc: defs.Document, header: List[str], item: List[str]) -> List[st
             links(f"https://www.opencre.org/cre/{doc.id}", f"{doc.id} {doc.name}")
         )
     else:
-        (item[header.index(doc.name)]).append(
-            links(doc.hyperlink, make_node_entry(doc))
-        )
+        item[header.index(doc.name)].append(links(doc.hyperlink, make_node_entry(doc)))
     return item
 
 

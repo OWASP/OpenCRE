@@ -28,7 +28,6 @@ def generate_uuid():
 
 
 class Node(BaseModel):  # type: ignore
-
     __tablename__ = "node"
     id = sqla.Column(sqla.String, primary_key=True, default=generate_uuid)
     # ASVS or standard name,  what are we linking to
@@ -58,7 +57,6 @@ class Node(BaseModel):  # type: ignore
 
 
 class CRE(BaseModel):  # type: ignore
-
     __tablename__ = "cre"
     id = sqla.Column(sqla.String, primary_key=True, default=generate_uuid)
 
@@ -97,7 +95,6 @@ class InternalLinks(BaseModel):  # type: ignore
 
 
 class Links(BaseModel):  # type: ignore
-
     __tablename__ = "cre_node_links"
     type = sqla.Column(sqla.String, default="SAME")
     cre = sqla.Column(
@@ -164,7 +161,6 @@ class CRE_Graph:
 
     @classmethod
     def load_cre_graph(cls, session) -> nx.Graph:
-
         graph = nx.DiGraph()
         for il in session.query(InternalLinks).all():
             group = session.query(CRE).filter(CRE.id == il.group).first()
@@ -212,7 +208,6 @@ class Node_collection:
         return external_links
 
     def __get_internal_links(self) -> List[Tuple[CRE, CRE, str]]:
-
         internal_links = []
         all_internal_links = self.session.query(InternalLinks).all()
         for il in all_internal_links:
@@ -222,7 +217,6 @@ class Node_collection:
         return internal_links
 
     def __get_unlinked_nodes(self) -> List[Node]:
-
         linked_nodes = (
             self.session.query(Node.id).join(Links).filter(Node.id == Links.node)
         )
@@ -291,7 +285,6 @@ class Node_collection:
     def get_node_names(
         self, ntype: str = cre_defs.Standard.__name__
     ) -> List[Tuple[str, str]]:
-
         q = self.session.query(Node.ntype, Node.name).distinct().all()
         if q:
             return [i for i in q]
@@ -471,7 +464,6 @@ class Node_collection:
         description: Optional[str] = None,
         ntype: str = cre_defs.Standard.__name__,
     ) -> Optional[List[cre_defs.Node]]:
-
         nodes = []
         nodes_query = self.__get_nodes_query__(
             name=name,
@@ -809,7 +801,6 @@ class Node_collection:
     def add_internal_link(
         self, group: CRE, cre: CRE, type: cre_defs.LinkTypes = cre_defs.LinkTypes.Same
     ) -> None:
-
         if cre.id is None:
             if cre.external_id is None:
                 cre = (
@@ -910,7 +901,6 @@ class Node_collection:
         node: Node,
         type: cre_defs.LinkTypes = cre_defs.LinkTypes.Same,
     ) -> None:
-
         if cre.id is None:
             cre = (
                 self.session.query(CRE).filter(sqla.and_(CRE.name == cre.name)).first()

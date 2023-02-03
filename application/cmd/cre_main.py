@@ -216,7 +216,6 @@ def parse_standards_from_spreadsheeet(
 
 
 def get_cre_files_from_disk(cre_loc: str) -> Generator[str, None, None]:
-
     for root, _, cre_docs in os.walk(cre_loc):
         for name in cre_docs:
             if name.endswith(".yaml") or name.endswith(".yml"):
@@ -403,7 +402,6 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
 
 
 def db_connect(path: str) -> db.Node_collection:
-
     global app
     conf = CMDConfig(db_uri=path)
     app = create_app(conf=conf)
@@ -431,7 +429,6 @@ def create_spreadsheet(
 
 
 def prepare_for_review(cache: str) -> Tuple[str, str]:
-
     loc = tempfile.mkdtemp()
     cache_filename = os.path.basename(cache)
     if os.path.isfile(cache):
