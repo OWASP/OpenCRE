@@ -247,7 +247,6 @@ class Link:
         return json.dumps(self.todict())
 
     def __eq__(self, other: object) -> bool:
-
         return (
             type(other) is Link
             and self.ltype.value == other.ltype.value
@@ -353,6 +352,7 @@ class CRE(Document):
 @dataclass
 class Node(Document):
     hyperlink: Optional[str] = ""
+    version: Optional[str] = ""
 
     def todict(self):
         res = super().todict()
@@ -373,7 +373,6 @@ class Standard(Node):
     section: str = ""
     doctype: Credoctypes = Credoctypes.Standard
     subsection: Optional[str] = ""
-    version: Optional[str] = ""
 
     def todict(self) -> Dict[Any, Any]:
         res = super().todict()

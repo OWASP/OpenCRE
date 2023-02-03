@@ -57,7 +57,6 @@ def __add_cre_to_spreadsheet(
         working_array[defs.ExportFormat.cre_description_key()] = document.description
     # case where a lone standard is displayed without any CRE links
     elif document.doctype == defs.Credoctypes.Standard:
-
         working_array[
             defs.ExportFormat.section_key(sname=document.name, doctype=document.doctype)
         ] = document.section  # type: ignore
@@ -76,7 +75,6 @@ def __add_cre_to_spreadsheet(
         if (
             link.document.doctype == defs.Credoctypes.Standard
         ):  # linking to normal standard
-
             # a single CRE can link to multiple subsections of the same
             # standard hence we can have conflicts
             if working_array[
