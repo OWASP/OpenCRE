@@ -60,7 +60,6 @@ def add_to_github(cre_loc: str, alias: str, apikey: str) -> None:
 def createPullRequest(
     apiToken: str, repo: str, title: str, srcBranch: str, targetBranch: str = "master"
 ) -> None:
-
     logger.info(
         "Issuing pull request from %s to master for repo %s" % (srcBranch, repo)
     )

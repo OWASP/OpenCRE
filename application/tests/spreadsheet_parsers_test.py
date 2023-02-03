@@ -698,7 +698,6 @@ class TestParsers(unittest.TestCase):
         self.assertEqual(expected, output)
 
     def test_parse_v1_standards(self) -> None:
-
         input_data = [
             {
                 "ASVS Item": "V9.9.9",
