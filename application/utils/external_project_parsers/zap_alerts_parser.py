@@ -15,13 +15,14 @@ logger.setLevel(logging.INFO)
 
 
 def zap_alert(
-    name: str, id: str, description: str, tags: List[str], code: str
+    name: str, alert_id: str, description: str, tags: List[str], code: str
 ) -> defs.Tool:
     tags.append(id)
     return defs.Tool(
         tooltype=defs.ToolTypes.Offensive,
         name=f"ZAP Rule",
-        ruleID=name,
+        section = name
+        ruleID=alert_id,
         description=description,
         tags=tags,
         hyperlink=code,
@@ -80,7 +81,7 @@ def register_alerts(cache: db.Node_collection, repo: git.git, alerts_path: str):
             cwe = re.search(zap_md_cwe_regexp, mdtext)
             alert = zap_alert(
                 name=name,
-                id=externalId,
+                alert_id=externalId,
                 description=description,
                 tags=[tag],
                 code=code,

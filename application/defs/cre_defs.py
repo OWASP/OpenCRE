@@ -397,7 +397,7 @@ class Standard(Node):
 
 
 @dataclass
-class Tool(Node):
+class Tool(Standard):
     ruleID: str = ""
     tooltype: ToolTypes = ToolTypes.Unknown
     doctype: Credoctypes = Credoctypes.Tool

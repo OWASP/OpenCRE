@@ -40,7 +40,7 @@ class Node(BaseModel):  # type: ignore
     version = sqla.Column(sqla.String)
     description = sqla.Column(sqla.String)
     ntype = sqla.Column(sqla.String)
-
+    ruleID = sqla.Column(sqla.String, nullable=True)
     # some external link to where this is, usually a URL with an anchor
     link = sqla.Column(sqla.String, default="")
     __table_args__ = (
@@ -51,6 +51,7 @@ class Node(BaseModel):  # type: ignore
             ntype,
             description,
             version,
+            ruleID,
             name="uq_node",
         ),
     )
@@ -154,6 +155,7 @@ class CRE_Graph:
                 internal_id=dbnode.id,
                 name=dbnode.name,
                 section=dbnode.section,
+                ruleID = dbnode.ruleID,
             )
         else:
             logger.error("Called with dbnode being none")
@@ -323,6 +325,8 @@ class Node_collection:
                 node.section = ""
             if "version" not in vars(node):
                 node.version = ""
+            if "ruleID" not in vars(node):
+                node.ruleID = ""
             node = (
                 self.session.query(Node)
                 .filter(
@@ -332,6 +336,7 @@ class Node_collection:
                         Node.subsection == node.subsection,
                         Node.version == node.version,
                         Node.ntype == type(node).__name__,
+                        Node.ruleID == node.ruleID,
                     )
                 )
                 .first()
@@ -371,13 +376,14 @@ class Node_collection:
                 version=node.version,
                 link=node.link,
                 ntype=node.ntype,
+                ruleID = node.ruleID,
             )
             if node:
                 documents.extend(node)
             else:
                 logger.fatal(
                     "db.get_node returned None for"
-                    "Node %s:%s that exists, BUG!" % (node.name, node.section)
+                    "Node %s:%s:%s that exists, BUG!" % (node.name, node.section,node.ruleID)
                 )
 
         cres = CRE.query.filter(*cre_where_clause).all() or []
@@ -405,6 +411,7 @@ class Node_collection:
         include_only: Optional[List[str]] = None,
         ntype: str = cre_defs.Standard.__name__,
         description: Optional[str] = None,
+        ruleID:Optional[str] = None,
     ) -> Tuple[Optional[int], Optional[List[cre_defs.Standard]], Optional[List[Node]]]:
         """
         Returns the relevant node entries of a singular ntype (or ntype irrelevant if ntype==None) and their linked CREs
@@ -422,6 +429,7 @@ class Node_collection:
             partial=partial,
             ntype=ntype,
             description=description,
+            ruleID = ruleID,
         ).paginate(int(page), items_per_page, False)
         total_pages = dbnodes.pages
         if dbnodes.items:
@@ -463,6 +471,7 @@ class Node_collection:
         include_only: Optional[List[str]] = None,
         description: Optional[str] = None,
         ntype: str = cre_defs.Standard.__name__,
+        ruleID: Optional[str] = None,
     ) -> Optional[List[cre_defs.Node]]:
         nodes = []
         nodes_query = self.__get_nodes_query__(
@@ -474,6 +483,7 @@ class Node_collection:
             partial=partial,
             ntype=ntype,
             description=description,
+            ruleID=ruleID,
         )
         dbnodes = nodes_query.all()
         if dbnodes:
@@ -518,6 +528,7 @@ class Node_collection:
         partial: Optional[bool] = False,
         ntype: Optional[str] = None,
         description: Optional[str] = None,
+        ruleID:Optional[str] = None,
     ) -> sqla.Query:
         if (
             not name
@@ -526,6 +537,7 @@ class Node_collection:
             and not link
             and not version
             and not description
+            and not ruleID
         ):
             raise ValueError("tried to retrieve node with no values")
         query = Node.query
@@ -566,6 +578,11 @@ class Node_collection:
                 query = query.filter(Node.description == description)
             else:
                 query = query.filter(Node.description.like(description))
+        if ruleID:
+            if not partial:
+                query = query.filter(func.lower(Node.ruleID) == ruleID.lower())
+            else:
+                query = query.filter(func.lower(Node.ruleID).like(ruleID.lower()))
         return query
 
     def get_CREs(
@@ -1026,9 +1043,9 @@ class Node_collection:
             results: List[cre_defs.Document] = []
             if txt:
                 args = txt.split(":") if ":" in txt else txt.split(" ")
-                if len(args) < 3:
-                    args += [""] * (3 - len(args))
-                s = set([p for p in permutations(args, 3)])
+                if len(args) < 4:
+                    args += [""] * (4 - len(args))
+                s = set([p for p in permutations(args, 4)])
                 for combo in s:
                     nodes = self.get_nodes(
                         name=combo[0],
@@ -1036,6 +1053,7 @@ class Node_collection:
                         subsection=combo[2],
                         link=link,
                         ntype=ntype,
+                        ruleID=combo[3]
                     )
                     if nodes:
                         results.extend(nodes)
@@ -1046,9 +1064,9 @@ class Node_collection:
             if results:
                 return list(set(results))
         # fuzzy matches second
-        args = [f"%{text}%", "", "", "", ""]
+        args = [f"%{text}%", "", "", "", "",""]
         results = []
-        s = set([p for p in permutations(args, 5)])
+        s = set([p for p in permutations(args, 6)])
         for combo in s:
             nodes = self.get_nodes(
                 name=combo[0],
@@ -1058,6 +1076,7 @@ class Node_collection:
                 description=combo[4],
                 partial=True,
                 ntype=None,  # type: ignore
+                ruleID=combo[5]
             )
             if nodes:
                 results.extend(nodes)
@@ -1150,7 +1169,8 @@ def dbNodeFromTool(tool: cre_defs.Node) -> Node:
         ntype=tool.doctype.value,
         description=tool.description,
         link=tool.hyperlink,
-        section=tool.ruleID,
+        section=tool.section,
+        ruleID = tool.ruleID,
     )
 
 
@@ -1166,6 +1186,7 @@ def nodeFromDB(dbnode: Node) -> cre_defs.Node:
             hyperlink=dbnode.link,
             tags=tags,
             version=dbnode.version,
+            ruleID = dbnode.ruleID,
         )
     elif dbnode.ntype == cre_defs.Tool.__name__:
         ttype = cre_defs.ToolTypes.Unknown
@@ -1179,7 +1200,8 @@ def nodeFromDB(dbnode: Node) -> cre_defs.Node:
             tags=tags,
             description=dbnode.description,
             tooltype=ttype,
-            ruleID=dbnode.section,
+            section=dbnode.section,
+            ruleID=dbnode.ruleID,
         )
     elif dbnode.ntype == cre_defs.Code.__name__:
         return cre_defs.Code(
