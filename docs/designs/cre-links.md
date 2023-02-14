@@ -13,7 +13,6 @@ However, it makes things hard for:
 1. single-page documents with several sections or information
 2. mapping lots of small standards with their own unique structure
 
-
 ## Problem Statement
 
 Human-readable documents can have several structures and links can have even more, parsing and understanding human language is an open problem in computing.
