@@ -34,7 +34,8 @@ We could make an assumption that we always pick the document title as the name f
 In general parsing this kind of human readable information, complicates the project beyond its scope and maintaining those solutions requires significant resources.
 
 ## Solution
-Since standards writers are already required to provide links to opencre.org why not get them to encode all the information we need in the link?
+
+As standards integrate with the OpenCRE.org project, it would be intuitive for the authors to inject the information needed for the project to function with its maximum potential.
 Then, not only does the parsing become simpler, but it also empowers us to use analytics to discover resources that link to us without our knowledge helping the ecosystem grow faster.
 
 The link for a standard could be as simple as:
