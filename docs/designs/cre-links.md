@@ -1,7 +1,11 @@
 # CRE Links
 
 The biggest advantage of opencre.org is its ability to dynamically update itself by parsing other standards that link to it.
-So far, as a small project, our approach to this has been relatively simple: when any security resource added a link to opencre.org in their documents we would write a parser for their specific document format and information structure and add it to an ever-growing list of custom parsers.
+
+So far, as a small project, our approach to this has been relatively simple:
+1. A security resource adds a link to `opencre.org` in their documents
+2. The CRE team writes a parser for their specific document format and information structure
+3. Add it to an ever-growing list of custom parsers that is maintained by the CRE team
 
 This works relatively well for big, well-structured projects that have sufficient automation to either release big spreadsheets (e.g. CCM) or several simply structured Markdown files with one topic per section/file (Cheatsheets, ASVS etc).
 
