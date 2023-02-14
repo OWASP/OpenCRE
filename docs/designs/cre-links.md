@@ -33,7 +33,7 @@ In general parsing this kind of human readable information, complicates the proj
 
 ## Solution
 Since standards writers are already required to provide links to opencre.org why not get them to encode all the information we need in the link?
-Then, not only does the parsing become simpler but we can also use analytics to discover resources that link to us but we may not know off yet.
+Then, not only does the parsing become simpler, but it also empowers us to use analytics to discover resources that link to us without our knowledge helping the ecosystem grow faster.
 
 The link for a standard could be as simple as:
 
