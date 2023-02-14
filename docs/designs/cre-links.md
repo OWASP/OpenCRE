@@ -9,7 +9,9 @@ So far, as a small project, our approach to this has been relatively simple:
 
 Our best providers are those that are capable to either release big spreadsheets (e.g. CCM) or several structured Markdown files with one topic per section or file (Cheat sheet series, ASVS etc).
 
-However, it fails for single-page documents with several sections or information and for mapping lots of small standards which will likely have their own unique structure each.
+However, it makes things hard for:
+1. single-page documents with several sections or information
+2. mapping lots of small standards with their own unique structure
 
 
 ## Problem Statement
