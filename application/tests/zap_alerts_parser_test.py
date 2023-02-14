@@ -97,7 +97,8 @@ class TestZAPAlertsParser(unittest.TestCase):
         )
 
         expected = defs.Tool(
-            name='ZAP Rule: "Vulnerable JS Library"',
+            name="ZAP Rule",
+            ruleID="Vulnerable JS Library",
             doctype=defs.Credoctypes.Tool,
             description='"_Unavailable_"',
             tags=["10003", '"Passive"'],
@@ -119,7 +120,48 @@ class TestZAPAlertsParser(unittest.TestCase):
         self.assertIn(cre2.external_id, [link.document.id for link in node.links])
 
     def test_register_zap_alert_cwe(self) -> None:
-        alert = """
+        class Repo:
+            working_dir = ""
+
+        repo = Repo()
+        loc = tempfile.mkdtemp()
+        repo.working_dir = loc
+
+        cre = self.collection.add_cre(defs.CRE(name="foo", id="111-111"))
+        cwe = self.collection.add_node(defs.Standard(name="CWE", section="1021"))
+        self.collection.add_link(cre=cre, node=cwe)
+
+        with open(os.path.join(loc, "alert0.md"), "w") as mdf:
+            mdf.write(alert)
+        zap_alerts_parser.register_alerts(
+            cache=self.collection, repo=repo, alerts_path=""
+        )
+
+        expected = defs.Tool(
+            name="ZAP Rule",
+            ruleID="Multiple X-Frame-Options Header Entries",
+            doctype=defs.Credoctypes.Tool,
+            description='"Ensure only a single X-Frame-Options header is present in the response."',
+            tags=["10020", '"Passive"'],
+            hyperlink="https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/AntiClickjackingScanRule.java",
+            tooltype=defs.ToolTypes.Offensive,
+        )
+
+        self.maxDiff = None
+
+        self.assertEqual(
+            expected,
+            db.nodeFromDB(
+                self.collection.session.query(db.Node)
+                .filter(db.Node.name == expected.name)
+                .first()
+            ),
+        )
+        links = self.collection.get_CREs(external_id="111-111")[0].links
+        self.assertTrue(expected == links[0].document or expected == links[1].document)
+
+
+alert = """
 ---
 title: "Multiple X-Frame-Options Header Entries"
 alertid: 10020-2
@@ -143,41 +185,3 @@ linktext: org/zaproxy/zap/extension/pscanrules/AntiClickjackingScanRule.java
 ---
 X-Frame-Options (XFO) headers were found, a response with multiple XFO header entries may not be predictably treated by all user-agents.
 """
-
-        class Repo:
-            working_dir = ""
-
-        repo = Repo()
-        loc = tempfile.mkdtemp()
-        repo.working_dir = loc
-
-        cre = self.collection.add_cre(defs.CRE(name="foo", id="111-111"))
-        cwe = self.collection.add_node(defs.Standard(name="CWE", section="1021"))
-        self.collection.add_link(cre=cre, node=cwe)
-
-        with open(os.path.join(loc, "alert0.md"), "w") as mdf:
-            mdf.write(alert)
-        zap_alerts_parser.register_alerts(
-            cache=self.collection, repo=repo, alerts_path=""
-        )
-
-        expected = defs.Tool(
-            name='ZAP Rule: "Multiple X-Frame-Options Header Entries"',
-            doctype=defs.Credoctypes.Tool,
-            description='"Ensure only a single X-Frame-Options header is present in the response."',
-            tags=["10020", '"Passive"'],
-            hyperlink="https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/AntiClickjackingScanRule.java",
-            tooltype=defs.ToolTypes.Offensive,
-        )
-
-        self.maxDiff = None
-        self.assertEqual(
-            expected,
-            db.nodeFromDB(
-                self.collection.session.query(db.Node)
-                .filter(db.Node.name == expected.name)
-                .all()[0]
-            ),
-        )
-        links = self.collection.get_CREs(external_id="111-111")[0].links
-        self.assertTrue(expected == links[0].document or expected == links[1].document)

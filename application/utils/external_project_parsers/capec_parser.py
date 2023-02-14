@@ -69,7 +69,6 @@ def register_capec(cache: db.Node_collection, xml_file: str):
                         for cwe_entry in lst:
                             if isinstance(cwe_entry, Dict):
                                 for _, cwe_id in cwe_entry.items():
-
                                     link_capec_to_cwe_cre(
                                         capec=dbcapec, cache=cache, cwe_id=cwe_id
                                     )

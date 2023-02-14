@@ -16,7 +16,6 @@ logging.basicConfig()
 
 
 def is_empty(value: Optional[str]) -> bool:
-
     value = str(value)
     return (
         value is None
@@ -121,7 +120,6 @@ def parse_export_format(lfile: List[Dict[str, Any]]) -> Dict[str, defs.Document]
         if not mapping.get(defs.ExportFormat.cre_name_key()):
             # standard -> nothing | standard
             for st in get_linked_nodes(mapping):
-
                 lone_nodes[
                     f"{st.document.doctype}:{st.document.name}:{st.document.section}"
                 ] = st.document
@@ -400,12 +398,10 @@ def parse_v1_standards(
         # group mapping
         is_in_group = False
         for i in range(1, 8):
-
             group: defs.CRE
             gname = cre_mapping.pop("CRE Group %s" % i)
             gid = cre_mapping.pop("CRE Group %s Lookup" % i)
             if not is_empty(gname):
-
                 if gname not in groups.keys():
                     group = defs.CRE(name=gname, id=gid)
 
@@ -415,7 +411,6 @@ def parse_v1_standards(
                         % (name, id, groups.get("name"))
                     )
                 else:
-
                     group = groups[gname]
 
                 is_in_group = True
@@ -537,7 +532,6 @@ def parse_hierarchical_export_format(
                     new_cre = defs.CRE(name=other_cre.strip())
                     cres[new_cre.name] = new_cre
                 else:
-
                     new_cre = cres[other_cre]
 
                 # we only need a shallow copy here

@@ -33,7 +33,6 @@ class TestMain(unittest.TestCase):
         self.collection = db.Node_collection()
 
     def test_register_node_with_links(self) -> None:
-
         standard_with_links = defs.Standard(
             doctype=defs.Credoctypes.Standard,
             id="",
