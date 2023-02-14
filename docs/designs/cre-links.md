@@ -7,7 +7,7 @@ So far, as a small project, our approach to this has been relatively simple:
 2. The CRE team writes a parser for their specific document format and information structure
 3. Add it to an ever-growing list of custom parsers that is maintained by the CRE team
 
-This works relatively well for big, well-structured projects that have sufficient automation to either release big spreadsheets (e.g. CCM) or several simply structured Markdown files with one topic per section/file (Cheatsheets, ASVS etc).
+Our best providers are those that are capable to either release big spreadsheets (e.g. CCM) or several structured Markdown files with one topic per section or file (Cheat sheet series, ASVS etc).
 
 However, it fails for single-page documents with several sections or information and for mapping lots of small standards which will likely have their own unique structure each.
 
