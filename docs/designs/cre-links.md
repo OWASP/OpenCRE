@@ -8,7 +8,7 @@ This works relatively well for big, well-structured projects that have sufficien
 However, it fails for single-page documents with several sections or information and for mapping lots of small standards which will likely have their own unique structure each.
 
 
-## The problem
+## Problem Statement
 
 Human-readable documents can have several structures and links can have even more, parsing and understanding human language is an open problem in computing.
 For example, there are likely non-NLP/AI ways to extract the correct link and title from a markdown file structured like this.
