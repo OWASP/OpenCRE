@@ -40,7 +40,7 @@ The link for a standard could be as simple as:
 ```
 https://opencre.org/cre/<creid>?type=<standard>&name=<standard_name>&section=<section>&link=<where should we redirect to>
 ```
-The link for a tool rule could be as simple as:
+And a link for a tool rule would be:
 
 ```https://opencre.org/cre/<creid>?type=<tool>&name=<tool_name>&link=<where should we redirect to>&ruleID=<the tool rule id>
 ```
