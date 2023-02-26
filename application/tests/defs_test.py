@@ -312,7 +312,10 @@ class TestCreDefs(unittest.TestCase):
 
     def test_tool_todict(self) -> None:
         t0 = defs.Tool(
-            name="toolmctoolface", tooltype=defs.ToolTypes.Offensive, ruleID="15", section="Rule 15 Title"
+            name="toolmctoolface",
+            tooltype=defs.ToolTypes.Offensive,
+            ruleID="15",
+            section="Rule 15 Title",
         )
         expected = {
             "doctype": "Tool",

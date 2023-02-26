@@ -30,26 +30,26 @@ def generate_uuid():
 class Node(BaseModel):  # type: ignore
     __tablename__ = "node"
     id = sqla.Column(sqla.String, primary_key=True, default=generate_uuid)
-    
+
     # ASVS or standard name,  what are we linking to
     name = sqla.Column(sqla.String)
-    
+
     # which part of <name> are we linking to
     section = sqla.Column(sqla.String, nullable=True)
-    
+
     # which subpart of <name> are we linking to
     subsection = sqla.Column(sqla.String)
-    
+
     # coma separated tags
-    tags = sqla.Column(sqla.String)  
+    tags = sqla.Column(sqla.String)
     version = sqla.Column(sqla.String)
     description = sqla.Column(sqla.String)
     ntype = sqla.Column(sqla.String)
     ruleID = sqla.Column(sqla.String, nullable=True)
-    
+
     # some external link to where this is, usually a URL with an anchor
     link = sqla.Column(sqla.String, default="")
-    
+
     __table_args__ = (
         sqla.UniqueConstraint(
             name,
@@ -162,7 +162,7 @@ class CRE_Graph:
                 internal_id=dbnode.id,
                 name=dbnode.name,
                 section=dbnode.section,
-                ruleID = dbnode.ruleID,
+                ruleID=dbnode.ruleID,
             )
         else:
             logger.error("Called with dbnode being none")
@@ -383,14 +383,15 @@ class Node_collection:
                 version=node.version,
                 link=node.link,
                 ntype=node.ntype,
-                ruleID = node.ruleID,
+                ruleID=node.ruleID,
             )
             if node:
                 documents.extend(node)
             else:
                 logger.fatal(
                     "db.get_node returned None for"
-                    "Node %s:%s:%s that exists, BUG!" % (node.name, node.section,node.ruleID)
+                    "Node %s:%s:%s that exists, BUG!"
+                    % (node.name, node.section, node.ruleID)
                 )
 
         cres = CRE.query.filter(*cre_where_clause).all() or []
@@ -418,7 +419,7 @@ class Node_collection:
         include_only: Optional[List[str]] = None,
         ntype: str = cre_defs.Standard.__name__,
         description: Optional[str] = None,
-        ruleID:Optional[str] = None,
+        ruleID: Optional[str] = None,
     ) -> Tuple[Optional[int], Optional[List[cre_defs.Standard]], Optional[List[Node]]]:
         """
         Returns the relevant node entries of a singular ntype (or ntype irrelevant if ntype==None) and their linked CREs
@@ -436,7 +437,7 @@ class Node_collection:
             partial=partial,
             ntype=ntype,
             description=description,
-            ruleID = ruleID,
+            ruleID=ruleID,
         ).paginate(int(page), items_per_page, False)
         total_pages = dbnodes.pages
         if dbnodes.items:
@@ -535,7 +536,7 @@ class Node_collection:
         partial: Optional[bool] = False,
         ntype: Optional[str] = None,
         description: Optional[str] = None,
-        ruleID:Optional[str] = None,
+        ruleID: Optional[str] = None,
     ) -> sqla.Query:
         if (
             not name
@@ -1060,7 +1061,7 @@ class Node_collection:
                         subsection=combo[2],
                         link=link,
                         ntype=ntype,
-                        ruleID=combo[3]
+                        ruleID=combo[3],
                     )
                     if nodes:
                         results.extend(nodes)
@@ -1071,7 +1072,7 @@ class Node_collection:
             if results:
                 return list(set(results))
         # fuzzy matches second
-        args = [f"%{text}%", "", "", "", "",""]
+        args = [f"%{text}%", "", "", "", "", ""]
         results = []
         s = set([p for p in permutations(args, 6)])
         for combo in s:
@@ -1083,7 +1084,7 @@ class Node_collection:
                 description=combo[4],
                 partial=True,
                 ntype=None,  # type: ignore
-                ruleID=combo[5]
+                ruleID=combo[5],
             )
             if nodes:
                 results.extend(nodes)
@@ -1177,7 +1178,7 @@ def dbNodeFromTool(tool: cre_defs.Node) -> Node:
         description=tool.description,
         link=tool.hyperlink,
         section=tool.section,
-        ruleID = tool.ruleID,
+        ruleID=tool.ruleID,
     )
 
 

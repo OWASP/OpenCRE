@@ -21,7 +21,7 @@ def zap_alert(
     return defs.Tool(
         tooltype=defs.ToolTypes.Offensive,
         name=f"ZAP Rule",
-        section = name,
+        section=name,
         ruleID=alert_id,
         description=description,
         tags=tags,
@@ -80,10 +80,10 @@ def register_alerts(cache: db.Node_collection, repo: git.git, alerts_path: str):
                 continue
             cwe = re.search(zap_md_cwe_regexp, mdtext)
             alert = zap_alert(
-                name=name.replace("\"",""),
+                name=name.replace('"', ""),
                 alert_id=externalId,
-                description=description.replace("\"",""),
-                tags=[tag.replace("\"","")],
+                description=description.replace('"', ""),
+                tags=[tag.replace('"', "")],
                 code=code,
             )
             dbnode = cache.add_node(alert)

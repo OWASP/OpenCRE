@@ -78,6 +78,7 @@ class _Source(_Status):
     subsection: Optional[str] = field(default=None)
     ruleID: Optional[str] = field(default=None)
 
+
 @dataclass
 class Node_attributes(_Status):
     """Attributes decribing an OSIB object"""

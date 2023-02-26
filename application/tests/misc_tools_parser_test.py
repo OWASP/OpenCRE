@@ -51,7 +51,7 @@ class TestMiscToolsParser(unittest.TestCase):
             tags=",".join(tags),
             link=expected.hyperlink,
             section=expected.section,
-            ruleID = expected.ruleID,
+            ruleID=expected.ruleID,
         )
 
         mocked_clone.return_value = repo

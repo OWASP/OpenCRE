@@ -54,6 +54,7 @@ class ExportFormat(
             ExportFormat.separator.value,
             ExportFormat.tooltype.value,
         )
+
     @staticmethod
     def ruleID_key(sname: str, doctype: "Credoctypes") -> str:
         "returns <doctype>:<name>:ruleID"
@@ -64,6 +65,7 @@ class ExportFormat(
             ExportFormat.separator.value,
             ExportFormat.ruleID.value,
         )
+
     @staticmethod
     def description_key(sname: str, doctype: "Credoctypes") -> str:
         "returns <doctype>:<name>:description"

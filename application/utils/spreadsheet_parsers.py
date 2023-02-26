@@ -77,7 +77,7 @@ def get_linked_nodes(mapping: Dict[str, str]) -> List[defs.Link]:
                 name=name,
                 description=description,
                 hyperlink=hyperlink,
-                section = section,
+                section=section,
                 ruleID=ruleID,
             )
 
