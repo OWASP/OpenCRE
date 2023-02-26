@@ -379,6 +379,7 @@ class Node(Document):
             and self.hyperlink == other.hyperlink
         )
 
+
 @dataclass
 class Standard(Node):
     section: str = ""

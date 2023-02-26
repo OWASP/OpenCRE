@@ -98,7 +98,7 @@ class TestMain(unittest.TestCase):
                         section="Rule - 9",
                         ruleID="9",
                     )
-                ),  
+                ),
                 defs.Link(document=defs.CRE(id="101-202", name="crename")),
                 defs.Link(
                     document=defs.Standard(

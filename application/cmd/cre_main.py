@@ -35,7 +35,7 @@ app = None
 
 def register_node(node: defs.Node, collection: db.Node_collection) -> db.Node:
     """
-    for each link find if either the root node or the link have a CRE, 
+    for each link find if either the root node or the link have a CRE,
     then map the one who doesn't to the CRE
     if both don't map to anything, just add them in the db as unlinked nodes
     """
@@ -81,7 +81,7 @@ def register_node(node: defs.Node, collection: db.Node_collection) -> db.Node:
 
             if link.document.links and len(link.document.links) > 0:
                 register_node(node=link.document, collection=collection)
-            
+
         elif type(link.document).__name__ == defs.CRE.__name__:
             dbcre = register_cre(link.document, collection)
             collection.add_link(dbcre, linked_node, type=link.ltype)

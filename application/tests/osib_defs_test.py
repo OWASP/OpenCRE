@@ -115,7 +115,7 @@ class TestCreDefs(unittest.TestCase):
         cre_arr = defs.osib2cre(data[0])
         for el in expected[1]:
             cre_ell = [e for e in cre_arr[1] if e.hyperlink == el.hyperlink]
-            self.assertDictEqual(el.todict(),cre_ell[0].todict())
+            self.assertDictEqual(el.todict(), cre_ell[0].todict())
 
     def test_cre2osib(self) -> None:
         cres = {}
