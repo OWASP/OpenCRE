@@ -41,8 +41,10 @@ def register_node(node: defs.Node, collection: db.Node_collection) -> db.Node:
 
     cre_less_nodes: List[defs.Node] = []
 
+    # we need to know the cres added in case we encounter a higher level CRE,
+    # in which case we get the higher level CRE to link to these cres
     cres_added = []
-    # we need to know the cres added in case we encounter a higher level CRE, then we get the higher level CRE to link to these cres
+
     for link in node.links:
         if type(link.document).__name__ in [
             defs.Standard.__name__,

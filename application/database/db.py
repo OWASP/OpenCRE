@@ -30,19 +30,26 @@ def generate_uuid():
 class Node(BaseModel):  # type: ignore
     __tablename__ = "node"
     id = sqla.Column(sqla.String, primary_key=True, default=generate_uuid)
+    
     # ASVS or standard name,  what are we linking to
     name = sqla.Column(sqla.String)
+    
     # which part of <name> are we linking to
     section = sqla.Column(sqla.String, nullable=True)
+    
     # which subpart of <name> are we linking to
     subsection = sqla.Column(sqla.String)
-    tags = sqla.Column(sqla.String)  # coma separated tags
+    
+    # coma separated tags
+    tags = sqla.Column(sqla.String)  
     version = sqla.Column(sqla.String)
     description = sqla.Column(sqla.String)
     ntype = sqla.Column(sqla.String)
     ruleID = sqla.Column(sqla.String, nullable=True)
+    
     # some external link to where this is, usually a URL with an anchor
     link = sqla.Column(sqla.String, default="")
+    
     __table_args__ = (
         sqla.UniqueConstraint(
             name,
@@ -1175,6 +1182,8 @@ def dbNodeFromTool(tool: cre_defs.Node) -> Node:
 
 
 def nodeFromDB(dbnode: Node) -> cre_defs.Node:
+    if not dbnode:
+        return None
     tags = []
     if dbnode.tags:
         tags = list(set(dbnode.tags.split(",")))
@@ -1186,7 +1195,6 @@ def nodeFromDB(dbnode: Node) -> cre_defs.Node:
             hyperlink=dbnode.link,
             tags=tags,
             version=dbnode.version,
-            ruleID = dbnode.ruleID,
         )
     elif dbnode.ntype == cre_defs.Tool.__name__:
         ttype = cre_defs.ToolTypes.Unknown

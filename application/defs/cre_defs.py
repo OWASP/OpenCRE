@@ -21,6 +21,7 @@ class ExportFormat(
     cre_link = "Linked_CRE_"
     cre = "CRE"
     tooltype = "ToolType"
+    ruleID = "RuleID"
 
     @staticmethod
     def get_doctype(header: str) -> Optional["Credoctypes"]:
@@ -53,7 +54,16 @@ class ExportFormat(
             ExportFormat.separator.value,
             ExportFormat.tooltype.value,
         )
-
+    @staticmethod
+    def ruleID_key(sname: str, doctype: "Credoctypes") -> str:
+        "returns <doctype>:<name>:ruleID"
+        return "%s%s%s%s%s" % (
+            doctype.value,
+            ExportFormat.separator.value,
+            sname,
+            ExportFormat.separator.value,
+            ExportFormat.ruleID.value,
+        )
     @staticmethod
     def description_key(sname: str, doctype: "Credoctypes") -> str:
         "returns <doctype>:<name>:description"
@@ -407,6 +417,7 @@ class Tool(Standard):
             type(other) is Tool
             and super().__eq__(other)
             and self.tooltype == other.tooltype
+            and self.ruleID == other.ruleID
         )
 
     def todict(self) -> Dict[str, Any]:

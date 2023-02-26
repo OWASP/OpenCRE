@@ -161,6 +161,8 @@ class TestCreDefs(unittest.TestCase):
                     document=cdefs.Tool(
                         tooltype=cdefs.ToolTypes.Defensive,
                         name="SKF",
+                        section="",
+                        ruleID="",
                         hyperlink="https://example.com/skf",
                     ),
                 )
