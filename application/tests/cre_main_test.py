@@ -98,22 +98,21 @@ class TestMain(unittest.TestCase):
                         section="Rule - 9",
                         ruleID="9",
                     )
-                ),
+                ),  
+                defs.Link(document=defs.CRE(id="101-202", name="crename")),
                 defs.Link(
                     document=defs.Standard(
                         name="CWE",
                         section="598",
-                        links=[
-                            defs.Link(document=defs.CRE(id="101-202", name="crename")),
-                        ],
+                        links=[],
                     )
                 ),
             ],
             section="standard_with_cre",
         )
-
         main.register_node(node=known_standard_with_cre, collection=self.collection)
         main.register_node(node=standard_with_cre, collection=self.collection)
+
         # assert db structure makes sense
         self.assertEqual(
             len(self.collection.session.query(db.Links).all()), 3

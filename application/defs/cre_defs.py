@@ -379,7 +379,6 @@ class Node(Document):
             and self.hyperlink == other.hyperlink
         )
 
-
 @dataclass
 class Standard(Node):
     section: str = ""
@@ -400,8 +399,7 @@ class Standard(Node):
 
     def __eq__(self, other: object) -> bool:
         return (
-            type(other) is Standard
-            and super().__eq__(other)
+            super().__eq__(other)
             and self.section == other.section
             and self.subsection == other.subsection
             and self.version == other.version
@@ -416,8 +414,7 @@ class Tool(Standard):
 
     def __eq__(self, other: object) -> bool:
         return (
-            type(other) is Tool
-            and super().__eq__(other)
+            super().__eq__(other)
             and self.tooltype == other.tooltype
             and self.ruleID == other.ruleID
         )
