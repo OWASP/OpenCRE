@@ -212,6 +212,8 @@ class TestParsers(unittest.TestCase):
                 "Tool:S2:link_type": "Linked To",
                 "Tool:S2:description": "SE2",
                 "Tool:S2:ToolType": "Offensive",
+                "Tool:S2:RuleID": "0",
+                "Tool:S2:section": "rule-0",
                 "Code:S3:hyperlink": "",
                 "Code:S3:link_type": "",
                 "Code:S3:description": "",
@@ -387,6 +389,8 @@ class TestParsers(unittest.TestCase):
                         ltype=defs.LinkTypes.LinkedTo,
                         document=defs.Tool(
                             name="S2",
+                            section="rule-0",
+                            ruleID="0",
                             tooltype=defs.ToolTypes.Offensive,
                             description="SE2",
                             hyperlink="https://example.com/S2",
@@ -456,9 +460,9 @@ class TestParsers(unittest.TestCase):
         }
 
         result = parse_export_format(input_data)
-
+        self.maxDiff = None
         for key, val in result.items():
-            self.assertEqual(expected[key], val)
+            self.assertDictEqual(expected[key].todict(), val.todict())
 
             expected[key].links = []
             val.links = []

@@ -21,8 +21,14 @@ tool_urls = [
 ]
 
 
-def Project(
-    name: str, hyperlink: str, tags: List[str], ttype: str, description: str
+def project(
+    name: str,
+    hyperlink: str,
+    tags: List[str],
+    ttype: str,
+    description: str,
+    ruleID: str,
+    section: str,
 ) -> defs.Tool:
     return defs.Tool(
         name=name,
@@ -30,6 +36,8 @@ def Project(
         tags=tags,
         hyperlink=hyperlink,
         description=description,
+        ruleID=ruleID,
+        section=section,
     )
 
 
@@ -70,12 +78,14 @@ def parse_tool(tool_repo: str, cache: db.Node_collection, dry_run: boolean = Fal
                 cres = cache.get_CREs(external_id=cre_id)
                 hyperlink = f"{tool_repo.replace('.git','')}"
                 for dbcre in cres:
-                    cs = Project(
+                    cs = project(
                         name=name,
                         hyperlink=hyperlink,
                         tags=tags or [],
                         ttype=tool_type,
                         description=description,
+                        ruleID="",  # we don't support ruleID and section when linking to a whole tool
+                        section="",
                     )
                     dbnode = cache.add_node(node=cs)
                     cache.add_link(

@@ -62,6 +62,7 @@ def get_linked_nodes(mapping: Dict[str, str]) -> List[defs.Link]:
         tooltype = defs.ToolTypes.from_str(
             mapping.get(defs.ExportFormat.tooltype_key(name, type))
         )
+        ruleID = mapping.get(defs.ExportFormat.ruleID_key(name, type))
         description = mapping.get(defs.ExportFormat.description_key(name, type))
         node = None
         if type == defs.Credoctypes.Standard:
@@ -76,6 +77,8 @@ def get_linked_nodes(mapping: Dict[str, str]) -> List[defs.Link]:
                 name=name,
                 description=description,
                 hyperlink=hyperlink,
+                section=section,
+                ruleID=ruleID,
             )
 
         lt: defs.LinkTypes
@@ -98,7 +101,8 @@ def update_cre_in_links(
 
 
 def parse_export_format(lfile: List[Dict[str, Any]]) -> Dict[str, defs.Document]:
-    """Given: a spreadsheet written by prepare_spreadsheet()
+    """
+    Given: a spreadsheet written by prepare_spreadsheet()
     return a list of CRE docs
     cases:
         standard

@@ -113,7 +113,9 @@ class TestCreDefs(unittest.TestCase):
         self.maxDiff = None
         expected: Tuple[List[cdefs.CRE], List[cdefs.Standard]] = ([], tools)
         cre_arr = defs.osib2cre(data[0])
-        self.assertCountEqual(expected[1], cre_arr[1])
+        for el in expected[1]:
+            cre_ell = [e for e in cre_arr[1] if e.hyperlink == el.hyperlink]
+            self.assertDictEqual(el.todict(), cre_ell[0].todict())
 
     def test_cre2osib(self) -> None:
         cres = {}
@@ -161,6 +163,8 @@ class TestCreDefs(unittest.TestCase):
                     document=cdefs.Tool(
                         tooltype=cdefs.ToolTypes.Defensive,
                         name="SKF",
+                        section="",
+                        ruleID="",
                         hyperlink="https://example.com/skf",
                     ),
                 )

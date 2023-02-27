@@ -247,7 +247,7 @@ class TestCreDefs(unittest.TestCase):
         lnk = defs.Link(document=tool2, ltype=defs.LinkTypes.Same)
         actual = copy.deepcopy(tool).add_link(defs.Link(document=tool2))
         tool.links = [lnk]
-        self.assertEqual(actual, tool)
+        self.assertDictEqual(actual.todict(), tool.todict())
 
         with self.assertRaises(ValueError):
             tool.add_link(link=tool2)  # type: ignore # this is on purpose
@@ -312,13 +312,17 @@ class TestCreDefs(unittest.TestCase):
 
     def test_tool_todict(self) -> None:
         t0 = defs.Tool(
-            name="toolmctoolface", tooltype=defs.ToolTypes.Offensive, ruleID="15"
+            name="toolmctoolface",
+            tooltype=defs.ToolTypes.Offensive,
+            ruleID="15",
+            section="Rule 15 Title",
         )
         expected = {
             "doctype": "Tool",
             "name": "toolmctoolface",
             "tooltype": "Offensive",
             "ruleID": "15",
+            "section": "Rule 15 Title",
         }
         self.assertDictEqual(t0.todict(), expected)
         expected["toolType"] = "Defensive"

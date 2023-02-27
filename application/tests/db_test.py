@@ -1006,6 +1006,8 @@ class TestDB(unittest.TestCase):
             tooltype=defs.ToolTypes.Offensive,
             hyperlink="https://example.com/textSearchTool",
             description="test text search with tool",
+            ruleID="15",
+            section="rule 15",
         )
         collection.add_node(t1)
         collection.session.commit()

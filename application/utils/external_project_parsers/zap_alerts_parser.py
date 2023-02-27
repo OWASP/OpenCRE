@@ -15,13 +15,14 @@ logger.setLevel(logging.INFO)
 
 
 def zap_alert(
-    name: str, id: str, description: str, tags: List[str], code: str
+    name: str, alert_id: str, description: str, tags: List[str], code: str
 ) -> defs.Tool:
-    tags.append(id)
+    tags.append(alert_id)
     return defs.Tool(
         tooltype=defs.ToolTypes.Offensive,
         name=f"ZAP Rule",
-        ruleID=name,
+        section=name,
+        ruleID=alert_id,
         description=description,
         tags=tags,
         hyperlink=code,
@@ -38,7 +39,7 @@ def parse_zap_alerts(cache: db.Node_collection):
 def register_alerts(cache: db.Node_collection, repo: git.git, alerts_path: str):
     zap_md_cwe_regexp = r"cwe: ?(?P<cweId>\d+)"
     zap_md_title_regexp = r"title: ?(?P<title>\".+\")"
-    zap_md_alert_id_regexp = r"alertid: ?(?P<id>\d+)"
+    zap_md_alert_id_regexp = r"alertid: ?(?P<id>\d+(-\d+)?)"
     zap_md_alert_type_regexp = r"alerttype: ?(?P<type>\".+\")"
     zap_md_solution_regexp = r"solution: ?(?P<solution>\".+\")"
     zap_md_code_regexp = r"code: ?(?P<code>.+)"
@@ -79,10 +80,10 @@ def register_alerts(cache: db.Node_collection, repo: git.git, alerts_path: str):
                 continue
             cwe = re.search(zap_md_cwe_regexp, mdtext)
             alert = zap_alert(
-                name=name,
-                id=externalId,
-                description=description,
-                tags=[tag],
+                name=name.replace('"', ""),
+                alert_id=externalId,
+                description=description.replace('"', "") if description else "",
+                tags=[tag.replace('"', "")],
                 code=code,
             )
             dbnode = cache.add_node(alert)
