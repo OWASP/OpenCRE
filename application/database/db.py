@@ -45,7 +45,8 @@ class Node(BaseModel):  # type: ignore
     version = sqla.Column(sqla.String)
     description = sqla.Column(sqla.String)
     ntype = sqla.Column(sqla.String)
-    ruleID = sqla.Column(sqla.String, nullable=True)
+
+    rule_id = sqla.Column(sqla.String, nullable=True)
 
     # some external link to where this is, usually a URL with an anchor
     link = sqla.Column(sqla.String, default="")
@@ -58,7 +59,7 @@ class Node(BaseModel):  # type: ignore
             ntype,
             description,
             version,
-            ruleID,
+            rule_id,
             name="uq_node",
         ),
     )
@@ -162,7 +163,7 @@ class CRE_Graph:
                 internal_id=dbnode.id,
                 name=dbnode.name,
                 section=dbnode.section,
-                ruleID=dbnode.ruleID,
+                rule_id=dbnode.rule_id,
             )
         else:
             logger.error("Called with dbnode being none")
@@ -343,7 +344,7 @@ class Node_collection:
                         Node.subsection == node.subsection,
                         Node.version == node.version,
                         Node.ntype == type(node).__name__,
-                        Node.ruleID == node.ruleID,
+                        Node.rule_id == node.ruleID,
                     )
                 )
                 .first()
@@ -383,7 +384,7 @@ class Node_collection:
                 version=node.version,
                 link=node.link,
                 ntype=node.ntype,
-                ruleID=node.ruleID,
+                ruleID=node.rule_id,
             )
             if node:
                 documents.extend(node)
@@ -391,7 +392,7 @@ class Node_collection:
                 logger.fatal(
                     "db.get_node returned None for"
                     "Node %s:%s:%s that exists, BUG!"
-                    % (node.name, node.section, node.ruleID)
+                    % (node.name, node.section, node.rule_id)
                 )
 
         cres = CRE.query.filter(*cre_where_clause).all() or []
@@ -588,9 +589,9 @@ class Node_collection:
                 query = query.filter(Node.description.like(description))
         if ruleID:
             if not partial:
-                query = query.filter(func.lower(Node.ruleID) == ruleID.lower())
+                query = query.filter(func.lower(Node.rule_id) == ruleID.lower())
             else:
-                query = query.filter(func.lower(Node.ruleID).like(ruleID.lower()))
+                query = query.filter(func.lower(Node.rule_id).like(ruleID.lower()))
         return query
 
     def get_CREs(
@@ -1178,7 +1179,7 @@ def dbNodeFromTool(tool: cre_defs.Node) -> Node:
         description=tool.description,
         link=tool.hyperlink,
         section=tool.section,
-        ruleID=tool.ruleID,
+        rule_id=tool.ruleID,
     )
 
 
@@ -1210,7 +1211,7 @@ def nodeFromDB(dbnode: Node) -> cre_defs.Node:
             description=dbnode.description,
             tooltype=ttype,
             section=dbnode.section,
-            ruleID=dbnode.ruleID,
+            ruleID=dbnode.rule_id,
         )
     elif dbnode.ntype == cre_defs.Code.__name__:
         return cre_defs.Code(

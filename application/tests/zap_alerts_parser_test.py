@@ -152,7 +152,7 @@ class TestZAPAlertsParser(unittest.TestCase):
         actual = db.nodeFromDB(
             self.collection.session.query(db.Node)
             .filter(db.Node.name == expected.name)
-            .filter(db.Node.ruleID == expected.ruleID)
+            .filter(db.Node.rule_id == expected.ruleID)
             .first()
         )
         self.assertCountEqual(expected.tags, actual.tags)

@@ -82,7 +82,7 @@ def register_alerts(cache: db.Node_collection, repo: git.git, alerts_path: str):
             alert = zap_alert(
                 name=name.replace('"', ""),
                 alert_id=externalId,
-                description=description.replace('"', ""),
+                description=description.replace('"', "") if description else "",
                 tags=[tag.replace('"', "")],
                 code=code,
             )
