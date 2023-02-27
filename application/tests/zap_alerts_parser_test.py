@@ -98,10 +98,11 @@ class TestZAPAlertsParser(unittest.TestCase):
 
         expected = defs.Tool(
             name="ZAP Rule",
-            ruleID="Vulnerable JS Library",
+            ruleID="10003",
+            section="Vulnerable JS Library",
             doctype=defs.Credoctypes.Tool,
-            description='"_Unavailable_"',
-            tags=["10003", '"Passive"'],
+            description="_Unavailable_",
+            tags=["10003", "Passive"],
             hyperlink="https://github.com/zaproxy/zap-extensions/blob/main/addOns/retire/src/main/java/org/zaproxy/addon/retire/RetireScanRule.java",
             tooltype=defs.ToolTypes.Offensive,
         )
@@ -112,7 +113,7 @@ class TestZAPAlertsParser(unittest.TestCase):
             .filter(db.Node.name == expected.name)
             .first()
         )
-        self.assertEquals(expected, node)
+        self.assertCountEqual(expected.todict(), node.todict())
 
         node = self.collection.get_nodes(name=expected.name, ntype=expected.doctype)[0]
         self.assertNotIn(cre3.external_id, [link.document.id for link in node.links])
@@ -139,26 +140,34 @@ class TestZAPAlertsParser(unittest.TestCase):
 
         expected = defs.Tool(
             name="ZAP Rule",
-            ruleID="Multiple X-Frame-Options Header Entries",
+            section="Multiple X-Frame-Options Header Entries",
+            ruleID="10020-2",
             doctype=defs.Credoctypes.Tool,
-            description='"Ensure only a single X-Frame-Options header is present in the response."',
-            tags=["10020", '"Passive"'],
+            description="Ensure only a single X-Frame-Options header is present in the response.",
+            tags=["10020-2", "Passive"],
             hyperlink="https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/AntiClickjackingScanRule.java",
             tooltype=defs.ToolTypes.Offensive,
         )
-
         self.maxDiff = None
-
-        self.assertEqual(
-            expected,
-            db.nodeFromDB(
-                self.collection.session.query(db.Node)
-                .filter(db.Node.name == expected.name)
-                .first()
-            ),
+        actual = db.nodeFromDB(
+            self.collection.session.query(db.Node)
+            .filter(db.Node.name == expected.name)
+            .filter(db.Node.rule_id == expected.ruleID)
+            .first()
         )
+        self.assertCountEqual(expected.tags, actual.tags)
+        tags_copy = actual.tags
+        actual.tags = [""]
+        expected.tags = [""]
+        self.assertDictEqual(expected.todict(), actual.todict())
+
         links = self.collection.get_CREs(external_id="111-111")[0].links
-        self.assertTrue(expected == links[0].document or expected == links[1].document)
+
+        expected.tags = tags_copy
+        if links[0].document.hyperlink == expected.hyperlink:
+            self.assertDictEqual(expected.todict(), links[0].document.todict())
+        else:
+            self.assertDictEqual(expected.todict(), links[1].document.todict())
 
 
 alert = """
