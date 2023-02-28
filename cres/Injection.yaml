@@ -6,8 +6,8 @@ links:
     id: 010-308
     name: Input validation
     tags:
-    - Injection
     - XSS
+    - Injection
   ltype: Related
 - document:
     doctype: CRE
@@ -26,16 +26,16 @@ links:
     id: 161-451
     name: Output encoding and injection prevention
     tags:
-    - Injection
     - XSS
+    - Injection
   ltype: Related
 - document:
     doctype: CRE
     id: 764-765
     name: Sanitization and sandboxing
     tags:
-    - Injection
     - XSS
+    - Injection
   ltype: Related
 - document:
     doctype: CRE
@@ -43,8 +43,8 @@ links:
     name: Store and serve user-uploaded files such that they cannot execute/damage
       server or client
     tags:
-    - Injection
     - XSS
+    - Injection
   ltype: Related
 - document:
     doctype: CRE
