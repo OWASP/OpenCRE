@@ -131,9 +131,11 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({
                 <div className="document-node__link-type-container" key={type}>
                   <div>
                     <span>
-                      {usedNode.doctype}: {usedNode.name} : 
-                      {usedNode.doctype.toLowerCase() === DOCUMENT_TYPES.TYPE_TOOL.toLowerCase()? usedNode.ruleID:""
-                      } : {usedNode.section}
+                      {usedNode.doctype}: {usedNode.name} :
+                      {usedNode.doctype.toLowerCase() === DOCUMENT_TYPES.TYPE_TOOL.toLowerCase()
+                        ? usedNode.ruleID
+                        : ''}{' '}
+                      : {usedNode.section}
                     </span>
                     <b> {DOCUMENT_TYPE_NAMES[type]}</b>:
                   </div>
