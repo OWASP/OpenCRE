@@ -97,11 +97,14 @@ def find_cre(creid: str = None, crename: str = None) -> Any:  # refer
 def find_node_by_name(name: str, ntype: str = defs.Credoctypes.Standard.value) -> Any:
     database = db.Node_collection()
     opt_section = request.args.get("section")
+    opt_ruleID = request.args.get("ruleID")
     opt_osib = request.args.get("osib")
     opt_version = request.args.get("version")
     opt_format = request.args.get("format")
     if opt_section:
         opt_section = urllib.parse.unquote(opt_section)
+    if opt_ruleID:
+            opt_ruleID = urllib.parse.unquote(opt_ruleID)
     opt_subsection = request.args.get("subsection")
     opt_hyperlink = request.args.get("hyperlink")
 
@@ -128,6 +131,7 @@ def find_node_by_name(name: str, ntype: str = defs.Credoctypes.Standard.value) -
             include_only=include_only,
             version=opt_version,
             ntype=ntype,
+            ruleID=opt_ruleID
         )
     else:
         nodes = database.get_nodes(
@@ -138,6 +142,7 @@ def find_node_by_name(name: str, ntype: str = defs.Credoctypes.Standard.value) -
             include_only=include_only,
             version=opt_version,
             ntype=ntype,
+            ruleID=opt_ruleID
         )
     result = {}
     result["total_pages"] = total_pages
