@@ -164,6 +164,7 @@ class TestDB(unittest.TestCase):
             defs.Standard(
                 subsection="4.5.6",
                 section="FooStand",
+                sectionID="123",
                 name="BarStand",
                 hyperlink="https://example.com",
                 tags=["a", "b", "c"],
@@ -174,6 +175,7 @@ class TestDB(unittest.TestCase):
             defs.Standard(
                 subsection="4.5.6",
                 section="Unlinked",
+                sectionID="Unlinked",
                 name="Unlinked",
                 hyperlink="https://example.com",
             )
@@ -209,6 +211,7 @@ class TestDB(unittest.TestCase):
                         document=defs.Standard(
                             name="BarStand",
                             section="FooStand",
+                            sectionID="456",
                             subsection="4.5.6",
                             hyperlink="https://example.com",
                             tags=["a", "b", "c"],
@@ -221,6 +224,7 @@ class TestDB(unittest.TestCase):
                 subsection="4.5.6",
                 section="Unlinked",
                 name="Unlinked",
+                sectionID="Unlinked",
                 hyperlink="https://example.com",
             ),
             defs.Tool(name="t0", tooltype=defs.ToolTypes.Unknown),
@@ -262,6 +266,7 @@ class TestDB(unittest.TestCase):
         expected = defs.Standard(
             name="foo",
             section="bar",
+            sectionID="213",
             subsection="foobar",
             hyperlink="https://example.com/foo/bar",
             version="1.1.1",
@@ -275,6 +280,7 @@ class TestDB(unittest.TestCase):
                     subsection="foobar",
                     link="https://example.com/foo/bar",
                     version="1.1.1",
+                    section_id="213",
                     ntype=defs.Standard.__name__,
                 )
             ),
@@ -641,6 +647,7 @@ class TestDB(unittest.TestCase):
             defs.Standard(
                 name="S1",
                 section="1",
+                sectionID="123",
                 subsection="2",
                 hyperlink="3",
                 version="4",
@@ -676,6 +683,7 @@ class TestDB(unittest.TestCase):
             "dbs1": db.Node(
                 name="S1",
                 section="1",
+                section_id="123",
                 subsection="2",
                 link="3",
                 version="4",
@@ -695,6 +703,7 @@ class TestDB(unittest.TestCase):
             defs.Standard(
                 name="S1",
                 section="1",
+                sectionID="123",
                 subsection="2",
                 hyperlink="3",
                 version="4",
@@ -717,6 +726,7 @@ class TestDB(unittest.TestCase):
             defs.Standard(
                 name="S1",
                 section="1",
+                sectionID="123",
                 subsection="2",
                 hyperlink="3",
                 version="4",
@@ -1006,7 +1016,7 @@ class TestDB(unittest.TestCase):
             tooltype=defs.ToolTypes.Offensive,
             hyperlink="https://example.com/textSearchTool",
             description="test text search with tool",
-            ruleID="15",
+            sectionID="15",
             section="rule 15",
         )
         collection.add_node(t1)

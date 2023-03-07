@@ -68,7 +68,7 @@ def document_to_oscal(
             )
         elif link.document.doctype == defs.Credoctypes.Tool:
             ctrl = catalog.Control(
-                id=f"_{link.document.ruleID}",
+                id=f"_{link.document.sectionID}",
                 title=link.document.name,
                 links=[common.Link(href=link.document.hyperlink)],
             )
@@ -111,7 +111,7 @@ def list_to_oscal(documents: List[defs.Standard | defs.Tool]) -> str:
             controls.append(
                 catalog.Control(
                     id=f"_{random.getrandbits(1024)}",
-                    props=[common.Property(name="ruleID", value=doc.ruleID)],
+                    props=[common.Property(name="sectionID", value=doc.sectionID)],
                     title=doc.name,
                     links=[common.Link(href=doc.hyperlink)],
                 )

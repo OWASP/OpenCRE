@@ -70,7 +70,7 @@ export const StandardSection = () => {
                   <div className="cre-page__links-header">
                     {document.doctype}: {document.name} -{' '}
                     {document.doctype.toLowerCase() === DOCUMENT_TYPES.TYPE_TOOL.toLowerCase()
-                      ? document.ruleID
+                      ? document.sectionID
                       : document.section}{' '}
                     <b>{DOCUMENT_TYPE_NAMES[type]}</b>:
                   </div>

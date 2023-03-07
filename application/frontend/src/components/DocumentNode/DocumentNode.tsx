@@ -132,8 +132,9 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({
                   <div>
                     <span>
                       {usedNode.doctype}: {usedNode.name} :
-                      {usedNode.doctype.toLowerCase() === DOCUMENT_TYPES.TYPE_TOOL.toLowerCase()
-                        ? usedNode.ruleID
+                      {usedNode.doctype.toLowerCase() === DOCUMENT_TYPES.TYPE_TOOL.toLowerCase() ||
+                      usedNode.doctype.toLowerCase() === DOCUMENT_TYPES.TYPE_STANDARD.toLowerCase()
+                        ? usedNode.sectionID
                         : ''}{' '}
                       : {usedNode.section}
                     </span>

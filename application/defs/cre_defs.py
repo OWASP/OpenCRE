@@ -21,7 +21,7 @@ class ExportFormat(
     cre_link = "Linked_CRE_"
     cre = "CRE"
     tooltype = "ToolType"
-    ruleID = "RuleID"
+    sectionID = "SectionID"
 
     @staticmethod
     def get_doctype(header: str) -> Optional["Credoctypes"]:
@@ -56,14 +56,14 @@ class ExportFormat(
         )
 
     @staticmethod
-    def ruleID_key(sname: str, doctype: "Credoctypes") -> str:
-        "returns <doctype>:<name>:ruleID"
+    def sectionID_key(sname: str, doctype: "Credoctypes") -> str:
+        "returns <doctype>:<name>:sectionID"
         return "%s%s%s%s%s" % (
             doctype.value,
             ExportFormat.separator.value,
             sname,
             ExportFormat.separator.value,
-            ExportFormat.ruleID.value,
+            ExportFormat.sectionID.value,
         )
 
     @staticmethod
@@ -383,6 +383,7 @@ class Node(Document):
 @dataclass
 class Standard(Node):
     section: str = ""
+    sectionID: str = ""
     doctype: Credoctypes = Credoctypes.Standard
     subsection: Optional[str] = ""
 
@@ -393,6 +394,8 @@ class Standard(Node):
             res["subsection"] = self.subsection
         if self.version:
             res["version"] = self.version
+        if self.sectionID:
+            res["sectionID"] = self.sectionID
         return res
 
     def __hash__(self) -> int:
@@ -404,26 +407,21 @@ class Standard(Node):
             and self.section == other.section
             and self.subsection == other.subsection
             and self.version == other.version
+            and self.sectionID == other.sectionID
         )
 
 
 @dataclass
 class Tool(Standard):
-    ruleID: str = ""
     tooltype: ToolTypes = ToolTypes.Unknown
     doctype: Credoctypes = Credoctypes.Tool
 
     def __eq__(self, other: object) -> bool:
-        return (
-            super().__eq__(other)
-            and self.tooltype == other.tooltype
-            and self.ruleID == other.ruleID
-        )
+        return super().__eq__(other) and self.tooltype == other.tooltype
 
     def todict(self) -> Dict[str, Any]:
         res = super().todict()
         res["tooltype"] = self.tooltype.value + ""
-        res["ruleID"] = self.ruleID
         return res
 
     def __hash__(self) -> int:

@@ -27,7 +27,7 @@ def project(
     tags: List[str],
     ttype: str,
     description: str,
-    ruleID: str,
+    sectionID: str,
     section: str,
 ) -> defs.Tool:
     return defs.Tool(
@@ -36,7 +36,7 @@ def project(
         tags=tags,
         hyperlink=hyperlink,
         description=description,
-        ruleID=ruleID,
+        sectionID=sectionID,
         section=section,
     )
 
@@ -84,7 +84,7 @@ def parse_tool(tool_repo: str, cache: db.Node_collection, dry_run: boolean = Fal
                         tags=tags or [],
                         ttype=tool_type,
                         description=description,
-                        ruleID="",  # we don't support ruleID and section when linking to a whole tool
+                        sectionID="",  # we don't support sectionID and section when linking to a whole tool
                         section="",
                     )
                     dbnode = cache.add_node(node=cs)

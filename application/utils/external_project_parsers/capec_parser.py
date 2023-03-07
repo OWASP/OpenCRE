@@ -30,7 +30,7 @@ def make_hyperlink(capec_id: int):
 
 
 def link_capec_to_cwe_cre(capec: db.Node, cache: db.Node_collection, cwe_id: str):
-    cwes = cache.get_nodes(name="CWE", section=cwe_id)
+    cwes = cache.get_nodes(name="CWE", sectionID=cwe_id)
     if cwes:
         for cre in [
             c.document
