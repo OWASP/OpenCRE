@@ -627,6 +627,7 @@ class TestDB(unittest.TestCase):
                 ntype=defs.Standard.__name__,
                 name="S1",
                 section="1",
+                section_id="123",
                 subsection="2",
                 link="3",
                 version="4",

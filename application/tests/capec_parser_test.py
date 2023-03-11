@@ -42,14 +42,14 @@ class TestCapecParser(unittest.TestCase):
             ],
             hyperlink="https://capec.mitre.org/data/definitions/1.html",
             sectionID="1",
-            subsection="Accessing Functionality Not Properly Constrained by ACLs",
+            section="Accessing Functionality Not Properly Constrained by ACLs",
             version="3.7",
         )
 
         node = self.collection.get_nodes(
             name="CAPEC",
-            section="1",
-            subsection="Accessing Functionality Not Properly Constrained by ACLs",
+            sectionID="1",
+            section="Accessing Functionality Not Properly Constrained by ACLs",
         )[0]
         self.assertEquals(node, expected)
 

@@ -57,8 +57,8 @@ def register_capec(cache: db.Node_collection, xml_file: str):
             if pattern["@Status"] in ["Stable", "Usable", "Draft"]:
                 capec = defs.Standard(
                     name="CAPEC",
-                    section=pattern["@ID"],
-                    subsection=pattern["@Name"],
+                    sectionID=pattern["@ID"],
+                    section=pattern["@Name"],
                     hyperlink=make_hyperlink(pattern["@ID"]),
                     version=version,
                 )

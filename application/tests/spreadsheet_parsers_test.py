@@ -500,12 +500,16 @@ class TestParsers(unittest.TestCase):
                 links=[
                     defs.Link(
                         document=defs.Standard(
-                            doctype=defs.Credoctypes.Standard, name="CWE", sectionID="598"
+                            doctype=defs.Credoctypes.Standard,
+                            name="CWE",
+                            sectionID="598",
                         )
                     ),
                     defs.Link(
                         document=defs.Standard(
-                            doctype=defs.Credoctypes.Standard, name="CWE", sectionID="384"
+                            doctype=defs.Credoctypes.Standard,
+                            name="CWE",
+                            sectionID="384",
                         )
                     ),
                     defs.Link(
@@ -615,7 +619,9 @@ class TestParsers(unittest.TestCase):
                     defs.Link(
                         ltype=defs.LinkTypes.LinkedTo,
                         document=defs.Standard(
-                            doctype=defs.Credoctypes.Standard, name="CWE", sectionID="598"
+                            doctype=defs.Credoctypes.Standard,
+                            name="CWE",
+                            sectionID="598",
                         ),
                     ),
                     defs.Link(
@@ -669,7 +675,9 @@ class TestParsers(unittest.TestCase):
                     defs.Link(
                         ltype=defs.LinkTypes.LinkedTo,
                         document=defs.Standard(
-                            doctype=defs.Credoctypes.Standard, name="CWE", sectionID="384"
+                            doctype=defs.Credoctypes.Standard,
+                            name="CWE",
+                            sectionID="384",
                         ),
                     ),
                     defs.Link(
@@ -1502,7 +1510,15 @@ class TestParsers(unittest.TestCase):
         output = parse_hierarchical_export_format(data)
         self.maxDiff = None
         for k, v in expected.items():
-            self.assertEqual(output[k], v)
+            try:
+                self.assertEqual(output[k], v)
+            except Exception as e:
+                pprint("-" * 90)
+                pprint(output[k])
+                pprint("-" * 90)
+                pprint(v)
+                pprint("-" * 90)
+                raise e
 
 
 if __name__ == "__main__":
