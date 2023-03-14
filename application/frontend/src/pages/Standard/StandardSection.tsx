@@ -13,7 +13,7 @@ import { Document } from '../../types';
 import { groupLinksByType } from '../../utils';
 
 export const StandardSection = () => {
-  const { id, section } = useParams();
+  const { id, section,sectionID } = useParams();
   const { apiUrl } = useEnvironment();
   const [page, setPage] = useState<number>(1);
   const [loading, setLoading] = useState<boolean>(false);
@@ -21,7 +21,9 @@ export const StandardSection = () => {
   const getSectionParameter = (): string => {
     return section ? `&section=${encodeURIComponent(section)}` : '';
   };
-
+  const getSectionIDParameter = (): string => {
+    return sectionID ? `&sectionID=${encodeURIComponent(sectionID)}` : '';
+  };
   const { error, data, refetch } = useQuery<
     { standards: Document[]; total_pages: number; page: number },
     string
