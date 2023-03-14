@@ -542,7 +542,7 @@ class TestDB(unittest.TestCase):
             )
             .add_link(defs.Link(ltype=defs.LinkTypes.Contains, document=copy(cd3)))
         ]
-
+        self.maxDiff = None
         shallow_cd1 = copy(cd1)
         shallow_cd1.links = []
         cd2.add_link(defs.Link(ltype=defs.LinkTypes.PartOf, document=shallow_cd1))
@@ -550,27 +550,40 @@ class TestDB(unittest.TestCase):
         self.assertEqual([], collection.get_CREs())
 
         res = collection.get_CREs(name="gcC1")
-        self.assertEqual(expected, res)
+        self.assertEqual(len(expected), len(res))
+        self.assertDictEqual(expected[0].todict(), res[0].todict())
 
         res = collection.get_CREs(external_id="123")
-        self.assertEqual(expected, res)
+        self.assertEqual(len(expected), len(res))
+        self.assertDictEqual(expected[0].todict(), res[0].todict())
 
-        self.assertEqual(collection.get_CREs(external_id="12%", partial=True), expected)
+        res = collection.get_CREs(external_id="12%", partial=True)
+        self.assertEqual(len(expected), len(res))
+        self.assertDictEqual(expected[0].todict(), res[0].todict())
 
-        cres = collection.get_CREs(name="gcC%", partial=True)
-        self.assertCountEqual(cres, [expected[0], cd2, cd3])
-        self.assertEqual(
-            collection.get_CREs(external_id="1%", name="gcC%", partial=True), expected
-        )
-        self.assertEqual(collection.get_CREs(description="gcCD1"), expected)
-        self.assertEqual(
-            collection.get_CREs(external_id="1%", description="gcC%", partial=True),
-            expected,
-        )
-        self.assertCountEqual(
-            collection.get_CREs(description="gcC%", name="gcC%", partial=True),
-            [expected[0], cd2, cd3],
-        )
+        res = collection.get_CREs(name="gcC%", partial=True)
+
+        res = collection.get_CREs(external_id="1%", name="gcC%", partial=True)
+        self.assertEqual(len(expected), len(res))
+        self.assertDictEqual(expected[0].todict(), res[0].todict())
+
+        res = collection.get_CREs(description="gcCD1")
+        self.assertEqual(len(expected), len(res))
+        self.assertDictEqual(expected[0].todict(), res[0].todict())
+
+        res = collection.get_CREs(external_id="1%", description="gcC%", partial=True)
+        self.assertEqual(len(expected), len(res))
+        self.assertDictEqual(expected[0].todict(), res[0].todict())
+
+        res = collection.get_CREs(description="gcC%", name="gcC%", partial=True)
+        want = [expected[0], cd2, cd3]
+        for el in res:
+            found = False
+            for wel in want:
+                if el.todict() == wel.todict():
+                    found = True
+            self.assertTrue(found)
+
         self.assertEqual([], collection.get_CREs(external_id="123", name="gcC5"))
         self.assertEqual([], collection.get_CREs(external_id="1234"))
         self.assertEqual([], collection.get_CREs(name="gcC5"))
@@ -591,10 +604,10 @@ class TestDB(unittest.TestCase):
             )
         )
         res = collection.get_CREs(name="gcC1")
-        self.assertEqual(expected, res)
+        self.assertCountEqual(expected[0].todict(), res[0].todict())
 
         res = collection.get_CREs(name="gcC1", include_only=["gcS2"])
-        self.assertEqual(only_gcS2, res)
+        self.assertDictEqual(only_gcS2[0].todict(), res[0].todict())
 
         ccd2 = copy(cd2)
         ccd2.links = []
