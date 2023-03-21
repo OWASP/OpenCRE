@@ -27,6 +27,7 @@ export const STANDARD = '/standard';
 export const TOOL = '/tool';
 export const CODE = '/code';
 export const SECTION = '/section';
+export const SECTION_ID = '/sectionID';
 export const SUBSECTION = '/subsection';
 export const SEARCH = '/search';
 export const CRE = '/cre';

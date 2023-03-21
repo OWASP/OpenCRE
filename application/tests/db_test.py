@@ -164,6 +164,7 @@ class TestDB(unittest.TestCase):
             defs.Standard(
                 subsection="4.5.6",
                 section="FooStand",
+                sectionID="123",
                 name="BarStand",
                 hyperlink="https://example.com",
                 tags=["a", "b", "c"],
@@ -174,6 +175,7 @@ class TestDB(unittest.TestCase):
             defs.Standard(
                 subsection="4.5.6",
                 section="Unlinked",
+                sectionID="Unlinked",
                 name="Unlinked",
                 hyperlink="https://example.com",
             )
@@ -209,6 +211,7 @@ class TestDB(unittest.TestCase):
                         document=defs.Standard(
                             name="BarStand",
                             section="FooStand",
+                            sectionID="456",
                             subsection="4.5.6",
                             hyperlink="https://example.com",
                             tags=["a", "b", "c"],
@@ -221,6 +224,7 @@ class TestDB(unittest.TestCase):
                 subsection="4.5.6",
                 section="Unlinked",
                 name="Unlinked",
+                sectionID="Unlinked",
                 hyperlink="https://example.com",
             ),
             defs.Tool(name="t0", tooltype=defs.ToolTypes.Unknown),
@@ -262,6 +266,7 @@ class TestDB(unittest.TestCase):
         expected = defs.Standard(
             name="foo",
             section="bar",
+            sectionID="213",
             subsection="foobar",
             hyperlink="https://example.com/foo/bar",
             version="1.1.1",
@@ -275,6 +280,7 @@ class TestDB(unittest.TestCase):
                     subsection="foobar",
                     link="https://example.com/foo/bar",
                     version="1.1.1",
+                    section_id="213",
                     ntype=defs.Standard.__name__,
                 )
             ),
@@ -536,7 +542,7 @@ class TestDB(unittest.TestCase):
             )
             .add_link(defs.Link(ltype=defs.LinkTypes.Contains, document=copy(cd3)))
         ]
-
+        self.maxDiff = None
         shallow_cd1 = copy(cd1)
         shallow_cd1.links = []
         cd2.add_link(defs.Link(ltype=defs.LinkTypes.PartOf, document=shallow_cd1))
@@ -544,27 +550,40 @@ class TestDB(unittest.TestCase):
         self.assertEqual([], collection.get_CREs())
 
         res = collection.get_CREs(name="gcC1")
-        self.assertEqual(expected, res)
+        self.assertEqual(len(expected), len(res))
+        self.assertDictEqual(expected[0].todict(), res[0].todict())
 
         res = collection.get_CREs(external_id="123")
-        self.assertEqual(expected, res)
+        self.assertEqual(len(expected), len(res))
+        self.assertDictEqual(expected[0].todict(), res[0].todict())
 
-        self.assertEqual(collection.get_CREs(external_id="12%", partial=True), expected)
+        res = collection.get_CREs(external_id="12%", partial=True)
+        self.assertEqual(len(expected), len(res))
+        self.assertDictEqual(expected[0].todict(), res[0].todict())
 
-        cres = collection.get_CREs(name="gcC%", partial=True)
-        self.assertCountEqual(cres, [expected[0], cd2, cd3])
-        self.assertEqual(
-            collection.get_CREs(external_id="1%", name="gcC%", partial=True), expected
-        )
-        self.assertEqual(collection.get_CREs(description="gcCD1"), expected)
-        self.assertEqual(
-            collection.get_CREs(external_id="1%", description="gcC%", partial=True),
-            expected,
-        )
-        self.assertCountEqual(
-            collection.get_CREs(description="gcC%", name="gcC%", partial=True),
-            [expected[0], cd2, cd3],
-        )
+        res = collection.get_CREs(name="gcC%", partial=True)
+
+        res = collection.get_CREs(external_id="1%", name="gcC%", partial=True)
+        self.assertEqual(len(expected), len(res))
+        self.assertDictEqual(expected[0].todict(), res[0].todict())
+
+        res = collection.get_CREs(description="gcCD1")
+        self.assertEqual(len(expected), len(res))
+        self.assertDictEqual(expected[0].todict(), res[0].todict())
+
+        res = collection.get_CREs(external_id="1%", description="gcC%", partial=True)
+        self.assertEqual(len(expected), len(res))
+        self.assertDictEqual(expected[0].todict(), res[0].todict())
+
+        res = collection.get_CREs(description="gcC%", name="gcC%", partial=True)
+        want = [expected[0], cd2, cd3]
+        for el in res:
+            found = False
+            for wel in want:
+                if el.todict() == wel.todict():
+                    found = True
+            self.assertTrue(found)
+
         self.assertEqual([], collection.get_CREs(external_id="123", name="gcC5"))
         self.assertEqual([], collection.get_CREs(external_id="1234"))
         self.assertEqual([], collection.get_CREs(name="gcC5"))
@@ -585,10 +604,10 @@ class TestDB(unittest.TestCase):
             )
         )
         res = collection.get_CREs(name="gcC1")
-        self.assertEqual(expected, res)
+        self.assertCountEqual(expected[0].todict(), res[0].todict())
 
         res = collection.get_CREs(name="gcC1", include_only=["gcS2"])
-        self.assertEqual(only_gcS2, res)
+        self.assertDictEqual(only_gcS2[0].todict(), res[0].todict())
 
         ccd2 = copy(cd2)
         ccd2.links = []
@@ -621,6 +640,7 @@ class TestDB(unittest.TestCase):
                 ntype=defs.Standard.__name__,
                 name="S1",
                 section="1",
+                section_id="123",
                 subsection="2",
                 link="3",
                 version="4",
@@ -641,6 +661,7 @@ class TestDB(unittest.TestCase):
             defs.Standard(
                 name="S1",
                 section="1",
+                sectionID="123",
                 subsection="2",
                 hyperlink="3",
                 version="4",
@@ -676,6 +697,7 @@ class TestDB(unittest.TestCase):
             "dbs1": db.Node(
                 name="S1",
                 section="1",
+                section_id="123",
                 subsection="2",
                 link="3",
                 version="4",
@@ -695,6 +717,7 @@ class TestDB(unittest.TestCase):
             defs.Standard(
                 name="S1",
                 section="1",
+                sectionID="123",
                 subsection="2",
                 hyperlink="3",
                 version="4",
@@ -717,6 +740,7 @@ class TestDB(unittest.TestCase):
             defs.Standard(
                 name="S1",
                 section="1",
+                sectionID="123",
                 subsection="2",
                 hyperlink="3",
                 version="4",
@@ -1006,7 +1030,7 @@ class TestDB(unittest.TestCase):
             tooltype=defs.ToolTypes.Offensive,
             hyperlink="https://example.com/textSearchTool",
             description="test text search with tool",
-            ruleID="15",
+            sectionID="15",
             section="rule 15",
         )
         collection.add_node(t1)

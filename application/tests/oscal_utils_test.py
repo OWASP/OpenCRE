@@ -46,7 +46,7 @@ class TestOSCALUtils(unittest.TestCase):
                     defs.Link(
                         document=defs.Tool(
                             name=f"tool-{i}",
-                            ruleID=f"{i}",
+                            sectionID=f"{i}",
                             hyperlink=f"https://example.com/{i}",
                         )
                     )
@@ -201,7 +201,7 @@ class TestOSCALUtils(unittest.TestCase):
             name="t-1",
             id="-1",
             version="v0.1.2",
-            ruleID="t-rule",
+            sectionID="t-rule",
             hyperlink="https://example.com/t-1/t-rule",
         )
         for i in range(0, 5):
@@ -345,7 +345,7 @@ class TestOSCALUtils(unittest.TestCase):
             name="t-1",
             id="-1",
             version="v0.1.2",
-            ruleID="t-rule",
+            sectionID="t-rule",
             hyperlink="https://example.com/t-1/t-rule",
         )
         for i in range(0, 5):

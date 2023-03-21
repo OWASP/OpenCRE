@@ -51,7 +51,7 @@ https://opencre.org/cre/<creid>?type=<standard>&name=<standard_name>&section=<se
 And a link for a tool rule would be:
 
 ``` url
-https://opencre.org/cre/<creid>?type=<tool>&name=<tool_name>&link=<where should we redirect to>&ruleID=<the tool rule id>
+https://opencre.org/cre/<creid>?type=<tool>&name=<tool_name>&link=<where should we redirect to>&sectionID=<the tool rule id>
 ```
 
 Under this proposal a link to e.g. CRE from ASVS becomes
@@ -63,7 +63,7 @@ You can read more information about secrets storage at (OpenCRE.org)[https://ope
 And a link from ZAP's XSS rule could be
 
 ``` markdown
-(CRE 028-726)[https://opencre.org/cre/028-726?name=ZAP&ruleID=15&link=https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrules/src/main/java/org/zaproxy/zap/extension/ascanrules/PersistentXssScanRule.java]
+(CRE 028-726)[https://opencre.org/cre/028-726?name=ZAP&sectionID=15&link=https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrules/src/main/java/org/zaproxy/zap/extension/ascanrules/PersistentXssScanRule.java]
 ````
 
 ### Abstract parser with config

@@ -28,7 +28,7 @@ def make_node_entry(doc: defs.Node) -> str:
     if doc.doctype == defs.Credoctypes.Standard:
         return f"{doc.name} {doc.section}"
     elif doc.doctype == defs.Credoctypes.Tool:
-        return f"{doc.name}-{doc.ruleID}"
+        return f"{doc.name}-{doc.sectionID}"
     elif doc.doctype == defs.Credoctypes.CRE:
         return f"{doc.name}-{doc.id}"
     else:

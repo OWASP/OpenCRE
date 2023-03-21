@@ -76,7 +76,7 @@ class _Source(_Status):
     description: Optional[str] = field(compare=False, default=None)
     section: Optional[str] = field(default=None)
     subsection: Optional[str] = field(default=None)
-    ruleID: Optional[str] = field(default=None)
+    sectionID: Optional[str] = field(default=None)
 
 
 @dataclass
@@ -207,7 +207,9 @@ def _parse_node(
                     hyperlink=english_attrs.source if english_attrs.source else "",
                     tooltype=ttype if ttype else defs.ToolTypes.Unknown,
                     section=english_attrs.section if english_attrs.section else "",
-                    ruleID=english_attrs.ruleID if english_attrs.ruleID else "",
+                    sectionID=english_attrs.sectionID
+                    if english_attrs.sectionID
+                    else "",
                 )
 
             elif node_type == defs.Credoctypes.CRE:

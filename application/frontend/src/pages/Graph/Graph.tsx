@@ -51,9 +51,9 @@ const documentToReactFlowNode = (cDoc: Document | any): CREGraph => {
 
   if (cDoc.links) {
     for (let link of cDoc.links) {
-      const { id, doctype, hyperlink, name, section, subsection, ruleID } = link.document;
+      const { id, doctype, hyperlink, name, section, subsection, sectionID } = link.document;
       const unique_node_id = id || section || name;
-      const node_label = name + ' - ' + doctype === DOCUMENT_TYPES.TYPE_TOOL ? ruleID : section || id;
+      const node_label = name + ' - ' + doctype === DOCUMENT_TYPES.TYPE_TOOL ? sectionID : section || id;
       let node = {
         id: unique_node_id,
         type: doctype,

@@ -22,7 +22,7 @@ def zap_alert(
         tooltype=defs.ToolTypes.Offensive,
         name=f"ZAP Rule",
         section=name,
-        ruleID=alert_id,
+        sectionID=alert_id,
         description=description,
         tags=tags,
         hyperlink=code,
@@ -116,7 +116,7 @@ def register_alerts(cache: db.Node_collection, repo: git.git, alerts_path: str):
             if cwe:
                 cweId = cwe.group("cweId")
                 logger.info(f"Found zap alert {name} linking to CWE {cweId}")
-                cwe_nodes = cache.get_nodes(name="CWE", section=cweId)
+                cwe_nodes = cache.get_nodes(name="CWE", sectionID=cweId)
                 for node in cwe_nodes:
                     for link in node.links:
                         if link.document.doctype == defs.Credoctypes.CRE:
