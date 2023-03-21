@@ -62,12 +62,16 @@ def get_linked_nodes(mapping: Dict[str, str]) -> List[defs.Link]:
         tooltype = defs.ToolTypes.from_str(
             mapping.get(defs.ExportFormat.tooltype_key(name, type))
         )
-        ruleID = mapping.get(defs.ExportFormat.ruleID_key(name, type))
+        sectionID = mapping.get(defs.ExportFormat.sectionID_key(name, type))
         description = mapping.get(defs.ExportFormat.description_key(name, type))
         node = None
         if type == defs.Credoctypes.Standard:
             node = defs.Standard(
-                name=name, section=section, subsection=subsection, hyperlink=hyperlink
+                name=name,
+                section=section,
+                subsection=subsection,
+                hyperlink=hyperlink,
+                sectionID=sectionID,
             )
         elif type == defs.Credoctypes.Code:
             node = defs.Code(description=description, hyperlink=hyperlink, name=name)
@@ -78,7 +82,7 @@ def get_linked_nodes(mapping: Dict[str, str]) -> List[defs.Link]:
                 description=description,
                 hyperlink=hyperlink,
                 section=section,
-                ruleID=ruleID,
+                sectionID=sectionID,
             )
 
         lt: defs.LinkTypes
@@ -299,7 +303,9 @@ def parse_v1_standards(
             cre.add_link(
                 defs.Link(
                     ltype=defs.LinkTypes.LinkedTo,
-                    document=defs.Standard(name="CWE", section=cre_mapping.pop("CWE")),
+                    document=defs.Standard(
+                        name="CWE", sectionID=cre_mapping.pop("CWE")
+                    ),
                 )
             )
 
@@ -460,6 +466,9 @@ def parse_v0_standards(cre_file: List[Dict[str, str]]) -> Dict[str, defs.CRE]:
         for key, value in cre_mapping.items():
             if not is_empty(value) and not is_empty(key):
                 linked_standard = defs.Standard(name=key, section=value)
+
+                if key == "CWE":
+                    linked_standard = defs.Standard(name=key, sectionID=value)
                 cre.add_link(
                     defs.Link(ltype=defs.LinkTypes.LinkedTo, document=linked_standard)
                 )
@@ -603,50 +612,59 @@ def parse_standards(
             "Standards": {
                 "ASVS": {
                     "section": "Standard ASVS Item",
+                    "sectionID": "",
                     "subsection": "",
                     "hyperlink": "Standard ASVS Hyperlink",
                 },
                 "OWASP Proactive Controls": {
                     "section": "Standard OPC (ASVS source)",
+                    "sectionID": "",
                     "subsection": "",
                     "hyperlink": "Standard OPC (ASVS source)-hyperlink",
                 },
                 "CWE": {
-                    "section": "Standard CWE (from ASVS)",
+                    "section": "",
+                    "sectionID": "Standard CWE (from ASVS)",
                     "subsection": "",
                     "hyperlink": "Standard CWE (from ASVS)-hyperlink",
                 },
                 "NIST 800-53 v5": {
                     "section": "Standard NIST 800-53 v5",
+                    "sectionID": "",
                     "subsection": "",
                     "hyperlink": "Standard NIST 800-53 v5-hyperlink",
                     "separator": "\n",
                 },
                 "(WSTG) Web Security Testing Guide": {
                     "section": "Standard WSTG",
+                    "sectionID": "",
                     "subsection": "",
                     "hyperlink": "Standard WSTG-Hyperlink",
                     "separator": "\n",
                 },
                 "Cheat_sheets": {
                     "section": "Standard Cheat_sheets",
+                    "sectionID": "",
                     "subsection": "",
                     "hyperlink": "Standard Cheat_sheets-Hyperlink",
                     "separator": ";",
                 },
                 "NIST 800-63": {
                     "section": "Standard NIST-800-63 (from ASVS)",
+                    "sectionID": "",
                     "subsection": "",
                     "hyperlink": "",
                     "separator": "/",
                 },
                 "OWASP Top 10 2021": {
                     "section": "OWASP Top 10 2021",
+                    "sectionID": "",
                     "subsection": "",
                     "hyperlink": "OWASP Top 10 hyperlink",
                 },
                 "Top10 2017": {
                     "section": "Standard Top10 2017",
+                    "sectionID": "",
                     "subsection": "",
                     "hyperlink": "Standard Top10 Hyperlink",
                 },
@@ -654,23 +672,35 @@ def parse_standards(
         }
     links: List[defs.Link] = []
     for name, struct in standards_mapping.get("Standards", {}).items():
-        if not is_empty(mapping.get(struct["section"])):
+        if not is_empty(mapping.get(struct["section"])) or not is_empty(
+            mapping.get(struct["sectionID"])
+        ):
             if "separator" in struct:
                 separator = struct["separator"]
                 sections = str(mapping.pop(struct["section"])).split(separator)
                 subsections = str(mapping.get(struct["subsection"], "")).split(
                     separator
                 )
+
                 hyperlinks = mapping.get(struct["hyperlink"], "").split(separator)
                 if len(sections) > len(subsections):
                     subsections.extend([""] * (len(sections) - len(subsections)))
                 if len(sections) > len(hyperlinks):
                     hyperlinks.extend([""] * (len(sections) - len(hyperlinks)))
 
+                sectionIDs = [""] * len(sections)
+                if struct["sectionID"] in mapping:
+                    sectionIDs = str(mapping.pop(struct["sectionID"])).split(separator)
+
+                if len(sections) == 0:
+                    sections = [""] * len(sectionIDs)
+
                 if "Top" in name:
                     pprint("found top 10")
 
-                for section, subsection, link in zip(sections, subsections, hyperlinks):
+                for section, subsection, link, sectionID in zip(
+                    sections, subsections, hyperlinks, sectionIDs
+                ):
                     if not is_empty(section):
                         links.append(
                             defs.Link(
@@ -680,19 +710,23 @@ def parse_standards(
                                     section=section.strip(),
                                     hyperlink=link.strip(),
                                     subsection=subsection.strip(),
+                                    sectionID=sectionID.strip(),
                                 ),
                             )
                         )
             else:
-                section = str(mapping.pop(struct["section"]))
+                section = str(mapping.get(struct["section"], ""))
                 subsection = mapping.get(struct["subsection"], "")
                 hyperlink = mapping.get(struct["hyperlink"], "")
+                sectionID = str(mapping.get(struct["sectionID"], ""))
+
                 links.append(
                     defs.Link(
                         ltype=defs.LinkTypes.LinkedTo,
                         document=defs.Standard(
                             name=name,
                             section=section.strip(),
+                            sectionID=sectionID.strip(),
                             subsection=subsection.strip(),
                             hyperlink=hyperlink.strip(),
                         ),

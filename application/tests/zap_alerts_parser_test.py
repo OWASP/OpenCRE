@@ -98,7 +98,7 @@ class TestZAPAlertsParser(unittest.TestCase):
 
         expected = defs.Tool(
             name="ZAP Rule",
-            ruleID="10003",
+            sectionID="10003",
             section="Vulnerable JS Library",
             doctype=defs.Credoctypes.Tool,
             description="_Unavailable_",
@@ -129,7 +129,7 @@ class TestZAPAlertsParser(unittest.TestCase):
         repo.working_dir = loc
 
         cre = self.collection.add_cre(defs.CRE(name="foo", id="111-111"))
-        cwe = self.collection.add_node(defs.Standard(name="CWE", section="1021"))
+        cwe = self.collection.add_node(defs.Standard(name="CWE", sectionID="1021"))
         self.collection.add_link(cre=cre, node=cwe)
 
         with open(os.path.join(loc, "alert0.md"), "w") as mdf:
@@ -141,7 +141,7 @@ class TestZAPAlertsParser(unittest.TestCase):
         expected = defs.Tool(
             name="ZAP Rule",
             section="Multiple X-Frame-Options Header Entries",
-            ruleID="10020-2",
+            sectionID="10020-2",
             doctype=defs.Credoctypes.Tool,
             description="Ensure only a single X-Frame-Options header is present in the response.",
             tags=["10020-2", "Passive"],
@@ -152,7 +152,7 @@ class TestZAPAlertsParser(unittest.TestCase):
         actual = db.nodeFromDB(
             self.collection.session.query(db.Node)
             .filter(db.Node.name == expected.name)
-            .filter(db.Node.rule_id == expected.ruleID)
+            .filter(db.Node.section_id == expected.sectionID)
             .first()
         )
         self.assertCountEqual(expected.tags, actual.tags)

@@ -39,7 +39,7 @@ class TestMdutilsParser(unittest.TestCase):
         tools = [
             defs.Tool(
                 name=f"tname_{s}",
-                ruleID=f"trule_{s}",
+                sectionID=f"trule_{s}",
                 tooltype=defs.ToolTypes.Training,
                 hyperlink=f"https://example.com/tnae/{s}",
             )

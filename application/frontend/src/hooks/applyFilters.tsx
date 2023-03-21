@@ -26,7 +26,7 @@ const filterLinks = (document: Document, filters: string[]): Document | undefine
       subsection: document.subsection,
       tags: document.tags,
       links: links,
-      ruleID: document.ruleID,
+      sectionID: document.sectionID,
     };
   }
 };

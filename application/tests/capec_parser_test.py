@@ -25,7 +25,7 @@ class TestCapecParser(unittest.TestCase):
             xml.write(self.capec_xml)
         cres = []
         for cwe in [276, 285, 434]:
-            dbnode = self.collection.add_node(defs.Standard(name="CWE", section=cwe))
+            dbnode = self.collection.add_node(defs.Standard(name="CWE", sectionID=cwe))
             cre = defs.CRE(id=f"{cwe}-{cwe}", name=f"CRE-{cwe}")
             cres.append(cre)
             dbcre = self.collection.add_cre(cre=cre)
@@ -41,15 +41,15 @@ class TestCapecParser(unittest.TestCase):
                 defs.Link(document=defs.CRE(name="CRE-434", id="434-434")),
             ],
             hyperlink="https://capec.mitre.org/data/definitions/1.html",
-            section="1",
-            subsection="Accessing Functionality Not Properly Constrained by ACLs",
+            sectionID="1",
+            section="Accessing Functionality Not Properly Constrained by ACLs",
             version="3.7",
         )
 
         node = self.collection.get_nodes(
             name="CAPEC",
-            section="1",
-            subsection="Accessing Functionality Not Properly Constrained by ACLs",
+            sectionID="1",
+            section="Accessing Functionality Not Properly Constrained by ACLs",
         )[0]
         self.assertEquals(node, expected)
 

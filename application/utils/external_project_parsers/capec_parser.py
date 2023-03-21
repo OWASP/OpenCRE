@@ -30,7 +30,7 @@ def make_hyperlink(capec_id: int):
 
 
 def link_capec_to_cwe_cre(capec: db.Node, cache: db.Node_collection, cwe_id: str):
-    cwes = cache.get_nodes(name="CWE", section=cwe_id)
+    cwes = cache.get_nodes(name="CWE", sectionID=cwe_id)
     if cwes:
         for cre in [
             c.document
@@ -57,8 +57,8 @@ def register_capec(cache: db.Node_collection, xml_file: str):
             if pattern["@Status"] in ["Stable", "Usable", "Draft"]:
                 capec = defs.Standard(
                     name="CAPEC",
-                    section=pattern["@ID"],
-                    subsection=pattern["@Name"],
+                    sectionID=pattern["@ID"],
+                    section=pattern["@Name"],
                     hyperlink=make_hyperlink(pattern["@ID"]),
                     version=version,
                 )

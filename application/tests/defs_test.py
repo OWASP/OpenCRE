@@ -314,14 +314,14 @@ class TestCreDefs(unittest.TestCase):
         t0 = defs.Tool(
             name="toolmctoolface",
             tooltype=defs.ToolTypes.Offensive,
-            ruleID="15",
+            sectionID="15",
             section="Rule 15 Title",
         )
         expected = {
             "doctype": "Tool",
             "name": "toolmctoolface",
             "tooltype": "Offensive",
-            "ruleID": "15",
+            "sectionID": "15",
             "section": "Rule 15 Title",
         }
         self.assertDictEqual(t0.todict(), expected)

@@ -44,7 +44,7 @@ class TestMain(unittest.TestCase):
                     document=defs.Standard(
                         doctype=defs.Credoctypes.Standard,
                         name="CWE",
-                        section="598",
+                        sectionID="598",
                     )
                 ),
                 defs.Link(
@@ -81,7 +81,7 @@ class TestMain(unittest.TestCase):
     def test_register_node_with_cre(self) -> None:
         known_standard_with_cre = defs.Standard(
             name="CWE",
-            section="598",
+            sectionID="598",
             links=[
                 defs.Link(document=defs.CRE(id="101-202", name="crename")),
             ],
@@ -96,14 +96,14 @@ class TestMain(unittest.TestCase):
                         tooltype=defs.ToolTypes.Offensive,
                         name="zap",
                         section="Rule - 9",
-                        ruleID="9",
+                        sectionID="9",
                     )
                 ),
                 defs.Link(document=defs.CRE(id="101-202", name="crename")),
                 defs.Link(
                     document=defs.Standard(
                         name="CWE",
-                        section="598",
+                        sectionID="598",
                         links=[],
                     )
                 ),
@@ -152,7 +152,7 @@ class TestMain(unittest.TestCase):
                     document=defs.Standard(
                         doctype=defs.Credoctypes.Standard,
                         name="CWE",
-                        section="598",
+                        sectionID="598",
                     )
                 ),
                 defs.Link(

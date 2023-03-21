@@ -212,7 +212,7 @@ class TestParsers(unittest.TestCase):
                 "Tool:S2:link_type": "Linked To",
                 "Tool:S2:description": "SE2",
                 "Tool:S2:ToolType": "Offensive",
-                "Tool:S2:RuleID": "0",
+                "Tool:S2:SectionID": "0",
                 "Tool:S2:section": "rule-0",
                 "Code:S3:hyperlink": "",
                 "Code:S3:link_type": "",
@@ -390,7 +390,7 @@ class TestParsers(unittest.TestCase):
                         document=defs.Tool(
                             name="S2",
                             section="rule-0",
-                            ruleID="0",
+                            sectionID="0",
                             tooltype=defs.ToolTypes.Offensive,
                             description="SE2",
                             hyperlink="https://example.com/S2",
@@ -500,12 +500,16 @@ class TestParsers(unittest.TestCase):
                 links=[
                     defs.Link(
                         document=defs.Standard(
-                            doctype=defs.Credoctypes.Standard, name="CWE", section="598"
+                            doctype=defs.Credoctypes.Standard,
+                            name="CWE",
+                            sectionID="598",
                         )
                     ),
                     defs.Link(
                         document=defs.Standard(
-                            doctype=defs.Credoctypes.Standard, name="CWE", section="384"
+                            doctype=defs.Credoctypes.Standard,
+                            name="CWE",
+                            sectionID="384",
                         )
                     ),
                     defs.Link(
@@ -615,7 +619,9 @@ class TestParsers(unittest.TestCase):
                     defs.Link(
                         ltype=defs.LinkTypes.LinkedTo,
                         document=defs.Standard(
-                            doctype=defs.Credoctypes.Standard, name="CWE", section="598"
+                            doctype=defs.Credoctypes.Standard,
+                            name="CWE",
+                            sectionID="598",
                         ),
                     ),
                     defs.Link(
@@ -669,7 +675,9 @@ class TestParsers(unittest.TestCase):
                     defs.Link(
                         ltype=defs.LinkTypes.LinkedTo,
                         document=defs.Standard(
-                            doctype=defs.Credoctypes.Standard, name="CWE", section="384"
+                            doctype=defs.Credoctypes.Standard,
+                            name="CWE",
+                            sectionID="384",
                         ),
                     ),
                     defs.Link(
@@ -844,7 +852,7 @@ class TestParsers(unittest.TestCase):
                                     document=defs.Standard(
                                         doctype=defs.Credoctypes.Standard,
                                         name="CWE",
-                                        section="0",
+                                        sectionID="0",
                                     ),
                                 ),
                                 defs.Link(
@@ -927,7 +935,7 @@ class TestParsers(unittest.TestCase):
                                         doctype=defs.Credoctypes.Standard,
                                         name="CWE",
                                         links=[],
-                                        section="0",
+                                        sectionID="0",
                                     ),
                                 ),
                                 defs.Link(
@@ -1009,7 +1017,7 @@ class TestParsers(unittest.TestCase):
                                     document=defs.Standard(
                                         doctype=defs.Credoctypes.Standard,
                                         name="CWE",
-                                        section="0",
+                                        sectionID="0",
                                     ),
                                 ),
                                 defs.Link(
@@ -1047,7 +1055,7 @@ class TestParsers(unittest.TestCase):
                                     document=defs.Standard(
                                         doctype=defs.Credoctypes.Standard,
                                         name="CWE",
-                                        section="0",
+                                        sectionID="0",
                                     ),
                                 ),
                                 defs.Link(
@@ -1126,7 +1134,7 @@ class TestParsers(unittest.TestCase):
                                     document=defs.Standard(
                                         doctype=defs.Credoctypes.Standard,
                                         name="CWE",
-                                        section="0",
+                                        sectionID="0",
                                     ),
                                 ),
                                 defs.Link(
@@ -1224,7 +1232,7 @@ class TestParsers(unittest.TestCase):
             hyperlink="https://example.com/opc",
         )
         sCWE19876 = defs.Standard(
-            name="CWE", section="19876", hyperlink="https://example.com/cwe19876"
+            name="CWE", sectionID="19876", hyperlink="https://example.com/cwe19876"
         )
         sWSTG = defs.Standard(
             name="(WSTG) Web Security Testing Guide",
@@ -1242,7 +1250,7 @@ class TestParsers(unittest.TestCase):
             name="ASVS", section="V1.2.3", hyperlink="https://example.com/asvs"
         )
         sCWE = defs.Standard(
-            name="CWE", section="306", hyperlink="https://example.com/cwe306"
+            name="CWE", sectionID="306", hyperlink="https://example.com/cwe306"
         )
         scheatf = defs.Standard(
             name="Cheat_sheets",
@@ -1502,7 +1510,15 @@ class TestParsers(unittest.TestCase):
         output = parse_hierarchical_export_format(data)
         self.maxDiff = None
         for k, v in expected.items():
-            self.assertEqual(output[k], v)
+            try:
+                self.assertEqual(output[k], v)
+            except Exception as e:
+                pprint("-" * 90)
+                pprint(output[k])
+                pprint("-" * 90)
+                pprint(v)
+                pprint("-" * 90)
+                raise e
 
 
 if __name__ == "__main__":

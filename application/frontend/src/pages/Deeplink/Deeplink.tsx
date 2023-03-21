@@ -7,14 +7,14 @@ import { useEnvironment } from '../../hooks';
 import { Document } from '../../types';
 
 export const Deeplink = () => {
-  let { type, nodeName, section, subsection, tooltype, ruleID } = useParams();
+  let { type, nodeName, section, subsection, tooltype, sectionID } = useParams();
   const { apiUrl } = useEnvironment();
   const [loading, setLoading] = useState<boolean>(false);
   const search = useLocation().search;
   section = section ? section : new URLSearchParams(search).get('section');
   subsection = subsection ? subsection : new URLSearchParams(search).get('subsection');
   tooltype = tooltype ? tooltype : new URLSearchParams(search).get('tooltype');
-  ruleID = ruleID ? ruleID : new URLSearchParams(search).get('ruleID');
+  sectionID = sectionID ? sectionID : new URLSearchParams(search).get('sectionID');
   if (!type) {
     // Backwards compatible fix, the url used to be /deeplink/:nodename, new url is /deeplink/:type/:nodename
     type = 'Standard';
@@ -25,7 +25,7 @@ export const Deeplink = () => {
     (section != null ? `?section=${section}&` : '') +
     (subsection != null ? `subsection=${subsection}&` : '') +
     (tooltype != null ? `tooltype=${tooltype}&` : '') +
-    (ruleID != null ? `ruleID=${ruleID}&` : '');
+    (sectionID != null ? `sectionID=${sectionID}&` : '');
 
   const { error, data, refetch } = useQuery<{ standards: Document[] }, string>(
     'deeplink',

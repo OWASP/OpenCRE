@@ -12,7 +12,7 @@ export interface Document {
   subsection?: string;
   tags?: string[];
   tooltype?: string;
-  ruleID?: string;
+  sectionID?: string;
 }
 export interface LinkedDocument {
   document: Document;

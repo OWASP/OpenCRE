@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 
-import { BROWSEROOT, CRE, DEEPLINK, GRAPH, INDEX, SEARCH, SECTION, STANDARD } from './const';
+import { BROWSEROOT, CRE, DEEPLINK, GRAPH, INDEX, SEARCH, SECTION, STANDARD,SECTION_ID } from './const';
 import { CommonRequirementEnumeration, Graph, Search, Standard } from './pages';
 import { BrowseRootCres } from './pages/BrowseRootCres/browseRootCres';
 import { Deeplink } from './pages/Deeplink/Deeplink';
@@ -23,6 +23,12 @@ export const ROUTES: IRoute[] = [
   },
   {
     path: `/node${STANDARD}/:id${SECTION}/:section`,
+    component: StandardSection,
+    showHeader: true,
+    showFilter: true,
+  },
+  {
+    path: `/node${STANDARD}/:id${SECTION_ID}/:sectionID`,
     component: StandardSection,
     showHeader: true,
     showFilter: true,
