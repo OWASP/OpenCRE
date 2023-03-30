@@ -13,7 +13,7 @@ import { Document } from '../../types';
 import { groupLinksByType } from '../../utils';
 
 export const StandardSection = () => {
-  const { id, section,sectionID } = useParams();
+  const { id, section, sectionID } = useParams();
   const { apiUrl } = useEnvironment();
   const [page, setPage] = useState<number>(1);
   const [loading, setLoading] = useState<boolean>(false);

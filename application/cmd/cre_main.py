@@ -22,6 +22,7 @@ from application.utils.external_project_parsers import (
     misc_tools_parser,
     zap_alerts_parser,
     iso27001,
+    secure_headers,
 )
 from dacite import from_dict
 from dacite.config import Config
@@ -406,6 +407,10 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
     if args.iso_27001_in:
         iso27001.parse_iso(
             url="https://csrc.nist.gov/CSRC/media/Publications/sp/800-53/rev-5/final/documents/sp800-53r5-to-iso-27001-mapping.docx",
+            cache=db_connect(args.cache_file),
+        )
+    if args.owasp_secure_headers_in:
+        secure_headers.parse(
             cache=db_connect(args.cache_file),
         )
     if args.owasp_proj_meta:
