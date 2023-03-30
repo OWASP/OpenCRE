@@ -8,7 +8,7 @@ import os
 import re
 from urllib.parse import urlparse, parse_qs
 
-# GENERIC Markdown file parser
+# GENERIC Markdown file parser for self-contained links! when we have more projects using this setup add them in the list
 
 
 def entry(name: str, section: str, hyperlink: str, tags: List[str]) -> defs.Standard:
@@ -21,7 +21,7 @@ def entry(name: str, section: str, hyperlink: str, tags: List[str]) -> defs.Stan
 
 
 def parse(cache: db.Node_collection):
-    sh_repo = "https://github.com/northdpole/www-project-secure-headers.git"
+    sh_repo = "https://github.com/owasp/www-project-secure-headers.git"
     file_path = "./"
     repo = git.clone(sh_repo)
     register_headers(repo=repo, cache=cache, file_path=file_path, repo_path=sh_repo)
