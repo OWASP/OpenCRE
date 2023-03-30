@@ -156,7 +156,11 @@ def main() -> None:
         action="store_true",
         help="import ISO 27001 by using the NIST mappings located at https://csrc.nist.gov/CSRC/media/Publications/sp/800-53/rev-5/final/documents/sp800-53r5-to-iso-27001-mapping.docx",
     )
-
+    parser.add_argument(
+        "--owasp_secure_headers_in",
+        action="store_true",
+        help="import owasp secure headers",
+    )
     args = parser.parse_args()
 
     from application.cmd import cre_main
