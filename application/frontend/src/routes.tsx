@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 
-import { BROWSEROOT, CRE, DEEPLINK, GRAPH, INDEX, SEARCH, SECTION, STANDARD,SECTION_ID } from './const';
+import { BROWSEROOT, CRE, DEEPLINK, GRAPH, INDEX, SEARCH, SECTION, SECTION_ID, STANDARD } from './const';
 import { CommonRequirementEnumeration, Graph, Search, Standard } from './pages';
 import { BrowseRootCres } from './pages/BrowseRootCres/browseRootCres';
 import { Deeplink } from './pages/Deeplink/Deeplink';
