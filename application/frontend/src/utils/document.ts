@@ -33,20 +33,28 @@ export const groupBy = <T, K extends keyof any>(list: T[], getKey: (item: T) => 
 export const getInternalUrl = (doc: Document): String => {
   if (doc.doctype.toLowerCase() != 'cre') {
     var standardAPIPath = `/node/${doc.doctype.toLowerCase()}/${doc.name}/`;
-    if (doc && doc.section) {
-      standardAPIPath += `section/${encodeURIComponent(doc.section)}`;
+    if (doc) {
+      if (doc.section) {
+        standardAPIPath += `section/${encodeURIComponent(doc.section)}`;
+      } else if (doc.sectionID) {
+        standardAPIPath += `sectionid/${encodeURIComponent(doc.sectionID)}`;
+      }
     }
     return standardAPIPath;
   }
-
   return `/cre/${doc.id}`;
 };
 
 export const getApiEndpoint = (doc: Document, apiUrl: string): string => {
   if (doc.doctype.toLowerCase() != 'cre') {
     var standardAPIPath = `${apiUrl}/${doc.doctype.toLowerCase()}/${doc.name}`;
-    if (doc && doc.section) {
-      standardAPIPath += `?section=${encodeURIComponent(doc.section)}`;
+    if (doc) {
+      if (doc.section) {
+        standardAPIPath += `section/${encodeURIComponent(doc.section)}`;
+      } else if (doc.sectionID) {
+        standardAPIPath += `sectionid/${encodeURIComponent(doc.sectionID)}`;
+      }
+      return standardAPIPath;
     }
     return standardAPIPath;
   }
