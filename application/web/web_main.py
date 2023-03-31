@@ -105,8 +105,9 @@ def find_node_by_name(name: str, ntype: str = defs.Credoctypes.Standard.value) -
     opt_format = request.args.get("format")
     if opt_section:
         opt_section = urllib.parse.unquote(opt_section)
-    if opt_ruleID or opt_sectionID:
+    if opt_ruleID:
         opt_ruleID = urllib.parse.unquote(opt_ruleID)
+    if opt_sectionID:
         opt_sectionID = urllib.parse.unquote(opt_sectionID)
         if (
             not opt_sectionID and opt_ruleID
