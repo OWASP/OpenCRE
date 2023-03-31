@@ -29,7 +29,7 @@ export const StandardSection = () => {
     string
   >(
     'standard section',
-    () => fetch(`${apiUrl}/standard/${id}?page=${page}${getSectionParameter()}`).then((res) => res.json()),
+    () => fetch(`${apiUrl}/standard/${id}?page=${page}${getSectionParameter()}${getSectionIDParameter()}`).then((res) => res.json()),
     {
       retry: false,
       enabled: false,
@@ -53,7 +53,7 @@ export const StandardSection = () => {
     <>
       <div className="standard-page section-page">
         <h4 className="standard-page__heading">{id}</h4>
-        <h5 className="standard-page__sub-heading">Section: {document?.section}</h5>
+        <h5 className="standard-page__sub-heading">Section: {document?.section?document?.section:document?.sectionID}</h5>
         {document && document.hyperlink && (
           <>
             <span>Reference: </span>
