@@ -487,3 +487,85 @@ class TestMain(unittest.TestCase):
             }
             self.assertEqual(json.loads(osib_response.data.decode()), osib_expected)
             self.assertEqual(200, osib_response.status_code)
+
+    def test_smartlink(self) -> None:
+        self.maxDiff = None
+        collection = db.Node_collection()
+        with self.app.test_client() as client:
+            response = client.get(
+                "/smartlink/standard/foo/611",
+                headers={"Content-Type": "application/json"},
+            )
+            self.assertEqual(404, response.status_code)
+
+            cres = {
+                "ca": defs.CRE(id="1", description="CA", name="CA", tags=["ta"]),
+                "cd": defs.CRE(id="2", description="CD", name="CD", tags=["td"]),
+                "cb": defs.CRE(id="3", description="CB", name="CB", tags=["tb"]),
+            }
+            standards = {
+                "cwe0": defs.Standard(name="CWE", sectionID="456"),
+                "ASVS": defs.Standard(name="ASVS", section="v0.1.2"),
+            }
+            cres["ca"].add_link(
+                defs.Link(
+                    ltype=defs.LinkTypes.Contains, document=cres["cd"].shallow_copy()
+                )
+            )
+            cres["cb"].add_link(
+                defs.Link(
+                    ltype=defs.LinkTypes.Contains, document=cres["cd"].shallow_copy()
+                )
+            )
+            cres["cd"].add_link(defs.Link(document=standards["cwe0"]))
+            cres["cb"].add_link(defs.Link(document=standards["ASVS"]))
+
+            dca = collection.add_cre(cres["ca"])
+            dcb = collection.add_cre(cres["cb"])
+            dcd = collection.add_cre(cres["cd"])
+            dasvs = collection.add_node(standards["ASVS"])
+            dcwe = collection.add_node(standards["cwe0"])
+            collection.add_internal_link(
+                group=dca, cre=dcd, type=defs.LinkTypes.Contains
+            )
+            collection.add_internal_link(
+                group=dcb, cre=dcd, type=defs.LinkTypes.Contains
+            )
+
+            collection.add_link(dcb, dasvs)
+            collection.add_link(dcd, dcwe)
+
+            response = client.get(
+                "/smartlink/standard/CWE/456",
+                headers={"Content-Type": "application/json"},
+            )
+            location = ""
+            for head in response.headers:
+                if head[0] == "Location":
+                    location = head[1]
+            self.assertEqual(location, "/node/Standard/CWE/sectionid/456")
+            self.assertEqual(302, response.status_code)
+
+            response = client.get(
+                "/smartlink/standard/ASVS/v0.1.2",
+                headers={"Content-Type": "application/json"},
+            )
+            location = ""
+            for head in response.headers:
+                if head[0] == "Location":
+                    location = head[1]
+            self.assertEqual(location, "/node/Standard/ASVS/section/v0.1.2")
+            self.assertEqual(302, response.status_code)
+
+            response = client.get(
+                "/smartlink/standard/CWE/999",
+                headers={"Content-Type": "application/json"},
+            )
+            location = ""
+            for head in response.headers:
+                if head[0] == "Location":
+                    location = head[1]
+            self.assertEqual(
+                location, " https://cwe.mitre.org/data/definitions/999.html"
+            )
+            self.assertEqual(302, response.status_code)

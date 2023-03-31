@@ -14,6 +14,7 @@ from application.defs import osib_defs as odefs
 from application.utils import spreadsheet as sheet_utils
 from application.utils import mdutils, redirectors
 from enum import Enum
+from pprint import pprint
 from flask import (
     Blueprint,
     abort,
@@ -293,7 +294,6 @@ def smartlink(
     """if node is found, show node, else redirect"""
     database = db.Node_collection()
     opt_version = request.args.get("version")
-
     # match ntype to the credoctypes case-insensitive
     typ = [t for t in defs.Credoctypes if t.value.lower() == ntype.lower()]
     if typ:
@@ -301,6 +301,7 @@ def smartlink(
 
     page = 1
     items_per_page = 1
+    found_section_id = False
     _, nodes, _ = database.get_nodes_with_pagination(
         name=name,
         section=section,
@@ -309,13 +310,25 @@ def smartlink(
         version=opt_version,
         ntype=ntype,
     )
+
+    if not nodes or len(nodes) == 0:
+        _, nodes, _ = database.get_nodes_with_pagination(
+            name=name,
+            sectionID=section,
+            page=int(page),
+            items_per_page=int(items_per_page),
+            version=opt_version,
+            ntype=ntype,
+        )
+        found_section_id = True
     if nodes and len(nodes[0].links):
         print(
             f"found node of type {ntype}, name {name} and section {section}, redirecting to opencre"
         )
-        return redirect(
-            f"https://www.opencre.org/node/{ntype}/{name}/section/{section}"
-        )
+        if found_section_id:
+            print(2)
+            return redirect(f"/node/{ntype}/{name}/sectionid/{section}")
+        return redirect(f"/node/{ntype}/{name}/section/{section}")
     elif ntype == defs.Credoctypes.Standard.value and redirectors.redirect(
         name, section
     ):
