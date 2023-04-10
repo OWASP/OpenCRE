@@ -6,8 +6,8 @@ links:
     id: 010-308
     name: Input validation
     tags:
-    - XSS
     - Injection
+    - XSS
   ltype: Contains
 - document:
     doctype: CRE

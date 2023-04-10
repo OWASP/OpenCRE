@@ -92,7 +92,8 @@ export const CommonRequirementEnumeration = () => {
               Object.entries(linksByType).map(([type, links]) => (
                 <div className="cre-page__links" key={type}>
                   <div className="cre-page__links-eader">
-                    {getDocumentDisplayName(display)}<b>{DOCUMENT_TYPE_NAMES[type]}</b>:
+                    {getDocumentDisplayName(display)}
+                    <b>{DOCUMENT_TYPE_NAMES[type]}</b>:
                   </div>
                   {links.map((link, i) => (
                     <div key={i} className="accordion ui fluid styled cre-page__links-container">

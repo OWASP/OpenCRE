@@ -6,8 +6,8 @@ links:
     id: 010-308
     name: Input validation
     tags:
-    - XSS
     - Injection
+    - XSS
   ltype: Contains
 - document:
     doctype: CRE
@@ -24,8 +24,8 @@ links:
     id: 161-451
     name: Output encoding and injection prevention
     tags:
-    - XSS
     - Injection
+    - XSS
   ltype: Contains
 - document:
     doctype: CRE
@@ -49,8 +49,8 @@ links:
     id: 764-765
     name: Sanitization and sandboxing
     tags:
-    - XSS
     - Injection
+    - XSS
   ltype: Contains
 - document:
     doctype: CRE

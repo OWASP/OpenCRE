@@ -8,13 +8,13 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 028-726
-    name: XSS
+    id: 760-764
+    name: Injection
   ltype: Related
 - document:
     doctype: CRE
-    id: 760-764
-    name: Injection
+    id: 028-726
+    name: XSS
   ltype: Related
 - document:
     doctype: CRE
@@ -57,5 +57,5 @@ links:
   ltype: Contains
 name: Input validation
 tags:
-- XSS
 - Injection
+- XSS

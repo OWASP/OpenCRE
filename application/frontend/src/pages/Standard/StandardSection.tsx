@@ -57,7 +57,10 @@ export const StandardSection = () => {
       <div className="standard-page section-page">
         <h4 className="standard-page__heading">{id}</h4>
         <h5 className="standard-page__sub-heading">
-        {getDocumentDisplayName(document).replace(document?.name,"").replace(document?.doctype,"").replace("::","")}
+          {getDocumentDisplayName(document)
+            .replace(document?.name, '')
+            .replace(document?.doctype, '')
+            .replace('::', '')}
         </h5>
         {document && document.hyperlink && (
           <>
@@ -71,7 +74,8 @@ export const StandardSection = () => {
         <LoadingAndErrorIndicator loading={loading} error={error} />
         {!loading && !error && (
           <div className="cre-page__links-container">
-            {Object.keys(linksByType).length > 0? Object.entries(linksByType).map(([type, links]) => (
+            {Object.keys(linksByType).length > 0 ? (
+              Object.entries(linksByType).map(([type, links]) => (
                 <div className="cre-page__links" key={type}>
                   <div className="cre-page__links-header">
                     {getDocumentDisplayName(document)}
@@ -83,7 +87,13 @@ export const StandardSection = () => {
                     </div>
                   ))}
                 </div>
-              )):<b>"This document has no links yet, please open a ticket at https://github.com/OWASP/common-requirement-enumeration with your suggested mapping"</b>}
+              ))
+            ) : (
+              <b>
+                "This document has no links yet, please open a ticket at
+                https://github.com/OWASP/common-requirement-enumeration with your suggested mapping"
+              </b>
+            )}
           </div>
         )}
 
