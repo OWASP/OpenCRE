@@ -10,7 +10,7 @@ import { LoadingAndErrorIndicator } from '../../components/LoadingAndErrorIndica
 import { DOCUMENT_TYPES, DOCUMENT_TYPE_NAMES, TOOL } from '../../const';
 import { useEnvironment } from '../../hooks';
 import { Document } from '../../types';
-import { groupLinksByType } from '../../utils';
+import { getDocumentDisplayName, groupLinksByType } from '../../utils';
 
 export const StandardSection = () => {
   const { id, section, sectionID } = useParams();
@@ -57,7 +57,7 @@ export const StandardSection = () => {
       <div className="standard-page section-page">
         <h4 className="standard-page__heading">{id}</h4>
         <h5 className="standard-page__sub-heading">
-          Section: {document?.section ? document?.section : document?.sectionID}
+          Section {getDocumentDisplayName(document).replace(document?.name,"")}
         </h5>
         {document && document.hyperlink && (
           <>
@@ -71,14 +71,10 @@ export const StandardSection = () => {
         <LoadingAndErrorIndicator loading={loading} error={error} />
         {!loading && !error && (
           <div className="cre-page__links-container">
-            {Object.keys(linksByType).length > 0 &&
-              Object.entries(linksByType).map(([type, links]) => (
+            {Object.keys(linksByType).length > 0? Object.entries(linksByType).map(([type, links]) => (
                 <div className="cre-page__links" key={type}>
                   <div className="cre-page__links-header">
-                    {document.doctype}: {document.name} -{' '}
-                    {document.doctype.toLowerCase() === DOCUMENT_TYPES.TYPE_TOOL.toLowerCase()
-                      ? document.sectionID
-                      : document.section}{' '}
+                    {getDocumentDisplayName(document)}
                     <b>{DOCUMENT_TYPE_NAMES[type]}</b>:
                   </div>
                   {links.map((link, i) => (
@@ -87,7 +83,7 @@ export const StandardSection = () => {
                     </div>
                   ))}
                 </div>
-              ))}
+              )):<b>"This document has no links yet, please open a ticket at https://github.com/OWASP/common-requirement-enumeration with your suggested mapping"</b>}
           </div>
         )}
 
