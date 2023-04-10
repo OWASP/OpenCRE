@@ -801,7 +801,9 @@ class Node_collection:
             self.graph = self.graph.add_cre(dbcre=entry, graph=self.graph)
         return entry
 
-    def add_node(self, node: cre_defs.Node,comparison_skip_attributes:List=["link"]) -> Optional[Node]:
+    def add_node(
+        self, node: cre_defs.Node, comparison_skip_attributes: List = ["link"]
+    ) -> Optional[Node]:
         dbnode = dbNodeFromNode(node)
         if not dbnode:
             logger.warning(f"{node} could not be transformed to a DB object")
@@ -1118,12 +1120,15 @@ class Node_collection:
         nodes = filter(node_is_root, self.graph.graph.nodes)
 
         result = []
-        
+
         for nodeid in nodes:
-            from pprint import pprint
-            if not self.graph.graph.nodes[nodeid].get("internal_id") or "internal_id" not in self.graph.graph.nodes[nodeid]:
-                pprint(self.graph.graph.nodes[nodeid])            
-                input("wtf?")
+            if (
+                not self.graph.graph.nodes[nodeid].get("internal_id")
+                or "internal_id" not in self.graph.graph.nodes[nodeid]
+            ):
+                logger.warning(
+                    "root cre has no internal id, this is a bug in the graph"
+                )
             result.extend(
                 self.get_CREs(internal_id=self.graph.graph.nodes[nodeid]["internal_id"])
             )
