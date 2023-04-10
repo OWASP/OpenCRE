@@ -1129,8 +1129,11 @@ class Node_collection:
                 logger.warning(
                     "root cre has no internal id, this is a bug in the graph"
                 )
+                logger.warning(self.graph.graph.nodes[nodeid].get("internal_id"))
             result.extend(
-                self.get_CREs(internal_id=self.graph.graph.nodes[nodeid]["internal_id"])
+                self.get_CREs(
+                    internal_id=self.graph.graph.nodes[nodeid].get("internal_id")
+                )
             )
         return result
 
