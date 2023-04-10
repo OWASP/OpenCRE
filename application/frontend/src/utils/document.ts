@@ -1,12 +1,13 @@
 import { TYPE_CONTAINS, TYPE_IS_PART_OF, TYPE_LINKED_TO, TYPE_RELATED, TYPE_SAM, TYPE_SAME } from '../const';
 import { Document, LinkedDocument } from '../types';
 
-export const getDocumentDisplayName = (document: Document) =>
+export const getDocumentDisplayName = (document: Document) => {
   // [document.doctype, document.id, document.name, document.section, document.subsection].filter(Boolean).join(' - '); // format: Standard - ASVS - V1.1
-  [document.id, document.name, document.sectionID, document.section, document.subsection]
-    .filter(Boolean)
-    .join(' : '); // format: ASVS - V1.1
-
+  if (!document) {
+    return ""
+  }
+  return [document.doctype, document.id, document.name, document.sectionID, document.section, document.subsection].filter(Boolean).join(' : '); // format: ASVS : V1.1
+}
 export type LinksByType = Record<string, LinkedDocument[]>;
 
 export const groupLinksByType = (node: Document): LinksByType =>
