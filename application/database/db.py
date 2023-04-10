@@ -801,7 +801,9 @@ class Node_collection:
             self.graph = self.graph.add_cre(dbcre=entry, graph=self.graph)
         return entry
 
-    def add_node(self, node: cre_defs.Node) -> Optional[Node]:
+    def add_node(
+        self, node: cre_defs.Node, comparison_skip_attributes: List = ["link"]
+    ) -> Optional[Node]:
         dbnode = dbNodeFromNode(node)
         if not dbnode:
             logger.warning(f"{node} could not be transformed to a DB object")
@@ -810,10 +812,9 @@ class Node_collection:
             logger.warning(f"{node} has no registered type, cannot add, skipping")
             return None
 
-        entries = self.object_select(dbnode, skip_attributes=["link"])
+        entries = self.object_select(dbnode, skip_attributes=comparison_skip_attributes)
         if entries:
             entry = entries[0]
-
             logger.debug(f"knew of {entry.name}:{entry.section}:{entry.link} ,updating")
             entry.link = node.hyperlink
             self.session.commit()
@@ -1119,7 +1120,15 @@ class Node_collection:
         nodes = filter(node_is_root, self.graph.graph.nodes)
 
         result = []
+
         for nodeid in nodes:
+            if (
+                not self.graph.graph.nodes[nodeid].get("internal_id")
+                or "internal_id" not in self.graph.graph.nodes[nodeid]
+            ):
+                logger.warning(
+                    "root cre has no internal id, this is a bug in the graph"
+                )
             result.extend(
                 self.get_CREs(internal_id=self.graph.graph.nodes[nodeid]["internal_id"])
             )

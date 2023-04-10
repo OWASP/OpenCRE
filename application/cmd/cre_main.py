@@ -16,6 +16,7 @@ from application.utils import spreadsheet as sheet_utils
 from application.utils import spreadsheet_parsers
 from application.utils.external_project_parsers import (
     capec_parser,
+    cwe,
     ccmv3,
     ccmv4,
     cheatsheets_parser,
@@ -383,6 +384,9 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
             )
     if args.capec_in:
         capec_parser.parse_capec(cache=db_connect(args.cache_file))
+    if args.cwe_in:
+        cwe.parse_cwe(cache=db_connect(args.cache_file))
+
     if args.export:
         cache = db_connect(args.cache_file)
         cache.export(args.export)
