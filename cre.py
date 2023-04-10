@@ -137,6 +137,11 @@ def main() -> None:
         help="import CAPEC",
     )
     parser.add_argument(
+        "--cwe_in",
+        action="store_true",
+        help="import CWE",
+    )
+    parser.add_argument(
         "--export",
         default=None,
         help="export all data into yaml files under the directory pointed to by this argument",
