@@ -57,7 +57,7 @@ export const StandardSection = () => {
       <div className="standard-page section-page">
         <h4 className="standard-page__heading">{id}</h4>
         <h5 className="standard-page__sub-heading">
-        {getDocumentDisplayName(document).replace(document?.name,"").replace(document?.doctype,"")}
+        {getDocumentDisplayName(document).replace(document?.name,"").replace(document?.doctype,"").replace("::","")}
         </h5>
         {document && document.hyperlink && (
           <>
