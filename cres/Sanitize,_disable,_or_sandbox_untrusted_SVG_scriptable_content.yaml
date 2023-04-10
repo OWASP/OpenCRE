@@ -6,8 +6,8 @@ links:
     id: 764-765
     name: Sanitization and sandboxing
     tags:
-    - XSS
     - Injection
+    - XSS
   ltype: Contains
 - document:
     doctype: Standard

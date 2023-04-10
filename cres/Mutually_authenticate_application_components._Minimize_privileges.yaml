@@ -8,13 +8,13 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 724-770
-    name: '>>Authorized access'
+    id: 155-155
+    name: Architecture
   ltype: Related
 - document:
     doctype: CRE
-    id: 155-155
-    name: Architecture
+    id: 724-770
+    name: '>>Authorized access'
   ltype: Related
 - document:
     doctype: Standard

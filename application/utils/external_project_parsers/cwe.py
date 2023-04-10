@@ -89,7 +89,7 @@ def register_cwe(cache: db.Node_collection, xml_file: str):
                     version=version,
                 )
                 dbcwe = cache.add_node(
-                    cwe, comparison_skip_attributes=["link", "section","version"]
+                    cwe, comparison_skip_attributes=["link", "section", "version"]
                 )
                 logger.debug(f"Registered CWE with id {cwe.section}")
                 link_found = False

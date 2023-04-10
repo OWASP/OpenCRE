@@ -6,8 +6,8 @@ links:
     id: 161-451
     name: Output encoding and injection prevention
     tags:
-    - XSS
     - Injection
+    - XSS
   ltype: Contains
 - document:
     doctype: Standard
