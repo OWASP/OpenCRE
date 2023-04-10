@@ -21,7 +21,8 @@ links:
     doctype: Standard
     hyperlink: https://cwe.mitre.org/data/definitions/400.html
     name: CWE
-    section: '400'
+    section: ''
+    sectionID: '400'
   ltype: Linked To
 - document:
     doctype: Standard

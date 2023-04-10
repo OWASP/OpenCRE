@@ -19,7 +19,8 @@ links:
     doctype: Standard
     hyperlink: https://cwe.mitre.org/data/definitions/94.html
     name: CWE
-    section: '94'
+    section: ''
+    sectionID: '94'
   ltype: Linked To
 - document:
     doctype: Standard

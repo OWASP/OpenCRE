@@ -21,6 +21,7 @@ links:
     doctype: Standard
     hyperlink: https://cwe.mitre.org/data/definitions/1104.html
     name: CWE
-    section: '1104'
+    section: ''
+    sectionID: '1104'
   ltype: Linked To
 name: Force pipeline to check outdated/insecure components

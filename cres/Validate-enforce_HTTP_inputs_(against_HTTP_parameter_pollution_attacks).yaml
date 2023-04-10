@@ -19,7 +19,8 @@ links:
     doctype: Standard
     hyperlink: https://cwe.mitre.org/data/definitions/235.html
     name: CWE
-    section: '235'
+    section: ''
+    sectionID: '235'
   ltype: Linked To
 - document:
     doctype: Standard

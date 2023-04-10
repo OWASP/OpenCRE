@@ -16,6 +16,7 @@ links:
     doctype: Standard
     hyperlink: https://cwe.mitre.org/data/definitions/524.html
     name: CWE
-    section: '524'
+    section: ''
+    sectionID: '524'
   ltype: Linked To
 name: Prevent caching of sensitive data in server components

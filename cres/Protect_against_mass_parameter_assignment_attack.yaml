@@ -25,7 +25,8 @@ links:
     doctype: Standard
     hyperlink: https://cwe.mitre.org/data/definitions/915.html
     name: CWE
-    section: '915'
+    section: ''
+    sectionID: '915'
   ltype: Linked To
 - document:
     doctype: Standard

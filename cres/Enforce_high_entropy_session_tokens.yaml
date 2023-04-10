@@ -27,7 +27,8 @@ links:
     doctype: Standard
     hyperlink: https://cwe.mitre.org/data/definitions/331.html
     name: CWE
-    section: '331'
+    section: ''
+    sectionID: '331'
   ltype: Linked To
 - document:
     doctype: Standard

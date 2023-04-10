@@ -23,6 +23,7 @@ links:
     doctype: Standard
     hyperlink: https://cwe.mitre.org/data/definitions/212.html
     name: CWE
-    section: '212'
+    section: ''
+    sectionID: '212'
   ltype: Linked To
 name: Ensure users can remove or export their data

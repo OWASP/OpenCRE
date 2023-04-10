@@ -21,7 +21,8 @@ links:
     doctype: Standard
     hyperlink: https://cwe.mitre.org/data/definitions/829.html
     name: CWE
-    section: '829'
+    section: ''
+    sectionID: '829'
   ltype: Linked To
 - document:
     doctype: Standard
