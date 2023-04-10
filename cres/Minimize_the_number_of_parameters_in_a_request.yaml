@@ -16,6 +16,7 @@ links:
     doctype: Standard
     hyperlink: https://cwe.mitre.org/data/definitions/233.html
     name: CWE
-    section: '233'
+    section: ''
+    sectionID: '233'
   ltype: Linked To
 name: Minimize the number of parameters in a request

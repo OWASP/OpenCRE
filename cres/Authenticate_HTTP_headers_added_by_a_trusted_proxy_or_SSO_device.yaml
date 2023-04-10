@@ -16,6 +16,7 @@ links:
     doctype: Standard
     hyperlink: https://cwe.mitre.org/data/definitions/306.html
     name: CWE
-    section: '306'
+    section: ''
+    sectionID: '306'
   ltype: Linked To
 name: Authenticate HTTP headers added by a trusted proxy or SSO device

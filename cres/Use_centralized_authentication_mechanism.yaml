@@ -26,7 +26,8 @@ links:
     doctype: Standard
     hyperlink: https://cwe.mitre.org/data/definitions/306.html
     name: CWE
-    section: '306'
+    section: ''
+    sectionID: '306'
   ltype: Linked To
 name: Use centralized authentication mechanism
 tags:

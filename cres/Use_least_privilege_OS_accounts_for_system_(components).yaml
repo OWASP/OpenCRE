@@ -29,6 +29,7 @@ links:
     doctype: Standard
     hyperlink: https://cwe.mitre.org/data/definitions/250.html
     name: CWE
-    section: '250'
+    section: ''
+    sectionID: '250'
   ltype: Linked To
 name: Use least privilege OS accounts for system (components)

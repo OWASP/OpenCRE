@@ -16,6 +16,7 @@ links:
     doctype: Standard
     hyperlink: https://cwe.mitre.org/data/definitions/134.html
     name: CWE
-    section: '134'
+    section: ''
+    sectionID: '134'
   ltype: Linked To
 name: Force format strings as constants

@@ -18,7 +18,8 @@ links:
     doctype: Standard
     hyperlink: https://cwe.mitre.org/data/definitions/497.html
     name: CWE
-    section: '497'
+    section: ''
+    sectionID: '497'
   ltype: Linked To
 - document:
     doctype: Standard

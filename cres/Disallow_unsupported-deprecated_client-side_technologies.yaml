@@ -16,6 +16,7 @@ links:
     doctype: Standard
     hyperlink: https://cwe.mitre.org/data/definitions/477.html
     name: CWE
-    section: '477'
+    section: ''
+    sectionID: '477'
   ltype: Linked To
 name: Disallow unsupported/deprecated client-side technologies

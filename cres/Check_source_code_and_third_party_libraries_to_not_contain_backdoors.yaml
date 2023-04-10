@@ -16,6 +16,7 @@ links:
     doctype: Standard
     hyperlink: https://cwe.mitre.org/data/definitions/507.html
     name: CWE
-    section: '507'
+    section: ''
+    sectionID: '507'
   ltype: Linked To
 name: Check source code and third party libraries to not contain backdoors

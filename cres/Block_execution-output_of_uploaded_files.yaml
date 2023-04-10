@@ -21,7 +21,8 @@ links:
     doctype: Standard
     hyperlink: https://cwe.mitre.org/data/definitions/434.html
     name: CWE
-    section: '434'
+    section: ''
+    sectionID: '434'
   ltype: Linked To
 - document:
     doctype: Standard

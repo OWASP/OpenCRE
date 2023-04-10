@@ -16,6 +16,7 @@ links:
     doctype: Standard
     hyperlink: https://cwe.mitre.org/data/definitions/346.html
     name: CWE
-    section: '346'
+    section: ''
+    sectionID: '346'
   ltype: Linked To
 name: Avoid using of Origin header for authentication of access control

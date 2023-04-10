@@ -25,6 +25,7 @@ links:
     doctype: Standard
     hyperlink: https://cwe.mitre.org/data/definitions/116.html
     name: CWE
-    section: '116'
+    section: ''
+    sectionID: '116'
   ltype: Linked To
 name: Encode output near the consuming interpreter

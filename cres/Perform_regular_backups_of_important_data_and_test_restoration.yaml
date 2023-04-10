@@ -16,6 +16,7 @@ links:
     doctype: Standard
     hyperlink: https://cwe.mitre.org/data/definitions/19.html
     name: CWE
-    section: '19'
+    section: ''
+    sectionID: '19'
   ltype: Linked To
 name: Perform regular backups of important data and test restoration

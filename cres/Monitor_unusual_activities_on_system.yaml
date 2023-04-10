@@ -29,7 +29,8 @@ links:
     doctype: Standard
     hyperlink: https://cwe.mitre.org/data/definitions/754.html
     name: CWE
-    section: '754'
+    section: ''
+    sectionID: '754'
   ltype: Linked To
 - document:
     doctype: Standard

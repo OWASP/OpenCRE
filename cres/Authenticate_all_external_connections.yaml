@@ -16,6 +16,7 @@ links:
     doctype: Standard
     hyperlink: https://cwe.mitre.org/data/definitions/287.html
     name: CWE
-    section: '287'
+    section: ''
+    sectionID: '287'
   ltype: Linked To
 name: Authenticate all external connections

@@ -23,7 +23,8 @@ links:
     doctype: Standard
     hyperlink: https://cwe.mitre.org/data/definitions/295.html
     name: CWE
-    section: '295'
+    section: ''
+    sectionID: '295'
   ltype: Linked To
 name: Verify TLS certificates and trust chain
 tags:

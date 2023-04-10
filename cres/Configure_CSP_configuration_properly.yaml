@@ -21,7 +21,8 @@ links:
     doctype: Standard
     hyperlink: https://cwe.mitre.org/data/definitions/1021.html
     name: CWE
-    section: '1021'
+    section: ''
+    sectionID: '1021'
   ltype: Linked To
 - document:
     doctype: Standard

@@ -21,7 +21,8 @@ links:
     doctype: Standard
     hyperlink: https://cwe.mitre.org/data/definitions/409.html
     name: CWE
-    section: '409'
+    section: ''
+    sectionID: '409'
   ltype: Linked To
 - document:
     doctype: Standard

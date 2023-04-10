@@ -23,7 +23,8 @@ links:
     doctype: Standard
     hyperlink: https://cwe.mitre.org/data/definitions/390.html
     name: CWE
-    section: '390'
+    section: ''
+    sectionID: '390'
   ltype: Linked To
 - document:
     doctype: Standard

@@ -26,7 +26,8 @@ links:
     doctype: Standard
     hyperlink: https://cwe.mitre.org/data/definitions/646.html
     name: CWE
-    section: '646'
+    section: ''
+    sectionID: '646'
   ltype: Linked To
 name: Store and serve user-uploaded files such that they cannot execute/damage server
   or client

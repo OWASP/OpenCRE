@@ -16,7 +16,8 @@ links:
     doctype: Standard
     hyperlink: https://cwe.mitre.org/data/definitions/539.html
     name: CWE
-    section: '539'
+    section: ''
+    sectionID: '539'
   ltype: Linked To
 - document:
     doctype: Standard
