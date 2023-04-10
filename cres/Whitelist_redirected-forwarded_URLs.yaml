@@ -19,7 +19,8 @@ links:
     doctype: Standard
     hyperlink: https://cwe.mitre.org/data/definitions/601.html
     name: CWE
-    section: '601'
+    section: ''
+    sectionID: '601'
   ltype: Linked To
 - document:
     doctype: Standard

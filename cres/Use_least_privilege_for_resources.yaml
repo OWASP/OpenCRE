@@ -16,7 +16,8 @@ links:
     doctype: Standard
     hyperlink: https://cwe.mitre.org/data/definitions/272.html
     name: CWE
-    section: '272'
+    section: ''
+    sectionID: '272'
   ltype: Linked To
 - document:
     doctype: Standard

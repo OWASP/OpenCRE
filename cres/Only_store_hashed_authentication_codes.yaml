@@ -18,7 +18,8 @@ links:
     doctype: Standard
     hyperlink: https://cwe.mitre.org/data/definitions/256.html
     name: CWE
-    section: '256'
+    section: ''
+    sectionID: '256'
   ltype: Linked To
 - document:
     doctype: Standard

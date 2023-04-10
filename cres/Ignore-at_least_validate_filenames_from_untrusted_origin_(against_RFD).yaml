@@ -16,6 +16,7 @@ links:
     doctype: Standard
     hyperlink: https://cwe.mitre.org/data/definitions/641.html
     name: CWE
-    section: '641'
+    section: ''
+    sectionID: '641'
   ltype: Linked To
 name: Ignore/at least validate filenames from untrusted origin (against RFD)

@@ -16,6 +16,7 @@ links:
     doctype: Standard
     hyperlink: https://cwe.mitre.org/data/definitions/494.html
     name: CWE
-    section: '494'
+    section: ''
+    sectionID: '494'
   ltype: Linked To
 name: Check binary integrity before deployment

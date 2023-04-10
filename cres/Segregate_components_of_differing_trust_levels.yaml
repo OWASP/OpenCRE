@@ -23,6 +23,7 @@ links:
     doctype: Standard
     hyperlink: https://cwe.mitre.org/data/definitions/923.html
     name: CWE
-    section: '923'
+    section: ''
+    sectionID: '923'
   ltype: Linked To
 name: Segregate components of differing trust levels

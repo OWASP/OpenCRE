@@ -21,6 +21,7 @@ links:
     doctype: Standard
     hyperlink: https://cwe.mitre.org/data/definitions/532.html
     name: CWE
-    section: '532'
+    section: ''
+    sectionID: '532'
   ltype: Linked To
 name: Log access to sensitive data

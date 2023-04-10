@@ -24,7 +24,8 @@ links:
     doctype: Standard
     hyperlink: https://cwe.mitre.org/data/definitions/327.html
     name: CWE
-    section: '327'
+    section: ''
+    sectionID: '327'
   ltype: Linked To
 name: Encrypt sensitive data with algorithms that provide both confidentiality and
   integrity

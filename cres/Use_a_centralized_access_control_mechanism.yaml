@@ -27,7 +27,8 @@ links:
     doctype: Standard
     hyperlink: https://cwe.mitre.org/data/definitions/284.html
     name: CWE
-    section: '284'
+    section: ''
+    sectionID: '284'
   ltype: Linked To
 name: Use a centralized access control mechanism
 tags:

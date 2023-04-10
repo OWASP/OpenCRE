@@ -16,6 +16,7 @@ links:
     doctype: Standard
     hyperlink: https://cwe.mitre.org/data/definitions/226.html
     name: CWE
-    section: '226'
+    section: ''
+    sectionID: '226'
   ltype: Linked To
 name: Zeroize sensitive information in memory after use
