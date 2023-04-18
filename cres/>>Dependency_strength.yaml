@@ -3,13 +3,13 @@ id: 613-285
 links:
 - document:
     doctype: CRE
-    id: 053-751
-    name: Force pipeline to check outdated/insecure components
+    id: 834-645
+    name: Avoid unauthorized client data collection
   ltype: Contains
 - document:
     doctype: CRE
-    id: 154-031
-    name: Harden application by excluding unwanted functionality
+    id: 838-636
+    name: Check source code and third party libraries to not contain backdoors
   ltype: Contains
 - document:
     doctype: CRE
@@ -23,10 +23,8 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 462-245
-    name: Remove unnecessary features, documentation, configuration etc
-    tags:
-    - Configuration
+    id: 673-475
+    name: Disallow unsupported/deprecated client-side technologies
   ltype: Contains
 - document:
     doctype: CRE
@@ -35,28 +33,30 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 673-475
-    name: Disallow unsupported/deprecated client-side technologies
-  ltype: Contains
-- document:
-    doctype: CRE
     id: 715-223
     name: Ensure trusted origin of third party resources
   ltype: Contains
 - document:
     doctype: CRE
-    id: 715-334
-    name: Update third party components build- or compile time
+    id: 053-751
+    name: Force pipeline to check outdated/insecure components
   ltype: Contains
 - document:
     doctype: CRE
-    id: 834-645
-    name: Avoid unauthorized client data collection
+    id: 154-031
+    name: Harden application by excluding unwanted functionality
   ltype: Contains
 - document:
     doctype: CRE
-    id: 838-636
-    name: Check source code and third party libraries to not contain backdoors
+    id: 863-521
+    name: Maintain/manage inventory of third party repositories
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 462-245
+    name: Remove unnecessary features, documentation, configuration etc
+    tags:
+    - Configuration
   ltype: Contains
 - document:
     doctype: CRE
@@ -65,8 +65,8 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 863-521
-    name: Maintain/manage inventory of third party repositories
+    id: 715-334
+    name: Update third party components build- or compile time
   ltype: Contains
 - document:
     doctype: Standard

@@ -12,7 +12,10 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x10-V1-Architecture.md
     name: ASVS
-    section: V1.9.1
+    section: Verify the application encrypts communications between components, particularly
+      when these components are in different containers, systems, sites, or cloud
+      providers. (C3)
+    sectionID: V1.9.1
   ltype: Linked To
 - document:
     doctype: Standard

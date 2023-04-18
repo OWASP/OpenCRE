@@ -3,11 +3,16 @@ id: 726-868
 links:
 - document:
     doctype: CRE
-    id: 783-355
-    name: Deployment
+    id: 228-551
+    name: TLS
     tags:
-    - Configuration
-  ltype: Contains
+    - Cryptography
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 155-155
+    name: Architecture
+  ltype: Related
 - document:
     doctype: CRE
     id: 515-021
@@ -17,21 +22,16 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 155-155
-    name: Architecture
-  ltype: Related
-- document:
-    doctype: CRE
-    id: 228-551
-    name: TLS
-    tags:
-    - Cryptography
-  ltype: Related
-- document:
-    doctype: CRE
     id: 330-281
     name: Use least privilege OS accounts for system (components)
   ltype: Related
+- document:
+    doctype: CRE
+    id: 783-355
+    name: Deployment
+    tags:
+    - Configuration
+  ltype: Contains
 - document:
     doctype: CRE
     id: 814-322

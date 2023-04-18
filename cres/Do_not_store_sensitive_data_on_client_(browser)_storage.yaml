@@ -10,7 +10,9 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x16-V8-Data-Protection.md
     name: ASVS
-    section: V8.2.2
+    section: Verify that data stored in browser storage (such as HTML5 local storage,
+      session storage, IndexedDB, or cookies) does not contain sensitive data or PII.
+    sectionID: V8.2.2
   ltype: Linked To
 - document:
     doctype: Standard

@@ -12,7 +12,9 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x11-V2-Authentication.md
     name: ASVS
-    section: V2.7.5
+    section: Verify that the out of band verifier retains only a hashed version of
+      the authentication code.
+    sectionID: V2.7.5
   ltype: Linked To
 - document:
     doctype: Standard

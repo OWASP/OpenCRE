@@ -10,7 +10,9 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x12-V4-Access-Control.md
     name: ASVS
-    section: V4.1.2
+    section: Verify that all user and data attributes and policy information used
+      by access controls cannot be manipulated by end users unless specifically authorized.
+    sectionID: V4.1.2
   ltype: Linked To
 - document:
     doctype: Standard

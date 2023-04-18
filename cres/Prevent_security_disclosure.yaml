@@ -8,23 +8,23 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 208-805
-    name: Disable debug mode in production
-  ltype: Contains
-- document:
-    doctype: CRE
     id: 486-813
     name: Configuration
   ltype: Related
 - document:
     doctype: CRE
-    id: 403-005
-    name: Do not disclose technical information in HTTP header or response
+    id: 208-805
+    name: Disable debug mode in production
   ltype: Contains
 - document:
     doctype: CRE
     id: 743-110
     name: Do not disclose technical information in error message
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 403-005
+    name: Do not disclose technical information in HTTP header or response
   ltype: Contains
 - document:
     doctype: Standard

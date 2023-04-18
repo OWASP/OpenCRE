@@ -10,7 +10,10 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x14-V6-Cryptography.md
     name: ASVS
-    section: V6.2.4
+    section: Verify that random number, encryption or hashing algorithms, key lengths,
+      rounds, ciphers or modes, can be reconfigured, upgraded, or swapped at any time,
+      to protect against cryptographic breaks. (C8)
+    sectionID: V6.2.4
   ltype: Linked To
 - document:
     doctype: Standard

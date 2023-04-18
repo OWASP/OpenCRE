@@ -8,15 +8,8 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 208-830
-    name: Manage temporary storage
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 223-780
-    name: Secret storage
-    tags:
-    - Cryptography
+    id: 538-770
+    name: Data access control
   ltype: Contains
 - document:
     doctype: CRE
@@ -27,8 +20,15 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 538-770
-    name: Data access control
+    id: 208-830
+    name: Manage temporary storage
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 223-780
+    name: Secret storage
+    tags:
+    - Cryptography
   ltype: Contains
 - document:
     doctype: CRE

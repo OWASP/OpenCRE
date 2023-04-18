@@ -3,66 +3,13 @@ id: 724-770
 links:
 - document:
     doctype: CRE
-    id: 060-472
-    name: Use CSRF protection against authenticated functionality, add anti-automation
-      controls for unauthenticated functionality
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 152-725
-    name: Limit access to admin/management functionality
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 166-151
-    name: Ensure that secure fail-safe is in place for access control
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 284-521
-    name: Enforce additional authorization and segregation of duties
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 304-667
-    name: Protect API against unauthorized access/modification (IDOR)
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 330-281
-    name: Use least privilege OS accounts for system (components)
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 368-633
-    name: Enforce least privilege
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 412-561
-    name: Provide system flexibility for access control
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 524-603
-    name: Limit modification of access controls to specifically authorized actors/users
-  ltype: Contains
-- document:
-    doctype: CRE
     id: 540-566
     name: Let application request minimal permissions
   ltype: Contains
 - document:
     doctype: CRE
-    id: 615-744
-    name: Protect against directory browsing/discovery attacks
-    tags:
-    - Configuration
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 624-716
-    name: Use least privilege for resources
+    id: 166-151
+    name: Ensure that secure fail-safe is in place for access control
   ltype: Contains
 - document:
     doctype: CRE
@@ -78,8 +25,45 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
+    id: 284-521
+    name: Enforce additional authorization and segregation of duties
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 368-633
+    name: Enforce least privilege
+  ltype: Contains
+- document:
+    doctype: CRE
     id: 664-080
     name: Enforce model-based authorization both at URI and final resource
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 152-725
+    name: Limit access to admin/management functionality
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 524-603
+    name: Limit modification of access controls to specifically authorized actors/users
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 615-744
+    name: Protect against directory browsing/discovery attacks
+    tags:
+    - Configuration
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 304-667
+    name: Protect API against unauthorized access/modification (IDOR)
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 412-561
+    name: Provide system flexibility for access control
   ltype: Contains
 - document:
     doctype: CRE
@@ -88,8 +72,26 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 538-770
-    name: Data access control
+    id: 060-472
+    name: Use CSRF protection against authenticated functionality, add anti-automation
+      controls for unauthenticated functionality
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 624-716
+    name: Use least privilege for resources
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 330-281
+    name: Use least privilege OS accounts for system (components)
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 278-413
+    name: Mutually authenticate application components. Minimize privileges
+    tags:
+    - Architecture
   ltype: Related
 - document:
     doctype: CRE
@@ -98,10 +100,8 @@ links:
   ltype: Related
 - document:
     doctype: CRE
-    id: 278-413
-    name: Mutually authenticate application components. Minimize privileges
-    tags:
-    - Architecture
+    id: 538-770
+    name: Data access control
   ltype: Related
 - document:
     doctype: CRE

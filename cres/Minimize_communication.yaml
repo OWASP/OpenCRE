@@ -3,15 +3,8 @@ id: 341-076
 links:
 - document:
     doctype: CRE
-    id: 186-540
-    name: Do not expose data through HTTP verb
-    tags:
-    - Configuration
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 217-112
-    name: Minimize the number of parameters in a request
+    id: 278-646
+    name: '>>Secure communication'
   ltype: Contains
 - document:
     doctype: CRE
@@ -22,7 +15,14 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 278-646
-    name: '>>Secure communication'
+    id: 186-540
+    name: Do not expose data through HTTP verb
+    tags:
+    - Configuration
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 217-112
+    name: Minimize the number of parameters in a request
   ltype: Contains
 name: Minimize communication

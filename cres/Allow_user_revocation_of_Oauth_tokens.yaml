@@ -10,7 +10,9 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x12-V3-Session-management.md
     name: ASVS
-    section: V3.5.1
+    section: Verify the application allows users to revoke OAuth tokens that form
+      trust relationships with linked applications.
+    sectionID: V3.5.1
   ltype: Linked To
 - document:
     doctype: Standard

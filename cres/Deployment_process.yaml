@@ -3,15 +3,14 @@ id: 615-188
 links:
 - document:
     doctype: CRE
-    id: 783-355
-    name: Deployment
-    tags:
-    - Configuration
+    id: 307-507
+    name: Allow only trusted sources both build time and runtime; therefore perform
+      integrity checks on all resources and code
   ltype: Contains
 - document:
     doctype: CRE
-    id: 028-254
-    name: Secure auto-updates over full stack
+    id: 263-184
+    name: Automate secure build and deployment, especially with SDI
   ltype: Contains
 - document:
     doctype: CRE
@@ -25,19 +24,13 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
+    id: 028-254
+    name: Secure auto-updates over full stack
+  ltype: Contains
+- document:
+    doctype: CRE
     id: 253-452
     name: Securely automate build and deployment in pipeline
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 263-184
-    name: Automate secure build and deployment, especially with SDI
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 307-507
-    name: Allow only trusted sources both build time and runtime; therefore perform
-      integrity checks on all resources and code
   ltype: Contains
 - document:
     doctype: CRE
@@ -49,6 +42,13 @@ links:
     id: 053-751
     name: Force pipeline to check outdated/insecure components
   ltype: Related
+- document:
+    doctype: CRE
+    id: 783-355
+    name: Deployment
+    tags:
+    - Configuration
+  ltype: Contains
 - document:
     doctype: Standard
     hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=SC-51

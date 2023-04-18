@@ -13,7 +13,10 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x13-V5-Validation-Sanitization-Encoding.md
     name: ASVS
-    section: V5.1.2
+    section: Verify that frameworks protect against mass parameter assignment attacks,
+      or that the application has countermeasures to protect against unsafe parameter
+      assignment, such as marking fields private or similar. (C5)
+    sectionID: V5.1.2
   ltype: Linked To
 - document:
     doctype: Standard

@@ -15,7 +15,10 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x12-V4-Access-Control.md
     name: ASVS
-    section: V4.1.4
+    section: Verify that the principle of deny by default exists whereby new users/roles
+      start with minimal or no permissions and users/roles do not receive access to
+      new features until access is explicitly assigned.  (C7)
+    sectionID: V4.1.4
   ltype: Linked To
 - document:
     doctype: Standard

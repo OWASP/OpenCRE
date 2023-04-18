@@ -8,8 +8,8 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 530-671
-    name: Mutually authenticate application components
+    id: 605-735
+    name: Authenticate all external connections
   ltype: Contains
 - document:
     doctype: CRE
@@ -18,7 +18,7 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 605-735
-    name: Authenticate all external connections
+    id: 530-671
+    name: Mutually authenticate application components
   ltype: Contains
 name: Communication authentication

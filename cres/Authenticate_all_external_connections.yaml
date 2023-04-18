@@ -10,7 +10,9 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x17-V9-Communications.md
     name: ASVS
-    section: V9.2.3
+    section: Verify that all encrypted connections to external systems that involve
+      sensitive information or functions are authenticated.
+    sectionID: V9.2.3
   ltype: Linked To
 - document:
     doctype: Standard

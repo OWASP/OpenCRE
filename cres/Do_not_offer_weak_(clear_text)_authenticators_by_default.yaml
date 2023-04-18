@@ -12,7 +12,10 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x11-V2-Authentication.md
     name: ASVS
-    section: V2.7.1
+    section: Verify that clear text out of band (NIST "restricted") authenticators,
+      such as SMS or PSTN, are not offered by default, and stronger alternatives such
+      as push notifications are offered first.
+    sectionID: V2.7.1
   ltype: Linked To
 - document:
     doctype: Standard

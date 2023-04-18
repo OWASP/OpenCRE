@@ -3,35 +3,25 @@ id: 354-846
 links:
 - document:
     doctype: CRE
-    id: 004-130
-    name: Define High-level architecture and perform security analysis on it
-    tags:
-    - Architecture
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 036-275
-    name: Make (centrally) available secure coding resources for programmers
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 162-655
-    name: Documentation of all components' business or security function
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 287-305
-    name: Document explicit key/secret management
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 625-323
-    name: Data security requirement documentation
+    id: 153-513
+    name: '>>Development & operations'
   ltype: Contains
 - document:
     doctype: CRE
     id: 782-234
     name: Clear policy compliant I/O requirements
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 822-100
+    name: Constrain functional features based on user stories
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 004-130
+    name: Define High-level architecture and perform security analysis on it
+    tags:
+    - Architecture
   ltype: Contains
 - document:
     doctype: CRE
@@ -42,19 +32,24 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 822-100
-    name: Constrain functional features based on user stories
+    id: 287-305
+    name: Document explicit key/secret management
   ltype: Contains
 - document:
     doctype: CRE
-    id: 153-513
-    name: '>>Development & operations'
+    id: 162-655
+    name: Documentation of all components' business or security function
   ltype: Contains
 - document:
     doctype: CRE
-    id: 227-045
-    name: Identify sensitive data and subject it to a policy
-  ltype: Related
+    id: 036-275
+    name: Make (centrally) available secure coding resources for programmers
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 625-323
+    name: Data security requirement documentation
+  ltype: Contains
 - document:
     doctype: Standard
     hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=SA-5

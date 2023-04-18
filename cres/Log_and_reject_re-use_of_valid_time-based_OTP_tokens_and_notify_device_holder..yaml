@@ -12,7 +12,10 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x11-V2-Authentication.md
     name: ASVS
-    section: V2.8.5
+    section: Verify that if a time-based multi-factor OTP token is re-used during
+      the validity period, it is logged and rejected with secure notifications being
+      sent to the holder of the device.
+    sectionID: V2.8.5
   ltype: Linked To
 - document:
     doctype: Standard
