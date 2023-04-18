@@ -611,8 +611,8 @@ def parse_standards(
             },
             "Standards": {
                 "ASVS": {
-                    "section": "Standard ASVS Item",
-                    "sectionID": "",
+                    "section": "Standard ASVS 4.0.2 description",
+                    "sectionID": "Standard ASVS Item",
                     "subsection": "",
                     "hyperlink": "Standard ASVS Hyperlink",
                 },
