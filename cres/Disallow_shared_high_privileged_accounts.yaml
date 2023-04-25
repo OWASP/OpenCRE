@@ -7,19 +7,12 @@ links:
     name: '>>Secure user management'
   ltype: Contains
 - document:
-    doctype: CRE
-    id: 783-355
-    name: Deployment
-    tags:
-    - Configuration
-  ltype: Related
-- document:
     doctype: Standard
-    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x11-V2-Authentication.md
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x11-V2-Authentication.md
     name: ASVS
-    section: Verify shared or default accounts are not present (e.g. "root", "admin",
+    section: V2.5.4
+    sectionID: Verify shared or default accounts are not present (e.g. "root", "admin",
       or "sa").
-    sectionID: V2.5.4
   ltype: Linked To
 - document:
     doctype: Standard
@@ -31,13 +24,13 @@ links:
 - document:
     doctype: Standard
     hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Choosing_and_Using_Security_Questions_Cheat_Sheet.html
-    name: Cheat_sheets
+    name: OWASP Cheat Sheets
     section: Choosing and Using Security Questions Cheat Sheet
   ltype: Linked To
 - document:
     doctype: Standard
     hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Forgot_Password_Cheat_Sheet.html
-    name: Cheat_sheets
+    name: OWASP Cheat Sheets
     section: Forgot Password Cheat Sheet
   ltype: Linked To
 - document:

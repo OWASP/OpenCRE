@@ -8,11 +8,11 @@ links:
   ltype: Contains
 - document:
     doctype: Standard
-    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x17-V9-Communications.md
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x17-V9-Communications.md
     name: ASVS
-    section: Verify that proper certification revocation, such as Online Certificate
+    section: V9.2.4
+    sectionID: Verify that proper certification revocation, such as Online Certificate
       Status Protocol (OCSP) Stapling, is enabled and configured.
-    sectionID: V9.2.4
   ltype: Linked To
 - document:
     doctype: Standard

@@ -7,12 +7,17 @@ links:
     name: '>>Dependency strength'
   ltype: Contains
 - document:
+    doctype: CRE
+    id: 486-813
+    name: Configuration
+  ltype: Related
+- document:
     doctype: Standard
-    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x18-V10-Malicious.md
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x18-V10-Malicious.md
     name: ASVS
-    section: Verify that the application source code and third party libraries do
+    section: V10.2.6
+    sectionID: Verify that the application source code and third party libraries do
       not contain Easter eggs or any other potentially unwanted functionality.
-    sectionID: V10.2.6
   ltype: Linked To
 - document:
     doctype: Standard
@@ -22,3 +27,5 @@ links:
     sectionID: '507'
   ltype: Linked To
 name: Harden application by excluding unwanted functionality
+tags:
+- Configuration

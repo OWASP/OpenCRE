@@ -10,6 +10,8 @@ links:
     doctype: CRE
     id: 605-735
     name: Authenticate all external connections
+    tags:
+    - Cryptography
   ltype: Contains
 - document:
     doctype: CRE

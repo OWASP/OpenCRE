@@ -5,14 +5,16 @@ links:
     doctype: CRE
     id: 866-553
     name: Memory, String, and Unmanaged Code
+    tags:
+    - Injection
   ltype: Contains
 - document:
     doctype: Standard
-    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x13-V5-Validation-Sanitization-Encoding.md
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x13-V5-Validation-Sanitization-Encoding.md
     name: ASVS
-    section: Verify that the application uses memory-safe string, safer memory copy
+    section: V5.4.1
+    sectionID: Verify that the application uses memory-safe string, safer memory copy
       and pointer arithmetic to detect or prevent stack, buffer, or heap overflows.
-    sectionID: V5.4.1
   ltype: Linked To
 - document:
     doctype: Standard
@@ -24,7 +26,7 @@ links:
 - document:
     doctype: Standard
     hyperlink: https://owasp.org/www-project-web-security-testing-guide/v41/4-Web_Application_Security_Testing/07-Input_Validation_Testing/13-Testing_for_Buffer_Overflow.html
-    name: (WSTG) Web Security Testing Guide
+    name: OWASP Web Security Testing Guide (WSTG)
     section: WSTG-INPV-13
   ltype: Linked To
 name: Use memory-safe functions exclusively

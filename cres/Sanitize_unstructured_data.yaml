@@ -11,11 +11,11 @@ links:
   ltype: Contains
 - document:
     doctype: Standard
-    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x13-V5-Validation-Sanitization-Encoding.md
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x13-V5-Validation-Sanitization-Encoding.md
     name: ASVS
-    section: Verify that unstructured data is sanitized to enforce safety measures
+    section: V5.2.2
+    sectionID: Verify that unstructured data is sanitized to enforce safety measures
       such as allowed characters and length.
-    sectionID: V5.2.2
   ltype: Linked To
 - document:
     doctype: Standard
@@ -27,31 +27,31 @@ links:
 - document:
     doctype: Standard
     hyperlink: https://owasp.org/www-project-web-security-testing-guide/v41/4-Web_Application_Security_Testing/07-Input_Validation_Testing/
-    name: (WSTG) Web Security Testing Guide
+    name: OWASP Web Security Testing Guide (WSTG)
     section: WSTG-INPV-00
   ltype: Linked To
 - document:
     doctype: Standard
     hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html
-    name: Cheat_sheets
+    name: OWASP Cheat Sheets
     section: Server Side Request Forgery Prevention Cheat Sheet
   ltype: Linked To
 - document:
     doctype: Standard
     hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html
-    name: Cheat_sheets
+    name: OWASP Cheat Sheets
     section: Cross Site Scripting Prevention Cheat Sheet
   ltype: Linked To
 - document:
     doctype: Standard
     hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.html
-    name: Cheat_sheets
+    name: OWASP Cheat Sheets
     section: DOM based XSS Prevention Cheat Sheet
   ltype: Linked To
 - document:
     doctype: Standard
     hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.html
-    name: Cheat_sheets
+    name: OWASP Cheat Sheets
     section: Unvalidated Redirects and Forwards Cheat Sheet
   ltype: Linked To
 name: Sanitize unstructured data

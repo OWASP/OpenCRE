@@ -10,12 +10,11 @@ links:
   ltype: Contains
 - document:
     doctype: Standard
-    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x11-V2-Authentication.md
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x11-V2-Authentication.md
     name: ASVS
-    section: Verify that if PBKDF2 is used, the iteration count SHOULD be as large
+    section: V2.4.3
+    sectionID: Verify that if PBKDF2 is used, the iteration count SHOULD be as large
       as verification server performance will allow, typically at least 100,000 iterations.
-      (C6)
-    sectionID: V2.4.3
   ltype: Linked To
 - document:
     doctype: Standard
@@ -33,7 +32,7 @@ links:
 - document:
     doctype: Standard
     hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html
-    name: Cheat_sheets
+    name: OWASP Cheat Sheets
     section: Password Storage Cheat Sheet
   ltype: Linked To
 - document:

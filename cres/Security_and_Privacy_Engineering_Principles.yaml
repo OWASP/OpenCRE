@@ -3,12 +3,19 @@ id: 180-070
 links:
 - document:
     doctype: CRE
+    id: 362-550
+    name: '>>Personal data handling'
+    tags:
+    - Security and Privacy Engineering Principles
+  ltype: Related
+- document:
+    doctype: CRE
     id: 546-564
     name: '>>Tags'
   ltype: Contains
 - document:
     doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=SA-8
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=SA-8
     name: NIST 800-53 v5
     section: SA-8 Security and Privacy Engineering Principles
   ltype: Linked To

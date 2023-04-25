@@ -8,11 +8,11 @@ links:
   ltype: Contains
 - document:
     doctype: Standard
-    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x20-V12-Files-Resources.md
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x20-V12-Files-Resources.md
     name: ASVS
-    section: Verify that user-submitted filename metadata is validated or ignored
+    section: V12.3.2
+    sectionID: Verify that user-submitted filename metadata is validated or ignored
       to prevent the disclosure, creation, updating or removal of local files (LFI).
-    sectionID: V12.3.2
   ltype: Linked To
 - document:
     doctype: Standard
@@ -24,7 +24,7 @@ links:
 - document:
     doctype: Standard
     hyperlink: https://owasp.org/www-project-web-security-testing-guide/v41/4-Web_Application_Security_Testing/05-Authorization_Testing/01-Testing_Directory_Traversal_File_Include.html
-    name: (WSTG) Web Security Testing Guide
+    name: OWASP Web Security Testing Guide (WSTG)
     section: WSTG-ATHZ-01
   ltype: Linked To
 name: Ignore/at least validate  filename metadata from untrusted origin (local file

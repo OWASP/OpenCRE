@@ -17,15 +17,22 @@ links:
   ltype: Related
 - document:
     doctype: CRE
-    id: 650-560
-    name: Enforce access control on trusted service layer
+    id: 726-868
+    name: Deployed topology
     tags:
     - Architecture
   ltype: Related
 - document:
     doctype: CRE
-    id: 726-868
-    name: Deployed topology
+    id: 640-364
+    name: Enforce access control on trusted parts/serverside
+    tags:
+    - Architecture
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 650-560
+    name: Enforce access control on trusted service layer
     tags:
     - Architecture
   ltype: Related
@@ -40,6 +47,13 @@ links:
     doctype: CRE
     id: 340-754
     name: Threat model every design change or sprint
+    tags:
+    - Architecture
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 354-846
+    name: Documentation and requirements
     tags:
     - Architecture
   ltype: Related
@@ -61,6 +75,13 @@ links:
     doctype: CRE
     id: 344-611
     name: Centralize security controls
+    tags:
+    - Architecture
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 612-252
+    name: Separate GraphQL (or similar) authorization logic from data layer
     tags:
     - Architecture
   ltype: Related
@@ -90,4 +111,10 @@ links:
     id: 546-564
     name: '>>Tags'
   ltype: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://owasp.org/Top10/A04_2021-Insecure_Design/
+    name: OWASP Top 10 2021
+    section: 04_2021-Insecure_Design/
+  ltype: Linked To
 name: Architecture

@@ -14,12 +14,17 @@ links:
     name: '>>Logging and error handling'
   ltype: Related
 - document:
+    doctype: CRE
+    id: 623-550
+    name: DOS
+  ltype: Related
+- document:
     doctype: Standard
-    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x19-V11-BusLogic.md
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x19-V11-BusLogic.md
     name: ASVS
-    section: Verify the application has configurable alerting when automated attacks
-      or unusual activity is detected.
-    sectionID: V11.1.8
+    section: V11.1.8
+    sectionID: Verify that the application has configurable alerting when automated
+      attacks or unusual activity is detected.
   ltype: Linked To
 - document:
     doctype: Standard
@@ -31,7 +36,9 @@ links:
 - document:
     doctype: Standard
     hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Abuse_Case_Cheat_Sheet.html
-    name: Cheat_sheets
+    name: OWASP Cheat Sheets
     section: Abuse Case Cheat Sheet
   ltype: Linked To
 name: Enable configurable alert against usage anomalies
+tags:
+- DOS

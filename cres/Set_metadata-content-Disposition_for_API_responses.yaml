@@ -8,11 +8,11 @@ links:
   ltype: Contains
 - document:
     doctype: Standard
-    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x22-V14-Config.md
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x22-V14-Config.md
     name: ASVS
-    section: 'Verify that all API responses contain a Content-Disposition: attachment;
+    section: V14.4.2
+    sectionID: 'Verify that all API responses contain a Content-Disposition: attachment;
       filename="api.json" header (or other appropriate filename for the content type).'
-    sectionID: V14.4.2
   ltype: Linked To
 - document:
     doctype: Standard
@@ -24,7 +24,7 @@ links:
 - document:
     doctype: Standard
     hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Content_Security_Policy_Cheat_Sheet.html
-    name: Cheat_sheets
+    name: OWASP Cheat Sheets
     section: Content Security Policy Cheat Sheet
   ltype: Linked To
 name: Set metadata/content-Disposition for API responses

@@ -10,11 +10,11 @@ links:
   ltype: Contains
 - document:
     doctype: Standard
-    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x11-V2-Authentication.md
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x11-V2-Authentication.md
     name: ASVS
-    section: Verify that the out of band verifier retains only a hashed version of
-      the authentication code.
-    sectionID: V2.7.5
+    section: V2.7.5
+    sectionID: Verify that the out of band verifier retains only a hashed version
+      of the authentication code.
   ltype: Linked To
 - document:
     doctype: Standard
@@ -26,7 +26,7 @@ links:
 - document:
     doctype: Standard
     hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Forgot_Password_Cheat_Sheet.html
-    name: Cheat_sheets
+    name: OWASP Cheat Sheets
     section: Forgot Password Cheat Sheet
   ltype: Linked To
 - document:

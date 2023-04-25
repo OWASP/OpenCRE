@@ -40,7 +40,14 @@ links:
   ltype: Related
 - document:
     doctype: Standard
-    name: Top10 2017
+    hyperlink: https://owasp.org/Top10/A08_2021-Software_and_Data_Integrity_Failures/
+    name: OWASP Top 10 2021
+    section: 08_2021-Software_and_Data_Integrity_Failures/
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owasp.org/www-project-top-ten/2017/A8_2017-Insecure_Deserialization
+    name: OWASP Top 10 2017
     section: A8_Insecure_Deserialization
   ltype: Linked To
 name: Deserialization Prevention

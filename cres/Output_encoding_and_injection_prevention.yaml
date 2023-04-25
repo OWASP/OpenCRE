@@ -8,33 +8,27 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
+    id: 760-764
+    name: Injection
+    tags:
+    - XSS
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 760-765
+    name: XSS
+    tags:
+    - Injection
+  ltype: Related
+- document:
+    doctype: CRE
     id: 064-808
     name: Encode output context-specifically
   ltype: Contains
 - document:
     doctype: CRE
-    id: 134-207
-    name: Protect against XML/XPath injection
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 760-764
-    name: Injection
-  ltype: Related
-- document:
-    doctype: CRE
-    id: 028-726
-    name: XSS
-  ltype: Related
-- document:
-    doctype: CRE
-    id: 366-835
-    name: Escape output against XSS
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 531-558
-    name: Protect against LDAP injection
+    id: 806-367
+    name: Encode output near the consuming interpreter
   ltype: Contains
 - document:
     doctype: CRE
@@ -43,13 +37,8 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 547-283
-    name: Protect against LFI / RFI
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 607-671
-    name: Protect against JS or JSON injection attacks
+    id: 366-835
+    name: Escape output against XSS
   ltype: Contains
 - document:
     doctype: CRE
@@ -63,15 +52,30 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 806-367
-    name: Encode output near the consuming interpreter
+    id: 607-671
+    name: Protect against JS or JSON injection attacks
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 531-558
+    name: Protect against LDAP injection
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 547-283
+    name: Protect against LFI / RFI
   ltype: Contains
 - document:
     doctype: CRE
     id: 857-718
     name: Protect against OS command injection attack
   ltype: Contains
+- document:
+    doctype: CRE
+    id: 134-207
+    name: Protect against XML/XPath injection
+  ltype: Contains
 name: Output encoding and injection prevention
 tags:
-- XSS
 - Injection
+- XSS

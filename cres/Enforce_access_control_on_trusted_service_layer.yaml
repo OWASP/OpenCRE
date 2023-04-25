@@ -3,8 +3,8 @@ id: 650-560
 links:
 - document:
     doctype: CRE
-    id: 724-770
-    name: '>>Authorized access'
+    id: 128-128
+    name: Strong authorization checking
   ltype: Contains
 - document:
     doctype: CRE
@@ -13,12 +13,12 @@ links:
   ltype: Related
 - document:
     doctype: Standard
-    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x12-V4-Access-Control.md
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x12-V4-Access-Control.md
     name: ASVS
-    section: Verify that the application enforces access control rules on a trusted
+    section: V4.1.1
+    sectionID: Verify that the application enforces access control rules on a trusted
       service layer, especially if client-side access control is present and could
       be bypassed.
-    sectionID: V4.1.1
   ltype: Linked To
 - document:
     doctype: Standard
@@ -30,19 +30,19 @@ links:
 - document:
     doctype: Standard
     hyperlink: https://owasp.org/www-project-web-security-testing-guide/v41/4-Web_Application_Security_Testing/05-Authorization_Testing/02-Testing_for_Bypassing_Authorization_Schema.html
-    name: (WSTG) Web Security Testing Guide
+    name: OWASP Web Security Testing Guide (WSTG)
     section: WSTG-ATHZ-02
   ltype: Linked To
 - document:
     doctype: Standard
     hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Access_Control_Cheat_Sheet.html
-    name: Cheat_sheets
+    name: OWASP Cheat Sheets
     section: Access Control Cheat Sheet
   ltype: Linked To
 - document:
     doctype: Standard
     hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Testing_Automation_Cheat_Sheet.html
-    name: Cheat_sheets
+    name: OWASP Cheat Sheets
     section: Authorization Testing Automation Cheat Sheet
   ltype: Linked To
 name: Enforce access control on trusted service layer

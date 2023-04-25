@@ -3,16 +3,16 @@ id: 026-280
 links:
 - document:
     doctype: CRE
-    id: 842-876
-    name: '>>Logging and error handling'
+    id: 148-420
+    name: Log integrity
   ltype: Contains
 - document:
     doctype: Standard
-    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x10-V1-Architecture.md
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x10-V1-Architecture.md
     name: ASVS
-    section: Verify that logs are securely transmitted to a preferably remote system
-      for analysis, detection, alerting, and escalation. (C9)
-    sectionID: V1.7.2
+    section: V1.7.2
+    sectionID: Verify that logs are securely transmitted to a preferably remote system
+      for analysis, detection, alerting, and escalation.
   ltype: Linked To
 - document:
     doctype: Standard
@@ -23,7 +23,7 @@ links:
 - document:
     doctype: Standard
     hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html
-    name: Cheat_sheets
+    name: OWASP Cheat Sheets
     section: Logging Cheat Sheet
   ltype: Linked To
 name: Securely transfer logs (remotely)

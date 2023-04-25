@@ -8,12 +8,12 @@ links:
   ltype: Contains
 - document:
     doctype: Standard
-    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x15-V7-Error-Logging.md
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x15-V7-Error-Logging.md
     name: ASVS
-    section: Verify that all authentication decisions are logged, without storing
+    section: V7.2.1
+    sectionID: Verify that all authentication decisions are logged, without storing
       sensitive session tokens or passwords. This should include requests with relevant
       metadata needed for security investigations.
-    sectionID: V7.2.1
   ltype: Linked To
 - document:
     doctype: Standard
@@ -25,7 +25,7 @@ links:
 - document:
     doctype: Standard
     hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html
-    name: Cheat_sheets
+    name: OWASP Cheat Sheets
     section: Logging Cheat Sheet
   ltype: Linked To
 name: Log authentication decisions without exposing sensitive data

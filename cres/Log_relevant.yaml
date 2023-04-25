@@ -8,6 +8,11 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
+    id: 015-063
+    name: Log access to sensitive data
+  ltype: Contains
+- document:
+    doctype: CRE
     id: 184-284
     name: Log all security relevant events
   ltype: Contains
@@ -23,11 +28,6 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 015-063
-    name: Log access to sensitive data
-  ltype: Contains
-- document:
-    doctype: CRE
     id: 113-133
     name: Use centralized authentication mechanism
     tags:
@@ -40,14 +40,20 @@ links:
   ltype: Contains
 - document:
     doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=AU-2
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=AU-2
     name: NIST 800-53 v5
     section: AU-2 Event Logging
   ltype: Linked To
 - document:
     doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=AU-3
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=AU-3
     name: NIST 800-53 v5
     section: AU-3 Content of Audit Records
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owasp.org/Top10/A09_2021-Security_Logging_and_Monitoring_Failures/
+    name: OWASP Top 10 2021
+    section: 09_2021-Security_Logging_and_Monitoring_Failures/
   ltype: Linked To
 name: Log relevant

@@ -8,11 +8,11 @@ links:
   ltype: Contains
 - document:
     doctype: Standard
-    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x21-V13-API.md
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x21-V13-API.md
     name: ASVS
-    section: Verify that REST services explicitly check the incoming Content-Type
+    section: V13.2.5
+    sectionID: Verify that REST services explicitly check the incoming Content-Type
       to be the expected one, such as application/xml or application/json.
-    sectionID: V13.2.5
   ltype: Linked To
 - document:
     doctype: Standard
@@ -24,19 +24,19 @@ links:
 - document:
     doctype: Standard
     hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/REST_Assessment_Cheat_Sheet.html
-    name: Cheat_sheets
+    name: OWASP Cheat Sheets
     section: REST Assessment Cheat Sheet
   ltype: Linked To
 - document:
     doctype: Standard
     hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/REST_Security_Cheat_Sheet.html
-    name: Cheat_sheets
+    name: OWASP Cheat Sheets
     section: REST Security Cheat Sheet
   ltype: Linked To
 - document:
     doctype: Standard
     hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html
-    name: Cheat_sheets
+    name: OWASP Cheat Sheets
     section: Cross-Site Request Forgery Prevention Cheat Sheet
   ltype: Linked To
 name: Verify content-type for REST services

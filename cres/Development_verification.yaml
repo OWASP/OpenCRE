@@ -18,4 +18,9 @@ links:
     id: 611-158
     name: Use SAST for malicious content
   ltype: Contains
+- document:
+    doctype: CRE
+    id: 053-751
+    name: Force build pipeline to check outdated/insecure components
+  ltype: Related
 name: Development verification

@@ -1,5 +1,5 @@
 doctype: CRE
-id: 470-731
+id: 716-526
 links:
 - document:
     doctype: CRE
@@ -28,6 +28,6 @@ links:
 - document:
     doctype: CRE
     id: 455-358
-    name: When storing session tokens in browers, use secure methods only
+    name: When storing session tokens in browser, use secure methods only
   ltype: Contains
 name: Session token generation

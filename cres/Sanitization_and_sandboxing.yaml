@@ -8,18 +8,30 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 145-310
-    name: Sanitize, disable, or sandbox untrusted SVG scriptable content
+    id: 760-764
+    name: Injection
+    tags:
+    - XSS
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 760-765
+    name: XSS
+    tags:
+    - Injection
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 657-084
+    name: (SSRF) When depending on internal server input, use validation sanitization
+      and whitelisting
+    tags:
+    - SSRF
   ltype: Contains
 - document:
     doctype: CRE
     id: 317-743
     name: Do not use eval or dynamic code execution functions
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 422-005
-    name: Sanitize/sandbox user input where template-injection is a threat
   ltype: Contains
 - document:
     doctype: CRE
@@ -33,33 +45,33 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
+    id: 881-434
+    name: Sanitize user input before passing content to mail systems (SMTP/IMAP injection)
+  ltype: Contains
+- document:
+    doctype: CRE
     id: 646-462
     name: Sanitize, disable, or sandbox untrusted scriptable or template language
       content
   ltype: Contains
 - document:
     doctype: CRE
-    id: 657-084
-    name: (SSRF) When depending on internal server input, use validation sanitization
-      and whitelisting
+    id: 145-310
+    name: Sanitize, disable, or sandbox untrusted SVG scriptable content
   ltype: Contains
 - document:
     doctype: CRE
-    id: 760-764
-    name: Injection
-  ltype: Related
+    id: 422-005
+    name: Sanitize/sandbox user input where template-injection is a threat
+  ltype: Contains
 - document:
     doctype: CRE
-    id: 028-726
-    name: XSS
-  ltype: Related
-- document:
-    doctype: CRE
-    id: 881-434
-    name: Sanitize user input before passing content to mail systems (SMTP/IMAP injection)
+    id: 268-088
+    name: Limit query impact GraphQL/data layer expression DoS
+    tags:
+    - DOS
   ltype: Contains
 name: Sanitization and sandboxing
 tags:
 - Injection
 - XSS
-- Injection

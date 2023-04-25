@@ -8,11 +8,11 @@ links:
   ltype: Contains
 - document:
     doctype: Standard
-    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x22-V14-Config.md
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x22-V14-Config.md
     name: ASVS
-    section: 'Verify that all responses contain a X-Content-Type-Options: nosniff
+    section: V14.4.4
+    sectionID: 'Verify that all responses contain a X-Content-Type-Options: nosniff
       header.'
-    sectionID: V14.4.4
   ltype: Linked To
 - document:
     doctype: Standard
@@ -26,13 +26,13 @@ links:
     hyperlink: https://owasp.org/www-project-web-security-testing-guide/v41/4-Web_Application_Security_Testing/07-Input_Validation_Testing/01-Testing_for_Reflected_Cross_Site_Scripting.html;
       https://owasp.org/www-project-web-security-testing-guide/v41/4-Web_Application_Security_Testing/07-Input_Validation_Testing/02-Testing_for_Stored_Cross_Site_Scripting.html;
       https://owasp.org/www-project-web-security-testing-guide/v41/4-Web_Application_Security_Testing/11-Client_Side_Testing/01-Testing_for_DOM-based_Cross_Site_Scripting.html
-    name: (WSTG) Web Security Testing Guide
+    name: OWASP Web Security Testing Guide (WSTG)
     section: WSTG-INPV-01; WSTG-INPV-02; WSTG-CLNT-01
   ltype: Linked To
 - document:
     doctype: Standard
     hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Content_Security_Policy_Cheat_Sheet.html
-    name: Cheat_sheets
+    name: OWASP Cheat Sheets
     section: Content Security Policy Cheat Sheet
   ltype: Linked To
 name: Configure X-Content-Type-Options properly

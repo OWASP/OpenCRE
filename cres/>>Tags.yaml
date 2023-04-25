@@ -23,6 +23,11 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
+    id: 028-727
+    name: CSRF
+  ltype: Contains
+- document:
+    doctype: CRE
     id: 623-550
     name: DOS
   ltype: Contains
@@ -30,6 +35,8 @@ links:
     doctype: CRE
     id: 760-764
     name: Injection
+    tags:
+    - XSS
   ltype: Contains
 - document:
     doctype: CRE
@@ -43,7 +50,14 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 028-726
+    id: 028-727
+    name: SSRF
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 760-765
     name: XSS
+    tags:
+    - Injection
   ltype: Contains
 name: '>>Tags'

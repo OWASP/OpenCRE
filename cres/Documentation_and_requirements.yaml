@@ -51,9 +51,22 @@ links:
     name: Data security requirement documentation
   ltype: Contains
 - document:
+    doctype: CRE
+    id: 155-155
+    name: Architecture
+  ltype: Related
+- document:
     doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=SA-5
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=SA-5
     name: NIST 800-53 v5
     section: SA-5 System Documentation
   ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owasp.org/www-project-top-ten/2017/A3_2017-Sensitive_Data_Exposure
+    name: OWASP Top 10 2017
+    section: A3-Sensitive_Data_Exposure
+  ltype: Linked To
 name: Documentation and requirements
+tags:
+- Architecture

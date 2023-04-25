@@ -15,15 +15,6 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 384-344
-    name: Store and serve user-uploaded files such that they cannot execute/damage
-      server or client
-    tags:
-    - Injection
-    - XSS
-  ltype: Contains
-- document:
-    doctype: CRE
     id: 463-820
     name: Limit size and number of uploaded files
     tags:
@@ -31,8 +22,17 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 634-883
-    name: Separate storage of user uploaded files
+    id: 112-273
+    name: Scan untrusted files for malware
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 384-344
+    name: Store and serve user-uploaded files such that they cannot execute/damage
+      server or client
+    tags:
+    - Injection
+    - XSS
   ltype: Contains
 - document:
     doctype: CRE

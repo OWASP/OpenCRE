@@ -3,17 +3,17 @@ id: 801-310
 links:
 - document:
     doctype: CRE
-    id: 724-770
-    name: '>>Authorized access'
+    id: 128-128
+    name: Strong authorization checking
   ltype: Contains
 - document:
     doctype: Standard
-    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x10-V1-Architecture.md
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x10-V1-Architecture.md
     name: ASVS
-    section: Verify that attribute or feature-based access control is used whereby
+    section: V1.4.5
+    sectionID: Verify that attribute or feature-based access control is used whereby
       the code checks the user's authorization for a feature/data item rather than
-      just their role. Permissions should still be allocated using roles. (C7)
-    sectionID: V1.4.5
+      just their role. Permissions should still be allocated using roles.
   ltype: Linked To
 - document:
     doctype: Standard
@@ -31,7 +31,7 @@ links:
 - document:
     doctype: Standard
     hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html
-    name: Cheat_sheets
+    name: OWASP Cheat Sheets
     section: Docker Security Cheat Sheet
   ltype: Linked To
 name: Use ABAC/FBAC on data/feature level, even when using RBAC for permissions

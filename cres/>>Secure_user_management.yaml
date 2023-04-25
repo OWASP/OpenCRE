@@ -45,7 +45,7 @@ links:
     doctype: CRE
     id: 817-808
     name: Deny new users by default
-  ltype: Contains
+  ltype: Related
 - document:
     doctype: CRE
     id: 673-736
@@ -53,7 +53,14 @@ links:
   ltype: Related
 - document:
     doctype: Standard
-    name: Top10 2017
+    hyperlink: https://owasp.org/Top10/A07_2021-Identification_and_Authentication_Failures/
+    name: OWASP Top 10 2021
+    section: 07_2021-Identification_and_Authentication_Failures/
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owasp.org/www-project-top-ten/2017/A2_2017-Broken_Authentication
+    name: OWASP Top 10 2017
     section: A2_Broken_Authentication
   ltype: Linked To
 name: '>>Secure user management'

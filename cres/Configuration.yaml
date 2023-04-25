@@ -10,8 +10,16 @@ links:
   ltype: Related
 - document:
     doctype: CRE
+    id: 154-031
+    name: Harden application by excluding unwanted functionality
+    tags:
+    - Configuration
+  ltype: Related
+- document:
+    doctype: CRE
     id: 462-245
-    name: Remove unnecessary features, documentation, configuration etc
+    name: Remove unnecessary elements from external components (e.g. features, documentation,
+      configuration)
     tags:
     - Configuration
   ltype: Related
@@ -41,6 +49,7 @@ links:
     id: 764-507
     name: Restrict XML parsing (against XXE)
     tags:
+    - Injection
     - Configuration
   ltype: Related
 - document:
@@ -71,14 +80,20 @@ links:
   ltype: Contains
 - document:
     doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=CM-2
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=CM-2
     name: NIST 800-53 v5
     section: CM-2 BASELINE CONFIGURATION
   ltype: Linked To
 - document:
     doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=CM-6
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=CM-6
     name: NIST 800-53 v5
     section: CM-6 Configuration Settings
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owasp.org/Top10/A05_2021-Security_Misconfiguration/
+    name: OWASP Top 10 2021
+    section: 05_2021-Security_Misconfiguration/
   ltype: Linked To
 name: Configuration

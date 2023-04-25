@@ -10,11 +10,11 @@ links:
   ltype: Contains
 - document:
     doctype: Standard
-    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x19-V11-BusLogic.md
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x19-V11-BusLogic.md
     name: ASVS
-    section: Verify the application does not suffer from "Time Of Check to Time Of
-      Use" (TOCTOU) issues or other race conditions for sensitive operations.
-    sectionID: V11.1.6
+    section: V11.1.6
+    sectionID: Verify that the application does not suffer from "Time Of Check to
+      Time Of Use" (TOCTOU) issues or other race conditions for sensitive operations.
   ltype: Linked To
 - document:
     doctype: Standard
@@ -26,7 +26,7 @@ links:
 - document:
     doctype: Standard
     hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Abuse_Case_Cheat_Sheet.html
-    name: Cheat_sheets
+    name: OWASP Cheat Sheets
     section: Abuse Case Cheat Sheet
   ltype: Linked To
 name: Protect sensitive functionalities against race conditions

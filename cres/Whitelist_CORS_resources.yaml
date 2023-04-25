@@ -5,15 +5,17 @@ links:
     doctype: CRE
     id: 541-441
     name: Validate HTTP request headers
+    tags:
+    - Injection
   ltype: Contains
 - document:
     doctype: Standard
-    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x22-V14-Config.md
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x22-V14-Config.md
     name: ASVS
-    section: Verify that the Cross-Origin Resource Sharing (CORS) Access-Control-Allow-Origin
+    section: V14.5.3
+    sectionID: Verify that the Cross-Origin Resource Sharing (CORS) Access-Control-Allow-Origin
       header uses a strict allow list of trusted domains and subdomains to match against
       and does not support the "null" origin.
-    sectionID: V14.5.3
   ltype: Linked To
 - document:
     doctype: Standard
@@ -25,7 +27,7 @@ links:
 - document:
     doctype: Standard
     hyperlink: https://owasp.org/www-project-web-security-testing-guide/v41/4-Web_Application_Security_Testing/11-Client_Side_Testing/07-Testing_Cross_Origin_Resource_Sharing.html
-    name: (WSTG) Web Security Testing Guide
+    name: OWASP Web Security Testing Guide (WSTG)
     section: WSTG-CLNT-07
   ltype: Linked To
 name: Whitelist CORS resources

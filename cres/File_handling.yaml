@@ -8,6 +8,11 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
+    id: 545-243
+    name: Block execution/output of uploaded files
+  ltype: Contains
+- document:
+    doctype: CRE
     id: 175-235
     name: Validate file type of data from untrusted sources
   ltype: Contains

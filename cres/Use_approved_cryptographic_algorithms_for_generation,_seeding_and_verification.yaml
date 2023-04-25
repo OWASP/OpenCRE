@@ -4,20 +4,17 @@ links:
 - document:
     doctype: CRE
     id: 585-408
-    name: Cryptographic authentication software and devices
+    name: Challenge nonce cryptography
+    tags:
+    - Cryptography
   ltype: Contains
 - document:
-    doctype: CRE
-    id: 170-772
-    name: Cryptography
-  ltype: Related
-- document:
     doctype: Standard
-    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x11-V2-Authentication.md
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x11-V2-Authentication.md
     name: ASVS
-    section: Verify that approved cryptographic algorithms are used in the generation,
+    section: V2.9.3
+    sectionID: Verify that approved cryptographic algorithms are used in the generation,
       seeding, and verification.
-    sectionID: V2.9.3
   ltype: Linked To
 - document:
     doctype: Standard
@@ -29,13 +26,13 @@ links:
 - document:
     doctype: Standard
     hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html
-    name: Cheat_sheets
+    name: OWASP Cheat Sheets
     section: Cryptographic Storage Cheat Sheet
   ltype: Linked To
 - document:
     doctype: Standard
     hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Key_Management_Cheat_Sheet.html
-    name: Cheat_sheets
+    name: OWASP Cheat Sheets
     section: Key Management Cheat Sheet
   ltype: Linked To
 - document:
@@ -44,5 +41,3 @@ links:
     section: 5.1.7.2
   ltype: Linked To
 name: Use approved cryptographic algorithms for generation, seeding and verification
-tags:
-- Cryptography

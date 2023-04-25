@@ -22,6 +22,8 @@ links:
     id: 742-056
     name: Ignore/at least validate  filename metadata from untrusted origin (remote
       file context, eg RFI)
+    tags:
+    - SSRF
   ltype: Contains
 - document:
     doctype: CRE

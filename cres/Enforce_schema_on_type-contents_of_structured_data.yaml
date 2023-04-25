@@ -11,13 +11,13 @@ links:
   ltype: Contains
 - document:
     doctype: Standard
-    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x13-V5-Validation-Sanitization-Encoding.md
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x13-V5-Validation-Sanitization-Encoding.md
     name: ASVS
-    section: Verify that structured data is strongly typed and validated against a
-      defined schema including allowed characters, length and pattern (e.g. credit
-      card numbers or telephone, or validating that two related fields are reasonable,
-      such as checking that suburb and zip/postcode match). (C5)
-    sectionID: V5.1.4
+    section: V5.1.4
+    sectionID: Verify that structured data is strongly typed and validated against
+      a defined schema including allowed characters, length and pattern (e.g. credit
+      card numbers, e-mail addresses, telephone numbers, or validating that two related
+      fields are reasonable, such as checking that suburb and zip/postcode match).
   ltype: Linked To
 - document:
     doctype: Standard
@@ -35,19 +35,19 @@ links:
 - document:
     doctype: Standard
     hyperlink: https://owasp.org/www-project-web-security-testing-guide/v41/4-Web_Application_Security_Testing/07-Input_Validation_Testing/
-    name: (WSTG) Web Security Testing Guide
+    name: OWASP Web Security Testing Guide (WSTG)
     section: WSTG-INPV-00
   ltype: Linked To
 - document:
     doctype: Standard
     hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Mass_Assignment_Cheat_Sheet.html
-    name: Cheat_sheets
+    name: OWASP Cheat Sheets
     section: Mass Assignment Cheat Sheet
   ltype: Linked To
 - document:
     doctype: Standard
     hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html
-    name: Cheat_sheets
+    name: OWASP Cheat Sheets
     section: Input Validation Cheat Sheet
   ltype: Linked To
 name: Enforce schema on type/contents of structured data

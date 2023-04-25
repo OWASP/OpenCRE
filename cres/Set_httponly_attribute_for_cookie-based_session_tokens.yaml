@@ -8,16 +8,18 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 028-726
+    id: 760-765
     name: XSS
+    tags:
+    - Injection
   ltype: Related
 - document:
     doctype: Standard
-    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x12-V3-Session-management.md
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x12-V3-Session-management.md
     name: ASVS
-    section: Verify that cookie-based session tokens have the 'HttpOnly' attribute
-      set. (C6)
-    sectionID: V3.4.2
+    section: V3.4.2
+    sectionID: Verify that cookie-based session tokens have the 'HttpOnly' attribute
+      set.
   ltype: Linked To
 - document:
     doctype: Standard
@@ -35,19 +37,19 @@ links:
 - document:
     doctype: Standard
     hyperlink: https://owasp.org/www-project-web-security-testing-guide/v41/4-Web_Application_Security_Testing/06-Session_Management_Testing/02-Testing_for_Cookies_Attributes.html#domain-attribute
-    name: (WSTG) Web Security Testing Guide
+    name: OWASP Web Security Testing Guide (WSTG)
     section: WSTG-SESS-02
   ltype: Linked To
 - document:
     doctype: Standard
     hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html
-    name: Cheat_sheets
+    name: OWASP Cheat Sheets
     section: Session Management Cheat Sheet
   ltype: Linked To
 - document:
     doctype: Standard
     hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html
-    name: Cheat_sheets
+    name: OWASP Cheat Sheets
     section: Cross-Site Request Forgery Prevention Cheat Sheet
   ltype: Linked To
 - document:

@@ -8,11 +8,12 @@ links:
   ltype: Contains
 - document:
     doctype: Standard
-    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x11-V2-Authentication.md
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x11-V2-Authentication.md
     name: ASVS
-    section: Verify that if OTP or multi-factor authentication factors are lost, that
-      evidence of identity proofing is performed at the same level as during enrollment.
-    sectionID: V2.5.7
+    section: V2.5.7
+    sectionID: Verify that if OTP or multi-factor authentication factors are lost,
+      that evidence of identity proofing is performed at the same level as during
+      enrollment.
   ltype: Linked To
 - document:
     doctype: Standard
@@ -24,13 +25,13 @@ links:
 - document:
     doctype: Standard
     hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Choosing_and_Using_Security_Questions_Cheat_Sheet.html
-    name: Cheat_sheets
+    name: OWASP Cheat Sheets
     section: Choosing and Using Security Questions Cheat Sheet
   ltype: Linked To
 - document:
     doctype: Standard
     hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Forgot_Password_Cheat_Sheet.html
-    name: Cheat_sheets
+    name: OWASP Cheat Sheets
     section: Forgot Password Cheat Sheet
   ltype: Linked To
 - document:

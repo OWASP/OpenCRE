@@ -11,12 +11,12 @@ links:
   ltype: Contains
 - document:
     doctype: Standard
-    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x13-V5-Validation-Sanitization-Encoding.md
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x13-V5-Validation-Sanitization-Encoding.md
     name: ASVS
-    section: Verify that frameworks protect against mass parameter assignment attacks,
+    section: V5.1.2
+    sectionID: Verify that frameworks protect against mass parameter assignment attacks,
       or that the application has countermeasures to protect against unsafe parameter
-      assignment, such as marking fields private or similar. (C5)
-    sectionID: V5.1.2
+      assignment, such as marking fields private or similar.
   ltype: Linked To
 - document:
     doctype: Standard
@@ -34,13 +34,13 @@ links:
 - document:
     doctype: Standard
     hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Mass_Assignment_Cheat_Sheet.html
-    name: Cheat_sheets
+    name: OWASP Cheat Sheets
     section: Mass Assignment Cheat Sheet
   ltype: Linked To
 - document:
     doctype: Standard
     hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html
-    name: Cheat_sheets
+    name: OWASP Cheat Sheets
     section: Input Validation Cheat Sheet
   ltype: Linked To
 name: Protect against mass parameter assignment attack

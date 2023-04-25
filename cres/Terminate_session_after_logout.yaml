@@ -4,16 +4,16 @@ links:
 - document:
     doctype: CRE
     id: 470-731
-    name: Session logout and timeout
+    name: Minimize session life
   ltype: Contains
 - document:
     doctype: Standard
-    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x12-V3-Session-management.md
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x12-V3-Session-management.md
     name: ASVS
-    section: Verify that logout and expiration invalidate the session token, such
+    section: V3.3.1
+    sectionID: Verify that logout and expiration invalidate the session token, such
       that the back button or a downstream relying party does not resume an authenticated
-      session, including across relying parties. (C6)
-    sectionID: V3.3.1
+      session, including across relying parties.
   ltype: Linked To
 - document:
     doctype: Standard
@@ -36,13 +36,13 @@ links:
 - document:
     doctype: Standard
     hyperlink: https://owasp.org/www-project-web-security-testing-guide/v41/4-Web_Application_Security_Testing/06-Session_Management_Testing/06-Testing_for_Logout_Functionality.html#testing-for-server-side-session-termination
-    name: (WSTG) Web Security Testing Guide
+    name: OWASP Web Security Testing Guide (WSTG)
     section: WSTG-SESS-06
   ltype: Linked To
 - document:
     doctype: Standard
     hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html
-    name: Cheat_sheets
+    name: OWASP Cheat Sheets
     section: Session Management Cheat Sheet
   ltype: Linked To
 - document:

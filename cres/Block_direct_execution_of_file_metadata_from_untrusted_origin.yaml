@@ -8,11 +8,11 @@ links:
   ltype: Contains
 - document:
     doctype: Standard
-    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x20-V12-Files-Resources.md
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x20-V12-Files-Resources.md
     name: ASVS
-    section: Verify that untrusted file metadata is not used directly with system
+    section: V12.3.5
+    sectionID: Verify that untrusted file metadata is not used directly with system
       API or libraries, to protect against OS command injection.
-    sectionID: V12.3.5
   ltype: Linked To
 - document:
     doctype: Standard
@@ -24,7 +24,7 @@ links:
 - document:
     doctype: Standard
     hyperlink: https://owasp.org/www-project-web-security-testing-guide/v41/4-Web_Application_Security_Testing/07-Input_Validation_Testing/12-Testing_for_Command_Injection.html
-    name: (WSTG) Web Security Testing Guide
+    name: OWASP Web Security Testing Guide (WSTG)
     section: WSTG-INPV-12
   ltype: Linked To
 name: Block direct execution of file metadata from untrusted origin

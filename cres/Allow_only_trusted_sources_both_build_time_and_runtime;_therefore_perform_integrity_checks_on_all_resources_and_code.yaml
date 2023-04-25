@@ -8,13 +8,13 @@ links:
   ltype: Contains
 - document:
     doctype: Standard
-    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x18-V10-Malicious.md
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x18-V10-Malicious.md
     name: ASVS
-    section: Verify that the application employs integrity protections, such as code
-      signing or subresource integrity. The application must not load or execute code
-      from untrusted sources, such as loading includes, modules, plugins, code, or
-      libraries from untrusted sources or the Internet.
-    sectionID: V10.3.2
+    section: V10.3.2
+    sectionID: Verify that the application employs integrity protections, such as
+      code signing or subresource integrity. The application must not load or execute
+      code from untrusted sources, such as loading includes, modules, plugins, code,
+      or libraries from untrusted sources or the Internet.
   ltype: Linked To
 - document:
     doctype: Standard
@@ -26,7 +26,7 @@ links:
 - document:
     doctype: Standard
     hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html
-    name: Cheat_sheets
+    name: OWASP Cheat Sheets
     section: Docker Security Cheat Sheet
   ltype: Linked To
 name: Allow only trusted sources both build time and runtime; therefore perform integrity

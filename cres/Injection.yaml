@@ -3,6 +3,13 @@ id: 760-764
 links:
 - document:
     doctype: CRE
+    id: 760-765
+    name: XSS
+    tags:
+    - Injection
+  ltype: Related
+- document:
+    doctype: CRE
     id: 384-344
     name: Store and serve user-uploaded files such that they cannot execute/damage
       server or client
@@ -15,7 +22,14 @@ links:
     id: 010-308
     name: Input validation
     tags:
+    - Injection
     - XSS
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 866-553
+    name: Memory, String, and Unmanaged Code
+    tags:
     - Injection
   ltype: Related
 - document:
@@ -36,16 +50,23 @@ links:
   ltype: Related
 - document:
     doctype: CRE
-    id: 048-612
-    name: Encode user input before logging
+    id: 541-441
+    name: Validate HTTP request headers
     tags:
     - Injection
-    - XSS
   ltype: Related
 - document:
     doctype: CRE
-    id: 821-540
-    name: Protect logs against log injection
+    id: 764-507
+    name: Restrict XML parsing (against XXE)
+    tags:
+    - Injection
+    - Configuration
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 048-612
+    name: Encode user input before logging
     tags:
     - Injection
   ltype: Related
@@ -56,7 +77,16 @@ links:
   ltype: Contains
 - document:
     doctype: Standard
-    name: Top10 2017
+    hyperlink: https://owasp.org/Top10/A03_2021-Injection/
+    name: OWASP Top 10 2021
+    section: 03_2021-Injection/
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owasp.org/www-project-top-ten/2017/A1_2017-Injection
+    name: OWASP Top 10 2017
     section: A1-Injection
   ltype: Linked To
 name: Injection
+tags:
+- XSS

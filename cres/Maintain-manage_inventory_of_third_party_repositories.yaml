@@ -3,8 +3,8 @@ id: 863-521
 links:
 - document:
     doctype: CRE
-    id: 613-285
-    name: '>>Dependency strength'
+    id: 613-286
+    name: Dependency management
   ltype: Contains
 - document:
     doctype: CRE
@@ -13,11 +13,11 @@ links:
   ltype: Related
 - document:
     doctype: Standard
-    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x22-V14-Config.md
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x22-V14-Config.md
     name: ASVS
-    section: Verify that an inventory catalog is maintained of all third party libraries
-      in use. (C2)
-    sectionID: V14.2.5
+    section: V14.2.5
+    sectionID: Verify that a Software Bill of Materials (SBOM) is maintained of all
+      third party libraries in use.
   ltype: Linked To
 - document:
     doctype: Standard
@@ -28,13 +28,13 @@ links:
 - document:
     doctype: Standard
     hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html
-    name: Cheat_sheets
+    name: OWASP Cheat Sheets
     section: Docker Security Cheat Sheet
   ltype: Linked To
 - document:
     doctype: Standard
     hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Vulnerable_Dependency_Management_Cheat_Sheet.html
-    name: Cheat_sheets
+    name: OWASP Cheat Sheets
     section: Vulnerable Dependency Management Cheat Sheet
   ltype: Linked To
 name: Maintain/manage inventory of third party repositories

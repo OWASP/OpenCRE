@@ -8,6 +8,13 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
+    id: 760-764
+    name: Injection
+    tags:
+    - XSS
+  ltype: Related
+- document:
+    doctype: CRE
     id: 482-771
     name: Check boundaries against integer overflow weaknesses
   ltype: Contains
@@ -22,3 +29,5 @@ links:
     name: Use memory-safe functions exclusively
   ltype: Contains
 name: Memory, String, and Unmanaged Code
+tags:
+- Injection

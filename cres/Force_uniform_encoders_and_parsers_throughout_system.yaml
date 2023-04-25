@@ -7,13 +7,18 @@ links:
     name: API/web services
   ltype: Contains
 - document:
+    doctype: CRE
+    id: 028-727
+    name: SSRF
+  ltype: Related
+- document:
     doctype: Standard
-    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x21-V13-API.md
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x21-V13-API.md
     name: ASVS
-    section: Verify that all application components use the same encodings and parsers
+    section: V13.1.1
+    sectionID: Verify that all application components use the same encodings and parsers
       to avoid parsing attacks that exploit different URI or file parsing behavior
       that could be used in SSRF and RFI attacks.
-    sectionID: V13.1.1
   ltype: Linked To
 - document:
     doctype: Standard
@@ -25,13 +30,15 @@ links:
 - document:
     doctype: Standard
     hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Web_Service_Security_Cheat_Sheet.html
-    name: Cheat_sheets
+    name: OWASP Cheat Sheets
     section: Web Service Security Cheat Sheet
   ltype: Linked To
 - document:
     doctype: Standard
     hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html
-    name: Cheat_sheets
+    name: OWASP Cheat Sheets
     section: Server Side Request Forgery Prevention Cheat Sheet
   ltype: Linked To
 name: Force uniform encoders and parsers throughout system
+tags:
+- SSRF

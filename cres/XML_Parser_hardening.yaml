@@ -1,5 +1,5 @@
 doctype: CRE
-id: 764-509
+id: 764-508
 links:
 - document:
     doctype: CRE
@@ -11,6 +11,7 @@ links:
     id: 764-507
     name: Restrict XML parsing (against XXE)
     tags:
+    - Injection
     - Configuration
   ltype: Contains
 name: XML Parser hardening

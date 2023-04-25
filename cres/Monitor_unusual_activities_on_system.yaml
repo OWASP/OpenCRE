@@ -14,13 +14,18 @@ links:
     name: '>>Logging and error handling'
   ltype: Related
 - document:
+    doctype: CRE
+    id: 623-550
+    name: DOS
+  ltype: Related
+- document:
     doctype: Standard
-    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x19-V11-BusLogic.md
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x19-V11-BusLogic.md
     name: ASVS
-    section: Verify the application monitors for unusual events or activity from a
-      business logic perspective. For example, attempts to perform actions out of
-      order or actions which a normal user would never attempt. (C9)
-    sectionID: V11.1.7
+    section: V11.1.7
+    sectionID: Verify that the application monitors for unusual events or activity
+      from a business logic perspective. For example, attempts to perform actions
+      out of order or actions which a normal user would never attempt.
   ltype: Linked To
 - document:
     doctype: Standard
@@ -38,7 +43,9 @@ links:
 - document:
     doctype: Standard
     hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Abuse_Case_Cheat_Sheet.html
-    name: Cheat_sheets
+    name: OWASP Cheat Sheets
     section: Abuse Case Cheat Sheet
   ltype: Linked To
 name: Monitor unusual activities on system
+tags:
+- DOS

@@ -3,16 +3,16 @@ id: 713-683
 links:
 - document:
     doctype: CRE
-    id: 713-685
+    id: 713-684
     name: Log access protection
   ltype: Contains
 - document:
     doctype: Standard
-    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x15-V7-Error-Logging.md
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x15-V7-Error-Logging.md
     name: ASVS
-    section: Verify that security logs are protected from unauthorized access and
-      modification. (C9)
-    sectionID: V7.3.3
+    section: V7.3.3
+    sectionID: Verify that security logs are protected from unauthorized access and
+      modification.
   ltype: Linked To
 - document:
     doctype: Standard
@@ -30,13 +30,13 @@ links:
 - document:
     doctype: Standard
     hyperlink: https://owasp.org/www-project-web-security-testing-guide/v41/4-Web_Application_Security_Testing/05-Authorization_Testing/03-Testing_for_Privilege_Escalation.html
-    name: (WSTG) Web Security Testing Guide
+    name: OWASP Web Security Testing Guide (WSTG)
     section: WSTG-ATHZ-03
   ltype: Linked To
 - document:
     doctype: Standard
     hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.htmlhttps://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html
-    name: Cheat_sheets
+    name: OWASP Cheat Sheets
     section: Logging Cheat Sheet.htmlhttps://cheatsheetseries.owasp.org/cheatsheets/Logging
       Cheat Sheet
   ltype: Linked To

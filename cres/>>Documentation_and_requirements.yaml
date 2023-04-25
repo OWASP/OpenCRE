@@ -1,0 +1,15 @@
+doctype: CRE
+id: 227-046
+links:
+- document:
+    doctype: CRE
+    id: 268-272
+    name: Classify personal data regarding retention so that old or outdated data
+      is deleted
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 227-045
+    name: Identify sensitive data and subject it to a policy
+  ltype: Contains
+name: '>>Documentation and requirements'

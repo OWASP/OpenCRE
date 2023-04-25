@@ -7,12 +7,16 @@ links:
     name: Re-authentication from federation or assertion
   ltype: Contains
 - document:
+    doctype: CRE
+    name: '>>Authorization'
+  ltype: Related
+- document:
     doctype: Standard
-    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x12-V3-Session-management.md
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x12-V3-Session-management.md
     name: ASVS
-    section: Verify the application allows users to revoke OAuth tokens that form
+    section: V3.5.1
+    sectionID: Verify the application allows users to revoke OAuth tokens that form
       trust relationships with linked applications.
-    sectionID: V3.5.1
   ltype: Linked To
 - document:
     doctype: Standard
@@ -24,13 +28,13 @@ links:
 - document:
     doctype: Standard
     hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/JSON_Web_Token_for_Java_Cheat_Sheet.html
-    name: Cheat_sheets
+    name: OWASP Cheat Sheets
     section: JSON Web Token for Java Cheat Sheet
   ltype: Linked To
 - document:
     doctype: Standard
     hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/REST_Security_Cheat_Sheet.html
-    name: Cheat_sheets
+    name: OWASP Cheat Sheets
     section: REST Security Cheat Sheet
   ltype: Linked To
 - document:

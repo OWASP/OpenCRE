@@ -3,8 +3,10 @@ id: 336-512
 links:
 - document:
     doctype: CRE
-    id: 336-511
-    name: Network protection
+    id: 783-355
+    name: Deployment
+    tags:
+    - Configuration
   ltype: Contains
 - document:
     doctype: CRE
@@ -13,16 +15,16 @@ links:
   ltype: Related
 - document:
     doctype: Standard
-    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x18-V10-Malicious.md
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x18-V10-Malicious.md
     name: ASVS
-    section: Verify that the application has protection from subdomain takeovers if
-      the application relies upon DNS entries or DNS subdomains, such as expired domain
-      names, out of date DNS pointers or CNAMEs, expired projects at public source
-      code repos, or transient cloud APIs, serverless functions, or storage buckets
-      (*autogen-bucket-id*.cloud.example.com) or similar. Protections can include
-      ensuring that DNS names used by applications are regularly checked for expiry
-      or change.
-    sectionID: V10.3.3
+    section: V10.3.3
+    sectionID: Verify that the application has protection from subdomain takeovers
+      if the application relies upon DNS entries or DNS subdomains, such as expired
+      domain names, out of date DNS pointers or CNAMEs, expired projects at public
+      source code repos, or transient cloud APIs, serverless functions, or storage
+      buckets (*autogen-bucket-id*.cloud.example.com) or similar. Protections can
+      include ensuring that DNS names used by applications are regularly checked for
+      expiry or change.
   ltype: Linked To
 - document:
     doctype: Standard
@@ -34,13 +36,13 @@ links:
 - document:
     doctype: Standard
     hyperlink: https://owasp.org/www-project-web-security-testing-guide/v41/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/10-Test_for_Subdomain_Takeover.html
-    name: (WSTG) Web Security Testing Guide
+    name: OWASP Web Security Testing Guide (WSTG)
     section: WSTG-CONF-10
   ltype: Linked To
 - document:
     doctype: Standard
     hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html
-    name: Cheat_sheets
+    name: OWASP Cheat Sheets
     section: Docker Security Cheat Sheet
   ltype: Linked To
 name: Ensure integrity of DNS entries and domains

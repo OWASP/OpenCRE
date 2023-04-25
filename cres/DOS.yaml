@@ -10,8 +10,29 @@ links:
   ltype: Related
 - document:
     doctype: CRE
-    id: 268-088
-    name: Limit query impact GraphQL/data layer expression DoS
+    id: 725-682
+    name: Enable configurable alert against usage anomalies
+    tags:
+    - DOS
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 456-535
+    name: Monitor for realistic "human time" business logic flows
+    tags:
+    - DOS
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 418-853
+    name: Monitor unusual activities on system
+    tags:
+    - DOS
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 630-573
+    name: Detect and protect against automation abuse
     tags:
     - DOS
   ltype: Related
@@ -52,12 +73,19 @@ links:
   ltype: Related
 - document:
     doctype: CRE
+    id: 268-088
+    name: Limit query impact GraphQL/data layer expression DoS
+    tags:
+    - DOS
+  ltype: Related
+- document:
+    doctype: CRE
     id: 546-564
     name: '>>Tags'
   ltype: Contains
 - document:
     doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=SC-5
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=SC-5
     name: NIST 800-53 v5
     section: SC-5 DENIAL-OF-SERVICE PROTECTION
   ltype: Linked To

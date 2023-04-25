@@ -8,12 +8,12 @@ links:
   ltype: Contains
 - document:
     doctype: Standard
-    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x21-V13-API.md
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x21-V13-API.md
     name: ASVS
-    section: Verify that XSD schema validation takes place to ensure a properly formed
-      XML document, followed by validation of each input field before any processing
+    section: V13.3.1
+    sectionID: Verify that XSD schema validation takes place to ensure a properly
+      formed XML document, followed by validation of each input field before any processing
       of that data takes place.
-    sectionID: V13.3.1
   ltype: Linked To
 - document:
     doctype: Standard
@@ -25,13 +25,13 @@ links:
 - document:
     doctype: Standard
     hyperlink: https://owasp.org/www-project-web-security-testing-guide/v41/4-Web_Application_Security_Testing/07-Input_Validation_Testing/07-Testing_for_XML_Injection.html
-    name: (WSTG) Web Security Testing Guide
+    name: OWASP Web Security Testing Guide (WSTG)
     section: WSTG-INPV-07
   ltype: Linked To
 - document:
     doctype: Standard
     hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/XML_Security_Cheat_Sheet.html
-    name: Cheat_sheets
+    name: OWASP Cheat Sheets
     section: XML Security Cheat Sheet
   ltype: Linked To
 name: Enforce schema on XML structure/field

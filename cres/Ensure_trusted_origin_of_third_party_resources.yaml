@@ -3,16 +3,16 @@ id: 715-223
 links:
 - document:
     doctype: CRE
-    id: 613-285
-    name: '>>Dependency strength'
+    id: 613-287
+    name: Dependency integrity
   ltype: Contains
 - document:
     doctype: Standard
-    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x22-V14-Config.md
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x22-V14-Config.md
     name: ASVS
-    section: Verify that third party components come from pre-defined, trusted and
-      continually maintained repositories. (C2)
-    sectionID: V14.2.4
+    section: V14.2.4
+    sectionID: Verify that third party components come from pre-defined, trusted and
+      continually maintained repositories.
   ltype: Linked To
 - document:
     doctype: Standard
@@ -30,13 +30,13 @@ links:
 - document:
     doctype: Standard
     hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html
-    name: Cheat_sheets
+    name: OWASP Cheat Sheets
     section: Docker Security Cheat Sheet
   ltype: Linked To
 - document:
     doctype: Standard
     hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Vulnerable_Dependency_Management_Cheat_Sheet.html
-    name: Cheat_sheets
+    name: OWASP Cheat Sheets
     section: Vulnerable Dependency Management Cheat Sheet
   ltype: Linked To
 name: Ensure trusted origin of third party resources

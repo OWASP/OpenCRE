@@ -17,6 +17,8 @@ links:
     doctype: CRE
     id: 248-646
     name: Disable insecure SSL/TLS versions
+    tags:
+    - Cryptography
   ltype: Contains
 - document:
     doctype: CRE
