@@ -504,7 +504,6 @@ def parse_hierarchical_export_format(
                 " without a cre name, skipping"
             )
             continue
-
         if name in cres.keys():
             new_id = mapping.get("CRE ID")
             if cres[name].id != new_id and cres[name].id != "" and new_id != "":
@@ -558,7 +557,6 @@ def parse_hierarchical_export_format(
                         ltype=defs.LinkTypes.Related, document=new_cre.shallow_copy()
                     )
                 )
-
         for link in parse_standards(mapping):
             cre.add_link(link)
 
@@ -566,11 +564,12 @@ def parse_hierarchical_export_format(
 
         if higher_cre:
             cre_hi: defs.CRE
-            if cres.get(mapping[f"CRE hierarchy {str(higher_cre)}"]):
-                cre_hi = cres[mapping.pop(f"CRE hierarchy {str(higher_cre)}").strip()]
+            name_hi = mapping.pop(f"CRE hierarchy {str(higher_cre)}").strip()
+            if cres.get(name_hi):
+                cre_hi = cres[name_hi]
             else:
                 cre_hi = defs.CRE(
-                    name=mapping.pop(f"CRE hierarchy {str(higher_cre)}").strip()
+                    name=name_hi
                 )
 
             existing_link = [
@@ -579,7 +578,6 @@ def parse_hierarchical_export_format(
                 if c.document.doctype == defs.Credoctypes.CRE
                 and c.document.name == cre.name
             ]
-
             # there is no need to capture the entirety of the cre tree, we just need to register this shallow relation
             # the "cres" dict should contain the rest of the info
             if existing_link:
@@ -588,16 +586,17 @@ def parse_hierarchical_export_format(
                     # ugliest way ever to write "update the object in that pointer"
                 ].document = cre.shallow_copy()
             else:
-                cre_hi.add_link(
+                cre_hi = cre_hi.add_link(
                     defs.Link(
                         ltype=defs.LinkTypes.Contains, document=cre.shallow_copy()
                     )
                 )
-            cres[cre_hi.name] = cre_hi
+            cres[cre_hi.name] = cre_hi                
         else:
             pass  # add the cre to cres and make the connection
         if cre:
             cres[cre.name] = cre
+    
 
     return cres
 
