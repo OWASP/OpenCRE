@@ -89,7 +89,6 @@ def find_cre(creid: str = None, crename: str = None) -> Any:  # refer
             result = {"data": json.loads(oscal_utils.document_to_oscal(cre))}
 
         return jsonify(result)
-    print("cre aborting 404")
     abort(404)
 
 
@@ -168,7 +167,6 @@ def find_node_by_name(name: str, ntype: str = defs.Credoctypes.Standard.value) -
 
         return jsonify(result)
     else:
-        print("node by name 404")
         abort(404)
 
 
@@ -239,7 +237,6 @@ def text_search() -> Any:
         res = [doc.todict() for doc in documents]
         return jsonify(res)
     else:
-        print("txt search aborting 404")
         abort(404)
 
 
@@ -264,7 +261,6 @@ def find_root_cres() -> Any:
             return jsonify(json.loads(oscal_utils.list_to_oscal(documents)))
 
         return jsonify(result)
-    print("aborting 404")
     abort(404)
 
 
@@ -278,9 +274,6 @@ def page_not_found(e) -> Any:
 @app.route("/<path:path>")
 # @cache.cached(timeout=50)
 def index(path: str) -> Any:
-    print(path)
-    print(os.path.exists(app.static_folder + "/" + path))
-    print(path)
     if path != "" and os.path.exists(app.static_folder + "/" + path):
         return send_from_directory(app.static_folder, path)
     else:
@@ -327,7 +320,6 @@ def smartlink(
             f"found node of type {ntype}, name {name} and section {section}, redirecting to opencre"
         )
         if found_section_id:
-            print(2)
             return redirect(f"/node/{ntype}/{name}/sectionid/{section}")
         return redirect(f"/node/{ntype}/{name}/section/{section}")
     elif ntype == defs.Credoctypes.Standard.value and redirectors.redirect(
@@ -339,7 +331,6 @@ def smartlink(
         return redirect(redirectors.redirect(name, section))
     else:
         print(f"not sure what happened, 404")
-        pprint(nodes)
         return abort(404)
 
 

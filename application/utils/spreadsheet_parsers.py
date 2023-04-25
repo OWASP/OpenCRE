@@ -611,10 +611,10 @@ def parse_standards(
             },
             "Standards": {
                 "ASVS": {
-                    "section": "Standard ASVS 4.0.2 description",
-                    "sectionID": "Standard ASVS Item",
+                    "section": "Standard ASVS 4.0.3 Item",
+                    "sectionID": "Standard ASVS 4.0.3 description",
                     "subsection": "",
-                    "hyperlink": "Standard ASVS Hyperlink",
+                    "hyperlink": "Standard ASVS 4.0.3 Hyperlink",
                 },
                 "OWASP Proactive Controls": {
                     "section": "Standard OPC (ASVS source)",
@@ -635,14 +635,14 @@ def parse_standards(
                     "hyperlink": "Standard NIST 800-53 v5-hyperlink",
                     "separator": "\n",
                 },
-                "(WSTG) Web Security Testing Guide": {
-                    "section": "Standard WSTG",
+                "OWASP Web Security Testing Guide (WSTG)": {
+                    "section": "Standard WSTG-item",
                     "sectionID": "",
                     "subsection": "",
                     "hyperlink": "Standard WSTG-Hyperlink",
                     "separator": "\n",
                 },
-                "Cheat_sheets": {
+                "OWASP Cheat Sheets": {
                     "section": "Standard Cheat_sheets",
                     "sectionID": "",
                     "subsection": "",
@@ -657,16 +657,16 @@ def parse_standards(
                     "separator": "/",
                 },
                 "OWASP Top 10 2021": {
-                    "section": "OWASP Top 10 2021",
+                    "section": "OWASP Top 10 2021 item",
                     "sectionID": "",
                     "subsection": "",
-                    "hyperlink": "OWASP Top 10 hyperlink",
+                    "hyperlink": "OWASP Top 10 2021 hyperlink",
                 },
-                "Top10 2017": {
-                    "section": "Standard Top10 2017",
+                "OWASP Top 10 2017": {
+                    "section": "Standard Top 10 2017 item",
                     "sectionID": "",
                     "subsection": "",
-                    "hyperlink": "Standard Top10 Hyperlink",
+                    "hyperlink": "Standard Top 10 2017 Hyperlink",
                 },
             },
         }
