@@ -1108,9 +1108,8 @@ class Node_collection:
         result = []
         # select cre.* from cre join cre_links on cre.id=cre_links."group" where cre.id=cre_links."group" and cre.id not in (select cre from cre_links)
         subquery = self.session.query(InternalLinks.cre).subquery()
-        cre_ids = self.session.query(CRE.id).join(InternalLinks,CRE.id==InternalLinks.group).filter(CRE.id==InternalLinks.group).filter(~CRE.id.in_(subquery)).all()
+        cre_ids = self.session.query(CRE.id).join(InternalLinks,CRE.id==InternalLinks.group).filter(CRE.id==InternalLinks.group).filter(~CRE.id.in_(subquery)).distinct()
 
-     
         for cid in cre_ids:
             result.extend(self.get_CREs(internal_id=cid[0]))
         return result
