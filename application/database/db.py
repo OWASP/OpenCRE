@@ -1105,24 +1105,54 @@ class Node_collection:
         """Returns CRES that only have "Contains" links
         Implemented via filtering graph nodes whose incoming edges are only "RELATED" type links
         """
-        result = []
-        # select distinct name from cre join cre_links on cre.id=cre_links."group" where cre.id=cre_links."group" and cre.id not in (select cre from cre_links where type='Contains');
-        subquery = (
-            self.session.query(InternalLinks.cre)
-            .filter(InternalLinks.type == cre_defs.LinkTypes.Contains.value)
-            .subquery()
-        )
-        cre_ids = (
-            self.session.query(CRE.id)
-            .join(InternalLinks, CRE.id == InternalLinks.group)
-            .filter(CRE.id == InternalLinks.group)
-            .filter(~CRE.id.in_(subquery))
-            .distinct()
-        )
+        
+        def node_is_root(node):
+            return node.startswith("CRE") and (
+                self.graph.graph.in_degree(node) == 0
+                or not [
+                    edge
+                    for edge in self.graph.graph.in_edges(node)
+                    if self.graph.graph.get_edge_data(*edge)["ltype"]
+                    != cre_defs.LinkTypes.Related.value
+                ]
+            )  # there are no incoming edges with relationships other than RELATED
 
-        for cid in cre_ids:
-            result.extend(self.get_CREs(internal_id=cid[0]))
+        nodes = filter(node_is_root, self.graph.graph.nodes)
+
+        result = []
+
+        for nodeid in nodes:
+            if (
+                not self.graph.graph.nodes[nodeid].get("internal_id")
+                or "internal_id" not in self.graph.graph.nodes[nodeid]
+            ):
+                logger.warning(
+                    "root cre has no internal id, this is a bug in the graph"
+                )
+                logger.warning(self.graph.graph.nodes[nodeid].get("internal_id"))
+            result.extend(
+                self.get_CREs(
+                    internal_id=self.graph.graph.nodes[nodeid].get("internal_id")
+                )
+            )
         return result
+        # result = []
+        # # select distinct name from cre left join cre_links on cre.id=cre_links."group" where cre.id not in (select cre from cre_links where type='Contains');
+        # subquery = (
+        #     self.session.query(InternalLinks.cre)
+        #     .filter(InternalLinks.type == cre_defs.LinkTypes.Contains.value)
+        #     .subquery()
+        # )
+        # cre_ids = (
+        #     self.session.query(CRE.id)
+        #     .join(InternalLinks, CRE.id == InternalLinks.group,isouter=True)
+        #     .filter(~CRE.id.in_(subquery))
+        #     .distinct()
+        # )
+
+        # for cid in cre_ids:
+        #     result.extend(self.get_CREs(internal_id=cid[0]))
+        # return result
 
 
 def dbNodeFromNode(doc: cre_defs.Node) -> Optional[Node]:
