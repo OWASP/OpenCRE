@@ -89,6 +89,7 @@ def find_cre(creid: str = None, crename: str = None) -> Any:  # refer
             result = {"data": json.loads(oscal_utils.document_to_oscal(cre))}
 
         return jsonify(result)
+    print("cre aborting 404")
     abort(404)
 
 
@@ -167,6 +168,7 @@ def find_node_by_name(name: str, ntype: str = defs.Credoctypes.Standard.value) -
 
         return jsonify(result)
     else:
+        print("node by name 404")
         abort(404)
 
 
@@ -192,6 +194,7 @@ def find_document_by_tag() -> Any:
             return jsonify(json.loads(oscal_utils.list_to_oscal(documents)))
 
         return jsonify(result)
+    print("tags aborting 404")
     abort(404)
 
 
@@ -236,6 +239,7 @@ def text_search() -> Any:
         res = [doc.todict() for doc in documents]
         return jsonify(res)
     else:
+        print("txt search aborting 404")
         abort(404)
 
 
@@ -260,6 +264,7 @@ def find_root_cres() -> Any:
             return jsonify(json.loads(oscal_utils.list_to_oscal(documents)))
 
         return jsonify(result)
+    print("aborting 404")
     abort(404)
 
 
@@ -273,6 +278,7 @@ def page_not_found(e) -> Any:
 @app.route("/<path:path>")
 # @cache.cached(timeout=50)
 def index(path: str) -> Any:
+    print("1")
     if path != "" and os.path.exists(app.static_folder + "/" + path):
         return send_from_directory(app.static_folder, path)
     else:
