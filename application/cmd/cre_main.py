@@ -206,6 +206,7 @@ def parse_standards_from_spreadsheeet(
     else:
         logger.fatal(f"could not find any useful keys { cre_file[0].keys()}")
         from pprint import pprint
+
         pprint(cre_file)
     # register groupless cres first
     for _, cre in cres.items():

@@ -1106,9 +1106,19 @@ class Node_collection:
         Implemented via filtering graph nodes whose incoming edges are only "RELATED" type links
         """
         result = []
-        # select cre.* from cre join cre_links on cre.id=cre_links."group" where cre.id=cre_links."group" and cre.id not in (select cre from cre_links)
-        subquery = self.session.query(InternalLinks.cre).subquery()
-        cre_ids = self.session.query(CRE.id).join(InternalLinks,CRE.id==InternalLinks.group).filter(CRE.id==InternalLinks.group).filter(~CRE.id.in_(subquery)).distinct()
+        # select distinct name from cre join cre_links on cre.id=cre_links."group" where cre.id=cre_links."group" and cre.id not in (select cre from cre_links where type='Contains');
+        subquery = (
+            self.session.query(InternalLinks.cre)
+            .filter(InternalLinks.type == cre_defs.LinkTypes.Contains.value)
+            .subquery()
+        )
+        cre_ids = (
+            self.session.query(CRE.id)
+            .join(InternalLinks, CRE.id == InternalLinks.group)
+            .filter(CRE.id == InternalLinks.group)
+            .filter(~CRE.id.in_(subquery))
+            .distinct()
+        )
 
         for cid in cre_ids:
             result.extend(self.get_CREs(internal_id=cid[0]))
