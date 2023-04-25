@@ -1105,36 +1105,14 @@ class Node_collection:
         """Returns CRES that only have "Contains" links
         Implemented via filtering graph nodes whose incoming edges are only "RELATED" type links
         """
-
-        def node_is_root(node):
-            return node.startswith("CRE") and (
-                self.graph.graph.in_degree(node) == 0
-                or not [
-                    edge
-                    for edge in self.graph.graph.in_edges(node)
-                    if self.graph.graph.get_edge_data(*edge)["ltype"]
-                    != cre_defs.LinkTypes.Related.value
-                ]
-            )  # there are no incoming edges with relationships other than RELATED
-
-        nodes = filter(node_is_root, self.graph.graph.nodes)
-
         result = []
+        # select cre.* from cre join cre_links on cre.id=cre_links."group" where cre.id=cre_links."group" and cre.id not in (select cre from cre_links)
+        subquery = session.query(InternalLinks.cre).subquery()
+        cre_ids = session.query(CRE.id).join(InternalLinks,CRE.id==InternalLinks.group).filter(CRE.id==InternalLinks.group).filter(CRE.id.not_().in_(subquery)).all()
 
-        for nodeid in nodes:
-            if (
-                not self.graph.graph.nodes[nodeid].get("internal_id")
-                or "internal_id" not in self.graph.graph.nodes[nodeid]
-            ):
-                logger.warning(
-                    "root cre has no internal id, this is a bug in the graph"
-                )
-                logger.warning(self.graph.graph.nodes[nodeid].get("internal_id"))
-            result.extend(
-                self.get_CREs(
-                    internal_id=self.graph.graph.nodes[nodeid].get("internal_id")
-                )
-            )
+     
+        for cid in cre_ids:
+            result.extend(self.get_CREs(internal_id=cid))
         return result
 
 

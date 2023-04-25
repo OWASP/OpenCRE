@@ -198,34 +198,32 @@ def parse_standards_from_spreadsheeet(
     cre_file: List[Dict[str, Any]], result: db.Node_collection
 ) -> None:
     """given a yaml with standards, build a list of standards in the db"""
-    hi_lvl_CREs = {}
     cres = {}
-    if "CRE Group 1" in cre_file[0].keys():
-        hi_lvl_CREs, cres = spreadsheet_parsers.parse_v1_standards(cre_file)
-    elif "CRE:name" in cre_file[0].keys():
+    if "CRE:name" in cre_file[0].keys():
         cres = spreadsheet_parsers.parse_export_format(cre_file)
     elif any(key.startswith("CRE hierarchy") for key in cre_file[0].keys()):
         cres = spreadsheet_parsers.parse_hierarchical_export_format(cre_file)
     else:
-        cres = spreadsheet_parsers.parse_v0_standards(cre_file)
-
+        logger.fatal(f"could not find any useful keys { cre_file[0].keys()}")
+        from pprint import pprint
+        pprint(cre_file)
     # register groupless cres first
     for _, cre in cres.items():
         register_cre(cre, result)
 
-    # groups
-    # TODO :(spyros) merge with register_cre above
-    for name, doc in hi_lvl_CREs.items():
-        dbgroup = result.add_cre(doc)
+    # # groups
+    # # TODO :(spyros) merge with register_cre above
+    # for name, doc in hi_lvl_CREs.items():
+    #     dbgroup = result.add_cre(doc)
 
-        for link in doc.links:
-            if type(link.document).__name__ == defs.CRE.__name__:
-                dbcre = register_cre(link.document, result)
-                result.add_internal_link(group=dbgroup, cre=dbcre, type=link.ltype)
+    #     for link in doc.links:
+    #         if type(link.document).__name__ == defs.CRE.__name__:
+    #             dbcre = register_cre(link.document, result)
+    #             result.add_internal_link(group=dbgroup, cre=dbcre, type=link.ltype)
 
-            elif type(link.document).__name__ == defs.Standard.__name__:
-                dbstandard = register_node(link.document, result)
-                result.add_link(cre=dbgroup, node=dbstandard, type=link.ltype)
+    #         elif type(link.document).__name__ == defs.Standard.__name__:
+    #             dbstandard = register_node(link.document, result)
+    #             result.add_link(cre=dbgroup, node=dbstandard, type=link.ltype)
 
 
 def get_cre_files_from_disk(cre_loc: str) -> Generator[str, None, None]:

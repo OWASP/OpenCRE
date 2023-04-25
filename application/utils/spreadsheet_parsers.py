@@ -435,7 +435,7 @@ def parse_v0_standards(cre_file: List[Dict[str, str]]) -> Dict[str, defs.CRE]:
     """given a yaml with standards, build a list of standards"""
     cres: Dict[str, defs.CRE] = {}
     for cre_mapping in cre_file:
-        cre: defs.CRE
+        cre= defs.CRE(name="")
         linked_standard: defs.Standard
         if not is_empty(cre_mapping.get("CRE-ID-lookup-from-taxonomy-table")):
             existing = cres.get(cre_mapping["CRE-ID-lookup-from-taxonomy-table"])
@@ -506,6 +506,9 @@ def parse_hierarchical_export_format(
             continue
 
         if name in cres.keys():
+            new_id = mapping.get("CRE ID")
+            if cres[name].id != new_id and cres[name].id != "" and new_id != "":
+                logger.fatal(f"duplicate entry for cre named {name}, previous id:{cres[name].id}, new id {new_id}")
             cre = cres[name]
         else:
             cre = defs.CRE(name=name)
