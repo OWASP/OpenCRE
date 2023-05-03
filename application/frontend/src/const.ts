@@ -6,12 +6,12 @@ export const TYPE_SAME = 'SAME';
 export const TYPE_SAM = 'SAM';
 
 export const DOCUMENT_TYPE_NAMES = {
-  [TYPE_SAME]: ' is the same as',
-  [TYPE_SAM]: ' is the same as',
-  [TYPE_LINKED_TO]: ' is linked to',
-  [TYPE_IS_PART_OF]: ' is part of',
-  [TYPE_CONTAINS]: ' contains',
-  [TYPE_RELATED]: ' is related to',
+  [TYPE_SAME]: ' is the same as sources',
+  [TYPE_SAM]: ' is the same as sources',
+  [TYPE_LINKED_TO]: ' is linked to sources',
+  [TYPE_IS_PART_OF]: ' is part of CREs',
+  [TYPE_CONTAINS]: ' contains CREs',
+  [TYPE_RELATED]: ' is related to CREs',
 };
 
 export const DOCUMENT_TYPES = {
