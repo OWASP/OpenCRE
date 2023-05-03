@@ -8,15 +8,15 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 314-701
-    name: Whitelist file extensions served by web tier
+    id: 545-243
+    name: Block execution/output of uploaded files
     tags:
     - XSS
   ltype: Contains
 - document:
     doctype: CRE
-    id: 545-243
-    name: Block execution/output of uploaded files
+    id: 314-701
+    name: Whitelist file extensions served by web tier
     tags:
     - XSS
   ltype: Contains

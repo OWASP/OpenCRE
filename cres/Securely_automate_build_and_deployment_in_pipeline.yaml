@@ -10,7 +10,10 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x22-V14-Config.md
     name: ASVS
-    section: V14.1.1
+    section: Verify that the application build and deployment processes are performed
+      in a secure and repeatable way, such as CI / CD automation, automated configuration
+      management, and automated deployment scripts.
+    sectionID: V14.1.1
   ltype: Linked To
 - document:
     doctype: Standard

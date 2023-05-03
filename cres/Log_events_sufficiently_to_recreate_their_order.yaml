@@ -10,7 +10,9 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x15-V7-Error-Logging.md
     name: ASVS
-    section: V7.1.4
+    section: Verify that each log event includes necessary information that would
+      allow for a detailed investigation of the timeline when an event happens. (C9)
+    sectionID: V7.1.4
   ltype: Linked To
 - document:
     doctype: Standard

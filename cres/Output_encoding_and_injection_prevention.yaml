@@ -73,5 +73,5 @@ links:
   ltype: Contains
 name: Output encoding and injection prevention
 tags:
-- Injection
 - XSS
+- Injection

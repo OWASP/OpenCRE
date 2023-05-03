@@ -15,7 +15,9 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x22-V14-Config.md
     name: ASVS
-    section: V14.2.5
+    section: Verify that an inventory catalog is maintained of all third party libraries
+      in use. (C2)
+    sectionID: V14.2.5
   ltype: Linked To
 - document:
     doctype: Standard

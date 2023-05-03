@@ -3,28 +3,6 @@ id: 153-513
 links:
 - document:
     doctype: CRE
-    id: 344-611
-    name: Centralize security controls
-    tags:
-    - Architecture
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 354-846
-    name: Documentation and requirements
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 433-442
-    name: Development verification
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 601-155
-    name: Developer Configuration Management
-  ltype: Contains
-- document:
-    doctype: CRE
     id: 616-305
     name: Define security steps in every SDLC stage
   ltype: Contains
@@ -37,13 +15,35 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
+    id: 601-155
+    name: Developer Configuration Management
+  ltype: Contains
+- document:
+    doctype: CRE
     id: 817-658
     name: Developer Testing and Evaluation
   ltype: Contains
 - document:
     doctype: CRE
+    id: 433-442
+    name: Development verification
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 354-846
+    name: Documentation and requirements
+  ltype: Contains
+- document:
+    doctype: CRE
     id: 840-758
     name: Secure Development
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 344-611
+    name: Centralize security controls
+    tags:
+    - Architecture
   ltype: Contains
 - document:
     doctype: CRE
@@ -55,84 +55,6 @@ links:
     id: 863-521
     name: Maintain/manage inventory of third party repositories
   ltype: Related
-- document:
-    doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=CM-1
-    name: NIST 800-53 v5
-    section: CM-1 Policy and Procedures
-  ltype: Linked To
-- document:
-    doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=CM-10
-    name: NIST 800-53 v5
-    section: CM-10 Software Usage Restrictions
-  ltype: Linked To
-- document:
-    doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=CM-11
-    name: NIST 800-53 v5
-    section: CM-11 User-installed Software
-  ltype: Linked To
-- document:
-    doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=CM-12
-    name: NIST 800-53 v5
-    section: CM-12 Information Location
-  ltype: Linked To
-- document:
-    doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=CM-13
-    name: NIST 800-53 v5
-    section: CM-13 Data Action Mapping
-  ltype: Linked To
-- document:
-    doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=CM-14
-    name: NIST 800-53 v5
-    section: CM-14 Signed Components
-  ltype: Linked To
-- document:
-    doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=CM-3
-    name: NIST 800-53 v5
-    section: CM-3 Configuration Change Control
-  ltype: Linked To
-- document:
-    doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=CM-4
-    name: NIST 800-53 v5
-    section: CM-4 Impact Analyses
-  ltype: Linked To
-- document:
-    doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=CM-5
-    name: NIST 800-53 v5
-    section: CM-5 Access Restrictions for Change
-  ltype: Linked To
-- document:
-    doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=CM-7
-    name: NIST 800-53 v5
-    section: CM-7 Least Functionality
-  ltype: Linked To
-- document:
-    doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=CM-8
-    name: NIST 800-53 v5
-    section: CM-8 System Component Inventory
-  ltype: Linked To
-- document:
-    doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=CM-9
-    name: NIST 800-53 v5
-    section: CM-9 Configuration Management Plan
-  ltype: Linked To
-- document:
-    doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=PL-2
-    name: NIST 800-53 v5
-    section: PL-2 System Security and Privacy Plans
-  ltype: Linked To
 - document:
     doctype: Standard
     hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=PL-7
@@ -204,5 +126,83 @@ links:
     hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=SC-38
     name: NIST 800-53 v5
     section: SC-38 Operations Security
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=PL-2
+    name: NIST 800-53 v5
+    section: PL-2 System Security and Privacy Plans
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=CM-1
+    name: NIST 800-53 v5
+    section: CM-1 Policy and Procedures
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=CM-10
+    name: NIST 800-53 v5
+    section: CM-10 Software Usage Restrictions
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=CM-11
+    name: NIST 800-53 v5
+    section: CM-11 User-installed Software
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=CM-12
+    name: NIST 800-53 v5
+    section: CM-12 Information Location
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=CM-13
+    name: NIST 800-53 v5
+    section: CM-13 Data Action Mapping
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=CM-14
+    name: NIST 800-53 v5
+    section: CM-14 Signed Components
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=CM-3
+    name: NIST 800-53 v5
+    section: CM-3 Configuration Change Control
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=CM-4
+    name: NIST 800-53 v5
+    section: CM-4 Impact Analyses
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=CM-5
+    name: NIST 800-53 v5
+    section: CM-5 Access Restrictions for Change
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=CM-7
+    name: NIST 800-53 v5
+    section: CM-7 Least Functionality
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=CM-8
+    name: NIST 800-53 v5
+    section: CM-8 System Component Inventory
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=CM-9
+    name: NIST 800-53 v5
+    section: CM-9 Configuration Management Plan
   ltype: Linked To
 name: '>>Development & operations'

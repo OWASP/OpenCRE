@@ -10,7 +10,10 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x10-V1-Architecture.md
     name: ASVS
-    section: V1.9.2
+    section: Verify that application components verify the authenticity of each side
+      in a communication link to prevent person-in-the-middle attacks. For example,
+      application components should validate TLS certificates and chains.
+    sectionID: V1.9.2
   ltype: Linked To
 - document:
     doctype: Standard

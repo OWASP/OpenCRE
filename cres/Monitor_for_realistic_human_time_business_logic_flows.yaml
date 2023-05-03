@@ -12,7 +12,10 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x19-V11-BusLogic.md
     name: ASVS
-    section: V11.1.2
+    section: Verify the application will only process business logic flows with all
+      steps being processed in realistic human time, i.e. transactions are not submitted
+      too quickly.
+    sectionID: V11.1.2
   ltype: Linked To
 - document:
     doctype: Standard

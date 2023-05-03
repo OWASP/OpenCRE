@@ -12,7 +12,10 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x14-V6-Cryptography.md
     name: ASVS
-    section: V6.3.3
+    section: Verify that random numbers are created with proper entropy even when
+      the application is under heavy load, or that the application degrades gracefully
+      in such circumstances.
+    sectionID: V6.3.3
   ltype: Linked To
 - document:
     doctype: Standard

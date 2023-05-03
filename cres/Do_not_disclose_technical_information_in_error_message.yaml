@@ -17,7 +17,10 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x22-V14-Config.md
     name: ASVS
-    section: V14.3.1
+    section: Verify that web or application server and framework error messages are
+      configured to deliver user actionable, customized responses to eliminate any
+      unintended security disclosures.
+    sectionID: V14.3.1
   ltype: Linked To
 - document:
     doctype: Standard

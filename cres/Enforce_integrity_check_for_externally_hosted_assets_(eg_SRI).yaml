@@ -15,7 +15,11 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x22-V14-Config.md
     name: ASVS
-    section: V14.2.3
+    section: Verify that if application assets, such as JavaScript libraries, CSS
+      or web fonts, are hosted externally on a Content Delivery Network (CDN) or external
+      provider, Subresource Integrity (SRI) is used to validate the integrity of the
+      asset.
+    sectionID: V14.2.3
   ltype: Linked To
 - document:
     doctype: Standard

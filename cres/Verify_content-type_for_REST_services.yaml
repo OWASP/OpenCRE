@@ -10,7 +10,9 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x21-V13-API.md
     name: ASVS
-    section: V13.2.5
+    section: Verify that REST services explicitly check the incoming Content-Type
+      to be the expected one, such as application/xml or application/json.
+    sectionID: V13.2.5
   ltype: Linked To
 - document:
     doctype: Standard

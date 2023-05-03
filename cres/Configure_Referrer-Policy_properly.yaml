@@ -10,7 +10,9 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x22-V14-Config.md
     name: ASVS
-    section: V14.4.6
+    section: Verify that a suitable "Referrer-Policy" header is included, such as
+      "no-referrer" or "same-origin".
+    sectionID: V14.4.6
   ltype: Linked To
 - document:
     doctype: Standard

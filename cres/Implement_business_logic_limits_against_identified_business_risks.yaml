@@ -12,7 +12,10 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x19-V11-BusLogic.md
     name: ASVS
-    section: V11.1.5
+    section: Verify the application has business logic limits or validation to protect
+      against likely business risks or threats, identified using threat modeling or
+      similar methodologies.
+    sectionID: V11.1.5
   ltype: Linked To
 - document:
     doctype: Standard

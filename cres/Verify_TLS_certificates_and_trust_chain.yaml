@@ -17,7 +17,11 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x17-V9-Communications.md
     name: ASVS
-    section: V9.2.1
+    section: Verify that connections to and from the server use trusted TLS certificates.
+      Where internally generated or self-signed certificates are used, the server
+      must be configured to only trust specific internal CAs and specific self-signed
+      certificates. All others should be rejected.
+    sectionID: V9.2.1
   ltype: Linked To
 - document:
     doctype: Standard

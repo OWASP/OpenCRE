@@ -10,7 +10,9 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x12-V3-Session-management.md
     name: ASVS
-    section: V3.2.1
+    section: Verify the application generates a new session token on user authentication.
+      (C6)
+    sectionID: V3.2.1
   ltype: Linked To
 - document:
     doctype: Standard

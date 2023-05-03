@@ -3,6 +3,11 @@ id: 141-555
 links:
 - document:
     doctype: CRE
+    id: 166-151
+    name: Ensure that secure fail-safe is in place for access control
+  ltype: Related
+- document:
+    doctype: CRE
     id: 842-876
     name: '>>Logging and error handling'
   ltype: Contains
@@ -10,11 +15,6 @@ links:
     doctype: CRE
     id: 036-810
     name: Let cryptographic modules fail securely
-  ltype: Related
-- document:
-    doctype: CRE
-    id: 166-151
-    name: Ensure that secure fail-safe is in place for access control
   ltype: Related
 - document:
     doctype: Standard

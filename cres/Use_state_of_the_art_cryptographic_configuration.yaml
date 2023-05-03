@@ -10,7 +10,9 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x14-V6-Cryptography.md
     name: ASVS
-    section: V6.2.3
+    section: Verify that encryption initialization vector, cipher configuration, and
+      block modes are configured securely using the latest advice.
+    sectionID: V6.2.3
   ltype: Linked To
 - document:
     doctype: Standard

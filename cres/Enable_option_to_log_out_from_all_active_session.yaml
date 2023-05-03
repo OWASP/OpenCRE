@@ -15,7 +15,9 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x12-V3-Session-management.md
     name: ASVS
-    section: V3.3.4
+    section: Verify that users are able to view and (having re-entered login credentials)
+      log out of any or all currently active sessions and devices.
+    sectionID: V3.3.4
   ltype: Linked To
 - document:
     doctype: Standard
@@ -26,7 +28,7 @@ links:
   ltype: Linked To
 - document:
     doctype: Standard
-    hyperlink: https://owasp.org/www-project-web-security-testing-guide/v41/4-Web_Application_Security_Testing/06-Session_Management_Testing/06-Testing_for_Logout_Functionality.html#testing-for-log-out-user-interface
+    hyperlink: https://owasp.org/www-project-web-security-testing-guide/v41/4-Web_Application_Security_Testing/06-Session_Management_Testing/06-Testing_for_Logout_Functionality.html#testing-for-server-side-session-termination
     name: (WSTG) Web Security Testing Guide
     section: WSTG-SESS-06
   ltype: Linked To

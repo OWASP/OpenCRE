@@ -3,11 +3,6 @@ id: 228-551
 links:
 - document:
     doctype: CRE
-    id: 278-646
-    name: '>>Secure communication'
-  ltype: Contains
-- document:
-    doctype: CRE
     id: 726-868
     name: Deployed topology
     tags:
@@ -25,10 +20,8 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 430-636
-    name: Verify TLS certificates and trust chain
-    tags:
-    - Configuration
+    id: 745-045
+    name: Do not fall back to insecure protocols in TCP
   ltype: Contains
 - document:
     doctype: CRE
@@ -42,19 +35,26 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 745-045
-    name: Do not fall back to insecure protocols in TCP
+    id: 767-701
+    name: Verify strong TLS algorithms by testing
   ltype: Contains
 - document:
     doctype: CRE
-    id: 767-701
-    name: Verify strong TLS algorithms by testing
+    id: 430-636
+    name: Verify TLS certificates and trust chain
+    tags:
+    - Configuration
   ltype: Contains
 - document:
     doctype: CRE
     id: 558-807
     name: Mutually authenticate application and credential service provider
   ltype: Related
+- document:
+    doctype: CRE
+    id: 278-646
+    name: '>>Secure communication'
+  ltype: Contains
 name: TLS
 tags:
 - Cryptography

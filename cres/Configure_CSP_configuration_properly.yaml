@@ -15,7 +15,10 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x22-V14-Config.md
     name: ASVS
-    section: V14.4.3
+    section: Verify that a Content Security Policy (CSP) response header is in place
+      that helps mitigate impact for XSS attacks like HTML, DOM, JSON, and JavaScript
+      injection vulnerabilities.
+    sectionID: V14.4.3
   ltype: Linked To
 - document:
     doctype: Standard
