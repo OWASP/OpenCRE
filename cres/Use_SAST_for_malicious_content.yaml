@@ -10,7 +10,9 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x18-V10-Malicious.md
     name: ASVS
-    section: V10.1.1
+    section: Verify that a code analysis tool is in use that can detect potentially
+      malicious code, such as time functions, unsafe file operations and network connections.
+    sectionID: V10.1.1
   ltype: Linked To
 - document:
     doctype: Standard

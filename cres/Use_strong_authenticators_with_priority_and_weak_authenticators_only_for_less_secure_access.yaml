@@ -12,7 +12,12 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x11-V2-Authentication.md
     name: ASVS
-    section: V2.2.2
+    section: Verify that the use of weak authenticators (such as SMS and email) is
+      limited to secondary verification and transaction approval and not as a replacement
+      for more secure authentication methods. Verify that stronger methods are offered
+      before weak methods, users are aware of the risks, or that proper measures are
+      in place to limit the risks of account compromise.
+    sectionID: V2.2.2
   ltype: Linked To
 - document:
     doctype: Standard

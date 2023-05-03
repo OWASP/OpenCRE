@@ -10,7 +10,10 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x14-V6-Cryptography.md
     name: ASVS
-    section: V6.2.7
+    section: Verify that encrypted data is authenticated via signatures, authenticated
+      cipher modes, or HMAC to ensure that ciphertext is not altered by an unauthorized
+      party.
+    sectionID: V6.2.7
   ltype: Linked To
 - document:
     doctype: Standard

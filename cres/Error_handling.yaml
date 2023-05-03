@@ -8,13 +8,13 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 118-602
-    name: Use a standard last-resort error handler for unhandled errors
+    id: 612-435
+    name: Show generic message for security exceptions or unanticipated exceptions
   ltype: Contains
 - document:
     doctype: CRE
-    id: 612-435
-    name: Show generic message for security exceptions or unanticipated exceptions
+    id: 118-602
+    name: Use a standard last-resort error handler for unhandled errors
   ltype: Contains
 - document:
     doctype: CRE

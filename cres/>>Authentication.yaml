@@ -17,46 +17,6 @@ links:
     name: Ensure session timeout (soft/hard)
   ltype: Related
 - document:
-    doctype: CRE
-    id: 077-781
-    name: Use separately stored secret salt (pepper)
-  ltype: Related
-- document:
-    doctype: CRE
-    id: 078-427
-    name: Set the highest feasible work factor for bcrypt
-  ltype: Related
-- document:
-    doctype: CRE
-    id: 082-530
-    name: Use unique random salt with sufficient entropy for each credential
-  ltype: Related
-- document:
-    doctype: CRE
-    id: 622-203
-    name: Store passwords salted and hashed
-  ltype: Related
-- document:
-    doctype: CRE
-    id: 767-435
-    name: Set the highest feasible iteration count for PBKDF2
-  ltype: Related
-- document:
-    doctype: CRE
-    id: 774-888
-    name: Do not store secrets in the code
-  ltype: Related
-- document:
-    doctype: CRE
-    id: 783-255
-    name: Store cryptographic keys securely
-  ltype: Related
-- document:
-    doctype: CRE
-    id: 881-321
-    name: Store credentials securely
-  ltype: Related
-- document:
     doctype: Standard
     hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=AC-7
     name: NIST 800-53 v5

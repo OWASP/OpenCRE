@@ -13,7 +13,10 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x13-V5-Validation-Sanitization-Encoding.md
     name: ASVS
-    section: V5.3.8
+    section: Verify that the application protects against OS command injection and
+      that operating system calls use parameterized OS queries or use contextual command
+      line output encoding. (C4)
+    sectionID: V5.3.8
   ltype: Linked To
 - document:
     doctype: Standard

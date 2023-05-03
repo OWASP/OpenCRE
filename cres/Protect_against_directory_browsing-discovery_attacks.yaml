@@ -15,7 +15,10 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x12-V4-Access-Control.md
     name: ASVS
-    section: V4.3.2
+    section: Verify that directory browsing is disabled unless deliberately desired.
+      Additionally, applications should not allow discovery or disclosure of file
+      or directory metadata, such as Thumbs.db, .DS_Store, .git or .svn folders.
+    sectionID: V4.3.2
   ltype: Linked To
 - document:
     doctype: Standard

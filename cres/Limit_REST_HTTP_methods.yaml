@@ -10,7 +10,10 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x21-V13-API.md
     name: ASVS
-    section: V13.2.1
+    section: Verify that enabled RESTful HTTP methods are a valid choice for the user
+      or action, such as preventing normal users using DELETE or PUT on protected
+      API or resources.
+    sectionID: V13.2.1
   ltype: Linked To
 - document:
     doctype: Standard

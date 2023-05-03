@@ -10,7 +10,10 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x15-V7-Error-Logging.md
     name: ASVS
-    section: V7.2.2
+    section: Verify that all access control decisions can be logged and all failed
+      decisions are logged. This should include requests with relevant metadata needed
+      for security investigations.
+    sectionID: V7.2.2
   ltype: Linked To
 - document:
     doctype: Standard

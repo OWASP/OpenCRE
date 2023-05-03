@@ -10,7 +10,10 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x15-V7-Error-Logging.md
     name: ASVS
-    section: V7.4.1
+    section: Verify that a generic message is shown when an unexpected or security
+      sensitive error occurs, potentially with a unique ID which support personnel
+      can use to investigate.  (C10)
+    sectionID: V7.4.1
   ltype: Linked To
 - document:
     doctype: Standard

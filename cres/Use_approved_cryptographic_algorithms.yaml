@@ -10,7 +10,9 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x14-V6-Cryptography.md
     name: ASVS
-    section: V6.2.2
+    section: Verify that industry proven or government approved cryptographic algorithms,
+      modes, and libraries are used, instead of custom coded cryptography. (C8)
+    sectionID: V6.2.2
   ltype: Linked To
 - document:
     doctype: Standard

@@ -9,15 +9,13 @@ links:
     - Cryptography
   ltype: Contains
 - document:
-    doctype: CRE
-    id: 633-428
-    name: '>>Authentication'
-  ltype: Related
-- document:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x11-V2-Authentication.md
     name: ASVS
-    section: V2.4.3
+    section: Verify that if PBKDF2 is used, the iteration count SHOULD be as large
+      as verification server performance will allow, typically at least 100,000 iterations.
+      (C6)
+    sectionID: V2.4.3
   ltype: Linked To
 - document:
     doctype: Standard

@@ -10,7 +10,10 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x20-V12-Files-Resources.md
     name: ASVS
-    section: V12.3.1
+    section: Verify that user-submitted filename metadata is not used directly by
+      system or framework filesystems and that a URL API is used to protect against
+      path traversal.
+    sectionID: V12.3.1
   ltype: Linked To
 - document:
     doctype: Standard

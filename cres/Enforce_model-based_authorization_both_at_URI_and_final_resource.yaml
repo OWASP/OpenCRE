@@ -15,7 +15,10 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x21-V13-API.md
     name: ASVS
-    section: V13.1.4
+    section: Verify that authorization decisions are made at both the URI, enforced
+      by programmatic or declarative security at the controller or router, and at
+      the resource level, enforced by model-based permissions.
+    sectionID: V13.1.4
   ltype: Linked To
 - document:
     doctype: Standard

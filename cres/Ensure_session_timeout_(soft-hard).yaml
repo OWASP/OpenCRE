@@ -15,7 +15,9 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x12-V3-Session-management.md
     name: ASVS
-    section: V3.3.2
+    section: If authenticators permit users to remain logged in, verify that re-authentication
+      occurs periodically both when actively used or after an idle period. (C6)
+    sectionID: V3.3.2
   ltype: Linked To
 - document:
     doctype: Standard

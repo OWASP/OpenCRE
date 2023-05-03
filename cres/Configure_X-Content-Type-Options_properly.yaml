@@ -10,7 +10,9 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x22-V14-Config.md
     name: ASVS
-    section: V14.4.4
+    section: 'Verify that all responses contain a X-Content-Type-Options: nosniff
+      header.'
+    sectionID: V14.4.4
   ltype: Linked To
 - document:
     doctype: Standard

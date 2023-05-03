@@ -10,7 +10,9 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x16-V8-Data-Protection.md
     name: ASVS
-    section: V8.1.3
+    section: Verify the application minimizes the number of parameters in a request,
+      such as hidden fields, Ajax variables, cookies and header values.
+    sectionID: V8.1.3
   ltype: Linked To
 - document:
     doctype: Standard

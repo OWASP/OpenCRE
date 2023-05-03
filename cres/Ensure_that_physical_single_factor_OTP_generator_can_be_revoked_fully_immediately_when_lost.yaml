@@ -12,7 +12,10 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x11-V2-Authentication.md
     name: ASVS
-    section: V2.8.6
+    section: Verify physical single-factor OTP generator can be revoked in case of
+      theft or other loss. Ensure that revocation is immediately effective across
+      logged in sessions, regardless of location.
+    sectionID: V2.8.6
   ltype: Linked To
 - document:
     doctype: Standard

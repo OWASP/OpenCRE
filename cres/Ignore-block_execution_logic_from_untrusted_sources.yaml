@@ -10,7 +10,10 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x20-V12-Files-Resources.md
     name: ASVS
-    section: V12.3.6
+    section: Verify that the application does not include and execute functionality
+      from untrusted sources, such as unverified content distribution networks, JavaScript
+      libraries, node npm libraries, or server-side DLLs.
+    sectionID: V12.3.6
   ltype: Linked To
 - document:
     doctype: Standard

@@ -10,7 +10,11 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x12-V4-Access-Control.md
     name: ASVS
-    section: V4.3.3
+    section: Verify the application has additional authorization (such as step up
+      or adaptive authentication) for lower value systems, and / or segregation of
+      duties for high value applications to enforce anti-fraud controls as per the
+      risk of application and past fraud.
+    sectionID: V4.3.3
   ltype: Linked To
 - document:
     doctype: Standard

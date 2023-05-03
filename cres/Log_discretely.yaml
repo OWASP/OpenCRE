@@ -3,6 +3,11 @@ id: 843-841
 links:
 - document:
     doctype: CRE
+    id: 842-876
+    name: '>>Logging and error handling'
+  ltype: Contains
+- document:
+    doctype: CRE
     id: 067-050
     name: Do not log credentials or payment details
   ltype: Contains
@@ -13,18 +18,13 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 015-063
-    name: Log access to sensitive data
+    id: 743-110
+    name: Do not disclose technical information in error message
   ltype: Related
 - document:
     doctype: CRE
-    id: 842-876
-    name: '>>Logging and error handling'
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 743-110
-    name: Do not disclose technical information in error message
+    id: 015-063
+    name: Log access to sensitive data
   ltype: Related
 - document:
     doctype: Standard

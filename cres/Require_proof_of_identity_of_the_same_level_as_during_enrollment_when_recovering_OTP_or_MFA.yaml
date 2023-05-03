@@ -10,7 +10,9 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x11-V2-Authentication.md
     name: ASVS
-    section: V2.5.7
+    section: Verify that if OTP or multi-factor authentication factors are lost, that
+      evidence of identity proofing is performed at the same level as during enrollment.
+    sectionID: V2.5.7
   ltype: Linked To
 - document:
     doctype: Standard

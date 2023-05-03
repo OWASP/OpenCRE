@@ -8,14 +8,9 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 232-325
-    name: Treat client-secrets as insecure
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 275-483
-    name: Securely store regulated data
-  ltype: Contains
+    id: 170-772
+    name: Cryptography
+  ltype: Related
 - document:
     doctype: CRE
     id: 504-340
@@ -24,13 +19,18 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 170-772
-    name: Cryptography
-  ltype: Related
-- document:
-    doctype: CRE
     id: 742-432
     name: Encryption algorithms
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 275-483
+    name: Securely store regulated data
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 232-325
+    name: Treat client-secrets as insecure
   ltype: Contains
 name: Encrypt data at rest
 tags:

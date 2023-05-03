@@ -15,7 +15,10 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x16-V8-Data-Protection.md
     name: ASVS
-    section: V8.3.5
+    section: Verify accessing sensitive data is audited (without logging the sensitive
+      data itself), if the data is collected under relevant data protection directives
+      or where logging of access is required.
+    sectionID: V8.3.5
   ltype: Linked To
 - document:
     doctype: Standard

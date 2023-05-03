@@ -10,7 +10,10 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x22-V14-Config.md
     name: ASVS
-    section: V14.4.5
+    section: 'Verify that a Strict-Transport-Security header is included on all responses
+      and for all subdomains, such as Strict-Transport-Security: max-age=15724800;
+      includeSubdomains.'
+    sectionID: V14.4.5
   ltype: Linked To
 - document:
     doctype: Standard

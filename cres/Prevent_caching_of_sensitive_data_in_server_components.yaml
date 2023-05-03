@@ -10,7 +10,9 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x16-V8-Data-Protection.md
     name: ASVS
-    section: V8.1.1
+    section: Verify the application protects sensitive data from being cached in server
+      components such as load balancers and application caches.
+    sectionID: V8.1.1
   ltype: Linked To
 - document:
     doctype: Standard

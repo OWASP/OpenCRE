@@ -8,13 +8,13 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 731-120
-    name: Document requirements for (data) protection levels
+    id: 765-788
+    name: Classify sensitive data in protection levels
   ltype: Contains
 - document:
     doctype: CRE
-    id: 765-788
-    name: Classify sensitive data in protection levels
+    id: 731-120
+    name: Document requirements for (data) protection levels
   ltype: Contains
 - document:
     doctype: Standard

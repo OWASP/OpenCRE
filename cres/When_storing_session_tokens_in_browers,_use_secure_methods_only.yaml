@@ -10,7 +10,10 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x12-V3-Session-management.md
     name: ASVS
-    section: V3.2.3
+    section: Verify the application only stores session tokens in the browser using
+      secure methods such as appropriately secured cookies (see section 3.4) or HTML
+      5 session storage.
+    sectionID: V3.2.3
   ltype: Linked To
 - document:
     doctype: Standard

@@ -7,17 +7,13 @@ links:
     name: '>>Personal data handling'
   ltype: Contains
 - document:
-    doctype: CRE
-    id: 783-355
-    name: Deployment
-    tags:
-    - Configuration
-  ltype: Related
-- document:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x16-V8-Data-Protection.md
     name: ASVS
-    section: V8.3.8
+    section: Verify that sensitive personal information is subject to data retention
+      classification, such that old or out of date data is deleted automatically,
+      on a schedule, or as the situation requires.
+    sectionID: V8.3.8
   ltype: Linked To
 - document:
     doctype: Standard

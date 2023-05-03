@@ -12,7 +12,10 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x19-V11-BusLogic.md
     name: ASVS
-    section: V11.1.4
+    section: Verify the application has sufficient anti-automation controls to detect
+      and protect against data exfiltration, excessive business logic requests, excessive
+      file uploads or denial of service attacks.
+    sectionID: V11.1.4
   ltype: Linked To
 - document:
     doctype: Standard

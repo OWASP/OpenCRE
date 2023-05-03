@@ -15,34 +15,26 @@ import { groupLinksByType } from '../../utils';
 import { SearchResults } from '../Search/components/SearchResults';
 
 export const BrowseRootCres = () => {
-  const { id } = useParams();
   const { apiUrl } = useEnvironment();
   const [loading, setLoading] = useState<boolean>(false);
-  const globalState = useContext(filterContext);
-
+  const [display, setDisplay] = useState<Document[]>();
   const { error, data, refetch } = useQuery<{ data: Document }, string>(
     'cre',
-    () => fetch(`${apiUrl}/root_cres`).then((res) => res.json()),
+    () => fetch(`${apiUrl}/root_cres`).then((res) => res.json()).then((resjson)=>{setDisplay(resjson.data); return resjson}),
     {
       retry: false,
       enabled: false,
       onSettled: () => {
         setLoading(false);
-      },
-    }
+      }}
   );
 
   useEffect(() => {
     window.scrollTo(0, 0);
     setLoading(true);
     refetch();
-  }, [id]);
+  },[]);
 
-  // TODO: the rest should really be shared between this and CommonRequirementEnumeration instead of ugly copy pastes
-
-  const cre = data?.data;
-  let display = cre;
-  console.log(display);
   return (
     <div className="cre-page">
       <h1 className="standard-page__heading">Root Cres:</h1>

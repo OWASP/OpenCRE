@@ -12,7 +12,9 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x11-V2-Authentication.md
     name: ASVS
-    section: V2.3.2
+    section: Verify that enrollment and use of subscriber-provided authentication
+      devices are supported, such as a U2F or FIDO tokens.
+    sectionID: V2.3.2
   ltype: Linked To
 - document:
     doctype: Standard

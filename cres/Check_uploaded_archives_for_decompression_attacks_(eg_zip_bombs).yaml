@@ -15,7 +15,9 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x20-V12-Files-Resources.md
     name: ASVS
-    section: V12.1.2
+    section: Verify that compressed files are checked for "zip bombs" - small input
+      files that will decompress into huge files thus exhausting file storage limits.
+    sectionID: V12.1.2
   ltype: Linked To
 - document:
     doctype: Standard

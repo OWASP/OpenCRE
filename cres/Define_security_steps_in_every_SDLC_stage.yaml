@@ -10,7 +10,9 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x10-V1-Architecture.md
     name: ASVS
-    section: V1.1.1
+    section: Verify the use of a secure software development lifecycle that addresses
+      security in all stages of development. (C1)
+    sectionID: V1.1.1
   ltype: Linked To
 - document:
     doctype: Standard

@@ -3,22 +3,19 @@ id: 760-764
 links:
 - document:
     doctype: CRE
-    id: 010-308
-    name: Input validation
+    id: 384-344
+    name: Store and serve user-uploaded files such that they cannot execute/damage
+      server or client
     tags:
     - Injection
     - XSS
   ltype: Related
 - document:
     doctype: CRE
-    id: 546-564
-    name: '>>Tags'
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 048-612
-    name: Encode user input before logging
+    id: 010-308
+    name: Input validation
     tags:
+    - XSS
     - Injection
   ltype: Related
 - document:
@@ -39,9 +36,8 @@ links:
   ltype: Related
 - document:
     doctype: CRE
-    id: 384-344
-    name: Store and serve user-uploaded files such that they cannot execute/damage
-      server or client
+    id: 048-612
+    name: Encode user input before logging
     tags:
     - Injection
     - XSS
@@ -53,6 +49,11 @@ links:
     tags:
     - Injection
   ltype: Related
+- document:
+    doctype: CRE
+    id: 546-564
+    name: '>>Tags'
+  ltype: Contains
 - document:
     doctype: Standard
     name: Top10 2017

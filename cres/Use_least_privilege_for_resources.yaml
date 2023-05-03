@@ -10,7 +10,10 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x10-V1-Architecture.md
     name: ASVS
-    section: V1.4.3
+    section: Verify enforcement of the principle of least privilege in functions,
+      data files, URLs, controllers, services, and other resources. This implies protection
+      against spoofing and elevation of privilege.
+    sectionID: V1.4.3
   ltype: Linked To
 - document:
     doctype: Standard

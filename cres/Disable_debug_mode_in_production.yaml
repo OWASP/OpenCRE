@@ -12,7 +12,10 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x22-V14-Config.md
     name: ASVS
-    section: V14.3.2
+    section: Verify that web or application server and application framework debug
+      modes are disabled in production to eliminate debug features, developer consoles,
+      and unintended security disclosures.
+    sectionID: V14.3.2
   ltype: Linked To
 - document:
     doctype: Standard

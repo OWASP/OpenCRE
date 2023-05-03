@@ -10,7 +10,10 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x12-V4-Access-Control.md
     name: ASVS
-    section: V4.2.2
+    section: Verify that the application or framework enforces a strong anti-CSRF
+      mechanism to protect authenticated functionality, and effective anti-automation
+      or anti-CSRF protects unauthenticated functionality.
+    sectionID: V4.2.2
   ltype: Linked To
 - document:
     doctype: Standard

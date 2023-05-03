@@ -3,8 +3,18 @@ id: 270-568
 links:
 - document:
     doctype: CRE
-    id: 062-850
-    name: MFA/OTP
+    id: 633-428
+    name: '>>Authentication'
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 558-807
+    name: Mutually authenticate application and credential service provider
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 333-858
+    name: Resist stolen credentials
     tags:
     - Cryptography
   ltype: Contains
@@ -22,20 +32,8 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 333-858
-    name: Resist stolen credentials
-    tags:
-    - Cryptography
-  ltype: Contains
-- document:
-    doctype: CRE
     id: 520-617
     name: Credential recovery
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 558-807
-    name: Mutually authenticate application and credential service provider
   ltype: Contains
 - document:
     doctype: CRE
@@ -49,18 +47,20 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
+    id: 062-850
+    name: MFA/OTP
+    tags:
+    - Cryptography
+  ltype: Contains
+- document:
+    doctype: CRE
     id: 802-056
     name: Restrict excessive authentication
   ltype: Contains
 - document:
     doctype: CRE
-    id: 633-428
-    name: '>>Authentication'
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 177-260
-    name: '>>Session management'
+    id: 327-505
+    name: Change password with presence of old and new password
   ltype: Related
 - document:
     doctype: CRE
@@ -69,8 +69,8 @@ links:
   ltype: Related
 - document:
     doctype: CRE
-    id: 327-505
-    name: Change password with presence of old and new password
+    id: 808-425
+    name: Notify users about anomalies in their usage patterns
   ltype: Related
 - document:
     doctype: CRE
@@ -79,8 +79,8 @@ links:
   ltype: Related
 - document:
     doctype: CRE
-    id: 808-425
-    name: Notify users about anomalies in their usage patterns
+    id: 177-260
+    name: '>>Session management'
   ltype: Related
 - document:
     doctype: Standard

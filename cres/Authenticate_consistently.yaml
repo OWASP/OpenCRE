@@ -8,14 +8,14 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
+    id: 576-042
+    name: Consistently apply authentication strength
+  ltype: Contains
+- document:
+    doctype: CRE
     id: 278-413
     name: Mutually authenticate application components. Minimize privileges
     tags:
     - Architecture
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 576-042
-    name: Consistently apply authentication strength
   ltype: Contains
 name: Authenticate consistently

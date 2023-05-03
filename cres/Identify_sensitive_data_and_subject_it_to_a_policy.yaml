@@ -7,15 +7,13 @@ links:
     name: '>>Personal data handling'
   ltype: Contains
 - document:
-    doctype: CRE
-    id: 354-846
-    name: Documentation and requirements
-  ltype: Related
-- document:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x16-V8-Data-Protection.md
     name: ASVS
-    section: V8.3.4
+    section: Verify that all sensitive data created and processed by the application
+      has been identified, and ensure that a policy is in place on how to deal with
+      sensitive data. (C8)
+    sectionID: V8.3.4
   ltype: Linked To
 - document:
     doctype: Standard

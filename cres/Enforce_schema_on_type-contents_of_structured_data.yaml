@@ -13,7 +13,11 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x13-V5-Validation-Sanitization-Encoding.md
     name: ASVS
-    section: V5.1.4
+    section: Verify that structured data is strongly typed and validated against a
+      defined schema including allowed characters, length and pattern (e.g. credit
+      card numbers or telephone, or validating that two related fields are reasonable,
+      such as checking that suburb and zip/postcode match). (C5)
+    sectionID: V5.1.4
   ltype: Linked To
 - document:
     doctype: Standard

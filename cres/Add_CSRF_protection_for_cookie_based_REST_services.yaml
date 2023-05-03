@@ -10,7 +10,10 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x21-V13-API.md
     name: ASVS
-    section: V13.2.3
+    section: 'Verify that RESTful web services that utilize cookies are protected
+      from Cross-Site Request Forgery via the use of at least one or more of the following:
+      double submit cookie pattern, CSRF nonces, or Origin request header checks.'
+    sectionID: V13.2.3
   ltype: Linked To
 - document:
     doctype: Standard

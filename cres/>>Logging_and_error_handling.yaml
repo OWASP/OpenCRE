@@ -3,21 +3,6 @@ id: 842-876
 links:
 - document:
     doctype: CRE
-    id: 026-280
-    name: Securely transfer logs (remotely)
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 141-555
-    name: Fail securely
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 148-420
-    name: Log integrity
-  ltype: Contains
-- document:
-    doctype: CRE
     id: 260-200
     name: Log in consistent format across system
     tags:
@@ -25,8 +10,8 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 402-706
-    name: Log relevant
+    id: 026-280
+    name: Securely transfer logs (remotely)
   ltype: Contains
 - document:
     doctype: CRE
@@ -35,9 +20,29 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
+    id: 141-555
+    name: Fail securely
+  ltype: Contains
+- document:
+    doctype: CRE
     id: 843-841
     name: Log discretely
   ltype: Contains
+- document:
+    doctype: CRE
+    id: 148-420
+    name: Log integrity
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 402-706
+    name: Log relevant
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 725-682
+    name: Enable configurable alert against usage anomalies
+  ltype: Related
 - document:
     doctype: CRE
     id: 418-853
@@ -45,13 +50,15 @@ links:
   ltype: Related
 - document:
     doctype: CRE
-    id: 668-364
-    name: Log TLS connection failures
+    id: 176-154
+    name: Monitor expectation of usage intensity (e.g. number of requests)
+    tags:
+    - DOS
   ltype: Related
 - document:
     doctype: CRE
-    id: 725-682
-    name: Enable configurable alert against usage anomalies
+    id: 668-364
+    name: Log TLS connection failures
   ltype: Related
 - document:
     doctype: Standard

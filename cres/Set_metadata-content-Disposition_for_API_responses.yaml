@@ -10,7 +10,9 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x22-V14-Config.md
     name: ASVS
-    section: V14.4.2
+    section: 'Verify that all API responses contain a Content-Disposition: attachment;
+      filename="api.json" header (or other appropriate filename for the content type).'
+    sectionID: V14.4.2
   ltype: Linked To
 - document:
     doctype: Standard

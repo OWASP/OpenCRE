@@ -13,7 +13,12 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x13-V5-Validation-Sanitization-Encoding.md
     name: ASVS
-    section: V5.3.1
+    section: "Verify that output encoding is relevant for the interpreter and context\
+      \ required. For example, use encoders specifically for HTML values, HTML attributes,\
+      \ JavaScript, URL parameters, HTTP headers, SMTP, and others as the context\
+      \ requires, especially from untrusted inputs (e.g. names with Unicode or apostrophes,\
+      \ such as \u306D\u3053 or O'Hara). (C4)"
+    sectionID: V5.3.1
   ltype: Linked To
 - document:
     doctype: Standard

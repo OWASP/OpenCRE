@@ -15,7 +15,8 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x12-V3-Session-management.md
     name: ASVS
-    section: V3.2.2
+    section: Verify that session tokens possess at least 64 bits of entropy. (C6)
+    sectionID: V3.2.2
   ltype: Linked To
 - document:
     doctype: Standard
@@ -32,7 +33,7 @@ links:
   ltype: Linked To
 - document:
     doctype: Standard
-    hyperlink: https://owasp.org/www-project-web-security-testing-guide/v41/4-Web_Application_Security_Testing/06-Session_Management_Testing/01-Testing_for_Session_Management_Schema.html#gray-box-testing-and-example
+    hyperlink: https://owasp.org/www-project-web-security-testing-guide/v41/4-Web_Application_Security_Testing/06-Session_Management_Testing/01-Testing_for_Session_Management_Schema.html#session-id-predictability-and-randomness
     name: (WSTG) Web Security Testing Guide
     section: WSTG-SESS-01
   ltype: Linked To

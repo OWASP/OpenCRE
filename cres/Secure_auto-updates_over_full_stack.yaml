@@ -10,7 +10,11 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x18-V10-Malicious.md
     name: ASVS
-    section: V10.3.1
+    section: Verify that if the application has a client or server auto-update feature,
+      updates should be obtained over secure channels and digitally signed. The update
+      code must validate the digital signature of the update before installing or
+      executing the update.
+    sectionID: V10.3.1
   ltype: Linked To
 - document:
     doctype: Standard

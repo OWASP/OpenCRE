@@ -15,7 +15,10 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x10-V1-Architecture.md
     name: ASVS
-    section: V1.1.6
+    section: Verify implementation of centralized, simple (economy of design), vetted,
+      secure, and reusable security controls to avoid duplicate, missing, ineffective,
+      or insecure controls. (C10)
+    sectionID: V1.1.6
   ltype: Linked To
 - document:
     doctype: Standard

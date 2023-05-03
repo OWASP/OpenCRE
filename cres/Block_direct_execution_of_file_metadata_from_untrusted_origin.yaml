@@ -10,7 +10,9 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x20-V12-Files-Resources.md
     name: ASVS
-    section: V12.3.5
+    section: Verify that untrusted file metadata is not used directly with system
+      API or libraries, to protect against OS command injection.
+    sectionID: V12.3.5
   ltype: Linked To
 - document:
     doctype: Standard

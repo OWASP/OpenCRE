@@ -23,14 +23,14 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 705-182
-    name: Set path attribute in cookie-bases session tokens as precise as possible
-  ltype: Contains
-- document:
-    doctype: CRE
     id: 804-220
     name: Set httponly attribute for cookie-based session tokens
     tags:
     - XSS
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 705-182
+    name: Set path attribute in cookie-bases session tokens as precise as possible
   ltype: Contains
 name: Cookie-config

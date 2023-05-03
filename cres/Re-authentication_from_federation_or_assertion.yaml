@@ -3,9 +3,8 @@ id: 258-115
 links:
 - document:
     doctype: CRE
-    id: 052-821
-    name: When using an authentication third party (CSP), relay last authentication
-      event to other parties in the chain
+    id: 177-260
+    name: '>>Session management'
   ltype: Contains
 - document:
     doctype: CRE
@@ -20,7 +19,8 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 177-260
-    name: '>>Session management'
+    id: 052-821
+    name: When using an authentication third party (CSP), relay last authentication
+      event to other parties in the chain
   ltype: Contains
 name: Re-authentication from federation or assertion

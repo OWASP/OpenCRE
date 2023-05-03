@@ -15,7 +15,9 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x22-V14-Config.md
     name: ASVS
-    section: V14.1.3
+    section: Verify that server configuration is hardened as per the recommendations
+      of the application server and frameworks in use.
+    sectionID: V14.1.3
   ltype: Linked To
 - document:
     doctype: Standard

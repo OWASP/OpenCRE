@@ -18,13 +18,15 @@ links:
   ltype: Related
 - document:
     doctype: CRE
-    id: 031-447
-    name: Whitelist all external (HTTP) input
+    id: 848-711
+    name: Enforce input validation on a trusted service layer
+    tags:
+    - Architecture
   ltype: Contains
 - document:
     doctype: CRE
-    id: 042-550
-    name: Protect against mass parameter assignment attack
+    id: 653-242
+    name: Enforce schema on type/contents of structured data
   ltype: Contains
 - document:
     doctype: CRE
@@ -35,13 +37,8 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 232-217
-    name: Whitelist redirected/forwarded URLs
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 653-242
-    name: Enforce schema on type/contents of structured data
+    id: 042-550
+    name: Protect against mass parameter assignment attack
   ltype: Contains
 - document:
     doctype: CRE
@@ -50,10 +47,13 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 848-711
-    name: Enforce input validation on a trusted service layer
-    tags:
-    - Architecture
+    id: 031-447
+    name: Whitelist all external (HTTP) input
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 232-217
+    name: Whitelist redirected/forwarded URLs
   ltype: Contains
 name: Input validation
 tags:

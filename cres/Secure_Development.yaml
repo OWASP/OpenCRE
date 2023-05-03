@@ -8,12 +8,12 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 255-443
-    name: Techniques
+    id: 840-757
+    name: Guidelines
   ltype: Contains
 - document:
     doctype: CRE
-    id: 840-757
-    name: Guidelines
+    id: 255-443
+    name: Techniques
   ltype: Contains
 name: Secure Development

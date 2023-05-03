@@ -10,7 +10,10 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x22-V14-Config.md
     name: ASVS
-    section: V14.5.2
+    section: Verify that the supplied Origin header is not used for authentication
+      or access control decisions, as the Origin header can easily be changed by an
+      attacker.
+    sectionID: V14.5.2
   ltype: Linked To
 - document:
     doctype: Standard

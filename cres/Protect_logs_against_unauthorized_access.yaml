@@ -10,7 +10,9 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x15-V7-Error-Logging.md
     name: ASVS
-    section: V7.3.3
+    section: Verify that security logs are protected from unauthorized access and
+      modification. (C9)
+    sectionID: V7.3.3
   ltype: Linked To
 - document:
     doctype: Standard

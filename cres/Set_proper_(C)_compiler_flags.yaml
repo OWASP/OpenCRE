@@ -10,7 +10,11 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x22-V14-Config.md
     name: ASVS
-    section: V14.1.2
+    section: Verify that compiler flags are configured to enable all available buffer
+      overflow protections and warnings, including stack randomization, data execution
+      prevention, and to break the build if an unsafe pointer, memory, format string,
+      integer, or string operations are found.
+    sectionID: V14.1.2
   ltype: Linked To
 - document:
     doctype: Standard

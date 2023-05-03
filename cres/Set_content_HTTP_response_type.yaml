@@ -10,7 +10,10 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x22-V14-Config.md
     name: ASVS
-    section: V14.4.1
+    section: Verify that every HTTP response contains a Content-Type header. text/*,
+      */*+xml and application/xml content types should also specify a safe character
+      set (e.g., UTF-8, ISO-8859-1).
+    sectionID: V14.4.1
   ltype: Linked To
 - document:
     doctype: Standard

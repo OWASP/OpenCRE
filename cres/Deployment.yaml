@@ -3,29 +3,14 @@ id: 783-355
 links:
 - document:
     doctype: CRE
-    id: 840-757
-    name: Guidelines
+    id: 153-513
+    name: '>>Development & operations'
   ltype: Contains
 - document:
     doctype: CRE
-    id: 180-487
-    name: Server protection
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 266-527
-    name: Physical security
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 273-600
-    name: Segregate components of differing trust levels
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 336-511
-    name: Network protection
-  ltype: Contains
+    id: 486-813
+    name: Configuration
+  ltype: Related
 - document:
     doctype: CRE
     id: 347-352
@@ -38,8 +23,10 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 612-364
-    name: System time synchronization
+    id: 726-868
+    name: Deployed topology
+    tags:
+    - Architecture
   ltype: Contains
 - document:
     doctype: CRE
@@ -48,36 +35,43 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
+    id: 840-757
+    name: Guidelines
+  ltype: Contains
+- document:
+    doctype: CRE
     id: 636-347
     name: HTTP security headers
   ltype: Contains
 - document:
     doctype: CRE
-    id: 726-868
-    name: Deployed topology
-    tags:
-    - Architecture
+    id: 336-511
+    name: Network protection
   ltype: Contains
 - document:
     doctype: CRE
-    id: 486-813
-    name: Configuration
-  ltype: Related
+    id: 266-527
+    name: Physical security
+  ltype: Contains
 - document:
     doctype: CRE
-    id: 153-513
-    name: '>>Development & operations'
+    id: 180-487
+    name: Server protection
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 612-364
+    name: System time synchronization
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 273-600
+    name: Segregate components of differing trust levels
   ltype: Contains
 - document:
     doctype: CRE
     id: 163-776
     name: Backups
-  ltype: Related
-- document:
-    doctype: CRE
-    id: 268-272
-    name: Classify personal data regarding retention so that old or outdated data
-      is deleted
   ltype: Related
 - document:
     doctype: CRE

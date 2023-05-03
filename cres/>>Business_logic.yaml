@@ -3,39 +3,9 @@ id: 854-643
 links:
 - document:
     doctype: CRE
-    id: 134-412
-    name: Protect sensitive functionalities against race conditions
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 380-540
-    name: Ensure business flows' thread safety/resistance to race conditions
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 418-853
-    name: Monitor unusual activities on system
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 456-535
-    name: Monitor for realistic "human time" business logic flows
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 534-605
-    name: Enforce natural sequence of business flows to avoid abuse
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 630-573
-    name: Monitor suspected automation abuse
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 660-867
-    name: Implement business logic limits against identified business risks
-  ltype: Contains
+    id: 623-550
+    name: DOS
+  ltype: Related
 - document:
     doctype: CRE
     id: 670-660
@@ -48,24 +18,54 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
+    id: 534-605
+    name: Enforce natural sequence of business flows to avoid abuse
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 380-540
+    name: Ensure business flows' thread safety/resistance to race conditions
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 660-867
+    name: Implement business logic limits against identified business risks
+  ltype: Contains
+- document:
+    doctype: CRE
     id: 746-705
     name: Limit/authorize user's access to functionality
   ltype: Contains
 - document:
     doctype: CRE
-    id: 623-550
-    name: DOS
+    id: 456-535
+    name: Monitor for realistic "human time" business logic flows
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 630-573
+    name: Monitor suspected automation abuse
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 418-853
+    name: Monitor unusual activities on system
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 134-412
+    name: Protect sensitive functionalities against race conditions
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 762-451
+    name: Ensure users can remove or export their data
   ltype: Related
 - document:
     doctype: CRE
     id: 082-327
     name: Inform users clearly about the collection and use of personal data, and
       use it only after opt-in consent.
-  ltype: Related
-- document:
-    doctype: CRE
-    id: 762-451
-    name: Ensure users can remove or export their data
   ltype: Related
 name: '>>Business logic'
 tags:

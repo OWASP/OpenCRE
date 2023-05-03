@@ -11,6 +11,11 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
+    id: 842-876
+    name: '>>Logging and error handling'
+  ltype: Related
+- document:
+    doctype: CRE
     id: 623-550
     name: DOS
   ltype: Related
@@ -18,7 +23,10 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x16-V8-Data-Protection.md
     name: ASVS
-    section: V8.1.4
+    section: Verify the application can detect and alert on abnormal numbers of requests,
+      such as by IP, user, total per hour or day, or whatever makes sense for the
+      application.
+    sectionID: V8.1.4
   ltype: Linked To
 - document:
     doctype: Standard

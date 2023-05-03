@@ -15,7 +15,9 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x14-V6-Cryptography.md
     name: ASVS
-    section: V6.2.1
+    section: Verify that all cryptographic modules fail securely, and errors are handled
+      in a way that does not enable Padding Oracle attacks.
+    sectionID: V6.2.1
   ltype: Linked To
 - document:
     doctype: Standard

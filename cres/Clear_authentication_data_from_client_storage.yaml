@@ -10,7 +10,9 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x16-V8-Data-Protection.md
     name: ASVS
-    section: V8.2.3
+    section: Verify that authenticated data is cleared from client storage, such as
+      the browser DOM, after the client or session is terminated.
+    sectionID: V8.2.3
   ltype: Linked To
 - document:
     doctype: Standard

@@ -3,13 +3,30 @@ id: 118-110
 links:
 - document:
     doctype: CRE
-    id: 503-455
-    name: '>>Input and output verification'
+    id: 061-186
+    name: Force uniform encoders and parsers throughout system
   ltype: Contains
 - document:
     doctype: CRE
-    id: 061-186
-    name: Force uniform encoders and parsers throughout system
+    id: 268-088
+    name: Limit query impact GraphQL/data layer expression DoS
+    tags:
+    - DOS
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 532-878
+    name: Limit REST HTTP methods
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 377-680
+    name: Reject non-whitelisted content types
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 612-252
+    name: Separate GraphQL (or similar) authorization logic from data layer
   ltype: Contains
 - document:
     doctype: CRE
@@ -23,26 +40,9 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 268-088
-    name: Limit query impact GraphQL/data layer expression DoS
-    tags:
-    - DOS
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 377-680
-    name: Reject non-whitelisted content types
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 532-878
-    name: Limit REST HTTP methods
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 612-252
-    name: Separate GraphQL (or similar) authorization logic from data layer
-  ltype: Contains
+    id: 664-080
+    name: Enforce model-based authorization both at URI and final resource
+  ltype: Related
 - document:
     doctype: CRE
     id: 152-725
@@ -50,19 +50,7 @@ links:
   ltype: Related
 - document:
     doctype: CRE
-    id: 333-888
-    name: Do not expose data through API URLs
-    tags:
-    - Configuration
-  ltype: Related
-- document:
-    doctype: CRE
-    id: 426-842
-    name: Verify the authenticity of both headers and payload
-  ltype: Related
-- document:
-    doctype: CRE
-    id: 664-080
-    name: Enforce model-based authorization both at URI and final resource
-  ltype: Related
+    id: 503-455
+    name: '>>Input and output verification'
+  ltype: Contains
 name: API/web services

@@ -17,7 +17,9 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x11-V2-Authentication.md
     name: ASVS
-    section: V2.5.4
+    section: Verify shared or default accounts are not present (e.g. "root", "admin",
+      or "sa").
+    sectionID: V2.5.4
   ltype: Linked To
 - document:
     doctype: Standard

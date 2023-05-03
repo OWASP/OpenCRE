@@ -10,7 +10,9 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x13-V5-Validation-Sanitization-Encoding.md
     name: ASVS
-    section: V5.4.1
+    section: Verify that the application uses memory-safe string, safer memory copy
+      and pointer arithmetic to detect or prevent stack, buffer, or heap overflows.
+    sectionID: V5.4.1
   ltype: Linked To
 - document:
     doctype: Standard
