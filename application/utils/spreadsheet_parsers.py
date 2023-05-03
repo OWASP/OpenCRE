@@ -672,6 +672,12 @@ def parse_standards(
                     "subsection": "",
                     "hyperlink": "Standard Top 10 2017 Hyperlink",
                 },
+                 "Cloud Controls Matrix": {
+                    "section": "Source-CCM-Control Title",
+                    "sectionID": "Source-CCM ID",
+                    "subsection": "",
+                    "hyperlink": "",
+                },
             },
         }
     links: List[defs.Link] = []
