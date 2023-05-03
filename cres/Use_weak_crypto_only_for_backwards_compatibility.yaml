@@ -10,7 +10,11 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x14-V6-Cryptography.md
     name: ASVS
-    section: V6.2.5
+    section: Verify that known insecure block modes (i.e. ECB, etc.), padding modes
+      (i.e. PKCS#1 v1.5, etc.), ciphers with small block sizes (i.e. Triple-DES, Blowfish,
+      etc.), and weak hashing algorithms (i.e. MD5, SHA1, etc.) are not used unless
+      required for backwards compatibility.
+    sectionID: V6.2.5
   ltype: Linked To
 - document:
     doctype: Standard

@@ -10,7 +10,9 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x12-V3-Session-management.md
     name: ASVS
-    section: V3.4.4
+    section: Verify that cookie-based session tokens use "__Host-" prefix (see references)
+      to provide session cookie confidentiality.
+    sectionID: V3.4.4
   ltype: Linked To
 - document:
     doctype: Standard
@@ -21,7 +23,7 @@ links:
   ltype: Linked To
 - document:
     doctype: Standard
-    hyperlink: https://owasp.org/www-project-web-security-testing-guide/v41/4-Web_Application_Security_Testing/06-Session_Management_Testing/02-Testing_for_Cookies_Attributes.html#httponly-attribute
+    hyperlink: https://owasp.org/www-project-web-security-testing-guide/v41/4-Web_Application_Security_Testing/06-Session_Management_Testing/02-Testing_for_Cookies_Attributes.html#domain-attribute
     name: (WSTG) Web Security Testing Guide
     section: WSTG-SESS-02
   ltype: Linked To

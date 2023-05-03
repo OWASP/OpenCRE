@@ -3,33 +3,10 @@ id: 742-432
 links:
 - document:
     doctype: CRE
-    id: 036-810
-    name: Let cryptographic modules fail securely
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 122-287
-    name: Ensure cryptographic elements can be upgraded or replaced
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 433-122
-    name: Use nonces and initialization vectors only once
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 441-132
-    name: Use weak crypto only for backwards compatibility
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 674-425
-    name: Use state of the art cryptographic configuration
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 742-431
-    name: Use approved cryptographic algorithms
+    id: 726-668
+    name: Encrypt data at rest
+    tags:
+    - Cryptography
   ltype: Contains
 - document:
     doctype: CRE
@@ -38,14 +15,37 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
+    id: 122-287
+    name: Ensure cryptographic elements can be upgraded or replaced
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 036-810
+    name: Let cryptographic modules fail securely
+  ltype: Contains
+- document:
+    doctype: CRE
     id: 878-880
     name: Perform cryptographic operations in constant time
   ltype: Contains
 - document:
     doctype: CRE
-    id: 726-668
-    name: Encrypt data at rest
-    tags:
-    - Cryptography
+    id: 742-431
+    name: Use approved cryptographic algorithms
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 433-122
+    name: Use nonces and initialization vectors only once
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 674-425
+    name: Use state of the art cryptographic configuration
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 441-132
+    name: Use weak crypto only for backwards compatibility
   ltype: Contains
 name: Encryption algorithms

@@ -3,27 +3,29 @@ id: 170-772
 links:
 - document:
     doctype: CRE
+    id: 228-551
+    name: TLS
+    tags:
+    - Cryptography
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 333-858
+    name: Resist stolen credentials
+    tags:
+    - Cryptography
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 287-251
+    name: Use a unique challenge nonce of sufficient size
+    tags:
+    - Cryptography
+  ltype: Related
+- document:
+    doctype: CRE
     id: 002-801
     name: Use approved cryptographic algorithms for generation, seeding and verification
-    tags:
-    - Cryptography
-  ltype: Related
-- document:
-    doctype: CRE
-    id: 542-270
-    name: Secure random values
-    tags:
-    - Cryptography
-  ltype: Related
-- document:
-    doctype: CRE
-    id: 546-564
-    name: '>>Tags'
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 223-780
-    name: Secret storage
     tags:
     - Cryptography
   ltype: Related
@@ -43,29 +45,15 @@ links:
   ltype: Related
 - document:
     doctype: CRE
-    id: 228-551
-    name: TLS
+    id: 223-780
+    name: Secret storage
     tags:
     - Cryptography
   ltype: Related
 - document:
     doctype: CRE
-    id: 726-668
-    name: Encrypt data at rest
-    tags:
-    - Cryptography
-  ltype: Related
-- document:
-    doctype: CRE
-    id: 287-251
-    name: Use a unique challenge nonce of sufficient size
-    tags:
-    - Cryptography
-  ltype: Related
-- document:
-    doctype: CRE
-    id: 333-858
-    name: Resist stolen credentials
+    id: 543-428
+    name: Use security module to store one-time password verification keys
     tags:
     - Cryptography
   ltype: Related
@@ -78,8 +66,15 @@ links:
   ltype: Related
 - document:
     doctype: CRE
-    id: 543-428
-    name: Use security module to store one-time password verification keys
+    id: 726-668
+    name: Encrypt data at rest
+    tags:
+    - Cryptography
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 542-270
+    name: Secure random values
     tags:
     - Cryptography
   ltype: Related
@@ -97,6 +92,11 @@ links:
     tags:
     - Cryptography
   ltype: Related
+- document:
+    doctype: CRE
+    id: 546-564
+    name: '>>Tags'
+  ltype: Contains
 - document:
     doctype: Standard
     hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=SC-12

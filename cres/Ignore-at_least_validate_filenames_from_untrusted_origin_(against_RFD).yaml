@@ -10,7 +10,11 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x20-V12-Files-Resources.md
     name: ASVS
-    section: V12.3.4
+    section: Verify that the application protects against Reflective File Download
+      (RFD) by validating or ignoring user-submitted filenames in a JSON, JSONP, or
+      URL parameter, the response Content-Type header should be set to text/plain,
+      and the Content-Disposition header should have a fixed filename.
+    sectionID: V12.3.4
   ltype: Linked To
 - document:
     doctype: Standard

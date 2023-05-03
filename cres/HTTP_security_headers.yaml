@@ -10,25 +10,15 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 036-147
-    name: Configure HSTS configuration properly
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 036-725
-    name: Set content HTTP response type
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 065-388
-    name: Configure X-Content-Type-Options properly
-  ltype: Contains
-- document:
-    doctype: CRE
     id: 257-668
     name: Configure CSP configuration properly
     tags:
     - XSS
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 036-147
+    name: Configure HSTS configuration properly
   ltype: Contains
 - document:
     doctype: CRE
@@ -37,8 +27,18 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
+    id: 065-388
+    name: Configure X-Content-Type-Options properly
+  ltype: Contains
+- document:
+    doctype: CRE
     id: 480-071
     name: Prevent Click jacking through X-Frame-Options or CSP
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 036-725
+    name: Set content HTTP response type
   ltype: Contains
 - document:
     doctype: CRE

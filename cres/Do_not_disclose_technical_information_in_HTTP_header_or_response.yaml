@@ -12,7 +12,9 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x22-V14-Config.md
     name: ASVS
-    section: V14.3.3
+    section: Verify that the HTTP headers or any part of the HTTP response do not
+      expose detailed version information of system components.
+    sectionID: V14.3.3
   ltype: Linked To
 - document:
     doctype: Standard

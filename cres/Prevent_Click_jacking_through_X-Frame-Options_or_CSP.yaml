@@ -10,7 +10,11 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x22-V14-Config.md
     name: ASVS
-    section: V14.4.7
+    section: 'Verify that the content of a web application cannot be embedded in a
+      third-party site by default and that embedding of the exact resources is only
+      allowed where necessary by using suitable Content-Security-Policy: frame-ancestors
+      and X-Frame-Options response headers.'
+    sectionID: V14.4.7
   ltype: Linked To
 - document:
     doctype: Standard

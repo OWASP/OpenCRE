@@ -15,7 +15,9 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x22-V14-Config.md
     name: ASVS
-    section: V14.2.1
+    section: Verify that all components are up to date, preferably using a dependency
+      checker during build or compile time. (C2)
+    sectionID: V14.2.1
   ltype: Linked To
 - document:
     doctype: Standard

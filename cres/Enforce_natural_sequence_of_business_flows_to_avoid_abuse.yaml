@@ -12,7 +12,9 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x19-V11-BusLogic.md
     name: ASVS
-    section: V11.1.1
+    section: Verify the application will only process business logic flows for the
+      same user in sequential step order and without skipping steps.
+    sectionID: V11.1.1
   ltype: Linked To
 - document:
     doctype: Standard

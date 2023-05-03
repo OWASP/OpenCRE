@@ -15,7 +15,10 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x12-V4-Access-Control.md
     name: ASVS
-    section: V4.1.1
+    section: Verify that the application enforces access control rules on a trusted
+      service layer, especially if client-side access control is present and could
+      be bypassed.
+    sectionID: V4.1.1
   ltype: Linked To
 - document:
     doctype: Standard

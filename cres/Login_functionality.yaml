@@ -8,12 +8,12 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 487-305
-    name: Provide options to view entire password or last typed character
+    id: 630-577
+    name: Allow password helpers, including paste functionality
   ltype: Contains
 - document:
     doctype: CRE
-    id: 630-577
-    name: Allow password helpers, including paste functionality
+    id: 487-305
+    name: Provide options to view entire password or last typed character
   ltype: Contains
 name: Login functionality

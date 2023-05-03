@@ -8,8 +8,13 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 138-448
-    name: Inform users for authentication renewal
+    id: 623-347
+    name: Disallow shared high privileged accounts
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 813-610
+    name: Do not use static secrets
   ltype: Contains
 - document:
     doctype: CRE
@@ -23,13 +28,8 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 623-347
-    name: Disallow shared high privileged accounts
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 751-176
-    name: Offer password changing functionality
+    id: 138-448
+    name: Inform users for authentication renewal
   ltype: Contains
 - document:
     doctype: CRE
@@ -38,8 +38,8 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 813-610
-    name: Do not use static secrets
+    id: 751-176
+    name: Offer password changing functionality
   ltype: Contains
 - document:
     doctype: CRE

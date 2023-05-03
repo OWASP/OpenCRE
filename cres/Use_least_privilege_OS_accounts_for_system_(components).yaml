@@ -17,7 +17,9 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x10-V1-Architecture.md
     name: ASVS
-    section: V1.2.1
+    section: Verify the use of unique or special low-privilege operating system accounts
+      for all application components, services, and servers. (C3)
+    sectionID: V1.2.1
   ltype: Linked To
 - document:
     doctype: Standard

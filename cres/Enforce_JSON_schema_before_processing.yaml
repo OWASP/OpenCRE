@@ -10,7 +10,9 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x21-V13-API.md
     name: ASVS
-    section: V13.2.2
+    section: Verify that JSON schema validation is in place and verified before accepting
+      input.
+    sectionID: V13.2.2
   ltype: Linked To
 - document:
     doctype: Standard

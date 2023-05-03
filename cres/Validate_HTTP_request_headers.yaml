@@ -8,8 +8,8 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 316-272
-    name: Whitelist CORS resources
+    id: 820-421
+    name: Authenticate HTTP headers added by a trusted proxy or SSO device
   ltype: Contains
 - document:
     doctype: CRE
@@ -23,8 +23,8 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 820-421
-    name: Authenticate HTTP headers added by a trusted proxy or SSO device
+    id: 316-272
+    name: Whitelist CORS resources
   ltype: Contains
 - document:
     doctype: Standard

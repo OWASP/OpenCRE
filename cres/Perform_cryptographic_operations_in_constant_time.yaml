@@ -10,7 +10,9 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x14-V6-Cryptography.md
     name: ASVS
-    section: V6.2.8
+    section: Verify that all cryptographic operations are constant-time, with no 'short-circuit'
+      operations in comparisons, calculations, or returns, to avoid leaking information.
+    sectionID: V6.2.8
   ltype: Linked To
 - document:
     doctype: Standard

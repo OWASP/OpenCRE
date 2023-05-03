@@ -12,7 +12,10 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x17-V9-Communications.md
     name: ASVS
-    section: V9.1.2
+    section: Verify using online or up to date TLS testing tools that only strong
+      algorithms, ciphers, and protocols are enabled, with the strongest algorithms
+      and ciphers set as preferred.
+    sectionID: V9.1.2
   ltype: Linked To
 - document:
     doctype: Standard

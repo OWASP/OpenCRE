@@ -15,7 +15,9 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x16-V8-Data-Protection.md
     name: ASVS
-    section: V8.2.1
+    section: Verify the application sets sufficient anti-caching headers so that sensitive
+      data is not cached in modern browsers.
+    sectionID: V8.2.1
   ltype: Linked To
 - document:
     doctype: Standard

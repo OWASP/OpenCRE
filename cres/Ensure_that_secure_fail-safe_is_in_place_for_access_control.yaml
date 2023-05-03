@@ -15,7 +15,9 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x12-V4-Access-Control.md
     name: ASVS
-    section: V4.1.5
+    section: Verify that access controls fail securely including when an exception
+      occurs. (C10)
+    sectionID: V4.1.5
   ltype: Linked To
 - document:
     doctype: Standard

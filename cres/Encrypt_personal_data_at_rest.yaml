@@ -15,7 +15,10 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x14-V6-Cryptography.md
     name: ASVS
-    section: V6.1.1
+    section: Verify that regulated private data is stored encrypted while at rest,
+      such as Personally Identifiable Information (PII), sensitive personal information,
+      or data assessed likely to be subject to EU's GDPR.
+    sectionID: V6.1.1
   ltype: Linked To
 - document:
     doctype: Standard

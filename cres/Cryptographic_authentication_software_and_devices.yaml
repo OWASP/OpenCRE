@@ -3,10 +3,8 @@ id: 585-408
 links:
 - document:
     doctype: CRE
-    id: 002-801
-    name: Use approved cryptographic algorithms for generation, seeding and verification
-    tags:
-    - Cryptography
+    id: 270-568
+    name: Authentication mechanism
   ltype: Contains
 - document:
     doctype: CRE
@@ -17,7 +15,9 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 270-568
-    name: Authentication mechanism
+    id: 002-801
+    name: Use approved cryptographic algorithms for generation, seeding and verification
+    tags:
+    - Cryptography
   ltype: Contains
 name: Cryptographic authentication software and devices

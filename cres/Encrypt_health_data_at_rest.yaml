@@ -10,7 +10,9 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x14-V6-Cryptography.md
     name: ASVS
-    section: V6.1.2
+    section: Verify that regulated health data is stored encrypted while at rest,
+      such as medical records, medical device details, or de-anonymized research records.
+    sectionID: V6.1.2
   ltype: Linked To
 - document:
     doctype: Standard

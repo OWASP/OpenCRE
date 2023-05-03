@@ -10,7 +10,10 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x21-V13-API.md
     name: ASVS
-    section: V13.1.5
+    section: Verify that requests containing unexpected or missing content types are
+      rejected with appropriate headers (HTTP response status 406 Unacceptable or
+      415 Unsupported Media Type).
+    sectionID: V13.1.5
   ltype: Linked To
 - document:
     doctype: Standard
