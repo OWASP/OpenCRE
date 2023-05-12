@@ -499,12 +499,12 @@ def export_to_osib(file_loc: str, cache: str) -> None:
         with open(file_loc, "w") as f:
             f.write(json.dumps(tree.todict()))
 
-def generate_embeddings(db_url:str) ->None:
+
+def generate_embeddings(db_url: str) -> None:
     database = db_connect(path=db_url)
     prompt = prompt_client.PromptHandler(database, os.getenv("OPENAI_API_KEY"))
-    
-    
-    
+
+
 def owasp_metadata_to_cre(meta_file: str):
     """given a file with entries like below
     parse projects of type "tool" in file into "tool" data.
@@ -522,5 +522,3 @@ def owasp_metadata_to_cre(meta_file: str):
     },
     """
     raise NotImplementedError("someone needs to work on this")
-
-

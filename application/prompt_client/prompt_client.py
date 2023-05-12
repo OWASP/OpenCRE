@@ -1,6 +1,5 @@
 from application.database import db
 from application.defs import cre_defs
-from bs4 import BeautifulSoup
 from datetime import datetime
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
@@ -15,8 +14,6 @@ import requests
 from playwright.sync_api import sync_playwright
 import nltk
 from multiprocessing import Pool
-from functools import partial
-from multiprocessing.pool import ThreadPool
 from scipy import sparse
 
 logging.basicConfig()

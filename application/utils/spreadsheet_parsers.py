@@ -568,9 +568,7 @@ def parse_hierarchical_export_format(
             if cres.get(name_hi):
                 cre_hi = cres[name_hi]
             else:
-                cre_hi = defs.CRE(
-                    name=name_hi
-                )
+                cre_hi = defs.CRE(name=name_hi)
 
             existing_link = [
                 c
@@ -591,12 +589,11 @@ def parse_hierarchical_export_format(
                         ltype=defs.LinkTypes.Contains, document=cre.shallow_copy()
                     )
                 )
-            cres[cre_hi.name] = cre_hi                
+            cres[cre_hi.name] = cre_hi
         else:
             pass  # add the cre to cres and make the connection
         if cre:
             cres[cre.name] = cre
-    
 
     return cres
 
@@ -672,7 +669,7 @@ def parse_standards(
                     "subsection": "",
                     "hyperlink": "Standard Top 10 2017 Hyperlink",
                 },
-                 "Cloud Controls Matrix": {
+                "Cloud Controls Matrix": {
                     "section": "Source-CCM-Control Title",
                     "sectionID": "Source-CCM ID",
                     "subsection": "",

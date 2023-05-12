@@ -28,7 +28,7 @@ def create_app(mode: str = "production", conf: any = None) -> Any:
         app.config.from_object(config[mode])
     else:
         app.config.from_object(conf)
-    GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET')    
+    GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET")
     app.secret_key = GOOGLE_CLIENT_SECRET
 
     # config[mode].init_app(app)

@@ -558,7 +558,7 @@ class Node_collection:
     def get_node_by_db_id(self, id: str) -> cre_defs.Node:
         return nodeFromDB(self.session.query(Node).filter(Node.id == id).first())
 
-    def list_node_ids_by_ntype(self,ntype:str) -> List[str]:
+    def list_node_ids_by_ntype(self, ntype: str) -> List[str]:
         return self.session.query(Node.id).filter(Node.ntype == ntype).all()
 
     def __get_nodes_query__(

@@ -433,7 +433,9 @@ def callback():
     credentials = flow_instance.flow.credentials
     token_request = google.auth.transport.requests.Request()
     id_info = id_token.verify_oauth2_token(
-        id_token=credentials._id_token, request=token_request, audience=os.environ.get("GOOGLE_CLIENT_ID")
+        id_token=credentials._id_token,
+        request=token_request,
+        audience=os.environ.get("GOOGLE_CLIENT_ID"),
     )
 
     session["google_id"] = id_info.get("sub")
@@ -442,8 +444,15 @@ def callback():
     allowed_domains = os.environ.get("LOGIN_ALLOWED_DOMAINS")
     allowed_domains = allowed_domains.split(",") if allowed_domains else []
     if not allowed_domains:
-        abort(500,"You have not set any domain in the allowed domains list, to ignore this set LOGIN_ALLOWED_DOMAINS to '*'")
-    if allowed_domains and allowed_domains!=['*'] and not any([id_info.get("email").endswith(x) for x in allowed_domains]):
+        abort(
+            500,
+            "You have not set any domain in the allowed domains list, to ignore this set LOGIN_ALLOWED_DOMAINS to '*'",
+        )
+    if (
+        allowed_domains
+        and allowed_domains != ["*"]
+        and not any([id_info.get("email").endswith(x) for x in allowed_domains])
+    ):
         abort(401)
     return redirect("/chatbot")
 
