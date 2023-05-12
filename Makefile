@@ -84,6 +84,6 @@ import-all:
 	python cre.py --zap_in --cheatsheets_in --github_tools_in  --capec_in --cwe_in --csa_ccm_v4_in --iso_27001_in --owasp_secure_headers_in
 
 create-google-credentials-file:
-	echo "${GOOGLE_SECRET_JSON}" > gcp_secret.sh
+	echo "${GOOGLE_SECRET_JSON}" > gcp_secret.json
 
 all: clean lint test dev dev-run
