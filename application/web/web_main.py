@@ -1,8 +1,10 @@
 # type: ignore
 # silence mypy for the routes file
+from functools import wraps
 import json
 import logging
 import os
+import pathlib
 import urllib.parse
 from typing import Any
 from application.utils import oscal_utils
@@ -13,6 +15,7 @@ from application.defs import cre_defs as defs
 from application.defs import osib_defs as odefs
 from application.utils import spreadsheet as sheet_utils
 from application.utils import mdutils, redirectors
+from application.prompt_client import prompt_client as prompt_client
 from enum import Enum
 from pprint import pprint
 from flask import (
@@ -23,9 +26,14 @@ from flask import (
     redirect,
     request,
     send_from_directory,
+    url_for,
+    session,
 )
-
+from google.oauth2 import id_token
+from google_auth_oauthlib.flow import Flow
 from application.utils.spreadsheet import write_csv
+from pip._vendor import cachecontrol
+import google.auth.transport.requests
 
 ITEMS_PER_PAGE = 20
 
@@ -349,6 +357,101 @@ def before_request():
 def add_header(response):
     response.cache_control.max_age = 300
     return response
+
+
+def login_required(f):
+    @wraps(f)
+    def login_r(*args, **kwargs):
+        pprint(session)
+        if "google_id" not in session or "name" not in session:
+            return abort(401)
+        else:
+            return f(*args, **kwargs)
+
+    return login_r
+
+
+@app.route("/rest/v1/completion", methods=["POST"])
+@login_required
+def chat_cre() -> Any:
+    message = request.get_json(force=True)
+    database = db.Node_collection()
+    prompt = prompt_client.PromptHandler(database, os.getenv("OPENAI_API_KEY"))
+    response = prompt.generate_text(message.get("prompt"))
+    return jsonify(response)
+
+
+class CREFlow:
+    __instance = None
+    flow = None
+
+    @classmethod
+    def instance(cls):
+        if cls.__instance is None:
+            cls.__instance = cls.__new__(cls)
+            client_secrets_file = os.path.join(
+                pathlib.Path(__file__).parent.parent.parent, "gcp_secret.json"
+            )
+            cls.flow = Flow.from_client_secrets_file(
+                client_secrets_file=client_secrets_file,
+                scopes=[
+                    "https://www.googleapis.com/auth/userinfo.profile",
+                    "https://www.googleapis.com/auth/userinfo.email",
+                    "openid",
+                ],
+                redirect_uri=request.root_url.rstrip("/") + url_for("web.callback"),
+            )
+        return cls.__instance
+
+    def __init__(sel):
+        raise ValueError("class is a singleton, please call instance() instead")
+
+
+@app.route("/rest/v1/login")
+def login():
+    flow_instance = CREFlow.instance()
+    authorization_url, state = flow_instance.flow.authorization_url()
+    session["state"] = state
+
+    return redirect(authorization_url)
+
+
+@app.route("/rest/v1/user")
+@login_required
+def logged_in_user():
+    pprint(session.get("name"))
+    return session.get("name")
+
+
+@app.route("/rest/v1/callback")
+def callback():
+    flow_instance = CREFlow.instance()
+    flow_instance.flow.fetch_token(authorization_response=request.url)
+
+    if not session["state"] == request.args["state"]:
+        abort(500)  # State does not match!
+    credentials = flow_instance.flow.credentials
+    token_request = google.auth.transport.requests.Request()
+    id_info = id_token.verify_oauth2_token(
+        id_token=credentials._id_token, request=token_request, audience=os.environ.get("GOOGLE_CLIENT_ID")
+    )
+
+    session["google_id"] = id_info.get("sub")
+    session["name"] = id_info.get("name")
+    session["email"] = id_info.get("email")
+    allowed_domains = os.environ.get("LOGIN_ALLOWED_DOMAINS")
+    allowed_domains = allowed_domains.split(",") if allowed_domains else []
+    if not allowed_domains:
+        abort(500,"You have not set any domain in the allowed domains list, to ignore this set LOGIN_ALLOWED_DOMAINS to '*'")
+    if allowed_domains and allowed_domains!=['*'] and not any([id_info.get("email").endswith(x) for x in allowed_domains]):
+        abort(401)
+    return redirect("/chatbot")
+
+
+@app.route("/rest/v1/logout")
+def logout():
+    session.clear()
+    return redirect("/")
 
 
 if __name__ == "__main__":

@@ -25,6 +25,7 @@ from application.utils.external_project_parsers import (
     iso27001,
     secure_headers,
 )
+from application.prompt_client import prompt_client as prompt_client
 from dacite import from_dict
 from dacite.config import Config
 
@@ -413,11 +414,13 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
         secure_headers.parse(
             cache=db_connect(args.cache_file),
         )
+    if args.generate_embeddings:
+        generate_embeddings(args.cache_file)
     if args.owasp_proj_meta:
         owasp_metadata_to_cre(args.owasp_proj_meta)
 
 
-def db_connect(path: str) -> db.Node_collection:
+def db_connect(path: str):
     global app
     conf = CMDConfig(db_uri=path)
     app = create_app(conf=conf)
@@ -496,7 +499,12 @@ def export_to_osib(file_loc: str, cache: str) -> None:
         with open(file_loc, "w") as f:
             f.write(json.dumps(tree.todict()))
 
-
+def generate_embeddings(db_url:str) ->None:
+    database = db_connect(path=db_url)
+    prompt = prompt_client.PromptHandler(database, os.getenv("OPENAI_API_KEY"))
+    
+    
+    
 def owasp_metadata_to_cre(meta_file: str):
     """given a file with entries like below
     parse projects of type "tool" in file into "tool" data.
@@ -514,3 +522,5 @@ def owasp_metadata_to_cre(meta_file: str):
     },
     """
     raise NotImplementedError("someone needs to work on this")
+
+

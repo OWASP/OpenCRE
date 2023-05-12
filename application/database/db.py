@@ -125,6 +125,35 @@ class Links(BaseModel):  # type: ignore
     )
 
 
+class Embeddings(BaseModel):  # type: ignore
+    __tablename__ = "embeddings"
+
+    embeddings = sqla.Column(sqla.String)
+    doc_type = sqla.Column(sqla.String)
+    cre_id = sqla.Column(
+        sqla.String,
+        sqla.ForeignKey("cre.id", onupdate="CASCADE", ondelete="CASCADE"),
+        default="",
+    )
+    node_id = sqla.Column(
+        sqla.String,
+        sqla.ForeignKey("node.id", onupdate="CASCADE", ondelete="CASCADE"),
+        default="",
+    )
+
+    embeddings_url = sqla.Column(sqla.String, default="")
+    embeddings_content = sqla.Column(sqla.String, default="")
+    __table_args__ = (
+        sqla.PrimaryKeyConstraint(
+            embeddings,
+            doc_type,
+            cre_id,
+            node_id,
+            name="uq_entry",
+        ),
+    )
+
+
 class CRE_Graph:
     graph: nx.Graph = None
     __instance = None
@@ -204,7 +233,6 @@ class Node_collection:
 
     def __init__(self) -> None:
         self.graph = CRE_Graph.instance(sqla.session)
-        # self.graph = CRE_Graph.instance(session=sqla.session)
         self.session = sqla.session
 
     def __get_external_links(self) -> List[Tuple[CRE, Node, str]]:
@@ -526,6 +554,12 @@ class Node_collection:
             )
 
             return []
+
+    def get_node_by_db_id(self, id: str) -> cre_defs.Node:
+        return nodeFromDB(self.session.query(Node).filter(Node.id == id).first())
+
+    def list_node_ids_by_ntype(self,ntype:str) -> List[str]:
+        return self.session.query(Node.id).filter(Node.ntype == ntype).all()
 
     def __get_nodes_query__(
         self,
@@ -1105,7 +1139,7 @@ class Node_collection:
         """Returns CRES that only have "Contains" links
         Implemented via filtering graph nodes whose incoming edges are only "RELATED" type links
         """
-        
+
         def node_is_root(node):
             return node.startswith("CRE") and (
                 self.graph.graph.in_degree(node) == 0
@@ -1153,6 +1187,69 @@ class Node_collection:
         # for cid in cre_ids:
         #     result.extend(self.get_CREs(internal_id=cid[0]))
         # return result
+
+    def get_embeddings_by_doc_type(self, doc_type: str) -> Dict[str, List[float]]:
+        res = {}
+        embeddings = (
+            self.session.query(Embeddings).filter(Embeddings.doc_type == doc_type).all()
+        )
+        for entry in embeddings:
+            if doc_type == cre_defs.Credoctypes.CRE.value:
+                res[entry.cre_id] = [float(e) for e in entry.embeddings.split(",")]
+            else:
+                res[entry.node_id] = [float(e) for e in entry.embeddings.split(",")]
+        return res
+
+    def get_embedding(self, object_id: str) -> Optional[Embeddings]:
+        return (
+            self.session.query(Embeddings)
+            .filter(
+                sqla.or_(
+                    Embeddings.cre_id == object_id, Embeddings.node_id == object_id
+                )
+            )
+            .all()
+        )
+
+    def add_embedding(
+        self,
+        db_object: CRE | Node,
+        doctype: cre_defs.Credoctypes,
+        embeddings: List[float],
+        embedding_text: str,
+    ):
+        existing = self.get_embedding(db_object.id)
+        embeddings_str = ",".join([str(e) for e in embeddings])
+
+        if not existing:
+            emb = None
+            if doctype == cre_defs.Credoctypes.CRE:
+                emb = Embeddings(
+                    embeddings=embeddings_str,
+                    cre_id=db_object.id,
+                    doc_type=cre_defs.Credoctypes.CRE.value,
+                    embeddings_content=embedding_text,
+                    embeddings_url=db_object.link,
+                )
+            else:
+                emb = Embeddings(
+                    embeddings=embeddings_str,
+                    node_id=db_object.id,
+                    doc_type=db_object.ntype,
+                    embeddings_content=embedding_text,
+                    embeddings_url=db_object.link,
+                )
+            self.session.add(emb)
+            self.session.commit()
+            return emb
+        else:
+            logger.debug(f"knew of embedding for object {db_object.id} ,updating")
+            self.session.commit()
+            existing[0].embeddings = embeddings_str
+            existing[0].embeddings_content = embedding_text
+            self.session.commit()
+
+            return existing
 
 
 def dbNodeFromNode(doc: cre_defs.Node) -> Optional[Node]:

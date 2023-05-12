@@ -166,6 +166,12 @@ def main() -> None:
         action="store_true",
         help="import owasp secure headers",
     )
+    parser.add_argument(
+        "--generate_embeddings",
+        action="store_true",
+        help="for every node, download the text pointed to by the hyperlink and generate embeddings for the content of the specific node",
+    )
+
     args = parser.parse_args()
 
     from application.cmd import cre_main

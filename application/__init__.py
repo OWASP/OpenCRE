@@ -7,6 +7,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_caching import Cache
 from flask_compress import Compress
 from application.config import config
+import os
 
 convention = {
     "ix": "ix_%(column_0_label)s",
@@ -27,6 +28,8 @@ def create_app(mode: str = "production", conf: any = None) -> Any:
         app.config.from_object(config[mode])
     else:
         app.config.from_object(conf)
+    GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET')    
+    app.secret_key = GOOGLE_CLIENT_SECRET
 
     # config[mode].init_app(app)
     sqla.init_app(app=app)

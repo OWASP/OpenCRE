@@ -677,6 +677,7 @@ def parse_standards(
                     "sectionID": "Source-CCM ID",
                     "subsection": "",
                     "hyperlink": "",
+                    "separator": "\n",
                 },
             },
         }

@@ -6,6 +6,7 @@ import { BrowseRootCres } from './pages/BrowseRootCres/browseRootCres';
 import { Deeplink } from './pages/Deeplink/Deeplink';
 import { SearchName } from './pages/Search/SearchName';
 import { StandardSection } from './pages/Standard/StandardSection';
+import { Chatbot } from './pages/chatbot/chatbot';
 
 export interface IRoute {
   path: string;
@@ -84,6 +85,12 @@ export const ROUTES: IRoute[] = [
   {
     path: `${DEEPLINK}/:nodeName`,
     component: Deeplink,
+    showHeader: true,
+    showFilter: false,
+  },
+  {
+    path: `/chatbot`,
+    component: Chatbot,
     showHeader: true,
     showFilter: false,
   },
