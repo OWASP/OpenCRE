@@ -11,7 +11,7 @@ links:
     id: 464-084
     name: Add CSRF protection for cookie based REST services
     tags:
-    - CSRF
+    - CSRF protection
   ltype: Contains
 - document:
     doctype: CRE

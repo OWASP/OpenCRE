@@ -3,10 +3,8 @@ id: 134-412
 links:
 - document:
     doctype: CRE
-    id: 854-643
-    name: '>>Business logic'
-    tags:
-    - DOS
+    id: 601-182
+    name: Parallel execution robustness
   ltype: Contains
 - document:
     doctype: Standard

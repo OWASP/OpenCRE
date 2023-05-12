@@ -4,14 +4,14 @@ links:
 - document:
     doctype: CRE
     id: 503-455
-    name: '>>Input and output verification'
+    name: Input and output protection
   ltype: Contains
 - document:
     doctype: CRE
     id: 760-764
-    name: Injection
+    name: Injection protection
     tags:
-    - XSS
+    - XSS protection
   ltype: Related
 - document:
     doctype: CRE
@@ -33,12 +33,6 @@ links:
     id: 316-272
     name: Whitelist CORS resources
   ltype: Contains
-- document:
-    doctype: Standard
-    hyperlink: https://owasp.org/www-project-top-ten/2017/A6_2017-Security_Misconfiguration
-    name: OWASP Top 10 2017
-    section: A6_Security_Misconfiguration
-  ltype: Linked To
 name: Validate HTTP request headers
 tags:
-- Injection
+- Injection protection

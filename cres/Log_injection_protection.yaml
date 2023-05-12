@@ -11,6 +11,6 @@ links:
     id: 048-612
     name: Encode user input before logging
     tags:
-    - Injection
+    - Injection protection
   ltype: Contains
 name: Log injection protection

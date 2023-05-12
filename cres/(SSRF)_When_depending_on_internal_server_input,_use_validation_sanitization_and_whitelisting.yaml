@@ -6,13 +6,13 @@ links:
     id: 764-765
     name: Sanitization and sandboxing
     tags:
-    - Injection
-    - XSS
+    - XSS protection
+    - Injection protection
   ltype: Contains
 - document:
     doctype: CRE
     id: 028-727
-    name: SSRF
+    name: SSRF protection
   ltype: Related
 - document:
     doctype: Standard
@@ -63,4 +63,4 @@ links:
 name: (SSRF) When depending on internal server input, use validation sanitization
   and whitelisting
 tags:
-- SSRF
+- SSRF protection

@@ -11,14 +11,14 @@ links:
     id: 163-518
     name: Check uploaded archives for decompression attacks (eg zip bombs)
     tags:
-    - DOS
+    - Denial Of Service protection
   ltype: Contains
 - document:
     doctype: CRE
     id: 463-820
     name: Limit size and number of uploaded files
     tags:
-    - DOS
+    - Denial Of Service protection
   ltype: Contains
 - document:
     doctype: CRE
@@ -31,14 +31,14 @@ links:
     name: Store and serve user-uploaded files such that they cannot execute/damage
       server or client
     tags:
-    - Injection
-    - XSS
+    - XSS protection
+    - Injection protection
   ltype: Contains
 - document:
     doctype: CRE
     id: 660-052
     name: Validate max input/file sizes
     tags:
-    - DOS
+    - Denial Of Service protection
   ltype: Contains
 name: File upload

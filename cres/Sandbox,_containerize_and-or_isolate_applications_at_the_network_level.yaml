@@ -3,20 +3,18 @@ id: 515-021
 links:
 - document:
     doctype: CRE
-    id: 726-868
-    name: Deployed topology
-    tags:
-    - Architecture
+    id: 467-784
+    name: Network security
   ltype: Contains
-- document:
-    doctype: CRE
-    id: 155-155
-    name: Architecture
-  ltype: Related
 - document:
     doctype: CRE
     id: 836-068
     name: Deserialization Prevention
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 155-155
+    name: Architecture
   ltype: Related
 - document:
     doctype: Standard
@@ -40,6 +38,12 @@ links:
     name: CWE
     section: ''
     sectionID: '265'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    name: Cloud Controls Matrix
+    section: Segmentation and Segregation
+    sectionID: IVS-06
   ltype: Linked To
 name: Sandbox, containerize and/or isolate applications at the network level
 tags:

@@ -1,12 +1,10 @@
 doctype: CRE
-id: 820-877
+id: 820-878
 links:
 - document:
     doctype: CRE
-    id: 354-846
-    name: Documentation and requirements
-    tags:
-    - Architecture
+    id: 820-877
+    name: Technical system documentation
   ltype: Contains
 - document:
     doctype: CRE

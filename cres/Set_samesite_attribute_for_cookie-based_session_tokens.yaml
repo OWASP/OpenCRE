@@ -9,7 +9,7 @@ links:
 - document:
     doctype: CRE
     id: 028-727
-    name: CSRF
+    name: CSRF protection
   ltype: Related
 - document:
     doctype: Standard
@@ -57,4 +57,4 @@ links:
   ltype: Linked To
 name: Set "samesite" attribute for cookie-based session tokens
 tags:
-- CSRF
+- CSRF protection

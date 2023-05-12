@@ -3,16 +3,9 @@ id: 746-705
 links:
 - document:
     doctype: CRE
-    id: 854-643
-    name: '>>Business logic'
-    tags:
-    - DOS
+    id: 128-128
+    name: Strong authorization checking
   ltype: Contains
-- document:
-    doctype: CRE
-    id: 724-770
-    name: '>>Authorized access'
-  ltype: Related
 - document:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x19-V11-BusLogic.md

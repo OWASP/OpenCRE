@@ -3,12 +3,9 @@ id: 028-727
 links:
 - document:
     doctype: CRE
-    id: 060-472
-    name: Use CSRF protection against authenticated functionality, add anti-automation
-      controls for unauthenticated functionality
-    tags:
-    - CSRF
-  ltype: Related
+    id: 546-564
+    name: Cross-cutting concerns
+  ltype: Contains
 - document:
     doctype: CRE
     id: 464-084
@@ -25,7 +22,10 @@ links:
   ltype: Related
 - document:
     doctype: CRE
-    id: 546-564
-    name: '>>Tags'
-  ltype: Contains
+    id: 060-472
+    name: Use CSRF protection against authenticated functionality, add anti-automation
+      controls for unauthenticated functionality
+    tags:
+    - CSRF
+  ltype: Related
 name: CSRF

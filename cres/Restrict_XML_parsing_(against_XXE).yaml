@@ -9,9 +9,9 @@ links:
 - document:
     doctype: CRE
     id: 760-764
-    name: Injection
+    name: Injection protection
     tags:
-    - XSS
+    - XSS protection
   ltype: Related
 - document:
     doctype: CRE
@@ -59,13 +59,7 @@ links:
     name: OWASP Cheat Sheets
     section: XML Security Cheat Sheet
   ltype: Linked To
-- document:
-    doctype: Standard
-    hyperlink: https://owasp.org/www-project-top-ten/2017/A4_2017-XML_External_Entities_(XXE)
-    name: OWASP Top 10 2017
-    section: A4-XML_External_Entities_(XXE)
-  ltype: Linked To
 name: Restrict XML parsing (against XXE)
 tags:
-- Injection
+- Injection protection
 - Configuration

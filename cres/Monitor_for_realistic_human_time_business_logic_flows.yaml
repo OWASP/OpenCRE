@@ -3,15 +3,13 @@ id: 456-535
 links:
 - document:
     doctype: CRE
-    id: 854-643
-    name: '>>Business logic'
-    tags:
-    - DOS
+    id: 552-588
+    name: Detect and prevent unusual activity
   ltype: Contains
 - document:
     doctype: CRE
     id: 623-550
-    name: DOS
+    name: Denial Of Service protection
   ltype: Related
 - document:
     doctype: Standard
@@ -43,4 +41,4 @@ links:
   ltype: Linked To
 name: Monitor for realistic "human time" business logic flows
 tags:
-- DOS
+- Denial Of Service protection

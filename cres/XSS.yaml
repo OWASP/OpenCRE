@@ -3,6 +3,11 @@ id: 760-765
 links:
 - document:
     doctype: CRE
+    id: 546-564
+    name: Cross-cutting concerns
+  ltype: Contains
+- document:
+    doctype: CRE
     id: 760-764
     name: Injection
     tags:
@@ -55,11 +60,6 @@ links:
     tags:
     - XSS
   ltype: Related
-- document:
-    doctype: CRE
-    id: 546-564
-    name: '>>Tags'
-  ltype: Contains
 name: XSS
 tags:
 - Injection

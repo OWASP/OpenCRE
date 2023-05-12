@@ -4,7 +4,7 @@ links:
 - document:
     doctype: CRE
     id: 503-455
-    name: '>>Input and output verification'
+    name: Input and output protection
   ltype: Contains
 - document:
     doctype: CRE
@@ -21,12 +21,6 @@ links:
     id: 403-005
     name: Do not disclose technical information in HTTP header or response
   ltype: Contains
-- document:
-    doctype: Standard
-    hyperlink: https://owasp.org/www-project-top-ten/2017/A3_2017-Sensitive_Data_Exposure
-    name: OWASP Top 10 2017
-    section: A3-Sensitive_Data_Exposure
-  ltype: Linked To
 name: Prevent security disclosure
 tags:
 - Configuration

@@ -1,0 +1,29 @@
+doctype: CRE
+id: 287-823
+links:
+- document:
+    doctype: CRE
+    id: 766-162
+    name: Security Analysis and documentation
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 074-873
+    name: Data classification and handling
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 571-640
+    name: Personal data handling management
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 157-587
+    name: Device management
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 522-616
+    name: Media protection
+  ltype: Related
+name: Asset management

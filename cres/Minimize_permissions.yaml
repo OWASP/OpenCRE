@@ -4,7 +4,7 @@ links:
 - document:
     doctype: CRE
     id: 724-770
-    name: '>>Authorized access'
+    name: Technical application access control
   ltype: Contains
 - document:
     doctype: CRE
@@ -38,7 +38,7 @@ links:
   ltype: Contains
 - document:
     doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=AC-6
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=AC-6
     name: NIST 800-53 v5
     section: AC-6 LEAST PRIVILEGE
   ltype: Linked To

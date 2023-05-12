@@ -9,9 +9,9 @@ links:
 - document:
     doctype: CRE
     id: 760-765
-    name: XSS
+    name: XSS protection
     tags:
-    - Injection
+    - Injection protection
   ltype: Related
 - document:
     doctype: Standard
@@ -59,4 +59,4 @@ links:
   ltype: Linked To
 name: Set httponly attribute for cookie-based session tokens
 tags:
-- XSS
+- XSS protection

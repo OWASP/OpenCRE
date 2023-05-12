@@ -1,0 +1,24 @@
+doctype: CRE
+id: 163-776
+links:
+- document:
+    doctype: CRE
+    id: 850-376
+    name: Facilities management
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 240-464
+    name: Contingency planning
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 257-117
+    name: Perform regular backups of important data and test restoration
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 614-353
+    name: Store backups securely
+  ltype: Contains
+name: Backup

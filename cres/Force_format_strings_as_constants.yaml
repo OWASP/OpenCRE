@@ -6,7 +6,7 @@ links:
     id: 866-553
     name: Memory, String, and Unmanaged Code
     tags:
-    - Injection
+    - Injection protection
   ltype: Contains
 - document:
     doctype: Standard

@@ -9,7 +9,7 @@ links:
 - document:
     doctype: CRE
     id: 623-550
-    name: DOS
+    name: Denial Of Service protection
   ltype: Related
 - document:
     doctype: Standard
@@ -40,4 +40,4 @@ links:
   ltype: Linked To
 name: Validate max input/file sizes
 tags:
-- DOS
+- Denial Of Service protection

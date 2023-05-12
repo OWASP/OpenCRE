@@ -3,16 +3,11 @@ id: 180-488
 links:
 - document:
     doctype: CRE
-    id: 783-355
-    name: Deployment
+    id: 233-748
+    name: Configuration hardening
     tags:
     - Configuration
   ltype: Contains
-- document:
-    doctype: CRE
-    id: 486-813
-    name: Configuration
-  ltype: Related
 - document:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x22-V14-Config.md
@@ -35,5 +30,3 @@ links:
     section: Docker Security Cheat Sheet
   ltype: Linked To
 name: Proper Configuration for all applications and frameworks
-tags:
-- Configuration

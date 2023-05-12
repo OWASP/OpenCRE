@@ -1,0 +1,24 @@
+doctype: CRE
+id: 362-550
+links:
+- document:
+    doctype: CRE
+    id: 546-564
+    name: Cross-cutting concerns
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 571-640
+    name: Personal data handling management
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 447-083
+    name: Privacy-preserving personal data logic
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 482-866
+    name: Encrypt personal data at rest
+  ltype: Related
+name: Personal data handling

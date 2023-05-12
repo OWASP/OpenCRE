@@ -1,0 +1,81 @@
+doctype: CRE
+id: 646-285
+links:
+- document:
+    doctype: CRE
+    id: 646-285
+    name: Define security steps in every SDLC stage
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 068-102
+    name: Architecture/design processes
+    tags:
+    - Architecture
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 124-564
+    name: Configuration Management
+    tags:
+    - Configuration
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 424-242
+    name: Decommissioning
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 473-177
+    name: Deploy/build
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 114-853
+    name: Maintenance
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 613-285
+    name: Supply chain management
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 787-638
+    name: Technical instructions
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 728-864
+    name: Technical system documentation
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 244-750
+    name: Technical training
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 433-442
+    name: Verification
+  ltype: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=SA-15
+    name: NIST 800-53 v5
+    section: SA-15 Development Process, Standards, and Tools
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=SA-3
+    name: NIST 800-53 v5
+    section: SA-3 System Development Life Cycle
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=SA-8
+    name: NIST 800-53 v5
+    section: SA-8 Security and Privacy Engineering Principles
+  ltype: Linked To
+name: Development processes

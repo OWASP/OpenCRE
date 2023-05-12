@@ -3,9 +3,14 @@ id: 307-507
 links:
 - document:
     doctype: CRE
-    id: 615-188
-    name: Deployment process
+    id: 473-177
+    name: Deploy/build
   ltype: Contains
+- document:
+    doctype: CRE
+    id: 613-285
+    name: Supply chain management
+  ltype: Related
 - document:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x18-V10-Malicious.md

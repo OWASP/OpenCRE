@@ -9,9 +9,7 @@ links:
 - document:
     doctype: CRE
     id: 362-550
-    name: '>>Personal data handling'
-    tags:
-    - Security and Privacy Engineering Principles
+    name: Personal data handling
   ltype: Related
 - document:
     doctype: Standard

@@ -4,7 +4,7 @@ links:
 - document:
     doctype: CRE
     id: 842-876
-    name: '>>Logging and error handling'
+    name: Logging and error handling
   ltype: Contains
 - document:
     doctype: CRE
@@ -21,12 +21,6 @@ links:
     id: 015-063
     name: Log access to sensitive data
   ltype: Related
-- document:
-    doctype: Standard
-    hyperlink: https://owasp.org/www-project-top-ten/2017/A3_2017-Sensitive_Data_Exposure
-    name: OWASP Top 10 2017
-    section: A3-Sensitive_Data_Exposure
-  ltype: Linked To
 - document:
     doctype: Standard
     hyperlink: https://owasp.org/Top10/A09_2021-Security_Logging_and_Monitoring_Failures/

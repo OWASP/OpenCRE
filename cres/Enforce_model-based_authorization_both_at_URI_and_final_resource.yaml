@@ -7,11 +7,6 @@ links:
     name: Strong authorization checking
   ltype: Contains
 - document:
-    doctype: CRE
-    id: 118-110
-    name: API/web services
-  ltype: Related
-- document:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x21-V13-API.md
     name: ASVS

@@ -1,0 +1,10 @@
+doctype: CRE
+links:
+- document:
+    doctype: CRE
+    id: 418-853
+    name: Monitor unusual activities on system
+    tags:
+    - DOS
+  ltype: Related
+name: Monitor

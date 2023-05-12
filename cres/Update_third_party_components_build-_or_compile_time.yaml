@@ -7,11 +7,6 @@ links:
     name: Dependency management
   ltype: Contains
 - document:
-    doctype: CRE
-    id: 601-155
-    name: Developer Configuration Management
-  ltype: Related
-- document:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x22-V14-Config.md
     name: ASVS

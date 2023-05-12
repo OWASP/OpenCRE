@@ -3,6 +3,11 @@ id: 760-764
 links:
 - document:
     doctype: CRE
+    id: 546-564
+    name: Cross-cutting concerns
+  ltype: Contains
+- document:
+    doctype: CRE
     id: 760-765
     name: XSS
     tags:
@@ -60,8 +65,8 @@ links:
     id: 764-507
     name: Restrict XML parsing (against XXE)
     tags:
-    - Injection
     - Configuration
+    - Injection
   ltype: Related
 - document:
     doctype: CRE
@@ -71,21 +76,10 @@ links:
     - Injection
   ltype: Related
 - document:
-    doctype: CRE
-    id: 546-564
-    name: '>>Tags'
-  ltype: Contains
-- document:
     doctype: Standard
     hyperlink: https://owasp.org/Top10/A03_2021-Injection/
     name: OWASP Top 10 2021
     section: 03_2021-Injection/
-  ltype: Linked To
-- document:
-    doctype: Standard
-    hyperlink: https://owasp.org/www-project-top-ten/2017/A1_2017-Injection
-    name: OWASP Top 10 2017
-    section: A1-Injection
   ltype: Linked To
 name: Injection
 tags:

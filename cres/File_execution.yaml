@@ -23,7 +23,7 @@ links:
     name: Ignore/at least validate  filename metadata from untrusted origin (remote
       file context, eg RFI)
     tags:
-    - SSRF
+    - SSRF protection
   ltype: Contains
 - document:
     doctype: CRE

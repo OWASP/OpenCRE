@@ -1,0 +1,67 @@
+doctype: CRE
+id: 068-102
+links:
+- document:
+    doctype: CRE
+    id: 646-285
+    name: Development processes for security
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 708-355
+    name: Secure implemented architecture
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 155-155
+    name: Architecture
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 307-242
+    name: Security risk assessment
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 068-102
+    name: Define High-level architecture and perform security analysis on it
+  ltype: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=PL-8
+    name: NIST 800-53 v5
+    section: PL-8 SECURITY AND PRIVACY ARCHITECTURES
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=SA-17
+    name: NIST 800-53 v5
+    section: SA-17 Developer Security and Privacy Architecture and Design
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=SA-20
+    name: NIST 800-53 v5
+    section: SA-20 Customized Development of Critical Components
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=SC-27
+    name: NIST 800-53 v5
+    section: SC-27 Platform-independent Applications
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=SC-29
+    name: NIST 800-53 v5
+    section: SC-29 Heterogeneity
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=SA-23
+    name: NIST 800-53 v5
+    section: SA-23 Specialization
+  ltype: Linked To
+name: Architecture/design processes
+tags:
+- Architecture

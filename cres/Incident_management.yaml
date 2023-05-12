@@ -1,0 +1,9 @@
+doctype: CRE
+id: 463-577
+links:
+- document:
+    doctype: CRE
+    id: 887-750
+    name: Detect and respond
+  ltype: Contains
+name: Incident management

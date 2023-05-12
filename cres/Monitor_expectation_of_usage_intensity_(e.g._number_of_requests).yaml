@@ -6,18 +6,18 @@ links:
     id: 010-308
     name: Input validation
     tags:
-    - Injection
-    - XSS
+    - XSS protection
+    - Injection protection
   ltype: Contains
 - document:
     doctype: CRE
-    id: 842-876
-    name: '>>Logging and error handling'
+    id: 623-550
+    name: Denial Of Service protection
   ltype: Related
 - document:
     doctype: CRE
-    id: 623-550
-    name: DOS
+    id: 058-083
+    name: Monitoring
   ltype: Related
 - document:
     doctype: Standard
@@ -37,4 +37,4 @@ links:
   ltype: Linked To
 name: Monitor expectation of usage intensity (e.g. number of requests)
 tags:
-- DOS
+- Denial Of Service protection

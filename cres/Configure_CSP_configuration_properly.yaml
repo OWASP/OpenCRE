@@ -9,9 +9,9 @@ links:
 - document:
     doctype: CRE
     id: 760-765
-    name: XSS
+    name: XSS protection
     tags:
-    - Injection
+    - Injection protection
   ltype: Related
 - document:
     doctype: Standard
@@ -45,4 +45,4 @@ links:
   ltype: Linked To
 name: Configure CSP configuration properly
 tags:
-- XSS
+- XSS protection

@@ -1,0 +1,14 @@
+doctype: CRE
+id: 510-324
+links:
+- document:
+    doctype: CRE
+    id: 004-517
+    name: Security requirements
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 217-168
+    name: Audit & accountability
+  ltype: Contains
+name: Compliance

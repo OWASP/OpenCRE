@@ -1,0 +1,61 @@
+doctype: CRE
+id: 148-227
+links:
+- document:
+    doctype: CRE
+    id: 850-376
+    name: Facilities management
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 286-500
+    name: OS security
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 872-574
+    name: Virus/malware protection
+  ltype: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=SC-45
+    name: NIST 800-53 v5
+    section: SC-45 System Time Synchronization
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=SC-49
+    name: NIST 800-53 v5
+    section: SC-49 Hardware-enforced Separation and Policy Enforcement
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=SC-51
+    name: NIST 800-53 v5
+    section: SC-51 Hardware-based Protection
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=SC-25
+    name: NIST 800-53 v5
+    section: SC-25 Thin Nodes
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=PL-2
+    name: NIST 800-53 v5
+    section: PL-2 System Security and Privacy Plans
+  ltype: Linked To
+- document:
+    doctype: Standard
+    name: Cloud Controls Matrix
+    section: Universal Endpoint Management
+    sectionID: UEM
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=SI-8
+    name: NIST 800-53 v5
+    section: SI-8 Spam Protection
+  ltype: Linked To
+name: Endpoint management

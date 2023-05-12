@@ -1,0 +1,36 @@
+doctype: CRE
+id: 854-643
+links:
+- document:
+    doctype: CRE
+    id: 636-660
+    name: Technical application security controls
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 623-550
+    name: Denial Of Service protection
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 552-588
+    name: Detect and prevent unusual activity
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 356-282
+    name: Minimize sensitive data scattering and retention
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 601-182
+    name: Parallel execution robustness
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 447-083
+    name: Privacy-preserving personal data logic
+  ltype: Contains
+name: Robust business logic
+tags:
+- Denial Of Service protection

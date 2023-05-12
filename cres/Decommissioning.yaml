@@ -1,0 +1,14 @@
+doctype: CRE
+id: 424-242
+links:
+- document:
+    doctype: CRE
+    id: 646-285
+    name: Development processes for security
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 613-285
+    name: Supply chain management
+  ltype: Related
+name: Decommissioning

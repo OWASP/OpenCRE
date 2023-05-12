@@ -3,16 +3,9 @@ id: 227-045
 links:
 - document:
     doctype: CRE
-    id: 227-046
-    name: '>>Documentation and requirements'
+    id: 074-873
+    name: Data classification and handling
   ltype: Contains
-- document:
-    doctype: CRE
-    id: 362-550
-    name: '>>Personal data handling'
-    tags:
-    - Security and Privacy Engineering Principles
-  ltype: Related
 - document:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x16-V8-Data-Protection.md

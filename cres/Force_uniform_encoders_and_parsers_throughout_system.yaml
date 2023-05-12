@@ -9,7 +9,7 @@ links:
 - document:
     doctype: CRE
     id: 028-727
-    name: SSRF
+    name: SSRF protection
   ltype: Related
 - document:
     doctype: Standard
@@ -41,4 +41,4 @@ links:
   ltype: Linked To
 name: Force uniform encoders and parsers throughout system
 tags:
-- SSRF
+- SSRF protection

@@ -3,10 +3,8 @@ id: 762-451
 links:
 - document:
     doctype: CRE
-    id: 362-550
-    name: '>>Personal data handling'
-    tags:
-    - Security and Privacy Engineering Principles
+    id: 447-083
+    name: Privacy-preserving personal data logic
   ltype: Contains
 - document:
     doctype: Standard

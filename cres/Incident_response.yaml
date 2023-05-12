@@ -1,0 +1,69 @@
+doctype: CRE
+id: 463-577
+links:
+- document:
+    doctype: CRE
+    id: 887-750
+    name: Detect and respond
+  ltype: Contains
+- document:
+    doctype: Standard
+    name: Cloud Controls Matrix
+    section: Security Incident Management, E-Discovery, & Cloud Forensics
+    sectionID: SEF
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=IR-1
+    name: NIST 800-53 v5
+    section: IR-1 Policy and Procedures
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=IR-2
+    name: NIST 800-53 v5
+    section: IR-2 Incident Response Training
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=IR-3
+    name: NIST 800-53 v5
+    section: IR-3 Incident Response Testing
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=IR-4
+    name: NIST 800-53 v5
+    section: IR-4 Incident Handling
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=IR-5
+    name: NIST 800-53 v5
+    section: IR-5 Incident Monitoring
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=IR-6
+    name: NIST 800-53 v5
+    section: IR-6 Incident Reporting
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=IR-7
+    name: NIST 800-53 v5
+    section: IR-7 Incident Response Assistance
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=IR-8
+    name: NIST 800-53 v5
+    section: IR-8 Incident Response Plan
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=IR-9
+    name: NIST 800-53 v5
+    section: IR-9 Information Spillage Response
+  ltype: Linked To
+name: Incident response

@@ -9,7 +9,7 @@ links:
 - document:
     doctype: CRE
     id: 028-727
-    name: SSRF
+    name: SSRF protection
   ltype: Related
 - document:
     doctype: Standard
@@ -36,4 +36,4 @@ links:
 name: Ignore/at least validate  filename metadata from untrusted origin (remote file
   context, eg RFI)
 tags:
-- SSRF
+- SSRF protection

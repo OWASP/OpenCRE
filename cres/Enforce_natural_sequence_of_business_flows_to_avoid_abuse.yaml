@@ -3,10 +3,8 @@ id: 534-605
 links:
 - document:
     doctype: CRE
-    id: 854-643
-    name: '>>Business logic'
-    tags:
-    - DOS
+    id: 552-588
+    name: Detect and prevent unusual activity
   ltype: Contains
 - document:
     doctype: Standard

@@ -3,15 +3,13 @@ id: 782-234
 links:
 - document:
     doctype: CRE
-    id: 354-846
-    name: Documentation and requirements
-    tags:
-    - Architecture
+    id: 004-517
+    name: Security requirements
   ltype: Contains
 - document:
     doctype: CRE
     id: 503-455
-    name: '>>Input and output verification'
+    name: Input and output protection
   ltype: Related
 - document:
     doctype: Standard

@@ -28,6 +28,7 @@ links:
   ltype: Linked To
 - document:
     doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=SC-23
     name: NIST 800-53 v5
     section: SC-23(3)
   ltype: Linked To

@@ -3,10 +3,8 @@ id: 347-352
 links:
 - document:
     doctype: CRE
-    id: 783-355
-    name: Deployment
-    tags:
-    - Configuration
+    id: 473-177
+    name: Deploy/build
   ltype: Contains
 - document:
     doctype: Standard

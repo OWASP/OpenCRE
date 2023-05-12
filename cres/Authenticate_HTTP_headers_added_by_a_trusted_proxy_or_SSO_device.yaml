@@ -6,7 +6,7 @@ links:
     id: 541-441
     name: Validate HTTP request headers
     tags:
-    - Injection
+    - Injection protection
   ltype: Contains
 - document:
     doctype: Standard

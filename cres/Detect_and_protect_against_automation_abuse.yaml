@@ -9,7 +9,7 @@ links:
 - document:
     doctype: CRE
     id: 623-550
-    name: DOS
+    name: Denial Of Service protection
   ltype: Related
 - document:
     doctype: Standard
@@ -41,4 +41,4 @@ links:
   ltype: Linked To
 name: Detect and protect against automation abuse
 tags:
-- DOS
+- Denial Of Service protection

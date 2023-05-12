@@ -1,0 +1,35 @@
+doctype: CRE
+id: 074-873
+links:
+- document:
+    doctype: CRE
+    id: 287-823
+    name: Asset management
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 724-770
+    name: Technical application access control
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 268-272
+    name: Classify personal data regarding retention so that old or outdated data
+      is deleted
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 765-788
+    name: Classify sensitive data in protection levels
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 731-120
+    name: Document requirements for (data) protection levels
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 227-045
+    name: Identify sensitive data and subject it to a policy
+  ltype: Contains
+name: Data classification and handling

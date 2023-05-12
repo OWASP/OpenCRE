@@ -1,0 +1,14 @@
+doctype: CRE
+id: 013-021
+links:
+- document:
+    doctype: CRE
+    id: 427-113
+    name: Security governance regarding people
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 247-250
+    name: Access control processes
+  ltype: Related
+name: Roles and responsibilities

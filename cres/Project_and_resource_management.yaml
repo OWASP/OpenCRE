@@ -1,0 +1,51 @@
+doctype: CRE
+id: 560-224
+links:
+- document:
+    doctype: CRE
+    id: 563-088
+    name: Security organizing processes
+  ltype: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=PL-1
+    name: NIST 800-53 v5
+    section: PL-1 Policy and Procedures
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=PL-10
+    name: NIST 800-53 v5
+    section: PL-10 Baseline Selection
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=PL-11
+    name: NIST 800-53 v5
+    section: PL-11 Baseline Tailoring
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=PL-3
+    name: NIST 800-53 v5
+    section: PL-3 System Security Plan Update
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=PL-4
+    name: NIST 800-53 v5
+    section: PL-4 Rules of Behavior
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=PL-5
+    name: NIST 800-53 v5
+    section: PL-5 Privacy Impact Assessment
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=PL-6
+    name: NIST 800-53 v5
+    section: PL-6 Security-related Activity Planning
+  ltype: Linked To
+name: Project and resource management

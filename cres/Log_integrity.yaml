@@ -4,14 +4,12 @@ links:
 - document:
     doctype: CRE
     id: 842-876
-    name: '>>Logging and error handling'
+    name: Logging and error handling
   ltype: Contains
 - document:
     doctype: CRE
     id: 260-200
     name: Log in consistent format across system
-    tags:
-    - Architecture
   ltype: Contains
 - document:
     doctype: CRE
@@ -35,19 +33,19 @@ links:
   ltype: Contains
 - document:
     doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=AU-10
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=AU-10
     name: NIST 800-53 v5
     section: AU-10 Non-repudiation
   ltype: Linked To
 - document:
     doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=AU-8
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=AU-8
     name: NIST 800-53 v5
     section: AU-8 Time Stamps
   ltype: Linked To
 - document:
     doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=AU-9
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=AU-9
     name: NIST 800-53 v5
     section: AU-9 Protection of Audit Information
   ltype: Linked To
@@ -56,11 +54,5 @@ links:
     hyperlink: https://owasp.org/Top10/A09_2021-Security_Logging_and_Monitoring_Failures/
     name: OWASP Top 10 2021
     section: 09_2021-Security_Logging_and_Monitoring_Failures/
-  ltype: Linked To
-- document:
-    doctype: Standard
-    hyperlink: https://owasp.org/www-project-top-ten/2017/A10_2017-Insufficient_Logging%2526Monitoring
-    name: OWASP Top 10 2017
-    section: A10_Insufficient_Logging&Monitoring
   ltype: Linked To
 name: Log integrity

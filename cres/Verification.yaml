@@ -1,0 +1,59 @@
+doctype: CRE
+id: 433-442
+links:
+- document:
+    doctype: CRE
+    id: 646-285
+    name: Development processes for security
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 613-285
+    name: Supply chain management
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 732-148
+    name: Vulnerability management
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 611-158
+    name: Use SAST for malicious content
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 464-513
+    name: Assurance processes
+  ltype: Related
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=SA-11
+    name: NIST 800-53 v5
+    section: SA-11 Developer Testing and Evaluation
+  ltype: Linked To
+- document:
+    doctype: Standard
+    name: Cloud Controls Matrix
+    section: Supply Chain Management, Transparency, and Accountability
+    sectionID: STA
+  ltype: Linked To
+- document:
+    doctype: Standard
+    name: Cloud Controls Matrix
+    section: Automated Application Security Testing
+    sectionID: AIS-05
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=SI-6
+    name: NIST 800-53 v5
+    section: SI-6 Security and Privacy Function Verification
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=SI-7
+    name: NIST 800-53 v5
+    section: SI-7 Software, Firmware, and Information Integrity
+  ltype: Linked To
+name: Verification

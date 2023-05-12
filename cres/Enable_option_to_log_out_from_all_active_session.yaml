@@ -9,7 +9,7 @@ links:
 - document:
     doctype: CRE
     id: 586-842
-    name: '>>Secure user management'
+    name: Secure user management
   ltype: Related
 - document:
     doctype: Standard

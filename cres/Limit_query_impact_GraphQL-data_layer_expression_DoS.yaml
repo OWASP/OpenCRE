@@ -6,13 +6,13 @@ links:
     id: 764-765
     name: Sanitization and sandboxing
     tags:
-    - Injection
-    - XSS
+    - XSS protection
+    - Injection protection
   ltype: Contains
 - document:
     doctype: CRE
     id: 623-550
-    name: DOS
+    name: Denial Of Service protection
   ltype: Related
 - document:
     doctype: Standard
@@ -33,4 +33,4 @@ links:
   ltype: Linked To
 name: Limit query impact GraphQL/data layer expression DoS
 tags:
-- DOS
+- Denial Of Service protection

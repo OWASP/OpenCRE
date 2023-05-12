@@ -4,7 +4,12 @@ links:
 - document:
     doctype: CRE
     id: 724-770
-    name: '>>Authorized access'
+    name: Technical application access control
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 822-100
+    name: Constrain functional features based on user stories
   ltype: Contains
 - document:
     doctype: CRE
@@ -42,6 +47,11 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
+    id: 746-705
+    name: Limit/authorize user's access to functionality
+  ltype: Contains
+- document:
+    doctype: CRE
     id: 615-744
     name: Protect against directory browsing/discovery attacks
     tags:
@@ -63,11 +73,11 @@ links:
     name: Use CSRF protection against authenticated functionality, add anti-automation
       controls for unauthenticated functionality
     tags:
-    - CSRF
+    - CSRF protection
   ltype: Contains
 - document:
     doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=AC-3
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=AC-3
     name: NIST 800-53 v5
     section: AC-3 ACCESS ENFORCEMENT
   ltype: Linked To

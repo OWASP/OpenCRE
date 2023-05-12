@@ -3,6 +3,18 @@ id: 170-772
 links:
 - document:
     doctype: CRE
+    id: 546-564
+    name: Cross-cutting concerns
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 223-780
+    name: Secret storage
+    tags:
+    - Cryptography
+  ltype: Related
+- document:
+    doctype: CRE
     id: 228-551
     name: TLS
     tags:
@@ -41,13 +53,6 @@ links:
     doctype: CRE
     id: 206-254
     name: Use secure random to generate initial authentication codes
-    tags:
-    - Cryptography
-  ltype: Related
-- document:
-    doctype: CRE
-    id: 223-780
-    name: Secret storage
     tags:
     - Cryptography
   ltype: Related
@@ -136,25 +141,20 @@ links:
     - Cryptography
   ltype: Related
 - document:
-    doctype: CRE
-    id: 546-564
-    name: '>>Tags'
-  ltype: Contains
-- document:
     doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=SC-12
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=SC-12
     name: NIST 800-53 v5
     section: SC-12 CRYPTOGRAPHIC KEY ESTABLISHMENT AND MANAGEMENT
   ltype: Linked To
 - document:
     doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=SC-13
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=SC-13
     name: NIST 800-53 v5
     section: SC-13 Cryptographic Protection
   ltype: Linked To
 - document:
     doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=SC-17
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=SC-17
     name: NIST 800-53 v5
     section: SC-17 Public Key Infrastructure Certificates
   ltype: Linked To
@@ -163,5 +163,11 @@ links:
     hyperlink: https://owasp.org/Top10/A02_2021-Cryptographic_Failures/
     name: OWASP Top 10 2021
     section: 02_2021-Cryptographic_Failures/
+  ltype: Linked To
+- document:
+    doctype: Standard
+    name: Cloud Controls Matrix
+    section: Cryptography, Encryption & Key Management
+    sectionID: CEK
   ltype: Linked To
 name: Cryptography

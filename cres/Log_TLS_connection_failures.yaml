@@ -11,7 +11,7 @@ links:
 - document:
     doctype: CRE
     id: 842-876
-    name: '>>Logging and error handling'
+    name: Logging and error handling
   ltype: Related
 - document:
     doctype: Standard
@@ -29,7 +29,7 @@ links:
   ltype: Linked To
 - document:
     doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=SC-28
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=SC-28
     name: NIST 800-53 v5
     section: SC-28 PROTECTION OF INFORMATION AT REST
   ltype: Linked To

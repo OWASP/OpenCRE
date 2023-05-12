@@ -1,0 +1,11 @@
+doctype: CRE
+id: 601-182
+links:
+- document:
+    doctype: CRE
+    id: 854-643
+    name: Robust business logic
+    tags:
+    - DOS
+  ltype: Contains
+name: Prevent parallel execution issues

@@ -3,20 +3,18 @@ id: 418-853
 links:
 - document:
     doctype: CRE
-    id: 854-643
-    name: '>>Business logic'
-    tags:
-    - DOS
+    id: 552-588
+    name: Detect and prevent unusual activity
   ltype: Contains
 - document:
     doctype: CRE
-    id: 842-876
-    name: '>>Logging and error handling'
+    id: 623-550
+    name: Denial Of Service protection
   ltype: Related
 - document:
     doctype: CRE
-    id: 623-550
-    name: DOS
+    id: 058-083
+    name: Monitoring
   ltype: Related
 - document:
     doctype: Standard
@@ -48,4 +46,4 @@ links:
   ltype: Linked To
 name: Monitor unusual activities on system
 tags:
-- DOS
+- Denial Of Service protection

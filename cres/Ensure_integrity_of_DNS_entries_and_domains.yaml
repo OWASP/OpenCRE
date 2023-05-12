@@ -3,10 +3,8 @@ id: 336-512
 links:
 - document:
     doctype: CRE
-    id: 783-355
-    name: Deployment
-    tags:
-    - Configuration
+    id: 467-784
+    name: Network security
   ltype: Contains
 - document:
     doctype: CRE
@@ -44,6 +42,12 @@ links:
     hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html
     name: OWASP Cheat Sheets
     section: Docker Security Cheat Sheet
+  ltype: Linked To
+- document:
+    doctype: Standard
+    name: Cloud Controls Matrix
+    section: Production and Non-Production Environments
+    sectionID: IVS-05
   ltype: Linked To
 name: Ensure integrity of DNS entries and domains
 tags:

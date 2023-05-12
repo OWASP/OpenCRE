@@ -3,15 +3,13 @@ id: 273-600
 links:
 - document:
     doctype: CRE
-    id: 783-355
-    name: Deployment
-    tags:
-    - Configuration
+    id: 467-784
+    name: Network security
   ltype: Contains
 - document:
     doctype: CRE
     id: 724-770
-    name: '>>Authorized access'
+    name: Technical application access control
   ltype: Related
 - document:
     doctype: Standard
@@ -28,5 +26,11 @@ links:
     name: CWE
     section: ''
     sectionID: '923'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    name: Cloud Controls Matrix
+    section: Network Architecture Documentation
+    sectionID: IVS-08
   ltype: Linked To
 name: Segregate components of differing trust levels

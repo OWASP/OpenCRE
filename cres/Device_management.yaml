@@ -1,0 +1,20 @@
+doctype: CRE
+id: 157-587
+links:
+- document:
+    doctype: CRE
+    id: 850-376
+    name: Facilities management
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 287-823
+    name: Asset management
+  ltype: Related
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=SC-41
+    name: NIST 800-53 v5
+    section: SC-41 Port and I/O Device Access
+  ltype: Linked To
+name: Device management

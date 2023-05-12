@@ -3,10 +3,15 @@ id: 118-110
 links:
 - document:
     doctype: CRE
+    id: 503-455
+    name: Input and output protection
+  ltype: Contains
+- document:
+    doctype: CRE
     id: 061-186
     name: Force uniform encoders and parsers throughout system
     tags:
-    - SSRF
+    - SSRF protection
   ltype: Contains
 - document:
     doctype: CRE
@@ -40,16 +45,6 @@ links:
     id: 630-573
     name: Detect and protect against automation abuse
     tags:
-    - DOS
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 664-080
-    name: Enforce model-based authorization both at URI and final resource
-  ltype: Related
-- document:
-    doctype: CRE
-    id: 503-455
-    name: '>>Input and output verification'
+    - Denial Of Service protection
   ltype: Contains
 name: API/web services
