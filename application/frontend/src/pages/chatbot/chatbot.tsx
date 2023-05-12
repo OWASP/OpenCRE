@@ -1,10 +1,7 @@
-import SyntaxHighlighter from 'react-syntax-highlighter';
-import { docco } from 'react-syntax-highlighter/dist/esm/styles/hljs';
 
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { dark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import './chatbot.scss';
-// import Prism from "prism";
 import React, { useEffect, useState, createElement } from 'react';
 
 import { LoadingAndErrorIndicator } from '../../components/LoadingAndErrorIndicator';
@@ -12,10 +9,6 @@ import { useEnvironment } from '../../hooks';
 import { Button, Comment, Container, Dropdown, Form, GridRow, Header, Icon, Input } from 'semantic-ui-react';
 import { Grid } from 'semantic-ui-react';
 import { Document } from '../../types';
-import { set } from 'date-fns';
-
-import { GoogleOAuthProvider } from '@react-oauth/google';
-import { GoogleLogin } from '@react-oauth/google';
 
 export const Chatbot = () => {
   type chatMessage = {
