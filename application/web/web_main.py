@@ -17,7 +17,6 @@ from application.utils import spreadsheet as sheet_utils
 from application.utils import mdutils, redirectors
 from application.prompt_client import prompt_client as prompt_client
 from enum import Enum
-from pprint import pprint
 from flask import (
     Blueprint,
     abort,
@@ -200,7 +199,7 @@ def find_document_by_tag() -> Any:
             return jsonify(json.loads(oscal_utils.list_to_oscal(documents)))
 
         return jsonify(result)
-    print("tags aborting 404")
+    logger.info("tags aborting 404")
     abort(404)
 
 
@@ -324,7 +323,7 @@ def smartlink(
         )
         found_section_id = True
     if nodes and len(nodes[0].links):
-        print(
+        logger.info(
             f"found node of type {ntype}, name {name} and section {section}, redirecting to opencre"
         )
         if found_section_id:
@@ -333,12 +332,12 @@ def smartlink(
     elif ntype == defs.Credoctypes.Standard.value and redirectors.redirect(
         name, section
     ):
-        print(
+        logger.info(
             f"did not find node of type {ntype}, name {name} and section {section}, redirecting to external resource"
         )
         return redirect(redirectors.redirect(name, section))
     else:
-        print(f"not sure what happened, 404")
+        logger.info(f"not sure what happened, 404")
         return abort(404)
 
 
@@ -362,7 +361,6 @@ def add_header(response):
 def login_required(f):
     @wraps(f)
     def login_r(*args, **kwargs):
-        pprint(session)
         if "google_id" not in session or "name" not in session:
             return abort(401)
         else:
@@ -392,6 +390,12 @@ class CREFlow:
             client_secrets_file = os.path.join(
                 pathlib.Path(__file__).parent.parent.parent, "gcp_secret.json"
             )
+            if not os.path.exists(client_secrets_file) and os.environ.get("GOOGLE_SECRET_JSON"):
+                with open(client_secrets_file, "w")as f:
+                    f.write(os.environ.get("GOOGLE_SECRET_JSON"))
+            else:
+                logger.fatal("neither file gcp_secret.json nor env GOOGLE_SECRET_JSON have been set")
+
             cls.flow = Flow.from_client_secrets_file(
                 client_secrets_file=client_secrets_file,
                 scopes=[
@@ -419,7 +423,6 @@ def login():
 @app.route("/rest/v1/user")
 @login_required
 def logged_in_user():
-    pprint(session.get("name"))
     return session.get("name")
 
 
