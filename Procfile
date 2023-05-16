@@ -1,1 +1,1 @@
-web: make create-google-credentials-file; gunicorn cre:app --log-file=-
+web: gunicorn cre:app --log-file=-
