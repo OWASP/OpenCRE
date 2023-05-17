@@ -185,8 +185,9 @@ class PromptHandler:
         timestamp = datetime.now().strftime("%I:%M:%S %p")
         if not prompt:
             return {"response": "", "table": "", "timestamp": timestamp}
-
+        logger.info(f"getting embeddings for {prompt}")
         question_embedding = get_embeddings(self.api_key, prompt)
+        logger.info(f"retrieved embeddings for {prompt}")
 
         # Find the closest area in the existing embeddings
         closest_id = self.__get_id_of_most_similar_item(
@@ -198,6 +199,7 @@ class PromptHandler:
         )[
             :8000
         ]  # openai has a model limit of 8100 characters
+        logger.info(f"most similar object is {closest_object.name}")
 
         # Send the question and the closest area to the LLM to get an answer
         messages = [
@@ -216,6 +218,7 @@ class PromptHandler:
             model="gpt-3.5-turbo",
             messages=messages,
         )
+        logger.info(f"retrieved completion from openAI for {prompt}")
 
         answer = response.choices[0].message["content"].strip()
 
