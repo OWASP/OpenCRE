@@ -8,13 +8,13 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 623-550
-    name: Denial Of Service protection
+    id: 842-876
+    name: Logging and error handling
   ltype: Related
 - document:
     doctype: CRE
-    id: 842-876
-    name: Logging and error handling
+    id: 623-550
+    name: Denial Of Service protection
   ltype: Related
 - document:
     doctype: Standard

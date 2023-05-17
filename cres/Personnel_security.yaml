@@ -20,6 +20,11 @@ links:
   ltype: Linked To
 - document:
     doctype: Standard
+    name: ISO 27001
+    section: 5.4 Management responsibilities
+  ltype: Linked To
+- document:
+    doctype: Standard
     hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=PS-2
     name: NIST 800-53 v5
     section: PS-2 Position Risk Designation
@@ -32,9 +37,19 @@ links:
   ltype: Linked To
 - document:
     doctype: Standard
+    name: ISO 27001
+    section: 6.1 Screening
+  ltype: Linked To
+- document:
+    doctype: Standard
     hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=PS-4
     name: NIST 800-53 v5
     section: PS-4 Personnel Termination
+  ltype: Linked To
+- document:
+    doctype: Standard
+    name: ISO 27001
+    section: 6.5 Responsibilities after termination or change of employment
   ltype: Linked To
 - document:
     doctype: Standard
@@ -44,9 +59,19 @@ links:
   ltype: Linked To
 - document:
     doctype: Standard
+    name: ISO 27001
+    section: 5.11 Return of assets
+  ltype: Linked To
+- document:
+    doctype: Standard
     hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=PS-6
     name: NIST 800-53 v5
     section: PS-6 Access Agreements
+  ltype: Linked To
+- document:
+    doctype: Standard
+    name: ISO 27001
+    section: 6.6 Confidentiality or non-disclosure agreements
   ltype: Linked To
 - document:
     doctype: Standard
@@ -62,8 +87,18 @@ links:
   ltype: Linked To
 - document:
     doctype: Standard
+    name: ISO 27001
+    section: 6.4 Disciplinary process
+  ltype: Linked To
+- document:
+    doctype: Standard
     hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=PS-9
     name: NIST 800-53 v5
     section: PS-9 Position Descriptions
+  ltype: Linked To
+- document:
+    doctype: Standard
+    name: ISO 27001
+    section: 6.2 Terms and conditions of employment
   ltype: Linked To
 name: Personnel security

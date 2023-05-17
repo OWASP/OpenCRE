@@ -26,4 +26,9 @@ links:
     name: OWASP Cheat Sheets
     section: User Privacy Protection Cheat Sheet
   ltype: Linked To
+- document:
+    doctype: Standard
+    name: ISO 27001
+    section: 5.12 Classification of information
+  ltype: Linked To
 name: Classify sensitive data in protection levels

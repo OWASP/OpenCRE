@@ -3,13 +3,13 @@ id: 247-250
 links:
 - document:
     doctype: CRE
-    id: 724-770
-    name: Technical application access control
+    id: 013-021
+    name: Roles and responsibilities
   ltype: Related
 - document:
     doctype: CRE
-    id: 013-021
-    name: Roles and responsibilities
+    id: 724-770
+    name: Technical application access control
   ltype: Related
 - document:
     doctype: CRE
@@ -29,9 +29,19 @@ links:
   ltype: Linked To
 - document:
     doctype: Standard
+    name: ISO 27001
+    section: 5.15 Access control
+  ltype: Linked To
+- document:
+    doctype: Standard
     name: Cloud Controls Matrix
     section: Identity & Access Management
     sectionID: IAM
+  ltype: Linked To
+- document:
+    doctype: Standard
+    name: ISO 27001
+    section: 5.18 Access rights
   ltype: Linked To
 - document:
     doctype: Standard
@@ -41,9 +51,19 @@ links:
   ltype: Linked To
 - document:
     doctype: Standard
+    name: ISO 27001
+    section: 5.16 Identity management
+  ltype: Linked To
+- document:
+    doctype: Standard
     hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=AC-21
     name: NIST 800-53 v5
     section: AC-21 Information Sharing
+  ltype: Linked To
+- document:
+    doctype: Standard
+    name: ISO 27001
+    section: 5.3 Segregation of duties
   ltype: Linked To
 - document:
     doctype: Standard
@@ -62,5 +82,10 @@ links:
     hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=AC-4
     name: NIST 800-53 v5
     section: AC-4 Information Flow Enforcement
+  ltype: Linked To
+- document:
+    doctype: Standard
+    name: ISO 27001
+    section: "8.3\tInformation access restriction"
   ltype: Linked To
 name: Access control processes

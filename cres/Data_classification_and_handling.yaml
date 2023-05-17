@@ -3,6 +3,11 @@ id: 074-873
 links:
 - document:
     doctype: CRE
+    id: 004-517
+    name: Security requirements
+  ltype: Related
+- document:
+    doctype: CRE
     id: 287-823
     name: Asset management
   ltype: Contains
@@ -32,4 +37,9 @@ links:
     id: 227-045
     name: Identify sensitive data and subject it to a policy
   ltype: Contains
+- document:
+    doctype: Standard
+    name: ISO 27001
+    section: 8.1 Information deletion
+  ltype: Linked To
 name: Data classification and handling

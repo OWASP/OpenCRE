@@ -32,11 +32,6 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 114-853
-    name: Maintenance
-  ltype: Contains
-- document:
-    doctype: CRE
     id: 613-285
     name: Supply chain management
   ltype: Contains

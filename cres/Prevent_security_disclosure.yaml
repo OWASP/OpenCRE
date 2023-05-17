@@ -18,7 +18,7 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 403-005
+    id: 743-110
     name: Do not disclose technical information in HTTP header or response
   ltype: Contains
 name: Prevent security disclosure

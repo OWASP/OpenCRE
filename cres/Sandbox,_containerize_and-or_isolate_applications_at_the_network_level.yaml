@@ -8,13 +8,13 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 836-068
-    name: Deserialization Prevention
+    id: 155-155
+    name: Architecture
   ltype: Related
 - document:
     doctype: CRE
-    id: 155-155
-    name: Architecture
+    id: 836-068
+    name: Deserialization Prevention
   ltype: Related
 - document:
     doctype: Standard
@@ -44,6 +44,11 @@ links:
     name: Cloud Controls Matrix
     section: Segmentation and Segregation
     sectionID: IVS-06
+  ltype: Linked To
+- document:
+    doctype: Standard
+    name: ISO 27001
+    section: 8.22 Segregation of networks
   ltype: Linked To
 name: Sandbox, containerize and/or isolate applications at the network level
 tags:

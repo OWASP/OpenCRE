@@ -52,6 +52,11 @@ links:
   ltype: Linked To
 - document:
     doctype: Standard
+    name: ISO 27001
+    section: 8.31 Separation of development, test and production environments
+  ltype: Linked To
+- document:
+    doctype: Standard
     hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=SC-37
     name: NIST 800-53 v5
     section: SC-37 Out-of-band Channels
@@ -100,8 +105,18 @@ links:
   ltype: Linked To
 - document:
     doctype: Standard
+    name: ISO 27001
+    section: 5.37 Documented operating procedures
+  ltype: Linked To
+- document:
+    doctype: Standard
     name: Cloud Controls Matrix
     section: Infrastructure and Virtualization Security Policy and Procedures
     sectionID: IVS-01
+  ltype: Linked To
+- document:
+    doctype: Standard
+    name: ISO 27001
+    section: 5.23 Information security for use of cloud services
   ltype: Linked To
 name: Operating processes for security
