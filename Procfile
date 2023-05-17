@@ -1,1 +1,1 @@
-web: gunicorn cre:app --log-file=-
+web: playwright install; gunicorn cre:app --log-file=-

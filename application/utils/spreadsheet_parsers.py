@@ -676,6 +676,13 @@ def parse_standards(
                     "hyperlink": "",
                     "separator": "\n",
                 },
+                "ISO 27001": {
+                    "section": "Standard 27001/2:2022",
+                    "sectionID": "",
+                    "subsection": "",
+                    "hyperlink": "",
+                    "separator": "\n",
+                },
             },
         }
     links: List[defs.Link] = []

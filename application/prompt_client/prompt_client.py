@@ -84,16 +84,17 @@ class in_memory_embeddings:
     def instance(cls, database: db.Node_collection, openai_key: str):
         if cls.__instance is None:
             cls.__instance = cls.__new__(cls)
-            cls.__playwright = sync_playwright().start()
-            nltk.download("punkt")
-            nltk.download("stopwords")
-
-            cls.__webkit = cls.__playwright.webkit
-            cls.__browser = cls.__webkit.launch()  # headless=False, slow_mo=1000)
-            cls.__context = cls.__browser.new_context()
-            cls.generate_embeddings(database, openai_key)
-            cls.__browser.close()
-            cls.__playwright.stop()
+            
+            if not os.environ.get("NO_GEN_EMBEDDINGS"): # in case we want to run without connectivity to openai or playwright
+                cls.__playwright = sync_playwright().start()
+                nltk.download("punkt")
+                nltk.download("stopwords")
+                cls.__webkit = cls.__playwright.webkit
+                cls.__browser = cls.__webkit.launch()  # headless=False, slow_mo=1000)
+                cls.__context = cls.__browser.new_context()
+                cls.generate_embeddings(database, openai_key)
+                cls.__browser.close()
+                cls.__playwright.stop()
         return cls.__instance
 
     @classmethod

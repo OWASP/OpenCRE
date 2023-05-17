@@ -41,7 +41,7 @@ def upgrade():
             ondelete="CASCADE",
         ),
         sa.PrimaryKeyConstraint(
-            "embeddings", "doc_type", "cre_id", "node_id", name="uq_entry"
+            "doc_type", "cre_id", "node_id", name="uq_entry"
         ),
     )
     # ### end Alembic commands ###
