@@ -8,13 +8,13 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 732-148
-    name: Vulnerability management
+    id: 613-285
+    name: Supply chain management
   ltype: Related
 - document:
     doctype: CRE
-    id: 613-285
-    name: Supply chain management
+    id: 732-148
+    name: Vulnerability management
   ltype: Related
 - document:
     doctype: CRE

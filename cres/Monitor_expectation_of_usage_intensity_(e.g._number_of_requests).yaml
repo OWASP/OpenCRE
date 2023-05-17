@@ -11,13 +11,13 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 058-083
-    name: Monitoring
+    id: 623-550
+    name: Denial Of Service protection
   ltype: Related
 - document:
     doctype: CRE
-    id: 623-550
-    name: Denial Of Service protection
+    id: 058-083
+    name: Monitoring
   ltype: Related
 - document:
     doctype: Standard

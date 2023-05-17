@@ -85,21 +85,27 @@ class in_memory_embeddings:
         if cls.__instance is None:
             cls.__instance = cls.__new__(cls)
             
-            if not os.environ.get("NO_GEN_EMBEDDINGS"): # in case we want to run without connectivity to openai or playwright
-                cls.__playwright = sync_playwright().start()
-                nltk.download("punkt")
-                nltk.download("stopwords")
-                cls.__webkit = cls.__playwright.webkit
-                cls.__browser = cls.__webkit.launch()  # headless=False, slow_mo=1000)
-                cls.__context = cls.__browser.new_context()
-                cls.generate_embeddings(database, openai_key)
-                cls.__browser.close()
-                cls.__playwright.stop()
+            missing_embeddings = cls.load_embeddings(database)
+            if missing_embeddings:
+                if  not os.environ.get("NO_GEN_EMBEDDINGS"): # in case we want to run without connectivity to openai or playwright
+                    cls.__playwright = sync_playwright().start()
+                    nltk.download("punkt")
+                    nltk.download("stopwords")
+                    cls.__webkit = cls.__playwright.webkit
+                    cls.__browser = cls.__webkit.launch()  # headless=False, slow_mo=1000)
+                    cls.__context = cls.__browser.new_context()
+                    
+                    cls.generate_embeddings(database,missing_embeddings, openai_key)
+                    cls.__browser.close()
+                    cls.__playwright.stop()
+                else:
+                    logger.info(f"there are {len(missing_embeddings)} embeddings missing from the dataset, your db is inclompete")                
         return cls.__instance
 
     @classmethod
-    def generate_embeddings(cls, database: db.Node_collection, openai_key: str):
+    def load_embeddings(cls, database: db.Node_collection)->List[str]:
         logger.info(f"syncing nodes with embeddings")
+        missing_embeddings = []
         for doc_type in cre_defs.Credoctypes:
             if doc_type.value == cre_defs.Credoctypes.CRE:
                 pass  # TODO: if there is ever a need to correlate with CREs, load cre embeddings
@@ -120,26 +126,29 @@ class in_memory_embeddings:
                     logger.fatal(
                         "the following embeddings have no corresponding nodes, BUG", a
                     )
+                
                 if b != []:
-                    logger.info(
-                        f"generating {len(b)} embeddings out of {len(node_ids)} total nodes"
-                    )
-                    for id in b:
-                        node = database.get_node_by_db_id(id)
-                        content = ""
-                        if is_valid_url(node.hyperlink):
-                            content = cls.clean_content(cls.get_content(node.hyperlink))
-                        else:
-                            content = f"{node.doctype}\n name:{node.name}\n section:{node.section}\n subsection:{node.subsection}\n section_id:{node.sectionID}\n "
+                    missing_embeddings.extend(b)
+        return missing_embeddings
+    @classmethod
+    def generate_embeddings(cls,database: db.Node_collection, missing_embeddings: List[str], openai_key: str):
+        logger.info(f"generating {len(missing_embeddings)} embeddings")
+        for id in missing_embeddings:
+            node = database.get_node_by_db_id(id)
+            content = ""
+            if is_valid_url(node.hyperlink):
+                content = cls.clean_content(cls.get_content(node.hyperlink))
+            else:
+                content = f"{node.doctype}\n name:{node.name}\n section:{node.section}\n subsection:{node.subsection}\n section_id:{node.sectionID}\n "
 
-                        logger.info(f"making embedding for {node.hyperlink}")
-                        embedding = get_embeddings(openai_key, content)
-                        dbnode = db.dbNodeFromNode(node)
-                        if not dbnode:
-                            logger.fatal(node, "cannot be converted to database Node")
-                        dbnode.id = id
-                        database.add_embedding(dbnode, doc_type, embedding, content)
-                        cls.embeddings[id] = embedding
+            logger.info(f"making embedding for {node.hyperlink}")
+            embedding = get_embeddings(openai_key, content)
+            dbnode = db.dbNodeFromNode(node)
+            if not dbnode:
+                logger.fatal(node, "cannot be converted to database Node")
+            dbnode.id = id
+            database.add_embedding(dbnode, node.doctype, embedding, content)
+            cls.embeddings[id] = embedding
 
 
 class PromptHandler:
