@@ -38,7 +38,7 @@ export const SearchName = () => {
 
   const groupedByType = groupBy(documents, (doc) => doc.doctype);
   Object.keys(groupedByType).forEach((key) => {
-    groupedByType[key] = groupedByType[key].sort((a, b) => a.name.localeCompare(b.name));
+    groupedByType[key] = groupedByType[key].sort((a, b) => (a.name+a.section).localeCompare(b.name+b.section));
   });
   const cres = groupedByType[CRE];
 
