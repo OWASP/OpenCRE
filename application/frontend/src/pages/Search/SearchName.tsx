@@ -37,6 +37,9 @@ export const SearchName = () => {
   }, [searchTerm]);
 
   const groupedByType = groupBy(documents, (doc) => doc.doctype);
+  Object.keys(groupedByType).forEach((key) => {
+    groupedByType[key] = groupedByType[key].sort((a, b) => a.name.localeCompare(b.name));
+  });
   const cres = groupedByType[CRE];
 
   let nodes;
@@ -55,11 +58,11 @@ export const SearchName = () => {
       {!loading && !error && (
         <div className="ui grid">
           <div className="eight wide column">
-            <h1 className="standard-page__heading">Related CRE's</h1>
+            <h1 className="standard-page__heading">Matching CREs</h1>
             {cres && <SearchResults results={cres} />}
           </div>
           <div className="eight wide column">
-            <h1 className="standard-page__heading">Related Documents</h1>
+            <h1 className="standard-page__heading">Matching sources</h1>
             {nodes && <SearchResults results={nodes} />}
           </div>
         </div>
