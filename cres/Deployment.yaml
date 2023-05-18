@@ -35,7 +35,7 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 015-770
+    id: 840-757
     name: Guidelines
   ltype: Contains
 - document:
@@ -45,10 +45,8 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 336-512
-    name: Ensure integrity of DNS entries and domains
-    tags:
-    - Secure name/address resolution service
+    id: 336-511
+    name: Network protection
   ltype: Contains
 - document:
     doctype: CRE
@@ -57,10 +55,8 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 180-488
-    name: Proper Configuration for all applications and frameworks
-    tags:
-    - Configuration
+    id: 180-487
+    name: Server protection
   ltype: Contains
 - document:
     doctype: CRE
@@ -78,14 +74,19 @@ links:
     name: Backups
   ltype: Related
 - document:
+    doctype: CRE
+    id: 623-347
+    name: Disallow shared high privileged accounts
+  ltype: Related
+- document:
     doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=SC-27
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=SC-27
     name: NIST 800-53 v5
     section: SC-27 Platform-independent Applications
   ltype: Linked To
 - document:
     doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=SC-29
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=SC-29
     name: NIST 800-53 v5
     section: SC-29 Heterogeneity
   ltype: Linked To

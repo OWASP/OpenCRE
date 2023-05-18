@@ -3,7 +3,7 @@ id: 275-483
 links:
 - document:
     doctype: CRE
-    id: 400-007
+    id: 726-668
     name: Encrypt data at rest
     tags:
     - Cryptography

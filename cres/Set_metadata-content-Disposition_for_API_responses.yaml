@@ -8,14 +8,6 @@ links:
   ltype: Contains
 - document:
     doctype: Standard
-    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x22-V14-Config.md
-    name: ASVS
-    section: V14.4.2
-    sectionID: 'Verify that all API responses contain a Content-Disposition: attachment;
-      filename="api.json" header (or other appropriate filename for the content type).'
-  ltype: Linked To
-- document:
-    doctype: Standard
     hyperlink: https://cwe.mitre.org/data/definitions/116.html
     name: CWE
     section: ''

@@ -3,11 +3,6 @@ id: 836-068
 links:
 - document:
     doctype: CRE
-    id: 503-455
-    name: Input and output protection
-  ltype: Contains
-- document:
-    doctype: CRE
     id: 831-563
     name: Avoid deserialization logic
   ltype: Contains
@@ -35,13 +30,12 @@ links:
   ltype: Related
 - document:
     doctype: CRE
+    id: 503-455
+    name: '>>Input and output verification'
+  ltype: Contains
+- document:
+    doctype: CRE
     id: 184-284
     name: Log all security relevant events
   ltype: Related
-- document:
-    doctype: Standard
-    hyperlink: https://owasp.org/Top10/A08_2021-Software_and_Data_Integrity_Failures/
-    name: OWASP Top 10 2021
-    section: 08_2021-Software_and_Data_Integrity_Failures/
-  ltype: Linked To
 name: Deserialization Prevention

@@ -3,24 +3,9 @@ id: 307-507
 links:
 - document:
     doctype: CRE
-    id: 473-177
-    name: Deploy/build
+    id: 615-188
+    name: Deployment process
   ltype: Contains
-- document:
-    doctype: CRE
-    id: 613-285
-    name: Supply chain management
-  ltype: Related
-- document:
-    doctype: Standard
-    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x18-V10-Malicious.md
-    name: ASVS
-    section: V10.3.2
-    sectionID: Verify that the application employs integrity protections, such as
-      code signing or subresource integrity. The application must not load or execute
-      code from untrusted sources, such as loading includes, modules, plugins, code,
-      or libraries from untrusted sources or the Internet.
-  ltype: Linked To
 - document:
     doctype: Standard
     hyperlink: https://cwe.mitre.org/data/definitions/353.html

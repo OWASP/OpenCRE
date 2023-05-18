@@ -8,6 +8,11 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
+    id: 112-273
+    name: Scan untrusted files for malware
+  ltype: Contains
+- document:
+    doctype: CRE
     id: 307-111
     name: Securely store files with untrusted origin
   ltype: Contains

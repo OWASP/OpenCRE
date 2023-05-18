@@ -3,7 +3,7 @@ id: 704-530
 links:
 - document:
     doctype: CRE
-    id: 716-526
+    id: 470-731
     name: Session token generation
   ltype: Contains
 - document:
@@ -11,13 +11,6 @@ links:
     id: 170-772
     name: Cryptography
   ltype: Related
-- document:
-    doctype: Standard
-    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x12-V3-Session-management.md
-    name: ASVS
-    section: V3.2.2
-    sectionID: Verify that session tokens possess at least 64 bits of entropy.
-  ltype: Linked To
 - document:
     doctype: Standard
     hyperlink: https://owasp-top-10-proactive-controls-2018.readthedocs.io/en/latest/c6-implement-digital-identity.html
@@ -30,12 +23,6 @@ links:
     name: CWE
     section: ''
     sectionID: '331'
-  ltype: Linked To
-- document:
-    doctype: Standard
-    hyperlink: https://owasp.org/www-project-web-security-testing-guide/v41/4-Web_Application_Security_Testing/06-Session_Management_Testing/01-Testing_for_Session_Management_Schema.html#gray-box-testing-and-example
-    name: OWASP Web Security Testing Guide (WSTG)
-    section: WSTG-SESS-01
   ltype: Linked To
 - document:
     doctype: Standard

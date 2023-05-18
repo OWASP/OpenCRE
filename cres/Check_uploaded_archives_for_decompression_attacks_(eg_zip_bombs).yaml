@@ -9,17 +9,8 @@ links:
 - document:
     doctype: CRE
     id: 623-550
-    name: Denial Of Service protection
+    name: DOS
   ltype: Related
-- document:
-    doctype: Standard
-    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x20-V12-Files-Resources.md
-    name: ASVS
-    section: V12.1.2
-    sectionID: Verify that the application checks compressed files (e.g. zip, gz,
-      docx, odt) against maximum allowed uncompressed size and against maximum number
-      of files before uncompressing the file.
-  ltype: Linked To
 - document:
     doctype: Standard
     hyperlink: https://cwe.mitre.org/data/definitions/409.html
@@ -35,4 +26,4 @@ links:
   ltype: Linked To
 name: Check uploaded archives for decompression attacks (eg zip bombs)
 tags:
-- Denial Of Service protection
+- DOS

@@ -1,22 +1,24 @@
 doctype: CRE
-id: 760-765
+id: 028-726
 links:
 - document:
     doctype: CRE
-    id: 546-564
-    name: Cross-cutting concerns
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 760-764
-    name: Injection
+    id: 257-668
+    name: Configure CSP configuration properly
     tags:
     - XSS
   ltype: Related
 - document:
     doctype: CRE
-    id: 257-668
-    name: Configure CSP configuration properly
+    id: 545-243
+    name: Block execution/output of uploaded files
+    tags:
+    - XSS
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 314-701
+    name: Whitelist file extensions served by web tier
     tags:
     - XSS
   ltype: Related
@@ -60,6 +62,9 @@ links:
     tags:
     - XSS
   ltype: Related
+- document:
+    doctype: CRE
+    id: 546-564
+    name: '>>Tags'
+  ltype: Contains
 name: XSS
-tags:
-- Injection

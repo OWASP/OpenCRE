@@ -28,8 +28,6 @@ links:
     doctype: CRE
     id: 866-553
     name: Memory, String, and Unmanaged Code
-    tags:
-    - Injection
   ltype: Contains
 - document:
     doctype: CRE
@@ -58,12 +56,10 @@ links:
     doctype: CRE
     id: 541-441
     name: Validate HTTP request headers
-    tags:
-    - Injection
   ltype: Contains
 - document:
     doctype: CRE
-    id: 764-508
+    id: 764-509
     name: XML Parser hardening
   ltype: Contains
 - document:
@@ -73,7 +69,7 @@ links:
   ltype: Related
 - document:
     doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#!/control?version=5.1&number=SI-10
+    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=SI-10
     name: NIST 800-53 v5
     section: SI-10 INFORMATION INPUT VALIDATION
   ltype: Linked To

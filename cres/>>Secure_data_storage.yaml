@@ -13,7 +13,7 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 400-007
+    id: 726-668
     name: Encrypt data at rest
     tags:
     - Cryptography
@@ -37,16 +37,4 @@ links:
     tags:
     - Cryptography
   ltype: Contains
-- document:
-    doctype: Standard
-    hyperlink: https://owasp.org/Top10/A04_2021-Insecure_Design/
-    name: OWASP Top 10 2021
-    section: 04_2021-Insecure_Design/
-  ltype: Linked To
-- document:
-    doctype: Standard
-    hyperlink: https://owasp.org/www-project-top-ten/2017/A3_2017-Sensitive_Data_Exposure
-    name: OWASP Top 10 2017
-    section: A3-Sensitive_Data_Exposure
-  ltype: Linked To
 name: '>>Secure data storage'

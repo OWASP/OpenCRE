@@ -3,27 +3,14 @@ id: 268-088
 links:
 - document:
     doctype: CRE
-    id: 764-765
-    name: Sanitization and sandboxing
-    tags:
-    - XSS protection
-    - Injection protection
+    id: 118-110
+    name: API/web services
   ltype: Contains
 - document:
     doctype: CRE
     id: 623-550
-    name: Denial Of Service protection
+    name: DOS
   ltype: Related
-- document:
-    doctype: Standard
-    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x21-V13-API.md
-    name: ASVS
-    section: V13.4.1
-    sectionID: Verify that a query allow list or a combination of depth limiting and
-      amount limiting is used to prevent GraphQL or data layer expression Denial of
-      Service (DoS) as a result of expensive, nested queries. For more advanced scenarios,
-      query cost analysis should be used.
-  ltype: Linked To
 - document:
     doctype: Standard
     hyperlink: https://cwe.mitre.org/data/definitions/770.html
@@ -33,4 +20,4 @@ links:
   ltype: Linked To
 name: Limit query impact GraphQL/data layer expression DoS
 tags:
-- Denial Of Service protection
+- DOS

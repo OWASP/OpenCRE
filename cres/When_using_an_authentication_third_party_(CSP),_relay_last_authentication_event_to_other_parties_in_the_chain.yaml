@@ -8,15 +8,6 @@ links:
   ltype: Contains
 - document:
     doctype: Standard
-    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x12-V3-Session-management.md
-    name: ASVS
-    section: V3.6.2
-    sectionID: Verify that Credential Service Providers (CSPs) inform Relying Parties
-      (RPs) of the last authentication event, to allow RPs to determine if they need
-      to re-authenticate the user.
-  ltype: Linked To
-- document:
-    doctype: Standard
     hyperlink: https://cwe.mitre.org/data/definitions/613.html
     name: CWE
     section: ''

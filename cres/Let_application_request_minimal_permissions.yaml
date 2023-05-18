@@ -3,28 +3,19 @@ id: 540-566
 links:
 - document:
     doctype: CRE
-    id: 123-124
-    name: Minimize permissions
+    id: 724-770
+    name: '>>Authorized access'
   ltype: Contains
 - document:
-    doctype: Standard
-    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x18-V10-Malicious.md
-    name: ASVS
-    section: V10.2.2
-    sectionID: Verify that the application does not ask for unnecessary or excessive
-      permissions to privacy related features or sensors, such as contacts, cameras,
-      microphones, or location.
-  ltype: Linked To
+    doctype: CRE
+    id: 362-550
+    name: '>>Personal data handling'
+  ltype: Related
 - document:
     doctype: Standard
     hyperlink: https://cwe.mitre.org/data/definitions/272.html
     name: CWE
     section: ''
     sectionID: '272'
-  ltype: Linked To
-- document:
-    doctype: Standard
-    name: ISO 27001
-    section: "8.18\tUse of privileged utility programs"
   ltype: Linked To
 name: Let application request minimal permissions

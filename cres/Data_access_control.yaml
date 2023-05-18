@@ -4,12 +4,12 @@ links:
 - document:
     doctype: CRE
     id: 126-668
-    name: Secure data storage
+    name: '>>Secure data storage'
   ltype: Contains
 - document:
     doctype: CRE
     id: 724-770
-    name: Technical application access control
+    name: '>>Authorized access'
   ltype: Related
 - document:
     doctype: CRE

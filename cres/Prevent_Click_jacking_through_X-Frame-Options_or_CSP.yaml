@@ -8,26 +8,10 @@ links:
   ltype: Contains
 - document:
     doctype: Standard
-    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x22-V14-Config.md
-    name: ASVS
-    section: V14.4.7
-    sectionID: 'Verify that the content of a web application cannot be embedded in
-      a third-party site by default and that embedding of the exact resources is only
-      allowed where necessary by using suitable Content-Security-Policy: frame-ancestors
-      and X-Frame-Options response headers.'
-  ltype: Linked To
-- document:
-    doctype: Standard
-    hyperlink: https://cwe.mitre.org/data/definitions/1021.html
+    hyperlink: https://cwe.mitre.org/data/definitions/346.html
     name: CWE
     section: ''
-    sectionID: '1021'
-  ltype: Linked To
-- document:
-    doctype: Standard
-    hyperlink: https://owasp.org/www-project-web-security-testing-guide/v41/4-Web_Application_Security_Testing/11-Client_Side_Testing/09-Testing_for_Clickjacking.html
-    name: OWASP Web Security Testing Guide (WSTG)
-    section: WSTG-CLNT-09
+    sectionID: '346'
   ltype: Linked To
 - document:
     doctype: Standard

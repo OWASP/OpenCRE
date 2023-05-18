@@ -3,13 +3,13 @@ id: 247-250
 links:
 - document:
     doctype: CRE
-    id: 724-770
-    name: Technical application access control
+    id: 013-021
+    name: Roles and responsibilities
   ltype: Related
 - document:
     doctype: CRE
-    id: 013-021
-    name: Roles and responsibilities
+    id: 724-770
+    name: Technical application access control
   ltype: Related
 - document:
     doctype: CRE

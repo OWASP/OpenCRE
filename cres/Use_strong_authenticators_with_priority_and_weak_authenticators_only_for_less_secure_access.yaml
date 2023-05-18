@@ -10,17 +10,6 @@ links:
   ltype: Contains
 - document:
     doctype: Standard
-    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x11-V2-Authentication.md
-    name: ASVS
-    section: Verify that the use of weak authenticators (such as SMS and email) is
-      limited to secondary verification and transaction approval and not as a replacement
-      for more secure authentication methods. Verify that stronger methods are offered
-      before weak methods, users are aware of the risks, or that proper measures are
-      in place to limit the risks of account compromise.
-    sectionID: V2.2.2
-  ltype: Linked To
-- document:
-    doctype: Standard
     hyperlink: https://cwe.mitre.org/data/definitions/304.html
     name: CWE
     section: ''
@@ -29,19 +18,19 @@ links:
 - document:
     doctype: Standard
     hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html
-    name: Cheat_sheets
+    name: OWASP Cheat Sheets
     section: Authentication Cheat Sheet
   ltype: Linked To
 - document:
     doctype: Standard
     hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Protection_Cheat_Sheet.html
-    name: Cheat_sheets
+    name: OWASP Cheat Sheets
     section: Transport Layer Protection Cheat Sheet
   ltype: Linked To
 - document:
     doctype: Standard
     hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/TLS_Cipher_String_Cheat_Sheet.html
-    name: Cheat_sheets
+    name: OWASP Cheat Sheets
     section: TLS Cipher String Cheat Sheet
   ltype: Linked To
 - document:

@@ -3,7 +3,7 @@ id: 742-432
 links:
 - document:
     doctype: CRE
-    id: 400-007
+    id: 726-668
     name: Encrypt data at rest
     tags:
     - Cryptography
@@ -48,11 +48,4 @@ links:
     id: 441-132
     name: Use weak crypto only for backwards compatibility
   ltype: Contains
-- document:
-    doctype: CRE
-    id: 170-772
-    name: Cryptography
-  ltype: Related
 name: Encryption algorithms
-tags:
-- Cryptography

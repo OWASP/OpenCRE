@@ -4,21 +4,17 @@ links:
 - document:
     doctype: CRE
     id: 503-455
-    name: Input and output protection
+    name: '>>Input and output verification'
   ltype: Contains
 - document:
     doctype: CRE
-    id: 760-765
-    name: XSS protection
-    tags:
-    - Injection protection
+    id: 760-764
+    name: Injection
   ltype: Related
 - document:
     doctype: CRE
-    id: 760-764
-    name: Injection protection
-    tags:
-    - XSS protection
+    id: 028-726
+    name: XSS
   ltype: Related
 - document:
     doctype: CRE
@@ -37,7 +33,7 @@ links:
     id: 176-154
     name: Monitor expectation of usage intensity (e.g. number of requests)
     tags:
-    - Denial Of Service protection
+    - DOS
   ltype: Contains
 - document:
     doctype: CRE
@@ -47,7 +43,7 @@ links:
 - document:
     doctype: CRE
     id: 743-237
-    name: Validatie/enforce HTTP inputs (against HTTP parameter pollution attacks)
+    name: Validate/enforce HTTP inputs (against HTTP parameter pollution attacks)
   ltype: Contains
 - document:
     doctype: CRE
@@ -59,12 +55,7 @@ links:
     id: 232-217
     name: Whitelist redirected/forwarded URLs
   ltype: Contains
-- document:
-    doctype: CRE
-    id: 146-706
-    name: Enforce JSON schema before processing
-  ltype: Contains
 name: Input validation
 tags:
-- XSS protection
-- Injection protection
+- Injection
+- XSS

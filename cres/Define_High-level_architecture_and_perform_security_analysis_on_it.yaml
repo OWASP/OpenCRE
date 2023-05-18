@@ -1,21 +1,16 @@
 doctype: CRE
-id: 068-102
+id: 004-130
 links:
 - document:
     doctype: CRE
-    id: 068-102
-    name: Architecture/design processes
-    tags:
-    - Architecture
+    id: 354-846
+    name: Documentation and requirements
   ltype: Contains
 - document:
-    doctype: Standard
-    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x10-V1-Architecture.md
-    name: ASVS
-    section: V1.1.5
-    sectionID: Verify definition and security analysis of the application's high-level
-      architecture and all connected remote services.
-  ltype: Linked To
+    doctype: CRE
+    id: 155-155
+    name: Architecture
+  ltype: Related
 - document:
     doctype: Standard
     hyperlink: https://owasp-top-10-proactive-controls-2018.readthedocs.io/en/latest/c1-security-requirements.html
@@ -48,3 +43,5 @@ links:
     section: Attack Surface Analysis Cheat Sheet
   ltype: Linked To
 name: Define High-level architecture and perform security analysis on it
+tags:
+- Architecture

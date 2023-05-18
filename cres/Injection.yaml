@@ -3,18 +3,6 @@ id: 760-764
 links:
 - document:
     doctype: CRE
-    id: 546-564
-    name: Cross-cutting concerns
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 760-765
-    name: XSS
-    tags:
-    - Injection
-  ltype: Related
-- document:
-    doctype: CRE
     id: 384-344
     name: Store and serve user-uploaded files such that they cannot execute/damage
       server or client
@@ -29,13 +17,6 @@ links:
     tags:
     - Injection
     - XSS
-  ltype: Related
-- document:
-    doctype: CRE
-    id: 866-553
-    name: Memory, String, and Unmanaged Code
-    tags:
-    - Injection
   ltype: Related
 - document:
     doctype: CRE
@@ -55,32 +36,21 @@ links:
   ltype: Related
 - document:
     doctype: CRE
-    id: 541-441
-    name: Validate HTTP request headers
-    tags:
-    - Injection
-  ltype: Related
-- document:
-    doctype: CRE
-    id: 764-507
-    name: Restrict XML parsing (against XXE)
-    tags:
-    - Configuration
-    - Injection
-  ltype: Related
-- document:
-    doctype: CRE
     id: 048-612
     name: Encode user input before logging
     tags:
     - Injection
   ltype: Related
 - document:
-    doctype: Standard
-    hyperlink: https://owasp.org/Top10/A03_2021-Injection/
-    name: OWASP Top 10 2021
-    section: 03_2021-Injection/
-  ltype: Linked To
+    doctype: CRE
+    id: 821-540
+    name: Protect logs against log injection
+    tags:
+    - Injection
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 546-564
+    name: '>>Tags'
+  ltype: Contains
 name: Injection
-tags:
-- XSS

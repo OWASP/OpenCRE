@@ -4,14 +4,12 @@ links:
 - document:
     doctype: CRE
     id: 278-646
-    name: Secure communication
+    name: '>>Secure communication'
   ltype: Contains
 - document:
     doctype: CRE
     id: 605-735
     name: Authenticate all external connections
-    tags:
-    - Cryptography
   ltype: Contains
 - document:
     doctype: CRE

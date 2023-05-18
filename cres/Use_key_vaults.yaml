@@ -10,14 +10,6 @@ links:
   ltype: Contains
 - document:
     doctype: Standard
-    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x10-V1-Architecture.md
-    name: ASVS
-    section: V1.6.2
-    sectionID: Verify that consumers of cryptographic services protect key material
-      and other secrets by using key vaults or API based alternatives.
-  ltype: Linked To
-- document:
-    doctype: Standard
     hyperlink: https://cwe.mitre.org/data/definitions/320.html
     name: CWE
     section: ''

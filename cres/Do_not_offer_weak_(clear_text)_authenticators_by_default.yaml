@@ -10,15 +10,6 @@ links:
   ltype: Contains
 - document:
     doctype: Standard
-    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x11-V2-Authentication.md
-    name: ASVS
-    section: Verify that clear text out of band (NIST "restricted") authenticators,
-      such as SMS or PSTN, are not offered by default, and stronger alternatives such
-      as push notifications are offered first.
-    sectionID: V2.7.1
-  ltype: Linked To
-- document:
-    doctype: Standard
     hyperlink: https://cwe.mitre.org/data/definitions/287.html
     name: CWE
     section: ''
@@ -27,7 +18,7 @@ links:
 - document:
     doctype: Standard
     hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Forgot_Password_Cheat_Sheet.html
-    name: Cheat_sheets
+    name: OWASP Cheat Sheets
     section: Forgot Password Cheat Sheet
   ltype: Linked To
 - document:

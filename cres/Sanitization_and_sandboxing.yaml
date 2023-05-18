@@ -4,29 +4,23 @@ links:
 - document:
     doctype: CRE
     id: 503-455
-    name: Input and output protection
+    name: '>>Input and output verification'
   ltype: Contains
 - document:
     doctype: CRE
-    id: 760-765
-    name: XSS protection
-    tags:
-    - Injection protection
+    id: 760-764
+    name: Injection
   ltype: Related
 - document:
     doctype: CRE
-    id: 760-764
-    name: Injection protection
-    tags:
-    - XSS protection
+    id: 028-726
+    name: XSS
   ltype: Related
 - document:
     doctype: CRE
     id: 657-084
     name: (SSRF) When depending on internal server input, use validation sanitization
       and whitelisting
-    tags:
-    - SSRF protection
   ltype: Contains
 - document:
     doctype: CRE
@@ -64,14 +58,7 @@ links:
     id: 422-005
     name: Sanitize/sandbox user input where template-injection is a threat
   ltype: Contains
-- document:
-    doctype: CRE
-    id: 268-088
-    name: Limit query impact GraphQL/data layer expression DoS
-    tags:
-    - Denial Of Service protection
-  ltype: Contains
 name: Sanitization and sandboxing
 tags:
-- XSS protection
-- Injection protection
+- Injection
+- XSS

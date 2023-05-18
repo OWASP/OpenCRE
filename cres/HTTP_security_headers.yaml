@@ -3,22 +3,17 @@ id: 636-347
 links:
 - document:
     doctype: CRE
-    id: 233-748
-    name: Configuration hardening
+    id: 783-355
+    name: Deployment
     tags:
     - Configuration
   ltype: Contains
 - document:
     doctype: CRE
-    id: 110-531
-    name: Cookie-config
-  ltype: Related
-- document:
-    doctype: CRE
     id: 257-668
     name: Configure CSP configuration properly
     tags:
-    - XSS protection
+    - XSS
   ltype: Contains
 - document:
     doctype: CRE

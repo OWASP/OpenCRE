@@ -3,13 +3,13 @@ id: 004-517
 links:
 - document:
     doctype: CRE
-    id: 074-873
-    name: Data classification and handling
+    id: 510-324
+    name: Compliance
   ltype: Related
 - document:
     doctype: CRE
-    id: 510-324
-    name: Compliance
+    id: 074-873
+    name: Data classification and handling
   ltype: Related
 - document:
     doctype: CRE

@@ -8,14 +8,6 @@ links:
   ltype: Contains
 - document:
     doctype: Standard
-    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x15-V7-Error-Logging.md
-    name: ASVS
-    section: V7.4.3
-    sectionID: Verify that a "last resort" error handler is defined which will catch
-      all unhandled exceptions.
-  ltype: Linked To
-- document:
-    doctype: Standard
     hyperlink: https://owasp-top-10-proactive-controls-2018.readthedocs.io/en/latest/c10-handle-errors-exceptions.html
     name: OWASP Proactive Controls
     section: C10
@@ -26,12 +18,6 @@ links:
     name: CWE
     section: ''
     sectionID: '431'
-  ltype: Linked To
-- document:
-    doctype: Standard
-    hyperlink: https://owasp.org/www-project-web-security-testing-guide/v41/4-Web_Application_Security_Testing/08-Testing_for_Error_Handling/02-Testing_for_Stack_Traces.html
-    name: OWASP Web Security Testing Guide (WSTG)
-    section: WSTG-ERRH-02
   ltype: Linked To
 - document:
     doctype: Standard

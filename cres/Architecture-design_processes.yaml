@@ -8,11 +8,6 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 708-355
-    name: Secure implemented architecture
-  ltype: Related
-- document:
-    doctype: CRE
     id: 307-242
     name: Security risk assessment
   ltype: Related
@@ -20,6 +15,11 @@ links:
     doctype: CRE
     id: 155-155
     name: Architecture
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 708-355
+    name: Secure implemented architecture
   ltype: Related
 - document:
     doctype: CRE

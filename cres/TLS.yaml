@@ -3,6 +3,13 @@ id: 228-551
 links:
 - document:
     doctype: CRE
+    id: 726-868
+    name: Deployed topology
+    tags:
+    - Architecture
+  ltype: Related
+- document:
+    doctype: CRE
     id: 170-772
     name: Cryptography
   ltype: Related
@@ -10,8 +17,6 @@ links:
     doctype: CRE
     id: 248-646
     name: Disable insecure SSL/TLS versions
-    tags:
-    - Cryptography
   ltype: Contains
 - document:
     doctype: CRE
@@ -48,7 +53,7 @@ links:
 - document:
     doctype: CRE
     id: 278-646
-    name: Secure communication
+    name: '>>Secure communication'
   ltype: Contains
 name: TLS
 tags:

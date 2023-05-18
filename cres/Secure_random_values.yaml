@@ -4,7 +4,7 @@ links:
 - document:
     doctype: CRE
     id: 126-668
-    name: Secure data storage
+    name: '>>Secure data storage'
   ltype: Contains
 - document:
     doctype: CRE
@@ -20,8 +20,6 @@ links:
     doctype: CRE
     id: 664-571
     name: Ensure proper generation of secure random
-    tags:
-    - Cryptography
   ltype: Contains
 - document:
     doctype: CRE

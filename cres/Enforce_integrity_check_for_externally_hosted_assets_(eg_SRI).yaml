@@ -3,19 +3,14 @@ id: 577-260
 links:
 - document:
     doctype: CRE
-    id: 613-287
-    name: Dependency integrity
+    id: 613-285
+    name: '>>Dependency strength'
   ltype: Contains
 - document:
-    doctype: Standard
-    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x22-V14-Config.md
-    name: ASVS
-    section: V14.2.3
-    sectionID: Verify that if application assets, such as JavaScript libraries, CSS
-      or web fonts, are hosted externally on a Content Delivery Network (CDN) or external
-      provider, Subresource Integrity (SRI) is used to validate the integrity of the
-      asset.
-  ltype: Linked To
+    doctype: CRE
+    id: 153-513
+    name: '>>Development & operations'
+  ltype: Related
 - document:
     doctype: Standard
     hyperlink: https://cwe.mitre.org/data/definitions/829.html

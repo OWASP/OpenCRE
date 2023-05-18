@@ -4,7 +4,7 @@ links:
 - document:
     doctype: CRE
     id: 842-876
-    name: Logging and error handling
+    name: '>>Logging and error handling'
   ltype: Contains
 - document:
     doctype: CRE
@@ -18,13 +18,12 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
+    id: 743-110
+    name: Do not disclose technical information in error message
+  ltype: Related
+- document:
+    doctype: CRE
     id: 015-063
     name: Log access to sensitive data
   ltype: Related
-- document:
-    doctype: Standard
-    hyperlink: https://owasp.org/Top10/A09_2021-Security_Logging_and_Monitoring_Failures/
-    name: OWASP Top 10 2021
-    section: 09_2021-Security_Logging_and_Monitoring_Failures/
-  ltype: Linked To
 name: Log discretely

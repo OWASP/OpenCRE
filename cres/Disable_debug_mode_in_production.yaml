@@ -10,15 +10,6 @@ links:
   ltype: Contains
 - document:
     doctype: Standard
-    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x22-V14-Config.md
-    name: ASVS
-    section: V14.3.2
-    sectionID: Verify that web or application server and application framework debug
-      modes are disabled in production to eliminate debug features, developer consoles,
-      and unintended security disclosures.
-  ltype: Linked To
-- document:
-    doctype: Standard
     hyperlink: https://cwe.mitre.org/data/definitions/497.html
     name: CWE
     section: ''
