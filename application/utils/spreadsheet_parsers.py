@@ -678,9 +678,17 @@ def parse_standards(
                 },
                 "ISO 27001": {
                     "section": "Standard 27001/2:2022",
-                    "sectionID": "",
+                    "sectionID": "Standard 27001/2:2022 Section ID",
                     "subsection": "",
                     "hyperlink": "",
+                    "separator": "\n",
+                },
+                "SAMM": {
+                    "section": "Standard SAMM v2",
+                    "sectionID": "",
+                    "subsection": "",
+                    "hyperlink": "Standard SAMM v2 hyperlink",
+                    "version":"v2",
                     "separator": "\n",
                 },
             },
