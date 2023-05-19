@@ -10,6 +10,14 @@ links:
   ltype: Contains
 - document:
     doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x11-V2-Authentication.md
+    name: ASVS
+    section: V2.3.2
+    sectionID: Verify that enrollment and use of user-provided authentication devices
+      are supported, such as a U2F or FIDO tokens.
+  ltype: Linked To
+- document:
+    doctype: Standard
     hyperlink: https://cwe.mitre.org/data/definitions/308.html
     name: CWE
     section: ''

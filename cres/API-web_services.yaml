@@ -3,15 +3,15 @@ id: 118-110
 links:
 - document:
     doctype: CRE
-    id: 061-186
-    name: Force uniform encoders and parsers throughout system
+    id: 503-455
+    name: Input and output protection
   ltype: Contains
 - document:
     doctype: CRE
-    id: 268-088
-    name: Limit query impact GraphQL/data layer expression DoS
+    id: 061-186
+    name: Force uniform encoders and parsers throughout system
     tags:
-    - DOS
+    - SSRF protection
   ltype: Contains
 - document:
     doctype: CRE
@@ -27,6 +27,8 @@ links:
     doctype: CRE
     id: 612-252
     name: Separate GraphQL (or similar) authorization logic from data layer
+    tags:
+    - Architecture
   ltype: Contains
 - document:
     doctype: CRE
@@ -40,17 +42,9 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 664-080
-    name: Enforce model-based authorization both at URI and final resource
-  ltype: Related
-- document:
-    doctype: CRE
-    id: 152-725
-    name: Limit access to admin/management functionality
-  ltype: Related
-- document:
-    doctype: CRE
-    id: 503-455
-    name: '>>Input and output verification'
+    id: 630-573
+    name: Detect and protect against automation abuse
+    tags:
+    - Denial Of Service protection
   ltype: Contains
 name: API/web services

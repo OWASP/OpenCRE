@@ -8,6 +8,15 @@ links:
   ltype: Contains
 - document:
     doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x11-V2-Authentication.md
+    name: ASVS
+    section: V2.5.7
+    sectionID: Verify that if OTP or multi-factor authentication factors are lost,
+      that evidence of identity proofing is performed at the same level as during
+      enrollment.
+  ltype: Linked To
+- document:
+    doctype: Standard
     hyperlink: https://cwe.mitre.org/data/definitions/308.html
     name: CWE
     section: ''

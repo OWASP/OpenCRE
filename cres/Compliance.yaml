@@ -14,12 +14,25 @@ links:
 - document:
     doctype: Standard
     name: ISO 27001
-    section: "5.36\tCompliance with policies, rules and standards for information\
-      \ security"
+    section: Compliance with policies, rules and standards for information security
+    sectionID: '5.36'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owaspsamm.org/model/governance/policy-and-compliance/stream-b/
+    name: SAMM
+    section: G-PC-B Compliance Management
   ltype: Linked To
 - document:
     doctype: Standard
     name: ISO 27001
-    section: 5.35 Independent review of information security,5.5 Contact with authorities
+    section: Independent review of information security
+    sectionID: '5.35'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    name: ISO 27001
+    section: Contact with authorities
+    sectionID: '5.5'
   ltype: Linked To
 name: Compliance

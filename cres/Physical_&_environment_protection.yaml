@@ -9,7 +9,8 @@ links:
 - document:
     doctype: Standard
     name: ISO 27001
-    section: 7.1 Physical security perimeters
+    section: Physical security perimeters
+    sectionID: '7.1'
   ltype: Linked To
 - document:
     doctype: Standard
@@ -20,7 +21,8 @@ links:
 - document:
     doctype: Standard
     name: ISO 27001
-    section: 7.7 Clear desk and clear screen
+    section: Clear desk and clear screen
+    sectionID: '7.7'
   ltype: Linked To
 - document:
     doctype: Standard
@@ -37,7 +39,8 @@ links:
 - document:
     doctype: Standard
     name: ISO 27001
-    section: 7.11 Supporting utilities
+    section: Supporting utilities
+    sectionID: '7.11'
   ltype: Linked To
 - document:
     doctype: Standard
@@ -54,7 +57,8 @@ links:
 - document:
     doctype: Standard
     name: ISO 27001
-    section: 7.5 Protecting against physical and environmental threats
+    section: Protecting against physical and environmental threats
+    sectionID: '7.5'
   ltype: Linked To
 - document:
     doctype: Standard
@@ -83,7 +87,8 @@ links:
 - document:
     doctype: Standard
     name: ISO 27001
-    section: 7.6 Working in secure areas
+    section: Working in secure areas
+    sectionID: '7.6'
   ltype: Linked To
 - document:
     doctype: Standard
@@ -106,7 +111,8 @@ links:
 - document:
     doctype: Standard
     name: ISO 27001
-    section: 7.2 Physical entry
+    section: Physical entry
+    sectionID: '7.2'
   ltype: Linked To
 - document:
     doctype: Standard
@@ -141,7 +147,8 @@ links:
 - document:
     doctype: Standard
     name: ISO 27001
-    section: 7.3 Securing offices, rooms and facilities
+    section: Securing offices, rooms and facilities
+    sectionID: '7.3'
   ltype: Linked To
 - document:
     doctype: Standard
@@ -164,7 +171,8 @@ links:
 - document:
     doctype: Standard
     name: ISO 27001
-    section: "7.4\tPhysical security monitoring"
+    section: Physical security monitoring
+    sectionID: '7.4'
   ltype: Linked To
 - document:
     doctype: Standard
@@ -181,6 +189,7 @@ links:
 - document:
     doctype: Standard
     name: ISO 27001
-    section: 7.12 Cabling security
+    section: Cabling security
+    sectionID: '7.12'
   ltype: Linked To
 name: Physical & environment protection

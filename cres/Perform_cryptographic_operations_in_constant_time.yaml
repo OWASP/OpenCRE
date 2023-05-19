@@ -5,7 +5,18 @@ links:
     doctype: CRE
     id: 742-432
     name: Encryption algorithms
+    tags:
+    - Cryptography
   ltype: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x14-V6-Cryptography.md
+    name: ASVS
+    section: V6.2.8
+    sectionID: Verify that all cryptographic operations are constant-time, with no
+      'short-circuit' operations in comparisons, calculations, or returns, to avoid
+      leaking information.
+  ltype: Linked To
 - document:
     doctype: Standard
     hyperlink: https://cwe.mitre.org/data/definitions/385.html

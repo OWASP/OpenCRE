@@ -17,6 +17,11 @@ links:
     name: Virus/malware protection
   ltype: Contains
 - document:
+    doctype: CRE
+    id: 007-274
+    name: Patching and updating system components
+  ltype: Contains
+- document:
     doctype: Standard
     hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=SC-45
     name: NIST 800-53 v5
@@ -25,7 +30,8 @@ links:
 - document:
     doctype: Standard
     name: ISO 27001
-    section: 8.17 Clock synchronization
+    section: Clock synchronization
+    sectionID: '8.17'
   ltype: Linked To
 - document:
     doctype: Standard
@@ -36,7 +42,8 @@ links:
 - document:
     doctype: Standard
     name: ISO 27001
-    section: 6.7 Remote working
+    section: Remote working
+    sectionID: '6.7'
   ltype: Linked To
 - document:
     doctype: Standard
@@ -47,7 +54,8 @@ links:
 - document:
     doctype: Standard
     name: ISO 27001
-    section: 8.1 User end point devices
+    section: User end point devices
+    sectionID: '8.1'
   ltype: Linked To
 - document:
     doctype: Standard
@@ -70,7 +78,8 @@ links:
 - document:
     doctype: Standard
     name: ISO 27001
-    section: "8.19\tInstallation of software on operational systems"
+    section: Installation of software on operational systems
+    sectionID: '8.19'
   ltype: Linked To
 - document:
     doctype: Standard

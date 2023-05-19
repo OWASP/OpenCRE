@@ -34,8 +34,20 @@ links:
   ltype: Linked To
 - document:
     doctype: Standard
+    hyperlink: https://owaspsamm.org/model/design/security-requirements/stream-a
+    name: SAMM
+    section: D-SR-A Software Requirements
+  ltype: Linked To
+- document:
+    doctype: Standard
     name: Cloud Controls Matrix
     section: Application Security Baseline Requirements
     sectionID: AIS-02
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: 'G-SM-B: Measure and Improve'
+    name: SAMM
+    section: G-PC-A Policy & Standards
   ltype: Linked To
 name: Security requirements

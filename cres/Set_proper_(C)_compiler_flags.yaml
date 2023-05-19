@@ -3,9 +3,19 @@ id: 314-131
 links:
 - document:
     doctype: CRE
-    id: 615-188
-    name: Deployment process
+    id: 473-177
+    name: Deploy/build
   ltype: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x22-V14-Config.md
+    name: ASVS
+    section: V14.1.2
+    sectionID: Verify that compiler flags are configured to enable all available buffer
+      overflow protections and warnings, including stack randomization, data execution
+      prevention, and to break the build if an unsafe pointer, memory, format string,
+      integer, or string operations are found.
+  ltype: Linked To
 - document:
     doctype: Standard
     hyperlink: https://cwe.mitre.org/data/definitions/120.html

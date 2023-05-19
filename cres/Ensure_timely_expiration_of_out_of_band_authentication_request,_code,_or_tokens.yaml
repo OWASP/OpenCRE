@@ -10,6 +10,14 @@ links:
   ltype: Contains
 - document:
     doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x11-V2-Authentication.md
+    name: ASVS
+    section: V2.7.2
+    sectionID: Verify that the out of band verifier expires out of band authentication
+      requests, codes, or tokens after 10 minutes.
+  ltype: Linked To
+- document:
+    doctype: Standard
     hyperlink: https://cwe.mitre.org/data/definitions/287.html
     name: CWE
     section: ''

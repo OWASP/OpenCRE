@@ -15,7 +15,8 @@ links:
 - document:
     doctype: Standard
     name: ISO 27001
-    section: 5.25 Assessment and decision on information security events
+    section: Assessment and decision on information security events
+    sectionID: '5.25'
   ltype: Linked To
 - document:
     doctype: Standard
@@ -26,7 +27,14 @@ links:
 - document:
     doctype: Standard
     name: ISO 27001
-    section: 5.24 Information security incident management planning and preparation
+    section: Information security incident management planning and preparation
+    sectionID: '5.24'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owaspsamm.org/model/operations/incident-management/stream-b
+    name: SAMM
+    section: 'O-IM-B: Incident Response'
   ltype: Linked To
 - document:
     doctype: Standard
@@ -49,14 +57,20 @@ links:
 - document:
     doctype: Standard
     name: ISO 27001
-    section: 5.27 Learning from information security incidents, 5.28 Collection of
-      evidence
+    section: Learning from information security incidents
+    sectionID: '5.27'
   ltype: Linked To
 - document:
     doctype: Standard
     hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=IR-5
     name: NIST 800-53 v5
     section: IR-5 Incident Monitoring
+  ltype: Linked To
+- document:
+    doctype: Standard
+    name: ISO 27001
+    section: Collection of evidence
+    sectionID: '5.28'
   ltype: Linked To
 - document:
     doctype: Standard
@@ -67,7 +81,8 @@ links:
 - document:
     doctype: Standard
     name: ISO 27001
-    section: 6.8 Information security event reporting
+    section: Information security event reporting
+    sectionID: '6.8'
   ltype: Linked To
 - document:
     doctype: Standard
@@ -84,17 +99,13 @@ links:
 - document:
     doctype: Standard
     name: ISO 27001
-    section: 5.26 Response to information security incidents
+    section: Response to information security incidents
+    sectionID: '5.26'
   ltype: Linked To
 - document:
     doctype: Standard
     hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=IR-9
     name: NIST 800-53 v5
     section: IR-9 Information Spillage Response
-  ltype: Linked To
-- document:
-    doctype: Standard
-    name: ISO 27001
-    section: 5.28 Collection of evidence
   ltype: Linked To
 name: Incident response

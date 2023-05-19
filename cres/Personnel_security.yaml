@@ -21,7 +21,8 @@ links:
 - document:
     doctype: Standard
     name: ISO 27001
-    section: 5.4 Management responsibilities
+    section: Management responsibilities
+    sectionID: '5.4'
   ltype: Linked To
 - document:
     doctype: Standard
@@ -38,7 +39,8 @@ links:
 - document:
     doctype: Standard
     name: ISO 27001
-    section: 6.1 Screening
+    section: Screening
+    sectionID: '6.1'
   ltype: Linked To
 - document:
     doctype: Standard
@@ -49,7 +51,8 @@ links:
 - document:
     doctype: Standard
     name: ISO 27001
-    section: 6.5 Responsibilities after termination or change of employment
+    section: Responsibilities after termination or change of employment
+    sectionID: '6.5'
   ltype: Linked To
 - document:
     doctype: Standard
@@ -60,7 +63,8 @@ links:
 - document:
     doctype: Standard
     name: ISO 27001
-    section: 5.11 Return of assets
+    section: Return of assets
+    sectionID: '5.11'
   ltype: Linked To
 - document:
     doctype: Standard
@@ -71,7 +75,8 @@ links:
 - document:
     doctype: Standard
     name: ISO 27001
-    section: 6.6 Confidentiality or non-disclosure agreements
+    section: Confidentiality or non-disclosure agreements
+    sectionID: '6.6'
   ltype: Linked To
 - document:
     doctype: Standard
@@ -88,7 +93,8 @@ links:
 - document:
     doctype: Standard
     name: ISO 27001
-    section: 6.4 Disciplinary process
+    section: Disciplinary process
+    sectionID: '6.4'
   ltype: Linked To
 - document:
     doctype: Standard
@@ -99,6 +105,7 @@ links:
 - document:
     doctype: Standard
     name: ISO 27001
-    section: 6.2 Terms and conditions of employment
+    section: Terms and conditions of employment
+    sectionID: '6.2'
   ltype: Linked To
 name: Personnel security

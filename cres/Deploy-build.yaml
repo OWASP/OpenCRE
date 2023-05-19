@@ -3,9 +3,16 @@ id: 473-177
 links:
 - document:
     doctype: CRE
-    id: 646-285
+    id: 616-305
     name: Development processes for security
   ltype: Contains
+- document:
+    doctype: CRE
+    id: 223-780
+    name: Secret storage
+    tags:
+    - Cryptography
+  ltype: Related
 - document:
     doctype: CRE
     id: 307-507
@@ -60,8 +67,20 @@ links:
   ltype: Linked To
 - document:
     doctype: Standard
+    hyperlink: https://owaspsamm.org/model/implementation/secure-build/stream-a
+    name: SAMM
+    section: 'I-SB-A: Build Process'
+  ltype: Linked To
+- document:
+    doctype: Standard
     name: Cloud Controls Matrix
     section: Automated Secure Application Deployment
     sectionID: AIS-06
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owaspsamm.org/model/implementation/secure-deployment/stream-a
+    name: SAMM
+    section: 'I-SD-A: Deployment Process'
   ltype: Linked To
 name: Deploy/build

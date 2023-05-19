@@ -3,7 +3,7 @@ id: 764-507
 links:
 - document:
     doctype: CRE
-    id: 764-509
+    id: 764-508
     name: XML Parser hardening
   ltype: Contains
 - document:
@@ -12,11 +12,34 @@ links:
     name: Configuration
   ltype: Related
 - document:
+    doctype: CRE
+    id: 760-764
+    name: Injection protection
+    tags:
+    - XSS protection
+  ltype: Related
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x13-V5-Validation-Sanitization-Encoding.md
+    name: ASVS
+    section: V5.5.2
+    sectionID: Verify that the application correctly restricts XML parsers to only
+      use the most restrictive configuration possible and to ensure that unsafe features
+      such as resolving external entities are disabled to prevent XML eXternal Entity
+      (XXE) attacks.
+  ltype: Linked To
+- document:
     doctype: Standard
     hyperlink: https://cwe.mitre.org/data/definitions/611.html
     name: CWE
     section: ''
     sectionID: '611'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owasp.org/www-project-web-security-testing-guide/v41/4-Web_Application_Security_Testing/07-Input_Validation_Testing/07-Testing_for_XML_Injection.html
+    name: OWASP Web Security Testing Guide (WSTG)
+    section: WSTG-INPV-07
   ltype: Linked To
 - document:
     doctype: Standard
@@ -39,3 +62,4 @@ links:
 name: Restrict XML parsing (against XXE)
 tags:
 - Configuration
+- Injection protection

@@ -4,7 +4,7 @@ links:
 - document:
     doctype: CRE
     id: 126-668
-    name: '>>Secure data storage'
+    name: Secure data storage
   ltype: Contains
 - document:
     doctype: CRE
@@ -38,7 +38,7 @@ links:
   ltype: Contains
 - document:
     doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=SC-4
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=SC-4
     name: NIST 800-53 v5
     section: SC-4 Information in Shared System Resources
   ltype: Linked To

@@ -3,7 +3,7 @@ id: 433-442
 links:
 - document:
     doctype: CRE
-    id: 646-285
+    id: 616-305
     name: Development processes for security
   ltype: Contains
 - document:
@@ -41,7 +41,14 @@ links:
 - document:
     doctype: Standard
     name: ISO 27001
-    section: 8.29 Security testing in development and acceptance
+    section: Security testing in development and acceptance
+    sectionID: '8.29'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owaspsamm.org/model/verification/security-testing/stream-a
+    name: SAMM
+    section: 'V-ST-A: Scalable Baseline'
   ltype: Linked To
 - document:
     doctype: Standard
@@ -52,7 +59,14 @@ links:
 - document:
     doctype: Standard
     name: ISO 27001
-    section: 8.33 Test information
+    section: Test information
+    sectionID: '8.33'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owaspsamm.org/model/verification/security-testing/stream-b
+    name: SAMM
+    section: 'V-ST-B: Deep understanding'
   ltype: Linked To
 - document:
     doctype: Standard
@@ -62,8 +76,32 @@ links:
   ltype: Linked To
 - document:
     doctype: Standard
+    hyperlink: https://owaspsamm.org/model/verification/architecture-assessment/stream-a
+    name: SAMM
+    section: 'V-AA-A: Achitecture validation'
+  ltype: Linked To
+- document:
+    doctype: Standard
     hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=SI-7
     name: NIST 800-53 v5
     section: SI-7 Software, Firmware, and Information Integrity
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owaspsamm.org/model/verification/architecture-assessment/stream-b
+    name: SAMM
+    section: 'V-AA-B: Achitecture mitigation'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owaspsamm.org/model/verification/requirements-driven-testing/stream-a
+    name: SAMM
+    section: 'V-RT-A: Control verification'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owaspsamm.org/model/verification/requirements-driven-testing/stream-b
+    name: SAMM
+    section: 'V-RT-B: Misuse/Abuse Testing'
   ltype: Linked To
 name: Verification

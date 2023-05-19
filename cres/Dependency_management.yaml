@@ -22,9 +22,20 @@ links:
     name: Update third party components build- or compile time
   ltype: Contains
 - document:
+    doctype: CRE
+    id: 007-274
+    name: Patching and updating system components
+  ltype: Related
+- document:
     doctype: Standard
     hyperlink: https://owasp.org/Top10/A06_2021-Vulnerable_and_Outdated_Components/
     name: OWASP Top 10 2021
     section: 06_2021-Vulnerable_and_Outdated_Components/
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owaspsamm.org/model/implementation/secure-build/stream-b
+    name: SAMM
+    section: 'I-SB-B: Software Dependencies'
   ltype: Linked To
 name: Dependency management

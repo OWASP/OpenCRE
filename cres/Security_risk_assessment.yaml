@@ -18,7 +18,7 @@ links:
     id: 340-754
     name: Threat model every design change or sprint
     tags:
-    - Architecture
+    - Define High-level architecture and perform security analysis on it
   ltype: Contains
 - document:
     doctype: CRE
@@ -38,6 +38,12 @@ links:
   ltype: Linked To
 - document:
     doctype: Standard
+    hyperlink: https://owaspsamm.org/model/design/threat-assessment/stream-a
+    name: SAMM
+    section: 'D-TA-A: Application risk profile'
+  ltype: Linked To
+- document:
+    doctype: Standard
     hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=RA-10
     name: NIST 800-53 v5
     section: RA-10 Threat Hunting
@@ -45,7 +51,8 @@ links:
 - document:
     doctype: Standard
     name: ISO 27001
-    section: 5.7 Threat intelligence
+    section: Threat intelligence
+    sectionID: '5.7'
   ltype: Linked To
 - document:
     doctype: Standard

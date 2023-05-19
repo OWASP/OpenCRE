@@ -4,7 +4,7 @@ links:
 - document:
     doctype: CRE
     id: 177-260
-    name: '>>Session management'
+    name: Session management
   ltype: Contains
 - document:
     doctype: CRE
@@ -14,7 +14,7 @@ links:
 - document:
     doctype: CRE
     id: 618-403
-    name: Enforce authentication time-out when dealing with an authentication third
+    name: Enforce authentication timeout when dealing with an authentication third
       party (CSP)
   ltype: Contains
 - document:

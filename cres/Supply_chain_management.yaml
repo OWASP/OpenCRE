@@ -3,7 +3,7 @@ id: 613-285
 links:
 - document:
     doctype: CRE
-    id: 646-285
+    id: 616-305
     name: Development processes for security
   ltype: Contains
 - document:
@@ -78,7 +78,8 @@ links:
 - document:
     doctype: Standard
     name: ISO 27001
-    section: 8.3 Outsourced development
+    section: Outsourced development
+    sectionID: '8.3'
   ltype: Linked To
 - document:
     doctype: Standard
@@ -113,7 +114,8 @@ links:
 - document:
     doctype: Standard
     name: ISO 27001
-    section: 5.19 Information security in supplier relationships
+    section: Information security in supplier relationships
+    sectionID: '5.19'
   ltype: Linked To
 - document:
     doctype: Standard
@@ -136,7 +138,14 @@ links:
 - document:
     doctype: Standard
     name: ISO 27001
-    section: 5.2 Addressing information security within supplier agreements
+    section: Addressing information security within supplier agreements
+    sectionID: '5.2'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owaspsamm.org/model/design/security-requirements/stream-b
+    name: SAMM
+    section: 'D-SR-B: Supplier security'
   ltype: Linked To
 - document:
     doctype: Standard
@@ -147,7 +156,8 @@ links:
 - document:
     doctype: Standard
     name: ISO 27001
-    section: 5.23 Information security for use of cloud services
+    section: Information security for use of cloud services
+    sectionID: '5.23'
   ltype: Linked To
 - document:
     doctype: Standard
@@ -170,8 +180,9 @@ links:
 - document:
     doctype: Standard
     name: ISO 27001
-    section: 5.21 Managing information security in the information and communication
-      technology (ICT) supply chain
+    section: Managing information security in the information and communication technology
+      (ICT) supply chain
+    sectionID: '5.21'
   ltype: Linked To
 - document:
     doctype: Standard
@@ -182,6 +193,7 @@ links:
 - document:
     doctype: Standard
     name: ISO 27001
-    section: 5.22 Monitoring, review and change management of supplier services
+    section: Monitoring, review and change management of supplier services
+    sectionID: '5.22'
   ltype: Linked To
 name: Supply chain management

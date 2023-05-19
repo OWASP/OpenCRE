@@ -18,6 +18,12 @@ links:
   ltype: Contains
 - document:
     doctype: Standard
+    hyperlink: https://owaspsamm.org/model/governance/strategy-and-metrics/stream-b/
+    name: SAMM
+    section: 'G-SM-B: Measure and Improve'
+  ltype: Linked To
+- document:
+    doctype: Standard
     hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=CA-1
     name: NIST 800-53 v5
     section: CA-1 Policy and Procedures

@@ -4,13 +4,16 @@ links:
 - document:
     doctype: CRE
     id: 470-731
-    name: Session logout and timeout
+    name: Minimize session life
   ltype: Contains
 - document:
-    doctype: CRE
-    id: 633-428
-    name: '>>Authentication'
-  ltype: Related
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x12-V3-Session-management.md
+    name: ASVS
+    section: V3.3.2
+    sectionID: If authenticators permit users to remain logged in, verify that re-authentication
+      occurs periodically both when actively used or after an idle period.
+  ltype: Linked To
 - document:
     doctype: Standard
     hyperlink: https://owasp-top-10-proactive-controls-2018.readthedocs.io/en/latest/c6-implement-digital-identity.html
@@ -23,6 +26,12 @@ links:
     name: CWE
     section: ''
     sectionID: '613'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owasp.org/www-project-web-security-testing-guide/v41/4-Web_Application_Security_Testing/06-Session_Management_Testing/07-Testing_Session_Timeout.html
+    name: OWASP Web Security Testing Guide (WSTG)
+    section: WSTG-SESS-07
   ltype: Linked To
 - document:
     doctype: Standard

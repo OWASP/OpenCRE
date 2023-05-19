@@ -3,9 +3,19 @@ id: 757-271
 links:
 - document:
     doctype: CRE
-    id: 601-155
+    id: 124-564
     name: Developer Configuration Management
   ltype: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x10-V1-Architecture.md
+    name: ASVS
+    section: V1.10.1
+    sectionID: Verify that a source code control system is in use, with procedures
+      to ensure that check-ins are accompanied by issues or change tickets. The source
+      code control system should have access control and identifiable users to allow
+      traceability of any changes.
+  ltype: Linked To
 - document:
     doctype: Standard
     hyperlink: https://cwe.mitre.org/data/definitions/284.html
@@ -24,5 +34,11 @@ links:
     hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Virtual_Patching_Cheat_Sheet.html
     name: OWASP Cheat Sheets
     section: Virtual Patching Cheat Sheet
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owaspsamm.org/model/operations/operational-management/stream-b
+    name: SAMM
+    section: 'O-OM-B: System Decommissioning / Legacy Management'
   ltype: Linked To
 name: Use proper source code control system

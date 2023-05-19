@@ -3,15 +3,29 @@ id: 524-603
 links:
 - document:
     doctype: CRE
-    id: 724-770
-    name: '>>Authorized access'
+    id: 123-124
+    name: Minimize permissions
   ltype: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x12-V4-Access-Control.md
+    name: ASVS
+    section: V4.1.2
+    sectionID: Verify that all user and data attributes and policy information used
+      by access controls cannot be manipulated by end users unless specifically authorized.
+  ltype: Linked To
 - document:
     doctype: Standard
     hyperlink: https://cwe.mitre.org/data/definitions/639.html
     name: CWE
     section: ''
     sectionID: '639'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owasp.org/www-project-web-security-testing-guide/v41/4-Web_Application_Security_Testing/05-Authorization_Testing/02-Testing_for_Bypassing_Authorization_Schema.html
+    name: OWASP Web Security Testing Guide (WSTG)
+    section: WSTG-ATHZ-02
   ltype: Linked To
 - document:
     doctype: Standard

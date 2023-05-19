@@ -20,7 +20,8 @@ links:
 - document:
     doctype: Standard
     name: ISO 27001
-    section: 8.14 Redundancy of information processing facilities
+    section: Redundancy of information processing facilities
+    sectionID: '8.14'
   ltype: Linked To
 - document:
     doctype: Standard
@@ -31,7 +32,8 @@ links:
 - document:
     doctype: Standard
     name: ISO 27001
-    section: 5.29 Information security during disruption
+    section: Information security during disruption
+    sectionID: '5.29'
   ltype: Linked To
 - document:
     doctype: Standard
@@ -42,7 +44,8 @@ links:
 - document:
     doctype: Standard
     name: ISO 27001
-    section: 5.3 ICT readiness for business continuity
+    section: ICT readiness for business continuity
+    sectionID: '5.3'
   ltype: Linked To
 - document:
     doctype: Standard

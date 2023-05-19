@@ -4,19 +4,17 @@ links:
 - document:
     doctype: CRE
     id: 503-455
-    name: '>>Input and output verification'
+    name: Input and output protection
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 545-243
+    name: Block execution/output of uploaded files
   ltype: Contains
 - document:
     doctype: CRE
     id: 175-235
     name: Validate file type of data from untrusted sources
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 814-322
-    name: Whitelist data sources and sinks
-    tags:
-    - DOS
   ltype: Contains
 - document:
     doctype: CRE

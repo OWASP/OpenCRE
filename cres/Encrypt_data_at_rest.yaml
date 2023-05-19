@@ -1,10 +1,10 @@
 doctype: CRE
-id: 726-668
+id: 400-007
 links:
 - document:
     doctype: CRE
     id: 126-668
-    name: '>>Secure data storage'
+    name: Secure data storage
   ltype: Contains
 - document:
     doctype: CRE
@@ -21,6 +21,8 @@ links:
     doctype: CRE
     id: 742-432
     name: Encryption algorithms
+    tags:
+    - Cryptography
   ltype: Contains
 - document:
     doctype: CRE

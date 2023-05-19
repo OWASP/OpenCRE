@@ -8,13 +8,13 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 850-376
-    name: Facilities management
+    id: 486-813
+    name: Configuration
   ltype: Related
 - document:
     doctype: CRE
-    id: 486-813
-    name: Configuration
+    id: 850-376
+    name: Facilities management
   ltype: Related
 - document:
     doctype: CRE
@@ -33,6 +33,12 @@ links:
     id: 636-347
     name: HTTP security headers
   ltype: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://owaspsamm.org/model/operations/environment-management/stream-a
+    name: SAMM
+    section: 'O-EM-A: Configuration Hardening'
+  ltype: Linked To
 name: Configuration hardening
 tags:
 - Configuration

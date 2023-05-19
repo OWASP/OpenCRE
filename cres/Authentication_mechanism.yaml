@@ -4,7 +4,7 @@ links:
 - document:
     doctype: CRE
     id: 633-428
-    name: '>>Authentication'
+    name: Authentication
   ltype: Contains
 - document:
     doctype: CRE
@@ -20,6 +20,11 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
+    id: 802-056
+    name: Restrict excessive authentication
+  ltype: Contains
+- document:
+    doctype: CRE
     id: 113-133
     name: Use centralized authentication mechanism
     tags:
@@ -32,13 +37,15 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 520-617
-    name: Credential recovery
+    id: 585-408
+    name: Challenge nonce cryptography
+    tags:
+    - Cryptography
   ltype: Contains
 - document:
     doctype: CRE
-    id: 585-408
-    name: Cryptographic authentication software and devices
+    id: 520-617
+    name: Credential recovery
   ltype: Contains
 - document:
     doctype: CRE
@@ -51,11 +58,6 @@ links:
     name: MFA/OTP
     tags:
     - Cryptography
-  ltype: Contains
-- document:
-    doctype: CRE
-    id: 802-056
-    name: Restrict excessive authentication
   ltype: Contains
 - document:
     doctype: CRE
@@ -80,18 +82,29 @@ links:
 - document:
     doctype: CRE
     id: 177-260
-    name: '>>Session management'
+    name: Session management
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 551-054
+    name: Use ephemeral secrets rather than static secrets
   ltype: Related
 - document:
     doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=IA-6
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=IA-6
     name: NIST 800-53 v5
     section: IA-6 Authentication Feedback
   ltype: Linked To
 - document:
     doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/risk-management/sp800-53-controls/release-search#/control?version=5.1&number=IA-7
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=IA-7
     name: NIST 800-53 v5
     section: IA-7 Cryptographic Module Authentication
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=IA-9
+    name: NIST 800-53 v5
+    section: IA-9 Service Identification and Authentication
   ltype: Linked To
 name: Authentication mechanism

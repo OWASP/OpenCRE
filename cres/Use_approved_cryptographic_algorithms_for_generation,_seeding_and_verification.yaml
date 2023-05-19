@@ -4,13 +4,18 @@ links:
 - document:
     doctype: CRE
     id: 585-408
-    name: Cryptographic authentication software and devices
+    name: Challenge nonce cryptography
+    tags:
+    - Cryptography
   ltype: Contains
 - document:
-    doctype: CRE
-    id: 170-772
-    name: Cryptography
-  ltype: Related
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x11-V2-Authentication.md
+    name: ASVS
+    section: V2.9.3
+    sectionID: Verify that approved cryptographic algorithms are used in the generation,
+      seeding, and verification.
+  ltype: Linked To
 - document:
     doctype: Standard
     hyperlink: https://cwe.mitre.org/data/definitions/327.html
@@ -36,5 +41,3 @@ links:
     section: 5.1.7.2
   ltype: Linked To
 name: Use approved cryptographic algorithms for generation, seeding and verification
-tags:
-- Cryptography
