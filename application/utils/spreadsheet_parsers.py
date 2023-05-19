@@ -688,7 +688,7 @@ def parse_standards(
                     "sectionID": "",
                     "subsection": "",
                     "hyperlink": "Standard SAMM v2 hyperlink",
-                    "version":"v2",
+                    # "version":"v2",
                     "separator": "\n",
                 },
             },
@@ -717,9 +717,6 @@ def parse_standards(
 
                 if len(sections) == 0:
                     sections = [""] * len(sectionIDs)
-
-                if "Top" in name:
-                    pprint("found top 10")
 
                 for section, subsection, link, sectionID in zip(
                     sections, subsections, hyperlinks, sectionIDs
