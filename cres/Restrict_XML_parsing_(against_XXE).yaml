@@ -8,15 +8,15 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 486-813
-    name: Configuration
-  ltype: Related
-- document:
-    doctype: CRE
     id: 760-764
     name: Injection protection
     tags:
     - XSS protection
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 486-813
+    name: Configuration
   ltype: Related
 - document:
     doctype: Standard
@@ -61,5 +61,5 @@ links:
   ltype: Linked To
 name: Restrict XML parsing (against XXE)
 tags:
-- Configuration
 - Injection protection
+- Configuration

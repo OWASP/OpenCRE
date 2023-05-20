@@ -8,8 +8,8 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 155-155
-    name: Architecture
+    id: 708-355
+    name: Secure implemented architecture
   ltype: Related
 - document:
     doctype: CRE
@@ -18,8 +18,8 @@ links:
   ltype: Related
 - document:
     doctype: CRE
-    id: 708-355
-    name: Secure implemented architecture
+    id: 155-155
+    name: Architecture
   ltype: Related
 - document:
     doctype: CRE

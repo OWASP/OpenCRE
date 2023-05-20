@@ -8,13 +8,13 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 724-770
-    name: Technical application access control
+    id: 623-550
+    name: Denial Of Service protection
   ltype: Related
 - document:
     doctype: CRE
-    id: 623-550
-    name: Denial Of Service protection
+    id: 724-770
+    name: Technical application access control
   ltype: Related
 - document:
     doctype: Standard

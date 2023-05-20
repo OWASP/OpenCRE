@@ -65,8 +65,8 @@ links:
     id: 764-507
     name: Restrict XML parsing (against XXE)
     tags:
-    - Configuration
     - Injection protection
+    - Configuration
   ltype: Related
 - document:
     doctype: CRE
