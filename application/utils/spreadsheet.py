@@ -15,7 +15,7 @@ logging.basicConfig()
 
 
 def readSpreadsheet(
-    url: str, cres_loc: str, alias: str, validate: bool = True, parse_numbered_only=True
+    url: str, alias: str, validate: bool = True, parse_numbered_only=True
 ) -> Dict[str, Any]:
     """given remote google spreadsheet url,
     reads each workbook into a collection of documents"""

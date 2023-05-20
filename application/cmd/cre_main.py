@@ -391,7 +391,6 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
     if args.csa_ccm_v3_in:
         ccmv3.parse_ccm(
             ccmFile=sheet_utils.readSpreadsheet(
-                cres_loc="",
                 alias="",
                 url="https://docs.google.com/spreadsheets/d/1b5i8OV919aiqW2KcYWOQvkLorL1bRPqjthJxLH0QpD8",
             ),
@@ -400,7 +399,6 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
     if args.csa_ccm_v4_in:
         ccmv4.parse_ccm(
             ccmFile=sheet_utils.readSpreadsheet(
-                cres_loc="",
                 alias="",
                 url="https://docs.google.com/spreadsheets/d/1QDzQy0wt1blGjehyXS3uaHh7k5OOR12AWgAA1DeACyc",
             ),
@@ -418,7 +416,6 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
     if args.pci_dss_3_2_in:
         pci_dss.parse_3_2(
             pci_file=sheet_utils.readSpreadsheet(
-                cres_loc="",
                 alias="",
                 url="https://docs.google.com/spreadsheets/d/1p-s65MaVrKOnWPEQ_tt7e0fmutCeiJx8EORPNF5TyME",
                 parse_numbered_only=False,
@@ -428,7 +425,6 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
     if args.pci_dss_4_in:
         pci_dss.parse_4(
             pci_file=sheet_utils.readSpreadsheet(
-                cres_loc="",
                 alias="",
                 url="https://docs.google.com/spreadsheets/d/18weo-qbik_C7SdYq7FSP2OMgUmsWdWWI1eaXcAfMz8I",
                 parse_numbered_only=False,

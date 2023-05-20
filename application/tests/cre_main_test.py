@@ -386,7 +386,6 @@ class TestMain(unittest.TestCase):
         mocked_db_connect.assert_called_with(path=cache)
         mocked_readSpreadsheet.assert_called_with(
             url="https://example.com/sheeet",
-            cres_loc=dir,
             alias="new spreadsheet",
             validate=False,
         )

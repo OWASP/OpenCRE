@@ -20,6 +20,7 @@ logging.basicConfig()
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+SIMILARITY_THRESHOLD=0.8
 
 def get_embeddings(openai_key: str, text: str, model: str = "text-embedding-ada-002"):
     openai.api_key = openai_key
@@ -226,10 +227,13 @@ class PromptHandler:
 
         similarities = cosine_similarity(embedding_array, self.existing_cres)
         most_similar_index = np.argmax(similarities)
+        if np.max(similarities) < SIMILARITY_THRESHOLD:
+            logger.info(f"there is no good cre candidate for this standard section, returning nothing")
+            return None
         id = self.existing_cre_ids[most_similar_index]
         return id
 
-    def __get_id_of_most_similar_item(
+    def get_id_of_most_similar_node(
         self, question_embedding: List[float], embeddings: Dict[str, List[float]]
     ) -> str:
         embedding_array = sparse.csr_matrix(
@@ -249,7 +253,7 @@ class PromptHandler:
         logger.info(f"retrieved embeddings for {prompt}")
 
         # Find the closest area in the existing embeddings
-        closest_id = self.__get_id_of_most_similar_item(
+        closest_id = self.get_id_of_most_similar_node(
             question_embedding, self.embeddings_instance.node_embeddings
         )
         closest_object = self.database.get_node_by_db_id(closest_id)

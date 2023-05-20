@@ -81,6 +81,9 @@ import-all:
 	make migrate-upgrade
 	export FLASK_APP=$(CURDIR)/cre.py
 	python cre.py --add --from_spreadsheet https://docs.google.com/spreadsheets/d/1YriDB90xxyB-pEh3FWlWahuhEF-HwItcDgThcQ6fwJU/edit\#gid\=1999053255
-	python cre.py --zap_in --cheatsheets_in --github_tools_in  --capec_in --cwe_in --csa_ccm_v4_in --iso_27001_in --owasp_secure_headers_in
+	python cre.py --generate_embeddings
+	python cre.py --zap_in --cheatsheets_in --github_tools_in  --capec_in --cwe_in --csa_ccm_v4_in --iso_27001_in --owasp_secure_headers_in --pci_dss_4_in
+	python cre.py --generate_embeddings
+	
 
 all: clean lint test dev dev-run
