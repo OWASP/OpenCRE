@@ -380,6 +380,8 @@ def chat_cre() -> Any:
 
 
 class CREFlow:
+    """ "This class handles authentication with google's oauth"""
+
     __instance = None
     flow = None
 
@@ -390,11 +392,15 @@ class CREFlow:
             client_secrets_file = os.path.join(
                 pathlib.Path(__file__).parent.parent.parent, "gcp_secret.json"
             )
-            if not os.path.exists(client_secrets_file) and os.environ.get("GOOGLE_SECRET_JSON"):
-                with open(client_secrets_file, "w")as f:
+            if not os.path.exists(client_secrets_file) and os.environ.get(
+                "GOOGLE_SECRET_JSON"
+            ):
+                with open(client_secrets_file, "w") as f:
                     f.write(os.environ.get("GOOGLE_SECRET_JSON"))
             else:
-                logger.fatal("neither file gcp_secret.json nor env GOOGLE_SECRET_JSON have been set")
+                logger.fatal(
+                    "neither file gcp_secret.json nor env GOOGLE_SECRET_JSON have been set"
+                )
 
             cls.flow = Flow.from_client_secrets_file(
                 client_secrets_file=client_secrets_file,

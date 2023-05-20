@@ -26,9 +26,7 @@ def upgrade():
         sa.Column("node_id", sa.String(), nullable=False),
         sa.Column("embeddings_content", sa.String(), nullable=False),
         sa.Column("embeddings_url", sa.String(), nullable=False),
-        sa.PrimaryKeyConstraint(
-            "doc_type", "cre_id", "node_id", name="uq_entry"
-        ),
+        sa.PrimaryKeyConstraint("doc_type", "cre_id", "node_id", name="uq_entry"),
     )
     # ### end Alembic commands ###
 

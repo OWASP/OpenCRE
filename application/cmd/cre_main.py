@@ -24,6 +24,7 @@ from application.utils.external_project_parsers import (
     zap_alerts_parser,
     iso27001,
     secure_headers,
+    pci_dss,
 )
 from application.prompt_client import prompt_client as prompt_client
 from dacite import from_dict
@@ -240,7 +241,7 @@ def add_from_spreadsheet(spreadsheet_url: str, cache_loc: str, cre_loc: str) -> 
     """
     database = db_connect(path=cache_loc)
     spreadsheet = sheet_utils.readSpreadsheet(
-        url=spreadsheet_url, cres_loc=cre_loc, alias="new spreadsheet", validate=False
+        url=spreadsheet_url, alias="new spreadsheet", validate=False
     )
     for worksheet, contents in spreadsheet.items():
         parse_standards_from_spreadsheeet(contents, database)
@@ -279,7 +280,7 @@ def review_from_spreadsheet(cache: str, spreadsheet_url: str, share_with: str) -
     loc, cache = prepare_for_review(cache)
     database = db_connect(path=cache)
     spreadsheet = sheet_utils.readSpreadsheet(
-        url=spreadsheet_url, cres_loc=loc, alias="new spreadsheet", validate=False
+        url=spreadsheet_url, alias="new spreadsheet", validate=False
     )
     for _, contents in spreadsheet.items():
         parse_standards_from_spreadsheeet(contents, database)
@@ -412,6 +413,26 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
         )
     if args.owasp_secure_headers_in:
         secure_headers.parse(
+            cache=db_connect(args.cache_file),
+        )
+    if args.pci_dss_3_2_in:
+        pci_dss.parse_3_2(
+            pci_file=sheet_utils.readSpreadsheet(
+                cres_loc="",
+                alias="",
+                url="https://docs.google.com/spreadsheets/d/1p-s65MaVrKOnWPEQ_tt7e0fmutCeiJx8EORPNF5TyME",
+                parse_numbered_only=False,
+            ),
+            cache=db_connect(args.cache_file),
+        )
+    if args.pci_dss_4_in:
+        pci_dss.parse_4(
+            pci_file=sheet_utils.readSpreadsheet(
+                cres_loc="",
+                alias="",
+                url="https://docs.google.com/spreadsheets/d/18weo-qbik_C7SdYq7FSP2OMgUmsWdWWI1eaXcAfMz8I",
+                parse_numbered_only=False,
+            ),
             cache=db_connect(args.cache_file),
         )
     if args.generate_embeddings:

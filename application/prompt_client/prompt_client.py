@@ -37,7 +37,8 @@ def is_valid_url(url):
 
 class in_memory_embeddings:
     __instance = None
-    embeddings: Dict[str, List[float]] = {}
+    node_embeddings: Dict[str, List[float]] = {}
+    cre_embeddings: Dict[str, List[float]] = {}
     __webkit = None
     __browser = None
     __context = None
@@ -84,71 +85,99 @@ class in_memory_embeddings:
     def instance(cls, database: db.Node_collection, openai_key: str):
         if cls.__instance is None:
             cls.__instance = cls.__new__(cls)
-            
+
             missing_embeddings = cls.load_embeddings(database)
             if missing_embeddings:
-                if  not os.environ.get("NO_GEN_EMBEDDINGS"): # in case we want to run without connectivity to openai or playwright
+                if not os.environ.get(
+                    "NO_GEN_EMBEDDINGS"
+                ):  # in case we want to run without connectivity to openai or playwright
                     cls.__playwright = sync_playwright().start()
                     nltk.download("punkt")
                     nltk.download("stopwords")
                     cls.__webkit = cls.__playwright.webkit
-                    cls.__browser = cls.__webkit.launch()  # headless=False, slow_mo=1000)
+                    cls.__browser = (
+                        cls.__webkit.launch()
+                    )  # headless=False, slow_mo=1000)
                     cls.__context = cls.__browser.new_context()
-                    
-                    cls.generate_embeddings(database,missing_embeddings, openai_key)
+
+                    cls.generate_embeddings(database, missing_embeddings, openai_key)
                     cls.__browser.close()
                     cls.__playwright.stop()
                 else:
-                    logger.info(f"there are {len(missing_embeddings)} embeddings missing from the dataset, your db is inclompete")                
+                    logger.info(
+                        f"there are {len(missing_embeddings)} embeddings missing from the dataset, your db is inclompete"
+                    )
         return cls.__instance
 
     @classmethod
-    def load_embeddings(cls, database: db.Node_collection)->List[str]:
+    def load_embeddings(cls, database: db.Node_collection) -> List[str]:
         logger.info(f"syncing nodes with embeddings")
         missing_embeddings = []
         for doc_type in cre_defs.Credoctypes:
+            db_ids = []
             if doc_type.value == cre_defs.Credoctypes.CRE:
-                pass  # TODO: if there is ever a need to correlate with CREs, load cre embeddings
+                db_ids = [a[0] for a in database.list_cre_ids()]
             else:
-                node_ids = [
-                    a[0] for a in database.list_node_ids_by_ntype(doc_type.value)
-                ]
-                embeddings = database.get_embeddings_by_doc_type(doc_type.value)
-                for id, embedding in embeddings.items():
-                    cls.embeddings[id] = embedding
-                a = [
-                    node_id for node_id in embeddings.keys() if node_id not in node_ids
-                ]  # embeddings that have no nodes (bug detection?)
-                b = [
-                    node_id for node_id in node_ids if node_id not in embeddings.keys()
-                ]
-                if a != []:
-                    logger.fatal(
-                        "the following embeddings have no corresponding nodes, BUG", a
-                    )
-                
-                if b != []:
-                    missing_embeddings.extend(b)
+                db_ids = [a[0] for a in database.list_node_ids_by_ntype(doc_type.value)]
+
+            embeddings = database.get_embeddings_by_doc_type(doc_type.value)
+            for id, embedding in embeddings.items():
+                if doc_type.value == cre_defs.Credoctypes.CRE:
+                    cls.cre_embeddings[id] = embedding
+                else:
+                    cls.node_embeddings[id] = embedding
+            a = [
+                db_id for db_id in embeddings.keys() if db_id not in db_ids
+            ]  # embeddings that have no nodes (bug detection?)
+            b = [db_id for db_id in db_ids if db_id not in embeddings.keys()]
+            if a != []:
+                logger.fatal(
+                    "the following embeddings have no corresponding nodes, BUG", a
+                )
+            if b != []:
+                missing_embeddings.extend(b)
         return missing_embeddings
+
     @classmethod
-    def generate_embeddings(cls,database: db.Node_collection, missing_embeddings: List[str], openai_key: str):
+    def generate_embeddings(
+        cls,
+        database: db.Node_collection,
+        missing_embeddings: List[str],
+        openai_key: str,
+    ):
+        """method generate embeddings accepts a list of Database IDs of object which do not have embeddings and generates embeddings for those objects"""
         logger.info(f"generating {len(missing_embeddings)} embeddings")
         for id in missing_embeddings:
+            cre = database.get_cre_by_db_id(id)
             node = database.get_node_by_db_id(id)
             content = ""
-            if is_valid_url(node.hyperlink):
-                content = cls.clean_content(cls.get_content(node.hyperlink))
-            else:
-                content = f"{node.doctype}\n name:{node.name}\n section:{node.section}\n subsection:{node.subsection}\n section_id:{node.sectionID}\n "
+            if node:
+                if is_valid_url(node.hyperlink):
+                    content = cls.clean_content(cls.get_content(node.hyperlink))
+                else:
+                    content = f"{node.doctype}\n name:{node.name}\n section:{node.section}\n subsection:{node.subsection}\n section_id:{node.sectionID}\n "
+                logger.info(f"making embedding for {node.hyperlink}")
 
-            logger.info(f"making embedding for {node.hyperlink}")
-            embedding = get_embeddings(openai_key, content)
-            dbnode = db.dbNodeFromNode(node)
-            if not dbnode:
-                logger.fatal(node, "cannot be converted to database Node")
-            dbnode.id = id
-            database.add_embedding(dbnode, node.doctype, embedding, content)
-            cls.embeddings[id] = embedding
+                embedding = get_embeddings(openai_key, content)
+                dbnode = db.dbNodeFromNode(node)
+                if not dbnode:
+                    logger.fatal(node, "cannot be converted to database Node")
+                    continue
+                dbnode.id = id
+                database.add_embedding(dbnode, node.doctype, embedding, content)
+                cls.node_embeddings[id] = embedding
+            elif cre:
+                content = f"{cre.doctype}\n name:{cre.name}\n description:{cre.description}\n id:{cre.id}\n "
+                logger.info(f"making embedding for {content}")
+                embedding = get_embeddings(openai_key, content)
+                dbcre = db.dbCREfromCRE(cre)
+                if not dbcre:
+                    logger.fatal(node, "cannot be converted to database Node")
+                dbcre.id = id
+                database.add_embedding(
+                    dbcre, cre_defs.Credoctypes.CRE, embedding, content
+                )
+                cls.cre_embeddings[id] = embedding
 
 
 class PromptHandler:
@@ -158,23 +187,53 @@ class PromptHandler:
         self.embeddings_instance = in_memory_embeddings.instance(
             database, openai_key=openai_key
         )
+
         existing = []
         existing_ids = []
-        for id, e in self.embeddings_instance.embeddings.items():
+        for id, e in self.embeddings_instance.node_embeddings.items():
             existing.append(e)
             existing_ids.append(id)
         self.existing = sparse.csr_matrix(np.array(existing).astype(np.float64))
         self.existing_ids = existing_ids
-        if not self.embeddings_instance or not self.embeddings_instance.embeddings:
+        if not self.embeddings_instance or not self.embeddings_instance.node_embeddings:
             logger.fatal(
-                f"in memory embeddings is {self.embeddings_instance} and embeddings are {self.embeddings_instance.embeddings} bug?"
+                f"in memory embeddings is {self.embeddings_instance} and embeddings are {self.embeddings_instance.node_embeddings} bug?"
             )
 
-    def __get_id_of_most_similar_item(
-        self, embedding: List[float], embeddings: Dict[str, List[float]]
+        existing_cres = []
+        existing_cre_ids = []
+        for id, e in self.embeddings_instance.cre_embeddings.items():
+            existing_cres.append(e)
+            existing_cre_ids.append(id)
+        self.existing_cres = sparse.csr_matrix(
+            np.array(existing_cres).astype(np.float64)
+        )
+        self.existing_cre_ids = existing_cre_ids
+        if not self.embeddings_instance or not self.embeddings_instance.cre_embeddings:
+            logger.fatal(
+                f"in memory embeddings is {self.embeddings_instance} and embeddings are {self.embeddings_instance.cre_embeddings} bug?"
+            )
+
+    def get_cre_embeddings(self):
+        return self.embeddings_instance.cre_embeddings
+
+    def get_id_of_most_similar_cre(
+        self, item_embedding: List[float], embeddings: Dict[str, List[float]]
     ) -> str:
         embedding_array = sparse.csr_matrix(
-            np.array(embedding).reshape(1, -1)
+            np.array(item_embedding).reshape(1, -1)
+        )  # convert embedding into a 1-dimentional numpy array
+
+        similarities = cosine_similarity(embedding_array, self.existing_cres)
+        most_similar_index = np.argmax(similarities)
+        id = self.existing_cre_ids[most_similar_index]
+        return id
+
+    def __get_id_of_most_similar_item(
+        self, question_embedding: List[float], embeddings: Dict[str, List[float]]
+    ) -> str:
+        embedding_array = sparse.csr_matrix(
+            np.array(question_embedding).reshape(1, -1)
         )  # convert embedding into a 1-dimentional numpy array
         similarities = cosine_similarity(embedding_array, self.existing)
         most_similar_index = np.argmax(similarities)
@@ -191,7 +250,7 @@ class PromptHandler:
 
         # Find the closest area in the existing embeddings
         closest_id = self.__get_id_of_most_similar_item(
-            question_embedding, self.embeddings_instance.embeddings
+            question_embedding, self.embeddings_instance.node_embeddings
         )
         closest_object = self.database.get_node_by_db_id(closest_id)
         closest_object_str = "\n".join(

@@ -558,8 +558,14 @@ class Node_collection:
     def get_node_by_db_id(self, id: str) -> cre_defs.Node:
         return nodeFromDB(self.session.query(Node).filter(Node.id == id).first())
 
+    def get_cre_by_db_id(self, id: str) -> cre_defs.CRE:
+        return CREfromDB(self.session.query(CRE).filter(CRE.id == id).first())
+
     def list_node_ids_by_ntype(self, ntype: str) -> List[str]:
         return self.session.query(Node.id).filter(Node.ntype == ntype).all()
+
+    def list_cre_ids(self) -> List[str]:
+        return self.session.query(CRE.id).all()
 
     def __get_nodes_query__(
         self,
@@ -1200,6 +1206,29 @@ class Node_collection:
                 res[entry.node_id] = [float(e) for e in entry.embeddings.split(",")]
         return res
 
+    def get_embeddings_for_doc(self, doc: cre_defs.Node | cre_defs.CRE) -> Embeddings:
+        if doc.doctype == cre_defs.Credoctypes.CRE:
+            obj = self.session.query(CRE).filter(CRE.external_id == doc.id).first()
+            return (
+                self.session.query(Embeddings)
+                .filter(Embeddings.cre_id == obj.id)
+                .first()
+            )
+        else:
+            node = dbNodeFromNode(doc)
+            if not node:
+                logger.warning(
+                    f"cannot get embeddings for doc {doc.todict()} it's not translatable to a database document"
+                )
+                return None
+            obj = self.object_select(node)
+            if obj:
+                return (
+                    self.session.query(Embeddings)
+                    .filter(Embeddings.node_id == obj[0].id)
+                    .first()
+                )
+
     def get_embedding(self, object_id: str) -> Optional[Embeddings]:
         return (
             self.session.query(Embeddings)
@@ -1229,7 +1258,6 @@ class Node_collection:
                     cre_id=db_object.id,
                     doc_type=cre_defs.Credoctypes.CRE.value,
                     embeddings_content=embedding_text,
-                    embeddings_url=db_object.link,
                 )
             else:
                 emb = Embeddings(
@@ -1357,6 +1385,8 @@ def nodeFromDB(dbnode: Node) -> cre_defs.Node:
 
 
 def CREfromDB(dbcre: CRE) -> cre_defs.CRE:
+    if not dbcre:
+        return None
     tags = []
     if dbcre.tags:
         tags = list(set(dbcre.tags.split(",")))
