@@ -12,8 +12,8 @@ export interface Document {
   subsection?: string;
   tags?: string[];
   tooltype?: string;
-  sectionID?: string
-  version?:string;
+  sectionID?: string;
+  version?: string;
 }
 export interface LinkedDocument {
   document: Document;
