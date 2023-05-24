@@ -19,16 +19,16 @@ links:
     name: Store and serve user-uploaded files such that they cannot execute/damage
       server or client
     tags:
-    - XSS protection
     - Injection protection
+    - XSS protection
   ltype: Related
 - document:
     doctype: CRE
     id: 010-308
     name: Input validation
     tags:
-    - XSS protection
     - Injection protection
+    - XSS protection
   ltype: Related
 - document:
     doctype: CRE
@@ -42,16 +42,16 @@ links:
     id: 161-451
     name: Output encoding and injection prevention
     tags:
-    - XSS protection
     - Injection protection
+    - XSS protection
   ltype: Related
 - document:
     doctype: CRE
     id: 764-765
     name: Sanitization and sandboxing
     tags:
-    - XSS protection
     - Injection protection
+    - XSS protection
   ltype: Related
 - document:
     doctype: CRE
@@ -65,8 +65,8 @@ links:
     id: 764-507
     name: Restrict XML parsing (against XXE)
     tags:
-    - Injection protection
     - Configuration
+    - Injection protection
   ltype: Related
 - document:
     doctype: CRE
