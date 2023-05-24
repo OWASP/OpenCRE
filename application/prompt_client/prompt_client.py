@@ -4,10 +4,9 @@ from datetime import datetime
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from sklearn.metrics.pairwise import cosine_similarity
-from typing import Any, Dict, List, Optional, Tuple, cast
+from typing import Dict, List, Any
 import logging
 import numpy as np
-import openai
 import os
 import re
 import requests
@@ -15,23 +14,13 @@ from playwright.sync_api import sync_playwright
 import nltk
 from multiprocessing import Pool
 from scipy import sparse
+from application.prompt_client import openai_prompt_client,vertex_prompt_client
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 SIMILARITY_THRESHOLD = 0.8
-
-
-def get_embeddings(openai_key: str, text: str, model: str = "text-embedding-ada-002"):
-    openai.api_key = openai_key
-    if len(text) > 8000:
-        logger.info(
-            f"embedding content is more than the openai hard limit of 8k tokens, reducing to 8000"
-        )
-        text = text[:8000]
-    return openai.Embedding.create(input=[text], model=model)["data"][0]["embedding"]
-
 
 def is_valid_url(url):
     return url.startswith("http://") or url.startswith("https://")
@@ -84,7 +73,7 @@ class in_memory_embeddings:
         return " ".join(words)
 
     @classmethod
-    def instance(cls, database: db.Node_collection, openai_key: str):
+    def instance(cls, database: db.Node_collection, ai_client:Any):
         if cls.__instance is None:
             cls.__instance = cls.__new__(cls)
 
@@ -92,7 +81,7 @@ class in_memory_embeddings:
             if missing_embeddings:
                 if not os.environ.get(
                     "NO_GEN_EMBEDDINGS"
-                ):  # in case we want to run without connectivity to openai or playwright
+                ):  # in case we want to run without connectivity to ai_client or playwright
                     cls.__playwright = sync_playwright().start()
                     nltk.download("punkt")
                     nltk.download("stopwords")
@@ -102,7 +91,7 @@ class in_memory_embeddings:
                     )  # headless=False, slow_mo=1000)
                     cls.__context = cls.__browser.new_context()
 
-                    cls.generate_embeddings(database, missing_embeddings, openai_key)
+                    cls.generate_embeddings(database, missing_embeddings, ai_client)
                     cls.__browser.close()
                     cls.__playwright.stop()
                 else:
@@ -145,7 +134,7 @@ class in_memory_embeddings:
         cls,
         database: db.Node_collection,
         missing_embeddings: List[str],
-        openai_key: str,
+        ai_client,
     ):
         """method generate embeddings accepts a list of Database IDs of object which do not have embeddings and generates embeddings for those objects"""
         logger.info(f"generating {len(missing_embeddings)} embeddings")
@@ -160,7 +149,7 @@ class in_memory_embeddings:
                     content = f"{node.doctype}\n name:{node.name}\n section:{node.section}\n subsection:{node.subsection}\n section_id:{node.sectionID}\n "
                 logger.info(f"making embedding for {node.hyperlink}")
 
-                embedding = get_embeddings(openai_key, content)
+                embedding = ai_client.get_text_embeddings(content)
                 dbnode = db.dbNodeFromNode(node)
                 if not dbnode:
                     logger.fatal(node, "cannot be converted to database Node")
@@ -171,7 +160,7 @@ class in_memory_embeddings:
             elif cre:
                 content = f"{cre.doctype}\n name:{cre.name}\n description:{cre.description}\n id:{cre.id}\n "
                 logger.info(f"making embedding for {content}")
-                embedding = get_embeddings(openai_key, content)
+                embedding = ai_client.get_text_embeddings(content)
                 dbcre = db.dbCREfromCRE(cre)
                 if not dbcre:
                     logger.fatal(node, "cannot be converted to database Node")
@@ -181,14 +170,22 @@ class in_memory_embeddings:
                 )
                 cls.cre_embeddings[id] = embedding
 
-
 class PromptHandler:
-    def __init__(self, database: db.Node_collection, openai_key: str) -> None:
-        self.api_key = openai_key
+    def __init__(self, database: db.Node_collection) -> None:
+        self.ai_client = None
+        if os.environ.get("SERVICE_ACCOUNT_CREDENTIALS"):
+            logger.info("using Google Vertex AI engine")
+            self.ai_client = vertex_prompt_client.VertexPromptClient(
+                os.environ.get("VERTEX_PROJECT_ID"),
+                os.environ.get("VERTEX_PROJECT_LOCATION"),
+            )
+        elif os.getenv("OPENAI_API_KEY"):
+            logger.info("using Open AI engine")
+            self.ai_client = openai_prompt_client.OpenAIPromptClient(os.getenv("OPENAI_API_KEY"))
+        else:
+            logger.error("cannot instantiate ai client, neither OPENAI_API_KEY nor GOOGLE_APPLICATION_CREDENTIALS are set ")
         self.database = database
-        self.embeddings_instance = in_memory_embeddings.instance(
-            database, openai_key=openai_key
-        )
+        self.embeddings_instance = in_memory_embeddings.instance(database, ai_client=self.ai_client)
 
         existing = []
         existing_ids = []
@@ -215,6 +212,8 @@ class PromptHandler:
             logger.fatal(
                 f"in memory embeddings is {self.embeddings_instance} and embeddings are {self.embeddings_instance.cre_embeddings} bug?"
             )
+    def get_text_embeddings(self, text):
+        return self.ai_client.get_text_embeddings(text)
 
     def get_cre_embeddings(self):
         return self.embeddings_instance.cre_embeddings
@@ -252,7 +251,7 @@ class PromptHandler:
         if not prompt:
             return {"response": "", "table": "", "timestamp": timestamp}
         logger.info(f"getting embeddings for {prompt}")
-        question_embedding = get_embeddings(self.api_key, prompt)
+        question_embedding = self.ai_client.get_text_embeddings(prompt)
         logger.info(f"retrieved embeddings for {prompt}")
 
         # Find the closest area in the existing embeddings
@@ -267,27 +266,9 @@ class PromptHandler:
         ]  # openai has a model limit of 8100 characters
         logger.info(f"most similar object is {closest_object.name}")
 
-        # Send the question and the closest area to the LLM to get an answer
-        messages = [
-            {
-                "role": "system",
-                "content": "Assistant is a large language model trained by OpenAI.",
-            },
-            {
-                "role": "user",
-                "content": f"Answer the following question based on this area of knowledge: {closest_object_str} delimit any code snippet with three backticks \nQuestion: {prompt}",
-            },
-        ]
 
-        openai.api_key = self.api_key
-        response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=messages,
-        )
+        answer = self.ai_client.create_chat_completion(prompt=prompt,closest_object_str=closest_object_str,)
         logger.info(f"retrieved completion from openAI for {prompt}")
-
-        answer = response.choices[0].message["content"].strip()
-
         table = [closest_object]
         result = f"Answer: {answer}"
         return {"response": result, "table": table, "timestamp": timestamp}
