@@ -8,7 +8,7 @@ async-timeout==4.0.2
 attrs==19.3.0
 bcrypt==4.0.1
 beautifulsoup4==4.12.2
-black==23.1.0
+black
 Brotli==1.0.9
 cachetools==4.1.1
 certifi==2020.6.20
@@ -93,7 +93,7 @@ Mako==1.1.5
 MarkupSafe==2.1.2
 marshmallow==3.14.1
 marshmallow-enum==1.5.1
-matplotlib==3.5.2
+matplotlib
 mccabe==0.6.1
 more-itertools==7.0.0
 multidict==6.0.4
@@ -121,7 +121,7 @@ pip-autoremove==0.9.1
 platformdirs==2.2.0
 playwright==1.33.0
 pluggy==1.0.0
-prance==0.22.11.4.0
+prance
 prompt-toolkit==3.0.19
 proto-plus==1.22.2
 protobuf==4.23.1
