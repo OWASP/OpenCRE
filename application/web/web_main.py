@@ -251,9 +251,12 @@ def text_search() -> Any:
 def find_root_cres() -> Any:
     """Useful for fast browsing the graph from the top"""
     database = db.Node_collection()
+    logger.info("got database")
     opt_osib = request.args.get("osib")
     opt_format = request.args.get("format")
     documents = database.get_root_cres()
+    logger.info(f"got {len(documents)} cres")
+    
     if documents:
         res = [doc.todict() for doc in documents]
         result = {"data": res}
@@ -362,6 +365,8 @@ def login_required(f):
     @wraps(f)
     def login_r(*args, **kwargs):
         if "google_id" not in session or "name" not in session:
+            from pprint import pprint
+            pprint(session)
             return abort(401)
         else:
             return f(*args, **kwargs)
