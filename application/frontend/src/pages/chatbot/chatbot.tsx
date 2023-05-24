@@ -125,8 +125,8 @@ export const Chatbot = () => {
                         >
                           <Comment>
                             <Comment.Content>
-                              <Comment.Avatar src=""></Comment.Avatar>
-                              <Comment.Avatar src=""></Comment.Avatar>
+                              {/* <Comment.Avatar src=""></Comment.Avatar> */}
+                              {/* <Comment.Avatar src=""></Comment.Avatar> */}
                               <Comment.Author as="b">{m.role}</Comment.Author>
                               <Comment.Metadata>
                                 <span className="timestamp">{m.timestamp}</span>

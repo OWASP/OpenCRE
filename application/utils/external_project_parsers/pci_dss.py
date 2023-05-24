@@ -4,7 +4,7 @@ import os
 from typing import Dict, Any
 from application.database import db
 from application.defs import cre_defs as defs
-
+import re
 from application.utils import spreadsheet as sheet_utils
 from application.prompt_client import prompt_client as prompt_client
 
@@ -14,7 +14,7 @@ logger.setLevel(logging.INFO)
 
 NAME = "PCI DSS"
 
-
+# todo: remove [CUSTOMIZED APPROACH OBJECTIVE]:.....
 def __parse(
     pci_file: Dict[str, Any],
     cache: db.Node_collection,
@@ -22,12 +22,12 @@ def __parse(
     pci_file_tab: str,
     standard_to_spreadsheet_mappings: Dict[str, str],
 ):
-    prompt = prompt_client.PromptHandler(cache, os.getenv("OPENAI_API_KEY"))
-
+    prompt = prompt_client.PromptHandler(cache)
+    
     for row in pci_file.get(pci_file_tab):
         pci_control = defs.Standard(
             name=NAME,
-            section=str(row.get(standard_to_spreadsheet_mappings["section"], "")),
+            section=re.sub("([CUSTOMIZED APPROACH OBJECTIVE]:.*)","",str(row.get(standard_to_spreadsheet_mappings["section"], ""))),
             sectionID=str(row.get(standard_to_spreadsheet_mappings["sectionID"], "")),
             description=str(
                 row.get(standard_to_spreadsheet_mappings["description"], "")
@@ -46,9 +46,7 @@ def __parse(
                     f"Node {pci_control.todict()} already exists and has embeddings, skipping"
                 )
 
-        control_embeddings = prompt_client.get_embeddings(
-            os.getenv("OPENAI_API_KEY"), pci_control.__repr__()
-        )
+        control_embeddings = prompt.get_text_embeddings(pci_control.__repr__())
         # these embeddings are different to the ones generated from --generate embeddings, this is because we want these embedding to include the optional "description" field, it is not a big difference and cosine similarity works reasonably accurately without it but good to have
         cre_id = prompt.get_id_of_most_similar_cre(control_embeddings, {})
         if not cre_id:

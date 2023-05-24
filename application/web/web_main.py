@@ -374,7 +374,7 @@ def login_required(f):
 def chat_cre() -> Any:
     message = request.get_json(force=True)
     database = db.Node_collection()
-    prompt = prompt_client.PromptHandler(database, os.getenv("OPENAI_API_KEY"))
+    prompt = prompt_client.PromptHandler(database)
     response = prompt.generate_text(message.get("prompt"))
     return jsonify(response)
 
@@ -419,6 +419,11 @@ class CREFlow:
 
 @app.route("/rest/v1/login")
 def login():
+    if os.environ.get("NO_LOGIN"):
+        session["state"] = {"state":True}
+        session["google_id"] = "some dev id"
+        session["name"] = "dev user"
+        return redirect("/chatbot")
     flow_instance = CREFlow.instance()
     authorization_url, state = flow_instance.flow.authorization_url()
     session["state"] = state

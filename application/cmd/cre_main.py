@@ -519,7 +519,7 @@ def export_to_osib(file_loc: str, cache: str) -> None:
 
 def generate_embeddings(db_url: str) -> None:
     database = db_connect(path=db_url)
-    prompt = prompt_client.PromptHandler(database, os.getenv("OPENAI_API_KEY"))
+    prompt = prompt_client.PromptHandler(database)
 
 
 def owasp_metadata_to_cre(meta_file: str):
