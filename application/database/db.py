@@ -1,3 +1,4 @@
+import os
 import logging
 import re
 from collections import Counter
@@ -232,7 +233,8 @@ class Node_collection:
     session = sqla.session
 
     def __init__(self) -> None:
-        self.graph = CRE_Graph.instance(sqla.session)
+        if not os.environ.get("HEROKU"):
+            self.graph = CRE_Graph.instance(sqla.session)
         self.session = sqla.session
 
     def __get_external_links(self) -> List[Tuple[CRE, Node, str]]:
@@ -283,6 +285,9 @@ class Node_collection:
         return cres
 
     def __introduces_cycle(self, node_from: str, node_to: str) -> Any:
+        if not self.graph:
+            logger.error("graph is null")
+            return None
         try:
             existing_cycle = nx.find_cycle(self.graph.graph)
             if existing_cycle:
@@ -838,7 +843,8 @@ class Node_collection:
             )
             self.session.add(entry)
             self.session.commit()
-            self.graph = self.graph.add_cre(dbcre=entry, graph=self.graph)
+            if self.graph:
+                self.graph = self.graph.add_cre(dbcre=entry, graph=self.graph)
         return entry
 
     def add_node(
@@ -863,8 +869,8 @@ class Node_collection:
             logger.debug(f"did not know of {dbnode.name}:{dbnode.section} ,adding")
             self.session.add(dbnode)
             self.session.commit()
-
-            self.graph = self.graph.add_dbnode(dbnode=dbnode, graph=self.graph)
+            if self.graph:
+                self.graph = self.graph.add_dbnode(dbnode=dbnode, graph=self.graph)
         return dbnode
 
     def add_internal_link(
@@ -954,9 +960,10 @@ class Node_collection:
                     InternalLinks(type=type.value, cre=cre.id, group=group.id)
                 )
                 self.session.commit()
-                self.graph.add_edge(
-                    f"CRE: {group.id}", f"CRE: {cre.id}", ltype=type.value
-                )
+                if self.graph:
+                    self.graph.add_edge(
+                        f"CRE: {group.id}", f"CRE: {cre.id}", ltype=type.value
+                    )
             else:
                 logger.warning(
                     f"A link between CREs {group.external_id}-{group.name} and"
@@ -1002,9 +1009,10 @@ class Node_collection:
                     " ,adding"
                 )
                 self.session.add(Links(type=type.value, cre=cre.id, node=node.id))
-                self.graph.add_edge(
-                    f"CRE: {cre.id}", f"Node: {str(node.id)}", ltype=type.value
-                )
+                if self.graph:
+                    self.graph.add_edge(
+                        f"CRE: {cre.id}", f"Node: {str(node.id)}", ltype=type.value
+                    )
             else:
                 logger.warning(
                     f"A link between CRE {cre.external_id}"
@@ -1147,40 +1155,40 @@ class Node_collection:
         """
         # select distinct name from cre join cre_links on cre.id=cre_links."group"
         # where cre.id not in (select cre from cre_links );                                                                                
-        # cres = self.session.query(CRE).join(InternalLinks,CRE.id==InternalLinks.group).filter(
-        #     CRE.ID.not_in(self.session.query(InternalLinks.CRE))).all()
-        # return [CREfromDB(c) for c in cres]
+        cres = self.session.query(CRE).join(InternalLinks,CRE.id==InternalLinks.group).filter(
+            CRE.ID.not_in(self.session.query(InternalLinks.CRE))).all()
+        return [CREfromDB(c) for c in cres]
     
-        def node_is_root(node):
-            return node.startswith("CRE") and (
-                self.graph.graph.in_degree(node) == 0
-                or not [
-                    edge
-                    for edge in self.graph.graph.in_edges(node)
-                    if self.graph.graph.get_edge_data(*edge)["ltype"]
-                    != cre_defs.LinkTypes.Related.value
-                ]
-            )  # there are no incoming edges with relationships other than RELATED
+        # def node_is_root(node):
+        #     return node.startswith("CRE") and (
+        #         self.graph.graph.in_degree(node) == 0
+        #         or not [
+        #             edge
+        #             for edge in self.graph.graph.in_edges(node)
+        #             if self.graph.graph.get_edge_data(*edge)["ltype"]
+        #             != cre_defs.LinkTypes.Related.value
+        #         ]
+        #     )  # there are no incoming edges with relationships other than RELATED
 
-        nodes = filter(node_is_root, self.graph.graph.nodes)
+        # nodes = filter(node_is_root, self.graph.graph.nodes)
 
-        result = []
+        # result = []
 
-        for nodeid in nodes:
-            if (
-                not self.graph.graph.nodes[nodeid].get("internal_id")
-                or "internal_id" not in self.graph.graph.nodes[nodeid]
-            ):
-                logger.warning(
-                    "root cre has no internal id, this is a bug in the graph"
-                )
-                logger.warning(self.graph.graph.nodes[nodeid].get("internal_id"))
-            result.extend(
-                self.get_CREs(
-                    internal_id=self.graph.graph.nodes[nodeid].get("internal_id")
-                )
-            )
-        return result
+        # for nodeid in nodes:
+        #     if (
+        #         not self.graph.graph.nodes[nodeid].get("internal_id")
+        #         or "internal_id" not in self.graph.graph.nodes[nodeid]
+        #     ):
+        #         logger.warning(
+        #             "root cre has no internal id, this is a bug in the graph"
+        #         )
+        #         logger.warning(self.graph.graph.nodes[nodeid].get("internal_id"))
+        #     result.extend(
+        #         self.get_CREs(
+        #             internal_id=self.graph.graph.nodes[nodeid].get("internal_id")
+        #         )
+        #     )
+        # return result
         # result = []
         # # select distinct name from cre left join cre_links on cre.id=cre_links."group" where cre.id not in (select cre from cre_links where type='Contains');
         # subquery = (
