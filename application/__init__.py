@@ -1,4 +1,5 @@
 # type:ignore
+import string
 from typing import Any
 from sqlalchemy import MetaData
 from flask import Flask
@@ -8,6 +9,7 @@ from flask_caching import Cache
 from flask_compress import Compress
 from application.config import config
 import os
+import random
 
 convention = {
     "ix": "ix_%(column_0_label)s",
@@ -30,6 +32,9 @@ def create_app(mode: str = "production", conf: any = None) -> Any:
         app.config.from_object(conf)
     GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET")
     app.secret_key = GOOGLE_CLIENT_SECRET
+    if os.environ.get("NO_LOGIN"):
+        letters = string.ascii_lowercase
+        app.secret_key = ''.join(random.choice(letters) for i in range(20))
 
     # config[mode].init_app(app)
     sqla.init_app(app=app)

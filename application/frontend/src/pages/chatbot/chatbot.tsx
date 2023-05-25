@@ -11,17 +11,10 @@ import { useEnvironment } from '../../hooks';
 import { Document } from '../../types';
 
 export const Chatbot = () => {
-  type chatMessage = {
-    timestamp: string;
-    role: string;
-    message: string;
-    data: Document[] | null;
-  };
-  interface ChatState {
-    term: string;
-    error: string;
+  const availableLangs = ["oneC (1c)", "abnf", "accesslog", "actionscript", "ada", "angelscript", "apache", "applescript", "arcade", "arduino", "armasm", "asciidoc", "aspectj", "autohotkey", "autoit", "avrasm", "awk", "axapta", "bash", "basic", "bnf", "brainfuck", "cLike (c-like)", "c", "cal", "capnproto", "ceylon", "clean", "clojureRepl (clojure-repl)", "clojure", "cmake", "coffeescript", "coq", "cos", "cpp", "crmsh", "crystal", "csharp", "csp", "css", "d", "dart", "delphi", "diff", "django", "dns", "dockerfile", "dos", "dsconfig", "dts", "dust", "ebnf", "elixir", "elm", "erb", "erlangRepl (erlang-repl)", "erlang", "excel", "fix", "flix", "fortran", "fsharp", "gams", "gauss", "gcode", "gherkin", "glsl", "gml", "go", "golo", "gradle", "groovy", "haml", "handlebars", "haskell", "haxe", "hsp", "htmlbars", "http", "hy", "inform7", "ini", "irpf90", "isbl", "java", "javascript", "jbossCli (jboss-cli)", "json", "juliaRepl (julia-repl)", "julia", "kotlin", "lasso", "latex", "ldif", "leaf", "less", "lisp", "livecodeserver", "livescript", "llvm", "lsl", "lua", "makefile", "markdown", "mathematica", "matlab", "maxima", "mel", "mercury", "mipsasm", "mizar", "mojolicious", "monkey", "moonscript", "n1ql", "nginx", "nim", "nix", "nodeRepl (node-repl)", "nsis", "objectivec", "ocaml", "openscad", "oxygene", "parser3", "perl", "pf", "pgsql", "phpTemplate (php-template)", "php", "plaintext", "pony", "powershell", "processing", "profile", "prolog", "properties", "protobuf", "puppet", "purebasic", "pythonRepl (python-repl)", "python", "q", "qml", "r", "reasonml", "rib", "roboconf", "routeros", "rsl", "ruby", "ruleslanguage", "rust", "sas", "scala", "scheme", "scilab", "scss", "shell", "smali", "smalltalk", "sml", "sqf", "sql", "sqlMore (sql_more)", "stan", "stata", "step21", "stylus", "subunit", "swift", "taggerscript", "tap", "tcl", "thrift", "tp", "twig", "typescript", "vala", "vbnet", "vbscriptHtml (vbscript-html)", "vbscript", "verilog", "vhdl", "vim", "x86asm", "xl", "xml", "xquery", "yaml", "zephir"]
+  type chatMessage = { timestamp: string; role: string; message: string; data: Document[] | null; }; interface ChatState { term: string; error: string; }interface ResponseMessagePart {
+    iscode: boolean; message: string;
   }
-
   const DEFAULT_CHAT_STATE: ChatState = { term: '', error: '' };
 
   const { apiUrl } = useEnvironment();
@@ -49,20 +42,27 @@ export const Chatbot = () => {
         setLoading(false);
       });
   }
-  function processResponse(response) {
-    const codeRegex = /```([\s\S]*?)```/g;
-    let resp = response;
 
-    let formattedResponse = response.replace(codeRegex, (x, code: string) => {
-      const language = (x.match(/```(.*)\n/) || [])[1] || 'none';
-      // todo replace this replacer with something that can do templating
-      return (
-        <SyntaxHighlighter language={language} style={dark}>
-          {code}
-        </SyntaxHighlighter>
-      );
-    });
-    return formattedResponse;
+  function processResponse(response) {
+    const matchedLang = response.replace(/(\r\n|\n|\r)/gm, "").match(/```(?<lang>\w+).*```/m)
+    let lang = "javascript"
+    if (matchedLang) {
+      if (matchedLang.groups.lang in availableLangs) {
+        lang = matchedLang.groups.lang;
+      }
+    }
+    const responses = response.split("```")
+    let i = 0;
+    const res = [<></>]
+    for (const txt of responses) {
+      if (i % 2 == 0) {
+        res.push(txt)
+      } else {
+        res.push(<SyntaxHighlighter style={dark}>{txt}</SyntaxHighlighter>)
+      }
+      i++;
+    }
+    return res;
   }
 
   function onSubmit() {
@@ -85,7 +85,7 @@ export const Chatbot = () => {
         setError('');
         setChatMessages((chatMessages) => [
           ...chatMessages,
-          { timestamp: data.timestamp, role: 'assistant', message: data.response, data: data.table },
+          { timestamp: new Date().toLocaleTimeString(), role: 'assistant', message: data.response, data: data.table },
         ]);
       })
       .catch((error) => {
@@ -102,6 +102,7 @@ export const Chatbot = () => {
       </a>
     );
   }
+
   return (
     <>
       {user != '' ? '' : login()}
@@ -125,17 +126,17 @@ export const Chatbot = () => {
                         >
                           <Comment>
                             <Comment.Content>
-                              {/* <Comment.Avatar src=""></Comment.Avatar> */}
-                              {/* <Comment.Avatar src=""></Comment.Avatar> */}
                               <Comment.Author as="b">{m.role}</Comment.Author>
                               <Comment.Metadata>
-                                <span className="timestamp">{m.timestamp}</span>
+                                <span className="timestamp">{new Date().toLocaleTimeString()}</span>
                               </Comment.Metadata>
-                              <Comment.Text>{m.message}</Comment.Text>
+                              <Comment.Text>
+                                {processResponse(m.message)}
+                              </Comment.Text>
                               {m.data
                                 ? m.data?.map((m2) => {
-                                    return displayDocument(m2);
-                                  })
+                                  return displayDocument(m2);
+                                })
                                 : ''}
                             </Comment.Content>
                           </Comment>

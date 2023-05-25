@@ -271,4 +271,4 @@ class PromptHandler:
         logger.info(f"retrieved completion from openAI for {prompt}")
         table = [closest_object]
         result = f"Answer: {answer}"
-        return {"response": result, "table": table, "timestamp": timestamp}
+        return {"response": result, "table": table}
