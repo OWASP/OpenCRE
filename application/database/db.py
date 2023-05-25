@@ -218,7 +218,7 @@ class CRE_Graph:
             node = session.query(Node).filter(Node.id == lnk.node).first()
             if not node:
                 logger.error(f"Node {lnk.node} does not exist?")
-            graph = cls.add_dbnode(dbnode=node.id, graph=graph)
+            graph = cls.add_dbnode(dbnode=node, graph=graph)
 
             cre = session.query(CRE).filter(CRE.id == lnk.cre).first()
             graph = cls.add_cre(dbcre=cre, graph=graph)
