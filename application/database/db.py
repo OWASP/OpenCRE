@@ -210,7 +210,7 @@ class CRE_Graph:
             cre = session.query(CRE).filter(CRE.id == il.cre).first()
             if not cre:
                 logger.error(f"CRE {il.cre} does not exist?")
-            graph = cls.add_cre(dbcre=cre.id, graph=graph)
+            graph = cls.add_cre(dbcre=cre, graph=graph)
 
             graph.add_edge(f"CRE: {il.group}", f"CRE: {il.cre}", ltype=il.type)
 
@@ -221,7 +221,7 @@ class CRE_Graph:
             graph = cls.add_dbnode(dbnode=node.id, graph=graph)
 
             cre = session.query(CRE).filter(CRE.id == lnk.cre).first()
-            graph = cls.add_cre(dbcre=cre.id, graph=graph)
+            graph = cls.add_cre(dbcre=cre, graph=graph)
 
             graph.add_edge(f"CRE: {lnk.cre}", f"Node: {str(lnk.node)}", ltype=lnk.type)
         return graph
