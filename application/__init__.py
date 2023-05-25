@@ -34,7 +34,7 @@ def create_app(mode: str = "production", conf: any = None) -> Any:
     app.secret_key = GOOGLE_CLIENT_SECRET
     if os.environ.get("NO_LOGIN"):
         letters = string.ascii_lowercase
-        app.secret_key = ''.join(random.choice(letters) for i in range(20))
+        app.secret_key = "".join(random.choice(letters) for i in range(20))
 
     # config[mode].init_app(app)
     sqla.init_app(app=app)

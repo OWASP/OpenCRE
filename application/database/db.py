@@ -1154,11 +1154,15 @@ class Node_collection:
         Implemented via filtering graph nodes whose incoming edges are only "RELATED" type links
         """
         # select distinct name from cre join cre_links on cre.id=cre_links."group"
-        # where cre.id not in (select cre from cre_links );                                                                                
-        cres = self.session.query(CRE).join(InternalLinks,CRE.id==InternalLinks.group).filter(
-            ~CRE.id.in_(self.session.query(InternalLinks.cre))).all()
+        # where cre.id not in (select cre from cre_links );
+        cres = (
+            self.session.query(CRE)
+            .join(InternalLinks, CRE.id == InternalLinks.group)
+            .filter(~CRE.id.in_(self.session.query(InternalLinks.cre)))
+            .all()
+        )
         return [CREfromDB(c) for c in cres]
-    
+
         # def node_is_root(node):
         #     return node.startswith("CRE") and (
         #         self.graph.graph.in_degree(node) == 0

@@ -14,6 +14,7 @@ logger.setLevel(logging.INFO)
 
 NAME = "PCI DSS"
 
+
 # todo: remove [CUSTOMIZED APPROACH OBJECTIVE]:.....
 def __parse(
     pci_file: Dict[str, Any],
@@ -23,11 +24,15 @@ def __parse(
     standard_to_spreadsheet_mappings: Dict[str, str],
 ):
     prompt = prompt_client.PromptHandler(cache)
-    
+
     for row in pci_file.get(pci_file_tab):
         pci_control = defs.Standard(
             name=NAME,
-            section=re.sub("([CUSTOMIZED APPROACH OBJECTIVE]:.*)","",str(row.get(standard_to_spreadsheet_mappings["section"], ""))),
+            section=re.sub(
+                "([CUSTOMIZED APPROACH OBJECTIVE]:.*)",
+                "",
+                str(row.get(standard_to_spreadsheet_mappings["section"], "")),
+            ),
             sectionID=str(row.get(standard_to_spreadsheet_mappings["sectionID"], "")),
             description=str(
                 row.get(standard_to_spreadsheet_mappings["description"], "")

@@ -14,13 +14,14 @@ from playwright.sync_api import sync_playwright
 import nltk
 from multiprocessing import Pool
 from scipy import sparse
-from application.prompt_client import openai_prompt_client,vertex_prompt_client
+from application.prompt_client import openai_prompt_client, vertex_prompt_client
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 SIMILARITY_THRESHOLD = 0.8
+
 
 def is_valid_url(url):
     return url.startswith("http://") or url.startswith("https://")
@@ -73,7 +74,7 @@ class in_memory_embeddings:
         return " ".join(words)
 
     @classmethod
-    def instance(cls, database: db.Node_collection, ai_client:Any):
+    def instance(cls, database: db.Node_collection, ai_client: Any):
         if cls.__instance is None:
             cls.__instance = cls.__new__(cls)
 
@@ -170,6 +171,7 @@ class in_memory_embeddings:
                 )
                 cls.cre_embeddings[id] = embedding
 
+
 class PromptHandler:
     def __init__(self, database: db.Node_collection) -> None:
         self.ai_client = None
@@ -181,11 +183,17 @@ class PromptHandler:
             )
         elif os.getenv("OPENAI_API_KEY"):
             logger.info("using Open AI engine")
-            self.ai_client = openai_prompt_client.OpenAIPromptClient(os.getenv("OPENAI_API_KEY"))
+            self.ai_client = openai_prompt_client.OpenAIPromptClient(
+                os.getenv("OPENAI_API_KEY")
+            )
         else:
-            logger.error("cannot instantiate ai client, neither OPENAI_API_KEY nor GOOGLE_APPLICATION_CREDENTIALS are set ")
+            logger.error(
+                "cannot instantiate ai client, neither OPENAI_API_KEY nor GOOGLE_APPLICATION_CREDENTIALS are set "
+            )
         self.database = database
-        self.embeddings_instance = in_memory_embeddings.instance(database, ai_client=self.ai_client)
+        self.embeddings_instance = in_memory_embeddings.instance(
+            database, ai_client=self.ai_client
+        )
 
         existing = []
         existing_ids = []
@@ -212,6 +220,7 @@ class PromptHandler:
             logger.fatal(
                 f"in memory embeddings is {self.embeddings_instance} and embeddings are {self.embeddings_instance.cre_embeddings} bug?"
             )
+
     def get_text_embeddings(self, text):
         return self.ai_client.get_text_embeddings(text)
 
@@ -266,8 +275,10 @@ class PromptHandler:
         ]  # openai has a model limit of 8100 characters
         logger.info(f"most similar object is {closest_object.name}")
 
-
-        answer = self.ai_client.create_chat_completion(prompt=prompt,closest_object_str=closest_object_str,)
+        answer = self.ai_client.create_chat_completion(
+            prompt=prompt,
+            closest_object_str=closest_object_str,
+        )
         logger.info(f"retrieved completion from openAI for {prompt}")
         table = [closest_object]
         result = f"Answer: {answer}"

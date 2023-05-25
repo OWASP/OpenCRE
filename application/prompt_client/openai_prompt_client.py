@@ -6,12 +6,11 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-class OpenAIPromptClient():
-    
+class OpenAIPromptClient:
     def __init__(self, openai_key) -> None:
         self.api_key = openai_key
         openai.api_key = self.api_key
-        
+
     def get_text_embeddings(self, text: str, model: str = "text-embedding-ada-002"):
         if len(text) > 8000:
             logger.info(
@@ -19,9 +18,11 @@ class OpenAIPromptClient():
             )
             text = text[:8000]
         openai.api_key = self.api_key
-        return openai.Embedding.create(input=[text], model=model)["data"][0]["embedding"]
+        return openai.Embedding.create(input=[text], model=model)["data"][0][
+            "embedding"
+        ]
 
-    def create_chat_completion(self, prompt, closest_object_str)->str:
+    def create_chat_completion(self, prompt, closest_object_str) -> str:
         # Send the question and the closest area to the LLM to get an answer
         messages = [
             {

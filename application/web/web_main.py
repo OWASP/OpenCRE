@@ -256,7 +256,7 @@ def find_root_cres() -> Any:
     opt_format = request.args.get("format")
     documents = database.get_root_cres()
     logger.info(f"got {len(documents)} cres")
-    
+
     if documents:
         res = [doc.todict() for doc in documents]
         result = {"data": res}
@@ -366,10 +366,11 @@ def login_required(f):
     def login_r(*args, **kwargs):
         if os.environ.get("NO_LOGIN"):
             return f(*args, **kwargs)
-        if  "google_id" not in session or "name" not in session:
+        if "google_id" not in session or "name" not in session:
             return abort(401)
         else:
             return f(*args, **kwargs)
+
     return login_r
 
 
@@ -424,7 +425,7 @@ class CREFlow:
 @app.route("/rest/v1/login")
 def login():
     if os.environ.get("NO_LOGIN"):
-        session["state"] = {"state":True}
+        session["state"] = {"state": True}
         session["google_id"] = "some dev id"
         session["name"] = "dev user"
         return redirect("/chatbot")
