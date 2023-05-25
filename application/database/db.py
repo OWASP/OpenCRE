@@ -1156,7 +1156,7 @@ class Node_collection:
         # select distinct name from cre join cre_links on cre.id=cre_links."group"
         # where cre.id not in (select cre from cre_links );                                                                                
         cres = self.session.query(CRE).join(InternalLinks,CRE.id==InternalLinks.group).filter(
-            CRE.id.not_in(self.session.query(InternalLinks.CRE))).all()
+            ~CRE.id.in_(self.session.query(InternalLinks.CRE))).all()
         return [CREfromDB(c) for c in cres]
     
         # def node_is_root(node):
