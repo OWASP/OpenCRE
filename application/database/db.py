@@ -190,9 +190,9 @@ class CRE_Graph:
             graph.add_node(
                 "Node: " + str(dbnode.id),
                 internal_id=dbnode.id,
-                name=dbnode.name,
-                section=dbnode.section,
-                section_id=dbnode.section_id,
+                # name=dbnode.name,
+                # section=dbnode.section,
+                # section_id=dbnode.section_id,
             )
         else:
             logger.error("Called with dbnode being none")
@@ -210,7 +210,7 @@ class CRE_Graph:
             cre = session.query(CRE).filter(CRE.id == il.cre).first()
             if not cre:
                 logger.error(f"CRE {il.cre} does not exist?")
-            graph = cls.add_cre(dbcre=cre, graph=graph)
+            graph = cls.add_cre(dbcre=cre.id, graph=graph)
 
             graph.add_edge(f"CRE: {il.group}", f"CRE: {il.cre}", ltype=il.type)
 
@@ -218,10 +218,10 @@ class CRE_Graph:
             node = session.query(Node).filter(Node.id == lnk.node).first()
             if not node:
                 logger.error(f"Node {lnk.node} does not exist?")
-            graph = cls.add_dbnode(dbnode=node, graph=graph)
+            graph = cls.add_dbnode(dbnode=node.id, graph=graph)
 
             cre = session.query(CRE).filter(CRE.id == lnk.cre).first()
-            graph = cls.add_cre(dbcre=cre, graph=graph)
+            graph = cls.add_cre(dbcre=cre.id, graph=graph)
 
             graph.add_edge(f"CRE: {lnk.cre}", f"Node: {str(lnk.node)}", ltype=lnk.type)
         return graph
@@ -1145,7 +1145,12 @@ class Node_collection:
         """Returns CRES that only have "Contains" links
         Implemented via filtering graph nodes whose incoming edges are only "RELATED" type links
         """
-
+        # select distinct name from cre join cre_links on cre.id=cre_links."group"
+        # where cre.id not in (select cre from cre_links );                                                                                
+        # cres = self.session.query(CRE).join(InternalLinks,CRE.id==InternalLinks.group).filter(
+        #     CRE.ID.not_in(self.session.query(InternalLinks.CRE))).all()
+        # return [CREfromDB(c) for c in cres]
+    
         def node_is_root(node):
             return node.startswith("CRE") and (
                 self.graph.graph.in_degree(node) == 0
