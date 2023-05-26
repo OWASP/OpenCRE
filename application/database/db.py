@@ -861,7 +861,9 @@ class Node_collection:
         entries = self.object_select(dbnode, skip_attributes=comparison_skip_attributes)
         if entries:
             entry = entries[0]
-            logger.debug(f"knew of {entry.name}:{entry.section}:{entry.link} ,updating")
+            logger.info(f"knew of {entry.name}:{entry.section}:{entry.link} ,updating")
+            if node.section and node.section != entry.section:
+                entry.section = node.section
             entry.link = node.hyperlink
             self.session.commit()
             return entry

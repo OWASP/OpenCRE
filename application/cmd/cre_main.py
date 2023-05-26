@@ -25,6 +25,7 @@ from application.utils.external_project_parsers import (
     iso27001,
     secure_headers,
     pci_dss,
+    juiceshop,
 )
 from application.prompt_client import prompt_client as prompt_client
 from dacite import from_dict
@@ -429,6 +430,10 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
                 url="https://docs.google.com/spreadsheets/d/18weo-qbik_C7SdYq7FSP2OMgUmsWdWWI1eaXcAfMz8I",
                 parse_numbered_only=False,
             ),
+            cache=db_connect(args.cache_file),
+        )
+    if args.juiceshop_in:
+        juiceshop.parse(
             cache=db_connect(args.cache_file),
         )
     if args.generate_embeddings:
