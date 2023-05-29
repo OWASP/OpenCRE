@@ -6,8 +6,8 @@ export const TYPE_SAME = 'SAME';
 export const TYPE_SAM = 'SAM';
 
 export const DOCUMENT_TYPE_NAMES = {
-  [TYPE_SAME]: ' is the same as sources',
-  [TYPE_SAM]: ' is the same as sources',
+  [TYPE_SAME]: ' is linked using AI to sources',
+  [TYPE_SAM]: ' is linked using AI to sources',
   [TYPE_LINKED_TO]: ' is linked to sources',
   [TYPE_IS_PART_OF]: ' is part of CREs',
   [TYPE_CONTAINS]: ' contains CREs',
