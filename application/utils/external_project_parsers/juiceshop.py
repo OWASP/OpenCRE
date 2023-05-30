@@ -33,10 +33,10 @@ def parse(
     for challenge in challenges:
         chal = defs.Tool(
             description=challenge["description"],
-            name="OWASP Juiceshop",
+            name="OWASP Juice Shop",
             section=challenge["name"],
             sectionID=challenge["key"],
-            hyperlink="https://preview.owasp-juice.shop/#/score-board?challenge="
+            hyperlink="https://demo.owasp-juice.shop//#/score-board?challenge="
             + urllib.parse.quote(challenge["name"]),
             tooltype=defs.ToolTypes.Training,
         )

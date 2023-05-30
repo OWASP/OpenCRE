@@ -31,7 +31,7 @@ The CRE links each section of a standard to a shared topic (a Common Requirement
 Example: the session time-out topic will take the user to relevant criteria in several standards, and to testing guides, development tips, more technical detail, threat descriptions, articles etc. From there, the user can navigate to resources about session management in general.
 WHEN?
 
-CRE is currently in beta and has linked OWASP standards (Top 10, ASVS, Proactive Controls, Cheat sheets, Testing guide), plus several other sources (CWE, NIST-800 53, NIST-800 63b), as part of the OWASP Integration standard project.
+CRE has linked OWASP standards (Top 10, ASVS, Proactive Controls, Cheat sheets, Testing guide), plus several other sources (CWE, NIST-800 53, NIST-800 63b), as part of the OWASP Integration standard project.
 
 Data has been kindly contributed by the SKF and ASVS projects
 
