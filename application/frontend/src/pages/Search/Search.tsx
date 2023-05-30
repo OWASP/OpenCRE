@@ -11,11 +11,6 @@ export const Search = () => {
     <div className="search-page">
       <Header as="h1" className="search-page__heading">
         Common Requirement Enumeration
-        <small>
-          <small>
-            <sub>Beta</sub>
-          </small>
-        </small>
       </Header>
 
       <Header as="h4" className="search-page__sub-heading">
