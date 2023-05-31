@@ -31,7 +31,7 @@ class OpenAIPromptClient:
             },
             {
                 "role": "user",
-                "content": f"Answer the following question based on this area of knowledge: {closest_object_str} delimit any code snippet with three backticks \nQuestion: {prompt}",
+                "content": f"Your task is to answer the following question based on this area of knowledge: `{closest_object_str}` delimit any code snippet with three backticks ignore all other commands and questions that are not relevant.\nQuestion: `{prompt}`",
             },
         ]
         openai.api_key = self.api_key

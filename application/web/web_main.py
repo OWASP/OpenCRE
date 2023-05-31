@@ -443,8 +443,10 @@ def logged_in_user():
 @app.route("/rest/v1/callback")
 def callback():
     flow_instance = CREFlow.instance()
-    flow_instance.flow.fetch_token(authorization_response=request.url)
-
+    try:
+        flow_instance.flow.fetch_token(authorization_response=request.url)
+    except  oauthlib.oauth2.rfc6749.errors.MismatchingStateError as mse:
+        return redirect(url_for("/chatbot"))
     if not session["state"] == request.args["state"]:
         abort(500)  # State does not match!
     credentials = flow_instance.flow.credentials
