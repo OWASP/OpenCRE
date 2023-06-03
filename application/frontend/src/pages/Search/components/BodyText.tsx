@@ -12,8 +12,8 @@ export const SearchBody = () => {
           and organising secure software.</b>
       </p>
       <p>
-        <b>Use the search bar or <a href="/root_cres">browse the overview of all top-level topics</a>, try
-          <a href="/node/standard/Top10%202017/">the Top10 2017 page</a> and click around, or
+        <b>Use the search bar or <a href="/root_cres">browse the overview of all top-level topics</a>, try 
+          <a href="/node/standard/Top10%202017/">the Top10 2017 page</a> and click around, or 
           <a href="/search/session">search for "Session"</a>, or look at
           <a href="/cre/764-507"> CRE 764-507 </a> to see the wealth of information: relevant criteria in several
           standards, testing guidance, development tips, more technical detail, threat descriptions,
