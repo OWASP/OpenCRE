@@ -383,9 +383,7 @@ class PromptHandler:
         logger.info(f"retrieved embeddings for {prompt}")
 
         # Find the closest area in the existing embeddings
-        closest_id = self.get_id_of_most_similar_node_paginated(
-            question_embedding, self.embeddings_instance.node_embeddings
-        )
+        closest_id = self.get_id_of_most_similar_node_paginated(question_embedding)
         closest_object = self.database.get_node_by_db_id(closest_id)
         closest_object_str = "\n".join(
             [f"{k}:{v}" for k, v in closest_object.shallow_copy().todict().items()]
