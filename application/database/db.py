@@ -792,13 +792,29 @@ class Node_collection:
 
         if not dry_run:
             for _, doc in docs.items():
-                title = (
-                    doc.name.replace("/", "-")
-                    .replace(" ", "_")
-                    .replace('"', "")
-                    .replace("'", "")
-                    + ".yaml"
-                )
+                title = ""
+                if hasattr(doc, "id"):
+                    title = (
+                        doc.id.replace("/", "-")
+                        .replace(" ", "_")
+                        .replace('"', "")
+                        .replace("'", "")
+                        + ".yaml"
+                    )
+                elif hasattr(doc, "sectionID"):
+                    title = (
+                        doc.name
+                        + "_"
+                        + doc.sectionID.replace("/", "-")
+                        .replace(" ", "_")
+                        .replace('"', "")
+                        .replace("'", "")
+                        + ".yaml"
+                    )
+                else:
+                    logger.fatal(
+                        f"doc does not have neither sectionID nor id, this is a bug! {doc.__dict__}"
+                    )
                 file.writeToDisk(
                     file_title=title,
                     file_content=yaml.safe_dump(doc.todict()),
