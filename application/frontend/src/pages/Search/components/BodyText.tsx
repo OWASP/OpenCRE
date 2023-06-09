@@ -7,25 +7,25 @@ export const SearchBody = () => {
     <div className="index-text">
       <h1>OpenCRE</h1>
       <p>
-        <b>OpenCRE is an interactive content linking platform for uniting security standards and guidelines. It
+        <b>OpenCRE is an interactive content linking platform for uniting security standards and guidelines into one overview. It
           offers easy and robust access to relevant information when designing, developing, testing, procuring
           and organising secure software.</b>
       </p>
       <p>
-        <b>Use the search bar or <a href="/root_cres">browse the overview of all top-level topics</a>, try
-          <a href="/node/standard/Top10%202017/">the Top10 2017 page</a> and click around, or
-          <a href="/search/session">search for "Session"</a>, or look at
-          <a href="/cre/764-507"> CRE 764-507 </a> to see the wealth of information: relevant criteria in several
-          standards, testing guidance, development tips, more technical detail, threat descriptions,
-          articles, tool configurations, related topics etc.</b>
+        <b>Use the search bar or <a href="/root_cres">browse the catalogue of all top-level topics</a>, try 
+          <a href="/node/standard/Top10%202017/">the Top10 2017 page</a> and click around, or 
+          <a href="/search/session">search for "Session"</a>, or check out 
+          <a href="/cre/764-507"> CRE 764-507 </a> to access a wirde array of relevant details. This includes criteria in several
+          standards, testing advice, development tips, in-depth technical information, threat descriptions,
+          articles, tool settings, and related topics.</b>
       </p>
       <h2>HOW?</h2>
       <p>
-        OpenCRE links each section of a resource (eg. a standard or guideline) to a shared topic (a Common Requirement),
+        OpenCRE links each section of a resource (like a standard or guideline) to a shared topic, known as a Common Requirement, 
         causing that section to also link with all other resources that link to the same topic. This 1) enables users to
         find all combined information from relevant sources, 2) it facilitates a shared and better
         understanding of cyber security, and 3) it allows standard makers to have links that keep working and
-        offer all the information that readers need, so they don’t have to cover it all themselves. The CRE
+        offer all the information that readers need, alleviating their need to cover everything themselves. OpenCRE
         maintains itself: links to OpenCRE in the standard text are scanned automatically. Furthermore, topics are
         linked with related other topics, creating a semantic web for security to explore.
       </p>
@@ -36,12 +36,12 @@ export const SearchBody = () => {
       </p>
       <h2>WHO?</h2>
       <p>
-        Independent software security professionals got together to find a solution for the complexity and
-        fragmentation in today’s landscape of security standards and guidelines. These people are Spyros
-        Gasteratos, Rob van der Veer with many friends, in close collaboration with the SKF, OpenSSF and
-        Owasp Top 10 project. OpenCRE is completely open source and governed by the OWASP foundation in the
-        <a href="https://owasp.org/www-project-integration-standards/"> OWASP Integration standard project</a>,
-        as part of the strategy to create more alignment between security initiatives.
+        It's the brainchild of independent software security professionals such as Spyros Gasteratos and Rob van der Veer, 
+        who joined forces to tackle the complexities and segmentation in current security standards and guidelines. 
+        They collaborated closely with the SKF, OpenSSF and the Owasp Top 10 project. 
+        OpenCRE is an open-source platform overseen by the OWASP foundation through the 
+        <a href="https://owasp.org/www-project-integration-standards/"> OWASP Integration standard project</a>. 
+        The goal is to foster better coordination among security initiatives.
       </p>
       <p>
         OpenCRE currently links OWASP standards (Top 10, ASVS, Proactive Controls, Cheat
