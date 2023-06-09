@@ -15,7 +15,6 @@ logger.setLevel(logging.INFO)
 NAME = "PCI DSS"
 
 
-# todo: remove [CUSTOMIZED APPROACH OBJECTIVE]:.....
 def __parse(
     pci_file: Dict[str, Any],
     cache: db.Node_collection,
@@ -66,8 +65,8 @@ def __parse(
             cres = cache.find_cres_of_node(dbstandard)
             if cres:
                 cre_id = cres[0].id
-
-        cre = cache.get_cre_by_db_id(cre_id)
+        if cre_id:
+            cre = cache.get_cre_by_db_id(cre_id)
         ctrl_copy = pci_control.shallow_copy()
         pci_control.description = ""
         dbnode = cache.add_node(pci_control)
@@ -77,8 +76,12 @@ def __parse(
         cache.add_embedding(
             dbnode, pci_control.doctype, control_embeddings, ctrl_copy.__repr__()
         )
-        cache.add_link(db.dbCREfromCRE(cre), dbnode)
-        logger.info(f"successfully stored {pci_control.__repr__()}")
+        if cre:
+            cache.add_link(db.dbCREfromCRE(cre), dbnode)
+            logger.info(f"successfully stored {pci_control.__repr__()}")
+        else:
+            logger.info(f"stored pci control: {pci_control.__repr__()} but could not link it to any CRE reliably")
+            
 
 
 def parse_3_2(pci_file: Dict[str, Any], cache: db.Node_collection):
