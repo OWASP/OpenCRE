@@ -29,4 +29,121 @@ links:
     name: OWASP Web Security Testing Guide (WSTG)
     section: WSTG-INPV-13
   ltype: Linked To
+- document:
+    description: Rewrite the background program using proper return length checking.  This
+      will require a recompile of the background executable.
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrules/src/main/java/org/zaproxy/zap/extension/ascanrules/BufferOverflowScanRule.java
+    name: ZAP Rule
+    section: Buffer Overflow
+    sectionID: '30001'
+    tags:
+    - Active
+    - '30001'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/10.html
+    name: CAPEC
+    section: Buffer Overflow via Environment Variables
+    sectionID: '10'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/100.html
+    name: CAPEC
+    section: Overflow Buffers
+    sectionID: '100'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/14.html
+    name: CAPEC
+    section: Client-side Injection-induced Buffer Overflow
+    sectionID: '14'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/24.html
+    name: CAPEC
+    section: Filter Failure through Buffer Overflow
+    sectionID: '24'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/42.html
+    name: CAPEC
+    section: MIME Conversion
+    sectionID: '42'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/44.html
+    name: CAPEC
+    section: Overflow Binary Resource File
+    sectionID: '44'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/45.html
+    name: CAPEC
+    section: Buffer Overflow via Symbolic Links
+    sectionID: '45'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/46.html
+    name: CAPEC
+    section: Overflow Variables and Tags
+    sectionID: '46'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/47.html
+    name: CAPEC
+    section: Buffer Overflow via Parameter Expansion
+    sectionID: '47'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/67.html
+    name: CAPEC
+    section: String Format Overflow in syslog()
+    sectionID: '67'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/8.html
+    name: CAPEC
+    section: Buffer Overflow in an API Call
+    sectionID: '8'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/9.html
+    name: CAPEC
+    section: Buffer Overflow in Local Command-Line Utilities
+    sectionID: '9'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/92.html
+    name: CAPEC
+    section: Forced Integer Overflow
+    sectionID: '92'
+    version: '3.9'
+  ltype: SAME
 name: Use memory-safe functions exclusively

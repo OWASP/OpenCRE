@@ -6,8 +6,8 @@ links:
     id: 161-451
     name: Output encoding and injection prevention
     tags:
-    - Injection protection
     - XSS protection
+    - Injection protection
   ltype: Contains
 - document:
     doctype: Standard
@@ -126,4 +126,120 @@ links:
     name: OWASP Cheat Sheets
     section: XML Security Cheat Sheet
   ltype: Linked To
+- document:
+    description: N/A
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrules/src/main/java/org/zaproxy/zap/extension/ascanrules/PersistentXssPrimeScanRule.java
+    name: ZAP Rule
+    section: Cross Site Scripting (Persistent) - Prime
+    sectionID: '40016'
+    tags:
+    - Active
+    - '40016'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/domxss/src/main/java/org/zaproxy/zap/extension/domxss/DomXssScanRule.java
+    name: ZAP Rule
+    section: Cross Site Scripting (DOM Based)
+    sectionID: '40026'
+    tags:
+    - Active
+    - '40026'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrules/src/main/java/org/zaproxy/zap/extension/ascanrules/CrossSiteScriptingScanRule.java
+    name: ZAP Rule
+    section: Cross Site Scripting (Reflected)
+    sectionID: '40012'
+    tags:
+    - Active
+    - '40012'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: N/A
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrules/src/main/java/org/zaproxy/zap/extension/ascanrules/PersistentXssSpiderScanRule.java
+    name: ZAP Rule
+    section: Cross Site Scripting (Persistent) - Spider
+    sectionID: '40017'
+    tags:
+    - Active
+    - '40017'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/OutOfBandXssScanRule.java
+    name: ZAP Rule
+    section: Out of Band XSS
+    sectionID: '40031'
+    tags:
+    - Active
+    - '40031'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrules/src/main/java/org/zaproxy/zap/extension/ascanrules/PersistentXssScanRule.java
+    name: ZAP Rule
+    section: Cross Site Scripting (Persistent)
+    sectionID: '40014'
+    tags:
+    - Active
+    - '40014'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/209.html
+    name: CAPEC
+    section: XSS Using MIME Type Mismatch
+    sectionID: '209'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/588.html
+    name: CAPEC
+    section: DOM-Based XSS
+    sectionID: '588'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/591.html
+    name: CAPEC
+    section: Reflected XSS
+    sectionID: '591'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/592.html
+    name: CAPEC
+    section: Stored XSS
+    sectionID: '592'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/63.html
+    name: CAPEC
+    section: Cross-Site Scripting (XSS)
+    sectionID: '63'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/85.html
+    name: CAPEC
+    section: AJAX Footprinting
+    sectionID: '85'
+    version: '3.9'
+  ltype: SAME
 name: Escape output against XSS

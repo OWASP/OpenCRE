@@ -55,4 +55,10 @@ links:
     id: 473-758
     name: Set sufficient anti-caching headers
   ltype: Related
+- document:
+    doctype: Standard
+    hyperlink: https://owasp.org/www-project-secure-headers/#div-bestpractices
+    name: OWASP Secure Headers Project
+    section: configuration
+  ltype: Linked To
 name: HTTP security headers

@@ -1,0 +1,53 @@
+doctype: CRE
+id: 166-151
+links:
+- document:
+    doctype: CRE
+    id: 128-128
+    name: Strong authorization checking
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 141-555
+    name: Fail securely
+  ltype: Related
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x12-V4-Access-Control.md
+    name: ASVS
+    section: V4.1.5
+    sectionID: Verify that access controls fail securely including when an exception
+      occurs.
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owasp-top-10-proactive-controls-2018.readthedocs.io/en/latest/c10-handle-errors-exceptions.html
+    name: OWASP Proactive Controls
+    section: C10
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/285.html
+    name: CWE
+    section: ''
+    sectionID: '285'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owasp.org/www-project-web-security-testing-guide/v42/4-Web_Application_Security_Testing/08-Testing_for_Error_Handling/01-Testing_for_Error_Code.html
+    name: OWASP Web Security Testing Guide (WSTG)
+    section: WSTG-ERRH-01
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Access_Control_Cheat_Sheet.html
+    name: OWASP Cheat Sheets
+    section: Access Control Cheat Sheet
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Testing_Automation_Cheat_Sheet.html
+    name: OWASP Cheat Sheets
+    section: Authorization Testing Automation Cheat Sheet
+  ltype: Linked To
+name: Ensure that secure fail-safe is in place for access control

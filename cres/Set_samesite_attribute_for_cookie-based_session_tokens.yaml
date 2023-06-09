@@ -55,6 +55,27 @@ links:
     name: NIST 800-63
     section: are g
   ltype: Linked To
+- document:
+    description: Ensure that the SameSite attribute is set to either 'lax' or ideally
+      'strict' for all cookies.
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/CookieSameSiteScanRule.java
+    name: ZAP Rule
+    section: Cookie without SameSite Attribute
+    sectionID: '10054'
+    tags:
+    - '10054'
+    - Passive
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/62.html
+    name: CAPEC
+    section: Cross Site Request Forgery
+    sectionID: '62'
+    version: '3.9'
+  ltype: SAME
 name: Set "samesite" attribute for cookie-based session tokens
 tags:
 - CSRF protection

@@ -1,0 +1,14 @@
+doctype: CRE
+id: 770-362
+links:
+- document:
+    doctype: CRE
+    id: 148-420
+    name: Log integrity
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 770-361
+    name: Synchronize time zones for logs
+  ltype: Contains
+name: Log time synchronization

@@ -1,0 +1,63 @@
+doctype: CRE
+id: 636-660
+links:
+- document:
+    doctype: CRE
+    id: 633-428
+    name: Authentication
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 233-748
+    name: Configuration hardening
+    tags:
+    - Configuration
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 503-455
+    name: Input and output protection
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 842-876
+    name: Logging and error handling
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 854-643
+    name: Robust business logic
+    tags:
+    - Denial Of Service protection
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 278-646
+    name: Secure communication
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 126-668
+    name: Secure data storage
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 708-355
+    name: Secure implemented architecture
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 586-842
+    name: Secure user management
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 177-260
+    name: Session management
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 724-770
+    name: Technical application access control
+  ltype: Contains
+name: Technical application security controls

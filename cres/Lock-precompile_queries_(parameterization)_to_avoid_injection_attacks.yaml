@@ -6,8 +6,8 @@ links:
     id: 161-451
     name: Output encoding and injection prevention
     tags:
-    - Injection protection
     - XSS protection
+    - Injection protection
   ltype: Contains
 - document:
     doctype: Standard
@@ -127,4 +127,140 @@ links:
     name: OWASP Cheat Sheets
     section: XML Security Cheat Sheet
   ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrules/src/main/java/org/zaproxy/zap/extension/ascanrules/SqlInjectionMySqlScanRule.java
+    name: ZAP Rule
+    section: SQL Injection - MySQL
+    sectionID: '40019'
+    tags:
+    - '40019'
+    - Active
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrules/src/main/java/org/zaproxy/zap/extension/ascanrules/SqlInjectionHypersonicScanRule.java
+    name: ZAP Rule
+    section: SQL Injection - Hypersonic SQL
+    sectionID: '40020'
+    tags:
+    - Active
+    - '40020'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrules/src/main/java/org/zaproxy/zap/extension/ascanrules/SqlInjectionMsSqlScanRule.java
+    name: ZAP Rule
+    section: SQL Injection - MsSQL
+    sectionID: '40027'
+    tags:
+    - Active
+    - '40027'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrules/src/main/java/org/zaproxy/zap/extension/ascanrules/SqlInjectionSqLiteScanRule.java
+    name: ZAP Rule
+    section: SQL Injection - SQLite
+    sectionID: '40024'
+    tags:
+    - Active
+    - '40024'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/sqliplugin/src/main/java/org/zaproxy/zap/extension/sqliplugin/SQLInjectionScanRule.java
+    name: ZAP Rule
+    section: Advanced SQL Injection
+    sectionID: '90018'
+    tags:
+    - Active
+    - '90018'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrules/src/main/java/org/zaproxy/zap/extension/ascanrules/SqlInjectionPostgreScanRule.java
+    name: ZAP Rule
+    section: SQL Injection - PostgreSQL
+    sectionID: '40022'
+    tags:
+    - Active
+    - '40022'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrules/src/main/java/org/zaproxy/zap/extension/ascanrules/SqlInjectionOracleScanRule.java
+    name: ZAP Rule
+    section: SQL Injection - Oracle
+    sectionID: '40021'
+    tags:
+    - Active
+    - '40021'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrules/src/main/java/org/zaproxy/zap/extension/ascanrules/SqlInjectionScanRule.java
+    name: ZAP Rule
+    section: SQL Injection
+    sectionID: '40018'
+    tags:
+    - Active
+    - '40018'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/108.html
+    name: CAPEC
+    section: Command Line Execution through SQL Injection
+    sectionID: '108'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/109.html
+    name: CAPEC
+    section: Object Relational Mapping Injection
+    sectionID: '109'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/110.html
+    name: CAPEC
+    section: SQL Injection through SOAP Parameter Tampering
+    sectionID: '110'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/470.html
+    name: CAPEC
+    section: Expanding Control over the Operating System from the Database
+    sectionID: '470'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/66.html
+    name: CAPEC
+    section: SQL Injection
+    sectionID: '66'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/7.html
+    name: CAPEC
+    section: Blind SQL Injection
+    sectionID: '7'
+    version: '3.9'
+  ltype: SAME
 name: Lock/precompile queries (parameterization) to avoid injection attacks

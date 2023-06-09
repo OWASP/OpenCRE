@@ -1,0 +1,6 @@
+doctype: Standard
+hyperlink: https://capec.mitre.org/data/definitions/98.html
+name: CAPEC
+section: Phishing
+sectionID: '98'
+version: '3.9'

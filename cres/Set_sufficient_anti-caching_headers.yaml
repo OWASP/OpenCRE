@@ -32,4 +32,26 @@ links:
     name: OWASP Web Security Testing Guide (WSTG)
     section: WSTG-ATHN-06
   ltype: Linked To
+- document:
+    description: For secure content, ensure the cache-control HTTP header is set with
+      'no-cache, no-store, must-revalidate'. If an asset should be cached consider
+      setting the directives 'public, max-age, immutable'.
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/CacheControlScanRule.java
+    name: ZAP Rule
+    section: Re-examine Cache-control Directives
+    sectionID: '10015'
+    tags:
+    - '10015'
+    - Passive
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/37.html
+    name: CAPEC
+    section: Retrieve Embedded Sensitive Data
+    sectionID: '37'
+    version: '3.9'
+  ltype: SAME
 name: Set sufficient anti-caching headers

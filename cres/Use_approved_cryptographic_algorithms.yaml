@@ -47,4 +47,60 @@ links:
     name: OWASP Cheat Sheets
     section: Key Management Cheat Sheet
   ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/20.html
+    name: CAPEC
+    section: Encryption Brute Forcing
+    sectionID: '20'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/459.html
+    name: CAPEC
+    section: Creating a Rogue Certification Authority Certificate
+    sectionID: '459'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/473.html
+    name: CAPEC
+    section: Signature Spoof
+    sectionID: '473'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/475.html
+    name: CAPEC
+    section: Signature Spoofing by Improper Validation
+    sectionID: '475'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/608.html
+    name: CAPEC
+    section: Cryptanalysis of Cellular Encryption
+    sectionID: '608'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/614.html
+    name: CAPEC
+    section: Rooting SIM Cards
+    sectionID: '614'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/97.html
+    name: CAPEC
+    section: Cryptanalysis
+    sectionID: '97'
+    version: '3.9'
+  ltype: SAME
 name: Use approved cryptographic algorithms

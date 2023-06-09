@@ -33,4 +33,164 @@ links:
     name: OWASP Cheat Sheets
     section: Abuse Case Cheat Sheet
   ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/125.html
+    name: CAPEC
+    section: Flooding
+    sectionID: '125'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/130.html
+    name: CAPEC
+    section: Excessive Allocation
+    sectionID: '130'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/147.html
+    name: CAPEC
+    section: XML Ping of the Death
+    sectionID: '147'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/197.html
+    name: CAPEC
+    section: Exponential Data Expansion
+    sectionID: '197'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/229.html
+    name: CAPEC
+    section: Serialized Data Parameter Blowup
+    sectionID: '229'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/230.html
+    name: CAPEC
+    section: Serialized Data with Nested Payloads
+    sectionID: '230'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/231.html
+    name: CAPEC
+    section: Oversized Serialized Data Payloads
+    sectionID: '231'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/469.html
+    name: CAPEC
+    section: HTTP DoS
+    sectionID: '469'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/482.html
+    name: CAPEC
+    section: TCP Flood
+    sectionID: '482'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/486.html
+    name: CAPEC
+    section: UDP Flood
+    sectionID: '486'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/487.html
+    name: CAPEC
+    section: ICMP Flood
+    sectionID: '487'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/488.html
+    name: CAPEC
+    section: HTTP Flood
+    sectionID: '488'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/489.html
+    name: CAPEC
+    section: SSL Flood
+    sectionID: '489'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/490.html
+    name: CAPEC
+    section: Amplification
+    sectionID: '490'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/491.html
+    name: CAPEC
+    section: Quadratic Data Expansion
+    sectionID: '491'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/493.html
+    name: CAPEC
+    section: SOAP Array Blowup
+    sectionID: '493'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/494.html
+    name: CAPEC
+    section: TCP Fragmentation
+    sectionID: '494'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/495.html
+    name: CAPEC
+    section: UDP Fragmentation
+    sectionID: '495'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/496.html
+    name: CAPEC
+    section: ICMP Fragmentation
+    sectionID: '496'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/528.html
+    name: CAPEC
+    section: XML Flood
+    sectionID: '528'
+    version: '3.9'
+  ltype: SAME
 name: Limit/authorize user's access to functionality

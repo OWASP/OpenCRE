@@ -49,4 +49,71 @@ links:
     name: NIST 800-63
     section: '7.1'
   ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/SessionFixationScanRule.java
+    name: ZAP Rule
+    section: Session Fixation
+    sectionID: '40013'
+    tags:
+    - Active
+    - '40013'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/196.html
+    name: CAPEC
+    section: Session Credential Falsification through Forging
+    sectionID: '196'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/21.html
+    name: CAPEC
+    section: Exploitation of Trusted Identifiers
+    sectionID: '21'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/31.html
+    name: CAPEC
+    section: Accessing/Intercepting/Modifying HTTP Cookies
+    sectionID: '31'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/39.html
+    name: CAPEC
+    section: Manipulating Opaque Client-based Data Tokens
+    sectionID: '39'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/59.html
+    name: CAPEC
+    section: Session Credential Falsification through Prediction
+    sectionID: '59'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/60.html
+    name: CAPEC
+    section: Reusing Session IDs (aka Session Replay)
+    sectionID: '60'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/61.html
+    name: CAPEC
+    section: Session Fixation
+    sectionID: '61'
+    version: '3.9'
+  ltype: SAME
 name: Generate a new session token after authentication

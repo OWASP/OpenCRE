@@ -6,8 +6,8 @@ links:
     id: 010-308
     name: Input validation
     tags:
-    - Injection protection
     - XSS protection
+    - Injection protection
   ltype: Contains
 - document:
     doctype: Standard
@@ -44,4 +44,12 @@ links:
     name: OWASP Cheat Sheets
     section: Input Validation Cheat Sheet
   ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/460.html
+    name: CAPEC
+    section: HTTP Parameter Pollution (HPP)
+    sectionID: '460'
+    version: '3.9'
+  ltype: SAME
 name: Validatie/enforce HTTP inputs (against HTTP parameter pollution attacks)

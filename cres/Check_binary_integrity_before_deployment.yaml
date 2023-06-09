@@ -21,4 +21,100 @@ links:
     section: ''
     sectionID: '494'
   ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/184.html
+    name: CAPEC
+    section: Software Integrity Attack
+    sectionID: '184'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/185.html
+    name: CAPEC
+    section: Malicious Software Download
+    sectionID: '185'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/186.html
+    name: CAPEC
+    section: Malicious Software Update
+    sectionID: '186'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/187.html
+    name: CAPEC
+    section: Malicious Automated Software Update via Redirection
+    sectionID: '187'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/533.html
+    name: CAPEC
+    section: Malicious Manual Software Update
+    sectionID: '533'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/538.html
+    name: CAPEC
+    section: Open-Source Library Manipulation
+    sectionID: '538'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/657.html
+    name: CAPEC
+    section: Malicious Automated Software Update via Spoofing
+    sectionID: '657'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/662.html
+    name: CAPEC
+    section: Adversary in the Browser (AiTB)
+    sectionID: '662'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/691.html
+    name: CAPEC
+    section: Spoof Open-Source Software Metadata
+    sectionID: '691'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/692.html
+    name: CAPEC
+    section: Spoof Version Control System Commit Metadata
+    sectionID: '692'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/693.html
+    name: CAPEC
+    section: StarJacking
+    sectionID: '693'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/695.html
+    name: CAPEC
+    section: Repo Jacking
+    sectionID: '695'
+    version: '3.9'
+  ltype: SAME
 name: Check binary integrity before deployment

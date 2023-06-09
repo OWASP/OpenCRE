@@ -6,8 +6,8 @@ links:
     id: 764-765
     name: Sanitization and sandboxing
     tags:
-    - Injection protection
     - XSS protection
+    - Injection protection
   ltype: Contains
 - document:
     doctype: CRE
@@ -60,6 +60,27 @@ links:
     name: OWASP Cheat Sheets
     section: Unvalidated Redirects and Forwards Cheat Sheet
   ltype: Linked To
+- document:
+    description: Do not accept remote addresses as request parameters, and if you
+      must, ensure that they are validated against an allow-list of expected values.
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesAlpha/src/main/java/org/zaproxy/zap/extension/ascanrulesAlpha/SsrfScanRule.java
+    name: ZAP Rule
+    section: Server Side Request Forgery
+    sectionID: '40046'
+    tags:
+    - Active
+    - '40046'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/664.html
+    name: CAPEC
+    section: Server Side Request Forgery
+    sectionID: '664'
+    version: '3.9'
+  ltype: SAME
 name: (SSRF) When depending on internal server input, use validation sanitization
   and whitelisting
 tags:

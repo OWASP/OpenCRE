@@ -28,4 +28,132 @@ links:
     name: OWASP Cheat Sheets
     section: Logging Cheat Sheet
   ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/1.html
+    name: CAPEC
+    section: Accessing Functionality Not Properly Constrained by ACLs
+    sectionID: '1'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/104.html
+    name: CAPEC
+    section: Cross Zone Scripting
+    sectionID: '104'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/127.html
+    name: CAPEC
+    section: Directory Indexing
+    sectionID: '127'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/13.html
+    name: CAPEC
+    section: Subverting Environment Variable Values
+    sectionID: '13'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/17.html
+    name: CAPEC
+    section: Using Malicious Files
+    sectionID: '17'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/39.html
+    name: CAPEC
+    section: Manipulating Opaque Client-based Data Tokens
+    sectionID: '39'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/402.html
+    name: CAPEC
+    section: Bypassing ATA Password Security
+    sectionID: '402'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/45.html
+    name: CAPEC
+    section: Buffer Overflow via Symbolic Links
+    sectionID: '45'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/51.html
+    name: CAPEC
+    section: Poison Web Service Registry
+    sectionID: '51'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/59.html
+    name: CAPEC
+    section: Session Credential Falsification through Prediction
+    sectionID: '59'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/60.html
+    name: CAPEC
+    section: Reusing Session IDs (aka Session Replay)
+    sectionID: '60'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/647.html
+    name: CAPEC
+    section: Collect Data from Registries
+    sectionID: '647'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/668.html
+    name: CAPEC
+    section: Key Negotiation of Bluetooth Attack (KNOB)
+    sectionID: '668'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/76.html
+    name: CAPEC
+    section: Manipulating Web Input to File System Calls
+    sectionID: '76'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/77.html
+    name: CAPEC
+    section: Manipulating User-Controlled Variables
+    sectionID: '77'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/87.html
+    name: CAPEC
+    section: Forceful Browsing
+    sectionID: '87'
+    version: '3.9'
+  ltype: SAME
 name: Log access control decisions

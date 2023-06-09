@@ -27,4 +27,12 @@ links:
     name: OWASP Web Security Testing Guide (WSTG)
     section: WSTG-BUSL-09
   ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/1.html
+    name: CAPEC
+    section: Accessing Functionality Not Properly Constrained by ACLs
+    sectionID: '1'
+    version: '3.9'
+  ltype: SAME
 name: Block execution/output of uploaded files

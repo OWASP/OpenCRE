@@ -6,8 +6,8 @@ links:
     id: 764-765
     name: Sanitization and sandboxing
     tags:
-    - Injection protection
     - XSS protection
+    - Injection protection
   ltype: Contains
 - document:
     doctype: Standard
@@ -54,4 +54,12 @@ links:
     name: OWASP Cheat Sheets
     section: Unvalidated Redirects and Forwards Cheat Sheet
   ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/460.html
+    name: CAPEC
+    section: HTTP Parameter Pollution (HPP)
+    sectionID: '460'
+    version: '3.9'
+  ltype: SAME
 name: Sanitize user input before passing content to mail systems (SMTP/IMAP injection)

@@ -66,5 +66,5 @@ links:
   ltype: Contains
 name: Input validation
 tags:
-- Injection protection
 - XSS protection
+- Injection protection

@@ -6,8 +6,8 @@ links:
     id: 161-451
     name: Output encoding and injection prevention
     tags:
-    - Injection protection
     - XSS protection
+    - Injection protection
   ltype: Contains
 - document:
     doctype: Standard
@@ -120,4 +120,133 @@ links:
     name: OWASP Cheat Sheets
     section: XML Security Cheat Sheet
   ltype: Linked To
+- document:
+    description: Please upgrade to the latest version of ExampleLibrary.
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/retire/src/main/java/org/zaproxy/addon/retire/RetireScanRule.java
+    name: ZAP Rule
+    section: Vulnerable JS Library
+    sectionID: '10003'
+    tags:
+    - '10003'
+    - Passive
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: Ensure JavaScript source files are loaded from only trusted sources,
+      and the sources can't be controlled by end users of the application.
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/CrossDomainScriptInclusionScanRule.java
+    name: ZAP Rule
+    section: Cross-Domain JavaScript Source File Inclusion
+    sectionID: '10017'
+    tags:
+    - '10017'
+    - Passive
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/175.html
+    name: CAPEC
+    section: Code Inclusion
+    sectionID: '175'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/201.html
+    name: CAPEC
+    section: Serialized Data External Linking
+    sectionID: '201'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/228.html
+    name: CAPEC
+    section: DTD Injection
+    sectionID: '228'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/251.html
+    name: CAPEC
+    section: Local Code Inclusion
+    sectionID: '251'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/252.html
+    name: CAPEC
+    section: PHP Local File Inclusion
+    sectionID: '252'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/253.html
+    name: CAPEC
+    section: Remote Code Inclusion
+    sectionID: '253'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/263.html
+    name: CAPEC
+    section: Force Use of Corrupted Files
+    sectionID: '263'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/538.html
+    name: CAPEC
+    section: Open-Source Library Manipulation
+    sectionID: '538'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/549.html
+    name: CAPEC
+    section: Local Execution of Code
+    sectionID: '549'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/640.html
+    name: CAPEC
+    section: Inclusion of Code in Existing Process
+    sectionID: '640'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/660.html
+    name: CAPEC
+    section: Root/Jailbreak Detection Evasion via Hooking
+    sectionID: '660'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/695.html
+    name: CAPEC
+    section: Repo Jacking
+    sectionID: '695'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/698.html
+    name: CAPEC
+    section: Install Malicious Extension
+    sectionID: '698'
+    version: '3.9'
+  ltype: SAME
 name: Protect against LFI / RFI

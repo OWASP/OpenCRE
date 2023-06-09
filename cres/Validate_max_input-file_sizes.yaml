@@ -38,6 +38,43 @@ links:
     name: OWASP Cheat Sheets
     section: File Upload Cheat Sheet
   ltype: Linked To
+- document:
+    description: 'Upgrade your Apache server to a currently stable version. Alternative
+      solutions or workarounds are outlined in the references. '
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/ApacheRangeHeaderDosScanRule.java
+    name: ZAP Rule
+    section: Apache Range Header DoS (CVE-2011-3192)
+    sectionID: '10053'
+    tags:
+    - Active
+    - '10053'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/147.html
+    name: CAPEC
+    section: XML Ping of the Death
+    sectionID: '147'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/227.html
+    name: CAPEC
+    section: Sustained Client Engagement
+    sectionID: '227'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/492.html
+    name: CAPEC
+    section: Regular Expression Exponential Blowup
+    sectionID: '492'
+    version: '3.9'
+  ltype: SAME
 name: Validate max input/file sizes
 tags:
 - Denial Of Service protection

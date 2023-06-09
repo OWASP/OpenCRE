@@ -6,8 +6,8 @@ links:
     id: 161-451
     name: Output encoding and injection prevention
     tags:
-    - Injection protection
     - XSS protection
+    - Injection protection
   ltype: Contains
 - document:
     doctype: Standard
@@ -126,5 +126,16 @@ links:
     hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/XML_Security_Cheat_Sheet.html
     name: OWASP Cheat Sheets
     section: XML Security Cheat Sheet
+  ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/XpathInjectionScanRule.java
+    name: ZAP Rule
+    section: XPath Injection
+    sectionID: '90021'
+    tags:
+    - Active
+    - '90021'
+    tooltype: Offensive
   ltype: Linked To
 name: Protect against XML/XPath injection

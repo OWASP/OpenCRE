@@ -39,6 +39,31 @@ links:
     name: OWASP Cheat Sheets
     section: REST Assessment Cheat Sheet
   ltype: Linked To
+- document:
+    description: Configure the web server to disable directory browsing.
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/DirectoryBrowsingScanRule.java
+    name: ZAP Rule
+    section: Directory Browsing
+    sectionID: '10033'
+    tags:
+    - '10033'
+    - Passive
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: Disable directory browsing.  If this is required, make sure the listed
+      files does not induce risks.
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrules/src/main/java/org/zaproxy/zap/extension/ascanrules/DirectoryBrowsingScanRule.java
+    name: ZAP Rule
+    section: Directory Browsing
+    sectionID: '0'
+    tags:
+    - Active
+    - '0'
+    tooltype: Offensive
+  ltype: Linked To
 name: Protect against directory browsing/discovery attacks
 tags:
 - Configuration

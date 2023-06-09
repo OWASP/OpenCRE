@@ -24,4 +24,12 @@ links:
     section: ''
     sectionID: '507'
   ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/698.html
+    name: CAPEC
+    section: Install Malicious Extension
+    sectionID: '698'
+    version: '3.9'
+  ltype: SAME
 name: Check source code and third party libraries to not contain backdoors

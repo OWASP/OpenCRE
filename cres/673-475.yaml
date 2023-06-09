@@ -1,0 +1,25 @@
+doctype: CRE
+id: 673-475
+links:
+- document:
+    doctype: CRE
+    id: 613-285
+    name: Supply chain management
+  ltype: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x10-V1-Architecture.md
+    name: ASVS
+    section: V1.14.6
+    sectionID: Verify the application does not use unsupported, insecure, or deprecated
+      client-side technologies such as NSAPI plugins, Flash, Shockwave, ActiveX, Silverlight,
+      NACL, or client-side Java applets.
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/477.html
+    name: CWE
+    section: ''
+    sectionID: '477'
+  ltype: Linked To
+name: Disallow unsupported/deprecated client-side technologies

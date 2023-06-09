@@ -38,8 +38,16 @@ links:
     section: ''
     sectionID: '646'
   ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/209.html
+    name: CAPEC
+    section: XSS Using MIME Type Mismatch
+    sectionID: '209'
+    version: '3.9'
+  ltype: SAME
 name: Store and serve user-uploaded files such that they cannot execute/damage server
   or client
 tags:
-- Injection protection
 - XSS protection
+- Injection protection

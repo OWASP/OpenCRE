@@ -28,4 +28,99 @@ links:
     name: OWASP Web Security Testing Guide (WSTG)
     section: WSTG-ATHZ-01
   ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrules/src/main/java/org/zaproxy/zap/extension/ascanrules/PathTraversalScanRule.java
+    name: ZAP Rule
+    section: Path Traversal
+    sectionID: 6-2
+    tags:
+    - Active
+    - 6-2
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrules/src/main/java/org/zaproxy/zap/extension/ascanrules/PathTraversalScanRule.java
+    name: ZAP Rule
+    section: Path Traversal
+    sectionID: 6-5
+    tags:
+    - Active
+    - 6-5
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrules/src/main/java/org/zaproxy/zap/extension/ascanrules/PathTraversalScanRule.java
+    name: ZAP Rule
+    section: Path Traversal
+    sectionID: 6-4
+    tags:
+    - Active
+    - 6-4
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrules/src/main/java/org/zaproxy/zap/extension/ascanrules/PathTraversalScanRule.java
+    name: ZAP Rule
+    section: Path Traversal
+    sectionID: 6-1
+    tags:
+    - Active
+    - 6-1
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrules/src/main/java/org/zaproxy/zap/extension/ascanrules/PathTraversalScanRule.java
+    name: ZAP Rule
+    section: Path Traversal
+    sectionID: 6-3
+    tags:
+    - Active
+    - 6-3
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/126.html
+    name: CAPEC
+    section: Path Traversal
+    sectionID: '126'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/64.html
+    name: CAPEC
+    section: Using Slashes and URL Encoding Combined to Bypass Validation Logic
+    sectionID: '64'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/76.html
+    name: CAPEC
+    section: Manipulating Web Input to File System Calls
+    sectionID: '76'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/78.html
+    name: CAPEC
+    section: Using Escaped Slashes in Alternate Encoding
+    sectionID: '78'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/79.html
+    name: CAPEC
+    section: Using Slashes in Alternate Encoding
+    sectionID: '79'
+    version: '3.9'
+  ltype: SAME
 name: Sanitize filename metadata from untrusted origin if processing is required

@@ -37,4 +37,28 @@ links:
     name: OWASP Cheat Sheets
     section: Authorization Testing Automation Cheat Sheet
   ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/1.html
+    name: CAPEC
+    section: Accessing Functionality Not Properly Constrained by ACLs
+    sectionID: '1'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/127.html
+    name: CAPEC
+    section: Directory Indexing
+    sectionID: '127'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/81.html
+    name: CAPEC
+    section: Web Server Logs Tampering
+    sectionID: '81'
+    version: '3.9'
+  ltype: SAME
 name: Deny new users by default

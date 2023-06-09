@@ -34,5 +34,13 @@ links:
     name: NIST 800-63
     section: 5.1.3.2
   ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/102.html
+    name: CAPEC
+    section: Session Sidejacking
+    sectionID: '102'
+    version: '3.9'
+  ltype: SAME
 name: Communicate out of band multi factor authentication requests, codes or tokens
   independently and securely

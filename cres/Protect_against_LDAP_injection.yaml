@@ -6,8 +6,8 @@ links:
     id: 161-451
     name: Output encoding and injection prevention
     tags:
-    - Injection protection
     - XSS protection
+    - Injection protection
   ltype: Contains
 - document:
     doctype: Standard
@@ -126,4 +126,23 @@ links:
     name: OWASP Cheat Sheets
     section: XML Security Cheat Sheet
   ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesAlpha/src/main/java/org/zaproxy/zap/extension/ascanrulesAlpha/LdapInjectionScanRule.java
+    name: ZAP Rule
+    section: LDAP Injection
+    sectionID: '40015'
+    tags:
+    - '40015'
+    - Active
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/136.html
+    name: CAPEC
+    section: LDAP Injection
+    sectionID: '136'
+    version: '3.9'
+  ltype: SAME
 name: Protect against LDAP injection

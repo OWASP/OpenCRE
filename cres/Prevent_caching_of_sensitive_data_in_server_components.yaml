@@ -21,4 +21,45 @@ links:
     section: ''
     sectionID: '524'
   ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrulesBeta/src/main/java/org/zaproxy/zap/extension/pscanrulesBeta/CacheableScanRule.java
+    name: ZAP Rule
+    section: Storable but Non-Cacheable Content
+    sectionID: 10049-2
+    tags:
+    - 10049-2
+    - Passive
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrulesBeta/src/main/java/org/zaproxy/zap/extension/pscanrulesBeta/CacheableScanRule.java
+    name: ZAP Rule
+    section: Storable and Cacheable Content
+    sectionID: 10049-3
+    tags:
+    - 10049-3
+    - Passive
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrulesBeta/src/main/java/org/zaproxy/zap/extension/pscanrulesBeta/CacheableScanRule.java
+    name: ZAP Rule
+    section: Non-Storable Content
+    sectionID: 10049-1
+    tags:
+    - 10049-1
+    - Passive
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/204.html
+    name: CAPEC
+    section: Lifting Sensitive Data Embedded in Cache
+    sectionID: '204'
+    version: '3.9'
+  ltype: SAME
 name: Prevent caching of sensitive data in server components

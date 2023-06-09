@@ -35,4 +35,25 @@ links:
     name: OWASP Cheat Sheets
     section: Deserialization Cheat Sheet
   ltype: Linked To
+- document:
+    description: Deserialization of untrusted data is inherently dangerous and should
+      be avoided.
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrulesBeta/src/main/java/org/zaproxy/zap/extension/pscanrulesBeta/JsoScanRule.java
+    name: ZAP Rule
+    section: Java Serialization Object
+    sectionID: '90002'
+    tags:
+    - '90002'
+    - Passive
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/586.html
+    name: CAPEC
+    section: Object Injection
+    sectionID: '586'
+    version: '3.9'
+  ltype: SAME
 name: Block serialization of content from untrusted clients

@@ -22,4 +22,12 @@ links:
     section: ''
     sectionID: '226'
   ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/37.html
+    name: CAPEC
+    section: Retrieve Embedded Sensitive Data
+    sectionID: '37'
+    version: '3.9'
+  ltype: SAME
 name: Zeroize sensitive information in memory after use

@@ -43,4 +43,85 @@ links:
     name: NIST 800-63
     section: 7.1.2
   ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/21.html
+    name: CAPEC
+    section: Exploitation of Trusted Identifiers
+    sectionID: '21'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/22.html
+    name: CAPEC
+    section: Exploiting Trust in Client
+    sectionID: '22'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/459.html
+    name: CAPEC
+    section: Creating a Rogue Certification Authority Certificate
+    sectionID: '459'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/461.html
+    name: CAPEC
+    section: Web Services API Signature Forgery Leveraging Hash Function Extension
+      Weakness
+    sectionID: '461'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/473.html
+    name: CAPEC
+    section: Signature Spoof
+    sectionID: '473'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/476.html
+    name: CAPEC
+    section: Signature Spoofing by Misrepresentation
+    sectionID: '476'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/59.html
+    name: CAPEC
+    section: Session Credential Falsification through Prediction
+    sectionID: '59'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/60.html
+    name: CAPEC
+    section: Reusing Session IDs (aka Session Replay)
+    sectionID: '60'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/667.html
+    name: CAPEC
+    section: Bluetooth Impersonation AttackS (BIAS)
+    sectionID: '667'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/94.html
+    name: CAPEC
+    section: Adversary in the Middle (AiTM)
+    sectionID: '94'
+    version: '3.9'
+  ltype: SAME
 name: Allow user revocation of Oauth tokens

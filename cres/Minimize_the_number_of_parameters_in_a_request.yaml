@@ -21,4 +21,12 @@ links:
     section: ''
     sectionID: '233'
   ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/39.html
+    name: CAPEC
+    section: Manipulating Opaque Client-based Data Tokens
+    sectionID: '39'
+    version: '3.9'
+  ltype: SAME
 name: Minimize the number of parameters in a request

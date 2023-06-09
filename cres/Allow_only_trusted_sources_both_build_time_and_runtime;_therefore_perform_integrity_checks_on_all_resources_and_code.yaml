@@ -34,5 +34,61 @@ links:
     name: OWASP Cheat Sheets
     section: Docker Security Cheat Sheet
   ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/13.html
+    name: CAPEC
+    section: Subverting Environment Variable Values
+    sectionID: '13'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/14.html
+    name: CAPEC
+    section: Client-side Injection-induced Buffer Overflow
+    sectionID: '14'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/389.html
+    name: CAPEC
+    section: Content Spoofing Via Application API Manipulation
+    sectionID: '389'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/39.html
+    name: CAPEC
+    section: Manipulating Opaque Client-based Data Tokens
+    sectionID: '39'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/665.html
+    name: CAPEC
+    section: Exploitation of Thunderbolt Protection Flaws
+    sectionID: '665'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/74.html
+    name: CAPEC
+    section: Manipulating State
+    sectionID: '74'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/75.html
+    name: CAPEC
+    section: Manipulating Writeable Configuration Files
+    sectionID: '75'
+    version: '3.9'
+  ltype: SAME
 name: Allow only trusted sources both build time and runtime; therefore perform integrity
   checks on all resources and code

@@ -6,8 +6,8 @@ links:
     id: 161-451
     name: Output encoding and injection prevention
     tags:
-    - Injection protection
     - XSS protection
+    - Injection protection
   ltype: Contains
 - document:
     doctype: Standard
@@ -129,4 +129,36 @@ links:
     name: OWASP Cheat Sheets
     section: XML Security Cheat Sheet
   ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/104.html
+    name: CAPEC
+    section: Cross Zone Scripting
+    sectionID: '104'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/73.html
+    name: CAPEC
+    section: User-Controlled Filename
+    sectionID: '73'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/81.html
+    name: CAPEC
+    section: Web Server Logs Tampering
+    sectionID: '81'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/85.html
+    name: CAPEC
+    section: AJAX Footprinting
+    sectionID: '85'
+    version: '3.9'
+  ltype: SAME
 name: Force output encoding for specific interpreter's context

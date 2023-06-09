@@ -51,6 +51,60 @@ links:
     name: OWASP Cheat Sheets
     section: Cross-Site Request Forgery Prevention Cheat Sheet
   ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/CsrfCountermeasuresScanRule.java
+    name: ZAP Rule
+    section: Absence of Anti-CSRF Tokens
+    sectionID: '10202'
+    tags:
+    - '10202'
+    - Passive
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/CsrfTokenScanRule.java
+    name: ZAP Rule
+    section: Anti-CSRF Tokens Check
+    sectionID: '20012'
+    tags:
+    - Active
+    - '20012'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/111.html
+    name: CAPEC
+    section: JSON Hijacking (aka JavaScript Hijacking)
+    sectionID: '111'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/462.html
+    name: CAPEC
+    section: Cross-Domain Search Timing
+    sectionID: '462'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/467.html
+    name: CAPEC
+    section: Cross Site Identification
+    sectionID: '467'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/62.html
+    name: CAPEC
+    section: Cross Site Request Forgery
+    sectionID: '62'
+    version: '3.9'
+  ltype: SAME
 name: Add CSRF protection for cookie based REST services
 tags:
 - CSRF protection

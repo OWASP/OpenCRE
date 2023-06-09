@@ -6,8 +6,8 @@ links:
     id: 010-308
     name: Input validation
     tags:
-    - Injection protection
     - XSS protection
+    - Injection protection
   ltype: Contains
 - document:
     doctype: Standard
@@ -43,4 +43,56 @@ links:
     name: OWASP Cheat Sheets
     section: Input Validation Cheat Sheet
   ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrules/src/main/java/org/zaproxy/zap/extension/ascanrules/ExternalRedirectScanRule.java
+    name: ZAP Rule
+    section: External Redirect
+    sectionID: 20019-3
+    tags:
+    - Active
+    - 20019-3
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrules/src/main/java/org/zaproxy/zap/extension/ascanrules/ExternalRedirectScanRule.java
+    name: ZAP Rule
+    section: External Redirect
+    sectionID: 20019-1
+    tags:
+    - 20019-1
+    - Active
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrules/src/main/java/org/zaproxy/zap/extension/ascanrules/ExternalRedirectScanRule.java
+    name: ZAP Rule
+    section: External Redirect
+    sectionID: 20019-4
+    tags:
+    - Active
+    - 20019-4
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrules/src/main/java/org/zaproxy/zap/extension/ascanrules/ExternalRedirectScanRule.java
+    name: ZAP Rule
+    section: External Redirect
+    sectionID: 20019-2
+    tags:
+    - Active
+    - 20019-2
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/178.html
+    name: CAPEC
+    section: Cross-Site Flashing
+    sectionID: '178'
+    version: '3.9'
+  ltype: SAME
 name: Whitelist redirected/forwarded URLs

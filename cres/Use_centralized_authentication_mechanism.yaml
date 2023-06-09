@@ -32,6 +32,46 @@ links:
     section: ''
     sectionID: '306'
   ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/12.html
+    name: CAPEC
+    section: Choosing Message Identifier
+    sectionID: '12'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/166.html
+    name: CAPEC
+    section: Force the System to Reset Values
+    sectionID: '166'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/216.html
+    name: CAPEC
+    section: Communication Channel Manipulation
+    sectionID: '216'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/36.html
+    name: CAPEC
+    section: Using Unpublished Interfaces or Functionality
+    sectionID: '36'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/62.html
+    name: CAPEC
+    section: Cross Site Request Forgery
+    sectionID: '62'
+    version: '3.9'
+  ltype: SAME
 name: Use centralized authentication mechanism
 tags:
 - Architecture

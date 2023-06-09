@@ -27,4 +27,79 @@ links:
     name: OWASP Web Security Testing Guide (WSTG)
     section: WSTG-INPV-12
   ltype: Linked To
+- document:
+    description: Update Bash on the server to the latest version
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/ShellShockScanRule.java
+    name: ZAP Rule
+    section: Remote Code Execution - Shell Shock
+    sectionID: '10048'
+    tags:
+    - Active
+    - '10048'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: Upgrade Spring Framework to versions 5.3.18, 5.2.20, or newer.
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/Spring4ShellScanRule.java
+    name: ZAP Rule
+    section: Spring4Shell
+    sectionID: '40045'
+    tags:
+    - Active
+    - '40045'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrules/src/main/java/org/zaproxy/zap/extension/ascanrules/CommandInjectionScanRule.java
+    name: ZAP Rule
+    section: Remote OS Command Injection
+    sectionID: '90020'
+    tags:
+    - Active
+    - '90020'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/108.html
+    name: CAPEC
+    section: Command Line Execution through SQL Injection
+    sectionID: '108'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/15.html
+    name: CAPEC
+    section: Command Delimiters
+    sectionID: '15'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/43.html
+    name: CAPEC
+    section: Exploiting Multiple Input Interpretation Layers
+    sectionID: '43'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/6.html
+    name: CAPEC
+    section: Argument Injection
+    sectionID: '6'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/88.html
+    name: CAPEC
+    section: OS Command Injection
+    sectionID: '88'
+    version: '3.9'
+  ltype: SAME
 name: Block direct execution of file metadata from untrusted origin

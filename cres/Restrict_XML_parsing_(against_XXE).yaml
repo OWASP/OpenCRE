@@ -8,15 +8,15 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 486-813
-    name: Configuration
-  ltype: Related
-- document:
-    doctype: CRE
     id: 760-764
     name: Injection protection
     tags:
     - XSS protection
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 486-813
+    name: Configuration
   ltype: Related
 - document:
     doctype: Standard
@@ -59,6 +59,26 @@ links:
     name: OWASP Cheat Sheets
     section: XML Security Cheat Sheet
   ltype: Linked To
+- document:
+    description: TBA
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrules/src/main/java/org/zaproxy/zap/extension/ascanrules/XxeScanRule.java
+    name: ZAP Rule
+    section: XML External Entity Attack
+    sectionID: '90023'
+    tags:
+    - '90023'
+    - Active
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/221.html
+    name: CAPEC
+    section: Data Serialization External Entities Blowup
+    sectionID: '221'
+    version: '3.9'
+  ltype: SAME
 name: Restrict XML parsing (against XXE)
 tags:
 - Configuration

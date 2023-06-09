@@ -45,4 +45,12 @@ links:
     name: OWASP Cheat Sheets
     section: XML Security Cheat Sheet
   ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/35.html
+    name: CAPEC
+    section: Leverage Executable Code in Non-Executable Files
+    sectionID: '35'
+    version: '3.9'
+  ltype: SAME
 name: Parse JSON safely

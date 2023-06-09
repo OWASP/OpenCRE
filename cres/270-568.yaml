@@ -1,0 +1,110 @@
+doctype: CRE
+id: 270-568
+links:
+- document:
+    doctype: CRE
+    id: 633-428
+    name: Authentication
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 558-807
+    name: Mutually authenticate application and credential service provider
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 333-858
+    name: Resist stolen credentials
+    tags:
+    - Cryptography
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 802-056
+    name: Restrict excessive authentication
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 113-133
+    name: Use centralized authentication mechanism
+    tags:
+    - Architecture
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 146-556
+    name: Authenticate consistently
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 585-408
+    name: Challenge nonce cryptography
+    tags:
+    - Cryptography
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 520-617
+    name: Credential recovery
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 789-320
+    name: Login functionality
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 062-850
+    name: MFA/OTP
+    tags:
+    - Cryptography
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 327-505
+    name: Change password with presence of old and new password
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 138-448
+    name: Inform users for authentication renewal
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 808-425
+    name: Notify users about anomalies in their usage patterns
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 751-176
+    name: Offer password changing functionality
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 177-260
+    name: Session management
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 551-054
+    name: Use ephemeral secrets rather than static secrets
+  ltype: Related
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=IA-6
+    name: NIST 800-53 v5
+    section: IA-6 Authentication Feedback
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=IA-7
+    name: NIST 800-53 v5
+    section: IA-7 Cryptographic Module Authentication
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=IA-9
+    name: NIST 800-53 v5
+    section: IA-9 Service Identification and Authentication
+  ltype: Linked To
+name: Authentication mechanism

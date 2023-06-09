@@ -30,4 +30,20 @@ links:
     name: OWASP Cheat Sheets
     section: Error Handling Cheat Sheet
   ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/170.html
+    name: CAPEC
+    section: Web Application Fingerprinting
+    sectionID: '170'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/694.html
+    name: CAPEC
+    section: System Location Discovery
+    sectionID: '694'
+    version: '3.9'
+  ltype: SAME
 name: Disable debug mode in production

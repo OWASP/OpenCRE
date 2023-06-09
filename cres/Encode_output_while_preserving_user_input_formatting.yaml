@@ -6,8 +6,8 @@ links:
     id: 161-451
     name: Output encoding and injection prevention
     tags:
-    - Injection protection
     - XSS protection
+    - Injection protection
   ltype: Contains
 - document:
     doctype: Standard
@@ -126,4 +126,12 @@ links:
     name: OWASP Cheat Sheets
     section: XML Security Cheat Sheet
   ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/71.html
+    name: CAPEC
+    section: Using Unicode Encoding to Bypass Validation Logic
+    sectionID: '71'
+    version: '3.9'
+  ltype: SAME
 name: Encode output while preserving user input formatting

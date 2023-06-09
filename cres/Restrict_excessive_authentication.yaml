@@ -70,4 +70,60 @@ links:
     name: NIST 800-63
     section: 5.1.5.2
   ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/16.html
+    name: CAPEC
+    section: Dictionary-based Password Attack
+    sectionID: '16'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/49.html
+    name: CAPEC
+    section: Password Brute Forcing
+    sectionID: '49'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/560.html
+    name: CAPEC
+    section: Use of Known Domain Credentials
+    sectionID: '560'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/565.html
+    name: CAPEC
+    section: Password Spraying
+    sectionID: '565'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/600.html
+    name: CAPEC
+    section: Credential Stuffing
+    sectionID: '600'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/652.html
+    name: CAPEC
+    section: Use of Known Kerberos Credentials
+    sectionID: '652'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/653.html
+    name: CAPEC
+    section: Use of Known Operating System Credentials
+    sectionID: '653'
+    version: '3.9'
+  ltype: SAME
 name: Restrict excessive authentication

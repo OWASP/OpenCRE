@@ -40,4 +40,153 @@ links:
     name: OWASP Cheat Sheets
     section: User Privacy Protection Cheat Sheet
   ltype: Linked To
+- document:
+    description: Configure your web or application server to use SSL (https).
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/HttpOnlySiteScanRule.java
+    name: ZAP Rule
+    section: HTTP Only Site
+    sectionID: '10106'
+    tags:
+    - Active
+    - '10106'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/MixedContentScanRule.java
+    name: ZAP Rule
+    section: Secure Pages Include Mixed Content
+    sectionID: '10040'
+    tags:
+    - '10040'
+    - Passive
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: Ensure that your web server, application server, load balancer, etc.
+      is configured to only serve such content via HTTPS. Consider implementing HTTP
+      Strict Transport Security.
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/HttpsAsHttpScanRule.java
+    name: ZAP Rule
+    section: HTTPS Content Available via HTTP
+    sectionID: '10047'
+    tags:
+    - Active
+    - '10047'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/157.html
+    name: CAPEC
+    section: Sniffing Attacks
+    sectionID: '157'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/158.html
+    name: CAPEC
+    section: Sniffing Network Traffic
+    sectionID: '158'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/204.html
+    name: CAPEC
+    section: Lifting Sensitive Data Embedded in Cache
+    sectionID: '204'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/31.html
+    name: CAPEC
+    section: Accessing/Intercepting/Modifying HTTP Cookies
+    sectionID: '31'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/37.html
+    name: CAPEC
+    section: Retrieve Embedded Sensitive Data
+    sectionID: '37'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/383.html
+    name: CAPEC
+    section: Harvesting Information via API Event Monitoring
+    sectionID: '383'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/384.html
+    name: CAPEC
+    section: Application API Message Manipulation via Man-in-the-Middle
+    sectionID: '384'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/385.html
+    name: CAPEC
+    section: Transaction or Event Tampering via Application API Manipulation
+    sectionID: '385'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/386.html
+    name: CAPEC
+    section: Application API Navigation Remapping
+    sectionID: '386'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/387.html
+    name: CAPEC
+    section: Navigation Remapping To Propagate Malicious Content
+    sectionID: '387'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/388.html
+    name: CAPEC
+    section: Application API Button Hijacking
+    sectionID: '388'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/477.html
+    name: CAPEC
+    section: Signature Spoofing by Mixing Signed and Unsigned Content
+    sectionID: '477'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/609.html
+    name: CAPEC
+    section: Cellular Traffic Intercept
+    sectionID: '609'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/65.html
+    name: CAPEC
+    section: Sniff Application Code
+    sectionID: '65'
+    version: '3.9'
+  ltype: SAME
 name: Encrypt financial data at rest

@@ -33,6 +33,25 @@ links:
     name: OWASP Web Security Testing Guide (WSTG)
     section: WSTG-ATHZ-01
   ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrules/src/main/java/org/zaproxy/zap/extension/ascanrules/RemoteFileIncludeScanRule.java
+    name: ZAP Rule
+    section: Remote File Inclusion
+    sectionID: '7'
+    tags:
+    - Active
+    - '7'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/193.html
+    name: CAPEC
+    section: PHP Remote File Inclusion
+    sectionID: '193'
+    version: '3.9'
+  ltype: SAME
 name: Ignore/at least validate  filename metadata from untrusted origin (remote file
   context, eg RFI)
 tags:

@@ -48,6 +48,14 @@ links:
     name: NIST 800-63
     section: '7.1'
   ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/59.html
+    name: CAPEC
+    section: Session Credential Falsification through Prediction
+    sectionID: '59'
+    version: '3.9'
+  ltype: SAME
 name: Enforce high entropy session tokens
 tags:
 - Cryptography

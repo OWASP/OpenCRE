@@ -1,0 +1,57 @@
+doctype: CRE
+id: 850-376
+links:
+- document:
+    doctype: CRE
+    id: 862-452
+    name: Operating processes for security
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 163-776
+    name: Backup
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 157-587
+    name: Equipment management
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 148-227
+    name: Endpoint management
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 522-616
+    name: Media protection
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 467-784
+    name: Network security
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 125-010
+    name: Password management systems
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 234-282
+    name: Physical & environment protection
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 233-748
+    name: Configuration hardening
+    tags:
+    - Configuration
+  ltype: Related
+- document:
+    doctype: Standard
+    name: Cloud Controls Matrix
+    section: Datacenter security
+    sectionID: DCS
+  ltype: Linked To
+name: Facilities management

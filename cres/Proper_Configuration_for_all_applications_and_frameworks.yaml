@@ -29,4 +29,30 @@ links:
     name: OWASP Cheat Sheets
     section: Docker Security Cheat Sheet
   ltype: Linked To
+- document:
+    description: Ensure that only POST is accepted where POST is expected.
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrules/src/main/java/org/zaproxy/zap/extension/ascanrules/GetForPostScanRule.java
+    name: ZAP Rule
+    section: GET for POST
+    sectionID: '10058'
+    tags:
+    - Active
+    - '10058'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: Ensure that your web server, application server, load balancer, etc.
+      is configured to set the Permissions-Policy header instead of the Feature-Policy
+      header.
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrulesBeta/src/main/java/org/zaproxy/zap/extension/pscanrulesBeta/PermissionsPolicyScanRule.java
+    name: ZAP Rule
+    section: Deprecated Feature Policy Header Set
+    sectionID: 10063-2
+    tags:
+    - 10063-2
+    - Passive
+    tooltype: Offensive
+  ltype: Linked To
 name: Proper Configuration for all applications and frameworks

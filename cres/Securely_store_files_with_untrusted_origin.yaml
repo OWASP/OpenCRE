@@ -27,4 +27,20 @@ links:
     name: OWASP Web Security Testing Guide (WSTG)
     section: WSTG-BUSL-09
   ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/150.html
+    name: CAPEC
+    section: Collect Data from Common Resource Locations
+    sectionID: '150'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/639.html
+    name: CAPEC
+    section: Probe System Files
+    sectionID: '639'
+    version: '3.9'
+  ltype: SAME
 name: Securely store files with untrusted origin

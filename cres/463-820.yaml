@@ -1,0 +1,38 @@
+doctype: CRE
+id: 463-820
+links:
+- document:
+    doctype: CRE
+    id: 621-287
+    name: File upload
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 623-550
+    name: Denial Of Service protection
+  ltype: Related
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x20-V12-Files-Resources.md
+    name: ASVS
+    section: V12.1.3
+    sectionID: Verify that a file size quota and maximum number of files per user
+      is enforced to ensure that a single user cannot fill up the storage with too
+      many files, or excessively large files.
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/770.html
+    name: CWE
+    section: ''
+    sectionID: '770'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/File_Upload_Cheat_Sheet.html
+    name: OWASP Cheat Sheets
+    section: File Upload Cheat Sheet
+  ltype: Linked To
+name: Limit size and number of uploaded files
+tags:
+- Denial Of Service protection

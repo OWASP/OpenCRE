@@ -27,5 +27,69 @@ links:
     name: OWASP Web Security Testing Guide (WSTG)
     section: WSTG-ATHZ-01
   ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/13.html
+    name: CAPEC
+    section: Subverting Environment Variable Values
+    sectionID: '13'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/267.html
+    name: CAPEC
+    section: Leverage Alternate Encoding
+    sectionID: '267'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/64.html
+    name: CAPEC
+    section: Using Slashes and URL Encoding Combined to Bypass Validation Logic
+    sectionID: '64'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/72.html
+    name: CAPEC
+    section: URL Encoding
+    sectionID: '72'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/76.html
+    name: CAPEC
+    section: Manipulating Web Input to File System Calls
+    sectionID: '76'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/78.html
+    name: CAPEC
+    section: Using Escaped Slashes in Alternate Encoding
+    sectionID: '78'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/79.html
+    name: CAPEC
+    section: Using Slashes in Alternate Encoding
+    sectionID: '79'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/80.html
+    name: CAPEC
+    section: Using UTF-8 Encoding to Bypass Validation Logic
+    sectionID: '80'
+    version: '3.9'
+  ltype: SAME
 name: Ignore/at least validate  filename metadata from untrusted origin (local file
   context, eg LFI)

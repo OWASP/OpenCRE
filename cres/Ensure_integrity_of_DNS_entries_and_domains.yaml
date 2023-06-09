@@ -49,6 +49,38 @@ links:
     section: Production and Non-Production Environments
     sectionID: IVS-05
   ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/142.html
+    name: CAPEC
+    section: DNS Cache Poisoning
+    sectionID: '142'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/275.html
+    name: CAPEC
+    section: DNS Rebinding
+    sectionID: '275'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/73.html
+    name: CAPEC
+    section: User-Controlled Filename
+    sectionID: '73'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/89.html
+    name: CAPEC
+    section: Pharming
+    sectionID: '89'
+    version: '3.9'
+  ltype: SAME
 name: Ensure integrity of DNS entries and domains
 tags:
 - Secure name/address resolution service

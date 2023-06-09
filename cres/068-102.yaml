@@ -1,0 +1,64 @@
+doctype: CRE
+id: 068-102
+links:
+- document:
+    doctype: CRE
+    id: 068-102
+    name: Architecture/design processes
+    tags:
+    - Architecture
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 340-754
+    name: Threat model every design change or sprint
+    tags:
+    - Define High-level architecture and perform security analysis on it
+  ltype: Related
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x10-V1-Architecture.md
+    name: ASVS
+    section: V1.1.5
+    sectionID: Verify definition and security analysis of the application's high-level
+      architecture and all connected remote services.
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owasp-top-10-proactive-controls-2018.readthedocs.io/en/latest/c1-security-requirements.html
+    name: OWASP Proactive Controls
+    section: C1
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/1059.html
+    name: CWE
+    section: ''
+    sectionID: '1059'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Threat_Modeling_Cheat_Sheet.html
+    name: OWASP Cheat Sheets
+    section: Threat Modeling Cheat Sheet
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Abuse_Case_Cheat_Sheet.html
+    name: OWASP Cheat Sheets
+    section: Abuse Case Cheat Sheet
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Attack_Surface_Analysis_Cheat_Sheet.html
+    name: OWASP Cheat Sheets
+    section: Attack Surface Analysis Cheat Sheet
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owaspsamm.org/model/design/threat-assessment/stream-b
+    name: SAMM
+    section: Threat modeling
+    sectionID: D-TA-B
+  ltype: Linked To
+name: Define High-level architecture and perform security analysis on it

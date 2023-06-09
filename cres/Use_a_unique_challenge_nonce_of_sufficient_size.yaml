@@ -40,4 +40,28 @@ links:
     name: NIST 800-63
     section: 5.1.7.2
   ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/112.html
+    name: CAPEC
+    section: Brute Force
+    sectionID: '112'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/485.html
+    name: CAPEC
+    section: Signature Spoofing by Key Recreation
+    sectionID: '485'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/59.html
+    name: CAPEC
+    section: Session Credential Falsification through Prediction
+    sectionID: '59'
+    version: '3.9'
+  ltype: SAME
 name: Use a unique challenge nonce of sufficient size

@@ -83,5 +83,5 @@ links:
   ltype: Linked To
 name: Output encoding and injection prevention
 tags:
-- Injection protection
 - XSS protection
+- Injection protection

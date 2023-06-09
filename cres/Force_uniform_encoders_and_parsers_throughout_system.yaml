@@ -39,6 +39,38 @@ links:
     name: OWASP Cheat Sheets
     section: Server Side Request Forgery Prevention Cheat Sheet
   ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/104.html
+    name: CAPEC
+    section: Cross Zone Scripting
+    sectionID: '104'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/73.html
+    name: CAPEC
+    section: User-Controlled Filename
+    sectionID: '73'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/81.html
+    name: CAPEC
+    section: Web Server Logs Tampering
+    sectionID: '81'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/85.html
+    name: CAPEC
+    section: AJAX Footprinting
+    sectionID: '85'
+    version: '3.9'
+  ltype: SAME
 name: Force uniform encoders and parsers throughout system
 tags:
 - SSRF protection

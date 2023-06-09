@@ -27,4 +27,12 @@ links:
     section: ''
     sectionID: '532'
   ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/215.html
+    name: CAPEC
+    section: Fuzzing for application mapping
+    sectionID: '215'
+    version: '3.9'
+  ltype: SAME
 name: Log access to sensitive data

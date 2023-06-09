@@ -34,4 +34,482 @@ links:
     name: OWASP Cheat Sheets
     section: XML Security Cheat Sheet
   ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/RelativePathConfusionScanRule.java
+    name: ZAP Rule
+    section: Relative Path Confusion
+    sectionID: '10051'
+    tags:
+    - '10051'
+    - Active
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: All forms must specify the action URL.
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrulesBeta/src/main/java/org/zaproxy/zap/extension/pscanrulesBeta/ServletParameterPollutionScanRule.java
+    name: ZAP Rule
+    section: HTTP Parameter Override
+    sectionID: '10026'
+    tags:
+    - '10026'
+    - Passive
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: Properly sanitize the user input for parameter delimiters
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/HttpParameterPollutionScanRule.java
+    name: ZAP Rule
+    section: HTTP Parameter Pollution
+    sectionID: '20014'
+    tags:
+    - Active
+    - '20014'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrules/src/main/java/org/zaproxy/zap/extension/ascanrules/RemoteCodeExecutionCve20121823ScanRule.java
+    name: ZAP Rule
+    section: Remote Code Execution - CVE-2012-1823
+    sectionID: '20018'
+    tags:
+    - Active
+    - '20018'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrules/src/main/java/org/zaproxy/zap/extension/ascanrules/SourceCodeDisclosureCve20121823ScanRule.java
+    name: ZAP Rule
+    section: Source Code Disclosure - CVE-2012-1823
+    sectionID: '20017'
+    tags:
+    - Active
+    - '20017'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: The best immediate mitigation is to block Proxy request headers as
+      early as possible, and before they hit your application.
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/HttPoxyScanRule.java
+    name: ZAP Rule
+    section: Httpoxy - Proxy Header Misuse
+    sectionID: '10107'
+    tags:
+    - Active
+    - '10107'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/10.html
+    name: CAPEC
+    section: Buffer Overflow via Environment Variables
+    sectionID: '10'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/101.html
+    name: CAPEC
+    section: Server Side Include (SSI) Injection
+    sectionID: '101'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/104.html
+    name: CAPEC
+    section: Cross Zone Scripting
+    sectionID: '104'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/108.html
+    name: CAPEC
+    section: Command Line Execution through SQL Injection
+    sectionID: '108'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/109.html
+    name: CAPEC
+    section: Object Relational Mapping Injection
+    sectionID: '109'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/110.html
+    name: CAPEC
+    section: SQL Injection through SOAP Parameter Tampering
+    sectionID: '110'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/120.html
+    name: CAPEC
+    section: Double Encoding
+    sectionID: '120'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/13.html
+    name: CAPEC
+    section: Subverting Environment Variable Values
+    sectionID: '13'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/135.html
+    name: CAPEC
+    section: Format String Injection
+    sectionID: '135'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/136.html
+    name: CAPEC
+    section: LDAP Injection
+    sectionID: '136'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/14.html
+    name: CAPEC
+    section: Client-side Injection-induced Buffer Overflow
+    sectionID: '14'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/153.html
+    name: CAPEC
+    section: Input Data Manipulation
+    sectionID: '153'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/182.html
+    name: CAPEC
+    section: Flash Injection
+    sectionID: '182'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/209.html
+    name: CAPEC
+    section: XSS Using MIME Type Mismatch
+    sectionID: '209'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/22.html
+    name: CAPEC
+    section: Exploiting Trust in Client
+    sectionID: '22'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/23.html
+    name: CAPEC
+    section: File Content Injection
+    sectionID: '23'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/230.html
+    name: CAPEC
+    section: Serialized Data with Nested Payloads
+    sectionID: '230'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/231.html
+    name: CAPEC
+    section: Oversized Serialized Data Payloads
+    sectionID: '231'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/24.html
+    name: CAPEC
+    section: Filter Failure through Buffer Overflow
+    sectionID: '24'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/250.html
+    name: CAPEC
+    section: XML Injection
+    sectionID: '250'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/261.html
+    name: CAPEC
+    section: Fuzzing for garnering other adjacent user/sensitive data
+    sectionID: '261'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/267.html
+    name: CAPEC
+    section: Leverage Alternate Encoding
+    sectionID: '267'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/28.html
+    name: CAPEC
+    section: Fuzzing
+    sectionID: '28'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/3.html
+    name: CAPEC
+    section: Using Leading 'Ghost' Character Sequences to Bypass Input Filters
+    sectionID: '3'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/31.html
+    name: CAPEC
+    section: Accessing/Intercepting/Modifying HTTP Cookies
+    sectionID: '31'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/42.html
+    name: CAPEC
+    section: MIME Conversion
+    sectionID: '42'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/43.html
+    name: CAPEC
+    section: Exploiting Multiple Input Interpretation Layers
+    sectionID: '43'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/45.html
+    name: CAPEC
+    section: Buffer Overflow via Symbolic Links
+    sectionID: '45'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/46.html
+    name: CAPEC
+    section: Overflow Variables and Tags
+    sectionID: '46'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/47.html
+    name: CAPEC
+    section: Buffer Overflow via Parameter Expansion
+    sectionID: '47'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/473.html
+    name: CAPEC
+    section: Signature Spoof
+    sectionID: '473'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/52.html
+    name: CAPEC
+    section: Embedding NULL Bytes
+    sectionID: '52'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/53.html
+    name: CAPEC
+    section: Postfix, Null Terminate, and Backslash
+    sectionID: '53'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/588.html
+    name: CAPEC
+    section: DOM-Based XSS
+    sectionID: '588'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/63.html
+    name: CAPEC
+    section: Cross-Site Scripting (XSS)
+    sectionID: '63'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/64.html
+    name: CAPEC
+    section: Using Slashes and URL Encoding Combined to Bypass Validation Logic
+    sectionID: '64'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/664.html
+    name: CAPEC
+    section: Server Side Request Forgery
+    sectionID: '664'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/67.html
+    name: CAPEC
+    section: String Format Overflow in syslog()
+    sectionID: '67'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/7.html
+    name: CAPEC
+    section: Blind SQL Injection
+    sectionID: '7'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/71.html
+    name: CAPEC
+    section: Using Unicode Encoding to Bypass Validation Logic
+    sectionID: '71'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/72.html
+    name: CAPEC
+    section: URL Encoding
+    sectionID: '72'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/73.html
+    name: CAPEC
+    section: User-Controlled Filename
+    sectionID: '73'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/78.html
+    name: CAPEC
+    section: Using Escaped Slashes in Alternate Encoding
+    sectionID: '78'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/79.html
+    name: CAPEC
+    section: Using Slashes in Alternate Encoding
+    sectionID: '79'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/8.html
+    name: CAPEC
+    section: Buffer Overflow in an API Call
+    sectionID: '8'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/80.html
+    name: CAPEC
+    section: Using UTF-8 Encoding to Bypass Validation Logic
+    sectionID: '80'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/81.html
+    name: CAPEC
+    section: Web Server Logs Tampering
+    sectionID: '81'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/83.html
+    name: CAPEC
+    section: XPath Injection
+    sectionID: '83'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/85.html
+    name: CAPEC
+    section: AJAX Footprinting
+    sectionID: '85'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/88.html
+    name: CAPEC
+    section: OS Command Injection
+    sectionID: '88'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/9.html
+    name: CAPEC
+    section: Buffer Overflow in Local Command-Line Utilities
+    sectionID: '9'
+    version: '3.9'
+  ltype: SAME
 name: Enforce schema on XML structure/field

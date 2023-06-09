@@ -35,4 +35,112 @@ links:
     name: OWASP Cheat Sheets
     section: Content Security Policy Cheat Sheet
   ltype: Linked To
+- document:
+    description: Ensure X-Frame-Options is set via a response header field.  Alternatively
+      consider implementing Content Security Policy's 'frame-ancestors' directive.
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/AntiClickjackingScanRule.java
+    name: ZAP Rule
+    section: X-Frame-Options Defined via META (Non-compliant with Spec)
+    sectionID: 10020-3
+    tags:
+    - 10020-3
+    - Passive
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: Ensure a valid setting is used on all web pages returned by your
+      site (if you expect the page to be framed only by pages on your server (e.g.
+      it's part of a FRAMESET) then you'll want to use SAMEORIGIN, otherwise if you
+      never expect the page to be framed, you should use DENY.  Alternatively consider
+      implementing Content Security Policy's 'frame-ancestors' directive.
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/AntiClickjackingScanRule.java
+    name: ZAP Rule
+    section: X-Frame-Options Setting Malformed
+    sectionID: 10020-4
+    tags:
+    - 10020-4
+    - Passive
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/AntiClickjackingScanRule.java
+    name: ZAP Rule
+    section: Missing Anti-clickjacking Header
+    sectionID: 10020-1
+    tags:
+    - 10020-1
+    - Passive
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: Ensure only a single X-Frame-Options header is present in the response.
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/AntiClickjackingScanRule.java
+    name: ZAP Rule
+    section: Multiple X-Frame-Options Header Entries
+    sectionID: 10020-2
+    tags:
+    - 10020-2
+    - Passive
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/103.html
+    name: CAPEC
+    section: Clickjacking
+    sectionID: '103'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/181.html
+    name: CAPEC
+    section: Flash File Overlay
+    sectionID: '181'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/222.html
+    name: CAPEC
+    section: iFrame Overlay
+    sectionID: '222'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/504.html
+    name: CAPEC
+    section: Task Impersonation
+    sectionID: '504'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/506.html
+    name: CAPEC
+    section: Tapjacking
+    sectionID: '506'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/587.html
+    name: CAPEC
+    section: Cross Frame Scripting (XFS)
+    sectionID: '587'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/654.html
+    name: CAPEC
+    section: Credential Prompt Impersonation
+    sectionID: '654'
+    version: '3.9'
+  ltype: SAME
 name: Prevent Click jacking through X-Frame-Options or CSP

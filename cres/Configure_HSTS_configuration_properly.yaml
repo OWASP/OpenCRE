@@ -39,4 +39,12 @@ links:
     name: OWASP Cheat Sheets
     section: Content Security Policy Cheat Sheet
   ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/102.html
+    name: CAPEC
+    section: Session Sidejacking
+    sectionID: '102'
+    version: '3.9'
+  ltype: SAME
 name: Configure HSTS configuration properly

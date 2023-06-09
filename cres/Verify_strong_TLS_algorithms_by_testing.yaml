@@ -47,4 +47,41 @@ links:
     name: OWASP Cheat Sheets
     section: TLS Cipher String Cheat Sheet
   ltype: Linked To
+- document:
+    description: Protect the connection using HTTPS or use a stronger authentication
+      mechanism
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/InsecureAuthenticationScanRule.java
+    name: ZAP Rule
+    section: Weak Authentication Method
+    sectionID: '10105'
+    tags:
+    - '10105'
+    - Passive
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/112.html
+    name: CAPEC
+    section: Brute Force
+    sectionID: '112'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/192.html
+    name: CAPEC
+    section: Protocol Analysis
+    sectionID: '192'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/20.html
+    name: CAPEC
+    section: Encryption Brute Forcing
+    sectionID: '20'
+    version: '3.9'
+  ltype: SAME
 name: Verify strong TLS algorithms by testing

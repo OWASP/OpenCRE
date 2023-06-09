@@ -28,4 +28,28 @@ links:
     section: Use of privileged utility programs
     sectionID: '8.18'
   ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/17.html
+    name: CAPEC
+    section: Using Malicious Files
+    sectionID: '17'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/35.html
+    name: CAPEC
+    section: Leverage Executable Code in Non-Executable Files
+    sectionID: '35'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/76.html
+    name: CAPEC
+    section: Manipulating Web Input to File System Calls
+    sectionID: '76'
+    version: '3.9'
+  ltype: SAME
 name: Let application request minimal permissions

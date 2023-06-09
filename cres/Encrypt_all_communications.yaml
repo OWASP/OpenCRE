@@ -26,4 +26,44 @@ links:
     section: ''
     sectionID: '319'
   ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/102.html
+    name: CAPEC
+    section: Session Sidejacking
+    sectionID: '102'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/117.html
+    name: CAPEC
+    section: Interception
+    sectionID: '117'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/383.html
+    name: CAPEC
+    section: Harvesting Information via API Event Monitoring
+    sectionID: '383'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/477.html
+    name: CAPEC
+    section: Signature Spoofing by Mixing Signed and Unsigned Content
+    sectionID: '477'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/65.html
+    name: CAPEC
+    section: Sniff Application Code
+    sectionID: '65'
+    version: '3.9'
+  ltype: SAME
 name: Encrypt all communications

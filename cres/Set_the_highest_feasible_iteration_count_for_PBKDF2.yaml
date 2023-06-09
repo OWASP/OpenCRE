@@ -40,4 +40,12 @@ links:
     name: NIST 800-63
     section: 5.1.1.2
   ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/55.html
+    name: CAPEC
+    section: Rainbow Table Password Cracking
+    sectionID: '55'
+    version: '3.9'
+  ltype: SAME
 name: Set the highest feasible iteration count for PBKDF2

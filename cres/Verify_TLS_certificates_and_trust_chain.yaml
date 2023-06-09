@@ -30,6 +30,22 @@ links:
     section: ''
     sectionID: '295'
   ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/459.html
+    name: CAPEC
+    section: Creating a Rogue Certification Authority Certificate
+    sectionID: '459'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/475.html
+    name: CAPEC
+    section: Signature Spoofing by Improper Validation
+    sectionID: '475'
+    version: '3.9'
+  ltype: SAME
 name: Verify TLS certificates and trust chain
 tags:
 - Configuration

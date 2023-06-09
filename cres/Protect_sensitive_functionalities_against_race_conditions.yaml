@@ -27,4 +27,20 @@ links:
     name: OWASP Cheat Sheets
     section: Abuse Case Cheat Sheet
   ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/27.html
+    name: CAPEC
+    section: Leveraging Race Conditions via Symbolic Links
+    sectionID: '27'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/29.html
+    name: CAPEC
+    section: Leveraging Time-of-Check and Time-of-Use (TOCTOU) Race Conditions
+    sectionID: '29'
+    version: '3.9'
+  ltype: SAME
 name: Protect sensitive functionalities against race conditions

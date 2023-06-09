@@ -33,4 +33,12 @@ links:
     name: OWASP Cheat Sheets
     section: Third Party Javascript Management Cheat Sheet
   ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/1.html
+    name: CAPEC
+    section: Accessing Functionality Not Properly Constrained by ACLs
+    sectionID: '1'
+    version: '3.9'
+  ltype: SAME
 name: Validate file type of data from untrusted sources

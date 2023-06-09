@@ -1,0 +1,49 @@
+doctype: CRE
+id: 455-885
+links:
+- document:
+    doctype: CRE
+    id: 633-428
+    name: Authentication
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 158-874
+    name: Allow long passwords
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 103-707
+    name: Allow unicode in passwords
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 715-681
+    name: Avoid password truncation, with exception of consecutive spaces
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 338-370
+    name: Do not enforce password rotation rules or history requirements
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 807-565
+    name: Do not limit character types for password composition
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 027-555
+    name: Enforce user passwords are of sufficient minimum length
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 604-025
+    name: Provide a password strength meter
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 576-651
+    name: Validate new passwords are not in commonly breached passwords list
+  ltype: Contains
+name: Credentials directives

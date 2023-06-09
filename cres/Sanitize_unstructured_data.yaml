@@ -6,8 +6,8 @@ links:
     id: 764-765
     name: Sanitization and sandboxing
     tags:
-    - Injection protection
     - XSS protection
+    - Injection protection
   ltype: Contains
 - document:
     doctype: Standard
@@ -54,4 +54,28 @@ links:
     name: OWASP Cheat Sheets
     section: Unvalidated Redirects and Forwards Cheat Sheet
   ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/105.html
+    name: CAPEC
+    section: HTTP Request Splitting
+    sectionID: '105'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/15.html
+    name: CAPEC
+    section: Command Delimiters
+    sectionID: '15'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/34.html
+    name: CAPEC
+    section: HTTP Response Splitting
+    sectionID: '34'
+    version: '3.9'
+  ltype: SAME
 name: Sanitize unstructured data

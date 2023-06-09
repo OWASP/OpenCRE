@@ -31,4 +31,12 @@ links:
     name: OWASP Cheat Sheets
     section: Server Side Request Forgery Prevention Cheat Sheet
   ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/383.html
+    name: CAPEC
+    section: Harvesting Information via API Event Monitoring
+    sectionID: '383'
+    version: '3.9'
+  ltype: SAME
 name: Limit access to admin/management functionality

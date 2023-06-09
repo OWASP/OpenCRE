@@ -30,4 +30,24 @@ links:
     name: OWASP Web Security Testing Guide (WSTG)
     section: WSTG-CONF-06
   ltype: Linked To
+- document:
+    description: See the references for security advice on the use of these functions.
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrulesBeta/src/main/java/org/zaproxy/zap/extension/pscanrulesBeta/JsFunctionScanRule.java
+    name: ZAP Rule
+    section: Dangerous JS Functions
+    sectionID: '10110'
+    tags:
+    - '10110'
+    - Passive
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/500.html
+    name: CAPEC
+    section: WebView Injection
+    sectionID: '500'
+    version: '3.9'
+  ltype: SAME
 name: White-list HTTP methods

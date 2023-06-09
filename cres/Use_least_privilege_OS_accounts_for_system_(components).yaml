@@ -32,4 +32,28 @@ links:
     section: ''
     sectionID: '250'
   ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/104.html
+    name: CAPEC
+    section: Cross Zone Scripting
+    sectionID: '104'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/470.html
+    name: CAPEC
+    section: Expanding Control over the Operating System from the Database
+    sectionID: '470'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/69.html
+    name: CAPEC
+    section: Target Programs with Elevated Privileges
+    sectionID: '69'
+    version: '3.9'
+  ltype: SAME
 name: Use least privilege OS accounts for system (components)

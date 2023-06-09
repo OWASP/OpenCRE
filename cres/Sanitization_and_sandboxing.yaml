@@ -73,5 +73,5 @@ links:
   ltype: Contains
 name: Sanitization and sandboxing
 tags:
-- Injection protection
 - XSS protection
+- Injection protection

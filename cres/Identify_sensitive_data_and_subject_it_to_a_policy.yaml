@@ -40,4 +40,798 @@ links:
     section: Protection of records
     sectionID: '5.33'
   ltype: Linked To
+- document:
+    description: Disable debugging messages before pushing to production.
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/websocket/src/main/zapHomeFiles/scripts/templates/websocketpassive/Debug%20Error%20Disclosure.js
+    name: ZAP Rule
+    section: Information Disclosure - Debug Error Messages via WebSocket
+    sectionID: '110003'
+    tags:
+    - WebSocket Passive
+    - '110003'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: For secure content, put session ID in a cookie. To be even more secure
+      consider using a combination of cookie and URL rewrite.
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/InfoSessionIdUrlScanRule.java
+    name: ZAP Rule
+    section: Session ID in URL Rewrite
+    sectionID: 3-1
+    tags:
+    - 3-1
+    - Passive
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: Manually confirm that the timestamp data is not sensitive, and that
+      the data cannot be aggregated to disclose exploitable patterns.
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/TimestampDisclosureScanRule.java
+    name: ZAP Rule
+    section: Timestamp Disclosure
+    sectionID: '10096'
+    tags:
+    - '10096'
+    - Passive
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: Manually confirm that the ASP.NET ViewState does not leak sensitive
+      information, and that the data cannot be aggregated/used to exploit other vulnerabilities.
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrulesAlpha/src/main/java/org/zaproxy/zap/extension/pscanrulesAlpha/Base64Disclosure.java
+    name: ZAP Rule
+    section: ASP.NET ViewState Disclosure
+    sectionID: 10094-1
+    tags:
+    - 10094-1
+    - Passive
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: This is a risk if the session ID is sensitive and the hyperlink refers
+      to an external or third party host. For secure content, put session ID in secured
+      session cookie.
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/InfoSessionIdUrlScanRule.java
+    name: ZAP Rule
+    section: Referer Exposes Session ID
+    sectionID: 3-3
+    tags:
+    - 3-3
+    - Passive
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/ProxyDisclosureScanRule.java
+    name: ZAP Rule
+    section: Proxy Disclosure
+    sectionID: '40025'
+    tags:
+    - Active
+    - '40025'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: Before allowing images to be stored on the server and/or transmitted
+      to the browser, strip out the embedded location information from image.  This
+      could mean removing all Exif data or just the GPS component.  Other data, like
+      serial numbers, should also be removed.
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/imagelocationscanner/src/main/java/org/zaproxy/zap/extension/imagelocationscanner/ImageLocationScanRule.java
+    name: ZAP Rule
+    section: Image Exposes Location or Privacy Data
+    sectionID: '10103'
+    tags:
+    - '10103'
+    - Passive
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: Remove emails that are not public.
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/websocket/src/main/zapHomeFiles/scripts/templates/websocketpassive/Email%20Disclosure.js
+    name: ZAP Rule
+    section: Email address found in WebSocket message
+    sectionID: '110004'
+    tags:
+    - WebSocket Passive
+    - '110004'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: Ensure that your web server, application server, load balancer, etc.
+      is configured to suppress the 'Server' header or provide generic details.
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/ServerHeaderInfoLeakScanRule.java
+    name: ZAP Rule
+    section: Server Leaks its Webserver Application via 'Server' HTTP Response Header
+      Field
+    sectionID: 10036-1
+    tags:
+    - 10036-1
+    - Passive
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: Disable debugging messages before pushing to production.
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/InformationDisclosureDebugErrorsScanRule.java
+    name: ZAP Rule
+    section: Information Disclosure - Debug Error Messages
+    sectionID: '10023'
+    tags:
+    - '10023'
+    - Passive
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: Remove the private IP address from the HTTP response body.  For comments,
+      use JSP/ASP/PHP comment instead of HTML/JavaScript comment which can be seen
+      by client browsers.
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/InfoPrivateAddressDisclosureScanRule.java
+    name: ZAP Rule
+    section: Private IP Disclosure
+    sectionID: '2'
+    tags:
+    - '2'
+    - Passive
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrulesBeta/src/main/java/org/zaproxy/zap/extension/pscanrulesBeta/InPageBannerInfoLeakScanRule.java
+    name: ZAP Rule
+    section: In Page Banner Information Leak
+    sectionID: '10009'
+    tags:
+    - '10009'
+    - Passive
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: Do not pass sensitive information in URIs.
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/InformationDisclosureReferrerScanRule.java
+    name: ZAP Rule
+    section: Information Disclosure - Sensitive Information in HTTP Referrer Header
+    sectionID: '10025'
+    tags:
+    - '10025'
+    - Passive
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: Limit access to Symfony's Profiler, either via authentication/authorization
+      or limiting inclusion of the header to specific clients (by IP, etc.).
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/XDebugTokenScanRule.java
+    name: ZAP Rule
+    section: X-Debug-Token Information Leak
+    sectionID: '10056'
+    tags:
+    - '10056'
+    - Passive
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: TBA
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/InsecureHttpMethodScanRule.java
+    name: ZAP Rule
+    section: Insecure HTTP Method
+    sectionID: '90028'
+    tags:
+    - Active
+    - '90028'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: Remove all comments that return information that may help an attacker
+      and fix any underlying problems they refer to.
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/websocket/src/main/zapHomeFiles/scripts/templates/websocketpassive/XML%20Comments%20Disclosure.js
+    name: ZAP Rule
+    section: Information Disclosure - Suspicious Comments in XML via WebSocket
+    sectionID: '110008'
+    tags:
+    - WebSocket Passive
+    - '110008'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: Ensure that your web server, application server, load balancer, etc.
+      is configured to suppress 'X-Powered-By' headers.
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/XPoweredByHeaderInfoLeakScanRule.java
+    name: ZAP Rule
+    section: Server Leaks Information via 'X-Powered-By' HTTP Response Header Field(s)
+    sectionID: '10037'
+    tags:
+    - '10037'
+    - Passive
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: For secure content, put session ID in a cookie. To be even more secure
+      consider using a combination of cookie and URL rewrite.
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/InfoSessionIdUrlScanRule.java
+    name: ZAP Rule
+    section: Session ID in URL Rewrite
+    sectionID: 3-2
+    tags:
+    - 3-2
+    - Passive
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: Do not pass sensitive information in URIs.
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/InformationDisclosureInUrlScanRule.java
+    name: ZAP Rule
+    section: Information Disclosure - Sensitive Information in URL
+    sectionID: '10024'
+    tags:
+    - '10024'
+    - Passive
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/SlackerCookieScanRule.java
+    name: ZAP Rule
+    section: Cookie Slack Detector
+    sectionID: '90027'
+    tags:
+    - Active
+    - '90027'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: Ensure that your web server, application server, load balancer, etc.
+      is configured to suppress the 'Server' header or provide generic details.
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/ServerHeaderInfoLeakScanRule.java
+    name: ZAP Rule
+    section: Server Leaks Version Information via 'Server' HTTP Response Header Field
+    sectionID: 10036-2
+    tags:
+    - 10036-2
+    - Passive
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: Do not divulge details of whether a username is valid or invalid.
+      In particular, for unsuccessful login attempts, do not differentiate between
+      an invalid user and an invalid password in the error message, page title, page
+      contents, HTTP headers, or redirection logic.
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesBeta/src/main/java/org/zaproxy/zap/extension/ascanrulesBeta/UsernameEnumerationScanRule.java
+    name: ZAP Rule
+    section: Possible Username Enumeration
+    sectionID: '40023'
+    tags:
+    - Active
+    - '40023'
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: Remove all comments that return information that may help an attacker
+      and fix any underlying problems they refer to.
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/InformationDisclosureSuspiciousCommentsScanRule.java
+    name: ZAP Rule
+    section: Information Disclosure - Suspicious Comments
+    sectionID: '10027'
+    tags:
+    - '10027'
+    - Passive
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: Manually confirm that the Base64 data does not leak sensitive information,
+      and that the data cannot be aggregated/used to exploit other vulnerabilities.
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrulesAlpha/src/main/java/org/zaproxy/zap/extension/pscanrulesAlpha/Base64Disclosure.java
+    name: ZAP Rule
+    section: Base64 Disclosure
+    sectionID: 10094-3
+    tags:
+    - 10094-3
+    - Passive
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    description: Review the source code of this page. Implement custom error pages.
+      Consider implementing a mechanism to provide a unique error reference/identifier
+      to the client (browser) while logging the details on the server side and not
+      exposing them to the user.
+    doctype: Tool
+    hyperlink: https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/ApplicationErrorScanRule.java
+    name: ZAP Rule
+    section: Application Error Disclosure
+    sectionID: '90022'
+    tags:
+    - '90022'
+    - Passive
+    tooltype: Offensive
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/116.html
+    name: CAPEC
+    section: Excavation
+    sectionID: '116'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/13.html
+    name: CAPEC
+    section: Subverting Environment Variable Values
+    sectionID: '13'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/169.html
+    name: CAPEC
+    section: Footprinting
+    sectionID: '169'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/22.html
+    name: CAPEC
+    section: Exploiting Trust in Client
+    sectionID: '22'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/224.html
+    name: CAPEC
+    section: Fingerprinting
+    sectionID: '224'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/285.html
+    name: CAPEC
+    section: ICMP Echo Request Ping
+    sectionID: '285'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/287.html
+    name: CAPEC
+    section: TCP SYN Scan
+    sectionID: '287'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/290.html
+    name: CAPEC
+    section: Enumerate Mail Exchange (MX) Records
+    sectionID: '290'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/291.html
+    name: CAPEC
+    section: DNS Zone Transfers
+    sectionID: '291'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/292.html
+    name: CAPEC
+    section: Host Discovery
+    sectionID: '292'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/293.html
+    name: CAPEC
+    section: Traceroute Route Enumeration
+    sectionID: '293'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/294.html
+    name: CAPEC
+    section: ICMP Address Mask Request
+    sectionID: '294'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/295.html
+    name: CAPEC
+    section: Timestamp Request
+    sectionID: '295'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/296.html
+    name: CAPEC
+    section: ICMP Information Request
+    sectionID: '296'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/297.html
+    name: CAPEC
+    section: TCP ACK Ping
+    sectionID: '297'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/298.html
+    name: CAPEC
+    section: UDP Ping
+    sectionID: '298'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/299.html
+    name: CAPEC
+    section: TCP SYN Ping
+    sectionID: '299'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/300.html
+    name: CAPEC
+    section: Port Scanning
+    sectionID: '300'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/301.html
+    name: CAPEC
+    section: TCP Connect Scan
+    sectionID: '301'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/302.html
+    name: CAPEC
+    section: TCP FIN Scan
+    sectionID: '302'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/303.html
+    name: CAPEC
+    section: TCP Xmas Scan
+    sectionID: '303'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/304.html
+    name: CAPEC
+    section: TCP Null Scan
+    sectionID: '304'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/305.html
+    name: CAPEC
+    section: TCP ACK Scan
+    sectionID: '305'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/306.html
+    name: CAPEC
+    section: TCP Window Scan
+    sectionID: '306'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/307.html
+    name: CAPEC
+    section: TCP RPC Scan
+    sectionID: '307'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/308.html
+    name: CAPEC
+    section: UDP Scan
+    sectionID: '308'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/309.html
+    name: CAPEC
+    section: Network Topology Mapping
+    sectionID: '309'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/310.html
+    name: CAPEC
+    section: Scanning for Vulnerable Software
+    sectionID: '310'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/312.html
+    name: CAPEC
+    section: Active OS Fingerprinting
+    sectionID: '312'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/313.html
+    name: CAPEC
+    section: Passive OS Fingerprinting
+    sectionID: '313'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/317.html
+    name: CAPEC
+    section: IP ID Sequencing Probe
+    sectionID: '317'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/318.html
+    name: CAPEC
+    section: IP 'ID' Echoed Byte-Order Probe
+    sectionID: '318'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/319.html
+    name: CAPEC
+    section: IP (DF) 'Don't Fragment Bit' Echoing Probe
+    sectionID: '319'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/320.html
+    name: CAPEC
+    section: TCP Timestamp Probe
+    sectionID: '320'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/321.html
+    name: CAPEC
+    section: TCP Sequence Number Probe
+    sectionID: '321'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/322.html
+    name: CAPEC
+    section: TCP (ISN) Greatest Common Divisor Probe
+    sectionID: '322'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/323.html
+    name: CAPEC
+    section: TCP (ISN) Counter Rate Probe
+    sectionID: '323'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/324.html
+    name: CAPEC
+    section: TCP (ISN) Sequence Predictability Probe
+    sectionID: '324'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/325.html
+    name: CAPEC
+    section: TCP Congestion Control Flag (ECN) Probe
+    sectionID: '325'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/326.html
+    name: CAPEC
+    section: TCP Initial Window Size Probe
+    sectionID: '326'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/327.html
+    name: CAPEC
+    section: TCP Options Probe
+    sectionID: '327'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/328.html
+    name: CAPEC
+    section: TCP 'RST' Flag Checksum Probe
+    sectionID: '328'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/329.html
+    name: CAPEC
+    section: ICMP Error Message Quoting Probe
+    sectionID: '329'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/330.html
+    name: CAPEC
+    section: ICMP Error Message Echoing Integrity Probe
+    sectionID: '330'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/472.html
+    name: CAPEC
+    section: Browser Fingerprinting
+    sectionID: '472'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/497.html
+    name: CAPEC
+    section: File Discovery
+    sectionID: '497'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/508.html
+    name: CAPEC
+    section: Shoulder Surfing
+    sectionID: '508'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/573.html
+    name: CAPEC
+    section: Process Footprinting
+    sectionID: '573'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/574.html
+    name: CAPEC
+    section: Services Footprinting
+    sectionID: '574'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/575.html
+    name: CAPEC
+    section: Account Footprinting
+    sectionID: '575'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/576.html
+    name: CAPEC
+    section: Group Permission Footprinting
+    sectionID: '576'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/577.html
+    name: CAPEC
+    section: Owner Footprinting
+    sectionID: '577'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/59.html
+    name: CAPEC
+    section: Session Credential Falsification through Prediction
+    sectionID: '59'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/60.html
+    name: CAPEC
+    section: Reusing Session IDs (aka Session Replay)
+    sectionID: '60'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/616.html
+    name: CAPEC
+    section: Establish Rogue Location
+    sectionID: '616'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/643.html
+    name: CAPEC
+    section: Identify Shared Files/Directories on System
+    sectionID: '643'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/646.html
+    name: CAPEC
+    section: Peripheral Footprinting
+    sectionID: '646'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/651.html
+    name: CAPEC
+    section: Eavesdropping
+    sectionID: '651'
+    version: '3.9'
+  ltype: SAME
+- document:
+    doctype: Standard
+    hyperlink: https://capec.mitre.org/data/definitions/79.html
+    name: CAPEC
+    section: Using Slashes in Alternate Encoding
+    sectionID: '79'
+    version: '3.9'
+  ltype: SAME
 name: Identify sensitive data and subject it to a policy
