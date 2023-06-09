@@ -659,7 +659,7 @@ def parse_standards(
                 },
                 "OWASP Top 10 2021": {
                     "section": "OWASP Top 10 2021 item",
-                    "sectionID": "",
+                    "sectionID": "OWASP Top 10 2021 item ID",
                     "subsection": "",
                     "hyperlink": "OWASP Top 10 2021 hyperlink",
                 },
@@ -685,7 +685,7 @@ def parse_standards(
                 },
                 "SAMM": {
                     "section": "Standard SAMM v2",
-                    "sectionID": "",
+                    "sectionID": "Standard SAMM v2 ID",
                     "subsection": "",
                     "hyperlink": "Standard SAMM v2 hyperlink",
                     # "version":"v2",
