@@ -233,7 +233,7 @@ class Node_collection:
     session = sqla.session
 
     def __init__(self) -> None:
-        if not os.environ.get("HEROKU"):
+        if not os.environ.get("NO_LOAD_GRAPH"):
             self.graph = CRE_Graph.instance(sqla.session)
         self.session = sqla.session
 
