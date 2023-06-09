@@ -1231,15 +1231,32 @@ class Node_collection:
 
     def get_embeddings_by_doc_type(self, doc_type: str) -> Dict[str, List[float]]:
         res = {}
-        embeddings = (
-            self.session.query(Embeddings).filter(Embeddings.doc_type == doc_type).all()
-        )
-        for entry in embeddings:
-            if doc_type == cre_defs.Credoctypes.CRE.value:
-                res[entry.cre_id] = [float(e) for e in entry.embeddings.split(",")]
-            else:
-                res[entry.node_id] = [float(e) for e in entry.embeddings.split(",")]
+        embeddings = self.session.query(Embeddings).filter(Embeddings.doc_type == doc_type).all()
+        if embeddings:
+            for entry in embeddings:
+                if doc_type == cre_defs.Credoctypes.CRE.value:
+                    res[entry.cre_id] = [float(e) for e in entry.embeddings.split(",")]
+                else:
+                    res[entry.node_id] = [float(e) for e in entry.embeddings.split(",")]
         return res
+
+    def get_embeddings_by_doc_type_paginated(
+        self, doc_type: str, page: int, per_page: int = 100
+    ) -> Tuple[Dict[str, List[float]], int]:
+        res = {}
+        embeddings = (
+            self.session.query(Embeddings)
+            .filter(Embeddings.doc_type == doc_type)
+            .paginate(page, per_page)
+        )
+        total_pages = embeddings.pages
+        if embeddings.items:
+            for entry in embeddings.items:
+                if doc_type == cre_defs.Credoctypes.CRE.value:
+                    res[entry.cre_id] = [float(e) for e in entry.embeddings.split(",")]
+                else:
+                    res[entry.node_id] = [float(e) for e in entry.embeddings.split(",")]
+        return res, total_pages
 
     def get_embeddings_for_doc(self, doc: cre_defs.Node | cre_defs.CRE) -> Embeddings:
         if doc.doctype == cre_defs.Credoctypes.CRE:
