@@ -1,3 +1,4 @@
+import google.api_core.exceptions as googleExceptions
 from typing import List
 from vertexai.preview.language_models import TextEmbeddingModel
 from google.cloud import aiplatform
@@ -13,15 +14,14 @@ import os
 import pathlib
 import vertexai
 import logging
-
+import grpc
+import grpc_status
+import time
 logging.basicConfig()
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-# get client https://googleapis.dev/python/google-api-core/latest/auth.html
-# https://github.com/googleapis/python-aiplatform/tree/d7c5b8e54c304f5cda59688af74e5b8d9bd35034
-# test chat completion
 class VertexPromptClient:
     context = 'You are "chat-CRE" a chatbot for security information that exists in opencre.org. You will be given text of security topics and questions on the topics, please answer the questions based on the content provided. Delimit any code snippet with three backticks.'
 
@@ -53,10 +53,19 @@ class VertexPromptClient:
                 f"embedding content is more than the vertex hard limit of 8k tokens, reducing to 8000"
             )
             text = text[:8000]
-        embeddings = self.embeddings_model.get_embeddings([text])
+        embeddings = []
+        try:
+            emb = self.embeddings_model.get_embeddings([text])
+            embeddings = emb[0].values
+        except googleExceptions.ResourceExhausted as e:
+            logger.info("hit limit, sleeping for a minute")
+            time.sleep(60) # Vertex's quota is per minute, so sleep for a full minute, then try again
+            embeddings = self.get_text_embeddings(text)
+            
         if not embeddings:
             return None
-        return embeddings[0].values
+        values =embeddings
+        return values
 
     def create_chat_completion(self, prompt, closest_object_str) -> str:
         msg = (
