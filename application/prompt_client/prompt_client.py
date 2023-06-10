@@ -376,7 +376,7 @@ class PromptHandler:
             total_pages,
             starting_page,
         ) = self.database.get_embeddings_by_doc_type_paginated(
-            cre_defs.Credoctypes.Standard.value
+            doc_type=cre_defs.Credoctypes.Standard.value,page=1,
         )
 
         max_similarity = -1
@@ -393,7 +393,7 @@ class PromptHandler:
                 most_similar_id = existing_standard_ids[most_similar_index]
 
             embeddings, _, _ = self.database.get_embeddings_by_doc_type_paginated(
-                cre_defs.Credoctypes.Standard.value, page=page
+                doc_type=cre_defs.Credoctypes.Standard.value, page=page
             )
         if max_similarity < similarity_threshold:
             logger.info(
