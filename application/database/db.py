@@ -1,3 +1,4 @@
+from sqlalchemy.orm import aliased
 import os
 import logging
 import re
@@ -716,14 +717,16 @@ class Node_collection:
                 res: CRE
                 ltype = cre_defs.LinkTypes.from_str(il.type)
 
-                if il.cre == dbcre.id:
-                    res = q.filter(CRE.id == il.group).first()
+                if il.cre == dbcre.id: # if we are a CRE in this relationship
+                    res = q.filter(CRE.id == il.group).first() # get the group in order to add the link
                     # if this CRE is the lower level cre the relationship will be tagged "Contains"
                     # in that case the implicit relationship is "Is Part Of"
                     # otherwise the relationship will be "Related" and we don't need to do anything
                     if ltype == cre_defs.LinkTypes.Contains:
                         # important, this is the only implicit link we have for now
                         ltype = cre_defs.LinkTypes.PartOf
+                    elif ltype == cre_defs.LinkTypes.PartOf:
+                        ltype = cre_defs.LinkTypes.Contains
                 elif il.group == dbcre.id:
                     res = q.filter(CRE.id == il.cre).first()
                     ltype = cre_defs.LinkTypes.from_str(il.type)
@@ -1168,18 +1171,31 @@ class Node_collection:
         return list(set(results))
 
     def get_root_cres(self):
-        """Returns CRES that only have "Contains" links
-        Implemented via filtering graph nodes whose incoming edges are only "RELATED" type links
-        """
-        # select distinct name from cre join cre_links on cre.id=cre_links."group"
-        # where cre.id not in (select cre from cre_links );
+        """Returns CRES that only have "Contains" links"""
+        linked_groups = aliased(InternalLinks)
+        linked_cres = aliased(InternalLinks)
         cres = (
             self.session.query(CRE)
-            .join(InternalLinks, CRE.id == InternalLinks.group)
-            .filter(~CRE.id.in_(self.session.query(InternalLinks.cre)))
+            .filter(
+                ~CRE.id.in_(
+                    self.session.query(InternalLinks.cre).filter(
+                        InternalLinks.type == cre_defs.LinkTypes.Contains,
+                    )
+                )
+            )
+            .filter(
+                ~CRE.id.in_(
+                    self.session.query(InternalLinks.group).filter(
+                        InternalLinks.type == cre_defs.LinkTypes.PartOf,
+                    )
+                )
+            )
             .all()
         )
-        return [CREfromDB(c) for c in cres]
+        result = []
+        for c in cres:
+            result.extend(self.get_CREs(external_id=c.external_id))
+        return result
 
         # def node_is_root(node):
         #     return node.startswith("CRE") and (
@@ -1231,7 +1247,9 @@ class Node_collection:
 
     def get_embeddings_by_doc_type(self, doc_type: str) -> Dict[str, List[float]]:
         res = {}
-        embeddings = self.session.query(Embeddings).filter(Embeddings.doc_type == doc_type).all()
+        embeddings = (
+            self.session.query(Embeddings).filter(Embeddings.doc_type == doc_type).all()
+        )
         if embeddings:
             for entry in embeddings:
                 if doc_type == cre_defs.Credoctypes.CRE.value:
@@ -1241,8 +1259,8 @@ class Node_collection:
         return res
 
     def get_embeddings_by_doc_type_paginated(
-        self, doc_type: str, page: int, per_page: int = 100
-    ) -> Tuple[Dict[str, List[float]], int]:
+        self, doc_type: str, page: int = 1, per_page: int = 100
+    ) -> Tuple[Dict[str, List[float]], int, int]:
         res = {}
         embeddings = (
             self.session.query(Embeddings)
@@ -1256,7 +1274,7 @@ class Node_collection:
                     res[entry.cre_id] = [float(e) for e in entry.embeddings.split(",")]
                 else:
                     res[entry.node_id] = [float(e) for e in entry.embeddings.split(",")]
-        return res, total_pages
+        return res, total_pages, page
 
     def get_embeddings_for_doc(self, doc: cre_defs.Node | cre_defs.CRE) -> Embeddings:
         if doc.doctype == cre_defs.Credoctypes.CRE:
