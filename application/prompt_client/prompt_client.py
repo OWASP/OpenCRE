@@ -376,7 +376,8 @@ class PromptHandler:
             total_pages,
             starting_page,
         ) = self.database.get_embeddings_by_doc_type_paginated(
-            doc_type=cre_defs.Credoctypes.Standard.value,page=1,
+            doc_type=cre_defs.Credoctypes.Standard.value,
+            page=1,
         )
 
         max_similarity = -1
@@ -397,7 +398,7 @@ class PromptHandler:
             )
         if max_similarity < similarity_threshold:
             logger.info(
-                f"there is no good standard candidate for this other standard section, returning nothing"
+                f"there is no good standard candidate for this other standard section, returning nothing, max similarity was {max_similarity}"
             )
             return None, None
         return most_similar_id, max_similarity
