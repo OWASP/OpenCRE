@@ -36,7 +36,6 @@ class VertexPromptClient:
                 os.environ[
                     "GOOGLE_APPLICATION_CREDENTIALS"
                 ] = service_account_secrets_file
-                print(os.environ["GOOGLE_APPLICATION_CREDENTIALS"])
         else:
             logger.fatal("env SERVICE_ACCOUNT_CREDENTIALS has not been set")
 
