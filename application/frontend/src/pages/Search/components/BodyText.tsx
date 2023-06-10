@@ -68,7 +68,7 @@ export const SearchBody = () => {
       <h2>TRY</h2>
       <p>
         See the CRE search bar. Try searching for
-        <a href="/node/standard/Top10%202017/"> Top10 2017 </a>
+        <a href="/node/standard/OWASP%20Top%2010%202021/"> OWASP Top 10 2021 </a>
         as standard and click around, or
         <a href="/cre/482-866"> 482-866 </a>
         as CRE-ID, to get an idea, or <a href="/search/session">search for "Session"</a>, or an overview of{' '}
