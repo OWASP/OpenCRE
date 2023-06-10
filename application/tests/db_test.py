@@ -239,7 +239,7 @@ class TestDB(unittest.TestCase):
         cre = expected[1].todict()
         groupname = (
             expected[0]
-            .name.replace("/", "-")
+            .id.replace("/", "-")
             .replace(" ", "_")
             .replace('"', "")
             .replace("'", "")
@@ -251,7 +251,7 @@ class TestDB(unittest.TestCase):
 
         crename = (
             expected[1]
-            .name.replace("/", "-")
+            .id.replace("/", "-")
             .replace(" ", "_")
             .replace('"', "")
             .replace("'", "")
