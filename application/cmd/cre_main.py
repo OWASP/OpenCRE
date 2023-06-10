@@ -212,6 +212,7 @@ def parse_standards_from_spreadsheeet(
     for _, cre in cres.items():
         register_cre(cre, result)
 
+
 def get_cre_files_from_disk(cre_loc: str) -> Generator[str, None, None]:
     for root, _, cre_docs in os.walk(cre_loc):
         for name in cre_docs:

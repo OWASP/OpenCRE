@@ -258,6 +258,7 @@ def parse_uknown_key_val_standards_spreadsheet(
                 standards[sname] = primary_standard
     return standards
 
+
 def parse_hierarchical_export_format(
     cre_file: List[Dict[str, str]]
 ) -> Dict[str, defs.CRE]:
