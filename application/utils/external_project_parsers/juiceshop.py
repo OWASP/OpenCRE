@@ -52,12 +52,12 @@ def parse(
                 )
                 continue
         challenge_embeddings = prompt.get_text_embeddings(chal.__repr__())
-        cre_id = prompt.get_id_of_most_similar_cre(challenge_embeddings, {})
+        cre_id = prompt.get_id_of_most_similar_cre(challenge_embeddings)
         if not cre_id:
             logger.info(
                 f"could not find an appropriate CRE for Juiceshop challenge {chal.section}, findings similarities with standards instead"
             )
-            standard_id = prompt.get_id_of_most_similar_node(challenge_embeddings, {})
+            standard_id = prompt.get_id_of_most_similar_node(challenge_embeddings)
             dbstandard = cache.get_node_by_db_id(standard_id)
             logger.info(
                 f"found an appropriate standard for Juiceshop challenge {chal.section}, it is: {dbstandard.section}"

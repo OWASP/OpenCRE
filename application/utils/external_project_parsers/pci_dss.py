@@ -52,12 +52,12 @@ def __parse(
 
         control_embeddings = prompt.get_text_embeddings(pci_control.__repr__())
         # these embeddings are different to the ones generated from --generate embeddings, this is because we want these embedding to include the optional "description" field, it is not a big difference and cosine similarity works reasonably accurately without it but good to have
-        cre_id = prompt.get_id_of_most_similar_cre(control_embeddings, {})
+        cre_id = prompt.get_id_of_most_similar_cre(control_embeddings)
         if not cre_id:
             logger.info(
                 f"could not find an appropriate CRE for pci {pci_control.section}, findings similarities with standards instead"
             )
-            standard_id = prompt.get_id_of_most_similar_node(control_embeddings, {})
+            standard_id = prompt.get_id_of_most_similar_node(control_embeddings)
             dbstandard = cache.get_node_by_db_id(standard_id)
             logger.info(
                 f"found an appropriate standard for pci {pci_control.section}, it is: {dbstandard.section}"
