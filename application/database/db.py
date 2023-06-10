@@ -717,8 +717,10 @@ class Node_collection:
                 res: CRE
                 ltype = cre_defs.LinkTypes.from_str(il.type)
 
-                if il.cre == dbcre.id: # if we are a CRE in this relationship
-                    res = q.filter(CRE.id == il.group).first() # get the group in order to add the link
+                if il.cre == dbcre.id:  # if we are a CRE in this relationship
+                    res = q.filter(
+                        CRE.id == il.group
+                    ).first()  # get the group in order to add the link
                     # if this CRE is the lower level cre the relationship will be tagged "Contains"
                     # in that case the implicit relationship is "Is Part Of"
                     # otherwise the relationship will be "Related" and we don't need to do anything

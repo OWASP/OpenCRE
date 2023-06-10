@@ -1250,7 +1250,7 @@ class TestDB(unittest.TestCase):
         cres[3].add_link(
             defs.Link(document=cres[5].shallow_copy(), ltype=defs.LinkTypes.Contains)
         )
-        
+
         cres[6].add_link(
             defs.Link(document=cres[7].shallow_copy(), ltype=defs.LinkTypes.PartOf)
         )
@@ -1274,13 +1274,14 @@ class TestDB(unittest.TestCase):
         )
 
         collection.session.commit()
-        
-            
-        cres[7].add_link(defs.Link(document=cres[6].shallow_copy(), ltype=defs.LinkTypes.Contains))
-        
+
+        cres[7].add_link(
+            defs.Link(document=cres[6].shallow_copy(), ltype=defs.LinkTypes.Contains)
+        )
+
         root_cres = collection.get_root_cres()
         self.maxDiff = None
-        self.assertEqual(root_cres, [cres[0], cres[1],cres[7]])
+        self.assertEqual(root_cres, [cres[0], cres[1], cres[7]])
 
 
 if __name__ == "__main__":

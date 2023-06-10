@@ -80,6 +80,6 @@ def parse(
             cache.add_link(db.dbCREfromCRE(cre), dbnode)
             logger.info(f"successfully stored {chal_copy.__repr__()}")
         else:
-            logger.info(f"stored {chal_copy.__repr__()} but could not link it to any CRE reliably")
-            
-
+            logger.info(
+                f"stored {chal_copy.__repr__()} but could not link it to any CRE reliably"
+            )

@@ -80,8 +80,9 @@ def __parse(
             cache.add_link(db.dbCREfromCRE(cre), dbnode)
             logger.info(f"successfully stored {pci_control.__repr__()}")
         else:
-            logger.info(f"stored pci control: {pci_control.__repr__()} but could not link it to any CRE reliably")
-            
+            logger.info(
+                f"stored pci control: {pci_control.__repr__()} but could not link it to any CRE reliably"
+            )
 
 
 def parse_3_2(pci_file: Dict[str, Any], cache: db.Node_collection):

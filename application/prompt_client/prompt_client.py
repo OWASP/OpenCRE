@@ -350,7 +350,7 @@ class PromptHandler:
             logger.info(
                 f"there is no good cre candidate for this standard section, returning nothing"
             )
-            return None,None
+            return None, None
         return most_similar_id, max_similarity
 
     def get_id_of_most_similar_node_paginated(
@@ -399,7 +399,7 @@ class PromptHandler:
             logger.info(
                 f"there is no good standard candidate for this other standard section, returning nothing"
             )
-            return None,None
+            return None, None
         return most_similar_id, max_similarity
 
     def generate_text(self, prompt: str) -> Dict[str, str]:

@@ -402,7 +402,9 @@ class CREFlow:
                     with open(client_secrets_file, "w") as f:
                         f.write(os.environ.get("GOOGLE_SECRET_JSON"))
                 else:
-                    logger.fatal("neither file gcp_secret.json nor env GOOGLE_SECRET_JSON have been set")
+                    logger.fatal(
+                        "neither file gcp_secret.json nor env GOOGLE_SECRET_JSON have been set"
+                    )
             cls.flow = Flow.from_client_secrets_file(
                 client_secrets_file=client_secrets_file,
                 scopes=[
@@ -445,7 +447,7 @@ def callback():
     flow_instance = CREFlow.instance()
     try:
         flow_instance.flow.fetch_token(authorization_response=request.url)
-    except  oauthlib.oauth2.rfc6749.errors.MismatchingStateError as mse:
+    except oauthlib.oauth2.rfc6749.errors.MismatchingStateError as mse:
         return redirect(url_for("/chatbot"))
     if not session["state"] == request.args["state"]:
         abort(500)  # State does not match!

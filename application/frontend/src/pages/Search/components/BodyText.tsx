@@ -44,9 +44,8 @@ export const SearchBody = () => {
 
       <h2>WHEN?</h2>
       <p>
-        CRE has linked OWASP standards (Top 10, ASVS, Proactive Controls, Cheat
-        sheets, Testing guide, ZAP), plus several other sources (CWE, CAPEC, NIST-800 53, NIST-800 63b), as
-        part of the
+        CRE has linked OWASP standards (Top 10, ASVS, Proactive Controls, Cheat sheets, Testing guide, ZAP),
+        plus several other sources (CWE, CAPEC, NIST-800 53, NIST-800 63b), as part of the
         <a href="https://owasp.org/www-project-integration-standards/"> OWASP Integration standard project</a>
         .
       </p>

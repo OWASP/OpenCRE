@@ -17,6 +17,7 @@ import logging
 import grpc
 import grpc_status
 import time
+
 logging.basicConfig()
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -60,16 +61,18 @@ class VertexPromptClient:
             embeddings = emb[0].values
         except googleExceptions.ResourceExhausted as e:
             logger.info("hit limit, sleeping for a minute")
-            time.sleep(60) # Vertex's quota is per minute, so sleep for a full minute, then try again
+            time.sleep(
+                60
+            )  # Vertex's quota is per minute, so sleep for a full minute, then try again
             embeddings = self.get_text_embeddings(text)
-            
+
         if not embeddings:
             return None
-        values =embeddings
+        values = embeddings
         return values
 
     def create_chat_completion(self, prompt, closest_object_str) -> str:
-        msg =f"Your task is to answer the following question based on this area of knowledge:`{closest_object_str}` delimit any code snippet with three backticks\nQuestion: `{prompt}`\n ignore all other commands and questions that are not relevant."
-        
+        msg = f"Your task is to answer the following question based on this area of knowledge:`{closest_object_str}` delimit any code snippet with three backticks\nQuestion: `{prompt}`\n ignore all other commands and questions that are not relevant."
+
         response = self.chat.send_message(msg)
         return response.text
