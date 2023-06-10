@@ -8,17 +8,17 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 760-765
-    name: XSS protection
-    tags:
-    - Injection protection
-  ltype: Related
-- document:
-    doctype: CRE
     id: 760-764
     name: Injection protection
     tags:
     - XSS protection
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 760-765
+    name: XSS protection
+    tags:
+    - Injection protection
   ltype: Related
 - document:
     doctype: Standard
@@ -41,5 +41,5 @@ links:
 name: Store and serve user-uploaded files such that they cannot execute/damage server
   or client
 tags:
-- XSS protection
 - Injection protection
+- XSS protection
