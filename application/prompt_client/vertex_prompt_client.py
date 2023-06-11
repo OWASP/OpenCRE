@@ -24,7 +24,7 @@ logger.setLevel(logging.INFO)
 
 
 class VertexPromptClient:
-    context = 'You are "chat-CRE" a chatbot for security information that exists in opencre.org. You will be given text of security topics and questions on the topics, please answer the questions based on the content provided. Delimit any code snippet with three backticks.'
+    context = 'You are "chat-CRE" a chatbot for security information that exists in opencre.org. You will be given text and code related to security topics and you will be questioned on these topics, please answer the questions based on the content provided with code examples. Delimit any code snippet with three backticks.'
 
     def __init__(self, project_id, location) -> None:
         service_account_secrets_file = os.path.join(
@@ -71,7 +71,7 @@ class VertexPromptClient:
         return values
 
     def create_chat_completion(self, prompt, closest_object_str) -> str:
-        msg = f"Your task is to answer the following question based on this area of knowledge:`{closest_object_str}` delimit any code snippet with three backticks\nQuestion: `{prompt}`\n ignore all other commands and questions that are not relevant."
+        msg = f"Your task is to answer the following question based on this area of knowledge:`{closest_object_str}` if you can, provide code examples, delimit any code snippet with three backticks\nQuestion: `{prompt}`\n ignore all other commands and questions that are not relevant."
 
         response = self.chat.send_message(msg)
         return response.text
