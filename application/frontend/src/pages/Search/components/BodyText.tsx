@@ -5,54 +5,52 @@ import React, { useState } from 'react';
 export const SearchBody = () => {
   return (
     <div className="index-text">
-      <h1>OPEN CRE</h1>
+      <h1>OpenCRE</h1>
       <p>
-        CRE is an interactive content linking platform for uniting security standards and guidelines. It
-        offers easy and robust access to relevant information when designing, developing, testing and
-        procuring secure software.
+        <b>OpenCRE is an interactive content linking platform for uniting security standards and guidelines into one overview. It
+          offers easy and robust access to relevant information when designing, developing, testing, procuring
+          and organising secure software.</b>
       </p>
-
-      <h2>WHY?</h2>
       <p>
-        Independent software security professionals got together to find a solution for the complexity and
-        fragmentation in today’s landscape of security standards and guidelines. These people are Spyros
-        Gasteratos, Elie Saad, Rob van der Veer and friends, in close collaboration with the SKF, OpenSSF and
-        Owasp Top 10 project.
+        <b>Use the search bar or <a href="/root_cres">browse the catalogue of all top-level topics</a>, try 
+          <a href="/node/standard/Top10%202017/">the Top10 2017 page</a> and click around, or 
+          <a href="/search/session">search for "Session"</a>, or check out 
+          <a href="/cre/764-507"> CRE 764-507 </a> to access a wirde array of relevant details. This includes criteria in several
+          standards, testing advice, development tips, in-depth technical information, threat descriptions,
+          articles, tool settings, and related topics.</b>
       </p>
-
       <h2>HOW?</h2>
       <p>
-        The CRE links each section of a standard to a shared topic (a Common Requirement), causing that
-        section to also link with all other resources that link to the same topic. This 1) enables users to
+        OpenCRE links each section of a resource (like a standard or guideline) to a shared topic, known as a Common Requirement, 
+        causing that section to also link with all other resources that link to the same topic. This 1) enables users to
         find all combined information from relevant sources, 2) it facilitates a shared and better
         understanding of cyber security, and 3) it allows standard makers to have links that keep working and
-        offer all the information that readers need, so they don’t have to cover it all themselves. The CRE
-        maintains itself: topic links in the standard text are scanned automatically. Furthermore, topics are
-        linked with related other topics, creating a semantic web for security.
+        offer all the information that readers need, alleviating their need to cover everything themselves. OpenCRE
+        maintains itself: links to OpenCRE in the standard text are scanned automatically. Furthermore, topics are
+        linked with related other topics, creating a semantic web for security to explore.
       </p>
       <p>
-        <b>Example</b>: the session time-out topic will take the user to relevant criteria in several
-        standards , and to testing guides, development tips, more technical detail, threat descriptions,
-        articles etc. From there, the user can navigate to resources about session management in general.
+        An easy way to link to OpenCRE topics, is to use a familiar standard. For example, using
+        CWE to link to OpenCRE content on the topic of XXE injection:
+        <a href="/smartlink/standard/CWE/611">www.opencre.org/smartlink/standard/CWE/611</a>.
+      </p>
+      <h2>WHO?</h2>
+      <p>
+        It's the brainchild of independent software security professionals such as Spyros Gasteratos and Rob van der Veer, 
+        who joined forces to tackle the complexities and segmentation in current security standards and guidelines. 
+        They collaborated closely with the SKF, OpenSSF and the Owasp Top 10 project. 
+        OpenCRE is an open-source platform overseen by the OWASP foundation through the 
+        <a href="https://owasp.org/www-project-integration-standards/"> OWASP Integration standard project</a>. 
+        The goal is to foster better coordination among security initiatives.
       </p>
       <p>
-        Moreover, standards can use the CRE project to maintain permanent links to other standards. For
-        example <a href="/deeplink/ASVS">ASVS Deeplink</a> could be maintained by ASVS and always redirect to
-        an ASVS entry on github while the following will redirect to the specific section{' '}
-        <a href="/deeplink/ASVS?section=v9.2.5">ASVS v9.2.5</a>
-      </p>
 
-      <h2>WHEN?</h2>
-      <p>
-        CRE has linked OWASP standards (Top 10, ASVS, Proactive Controls, Cheat sheets, Testing guide, ZAP),
-        plus several other sources (CWE, CAPEC, NIST-800 53, NIST-800 63b), as part of the
-        <a href="https://owasp.org/www-project-integration-standards/"> OWASP Integration standard project</a>
-        .
+        OpenCRE currently links OWASP standards (Top 10, ASVS, Proactive Controls, Cheat
+        sheets, Testing guide, ZAP), plus several other sources (CWE, CAPEC, NIST-800 53, NIST-800 63b, Cloud Control
+        Matrix, ISO27001, ISO27002 and PCI-DSS).
       </p>
-
-      <h2>Join us</h2>
       <p>
-        Contact us (rob.vanderveer [at] owasp.org) to join the movement. Currently, a stakeholder group is
+        Contact us via (rob.vanderveer [at] owasp.org) to join the movement. Currently, a stakeholder group is
         being formed.
       </p>
       <p>
@@ -63,16 +61,6 @@ export const SearchBody = () => {
           CRE explanation document
         </a>
         .
-      </p>
-
-      <h2>TRY</h2>
-      <p>
-        See the CRE search bar. Try searching for
-        <a href="/node/standard/OWASP%20Top%2010%202021/"> OWASP Top 10 2021 </a>
-        as standard and click around, or
-        <a href="/cre/482-866"> 482-866 </a>
-        as CRE-ID, to get an idea, or <a href="/search/session">search for "Session"</a>, or an overview of{' '}
-        <a href="/root_cres">all top-level topics</a>.
       </p>
     </div>
   );
