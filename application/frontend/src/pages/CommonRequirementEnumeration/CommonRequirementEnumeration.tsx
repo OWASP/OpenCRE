@@ -48,6 +48,13 @@ export const CommonRequirementEnumeration = () => {
   display = currentUrlParams.get('applyFilters') === 'true' ? filteredCRE : cre;
 
   const linksByType = useMemo(() => (display ? orderLinksByType(groupLinksByType(display)) : {}), [display]);
+  const sortedSections = Object.entries(linksByType).sort(([typeA], [typeB]) => {
+    const nameA = DOCUMENT_TYPE_NAMES[typeA] || '';
+    const nameB = DOCUMENT_TYPE_NAMES[typeB] || '';
+    const nameSectionA = nameA + typeA;
+    const nameSectionB = nameB + typeB;
+    return nameSectionA.localeCompare(nameSectionB);
+  });
   return (
     <div className="cre-page">
       <LoadingAndErrorIndicator loading={loading} error={error} />
@@ -88,21 +95,20 @@ export const CommonRequirementEnumeration = () => {
             ''
           )}
           <div className="cre-page__links-container">
-            {Object.keys(linksByType).length > 0 &&
-              Object.entries(linksByType).map(([type, links]) => (
-                <div className="cre-page__links" key={type}>
-                  <div className="cre-page__links-eader">
-                    {getDocumentDisplayName(display)}
-                    <b>{DOCUMENT_TYPE_NAMES[type]}</b>:
-                  </div>
-                  {links.map((link, i) => (
-                    <div key={i} className="accordion ui fluid styled cre-page__links-container">
-                      <DocumentNode node={link.document} linkType={type} />
-                      <FilterButton document={link.document} />
-                    </div>
-                  ))}
+            {sortedSections.map(([type, links]) => (
+              <div className="cre-page__links" key={type}>
+                <div className="cre-page__links-eader">
+                  {getDocumentDisplayName(display)}
+                  <b>{DOCUMENT_TYPE_NAMES[type]}</b>:
                 </div>
-              ))}
+                {links.map((link, i) => (
+                  <div key={i} className="accordion ui fluid styled cre-page__links-container">
+                    <DocumentNode node={link.document} linkType={type} />
+                    <FilterButton document={link.document} />
+                  </div>
+                ))}
+              </div>
+            ))}
           </div>
         </>
       )}
