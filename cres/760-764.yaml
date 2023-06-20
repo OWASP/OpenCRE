@@ -1,0 +1,87 @@
+doctype: CRE
+id: 760-764
+links:
+- document:
+    doctype: CRE
+    id: 546-564
+    name: Cross-cutting concerns
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 760-765
+    name: XSS protection
+    tags:
+    - Injection protection
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 384-344
+    name: Store and serve user-uploaded files such that they cannot execute/damage
+      server or client
+    tags:
+    - Injection protection
+    - XSS protection
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 010-308
+    name: Input validation
+    tags:
+    - Injection protection
+    - XSS protection
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 866-553
+    name: Memory, String, and Unmanaged Code
+    tags:
+    - Injection protection
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 161-451
+    name: Output encoding and injection prevention
+    tags:
+    - Injection protection
+    - XSS protection
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 764-765
+    name: Sanitization and sandboxing
+    tags:
+    - Injection protection
+    - XSS protection
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 541-441
+    name: Validate HTTP request headers
+    tags:
+    - Injection protection
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 764-507
+    name: Restrict XML parsing (against XXE)
+    tags:
+    - Injection protection
+    - Configuration
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 048-612
+    name: Encode user input before logging
+    tags:
+    - Injection protection
+  ltype: Related
+- document:
+    doctype: Standard
+    hyperlink: https://owasp.org/Top10/A03_2021-Injection/
+    name: OWASP Top 10 2021
+    section: Injection
+    sectionID: A03
+  ltype: Linked To
+name: Injection protection
+tags:
+- XSS protection

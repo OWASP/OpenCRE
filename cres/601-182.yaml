@@ -1,0 +1,26 @@
+doctype: CRE
+id: 601-182
+links:
+- document:
+    doctype: CRE
+    id: 854-643
+    name: Robust business logic
+    tags:
+    - Denial Of Service protection
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 670-660
+    name: Do not share unsynchronized state on high-value logic flows
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 380-540
+    name: Ensure business flows' thread safety/resistance to race conditions
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 134-412
+    name: Protect sensitive functionalities against race conditions
+  ltype: Contains
+name: Parallel execution robustness

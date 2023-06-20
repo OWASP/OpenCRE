@@ -239,7 +239,7 @@ class TestDB(unittest.TestCase):
         cre = expected[1].todict()
         groupname = (
             expected[0]
-            .name.replace("/", "-")
+            .id.replace("/", "-")
             .replace(" ", "_")
             .replace('"', "")
             .replace("'", "")
@@ -251,7 +251,7 @@ class TestDB(unittest.TestCase):
 
         crename = (
             expected[1]
-            .name.replace("/", "-")
+            .id.replace("/", "-")
             .replace(" ", "_")
             .replace('"', "")
             .replace("'", "")
@@ -1198,6 +1198,8 @@ class TestDB(unittest.TestCase):
             * C3 Part Of C1
             * C4 Part Of C2
             * C5 Related to C0
+            * C6 Part Of C1 but registered as C6 being the "group"
+            * C7 Contains C6 but registered as C6 being the "group" <-- Root
         3 Nodes:
             * N0  Unlinked
             * N1 Linked To C1
@@ -1216,7 +1218,7 @@ class TestDB(unittest.TestCase):
         collection = db.Node_collection()
         collection.graph.graph = db.CRE_Graph.load_cre_graph(sqla.session)
 
-        for i in range(0, 6):
+        for i in range(0, 8):
             if i == 0 or i == 1:
                 cres.append(defs.CRE(name=f">> C{i}", id=f"{i}"))
             else:
@@ -1248,6 +1250,10 @@ class TestDB(unittest.TestCase):
         cres[3].add_link(
             defs.Link(document=cres[5].shallow_copy(), ltype=defs.LinkTypes.Contains)
         )
+
+        cres[6].add_link(
+            defs.Link(document=cres[7].shallow_copy(), ltype=defs.LinkTypes.PartOf)
+        )
         collection.add_internal_link(
             group=dbcres[0], cre=dbcres[2], type=defs.LinkTypes.Contains
         )
@@ -1263,11 +1269,19 @@ class TestDB(unittest.TestCase):
         collection.add_internal_link(
             group=dbcres[3], cre=dbcres[5], type=defs.LinkTypes.Contains
         )
+        collection.add_internal_link(
+            group=dbcres[6], cre=dbcres[7], type=defs.LinkTypes.PartOf
+        )
+
         collection.session.commit()
+
+        cres[7].add_link(
+            defs.Link(document=cres[6].shallow_copy(), ltype=defs.LinkTypes.Contains)
+        )
 
         root_cres = collection.get_root_cres()
         self.maxDiff = None
-        self.assertEqual(root_cres, [cres[0], cres[1]])
+        self.assertEqual(root_cres, [cres[0], cres[1], cres[7]])
 
 
 if __name__ == "__main__":

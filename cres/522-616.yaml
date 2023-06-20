@@ -1,0 +1,68 @@
+doctype: CRE
+id: 522-616
+links:
+- document:
+    doctype: CRE
+    id: 850-376
+    name: Facilities management
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 287-823
+    name: Asset management
+  ltype: Related
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=MP-1
+    name: NIST 800-53 v5
+    section: MP-1 Policy and Procedures
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=MP-2
+    name: NIST 800-53 v5
+    section: MP-2 Media Access
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=MP-3
+    name: NIST 800-53 v5
+    section: MP-3 Media Marking
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=MP-4
+    name: NIST 800-53 v5
+    section: MP-4 Media Storage
+  ltype: Linked To
+- document:
+    doctype: Standard
+    name: ISO 27001
+    section: Storage media
+    sectionID: '7.1'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=MP-5
+    name: NIST 800-53 v5
+    section: MP-5 Media Transport
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=MP-6
+    name: NIST 800-53 v5
+    section: MP-6 Media Sanitization
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=MP-7
+    name: NIST 800-53 v5
+    section: MP-7 Media Use
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=MP-8
+    name: NIST 800-53 v5
+    section: MP-8 Media Downgrading
+  ltype: Linked To
+name: Media protection

@@ -1,0 +1,56 @@
+doctype: CRE
+id: 515-021
+links:
+- document:
+    doctype: CRE
+    id: 467-784
+    name: Network security
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 836-068
+    name: Deserialization Prevention
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 155-155
+    name: Architecture
+  ltype: Related
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x10-V1-Architecture.md
+    name: ASVS
+    section: V1.14.5
+    sectionID: Verify that application deployments adequately sandbox, containerize
+      and/or isolate at the network level to delay and deter attackers from attacking
+      other applications, especially when they are performing sensitive or dangerous
+      actions such as deserialization.
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owasp-top-10-proactive-controls-2018.readthedocs.io/en/latest/c5-validate-all-inputs.html
+    name: OWASP Proactive Controls
+    section: C5
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/265.html
+    name: CWE
+    section: ''
+    sectionID: '265'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    name: Cloud Controls Matrix
+    section: Segmentation and Segregation
+    sectionID: IVS-06
+  ltype: Linked To
+- document:
+    doctype: Standard
+    name: ISO 27001
+    section: Segregation of networks
+    sectionID: '8.22'
+  ltype: Linked To
+name: Sandbox, containerize and/or isolate applications at the network level
+tags:
+- Architecture

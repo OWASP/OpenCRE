@@ -1,0 +1,18 @@
+doctype: CRE
+id: 072-713
+links:
+- document:
+    doctype: CRE
+    id: 068-102
+    name: Architecture/design processes
+    tags:
+    - Architecture
+  ltype: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://owaspsamm.org/model/design/security-architecture/stream-b
+    name: SAMM
+    section: Technology Management
+    sectionID: D-SA-B
+  ltype: Linked To
+name: Manage standard technologies and frameworks

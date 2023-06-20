@@ -1,0 +1,59 @@
+doctype: CRE
+id: 148-420
+links:
+- document:
+    doctype: CRE
+    id: 842-876
+    name: Logging and error handling
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 260-200
+    name: Log in consistent format across system
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 026-280
+    name: Securely transfer logs (remotely)
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 713-684
+    name: Log access protection
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 821-541
+    name: Log injection protection
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 770-362
+    name: Log time synchronization
+  ltype: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=AU-10
+    name: NIST 800-53 v5
+    section: AU-10 Non-repudiation
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=AU-8
+    name: NIST 800-53 v5
+    section: AU-8 Time Stamps
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=AU-9
+    name: NIST 800-53 v5
+    section: AU-9 Protection of Audit Information
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owasp.org/Top10/A09_2021-Security_Logging_and_Monitoring_Failures/
+    name: OWASP Top 10 2021
+    section: Logging and Monitoring Failures
+    sectionID: A09
+  ltype: Linked To
+name: Log integrity

@@ -1,0 +1,34 @@
+doctype: CRE
+id: 152-725
+links:
+- document:
+    doctype: CRE
+    id: 123-124
+    name: Minimize permissions
+  ltype: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/419.html
+    name: CWE
+    section: ''
+    sectionID: '419'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owasp.org/www-project-web-security-testing-guide/v42/4-Web_Application_Security_Testing/05-Authorization_Testing/02-Testing_for_Bypassing_Authorization_Schema.html
+    name: OWASP Web Security Testing Guide (WSTG)
+    section: WSTG-ATHZ-02
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Web_Service_Security_Cheat_Sheet.html
+    name: OWASP Cheat Sheets
+    section: Web Service Security Cheat Sheet
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html
+    name: OWASP Cheat Sheets
+    section: Server Side Request Forgery Prevention Cheat Sheet
+  ltype: Linked To
+name: Limit access to admin/management functionality

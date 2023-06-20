@@ -1,0 +1,19 @@
+doctype: CRE
+id: 787-638
+links:
+- document:
+    doctype: CRE
+    id: 616-305
+    name: Development processes for security
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 004-517
+    name: Security requirements
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 036-275
+    name: Make (centrally) available secure coding resources for programmers
+  ltype: Contains
+name: Technical instructions

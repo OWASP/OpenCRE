@@ -51,11 +51,15 @@ export const StandardSection = () => {
   const documents = data?.standards || [];
   const document = documents[0];
   const linksByType = useMemo(() => (document ? groupLinksByType(document) : {}), [document]);
+  const version = document?.version;
 
   return (
     <>
       <div className="standard-page section-page">
-        <h4 className="standard-page__heading">{id}</h4>
+        <h4 className="standard-page__heading">
+          {id}
+          {version ? '-' + version : ''}
+        </h4>
         <h5 className="standard-page__sub-heading">
           {getDocumentDisplayName(document)
             .replace(document?.name, '')

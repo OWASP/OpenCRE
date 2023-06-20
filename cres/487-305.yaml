@@ -1,0 +1,54 @@
+doctype: CRE
+id: 487-305
+links:
+- document:
+    doctype: CRE
+    id: 789-320
+    name: Login functionality
+  ltype: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x11-V2-Authentication.md
+    name: ASVS
+    section: V2.1.12
+    sectionID: Verify that the user can choose to either temporarily view the entire
+      masked password, or temporarily view the last typed character of the password
+      on platforms that do not have this as built-in functionality.
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/521.html
+    name: CWE
+    section: ''
+    sectionID: '521'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owasp.org/www-project-web-security-testing-guide/v42/4-Web_Application_Security_Testing/04-Authentication_Testing/07-Testing_for_Weak_Password_Policy.html
+    name: OWASP Web Security Testing Guide (WSTG)
+    section: WSTG-ATHN-07
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Choosing_and_Using_Security_Questions_Cheat_Sheet.html
+    name: OWASP Cheat Sheets
+    section: Choosing and Using Security Questions Cheat Sheet
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Forgot_Password_Cheat_Sheet.html
+    name: OWASP Cheat Sheets
+    section: Forgot Password Cheat Sheet
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Credential_Stuffing_Prevention_Cheat_Sheet.html
+    name: OWASP Cheat Sheets
+    section: Credential Stuffing Prevention Cheat Sheet
+  ltype: Linked To
+- document:
+    doctype: Standard
+    name: NIST 800-63
+    section: 5.1.1.2
+  ltype: Linked To
+name: Provide options to view entire password or last typed character

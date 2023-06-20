@@ -1,0 +1,50 @@
+doctype: CRE
+id: 304-667
+links:
+- document:
+    doctype: CRE
+    id: 128-128
+    name: Strong authorization checking
+  ltype: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x12-V4-Access-Control.md
+    name: ASVS
+    section: V4.2.1
+    sectionID: Verify that sensitive data and APIs are protected against Insecure
+      Direct Object Reference (IDOR) attacks targeting creation, reading, updating
+      and deletion of records, such as creating or updating someone else's record,
+      viewing everyone's records, or deleting all records.
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/639.html
+    name: CWE
+    section: ''
+    sectionID: '639'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owasp.org/www-project-web-security-testing-guide/v42/4-Web_Application_Security_Testing/05-Authorization_Testing/04-Testing_for_Insecure_Direct_Object_References.html
+    name: OWASP Web Security Testing Guide (WSTG)
+    section: WSTG-ATHZ-04
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Insecure_Direct_Object_Reference_Prevention_Cheat_Sheet.html
+    name: OWASP Cheat Sheets
+    section: Insecure Direct Object Reference Prevention Cheat Sheet
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html
+    name: OWASP Cheat Sheets
+    section: Cross-Site Request Forgery Prevention Cheat Sheet
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Testing_Automation_Cheat_Sheet.html
+    name: OWASP Cheat Sheets
+    section: Authorization Testing Automation Cheat Sheet
+  ltype: Linked To
+name: Protect API against unauthorized access/modification (IDOR)

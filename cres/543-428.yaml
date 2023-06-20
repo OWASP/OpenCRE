@@ -1,0 +1,44 @@
+doctype: CRE
+id: 543-428
+links:
+- document:
+    doctype: CRE
+    id: 062-850
+    name: MFA/OTP
+    tags:
+    - Cryptography
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 170-772
+    name: Cryptography
+  ltype: Related
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x11-V2-Authentication.md
+    name: ASVS
+    section: V2.8.2
+    sectionID: Verify that symmetric keys used to verify submitted OTPs are highly
+      protected, such as by using a hardware security module or secure operating system
+      based key storage.
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/320.html
+    name: CWE
+    section: ''
+    sectionID: '320'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    name: NIST 800-63
+    section: 5.1.4.2
+  ltype: Linked To
+- document:
+    doctype: Standard
+    name: NIST 800-63
+    section: 5.1.5.2
+  ltype: Linked To
+name: Use security module to store one-time password verification keys
+tags:
+- Cryptography

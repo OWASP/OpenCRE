@@ -1,0 +1,19 @@
+doctype: CRE
+id: 010-678
+links:
+- document:
+    doctype: CRE
+    id: 862-452
+    name: Operating processes for security
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 112-648
+    name: Change management
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 732-148
+    name: Vulnerability management
+  ltype: Contains
+name: Improvement management
