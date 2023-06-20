@@ -1,0 +1,25 @@
+doctype: CRE
+id: 268-272
+links:
+- document:
+    doctype: CRE
+    id: 074-873
+    name: Data classification and handling
+  ltype: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x16-V8-Data-Protection.md
+    name: ASVS
+    section: V8.3.8
+    sectionID: Verify that sensitive personal information is subject to data retention
+      classification, such that old or out of date data is deleted automatically,
+      on a schedule, or as the situation requires.
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/285.html
+    name: CWE
+    section: ''
+    sectionID: '285'
+  ltype: Linked To
+name: Classify personal data regarding retention so that old or outdated data is deleted

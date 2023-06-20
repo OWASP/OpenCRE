@@ -1,0 +1,30 @@
+doctype: CRE
+id: 046-257
+links:
+- document:
+    doctype: CRE
+    id: 208-830
+    name: Manage temporary storage
+  ltype: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x16-V8-Data-Protection.md
+    name: ASVS
+    section: V8.2.3
+    sectionID: Verify that authenticated data is cleared from client storage, such
+      as the browser DOM, after the client or session is terminated.
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/922.html
+    name: CWE
+    section: ''
+    sectionID: '922'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owasp.org/www-project-web-security-testing-guide/v42/4-Web_Application_Security_Testing/11-Client_Side_Testing/12-Testing_Browser_Storage.html
+    name: OWASP Web Security Testing Guide (WSTG)
+    section: WSTG-CLNT-12
+  ltype: Linked To
+name: Clear authentication data from client storage

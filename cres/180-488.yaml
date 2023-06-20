@@ -1,0 +1,32 @@
+doctype: CRE
+id: 180-488
+links:
+- document:
+    doctype: CRE
+    id: 233-748
+    name: Configuration hardening
+    tags:
+    - Configuration
+  ltype: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x22-V14-Config.md
+    name: ASVS
+    section: V14.1.3
+    sectionID: Verify that server configuration is hardened as per the recommendations
+      of the application server and frameworks in use.
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/16.html
+    name: CWE
+    section: ''
+    sectionID: '16'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html
+    name: OWASP Cheat Sheets
+    section: Docker Security Cheat Sheet
+  ltype: Linked To
+name: Proper Configuration for all applications and frameworks

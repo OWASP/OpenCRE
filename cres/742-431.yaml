@@ -1,0 +1,50 @@
+doctype: CRE
+id: 742-431
+links:
+- document:
+    doctype: CRE
+    id: 742-432
+    name: Encryption algorithms
+    tags:
+    - Cryptography
+  ltype: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x14-V6-Cryptography.md
+    name: ASVS
+    section: V6.2.2
+    sectionID: Verify that industry proven or government approved cryptographic algorithms,
+      modes, and libraries are used, instead of custom coded cryptography.
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owasp-top-10-proactive-controls-2018.readthedocs.io/en/latest/c8-protect-data-everywhere.html
+    name: OWASP Proactive Controls
+    section: C8
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/327.html
+    name: CWE
+    section: ''
+    sectionID: '327'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owasp.org/www-project-web-security-testing-guide/v42/4-Web_Application_Security_Testing/09-Testing_for_Weak_Cryptography/04-Testing_for_Weak_Encryption.html
+    name: OWASP Web Security Testing Guide (WSTG)
+    section: WSTG-CRYP-04
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html
+    name: OWASP Cheat Sheets
+    section: Cryptographic Storage Cheat Sheet
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Key_Management_Cheat_Sheet.html
+    name: OWASP Cheat Sheets
+    section: Key Management Cheat Sheet
+  ltype: Linked To
+name: Use approved cryptographic algorithms

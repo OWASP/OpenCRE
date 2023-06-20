@@ -1,0 +1,48 @@
+doctype: CRE
+id: 836-068
+links:
+- document:
+    doctype: CRE
+    id: 503-455
+    name: Input and output protection
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 831-563
+    name: Avoid deserialization logic
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 736-554
+    name: Block serialization of content from untrusted clients
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 387-848
+    name: Parse JSON safely
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 762-616
+    name: Secure serialized objects (e.g. integrity checks)
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 515-021
+    name: Sandbox, containerize and/or isolate applications at the network level
+    tags:
+    - Architecture
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 184-284
+    name: Log all security relevant events
+  ltype: Related
+- document:
+    doctype: Standard
+    hyperlink: https://owasp.org/Top10/A08_2021-Software_and_Data_Integrity_Failures/
+    name: OWASP Top 10 2021
+    section: Software and Data Integrity Failures
+    sectionID: A08
+  ltype: Linked To
+name: Deserialization Prevention

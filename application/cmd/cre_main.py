@@ -24,7 +24,10 @@ from application.utils.external_project_parsers import (
     zap_alerts_parser,
     iso27001,
     secure_headers,
+    pci_dss,
+    juiceshop,
 )
+from application.prompt_client import prompt_client as prompt_client
 from dacite import from_dict
 from dacite.config import Config
 
@@ -198,34 +201,16 @@ def parse_standards_from_spreadsheeet(
     cre_file: List[Dict[str, Any]], result: db.Node_collection
 ) -> None:
     """given a yaml with standards, build a list of standards in the db"""
-    hi_lvl_CREs = {}
     cres = {}
-    if "CRE Group 1" in cre_file[0].keys():
-        hi_lvl_CREs, cres = spreadsheet_parsers.parse_v1_standards(cre_file)
-    elif "CRE:name" in cre_file[0].keys():
+    if "CRE:name" in cre_file[0].keys():
         cres = spreadsheet_parsers.parse_export_format(cre_file)
     elif any(key.startswith("CRE hierarchy") for key in cre_file[0].keys()):
         cres = spreadsheet_parsers.parse_hierarchical_export_format(cre_file)
     else:
-        cres = spreadsheet_parsers.parse_v0_standards(cre_file)
-
+        logger.fatal(f"could not find any useful keys { cre_file[0].keys()}")
     # register groupless cres first
     for _, cre in cres.items():
         register_cre(cre, result)
-
-    # groups
-    # TODO :(spyros) merge with register_cre above
-    for name, doc in hi_lvl_CREs.items():
-        dbgroup = result.add_cre(doc)
-
-        for link in doc.links:
-            if type(link.document).__name__ == defs.CRE.__name__:
-                dbcre = register_cre(link.document, result)
-                result.add_internal_link(group=dbgroup, cre=dbcre, type=link.ltype)
-
-            elif type(link.document).__name__ == defs.Standard.__name__:
-                dbstandard = register_node(link.document, result)
-                result.add_link(cre=dbgroup, node=dbstandard, type=link.ltype)
 
 
 def get_cre_files_from_disk(cre_loc: str) -> Generator[str, None, None]:
@@ -243,7 +228,7 @@ def add_from_spreadsheet(spreadsheet_url: str, cache_loc: str, cre_loc: str) -> 
     """
     database = db_connect(path=cache_loc)
     spreadsheet = sheet_utils.readSpreadsheet(
-        url=spreadsheet_url, cres_loc=cre_loc, alias="new spreadsheet", validate=False
+        url=spreadsheet_url, alias="new spreadsheet", validate=False
     )
     for worksheet, contents in spreadsheet.items():
         parse_standards_from_spreadsheeet(contents, database)
@@ -282,7 +267,7 @@ def review_from_spreadsheet(cache: str, spreadsheet_url: str, share_with: str) -
     loc, cache = prepare_for_review(cache)
     database = db_connect(path=cache)
     spreadsheet = sheet_utils.readSpreadsheet(
-        url=spreadsheet_url, cres_loc=loc, alias="new spreadsheet", validate=False
+        url=spreadsheet_url, alias="new spreadsheet", validate=False
     )
     for _, contents in spreadsheet.items():
         parse_standards_from_spreadsheeet(contents, database)
@@ -393,7 +378,6 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
     if args.csa_ccm_v3_in:
         ccmv3.parse_ccm(
             ccmFile=sheet_utils.readSpreadsheet(
-                cres_loc="",
                 alias="",
                 url="https://docs.google.com/spreadsheets/d/1b5i8OV919aiqW2KcYWOQvkLorL1bRPqjthJxLH0QpD8",
             ),
@@ -402,7 +386,6 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
     if args.csa_ccm_v4_in:
         ccmv4.parse_ccm(
             ccmFile=sheet_utils.readSpreadsheet(
-                cres_loc="",
                 alias="",
                 url="https://docs.google.com/spreadsheets/d/1QDzQy0wt1blGjehyXS3uaHh7k5OOR12AWgAA1DeACyc",
             ),
@@ -417,11 +400,35 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
         secure_headers.parse(
             cache=db_connect(args.cache_file),
         )
+    if args.pci_dss_3_2_in:
+        pci_dss.parse_3_2(
+            pci_file=sheet_utils.readSpreadsheet(
+                alias="",
+                url="https://docs.google.com/spreadsheets/d/1p-s65MaVrKOnWPEQ_tt7e0fmutCeiJx8EORPNF5TyME",
+                parse_numbered_only=False,
+            ),
+            cache=db_connect(args.cache_file),
+        )
+    if args.pci_dss_4_in:
+        pci_dss.parse_4(
+            pci_file=sheet_utils.readSpreadsheet(
+                alias="",
+                url="https://docs.google.com/spreadsheets/d/18weo-qbik_C7SdYq7FSP2OMgUmsWdWWI1eaXcAfMz8I",
+                parse_numbered_only=False,
+            ),
+            cache=db_connect(args.cache_file),
+        )
+    if args.juiceshop_in:
+        juiceshop.parse(
+            cache=db_connect(args.cache_file),
+        )
+    if args.generate_embeddings:
+        generate_embeddings(args.cache_file)
     if args.owasp_proj_meta:
         owasp_metadata_to_cre(args.owasp_proj_meta)
 
 
-def db_connect(path: str) -> db.Node_collection:
+def db_connect(path: str):
     global app
     conf = CMDConfig(db_uri=path)
     app = create_app(conf=conf)
@@ -499,6 +506,11 @@ def export_to_osib(file_loc: str, cache: str) -> None:
     with open(file_loc, "x"):
         with open(file_loc, "w") as f:
             f.write(json.dumps(tree.todict()))
+
+
+def generate_embeddings(db_url: str) -> None:
+    database = db_connect(path=db_url)
+    prompt = prompt_client.PromptHandler(database)
 
 
 def owasp_metadata_to_cre(meta_file: str):

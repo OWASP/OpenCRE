@@ -1,0 +1,44 @@
+doctype: CRE
+id: 621-287
+links:
+- document:
+    doctype: CRE
+    id: 130-550
+    name: File handling
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 163-518
+    name: Check uploaded archives for decompression attacks (eg zip bombs)
+    tags:
+    - Denial Of Service protection
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 463-820
+    name: Limit size and number of uploaded files
+    tags:
+    - Denial Of Service protection
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 112-273
+    name: Scan untrusted files for malware
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 384-344
+    name: Store and serve user-uploaded files such that they cannot execute/damage
+      server or client
+    tags:
+    - Injection protection
+    - XSS protection
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 660-052
+    name: Validate max input/file sizes
+    tags:
+    - Denial Of Service protection
+  ltype: Contains
+name: File upload
