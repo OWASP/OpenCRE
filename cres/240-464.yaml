@@ -1,0 +1,116 @@
+doctype: CRE
+id: 240-464
+links:
+- document:
+    doctype: CRE
+    id: 766-162
+    name: Security Analysis and documentation
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 163-776
+    name: Backup
+  ltype: Related
+- document:
+    doctype: Standard
+    name: Cloud Controls Matrix
+    section: Business Continuity Management and Operational Resilience
+    sectionID: BCR
+  ltype: Linked To
+- document:
+    doctype: Standard
+    name: ISO 27001
+    section: Redundancy of information processing facilities
+    sectionID: '8.14'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=CP-1
+    name: NIST 800-53 v5
+    section: CP-1 Policy and Procedures
+  ltype: Linked To
+- document:
+    doctype: Standard
+    name: ISO 27001
+    section: Information security during disruption
+    sectionID: '5.29'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=CP-10
+    name: NIST 800-53 v5
+    section: CP-10 System Recovery and Reconstitution
+  ltype: Linked To
+- document:
+    doctype: Standard
+    name: ISO 27001
+    section: ICT readiness for business continuity
+    sectionID: '5.3'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=CP-11
+    name: NIST 800-53 v5
+    section: CP-11 Alternate Communications Protocols
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=CP-12
+    name: NIST 800-53 v5
+    section: CP-12 Safe Mode
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=CP-13
+    name: NIST 800-53 v5
+    section: CP-13 Alternative Security Mechanisms
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=CP-2
+    name: NIST 800-53 v5
+    section: CP-2 Contingency Plan
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=CP-3
+    name: NIST 800-53 v5
+    section: CP-3 Contingency Training
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=CP-4
+    name: NIST 800-53 v5
+    section: CP-4 Contingency Plan Testing
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=CP-6
+    name: NIST 800-53 v5
+    section: CP-6 Alternate Storage Site
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=CP-7
+    name: NIST 800-53 v5
+    section: CP-7 Alternate Processing Site
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=CP-8
+    name: NIST 800-53 v5
+    section: CP-8 Telecommunications Services
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=CP-9
+    name: NIST 800-53 v5
+    section: CP-9 System Backup
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=SI-13
+    name: NIST 800-53 v5
+    section: SI-13 Predictable Failure Prevention
+  ltype: Linked To
+name: Contingency planning

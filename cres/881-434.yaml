@@ -1,0 +1,57 @@
+doctype: CRE
+id: 881-434
+links:
+- document:
+    doctype: CRE
+    id: 764-765
+    name: Sanitization and sandboxing
+    tags:
+    - Injection protection
+    - XSS protection
+  ltype: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x13-V5-Validation-Sanitization-Encoding.md
+    name: ASVS
+    section: V5.2.3
+    sectionID: Verify that the application sanitizes user input before passing to
+      mail systems to protect against SMTP or IMAP injection.
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/147.html
+    name: CWE
+    section: ''
+    sectionID: '147'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owasp.org/www-project-web-security-testing-guide/v42/4-Web_Application_Security_Testing/07-Input_Validation_Testing/10-Testing_for_IMAP_SMTP_Injection.html
+    name: OWASP Web Security Testing Guide (WSTG)
+    section: WSTG-INPV-10
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html
+    name: OWASP Cheat Sheets
+    section: Server Side Request Forgery Prevention Cheat Sheet
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html
+    name: OWASP Cheat Sheets
+    section: Cross Site Scripting Prevention Cheat Sheet
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.html
+    name: OWASP Cheat Sheets
+    section: DOM based XSS Prevention Cheat Sheet
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.html
+    name: OWASP Cheat Sheets
+    section: Unvalidated Redirects and Forwards Cheat Sheet
+  ltype: Linked To
+name: Sanitize user input before passing content to mail systems (SMTP/IMAP injection)

@@ -1,0 +1,180 @@
+doctype: CRE
+id: 170-772
+links:
+- document:
+    doctype: CRE
+    id: 546-564
+    name: Cross-cutting concerns
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 223-780
+    name: Secret storage
+    tags:
+    - Cryptography
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 228-551
+    name: TLS
+    tags:
+    - Cryptography
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 333-858
+    name: Resist stolen credentials
+    tags:
+    - Cryptography
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 585-408
+    name: Challenge nonce cryptography
+    tags:
+    - Cryptography
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 062-850
+    name: MFA/OTP
+    tags:
+    - Cryptography
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 841-757
+    name: Use approved cryptographic algorithms in generation, seeding and verification
+      of OTPs
+    tags:
+    - Cryptography
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 206-254
+    name: Use secure random to generate initial authentication codes
+    tags:
+    - Cryptography
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 543-428
+    name: Use security module to store one-time password verification keys
+    tags:
+    - Cryptography
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 605-735
+    name: Authenticate all external connections
+    tags:
+    - Cryptography
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 435-702
+    name: Communication encryption
+    tags:
+    - Cryptography
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 527-034
+    name: Protect communication between application components
+    tags:
+    - Cryptography
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 426-842
+    name: Verify the authenticity of both headers and payload
+    tags:
+    - Cryptography
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 248-646
+    name: Disable insecure SSL/TLS versions
+    tags:
+    - Cryptography
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 400-007
+    name: Encrypt data at rest
+    tags:
+    - Cryptography
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 742-432
+    name: Encryption algorithms
+    tags:
+    - Cryptography
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 542-270
+    name: Secure random values
+    tags:
+    - Cryptography
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 664-571
+    name: Ensure proper generation of secure random
+    tags:
+    - Cryptography
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 704-530
+    name: Enforce high entropy session tokens
+    tags:
+    - Cryptography
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 727-043
+    name: Ensure secure algorithms for generating session tokens
+    tags:
+    - Cryptography
+  ltype: Related
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=SC-12
+    name: NIST 800-53 v5
+    section: SC-12 CRYPTOGRAPHIC KEY ESTABLISHMENT AND MANAGEMENT
+  ltype: Linked To
+- document:
+    doctype: Standard
+    name: ISO 27001
+    section: Use of cryptography
+    sectionID: '8.24'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=SC-13
+    name: NIST 800-53 v5
+    section: SC-13 Cryptographic Protection
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=SC-17
+    name: NIST 800-53 v5
+    section: SC-17 Public Key Infrastructure Certificates
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owasp.org/Top10/A02_2021-Cryptographic_Failures/
+    name: OWASP Top 10 2021
+    section: Cryptographic Failures
+    sectionID: A02
+  ltype: Linked To
+- document:
+    doctype: Standard
+    name: Cloud Controls Matrix
+    section: Cryptography, Encryption & Key Management
+    sectionID: CEK
+  ltype: Linked To
+name: Cryptography

@@ -1,0 +1,14 @@
+doctype: CRE
+id: 758-262
+links:
+- document:
+    doctype: CRE
+    id: 130-550
+    name: File handling
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 307-111
+    name: Securely store files with untrusted origin
+  ltype: Contains
+name: File storage

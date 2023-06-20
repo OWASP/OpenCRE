@@ -1,0 +1,113 @@
+doctype: CRE
+id: 433-442
+links:
+- document:
+    doctype: CRE
+    id: 616-305
+    name: Development processes for security
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 732-148
+    name: Vulnerability management
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 613-285
+    name: Supply chain management
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 611-158
+    name: Use SAST for malicious content
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 464-513
+    name: Assurance processes
+  ltype: Related
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=SA-11
+    name: NIST 800-53 v5
+    section: SA-11 Developer Testing and Evaluation
+  ltype: Linked To
+- document:
+    doctype: Standard
+    name: Cloud Controls Matrix
+    section: Supply Chain Management, Transparency, and Accountability
+    sectionID: STA
+  ltype: Linked To
+- document:
+    doctype: Standard
+    name: ISO 27001
+    section: Security testing in development and acceptance
+    sectionID: '8.29'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owaspsamm.org/model/verification/security-testing/stream-a
+    name: SAMM
+    section: Scalable Baseline
+    sectionID: V-ST-A
+  ltype: Linked To
+- document:
+    doctype: Standard
+    name: Cloud Controls Matrix
+    section: Automated Application Security Testing
+    sectionID: AIS-05
+  ltype: Linked To
+- document:
+    doctype: Standard
+    name: ISO 27001
+    section: Test information
+    sectionID: '8.33'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owaspsamm.org/model/verification/security-testing/stream-b
+    name: SAMM
+    section: Deep understanding
+    sectionID: V-ST-B
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=SI-6
+    name: NIST 800-53 v5
+    section: SI-6 Security and Privacy Function Verification
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owaspsamm.org/model/verification/architecture-assessment/stream-a
+    name: SAMM
+    section: Achitecture validation
+    sectionID: V-AA-A
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=SI-7
+    name: NIST 800-53 v5
+    section: SI-7 Software, Firmware, and Information Integrity
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owaspsamm.org/model/verification/architecture-assessment/stream-b
+    name: SAMM
+    section: Achitecture mitigation
+    sectionID: V-AA-B
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owaspsamm.org/model/verification/requirements-driven-testing/stream-a
+    name: SAMM
+    section: Control verification
+    sectionID: V-RT-A
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owaspsamm.org/model/verification/requirements-driven-testing/stream-b
+    name: SAMM
+    section: Misuse/Abuse Testing
+    sectionID: V-RT-B
+  ltype: Linked To
+name: Verification

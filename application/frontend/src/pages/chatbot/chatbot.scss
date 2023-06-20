@@ -1,0 +1,78 @@
+// #SearchBar {
+//   margin: auto;
+//   padding-bottom: 7px;
+// }
+
+// #SearchButton{
+//   margin: auto;
+//   padding-bottom: 7px;
+// }
+
+// .search-page {
+//   background-color: #242e4c;
+//   display: flex;
+//   align-items: center;
+//   flex-direction: column;
+//   justify-content: center;
+//   padding-top: 40px;
+//   padding-bottom: 40px;
+//   min-height: 100%;
+// }
+
+// // mobile
+// @media (min-width: 0px) and (max-width: 599px) {
+//   .search-page {
+//     padding-top: 30px;
+//     padding-bottom: 30px;
+//   }
+// }
+
+
+// .chat-container {
+//   width: 1000px;
+//   display: flex;
+//   flex-direction: column;
+//   margin-top: 5rem;
+// }
+
+// .chat-messages {
+//   background-color: #e3f2fd;
+//   border: .5px solid #4f4f4f; /* Added for better visibility */
+//   border-radius: 10px;
+//   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+//   padding: 1rem;
+//   overflow-y: auto;
+//   max-height: 1000px;
+//   margin-bottom: 1rem;
+// }
+
+.chat-input {
+  background-color: #c8e6c9;
+  border-radius: 10px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 1rem;
+  // display: flex;
+  // justify-content: space-between;
+}
+
+
+.message-card {
+  background-color: white;
+  border-radius: 10px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 1rem;
+  margin-bottom: 1rem;
+  width: 100%;
+  height: 100%;
+}
+
+.user .message-card {
+  margin-left: auto;
+  background-color: #e3f2fd;
+  height: 100%;
+}
+
+.assistant .message-card {
+  margin-right: auto;
+  background-color: #c8e6c9;
+}

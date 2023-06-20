@@ -1,0 +1,38 @@
+doctype: CRE
+id: 186-540
+links:
+- document:
+    doctype: CRE
+    id: 341-076
+    name: Minimize communication
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 486-813
+    name: Configuration
+  ltype: Related
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x16-V8-Data-Protection.md
+    name: ASVS
+    section: V8.3.1
+    sectionID: Verify that sensitive data is sent to the server in the HTTP message
+      body or headers, and that query string parameters from any HTTP verb do not
+      contain sensitive data.
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/319.html
+    name: CWE
+    section: ''
+    sectionID: '319'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owasp.org/www-project-web-security-testing-guide/v42/4-Web_Application_Security_Testing/09-Testing_for_Weak_Cryptography/03-Testing_for_Sensitive_Information_Sent_via_Unencrypted_Channels.html
+    name: OWASP Web Security Testing Guide (WSTG)
+    section: WSTG-CRYP-03
+  ltype: Linked To
+name: Do not expose data through HTTP verb
+tags:
+- Configuration

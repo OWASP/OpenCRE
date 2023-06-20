@@ -1,0 +1,38 @@
+doctype: CRE
+id: 032-213
+links:
+- document:
+    doctype: CRE
+    id: 223-780
+    name: Secret storage
+    tags:
+    - Cryptography
+  ltype: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x14-V6-Cryptography.md
+    name: ASVS
+    section: V6.4.2
+    sectionID: Verify that key material is not exposed to the application but instead
+      uses an isolated security module like a vault for cryptographic operations.
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owasp-top-10-proactive-controls-2018.readthedocs.io/en/latest/c8-protect-data-everywhere.html
+    name: OWASP Proactive Controls
+    section: C8
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/320.html
+    name: CWE
+    section: ''
+    sectionID: '320'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Key_Management_Cheat_Sheet.html
+    name: OWASP Cheat Sheets
+    section: Key Management Cheat Sheet
+  ltype: Linked To
+name: Use an isolated security module for cryptographic operations

@@ -1,0 +1,39 @@
+doctype: CRE
+id: 510-324
+links:
+- document:
+    doctype: CRE
+    id: 004-517
+    name: Security requirements
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 217-168
+    name: Audit & accountability
+  ltype: Contains
+- document:
+    doctype: Standard
+    name: ISO 27001
+    section: Compliance with policies, rules and standards for information security
+    sectionID: '5.36'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owaspsamm.org/model/governance/policy-and-compliance/stream-b/
+    name: SAMM
+    section: Compliance Management
+    sectionID: G-PC-B
+  ltype: Linked To
+- document:
+    doctype: Standard
+    name: ISO 27001
+    section: Independent review of information security
+    sectionID: '5.35'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    name: ISO 27001
+    section: Contact with authorities
+    sectionID: '5.5'
+  ltype: Linked To
+name: Compliance

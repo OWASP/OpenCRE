@@ -1,0 +1,44 @@
+doctype: CRE
+id: 615-744
+links:
+- document:
+    doctype: CRE
+    id: 128-128
+    name: Strong authorization checking
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 486-813
+    name: Configuration
+  ltype: Related
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x12-V4-Access-Control.md
+    name: ASVS
+    section: V4.3.2
+    sectionID: Verify that directory browsing is disabled unless deliberately desired.
+      Additionally, applications should not allow discovery or disclosure of file
+      or directory metadata, such as Thumbs.db, .DS_Store, .git or .svn folders.
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/548.html
+    name: CWE
+    section: ''
+    sectionID: '548'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owasp.org/www-project-web-security-testing-guide/v42/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/03-Test_File_Extensions_Handling_for_Sensitive_Information.html
+    name: OWASP Web Security Testing Guide (WSTG)
+    section: WSTG-CONF-03
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/REST_Assessment_Cheat_Sheet.html
+    name: OWASP Cheat Sheets
+    section: REST Assessment Cheat Sheet
+  ltype: Linked To
+name: Protect against directory browsing/discovery attacks
+tags:
+- Configuration

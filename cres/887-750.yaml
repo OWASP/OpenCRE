@@ -1,0 +1,19 @@
+doctype: CRE
+id: 887-750
+links:
+- document:
+    doctype: CRE
+    id: 862-452
+    name: Operating processes for security
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 463-577
+    name: Incident response
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 058-083
+    name: Monitoring
+  ltype: Contains
+name: Detect and respond
