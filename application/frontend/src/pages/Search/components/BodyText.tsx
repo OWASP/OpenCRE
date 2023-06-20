@@ -13,9 +13,8 @@ export const SearchBody = () => {
       </p>
       <p>
         <b>Use the search bar or <a href="/root_cres">browse the catalogue of all top-level topics</a>, try 
-          <a href="/node/standard/Top10%202017/">the Top10 2017 page</a> and click around, or 
-          <a href="/search/session">search for "Session"</a>, or check out 
-          <a href="/cre/764-507"> CRE 764-507 </a> to access a wirde array of relevant details. This includes criteria in several
+          <a href="/node/standard/Top10%202017/">the Top10 2017 page</a> and click around, or <a href="/search/session">search for "Session"</a>, or 
+          check out <a href="/cre/764-507"> CRE 764-507 </a> or <a href="/cre/581-525">CRE 581-525</a> to access a wide array of relevant details. This includes criteria in several
           standards, testing advice, development tips, in-depth technical information, threat descriptions,
           articles, tool settings, and related topics.</b>
       </p>
