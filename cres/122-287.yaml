@@ -1,0 +1,45 @@
+doctype: CRE
+id: 122-287
+links:
+- document:
+    doctype: CRE
+    id: 742-432
+    name: Encryption algorithms
+    tags:
+    - Cryptography
+  ltype: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x14-V6-Cryptography.md
+    name: ASVS
+    section: V6.2.4
+    sectionID: Verify that random number, encryption or hashing algorithms, key lengths,
+      rounds, ciphers or modes, can be reconfigured, upgraded, or swapped at any time,
+      to protect against cryptographic breaks. ([C8](https://owasp.org/www-project-proactive-controls/#div-numbering))
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owasp-top-10-proactive-controls-2018.readthedocs.io/en/latest/c8-protect-data-everywhere.html
+    name: OWASP Proactive Controls
+    section: C8
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/326.html
+    name: CWE
+    section: ''
+    sectionID: '326'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html
+    name: OWASP Cheat Sheets
+    section: Cryptographic Storage Cheat Sheet
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Key_Management_Cheat_Sheet.html
+    name: OWASP Cheat Sheets
+    section: Key Management Cheat Sheet
+  ltype: Linked To
+name: Ensure cryptographic elements can be upgraded or replaced

@@ -43,6 +43,7 @@ export const SearchBody = () => {
         The goal is to foster better coordination among security initiatives.
       </p>
       <p>
+
         OpenCRE currently links OWASP standards (Top 10, ASVS, Proactive Controls, Cheat
         sheets, Testing guide, ZAP), plus several other sources (CWE, CAPEC, NIST-800 53, NIST-800 63b, Cloud Control
         Matrix, ISO27001, ISO27002 and PCI-DSS).

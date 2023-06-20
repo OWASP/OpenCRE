@@ -1,0 +1,200 @@
+doctype: CRE
+id: 613-285
+links:
+- document:
+    doctype: CRE
+    id: 616-305
+    name: Development processes for security
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 307-242
+    name: Security risk assessment
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 424-242
+    name: Decommissioning
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 673-475
+    name: Disallow unsupported/deprecated client-side technologies
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 154-031
+    name: Harden application by excluding unwanted functionality
+    tags:
+    - Configuration
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 462-245
+    name: Remove unnecessary elements from external components (e.g. features, documentation,
+      configuration)
+    tags:
+    - Configuration
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 613-287
+    name: Dependency integrity
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 613-286
+    name: Dependency management
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 307-507
+    name: Allow only trusted sources both build time and runtime; therefore perform
+      integrity checks on all resources and code
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 433-442
+    name: Verification
+  ltype: Related
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=SA-22
+    name: NIST 800-53 v5
+    section: SA-22 Unsupported System Components
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=SA-4
+    name: NIST 800-53 v5
+    section: SA-4 Acquisition Process
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=SR-1
+    name: NIST 800-53 v5
+    section: SR-1 Policy and Procedures
+  ltype: Linked To
+- document:
+    doctype: Standard
+    name: ISO 27001
+    section: Outsourced development
+    sectionID: '8.3'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=SR-10
+    name: NIST 800-53 v5
+    section: SR-10 Inspection of Systems or Components
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=SR-11
+    name: NIST 800-53 v5
+    section: SR-11 Component Authenticity
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=SR-12
+    name: NIST 800-53 v5
+    section: SR-12 Component Disposal
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=SR-2
+    name: NIST 800-53 v5
+    section: SR-2 Supply Chain Risk Management Plan
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=SR-3
+    name: NIST 800-53 v5
+    section: SR-3 Supply Chain Controls and Processes
+  ltype: Linked To
+- document:
+    doctype: Standard
+    name: ISO 27001
+    section: Information security in supplier relationships
+    sectionID: '5.19'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=SR-4
+    name: NIST 800-53 v5
+    section: SR-4 Provenance
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=SR-5
+    name: NIST 800-53 v5
+    section: SR-5 Acquisition Strategies, Tools, and Methods
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=SR-6
+    name: NIST 800-53 v5
+    section: SR-6 Supplier Assessments and Reviews
+  ltype: Linked To
+- document:
+    doctype: Standard
+    name: ISO 27001
+    section: Addressing information security within supplier agreements
+    sectionID: '5.2'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owaspsamm.org/model/design/security-requirements/stream-b
+    name: SAMM
+    section: Supplier security
+    sectionID: D-SR-B
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=SR-7
+    name: NIST 800-53 v5
+    section: SR-7 Supply Chain Operations Security
+  ltype: Linked To
+- document:
+    doctype: Standard
+    name: ISO 27001
+    section: Information security for use of cloud services
+    sectionID: '5.23'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=SR-8
+    name: NIST 800-53 v5
+    section: SR-8 Notification Agreements
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=SR-9
+    name: NIST 800-53 v5
+    section: SR-9 Tamper Resistance and Detection
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=SA-1
+    name: NIST 800-53 v5
+    section: SA-1 Policy and Procedures
+  ltype: Linked To
+- document:
+    doctype: Standard
+    name: ISO 27001
+    section: Managing information security in the information and communication technology
+      (ICT) supply chain
+    sectionID: '5.21'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=SA-9
+    name: NIST 800-53 v5
+    section: SA-9 External System Services
+  ltype: Linked To
+- document:
+    doctype: Standard
+    name: ISO 27001
+    section: Monitoring, review and change management of supplier services
+    sectionID: '5.22'
+  ltype: Linked To
+name: Supply chain management

@@ -1,0 +1,38 @@
+doctype: CRE
+id: 238-346
+links:
+- document:
+    doctype: CRE
+    id: 470-731
+    name: Minimize session life
+  ltype: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x12-V3-Session-management.md
+    name: ASVS
+    section: V3.3.3
+    sectionID: Verify that the application gives the option to terminate all other
+      active sessions after a successful password change (including change via password
+      reset/recovery), and that this is effective across the application, federated
+      login (if present), and any relying parties.
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/613.html
+    name: CWE
+    section: ''
+    sectionID: '613'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owasp.org/www-project-web-security-testing-guide/v42/4-Web_Application_Security_Testing/06-Session_Management_Testing/06-Testing_for_Logout_Functionality.html#testing-for-server-side-session-termination
+    name: OWASP Web Security Testing Guide (WSTG)
+    section: WSTG-SESS-06
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html
+    name: OWASP Cheat Sheets
+    section: Session Management Cheat Sheet
+  ltype: Linked To
+name: Terminate all sessions when password is changed

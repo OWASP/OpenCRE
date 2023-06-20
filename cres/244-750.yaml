@@ -1,0 +1,27 @@
+doctype: CRE
+id: 244-750
+links:
+- document:
+    doctype: CRE
+    id: 616-305
+    name: Development processes for security
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 428-544
+    name: Security awareness training
+  ltype: Related
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=SA-16
+    name: NIST 800-53 v5
+    section: SA-16 Developer-provided Training
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owaspsamm.org/model/governance/education-and-guidance/stream-a
+    name: SAMM
+    section: Training and Awareness
+    sectionID: G-EG-A
+  ltype: Linked To
+name: Technical training

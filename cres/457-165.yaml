@@ -1,0 +1,54 @@
+doctype: CRE
+id: 457-165
+links:
+- document:
+    doctype: CRE
+    id: 470-731
+    name: Minimize session life
+  ltype: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x12-V3-Session-management.md
+    name: ASVS
+    section: V3.3.1
+    sectionID: Verify that logout and expiration invalidate the session token, such
+      that the back button or a downstream relying party does not resume an authenticated
+      session, including across relying parties.
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owasp-top-10-proactive-controls-2018.readthedocs.io/en/latest/c6-implement-digital-identity.html
+    name: OWASP Proactive Controls
+    section: C6
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/613.html
+    name: CWE
+    section: ''
+    sectionID: '613'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=SC-23
+    name: NIST 800-53 v5
+    section: SC-23(1)
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owasp.org/www-project-web-security-testing-guide/v42/4-Web_Application_Security_Testing/06-Session_Management_Testing/06-Testing_for_Logout_Functionality.html#testing-for-server-side-session-termination
+    name: OWASP Web Security Testing Guide (WSTG)
+    section: WSTG-SESS-06
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html
+    name: OWASP Cheat Sheets
+    section: Session Management Cheat Sheet
+  ltype: Linked To
+- document:
+    doctype: Standard
+    name: NIST 800-63
+    section: '7.1'
+  ltype: Linked To
+name: Terminate session after logout

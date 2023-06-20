@@ -1,0 +1,56 @@
+doctype: CRE
+id: 368-633
+links:
+- document:
+    doctype: CRE
+    id: 123-124
+    name: Minimize permissions
+  ltype: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x12-V4-Access-Control.md
+    name: ASVS
+    section: V4.1.3
+    sectionID: Verify that the principle of least privilege exists - users should
+      only be able to access functions, data files, URLs, controllers, services, and
+      other resources, for which they possess specific authorization. This implies
+      protection against spoofing and elevation of privilege. ([C7](https://owasp.org/www-project-proactive-controls/#div-numbering))
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owasp-top-10-proactive-controls-2018.readthedocs.io/en/latest/c7-enforce-access-controls.html
+    name: OWASP Proactive Controls
+    section: C7
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/285.html
+    name: CWE
+    section: ''
+    sectionID: '285'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owasp.org/www-project-web-security-testing-guide/v42/4-Web_Application_Security_Testing/03-Identity_Management_Testing/01-Test_Role_Definitions.html
+    name: OWASP Web Security Testing Guide (WSTG)
+    section: WSTG-IDNT-01
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Access_Control_Cheat_Sheet.html
+    name: OWASP Cheat Sheets
+    section: Access Control Cheat Sheet
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Testing_Automation_Cheat_Sheet.html
+    name: OWASP Cheat Sheets
+    section: Authorization Testing Automation Cheat Sheet
+  ltype: Linked To
+- document:
+    doctype: Standard
+    name: ISO 27001
+    section: Privileged access rights
+    sectionID: '8.2'
+  ltype: Linked To
+name: Enforce least privilege

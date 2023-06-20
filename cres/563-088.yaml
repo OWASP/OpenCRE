@@ -1,0 +1,19 @@
+doctype: CRE
+id: 563-088
+links:
+- document:
+    doctype: CRE
+    id: 567-755
+    name: Governance processes for security
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 560-224
+    name: Planning and resource management
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 571-271
+    name: Program management
+  ltype: Contains
+name: Security organizing processes

@@ -1,0 +1,37 @@
+doctype: CRE
+id: 201-246
+links:
+- document:
+    doctype: CRE
+    id: 128-128
+    name: Strong authorization checking
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 062-850
+    name: MFA/OTP
+    tags:
+    - Cryptography
+  ltype: Related
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x12-V4-Access-Control.md
+    name: ASVS
+    section: V4.3.1
+    sectionID: Verify administrative interfaces use appropriate multi-factor authentication
+      to prevent unauthorized use.
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/419.html
+    name: CWE
+    section: ''
+    sectionID: '419'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/REST_Assessment_Cheat_Sheet.html
+    name: OWASP Cheat Sheets
+    section: REST Assessment Cheat Sheet
+  ltype: Linked To
+name: Use multifactor authentication on administrative interfaces

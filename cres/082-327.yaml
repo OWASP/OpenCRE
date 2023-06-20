@@ -1,0 +1,26 @@
+doctype: CRE
+id: 082-327
+links:
+- document:
+    doctype: CRE
+    id: 447-083
+    name: Privacy-preserving personal data logic
+  ltype: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x16-V8-Data-Protection.md
+    name: ASVS
+    section: V8.3.3
+    sectionID: Verify that users are provided clear language regarding collection
+      and use of supplied personal information and that users have provided opt-in
+      consent for the use of that data before it is used in any way.
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/285.html
+    name: CWE
+    section: ''
+    sectionID: '285'
+  ltype: Linked To
+name: Inform users clearly about the collection and use of personal data,  and use
+  it only after opt-in consent.

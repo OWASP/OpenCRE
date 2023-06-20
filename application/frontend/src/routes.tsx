@@ -3,6 +3,7 @@ import { ReactNode } from 'react';
 import { BROWSEROOT, CRE, DEEPLINK, GRAPH, INDEX, SEARCH, SECTION, SECTION_ID, STANDARD } from './const';
 import { CommonRequirementEnumeration, Graph, Search, Standard } from './pages';
 import { BrowseRootCres } from './pages/BrowseRootCres/browseRootCres';
+import { Chatbot } from './pages/chatbot/chatbot';
 import { Deeplink } from './pages/Deeplink/Deeplink';
 import { SearchName } from './pages/Search/SearchName';
 import { StandardSection } from './pages/Standard/StandardSection';
@@ -84,6 +85,12 @@ export const ROUTES: IRoute[] = [
   {
     path: `${DEEPLINK}/:nodeName`,
     component: Deeplink,
+    showHeader: true,
+    showFilter: false,
+  },
+  {
+    path: `/chatbot`,
+    component: Chatbot,
     showHeader: true,
     showFilter: false,
   },

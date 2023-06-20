@@ -1,0 +1,42 @@
+doctype: CRE
+id: 552-588
+links:
+- document:
+    doctype: CRE
+    id: 854-643
+    name: Robust business logic
+    tags:
+    - Denial Of Service protection
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 725-682
+    name: Enable configurable alert against usage anomalies
+    tags:
+    - Denial Of Service protection
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 534-605
+    name: Enforce natural sequence of business flows to avoid abuse
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 660-867
+    name: Implement business logic limits against identified business risks
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 456-535
+    name: Monitor for realistic "human time" business logic flows
+    tags:
+    - Denial Of Service protection
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 418-853
+    name: Monitor unusual activities on system
+    tags:
+    - Denial Of Service protection
+  ltype: Contains
+name: Detect and prevent unusual activity

@@ -1,0 +1,46 @@
+doctype: CRE
+id: 623-347
+links:
+- document:
+    doctype: CRE
+    id: 247-250
+    name: Access control processes
+  ltype: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x11-V2-Authentication.md
+    name: ASVS
+    section: V2.5.4
+    sectionID: Verify shared or default accounts are not present (e.g. "root", "admin",
+      or "sa").
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/16.html
+    name: CWE
+    section: ''
+    sectionID: '16'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Choosing_and_Using_Security_Questions_Cheat_Sheet.html
+    name: OWASP Cheat Sheets
+    section: Choosing and Using Security Questions Cheat Sheet
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Forgot_Password_Cheat_Sheet.html
+    name: OWASP Cheat Sheets
+    section: Forgot Password Cheat Sheet
+  ltype: Linked To
+- document:
+    doctype: Standard
+    name: NIST 800-63
+    section: 5.1.1.2
+  ltype: Linked To
+- document:
+    doctype: Standard
+    name: NIST 800-63
+    section: A.3
+  ltype: Linked To
+name: Disallow shared high privileged accounts

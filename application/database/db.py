@@ -1,3 +1,5 @@
+from sqlalchemy.orm import aliased
+import os
 import logging
 import re
 from collections import Counter
@@ -125,6 +127,35 @@ class Links(BaseModel):  # type: ignore
     )
 
 
+class Embeddings(BaseModel):  # type: ignore
+    __tablename__ = "embeddings"
+
+    embeddings = sqla.Column(sqla.String)
+    doc_type = sqla.Column(sqla.String)
+    cre_id = sqla.Column(
+        sqla.String,
+        sqla.ForeignKey("cre.id", onupdate="CASCADE", ondelete="CASCADE"),
+        default="",
+    )
+    node_id = sqla.Column(
+        sqla.String,
+        sqla.ForeignKey("node.id", onupdate="CASCADE", ondelete="CASCADE"),
+        default="",
+    )
+
+    embeddings_url = sqla.Column(sqla.String, default="")
+    embeddings_content = sqla.Column(sqla.String, default="")
+    __table_args__ = (
+        sqla.PrimaryKeyConstraint(
+            embeddings,
+            doc_type,
+            cre_id,
+            node_id,
+            name="uq_entry",
+        ),
+    )
+
+
 class CRE_Graph:
     graph: nx.Graph = None
     __instance = None
@@ -161,9 +192,9 @@ class CRE_Graph:
             graph.add_node(
                 "Node: " + str(dbnode.id),
                 internal_id=dbnode.id,
-                name=dbnode.name,
-                section=dbnode.section,
-                section_id=dbnode.section_id,
+                # name=dbnode.name,
+                # section=dbnode.section,
+                # section_id=dbnode.section_id,
             )
         else:
             logger.error("Called with dbnode being none")
@@ -203,8 +234,8 @@ class Node_collection:
     session = sqla.session
 
     def __init__(self) -> None:
-        self.graph = CRE_Graph.instance(sqla.session)
-        # self.graph = CRE_Graph.instance(session=sqla.session)
+        if not os.environ.get("NO_LOAD_GRAPH"):
+            self.graph = CRE_Graph.instance(sqla.session)
         self.session = sqla.session
 
     def __get_external_links(self) -> List[Tuple[CRE, Node, str]]:
@@ -255,6 +286,9 @@ class Node_collection:
         return cres
 
     def __introduces_cycle(self, node_from: str, node_to: str) -> Any:
+        if not self.graph:
+            logger.error("graph is null")
+            return None
         try:
             existing_cycle = nx.find_cycle(self.graph.graph)
             if existing_cycle:
@@ -527,6 +561,18 @@ class Node_collection:
 
             return []
 
+    def get_node_by_db_id(self, id: str) -> cre_defs.Node:
+        return nodeFromDB(self.session.query(Node).filter(Node.id == id).first())
+
+    def get_cre_by_db_id(self, id: str) -> cre_defs.CRE:
+        return CREfromDB(self.session.query(CRE).filter(CRE.id == id).first())
+
+    def list_node_ids_by_ntype(self, ntype: str) -> List[str]:
+        return self.session.query(Node.id).filter(Node.ntype == ntype).all()
+
+    def list_cre_ids(self) -> List[str]:
+        return self.session.query(CRE.id).all()
+
     def __get_nodes_query__(
         self,
         name: Optional[str] = None,
@@ -671,14 +717,18 @@ class Node_collection:
                 res: CRE
                 ltype = cre_defs.LinkTypes.from_str(il.type)
 
-                if il.cre == dbcre.id:
-                    res = q.filter(CRE.id == il.group).first()
+                if il.cre == dbcre.id:  # if we are a CRE in this relationship
+                    res = q.filter(
+                        CRE.id == il.group
+                    ).first()  # get the group in order to add the link
                     # if this CRE is the lower level cre the relationship will be tagged "Contains"
                     # in that case the implicit relationship is "Is Part Of"
                     # otherwise the relationship will be "Related" and we don't need to do anything
                     if ltype == cre_defs.LinkTypes.Contains:
                         # important, this is the only implicit link we have for now
                         ltype = cre_defs.LinkTypes.PartOf
+                    elif ltype == cre_defs.LinkTypes.PartOf:
+                        ltype = cre_defs.LinkTypes.Contains
                 elif il.group == dbcre.id:
                     res = q.filter(CRE.id == il.cre).first()
                     ltype = cre_defs.LinkTypes.from_str(il.type)
@@ -747,13 +797,29 @@ class Node_collection:
 
         if not dry_run:
             for _, doc in docs.items():
-                title = (
-                    doc.name.replace("/", "-")
-                    .replace(" ", "_")
-                    .replace('"', "")
-                    .replace("'", "")
-                    + ".yaml"
-                )
+                title = ""
+                if hasattr(doc, "id"):
+                    title = (
+                        doc.id.replace("/", "-")
+                        .replace(" ", "_")
+                        .replace('"', "")
+                        .replace("'", "")
+                        + ".yaml"
+                    )
+                elif hasattr(doc, "sectionID"):
+                    title = (
+                        doc.name
+                        + "_"
+                        + doc.sectionID.replace("/", "-")
+                        .replace(" ", "_")
+                        .replace('"', "")
+                        .replace("'", "")
+                        + ".yaml"
+                    )
+                else:
+                    logger.fatal(
+                        f"doc does not have neither sectionID nor id, this is a bug! {doc.__dict__}"
+                    )
                 file.writeToDisk(
                     file_title=title,
                     file_content=yaml.safe_dump(doc.todict()),
@@ -798,7 +864,8 @@ class Node_collection:
             )
             self.session.add(entry)
             self.session.commit()
-            self.graph = self.graph.add_cre(dbcre=entry, graph=self.graph)
+            if self.graph:
+                self.graph = self.graph.add_cre(dbcre=entry, graph=self.graph)
         return entry
 
     def add_node(
@@ -815,7 +882,9 @@ class Node_collection:
         entries = self.object_select(dbnode, skip_attributes=comparison_skip_attributes)
         if entries:
             entry = entries[0]
-            logger.debug(f"knew of {entry.name}:{entry.section}:{entry.link} ,updating")
+            logger.info(f"knew of {entry.name}:{entry.section}:{entry.link} ,updating")
+            if node.section and node.section != entry.section:
+                entry.section = node.section
             entry.link = node.hyperlink
             self.session.commit()
             return entry
@@ -823,8 +892,8 @@ class Node_collection:
             logger.debug(f"did not know of {dbnode.name}:{dbnode.section} ,adding")
             self.session.add(dbnode)
             self.session.commit()
-
-            self.graph = self.graph.add_dbnode(dbnode=dbnode, graph=self.graph)
+            if self.graph:
+                self.graph = self.graph.add_dbnode(dbnode=dbnode, graph=self.graph)
         return dbnode
 
     def add_internal_link(
@@ -914,9 +983,10 @@ class Node_collection:
                     InternalLinks(type=type.value, cre=cre.id, group=group.id)
                 )
                 self.session.commit()
-                self.graph.add_edge(
-                    f"CRE: {group.id}", f"CRE: {cre.id}", ltype=type.value
-                )
+                if self.graph:
+                    self.graph.add_edge(
+                        f"CRE: {group.id}", f"CRE: {cre.id}", ltype=type.value
+                    )
             else:
                 logger.warning(
                     f"A link between CREs {group.external_id}-{group.name} and"
@@ -962,9 +1032,10 @@ class Node_collection:
                     " ,adding"
                 )
                 self.session.add(Links(type=type.value, cre=cre.id, node=node.id))
-                self.graph.add_edge(
-                    f"CRE: {cre.id}", f"Node: {str(node.id)}", ltype=type.value
-                )
+                if self.graph:
+                    self.graph.add_edge(
+                        f"CRE: {cre.id}", f"Node: {str(node.id)}", ltype=type.value
+                    )
             else:
                 logger.warning(
                     f"A link between CRE {cre.external_id}"
@@ -1102,40 +1173,183 @@ class Node_collection:
         return list(set(results))
 
     def get_root_cres(self):
-        """Returns CRES that only have "Contains" links
-        Implemented via filtering graph nodes whose incoming edges are only "RELATED" type links
-        """
-
-        def node_is_root(node):
-            return node.startswith("CRE") and (
-                self.graph.graph.in_degree(node) == 0
-                or not [
-                    edge
-                    for edge in self.graph.graph.in_edges(node)
-                    if self.graph.graph.get_edge_data(*edge)["ltype"]
-                    != cre_defs.LinkTypes.Related.value
-                ]
-            )  # there are no incoming edges with relationships other than RELATED
-
-        nodes = filter(node_is_root, self.graph.graph.nodes)
-
-        result = []
-
-        for nodeid in nodes:
-            if (
-                not self.graph.graph.nodes[nodeid].get("internal_id")
-                or "internal_id" not in self.graph.graph.nodes[nodeid]
-            ):
-                logger.warning(
-                    "root cre has no internal id, this is a bug in the graph"
-                )
-                logger.warning(self.graph.graph.nodes[nodeid].get("internal_id"))
-            result.extend(
-                self.get_CREs(
-                    internal_id=self.graph.graph.nodes[nodeid].get("internal_id")
+        """Returns CRES that only have "Contains" links"""
+        linked_groups = aliased(InternalLinks)
+        linked_cres = aliased(InternalLinks)
+        cres = (
+            self.session.query(CRE)
+            .filter(
+                ~CRE.id.in_(
+                    self.session.query(InternalLinks.cre).filter(
+                        InternalLinks.type == cre_defs.LinkTypes.Contains,
+                    )
                 )
             )
+            .filter(
+                ~CRE.id.in_(
+                    self.session.query(InternalLinks.group).filter(
+                        InternalLinks.type == cre_defs.LinkTypes.PartOf,
+                    )
+                )
+            )
+            .all()
+        )
+        result = []
+        for c in cres:
+            result.extend(self.get_CREs(external_id=c.external_id))
         return result
+
+        # def node_is_root(node):
+        #     return node.startswith("CRE") and (
+        #         self.graph.graph.in_degree(node) == 0
+        #         or not [
+        #             edge
+        #             for edge in self.graph.graph.in_edges(node)
+        #             if self.graph.graph.get_edge_data(*edge)["ltype"]
+        #             != cre_defs.LinkTypes.Related.value
+        #         ]
+        #     )  # there are no incoming edges with relationships other than RELATED
+
+        # nodes = filter(node_is_root, self.graph.graph.nodes)
+
+        # result = []
+
+        # for nodeid in nodes:
+        #     if (
+        #         not self.graph.graph.nodes[nodeid].get("internal_id")
+        #         or "internal_id" not in self.graph.graph.nodes[nodeid]
+        #     ):
+        #         logger.warning(
+        #             "root cre has no internal id, this is a bug in the graph"
+        #         )
+        #         logger.warning(self.graph.graph.nodes[nodeid].get("internal_id"))
+        #     result.extend(
+        #         self.get_CREs(
+        #             internal_id=self.graph.graph.nodes[nodeid].get("internal_id")
+        #         )
+        #     )
+        # return result
+        # result = []
+        # # select distinct name from cre left join cre_links on cre.id=cre_links."group" where cre.id not in (select cre from cre_links where type='Contains');
+        # subquery = (
+        #     self.session.query(InternalLinks.cre)
+        #     .filter(InternalLinks.type == cre_defs.LinkTypes.Contains.value)
+        #     .subquery()
+        # )
+        # cre_ids = (
+        #     self.session.query(CRE.id)
+        #     .join(InternalLinks, CRE.id == InternalLinks.group,isouter=True)
+        #     .filter(~CRE.id.in_(subquery))
+        #     .distinct()
+        # )
+
+        # for cid in cre_ids:
+        #     result.extend(self.get_CREs(internal_id=cid[0]))
+        # return result
+
+    def get_embeddings_by_doc_type(self, doc_type: str) -> Dict[str, List[float]]:
+        res = {}
+        embeddings = (
+            self.session.query(Embeddings).filter(Embeddings.doc_type == doc_type).all()
+        )
+        if embeddings:
+            for entry in embeddings:
+                if doc_type == cre_defs.Credoctypes.CRE.value:
+                    res[entry.cre_id] = [float(e) for e in entry.embeddings.split(",")]
+                else:
+                    res[entry.node_id] = [float(e) for e in entry.embeddings.split(",")]
+        return res
+
+    def get_embeddings_by_doc_type_paginated(
+        self, doc_type: str, page: int = 1, per_page: int = 100
+    ) -> Tuple[Dict[str, List[float]], int, int]:
+        res = {}
+        embeddings = (
+            self.session.query(Embeddings)
+            .filter(Embeddings.doc_type == doc_type)
+            .paginate(page, per_page)
+        )
+        total_pages = embeddings.pages
+        if embeddings.items:
+            for entry in embeddings.items:
+                if doc_type == cre_defs.Credoctypes.CRE.value:
+                    res[entry.cre_id] = [float(e) for e in entry.embeddings.split(",")]
+                else:
+                    res[entry.node_id] = [float(e) for e in entry.embeddings.split(",")]
+        return res, total_pages, page
+
+    def get_embeddings_for_doc(self, doc: cre_defs.Node | cre_defs.CRE) -> Embeddings:
+        if doc.doctype == cre_defs.Credoctypes.CRE:
+            obj = self.session.query(CRE).filter(CRE.external_id == doc.id).first()
+            return (
+                self.session.query(Embeddings)
+                .filter(Embeddings.cre_id == obj.id)
+                .first()
+            )
+        else:
+            node = dbNodeFromNode(doc)
+            if not node:
+                logger.warning(
+                    f"cannot get embeddings for doc {doc.todict()} it's not translatable to a database document"
+                )
+                return None
+            obj = self.object_select(node)
+            if obj:
+                return (
+                    self.session.query(Embeddings)
+                    .filter(Embeddings.node_id == obj[0].id)
+                    .first()
+                )
+
+    def get_embedding(self, object_id: str) -> Optional[Embeddings]:
+        return (
+            self.session.query(Embeddings)
+            .filter(
+                sqla.or_(
+                    Embeddings.cre_id == object_id, Embeddings.node_id == object_id
+                )
+            )
+            .all()
+        )
+
+    def add_embedding(
+        self,
+        db_object: CRE | Node,
+        doctype: cre_defs.Credoctypes,
+        embeddings: List[float],
+        embedding_text: str,
+    ):
+        existing = self.get_embedding(db_object.id)
+        embeddings_str = ",".join([str(e) for e in embeddings])
+
+        if not existing:
+            emb = None
+            if doctype == cre_defs.Credoctypes.CRE:
+                emb = Embeddings(
+                    embeddings=embeddings_str,
+                    cre_id=db_object.id,
+                    doc_type=cre_defs.Credoctypes.CRE.value,
+                    embeddings_content=embedding_text,
+                )
+            else:
+                emb = Embeddings(
+                    embeddings=embeddings_str,
+                    node_id=db_object.id,
+                    doc_type=db_object.ntype,
+                    embeddings_content=embedding_text,
+                    embeddings_url=db_object.link,
+                )
+            self.session.add(emb)
+            self.session.commit()
+            return emb
+        else:
+            logger.debug(f"knew of embedding for object {db_object.id} ,updating")
+            self.session.commit()
+            existing[0].embeddings = embeddings_str
+            existing[0].embeddings_content = embedding_text
+            self.session.commit()
+
+            return existing
 
 
 def dbNodeFromNode(doc: cre_defs.Node) -> Optional[Node]:
@@ -1243,6 +1457,8 @@ def nodeFromDB(dbnode: Node) -> cre_defs.Node:
 
 
 def CREfromDB(dbcre: CRE) -> cre_defs.CRE:
+    if not dbcre:
+        return None
     tags = []
     if dbcre.tags:
         tags = list(set(dbcre.tags.split(",")))

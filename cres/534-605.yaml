@@ -1,0 +1,36 @@
+doctype: CRE
+id: 534-605
+links:
+- document:
+    doctype: CRE
+    id: 552-588
+    name: Detect and prevent unusual activity
+  ltype: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x19-V11-BusLogic.md
+    name: ASVS
+    section: V11.1.1
+    sectionID: Verify that the application will only process business logic flows
+      for the same user in sequential step order and without skipping steps.
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/841.html
+    name: CWE
+    section: ''
+    sectionID: '841'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owasp.org/www-project-web-security-testing-guide/v42/4-Web_Application_Security_Testing/10-Business_Logic_Testing/README.html
+    name: OWASP Web Security Testing Guide (WSTG)
+    section: WSTG-BUSL-$$
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Abuse_Case_Cheat_Sheet.html
+    name: OWASP Cheat Sheets
+    section: Abuse Case Cheat Sheet
+  ltype: Linked To
+name: Enforce natural sequence of business flows to avoid abuse

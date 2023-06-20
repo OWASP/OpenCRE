@@ -1,0 +1,32 @@
+doctype: CRE
+id: 028-254
+links:
+- document:
+    doctype: CRE
+    id: 473-177
+    name: Deploy/build
+  ltype: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x18-V10-Malicious.md
+    name: ASVS
+    section: V10.3.1
+    sectionID: Verify that if the application has a client or server auto-update feature,
+      updates should be obtained over secure channels and digitally signed. The update
+      code must validate the digital signature of the update before installing or
+      executing the update.
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/16.html
+    name: CWE
+    section: ''
+    sectionID: '16'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html
+    name: OWASP Cheat Sheets
+    section: Docker Security Cheat Sheet
+  ltype: Linked To
+name: Secure auto-updates over full stack

@@ -1,0 +1,38 @@
+doctype: CRE
+id: 736-554
+links:
+- document:
+    doctype: CRE
+    id: 836-068
+    name: Deserialization Prevention
+  ltype: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x10-V1-Architecture.md
+    name: ASVS
+    section: V1.5.2
+    sectionID: Verify that serialization is not used when communicating with untrusted
+      clients. If this is not possible, ensure that adequate integrity controls (and
+      possibly encryption if sensitive data is sent) are enforced to prevent deserialization
+      attacks including object injection.
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/502.html
+    name: CWE
+    section: ''
+    sectionID: '502'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Abuse_Case_Cheat_Sheet.html
+    name: OWASP Cheat Sheets
+    section: Abuse Case Cheat Sheet
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Deserialization_Cheat_Sheet.html
+    name: OWASP Cheat Sheets
+    section: Deserialization Cheat Sheet
+  ltype: Linked To
+name: Block serialization of content from untrusted clients

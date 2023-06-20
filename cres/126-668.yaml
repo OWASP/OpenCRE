@@ -1,0 +1,47 @@
+doctype: CRE
+id: 126-668
+links:
+- document:
+    doctype: CRE
+    id: 636-660
+    name: Technical application security controls
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 538-770
+    name: Data access control
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 400-007
+    name: Encrypt data at rest
+    tags:
+    - Cryptography
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 208-830
+    name: Manage temporary storage
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 223-780
+    name: Secret storage
+    tags:
+    - Cryptography
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 542-270
+    name: Secure random values
+    tags:
+    - Cryptography
+  ltype: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://owasp.org/Top10/A04_2021-Insecure_Design/
+    name: OWASP Top 10 2021
+    section: Insecure Design
+    sectionID: A04
+  ltype: Linked To
+name: Secure data storage

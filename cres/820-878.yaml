@@ -1,0 +1,49 @@
+doctype: CRE
+id: 820-878
+links:
+- document:
+    doctype: CRE
+    id: 820-877
+    name: Technical system documentation
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 155-155
+    name: Architecture
+  ltype: Related
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x10-V1-Architecture.md
+    name: ASVS
+    section: V1.1.4
+    sectionID: Verify documentation and justification of all the application's trust
+      boundaries, components, and significant data flows.
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/1059.html
+    name: CWE
+    section: ''
+    sectionID: '1059'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Threat_Modeling_Cheat_Sheet.html
+    name: OWASP Cheat Sheets
+    section: Threat Modeling Cheat Sheet
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Abuse_Case_Cheat_Sheet.html
+    name: OWASP Cheat Sheets
+    section: Abuse Case Cheat Sheet
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Attack_Surface_Analysis_Cheat_Sheet.html
+    name: OWASP Cheat Sheets
+    section: Attack Surface Analysis Cheat Sheet
+  ltype: Linked To
+name: Document all trust boundaries and significant data flows
+tags:
+- Architecture

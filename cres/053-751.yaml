@@ -1,0 +1,24 @@
+doctype: CRE
+id: 053-751
+links:
+- document:
+    doctype: CRE
+    id: 613-286
+    name: Dependency management
+  ltype: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x10-V1-Architecture.md
+    name: ASVS
+    section: V1.14.3
+    sectionID: Verify that the build pipeline warns of out-of-date or insecure components
+      and takes appropriate actions.
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/1104.html
+    name: CWE
+    section: ''
+    sectionID: '1104'
+  ltype: Linked To
+name: Force build pipeline to check outdated/insecure components

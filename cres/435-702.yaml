@@ -1,0 +1,30 @@
+doctype: CRE
+id: 435-702
+links:
+- document:
+    doctype: CRE
+    id: 278-646
+    name: Secure communication
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 170-772
+    name: Cryptography
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 527-034
+    name: Protect communication between application components
+    tags:
+    - Cryptography
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 426-842
+    name: Verify the authenticity of both headers and payload
+    tags:
+    - Cryptography
+  ltype: Contains
+name: Communication encryption
+tags:
+- Cryptography

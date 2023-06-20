@@ -1,0 +1,39 @@
+doctype: CRE
+id: 130-550
+links:
+- document:
+    doctype: CRE
+    id: 503-455
+    name: Input and output protection
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 545-243
+    name: Block execution/output of uploaded files
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 175-235
+    name: Validate file type of data from untrusted sources
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 040-843
+    name: File download
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 451-082
+    name: File execution
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 758-262
+    name: File storage
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 621-287
+    name: File upload
+  ltype: Contains
+name: File handling

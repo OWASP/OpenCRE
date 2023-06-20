@@ -1,0 +1,35 @@
+doctype: CRE
+id: 765-788
+links:
+- document:
+    doctype: CRE
+    id: 074-873
+    name: Data classification and handling
+  ltype: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x10-V1-Architecture.md
+    name: ASVS
+    section: V1.8.1
+    sectionID: Verify that all sensitive data is identified and classified into protection
+      levels.
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Abuse_Case_Cheat_Sheet.html
+    name: OWASP Cheat Sheets
+    section: Abuse Case Cheat Sheet
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/User_Privacy_Protection_Cheat_Sheet.html
+    name: OWASP Cheat Sheets
+    section: User Privacy Protection Cheat Sheet
+  ltype: Linked To
+- document:
+    doctype: Standard
+    name: ISO 27001
+    section: Classification of information
+    sectionID: '5.12'
+  ltype: Linked To
+name: Classify sensitive data in protection levels

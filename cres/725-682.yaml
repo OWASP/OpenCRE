@@ -1,0 +1,42 @@
+doctype: CRE
+id: 725-682
+links:
+- document:
+    doctype: CRE
+    id: 552-588
+    name: Detect and prevent unusual activity
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 842-876
+    name: Logging and error handling
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 623-550
+    name: Denial Of Service protection
+  ltype: Related
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x19-V11-BusLogic.md
+    name: ASVS
+    section: V11.1.8
+    sectionID: Verify that the application has configurable alerting when automated
+      attacks or unusual activity is detected.
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/390.html
+    name: CWE
+    section: ''
+    sectionID: '390'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Abuse_Case_Cheat_Sheet.html
+    name: OWASP Cheat Sheets
+    section: Abuse Case Cheat Sheet
+  ltype: Linked To
+name: Enable configurable alert against usage anomalies
+tags:
+- Denial Of Service protection

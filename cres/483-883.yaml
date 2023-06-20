@@ -1,0 +1,43 @@
+doctype: CRE
+id: 483-883
+links:
+- document:
+    doctype: CRE
+    id: 114-277
+    name: Session integrity
+  ltype: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x12-V3-Session-management.md
+    name: ASVS
+    section: V3.5.3
+    sectionID: Verify that stateless session tokens use digital signatures, encryption,
+      and other countermeasures to protect against tampering, enveloping, replay,
+      null cipher, and key substitution attacks.
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/345.html
+    name: CWE
+    section: ''
+    sectionID: '345'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owasp.org/www-project-web-security-testing-guide/v42/4-Web_Application_Security_Testing/09-Testing_for_Weak_Cryptography/04-Testing_for_Weak_Encryption.html
+    name: OWASP Web Security Testing Guide (WSTG)
+    section: WSTG-CRYP-04
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/JSON_Web_Token_for_Java_Cheat_Sheet.html
+    name: OWASP Cheat Sheets
+    section: JSON Web Token for Java Cheat Sheet
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/REST_Security_Cheat_Sheet.html
+    name: OWASP Cheat Sheets
+    section: REST Security Cheat Sheet
+  ltype: Linked To
+name: When using stateless tokens, ensure cryptographically secure characteristics

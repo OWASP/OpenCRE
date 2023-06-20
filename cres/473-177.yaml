@@ -1,0 +1,88 @@
+doctype: CRE
+id: 473-177
+links:
+- document:
+    doctype: CRE
+    id: 616-305
+    name: Development processes for security
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 223-780
+    name: Secret storage
+    tags:
+    - Cryptography
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 307-507
+    name: Allow only trusted sources both build time and runtime; therefore perform
+      integrity checks on all resources and code
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 347-352
+    name: Set and confirm integrity of security deployment configuration
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 263-184
+    name: Automate secure build and deployment, especially with SDI
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 171-222
+    name: Check binary integrity before deployment
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 208-355
+    name: Ensure repeatability of deployment
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 028-254
+    name: Secure auto-updates over full stack
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 253-452
+    name: Securely automate build and deployment in pipeline
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 314-131
+    name: Set proper (C) compiler flags
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 862-452
+    name: Operating processes for security
+  ltype: Related
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=SC-34
+    name: NIST 800-53 v5
+    section: SC-34 Non-modifiable Executable Programs
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owaspsamm.org/model/implementation/secure-build/stream-a
+    name: SAMM
+    section: Build Process
+    sectionID: I-SB-A
+  ltype: Linked To
+- document:
+    doctype: Standard
+    name: Cloud Controls Matrix
+    section: Automated Secure Application Deployment
+    sectionID: AIS-06
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owaspsamm.org/model/implementation/secure-deployment/stream-a
+    name: SAMM
+    section: Deployment Process
+    sectionID: I-SD-A
+  ltype: Linked To
+name: Deploy/build

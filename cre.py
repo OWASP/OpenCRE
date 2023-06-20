@@ -166,6 +166,28 @@ def main() -> None:
         action="store_true",
         help="import owasp secure headers",
     )
+    parser.add_argument(
+        "--pci_dss_3_2_in",
+        action="store_true",
+        help="import pci dss from https://www.compliancequickstart.com/",
+    )
+    parser.add_argument(
+        "--pci_dss_4_in",
+        action="store_true",
+        help="import pci dss from https://www.compliancequickstart.com/",
+    )
+    parser.add_argument(
+        "--juiceshop_in",
+        action="store_true",
+        help="import juiceshop challenges from their repo",
+    )
+
+    parser.add_argument(
+        "--generate_embeddings",
+        action="store_true",
+        help="for every node, download the text pointed to by the hyperlink and generate embeddings for the content of the specific node",
+    )
+
     args = parser.parse_args()
 
     from application.cmd import cre_main

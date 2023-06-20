@@ -20,20 +20,27 @@ export const BrowseRootCres = () => {
   const [display, setDisplay] = useState<Document[]>();
   const { error, data, refetch } = useQuery<{ data: Document }, string>(
     'cre',
-    () => fetch(`${apiUrl}/root_cres`).then((res) => res.json()).then((resjson)=>{setDisplay(resjson.data); return resjson}),
+    () =>
+      fetch(`${apiUrl}/root_cres`)
+        .then((res) => res.json())
+        .then((resjson) => {
+          setDisplay(resjson.data);
+          return resjson;
+        }),
     {
       retry: false,
       enabled: false,
       onSettled: () => {
         setLoading(false);
-      }}
+      },
+    }
   );
 
   useEffect(() => {
     window.scrollTo(0, 0);
     setLoading(true);
     refetch();
-  },[]);
+  }, []);
 
   return (
     <div className="cre-page">

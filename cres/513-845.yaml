@@ -1,0 +1,31 @@
+doctype: CRE
+id: 513-845
+links:
+- document:
+    doctype: CRE
+    id: 062-850
+    name: MFA/OTP
+    tags:
+    - Cryptography
+  ltype: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x11-V2-Authentication.md
+    name: ASVS
+    section: V2.6.3
+    sectionID: Verify that lookup secrets are resistant to offline attacks, such as
+      predictable values.
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/310.html
+    name: CWE
+    section: ''
+    sectionID: '310'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    name: NIST 800-63
+    section: 5.1.2.2
+  ltype: Linked To
+name: Use unpredictable multi-factor lookup secrets

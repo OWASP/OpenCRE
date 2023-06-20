@@ -1,0 +1,27 @@
+doctype: CRE
+id: 447-083
+links:
+- document:
+    doctype: CRE
+    id: 854-643
+    name: Robust business logic
+    tags:
+    - Denial Of Service protection
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 762-451
+    name: Ensure users can remove or export their data
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 082-327
+    name: Inform users clearly about the collection and use of personal data,  and
+      use it only after opt-in consent.
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 362-550
+    name: Personal data handling
+  ltype: Related
+name: Privacy-preserving personal data logic

@@ -1,0 +1,30 @@
+doctype: CRE
+id: 611-158
+links:
+- document:
+    doctype: CRE
+    id: 433-442
+    name: Verification
+  ltype: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x18-V10-Malicious.md
+    name: ASVS
+    section: V10.1.1
+    sectionID: Verify that a code analysis tool is in use that can detect potentially
+      malicious code, such as time functions, unsafe file operations and network connections.
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/749.html
+    name: CWE
+    section: ''
+    sectionID: '749'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Third_Party_Javascript_Management_Cheat_Sheet.html
+    name: OWASP Cheat Sheets
+    section: Third Party Javascript Management Cheat Sheet
+  ltype: Linked To
+name: Use SAST for malicious content

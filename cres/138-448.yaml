@@ -1,0 +1,34 @@
+doctype: CRE
+id: 138-448
+links:
+- document:
+    doctype: CRE
+    id: 586-842
+    name: Secure user management
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 270-568
+    name: Authentication mechanism
+  ltype: Related
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x11-V2-Authentication.md
+    name: ASVS
+    section: V2.3.3
+    sectionID: Verify that renewal instructions are sent with sufficient time to renew
+      time bound authenticators.
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/287.html
+    name: CWE
+    section: ''
+    sectionID: '287'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    name: NIST 800-63
+    section: 6.1.4
+  ltype: Linked To
+name: Inform users for authentication renewal

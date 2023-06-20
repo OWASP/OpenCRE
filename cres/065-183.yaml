@@ -1,0 +1,30 @@
+doctype: CRE
+id: 065-183
+links:
+- document:
+    doctype: CRE
+    id: 586-842
+    name: Secure user management
+  ltype: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x11-V2-Authentication.md
+    name: ASVS
+    section: V2.10.2
+    sectionID: Verify that if passwords are required for service authentication, the
+      service account used is not a default credential. (e.g. root/root or admin/admin
+      are default in some services during installation).
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/255.html
+    name: CWE
+    section: ''
+    sectionID: '255'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    name: NIST 800-63
+    section: 5.1.1.1
+  ltype: Linked To
+name: Disallow default credentials

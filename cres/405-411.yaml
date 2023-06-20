@@ -1,0 +1,27 @@
+doctype: CRE
+id: 405-411
+links:
+- document:
+    doctype: CRE
+    id: 541-441
+    name: Validate HTTP request headers
+    tags:
+    - Injection protection
+  ltype: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x22-V14-Config.md
+    name: ASVS
+    section: V14.5.2
+    sectionID: Verify that the supplied Origin header is not used for authentication
+      or access control decisions, as the Origin header can easily be changed by an
+      attacker.
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/346.html
+    name: CWE
+    section: ''
+    sectionID: '346'
+  ltype: Linked To
+name: Avoid using of Origin header for authentication of access control

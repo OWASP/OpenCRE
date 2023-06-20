@@ -1,0 +1,15 @@
+doctype: CRE
+id: 683-036
+links:
+- document:
+    doctype: CRE
+    id: 278-646
+    name: Secure communication
+  ltype: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=SC-40
+    name: NIST 800-53 v5
+    section: SC-40 Wireless Link Protection
+  ltype: Linked To
+name: Wireless link protection

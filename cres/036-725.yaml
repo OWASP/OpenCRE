@@ -1,0 +1,32 @@
+doctype: CRE
+id: 036-725
+links:
+- document:
+    doctype: CRE
+    id: 636-347
+    name: HTTP security headers
+  ltype: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x22-V14-Config.md
+    name: ASVS
+    section: V14.4.1
+    sectionID: Verify that every HTTP response contains a Content-Type header. Also
+      specify a safe character set (e.g., UTF-8, ISO-8859-1) if the content types
+      are text/*, /+xml and application/xml. Content must match with the provided
+      Content-Type header.
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/173.html
+    name: CWE
+    section: ''
+    sectionID: '173'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Content_Security_Policy_Cheat_Sheet.html
+    name: OWASP Cheat Sheets
+    section: Content Security Policy Cheat Sheet
+  ltype: Linked To
+name: Set content HTTP response type

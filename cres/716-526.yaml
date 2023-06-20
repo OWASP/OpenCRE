@@ -1,0 +1,33 @@
+doctype: CRE
+id: 716-526
+links:
+- document:
+    doctype: CRE
+    id: 177-260
+    name: Session management
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 704-530
+    name: Enforce high entropy session tokens
+    tags:
+    - Cryptography
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 727-043
+    name: Ensure secure algorithms for generating session tokens
+    tags:
+    - Cryptography
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 002-630
+    name: Generate a new session token after authentication
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 455-358
+    name: When storing session tokens in browser, use secure methods only
+  ltype: Contains
+name: Session token generation

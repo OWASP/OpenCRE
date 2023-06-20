@@ -1,0 +1,21 @@
+doctype: CRE
+id: 424-242
+links:
+- document:
+    doctype: CRE
+    id: 616-305
+    name: Development processes for security
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 613-285
+    name: Supply chain management
+  ltype: Related
+- document:
+    doctype: Standard
+    hyperlink: https://owaspsamm.org/model/operations/operational-management/stream-b
+    name: SAMM
+    section: System Decommissioning / Legacy Management
+    sectionID: O-OM-B
+  ltype: Linked To
+name: Decommissioning

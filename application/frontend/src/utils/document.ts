@@ -10,6 +10,7 @@ export const getDocumentDisplayName = (document: Document) => {
     document.doctype,
     document.id,
     document.name,
+    document.version,
     document.sectionID,
     document.section,
     document.subsection,

@@ -1,0 +1,52 @@
+doctype: CRE
+id: 235-658
+links:
+- document:
+    doctype: CRE
+    id: 586-842
+    name: Secure user management
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 520-617
+    name: Credential recovery
+  ltype: Related
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x11-V2-Authentication.md
+    name: ASVS
+    section: V2.5.5
+    sectionID: Verify that if an authentication factor is changed or replaced, that
+      the user is notified of this event.
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/304.html
+    name: CWE
+    section: ''
+    sectionID: '304'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owasp.org/www-project-web-security-testing-guide/v42/4-Web_Application_Security_Testing/04-Authentication_Testing/02-Testing_for_Default_Credentials.html
+    name: OWASP Web Security Testing Guide (WSTG)
+    section: WSTG-ATHN-02
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Choosing_and_Using_Security_Questions_Cheat_Sheet.html
+    name: OWASP Cheat Sheets
+    section: Choosing and Using Security Questions Cheat Sheet
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Forgot_Password_Cheat_Sheet.html
+    name: OWASP Cheat Sheets
+    section: Forgot Password Cheat Sheet
+  ltype: Linked To
+- document:
+    doctype: Standard
+    name: NIST 800-63
+    section: 6.1.2.3
+  ltype: Linked To
+name: Notify user about credential change

@@ -1,0 +1,36 @@
+doctype: CRE
+id: 404-126
+links:
+- document:
+    doctype: CRE
+    id: 062-850
+    name: MFA/OTP
+    tags:
+    - Cryptography
+  ltype: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x11-V2-Authentication.md
+    name: ASVS
+    section: V2.8.4
+    sectionID: Verify that time-based OTP can be used only once within the validity
+      period.
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/287.html
+    name: CWE
+    section: ''
+    sectionID: '287'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    name: NIST 800-63
+    section: 5.1.4.2
+  ltype: Linked To
+- document:
+    doctype: Standard
+    name: NIST 800-63
+    section: 5.1.5.2
+  ltype: Linked To
+name: Use time-based OTP only once

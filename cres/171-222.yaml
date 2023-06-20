@@ -1,0 +1,24 @@
+doctype: CRE
+id: 171-222
+links:
+- document:
+    doctype: CRE
+    id: 473-177
+    name: Deploy/build
+  ltype: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x10-V1-Architecture.md
+    name: ASVS
+    section: V1.14.2
+    sectionID: Verify that binary signatures, trusted connections, and verified endpoints
+      are used to deploy binaries to remote devices.
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/494.html
+    name: CWE
+    section: ''
+    sectionID: '494'
+  ltype: Linked To
+name: Check binary integrity before deployment

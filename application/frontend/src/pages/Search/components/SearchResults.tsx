@@ -12,7 +12,7 @@ export const SearchResults = ({ results }) => {
           </div>
         ))}
       </>
-    )
+    );
   }
-  return <></>
+  return <></>;
 };

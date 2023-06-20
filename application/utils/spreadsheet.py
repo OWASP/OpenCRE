@@ -15,7 +15,7 @@ logging.basicConfig()
 
 
 def readSpreadsheet(
-    url: str, cres_loc: str, alias: str, validate: bool = True
+    url: str, alias: str, validate: bool = True, parse_numbered_only=True
 ) -> Dict[str, Any]:
     """given remote google spreadsheet url,
     reads each workbook into a collection of documents"""
@@ -27,12 +27,16 @@ def readSpreadsheet(
         logger.info('accessing spreadsheet "%s" : "%s"' % (alias, url))
         result = {}
         for wsh in sh.worksheets():
-            if wsh.title[0].isdigit():
+            if parse_numbered_only and wsh.title[0].isdigit():
                 logger.info(
                     "handling worksheet %s  "
                     "(remember, only numbered worksheets"
                     " will be processed by convention)" % wsh.title
                 )
+                records = wsh.get_all_records()
+                toyaml = yaml.safe_load(yaml.safe_dump(records))
+                result[wsh.title] = toyaml
+            elif not parse_numbered_only:
                 records = wsh.get_all_records()
                 toyaml = yaml.safe_load(yaml.safe_dump(records))
                 result[wsh.title] = toyaml

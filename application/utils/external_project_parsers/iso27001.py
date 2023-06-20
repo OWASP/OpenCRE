@@ -95,7 +95,11 @@ def parse_iso(url: str, cache: db.Node_collection):
             stand = cache.add_node(defs.Standard(name="ISO 27001", section=iso))
             for cre in node_cres:
                 logger.debug(f"Added link between ISO {iso} and CRE {cre.external_id}")
-                cache.add_link(cre, stand)
+                cache.add_link(
+                    cre=cre,
+                    node=stand,
+                    type=defs.LinkTypes.LinkedTo,
+                )
 
     # nist_map = make_nist_map(cache)
     # re_nist = re.compile("(\w+-\d+)")

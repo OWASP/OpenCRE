@@ -1,0 +1,32 @@
+doctype: CRE
+id: 284-521
+links:
+- document:
+    doctype: CRE
+    id: 128-128
+    name: Strong authorization checking
+  ltype: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x12-V4-Access-Control.md
+    name: ASVS
+    section: V4.3.3
+    sectionID: Verify the application has additional authorization (such as step up
+      or adaptive authentication) for lower value systems, and / or segregation of
+      duties for high value applications to enforce anti-fraud controls as per the
+      risk of application and past fraud.
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/732.html
+    name: CWE
+    section: ''
+    sectionID: '732'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/REST_Assessment_Cheat_Sheet.html
+    name: OWASP Cheat Sheets
+    section: REST Assessment Cheat Sheet
+  ltype: Linked To
+name: Enforce additional authorization and segregation of duties

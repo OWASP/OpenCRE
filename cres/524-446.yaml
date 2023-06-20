@@ -1,0 +1,49 @@
+doctype: CRE
+id: 524-446
+links:
+- document:
+    doctype: CRE
+    id: 062-850
+    name: MFA/OTP
+    tags:
+    - Cryptography
+  ltype: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x11-V2-Authentication.md
+    name: ASVS
+    section: V2.2.6
+    sectionID: Verify replay resistance through the mandated use of One-time Passwords
+      (OTP) devices, cryptographic authenticators, or lookup codes.
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/308.html
+    name: CWE
+    section: ''
+    sectionID: '308'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html
+    name: OWASP Cheat Sheets
+    section: Authentication Cheat Sheet
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Protection_Cheat_Sheet.html
+    name: OWASP Cheat Sheets
+    section: Transport Layer Protection Cheat Sheet
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/TLS_Cipher_String_Cheat_Sheet.html
+    name: OWASP Cheat Sheets
+    section: TLS Cipher String Cheat Sheet
+  ltype: Linked To
+- document:
+    doctype: Standard
+    name: NIST 800-63
+    section: 5.2.8
+  ltype: Linked To
+name: Mandate using multi factor authentication

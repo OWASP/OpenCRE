@@ -1,0 +1,32 @@
+doctype: CRE
+id: 646-227
+links:
+- document:
+    doctype: CRE
+    id: 062-850
+    name: MFA/OTP
+    tags:
+    - Cryptography
+  ltype: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x11-V2-Authentication.md
+    name: ASVS
+    section: V2.8.5
+    sectionID: Verify that if a time-based multi-factor OTP token is re-used during
+      the validity period, it is logged and rejected with secure notifications being
+      sent to the holder of the device.
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/287.html
+    name: CWE
+    section: ''
+    sectionID: '287'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    name: NIST 800-63
+    section: 5.1.5.2
+  ltype: Linked To
+name: Log and reject re-use of valid time-based OTP tokens and notify device holder.

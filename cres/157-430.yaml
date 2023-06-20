@@ -1,0 +1,25 @@
+doctype: CRE
+id: 157-430
+links:
+- document:
+    doctype: CRE
+    id: 208-830
+    name: Manage temporary storage
+  ltype: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x16-V8-Data-Protection.md
+    name: ASVS
+    section: V8.1.2
+    sectionID: Verify that all cached or temporary copies of sensitive data stored
+      on the server are protected from unauthorized access or purged/invalidated after
+      the authorized user accesses the sensitive data.
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/524.html
+    name: CWE
+    section: ''
+    sectionID: '524'
+  ltype: Linked To
+name: Protect and clear cached sensitive data

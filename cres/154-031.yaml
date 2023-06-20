@@ -1,0 +1,31 @@
+doctype: CRE
+id: 154-031
+links:
+- document:
+    doctype: CRE
+    id: 613-285
+    name: Supply chain management
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 486-813
+    name: Configuration
+  ltype: Related
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x18-V10-Malicious.md
+    name: ASVS
+    section: V10.2.6
+    sectionID: Verify that the application source code and third party libraries do
+      not contain Easter eggs or any other potentially unwanted functionality.
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/507.html
+    name: CWE
+    section: ''
+    sectionID: '507'
+  ltype: Linked To
+name: Harden application by excluding unwanted functionality
+tags:
+- Configuration

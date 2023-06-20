@@ -1,0 +1,42 @@
+doctype: CRE
+id: 240-274
+links:
+- document:
+    doctype: CRE
+    id: 843-841
+    name: Log discretely
+  ltype: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x15-V7-Error-Logging.md
+    name: ASVS
+    section: V7.1.2
+    sectionID: Verify that the application does not log other sensitive data as defined
+      under local privacy laws or relevant security policy.
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owasp-top-10-proactive-controls-2018.readthedocs.io/en/latest/c9-implement-security-logging-monitoring.html
+    name: OWASP Proactive Controls
+    section: C9
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/532.html
+    name: CWE
+    section: ''
+    sectionID: '532'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owasp.org/www-project-web-security-testing-guide/v42/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/02-Test_Application_Platform_Configuration.html#log-review
+    name: OWASP Web Security Testing Guide (WSTG)
+    section: WSTG-CONF-02
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html
+    name: OWASP Cheat Sheets
+    section: Logging Cheat Sheet
+  ltype: Linked To
+name: Log only non-sensitive data

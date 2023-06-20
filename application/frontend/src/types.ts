@@ -13,6 +13,7 @@ export interface Document {
   tags?: string[];
   tooltype?: string;
   sectionID?: string;
+  version?: string;
 }
 export interface LinkedDocument {
   document: Document;

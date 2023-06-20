@@ -1,0 +1,45 @@
+doctype: CRE
+id: 806-367
+links:
+- document:
+    doctype: CRE
+    id: 161-451
+    name: Output encoding and injection prevention
+    tags:
+    - Injection protection
+    - XSS protection
+  ltype: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x10-V1-Architecture.md
+    name: ASVS
+    section: V1.5.4
+    sectionID: Verify that output encoding occurs close to or by the interpreter for
+      which it is intended.
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owasp-top-10-proactive-controls-2018.readthedocs.io/en/latest/c4-encode-escape-data.html
+    name: OWASP Proactive Controls
+    section: C4
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/116.html
+    name: CWE
+    section: ''
+    sectionID: '116'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Abuse_Case_Cheat_Sheet.html
+    name: OWASP Cheat Sheets
+    section: Abuse Case Cheat Sheet
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Deserialization_Cheat_Sheet.html
+    name: OWASP Cheat Sheets
+    section: Deserialization Cheat Sheet
+  ltype: Linked To
+name: Encode output near the consuming interpreter

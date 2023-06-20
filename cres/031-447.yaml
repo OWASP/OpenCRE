@@ -1,0 +1,52 @@
+doctype: CRE
+id: 031-447
+links:
+- document:
+    doctype: CRE
+    id: 010-308
+    name: Input validation
+    tags:
+    - Injection protection
+    - XSS protection
+  ltype: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x13-V5-Validation-Sanitization-Encoding.md
+    name: ASVS
+    section: V5.1.3
+    sectionID: Verify that all input (HTML form fields, REST requests, URL parameters,
+      HTTP headers, cookies, batch files, RSS feeds, etc) is validated using positive
+      validation (allow lists).
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owasp-top-10-proactive-controls-2018.readthedocs.io/en/latest/c5-validate-all-inputs.html
+    name: OWASP Proactive Controls
+    section: C5
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/20.html
+    name: CWE
+    section: ''
+    sectionID: '20'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owasp.org/www-project-web-security-testing-guide/v42/4-Web_Application_Security_Testing/07-Input_Validation_Testing/
+    name: OWASP Web Security Testing Guide (WSTG)
+    section: WSTG-INPV-00
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Mass_Assignment_Cheat_Sheet.html
+    name: OWASP Cheat Sheets
+    section: Mass Assignment Cheat Sheet
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html
+    name: OWASP Cheat Sheets
+    section: Input Validation Cheat Sheet
+  ltype: Linked To
+name: Whitelist all external (HTTP) input

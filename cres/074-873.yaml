@@ -1,0 +1,53 @@
+doctype: CRE
+id: 074-873
+links:
+- document:
+    doctype: CRE
+    id: 004-517
+    name: Security requirements
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 287-823
+    name: Asset management
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 724-770
+    name: Technical application access control
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 268-272
+    name: Classify personal data regarding retention so that old or outdated data
+      is deleted
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 765-788
+    name: Classify sensitive data in protection levels
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 731-120
+    name: Document requirements for (data) protection levels
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 227-045
+    name: Identify sensitive data and subject it to a policy
+  ltype: Contains
+- document:
+    doctype: Standard
+    name: ISO 27001
+    section: Information deletion
+    sectionID: '8.1'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owaspsamm.org/model/operations/operational-management/stream-a
+    name: SAMM
+    section: Data Protection
+    sectionID: O-OM-A
+  ltype: Linked To
+name: Data classification and handling

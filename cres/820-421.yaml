@@ -1,0 +1,26 @@
+doctype: CRE
+id: 820-421
+links:
+- document:
+    doctype: CRE
+    id: 541-441
+    name: Validate HTTP request headers
+    tags:
+    - Injection protection
+  ltype: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x22-V14-Config.md
+    name: ASVS
+    section: V14.5.4
+    sectionID: Verify that HTTP headers added by a trusted proxy or SSO devices, such
+      as a bearer token, are authenticated by the application.
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://cwe.mitre.org/data/definitions/306.html
+    name: CWE
+    section: ''
+    sectionID: '306'
+  ltype: Linked To
+name: Authenticate HTTP headers added by a trusted proxy or SSO device

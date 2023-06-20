@@ -1,0 +1,32 @@
+doctype: CRE
+id: 820-877
+links:
+- document:
+    doctype: CRE
+    id: 616-305
+    name: Development processes for security
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 820-878
+    name: Document all trust boundaries and significant data flows
+    tags:
+    - Architecture
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 287-305
+    name: Document explicit key/secret management
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 162-655
+    name: Documentation of all components' business or security function
+  ltype: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=SA-5
+    name: NIST 800-53 v5
+    section: SA-5 System Documentation
+  ltype: Linked To
+name: Technical system documentation
