@@ -439,7 +439,7 @@ def login():
 def logged_in_user():
     if os.environ.get("NO_LOGIN"):
         return "foobar"
-    return session.get("name")
+    return session.get("email")
 
 
 @app.route("/rest/v1/callback")
