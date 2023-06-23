@@ -367,7 +367,8 @@ def login_required(f):
         if os.environ.get("NO_LOGIN"):
             return f(*args, **kwargs)
         if "google_id" not in session or "name" not in session:
-            return abort(401)
+            allowed_domains = os.environ.get("LOGIN_ALLOWED_DOMAINS")
+            abort(401,description=f"You need an account with one of the following providers to access this functionality {allowed_domains}")
         else:
             return f(*args, **kwargs)
 
@@ -476,7 +477,8 @@ def callback():
         and allowed_domains != ["*"]
         and not any([id_info.get("email").endswith(x) for x in allowed_domains])
     ):
-        abort(401)
+        allowed_domains = os.environ.get("LOGIN_ALLOWED_DOMAINS")
+        abort(401,description=f"You need an account with one of the following providers to access this functionality {allowed_domains}")
     return redirect("/chatbot")
 
 
