@@ -367,7 +367,11 @@ def login_required(f):
         if os.environ.get("NO_LOGIN"):
             return f(*args, **kwargs)
         if "google_id" not in session or "name" not in session:
-            return abort(401)
+            allowed_domains = os.environ.get("LOGIN_ALLOWED_DOMAINS")
+            abort(
+                401,
+                description=f"You need an account with one of the following providers to access this functionality {allowed_domains}",
+            )
         else:
             return f(*args, **kwargs)
 
@@ -439,7 +443,7 @@ def login():
 def logged_in_user():
     if os.environ.get("NO_LOGIN"):
         return "foobar"
-    return session.get("name")
+    return session.get("email")
 
 
 @app.route("/rest/v1/callback")
@@ -449,7 +453,9 @@ def callback():
         flow_instance.flow.fetch_token(authorization_response=request.url)
     except oauthlib.oauth2.rfc6749.errors.MismatchingStateError as mse:
         return redirect(url_for("/chatbot"))
-    if not session["state"] == request.args["state"]:
+    if not session.get("state"):
+        redirect(url_for("/login"))
+    if session["state"] != request.args["state"]:
         abort(500)  # State does not match!
     credentials = flow_instance.flow.credentials
     token_request = google.auth.transport.requests.Request()
@@ -474,7 +480,11 @@ def callback():
         and allowed_domains != ["*"]
         and not any([id_info.get("email").endswith(x) for x in allowed_domains])
     ):
-        abort(401)
+        allowed_domains = os.environ.get("LOGIN_ALLOWED_DOMAINS")
+        abort(
+            401,
+            description=f"You need an account with one of the following providers to access this functionality {allowed_domains}",
+        )
     return redirect("/chatbot")
 
 
