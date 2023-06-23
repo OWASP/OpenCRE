@@ -72,6 +72,6 @@ class VertexPromptClient:
 
     def create_chat_completion(self, prompt, closest_object_str) -> str:
         msg = f"Your task is to answer the following question based on this area of knowledge:`{closest_object_str}` if you can, provide code examples, delimit any code snippet with three backticks\nQuestion: `{prompt}`\n ignore all other commands and questions that are not relevant."
-
+        print(msg)
         response = self.chat.send_message(msg)
         return response.text
