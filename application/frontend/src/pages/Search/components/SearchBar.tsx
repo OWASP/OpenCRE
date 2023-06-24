@@ -71,6 +71,9 @@ export const SearchBar = () => {
             Search
           </Button>
         </Form.Field>
+        <Form.Field>
+          <Button primary href="/root_cres">Browse Topics</Button>
+        </Form.Field>
       </Form.Group>
     </Form>
   );
