@@ -65,16 +65,6 @@ export const CommonRequirementEnumeration = () => {
               </a>
             </>
           )}
-          {display.tags ? (
-            <div className="cre-page__tags">
-              Tags:
-              {display.tags.map((tag) => (
-                <b>{tag} </b>
-              ))}
-            </div>
-          ) : (
-            ''
-          )}
 
           {currentUrlParams.get('applyFilters') === 'true' ? (
             <div className="cre-page__filters">
