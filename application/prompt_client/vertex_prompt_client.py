@@ -61,7 +61,7 @@ class VertexPromptClient:
             logger.fatal("env SERVICE_ACCOUNT_CREDENTIALS has not been set")
 
         # vertexai.init(project=project_id, location=location)
-        self.chat_model = ChatModel.from_pretrained("codechat-bison@001")
+        self.chat_model = ChatModel.from_pretrained("code-bison@001")
         self.embeddings_model = TextEmbeddingModel.from_pretrained(
             "textembedding-gecko@001"
         )
