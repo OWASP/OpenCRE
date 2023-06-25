@@ -453,9 +453,9 @@ def callback():
     try:
         flow_instance.flow.fetch_token(authorization_response=request.url)
     except oauthlib.oauth2.rfc6749.errors.MismatchingStateError as mse:
-        return redirect(url_for("/chatbot"))
+        return redirect(url_for("web.chat_cre"))
     if not session.get("state"):
-        redirect(url_for("/login"))
+        redirect(url_for("web.login"))
     if session["state"] != request.args["state"]:
         abort(500)  # State does not match!
     credentials = flow_instance.flow.credentials
