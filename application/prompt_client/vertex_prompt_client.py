@@ -23,6 +23,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 CODE_MAX_OUTPUT_TOKENS = 2048
+
 class VertexPromptClient:
     context = (
         'You are "chat-CRE" a chatbot for security information that exists in opencre.org. '
@@ -61,7 +62,7 @@ class VertexPromptClient:
             logger.fatal("env SERVICE_ACCOUNT_CREDENTIALS has not been set")
 
         # vertexai.init(project=project_id, location=location)
-        self.chat_model = ChatModel.from_pretrained("code-bison@001")
+        self.chat_model = ChatModel.from_pretrained("chat-bison@001")
         self.embeddings_model = TextEmbeddingModel.from_pretrained(
             "textembedding-gecko@001"
         )
