@@ -433,8 +433,13 @@ class PromptHandler:
         logger.info(
             f"The prompt {prompt}, was most similar to object \n{closest_object}\n, with similarity:{similarity}"
         )
+        closest_content = ""
+        if closest_object.hyperlink:
+            emb = db.get_embedding(closest_id)
+            if emb:
+                closest_content = emb[0].embeddings_content
         if closest_object:
-            closest_object_str = "\n".join(
+            closest_object_str = f"{closest_content}"+"\n".join(
                 [f"{k}:{v}" for k, v in closest_object.shallow_copy().todict().items()]
             )[:8000]
             # vertex and openai have a model limit of 8100 characters
