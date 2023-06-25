@@ -31,7 +31,7 @@ from flask import (
 from google.oauth2 import id_token
 from google_auth_oauthlib.flow import Flow
 from application.utils.spreadsheet import write_csv
-from pip._vendor import cachecontrol
+import oauthlib 
 import google.auth.transport.requests
 
 ITEMS_PER_PAGE = 20
@@ -434,7 +434,9 @@ def login():
     flow_instance = CREFlow.instance()
     authorization_url, state = flow_instance.flow.authorization_url()
     session["state"] = state
-
+    
+    print(authorization_url)
+    
     return redirect(authorization_url)
 
 
@@ -444,7 +446,6 @@ def logged_in_user():
     if os.environ.get("NO_LOGIN"):
         return "foobar"
     return session.get("email")
-
 
 @app.route("/rest/v1/callback")
 def callback():
