@@ -181,15 +181,10 @@ class PromptHandler:
         self.ai_client = None
         if os.environ.get("SERVICE_ACCOUNT_CREDENTIALS"):
             logger.info("using Google Vertex AI engine")
-            self.ai_client = vertex_prompt_client.VertexPromptClient(
-                os.environ.get("VERTEX_PROJECT_ID"),
-                os.environ.get("VERTEX_PROJECT_LOCATION"),
-            )
+            self.ai_client = vertex_prompt_client.VertexPromptClient()
         elif os.getenv("OPENAI_API_KEY"):
             logger.info("using Open AI engine")
-            self.ai_client = openai_prompt_client.OpenAIPromptClient(
-                os.getenv("OPENAI_API_KEY")
-            )
+            self.ai_client = openai_prompt_client.OpenAIPromptClient(os.getenv("OPENAI_API_KEY"))
         else:
             logger.error(
                 "cannot instantiate ai client, neither OPENAI_API_KEY nor GOOGLE_APPLICATION_CREDENTIALS are set "
