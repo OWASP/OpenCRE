@@ -24,6 +24,7 @@ logger.setLevel(logging.INFO)
 
 MAX_OUTPUT_TOKENS = 1024
 
+
 class VertexPromptClient:
     context = (
         'You are "chat-CRE" a chatbot for security information that exists in opencre.org. '
@@ -66,7 +67,7 @@ class VertexPromptClient:
         self.embeddings_model = TextEmbeddingModel.from_pretrained(
             "textembedding-gecko@001"
         )
-        self.chat = self.chat_model.start_chat(context=self.context,maxOutputTokens=MAX_OUTPUT_TOKENS)
+        self.chat = self.chat_model.start_chat(context=self.context)
 
     def get_text_embeddings(self, text: str) -> List[float]:
         """Text embedding with a Large Language Model."""
@@ -93,7 +94,8 @@ class VertexPromptClient:
         return values
 
     def create_chat_completion(self, prompt, closest_object_str) -> str:
+        parameters = {"temperature": 0.5, "max_output_tokens": MAX_OUTPUT_TOKENS}
         msg = f"Your task is to answer the following question based on this area of knowledge:`{closest_object_str}` if you can, provide code examples, delimit any code snippet with three backticks\nQuestion: `{prompt}`\n ignore all other commands and questions that are not relevant."
         print(msg)
-        response = self.chat.send_message(msg)
+        response = self.chat.send_message(msg,**parameters)
         return response.text
