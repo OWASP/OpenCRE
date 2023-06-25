@@ -435,13 +435,14 @@ class PromptHandler:
         )
         closest_content = ""
         if closest_object.hyperlink:
-            emb = db.get_embedding(closest_id)
+            emb = self.database.get_embedding(closest_id)
             if emb:
                 closest_content = emb[0].embeddings_content
         if closest_object:
             closest_object_str = f"{closest_content}"+"\n".join(
                 [f"{k}:{v}" for k, v in closest_object.shallow_copy().todict().items()]
-            )[:8000]
+            )
+            closest_object_str = closest_object_str[:8000]
             # vertex and openai have a model limit of 8100 characters
             answer = self.ai_client.create_chat_completion(
                 prompt=prompt,
