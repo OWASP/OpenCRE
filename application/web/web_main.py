@@ -434,9 +434,6 @@ def login():
     flow_instance = CREFlow.instance()
     authorization_url, state = flow_instance.flow.authorization_url()
     session["state"] = state
-    
-    print(authorization_url)
-    
     return redirect(authorization_url)
 
 
