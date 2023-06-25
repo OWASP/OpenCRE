@@ -22,7 +22,7 @@ logging.basicConfig()
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-CODE_MAX_OUTPUT_TOKENS = 2048
+MAX_OUTPUT_TOKENS = 1024
 
 class VertexPromptClient:
     context = (
@@ -66,7 +66,7 @@ class VertexPromptClient:
         self.embeddings_model = TextEmbeddingModel.from_pretrained(
             "textembedding-gecko@001"
         )
-        self.chat = self.chat_model.start_chat(context=self.context,maxOutputTokens=CODE_MAX_OUTPUT_TOKENS)
+        self.chat = self.chat_model.start_chat(context=self.context,maxOutputTokens=MAX_OUTPUT_TOKENS)
 
     def get_text_embeddings(self, text: str) -> List[float]:
         """Text embedding with a Large Language Model."""
