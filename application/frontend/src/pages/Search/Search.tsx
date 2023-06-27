@@ -10,7 +10,7 @@ export const Search = () => {
   return (
     <div className="search-page">
       <Header as="h1" className="search-page__heading">
-        Common Requirement Enumeration
+        Open Common Requirement Enumeration
       </Header>
 
       <Header as="h4" className="search-page__sub-heading">

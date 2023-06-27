@@ -301,7 +301,8 @@ export const Chatbot = () => {
   function displayDocument(d: Document) {
     return (
       <a href={d.hyperlink} target="_blank">
-        *Reference: The above answer was based on the {d.name} section of {d.section};
+        *Reference: The above answer was based on the {d.name} section of{' '}
+        {d.section ? d.section : d.sectionID};
       </a>
     );
   }

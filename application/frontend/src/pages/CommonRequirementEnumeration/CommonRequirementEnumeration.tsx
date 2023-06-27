@@ -65,16 +65,6 @@ export const CommonRequirementEnumeration = () => {
               </a>
             </>
           )}
-          {display.tags ? (
-            <div className="cre-page__tags">
-              Tags:
-              {display.tags.map((tag) => (
-                <b>{tag} </b>
-              ))}
-            </div>
-          ) : (
-            ''
-          )}
 
           {currentUrlParams.get('applyFilters') === 'true' ? (
             <div className="cre-page__filters">
@@ -95,7 +85,7 @@ export const CommonRequirementEnumeration = () => {
                     {getDocumentDisplayName(display)}
                     <b>{DOCUMENT_TYPE_NAMES[type]}</b>:
                   </div>
-                  {links.map((link, i) => (
+                  {links.sort((a, b) => getDocumentDisplayName(a.document).localeCompare(getDocumentDisplayName(b.document))).map((link, i) => (
                     <div key={i} className="accordion ui fluid styled cre-page__links-container">
                       <DocumentNode node={link.document} linkType={type} />
                       <FilterButton document={link.document} />
