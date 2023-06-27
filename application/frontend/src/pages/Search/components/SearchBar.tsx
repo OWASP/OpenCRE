@@ -2,36 +2,27 @@ import './SearchBar.scss';
 
 import React, { useState } from 'react';
 import { useHistory } from 'react-router-dom';
-import { Button, Dropdown, Form, Icon, Input } from 'semantic-ui-react';
+import { Button, Form, Icon, Input } from 'semantic-ui-react';
 
-import { CODE, CRE, SEARCH, STANDARD, TOOL } from '../../../const';
-
-const SEARCH_TYPES = {
-  topicText: { key: 'topicText', text: 'Topic text', value: 'topicText', path: SEARCH },
-  standard: { key: 'standard', text: 'Standard', value: 'standard', path: '/node' + STANDARD },
-  tool: { key: 'tool', text: 'tool', value: 'tool', path: '/node' + TOOL },
-  code: { key: 'code', text: 'code', value: 'code', path: '/node' + CODE },
-  creId: { key: 'creId', text: 'CRE ID', value: 'creId', path: CRE },
-};
+import { SEARCH } from '../../../const';
 
 interface SearchBarState {
   term: string;
-  type: string;
   error: string;
 }
 
-const DEFAULT_SEARCH_BAR_STATE: SearchBarState = { term: '', type: SEARCH_TYPES['topicText'].key, error: '' };
+const DEFAULT_SEARCH_BAR_STATE: SearchBarState = { term: '', error: '' };
 
 export const SearchBar = () => {
   const [search, setSearch] = useState<SearchBarState>(DEFAULT_SEARCH_BAR_STATE);
   const history = useHistory();
 
   const onSubmit = () => {
-    const { term, type } = search;
+    const { term } = search;
 
     if (Boolean(search.term)) {
       setSearch(DEFAULT_SEARCH_BAR_STATE);
-      history.push(`${SEARCH_TYPES[type].path}/${term}`);
+      history.push(`${SEARCH}/${term}`);
     } else {
       setSearch({
         ...search,
@@ -40,12 +31,6 @@ export const SearchBar = () => {
     }
   };
 
-  const onChange = (_, { value }) => {
-    setSearch({
-      ...search,
-      type: value as string,
-    });
-  };
 
   return (
     <Form onSubmit={onSubmit}>
@@ -60,16 +45,13 @@ export const SearchBar = () => {
                 term: e.target.value,
               });
             }}
-            label={<Dropdown options={Object.values(SEARCH_TYPES)} value={search.type} onChange={onChange} />}
+            label={<Button primary onSubmit={onSubmit}>
+              <Icon name="search" />
+              Search
+            </Button>}
             labelPosition="right"
             placeholder="Search..."
           />
-        </Form.Field>
-        <Form.Field id="SearchButton">
-          <Button primary onSubmit={onSubmit}>
-            <Icon name="search" />
-            Search
-          </Button>
         </Form.Field>
       </Form.Group>
     </Form>
