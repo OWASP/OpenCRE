@@ -31,7 +31,7 @@ from flask import (
 from google.oauth2 import id_token
 from google_auth_oauthlib.flow import Flow
 from application.utils.spreadsheet import write_csv
-import oauthlib 
+import oauthlib
 import google.auth.transport.requests
 
 ITEMS_PER_PAGE = 20
@@ -443,6 +443,7 @@ def logged_in_user():
     if os.environ.get("NO_LOGIN"):
         return "foobar"
     return session.get("email")
+
 
 @app.route("/rest/v1/callback")
 def callback():

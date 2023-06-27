@@ -184,7 +184,9 @@ class PromptHandler:
             self.ai_client = vertex_prompt_client.VertexPromptClient()
         elif os.getenv("OPENAI_API_KEY"):
             logger.info("using Open AI engine")
-            self.ai_client = openai_prompt_client.OpenAIPromptClient(os.getenv("OPENAI_API_KEY"))
+            self.ai_client = openai_prompt_client.OpenAIPromptClient(
+                os.getenv("OPENAI_API_KEY")
+            )
         else:
             logger.error(
                 "cannot instantiate ai client, neither OPENAI_API_KEY nor GOOGLE_APPLICATION_CREDENTIALS are set "
@@ -434,7 +436,7 @@ class PromptHandler:
             if emb:
                 closest_content = emb[0].embeddings_content
         if closest_object:
-            closest_object_str = f"{closest_content}"+"\n".join(
+            closest_object_str = f"{closest_content}" + "\n".join(
                 [f"{k}:{v}" for k, v in closest_object.shallow_copy().todict().items()]
             )
             closest_object_str = closest_object_str[:8000]
