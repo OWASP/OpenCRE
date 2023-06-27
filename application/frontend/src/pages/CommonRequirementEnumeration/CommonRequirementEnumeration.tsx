@@ -54,7 +54,7 @@ export const CommonRequirementEnumeration = () => {
       {!loading && !error && display && (
         <>
           <h4 className="cre-page__heading">{display.name}</h4>
-          <h5 className="cre-page__sub-heading">{display.id}</h5>
+          <h5 className="cre-page__sub-heading">CRE: {display.id}</h5>
           <div className="cre-page__description">{display.description}</div>
           {display && display.hyperlink && (
             <>
