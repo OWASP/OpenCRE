@@ -31,7 +31,7 @@ from flask import (
 from google.oauth2 import id_token
 from google_auth_oauthlib.flow import Flow
 from application.utils.spreadsheet import write_csv
-from pip._vendor import cachecontrol
+import oauthlib
 import google.auth.transport.requests
 
 ITEMS_PER_PAGE = 20
@@ -434,7 +434,6 @@ def login():
     flow_instance = CREFlow.instance()
     authorization_url, state = flow_instance.flow.authorization_url()
     session["state"] = state
-
     return redirect(authorization_url)
 
 
@@ -452,9 +451,9 @@ def callback():
     try:
         flow_instance.flow.fetch_token(authorization_response=request.url)
     except oauthlib.oauth2.rfc6749.errors.MismatchingStateError as mse:
-        return redirect(url_for("/chatbot"))
+        return redirect("/chatbot")
     if not session.get("state"):
-        redirect(url_for("/login"))
+        redirect(url_for("web.login"))
     if session["state"] != request.args["state"]:
         abort(500)  # State does not match!
     credentials = flow_instance.flow.credentials

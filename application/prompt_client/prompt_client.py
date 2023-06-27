@@ -181,10 +181,7 @@ class PromptHandler:
         self.ai_client = None
         if os.environ.get("SERVICE_ACCOUNT_CREDENTIALS"):
             logger.info("using Google Vertex AI engine")
-            self.ai_client = vertex_prompt_client.VertexPromptClient(
-                os.environ.get("VERTEX_PROJECT_ID"),
-                os.environ.get("VERTEX_PROJECT_LOCATION"),
-            )
+            self.ai_client = vertex_prompt_client.VertexPromptClient()
         elif os.getenv("OPENAI_API_KEY"):
             logger.info("using Open AI engine")
             self.ai_client = openai_prompt_client.OpenAIPromptClient(
@@ -433,10 +430,16 @@ class PromptHandler:
         logger.info(
             f"The prompt {prompt}, was most similar to object \n{closest_object}\n, with similarity:{similarity}"
         )
+        closest_content = ""
+        if closest_object.hyperlink:
+            emb = self.database.get_embedding(closest_id)
+            if emb:
+                closest_content = emb[0].embeddings_content
         if closest_object:
-            closest_object_str = "\n".join(
+            closest_object_str = f"{closest_content}" + "\n".join(
                 [f"{k}:{v}" for k, v in closest_object.shallow_copy().todict().items()]
-            )[:8000]
+            )
+            closest_object_str = closest_object_str[:8000]
             # vertex and openai have a model limit of 8100 characters
             answer = self.ai_client.create_chat_completion(
                 prompt=prompt,
