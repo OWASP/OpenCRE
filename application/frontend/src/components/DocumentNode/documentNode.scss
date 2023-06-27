@@ -31,7 +31,7 @@
     }
   }
 
-  &__link-type-container:not(:first-child) {
-    padding-top: 20px;
+  &__link-type-container hr {
+    margin: 15px 0;
   }
 }
