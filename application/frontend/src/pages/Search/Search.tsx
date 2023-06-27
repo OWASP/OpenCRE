@@ -1,7 +1,7 @@
 import './search.scss';
 
 import React from 'react';
-import { Header } from 'semantic-ui-react';
+import { Button, Header } from 'semantic-ui-react';
 
 import { SearchBody } from './components/BodyText';
 import { SearchBar } from './components/SearchBar';
@@ -16,7 +16,10 @@ export const Search = () => {
       <Header as="h4" className="search-page__sub-heading">
         Your gateway to security topics
       </Header>
+      <div>
       <SearchBar />
+      <Button primary fluid href="/root_cres">Browse Topics</Button>
+      </div>
       <SearchBody />
     </div>
   );
