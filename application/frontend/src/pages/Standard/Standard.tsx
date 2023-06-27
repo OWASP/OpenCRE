@@ -9,6 +9,7 @@ import { DocumentNode } from '../../components/DocumentNode';
 import { LoadingAndErrorIndicator } from '../../components/LoadingAndErrorIndicator';
 import { useEnvironment } from '../../hooks';
 import { Document } from '../../types';
+import { getDocumentDisplayName } from '../../utils/document';
 
 export const Standard = () => {
   let { type, id } = useParams();
@@ -44,7 +45,7 @@ export const Standard = () => {
         <LoadingAndErrorIndicator loading={loading} error={error} />
         {!loading &&
           !error &&
-          documents.map((standard, i) => (
+          documents.sort((a, b) => getDocumentDisplayName(a).localeCompare(getDocumentDisplayName(b))).map((standard, i) => (
             <div key={i} className="accordion ui fluid styled standard-page__links-container">
               <DocumentNode node={standard} linkType={'Standard'} />
             </div>
