@@ -126,9 +126,10 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({
         <div className={`content${active} document-node`}>
           <Hyperlink hyperlink={usedNode.hyperlink} />
           {expanded &&
-            getTopicsToDisplayOrderdByLinkType().map(([type, links]) => {
+            getTopicsToDisplayOrderdByLinkType().map(([type, links], idx) => {
               return (
                 <div className="document-node__link-type-container" key={type}>
+                  {idx > 0 && <hr/>}
                   <div>
                     <span>{getDocumentDisplayName(usedNode)}</span>
                     <b> {DOCUMENT_TYPE_NAMES[type]}</b>:
