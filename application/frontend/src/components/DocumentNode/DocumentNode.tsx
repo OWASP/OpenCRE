@@ -18,6 +18,7 @@ import { getDocumentDisplayName, groupLinksByType } from '../../utils';
 import { getApiEndpoint, getInternalUrl } from '../../utils/document';
 import { FilterButton } from '../FilterButton/FilterButton';
 import { LoadingAndErrorIndicator } from '../LoadingAndErrorIndicator';
+import { Icon } from 'semantic-ui-react';
 
 export interface DocumentNode {
   node: Document;
@@ -101,14 +102,27 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({
       </>
     );
   };
+
+  const HyperlinkIcon = (hyperlink) => {
+    if (!hyperlink.hyperlink) {
+      return <></>;
+    }
+
+    return (
+        <a href={hyperlink.hyperlink} target="_blank">
+          <Icon name="external" />
+        </a>
+    );
+  };
   const SimpleView = () => {
     return (
       <>
         <div className={`title external-link document-node f2`}>
           <Link to={getInternalUrl(usedNode)}>
             <i aria-hidden="true" className="circle icon"></i>
-            {getDocumentDisplayName(usedNode)}
+            {getDocumentDisplayName(usedNode)} 
           </Link>
+          <HyperlinkIcon hyperlink={usedNode.hyperlink} />
         </div>
         <div className={`content`}></div>
       </>
@@ -131,8 +145,7 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({
                 <div className="document-node__link-type-container" key={type}>
                   {idx > 0 && <hr/>}
                   <div>
-                    <span>{getDocumentDisplayName(usedNode)}</span>
-                    <b> {DOCUMENT_TYPE_NAMES[type]}</b>:
+                    <b>Which {DOCUMENT_TYPE_NAMES[type]}</b>:
                   </div>
                   <div>
                     <div className="accordion ui fluid styled f0">
