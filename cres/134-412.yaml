@@ -10,9 +10,9 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x19-V11-BusLogic.md
     name: ASVS
-    section: V11.1.6
-    sectionID: Verify that the application does not suffer from "Time Of Check to
-      Time Of Use" (TOCTOU) issues or other race conditions for sensitive operations.
+    section: Verify that the application does not suffer from "Time Of Check to Time
+      Of Use" (TOCTOU) issues or other race conditions for sensitive operations.
+    sectionID: V11.1.6
   ltype: Linked To
 - document:
     doctype: Standard

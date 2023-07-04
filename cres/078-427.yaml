@@ -12,9 +12,9 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x11-V2-Authentication.md
     name: ASVS
-    section: V2.4.4
-    sectionID: Verify that if bcrypt is used, the work factor SHOULD be as large as
+    section: Verify that if bcrypt is used, the work factor SHOULD be as large as
       verification server performance will allow, with a minimum of 10.
+    sectionID: V2.4.4
   ltype: Linked To
 - document:
     doctype: Standard

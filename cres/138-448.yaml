@@ -15,9 +15,9 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x11-V2-Authentication.md
     name: ASVS
-    section: V2.3.3
-    sectionID: Verify that renewal instructions are sent with sufficient time to renew
+    section: Verify that renewal instructions are sent with sufficient time to renew
       time bound authenticators.
+    sectionID: V2.3.3
   ltype: Linked To
 - document:
     doctype: Standard

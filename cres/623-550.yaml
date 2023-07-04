@@ -85,6 +85,14 @@ links:
     - Denial Of Service protection
   ltype: Related
 - document:
+    doctype: CRE
+    id: 267-031
+    name: Protect the availability of resources by providing more to higher-priority
+      processes
+    tags:
+    - Denial Of Service protection
+  ltype: Related
+- document:
     doctype: Standard
     hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=SC-5
     name: NIST 800-53 v5

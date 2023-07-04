@@ -17,13 +17,13 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x21-V13-API.md
     name: ASVS
-    section: V13.2.6
-    sectionID: Verify that the message headers and payload are trustworthy and not
-      modified in transit. Requiring strong encryption for transport (TLS only) may
-      be sufficient in many cases as it provides both confidentiality and integrity
-      protection. Per-message digital signatures can provide additional assurance
-      on top of the transport protections for high-security applications but bring
-      with them additional complexity and risks to weigh against the benefits.
+    section: Verify that the message headers and payload are trustworthy and not modified
+      in transit. Requiring strong encryption for transport (TLS only) may be sufficient
+      in many cases as it provides both confidentiality and integrity protection.
+      Per-message digital signatures can provide additional assurance on top of the
+      transport protections for high-security applications but bring with them additional
+      complexity and risks to weigh against the benefits.
+    sectionID: V13.2.6
   ltype: Linked To
 - document:
     doctype: Standard

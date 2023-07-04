@@ -1,0 +1,44 @@
+doctype: CRE
+id: 626-250
+links:
+- document:
+    doctype: CRE
+    id: 433-442
+    name: Verification
+  ltype: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=SI-6
+    name: NIST 800-53 v5
+    section: SI-6 Security and Privacy Function Verification
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owaspsamm.org/model/verification/architecture-assessment/stream-a
+    name: SAMM
+    section: Achitecture validation
+    sectionID: V-AA-A
+  ltype: Linked To
+- document:
+    doctype: Standard
+    name: NIST SSDF
+    section: Have 1) a qualified person (or people) who were not involved with the
+      design and/or 2) automated processes instantiated in the toolchain review the
+      software design to confirm and enforce that it meets all of the security requirements
+      and satisfactorily addresses the identified risk information.
+    sectionID: PW.2.1
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=SI-7
+    name: NIST 800-53 v5
+    section: SI-7 Software, Firmware, and Information Integrity
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owaspsamm.org/model/verification/architecture-assessment/stream-b
+    name: SAMM
+    section: Achitecture mitigation
+    sectionID: V-AA-B
+  ltype: Linked To
+name: Design review

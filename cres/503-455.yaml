@@ -21,8 +21,8 @@ links:
     id: 010-308
     name: Input validation
     tags:
-    - Injection protection
     - XSS protection
+    - Injection protection
   ltype: Contains
 - document:
     doctype: CRE
@@ -36,8 +36,8 @@ links:
     id: 161-451
     name: Output encoding and injection prevention
     tags:
-    - Injection protection
     - XSS protection
+    - Injection protection
   ltype: Contains
 - document:
     doctype: CRE
@@ -51,8 +51,8 @@ links:
     id: 764-765
     name: Sanitization and sandboxing
     tags:
-    - Injection protection
     - XSS protection
+    - Injection protection
   ltype: Contains
 - document:
     doctype: CRE
@@ -63,8 +63,11 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 764-508
-    name: XML Parser hardening
+    id: 764-507
+    name: Restrict XML parsing (against XXE)
+    tags:
+    - Injection protection
+    - Configuration
   ltype: Contains
 - document:
     doctype: CRE

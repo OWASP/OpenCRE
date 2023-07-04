@@ -1,0 +1,17 @@
+doctype: CRE
+id: 088-377
+links:
+- document:
+    doctype: CRE
+    id: 207-435
+    name: Dynamic security testing
+  ltype: Contains
+- document:
+    doctype: Standard
+    name: NIST SSDF
+    section: "Scope the testing, design the tests, perform the testing, and document\
+      \ the results, including recording and triaging all discovered issues and recommended\
+      \ remediations in the development team\u2019s workflow or issue tracking system."
+    sectionID: PW.8.2
+  ltype: Linked To
+name: Automated dynamic security testing

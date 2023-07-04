@@ -20,10 +20,10 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x19-V11-BusLogic.md
     name: ASVS
-    section: V11.1.7
-    sectionID: Verify that the application monitors for unusual events or activity
-      from a business logic perspective. For example, attempts to perform actions
-      out of order or actions which a normal user would never attempt.
+    section: Verify that the application monitors for unusual events or activity from
+      a business logic perspective. For example, attempts to perform actions out of
+      order or actions which a normal user would never attempt.
+    sectionID: V11.1.7
   ltype: Linked To
 - document:
     doctype: Standard

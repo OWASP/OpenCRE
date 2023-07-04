@@ -24,4 +24,12 @@ links:
     section: Training and Awareness
     sectionID: G-EG-A
   ltype: Linked To
-name: Technical training
+- document:
+    doctype: Standard
+    name: NIST SSDF
+    section: Provide role-based training for all personnel with responsibilities that
+      contribute to secure development. Periodically review personnel proficiency
+      and role-based training, and update the training as needed.
+    sectionID: PO.2.2
+  ltype: Linked To
+name: Technical application security training

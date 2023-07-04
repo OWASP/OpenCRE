@@ -12,12 +12,12 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x17-V9-Communications.md
     name: ASVS
-    section: V9.2.2
-    sectionID: Verify that encrypted communications such as TLS is used for all inbound
+    section: Verify that encrypted communications such as TLS is used for all inbound
       and outbound connections, including for management ports, monitoring, authentication,
       API, or web service calls, database, cloud, serverless, mainframe, external,
       and partner connections. The server must not fall back to insecure or unencrypted
       protocols.
+    sectionID: V9.2.2
   ltype: Linked To
 - document:
     doctype: Standard

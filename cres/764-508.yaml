@@ -11,7 +11,7 @@ links:
     id: 764-507
     name: Restrict XML parsing (against XXE)
     tags:
-    - Injection protection
     - Configuration
+    - Injection protection
   ltype: Contains
 name: XML Parser hardening

@@ -8,6 +8,16 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
+    id: 004-517
+    name: Security requirements
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 464-513
+    name: Assurance processes
+  ltype: Related
+- document:
+    doctype: CRE
     id: 732-148
     name: Vulnerability management
   ltype: Related
@@ -18,14 +28,24 @@ links:
   ltype: Related
 - document:
     doctype: CRE
-    id: 611-158
-    name: Use SAST for malicious content
+    id: 832-555
+    name: Automated static security analysis of code and configuration
   ltype: Contains
 - document:
     doctype: CRE
-    id: 464-513
-    name: Assurance processes
-  ltype: Related
+    id: 626-250
+    name: Design review
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 207-435
+    name: Dynamic security testing
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 411-684
+    name: Manual code review
+  ltype: Contains
 - document:
     doctype: Standard
     hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=SA-11
@@ -53,6 +73,13 @@ links:
   ltype: Linked To
 - document:
     doctype: Standard
+    name: NIST SSDF
+    section: Define criteria for software security checks and track throughout the
+      SDLC.
+    sectionID: PO.4.1
+  ltype: Linked To
+- document:
+    doctype: Standard
     name: Cloud Controls Matrix
     section: Automated Application Security Testing
     sectionID: AIS-05
@@ -72,29 +99,17 @@ links:
   ltype: Linked To
 - document:
     doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=SI-6
-    name: NIST 800-53 v5
-    section: SI-6 Security and Privacy Function Verification
+    name: NIST SSDF
+    section: Implement processes, mechanisms, etc. to gather and safeguard the necessary
+      information in support of the criteria.
+    sectionID: PO.4.2
   ltype: Linked To
 - document:
     doctype: Standard
-    hyperlink: https://owaspsamm.org/model/verification/architecture-assessment/stream-a
-    name: SAMM
-    section: Achitecture validation
-    sectionID: V-AA-A
-  ltype: Linked To
-- document:
-    doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=SI-7
-    name: NIST 800-53 v5
-    section: SI-7 Software, Firmware, and Information Integrity
-  ltype: Linked To
-- document:
-    doctype: Standard
-    hyperlink: https://owaspsamm.org/model/verification/architecture-assessment/stream-b
-    name: SAMM
-    section: Achitecture mitigation
-    sectionID: V-AA-B
+    name: NIST SSDF
+    section: "Review, analyze, and/or test the software\u2019s code to identify or\
+      \ confirm the presence of previously undetected vulnerabilities."
+    sectionID: RV.1.2
   ltype: Linked To
 - document:
     doctype: Standard

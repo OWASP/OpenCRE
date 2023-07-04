@@ -10,12 +10,12 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x18-V10-Malicious.md
     name: ASVS
-    section: V10.2.3
-    sectionID: Verify that the application source code and third party libraries do
+    section: Verify that the application source code and third party libraries do
       not contain back doors, such as hard-coded or additional undocumented accounts
       or keys, code obfuscation, undocumented binary blobs, rootkits, or anti-debugging,
       insecure debugging features, or otherwise out of date, insecure, or hidden functionality
       that could be used maliciously if discovered.
+    sectionID: V10.2.3
   ltype: Linked To
 - document:
     doctype: Standard

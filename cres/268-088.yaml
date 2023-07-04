@@ -6,8 +6,8 @@ links:
     id: 764-765
     name: Sanitization and sandboxing
     tags:
-    - Injection protection
     - XSS protection
+    - Injection protection
   ltype: Contains
 - document:
     doctype: CRE
@@ -18,11 +18,11 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x21-V13-API.md
     name: ASVS
-    section: V13.4.1
-    sectionID: Verify that a query allow list or a combination of depth limiting and
+    section: Verify that a query allow list or a combination of depth limiting and
       amount limiting is used to prevent GraphQL or data layer expression Denial of
       Service (DoS) as a result of expensive, nested queries. For more advanced scenarios,
       query cost analysis should be used.
+    sectionID: V13.4.1
   ltype: Linked To
 - document:
     doctype: Standard

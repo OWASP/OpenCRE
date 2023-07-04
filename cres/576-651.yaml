@@ -10,15 +10,15 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x11-V2-Authentication.md
     name: ASVS
-    section: V2.1.7
-    sectionID: Verify that passwords submitted during account registration, login,
-      and password change are checked against a set of breached passwords either locally
+    section: Verify that passwords submitted during account registration, login, and
+      password change are checked against a set of breached passwords either locally
       (such as the top 1,000 or 10,000 most common passwords which match the system's
       password policy) or using an external API. If using an API a zero knowledge
       proof or other mechanism should be used to ensure that the plain text password
       is not sent or used in verifying the breach status of the password. If the password
       is breached, the application must require the user to set a new non-breached
       password. ([C6](https://owasp.org/www-project-proactive-controls/#div-numbering))
+    sectionID: V2.1.7
   ltype: Linked To
 - document:
     doctype: Standard
@@ -35,7 +35,7 @@ links:
   ltype: Linked To
 - document:
     doctype: Standard
-    hyperlink: https://owasp.org/www-project-web-security-testing-guide/v42/4-Web_Application_Security_Testing/04-Authentication_Testing/07-Testing_for_Weak_Password_Policy.html
+    hyperlink: https://owasp.org/www-project-web-security-testing-guide/stable/4-Web_Application_Security_Testing/04-Authentication_Testing/07-Testing_for_Weak_Password_Policy.html
     name: OWASP Web Security Testing Guide (WSTG)
     section: WSTG-ATHN-07
   ltype: Linked To

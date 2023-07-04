@@ -8,13 +8,18 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
+    id: 732-148
+    name: Vulnerability management
+  ltype: Related
+- document:
+    doctype: CRE
     id: 053-751
     name: Force build pipeline to check outdated/insecure components
   ltype: Contains
 - document:
     doctype: CRE
     id: 863-521
-    name: Maintain/manage inventory of third party repositories
+    name: Maintain/manage inventory of third party components
   ltype: Contains
 - document:
     doctype: CRE
@@ -39,5 +44,13 @@ links:
     name: SAMM
     section: Software Dependencies
     sectionID: I-SB-B
+  ltype: Linked To
+- document:
+    doctype: Standard
+    name: NIST SSDF
+    section: Gather information from software acquirers, users, and public sources
+      on potential vulnerabilities in the software and third-party components that
+      the software uses, and investigate all credible reports.
+    sectionID: RV.1.1
   ltype: Linked To
 name: Dependency management

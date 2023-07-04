@@ -8,8 +8,15 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 068-102
+    id: 326-704
     name: Architecture/design processes
+    tags:
+    - Architecture
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 708-355
+    name: Secure implemented architecture
     tags:
     - Architecture
   ltype: Related
@@ -17,6 +24,13 @@ links:
     doctype: CRE
     id: 820-878
     name: Document all trust boundaries and significant data flows
+    tags:
+    - Architecture
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 344-611
+    name: Use centralized reusable security controls
     tags:
     - Architecture
   ltype: Related
@@ -59,13 +73,6 @@ links:
     doctype: CRE
     id: 117-371
     name: Use a centralized access control mechanism
-    tags:
-    - Architecture
-  ltype: Related
-- document:
-    doctype: CRE
-    id: 344-611
-    name: Centralize security controls
     tags:
     - Architecture
   ltype: Related
