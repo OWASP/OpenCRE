@@ -1,4 +1,4 @@
-import { TYPE_CONTAINS, TYPE_IS_PART_OF, TYPE_LINKED_TO, TYPE_RELATED, TYPE_SAM, TYPE_SAME } from '../const';
+import { DOCUMENT_TYPES, DOCUMENT_TYPE_NAMES, TYPE_IS_PART_OF, TYPE_LINKED_TO } from '../const';
 import { Document, LinkedDocument } from '../types';
 
 export const getDocumentDisplayName = (document: Document) => {
@@ -72,3 +72,12 @@ export const getApiEndpoint = (doc: Document, apiUrl: string): string => {
 
   return `${apiUrl}/id/${doc.id}`;
 };
+
+export const getDocumentTypeText = (linkType, docType): string => {
+  let docText =  DOCUMENT_TYPE_NAMES[linkType];
+  if(linkType === TYPE_LINKED_TO && docType === DOCUMENT_TYPES.TYPE_CRE)
+  {
+    docText = DOCUMENT_TYPE_NAMES[TYPE_IS_PART_OF];
+  }
+  return docText
+}

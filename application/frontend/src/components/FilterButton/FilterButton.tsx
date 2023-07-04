@@ -3,13 +3,6 @@ import React, { FunctionComponent, useEffect, useMemo, useState } from 'react';
 import { Link, useHistory } from 'react-router-dom';
 import { Button } from 'semantic-ui-react';
 
-import {
-  DOCUMENT_TYPE_NAMES,
-  TYPE_CONTAINS,
-  TYPE_IS_PART_OF,
-  TYPE_LINKED_TO,
-  TYPE_RELATED,
-} from '../../const';
 import { useEnvironment } from '../../hooks';
 import { Document, LinkedDocument } from '../../types';
 import { getDocumentDisplayName, groupLinksByType } from '../../utils';
