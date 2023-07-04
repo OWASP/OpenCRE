@@ -12,12 +12,12 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x11-V2-Authentication.md
     name: ASVS
-    section: V2.10.4
-    sectionID: Verify passwords, integrations with databases and third-party systems,
+    section: Verify passwords, integrations with databases and third-party systems,
       seeds and internal secrets, and API keys are managed securely and not included
       in the source code or stored within source code repositories. Such storage SHOULD
       resist offline attacks. The use of a secure software key store (L1), hardware
       TPM, or an HSM (L3) is recommended for password storage.
+    sectionID: V2.10.4
   ltype: Linked To
 - document:
     doctype: Standard

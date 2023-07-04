@@ -10,9 +10,9 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x16-V8-Data-Protection.md
     name: ASVS
-    section: V8.1.6
-    sectionID: Verify that backups are stored securely to prevent data from being
-      stolen or corrupted.
+    section: Verify that backups are stored securely to prevent data from being stolen
+      or corrupted.
+    sectionID: V8.1.6
   ltype: Linked To
 - document:
     doctype: Standard

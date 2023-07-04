@@ -10,9 +10,9 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x18-V10-Malicious.md
     name: ASVS
-    section: V10.2.4
-    sectionID: Verify that the application source code and third party libraries do
+    section: Verify that the application source code and third party libraries do
       not contain time bombs by searching for date and time related functions.
+    sectionID: V10.2.4
   ltype: Linked To
 - document:
     doctype: Standard

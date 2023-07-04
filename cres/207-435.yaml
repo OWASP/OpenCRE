@@ -1,0 +1,19 @@
+doctype: CRE
+id: 207-435
+links:
+- document:
+    doctype: CRE
+    id: 433-442
+    name: Verification
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 088-377
+    name: Automated dynamic security testing
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 570-487
+    name: Manual penetration testing
+  ltype: Contains
+name: Dynamic security testing

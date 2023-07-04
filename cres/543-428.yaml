@@ -17,10 +17,10 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x11-V2-Authentication.md
     name: ASVS
-    section: V2.8.2
-    sectionID: Verify that symmetric keys used to verify submitted OTPs are highly
-      protected, such as by using a hardware security module or secure operating system
-      based key storage.
+    section: Verify that symmetric keys used to verify submitted OTPs are highly protected,
+      such as by using a hardware security module or secure operating system based
+      key storage.
+    sectionID: V2.8.2
   ltype: Linked To
 - document:
     doctype: Standard

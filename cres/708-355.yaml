@@ -3,15 +3,20 @@ id: 708-355
 links:
 - document:
     doctype: CRE
-    id: 068-102
+    id: 326-704
     name: Architecture/design processes
     tags:
     - Architecture
   ltype: Related
 - document:
     doctype: CRE
+    id: 155-155
+    name: Architecture
+  ltype: Related
+- document:
+    doctype: CRE
     id: 344-611
-    name: Centralize security controls
+    name: Use centralized reusable security controls
     tags:
     - Architecture
   ltype: Contains
@@ -63,3 +68,5 @@ links:
     section: SC-44 Detonation Chambers
   ltype: Linked To
 name: Secure implemented architecture
+tags:
+- Architecture

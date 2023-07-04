@@ -12,10 +12,10 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x11-V2-Authentication.md
     name: ASVS
-    section: V2.6.2
-    sectionID: Verify that lookup secrets have sufficient randomness (112 bits of
-      entropy), or if less than 112 bits of entropy, salted with a unique and random
-      32-bit salt and hashed with an approved one-way hash.
+    section: Verify that lookup secrets have sufficient randomness (112 bits of entropy),
+      or if less than 112 bits of entropy, salted with a unique and random 32-bit
+      salt and hashed with an approved one-way hash.
+    sectionID: V2.6.2
   ltype: Linked To
 - document:
     doctype: Standard

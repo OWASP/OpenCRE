@@ -10,9 +10,9 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x22-V14-Config.md
     name: ASVS
-    section: V14.1.5
-    sectionID: Verify that authorized administrators can verify the integrity of all
+    section: Verify that authorized administrators can verify the integrity of all
       security-relevant configurations to detect tampering.
+    sectionID: V14.1.5
   ltype: Linked To
 - document:
     doctype: Standard

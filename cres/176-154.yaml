@@ -6,8 +6,8 @@ links:
     id: 010-308
     name: Input validation
     tags:
-    - Injection protection
     - XSS protection
+    - Injection protection
   ltype: Contains
 - document:
     doctype: CRE
@@ -23,10 +23,10 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x16-V8-Data-Protection.md
     name: ASVS
-    section: V8.1.4
-    sectionID: Verify the application can detect and alert on abnormal numbers of
-      requests, such as by IP, user, total per hour or day, or whatever makes sense
-      for the application.
+    section: Verify the application can detect and alert on abnormal numbers of requests,
+      such as by IP, user, total per hour or day, or whatever makes sense for the
+      application.
+    sectionID: V8.1.4
   ltype: Linked To
 - document:
     doctype: Standard

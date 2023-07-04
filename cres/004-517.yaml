@@ -3,6 +3,11 @@ id: 004-517
 links:
 - document:
     doctype: CRE
+    id: 433-442
+    name: Verification
+  ltype: Related
+- document:
+    doctype: CRE
     id: 074-873
     name: Data classification and handling
   ltype: Related
@@ -16,6 +21,11 @@ links:
     id: 782-234
     name: Clear policy compliant I/O requirements
   ltype: Contains
+- document:
+    doctype: CRE
+    id: 072-713
+    name: Manage standard technologies and frameworks
+  ltype: Related
 - document:
     doctype: CRE
     id: 787-638
@@ -34,6 +44,12 @@ links:
   ltype: Linked To
 - document:
     doctype: Standard
+    name: ISO 27001
+    section: Application security requirements
+    sectionID: '8.26'
+  ltype: Linked To
+- document:
+    doctype: Standard
     hyperlink: https://owaspsamm.org/model/design/security-requirements/stream-a
     name: SAMM
     section: Software Requirements
@@ -47,9 +63,22 @@ links:
   ltype: Linked To
 - document:
     doctype: Standard
+    name: ISO 27001
+    section: Information transfer
+    sectionID: '5.14'
+  ltype: Linked To
+- document:
+    doctype: Standard
     hyperlink: https://owaspsamm.org/model/governance/policy-and-compliance/stream-a/
     name: SAMM
     section: Policy & Standards
     sectionID: G-PC-A
+  ltype: Linked To
+- document:
+    doctype: Standard
+    name: NIST SSDF
+    section: Identify and document all security requirements for organization-developed
+      software to meet, and maintain the requirements over time.
+    sectionID: PO.1.2
   ltype: Linked To
 name: Security requirements

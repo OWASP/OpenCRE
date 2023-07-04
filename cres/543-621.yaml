@@ -10,9 +10,9 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x11-V2-Authentication.md
     name: ASVS
-    section: V2.5.3
-    sectionID: Verify password credential recovery does not reveal the current password
+    section: Verify password credential recovery does not reveal the current password
       in any way.
+    sectionID: V2.5.3
   ltype: Linked To
 - document:
     doctype: Standard

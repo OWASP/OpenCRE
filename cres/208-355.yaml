@@ -10,10 +10,10 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x22-V14-Config.md
     name: ASVS
-    section: V14.1.4
-    sectionID: Verify that the application, configuration, and all dependencies can
+    section: Verify that the application, configuration, and all dependencies can
       be re-deployed using automated deployment scripts, built from a documented and
       tested runbook in a reasonable time, or restored from backups in a timely fashion.
+    sectionID: V14.1.4
   ltype: Linked To
 - document:
     doctype: Standard

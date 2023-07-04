@@ -10,10 +10,10 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x12-V3-Session-management.md
     name: ASVS
-    section: V3.3.1
-    sectionID: Verify that logout and expiration invalidate the session token, such
+    section: Verify that logout and expiration invalidate the session token, such
       that the back button or a downstream relying party does not resume an authenticated
       session, including across relying parties.
+    sectionID: V3.3.1
   ltype: Linked To
 - document:
     doctype: Standard
@@ -36,7 +36,7 @@ links:
   ltype: Linked To
 - document:
     doctype: Standard
-    hyperlink: https://owasp.org/www-project-web-security-testing-guide/v42/4-Web_Application_Security_Testing/06-Session_Management_Testing/06-Testing_for_Logout_Functionality.html#testing-for-server-side-session-termination
+    hyperlink: https://owasp.org/www-project-web-security-testing-guide/stable/4-Web_Application_Security_Testing/06-Session_Management_Testing/06-Testing_for_Logout_Functionality.html#testing-for-server-side-session-termination
     name: OWASP Web Security Testing Guide (WSTG)
     section: WSTG-SESS-06
   ltype: Linked To

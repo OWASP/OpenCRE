@@ -12,10 +12,10 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x10-V1-Architecture.md
     name: ASVS
-    section: V1.6.4
-    sectionID: Verify that the architecture treats client-side secrets--such as symmetric
+    section: Verify that the architecture treats client-side secrets--such as symmetric
       keys, passwords, or API tokens--as insecure and never uses them to protect or
       access sensitive data.
+    sectionID: V1.6.4
   ltype: Linked To
 - document:
     doctype: Standard

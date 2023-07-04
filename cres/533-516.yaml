@@ -6,16 +6,16 @@ links:
     id: 161-451
     name: Output encoding and injection prevention
     tags:
-    - Injection protection
     - XSS protection
+    - Injection protection
   ltype: Contains
 - document:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x13-V5-Validation-Sanitization-Encoding.md
     name: ASVS
-    section: V5.3.2
-    sectionID: Verify that output encoding preserves the user's chosen character set
+    section: Verify that output encoding preserves the user's chosen character set
       and locale, such that any Unicode character point is valid and safely handled.
+    sectionID: V5.3.2
   ltype: Linked To
 - document:
     doctype: Standard
@@ -32,7 +32,7 @@ links:
   ltype: Linked To
 - document:
     doctype: Standard
-    hyperlink: https://owasp.org/www-project-web-security-testing-guide/v42/6-Appendix/D-Encoded_Injection.html
+    hyperlink: https://owasp.org/www-project-web-security-testing-guide/stable/6-Appendix/D-Encoded_Injection.html
     name: OWASP Web Security Testing Guide (WSTG)
     section: WSTG-APPE-D
   ltype: Linked To

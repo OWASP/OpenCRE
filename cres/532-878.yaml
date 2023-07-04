@@ -10,10 +10,10 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x21-V13-API.md
     name: ASVS
-    section: V13.2.1
-    sectionID: Verify that enabled RESTful HTTP methods are a valid choice for the
-      user or action, such as preventing normal users using DELETE or PUT on protected
+    section: Verify that enabled RESTful HTTP methods are a valid choice for the user
+      or action, such as preventing normal users using DELETE or PUT on protected
       API or resources.
+    sectionID: V13.2.1
   ltype: Linked To
 - document:
     doctype: Standard
@@ -24,7 +24,7 @@ links:
   ltype: Linked To
 - document:
     doctype: Standard
-    hyperlink: https://owasp.org/www-project-web-security-testing-guide/v42/4-Web_Application_Security_Testing/07-Input_Validation_Testing/03-Testing_for_HTTP_Verb_Tampering.html
+    hyperlink: https://owasp.org/www-project-web-security-testing-guide/stable/4-Web_Application_Security_Testing/07-Input_Validation_Testing/03-Testing_for_HTTP_Verb_Tampering.html
     name: OWASP Web Security Testing Guide (WSTG)
     section: WSTG-INPV-03
   ltype: Linked To

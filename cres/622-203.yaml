@@ -12,12 +12,12 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x11-V2-Authentication.md
     name: ASVS
-    section: V2.4.1
-    sectionID: Verify that passwords are stored in a form that is resistant to offline
+    section: Verify that passwords are stored in a form that is resistant to offline
       attacks. Passwords SHALL be salted and hashed using an approved one-way key
       derivation or password hashing function. Key derivation and password hashing
       functions take a password, a salt, and a cost factor as inputs when generating
       a password hash.
+    sectionID: V2.4.1
   ltype: Linked To
 - document:
     doctype: Standard

@@ -7,23 +7,20 @@ links:
     name: Security organizing processes
   ltype: Contains
 - document:
-    doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=PL-7
-    name: NIST 800-53 v5
-    section: PL-7 CONCEPT OF OPERATIONS
-  ltype: Linked To
+    doctype: CRE
+    id: 833-030
+    name: Connect with the community
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 261-010
+    name: Program management for secure software development
+  ltype: Contains
 - document:
     doctype: Standard
     name: ISO 27001
     section: Policies for information security
     sectionID: '5.1'
-  ltype: Linked To
-- document:
-    doctype: Standard
-    hyperlink: https://owaspsamm.org/model/governance/education-and-guidance/stream-b
-    name: SAMM
-    section: Organization and Culture
-    sectionID: G-EG-B
   ltype: Linked To
 - document:
     doctype: Standard
@@ -39,25 +36,6 @@ links:
   ltype: Linked To
 - document:
     doctype: Standard
-    hyperlink: https://owaspsamm.org/model/governance/strategy-and-metrics/stream-a
-    name: SAMM
-    section: Create and Promote
-    sectionID: G-SM-A
-  ltype: Linked To
-- document:
-    doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=PL
-    name: NIST 800-53 v5
-    section: PL   Planning
-  ltype: Linked To
-- document:
-    doctype: Standard
-    name: ISO 27001
-    section: Information transfer
-    sectionID: '5.14'
-  ltype: Linked To
-- document:
-    doctype: Standard
     hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=PM-1
     name: NIST 800-53 v5
     section: PM-1 Information Security Program Plan
@@ -70,27 +48,9 @@ links:
   ltype: Linked To
 - document:
     doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=PM-10
-    name: NIST 800-53 v5
-    section: PM-10 Authorization Process
-  ltype: Linked To
-- document:
-    doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=PM-11
-    name: NIST 800-53 v5
-    section: PM-11 Mission and Business Process Definition
-  ltype: Linked To
-- document:
-    doctype: Standard
     hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=PM-12
     name: NIST 800-53 v5
     section: PM-12 Insider Threat Program
-  ltype: Linked To
-- document:
-    doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=PM-13
-    name: NIST 800-53 v5
-    section: PM-13 Security and Privacy Workforce
   ltype: Linked To
 - document:
     doctype: Standard
@@ -100,87 +60,9 @@ links:
   ltype: Linked To
 - document:
     doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=PM-15
-    name: NIST 800-53 v5
-    section: PM-15 Security and Privacy Groups and Associations
-  ltype: Linked To
-- document:
-    doctype: Standard
-    name: ISO 27001
-    section: Contact with special interest groups
-    sectionID: '5.6'
-  ltype: Linked To
-- document:
-    doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=PM-16
-    name: NIST 800-53 v5
-    section: PM-16 Threat Awareness Program
-  ltype: Linked To
-- document:
-    doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=PM-17
-    name: NIST 800-53 v5
-    section: PM-17 Protecting Controlled Unclassified Information on External Systems
-  ltype: Linked To
-- document:
-    doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=PM-2
-    name: NIST 800-53 v5
-    section: PM-2 Information Security Program Leadership Role
-  ltype: Linked To
-- document:
-    doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=PM-21
-    name: NIST 800-53 v5
-    section: PM-21 Accounting of Disclosures
-  ltype: Linked To
-- document:
-    doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=PM-23
-    name: NIST 800-53 v5
-    section: PM-23 Data Governance Body
-  ltype: Linked To
-- document:
-    doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=PM-24
-    name: NIST 800-53 v5
-    section: PM-24 Data Integrity Board
-  ltype: Linked To
-- document:
-    doctype: Standard
     hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=PM-26
     name: NIST 800-53 v5
     section: PM-26 Complaint Management
-  ltype: Linked To
-- document:
-    doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=PM-28
-    name: NIST 800-53 v5
-    section: PM-28 Risk Framing
-  ltype: Linked To
-- document:
-    doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=PM-29
-    name: NIST 800-53 v5
-    section: PM-29 Risk Management Program Leadership Roles
-  ltype: Linked To
-- document:
-    doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=PM-3
-    name: NIST 800-53 v5
-    section: PM-3 Information Security and Privacy Resources
-  ltype: Linked To
-- document:
-    doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=PM-30
-    name: NIST 800-53 v5
-    section: PM-30 Supply Chain Risk Management Strategy
-  ltype: Linked To
-- document:
-    doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=PM-31
-    name: NIST 800-53 v5
-    section: PM-31 Continuous Monitoring Strategy
   ltype: Linked To
 - document:
     doctype: Standard
@@ -196,86 +78,14 @@ links:
   ltype: Linked To
 - document:
     doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=PM-5
-    name: NIST 800-53 v5
-    section: PM-5 System Inventory
-  ltype: Linked To
-- document:
-    doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=PM-6
-    name: NIST 800-53 v5
-    section: PM-6 Measures of Performance
-  ltype: Linked To
-- document:
-    doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=PM-7
-    name: NIST 800-53 v5
-    section: PM-7 Enterprise Architecture
-  ltype: Linked To
-- document:
-    doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=PM-8
-    name: NIST 800-53 v5
-    section: PM-8 Critical Infrastructure Plan
-  ltype: Linked To
-- document:
-    doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=PM-9
-    name: NIST 800-53 v5
-    section: PM-9 Risk Management Strategy
-  ltype: Linked To
-- document:
-    doctype: Standard
-    name: Cloud Controls Matrix
-    section: Application and Interface Security Policy and Procedures
-    sectionID: AIS-01
-  ltype: Linked To
-- document:
-    doctype: Standard
-    name: Cloud Controls Matrix
-    section: Application Security Metrics
-    sectionID: AIS-03
-  ltype: Linked To
-- document:
-    doctype: Standard
     hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=SC-1
     name: NIST 800-53 v5
     section: SC-1 Policy and Procedures
   ltype: Linked To
 - document:
     doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=SC-15
-    name: NIST 800-53 v5
-    section: SC-15 Collaborative Computing Devices and Applications
-  ltype: Linked To
-- document:
-    doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=SC-22
-    name: NIST 800-53 v5
-    section: SC-22 Architecture and Provisioning for Name/address Resolution Service
-  ltype: Linked To
-- document:
-    doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=SC-31
-    name: NIST 800-53 v5
-    section: SC-31 Covert Channel Analysis
-  ltype: Linked To
-- document:
-    doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=SC-6
-    name: NIST 800-53 v5
-    section: SC-6 Resource Availability
-  ltype: Linked To
-- document:
-    doctype: Standard
     hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=SI-1
     name: NIST 800-53 v5
     section: SI-1 Policy and Procedures
-  ltype: Linked To
-- document:
-    doctype: Standard
-    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=SI-12
-    name: NIST 800-53 v5
-    section: SI-12 Information Management and Retention
   ltype: Linked To
 name: Program management
