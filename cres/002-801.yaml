@@ -12,9 +12,9 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x11-V2-Authentication.md
     name: ASVS
-    section: V2.9.3
-    sectionID: Verify that approved cryptographic algorithms are used in the generation,
+    section: Verify that approved cryptographic algorithms are used in the generation,
       seeding, and verification.
+    sectionID: V2.9.3
   ltype: Linked To
 - document:
     doctype: Standard

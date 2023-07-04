@@ -3,11 +3,16 @@ id: 072-713
 links:
 - document:
     doctype: CRE
-    id: 068-102
+    id: 326-704
     name: Architecture/design processes
     tags:
     - Architecture
   ltype: Contains
+- document:
+    doctype: CRE
+    id: 004-517
+    name: Security requirements
+  ltype: Related
 - document:
     doctype: Standard
     hyperlink: https://owaspsamm.org/model/design/security-architecture/stream-b

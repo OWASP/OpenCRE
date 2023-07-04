@@ -15,9 +15,9 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x16-V8-Data-Protection.md
     name: ASVS
-    section: V8.2.1
-    sectionID: Verify the application sets sufficient anti-caching headers so that
-      sensitive data is not cached in modern browsers.
+    section: Verify the application sets sufficient anti-caching headers so that sensitive
+      data is not cached in modern browsers.
+    sectionID: V8.2.1
   ltype: Linked To
 - document:
     doctype: Standard
@@ -28,7 +28,7 @@ links:
   ltype: Linked To
 - document:
     doctype: Standard
-    hyperlink: https://owasp.org/www-project-web-security-testing-guide/v42/4-Web_Application_Security_Testing/04-Authentication_Testing/06-Testing_for_Browser_Cache_Weaknesses.html
+    hyperlink: https://owasp.org/www-project-web-security-testing-guide/stable/4-Web_Application_Security_Testing/04-Authentication_Testing/06-Testing_for_Browser_Cache_Weaknesses.html
     name: OWASP Web Security Testing Guide (WSTG)
     section: WSTG-ATHN-06
   ltype: Linked To

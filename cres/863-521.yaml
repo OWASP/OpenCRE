@@ -10,9 +10,9 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x22-V14-Config.md
     name: ASVS
-    section: V14.2.5
-    sectionID: Verify that a Software Bill of Materials (SBOM) is maintained of all
+    section: Verify that a Software Bill of Materials (SBOM) is maintained of all
       third party libraries in use.
+    sectionID: V14.2.5
   ltype: Linked To
 - document:
     doctype: Standard
@@ -32,4 +32,11 @@ links:
     name: OWASP Cheat Sheets
     section: Vulnerable Dependency Management Cheat Sheet
   ltype: Linked To
-name: Maintain/manage inventory of third party repositories
+- document:
+    doctype: Standard
+    name: NIST SSDF
+    section: Collect, safeguard, maintain, and share provenance data for all components
+      of each software release (e.g., in a software bill of materials [SBOM]).
+    sectionID: PS.3.2
+  ltype: Linked To
+name: Maintain/manage inventory of third party components

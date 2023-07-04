@@ -6,17 +6,17 @@ links:
     id: 764-765
     name: Sanitization and sandboxing
     tags:
-    - Injection protection
     - XSS protection
+    - Injection protection
   ltype: Contains
 - document:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x13-V5-Validation-Sanitization-Encoding.md
     name: ASVS
-    section: V5.2.8
-    sectionID: Verify that the application sanitizes, disables, or sandboxes user-supplied
+    section: Verify that the application sanitizes, disables, or sandboxes user-supplied
       scriptable or expression template language content, such as Markdown, CSS or
       XSL stylesheets, BBCode, or similar.
+    sectionID: V5.2.8
   ltype: Linked To
 - document:
     doctype: Standard
@@ -27,7 +27,7 @@ links:
   ltype: Linked To
 - document:
     doctype: Standard
-    hyperlink: https://owasp.org/www-project-web-security-testing-guide/v42/4-Web_Application_Security_Testing/11-Client_Side_Testing/05-Testing_for_CSS_Injection.html
+    hyperlink: https://owasp.org/www-project-web-security-testing-guide/stable/4-Web_Application_Security_Testing/11-Client_Side_Testing/05-Testing_for_CSS_Injection.html
     name: OWASP Web Security Testing Guide (WSTG)
     section: WSTG-CLNT-05
   ltype: Linked To

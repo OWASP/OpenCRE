@@ -15,10 +15,10 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x12-V4-Access-Control.md
     name: ASVS
-    section: V4.2.2
-    sectionID: Verify that the application or framework enforces a strong anti-CSRF
+    section: Verify that the application or framework enforces a strong anti-CSRF
       mechanism to protect authenticated functionality, and effective anti-automation
       or anti-CSRF protects unauthenticated functionality.
+    sectionID: V4.2.2
   ltype: Linked To
 - document:
     doctype: Standard
@@ -29,7 +29,7 @@ links:
   ltype: Linked To
 - document:
     doctype: Standard
-    hyperlink: https://owasp.org/www-project-web-security-testing-guide/v42/4-Web_Application_Security_Testing/06-Session_Management_Testing/05-Testing_for_Cross_Site_Request_Forgery.html
+    hyperlink: https://owasp.org/www-project-web-security-testing-guide/stable/4-Web_Application_Security_Testing/06-Session_Management_Testing/05-Testing_for_Cross_Site_Request_Forgery.html
     name: OWASP Web Security Testing Guide (WSTG)
     section: WSTG-SESS-05
   ltype: Linked To

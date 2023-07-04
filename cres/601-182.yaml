@@ -23,4 +23,12 @@ links:
     id: 134-412
     name: Protect sensitive functionalities against race conditions
   ltype: Contains
+- document:
+    doctype: CRE
+    id: 267-031
+    name: Protect the availability of resources by providing more to higher-priority
+      processes
+    tags:
+    - Denial Of Service protection
+  ltype: Contains
 name: Parallel execution robustness

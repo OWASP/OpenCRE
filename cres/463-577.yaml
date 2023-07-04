@@ -3,6 +3,11 @@ id: 463-577
 links:
 - document:
     doctype: CRE
+    id: 732-148
+    name: Vulnerability management
+  ltype: Related
+- document:
+    doctype: CRE
     id: 887-750
     name: Detect and respond
   ltype: Contains
@@ -36,6 +41,14 @@ links:
     name: SAMM
     section: Incident Response
     sectionID: O-IM-B
+  ltype: Linked To
+- document:
+    doctype: Standard
+    name: NIST SSDF
+    section: Have a policy that addresses vulnerability disclosure and remediation,
+      and implement the roles, responsibilities, and processes needed to support that
+      policy.
+    sectionID: RV.1.3
   ltype: Linked To
 - document:
     doctype: Standard

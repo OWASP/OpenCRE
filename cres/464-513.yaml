@@ -3,11 +3,6 @@ id: 464-513
 links:
 - document:
     doctype: CRE
-    id: 567-755
-    name: Governance processes for security
-  ltype: Contains
-- document:
-    doctype: CRE
     id: 433-442
     name: Verification
   ltype: Related
@@ -17,12 +12,15 @@ links:
     name: Audit & accountability
   ltype: Contains
 - document:
-    doctype: Standard
-    hyperlink: https://owaspsamm.org/model/governance/strategy-and-metrics/stream-b/
-    name: SAMM
-    section: Measure and Improve
-    sectionID: G-SM-B
-  ltype: Linked To
+    doctype: CRE
+    id: 745-356
+    name: Development process audit trail
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 567-755
+    name: Governance processes for security
+  ltype: Contains
 - document:
     doctype: Standard
     hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=CA-1
@@ -67,8 +65,33 @@ links:
   ltype: Linked To
 - document:
     doctype: Standard
+    name: NIST SSDF
+    section: Configure tools to generate artifacts of their support of secure software
+      development practices as defined by the organization.
+    sectionID: PO.3.3
+  ltype: Linked To
+- document:
+    doctype: Standard
     hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=SI-5
     name: NIST 800-53 v5
     section: SI-5 Security Alerts, Advisories, and Directives
+  ltype: Linked To
+- document:
+    doctype: Standard
+    name: Cloud Controls Matrix
+    section: Application Security Metrics
+    sectionID: AIS-03
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=PM-6
+    name: NIST 800-53 v5
+    section: PM-6 Measures of Performance
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=PM-31
+    name: NIST 800-53 v5
+    section: PM-31 Continuous Monitoring Strategy
   ltype: Linked To
 name: Assurance processes

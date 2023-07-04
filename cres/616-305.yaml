@@ -3,7 +3,7 @@ id: 616-305
 links:
 - document:
     doctype: CRE
-    id: 068-102
+    id: 326-704
     name: Architecture/design processes
     tags:
     - Architecture
@@ -27,8 +27,18 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
+    id: 745-356
+    name: Development process audit trail
+  ltype: Contains
+- document:
+    doctype: CRE
     id: 613-285
     name: Supply chain management
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 244-750
+    name: Technical application security training
   ltype: Contains
 - document:
     doctype: CRE
@@ -42,14 +52,19 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 244-750
-    name: Technical training
-  ltype: Contains
-- document:
-    doctype: CRE
     id: 433-442
     name: Verification
   ltype: Contains
+- document:
+    doctype: CRE
+    id: 261-010
+    name: Program management for secure software development
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 148-853
+    name: Setup and maintain a secure software development process
+  ltype: Related
 - document:
     doctype: Standard
     hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=SA-15
@@ -76,20 +91,6 @@ links:
   ltype: Linked To
 - document:
     doctype: Standard
-    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x10-V1-Architecture.md
-    name: ASVS
-    section: V1.1.1
-    sectionID: Verify the use of a secure software development lifecycle that addresses
-      security in all stages of development.
-  ltype: Linked To
-- document:
-    doctype: Standard
-    hyperlink: https://owasp-top-10-proactive-controls-2018.readthedocs.io/en/latest/c1-security-requirements.html
-    name: OWASP Proactive Controls
-    section: C1
-  ltype: Linked To
-- document:
-    doctype: Standard
     hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=SA-8
     name: NIST 800-53 v5
     section: SA-8 Security and Privacy Engineering Principles
@@ -99,5 +100,19 @@ links:
     hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=SI-3
     name: NIST 800-53 v5
     section: SI-3 Malicious Code Protection
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x10-V1-Architecture.md
+    name: ASVS
+    section: Verify the use of a secure software development lifecycle that addresses
+      security in all stages of development.
+    sectionID: V1.1.1
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owasp-top-10-proactive-controls-2018.readthedocs.io/en/latest/c1-security-requirements.html
+    name: OWASP Proactive Controls
+    section: C1
   ltype: Linked To
 name: Development processes for security

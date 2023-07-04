@@ -10,10 +10,10 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x12-V3-Session-management.md
     name: ASVS
-    section: V3.6.1
-    sectionID: Verify that Relying Parties (RPs) specify the maximum authentication
+    section: Verify that Relying Parties (RPs) specify the maximum authentication
       time to Credential Service Providers (CSPs) and that CSPs re-authenticate the
       user if they haven't used a session within that period.
+    sectionID: V3.6.1
   ltype: Linked To
 - document:
     doctype: Standard
@@ -24,7 +24,7 @@ links:
   ltype: Linked To
 - document:
     doctype: Standard
-    hyperlink: https://owasp.org/www-project-web-security-testing-guide/v42/4-Web_Application_Security_Testing/06-Session_Management_Testing/01-Testing_for_Session_Management_Schema.html#gray-box-testing-and-example
+    hyperlink: https://owasp.org/www-project-web-security-testing-guide/stable/4-Web_Application_Security_Testing/06-Session_Management_Testing/01-Testing_for_Session_Management_Schema.html#gray-box-testing-and-example
     name: OWASP Web Security Testing Guide (WSTG)
     section: WSTG-SESS-01
   ltype: Linked To

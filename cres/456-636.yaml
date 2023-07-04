@@ -15,9 +15,9 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x21-V13-API.md
     name: ASVS
-    section: V13.3.2
-    sectionID: Verify that the message payload is signed using WS-Security to ensure
+    section: Verify that the message payload is signed using WS-Security to ensure
       reliable transport between client and service.
+    sectionID: V13.3.2
   ltype: Linked To
 - document:
     doctype: Standard

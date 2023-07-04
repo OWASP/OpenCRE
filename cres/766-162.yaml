@@ -38,6 +38,12 @@ links:
   ltype: Contains
 - document:
     doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=PM-7
+    name: NIST 800-53 v5
+    section: PM-7 Enterprise Architecture
+  ltype: Linked To
+- document:
+    doctype: Standard
     name: Cloud Controls Matrix
     section: Governance, Risk and Compliance
     sectionID: GRC

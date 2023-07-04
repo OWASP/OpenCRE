@@ -40,6 +40,12 @@ links:
   ltype: Related
 - document:
     doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=SC-22
+    name: NIST 800-53 v5
+    section: SC-22 Architecture and Provisioning for Name/address Resolution Service
+  ltype: Linked To
+- document:
+    doctype: Standard
     name: ISO 27001
     section: Security of network services
     sectionID: '8.21'

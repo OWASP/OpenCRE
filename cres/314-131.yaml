@@ -10,11 +10,11 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x22-V14-Config.md
     name: ASVS
-    section: V14.1.2
-    sectionID: Verify that compiler flags are configured to enable all available buffer
+    section: Verify that compiler flags are configured to enable all available buffer
       overflow protections and warnings, including stack randomization, data execution
       prevention, and to break the build if an unsafe pointer, memory, format string,
       integer, or string operations are found.
+    sectionID: V14.1.2
   ltype: Linked To
 - document:
     doctype: Standard
@@ -29,4 +29,19 @@ links:
     name: OWASP Cheat Sheets
     section: Docker Security Cheat Sheet
   ltype: Linked To
-name: Set proper (C) compiler flags
+- document:
+    doctype: Standard
+    name: NIST SSDF
+    section: Use compiler, interpreter, and build tools that offer features to improve
+      executable security.
+    sectionID: PW.6.1
+  ltype: Linked To
+- document:
+    doctype: Standard
+    name: NIST SSDF
+    section: Determine which compiler, interpreter, and build tool features should
+      be used and how each should be configured, then implement and use the approved
+      configurations.
+    sectionID: PW.6.2
+  ltype: Linked To
+name: Use features in compile and build tools for executable security

@@ -12,9 +12,9 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x14-V6-Cryptography.md
     name: ASVS
-    section: V6.4.1
-    sectionID: Verify that a secrets management solution such as a key vault is used
+    section: Verify that a secrets management solution such as a key vault is used
       to securely create, store, control access to and destroy secrets.
+    sectionID: V6.4.1
   ltype: Linked To
 - document:
     doctype: Standard

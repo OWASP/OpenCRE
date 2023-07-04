@@ -1,0 +1,17 @@
+doctype: CRE
+id: 251-446
+links:
+- document:
+    doctype: CRE
+    id: 261-010
+    name: Program management for secure software development
+  ltype: Contains
+- document:
+    doctype: Standard
+    name: NIST SSDF
+    section: Obtain upper management or authorizing official commitment to secure
+      development, and convey that commitment to all with development-related roles
+      and responsibilities.
+    sectionID: PO.2.3
+  ltype: Linked To
+name: Organize stakeholder commitment for secure software development

@@ -20,9 +20,9 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x19-V11-BusLogic.md
     name: ASVS
-    section: V11.1.8
-    sectionID: Verify that the application has configurable alerting when automated
+    section: Verify that the application has configurable alerting when automated
       attacks or unusual activity is detected.
+    sectionID: V11.1.8
   ltype: Linked To
 - document:
     doctype: Standard
