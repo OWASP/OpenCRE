@@ -8,15 +8,19 @@
   }
 
   .icon.external {
-    display: none;
+    color: #4183c4;
     font-size: 0.9em;
     padding-left: 0.5em;
+  }
+
+.external:hover::before {
+    color: #115c96;
+    padding: 1px;
   }
 
   .external-link,
   &.external-link {
     a {
-      display: flex;
       color: rgba(0, 0, 0, 0.4);
     }
   }
@@ -25,9 +29,6 @@
   &.external-link:hover {
     a {
       color: rgba(0, 0, 0, 0.87);
-    }
-    .icon.external {
-      display: inline-block;
     }
   }
 
