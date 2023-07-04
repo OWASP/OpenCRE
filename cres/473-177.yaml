@@ -46,18 +46,30 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
+    id: 461-680
+    name: Securely archive builds and build information
+  ltype: Contains
+- document:
+    doctype: CRE
     id: 253-452
     name: Securely automate build and deployment in pipeline
   ltype: Contains
 - document:
     doctype: CRE
     id: 314-131
-    name: Set proper (C) compiler flags
+    name: Use features in compile and build tools for executable security
   ltype: Contains
 - document:
     doctype: CRE
     id: 862-452
     name: Operating processes for security
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 233-748
+    name: Configuration hardening
+    tags:
+    - Configuration
   ltype: Related
 - document:
     doctype: Standard

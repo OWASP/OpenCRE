@@ -3,25 +3,23 @@ id: 068-102
 links:
 - document:
     doctype: CRE
-    id: 068-102
+    id: 326-704
     name: Architecture/design processes
     tags:
     - Architecture
   ltype: Contains
 - document:
     doctype: CRE
-    id: 340-754
-    name: Threat model every design change or sprint
-    tags:
-    - Define High-level architecture and perform security analysis on it
+    id: 307-242
+    name: Security risk assessment
   ltype: Related
 - document:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x10-V1-Architecture.md
     name: ASVS
-    section: V1.1.5
-    sectionID: Verify definition and security analysis of the application's high-level
+    section: Verify definition and security analysis of the application's high-level
       architecture and all connected remote services.
+    sectionID: V1.1.5
   ltype: Linked To
 - document:
     doctype: Standard
@@ -35,6 +33,12 @@ links:
     name: CWE
     section: ''
     sectionID: '1059'
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=SC-31
+    name: NIST 800-53 v5
+    section: SC-31 Covert Channel Analysis
   ltype: Linked To
 - document:
     doctype: Standard
@@ -61,4 +65,13 @@ links:
     section: Threat modeling
     sectionID: D-TA-B
   ltype: Linked To
-name: Define High-level architecture and perform security analysis on it
+- document:
+    doctype: Standard
+    name: NIST SSDF
+    section: "Use forms of risk modeling \u2013 such as threat modeling, attack modeling,\
+      \ or attack surface mapping \u2013 to help assess the security risk for the\
+      \ software."
+    sectionID: PW.1.1
+  ltype: Linked To
+name: Describe high-level system architecture and perform threat modeling on it every
+  critical change and regularly

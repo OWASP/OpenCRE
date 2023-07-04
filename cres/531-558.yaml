@@ -6,16 +6,16 @@ links:
     id: 161-451
     name: Output encoding and injection prevention
     tags:
-    - Injection protection
     - XSS protection
+    - Injection protection
   ltype: Contains
 - document:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x13-V5-Validation-Sanitization-Encoding.md
     name: ASVS
-    section: V5.3.7
-    sectionID: Verify that the application protects against LDAP injection vulnerabilities,
+    section: Verify that the application protects against LDAP injection vulnerabilities,
       or that specific security controls to prevent LDAP injection have been implemented.
+    sectionID: V5.3.7
   ltype: Linked To
 - document:
     doctype: Standard
@@ -32,7 +32,7 @@ links:
   ltype: Linked To
 - document:
     doctype: Standard
-    hyperlink: https://owasp.org/www-project-web-security-testing-guide/v42/4-Web_Application_Security_Testing/07-Input_Validation_Testing/06-Testing_for_LDAP_Injection.html
+    hyperlink: https://owasp.org/www-project-web-security-testing-guide/stable/4-Web_Application_Security_Testing/07-Input_Validation_Testing/06-Testing_for_LDAP_Injection.html
     name: OWASP Web Security Testing Guide (WSTG)
     section: WSTG-INPV-06
   ltype: Linked To

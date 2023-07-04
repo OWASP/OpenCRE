@@ -10,9 +10,9 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x22-V14-Config.md
     name: ASVS
-    section: V14.2.6
-    sectionID: Verify that the attack surface is reduced by sandboxing or encapsulating
+    section: Verify that the attack surface is reduced by sandboxing or encapsulating
       third party libraries to expose only the required behaviour into the application.
+    sectionID: V14.2.6
   ltype: Linked To
 - document:
     doctype: Standard

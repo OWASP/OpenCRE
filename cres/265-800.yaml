@@ -10,10 +10,10 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x18-V10-Malicious.md
     name: ASVS
-    section: V10.2.5
-    sectionID: Verify that the application source code and third party libraries do
+    section: Verify that the application source code and third party libraries do
       not contain malicious code, such as salami attacks, logic bypasses, or logic
       bombs.
+    sectionID: V10.2.5
   ltype: Linked To
 - document:
     doctype: Standard

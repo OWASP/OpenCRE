@@ -10,11 +10,11 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x10-V1-Architecture.md
     name: ASVS
-    section: V1.8.2
-    sectionID: Verify that all protection levels have an associated set of protection
+    section: Verify that all protection levels have an associated set of protection
       requirements, such as encryption requirements, integrity requirements, retention,
       privacy and other confidentiality requirements, and that these are applied in
       the architecture.
+    sectionID: V1.8.2
   ltype: Linked To
 - document:
     doctype: Standard

@@ -12,10 +12,10 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x22-V14-Config.md
     name: ASVS
-    section: V14.5.1
-    sectionID: Verify that the application server only accepts the HTTP methods in
-      use by the application/API, including pre-flight OPTIONS, and logs/alerts on
-      any requests that are not valid for the application context.
+    section: Verify that the application server only accepts the HTTP methods in use
+      by the application/API, including pre-flight OPTIONS, and logs/alerts on any
+      requests that are not valid for the application context.
+    sectionID: V14.5.1
   ltype: Linked To
 - document:
     doctype: Standard
@@ -26,7 +26,7 @@ links:
   ltype: Linked To
 - document:
     doctype: Standard
-    hyperlink: https://owasp.org/www-project-web-security-testing-guide/v42/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/06-Test_HTTP_Methods.html
+    hyperlink: https://owasp.org/www-project-web-security-testing-guide/stable/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/06-Test_HTTP_Methods.html
     name: OWASP Web Security Testing Guide (WSTG)
     section: WSTG-CONF-06
   ltype: Linked To

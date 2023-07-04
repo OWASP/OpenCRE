@@ -10,10 +10,10 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x16-V8-Data-Protection.md
     name: ASVS
-    section: V8.3.6
-    sectionID: Verify that sensitive information contained in memory is overwritten
+    section: Verify that sensitive information contained in memory is overwritten
       as soon as it is no longer required to mitigate memory dumping attacks, using
       zeroes or random data.
+    sectionID: V8.3.6
   ltype: Linked To
 - document:
     doctype: Standard

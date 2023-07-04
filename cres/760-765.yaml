@@ -26,32 +26,32 @@ links:
     name: Store and serve user-uploaded files such that they cannot execute/damage
       server or client
     tags:
-    - Injection protection
     - XSS protection
+    - Injection protection
   ltype: Related
 - document:
     doctype: CRE
     id: 010-308
     name: Input validation
     tags:
-    - Injection protection
     - XSS protection
+    - Injection protection
   ltype: Related
 - document:
     doctype: CRE
     id: 161-451
     name: Output encoding and injection prevention
     tags:
-    - Injection protection
     - XSS protection
+    - Injection protection
   ltype: Related
 - document:
     doctype: CRE
     id: 764-765
     name: Sanitization and sandboxing
     tags:
-    - Injection protection
     - XSS protection
+    - Injection protection
   ltype: Related
 - document:
     doctype: CRE

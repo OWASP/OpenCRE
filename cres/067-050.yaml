@@ -10,9 +10,9 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x15-V7-Error-Logging.md
     name: ASVS
-    section: V7.1.1
-    sectionID: Verify that the application does not log credentials or payment details.
+    section: Verify that the application does not log credentials or payment details.
       Session tokens should only be stored in logs in an irreversible, hashed form.
+    sectionID: V7.1.1
   ltype: Linked To
 - document:
     doctype: Standard
@@ -23,7 +23,7 @@ links:
   ltype: Linked To
 - document:
     doctype: Standard
-    hyperlink: https://owasp.org/www-project-web-security-testing-guide/v42/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/02-Test_Application_Platform_Configuration.html#log-review
+    hyperlink: https://owasp.org/www-project-web-security-testing-guide/stable/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/02-Test_Application_Platform_Configuration.html#log-review
     name: OWASP Web Security Testing Guide (WSTG)
     section: WSTG-CONF-02
   ltype: Linked To

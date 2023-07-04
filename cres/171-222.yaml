@@ -10,9 +10,9 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x10-V1-Architecture.md
     name: ASVS
-    section: V1.14.2
-    sectionID: Verify that binary signatures, trusted connections, and verified endpoints
+    section: Verify that binary signatures, trusted connections, and verified endpoints
       are used to deploy binaries to remote devices.
+    sectionID: V1.14.2
   ltype: Linked To
 - document:
     doctype: Standard

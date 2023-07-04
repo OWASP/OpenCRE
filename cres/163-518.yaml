@@ -15,10 +15,10 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x20-V12-Files-Resources.md
     name: ASVS
-    section: V12.1.2
-    sectionID: Verify that the application checks compressed files (e.g. zip, gz,
-      docx, odt) against maximum allowed uncompressed size and against maximum number
-      of files before uncompressing the file.
+    section: Verify that the application checks compressed files (e.g. zip, gz, docx,
+      odt) against maximum allowed uncompressed size and against maximum number of
+      files before uncompressing the file.
+    sectionID: V12.1.2
   ltype: Linked To
 - document:
     doctype: Standard

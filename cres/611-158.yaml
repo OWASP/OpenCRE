@@ -3,16 +3,16 @@ id: 611-158
 links:
 - document:
     doctype: CRE
-    id: 433-442
-    name: Verification
+    id: 832-555
+    name: Automated static security analysis of code and configuration
   ltype: Contains
 - document:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x18-V10-Malicious.md
     name: ASVS
-    section: V10.1.1
-    sectionID: Verify that a code analysis tool is in use that can detect potentially
+    section: Verify that a code analysis tool is in use that can detect potentially
       malicious code, such as time functions, unsafe file operations and network connections.
+    sectionID: V10.1.1
   ltype: Linked To
 - document:
     doctype: Standard
@@ -27,4 +27,4 @@ links:
     name: OWASP Cheat Sheets
     section: Third Party Javascript Management Cheat Sheet
   ltype: Linked To
-name: Use SAST for malicious content
+name: Use static analysis tooling to detect potentially malicious actions

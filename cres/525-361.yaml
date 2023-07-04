@@ -12,9 +12,9 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x11-V2-Authentication.md
     name: ASVS
-    section: V2.2.7
-    sectionID: Verify intent to authenticate by requiring the entry of an OTP token
+    section: Verify intent to authenticate by requiring the entry of an OTP token
       or user-initiated action such as a button press on a FIDO hardware key.
+    sectionID: V2.2.7
   ltype: Linked To
 - document:
     doctype: Standard

@@ -12,9 +12,9 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x22-V14-Config.md
     name: ASVS
-    section: V14.3.3
-    sectionID: Verify that the HTTP headers or any part of the HTTP response do not
+    section: Verify that the HTTP headers or any part of the HTTP response do not
       expose detailed version information of system components.
+    sectionID: V14.3.3
   ltype: Linked To
 - document:
     doctype: Standard
@@ -25,7 +25,7 @@ links:
   ltype: Linked To
 - document:
     doctype: Standard
-    hyperlink: https://owasp.org/www-project-web-security-testing-guide/v42/4-Web_Application_Security_Testing/01-Information_Gathering/README.html
+    hyperlink: https://owasp.org/www-project-web-security-testing-guide/stable/4-Web_Application_Security_Testing/01-Information_Gathering/README.html
     name: OWASP Web Security Testing Guide (WSTG)
     section: WSTG-INFO-##
   ltype: Linked To

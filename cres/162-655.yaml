@@ -10,9 +10,9 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x10-V1-Architecture.md
     name: ASVS
-    section: V1.11.1
-    sectionID: Verify the definition and documentation of all application components
+    section: Verify the definition and documentation of all application components
       in terms of the business or security functions they provide.
+    sectionID: V1.11.1
   ltype: Linked To
 - document:
     doctype: Standard

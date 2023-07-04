@@ -44,6 +44,8 @@ links:
     doctype: CRE
     id: 708-355
     name: Secure implemented architecture
+    tags:
+    - Architecture
   ltype: Contains
 - document:
     doctype: CRE
@@ -60,4 +62,11 @@ links:
     id: 724-770
     name: Technical application access control
   ltype: Contains
+- document:
+    doctype: Standard
+    name: NIST SSDF
+    section: "Follow all secure coding practices that are appropriate to the development\
+      \ languages and environment to meet the organization\u2019s requirements"
+    sectionID: PW.5.1
+  ltype: Linked To
 name: Technical application security controls

@@ -8,17 +8,16 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 068-102
     name: Define High-level architecture and perform security analysis on it
   ltype: Related
 - document:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x10-V1-Architecture.md
     name: ASVS
-    section: V1.1.2
-    sectionID: Verify the use of threat modeling for every design change or sprint
-      planning to identify threats, plan for countermeasures, facilitate appropriate
-      risk responses, and guide security testing.
+    section: Verify the use of threat modeling for every design change or sprint planning
+      to identify threats, plan for countermeasures, facilitate appropriate risk responses,
+      and guide security testing.
+    sectionID: V1.1.2
   ltype: Linked To
 - document:
     doctype: Standard
@@ -45,6 +44,14 @@ links:
     name: OWASP Cheat Sheets
     section: Attack Surface Analysis Cheat Sheet
   ltype: Linked To
-name: Threat model every design change or sprint
+- document:
+    doctype: Standard
+    name: NIST SSDF
+    section: "Use forms of risk modeling \u2013 such as threat modeling, attack modeling,\
+      \ or attack surface mapping \u2013 to help assess the security risk for the\
+      \ software."
+    sectionID: PW.1.1
+  ltype: Linked To
+name: Threat model every critical design change and repeat regularly
 tags:
 - Define High-level architecture and perform security analysis on it

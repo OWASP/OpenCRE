@@ -6,17 +6,17 @@ links:
     id: 010-308
     name: Input validation
     tags:
-    - Injection protection
     - XSS protection
+    - Injection protection
   ltype: Contains
 - document:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x13-V5-Validation-Sanitization-Encoding.md
     name: ASVS
-    section: V5.1.5
-    sectionID: Verify that URL redirects and forwards only allow destinations which
+    section: Verify that URL redirects and forwards only allow destinations which
       appear on an allow list, or show a warning when redirecting to potentially untrusted
       content.
+    sectionID: V5.1.5
   ltype: Linked To
 - document:
     doctype: Standard
@@ -27,7 +27,7 @@ links:
   ltype: Linked To
 - document:
     doctype: Standard
-    hyperlink: https://owasp.org/www-project-web-security-testing-guide/v42/4-Web_Application_Security_Testing/11-Client_Side_Testing/04-Testing_for_Client_Side_URL_Redirect.html
+    hyperlink: https://owasp.org/www-project-web-security-testing-guide/stable/4-Web_Application_Security_Testing/11-Client_Side_Testing/04-Testing_for_Client_Side_URL_Redirect.html
     name: OWASP Web Security Testing Guide (WSTG)
     section: WSTG-CLNT-04
   ltype: Linked To

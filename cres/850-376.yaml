@@ -13,13 +13,13 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 157-587
-    name: Equipment management
+    id: 148-227
+    name: Endpoint management
   ltype: Contains
 - document:
     doctype: CRE
-    id: 148-227
-    name: Endpoint management
+    id: 157-587
+    name: Equipment management
   ltype: Contains
 - document:
     doctype: CRE

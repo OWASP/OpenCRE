@@ -29,4 +29,17 @@ links:
     name: NIST 800-53 v5
     section: SA-5 System Documentation
   ltype: Linked To
+- document:
+    doctype: Standard
+    name: NIST SSDF
+    section: "Track and maintain the software\u2019s security requirements, risks,\
+      \ and design decisions."
+    sectionID: PW.1.2
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=PL-7
+    name: NIST 800-53 v5
+    section: PL-7 CONCEPT OF OPERATIONS
+  ltype: Linked To
 name: Technical system documentation

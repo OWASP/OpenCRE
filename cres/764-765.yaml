@@ -8,17 +8,17 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 760-764
-    name: Injection protection
-    tags:
-    - XSS protection
-  ltype: Related
-- document:
-    doctype: CRE
     id: 760-765
     name: XSS protection
     tags:
     - Injection protection
+  ltype: Related
+- document:
+    doctype: CRE
+    id: 760-764
+    name: Injection protection
+    tags:
+    - XSS protection
   ltype: Related
 - document:
     doctype: CRE
@@ -73,5 +73,5 @@ links:
   ltype: Contains
 name: Sanitization and sandboxing
 tags:
-- Injection protection
 - XSS protection
+- Injection protection

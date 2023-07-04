@@ -17,9 +17,9 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x12-V4-Access-Control.md
     name: ASVS
-    section: V4.3.1
-    sectionID: Verify administrative interfaces use appropriate multi-factor authentication
+    section: Verify administrative interfaces use appropriate multi-factor authentication
       to prevent unauthorized use.
+    sectionID: V4.3.1
   ltype: Linked To
 - document:
     doctype: Standard

@@ -10,9 +10,9 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x20-V12-Files-Resources.md
     name: ASVS
-    section: V12.4.2
-    sectionID: Verify that files obtained from untrusted sources are scanned by antivirus
+    section: Verify that files obtained from untrusted sources are scanned by antivirus
       scanners to prevent upload and serving of known malicious content.
+    sectionID: V12.4.2
   ltype: Linked To
 - document:
     doctype: Standard
@@ -23,7 +23,7 @@ links:
   ltype: Linked To
 - document:
     doctype: Standard
-    hyperlink: https://owasp.org/www-project-web-security-testing-guide/v42/4-Web_Application_Security_Testing/10-Business_Logic_Testing/09-Test_Upload_of_Malicious_Files.html
+    hyperlink: https://owasp.org/www-project-web-security-testing-guide/stable/4-Web_Application_Security_Testing/10-Business_Logic_Testing/09-Test_Upload_of_Malicious_Files.html
     name: OWASP Web Security Testing Guide (WSTG)
     section: WSTG-BUSL-09
   ltype: Linked To

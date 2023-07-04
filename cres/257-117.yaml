@@ -10,9 +10,9 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x16-V8-Data-Protection.md
     name: ASVS
-    section: V8.1.5
-    sectionID: Verify that regular backups of important data are performed and that
+    section: Verify that regular backups of important data are performed and that
       test restoration of data is performed.
+    sectionID: V8.1.5
   ltype: Linked To
 - document:
     doctype: Standard

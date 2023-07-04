@@ -6,8 +6,8 @@ links:
     id: 764-765
     name: Sanitization and sandboxing
     tags:
-    - Injection protection
     - XSS protection
+    - Injection protection
   ltype: Contains
 - document:
     doctype: CRE
@@ -18,10 +18,10 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x13-V5-Validation-Sanitization-Encoding.md
     name: ASVS
-    section: V5.2.6
-    sectionID: Verify that the application protects against SSRF attacks, by validating
+    section: Verify that the application protects against SSRF attacks, by validating
       or sanitizing untrusted data or HTTP file metadata, such as filenames and URL
       input fields, and uses allow lists of protocols, domains, paths and ports.
+    sectionID: V5.2.6
   ltype: Linked To
 - document:
     doctype: Standard
@@ -32,7 +32,7 @@ links:
   ltype: Linked To
 - document:
     doctype: Standard
-    hyperlink: https://owasp.org/www-project-web-security-testing-guide/v42/4-Web_Application_Security_Testing/07-Input_Validation_Testing/11-Testing_for_Code_Injection.html
+    hyperlink: https://owasp.org/www-project-web-security-testing-guide/stable/4-Web_Application_Security_Testing/07-Input_Validation_Testing/11-Testing_for_Code_Injection.html
     name: OWASP Web Security Testing Guide (WSTG)
     section: WSTG-INPV-11
   ltype: Linked To

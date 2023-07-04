@@ -12,9 +12,9 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x17-V9-Communications.md
     name: ASVS
-    section: V9.1.2
-    sectionID: Verify using up to date TLS testing tools that only strong cipher suites
+    section: Verify using up to date TLS testing tools that only strong cipher suites
       are enabled, with the strongest cipher suites set as preferred.
+    sectionID: V9.1.2
   ltype: Linked To
 - document:
     doctype: Standard
@@ -25,7 +25,7 @@ links:
   ltype: Linked To
 - document:
     doctype: Standard
-    hyperlink: https://owasp.org/www-project-web-security-testing-guide/v42/4-Web_Application_Security_Testing/09-Testing_for_Weak_Cryptography/01-Testing_for_Weak_SSL_TLS_Ciphers_Insufficient_Transport_Layer_Protection.html
+    hyperlink: https://owasp.org/www-project-web-security-testing-guide/stable/4-Web_Application_Security_Testing/09-Testing_for_Weak_Cryptography/01-Testing_for_Weak_SSL_TLS_Ciphers_Insufficient_Transport_Layer_Protection.html
     name: OWASP Web Security Testing Guide (WSTG)
     section: WSTG-CRYP-01
   ltype: Linked To

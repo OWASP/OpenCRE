@@ -10,10 +10,10 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x10-V1-Architecture.md
     name: ASVS
-    section: V1.2.4
-    sectionID: Verify that all authentication pathways and identity management APIs
+    section: Verify that all authentication pathways and identity management APIs
       implement consistent authentication security control strength, such that there
       are no weaker alternatives per the risk of the application.
+    sectionID: V1.2.4
   ltype: Linked To
 - document:
     doctype: Standard

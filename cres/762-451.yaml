@@ -10,8 +10,8 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x16-V8-Data-Protection.md
     name: ASVS
-    section: V8.3.2
-    sectionID: Verify that users have a method to remove or export their data on demand.
+    section: Verify that users have a method to remove or export their data on demand.
+    sectionID: V8.3.2
   ltype: Linked To
 - document:
     doctype: Standard

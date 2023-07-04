@@ -1,0 +1,31 @@
+doctype: CRE
+id: 635-851
+links:
+- document:
+    doctype: CRE
+    id: 261-010
+    name: Program management for secure software development
+  ltype: Contains
+- document:
+    doctype: Standard
+    hyperlink: https://owaspsamm.org/model/governance/strategy-and-metrics/stream-a
+    name: SAMM
+    section: Create and Promote
+    sectionID: G-SM-A
+  ltype: Linked To
+- document:
+    doctype: Standard
+    hyperlink: https://owaspsamm.org/model/governance/strategy-and-metrics/stream-b/
+    name: SAMM
+    section: Measure and Improve
+    sectionID: G-SM-B
+  ltype: Linked To
+- document:
+    doctype: Standard
+    name: NIST SSDF
+    section: Review the SDLC process, and update it if appropriate to prevent (or
+      reduce the likelihood of) the root cause recurring in updates to the software
+      or in new software that is created.
+    sectionID: RV.3.4
+  ltype: Linked To
+name: Steer the secure software development program

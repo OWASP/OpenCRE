@@ -1,0 +1,21 @@
+doctype: CRE
+id: 118-775
+links:
+- document:
+    doctype: CRE
+    id: 261-010
+    name: Program management for secure software development
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 013-021
+    name: Roles and responsibilities
+  ltype: Related
+- document:
+    doctype: Standard
+    hyperlink: https://owaspsamm.org/model/governance/education-and-guidance/stream-b
+    name: SAMM
+    section: Organization and Culture
+    sectionID: G-EG-B
+  ltype: Linked To
+name: Manage an internal secure software development community

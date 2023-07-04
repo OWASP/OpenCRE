@@ -12,9 +12,9 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x11-V2-Authentication.md
     name: ASVS
-    section: V2.9.2
-    sectionID: Verify that the challenge nonce is at least 64 bits in length, and
-      statistically unique or unique over the lifetime of the cryptographic device.
+    section: Verify that the challenge nonce is at least 64 bits in length, and statistically
+      unique or unique over the lifetime of the cryptographic device.
+    sectionID: V2.9.2
   ltype: Linked To
 - document:
     doctype: Standard

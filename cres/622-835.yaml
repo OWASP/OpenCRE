@@ -12,11 +12,11 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x11-V2-Authentication.md
     name: ASVS
-    section: V2.3.1
-    sectionID: Verify system generated initial passwords or activation codes SHOULD
+    section: Verify system generated initial passwords or activation codes SHOULD
       be securely randomly generated, SHOULD be at least 6 characters long, and MAY
       contain letters and numbers, and expire after a short period of time. These
       initial secrets must not be permitted to become the long term password.
+    sectionID: V2.3.1
   ltype: Linked To
 - document:
     doctype: Standard

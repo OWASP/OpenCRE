@@ -17,8 +17,8 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x17-V9-Communications.md
     name: ASVS
-    section: V9.2.5
-    sectionID: Verify that backend TLS connection failures are logged.
+    section: Verify that backend TLS connection failures are logged.
+    sectionID: V9.2.5
   ltype: Linked To
 - document:
     doctype: Standard

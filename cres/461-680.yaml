@@ -1,0 +1,17 @@
+doctype: CRE
+id: 461-680
+links:
+- document:
+    doctype: CRE
+    id: 473-177
+    name: Deploy/build
+  ltype: Contains
+- document:
+    doctype: Standard
+    name: NIST SSDF
+    section: Securely archive the necessary files and supporting data (e.g., integrity
+      verification information, provenance data) to be retained for each software
+      release.
+    sectionID: PS.3.1
+  ltype: Linked To
+name: Securely archive builds and build information

@@ -1,0 +1,21 @@
+doctype: CRE
+id: 745-356
+links:
+- document:
+    doctype: CRE
+    id: 616-305
+    name: Development processes for security
+  ltype: Contains
+- document:
+    doctype: CRE
+    id: 464-513
+    name: Assurance processes
+  ltype: Related
+- document:
+    doctype: Standard
+    name: NIST SSDF
+    section: Configure tools to generate artifacts of their support of secure software
+      development practices as defined by the organization.
+    sectionID: PO.3.3
+  ltype: Linked To
+name: Development process audit trail

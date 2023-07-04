@@ -3,11 +3,6 @@ id: 287-823
 links:
 - document:
     doctype: CRE
-    id: 157-587
-    name: Equipment management
-  ltype: Related
-- document:
-    doctype: CRE
     id: 766-162
     name: Security Analysis and documentation
   ltype: Contains
@@ -23,9 +18,20 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
+    id: 157-587
+    name: Equipment management
+  ltype: Related
+- document:
+    doctype: CRE
     id: 522-616
     name: Media protection
   ltype: Related
+- document:
+    doctype: Standard
+    hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=PM-5
+    name: NIST 800-53 v5
+    section: PM-5 System Inventory
+  ltype: Linked To
 - document:
     doctype: Standard
     name: ISO 27001

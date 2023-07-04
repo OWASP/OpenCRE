@@ -6,8 +6,8 @@ links:
     id: 010-308
     name: Input validation
     tags:
-    - Injection protection
     - XSS protection
+    - Injection protection
   ltype: Contains
 - document:
     doctype: CRE
@@ -18,9 +18,9 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x10-V1-Architecture.md
     name: ASVS
-    section: V1.5.3
-    sectionID: Verify that input validation is enforced on a trusted service layer.
+    section: Verify that input validation is enforced on a trusted service layer.
       ([C5](https://owasp.org/www-project-proactive-controls/#div-numbering))
+    sectionID: V1.5.3
   ltype: Linked To
 - document:
     doctype: Standard

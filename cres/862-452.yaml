@@ -27,6 +27,11 @@ links:
     name: Improvement management
   ltype: Contains
 - document:
+    doctype: CRE
+    id: 148-853
+    name: Setup and maintain a secure software development process
+  ltype: Related
+- document:
     doctype: Standard
     hyperlink: https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=SC-26
     name: NIST 800-53 v5

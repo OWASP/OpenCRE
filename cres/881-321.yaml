@@ -12,9 +12,9 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x11-V2-Authentication.md
     name: ASVS
-    section: V2.10.3
-    sectionID: Verify that passwords are stored with sufficient protection to prevent
+    section: Verify that passwords are stored with sufficient protection to prevent
       offline recovery attacks, including local system access.
+    sectionID: V2.10.3
   ltype: Linked To
 - document:
     doctype: Standard

@@ -20,11 +20,11 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x10-V1-Architecture.md
     name: ASVS
-    section: V1.14.5
-    sectionID: Verify that application deployments adequately sandbox, containerize
+    section: Verify that application deployments adequately sandbox, containerize
       and/or isolate at the network level to delay and deter attackers from attacking
       other applications, especially when they are performing sensitive or dangerous
       actions such as deserialization.
+    sectionID: V1.14.5
   ltype: Linked To
 - document:
     doctype: Standard

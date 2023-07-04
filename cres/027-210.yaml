@@ -12,10 +12,10 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x14-V6-Cryptography.md
     name: ASVS
-    section: V6.3.2
-    sectionID: Verify that random GUIDs are created using the GUID v4 algorithm, and
+    section: Verify that random GUIDs are created using the GUID v4 algorithm, and
       a Cryptographically-secure Pseudo-random Number Generator (CSPRNG). GUIDs created
       using other pseudo-random number generators may be predictable.
+    sectionID: V6.3.2
   ltype: Linked To
 - document:
     doctype: Standard
@@ -26,7 +26,7 @@ links:
   ltype: Linked To
 - document:
     doctype: Standard
-    hyperlink: https://owasp.org/www-project-web-security-testing-guide/v42/4-Web_Application_Security_Testing/09-Testing_for_Weak_Cryptography/04-Testing_for_Weak_Encryption.html
+    hyperlink: https://owasp.org/www-project-web-security-testing-guide/stable/4-Web_Application_Security_Testing/09-Testing_for_Weak_Cryptography/04-Testing_for_Weak_Encryption.html
     name: OWASP Web Security Testing Guide (WSTG)
     section: WSTG-CRYP-04
   ltype: Linked To

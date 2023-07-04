@@ -10,9 +10,8 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x12-V3-Session-management.md
     name: ASVS
-    section: V3.4.1
-    sectionID: Verify that cookie-based session tokens have the 'Secure' attribute
-      set.
+    section: Verify that cookie-based session tokens have the 'Secure' attribute set.
+    sectionID: V3.4.1
   ltype: Linked To
 - document:
     doctype: Standard
@@ -29,7 +28,7 @@ links:
   ltype: Linked To
 - document:
     doctype: Standard
-    hyperlink: https://owasp.org/www-project-web-security-testing-guide/v42/4-Web_Application_Security_Testing/06-Session_Management_Testing/02-Testing_for_Cookies_Attributes.html#domain-attribute
+    hyperlink: https://owasp.org/www-project-web-security-testing-guide/stable/4-Web_Application_Security_Testing/06-Session_Management_Testing/02-Testing_for_Cookies_Attributes.html#domain-attribute
     name: OWASP Web Security Testing Guide (WSTG)
     section: WSTG-SESS-02
   ltype: Linked To

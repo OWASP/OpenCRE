@@ -10,9 +10,9 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x22-V14-Config.md
     name: ASVS
-    section: V14.2.4
-    sectionID: Verify that third party components come from pre-defined, trusted and
+    section: Verify that third party components come from pre-defined, trusted and
       continually maintained repositories.
+    sectionID: V14.2.4
   ltype: Linked To
 - document:
     doctype: Standard

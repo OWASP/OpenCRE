@@ -13,13 +13,13 @@ links:
   ltype: Contains
 - document:
     doctype: CRE
-    id: 872-574
-    name: Virus/malware protection
+    id: 007-274
+    name: Patching and updating system components
   ltype: Contains
 - document:
     doctype: CRE
-    id: 007-274
-    name: Patching and updating system components
+    id: 872-574
+    name: Virus/malware protection
   ltype: Contains
 - document:
     doctype: Standard

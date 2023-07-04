@@ -473,6 +473,14 @@ def parse_standards(
                     # "version":"v2",
                     "separator": "\n",
                 },
+                "NIST SSDF": {
+                    "section": "Standard NIST SSDF",
+                    "sectionID": "Standard NIST SSDF ID",
+                    "subsection": "",
+                    "hyperlink": "",
+                    # "version":"v2",
+                    "separator": "\n",
+                },
             },
         }
     links: List[defs.Link] = []

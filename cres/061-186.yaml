@@ -15,10 +15,10 @@ links:
     doctype: Standard
     hyperlink: https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x21-V13-API.md
     name: ASVS
-    section: V13.1.1
-    sectionID: Verify that all application components use the same encodings and parsers
+    section: Verify that all application components use the same encodings and parsers
       to avoid parsing attacks that exploit different URI or file parsing behavior
       that could be used in SSRF and RFI attacks.
+    sectionID: V13.1.1
   ltype: Linked To
 - document:
     doctype: Standard
