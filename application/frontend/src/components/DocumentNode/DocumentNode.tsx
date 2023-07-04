@@ -143,7 +143,7 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({
                 <div className="document-node__link-type-container" key={type}>
                   {idx > 0 && <hr/>}
                   <div>
-                    <b>Which {getDocumentTypeText(type, links[0].document.doctype)}</b>:
+                    <b>Which {getDocumentTypeText(type, links[0].document.doctype)}</b>:{/* Risk here of mixed doctype in here causing odd output */}
                   </div>
                   <div>
                     <div className="accordion ui fluid styled f0">
