@@ -149,7 +149,7 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({
                   </div>
                   <div>
                     <div className="accordion ui fluid styled f0">
-                      {links.map((link, i) => (
+                      {links.sort((a, b) => getDocumentDisplayName(a.document).localeCompare(getDocumentDisplayName(b.document))).map((link, i) => (
                         <div key={Math.random()}>
                           <DocumentNode
                             node={link.document}
