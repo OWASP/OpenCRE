@@ -65,7 +65,7 @@ export const SearchName = () => {
           </div>
           <div className="eight wide column">
             <h1 className="standard-page__heading">Matching sources</h1>
-            {nodes && <SearchResults results={nodes} />}
+            {nodes && <SearchResults results={nodes} grouped />}
           </div>
         </div>
       )}
