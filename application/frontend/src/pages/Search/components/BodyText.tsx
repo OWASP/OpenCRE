@@ -51,8 +51,8 @@ export const SearchBody = () => {
       </p>
       <p>
         OpenCRE currently links OWASP standards (Top 10, ASVS, Proactive Controls, Cheat sheets, Testing
-        guide, ZAP), plus several other sources (CWE, CAPEC, NIST-800 53, NIST-800 63b, Cloud Control Matrix,
-        ISO27001, ISO27002 and PCI-DSS).
+        guide, ZAP, SAMM), plus several other sources (CWE, CAPEC, NIST-800 53, NIST-800 63b, Cloud Control Matrix,
+        ISO27001, ISO27002, NIST SSDF, and PCI-DSS).
       </p>
       <p>
         Contact us via (rob.vanderveer [at] owasp.org) to join the movement. Currently, a stakeholder group is
@@ -60,13 +60,10 @@ export const SearchBody = () => {
       </p>
       <p>
         For more details, see this
-        <a href="https://www.youtube.com/watch?v=7knF14t0Svg"> presentation video</a>, or read the
-        <a href="https://github.com/OWASP/www-project-integration-standards/raw/master/writeups/CRE-Explained6.pdf">
-          {' '}
-          CRE explanation document
-        </a>
-        .
+        <a href="https://www.youtube.com/watch?v=7knF14t0Svg"> presentation video</a>, read the
+        <a href="https://github.com/OWASP/www-project-integration-standards/raw/master/writeups/CRE-Explained6.pdf">{' '}CRE explanation document{' '}</a>  or see the diagram below.
       </p>
+          <img className="align-middle mx-auto " src="/opencregraphic2.png" alt="Diagram" />
     </div>
   );
 };
