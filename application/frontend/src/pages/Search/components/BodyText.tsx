@@ -64,8 +64,8 @@ export const SearchBody = () => {
         <a href="https://github.com/OWASP/www-project-integration-standards/raw/master/writeups/CRE-Explained6.pdf">{' '}CRE explanation document{' '}</a>  or click the diagram below.
       </p>
 
-      <a href="/opencregraphc2.png" target="_blank">
-        <img className="align-middle mx-auto " src="/tn_opencregraphic2.png" alt="Diagram" />
+      <a href="/opencregraphic2.png" target="_blank">
+        <img className="align-middle mx-auto " src="/tn_opencregraphic2.jpg" alt="Diagram" />
       </a>
     </div>
   );
