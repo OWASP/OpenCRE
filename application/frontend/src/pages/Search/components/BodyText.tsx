@@ -61,9 +61,12 @@ export const SearchBody = () => {
       <p>
         For more details, see this
         <a href="https://www.youtube.com/watch?v=7knF14t0Svg"> presentation video</a>, read the
-        <a href="https://github.com/OWASP/www-project-integration-standards/raw/master/writeups/CRE-Explained6.pdf">{' '}CRE explanation document{' '}</a>  or see the diagram below.
+        <a href="https://github.com/OWASP/www-project-integration-standards/raw/master/writeups/CRE-Explained6.pdf">{' '}CRE explanation document{' '}</a>  or click the diagram below.
       </p>
-          <img className="align-middle mx-auto " src="/opencregraphic2.png" alt="Diagram" />
+
+      <a href="/opencregraphc2.png" target="_blank">
+        <img className="align-middle mx-auto " src="/tn_opencregraphic2.png" alt="Diagram" />
+      </a>
     </div>
   );
 };
