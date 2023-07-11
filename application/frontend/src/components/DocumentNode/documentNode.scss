@@ -36,3 +36,24 @@
     margin: 15px 0;
   }
 }
+
+
+.document-node__link-type-container .accordion.ui.styled 
+{
+  div>.title.external-link {
+    padding-top: 0;
+    padding-bottom: .25em;
+  }
+  div:first-child>.title.external-link {
+    padding-top: .75em;
+    padding-bottom: .25em;
+  }
+
+  div>hr+.title.external-link {
+    border-top: none;
+  }
+
+  div:last-child>.title.external-link {
+    padding-bottom: .75em;
+  }
+}

@@ -133,7 +133,7 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({
     return (
       <>
         <LoadingAndErrorIndicator loading={loading} error={error} />
-        <div className={`title${active} document-node`} onClick={() => setExpanded(!expanded)}>
+        <div className={`title ${active} document-node`} onClick={() => setExpanded(!expanded)}>
           <i aria-hidden="true" className="dropdown icon"></i>
           <Link to={getInternalUrl(usedNode)}>{getDocumentDisplayName(usedNode)}</Link>
         </div>
@@ -141,6 +141,8 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({
           <Hyperlink hyperlink={usedNode.hyperlink} />
           {expanded &&
             getTopicsToDisplayOrderdByLinkType().map(([type, links], idx) => {
+              const sortedResults = links.sort((a, b) => getDocumentDisplayName(a.document).localeCompare(getDocumentDisplayName(b.document)))
+              let lastDocumentName = sortedResults[0].document.name
               return (
                 <div className="document-node__link-type-container" key={type}>
                   {idx > 0 && <hr/>}
@@ -149,8 +151,9 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({
                   </div>
                   <div>
                     <div className="accordion ui fluid styled f0">
-                      {links.sort((a, b) => getDocumentDisplayName(a.document).localeCompare(getDocumentDisplayName(b.document))).map((link, i) => (
+                      {sortedResults.map((link, i) =>{const temp = (
                         <div key={Math.random()}>
+                          {lastDocumentName !== (link.document.name) &&<hr style={{margin:"10px"}}/>}
                           <DocumentNode
                             node={link.document}
                             linkType={type}
@@ -159,7 +162,10 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({
                           />
                           <FilterButton document={link.document} />
                         </div>
-                      ))}
+                      )
+                      lastDocumentName = link.document.name
+                      return temp;
+                      })}
                     </div>
                   </div>
                 </div>
