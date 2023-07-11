@@ -7,12 +7,11 @@ import { useParams } from 'react-router-dom';
 import { DocumentNode } from '../../components/DocumentNode';
 import { ClearFilterButton, FilterButton } from '../../components/FilterButton/FilterButton';
 import { LoadingAndErrorIndicator } from '../../components/LoadingAndErrorIndicator';
-import { DOCUMENT_TYPE_NAMES } from '../../const';
 import { useEnvironment } from '../../hooks';
 import { applyFilters, filterContext } from '../../hooks/applyFilters';
 import { Document } from '../../types';
 import { groupLinksByType } from '../../utils';
-import { getDocumentDisplayName, orderLinksByType } from '../../utils/document';
+import { getDocumentDisplayName, getDocumentTypeText, orderLinksByType } from '../../utils/document';
 
 export const CommonRequirementEnumeration = () => {
   const { id } = useParams();
@@ -82,7 +81,7 @@ export const CommonRequirementEnumeration = () => {
               Object.entries(linksByType).map(([type, links]) => (
                 <div className="cre-page__links" key={type}>
                   <div className="cre-page__links-eader">
-                    <b>Which {DOCUMENT_TYPE_NAMES[type]}</b>:
+                    <b>Which {getDocumentTypeText(type, links[0].document.doctype)}</b>:{/* Risk here of mixed doctype in here causing odd output */}
                   </div>
                   {links.sort((a, b) => getDocumentDisplayName(a.document).localeCompare(getDocumentDisplayName(b.document))).map((link, i) => (
                     <div key={i} className="accordion ui fluid styled cre-page__links-container">

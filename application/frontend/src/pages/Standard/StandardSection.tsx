@@ -11,6 +11,7 @@ import { DOCUMENT_TYPES, DOCUMENT_TYPE_NAMES, TOOL } from '../../const';
 import { useEnvironment } from '../../hooks';
 import { Document } from '../../types';
 import { getDocumentDisplayName, groupLinksByType } from '../../utils';
+import { getDocumentTypeText } from '../../utils/document';
 
 export const StandardSection = () => {
   const { id, section, sectionID } = useParams();
@@ -75,7 +76,7 @@ export const StandardSection = () => {
               Object.entries(linksByType).map(([type, links]) => (
                 <div className="cre-page__links" key={type}>
                   <div className="cre-page__links-header">
-                    <b>Which {DOCUMENT_TYPE_NAMES[type]}</b>:
+                    <b>Which {getDocumentTypeText(type, links[0].document.doctype)}</b>:{/* Risk here of mixed doctype in here causing odd output */}
                   </div>
                   {links.sort((a, b) => getDocumentDisplayName(a.document).localeCompare(getDocumentDisplayName(b.document))).map((link, i) => (
                     <div key={i} className="accordion ui fluid styled cre-page__links-container">
