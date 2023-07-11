@@ -5,8 +5,6 @@ import React, { FunctionComponent, useContext, useEffect, useMemo, useState } fr
 import { Link, useHistory } from 'react-router-dom';
 
 import {
-  DOCUMENT_TYPES,
-  DOCUMENT_TYPE_NAMES,
   TYPE_CONTAINS,
   TYPE_IS_PART_OF,
   TYPE_RELATED,
@@ -15,7 +13,7 @@ import { useEnvironment } from '../../hooks';
 import { applyFilters } from '../../hooks/applyFilters';
 import { Document } from '../../types';
 import { getDocumentDisplayName, groupLinksByType } from '../../utils';
-import { getApiEndpoint, getInternalUrl } from '../../utils/document';
+import { getApiEndpoint, getDocumentTypeText, getInternalUrl } from '../../utils/document';
 import { FilterButton } from '../FilterButton/FilterButton';
 import { LoadingAndErrorIndicator } from '../LoadingAndErrorIndicator';
 import { Icon } from 'semantic-ui-react';
@@ -147,7 +145,7 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({
                 <div className="document-node__link-type-container" key={type}>
                   {idx > 0 && <hr/>}
                   <div>
-                    <b>Which {DOCUMENT_TYPE_NAMES[type]}</b>:
+                    <b>Which {getDocumentTypeText(type, links[0].document.doctype)}</b>:{/* Risk here of mixed doctype in here causing odd output */}
                   </div>
                   <div>
                     <div className="accordion ui fluid styled f0">

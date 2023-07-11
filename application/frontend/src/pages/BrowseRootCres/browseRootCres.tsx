@@ -7,7 +7,6 @@ import { useParams } from 'react-router-dom';
 import { DocumentNode } from '../../components/DocumentNode';
 import { ClearFilterButton, FilterButton } from '../../components/FilterButton/FilterButton';
 import { LoadingAndErrorIndicator } from '../../components/LoadingAndErrorIndicator';
-import { DOCUMENT_TYPE_NAMES } from '../../const';
 import { useEnvironment } from '../../hooks';
 import { applyFilters, filterContext } from '../../hooks/applyFilters';
 import { Document } from '../../types';
