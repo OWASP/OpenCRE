@@ -40,20 +40,20 @@
 
 .document-node__link-type-container .accordion.ui.styled 
 {
-  div>.title {
+  div>.title.external-link {
     padding-top: 0;
     padding-bottom: .25em;
   }
-  div:first-child>.title {
+  div:first-child>.title.external-link {
     padding-top: .75em;
     padding-bottom: .25em;
   }
 
-  div>span+.title {
+  div>span+.title.external-link {
     border-top: none;
   }
 
-  div:last-child>.title {
+  div:last-child>.title.external-link {
     padding-bottom: .75em;
   }
 }

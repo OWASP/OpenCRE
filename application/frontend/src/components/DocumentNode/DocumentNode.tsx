@@ -151,7 +151,7 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({
                     <div className="accordion ui fluid styled f0">
                       {sortedResults.map((link, i) =>{const temp = (
                         <div key={Math.random()}>
-                          {lastDocumentName !== (link.document.name) &&<span style={{margin:"10px"}}/>}
+                          {lastDocumentName !== (link.document.name) &&<span style={{margin:"5px"}}/>}
                           <DocumentNode
                             node={link.document}
                             linkType={type}
