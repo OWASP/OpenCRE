@@ -143,7 +143,7 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({
               let lastDocumentName = sortedResults[0].document.name
               return (
                 <div className="document-node__link-type-container" key={type}>
-                  {idx > 0 && <hr/>}
+                  {idx > 0 && <hr style={{backgroundColor: "transparent", border: "none"}}/>}
                   <div>
                     <b>Which {getDocumentTypeText(type, links[0].document.doctype)}</b>:{/* Risk here of mixed doctype in here causing odd output */}
                   </div>
@@ -151,7 +151,7 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({
                     <div className="accordion ui fluid styled f0">
                       {sortedResults.map((link, i) =>{const temp = (
                         <div key={Math.random()}>
-                          {lastDocumentName !== (link.document.name) &&<hr style={{margin:"10px"}}/>}
+                          {lastDocumentName !== (link.document.name) &&<span style={{margin:"5px"}}/>}
                           <DocumentNode
                             node={link.document}
                             linkType={type}
