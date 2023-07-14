@@ -12,7 +12,7 @@ export const SearchResults = ({ results }) => {
       <>
         {sortedResults.map((document, i) => {let temp = (
           <>
-            {document.doctype != DOCUMENT_TYPES.TYPE_CRE && lastDocumentName !== document.name &&<hr style={{marginBottom: "40px"}} />}
+            {document.doctype != DOCUMENT_TYPES.TYPE_CRE && lastDocumentName !== document.name &&<span style={{margin: "5px"}} />}
             <div key={i} className="accordion ui fluid styled standard-page__links-container">
               <DocumentNode node={document} linkType={'Standard'} />
             </div>
