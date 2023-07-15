@@ -57,9 +57,7 @@ export const StandardSection = () => {
   return (
     <>
       <div className="standard-page section-page">
-        <h5 className="standard-page__heading">
-          {getDocumentDisplayName(document)}
-        </h5>
+        <h5 className="standard-page__heading">{getDocumentDisplayName(document)}</h5>
         {document && document.hyperlink && (
           <>
             <span>Reference: </span>
@@ -76,13 +74,18 @@ export const StandardSection = () => {
               Object.entries(linksByType).map(([type, links]) => (
                 <div className="cre-page__links" key={type}>
                   <div className="cre-page__links-header">
-                    <b>Which {getDocumentTypeText(type, links[0].document.doctype)}</b>:{/* Risk here of mixed doctype in here causing odd output */}
+                    <b>Which {getDocumentTypeText(type, links[0].document.doctype)}</b>:
+                    {/* Risk here of mixed doctype in here causing odd output */}
                   </div>
-                  {links.sort((a, b) => getDocumentDisplayName(a.document).localeCompare(getDocumentDisplayName(b.document))).map((link, i) => (
-                    <div key={i} className="accordion ui fluid styled cre-page__links-container">
-                      <DocumentNode node={link.document} linkType={type} />
-                    </div>
-                  ))}
+                  {links
+                    .sort((a, b) =>
+                      getDocumentDisplayName(a.document).localeCompare(getDocumentDisplayName(b.document))
+                    )
+                    .map((link, i) => (
+                      <div key={i} className="accordion ui fluid styled cre-page__links-container">
+                        <DocumentNode node={link.document} linkType={type} />
+                      </div>
+                    ))}
                 </div>
               ))
             ) : (

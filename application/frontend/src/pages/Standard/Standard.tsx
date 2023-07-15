@@ -45,11 +45,13 @@ export const Standard = () => {
         <LoadingAndErrorIndicator loading={loading} error={error} />
         {!loading &&
           !error &&
-          documents.sort((a, b) => getDocumentDisplayName(a).localeCompare(getDocumentDisplayName(b))).map((standard, i) => (
-            <div key={i} className="accordion ui fluid styled standard-page__links-container">
-              <DocumentNode node={standard} linkType={'Standard'} />
-            </div>
-          ))}
+          documents
+            .sort((a, b) => getDocumentDisplayName(a).localeCompare(getDocumentDisplayName(b)))
+            .map((standard, i) => (
+              <div key={i} className="accordion ui fluid styled standard-page__links-container">
+                <DocumentNode node={standard} linkType={'Standard'} />
+              </div>
+            ))}
         {data && data.total_pages > 0 && (
           <div className="pagination-container">
             <Pagination

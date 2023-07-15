@@ -74,10 +74,9 @@ export const getApiEndpoint = (doc: Document, apiUrl: string): string => {
 };
 
 export const getDocumentTypeText = (linkType, docType): string => {
-  let docText =  DOCUMENT_TYPE_NAMES[linkType];
-  if(linkType === TYPE_LINKED_TO && docType === DOCUMENT_TYPES.TYPE_CRE)
-  {
+  let docText = DOCUMENT_TYPE_NAMES[linkType];
+  if (linkType === TYPE_LINKED_TO && docType === DOCUMENT_TYPES.TYPE_CRE) {
     docText = DOCUMENT_TYPE_NAMES[TYPE_IS_PART_OF];
   }
-  return docText
-}
+  return docText;
+};

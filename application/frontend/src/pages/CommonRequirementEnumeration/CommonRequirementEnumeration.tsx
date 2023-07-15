@@ -79,26 +79,30 @@ export const CommonRequirementEnumeration = () => {
           <div className="cre-page__links-container">
             {Object.keys(linksByType).length > 0 &&
               Object.entries(linksByType).map(([type, links]) => {
-                const sortedResults = links.sort((a, b) => getDocumentDisplayName(a.document).localeCompare(getDocumentDisplayName(b.document)))
-                let lastDocumentName = sortedResults[0].document.name
+                const sortedResults = links.sort((a, b) =>
+                  getDocumentDisplayName(a.document).localeCompare(getDocumentDisplayName(b.document))
+                );
+                let lastDocumentName = sortedResults[0].document.name;
                 return (
                   <div className="cre-page__links" key={type}>
                     <div className="cre-page__links-eader">
-                      <b>Which {getDocumentTypeText(type, links[0].document.doctype)}</b>:{/* Risk here of mixed doctype in here causing odd output */}
+                      <b>Which {getDocumentTypeText(type, links[0].document.doctype)}</b>:
+                      {/* Risk here of mixed doctype in here causing odd output */}
                     </div>
                     {sortedResults.map((link, i) => {
                       const temp = (
                         <div key={i} className="accordion ui fluid styled cre-page__links-container">
-                          {lastDocumentName !== (link.document.name) && <span style={{ margin: "5px" }} />}
+                          {lastDocumentName !== link.document.name && <span style={{ margin: '5px' }} />}
                           <DocumentNode node={link.document} linkType={type} />
                           <FilterButton document={link.document} />
                         </div>
-                      )
-                      lastDocumentName = link.document.name
-                      return temp
+                      );
+                      lastDocumentName = link.document.name;
+                      return temp;
                     })}
                   </div>
-                )})}
+                );
+              })}
           </div>
         </>
       )}
