@@ -32,10 +32,12 @@ def __parse(
                 "",
                 str(row.get(standard_to_spreadsheet_mappings["section"], "")),
             ).strip(),
-            sectionID=str(row.get(standard_to_spreadsheet_mappings["sectionID"], "")).strip(),
+            sectionID=str(
+                row.get(standard_to_spreadsheet_mappings["sectionID"], "")
+            ).strip(),
             description=str(
                 row.get(standard_to_spreadsheet_mappings["description"], "")
-            ).strip()   ,
+            ).strip(),
             version=version,
         )
         existing = cache.get_nodes(

@@ -97,11 +97,20 @@ def list_to_oscal(documents: List[defs.Standard | defs.Tool]) -> str:
     if documents[0].doctype == defs.Credoctypes.Standard:
         for doc in documents:
             props = []
-            
+
             if doc.section:
-                props.append(common.Property(name="section", value="".join(doc.section.splitlines()).strip()))
+                props.append(
+                    common.Property(
+                        name="section", value="".join(doc.section.splitlines()).strip()
+                    )
+                )
             if doc.sectionID:
-                props.append(common.Property(name="sectionID",value="".join(doc.section.splitlines()).strip()))            
+                props.append(
+                    common.Property(
+                        name="sectionID",
+                        value="".join(doc.section.splitlines()).strip(),
+                    )
+                )
             controls.append(
                 catalog.Control(
                     id=f"_{random.getrandbits(1024)}",
@@ -112,7 +121,6 @@ def list_to_oscal(documents: List[defs.Standard | defs.Tool]) -> str:
             )
     elif documents[0].doctype == defs.Credoctypes.Tool:
         for doc in documents:
-
             controls.append(
                 catalog.Control(
                     id=f"_{random.getrandbits(1024)}",
