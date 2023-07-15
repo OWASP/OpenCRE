@@ -3,12 +3,9 @@ import './documentNode.scss';
 import axios from 'axios';
 import React, { FunctionComponent, useContext, useEffect, useMemo, useState } from 'react';
 import { Link, useHistory } from 'react-router-dom';
+import { Icon } from 'semantic-ui-react';
 
-import {
-  TYPE_CONTAINS,
-  TYPE_IS_PART_OF,
-  TYPE_RELATED,
-} from '../../const';
+import { TYPE_CONTAINS, TYPE_IS_PART_OF, TYPE_RELATED } from '../../const';
 import { useEnvironment } from '../../hooks';
 import { applyFilters } from '../../hooks/applyFilters';
 import { Document } from '../../types';
@@ -16,7 +13,6 @@ import { getDocumentDisplayName, groupLinksByType } from '../../utils';
 import { getApiEndpoint, getDocumentTypeText, getInternalUrl } from '../../utils/document';
 import { FilterButton } from '../FilterButton/FilterButton';
 import { LoadingAndErrorIndicator } from '../LoadingAndErrorIndicator';
-import { Icon } from 'semantic-ui-react';
 
 export interface DocumentNode {
   node: Document;
@@ -107,9 +103,9 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({
     }
 
     return (
-        <a href={hyperlink.hyperlink} target="_blank">
-          <Icon name="external" />
-        </a>
+      <a href={hyperlink.hyperlink} target="_blank">
+        <Icon name="external" />
+      </a>
     );
   };
   const SimpleView = () => {
@@ -118,7 +114,7 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({
         <div className={`title external-link document-node f2`}>
           <Link to={getInternalUrl(usedNode)}>
             <i aria-hidden="true" className="circle icon"></i>
-            {getDocumentDisplayName(usedNode)} 
+            {getDocumentDisplayName(usedNode)}
           </Link>
           <HyperlinkIcon hyperlink={usedNode.hyperlink} />
         </div>
@@ -139,30 +135,34 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({
           <Hyperlink hyperlink={usedNode.hyperlink} />
           {expanded &&
             getTopicsToDisplayOrderdByLinkType().map(([type, links], idx) => {
-              const sortedResults = links.sort((a, b) => getDocumentDisplayName(a.document).localeCompare(getDocumentDisplayName(b.document)))
-              let lastDocumentName = sortedResults[0].document.name
+              const sortedResults = links.sort((a, b) =>
+                getDocumentDisplayName(a.document).localeCompare(getDocumentDisplayName(b.document))
+              );
+              let lastDocumentName = sortedResults[0].document.name;
               return (
                 <div className="document-node__link-type-container" key={type}>
-                  {idx > 0 && <hr style={{backgroundColor: "transparent", border: "none"}}/>}
+                  {idx > 0 && <hr style={{ backgroundColor: 'transparent', border: 'none' }} />}
                   <div>
-                    <b>Which {getDocumentTypeText(type, links[0].document.doctype)}</b>:{/* Risk here of mixed doctype in here causing odd output */}
+                    <b>Which {getDocumentTypeText(type, links[0].document.doctype)}</b>:
+                    {/* Risk here of mixed doctype in here causing odd output */}
                   </div>
                   <div>
                     <div className="accordion ui fluid styled f0">
-                      {sortedResults.map((link, i) =>{const temp = (
-                        <div key={Math.random()}>
-                          {lastDocumentName !== (link.document.name) &&<span style={{margin:"5px"}}/>}
-                          <DocumentNode
-                            node={link.document}
-                            linkType={type}
-                            hasLinktypeRelatedParent={isNestedInRelated()}
-                            key={Math.random()}
-                          />
-                          <FilterButton document={link.document} />
-                        </div>
-                      )
-                      lastDocumentName = link.document.name
-                      return temp;
+                      {sortedResults.map((link, i) => {
+                        const temp = (
+                          <div key={Math.random()}>
+                            {lastDocumentName !== link.document.name && <span style={{ margin: '5px' }} />}
+                            <DocumentNode
+                              node={link.document}
+                              linkType={type}
+                              hasLinktypeRelatedParent={isNestedInRelated()}
+                              key={Math.random()}
+                            />
+                            <FilterButton document={link.document} />
+                          </div>
+                        );
+                        lastDocumentName = link.document.name;
+                        return temp;
                       })}
                     </div>
                   </div>

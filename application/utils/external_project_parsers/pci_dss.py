@@ -31,11 +31,13 @@ def __parse(
                 "([CUSTOMIZED APPROACH OBJECTIVE]:.*)",
                 "",
                 str(row.get(standard_to_spreadsheet_mappings["section"], "")),
-            ),
-            sectionID=str(row.get(standard_to_spreadsheet_mappings["sectionID"], "")),
+            ).strip(),
+            sectionID=str(
+                row.get(standard_to_spreadsheet_mappings["sectionID"], "")
+            ).strip(),
             description=str(
                 row.get(standard_to_spreadsheet_mappings["description"], "")
-            ),
+            ).strip(),
             version=version,
         )
         existing = cache.get_nodes(
