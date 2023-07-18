@@ -24,6 +24,7 @@ export const SearchBody = () => {
           topics.
         </b>
       </p>
+      <h3>Try talking to our <a href='/chatbot'>CRE Chatbot</a></h3>
       <h2>HOW?</h2>
       <p>
         OpenCRE links each section of a resource (like a standard or guideline) to a shared topic, known as a
