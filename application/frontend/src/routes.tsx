@@ -7,6 +7,7 @@ import { Chatbot } from './pages/chatbot/chatbot';
 import { Deeplink } from './pages/Deeplink/Deeplink';
 import { SearchName } from './pages/Search/SearchName';
 import { StandardSection } from './pages/Standard/StandardSection';
+import { MembershipRequired } from './pages/MembershipRequired/MembershipRequired'
 
 export interface IRoute {
   path: string;
@@ -91,6 +92,12 @@ export const ROUTES: IRoute[] = [
   {
     path: `/chatbot`,
     component: Chatbot,
+    showHeader: true,
+    showFilter: false,
+  },
+  {
+    path: '/members_required',
+    component: MembershipRequired,
     showHeader: true,
     showFilter: false,
   },
