@@ -17,8 +17,10 @@ export const Search = () => {
         Your gateway to security topics
       </Header>
       <div>
-      <SearchBar />
-      <Button primary fluid href="/root_cres">Browse Topics</Button>
+        <SearchBar />
+        <Button primary fluid href="/root_cres">
+          Browse Topics
+        </Button>
       </div>
       <SearchBody />
     </div>

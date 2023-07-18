@@ -37,7 +37,7 @@ def document_to_oscal(
             oscal_version="1.0.0",
             version=version,
             links=[common.Link(href=hyperlink)],
-            remarks=document.description,
+            remarks=document.description.strip(),
         )
     else:
         m = common.Metadata(
@@ -96,18 +96,31 @@ def list_to_oscal(documents: List[defs.Standard | defs.Tool]) -> str:
 
     if documents[0].doctype == defs.Credoctypes.Standard:
         for doc in documents:
+            props = []
+
+            if doc.section:
+                props.append(
+                    common.Property(
+                        name="section", value="".join(doc.section.splitlines()).strip()
+                    )
+                )
+            if doc.sectionID:
+                props.append(
+                    common.Property(
+                        name="sectionID",
+                        value="".join(doc.section.splitlines()).strip(),
+                    )
+                )
             controls.append(
                 catalog.Control(
                     id=f"_{random.getrandbits(1024)}",
                     title=doc.name,
-                    props=[common.Property(name="section", value=doc.section)],
+                    props=props,
                     links=[common.Link(href=doc.hyperlink)],
                 )
             )
     elif documents[0].doctype == defs.Credoctypes.Tool:
         for doc in documents:
-            from pprint import pprint
-
             controls.append(
                 catalog.Control(
                     id=f"_{random.getrandbits(1024)}",
