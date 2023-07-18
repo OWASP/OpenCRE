@@ -31,7 +31,6 @@ export const SearchBar = () => {
     }
   };
 
-
   return (
     <Form onSubmit={onSubmit}>
       <Form.Group>
@@ -45,10 +44,12 @@ export const SearchBar = () => {
                 term: e.target.value,
               });
             }}
-            label={<Button primary onSubmit={onSubmit}>
-              <Icon name="search" />
-              Search
-            </Button>}
+            label={
+              <Button primary onSubmit={onSubmit}>
+                <Icon name="search" />
+                Search
+              </Button>
+            }
             labelPosition="right"
             placeholder="Search..."
           />
