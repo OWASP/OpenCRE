@@ -1,3 +1,4 @@
+from neo4j import GraphDatabase
 from sqlalchemy.orm import aliased
 import os
 import logging
@@ -179,6 +180,13 @@ class CRE_Graph:
     @classmethod
     def add_cre(cls, dbcre: CRE, graph: nx.DiGraph) -> nx.DiGraph:
         if dbcre:
+            Neo4j_driver.execute_query(
+                "MERGE (n:CRE {id: $nid, name: $name, description: $description, external_id: $external_id})",
+                nid=dbcre.id,
+                name=dbcre.name,
+                description=dbcre.description,
+                external_id=dbcre.external_id, 
+                database_="neo4j")
             graph.add_node(
                 f"CRE: {dbcre.id}", internal_id=dbcre.id, external_id=dbcre.external_id
             )
@@ -189,6 +197,21 @@ class CRE_Graph:
     @classmethod
     def add_dbnode(cls, dbnode: Node, graph: nx.DiGraph) -> nx.DiGraph:
         if dbnode:
+            Neo4j_driver.execute_query(
+                "MERGE (n:Node {id: $nid, name: $name, section: $section, section_id: $section_id, subsection: $subsection, tags: $tags, version: $version, description: $description, ntype: $ntype})", 
+                nid=dbnode.id,
+                name=dbnode.name,
+                section=dbnode.section,
+                section_id=dbnode.section_id,
+                subsection=dbnode.subsection or "",
+                tags=dbnode.tags,
+                version=dbnode.version or "",
+                description=dbnode.description,
+                ntype=dbnode.ntype,
+                database_="neo4j")
+
+    # coma separated tags
+
             graph.add_node(
                 "Node: " + str(dbnode.id),
                 internal_id=dbnode.id,
@@ -215,6 +238,16 @@ class CRE_Graph:
             graph = cls.add_cre(dbcre=cre, graph=graph)
 
             graph.add_edge(f"CRE: {il.group}", f"CRE: {il.cre}", ltype=il.type)
+            Neo4j_driver.execute_query(
+                "MATCH (a:CRE), (b:CRE) "
+                "WHERE a.id = $aID AND b.id = $bID "
+                "CALL apoc.create.relationship(a,$relType, {},b) "
+                "YIELD rel "
+                "RETURN rel",
+                aID=il.group,
+                bID=il.cre,
+                relType=str.upper(il.type).replace(' ', '_'),
+                database_="neo4j")
 
         for lnk in session.query(Links).all():
             node = session.query(Node).filter(Node.id == lnk.node).first()
@@ -226,6 +259,16 @@ class CRE_Graph:
             graph = cls.add_cre(dbcre=cre, graph=graph)
 
             graph.add_edge(f"CRE: {lnk.cre}", f"Node: {str(lnk.node)}", ltype=lnk.type)
+            Neo4j_driver.execute_query(
+                "MATCH (a:CRE), (b:Node) "
+                "WHERE a.id = $aID AND b.id = $bID "
+                "CALL apoc.create.relationship(a,$relType, {},b) "
+                "YIELD rel "
+                "RETURN rel",
+                aID=lnk.cre,
+                bID=lnk.node,
+                relType=str.upper(lnk.type).replace(' ', '_'),
+                database_="neo4j")
         return graph
 
 
@@ -1475,3 +1518,7 @@ def dbCREfromCRE(cre: cre_defs.CRE) -> CRE:
         external_id=cre.id,
         tags=",".join(tags),
     )
+
+URI = "neo4j://localhost:7687"
+AUTH = ("neo4j", "password")
+Neo4j_driver = GraphDatabase.driver(URI, auth=AUTH)
