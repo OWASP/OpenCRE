@@ -1,5 +1,6 @@
 export const TYPE_IS_PART_OF = 'Is Part Of';
 export const TYPE_LINKED_TO = 'Linked To';
+export const TYPE_LINKED_FROM = 'Linked From';
 export const TYPE_CONTAINS = 'Contains';
 export const TYPE_RELATED = 'Related';
 export const TYPE_SAME = 'SAME';
@@ -10,6 +11,7 @@ export const DOCUMENT_TYPE_NAMES = {
   [TYPE_SAM]: ' has been automatically mapped to',
   [TYPE_LINKED_TO]: ' is linked to sources',
   [TYPE_IS_PART_OF]: ' is part of CREs',
+  [TYPE_LINKED_FROM]: 'is linked from CREs',
   [TYPE_CONTAINS]: ' contains CREs',
   [TYPE_RELATED]: ' is related to CREs',
 };
