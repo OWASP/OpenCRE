@@ -74,7 +74,7 @@ export const StandardSection = () => {
               Object.entries(linksByType).map(([type, links]) => (
                 <div className="cre-page__links" key={type}>
                   <div className="cre-page__links-header">
-                    <b>Which {getDocumentTypeText(type, links[0].document.doctype)}</b>:
+                    <b>Which {getDocumentTypeText(type, links[0].document.doctype, document.doctype)}</b>:
                     {/* Risk here of mixed doctype in here causing odd output */}
                   </div>
                   {links
