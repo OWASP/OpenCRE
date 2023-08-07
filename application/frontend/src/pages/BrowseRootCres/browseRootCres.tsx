@@ -43,12 +43,11 @@ export const BrowseRootCres = () => {
 
   return (
     <div className="cre-page">
-      <h1 className="standard-page__heading">Root Cres:</h1>
+      <h1 className="standard-page__heading">Root CREs:</h1>
       <LoadingAndErrorIndicator loading={loading} error={error} />
       {!loading && !error && (
         <div className="ui grid">
           <div className="wide column">
-            <h1 className="standard-page__heading">Related CRE's</h1>
             {display && <SearchResults results={display} />}
           </div>
         </div>
