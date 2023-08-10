@@ -208,10 +208,16 @@ def find_document_by_tag() -> Any:
 def gap_analysis() -> Any:  # TODO (spyros): add export result to spreadsheet
     database = db.Node_collection()
     standards = request.args.getlist("standard")
-    documents = database.gap_analysis(standards=standards)
-    if documents:
-        res = [doc.todict() for doc in documents]
-        return jsonify(res)
+    paths = database.gap_analysis(standards)
+    grouped_paths = {}
+    for path in paths:
+        key = path['start']['id']
+        if key not in grouped_paths:
+            grouped_paths[key] = {"start": path['start'], "paths": []}
+        del path['start']
+        grouped_paths[key]['paths'].append(path)
+        
+    return jsonify(grouped_paths)
 
 
 @app.route("/rest/v1/text_search", methods=["GET"])
