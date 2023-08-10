@@ -1,4 +1,6 @@
+
 from neo4j import GraphDatabase
+import neo4j
 from sqlalchemy.orm import aliased
 import os
 import logging
@@ -157,14 +159,102 @@ class Embeddings(BaseModel):  # type: ignore
     )
 
 
+
+class NEO_DB:
+    __instance = None
+    
+    driver = None
+    connected = False
+    @classmethod
+    def instance(self):
+        if self.__instance is None:
+            self.__instance = self.__new__(self)
+
+            URI = os.getenv('NEO4J_URI') or "neo4j://localhost:7687"
+            AUTH = (os.getenv('NEO4J_USR') or "neo4j", os.getenv('NEO4J_PASS') or "password")
+            self.driver = GraphDatabase.driver(URI, auth=AUTH)
+
+            try:
+                self.driver.verify_connectivity()
+                self.connected = True
+            except neo4j.exceptions.ServiceUnavailable: 
+                logger.error("NEO4J ServiceUnavailable error - disabling neo4j related features")
+            
+        return self.__instance
+
+    def __init__(sel):
+        raise ValueError("NEO_DB is a singleton, please call instance() instead")
+    
+    @classmethod
+    def add_cre(self, dbcre: CRE):
+         if not self.connected:
+            return
+         self.driver.execute_query(
+                "MERGE (n:CRE {id: $nid, name: $name, description: $description, external_id: $external_id})",
+                nid=dbcre.id,
+                name=dbcre.name,
+                description=dbcre.description,
+                external_id=dbcre.external_id, 
+                database_="neo4j")
+    
+    @classmethod
+    def add_dbnode(self, dbnode: Node):
+        if not self.connected:
+            return
+        self.driver.execute_query(
+                "MERGE (n:Node {id: $nid, name: $name, section: $section, section_id: $section_id, subsection: $subsection, tags: $tags, version: $version, description: $description, ntype: $ntype})", 
+                nid=dbnode.id,
+                name=dbnode.name,
+                section=dbnode.section,
+                section_id=dbnode.section_id,
+                subsection=dbnode.subsection or "",
+                tags=dbnode.tags,
+                version=dbnode.version or "",
+                description=dbnode.description,
+                ntype=dbnode.ntype,
+                database_="neo4j")
+    
+    @classmethod
+    def link_CRE_to_CRE(self, id1, id2, link_type):
+        if not self.connected:
+            return
+        self.driver.execute_query(
+                "MATCH (a:CRE), (b:CRE) "
+                "WHERE a.id = $aID AND b.id = $bID "
+                "CALL apoc.create.relationship(a,$relType, {},b) "
+                "YIELD rel "
+                "RETURN rel",
+                aID=id1,
+                bID=id2,
+                relType=str.upper(link_type).replace(' ', '_'),
+                database_="neo4j")
+    
+    @classmethod
+    def link_CRE_to_Node(self, CRE_id, node_id, link_type):
+        if not self.connected:
+            return
+        self.driver.execute_query(
+                "MATCH (a:CRE), (b:Node) "
+                "WHERE a.id = $aID AND b.id = $bID "
+                "CALL apoc.create.relationship(a,$relType, {},b) "
+                "YIELD rel "
+                "RETURN rel",
+                aID=CRE_id,
+                bID=node_id,
+                relType=str.upper(link_type).replace(' ', '_'),
+                database_="neo4j")
+
+
 class CRE_Graph:
     graph: nx.Graph = None
+    neo_db: NEO_DB = None
     __instance = None
 
     @classmethod
-    def instance(cls, session):
+    def instance(cls, session, neo_db: NEO_DB):
         if cls.__instance is None:
             cls.__instance = cls.__new__(cls)
+            cls.neo_db = neo_db
             cls.graph = cls.load_cre_graph(session)
         return cls.__instance
 
@@ -180,13 +270,7 @@ class CRE_Graph:
     @classmethod
     def add_cre(cls, dbcre: CRE, graph: nx.DiGraph) -> nx.DiGraph:
         if dbcre:
-            Neo4j_driver.execute_query(
-                "MERGE (n:CRE {id: $nid, name: $name, description: $description, external_id: $external_id})",
-                nid=dbcre.id,
-                name=dbcre.name,
-                description=dbcre.description,
-                external_id=dbcre.external_id, 
-                database_="neo4j")
+            cls.neo_db.add_cre(dbcre)
             graph.add_node(
                 f"CRE: {dbcre.id}", internal_id=dbcre.id, external_id=dbcre.external_id
             )
@@ -197,19 +281,7 @@ class CRE_Graph:
     @classmethod
     def add_dbnode(cls, dbnode: Node, graph: nx.DiGraph) -> nx.DiGraph:
         if dbnode:
-            Neo4j_driver.execute_query(
-                "MERGE (n:Node {id: $nid, name: $name, section: $section, section_id: $section_id, subsection: $subsection, tags: $tags, version: $version, description: $description, ntype: $ntype})", 
-                nid=dbnode.id,
-                name=dbnode.name,
-                section=dbnode.section,
-                section_id=dbnode.section_id,
-                subsection=dbnode.subsection or "",
-                tags=dbnode.tags,
-                version=dbnode.version or "",
-                description=dbnode.description,
-                ntype=dbnode.ntype,
-                database_="neo4j")
-
+            cls.neo_db.add_dbnode(dbnode)
     # coma separated tags
 
             graph.add_node(
@@ -238,16 +310,7 @@ class CRE_Graph:
             graph = cls.add_cre(dbcre=cre, graph=graph)
 
             graph.add_edge(f"CRE: {il.group}", f"CRE: {il.cre}", ltype=il.type)
-            Neo4j_driver.execute_query(
-                "MATCH (a:CRE), (b:CRE) "
-                "WHERE a.id = $aID AND b.id = $bID "
-                "CALL apoc.create.relationship(a,$relType, {},b) "
-                "YIELD rel "
-                "RETURN rel",
-                aID=il.group,
-                bID=il.cre,
-                relType=str.upper(il.type).replace(' ', '_'),
-                database_="neo4j")
+            cls.neo_db.link_CRE_to_CRE(il.group, il.cre, il.type)
 
         for lnk in session.query(Links).all():
             node = session.query(Node).filter(Node.id == lnk.node).first()
@@ -259,26 +322,19 @@ class CRE_Graph:
             graph = cls.add_cre(dbcre=cre, graph=graph)
 
             graph.add_edge(f"CRE: {lnk.cre}", f"Node: {str(lnk.node)}", ltype=lnk.type)
-            Neo4j_driver.execute_query(
-                "MATCH (a:CRE), (b:Node) "
-                "WHERE a.id = $aID AND b.id = $bID "
-                "CALL apoc.create.relationship(a,$relType, {},b) "
-                "YIELD rel "
-                "RETURN rel",
-                aID=lnk.cre,
-                bID=lnk.node,
-                relType=str.upper(lnk.type).replace(' ', '_'),
-                database_="neo4j")
+            cls.neo_db.link_CRE_to_Node(lnk.cre, lnk.node, lnk.type)
         return graph
 
 
 class Node_collection:
     graph: nx.Graph = None
+    neo_db: NEO_DB = None
     session = sqla.session
 
     def __init__(self) -> None:
         if not os.environ.get("NO_LOAD_GRAPH"):
-            self.graph = CRE_Graph.instance(sqla.session)
+            self.neo_db = NEO_DB.instance()
+            self.graph = CRE_Graph.instance(sqla.session, self.neo_db)
         self.session = sqla.session
 
     def __get_external_links(self) -> List[Tuple[CRE, Node, str]]:
@@ -1470,7 +1526,3 @@ def dbCREfromCRE(cre: cre_defs.CRE) -> CRE:
         external_id=cre.id,
         tags=",".join(tags),
     )
-
-URI = "neo4j://localhost:7687"
-AUTH = ("neo4j", "password")
-Neo4j_driver = GraphDatabase.driver(URI, auth=AUTH)
