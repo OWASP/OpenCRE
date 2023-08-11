@@ -1,4 +1,3 @@
-
 from neo4j import GraphDatabase
 import neo4j
 from sqlalchemy.orm import aliased
@@ -159,90 +158,100 @@ class Embeddings(BaseModel):  # type: ignore
     )
 
 
-
 class NEO_DB:
     __instance = None
-    
+
     driver = None
     connected = False
+
     @classmethod
     def instance(self):
         if self.__instance is None:
             self.__instance = self.__new__(self)
 
-            URI = os.getenv('NEO4J_URI') or "neo4j://localhost:7687"
-            AUTH = (os.getenv('NEO4J_USR') or "neo4j", os.getenv('NEO4J_PASS') or "password")
+            URI = os.getenv("NEO4J_URI") or "neo4j://localhost:7687"
+            AUTH = (
+                os.getenv("NEO4J_USR") or "neo4j",
+                os.getenv("NEO4J_PASS") or "password",
+            )
             self.driver = GraphDatabase.driver(URI, auth=AUTH)
 
             try:
                 self.driver.verify_connectivity()
                 self.connected = True
-            except neo4j.exceptions.ServiceUnavailable: 
-                logger.error("NEO4J ServiceUnavailable error - disabling neo4j related features")
-            
+            except neo4j.exceptions.ServiceUnavailable:
+                logger.error(
+                    "NEO4J ServiceUnavailable error - disabling neo4j related features"
+                )
+
         return self.__instance
 
     def __init__(sel):
         raise ValueError("NEO_DB is a singleton, please call instance() instead")
-    
+
     @classmethod
     def add_cre(self, dbcre: CRE):
-         if not self.connected:
+        if not self.connected:
             return
-         self.driver.execute_query(
-                "MERGE (n:CRE {id: $nid, name: $name, description: $description, external_id: $external_id})",
-                nid=dbcre.id,
-                name=dbcre.name,
-                description=dbcre.description,
-                external_id=dbcre.external_id, 
-                database_="neo4j")
-    
+        self.driver.execute_query(
+            "MERGE (n:CRE {id: $nid, name: $name, description: $description, external_id: $external_id})",
+            nid=dbcre.id,
+            name=dbcre.name,
+            description=dbcre.description,
+            external_id=dbcre.external_id,
+            database_="neo4j",
+        )
+
     @classmethod
     def add_dbnode(self, dbnode: Node):
         if not self.connected:
             return
         self.driver.execute_query(
-                "MERGE (n:Node {id: $nid, name: $name, section: $section, section_id: $section_id, subsection: $subsection, tags: $tags, version: $version, description: $description, ntype: $ntype})", 
-                nid=dbnode.id,
-                name=dbnode.name,
-                section=dbnode.section,
-                section_id=dbnode.section_id,
-                subsection=dbnode.subsection or "",
-                tags=dbnode.tags,
-                version=dbnode.version or "",
-                description=dbnode.description,
-                ntype=dbnode.ntype,
-                database_="neo4j")
-    
+            "MERGE (n:Node {id: $nid, name: $name, section: $section, section_id: $section_id, subsection: $subsection, tags: $tags, version: $version, description: $description, ntype: $ntype})",
+            nid=dbnode.id,
+            name=dbnode.name,
+            section=dbnode.section,
+            section_id=dbnode.section_id,
+            subsection=dbnode.subsection or "",
+            tags=dbnode.tags,
+            version=dbnode.version or "",
+            description=dbnode.description,
+            ntype=dbnode.ntype,
+            database_="neo4j",
+        )
+
     @classmethod
     def link_CRE_to_CRE(self, id1, id2, link_type):
         if not self.connected:
             return
         self.driver.execute_query(
-                "MATCH (a:CRE), (b:CRE) "
-                "WHERE a.id = $aID AND b.id = $bID "
-                "CALL apoc.create.relationship(a,$relType, {},b) "
-                "YIELD rel "
-                "RETURN rel",
-                aID=id1,
-                bID=id2,
-                relType=str.upper(link_type).replace(' ', '_'),
-                database_="neo4j")
-    
+            "MATCH (a:CRE), (b:CRE) "
+            "WHERE a.id = $aID AND b.id = $bID "
+            "CALL apoc.create.relationship(a,$relType, {},b) "
+            "YIELD rel "
+            "RETURN rel",
+            aID=id1,
+            bID=id2,
+            relType=str.upper(link_type).replace(" ", "_"),
+            database_="neo4j",
+        )
+
     @classmethod
     def link_CRE_to_Node(self, CRE_id, node_id, link_type):
         if not self.connected:
             return
         self.driver.execute_query(
-                "MATCH (a:CRE), (b:Node) "
-                "WHERE a.id = $aID AND b.id = $bID "
-                "CALL apoc.create.relationship(a,$relType, {},b) "
-                "YIELD rel "
-                "RETURN rel",
-                aID=CRE_id,
-                bID=node_id,
-                relType=str.upper(link_type).replace(' ', '_'),
-                database_="neo4j")
+            "MATCH (a:CRE), (b:Node) "
+            "WHERE a.id = $aID AND b.id = $bID "
+            "CALL apoc.create.relationship(a,$relType, {},b) "
+            "YIELD rel "
+            "RETURN rel",
+            aID=CRE_id,
+            bID=node_id,
+            relType=str.upper(link_type).replace(" ", "_"),
+            database_="neo4j",
+        )
+
     @classmethod
     def gap_analysis(self, name_1, name_2):
         if not self.connected:
@@ -256,18 +265,18 @@ class NEO_DB:
             "RETURN p ",
             name1=name_1,
             name2=name_2,
-            database_="neo4j"
+            database_="neo4j",
         )
 
         def format_segment(seg):
-                return {
+            return {
                 "start": {
                     "name": seg.start_node["name"],
                     "sectionID": seg.start_node["section_id"],
                     "section": seg.start_node["section"],
                     "subsection": seg.start_node["subsection"],
                     "description": seg.start_node["description"],
-                    "id": seg.start_node["id"]
+                    "id": seg.start_node["id"],
                 },
                 "end": {
                     "name": seg.end_node["name"],
@@ -275,9 +284,9 @@ class NEO_DB:
                     "section": seg.end_node["section"],
                     "subsection": seg.end_node["subsection"],
                     "description": seg.end_node["description"],
-                    "id": seg.end_node["id"]
+                    "id": seg.end_node["id"],
                 },
-                "relationship": seg.type
+                "relationship": seg.type,
             }
 
         def format_record(rec):
@@ -288,7 +297,7 @@ class NEO_DB:
                     "section": rec.start_node["section"],
                     "subsection": rec.start_node["subsection"],
                     "description": rec.start_node["description"],
-                    "id": rec.start_node["id"]
+                    "id": rec.start_node["id"],
                 },
                 "end": {
                     "name": rec.end_node["name"],
@@ -296,11 +305,13 @@ class NEO_DB:
                     "section": rec.end_node["section"],
                     "subsection": rec.end_node["subsection"],
                     "description": rec.end_node["description"],
-                    "id": rec.end_node["id"]
+                    "id": rec.end_node["id"],
                 },
-                "path": [format_segment(seg) for seg in rec.relationships]
+                "path": [format_segment(seg) for seg in rec.relationships],
             }
-        return [format_record(rec['p']) for rec in records]
+
+        return [format_record(rec["p"]) for rec in records]
+
 
 class CRE_Graph:
     graph: nx.Graph = None
@@ -339,7 +350,7 @@ class CRE_Graph:
     def add_dbnode(cls, dbnode: Node, graph: nx.DiGraph) -> nx.DiGraph:
         if dbnode:
             cls.neo_db.add_dbnode(dbnode)
-    # coma separated tags
+            # coma separated tags
 
             graph.add_node(
                 "Node: " + str(dbnode.id),
