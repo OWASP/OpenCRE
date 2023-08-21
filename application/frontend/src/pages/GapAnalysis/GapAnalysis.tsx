@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Dropdown, Label, Popup, Segment, Table } from 'semantic-ui-react';
+import { Accordion, Dropdown, Icon, Label, Popup, Segment, Table } from 'semantic-ui-react';
 
 import { useEnvironment } from '../../hooks';
 
@@ -49,6 +49,7 @@ export const GapAnalysis = () => {
   const [BaseStandard, setBaseStandard] = useState<string>();
   const [CompareStandard, setCompareStandard] = useState<string>();
   const [gapAnalysis, setGapAnalysis] = useState<string>();
+  const [activeIndex, SetActiveIndex] = useState<string>();
   const { apiUrl } = useEnvironment();
   useEffect(() => {
     const fetchData = async () => {
@@ -62,6 +63,12 @@ export const GapAnalysis = () => {
     if (!BaseStandard || !CompareStandard || BaseStandard === CompareStandard) return;
     fetchData().catch(console.error);
   }, [BaseStandard, CompareStandard, setGapAnalysis]);
+
+  const handleAccordionClick = (e, titleProps) => {
+    const { index } = titleProps
+    const newIndex = activeIndex === index ? -1 : index
+    SetActiveIndex(newIndex)
+  }
 
   return (
     <div>
@@ -99,29 +106,68 @@ export const GapAnalysis = () => {
                   </Label>
                 </Table.Cell>
                 <Table.Cell>
-                  {gapAnalysis[key].paths.map((path) => {
-                    let segmentID = gapAnalysis[key].start.id;
-                    return (
-                      <Popup
-                        wide="very"
-                        hoverable
-                        content={path.path
-                          .map((segment) => {
-                            const { text, nextID } = GetSegmentText(segment, segmentID);
-                            segmentID = nextID;
-                            return text;
-                          })
-                          .join('')}
-                        trigger={
-                          <span>
-                            {path.end.name} {path.end.sectionID} {path.end.section} {path.end.subsection}{' '}
-                            {path.end.description},{' '}
-                          </span>
-                        }
-                      />
-                    );
-                  })}
-                  <br />({gapAnalysis[key].paths.length})
+                  <Accordion>
+                    <Accordion.Title
+                      active={activeIndex === key}
+                      index={key}
+                      onClick={handleAccordionClick}
+                    >
+                      <Icon name='dropdown' />
+                      {gapAnalysis[key].paths.sort((a, b) => a.score - b.score).slice(0, 3).map((path) => {
+                        let segmentID = gapAnalysis[key].start.id;
+                        return (
+                          <>
+                            <Popup
+                              wide="very"
+                              hoverable
+                              content={path.path
+                                .map((segment) => {
+                                  const { text, nextID } = GetSegmentText(segment, segmentID);
+                                  segmentID = nextID;
+                                  return text;
+                                })
+                                .join('')}
+                              trigger={
+                                <span>
+                                  {path.end.name} {path.end.sectionID} {path.end.section} {path.end.subsection}{' '}
+                                  {path.end.description}{' '}({path.score})
+                                </span>
+                              }
+                            />
+                            <br />
+                          </>
+                        );
+                      })}
+                      (Total Links: {gapAnalysis[key].paths.length})
+                    </Accordion.Title>
+                    <Accordion.Content active={activeIndex === key}>
+                      {gapAnalysis[key].paths.sort((a, b) => a.score - b.score).slice(2, gapAnalysis[key].paths.length).map((path) => {
+                        let segmentID = gapAnalysis[key].start.id;
+                        return (
+                          <>
+                            <Popup
+                              wide="very"
+                              hoverable
+                              content={path.path
+                                .map((segment) => {
+                                  const { text, nextID } = GetSegmentText(segment, segmentID);
+                                  segmentID = nextID;
+                                  return text;
+                                })
+                                .join('')}
+                              trigger={
+                                <span>
+                                  {path.end.name} {path.end.sectionID} {path.end.section} {path.end.subsection}{' '}
+                                  {path.end.description}{' '}({path.score})
+                                </span>
+                              }
+                            />
+                            <br />
+                          </>
+                        );
+                      })}
+                    </Accordion.Content>
+                  </Accordion>
                 </Table.Cell>
               </Table.Row>
             ))}

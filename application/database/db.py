@@ -268,6 +268,18 @@ class NEO_DB:
             database_="neo4j",
         )
 
+        # records_no_related, _, _ = self.driver.execute_query(
+        #     "MATCH"
+        #     "(BaseStandard:Node {name: $name1}), "
+        #     "(CompareStandard:Node {name: $name2}), "
+        #     "p = shortestPath((BaseStandard)-[*]-(CompareStandard)) "
+        #     "WHERE length(p) > 1 AND ALL(n in NODES(p) WHERE n:CRE or n = BaseStandard or n = CompareStandard) AND ALL(r IN relationships(p) WHERE NOT r:RELATED) "
+        #     "RETURN p ",
+        #     name1=name_1,
+        #     name2=name_2,
+        #     database_="neo4j",
+        # )
+
         def format_segment(seg):
             return {
                 "start": {

@@ -15,6 +15,7 @@ from application.defs import cre_defs as defs
 from application.defs import osib_defs as odefs
 from application.utils import spreadsheet as sheet_utils
 from application.utils import mdutils, redirectors
+from application.utils.gap_analysis import get_path_score
 from application.prompt_client import prompt_client as prompt_client
 from enum import Enum
 from flask import (
@@ -214,6 +215,7 @@ def gap_analysis() -> Any:  # TODO (spyros): add export result to spreadsheet
         key = path["start"]["id"]
         if key not in grouped_paths:
             grouped_paths[key] = {"start": path["start"], "paths": []}
+        path['score'] = get_path_score(path)
         del path["start"]
         grouped_paths[key]["paths"].append(path)
 
