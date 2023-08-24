@@ -3,7 +3,6 @@ import './MembershipRequired.scss';
 import React from 'react';
 import { Button, Header } from 'semantic-ui-react';
 
-
 export const MembershipRequired = () => {
   return (
     <div className="membership-required">
@@ -12,7 +11,7 @@ export const MembershipRequired = () => {
       </Header>
       <p>A OWASP Membership account is needed to login</p>
       <Button primary href="https://owasp.org/membership/">
-          Sign up 
+        Sign up
       </Button>
     </div>
   );

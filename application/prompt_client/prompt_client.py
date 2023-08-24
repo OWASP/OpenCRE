@@ -436,7 +436,7 @@ class PromptHandler:
                 emb = self.database.get_embedding(closest_id)
                 if emb:
                     closest_content = emb[0].embeddings_content
-            
+
             closest_object_str = f"{closest_content}" + "\n".join(
                 [f"{k}:{v}" for k, v in closest_object.shallow_copy().todict().items()]
             )

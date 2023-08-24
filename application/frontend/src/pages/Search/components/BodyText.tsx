@@ -24,14 +24,16 @@ export const SearchBody = () => {
           topics.
         </b>
       </p>
-      <h3>Do you have an OWASP account? Try talking to our <a href='/chatbot'>CRE Chatbot</a></h3>
+      <h3>
+        Do you have an OWASP account? Try talking to our <a href="/chatbot">CRE Chatbot</a>
+      </h3>
       <h2>HOW?</h2>
       <p>
         OpenCRE links each section of a resource (like a standard or guideline) to a shared topic, known as a
         Common Requirement, causing that section to also link with all other resources that link to the same
-        topic. This 1) enables users to find all combined information from relevant sources, 2) facilitates
-        a shared and better understanding of cyber security, and 3) allows standard makers to have links
-        that keep working and offer all the information that readers need, alleviating their need to cover
+        topic. This 1) enables users to find all combined information from relevant sources, 2) facilitates a
+        shared and better understanding of cyber security, and 3) allows standard makers to have links that
+        keep working and offer all the information that readers need, alleviating their need to cover
         everything themselves. OpenCRE maintains itself: links to OpenCRE in the standard text are scanned
         automatically. Furthermore, topics are linked with related other topics, creating a semantic web for
         security to explore.
@@ -43,17 +45,17 @@ export const SearchBody = () => {
       </p>
       <h2>WHO?</h2>
       <p>
-        OpenCRE is the independent brainchild of software security professionals Spyros Gasteratos and Rob
-        van der Veer, who joined forces to tackle the complexities and segmentation in current security
-        standards and guidelines. They collaborated closely with many initiatives, including SKF, OpenSSF and the Owasp Top 10
-        project. OpenCRE is an open-source platform overseen by the OWASP foundation through the
+        OpenCRE is the independent brainchild of software security professionals Spyros Gasteratos and Rob van
+        der Veer, who joined forces to tackle the complexities and segmentation in current security standards
+        and guidelines. They collaborated closely with many initiatives, including SKF, OpenSSF and the Owasp
+        Top 10 project. OpenCRE is an open-source platform overseen by the OWASP foundation through the
         <a href="https://owasp.org/www-project-integration-standards/"> OWASP Integration standard project</a>
         . The goal is to foster better coordination among security initiatives.
       </p>
       <p>
         OpenCRE currently links OWASP standards (Top 10, ASVS, Proactive Controls, Cheat sheets, Testing
-        guide, ZAP, Juice shop, SAMM), plus several other sources (CWE, CAPEC, NIST-800 53, NIST-800 63b, Cloud Control
-        Matrix, ISO27001, ISO27002, and NIST SSDF).
+        guide, ZAP, Juice shop, SAMM), plus several other sources (CWE, CAPEC, NIST-800 53, NIST-800 63b,
+        Cloud Control Matrix, ISO27001, ISO27002, and NIST SSDF).
       </p>
       <p>
         Contact us via (rob.vanderveer [at] owasp.org) to join the movement. Currently, a stakeholder group is
@@ -65,12 +67,9 @@ export const SearchBody = () => {
         <a href="https://github.com/OWASP/www-project-integration-standards/raw/master/writeups/CRE-Explained6.pdf">
           {' '}
           CRE explanation document{' '}
-        </a>, follow our
-        <a href="https://www.linkedin.com/company/96695329">
-          {' '}
-          LinkedIn page{' '}
-        </a>{' '}
-        or click the diagram below.
+        </a>
+        , follow our
+        <a href="https://www.linkedin.com/company/96695329"> LinkedIn page </a> or click the diagram below.
       </p>
 
       <a href="/opencregraphic2.png" target="_blank">
