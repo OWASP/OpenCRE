@@ -47,9 +47,7 @@ export const BrowseRootCres = () => {
       <LoadingAndErrorIndicator loading={loading} error={error} />
       {!loading && !error && (
         <div className="ui grid">
-          <div className="wide column">
-            {display && <SearchResults results={display} />}
-          </div>
+          <div className="wide column">{display && <SearchResults results={display} />}</div>
         </div>
       )}
     </div>

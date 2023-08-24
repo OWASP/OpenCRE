@@ -5,9 +5,9 @@ import { CommonRequirementEnumeration, Graph, Search, Standard } from './pages';
 import { BrowseRootCres } from './pages/BrowseRootCres/browseRootCres';
 import { Chatbot } from './pages/chatbot/chatbot';
 import { Deeplink } from './pages/Deeplink/Deeplink';
+import { MembershipRequired } from './pages/MembershipRequired/MembershipRequired';
 import { SearchName } from './pages/Search/SearchName';
 import { StandardSection } from './pages/Standard/StandardSection';
-import { MembershipRequired } from './pages/MembershipRequired/MembershipRequired'
 
 export interface IRoute {
   path: string;

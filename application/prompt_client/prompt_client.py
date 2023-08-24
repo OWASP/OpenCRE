@@ -431,11 +431,12 @@ class PromptHandler:
             f"The prompt {prompt}, was most similar to object \n{closest_object}\n, with similarity:{similarity}"
         )
         closest_content = ""
-        if closest_object.hyperlink:
-            emb = self.database.get_embedding(closest_id)
-            if emb:
-                closest_content = emb[0].embeddings_content
         if closest_object:
+            if closest_object.hyperlink:
+                emb = self.database.get_embedding(closest_id)
+                if emb:
+                    closest_content = emb[0].embeddings_content
+
             closest_object_str = f"{closest_content}" + "\n".join(
                 [f"{k}:{v}" for k, v in closest_object.shallow_copy().todict().items()]
             )

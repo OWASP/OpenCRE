@@ -116,7 +116,7 @@ pathable==0.4.3
 pathspec==0.9.0
 pbr==5.8.0
 pep517==0.8.2
-Pillow==9.1.1
+Pillow
 pip-autoremove==0.9.1
 platformdirs==2.2.0
 playwright==1.33.0
@@ -125,7 +125,7 @@ prance
 prompt-toolkit==3.0.19
 proto-plus==1.22.2
 protobuf==4.23.1
-psycopg2==2.9.1
+psycopg2-binary
 pyasn1==0.4.8
 pyasn1-modules==0.2.8
 pycodestyle==2.7.0
