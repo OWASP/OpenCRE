@@ -65,10 +65,10 @@ export const GapAnalysis = () => {
   }, [BaseStandard, CompareStandard, setGapAnalysis]);
 
   const handleAccordionClick = (e, titleProps) => {
-    const { index } = titleProps
-    const newIndex = activeIndex === index ? -1 : index
-    SetActiveIndex(newIndex)
-  }
+    const { index } = titleProps;
+    const newIndex = activeIndex === index ? -1 : index;
+    SetActiveIndex(newIndex);
+  };
 
   return (
     <div>
@@ -107,65 +107,67 @@ export const GapAnalysis = () => {
                 </Table.Cell>
                 <Table.Cell>
                   <Accordion>
-                    <Accordion.Title
-                      active={activeIndex === key}
-                      index={key}
-                      onClick={handleAccordionClick}
-                    >
-                      <Icon name='dropdown' />
-                      {gapAnalysis[key].paths.sort((a, b) => a.score - b.score).slice(0, 3).map((path) => {
-                        let segmentID = gapAnalysis[key].start.id;
-                        return (
-                          <>
-                            <Popup
-                              wide="very"
-                              hoverable
-                              content={path.path
-                                .map((segment) => {
-                                  const { text, nextID } = GetSegmentText(segment, segmentID);
-                                  segmentID = nextID;
-                                  return text;
-                                })
-                                .join('')}
-                              trigger={
-                                <span>
-                                  {path.end.name} {path.end.sectionID} {path.end.section} {path.end.subsection}{' '}
-                                  {path.end.description}{' '}({path.score})
-                                </span>
-                              }
-                            />
-                            <br />
-                          </>
-                        );
-                      })}
+                    <Accordion.Title active={activeIndex === key} index={key} onClick={handleAccordionClick}>
+                      <Icon name="dropdown" />
+                      {gapAnalysis[key].paths
+                        .sort((a, b) => a.score - b.score)
+                        .slice(0, 3)
+                        .map((path) => {
+                          let segmentID = gapAnalysis[key].start.id;
+                          return (
+                            <>
+                              <Popup
+                                wide="very"
+                                hoverable
+                                content={path.path
+                                  .map((segment) => {
+                                    const { text, nextID } = GetSegmentText(segment, segmentID);
+                                    segmentID = nextID;
+                                    return text;
+                                  })
+                                  .join('')}
+                                trigger={
+                                  <span>
+                                    {path.end.name} {path.end.sectionID} {path.end.section}{' '}
+                                    {path.end.subsection} {path.end.description} ({path.score})
+                                  </span>
+                                }
+                              />
+                              <br />
+                            </>
+                          );
+                        })}
                       (Total Links: {gapAnalysis[key].paths.length})
                     </Accordion.Title>
                     <Accordion.Content active={activeIndex === key}>
-                      {gapAnalysis[key].paths.sort((a, b) => a.score - b.score).slice(2, gapAnalysis[key].paths.length).map((path) => {
-                        let segmentID = gapAnalysis[key].start.id;
-                        return (
-                          <>
-                            <Popup
-                              wide="very"
-                              hoverable
-                              content={path.path
-                                .map((segment) => {
-                                  const { text, nextID } = GetSegmentText(segment, segmentID);
-                                  segmentID = nextID;
-                                  return text;
-                                })
-                                .join('')}
-                              trigger={
-                                <span>
-                                  {path.end.name} {path.end.sectionID} {path.end.section} {path.end.subsection}{' '}
-                                  {path.end.description}{' '}({path.score})
-                                </span>
-                              }
-                            />
-                            <br />
-                          </>
-                        );
-                      })}
+                      {gapAnalysis[key].paths
+                        .sort((a, b) => a.score - b.score)
+                        .slice(2, gapAnalysis[key].paths.length)
+                        .map((path) => {
+                          let segmentID = gapAnalysis[key].start.id;
+                          return (
+                            <>
+                              <Popup
+                                wide="very"
+                                hoverable
+                                content={path.path
+                                  .map((segment) => {
+                                    const { text, nextID } = GetSegmentText(segment, segmentID);
+                                    segmentID = nextID;
+                                    return text;
+                                  })
+                                  .join('')}
+                                trigger={
+                                  <span>
+                                    {path.end.name} {path.end.sectionID} {path.end.section}{' '}
+                                    {path.end.subsection} {path.end.description} ({path.score})
+                                  </span>
+                                }
+                              />
+                              <br />
+                            </>
+                          );
+                        })}
                     </Accordion.Content>
                   </Accordion>
                 </Table.Cell>
