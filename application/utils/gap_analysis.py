@@ -1,9 +1,9 @@
 PENALTIES = {"RELATED": 20, "CONTAINS_UP": 2, "CONTAINS_DOWN": 1, "LINKED_TO": 0}
 
 
-def get_path_score(path, start_id):
+def get_path_score(path):
     score = 0
-    previous_id = start_id
+    previous_id = path["start"]["id"]
     for step in path["path"]:
         penalty_type = step["relationship"]
 
