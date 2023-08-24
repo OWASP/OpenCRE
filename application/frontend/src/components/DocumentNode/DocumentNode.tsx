@@ -141,7 +141,7 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({
               let lastDocumentName = sortedResults[0].document.name;
               return (
                 <div className="document-node__link-type-container" key={type}>
-                  {idx > 0 && <hr style={{borderColor: "transparent", margin: "20px 0"}} />}
+                  {idx > 0 && <hr style={{ borderColor: 'transparent', margin: '20px 0' }} />}
                   <div>
                     <b>Which {getDocumentTypeText(type, links[0].document.doctype, node.doctype)}</b>:
                     {/* Risk here of mixed doctype in here causing odd output */}
