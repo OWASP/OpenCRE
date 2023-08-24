@@ -215,7 +215,7 @@ def gap_analysis() -> Any:  # TODO (spyros): add export result to spreadsheet
         key = path["start"]["id"]
         if key not in grouped_paths:
             grouped_paths[key] = {"start": path["start"], "paths": []}
-        path['score'] = get_path_score(path)
+        path["score"] = get_path_score(path)
         del path["start"]
         grouped_paths[key]["paths"].append(path)
 
