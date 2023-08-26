@@ -543,7 +543,7 @@ class TestMain(unittest.TestCase):
             for head in response.headers:
                 if head[0] == "Location":
                     location = head[1]
-            self.assertEqual(location, "/node/Standard/CWE/sectionid/456")
+            self.assertEqual(location, "/node/standard/CWE/sectionid/456")
             self.assertEqual(302, response.status_code)
 
             response = client.get(
@@ -554,9 +554,10 @@ class TestMain(unittest.TestCase):
             for head in response.headers:
                 if head[0] == "Location":
                     location = head[1]
-            self.assertEqual(location, "/node/Standard/ASVS/section/v0.1.2")
+            self.assertEqual(location, "/node/standard/ASVS/section/v0.1.2")
             self.assertEqual(302, response.status_code)
 
+            # negative test, this cwe does not exist, therefore there is nowhere to redirect to
             response = client.get(
                 "/smartlink/standard/CWE/999",
                 headers={"Content-Type": "application/json"},
@@ -566,6 +567,6 @@ class TestMain(unittest.TestCase):
                 if head[0] == "Location":
                     location = head[1]
             self.assertEqual(
-                location, "https://cwe.mitre.org/data/definitions/999.html"
+                location, ""
             )
-            self.assertEqual(302, response.status_code)
+            self.assertEqual(404, response.status_code)
