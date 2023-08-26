@@ -415,9 +415,9 @@ class PromptHandler:
         timestamp = datetime.now().strftime("%I:%M:%S %p")
         if not prompt:
             return {"response": "", "table": "", "timestamp": timestamp}
-        logger.info(f"getting embeddings for {prompt}")
+        logger.debug(f"getting embeddings for {prompt}")
         question_embedding = self.ai_client.get_text_embeddings(prompt)
-        logger.info(f"retrieved embeddings for {prompt}")
+        logger.debug(f"retrieved embeddings for {prompt}")
 
         # Find the closest area in the existing embeddings
         closest_id, similarity = self.get_id_of_most_similar_node_paginated(
@@ -426,8 +426,7 @@ class PromptHandler:
         )
         closest_object = self.database.get_node_by_db_id(closest_id)
         answer = ""
-
-        logger.info(
+        logger.debug(
             f"The prompt {prompt}, was most similar to object \n{closest_object}\n, with similarity:{similarity}"
         )
         closest_content = ""
@@ -449,7 +448,7 @@ class PromptHandler:
         else:
             return {"response": "An adequate answer could not be found", "table": [""]}
 
-        logger.info(f"retrieved completion for {prompt}")
+        logger.debug(f"retrieved completion for {prompt}")
         table = [closest_object]
         result = f"Answer: {answer}"
         return {"response": result, "table": table}
