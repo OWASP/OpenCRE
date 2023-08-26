@@ -204,7 +204,7 @@ export const Chatbot = () => {
     'yaml',
     'zephir',
   ];
-  type chatMessage = { timestamp: string; role: string; message: string; data: Document[] | null; };
+  type chatMessage = { timestamp: string; role: string; message: string; data: Document[] | null };
   interface ChatState {
     term: string;
     error: string;
@@ -287,7 +287,7 @@ export const Chatbot = () => {
             timestamp: new Date().toLocaleTimeString(),
             role: 'assistant',
             message: data.response,
-            data: data.table
+            data: data.table,
           },
         ]);
       })
@@ -299,23 +299,25 @@ export const Chatbot = () => {
   }
 
   function displayDocument(d: Document) {
-
-    var link = "/node/" + d.doctype.toLowerCase() + "/" + d.name
+    var link = '/node/' + d.doctype.toLowerCase() + '/' + d.name;
     if (d.section) {
-      link = link + "/section/" + d.section
+      link = link + '/section/' + d.section;
     } else {
-      link = link + "/sectionid/" + d.sectionID
+      link = link + '/sectionid/' + d.sectionID;
     }
-    return (<p>
-      <p>*Reference: The above answer was based on:
-        <a href={d.hyperlink} target="_blank"> {d.name} section: {' '}
-          {d.section ? d.section : d.sectionID};
-        </a>
-      </p>
+    return (
       <p>
-        You can find more information about {d.name} <a href={link}> on its OpenCRE page</a>
+        <p>
+          *Reference: The above answer was based on:
+          <a href={d.hyperlink} target="_blank">
+            {' '}
+            {d.name} section: {d.section ? d.section : d.sectionID};
+          </a>
+        </p>
+        <p>
+          You can find more information about {d.name} <a href={link}> on its OpenCRE page</a>
+        </p>
       </p>
-    </p>
     );
   }
 
@@ -349,8 +351,8 @@ export const Chatbot = () => {
                               <Comment.Text>{processResponse(m.message)}</Comment.Text>
                               {m.data
                                 ? m.data?.map((m2) => {
-                                  return displayDocument(m2);
-                                })
+                                    return displayDocument(m2);
+                                  })
                                 : ''}
                             </Comment.Content>
                           </Comment>
@@ -384,12 +386,13 @@ export const Chatbot = () => {
               <div className="table-container mt-5 ms-5 d-none">
                 <div className="table-content bg-light shadow p-3" id="table-content"></div>
               </div>
-              <div className='chatbot'>
+              <div className="chatbot">
                 <i>
-                  ChatCRE uses Google's PALM2 LLM, you can find the code for OpenCRE in https://github.com/owaps/OpenCRE.
-                  Your question travels to Heroku (OpenCRE hosting provider) and then to GCP over a protected connection.
-                  Your data is never stored in the OpenCRE servers, you can start a new session by refreshing your page.
-                  The OpenCRE team has taken all reasonable precautions we could think off to protect your privacy and security.
+                  ChatCRE uses Google's PALM2 LLM, you can find the code for OpenCRE in
+                  https://github.com/owaps/OpenCRE. Your question travels to Heroku (OpenCRE hosting provider)
+                  and then to GCP over a protected connection. Your data is never stored in the OpenCRE
+                  servers, you can start a new session by refreshing your page. The OpenCRE team has taken all
+                  reasonable precautions we could think off to protect your privacy and security.
                 </i>
               </div>
             </Grid>
