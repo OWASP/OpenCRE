@@ -566,7 +566,5 @@ class TestMain(unittest.TestCase):
             for head in response.headers:
                 if head[0] == "Location":
                     location = head[1]
-            self.assertEqual(
-                location, ""
-            )
+            self.assertEqual(location, "")
             self.assertEqual(404, response.status_code)
