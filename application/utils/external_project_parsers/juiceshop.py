@@ -39,7 +39,7 @@ def parse(
             hyperlink="https://demo.owasp-juice.shop//#/score-board?challenge="
             + urllib.parse.quote(challenge["name"]),
             tooltype=defs.ToolTypes.Training,
-            tags= [challenge["category"]],
+            tags=[challenge["category"]],
         )
 
         existing = cache.get_nodes(
