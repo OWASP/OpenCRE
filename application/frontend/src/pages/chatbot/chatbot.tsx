@@ -299,11 +299,25 @@ export const Chatbot = () => {
   }
 
   function displayDocument(d: Document) {
+    var link = '/node/' + d.doctype.toLowerCase() + '/' + d.name;
+    if (d.section) {
+      link = link + '/section/' + d.section;
+    } else {
+      link = link + '/sectionid/' + d.sectionID;
+    }
     return (
-      <a href={d.hyperlink} target="_blank">
-        *Reference: The above answer was based on the {d.name} section of{' '}
-        {d.section ? d.section : d.sectionID};
-      </a>
+      <p>
+        <p>
+          *Reference: The above answer was based on:
+          <a href={d.hyperlink} target="_blank">
+            {' '}
+            {d.name} section: {d.section ? d.section : d.sectionID};
+          </a>
+        </p>
+        <p>
+          You can find more information about {d.name} <a href={link}> on its OpenCRE page</a>
+        </p>
+      </p>
     );
   }
 
@@ -371,6 +385,15 @@ export const Chatbot = () => {
               </GridRow>
               <div className="table-container mt-5 ms-5 d-none">
                 <div className="table-content bg-light shadow p-3" id="table-content"></div>
+              </div>
+              <div className="chatbot">
+                <i>
+                  ChatCRE uses Google's PALM2 LLM, you can find the code for OpenCRE in
+                  https://github.com/owaps/OpenCRE. Your question travels to Heroku (OpenCRE hosting provider)
+                  and then to GCP over a protected connection. Your data is never stored in the OpenCRE
+                  servers, you can start a new session by refreshing your page. The OpenCRE team has taken all
+                  reasonable precautions we could think off to protect your privacy and security.
+                </i>
               </div>
             </Grid>
           </Container>
