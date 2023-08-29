@@ -27,7 +27,6 @@ class TestMain(unittest.TestCase):
         self.app_context.push()
         sqla.create_all()
 
-
     def test_extend_cre_with_tag_links(self) -> None:
         """
         Given:
