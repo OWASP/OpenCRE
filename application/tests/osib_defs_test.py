@@ -16,7 +16,7 @@ from application.defs.osib_defs import (
     Osib_node,
 )
 from application.defs.cre_defs import LinkTypes
-from networkx import networkx as nx
+import networkx as nx
 from networkx.algorithms.simple_paths import all_simple_paths
 
 
