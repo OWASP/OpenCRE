@@ -300,8 +300,9 @@ def smartlink(
     opt_version = request.args.get("version")
     # match ntype to the credoctypes case-insensitive
     typ = [t for t in defs.Credoctypes if t.value.lower() == ntype.lower()]
+    doctype = None
     if typ:
-        ntype = typ[0]
+        doctype = typ[0]
 
     page = 1
     items_per_page = 1
@@ -312,7 +313,7 @@ def smartlink(
         page=int(page),
         items_per_page=int(items_per_page),
         version=opt_version,
-        ntype=ntype,
+        ntype=doctype,
     )
 
     if not nodes or len(nodes) == 0:
@@ -322,7 +323,7 @@ def smartlink(
             page=int(page),
             items_per_page=int(items_per_page),
             version=opt_version,
-            ntype=ntype,
+            ntype=doctype,
         )
         found_section_id = True
     if nodes and len(nodes[0].links):
