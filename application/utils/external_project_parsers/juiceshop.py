@@ -39,6 +39,7 @@ def parse(
             hyperlink="https://demo.owasp-juice.shop//#/score-board?challenge="
             + urllib.parse.quote(challenge["name"]),
             tooltype=defs.ToolTypes.Training,
+            tags=[challenge["category"]],
         )
 
         existing = cache.get_nodes(
@@ -51,7 +52,7 @@ def parse(
                     f"Node {chal.todict()} already exists and has embeddings, skipping"
                 )
                 continue
-        challenge_embeddings = prompt.get_text_embeddings(chal.__repr__())
+        challenge_embeddings = prompt.get_text_embeddings(",".join(chal.tags))
         cre_id = prompt.get_id_of_most_similar_cre(challenge_embeddings)
         if not cre_id:
             logger.info(
