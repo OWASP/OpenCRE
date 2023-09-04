@@ -255,8 +255,30 @@ class NEO_DB:
     @classmethod
     def gap_analysis(self, name_1, name_2):
         if not self.connected:
-            return
-        records, _, _ = self.driver.execute_query(
+            return None, None
+        base_standard, _, _ = self.driver.execute_query(
+            """
+            MATCH (BaseStandard:Node {name: $name1})
+            RETURN BaseStandard
+            """,
+            name1=name_1,
+            database_="neo4j",
+        )
+
+        path_records_all, _, _ = self.driver.execute_query(
+            """
+            OPTIONAL MATCH (BaseStandard:Node {name: $name1})
+            OPTIONAL MATCH (CompareStandard:Node {name: $name2})
+            OPTIONAL MATCH p = shortestPath((BaseStandard)-[*..20]-(CompareStandard)) 
+            WITH p
+            WHERE length(p) > 1 AND ALL(n in NODES(p) WHERE n:CRE or n.name = $name1 or n.name = $name2) 
+            RETURN p
+            """,
+            name1=name_1,
+            name2=name_2,
+            database_="neo4j",
+        )
+        path_records, _, _ = self.driver.execute_query(
             """
             OPTIONAL MATCH (BaseStandard:Node {name: $name1})
             OPTIONAL MATCH (CompareStandard:Node {name: $name2})
@@ -291,7 +313,7 @@ class NEO_DB:
                 "relationship": seg.type,
             }
 
-        def format_record(rec):
+        def format_path_record(rec):
             return {
                 "start": {
                     "name": rec.start_node["name"],
@@ -311,8 +333,19 @@ class NEO_DB:
                 },
                 "path": [format_segment(seg) for seg in rec.relationships],
             }
+        
+        def format_record(rec):
+            return {
+                    "name": rec["name"],
+                    "sectionID": rec["section_id"],
+                    "section": rec["section"],
+                    "subsection": rec["subsection"],
+                    "description": rec["description"],
+                    "id": rec["id"],
+                }
 
-        return [format_record(rec["p"]) for rec in records]
+
+        return [format_record(rec["BaseStandard"]) for rec in base_standard], [format_path_record(rec["p"]) for rec in (path_records + path_records_all)]
     
     @classmethod
     def standards(self):
