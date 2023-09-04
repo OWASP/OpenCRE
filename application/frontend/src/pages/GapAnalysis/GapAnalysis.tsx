@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from 'react';
-import { Accordion, Button, Dropdown, DropdownItemProps, Grid, Icon, Popup, Table } from 'semantic-ui-react';
-import { useLocation } from "react-router-dom";
-import { LoadingAndErrorIndicator } from '../../components/LoadingAndErrorIndicator';
-
-import { useEnvironment } from '../../hooks';
 import axios from 'axios';
+import React, { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
+import { Accordion, Button, Dropdown, DropdownItemProps, Grid, Icon, Popup, Table } from 'semantic-ui-react';
+
+import { LoadingAndErrorIndicator } from '../../components/LoadingAndErrorIndicator';
+import { useEnvironment } from '../../hooks';
 
 const GetSegmentText = (segment, segmentID) => {
   let textPart = segment.end;
@@ -15,7 +15,9 @@ const GetSegmentText = (segment, segmentID) => {
     nextID = segment.start.id;
     arrow = '<-';
   }
-  const text = `${arrow} ${segment.relationship} ${arrow} ${textPart.name} ${textPart.sectionID ?? ""} ${textPart.section ?? ""} ${textPart.subsection ?? ''} ${textPart.description ?? ''}`;
+  const text = `${arrow} ${segment.relationship} ${arrow} ${textPart.name} ${textPart.sectionID ?? ''} ${
+    textPart.section ?? ''
+  } ${textPart.subsection ?? ''} ${textPart.description ?? ''}`;
   return { text, nextID };
 };
 
@@ -26,14 +28,15 @@ function useQuery() {
 }
 
 export const GapAnalysis = () => {
-  const standardOptionsDefault = [
-    { key: '', text: '', value: undefined },
-
-  ];
+  const standardOptionsDefault = [{ key: '', text: '', value: undefined }];
   const searchParams = useQuery();
-  const [standardOptions, setStandardOptions] = useState<DropdownItemProps[] | undefined>(standardOptionsDefault);
-  const [BaseStandard, setBaseStandard] = useState<string | undefined>(searchParams.get('base') ?? "");
-  const [CompareStandard, setCompareStandard] = useState<string | undefined>(searchParams.get('compare') ?? "");
+  const [standardOptions, setStandardOptions] = useState<DropdownItemProps[] | undefined>(
+    standardOptionsDefault
+  );
+  const [BaseStandard, setBaseStandard] = useState<string | undefined>(searchParams.get('base') ?? '');
+  const [CompareStandard, setCompareStandard] = useState<string | undefined>(
+    searchParams.get('compare') ?? ''
+  );
   const [gapAnalysis, setGapAnalysis] = useState<string>();
   const [activeIndex, SetActiveIndex] = useState<string>();
   const [loading, setLoading] = useState<boolean>(false);
@@ -41,22 +44,31 @@ export const GapAnalysis = () => {
   const { apiUrl } = useEnvironment();
 
   const GetStrength = (score) => {
-    if (score < 5) return 'Strong'
-    if (score > 20) return 'Weak'
-    return 'Average'
-  }
+    if (score < 5) return 'Strong';
+    if (score > 20) return 'Weak';
+    return 'Average';
+  };
+
+  const GetStrengthColor = (score) => {
+    if (score < 5) return 'Green';
+    if (score > 20) return 'Red';
+    return 'Orange';
+  };
 
   useEffect(() => {
     const fetchData = async () => {
-      const result = await axios.get(
-        `${apiUrl}/standards`
-      );
+      const result = await axios.get(`${apiUrl}/standards`);
       setLoading(false);
-      setStandardOptions(standardOptionsDefault.concat(result.data.map(x => ({ key: x, text: x, value: x }))));
+      setStandardOptions(
+        standardOptionsDefault.concat(result.data.map((x) => ({ key: x, text: x, value: x })))
+      );
     };
 
     setLoading(true);
-    fetchData().catch(e => { setLoading(false); setError(e.response.data.message ?? e.message) });
+    fetchData().catch((e) => {
+      setLoading(false);
+      setError(e.response.data.message ?? e.message);
+    });
   }, [setStandardOptions, setLoading, setError]);
 
   useEffect(() => {
@@ -71,7 +83,10 @@ export const GapAnalysis = () => {
     if (!BaseStandard || !CompareStandard || BaseStandard === CompareStandard) return;
     setGapAnalysis(undefined);
     setLoading(true);
-    fetchData().catch(e => { setLoading(false); setError(e.response.data.message ?? e.message) });
+    fetchData().catch((e) => {
+      setLoading(false);
+      setError(e.response.data.message ?? e.message);
+    });
   }, [BaseStandard, CompareStandard, setGapAnalysis, setLoading, setError]);
 
   const handleAccordionClick = (e, titleProps) => {
@@ -107,7 +122,14 @@ export const GapAnalysis = () => {
         </Grid.Row>
         {gapAnalysis && (
           <Grid.Column width={2} floated="right">
-            <Button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/gap_analysis?base=${BaseStandard}&compare=${CompareStandard}`) }} target="_blank">
+            <Button
+              onClick={() => {
+                navigator.clipboard.writeText(
+                  `${window.location.origin}/gap_analysis?base=${BaseStandard}&compare=${CompareStandard}`
+                );
+              }}
+              target="_blank"
+            >
               <Icon name="share square" /> Share this anyalysis
             </Button>
           </Grid.Column>
@@ -115,7 +137,7 @@ export const GapAnalysis = () => {
       </Grid>
       <LoadingAndErrorIndicator loading={loading} error={error} />
       {gapAnalysis && (
-        <Table celled padded compact style={{ margin: "5px" }}>
+        <Table celled padded compact style={{ margin: '5px' }}>
           <Table.Header>
             <Table.Row>
               <Table.HeaderCell>{BaseStandard}</Table.HeaderCell>
@@ -126,10 +148,16 @@ export const GapAnalysis = () => {
           <Table.Body>
             {Object.keys(gapAnalysis).map((key) => (
               <Table.Row key={key}>
-                <Table.Cell >
+                <Table.Cell>
                   <p>
-                    <b>{gapAnalysis[key].start.name} {gapAnalysis[key].start.section} {gapAnalysis[key].start.subsection}</b>
-                    <a href={`/node/standard/${gapAnalysis[key].start.name}/section/${gapAnalysis[key].start.section}`} target="_blank">
+                    <b>
+                      {gapAnalysis[key].start.name} {gapAnalysis[key].start.section}{' '}
+                      {gapAnalysis[key].start.subsection}
+                    </b>
+                    <a
+                      href={`/node/standard/${gapAnalysis[key].start.name}/section/${gapAnalysis[key].start.section}`}
+                      target="_blank"
+                    >
                       <Icon name="external" />
                     </a>
                     <br />
@@ -157,9 +185,16 @@ export const GapAnalysis = () => {
                               .join('')}
                             trigger={
                               <span>
-                                {path.end.name} {path.end.sectionID} {path.end.section}{' '}
-                                {path.end.subsection} {path.end.description} ({GetStrength(path.score)}:{path.score}){' '}
-                                <a href={`/node/standard/${path.end.name}/section/${path.end.section}`} target="_blank">
+                                {path.end.name} {path.end.sectionID} {path.end.section} {path.end.subsection}{' '}
+                                {path.end.description} (
+                                <b style={{ color: GetStrengthColor(path.score) }}>
+                                  {GetStrength(path.score)}:{path.score}
+                                </b>
+                                ){' '}
+                                <a
+                                  href={`/node/standard/${path.end.name}/section/${path.end.section}`}
+                                  target="_blank"
+                                >
                                   <Icon name="external" />
                                 </a>
                               </span>
@@ -171,11 +206,14 @@ export const GapAnalysis = () => {
                     })}
                   {Object.keys(gapAnalysis[key].paths).length > 3 && (
                     <Accordion>
-                      <Accordion.Title active={activeIndex === key} index={key} onClick={handleAccordionClick}>
-                        <Button>Weakerlinks (Total Links: {Object.keys(gapAnalysis[key].paths).length})</Button>
+                      <Accordion.Title
+                        active={activeIndex === key}
+                        index={key}
+                        onClick={handleAccordionClick}
+                      >
+                        <Button>More Links (Total: {Object.keys(gapAnalysis[key].paths).length})</Button>
                       </Accordion.Title>
                       <Accordion.Content active={activeIndex === key}>
-                        <b>Weaker Links:</b><br />
                         {Object.values<any>(gapAnalysis[key].paths)
                           .sort((a, b) => a.score - b.score)
                           .slice(3, gapAnalysis[key].paths.length)
@@ -185,7 +223,6 @@ export const GapAnalysis = () => {
                               <span key={path.end.id}>
                                 <Popup
                                   wide="very"
-
                                   hoverable
                                   content={path.path
                                     .map((segment) => {
@@ -197,8 +234,12 @@ export const GapAnalysis = () => {
                                   trigger={
                                     <span>
                                       {path.end.name} {path.end.sectionID} {path.end.section}{' '}
-                                      {path.end.subsection} {path.end.description} {GetStrength(path.score)}:{path.score}){' '}
-                                      <a href={`/node/standard/${path.end.name}/section/${path.end.section}`} target="_blank">
+                                      {path.end.subsection} {path.end.description} {GetStrength(path.score)}:
+                                      {path.score}){' '}
+                                      <a
+                                        href={`/node/standard/${path.end.name}/section/${path.end.section}`}
+                                        target="_blank"
+                                      >
                                         <Icon name="external" />
                                       </a>
                                     </span>
@@ -211,7 +252,7 @@ export const GapAnalysis = () => {
                       </Accordion.Content>
                     </Accordion>
                   )}
-                  {Object.keys(gapAnalysis[key].paths).length === 0 && (<i>No links Found</i>)}
+                  {Object.keys(gapAnalysis[key].paths).length === 0 && <i>No links Found</i>}
                 </Table.Cell>
               </Table.Row>
             ))}

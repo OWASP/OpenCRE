@@ -335,30 +335,31 @@ class NEO_DB:
                 },
                 "path": [format_segment(seg) for seg in rec.relationships],
             }
-        
+
         def format_record(rec):
             return {
-                    "name": rec["name"],
-                    "sectionID": rec["section_id"],
-                    "section": rec["section"],
-                    "subsection": rec["subsection"],
-                    "description": rec["description"],
-                    "id": rec["id"],
-                }
+                "name": rec["name"],
+                "sectionID": rec["section_id"],
+                "section": rec["section"],
+                "subsection": rec["subsection"],
+                "description": rec["description"],
+                "id": rec["id"],
+            }
 
+        return [format_record(rec["BaseStandard"]) for rec in base_standard], [
+            format_path_record(rec["p"]) for rec in (path_records + path_records_all)
+        ]
 
-        return [format_record(rec["BaseStandard"]) for rec in base_standard], [format_path_record(rec["p"]) for rec in (path_records + path_records_all)]
-    
     @classmethod
     def standards(self):
         if not self.connected:
             return
         records, _, _ = self.driver.execute_query(
-            'MATCH (n:Node {ntype: "Standard"}) '
-            "RETURN collect(distinct n.name)",
+            'MATCH (n:Node {ntype: "Standard"}) ' "RETURN collect(distinct n.name)",
             database_="neo4j",
         )
         return records[0][0]
+
 
 class CRE_Graph:
     graph: nx.Graph = None
@@ -1276,7 +1277,7 @@ class Node_collection:
     def gap_analysis(self, node_names: List[str]):
         if not self.neo_db.connected:
             return None
-        base_standard, paths =  self.neo_db.gap_analysis(node_names[0], node_names[1])
+        base_standard, paths = self.neo_db.gap_analysis(node_names[0], node_names[1])
         if base_standard is None:
             return None
         grouped_paths = {}
@@ -1291,7 +1292,7 @@ class Node_collection:
             path["score"] = get_path_score(path)
             del path["start"]
             if end_key in grouped_paths[key]["paths"]:
-                if grouped_paths[key]["paths"][end_key]['score'] > path["score"]:
+                if grouped_paths[key]["paths"][end_key]["score"] > path["score"]:
                     grouped_paths[key]["paths"][end_key] = path
             else:
                 grouped_paths[key]["paths"][end_key] = path
