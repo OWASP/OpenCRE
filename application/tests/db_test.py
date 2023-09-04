@@ -21,10 +21,10 @@ class TestDB(unittest.TestCase):
 
     def setUp(self) -> None:
         self.app = create_app(mode="test")
-        sqla.create_all(app=self.app)
-
         self.app_context = self.app.app_context()
         self.app_context.push()
+        sqla.create_all()
+
         self.collection = db.Node_collection()
         collection = self.collection
         collection.graph.graph = db.CRE_Graph.load_cre_graph(sqla.session)
@@ -1214,7 +1214,7 @@ class TestDB(unittest.TestCase):
         dbnodes = []
         sqla.session.remove()
         sqla.drop_all()
-        sqla.create_all(app=self.app)
+        sqla.create_all()
         collection = db.Node_collection()
         collection.graph.graph = db.CRE_Graph.load_cre_graph(sqla.session)
 

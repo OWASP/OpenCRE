@@ -15,9 +15,10 @@ class TestZAPAlertsParser(unittest.TestCase):
 
     def setUp(self) -> None:
         self.app = create_app(mode="test")
-        sqla.create_all(app=self.app)
         self.app_context = self.app.app_context()
         self.app_context.push()
+        sqla.create_all()
+
         self.collection = db.Node_collection()
 
     def test_register_zap_alert_top_10_tags(self) -> None:
