@@ -333,7 +333,7 @@ class CRE_Graph:
         if cls.__instance is None:
             cls.__instance = cls.__new__(cls)
             cls.neo_db = neo_db
-            # cls.graph = cls.load_cre_graph(session)
+            cls.graph = cls.load_cre_graph(session)
         return cls.__instance
 
     def __init__(sel):

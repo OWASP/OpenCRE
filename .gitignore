@@ -31,3 +31,6 @@ coverage/
 
 ### Dev db
 standards_cache.sqlite
+
+### Neo4j
+neo4j/
