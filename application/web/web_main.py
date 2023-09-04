@@ -67,7 +67,15 @@ def extend_cre_with_tag_links(
 
 def neo4j_not_running_rejection():
     logger.info("Neo4j is disabled")
-    return jsonify({"message": "Backend services connected to this feature are not running at the moment."}), 500
+    return (
+        jsonify(
+            {
+                "message": "Backend services connected to this feature are not running at the moment."
+            }
+        ),
+        500,
+    )
+
 
 @app.route("/rest/v1/id/<creid>", methods=["GET"])
 @app.route("/rest/v1/name/<crename>", methods=["GET"])
@@ -213,17 +221,18 @@ def gap_analysis() -> Any:
     database = db.Node_collection()
     standards = request.args.getlist("standard")
     gap_analysis = database.gap_analysis(standards)
-    if gap_analysis is None: 
+    if gap_analysis is None:
         return neo4j_not_running_rejection()
     return jsonify(gap_analysis)
+
 
 @app.route("/rest/v1/standards", methods=["GET"])
 @cache.cached(timeout=50)
 def standards() -> Any:
     database = db.Node_collection()
     standards = database.standards()
-    if standards is None: 
-        neo4j_not_running_rejection()  
+    if standards is None:
+        neo4j_not_running_rejection()
     return standards
 
 
