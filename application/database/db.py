@@ -473,7 +473,7 @@ class Node_collection:
             ntype=ntype,
             description=description,
             sectionID=sectionID,
-        ).paginate(int(page), items_per_page, False)
+        ).paginate(page=int(page), per_page=items_per_page, error_out=False)
         total_pages = dbnodes.pages
         if dbnodes.items:
             for dbnode in dbnodes.items:

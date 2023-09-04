@@ -18,14 +18,14 @@ from application.utils import mdutils
 class TestMain(unittest.TestCase):
     def tearDown(self) -> None:
         sqla.session.remove()
-        sqla.drop_all(app=self.app)
+        sqla.drop_all()
         self.app_context.pop()
 
     def setUp(self) -> None:
         self.app = create_app(mode="test")
-        sqla.create_all(app=self.app)
         self.app_context = self.app.app_context()
         self.app_context.push()
+        sqla.create_all()
 
     def test_extend_cre_with_tag_links(self) -> None:
         """
