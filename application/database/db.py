@@ -268,18 +268,6 @@ class NEO_DB:
             database_="neo4j",
         )
 
-        # records_no_related, _, _ = self.driver.execute_query(
-        #     "MATCH"
-        #     "(BaseStandard:Node {name: $name1}), "
-        #     "(CompareStandard:Node {name: $name2}), "
-        #     "p = shortestPath((BaseStandard)-[*]-(CompareStandard)) "
-        #     "WHERE length(p) > 1 AND ALL(n in NODES(p) WHERE n:CRE or n = BaseStandard or n = CompareStandard) AND ALL(r IN relationships(p) WHERE NOT r:RELATED) "
-        #     "RETURN p ",
-        #     name1=name_1,
-        #     name2=name_2,
-        #     database_="neo4j",
-        # )
-
         def format_segment(seg):
             return {
                 "start": {
@@ -323,7 +311,17 @@ class NEO_DB:
             }
 
         return [format_record(rec["p"]) for rec in records]
-
+    
+    @classmethod
+    def standards(self):
+        if not self.connected:
+            return
+        records, _, _ = self.driver.execute_query(
+            'MATCH (n:Node {ntype: "Standard"}) '
+            "RETURN collect(distinct n.name)",
+            database_="neo4j",
+        )
+        return records[0][0]
 
 class CRE_Graph:
     graph: nx.Graph = None
@@ -1239,29 +1237,10 @@ class Node_collection:
         return res
 
     def gap_analysis(self, node_names: List[str]):
-        """Since the CRE structure is a tree-like graph with
-        leaves being nodes we can find the paths between nodes
-        find_path_between_nodes() is a graph-path-finding method
-        """
-        # processed_nodes = []
-        # dbnodes: List[Node] = []
-        # for name in node_names:
-        #     dbnodes.extend(self.session.query(Node).filter(Node.name == name).all())
-
-        # for node in dbnodes:
-        #     working_node = nodeFromDB(node)
-        #     for other_node in dbnodes:
-        #         if node.id == other_node.id:
-        #             continue
-        #         if self.find_path_between_nodes(node.id, other_node.id):
-        #             working_node.add_link(
-        #                 cre_defs.Link(
-        #                     ltype=cre_defs.LinkTypes.LinkedTo,
-        #                     document=nodeFromDB(other_node),
-        #                 )
-        #             )
-        #     processed_nodes.append(working_node)
         return self.neo_db.gap_analysis(node_names[0], node_names[1])
+
+    def standards(self):
+        return self.neo_db.standards()
 
     def text_search(self, text: str) -> List[Optional[cre_defs.Document]]:
         """Given a piece of text, tries to find the best match

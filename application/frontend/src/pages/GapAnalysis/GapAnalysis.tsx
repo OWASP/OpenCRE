@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { Accordion, Button, Dropdown, Grid, Popup, Table } from 'semantic-ui-react';
+import { Accordion, Button, Dropdown, DropdownItemProps, Grid, Popup, Table } from 'semantic-ui-react';
 import { useLocation } from "react-router-dom";
 import { LoadingAndErrorIndicator } from '../../components/LoadingAndErrorIndicator';
 
 import { useEnvironment } from '../../hooks';
+import axios from 'axios';
 
 const GetSegmentText = (segment, segmentID) => {
   let textPart = segment.end;
@@ -25,36 +26,12 @@ function useQuery() {
 }
 
 export const GapAnalysis = () => {
-  const standardOptions = [ // TODO: Automate this list
+  const standardOptionsDefault = [
     { key: '', text: '', value: undefined },
-    { key: 'OWASP Top 10 2021', text: 'OWASP Top 10 2021', value: 'OWASP Top 10 2021' },
-    { key: 'NIST 800-53 v5', text: 'NIST 800-53 v5', value: 'NIST 800-53 v5' },
-    { key: 'ISO 27001', text: 'ISO 27001', value: 'ISO 27001' },
-    { key: 'Cloud Controls Matrix', text: 'Cloud Controls Matrix', value: 'Cloud Controls Matrix' },
-    { key: 'ASVS', text: 'ASVS', value: 'ASVS' },
-    { key: 'OWASP Proactive Controls', text: 'OWASP Proactive Controls', value: 'OWASP Proactive Controls' },
-    { key: 'SAMM', text: 'SAMM', value: 'SAMM' },
-    { key: 'CWE', text: 'CWE', value: 'CWE' },
-    { key: 'OWASP Cheat Sheets', text: 'OWASP Cheat Sheets', value: 'OWASP Cheat Sheets' },
-    {
-      key: 'OWASP Web Security Testing Guide (WSTG)',
-      text: 'OWASP Web Security Testing Guide (WSTG)',
-      value: 'OWASP Web Security Testing Guide (WSTG)',
-    },
-    { key: 'NIST 800-63', text: 'NIST 800-63', value: 'NIST 800-63' },
-    { key: 'Cheat_sheets', text: 'Cheat_sheets', value: 'Cheat_sheets' },
-    { key: 'CAPEC', text: 'CAPEC', value: 'CAPEC' },
-    { key: 'ZAP Rule', text: 'ZAP Rule', value: 'ZAP Rule' },
-    { key: 'OWASP', text: 'OWASP', value: 'OWASP' },
-    {
-      key: 'OWASP Secure Headers Project',
-      text: 'OWASP Secure Headers Project',
-      value: 'OWASP Secure Headers Project',
-    },
-    { key: 'PCI DSS', text: 'PCI DSS', value: 'PCI DSS' },
-    { key: 'OWASP Juice Shop', text: 'OWASP Juice Shop', value: 'OWASP Juice Shop' },
+    
   ];
   const searchParams = useQuery();
+  const [standardOptions, setStandardOptions] = useState<DropdownItemProps[] | undefined>(standardOptionsDefault);
   const [BaseStandard, setBaseStandard] = useState<string | undefined>(searchParams.get('base') ?? "");
   const [CompareStandard, setCompareStandard] = useState<string | undefined>(searchParams.get('compare') ?? "");
   const [gapAnalysis, setGapAnalysis] = useState<string>();
@@ -68,19 +45,32 @@ export const GapAnalysis = () => {
     if(score > 20) return 'Weak'
     return 'Average'
   } 
+
   useEffect(() => {
     const fetchData = async () => {
-      const result = await fetch(
+      const result = await axios.get(
+        `${apiUrl}/standards`
+      );
+      setLoading(false);
+      setStandardOptions(standardOptionsDefault.concat(result.data.map(x => ({ key: x, text: x, value: x }))));
+    };
+
+    setLoading(true);
+    fetchData().catch(e => {setLoading(false); setError(e.response.data.message ?? e.message)});
+  }, [setStandardOptions, setLoading, setError]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const result = await axios.get(
         `${apiUrl}/gap_analysis?standard=${BaseStandard}&standard=${CompareStandard}`
       );
-      const resultObj = await result.json();
       setLoading(false);
-      setGapAnalysis(resultObj);
+      setGapAnalysis(result.data);
     };
 
     if (!BaseStandard || !CompareStandard || BaseStandard === CompareStandard) return;
     setLoading(true);
-    fetchData().catch(e => setError(e));
+    fetchData().catch(e => {setLoading(false); setError(e.response.data.message ?? e.message)});
   }, [BaseStandard, CompareStandard, setGapAnalysis, setLoading, setError]);
 
   const handleAccordionClick = (e, titleProps) => {
