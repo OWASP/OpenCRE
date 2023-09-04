@@ -69,6 +69,7 @@ export const GapAnalysis = () => {
     };
 
     if (!BaseStandard || !CompareStandard || BaseStandard === CompareStandard) return;
+    setGapAnalysis(undefined);
     setLoading(true);
     fetchData().catch(e => {setLoading(false); setError(e.response.data.message ?? e.message)});
   }, [BaseStandard, CompareStandard, setGapAnalysis, setLoading, setError]);
