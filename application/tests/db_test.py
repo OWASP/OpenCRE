@@ -1214,8 +1214,6 @@ class TestDB(unittest.TestCase):
         dbnodes = []
         sqla.session.remove()
         sqla.drop_all()
-        self.app_context = self.app.app_context()
-        self.app_context.push()
         sqla.create_all()
         collection = db.Node_collection()
         collection.graph.graph = db.CRE_Graph.load_cre_graph(sqla.session)

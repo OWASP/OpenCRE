@@ -287,7 +287,7 @@ export const Chatbot = () => {
             timestamp: new Date().toLocaleTimeString(),
             role: 'assistant',
             message: data.response,
-            data: data.table
+            data: data.table,
           },
         ]);
       })
