@@ -257,12 +257,14 @@ class NEO_DB:
         if not self.connected:
             return
         records, _, _ = self.driver.execute_query(
-            "MATCH"
-            "(BaseStandard:Node {name: $name1}), "
-            "(CompareStandard:Node {name: $name2}), "
-            "p = shortestPath((BaseStandard)-[*]-(CompareStandard)) "
-            "WHERE length(p) > 1 AND ALL(n in NODES(p) WHERE n:CRE or n = BaseStandard or n = CompareStandard) "
-            "RETURN p ",
+            """
+            OPTIONAL MATCH (BaseStandard:Node {name: $name1})
+            OPTIONAL MATCH (CompareStandard:Node {name: $name2})
+            OPTIONAL MATCH p = shortestPath((BaseStandard)-[:(LINKED_TO|CONTAINS)*..20]-(CompareStandard)) 
+            WITH p
+            WHERE length(p) > 1 AND ALL(n in NODES(p) WHERE n:CRE or n.name = $name1 or n.name = $name2) 
+            RETURN p
+            """,
             name1=name_1,
             name2=name_2,
             database_="neo4j",
