@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Accordion, Button, Dropdown, DropdownItemProps, Grid, Popup, Table } from 'semantic-ui-react';
+import { Accordion, Button, Dropdown, DropdownItemProps, Grid, Icon, Popup, Table } from 'semantic-ui-react';
 import { useLocation } from "react-router-dom";
 import { LoadingAndErrorIndicator } from '../../components/LoadingAndErrorIndicator';
 
@@ -104,10 +104,17 @@ export const GapAnalysis = () => {
             />
           </Grid.Column>
         </Grid.Row>
+        {gapAnalysis && (
+            <Grid.Column width={2} floated="right">
+              <Button onClick={() => {navigator.clipboard.writeText(`${window.location.origin}/gap_analysis?base=${BaseStandard}&compare=${CompareStandard}`)}} target="_blank">
+                  <Icon name="share square" /> Share this anyalysis
+              </Button>
+            </Grid.Column>
+        )}
       </Grid>
       <LoadingAndErrorIndicator loading={loading} error={error} />
       {gapAnalysis && (
-        <Table celled padded compact>
+        <Table celled padded compact style={{margin:"5px"}}>
           <Table.Header>
             <Table.Row>
               <Table.HeaderCell>{BaseStandard}</Table.HeaderCell>
@@ -120,7 +127,11 @@ export const GapAnalysis = () => {
               <Table.Row key={key}>
                 <Table.Cell >
                   <p>
-                    <b>{gapAnalysis[key].start.name} {gapAnalysis[key].start.section} {gapAnalysis[key].start.subsection}</b><br />
+                    <b>{gapAnalysis[key].start.name} {gapAnalysis[key].start.section} {gapAnalysis[key].start.subsection}</b>
+                    <a href={`/node/standard/${gapAnalysis[key].start.name}/section/${gapAnalysis[key].start.section}`} target="_blank">
+                      <Icon name="external" />
+                    </a>
+                    <br/>
                     {gapAnalysis[key].start.sectionID}
                     {gapAnalysis[key].start.description}
                   </p>
@@ -146,7 +157,10 @@ export const GapAnalysis = () => {
                             trigger={
                               <span>
                                 {path.end.name} {path.end.sectionID} {path.end.section}{' '}
-                                {path.end.subsection} {path.end.description} ({GetStrength(path.score)}:{path.score})
+                                {path.end.subsection} {path.end.description} ({GetStrength(path.score)}:{path.score}){' '}
+                                <a href={`/node/standard/${path.end.name}/section/${path.end.section}`} target="_blank">
+                                  <Icon name="external" />
+                                </a>
                               </span>
                             }
                           />
@@ -182,7 +196,10 @@ export const GapAnalysis = () => {
                                 trigger={
                                   <span>
                                     {path.end.name} {path.end.sectionID} {path.end.section}{' '}
-                                    {path.end.subsection} {path.end.description} {GetStrength(path.score)}:{path.score})
+                                    {path.end.subsection} {path.end.description} {GetStrength(path.score)}:{path.score}){' '}
+                                    <a href={`/node/standard/${path.end.name}/section/${path.end.section}`} target="_blank">
+                                    <Icon name="external" />
+                                  </a>
                                   </span>
                                 }
                               />
