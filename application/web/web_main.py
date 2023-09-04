@@ -213,17 +213,25 @@ def find_document_by_tag() -> Any:
 def gap_analysis() -> Any:
     database = db.Node_collection()
     standards = request.args.getlist("standard")
-    paths = database.gap_analysis(standards)
+    base_standard, paths = database.gap_analysis(standards)
     if paths is None: 
         return neo4j_not_running_rejection()
     grouped_paths = {}
+    for node in base_standard:
+        key = node["id"]
+        if key not in grouped_paths:
+            grouped_paths[key] = {"start": node, "paths": {}}
+
     for path in paths:
         key = path["start"]["id"]
-        if key not in grouped_paths:
-            grouped_paths[key] = {"start": path["start"], "paths": []}
+        end_key = path["end"]["id"]
         path["score"] = get_path_score(path)
         del path["start"]
-        grouped_paths[key]["paths"].append(path)
+        if end_key in grouped_paths[key]["paths"]:
+            if grouped_paths[key]["paths"][end_key]['score'] > path["score"]:
+                grouped_paths[key]["paths"][end_key] = path
+        else:
+            grouped_paths[key]["paths"][end_key] = path
 
     return jsonify(grouped_paths)
 
