@@ -15,7 +15,6 @@ from application.defs import cre_defs as defs
 from application.defs import osib_defs as odefs
 from application.utils import spreadsheet as sheet_utils
 from application.utils import mdutils, redirectors
-from application.utils.gap_analysis import get_path_score
 from application.prompt_client import prompt_client as prompt_client
 from enum import Enum
 from flask import (
@@ -213,27 +212,10 @@ def find_document_by_tag() -> Any:
 def gap_analysis() -> Any:
     database = db.Node_collection()
     standards = request.args.getlist("standard")
-    base_standard, paths = database.gap_analysis(standards)
-    if paths is None: 
+    gap_analysis = database.gap_analysis(standards)
+    if gap_analysis is None: 
         return neo4j_not_running_rejection()
-    grouped_paths = {}
-    for node in base_standard:
-        key = node["id"]
-        if key not in grouped_paths:
-            grouped_paths[key] = {"start": node, "paths": {}}
-
-    for path in paths:
-        key = path["start"]["id"]
-        end_key = path["end"]["id"]
-        path["score"] = get_path_score(path)
-        del path["start"]
-        if end_key in grouped_paths[key]["paths"]:
-            if grouped_paths[key]["paths"][end_key]['score'] > path["score"]:
-                grouped_paths[key]["paths"][end_key] = path
-        else:
-            grouped_paths[key]["paths"][end_key] = path
-
-    return jsonify(grouped_paths)
+    return jsonify(gap_analysis)
 
 @app.route("/rest/v1/standards", methods=["GET"])
 @cache.cached(timeout=50)

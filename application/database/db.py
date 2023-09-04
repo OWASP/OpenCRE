@@ -17,6 +17,8 @@ from sqlalchemy import func
 from sqlalchemy.sql.expression import desc  # type: ignore
 import uuid
 
+from application.utils.gap_analysis import get_path_score
+
 from .. import sqla  # type: ignore
 
 logging.basicConfig()
@@ -1272,7 +1274,28 @@ class Node_collection:
         return res
 
     def gap_analysis(self, node_names: List[str]):
-        return self.neo_db.gap_analysis(node_names[0], node_names[1])
+        if not self.neo_db.connected:
+            return None
+        base_standard, paths =  self.neo_db.gap_analysis(node_names[0], node_names[1])
+        if base_standard is None:
+            return None
+        grouped_paths = {}
+        for node in base_standard:
+            key = node["id"]
+            if key not in grouped_paths:
+                grouped_paths[key] = {"start": node, "paths": {}}
+
+        for path in paths:
+            key = path["start"]["id"]
+            end_key = path["end"]["id"]
+            path["score"] = get_path_score(path)
+            del path["start"]
+            if end_key in grouped_paths[key]["paths"]:
+                if grouped_paths[key]["paths"][end_key]['score'] > path["score"]:
+                    grouped_paths[key]["paths"][end_key] = path
+            else:
+                grouped_paths[key]["paths"][end_key] = path
+        return grouped_paths
 
     def standards(self):
         return self.neo_db.standards()
