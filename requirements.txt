@@ -12,6 +12,7 @@ google-cloud-aiplatform
 grpcio_status
 grpcio
 gspread==5.10.0
+gunicorn
 networkx
 nltk==3.8.1
 oauthlib==3.2.2
