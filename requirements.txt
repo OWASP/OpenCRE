@@ -20,6 +20,7 @@ nltk==3.8.1
 oauthlib==3.2.2
 openai==0.27.9
 playwright
+psycopg2
 pygithub
 python_markdown_maker==1.0
 scikit_learn==1.3.0
