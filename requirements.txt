@@ -1,3 +1,4 @@
+compliance-trestle
 coverage
 dacite
 docx==0.2.4
@@ -5,6 +6,7 @@ Flask_Caching==2.0.2
 flask_compress==1.13
 Flask_Cors==4.0.0
 Flask_Migrate==4.0.4
+Flask-SQLAlchemy==3.0.5
 gitpython
 google-api-core
 google_auth_oauthlib
@@ -18,6 +20,7 @@ nltk==3.8.1
 oauthlib==3.2.2
 openai==0.27.9
 playwright
+psycopg2-binary
 pygithub
 python_markdown_maker==1.0
 scikit_learn==1.3.0
@@ -25,6 +28,6 @@ scipy==1.11.2
 semver
 setuptools==66.1.1
 simplify_docx==0.1.2
-compliance-trestle
+SQLAlchemy==2.0.20
 vertexai==0.0.1
 xmltodict==0.13.0
