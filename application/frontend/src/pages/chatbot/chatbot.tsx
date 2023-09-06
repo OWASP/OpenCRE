@@ -327,7 +327,7 @@ export const Chatbot = () => {
       <LoadingAndErrorIndicator loading={loading} error={error} />
       <Grid textAlign="center" style={{ height: '100vh' }} verticalAlign="middle">
         <Grid.Column verticalAlign="middle">
-          <Header as="h1">OWASP Chat-CRE</Header>
+          <Header as="h1">OWASP OpenCRE Chat</Header>
           <Container>
             <Grid>
               <GridRow columns={1}>
@@ -388,7 +388,7 @@ export const Chatbot = () => {
               </div>
               <div className="chatbot">
                 <i>
-                  ChatCRE uses Google's PALM2 LLM, you can find the code for OpenCRE in
+                  OpenCRE Chat uses Google's PALM2 LLM, you can find the code for OpenCRE in
                   https://github.com/owaps/OpenCRE. Your question travels to Heroku (OpenCRE hosting provider)
                   and then to GCP over a protected connection. Your data is never stored in the OpenCRE
                   servers, you can start a new session by refreshing your page. The OpenCRE team has taken all
