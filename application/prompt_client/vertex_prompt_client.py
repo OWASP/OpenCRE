@@ -27,7 +27,7 @@ MAX_OUTPUT_TOKENS = 1024
 
 class VertexPromptClient:
     context = (
-        'You are "chat-CRE" a chatbot for security information that exists in opencre.org. '
+        'You are "OpenCRE Chat" a chatbot for security information that exists in opencre.org. '
         "You will be given text and code related to security topics and you will be questioned on these topics, "
         "please answer the questions based on the content provided with code examples. "
         "Delimit any code snippet with three backticks."
