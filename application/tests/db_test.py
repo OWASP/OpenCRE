@@ -1169,17 +1169,19 @@ class TestDB(unittest.TestCase):
     def test_gap_analysis_no_nodes(self, gap_mock):
         collection = db.Node_collection()
         collection.neo_db.connected = True
-        
+
         gap_mock.return_value = ([], [])
         self.assertEqual(collection.gap_analysis(["a", "b"]), {})
 
-    @patch.object(db.NEO_DB, 'gap_analysis')
+    @patch.object(db.NEO_DB, "gap_analysis")
     def test_gap_analysis_no_links(self, gap_mock):
         collection = db.Node_collection()
         collection.neo_db.connected = True
-        
-        gap_mock.return_value = ([{'id': 1}], [])
-        self.assertEqual(collection.gap_analysis(["a", "b"]), {1: {'start': {'id': 1}, 'paths': {}}} )   
+
+        gap_mock.return_value = ([{"id": 1}], [])
+        self.assertEqual(
+            collection.gap_analysis(["a", "b"]), {1: {"start": {"id": 1}, "paths": {}}}
+        )
 
     @patch.object(db.NEO_DB, 'gap_analysis')
 >>>>>>> 030c044 (Add gap analysis tests)
@@ -1622,6 +1624,7 @@ class TestDB(unittest.TestCase):
         }}
         self.assertEqual(collection.gap_analysis(["a", "b"]), expected) 
 >>>>>>> 030c044 (Add gap analysis tests)
+
 
 if __name__ == "__main__":
     unittest.main()
