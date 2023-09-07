@@ -3,6 +3,7 @@ import random
 import os
 import tempfile
 import unittest
+from unittest.mock import patch
 import uuid
 from copy import copy, deepcopy
 from pprint import pprint
@@ -763,153 +764,6 @@ class TestDB(unittest.TestCase):
             (None, None, None),
         )
 
-    def test_gap_analysis(self) -> None:
-        """Given
-        the following standards SA1, SA2, SA3 SAA1 , SB1, SD1, SDD1, SW1, SX1
-        the following CREs CA, CB, CC, CD, CDD , CW, CX
-        the following links
-        CC -> CA, CB,CD
-        CD -> CDD
-        CA-> SA1, SAA1
-        CB -> SB1
-        CD -> SD1
-        CDD -> SDD1
-        CW -> SW1
-        CX -> SA3, SX1
-        NoCRE -> SA2
-
-        Then:
-        gap_analysis(SA) returns SA1, SA2, SA3
-        gap_analysis(SA,SAA) returns SA1 <-> SAA1, SA2, SA3
-        gap_analysis(SA,SDD) returns SA1 <-> SDD1, SA2, SA3
-        gap_analysis(SA, SW) returns SA1,SA2,SA3, SW1 # no connection
-        gap_analysis(SA, SB, SD, SW) returns SA1 <->(SB1,SD1), SA2 , SW1, SA3
-        gap_analysis(SA, SX) returns SA1, SA2, SA3->SX1
-
-            give me a single standard
-            give me two standards connected by same cre
-            give me two standards connected by cres who are children of the same cre
-            give me two standards connected by completely different cres
-            give me two standards with sections on different trees.
-
-            give me two standards without  connections
-            give me 3 or more standards
-
-        """
-
-        collection = db.Node_collection()
-        collection.graph.graph = db.CRE_Graph.load_cre_graph(sqla.session)
-
-        cres = {
-            "dbca": collection.add_cre(defs.CRE(id="1", description="CA", name="CA")),
-            "dbcb": collection.add_cre(defs.CRE(id="2", description="CB", name="CB")),
-            "dbcc": collection.add_cre(defs.CRE(id="3", description="CC", name="CC")),
-            "dbcd": collection.add_cre(defs.CRE(id="4", description="CD", name="CD")),
-            "dbcdd": collection.add_cre(
-                defs.CRE(id="5", description="CDD", name="CDD")
-            ),
-            "dbcw": collection.add_cre(defs.CRE(id="6", description="CW", name="CW")),
-            "dbcx": collection.add_cre(defs.CRE(id="7", description="CX", name="CX")),
-        }
-        def_standards = {
-            "sa1": defs.Standard(name="SA", section="SA1"),
-            "sa2": defs.Standard(name="SA", section="SA2"),
-            "sa3": defs.Standard(name="SA", section="SA3"),
-            "saa1": defs.Standard(name="SAA", section="SAA1"),
-            "sb1": defs.Standard(name="SB", section="SB1"),
-            "sd1": defs.Standard(name="SD", section="SD1"),
-            "sdd1": defs.Standard(name="SDD", section="SDD1"),
-            "sw1": defs.Standard(name="SW", section="SW1"),
-            "sx1": defs.Standard(name="SX", section="SX1"),
-        }
-        standards = {}
-        for k, s in def_standards.items():
-            standards["db" + k] = collection.add_node(s)
-        ltype = defs.LinkTypes.LinkedTo
-        collection.add_link(cre=cres["dbca"], node=standards["dbsa1"])
-        collection.add_link(cre=cres["dbca"], node=standards["dbsaa1"])
-        collection.add_link(cre=cres["dbcb"], node=standards["dbsb1"])
-        collection.add_link(cre=cres["dbcd"], node=standards["dbsd1"])
-        collection.add_link(cre=cres["dbcdd"], node=standards["dbsdd1"])
-        collection.add_link(cre=cres["dbcw"], node=standards["dbsw1"])
-        collection.add_link(cre=cres["dbcx"], node=standards["dbsa3"])
-        collection.add_link(cre=cres["dbcx"], node=standards["dbsx1"])
-
-        collection.add_internal_link(group=cres["dbcc"], cre=cres["dbca"])
-        collection.add_internal_link(group=cres["dbcc"], cre=cres["dbcb"])
-        collection.add_internal_link(group=cres["dbcc"], cre=cres["dbcd"])
-        collection.add_internal_link(group=cres["dbcd"], cre=cres["dbcdd"])
-
-        expected = {
-            "SA": [def_standards["sa1"], def_standards["sa2"], def_standards["sa3"]],
-            "SA,SAA": [
-                copy(def_standards["sa1"]).add_link(
-                    defs.Link(ltype=ltype, document=def_standards["saa1"])
-                ),
-                copy(def_standards["saa1"]).add_link(
-                    defs.Link(ltype=ltype, document=def_standards["sa1"])
-                ),
-                def_standards["sa2"],
-                def_standards["sa3"],
-            ],
-            "SAA,SA": [
-                copy(def_standards["sa1"]).add_link(
-                    defs.Link(ltype=ltype, document=def_standards["saa1"])
-                ),
-                copy(def_standards["saa1"]).add_link(
-                    defs.Link(ltype=ltype, document=def_standards["sa1"])
-                ),
-                def_standards["sa2"],
-                def_standards["sa3"],
-            ],
-            "SA,SDD": [
-                copy(def_standards["sa1"]).add_link(
-                    defs.Link(ltype=ltype, document=def_standards["sdd1"])
-                ),
-                copy(def_standards["sdd1"]).add_link(
-                    defs.Link(ltype=ltype, document=def_standards["sa1"])
-                ),
-                def_standards["sa2"],
-                def_standards["sa3"],
-            ],
-            "SA,SW": [
-                def_standards["sa1"],
-                def_standards["sa2"],
-                def_standards["sa3"],
-                def_standards["sw1"],
-            ],
-            "SA,SB,SD,SW": [
-                copy(def_standards["sa1"])
-                .add_link(defs.Link(ltype=ltype, document=def_standards["sb1"]))
-                .add_link(defs.Link(ltype=ltype, document=def_standards["sd1"])),
-                copy(def_standards["sb1"])
-                .add_link(defs.Link(ltype=ltype, document=def_standards["sa1"]))
-                .add_link(defs.Link(ltype=ltype, document=def_standards["sd1"])),
-                copy(def_standards["sd1"])
-                .add_link(defs.Link(ltype=ltype, document=def_standards["sa1"]))
-                .add_link(defs.Link(ltype=ltype, document=def_standards["sb1"])),
-                def_standards["sa2"],
-                def_standards["sa3"],
-                def_standards["sw1"],
-            ],
-            "SA,SX": [
-                def_standards["sa1"],
-                def_standards["sa2"],
-                copy(def_standards["sa3"]).add_link(
-                    defs.Link(ltype=ltype, document=def_standards["sx1"])
-                ),
-                copy(def_standards["sx1"]).add_link(
-                    defs.Link(ltype=ltype, document=def_standards["sa3"])
-                ),
-            ],
-        }
-
-        self.maxDiff = None
-        for args, expected_vals in expected.items():
-            stands = args.split(",")
-            res = collection.gap_analysis(stands)
-            self.assertCountEqual(res, expected_vals)
-
     def test_add_internal_link(self) -> None:
         """test that internal links are added successfully,
         edge cases:
@@ -1285,6 +1139,163 @@ class TestDB(unittest.TestCase):
         self.maxDiff = None
         self.assertEqual(root_cres, [cres[0], cres[1], cres[7]])
 
+    def test_gap_analysis_disconnected(self):
+        collection = db.Node_collection()
+        collection.neo_db.connected = False
+        self.assertEqual(collection.gap_analysis(["a", "b"]), None)
+
+    @patch.object(db.NEO_DB, 'gap_analysis')
+    def test_gap_analysis_no_nodes(self, gap_mock):
+        collection = db.Node_collection()
+        collection.neo_db.connected = True
+        
+        gap_mock.return_value = ([], [])
+        self.assertEqual(collection.gap_analysis(["a", "b"]), {})
+
+    @patch.object(db.NEO_DB, 'gap_analysis')
+    def test_gap_analysis_no_links(self, gap_mock):
+        collection = db.Node_collection()
+        collection.neo_db.connected = True
+        
+        gap_mock.return_value = ([{'id': 1}], [])
+        self.assertEqual(collection.gap_analysis(["a", "b"]), {1: {'start': {'id': 1}, 'paths': {}}} )   
+
+    @patch.object(db.NEO_DB, 'gap_analysis')
+    def test_gap_analysis_one_link(self, gap_mock):
+        collection = db.Node_collection()
+        collection.neo_db.connected = True
+        path = [
+                {
+                    "end": {
+                        "id": 1,
+                    },
+                    "relationship": "LINKED_TO",
+                    "start": {
+                        "id": "a",
+                    },
+                },
+                {
+                    "end": {
+                        "id": 2,
+                    },
+                    "relationship": "LINKED_TO",
+                    "start": {
+                        "id": "a"
+                    },
+                },
+            ]
+        gap_mock.return_value = ([{'id': 1}], [{'start':{'id': 1}, 'end': {'id': 2}, 'path': path}])
+        expected = {1: {'start': {'id': 1}, 'paths': {
+            2: {'end': {'id': 2},
+                    'path': path,
+                    'score': 0}}
+        }}
+        self.assertEqual(collection.gap_analysis(["a", "b"]), expected)   
+
+    @patch.object(db.NEO_DB, 'gap_analysis')
+    def test_gap_analysis_duplicate_link_path_existing_lower(self, gap_mock):
+        collection = db.Node_collection()
+        collection.neo_db.connected = True
+        path = [
+                {
+                    "end": {
+                        "id": 1,
+                    },
+                    "relationship": "LINKED_TO",
+                    "start": {
+                        "id": "a",
+                    },
+                },
+                {
+                    "end": {
+                        "id": 2,
+                    },
+                    "relationship": "LINKED_TO",
+                    "start": {
+                        "id": "a"
+                    },
+                },
+            ]
+        path2 = [
+                {
+                    "end": {
+                        "id": 1,
+                    },
+                    "relationship": "LINKED_TO",
+                    "start": {
+                        "id": "a",
+                    },
+                },
+                {
+                    "end": {
+                        "id": 2,
+                    },
+                    "relationship": "RELATED",
+                    "start": {
+                        "id": "a"
+                    },
+                },
+            ]
+        gap_mock.return_value = ([{'id': 1}], [{'start':{'id': 1}, 'end': {'id': 2}, 'path': path}, {'start':{'id': 1}, 'end': {'id': 2}, 'path': path2}])
+        expected = {1: {'start': {'id': 1}, 'paths': {
+            2: {'end': {'id': 2},
+                    'path': path,
+                    'score': 0}}
+        }}
+        self.assertEqual(collection.gap_analysis(["a", "b"]), expected) 
+    
+    @patch.object(db.NEO_DB, 'gap_analysis')
+    def test_gap_analysis_duplicate_link_path_existing_higher(self, gap_mock):
+        collection = db.Node_collection()
+        collection.neo_db.connected = True
+        path = [
+                {
+                    "end": {
+                        "id": 1,
+                    },
+                    "relationship": "LINKED_TO",
+                    "start": {
+                        "id": "a",
+                    },
+                },
+                {
+                    "end": {
+                        "id": 2,
+                    },
+                    "relationship": "LINKED_TO",
+                    "start": {
+                        "id": "a"
+                    },
+                },
+            ]
+        path2 = [
+                {
+                    "end": {
+                        "id": 1,
+                    },
+                    "relationship": "LINKED_TO",
+                    "start": {
+                        "id": "a",
+                    },
+                },
+                {
+                    "end": {
+                        "id": 2,
+                    },
+                    "relationship": "RELATED",
+                    "start": {
+                        "id": "a"
+                    },
+                },
+            ]
+        gap_mock.return_value = ([{'id': 1}], [{'start':{'id': 1}, 'end': {'id': 2}, 'path': path2}, {'start':{'id': 1}, 'end': {'id': 2}, 'path': path}])
+        expected = {1: {'start': {'id': 1}, 'paths': {
+            2: {'end': {'id': 2},
+                    'path': path,
+                    'score': 0}}
+        }}
+        self.assertEqual(collection.gap_analysis(["a", "b"]), expected) 
+
     def test_get_embeddings_by_doc_type_paginated(self):
         """Given: a range of embedding for Nodes and a range of embeddings for CREs
         when called with doc_type CRE return the cre embeddings
@@ -1447,6 +1458,7 @@ class TestDB(unittest.TestCase):
             defs.Credoctypes.Tool.value
         )
         self.assertEqual(tool_emb, {})
+
 
 
 if __name__ == "__main__":
