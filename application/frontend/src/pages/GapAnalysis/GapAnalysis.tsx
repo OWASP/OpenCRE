@@ -1,7 +1,18 @@
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Accordion, Button, Dropdown, DropdownItemProps, Grid, Icon, Popup, Table } from 'semantic-ui-react';
+import {
+  Accordion,
+  Button,
+  Container,
+  Dropdown,
+  DropdownItemProps,
+  Grid,
+  Icon,
+  Label,
+  Popup,
+  Table,
+} from 'semantic-ui-react';
 
 import { LoadingAndErrorIndicator } from '../../components/LoadingAndErrorIndicator';
 import { useEnvironment } from '../../hooks';
@@ -96,43 +107,64 @@ export const GapAnalysis = () => {
   };
 
   return (
-    <div>
+    <div style={{ margin: '0 20px' }}>
       <Grid centered padded relaxed>
         <Grid.Row>
           <Grid.Column width={4}>
-            <Dropdown
-              placeholder="Base Standard"
-              search
-              selection
-              options={standardOptions}
-              onChange={(e, { value }) => setBaseStandard(value?.toString())}
-              value={BaseStandard}
-            />
+            <label>
+              Base Sandard{' '}
+              <Dropdown
+                placeholder="Base Standard"
+                search
+                selection
+                options={standardOptions}
+                onChange={(e, { value }) => setBaseStandard(value?.toString())}
+                value={BaseStandard}
+              />
+            </label>
           </Grid.Column>
           <Grid.Column width={4}>
-            <Dropdown
-              placeholder="Compare Standard"
-              search
-              selection
-              options={standardOptions}
-              onChange={(e, { value }) => setCompareStandard(value?.toString())}
-              value={CompareStandard}
-            />
+            <label>
+              Compare Sandard{' '}
+              <Dropdown
+                placeholder="Compare Standard"
+                search
+                selection
+                options={standardOptions}
+                onChange={(e, { value }) => setCompareStandard(value?.toString())}
+                value={CompareStandard}
+              />
+            </label>
           </Grid.Column>
         </Grid.Row>
         {gapAnalysis && (
-          <Grid.Column width={2} floated="right">
-            <Button
-              onClick={() => {
-                navigator.clipboard.writeText(
-                  `${window.location.origin}/gap_analysis?base=${BaseStandard}&compare=${CompareStandard}`
-                );
-              }}
-              target="_blank"
-            >
-              <Icon name="share square" /> Share this anyalysis
-            </Button>
-          </Grid.Column>
+          <>
+            <Grid.Column width={4} style={{ border: '1px solid black', margin: '2px' }}>
+              <b>Generally: lower is better</b>
+              <br />
+              <b style={{ color: GetStrengthColor(0) }}>{GetStrength(0)}</b>: Closely connected likely to have
+              majority overlap
+              <br />
+              <b style={{ color: GetStrengthColor(6) }}>{GetStrength(6)}</b>: Connected likely to have partial
+              overlap
+              <br />
+              <b style={{ color: GetStrengthColor(22) }}>{GetStrength(22)}</b>: Weakly connected likely to
+              have small or no overlap
+              <br />
+            </Grid.Column>
+            <Grid.Column width={2} floated="right">
+              <Button
+                onClick={() => {
+                  navigator.clipboard.writeText(
+                    `${window.location.origin}/gap_analysis?base=${BaseStandard}&compare=${CompareStandard}`
+                  );
+                }}
+                target="_blank"
+              >
+                <Icon name="share square" /> Share this anyalysis
+              </Button>
+            </Grid.Column>
+          </>
         )}
       </Grid>
       <LoadingAndErrorIndicator loading={loading} error={error} />
@@ -160,7 +192,6 @@ export const GapAnalysis = () => {
                     >
                       <Icon name="external" />
                     </a>{' '}
-                    {gapAnalysis[key].start.id}
                     <br />
                     {gapAnalysis[key].start.sectionID}
                     {gapAnalysis[key].start.description}
