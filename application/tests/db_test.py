@@ -1144,6 +1144,7 @@ class TestDB(unittest.TestCase):
         collection.neo_db.connected = False
         self.assertEqual(collection.gap_analysis(["a", "b"]), None)
 
+<<<<<<< HEAD
     @patch.object(db.NEO_DB, "gap_analysis")
     def test_gap_analysis_no_nodes(self, gap_mock):
         collection = db.Node_collection()
@@ -1163,10 +1164,30 @@ class TestDB(unittest.TestCase):
         )
 
     @patch.object(db.NEO_DB, "gap_analysis")
+=======
+    @patch.object(db.NEO_DB, 'gap_analysis')
+    def test_gap_analysis_no_nodes(self, gap_mock):
+        collection = db.Node_collection()
+        collection.neo_db.connected = True
+        
+        gap_mock.return_value = ([], [])
+        self.assertEqual(collection.gap_analysis(["a", "b"]), {})
+
+    @patch.object(db.NEO_DB, 'gap_analysis')
+    def test_gap_analysis_no_links(self, gap_mock):
+        collection = db.Node_collection()
+        collection.neo_db.connected = True
+        
+        gap_mock.return_value = ([{'id': 1}], [])
+        self.assertEqual(collection.gap_analysis(["a", "b"]), {1: {'start': {'id': 1}, 'paths': {}}} )   
+
+    @patch.object(db.NEO_DB, 'gap_analysis')
+>>>>>>> 030c044 (Add gap analysis tests)
     def test_gap_analysis_one_link(self, gap_mock):
         collection = db.Node_collection()
         collection.neo_db.connected = True
         path = [
+<<<<<<< HEAD
             {
                 "end": {
                     "id": 1,
@@ -1197,10 +1218,41 @@ class TestDB(unittest.TestCase):
         self.assertEqual(collection.gap_analysis(["a", "b"]), expected)
 
     @patch.object(db.NEO_DB, "gap_analysis")
+=======
+                {
+                    "end": {
+                        "id": 1,
+                    },
+                    "relationship": "LINKED_TO",
+                    "start": {
+                        "id": "a",
+                    },
+                },
+                {
+                    "end": {
+                        "id": 2,
+                    },
+                    "relationship": "LINKED_TO",
+                    "start": {
+                        "id": "a"
+                    },
+                },
+            ]
+        gap_mock.return_value = ([{'id': 1}], [{'start':{'id': 1}, 'end': {'id': 2}, 'path': path}])
+        expected = {1: {'start': {'id': 1}, 'paths': {
+            2: {'end': {'id': 2},
+                    'path': path,
+                    'score': 0}}
+        }}
+        self.assertEqual(collection.gap_analysis(["a", "b"]), expected)   
+
+    @patch.object(db.NEO_DB, 'gap_analysis')
+>>>>>>> 030c044 (Add gap analysis tests)
     def test_gap_analysis_duplicate_link_path_existing_lower(self, gap_mock):
         collection = db.Node_collection()
         collection.neo_db.connected = True
         path = [
+<<<<<<< HEAD
             {
                 "end": {
                     "id": 1,
@@ -1252,10 +1304,61 @@ class TestDB(unittest.TestCase):
         self.assertEqual(collection.gap_analysis(["a", "b"]), expected)
 
     @patch.object(db.NEO_DB, "gap_analysis")
+=======
+                {
+                    "end": {
+                        "id": 1,
+                    },
+                    "relationship": "LINKED_TO",
+                    "start": {
+                        "id": "a",
+                    },
+                },
+                {
+                    "end": {
+                        "id": 2,
+                    },
+                    "relationship": "LINKED_TO",
+                    "start": {
+                        "id": "a"
+                    },
+                },
+            ]
+        path2 = [
+                {
+                    "end": {
+                        "id": 1,
+                    },
+                    "relationship": "LINKED_TO",
+                    "start": {
+                        "id": "a",
+                    },
+                },
+                {
+                    "end": {
+                        "id": 2,
+                    },
+                    "relationship": "RELATED",
+                    "start": {
+                        "id": "a"
+                    },
+                },
+            ]
+        gap_mock.return_value = ([{'id': 1}], [{'start':{'id': 1}, 'end': {'id': 2}, 'path': path}, {'start':{'id': 1}, 'end': {'id': 2}, 'path': path2}])
+        expected = {1: {'start': {'id': 1}, 'paths': {
+            2: {'end': {'id': 2},
+                    'path': path,
+                    'score': 0}}
+        }}
+        self.assertEqual(collection.gap_analysis(["a", "b"]), expected) 
+    
+    @patch.object(db.NEO_DB, 'gap_analysis')
+>>>>>>> 030c044 (Add gap analysis tests)
     def test_gap_analysis_duplicate_link_path_existing_higher(self, gap_mock):
         collection = db.Node_collection()
         collection.neo_db.connected = True
         path = [
+<<<<<<< HEAD
             {
                 "end": {
                     "id": 1,
@@ -1471,6 +1574,54 @@ class TestDB(unittest.TestCase):
         self.assertEqual(tool_emb, {})
 
 
+=======
+                {
+                    "end": {
+                        "id": 1,
+                    },
+                    "relationship": "LINKED_TO",
+                    "start": {
+                        "id": "a",
+                    },
+                },
+                {
+                    "end": {
+                        "id": 2,
+                    },
+                    "relationship": "LINKED_TO",
+                    "start": {
+                        "id": "a"
+                    },
+                },
+            ]
+        path2 = [
+                {
+                    "end": {
+                        "id": 1,
+                    },
+                    "relationship": "LINKED_TO",
+                    "start": {
+                        "id": "a",
+                    },
+                },
+                {
+                    "end": {
+                        "id": 2,
+                    },
+                    "relationship": "RELATED",
+                    "start": {
+                        "id": "a"
+                    },
+                },
+            ]
+        gap_mock.return_value = ([{'id': 1}], [{'start':{'id': 1}, 'end': {'id': 2}, 'path': path2}, {'start':{'id': 1}, 'end': {'id': 2}, 'path': path}])
+        expected = {1: {'start': {'id': 1}, 'paths': {
+            2: {'end': {'id': 2},
+                    'path': path,
+                    'score': 0}}
+        }}
+        self.assertEqual(collection.gap_analysis(["a", "b"]), expected) 
+>>>>>>> 030c044 (Add gap analysis tests)
 
 if __name__ == "__main__":
     unittest.main()
