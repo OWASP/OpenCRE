@@ -60,7 +60,7 @@ export const GapAnalysis = () => {
       const result = await axios.get(`${apiUrl}/standards`);
       setLoading(false);
       setStandardOptions(
-        standardOptionsDefault.concat(result.data.map((x) => ({ key: x, text: x, value: x })))
+        standardOptionsDefault.concat(result.data.sort().map((x) => ({ key: x, text: x, value: x })))
       );
     };
 
@@ -159,7 +159,8 @@ export const GapAnalysis = () => {
                       target="_blank"
                     >
                       <Icon name="external" />
-                    </a>
+                    </a>{' '}
+                    {gapAnalysis[key].start.id}
                     <br />
                     {gapAnalysis[key].start.sectionID}
                     {gapAnalysis[key].start.description}
@@ -234,8 +235,11 @@ export const GapAnalysis = () => {
                                   trigger={
                                     <span>
                                       {path.end.name} {path.end.sectionID} {path.end.section}{' '}
-                                      {path.end.subsection} {path.end.description} {GetStrength(path.score)}:
-                                      {path.score}){' '}
+                                      {path.end.subsection} {path.end.description}(
+                                      <b style={{ color: GetStrengthColor(path.score) }}>
+                                        {GetStrength(path.score)}:{path.score}
+                                      </b>
+                                      ){' '}
                                       <a
                                         href={`/node/standard/${path.end.name}/section/${path.end.section}`}
                                         target="_blank"
