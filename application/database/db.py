@@ -1199,54 +1199,6 @@ class Node_collection:
             result.extend(self.get_CREs(external_id=c.external_id))
         return result
 
-        # def node_is_root(node):
-        #     return node.startswith("CRE") and (
-        #         self.graph.graph.in_degree(node) == 0
-        #         or not [
-        #             edge
-        #             for edge in self.graph.graph.in_edges(node)
-        #             if self.graph.graph.get_edge_data(*edge)["ltype"]
-        #             != cre_defs.LinkTypes.Related.value
-        #         ]
-        #     )  # there are no incoming edges with relationships other than RELATED
-
-        # nodes = filter(node_is_root, self.graph.graph.nodes)
-
-        # result = []
-
-        # for nodeid in nodes:
-        #     if (
-        #         not self.graph.graph.nodes[nodeid].get("internal_id")
-        #         or "internal_id" not in self.graph.graph.nodes[nodeid]
-        #     ):
-        #         logger.warning(
-        #             "root cre has no internal id, this is a bug in the graph"
-        #         )
-        #         logger.warning(self.graph.graph.nodes[nodeid].get("internal_id"))
-        #     result.extend(
-        #         self.get_CREs(
-        #             internal_id=self.graph.graph.nodes[nodeid].get("internal_id")
-        #         )
-        #     )
-        # return result
-        # result = []
-        # # select distinct name from cre left join cre_links on cre.id=cre_links."group" where cre.id not in (select cre from cre_links where type='Contains');
-        # subquery = (
-        #     self.session.query(InternalLinks.cre)
-        #     .filter(InternalLinks.type == cre_defs.LinkTypes.Contains.value)
-        #     .subquery()
-        # )
-        # cre_ids = (
-        #     self.session.query(CRE.id)
-        #     .join(InternalLinks, CRE.id == InternalLinks.group,isouter=True)
-        #     .filter(~CRE.id.in_(subquery))
-        #     .distinct()
-        # )
-
-        # for cid in cre_ids:
-        #     result.extend(self.get_CREs(internal_id=cid[0]))
-        # return result
-
     def get_embeddings_by_doc_type(self, doc_type: str) -> Dict[str, List[float]]:
         res = {}
         embeddings = (
@@ -1267,7 +1219,7 @@ class Node_collection:
         embeddings = (
             self.session.query(Embeddings)
             .filter(Embeddings.doc_type == doc_type)
-            .paginate(page, per_page)
+            .paginate(page=int(page), per_page=per_page, error_out=False)
         )
         total_pages = embeddings.pages
         if embeddings.items:
