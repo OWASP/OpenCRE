@@ -1,1 +1,1 @@
-web: gunicorn cre:app --log-level info --error-logfile '-' --acces-logfile '-'
+web: gunicorn cre:app --log-file=-
