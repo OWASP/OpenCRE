@@ -1,3 +1,5 @@
+import string
+import random
 import os
 import tempfile
 import unittest
@@ -1282,6 +1284,169 @@ class TestDB(unittest.TestCase):
         root_cres = collection.get_root_cres()
         self.maxDiff = None
         self.assertEqual(root_cres, [cres[0], cres[1], cres[7]])
+
+    def test_get_embeddings_by_doc_type_paginated(self):
+        """Given: a range of embedding for Nodes and a range of embeddings for CREs
+        when called with doc_type CRE return the cre embeddings
+         when called with doc_type Standard/Tool return the node embeddings"""
+        # add cre embeddings
+        cre_embeddings = []
+        for i in range(0, 10):
+            dbca = db.CRE(external_id=f"{i}", description=f"C{i}", name=f"C{i}")
+            self.collection.session.add(dbca)
+            self.collection.session.commit()
+
+            embeddings = [random.uniform(-1, 1) for e in range(0, 768)]
+            embeddings_text = "".join(
+                random.choices(string.ascii_uppercase + string.digits, k=100)
+            )
+            cre_embeddings.append(
+                self.collection.add_embedding(
+                    db_object=dbca,
+                    doctype=defs.Credoctypes.CRE.value,
+                    embeddings=embeddings,
+                    embedding_text=embeddings_text,
+                )
+            )
+
+        # add node embeddings
+        node_embeddings = []
+        for i in range(0, 10):
+            dbsa = db.Node(
+                subsection=f"4.5.{i}",
+                section=f"FooStand-{i}",
+                name="BarStand",
+                link="https://example.com",
+                ntype=defs.Credoctypes.Standard.value,
+            )
+            self.collection.session.add(dbsa)
+            self.collection.session.commit()
+
+            embeddings = [random.uniform(-1, 1) for e in range(0, 768)]
+            embeddings_text = "".join(
+                random.choices(string.ascii_uppercase + string.digits, k=100)
+            )
+            ne = self.collection.add_embedding(
+                db_object=dbsa,
+                doctype=defs.Credoctypes.Standard.value,
+                embeddings=embeddings,
+                embedding_text=embeddings_text,
+            )
+            node_embeddings.append(ne)
+
+        (
+            cre_emb,
+            total_pages,
+            curr_page,
+        ) = self.collection.get_embeddings_by_doc_type_paginated(
+            defs.Credoctypes.CRE.value, page=1, per_page=1
+        )
+        self.assertNotEqual(list(cre_emb.keys())[0], "")
+        self.assertIn(list(cre_emb.keys())[0], list([e.cre_id for e in cre_embeddings]))
+        self.assertNotIn(
+            list(cre_emb.keys())[0], list([e.node_id for e in cre_embeddings])
+        )
+        self.assertEqual(total_pages, 10)
+        self.assertEqual(curr_page, 1)
+
+        (
+            node_emb,
+            total_pages,
+            curr_page,
+        ) = self.collection.get_embeddings_by_doc_type_paginated(
+            defs.Credoctypes.Standard.value, page=1, per_page=1
+        )
+        self.assertNotEqual(list(node_emb.keys())[0], "")
+        self.assertIn(
+            list(node_emb.keys())[0], list([e.node_id for e in node_embeddings])
+        )
+        self.assertNotIn(
+            list(node_emb.keys())[0], list([e.cre_id for e in cre_embeddings])
+        )
+        self.assertEqual(total_pages, 10)
+        self.assertEqual(curr_page, 1)
+
+        (
+            tool_emb,
+            total_pages,
+            curr_page,
+        ) = self.collection.get_embeddings_by_doc_type_paginated(
+            defs.Credoctypes.Tool.value, page=1, per_page=1
+        )
+        self.assertEqual(total_pages, 0)
+        self.assertEqual(tool_emb, {})
+
+    def test_get_embeddings_by_doc_type(self):
+        """Given: a range of embedding for Nodes and a range of embeddings for CREs
+        when called with doc_type CRE return the cre embeddings
+         when called with doc_type Standard/Tool return the node embeddings"""
+        # add cre embeddings
+        cre_embeddings = []
+        for i in range(0, 10):
+            dbca = db.CRE(external_id=f"{i}", description=f"C{i}", name=f"C{i}")
+            self.collection.session.add(dbca)
+            self.collection.session.commit()
+
+            embeddings = [random.uniform(-1, 1) for e in range(0, 768)]
+            embeddings_text = "".join(
+                random.choices(string.ascii_uppercase + string.digits, k=100)
+            )
+            cre_embeddings.append(
+                self.collection.add_embedding(
+                    db_object=dbca,
+                    doctype=defs.Credoctypes.CRE.value,
+                    embeddings=embeddings,
+                    embedding_text=embeddings_text,
+                )
+            )
+
+        # add node embeddings
+        node_embeddings = []
+        for i in range(0, 10):
+            dbsa = db.Node(
+                subsection=f"4.5.{i}",
+                section=f"FooStand-{i}",
+                name="BarStand",
+                link="https://example.com",
+                ntype=defs.Credoctypes.Standard.value,
+            )
+            self.collection.session.add(dbsa)
+            self.collection.session.commit()
+
+            embeddings = [random.uniform(-1, 1) for e in range(0, 768)]
+            embeddings_text = "".join(
+                random.choices(string.ascii_uppercase + string.digits, k=100)
+            )
+            ne = self.collection.add_embedding(
+                db_object=dbsa,
+                doctype=defs.Credoctypes.Standard.value,
+                embeddings=embeddings,
+                embedding_text=embeddings_text,
+            )
+            node_embeddings.append(ne)
+
+        cre_emb = self.collection.get_embeddings_by_doc_type(defs.Credoctypes.CRE.value)
+        self.assertNotEqual(list(cre_emb.keys())[0], "")
+        self.assertIn(list(cre_emb.keys())[0], list([e.cre_id for e in cre_embeddings]))
+        self.assertNotIn(
+            list(cre_emb.keys())[0], list([e.node_id for e in cre_embeddings])
+        )
+
+        node_emb = self.collection.get_embeddings_by_doc_type(
+            defs.Credoctypes.Standard.value
+        )
+        self.assertNotEqual(list(node_emb.keys())[0], "")
+        self.assertIn(
+            list(node_emb.keys())[0], list([e.node_id for e in node_embeddings])
+        )
+        self.assertNotIn(
+            list(node_emb.keys())[0], list([e.cre_id for e in cre_embeddings])
+        )
+
+        tool_emb = self.collection.get_embeddings_by_doc_type(
+            defs.Credoctypes.Tool.value
+        )
+        self.assertEqual(tool_emb, {})
 
 
 if __name__ == "__main__":
