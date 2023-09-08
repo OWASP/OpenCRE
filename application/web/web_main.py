@@ -379,9 +379,9 @@ def login_required(f):
 
     return login_r
 
-
 @app.route("/rest/v1/completion", methods=["POST"])
 @login_required
+@limiter.limit("10 per minute", key_func = lambda : logged_in_user)
 def chat_cre() -> Any:
     message = request.get_json(force=True)
     database = db.Node_collection()
