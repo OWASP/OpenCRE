@@ -1267,7 +1267,7 @@ class Node_collection:
         embeddings = (
             self.session.query(Embeddings)
             .filter(Embeddings.doc_type == doc_type)
-            .paginate(page, per_page)
+            .paginate(page=int(page), per_page=per_page, error_out=False)
         )
         total_pages = embeddings.pages
         if embeddings.items:
