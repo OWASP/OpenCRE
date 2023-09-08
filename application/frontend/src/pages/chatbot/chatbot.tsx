@@ -389,10 +389,10 @@ export const Chatbot = () => {
               <div className="chatbot">
                 <i>
                   OpenCRE Chat uses Google's PALM2 LLM, you can find the code for OpenCRE in
-                  https://github.com/owaps/OpenCRE. Your question travels to Heroku (OpenCRE hosting provider)
+                  https://github.com/owasp/OpenCRE. Your question travels to Heroku (OpenCRE hosting provider)
                   and then to GCP over a protected connection. Your data is never stored in the OpenCRE
                   servers, you can start a new session by refreshing your page. The OpenCRE team has taken all
-                  reasonable precautions we could think off to protect your privacy and security.
+                  reasonable precautions we could think of to protect your privacy and security.
                 </i>
               </div>
             </Grid>
