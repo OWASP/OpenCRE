@@ -65,6 +65,13 @@ To run the web application for development you can run
 Alternatively, you can use the dockerfile with
 <pre>make docker && make docker-run</pre>
 
+Some features like Gap Analysis require a neo4j DB running you can start this with
+<pre>make docker-neo4j</pre>
+enviroment varaibles for app to connect to neo4jDB (default):
+- NEO4J_URI (localhost)
+- NEO4J_USR (neo4j)
+- NEO4J_PASS (password)
+
 To run the web application for production you need gunicorn and you can run from within the cre_sync dir
 <pre>make prod-run</pre>
 

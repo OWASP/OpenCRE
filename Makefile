@@ -45,6 +45,9 @@ docker:
 docker-run:
 	 docker run -it -p 5000:5000 opencre:$(shell git rev-parse HEAD)
 
+docker-neo4j:
+	docker run  --env NEO4J_PLUGINS='["apoc"]'  --volume=./neo4j/data:/data --volume=/data --volume=/logs --workdir=/var/lib/neo4j -p 7474:7474 -p 7687:7687 -d neo4j
+
 lint:
 	[ -d "./venv" ] && . ./venv/bin/activate && black . && yarn lint
 

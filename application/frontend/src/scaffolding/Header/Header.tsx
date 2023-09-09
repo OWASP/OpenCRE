@@ -13,6 +13,10 @@ const getLinks = (): { to: string; name: string }[] => [
     to: `/`,
     name: 'Open CRE',
   },
+  {
+    to: `/gap_analysis`,
+    name: 'Gap Analysis',
+  },
 ];
 
 export const Header = () => {

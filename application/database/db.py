@@ -1,3 +1,5 @@
+from neo4j import GraphDatabase
+import neo4j
 from sqlalchemy.orm import aliased
 import os
 import logging
@@ -14,6 +16,8 @@ from flask_sqlalchemy.model import DefaultMeta
 from sqlalchemy import func
 from sqlalchemy.sql.expression import desc  # type: ignore
 import uuid
+
+from application.utils.gap_analysis import get_path_score
 
 from .. import sqla  # type: ignore
 
@@ -156,14 +160,217 @@ class Embeddings(BaseModel):  # type: ignore
     )
 
 
+class NEO_DB:
+    __instance = None
+
+    driver = None
+    connected = False
+
+    @classmethod
+    def instance(self):
+        if self.__instance is None:
+            self.__instance = self.__new__(self)
+
+            URI = os.getenv("NEO4J_URI") or "neo4j://localhost:7687"
+            AUTH = (
+                os.getenv("NEO4J_USR") or "neo4j",
+                os.getenv("NEO4J_PASS") or "password",
+            )
+            self.driver = GraphDatabase.driver(URI, auth=AUTH)
+
+            try:
+                self.driver.verify_connectivity()
+                self.connected = True
+            except neo4j.exceptions.ServiceUnavailable:
+                logger.error(
+                    "NEO4J ServiceUnavailable error - disabling neo4j related features"
+                )
+
+        return self.__instance
+
+    def __init__(sel):
+        raise ValueError("NEO_DB is a singleton, please call instance() instead")
+
+    @classmethod
+    def add_cre(self, dbcre: CRE):
+        if not self.connected:
+            return
+        self.driver.execute_query(
+            "MERGE (n:CRE {id: $nid, name: $name, description: $description, external_id: $external_id})",
+            nid=dbcre.id,
+            name=dbcre.name,
+            description=dbcre.description,
+            external_id=dbcre.external_id,
+            database_="neo4j",
+        )
+
+    @classmethod
+    def add_dbnode(self, dbnode: Node):
+        if not self.connected:
+            return
+        self.driver.execute_query(
+            "MERGE (n:Node {id: $nid, name: $name, section: $section, section_id: $section_id, subsection: $subsection, tags: $tags, version: $version, description: $description, ntype: $ntype})",
+            nid=dbnode.id,
+            name=dbnode.name,
+            section=dbnode.section,
+            section_id=dbnode.section_id,
+            subsection=dbnode.subsection or "",
+            tags=dbnode.tags,
+            version=dbnode.version or "",
+            description=dbnode.description,
+            ntype=dbnode.ntype,
+            database_="neo4j",
+        )
+
+    @classmethod
+    def link_CRE_to_CRE(self, id1, id2, link_type):
+        if not self.connected:
+            return
+        self.driver.execute_query(
+            "MATCH (a:CRE), (b:CRE) "
+            "WHERE a.id = $aID AND b.id = $bID "
+            "CALL apoc.create.relationship(a,$relType, {},b) "
+            "YIELD rel "
+            "RETURN rel",
+            aID=id1,
+            bID=id2,
+            relType=str.upper(link_type).replace(" ", "_"),
+            database_="neo4j",
+        )
+
+    @classmethod
+    def link_CRE_to_Node(self, CRE_id, node_id, link_type):
+        if not self.connected:
+            return
+        self.driver.execute_query(
+            "MATCH (a:CRE), (b:Node) "
+            "WHERE a.id = $aID AND b.id = $bID "
+            "CALL apoc.create.relationship(a,$relType, {},b) "
+            "YIELD rel "
+            "RETURN rel",
+            aID=CRE_id,
+            bID=node_id,
+            relType=str.upper(link_type).replace(" ", "_"),
+            database_="neo4j",
+        )
+
+    @classmethod
+    def gap_analysis(self, name_1, name_2):
+        if not self.connected:
+            return None, None
+        base_standard, _, _ = self.driver.execute_query(
+            """
+            MATCH (BaseStandard:Node {name: $name1})
+            RETURN BaseStandard
+            """,
+            name1=name_1,
+            database_="neo4j",
+        )
+
+        path_records_all, _, _ = self.driver.execute_query(
+            """
+            OPTIONAL MATCH (BaseStandard:Node {name: $name1})
+            OPTIONAL MATCH (CompareStandard:Node {name: $name2})
+            OPTIONAL MATCH p = shortestPath((BaseStandard)-[*..20]-(CompareStandard)) 
+            WITH p
+            WHERE length(p) > 1 AND ALL(n in NODES(p) WHERE n:CRE or n.name = $name1 or n.name = $name2) 
+            RETURN p
+            """,
+            name1=name_1,
+            name2=name_2,
+            database_="neo4j",
+        )
+        path_records, _, _ = self.driver.execute_query(
+            """
+            OPTIONAL MATCH (BaseStandard:Node {name: $name1})
+            OPTIONAL MATCH (CompareStandard:Node {name: $name2})
+            OPTIONAL MATCH p = shortestPath((BaseStandard)-[:(LINKED_TO|CONTAINS)*..20]-(CompareStandard)) 
+            WITH p
+            WHERE length(p) > 1 AND ALL(n in NODES(p) WHERE n:CRE or n.name = $name1 or n.name = $name2) 
+            RETURN p
+            """,
+            name1=name_1,
+            name2=name_2,
+            database_="neo4j",
+        )
+
+        def format_segment(seg):
+            return {
+                "start": {
+                    "name": seg.start_node["name"],
+                    "sectionID": seg.start_node["section_id"],
+                    "section": seg.start_node["section"],
+                    "subsection": seg.start_node["subsection"],
+                    "description": seg.start_node["description"],
+                    "id": seg.start_node["id"],
+                },
+                "end": {
+                    "name": seg.end_node["name"],
+                    "sectionID": seg.end_node["section_id"],
+                    "section": seg.end_node["section"],
+                    "subsection": seg.end_node["subsection"],
+                    "description": seg.end_node["description"],
+                    "id": seg.end_node["id"],
+                },
+                "relationship": seg.type,
+            }
+
+        def format_path_record(rec):
+            return {
+                "start": {
+                    "name": rec.start_node["name"],
+                    "sectionID": rec.start_node["section_id"],
+                    "section": rec.start_node["section"],
+                    "subsection": rec.start_node["subsection"],
+                    "description": rec.start_node["description"],
+                    "id": rec.start_node["id"],
+                },
+                "end": {
+                    "name": rec.end_node["name"],
+                    "sectionID": rec.end_node["section_id"],
+                    "section": rec.end_node["section"],
+                    "subsection": rec.end_node["subsection"],
+                    "description": rec.end_node["description"],
+                    "id": rec.end_node["id"],
+                },
+                "path": [format_segment(seg) for seg in rec.relationships],
+            }
+
+        def format_record(rec):
+            return {
+                "name": rec["name"],
+                "sectionID": rec["section_id"],
+                "section": rec["section"],
+                "subsection": rec["subsection"],
+                "description": rec["description"],
+                "id": rec["id"],
+            }
+
+        return [format_record(rec["BaseStandard"]) for rec in base_standard], [
+            format_path_record(rec["p"]) for rec in (path_records + path_records_all)
+        ]
+
+    @classmethod
+    def standards(self):
+        if not self.connected:
+            return
+        records, _, _ = self.driver.execute_query(
+            'MATCH (n:Node {ntype: "Standard"}) ' "RETURN collect(distinct n.name)",
+            database_="neo4j",
+        )
+        return records[0][0]
+
+
 class CRE_Graph:
     graph: nx.Graph = None
+    neo_db: NEO_DB = None
     __instance = None
 
     @classmethod
-    def instance(cls, session):
+    def instance(cls, session, neo_db: NEO_DB):
         if cls.__instance is None:
             cls.__instance = cls.__new__(cls)
+            cls.neo_db = neo_db
             cls.graph = cls.load_cre_graph(session)
         return cls.__instance
 
@@ -179,6 +386,7 @@ class CRE_Graph:
     @classmethod
     def add_cre(cls, dbcre: CRE, graph: nx.DiGraph) -> nx.DiGraph:
         if dbcre:
+            cls.neo_db.add_cre(dbcre)
             graph.add_node(
                 f"CRE: {dbcre.id}", internal_id=dbcre.id, external_id=dbcre.external_id
             )
@@ -189,6 +397,9 @@ class CRE_Graph:
     @classmethod
     def add_dbnode(cls, dbnode: Node, graph: nx.DiGraph) -> nx.DiGraph:
         if dbnode:
+            cls.neo_db.add_dbnode(dbnode)
+            # coma separated tags
+
             graph.add_node(
                 "Node: " + str(dbnode.id),
                 internal_id=dbnode.id,
@@ -215,6 +426,7 @@ class CRE_Graph:
             graph = cls.add_cre(dbcre=cre, graph=graph)
 
             graph.add_edge(f"CRE: {il.group}", f"CRE: {il.cre}", ltype=il.type)
+            cls.neo_db.link_CRE_to_CRE(il.group, il.cre, il.type)
 
         for lnk in session.query(Links).all():
             node = session.query(Node).filter(Node.id == lnk.node).first()
@@ -226,16 +438,19 @@ class CRE_Graph:
             graph = cls.add_cre(dbcre=cre, graph=graph)
 
             graph.add_edge(f"CRE: {lnk.cre}", f"Node: {str(lnk.node)}", ltype=lnk.type)
+            cls.neo_db.link_CRE_to_Node(lnk.cre, lnk.node, lnk.type)
         return graph
 
 
 class Node_collection:
     graph: nx.Graph = None
+    neo_db: NEO_DB = None
     session = sqla.session
 
     def __init__(self) -> None:
         if not os.environ.get("NO_LOAD_GRAPH"):
-            self.graph = CRE_Graph.instance(sqla.session)
+            self.neo_db = NEO_DB.instance()
+            self.graph = CRE_Graph.instance(sqla.session, self.neo_db)
         self.session = sqla.session
 
     def __get_external_links(self) -> List[Tuple[CRE, Node, str]]:
@@ -1059,30 +1274,32 @@ class Node_collection:
 
         return res
 
-    def gap_analysis(self, node_names: List[str]) -> List[cre_defs.Node]:
-        """Since the CRE structure is a tree-like graph with
-        leaves being nodes we can find the paths between nodes
-        find_path_between_nodes() is a graph-path-finding method
-        """
-        processed_nodes = []
-        dbnodes: List[Node] = []
-        for name in node_names:
-            dbnodes.extend(self.session.query(Node).filter(Node.name == name).all())
+    def gap_analysis(self, node_names: List[str]):
+        if not self.neo_db.connected:
+            return None
+        base_standard, paths = self.neo_db.gap_analysis(node_names[0], node_names[1])
+        if base_standard is None:
+            return None
+        grouped_paths = {}
+        for node in base_standard:
+            key = node["id"]
+            if key not in grouped_paths:
+                grouped_paths[key] = {"start": node, "paths": {}}
 
-        for node in dbnodes:
-            working_node = nodeFromDB(node)
-            for other_node in dbnodes:
-                if node.id == other_node.id:
-                    continue
-                if self.find_path_between_nodes(node.id, other_node.id):
-                    working_node.add_link(
-                        cre_defs.Link(
-                            ltype=cre_defs.LinkTypes.LinkedTo,
-                            document=nodeFromDB(other_node),
-                        )
-                    )
-            processed_nodes.append(working_node)
-        return processed_nodes
+        for path in paths:
+            key = path["start"]["id"]
+            end_key = path["end"]["id"]
+            path["score"] = get_path_score(path)
+            del path["start"]
+            if end_key in grouped_paths[key]["paths"]:
+                if grouped_paths[key]["paths"][end_key]["score"] > path["score"]:
+                    grouped_paths[key]["paths"][end_key] = path
+            else:
+                grouped_paths[key]["paths"][end_key] = path
+        return grouped_paths
+
+    def standards(self):
+        return self.neo_db.standards()
 
     def text_search(self, text: str) -> List[Optional[cre_defs.Document]]:
         """Given a piece of text, tries to find the best match
