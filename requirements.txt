@@ -6,7 +6,7 @@ Flask_Caching==2.0.2
 flask_compress==1.13
 Flask_Cors==4.0.0
 Flask_Migrate==4.0.4
-Flask-SQLAlchemy==3.0.5
+Flask-SQLAlchemy
 gitpython
 google-api-core
 google_auth_oauthlib
