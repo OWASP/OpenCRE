@@ -299,6 +299,9 @@ export const Chatbot = () => {
   }
 
   function displayDocument(d: Document) {
+    if (d === undefined || d.doctype === undefined) {
+      return <p>{d}</p>;
+    }
     var link = '/node/' + d.doctype.toLowerCase() + '/' + d.name;
     if (d.section) {
       link = link + '/section/' + d.section;
