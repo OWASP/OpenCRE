@@ -424,7 +424,10 @@ class PromptHandler:
             question_embedding,
             similarity_threshold=SIMILARITY_THRESHOLD,
         )
-        closest_object = self.database.get_node_by_db_id(closest_id)
+        closest_object = None
+        if closest_id:
+            closest_object = self.database.get_node_by_db_id(closest_id)
+
         answer = ""
         logger.debug(
             f"The prompt {prompt}, was most similar to object \n{closest_object}\n, with similarity:{similarity}"
