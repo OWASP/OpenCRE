@@ -42,6 +42,8 @@ logging.basicConfig()
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+RATE_LIMIT = os.environ.get("OPENCRE_CHAT_RATE_LIMIT") or "10 per minute"
+
 
 class SupportedFormats(Enum):
     Markdown = "md"
@@ -404,6 +406,7 @@ def login_required(f):
 
 @app.route("/rest/v1/completion", methods=["POST"])
 @login_required
+@limiter.limit(RATE_LIMIT, key_func=lambda: logged_in_user)
 def chat_cre() -> Any:
     message = request.get_json(force=True)
     database = db.Node_collection()
