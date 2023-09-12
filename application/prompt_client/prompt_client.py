@@ -259,10 +259,11 @@ class PromptHandler:
         most_similar_index = np.argmax(similarities)
         if np.max(similarities) < SIMILARITY_THRESHOLD:
             logger.info(
-                f"there is no good cre candidate for this standard section, returning nothing"
+                f"there is no good cre candidate for this standard section,closest similarity: {np.max(similarities)} returning nothing"
             )
             return None
         id = self.existing_cre_ids[most_similar_index]
+        logger.info(f"found match with similarity {np.max(similarities)}, id {id}")
         return id
 
     def get_id_of_most_similar_node(self, standard_text_embedding: List[float]) -> str:
