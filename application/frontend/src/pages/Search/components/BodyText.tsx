@@ -25,9 +25,10 @@ export const SearchBody = () => {
         </b>
       </p>
       <h3>
-        Use <a href="/chatbot">OpenCRE Chat</a> to ask any security question (Google account required). We injected 
-        all the standards from OpenCRE in an AI model to create the world's first security-specialized chatbot.
-        This ensures you get a more reliable answer, and also a reference to a reputable source.
+        Use <a href="/chatbot">OpenCRE Chat</a> to ask any security question (Google account required). We
+        injected all the standards from OpenCRE in an AI model to create the world's first
+        security-specialized chatbot. This ensures you get a more reliable answer, and also a reference to a
+        reputable source.
       </h3>
       <h2>HOW?</h2>
       <p>
