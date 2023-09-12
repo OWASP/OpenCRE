@@ -263,8 +263,7 @@ class PromptHandler:
             )
             return None
         id = self.existing_cre_ids[most_similar_index]
-        logger.info(
-                f"found match with similarity {np.max(similarities)}, id {id}")
+        logger.info(f"found match with similarity {np.max(similarities)}, id {id}")
         return id
 
     def get_id_of_most_similar_node(self, standard_text_embedding: List[float]) -> str:
