@@ -430,7 +430,7 @@ class PromptHandler:
             closest_object = self.database.get_node_by_db_id(closest_id)
 
         answer = ""
-        logger.debug(
+        logger.info(
             f"The prompt {prompt}, was most similar to object \n{closest_object}\n, with similarity:{similarity}"
         )
         closest_content = ""
