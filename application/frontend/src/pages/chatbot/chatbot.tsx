@@ -311,14 +311,14 @@ export const Chatbot = () => {
     return (
       <p>
         <p>
-          *Reference: The above answer was based on:
+          *Reference: The above answer used as preferred input:
           <a href={d.hyperlink} target="_blank">
             {' '}
             {d.name} section: {d.section ? d.section : d.sectionID};
           </a>
         </p>
         <p>
-          You can find more information about {d.name} <a href={link}> on its OpenCRE page</a>
+          You can find more information about this section of {d.name} <a href={link}> on its OpenCRE page</a>
         </p>
       </p>
     );
