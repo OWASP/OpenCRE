@@ -1306,7 +1306,6 @@ class TestDB(unittest.TestCase):
         }
         self.assertEqual(collection.gap_analysis(["a", "b"]), expected)
 
-
     def test_get_embeddings_by_doc_type_paginated(self):
         """Given: a range of embedding for Nodes and a range of embeddings for CREs
         when called with doc_type CRE return the cre embeddings
@@ -1469,7 +1468,6 @@ class TestDB(unittest.TestCase):
             defs.Credoctypes.Tool.value
         )
         self.assertEqual(tool_emb, {})
-
 
 
 if __name__ == "__main__":

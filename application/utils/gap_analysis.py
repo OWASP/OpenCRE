@@ -1,4 +1,10 @@
-PENALTIES = {"RELATED": 20, "CONTAINS_UP": 2, "CONTAINS_DOWN": 1, "LINKED_TO": 0}
+PENALTIES = {
+    "RELATED": 20,
+    "CONTAINS_UP": 2,
+    "CONTAINS_DOWN": 1,
+    "LINKED_TO": 0,
+    "SAME": 0,
+}
 
 
 def get_path_score(path):
