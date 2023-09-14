@@ -193,7 +193,6 @@ def main() -> None:
         help="populate the neo4j db",
     )
 
-
     args = parser.parse_args()
 
     from application.cmd import cre_main

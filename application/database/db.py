@@ -463,7 +463,6 @@ class CRE_Graph:
 
             graph.add_edge(f"CRE: {lnk.cre}", f"Node: {str(lnk.node)}", ltype=lnk.type)
         return graph
-    
 
 
 class Node_collection:

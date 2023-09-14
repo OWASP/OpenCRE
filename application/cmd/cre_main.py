@@ -533,6 +533,7 @@ def owasp_metadata_to_cre(meta_file: str):
     """
     raise NotImplementedError("someone needs to work on this")
 
+
 def populate_neo4j_db(cache: str):
     logger.info(f"Populating neo4j DB: Connecting to SQL DB")
     database = db_connect(path=cache)
