@@ -14,11 +14,10 @@ import {
   Table,
 } from 'semantic-ui-react';
 
-import { GapAnalysisPathStart } from '../../types';
-import { getDocumentDisplayName } from '../../utils';
-
 import { LoadingAndErrorIndicator } from '../../components/LoadingAndErrorIndicator';
 import { useEnvironment } from '../../hooks';
+import { GapAnalysisPathStart } from '../../types';
+import { getDocumentDisplayName } from '../../utils';
 
 const GetSegmentText = (segment, segmentID) => {
   let textPart = segment.end;
@@ -68,6 +67,9 @@ export const GapAnalysis = () => {
     if (score > 20) return 'Red';
     return 'Orange';
   };
+
+  const GetStrongPathsCount = (paths) =>
+    Math.max(Object.values<any>(paths).filter((x) => GetStrength(x.score) === 'Strong').length, 3);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -185,9 +187,7 @@ export const GapAnalysis = () => {
               <Table.Row key={key}>
                 <Table.Cell>
                   <p>
-                    <b>
-                      {getDocumentDisplayName(gapAnalysis[key].start, true)}
-                    </b>
+                    <b>{getDocumentDisplayName(gapAnalysis[key].start, true)}</b>
                     <a
                       href={`/node/standard/${gapAnalysis[key].start.name}/section/${gapAnalysis[key].start.section}`}
                       target="_blank"
@@ -199,7 +199,7 @@ export const GapAnalysis = () => {
                 <Table.Cell style={{ minWidth: '35vw' }}>
                   {Object.values<any>(gapAnalysis[key].paths)
                     .sort((a, b) => a.score - b.score)
-                    .slice(0, 3)
+                    .slice(0, GetStrongPathsCount(gapAnalysis[key].paths))
                     .map((path) => {
                       let segmentID = gapAnalysis[key].start.id;
                       return (
@@ -246,7 +246,10 @@ export const GapAnalysis = () => {
                       <Accordion.Content active={activeIndex === key}>
                         {Object.values<any>(gapAnalysis[key].paths)
                           .sort((a, b) => a.score - b.score)
-                          .slice(3, Object.keys(gapAnalysis[key].paths).length)
+                          .slice(
+                            GetStrongPathsCount(gapAnalysis[key].paths),
+                            Object.keys(gapAnalysis[key].paths).length
+                          )
                           .map((path) => {
                             let segmentID = gapAnalysis[key].start.id;
                             return (
