@@ -316,7 +316,7 @@ class NEO_DB:
             return None, None
         base_standard, _, _ = self.driver.execute_query(
             """
-            MATCH (BaseStandard:Standard {name: $name1})
+            MATCH (BaseStandard:Standard|Tool {name: $name1})
             RETURN BaseStandard
             """,
             name1=name_1,
@@ -325,8 +325,8 @@ class NEO_DB:
 
         path_records_all, _, _ = self.driver.execute_query(
             """
-            OPTIONAL MATCH (BaseStandard:Standard {name: $name1})
-            OPTIONAL MATCH (CompareStandard:Standard {name: $name2})
+            OPTIONAL MATCH (BaseStandard:Standard|Tool {name: $name1})
+            OPTIONAL MATCH (CompareStandard:Standard|Tool {name: $name2})
             OPTIONAL MATCH p = shortestPath((BaseStandard)-[*..20]-(CompareStandard)) 
             WITH p
             WHERE length(p) > 1 AND ALL(n in NODES(p) WHERE n:CRE or n.name = $name1 or n.name = $name2) 
@@ -338,8 +338,8 @@ class NEO_DB:
         )
         path_records, _, _ = self.driver.execute_query(
             """
-            OPTIONAL MATCH (BaseStandard:Standard {name: $name1})
-            OPTIONAL MATCH (CompareStandard:Standard {name: $name2})
+            OPTIONAL MATCH (BaseStandard:Standard|Tool {name: $name1})
+            OPTIONAL MATCH (CompareStandard:Standard|Tool {name: $name2})
             OPTIONAL MATCH p = shortestPath((BaseStandard)-[:(LINKED_TO|CONTAINS)*..20]-(CompareStandard)) 
             WITH p
             WHERE length(p) > 1 AND ALL(n in NODES(p) WHERE n:CRE or n.name = $name1 or n.name = $name2) 
@@ -373,7 +373,7 @@ class NEO_DB:
         if not self.connected:
             return
         records, _, _ = self.driver.execute_query(
-            "MATCH (n:Standard) " "RETURN collect(distinct n.name)",
+            "MATCH (n:Standard|Tool) " "RETURN collect(distinct n.name)",
             database_="neo4j",
         )
         return records[0][0]
