@@ -426,6 +426,8 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
         generate_embeddings(args.cache_file)
     if args.owasp_proj_meta:
         owasp_metadata_to_cre(args.owasp_proj_meta)
+    if args.populate_neo4j_db:
+        populate_neo4j_db(args.cache_file)
 
 
 def db_connect(path: str):
@@ -530,3 +532,10 @@ def owasp_metadata_to_cre(meta_file: str):
     },
     """
     raise NotImplementedError("someone needs to work on this")
+
+def populate_neo4j_db(cache: str):
+    logger.info(f"Populating neo4j DB: Connecting to SQL DB")
+    database = db_connect(path=cache)
+    logger.info(f"Populating neo4j DB: Populating")
+    database.neo_db.populate_DB(database.session)
+    logger.info(f"Populating neo4j DB: Complete")
