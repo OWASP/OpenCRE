@@ -22,15 +22,23 @@ import { getDocumentDisplayName } from '../../utils';
 const GetSegmentText = (segment, segmentID) => {
   let textPart = segment.end;
   let nextID = segment.end.id;
-  let arrow = '->';
+  let arrow = <Icon name="arrow down" />;
   if (segmentID !== segment.start.id) {
     textPart = segment.start;
     nextID = segment.start.id;
-    arrow = '<-';
+    arrow = <Icon name="arrow up" />;
   }
-  const text = `${arrow} ${segment.relationship} ${arrow} ${textPart.name} ${textPart.sectionID ?? ''} ${
-    textPart.section ?? ''
-  } ${textPart.subsection ?? ''} ${textPart.description ?? ''}`;
+  const text = (
+    <>
+      <br />
+      {arrow}{' '}
+      <span style={{ textTransform: 'capitalize' }}>
+        {segment.relationship.replace('_', ' ').toLowerCase()}
+      </span>
+      <br /> {getDocumentDisplayName(textPart, true)} {textPart.section ?? ''} {textPart.subsection ?? ''}{' '}
+      {textPart.description ?? ''}
+    </>
+  );
   return { text, nextID };
 };
 
@@ -187,7 +195,7 @@ export const GapAnalysis = () => {
               <Table.Row key={key}>
                 <Table.Cell>
                   <p>
-                    <b>{getDocumentDisplayName(gapAnalysis[key].start, true)}</b>
+                    <b>{getDocumentDisplayName(gapAnalysis[key].start, true)}</b>{' '}
                     <a
                       href={`/node/standard/${gapAnalysis[key].start.name}/section/${gapAnalysis[key].start.section}`}
                       target="_blank"
@@ -206,14 +214,9 @@ export const GapAnalysis = () => {
                         <span key={path.end.id}>
                           <Popup
                             wide="very"
+                            size="large"
+                            style={{ textAlign: 'center' }}
                             hoverable
-                            content={path.path
-                              .map((segment) => {
-                                const { text, nextID } = GetSegmentText(segment, segmentID);
-                                segmentID = nextID;
-                                return text;
-                              })
-                              .join('')}
                             trigger={
                               <span>
                                 {getDocumentDisplayName(path.end, true)} (
@@ -229,7 +232,16 @@ export const GapAnalysis = () => {
                                 </a>
                               </span>
                             }
-                          />
+                          >
+                            <Popup.Content>
+                              {getDocumentDisplayName(gapAnalysis[key].start, true)}
+                              {path.path.map((segment) => {
+                                const { text, nextID } = GetSegmentText(segment, segmentID);
+                                segmentID = nextID;
+                                return text;
+                              })}
+                            </Popup.Content>
+                          </Popup>
                           <br />
                         </span>
                       );
@@ -256,17 +268,12 @@ export const GapAnalysis = () => {
                               <span key={path.end.id}>
                                 <Popup
                                   wide="very"
+                                  size="large"
+                                  style={{ textAlign: 'center' }}
                                   hoverable
-                                  content={path.path
-                                    .map((segment) => {
-                                      const { text, nextID } = GetSegmentText(segment, segmentID);
-                                      segmentID = nextID;
-                                      return text;
-                                    })
-                                    .join('')}
                                   trigger={
                                     <span>
-                                      {getDocumentDisplayName(path.end, true)}
+                                      {getDocumentDisplayName(path.end, true)} (
                                       <b style={{ color: GetStrengthColor(path.score) }}>
                                         {GetStrength(path.score)}:{path.score}
                                       </b>
@@ -279,7 +286,16 @@ export const GapAnalysis = () => {
                                       </a>
                                     </span>
                                   }
-                                />
+                                >
+                                  <Popup.Content>
+                                    {getDocumentDisplayName(gapAnalysis[key].start, true)}
+                                    {path.path.map((segment) => {
+                                      const { text, nextID } = GetSegmentText(segment, segmentID);
+                                      segmentID = nextID;
+                                      return text;
+                                    })}
+                                  </Popup.Content>
+                                </Popup>
                                 <br />
                               </span>
                             );
