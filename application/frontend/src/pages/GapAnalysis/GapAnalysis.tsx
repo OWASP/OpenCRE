@@ -31,10 +31,7 @@ const GetSegmentText = (segment, segmentID) => {
   const text = (
     <>
       <br />
-      {arrow}{' '}
-      <span style={{ textTransform: 'capitalize' }}>
-        {segment.relationship.replace('_', ' ').toLowerCase()}
-      </span>
+      {arrow} <span style={{textTransform: 'capitalize'}}>{segment.relationship.replace("_", " ").toLowerCase()}</span>
       <br /> {getDocumentDisplayName(textPart, true)} {textPart.section ?? ''} {textPart.subsection ?? ''}{' '}
       {textPart.description ?? ''}
     </>
