@@ -224,11 +224,14 @@ class NEO_DB:
         if not self.connected:
             return
         self.driver.execute_query(
-            "MERGE (n:CRE {id: $nid, name: $name, description: $description, external_id: $external_id})",
-            nid=dbcre.id,
+            "MERGE (n:CRE {id: $nid, name: $name, description: $description, doctype: $doctype, links: $links, metadata: $metadata, tags: $tags})",
             name=dbcre.name,
+            doctype="CRE", #dbcre.ntype,
+            nid=dbcre.id,
             description=dbcre.description,
-            external_id=dbcre.external_id,
+            links=[], #dbcre.links,
+            tags=dbcre.tags,
+            metadata="{}", #dbcre.metadata,
             database_="neo4j",
         )
 
@@ -236,20 +239,44 @@ class NEO_DB:
     def add_dbnode(self, dbnode: Node):
         if not self.connected:
             return
-        # TODO: Add diffrent Node types
-        self.driver.execute_query(
-            "MERGE (n:Node {id: $nid, name: $name, section: $section, section_id: $section_id, subsection: $subsection, tags: $tags, version: $version, description: $description, ntype: $ntype})",
-            nid=dbnode.id,
-            name=dbnode.name,
-            section=dbnode.section,
-            section_id=dbnode.section_id,
-            subsection=dbnode.subsection or "",
-            tags=dbnode.tags,
-            version=dbnode.version or "",
-            description=dbnode.description,
-            ntype=dbnode.ntype,
-            database_="neo4j",
-        )
+        if dbnode.ntype == "Standard":
+            self.driver.execute_query(
+                "MERGE (n:Standard {id: $nid, name: $name, section: $section, sectionID: $sectionID, subsection: $subsection, tags: $tags, version: $version, description: $description, doctype: $doctype, links: $links, metadata: $metadata, hyperlink: $hyperlink})",
+                name=dbnode.name,
+                doctype=dbnode.ntype,
+                nid=dbnode.id,
+                description=dbnode.description,
+                links=[], #dbnode.links,
+                tags=dbnode.tags,
+                metadata="{}", #dbnode.metadata,
+                hyperlink="", #dbnode.hyperlink or "",
+                version=dbnode.version or "",
+                section=dbnode.section,
+                sectionID=dbnode.section_id,#dbnode.sectionID,
+                subsection=dbnode.subsection or "",
+                database_="neo4j",
+            )
+            return
+        if dbnode.ntype == "Tool":
+            self.driver.execute_query(
+                "MERGE (n:Tool {id: $nid, name: $name, section: $section, sectionID: $sectionID, subsection: $subsection, tags: $tags, version: $version, description: $description, doctype: $doctype, links: $links, metadata: $metadata, hyperlink: $hyperlink, tooltype: $tooltype})",
+                name=dbnode.name,
+                doctype=dbnode.ntype,
+                nid=dbnode.id,
+                description=dbnode.description,
+                links=[], #dbnode.links,
+                tags=dbnode.tags,
+                metadata="{}", #dbnode.metadata,
+                hyperlink="", #dbnode.hyperlink or "",
+                version=dbnode.version or "",
+                section=dbnode.section,
+                sectionID=dbnode.section_id,#dbnode.sectionID,
+                subsection=dbnode.subsection or "",
+                tooltype="", #dbnode.tooltype,
+                database_="neo4j",
+            )
+            return
+        raise Exception(f"Unknown DB type: {dbnode.ntype}")
 
     @classmethod
     def link_CRE_to_CRE(self, id1, id2, link_type):
@@ -272,7 +299,7 @@ class NEO_DB:
         if not self.connected:
             return
         self.driver.execute_query(
-            "MATCH (a:CRE), (b:Node) "
+            "MATCH (a:CRE), (b:Standard|Tool) "
             "WHERE a.id = $aID AND b.id = $bID "
             "CALL apoc.create.relationship(a,$relType, {},b) "
             "YIELD rel "
@@ -289,7 +316,7 @@ class NEO_DB:
             return None, None
         base_standard, _, _ = self.driver.execute_query(
             """
-            MATCH (BaseStandard:Node {name: $name1})
+            MATCH (BaseStandard:Standard {name: $name1})
             RETURN BaseStandard
             """,
             name1=name_1,
@@ -298,8 +325,8 @@ class NEO_DB:
 
         path_records_all, _, _ = self.driver.execute_query(
             """
-            OPTIONAL MATCH (BaseStandard:Node {name: $name1})
-            OPTIONAL MATCH (CompareStandard:Node {name: $name2})
+            OPTIONAL MATCH (BaseStandard:Standard {name: $name1})
+            OPTIONAL MATCH (CompareStandard:Standard {name: $name2})
             OPTIONAL MATCH p = shortestPath((BaseStandard)-[*..20]-(CompareStandard)) 
             WITH p
             WHERE length(p) > 1 AND ALL(n in NODES(p) WHERE n:CRE or n.name = $name1 or n.name = $name2) 
@@ -311,8 +338,8 @@ class NEO_DB:
         )
         path_records, _, _ = self.driver.execute_query(
             """
-            OPTIONAL MATCH (BaseStandard:Node {name: $name1})
-            OPTIONAL MATCH (CompareStandard:Node {name: $name2})
+            OPTIONAL MATCH (BaseStandard:Standard {name: $name1})
+            OPTIONAL MATCH (CompareStandard:Standard {name: $name2})
             OPTIONAL MATCH p = shortestPath((BaseStandard)-[:(LINKED_TO|CONTAINS)*..20]-(CompareStandard)) 
             WITH p
             WHERE length(p) > 1 AND ALL(n in NODES(p) WHERE n:CRE or n.name = $name1 or n.name = $name2) 
@@ -325,58 +352,19 @@ class NEO_DB:
 
         def format_segment(seg):
             return {
-                "start": {
-                    "name": seg.start_node["name"],
-                    "sectionID": seg.start_node["section_id"],
-                    "section": seg.start_node["section"],
-                    "subsection": seg.start_node["subsection"],
-                    "description": seg.start_node["description"],
-                    "id": seg.start_node["id"],
-                },
-                "end": {
-                    "name": seg.end_node["name"],
-                    "sectionID": seg.end_node["section_id"],
-                    "section": seg.end_node["section"],
-                    "subsection": seg.end_node["subsection"],
-                    "description": seg.end_node["description"],
-                    "id": seg.end_node["id"],
-                },
+                "start": self.parse_node(seg.start_node),
+                "end": self.parse_node(seg.end_node),
                 "relationship": seg.type,
             }
 
         def format_path_record(rec):
             return {
-                "start": {
-                    "name": rec.start_node["name"],
-                    "sectionID": rec.start_node["section_id"],
-                    "section": rec.start_node["section"],
-                    "subsection": rec.start_node["subsection"],
-                    "description": rec.start_node["description"],
-                    "id": rec.start_node["id"],
-                },
-                "end": {
-                    "name": rec.end_node["name"],
-                    "sectionID": rec.end_node["section_id"],
-                    "section": rec.end_node["section"],
-                    "subsection": rec.end_node["subsection"],
-                    "description": rec.end_node["description"],
-                    "id": rec.end_node["id"],
-                },
+                "start": self.parse_node(rec.start_node),
+                "end": self.parse_node(rec.end_node),
                 "path": [format_segment(seg) for seg in rec.relationships],
             }
 
-        def format_record(rec):
-            # self.parse_node(rec)
-            return {
-                "name": rec["name"],
-                "sectionID": rec["section_id"],
-                "section": rec["section"],
-                "subsection": rec["subsection"],
-                "description": rec["description"],
-                "id": rec["id"],
-            }
-
-        return [format_record(rec["BaseStandard"]) for rec in base_standard], [
+        return [self.parse_node(rec["BaseStandard"]) for rec in base_standard], [
             format_path_record(rec["p"]) for rec in (path_records + path_records_all)
         ]
 
@@ -385,31 +373,19 @@ class NEO_DB:
         if not self.connected:
             return
         records, _, _ = self.driver.execute_query(
-            'MATCH (n:Node {ntype: "Standard"}) ' "RETURN collect(distinct n.name)",
+            'MATCH (n:Standard) ' "RETURN collect(distinct n.name)",
             database_="neo4j",
         )
         return records[0][0]
 
     @classmethod
     def parse_node(self, node: neo4j.graph.Node) -> cre_defs.Document:
-        print(node)
         name = node["name"]
         id = node["id"] if "id" in node else None
         description = node["description"] if "description" in node else None
         links = [self.parse_link(link) for link in node["links"]]
         tags = node["tags"]
         metadata = node["metadata"]
-        if "Node" in node.labels:
-            return cre_defs.Node(
-                name=name,
-                id=id,
-                description=description,
-                links=links,
-                tags=tags,
-                metadata=metadata,
-                hyperlink=(node["hyperlink"] if "hyperlink" in node else None),
-                version=(node["version"] if "version" in node else None),
-            )
         if "Code" in node.labels:
             return cre_defs.Code(
                 name=name,
@@ -458,6 +434,7 @@ class NEO_DB:
                 tags=tags,
                 metadata=metadata,
             )
+        raise Exception(f"Unknown node {node.labels}")
 
     @classmethod
     def parse_link(self, link):
@@ -1372,20 +1349,18 @@ class Node_collection:
         return res
 
     def gap_analysis(self, node_names: List[str]):
-        if not self.neo_db.connected:
-            return None
         base_standard, paths = self.neo_db.gap_analysis(node_names[0], node_names[1])
         if base_standard is None:
             return None
         grouped_paths = {}
         for node in base_standard:
-            key = node["id"]
+            key = node.id
             if key not in grouped_paths:
                 grouped_paths[key] = {"start": node, "paths": {}}
 
         for path in paths:
-            key = path["start"]["id"]
-            end_key = path["end"]["id"]
+            key = path["start"].id
+            end_key = path["end"].id
             path["score"] = get_path_score(path)
             del path["start"]
             if end_key in grouped_paths[key]["paths"]:

@@ -9,7 +9,7 @@ PENALTIES = {
 
 def get_path_score(path):
     score = 0
-    previous_id = path["start"]["id"]
+    previous_id = path["start"].id
     for step in path["path"]:
         penalty_type = step["relationship"]
 
@@ -21,12 +21,12 @@ def get_path_score(path):
 
 
 def get_relation_direction(step, previous_id):
-    if step["start"]["id"] == previous_id:
+    if step["start"].id == previous_id:
         return "UP"
     return "DOWN"
 
 
 def get_next_id(step, previous_id):
-    if step["start"]["id"] == previous_id:
-        return step["end"]["id"]
-    return step["start"]["id"]
+    if step["start"].id == previous_id:
+        return step["end"].id
+    return step["start"].id
