@@ -192,6 +192,34 @@ class NEO_DB:
         raise ValueError("NEO_DB is a singleton, please call instance() instead")
 
     @classmethod
+    def populate_DB(self, session) -> nx.Graph:
+        graph = nx.DiGraph()
+        for il in session.query(InternalLinks).all():
+            group = session.query(CRE).filter(CRE.id == il.group).first()
+            if not group:
+                logger.error(f"CRE {il.group} does not exist?")
+            self.add_cre(group)
+
+            cre = session.query(CRE).filter(CRE.id == il.cre).first()
+            if not cre:
+                logger.error(f"CRE {il.cre} does not exist?")
+            self.add_cre(cre)
+
+            self.link_CRE_to_CRE(il.group, il.cre, il.type)
+
+        for lnk in session.query(Links).all():
+            node = session.query(Node).filter(Node.id == lnk.node).first()
+            if not node:
+                logger.error(f"Node {lnk.node} does not exist?")
+            self.add_dbnode(node)
+
+            cre = session.query(CRE).filter(CRE.id == lnk.cre).first()
+            self.add_cre(cre)
+
+            self.link_CRE_to_Node(lnk.cre, lnk.node, lnk.type)
+        return graph
+
+    @classmethod
     def add_cre(self, dbcre: CRE):
         if not self.connected:
             return
@@ -208,6 +236,7 @@ class NEO_DB:
     def add_dbnode(self, dbnode: Node):
         if not self.connected:
             return
+        # TODO: Add diffrent Node types
         self.driver.execute_query(
             "MERGE (n:Node {id: $nid, name: $name, section: $section, section_id: $section_id, subsection: $subsection, tags: $tags, version: $version, description: $description, ntype: $ntype})",
             nid=dbnode.id,
@@ -363,15 +392,13 @@ class NEO_DB:
 
 class CRE_Graph:
     graph: nx.Graph = None
-    neo_db: NEO_DB = None
     __instance = None
 
     @classmethod
-    def instance(cls, session, neo_db: NEO_DB):
+    def instance(cls, session):
         if cls.__instance is None:
             cls.__instance = cls.__new__(cls)
-            cls.neo_db = neo_db
-            # cls.graph = cls.load_cre_graph(session) # TODO: Call this in a seperate statup mode
+            cls.graph = cls.load_cre_graph(session)
         return cls.__instance
 
     def __init__(sel):
@@ -386,7 +413,6 @@ class CRE_Graph:
     @classmethod
     def add_cre(cls, dbcre: CRE, graph: nx.DiGraph) -> nx.DiGraph:
         if dbcre:
-            cls.neo_db.add_cre(dbcre)
             graph.add_node(
                 f"CRE: {dbcre.id}", internal_id=dbcre.id, external_id=dbcre.external_id
             )
@@ -397,7 +423,6 @@ class CRE_Graph:
     @classmethod
     def add_dbnode(cls, dbnode: Node, graph: nx.DiGraph) -> nx.DiGraph:
         if dbnode:
-            cls.neo_db.add_dbnode(dbnode)
             # coma separated tags
 
             graph.add_node(
@@ -426,7 +451,6 @@ class CRE_Graph:
             graph = cls.add_cre(dbcre=cre, graph=graph)
 
             graph.add_edge(f"CRE: {il.group}", f"CRE: {il.cre}", ltype=il.type)
-            cls.neo_db.link_CRE_to_CRE(il.group, il.cre, il.type)
 
         for lnk in session.query(Links).all():
             node = session.query(Node).filter(Node.id == lnk.node).first()
@@ -438,8 +462,8 @@ class CRE_Graph:
             graph = cls.add_cre(dbcre=cre, graph=graph)
 
             graph.add_edge(f"CRE: {lnk.cre}", f"Node: {str(lnk.node)}", ltype=lnk.type)
-            cls.neo_db.link_CRE_to_Node(lnk.cre, lnk.node, lnk.type)
         return graph
+    
 
 
 class Node_collection:
@@ -449,8 +473,8 @@ class Node_collection:
 
     def __init__(self) -> None:
         if not os.environ.get("NO_LOAD_GRAPH"):
-            self.neo_db = NEO_DB.instance()
-            self.graph = CRE_Graph.instance(sqla.session, self.neo_db)
+            self.graph = CRE_Graph.instance(sqla.session)
+        self.neo_db = NEO_DB.instance()
         self.session = sqla.session
 
     def __get_external_links(self) -> List[Tuple[CRE, Node, str]]:
