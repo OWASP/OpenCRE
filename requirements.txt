@@ -44,7 +44,7 @@ pathable==0.4.3
 pathspec==0.9.0
 pbr==5.8.0
 pep517==0.8.2
-Pillow-binary
+Pillow
 pip-autoremove==0.9.1
 platformdirs==2.2.0
 playwright==1.33.0
