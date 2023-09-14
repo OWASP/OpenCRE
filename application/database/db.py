@@ -366,6 +366,7 @@ class NEO_DB:
             }
 
         def format_record(rec):
+            # self.parse_node(rec)
             return {
                 "name": rec["name"],
                 "sectionID": rec["section_id"],
@@ -380,7 +381,7 @@ class NEO_DB:
         ]
 
     @classmethod
-    def standards(self):
+    def standards(self) -> List[str]:
         if not self.connected:
             return
         records, _, _ = self.driver.execute_query(
@@ -388,6 +389,79 @@ class NEO_DB:
             database_="neo4j",
         )
         return records[0][0]
+
+    @classmethod
+    def parse_node(self, node: neo4j.graph.Node) -> cre_defs.Document:
+        print(node)
+        name = node["name"]
+        id = node["id"] if "id" in node else None
+        description = node["description"] if "description" in node else None
+        links = [self.parse_link(link) for link in node["links"]]
+        tags = node["tags"]
+        metadata = node["metadata"]
+        if "Node" in node.labels:
+            return cre_defs.Node(
+                name=name,
+                id=id,
+                description=description,
+                links=links,
+                tags=tags,
+                metadata=metadata,
+                hyperlink=(node["hyperlink"] if "hyperlink" in node else None),
+                version=(node["version"] if "version" in node else None),
+            )
+        if "Code" in node.labels:
+            return cre_defs.Code(
+                name=name,
+                id=id,
+                description=description,
+                links=links,
+                tags=tags,
+                metadata=metadata,
+                hyperlink=(node["hyperlink"] if "hyperlink" in node else None),
+                version=(node["version"] if "version" in node else None),
+            )
+        if "Standard" in node.labels:
+            return cre_defs.Standard(
+                name=name,
+                id=id,
+                description=description,
+                links=links,
+                tags=tags,
+                metadata=metadata,
+                hyperlink=(node["hyperlink"] if "hyperlink" in node else None),
+                version=(node["version"] if "version" in node else None),
+                section=node['section'],
+                sectionID='sectionID',
+                subsection=(node["subsection"] if "subsection" in node else None),
+            )
+        if "Tool" in node.labels:
+            return cre_defs.Tool(
+                name=name,
+                id=id,
+                description=description,
+                links=links,
+                tags=tags,
+                metadata=metadata,
+                hyperlink=(node["hyperlink"] if "hyperlink" in node else None),
+                version=(node["version"] if "version" in node else None),
+                section=node['section'],
+                sectionID='sectionID',
+                subsection=(node["subsection"] if "subsection" in node else None),
+            )
+        if "CRE" in node.labels:
+            return cre_defs.CRE(
+                name=name,
+                id=id,
+                description=description,
+                links=links,
+                tags=tags,
+                metadata=metadata,
+            )
+
+    @classmethod
+    def parse_link(self, link):
+        return cre_defs.Link(ltype=link["ltype"], tags=link["tags"])
 
 
 class CRE_Graph:
@@ -1321,7 +1395,7 @@ class Node_collection:
                 grouped_paths[key]["paths"][end_key] = path
         return grouped_paths
 
-    def standards(self):
+    def standards(self) -> List[str]:
         return self.neo_db.standards()
 
     def text_search(self, text: str) -> List[Optional[cre_defs.Document]]:
