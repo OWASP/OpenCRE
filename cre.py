@@ -187,6 +187,11 @@ def main() -> None:
         action="store_true",
         help="for every node, download the text pointed to by the hyperlink and generate embeddings for the content of the specific node",
     )
+    parser.add_argument(
+        "--populate_neo4j_db",
+        action="store_true",
+        help="populate the neo4j db",
+    )
 
     args = parser.parse_args()
 
