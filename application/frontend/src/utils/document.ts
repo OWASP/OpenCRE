@@ -7,14 +7,14 @@ import {
 } from '../const';
 import { Document, LinkedDocument } from '../types';
 
-export const getDocumentDisplayName = (document: Document, noID=false) => {
+export const getDocumentDisplayName = (document: Document, noID = false) => {
   // [document.doctype, document.id, document.name, document.section, document.subsection].filter(Boolean).join(' - '); // format: Standard - ASVS - V1.1
   if (!document) {
     return '';
   }
   return [
     document.doctype,
-    noID? "" : document.id,
+    noID ? '' : document.id,
     document.name,
     document.version,
     document.sectionID,

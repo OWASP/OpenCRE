@@ -24,14 +24,14 @@ interface GapAnalysisPathSegment {
   start: Document;
   end: Document;
   relationship: string;
-};
+}
 
 interface GapAnalysisPath {
   end: Document;
-  path: GapAnalysisPathSegment[]
-};
+  path: GapAnalysisPathSegment[];
+}
 
 export interface GapAnalysisPathStart {
   start: Document;
   paths: Record<string, GapAnalysisPath>;
-};
+}

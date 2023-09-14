@@ -226,12 +226,12 @@ class NEO_DB:
         self.driver.execute_query(
             "MERGE (n:CRE {id: $nid, name: $name, description: $description, doctype: $doctype, links: $links, metadata: $metadata, tags: $tags})",
             name=dbcre.name,
-            doctype="CRE", #dbcre.ntype,
+            doctype="CRE",  # dbcre.ntype,
             nid=dbcre.id,
             description=dbcre.description,
-            links=[], #dbcre.links,
+            links=[],  # dbcre.links,
             tags=dbcre.tags,
-            metadata="{}", #dbcre.metadata,
+            metadata="{}",  # dbcre.metadata,
             database_="neo4j",
         )
 
@@ -246,13 +246,13 @@ class NEO_DB:
                 doctype=dbnode.ntype,
                 nid=dbnode.id,
                 description=dbnode.description,
-                links=[], #dbnode.links,
+                links=[],  # dbnode.links,
                 tags=dbnode.tags,
-                metadata="{}", #dbnode.metadata,
-                hyperlink="", #dbnode.hyperlink or "",
+                metadata="{}",  # dbnode.metadata,
+                hyperlink="",  # dbnode.hyperlink or "",
                 version=dbnode.version or "",
                 section=dbnode.section,
-                sectionID=dbnode.section_id,#dbnode.sectionID,
+                sectionID=dbnode.section_id,  # dbnode.sectionID,
                 subsection=dbnode.subsection or "",
                 database_="neo4j",
             )
@@ -264,15 +264,15 @@ class NEO_DB:
                 doctype=dbnode.ntype,
                 nid=dbnode.id,
                 description=dbnode.description,
-                links=[], #dbnode.links,
+                links=[],  # dbnode.links,
                 tags=dbnode.tags,
-                metadata="{}", #dbnode.metadata,
-                hyperlink="", #dbnode.hyperlink or "",
+                metadata="{}",  # dbnode.metadata,
+                hyperlink="",  # dbnode.hyperlink or "",
                 version=dbnode.version or "",
                 section=dbnode.section,
-                sectionID=dbnode.section_id,#dbnode.sectionID,
+                sectionID=dbnode.section_id,  # dbnode.sectionID,
                 subsection=dbnode.subsection or "",
-                tooltype="", #dbnode.tooltype,
+                tooltype="",  # dbnode.tooltype,
                 database_="neo4j",
             )
             return
@@ -373,7 +373,7 @@ class NEO_DB:
         if not self.connected:
             return
         records, _, _ = self.driver.execute_query(
-            'MATCH (n:Standard) ' "RETURN collect(distinct n.name)",
+            "MATCH (n:Standard) " "RETURN collect(distinct n.name)",
             database_="neo4j",
         )
         return records[0][0]
@@ -407,8 +407,8 @@ class NEO_DB:
                 metadata=metadata,
                 hyperlink=(node["hyperlink"] if "hyperlink" in node else None),
                 version=(node["version"] if "version" in node else None),
-                section=node['section'],
-                sectionID=node['sectionID'],
+                section=node["section"],
+                sectionID=node["sectionID"],
                 subsection=(node["subsection"] if "subsection" in node else None),
             )
         if "Tool" in node.labels:
@@ -421,8 +421,8 @@ class NEO_DB:
                 metadata=metadata,
                 hyperlink=(node["hyperlink"] if "hyperlink" in node else None),
                 version=(node["version"] if "version" in node else None),
-                section=node['section'],
-                sectionID=node['sectionID'],
+                section=node["section"],
+                sectionID=node["sectionID"],
                 subsection=(node["subsection"] if "subsection" in node else None),
             )
         if "CRE" in node.labels:
