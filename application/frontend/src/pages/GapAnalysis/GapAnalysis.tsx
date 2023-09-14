@@ -14,6 +14,9 @@ import {
   Table,
 } from 'semantic-ui-react';
 
+import { GapAnalysisPathStart } from '../../types';
+import { getDocumentDisplayName } from '../../utils';
+
 import { LoadingAndErrorIndicator } from '../../components/LoadingAndErrorIndicator';
 import { useEnvironment } from '../../hooks';
 
@@ -48,7 +51,7 @@ export const GapAnalysis = () => {
   const [CompareStandard, setCompareStandard] = useState<string | undefined>(
     searchParams.get('compare') ?? ''
   );
-  const [gapAnalysis, setGapAnalysis] = useState<string>();
+  const [gapAnalysis, setGapAnalysis] = useState<Record<string, GapAnalysisPathStart>>();
   const [activeIndex, SetActiveIndex] = useState<string>();
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null | object>(null);
@@ -183,18 +186,14 @@ export const GapAnalysis = () => {
                 <Table.Cell>
                   <p>
                     <b>
-                      {gapAnalysis[key].start.name} {gapAnalysis[key].start.section}{' '}
-                      {gapAnalysis[key].start.subsection}
+                      {getDocumentDisplayName(gapAnalysis[key].start, true)}
                     </b>
                     <a
                       href={`/node/standard/${gapAnalysis[key].start.name}/section/${gapAnalysis[key].start.section}`}
                       target="_blank"
                     >
                       <Icon name="external" />
-                    </a>{' '}
-                    <br />
-                    {gapAnalysis[key].start.sectionID}
-                    {gapAnalysis[key].start.description}
+                    </a>
                   </p>
                 </Table.Cell>
                 <Table.Cell style={{ minWidth: '35vw' }}>
@@ -217,8 +216,7 @@ export const GapAnalysis = () => {
                               .join('')}
                             trigger={
                               <span>
-                                {path.end.name} {path.end.sectionID} {path.end.section} {path.end.subsection}{' '}
-                                {path.end.description} (
+                                {getDocumentDisplayName(path.end, true)} (
                                 <b style={{ color: GetStrengthColor(path.score) }}>
                                   {GetStrength(path.score)}:{path.score}
                                 </b>
@@ -248,7 +246,7 @@ export const GapAnalysis = () => {
                       <Accordion.Content active={activeIndex === key}>
                         {Object.values<any>(gapAnalysis[key].paths)
                           .sort((a, b) => a.score - b.score)
-                          .slice(3, gapAnalysis[key].paths.length)
+                          .slice(3, Object.keys(gapAnalysis[key].paths).length)
                           .map((path) => {
                             let segmentID = gapAnalysis[key].start.id;
                             return (
@@ -265,8 +263,7 @@ export const GapAnalysis = () => {
                                     .join('')}
                                   trigger={
                                     <span>
-                                      {path.end.name} {path.end.sectionID} {path.end.section}{' '}
-                                      {path.end.subsection} {path.end.description}(
+                                      {getDocumentDisplayName(path.end, true)}
                                       <b style={{ color: GetStrengthColor(path.score) }}>
                                         {GetStrength(path.score)}:{path.score}
                                       </b>
