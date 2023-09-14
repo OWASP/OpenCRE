@@ -408,7 +408,7 @@ class NEO_DB:
                 hyperlink=(node["hyperlink"] if "hyperlink" in node else None),
                 version=(node["version"] if "version" in node else None),
                 section=node['section'],
-                sectionID='sectionID',
+                sectionID=node['sectionID'],
                 subsection=(node["subsection"] if "subsection" in node else None),
             )
         if "Tool" in node.labels:
@@ -422,7 +422,7 @@ class NEO_DB:
                 hyperlink=(node["hyperlink"] if "hyperlink" in node else None),
                 version=(node["version"] if "version" in node else None),
                 section=node['section'],
-                sectionID='sectionID',
+                sectionID=node['sectionID'],
                 subsection=(node["subsection"] if "subsection" in node else None),
             )
         if "CRE" in node.labels:
