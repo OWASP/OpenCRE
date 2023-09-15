@@ -374,9 +374,10 @@ export const Chatbot = () => {
                                 ''
                               ) : (
                                 <i>
-                                  "Note: "The content of OpenCRE could not be used to answer your question as
+                                  Note: The content of OpenCRE could not be used to answer your question, as
                                   no matching standard was found. The answer therefore has no reference and
-                                  needs to be regarded as less reliable."
+                                  needs to be regarded as less reliable. Try rephrasing your question
+                                  or searching for similar topics
                                 </i>
                               )}
                             </Comment.Content>
