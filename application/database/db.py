@@ -366,19 +366,19 @@ class NEO_DB:
 
         def format_segment(seg):
             return {
-                "start": self.parse_node(seg.start_node),
-                "end": self.parse_node(seg.end_node),
+                "start": NEO_DB.parse_node(seg.start_node),
+                "end": NEO_DB.parse_node(seg.end_node),
                 "relationship": seg.type,
             }
 
         def format_path_record(rec):
             return {
-                "start": self.parse_node(rec.start_node),
-                "end": self.parse_node(rec.end_node),
+                "start": NEO_DB.parse_node(rec.start_node),
+                "end": NEO_DB.parse_node(rec.end_node),
                 "path": [format_segment(seg) for seg in rec.relationships],
             }
 
-        return [self.parse_node(rec["BaseStandard"]) for rec in base_standard], [
+        return [NEO_DB.parse_node(rec["BaseStandard"]) for rec in base_standard], [
             format_path_record(rec["p"]) for rec in (path_records + path_records_all)
         ]
 
@@ -392,8 +392,8 @@ class NEO_DB:
         )
         return records[0][0]
 
-    @classmethod
-    def parse_node(self, node: neo4j.graph.Node) -> cre_defs.Document:
+    @staticmethod
+    def parse_node(node: neo4j.graph.Node) -> cre_defs.Document:
         name = node["name"]
         id = node["id"] if "id" in node else None
         description = node["description"] if "description" in node else None
