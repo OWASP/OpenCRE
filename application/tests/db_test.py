@@ -1139,9 +1139,12 @@ class TestDB(unittest.TestCase):
         self.maxDiff = None
         self.assertEqual(root_cres, [cres[0], cres[1], cres[7]])
 
-    def test_gap_analysis_disconnected(self):
+    @patch.object(db.NEO_DB, "gap_analysis")
+    def test_gap_analysis_disconnected(self, gap_mock):
         collection = db.Node_collection()
         collection.neo_db.connected = False
+        gap_mock.return_value = (None, None)
+
         self.assertEqual(collection.gap_analysis(["a", "b"]), None)
 
     @patch.object(db.NEO_DB, "gap_analysis")
@@ -1157,9 +1160,10 @@ class TestDB(unittest.TestCase):
         collection = db.Node_collection()
         collection.neo_db.connected = True
 
-        gap_mock.return_value = ([{"id": 1}], [])
+        gap_mock.return_value = ([defs.CRE(name="bob", id=1)], [])
         self.assertEqual(
-            collection.gap_analysis(["a", "b"]), {1: {"start": {"id": 1}, "paths": {}}}
+            collection.gap_analysis(["a", "b"]),
+            {1: {"start": defs.CRE(name="bob", id=1), "paths": {}}},
         )
 
     @patch.object(db.NEO_DB, "gap_analysis")
@@ -1168,30 +1172,32 @@ class TestDB(unittest.TestCase):
         collection.neo_db.connected = True
         path = [
             {
-                "end": {
-                    "id": 1,
-                },
+                "end": defs.CRE(name="bob", id=1),
                 "relationship": "LINKED_TO",
-                "start": {
-                    "id": "a",
-                },
+                "start": defs.CRE(name="bob", id="a"),
             },
             {
-                "end": {
-                    "id": 2,
-                },
+                "end": defs.CRE(name="bob", id=2),
                 "relationship": "LINKED_TO",
-                "start": {"id": "a"},
+                "start": defs.CRE(name="bob", id="a"),
             },
         ]
         gap_mock.return_value = (
-            [{"id": 1}],
-            [{"start": {"id": 1}, "end": {"id": 2}, "path": path}],
+            [defs.CRE(name="bob", id=1)],
+            [
+                {
+                    "start": defs.CRE(name="bob", id=1),
+                    "end": defs.CRE(name="bob", id=2),
+                    "path": path,
+                }
+            ],
         )
         expected = {
             1: {
-                "start": {"id": 1},
-                "paths": {2: {"end": {"id": 2}, "path": path, "score": 0}},
+                "start": defs.CRE(name="bob", id=1),
+                "paths": {
+                    2: {"end": defs.CRE(name="bob", id=2), "path": path, "score": 0}
+                },
             }
         }
         self.assertEqual(collection.gap_analysis(["a", "b"]), expected)
@@ -1202,51 +1208,49 @@ class TestDB(unittest.TestCase):
         collection.neo_db.connected = True
         path = [
             {
-                "end": {
-                    "id": 1,
-                },
+                "end": defs.CRE(name="bob", id=1),
                 "relationship": "LINKED_TO",
-                "start": {
-                    "id": "a",
-                },
+                "start": defs.CRE(name="bob", id="a"),
             },
             {
-                "end": {
-                    "id": 2,
-                },
+                "end": defs.CRE(name="bob", id=2),
                 "relationship": "LINKED_TO",
-                "start": {"id": "a"},
+                "start": defs.CRE(name="bob", id="a"),
             },
         ]
         path2 = [
             {
-                "end": {
-                    "id": 1,
-                },
+                "end": defs.CRE(name="bob", id=1),
                 "relationship": "LINKED_TO",
-                "start": {
-                    "id": "a",
-                },
+                "start": defs.CRE(name="bob", id="a"),
             },
             {
-                "end": {
-                    "id": 2,
-                },
+                "end": defs.CRE(name="bob", id=2),
                 "relationship": "RELATED",
-                "start": {"id": "a"},
+                "start": defs.CRE(name="bob", id="a"),
             },
         ]
         gap_mock.return_value = (
-            [{"id": 1}],
+            [defs.CRE(name="bob", id=1)],
             [
-                {"start": {"id": 1}, "end": {"id": 2}, "path": path},
-                {"start": {"id": 1}, "end": {"id": 2}, "path": path2},
+                {
+                    "start": defs.CRE(name="bob", id=1),
+                    "end": defs.CRE(name="bob", id=2),
+                    "path": path,
+                },
+                {
+                    "start": defs.CRE(name="bob", id=1),
+                    "end": defs.CRE(name="bob", id=2),
+                    "path": path2,
+                },
             ],
         )
         expected = {
             1: {
-                "start": {"id": 1},
-                "paths": {2: {"end": {"id": 2}, "path": path, "score": 0}},
+                "start": defs.CRE(name="bob", id=1),
+                "paths": {
+                    2: {"end": defs.CRE(name="bob", id=2), "path": path, "score": 0}
+                },
             }
         }
         self.assertEqual(collection.gap_analysis(["a", "b"]), expected)
@@ -1257,51 +1261,49 @@ class TestDB(unittest.TestCase):
         collection.neo_db.connected = True
         path = [
             {
-                "end": {
-                    "id": 1,
-                },
+                "end": defs.CRE(name="bob", id=1),
                 "relationship": "LINKED_TO",
-                "start": {
-                    "id": "a",
-                },
+                "start": defs.CRE(name="bob", id="a"),
             },
             {
-                "end": {
-                    "id": 2,
-                },
+                "end": defs.CRE(name="bob", id=2),
                 "relationship": "LINKED_TO",
-                "start": {"id": "a"},
+                "start": defs.CRE(name="bob", id="a"),
             },
         ]
         path2 = [
             {
-                "end": {
-                    "id": 1,
-                },
+                "end": defs.CRE(name="bob", id=1),
                 "relationship": "LINKED_TO",
-                "start": {
-                    "id": "a",
-                },
+                "start": defs.CRE(name="bob", id="a"),
             },
             {
-                "end": {
-                    "id": 2,
-                },
+                "end": defs.CRE(name="bob", id=2),
                 "relationship": "RELATED",
-                "start": {"id": "a"},
+                "start": defs.CRE(name="bob", id="a"),
             },
         ]
         gap_mock.return_value = (
-            [{"id": 1}],
+            [defs.CRE(name="bob", id=1)],
             [
-                {"start": {"id": 1}, "end": {"id": 2}, "path": path2},
-                {"start": {"id": 1}, "end": {"id": 2}, "path": path},
+                {
+                    "start": defs.CRE(name="bob", id=1),
+                    "end": defs.CRE(name="bob", id=2),
+                    "path": path2,
+                },
+                {
+                    "start": defs.CRE(name="bob", id=1),
+                    "end": defs.CRE(name="bob", id=2),
+                    "path": path,
+                },
             ],
         )
         expected = {
             1: {
-                "start": {"id": 1},
-                "paths": {2: {"end": {"id": 2}, "path": path, "score": 0}},
+                "start": defs.CRE(name="bob", id=1),
+                "paths": {
+                    2: {"end": defs.CRE(name="bob", id=2), "path": path, "score": 0}
+                },
             }
         }
         self.assertEqual(collection.gap_analysis(["a", "b"]), expected)
