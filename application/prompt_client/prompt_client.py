@@ -20,7 +20,7 @@ logging.basicConfig()
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-SIMILARITY_THRESHOLD = 0.6
+SIMILARITY_THRESHOLD = os.environ.get("CHATBOT_SIMILARITY_THRESHOLD", None) or 0.7
 
 
 def is_valid_url(url):
