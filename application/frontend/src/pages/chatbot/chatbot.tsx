@@ -204,7 +204,13 @@ export const Chatbot = () => {
     'yaml',
     'zephir',
   ];
-  type chatMessage = { timestamp: string; role: string; message: string; data: Document[] | null };
+  type chatMessage = {
+    timestamp: string;
+    role: string;
+    message: string;
+    data: Document[] | null;
+    accurate: boolean;
+  };
   interface ChatState {
     term: string;
     error: string;
@@ -267,7 +273,13 @@ export const Chatbot = () => {
     setLoading(true);
     setChatMessages((chatMessages) => [
       ...chatMessages,
-      { timestamp: new Date().toLocaleTimeString(), role: 'user', message: chat.term, data: [] },
+      {
+        timestamp: new Date().toLocaleTimeString(),
+        role: 'user',
+        message: chat.term,
+        data: [],
+        accurate: true,
+      },
     ]);
 
     fetch(`${apiUrl}/completion`, {
@@ -288,6 +300,7 @@ export const Chatbot = () => {
             role: 'assistant',
             message: data.response,
             data: data.table,
+            accurate: data.accurate,
           },
         ]);
       })
@@ -357,6 +370,15 @@ export const Chatbot = () => {
                                     return displayDocument(m2);
                                   })
                                 : ''}
+                              {m.accurate ? (
+                                ''
+                              ) : (
+                                <i>
+                                  "Note: "The content of OpenCRE could not be used to answer your question as
+                                  no matching standard was found. The answer therefore has no reference and
+                                  needs to be regarded as less reliable."
+                                </i>
+                              )}
                             </Comment.Content>
                           </Comment>
                         </Comment.Group>
