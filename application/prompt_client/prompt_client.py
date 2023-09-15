@@ -429,11 +429,13 @@ class PromptHandler:
         if closest_id:
             closest_object = self.database.get_node_by_db_id(closest_id)
 
+            logger.info(
+                f"The prompt {prompt}, was most similar to object \n{closest_object}\n, with similarity:{similarity}"
+            )
+
         answer = ""
-        logger.info(
-            f"The prompt {prompt}, was most similar to object \n{closest_object}\n, with similarity:{similarity}"
-        )
         closest_content = ""
+        accurate = False
         if closest_object:
             if closest_object.hyperlink:
                 emb = self.database.get_embedding(closest_id)
@@ -449,10 +451,12 @@ class PromptHandler:
                 prompt=prompt,
                 closest_object_str=closest_object_str,
             )
+            accurate = True
         else:
-            return {"response": "An adequate answer could not be found", "table": [""]}
+            answer = self.ai_client.query_llm(prompt)
+            # return {"response": "An adequate answer could not be found", "table": [""]}
 
         logger.debug(f"retrieved completion for {prompt}")
         table = [closest_object]
         result = f"Answer: {answer}"
-        return {"response": result, "table": table}
+        return {"response": result, "table": table, "accurate": accurate}
