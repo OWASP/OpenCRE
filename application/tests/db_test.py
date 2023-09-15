@@ -9,6 +9,7 @@ from copy import copy, deepcopy
 from pprint import pprint
 from pydoc import doc
 from typing import Any, Dict, List, Union
+import neo4j
 
 import yaml
 from application import create_app, sqla  # type: ignore
@@ -1307,6 +1308,160 @@ class TestDB(unittest.TestCase):
             }
         }
         self.assertEqual(collection.gap_analysis(["a", "b"]), expected)
+
+    def test_neo_db_parse_node_code(self):
+        collection = db.Node_collection()
+        name = "name"
+        id = "id"
+        description = "description"
+        tags = "tags"
+        version = "version"
+        expected = defs.Code(
+            name=name,
+            id=id,
+            description=description,
+            tags=tags,
+            version=version,
+        )
+        graph_node = neo4j.graph.Node(
+            None,
+            "123",
+            "id",
+            n_labels=["Code"],
+            properties={
+                "name": name,
+                "id": id,
+                "description": description,
+                "tags": tags,
+                "version": version,
+            },
+        )
+        self.assertEqual(collection.neo_db.parse_node(graph_node), expected)
+
+    def test_neo_db_parse_node_standard(self):
+        collection = db.Node_collection()
+        name = "name"
+        id = "id"
+        description = "description"
+        tags = "tags"
+        version = "version"
+        section = "section"
+        sectionID = "sectionID"
+        subsection = "subsection"
+        expected = defs.Standard(
+            name=name,
+            id=id,
+            description=description,
+            tags=tags,
+            version=version,
+            section=section,
+            sectionID=sectionID,
+            subsection=subsection,
+        )
+        graph_node = neo4j.graph.Node(
+            None,
+            "123",
+            "id",
+            n_labels=["Standard"],
+            properties={
+                "name": name,
+                "id": id,
+                "description": description,
+                "tags": tags,
+                "version": version,
+                "section": section,
+                "sectionID": sectionID,
+                "subsection": subsection,
+            },
+        )
+        self.assertEqual(collection.neo_db.parse_node(graph_node), expected)
+
+    def test_neo_db_parse_node_tool(self):
+        collection = db.Node_collection()
+        name = "name"
+        id = "id"
+        description = "description"
+        tags = "tags"
+        version = "version"
+        section = "section"
+        sectionID = "sectionID"
+        subsection = "subsection"
+        expected = defs.Tool(
+            name=name,
+            id=id,
+            description=description,
+            tags=tags,
+            version=version,
+            section=section,
+            sectionID=sectionID,
+            subsection=subsection,
+        )
+        graph_node = neo4j.graph.Node(
+            None,
+            "123",
+            "id",
+            n_labels=["Tool"],
+            properties={
+                "name": name,
+                "id": id,
+                "description": description,
+                "tags": tags,
+                "version": version,
+                "section": section,
+                "sectionID": sectionID,
+                "subsection": subsection,
+            },
+        )
+        self.assertEqual(collection.neo_db.parse_node(graph_node), expected)
+
+    def test_neo_db_parse_node_cre(self):
+        collection = db.Node_collection()
+        name = "name"
+        id = "id"
+        description = "description"
+        tags = "tags"
+        expected = defs.CRE(
+            name=name,
+            id=id,
+            description=description,
+            tags=tags,
+        )
+        graph_node = neo4j.graph.Node(
+            None,
+            "123",
+            "id",
+            n_labels=["CRE"],
+            properties={
+                "name": name,
+                "id": id,
+                "description": description,
+                "tags": tags,
+            },
+        )
+        self.assertEqual(collection.neo_db.parse_node(graph_node), expected)
+
+    def test_neo_db_parse_node_unknown(self):
+        collection = db.Node_collection()
+        name = "name"
+        id = "id"
+        description = "description"
+        tags = "tags"
+        graph_node = neo4j.graph.Node(
+            None,
+            "123",
+            "id",
+            n_labels=["ABC"],
+            properties={
+                "name": name,
+                "id": id,
+                "description": description,
+                "tags": tags,
+            },
+        )
+        with self.assertRaises(Exception) as cm:
+            collection.neo_db.parse_node(graph_node)
+
+        self.assertEqual(str(cm.exception), "Unknown node frozenset({'ABC'})")
 
     def test_get_embeddings_by_doc_type_paginated(self):
         """Given: a range of embedding for Nodes and a range of embeddings for CREs

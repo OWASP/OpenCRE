@@ -276,6 +276,20 @@ class NEO_DB:
                 database_="neo4j",
             )
             return
+        if dbnode.ntype == "Code":
+            self.driver.execute_query(
+                "MERGE (n:Code {id: $nid, name: $name, section: $section, sectionID: $sectionID, subsection: $subsection, tags: $tags, version: $version, description: $description, doctype: $doctype, links: $links, metadata: $metadata, hyperlink: $hyperlink})",
+                name=dbnode.name,
+                doctype=dbnode.ntype,
+                nid=dbnode.id,
+                description=dbnode.description,
+                links=[],  # dbnode.links,
+                tags=dbnode.tags,
+                metadata="{}",  # dbnode.metadata,
+                hyperlink="",  # dbnode.hyperlink or "",
+                version=dbnode.version or "",
+            )
+            return
         raise Exception(f"Unknown DB type: {dbnode.ntype}")
 
     @classmethod
@@ -383,18 +397,18 @@ class NEO_DB:
         name = node["name"]
         id = node["id"] if "id" in node else None
         description = node["description"] if "description" in node else None
-        links = [self.parse_link(link) for link in node["links"]]
+        # links = [self.parse_link(link) for link in node["links"]]
         tags = node["tags"]
-        metadata = node["metadata"]
+        # metadata = node["metadata"]
         if "Code" in node.labels:
             return cre_defs.Code(
                 name=name,
                 id=id,
                 description=description,
-                links=links,
+                # links=links,
                 tags=tags,
-                metadata=metadata,
-                hyperlink=(node["hyperlink"] if "hyperlink" in node else None),
+                # metadata=metadata,
+                # hyperlink=(node["hyperlink"] if "hyperlink" in node else None),
                 version=(node["version"] if "version" in node else None),
             )
         if "Standard" in node.labels:
@@ -402,10 +416,10 @@ class NEO_DB:
                 name=name,
                 id=id,
                 description=description,
-                links=links,
+                # links=links,
                 tags=tags,
-                metadata=metadata,
-                hyperlink=(node["hyperlink"] if "hyperlink" in node else None),
+                # metadata=metadata,
+                # hyperlink=(node["hyperlink"] if "hyperlink" in node else None),
                 version=(node["version"] if "version" in node else None),
                 section=node["section"],
                 sectionID=node["sectionID"],
@@ -416,10 +430,10 @@ class NEO_DB:
                 name=name,
                 id=id,
                 description=description,
-                links=links,
+                # links=links,
                 tags=tags,
-                metadata=metadata,
-                hyperlink=(node["hyperlink"] if "hyperlink" in node else None),
+                # metadata=metadata,
+                # hyperlink=(node["hyperlink"] if "hyperlink" in node else None),
                 version=(node["version"] if "version" in node else None),
                 section=node["section"],
                 sectionID=node["sectionID"],
@@ -430,15 +444,15 @@ class NEO_DB:
                 name=name,
                 id=id,
                 description=description,
-                links=links,
+                # links=links,
                 tags=tags,
-                metadata=metadata,
+                # metadata=metadata,
             )
         raise Exception(f"Unknown node {node.labels}")
 
-    @classmethod
-    def parse_link(self, link):
-        return cre_defs.Link(ltype=link["ltype"], tags=link["tags"])
+    # @classmethod
+    # def parse_link(self, link):
+    #     return cre_defs.Link(ltype=link["ltype"], tags=link["tags"])
 
 
 class CRE_Graph:
