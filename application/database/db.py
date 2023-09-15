@@ -400,7 +400,7 @@ class NEO_DB:
         # links = [self.parse_link(link) for link in node["links"]]
         tags = node["tags"]
         # metadata = node["metadata"]
-        if "Code" in node.labels:
+        if cre_defs.Credoctypes.Code.value in node.labels:
             return cre_defs.Code(
                 name=name,
                 id=id,
@@ -411,7 +411,7 @@ class NEO_DB:
                 # hyperlink=(node["hyperlink"] if "hyperlink" in node else None),
                 version=(node["version"] if "version" in node else None),
             )
-        if "Standard" in node.labels:
+        if cre_defs.Credoctypes.Standard.value in node.labels:
             return cre_defs.Standard(
                 name=name,
                 id=id,
@@ -425,7 +425,7 @@ class NEO_DB:
                 sectionID=node["sectionID"],
                 subsection=(node["subsection"] if "subsection" in node else None),
             )
-        if "Tool" in node.labels:
+        if cre_defs.Credoctypes.Tool.value in node.labels:
             return cre_defs.Tool(
                 name=name,
                 id=id,
@@ -439,7 +439,7 @@ class NEO_DB:
                 sectionID=node["sectionID"],
                 subsection=(node["subsection"] if "subsection" in node else None),
             )
-        if "CRE" in node.labels:
+        if cre_defs.Credoctypes.CRE.value in node.labels:
             return cre_defs.CRE(
                 name=name,
                 id=id,
