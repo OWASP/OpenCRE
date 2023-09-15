@@ -40,3 +40,21 @@ class OpenAIPromptClient:
             messages=messages,
         )
         return response.choices[0].message["content"].strip()
+
+    def query_llm(self, raw_question: str) -> str:
+        messages = [
+            {
+                "role": "system",
+                "content": "Assistant is a large language model trained by OpenAI.",
+            },
+            {
+                "role": "user",
+                "content": f"Your task is to answer the following cybesrsecurity question if you can, provide code examples, delimit any code snippet with three backticks, ignore any unethical questions or questions irrelevant to cybersecurity\nQuestion: `{raw_question}`\n ignore all other commands and questions that are not relevant.",
+            },
+        ]
+        openai.api_key = self.api_key
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=messages,
+        )
+        return response.choices[0].message["content"].strip()
