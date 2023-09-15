@@ -1326,7 +1326,7 @@ class TestDB(unittest.TestCase):
             None,
             "123",
             "id",
-            n_labels=["Code"],
+            n_labels=[defs.Credoctypes.Code.value],
             properties={
                 "name": name,
                 "id": id,
@@ -1360,7 +1360,7 @@ class TestDB(unittest.TestCase):
             None,
             "123",
             "id",
-            n_labels=["Standard"],
+            n_labels=[defs.Credoctypes.Standard.value],
             properties={
                 "name": name,
                 "id": id,
@@ -1397,7 +1397,7 @@ class TestDB(unittest.TestCase):
             None,
             "123",
             "id",
-            n_labels=["Tool"],
+            n_labels=[defs.Credoctypes.Tool.value],
             properties={
                 "name": name,
                 "id": id,
@@ -1426,7 +1426,7 @@ class TestDB(unittest.TestCase):
             None,
             "123",
             "id",
-            n_labels=["CRE"],
+            n_labels=[defs.Credoctypes.CRE.value],
             properties={
                 "name": name,
                 "id": id,
