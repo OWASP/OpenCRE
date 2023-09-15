@@ -312,7 +312,7 @@ export const Chatbot = () => {
   }
 
   function displayDocument(d: Document) {
-    if (d === undefined || d.doctype === undefined) {
+    if (d === null || d.doctype === null) {
       return <p>{d}</p>;
     }
     var link = '/node/' + d.doctype.toLowerCase() + '/' + d.name;
