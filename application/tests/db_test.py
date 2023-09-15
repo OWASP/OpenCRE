@@ -1310,7 +1310,6 @@ class TestDB(unittest.TestCase):
         self.assertEqual(collection.gap_analysis(["a", "b"]), expected)
 
     def test_neo_db_parse_node_code(self):
-        collection = db.Node_collection()
         name = "name"
         id = "id"
         description = "description"
@@ -1336,10 +1335,9 @@ class TestDB(unittest.TestCase):
                 "version": version,
             },
         )
-        self.assertEqual(collection.neo_db.parse_node(graph_node), expected)
+        self.assertEqual(db.NEO_DB.parse_node(graph_node), expected)
 
     def test_neo_db_parse_node_standard(self):
-        collection = db.Node_collection()
         name = "name"
         id = "id"
         description = "description"
@@ -1374,10 +1372,9 @@ class TestDB(unittest.TestCase):
                 "subsection": subsection,
             },
         )
-        self.assertEqual(collection.neo_db.parse_node(graph_node), expected)
+        self.assertEqual(db.NEO_DB.parse_node(graph_node), expected)
 
     def test_neo_db_parse_node_tool(self):
-        collection = db.Node_collection()
         name = "name"
         id = "id"
         description = "description"
@@ -1412,10 +1409,9 @@ class TestDB(unittest.TestCase):
                 "subsection": subsection,
             },
         )
-        self.assertEqual(collection.neo_db.parse_node(graph_node), expected)
+        self.assertEqual(db.NEO_DB.parse_node(graph_node), expected)
 
     def test_neo_db_parse_node_cre(self):
-        collection = db.Node_collection()
         name = "name"
         id = "id"
         description = "description"
@@ -1438,10 +1434,9 @@ class TestDB(unittest.TestCase):
                 "tags": tags,
             },
         )
-        self.assertEqual(collection.neo_db.parse_node(graph_node), expected)
+        self.assertEqual(db.NEO_DB.parse_node(graph_node), expected)
 
     def test_neo_db_parse_node_unknown(self):
-        collection = db.Node_collection()
         name = "name"
         id = "id"
         description = "description"
@@ -1459,7 +1454,7 @@ class TestDB(unittest.TestCase):
             },
         )
         with self.assertRaises(Exception) as cm:
-            collection.neo_db.parse_node(graph_node)
+            db.NEO_DB.parse_node(graph_node)
 
         self.assertEqual(str(cm.exception), "Unknown node frozenset({'ABC'})")
 
