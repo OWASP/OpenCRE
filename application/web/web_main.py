@@ -9,7 +9,6 @@ import urllib.parse
 from typing import Any
 from application.utils import oscal_utils
 
-from application import cache
 from application.database import db
 from application.defs import cre_defs as defs
 from application.defs import osib_defs as odefs
@@ -67,7 +66,6 @@ def extend_cre_with_tag_links(
 
 @app.route("/rest/v1/id/<creid>", methods=["GET"])
 @app.route("/rest/v1/name/<crename>", methods=["GET"])
-@cache.cached(timeout=50)
 def find_cre(creid: str = None, crename: str = None) -> Any:  # refer
     database = db.Node_collection()
     include_only = request.args.getlist("include_only")
@@ -101,7 +99,6 @@ def find_cre(creid: str = None, crename: str = None) -> Any:  # refer
 
 @app.route("/rest/v1/<ntype>/<name>", methods=["GET"])
 @app.route("/rest/v1/standard/<name>", methods=["GET"])
-# @cache.cached(timeout=50)
 def find_node_by_name(name: str, ntype: str = defs.Credoctypes.Standard.value) -> Any:
     database = db.Node_collection()
     opt_section = request.args.get("section")
@@ -204,7 +201,6 @@ def find_document_by_tag() -> Any:
 
 
 @app.route("/rest/v1/gap_analysis", methods=["GET"])
-@cache.cached(timeout=50)
 def gap_analysis() -> Any:  # TODO (spyros): add export result to spreadsheet
     database = db.Node_collection()
     standards = request.args.getlist("standard")
@@ -215,7 +211,6 @@ def gap_analysis() -> Any:  # TODO (spyros): add export result to spreadsheet
 
 
 @app.route("/rest/v1/text_search", methods=["GET"])
-# @cache.cached(timeout=50)
 def text_search() -> Any:
     """
     Performs arbitrary text search among all known documents.
@@ -282,7 +277,6 @@ def page_not_found(e) -> Any:
 # If no other routes are matched, serve the react app, or any other static files (like bundle.js)
 @app.route("/", defaults={"path": ""})
 @app.route("/<path:path>")
-# @cache.cached(timeout=50)
 def index(path: str) -> Any:
     print(1)
     if path != "" and os.path.exists(app.static_folder + "/" + path):
@@ -292,7 +286,6 @@ def index(path: str) -> Any:
 
 
 @app.route("/smartlink/<ntype>/<name>/<section>", methods=["GET"])
-# @cache.cached(timeout=50)
 def smartlink(
     name: str, ntype: str = defs.Credoctypes.Standard.value, section: str = ""
 ) -> Any:
