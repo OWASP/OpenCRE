@@ -113,7 +113,6 @@ def find_cre(creid: str = None, crename: str = None) -> Any:  # refer
 
 @app.route("/rest/v1/<ntype>/<name>", methods=["GET"])
 @app.route("/rest/v1/standard/<name>", methods=["GET"])
-# @cache.cached(timeout=50)
 def find_node_by_name(name: str, ntype: str = defs.Credoctypes.Standard.value) -> Any:
     database = db.Node_collection()
     opt_section = request.args.get("section")
@@ -237,7 +236,6 @@ def standards() -> Any:
 
 
 @app.route("/rest/v1/text_search", methods=["GET"])
-# @cache.cached(timeout=50)
 def text_search() -> Any:
     """
     Performs arbitrary text search among all known documents.
@@ -298,15 +296,12 @@ def find_root_cres() -> Any:
 
 @app.errorhandler(404)
 def page_not_found(e) -> Any:
-    from pprint import pprint
-
     return "Resource Not found", 404
 
 
 # If no other routes are matched, serve the react app, or any other static files (like bundle.js)
 @app.route("/", defaults={"path": ""})
 @app.route("/<path:path>")
-# @cache.cached(timeout=50)
 def index(path: str) -> Any:
     print(1)
     if path != "" and os.path.exists(app.static_folder + "/" + path):
@@ -316,7 +311,6 @@ def index(path: str) -> Any:
 
 
 @app.route("/smartlink/<ntype>/<name>/<section>", methods=["GET"])
-# @cache.cached(timeout=50)
 def smartlink(
     name: str, ntype: str = defs.Credoctypes.Standard.value, section: str = ""
 ) -> Any:
