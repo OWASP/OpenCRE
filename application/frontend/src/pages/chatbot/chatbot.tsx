@@ -1,8 +1,10 @@
 import './chatbot.scss';
 
+import DOMPurify,{sanitize} from 'dompurify';
+import {marked} from 'marked';
 import React, { createElement, useEffect, useState } from 'react';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { dark } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { Button, Comment, Container, Dropdown, Form, GridRow, Header, Icon, Input } from 'semantic-ui-react';
 import { Grid } from 'semantic-ui-react';
 
@@ -257,12 +259,24 @@ export const Chatbot = () => {
     }
     const responses = response.split('```');
     let i = 0;
+    console.log(responses)
     const res = [<></>];
     for (const txt of responses) {
       if (i % 2 == 0) {
-        res.push(txt);
+        console.log("rendering md")
+        console.log(txt)
+        res.push(
+          <p 
+          dangerouslySetInnerHTML={{
+            __html : sanitize(marked(txt), {USE_PROFILES: {html: true},ADD_TAGS: ['code']})
+        }}
+          />
+        )
       } else {
-        res.push(<SyntaxHighlighter style={dark}>{txt}</SyntaxHighlighter>);
+        console.log("highlight")
+        console.log(txt)
+
+        res.push(<SyntaxHighlighter style={oneLight}> {txt}</SyntaxHighlighter>);
       }
       i++;
     }
