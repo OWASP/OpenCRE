@@ -364,7 +364,7 @@ export const Chatbot = () => {
                 <Grid.Column className="chat-container">
                   <div id="chat-messages">
                     {chatMessages.map((m) => (
-                      <div id={m.message} className="foobar">
+                      <div>
                         <Comment.Group
                           className={
                             m.role == 'user'
