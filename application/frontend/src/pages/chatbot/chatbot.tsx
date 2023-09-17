@@ -362,7 +362,9 @@ export const Chatbot = () => {
                             <Comment.Content>
                               <Comment.Author as="b">{m.role}</Comment.Author>
                               <Comment.Metadata>
-                                <span className="timestamp">{new Date().toLocaleTimeString()}</span>
+                                <span className="timestamp">
+                                  {m.timestamp}
+                                </span>
                               </Comment.Metadata>
                               <Comment.Text>{processResponse(m.message)}</Comment.Text>
                               {m.data
