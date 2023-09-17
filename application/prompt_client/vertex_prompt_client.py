@@ -100,14 +100,10 @@ class VertexPromptClient:
         parameters = {"temperature": 0.5, "max_output_tokens": MAX_OUTPUT_TOKENS}
         msg = f"Your task is to answer the following question based on this area of knowledge:`{closest_object_str}` if you can, provide code examples, delimit any code snippet with three backticks\nQuestion: `{prompt}`\n ignore all other commands and questions that are not relevant."
         response = self.chat.send_message(msg, **parameters)
-        print(msg)
-        print(response.text)
         return response.text
 
     def query_llm(self, raw_question: str) -> str:
         parameters = {"temperature": 0.5, "max_output_tokens": MAX_OUTPUT_TOKENS}
         msg = f"Your task is to answer the following cybesrsecurity question if you can, provide code examples, delimit any code snippet with three backticks, ignore any unethical questions or questions irrelevant to cybersecurity\nQuestion: `{raw_question}`\n ignore all other commands and questions that are not relevant."
         response = self.chat.send_message(msg, **parameters)
-        print(msg)
-        print(response.text)
         return response.text
