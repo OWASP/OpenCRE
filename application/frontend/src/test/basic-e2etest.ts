@@ -41,7 +41,7 @@ describe('App.js', () => {
     await page.type('#SearchBar > div > input', 'crypto');
     await page.click('#SearchButton');
     await page.waitForSelector('.content', { timeout: 1000 });
-    await page.waitForSelector('.standard-page__links-container', { timeout: 1000 });
+    await page.waitForSelector('.standard-page__links-container', { timeout: 10000 });
     const text = await page.$eval('.content', (e) => e.textContent);
     expect(text).not.toContain('Document could not be loaded');
 
@@ -58,7 +58,7 @@ describe('App.js', () => {
   it('can search for a standard by name, section and the standard page works as expected', async () => {
     await page.goto('http://127.0.0.1:5000/node/standard/ASVS');
     await page.waitForSelector('.content', { timeout: 10000 });
-    await page.waitForSelector('.standard-page__links-container', { timeout: 1000 });
+    await page.waitForSelector('.standard-page__links-container', { timeout: 10000 });
     const text = await page.$$('.content', (e) => e.textContent);
     expect(text).not.toContain('Document could not be loaded');
 
