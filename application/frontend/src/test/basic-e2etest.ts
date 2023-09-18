@@ -20,7 +20,7 @@ describe('App.js', () => {
     await page.goto('http://localhost:5000');
     await page.waitForSelector('#SearchBar');
     const text = await page.$eval('#SearchBar', (e) => e.textContent);
-    expect(text).toContain('Topic text');
+    expect(text).toContain('Search');
   });
 
   it('can search for random strs', async () => {
@@ -28,7 +28,7 @@ describe('App.js', () => {
     await page.waitForSelector('#SearchBar', { timeout: 1000 });
     await page.waitForSelector('#SearchButton', { timeout: 1000 });
     await page.type('#SearchBar > div > input', 'asdf');
-    await page.click('#SearchButton > button');
+    await page.click('#SearchButton');
     await page.waitForSelector('.content', { timeout: 1000 });
     const text = await page.$eval('.content', (e) => e.textContent);
     expect(text).toContain('Document could not be loaded');
@@ -39,7 +39,7 @@ describe('App.js', () => {
     await page.waitForSelector('#SearchBar', { timeout: 1000 });
     await page.waitForSelector('#SearchButton', { timeout: 1000 });
     await page.type('#SearchBar > div > input', 'crypto');
-    await page.click('#SearchButton > button');
+    await page.click('#SearchButton');
     await page.waitForSelector('.content', { timeout: 1000 });
     await page.waitForSelector('.standard-page__links-container', { timeout: 1000 });
     const text = await page.$eval('.content', (e) => e.textContent);
@@ -60,9 +60,7 @@ describe('App.js', () => {
     await page.waitForSelector('#SearchBar', { timeout: 1000 });
     await page.waitForSelector('#SearchButton', { timeout: 1000 });
     await page.type('#SearchBar > div > input', 'asvs');
-    await page.click('#SearchBar > .ui > .dropdown');
-    await page.click('div[path="/node/standard"]');
-    await page.click('#SearchButton > button');
+    await page.click('#SearchButton');
     await page.waitForSelector('.content', { timeout: 1000 });
     await page.waitForSelector('.standard-page__links-container', { timeout: 1000 });
     const text = await page.$$('.content', (e) => e.textContent);
@@ -112,9 +110,7 @@ describe('App.js', () => {
     await page.waitForSelector('#SearchBar', { timeout: 1000 });
     await page.waitForSelector('#SearchButton', { timeout: 1000 });
     await page.type('#SearchBar > div > input', '558-807');
-    await page.click('#SearchBar > .ui > .dropdown');
-    await page.click('div[path="/cre"]');
-    await page.click('#SearchButton > button');
+    await page.click('#SearchButton');
     await page.waitForSelector('.content', { timeout: 1000 });
     await page.waitForSelector('.cre-page__links-container', { timeout: 2000 });
     const text = await page.$$('.content', (e) => e.textContent);
