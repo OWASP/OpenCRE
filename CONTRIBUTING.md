@@ -104,3 +104,7 @@ We use eslint and black to enforce style. `make lint` should fix most style prob
 * Limit the first line to 72 characters or less
 * Reference issues and pull requests liberally after the first line
 * When only changing documentation, include `[ci skip]` in the commit title.
+
+
+
+### Contributors
