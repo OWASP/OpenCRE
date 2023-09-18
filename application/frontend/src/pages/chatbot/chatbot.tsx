@@ -1,8 +1,10 @@
 import './chatbot.scss';
 
+import DOMPurify,{sanitize} from 'dompurify';
+import {marked} from 'marked';
 import React, { createElement, useEffect, useState } from 'react';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { dark } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { Button, Comment, Container, Dropdown, Form, GridRow, Header, Icon, Input } from 'semantic-ui-react';
 import { Grid } from 'semantic-ui-react';
 
@@ -11,199 +13,7 @@ import { useEnvironment } from '../../hooks';
 import { Document } from '../../types';
 
 export const Chatbot = () => {
-  const availableLangs = [
-    'oneC (1c)',
-    'abnf',
-    'accesslog',
-    'actionscript',
-    'ada',
-    'angelscript',
-    'apache',
-    'applescript',
-    'arcade',
-    'arduino',
-    'armasm',
-    'asciidoc',
-    'aspectj',
-    'autohotkey',
-    'autoit',
-    'avrasm',
-    'awk',
-    'axapta',
-    'bash',
-    'basic',
-    'bnf',
-    'brainfuck',
-    'cLike (c-like)',
-    'c',
-    'cal',
-    'capnproto',
-    'ceylon',
-    'clean',
-    'clojureRepl (clojure-repl)',
-    'clojure',
-    'cmake',
-    'coffeescript',
-    'coq',
-    'cos',
-    'cpp',
-    'crmsh',
-    'crystal',
-    'csharp',
-    'csp',
-    'css',
-    'd',
-    'dart',
-    'delphi',
-    'diff',
-    'django',
-    'dns',
-    'dockerfile',
-    'dos',
-    'dsconfig',
-    'dts',
-    'dust',
-    'ebnf',
-    'elixir',
-    'elm',
-    'erb',
-    'erlangRepl (erlang-repl)',
-    'erlang',
-    'excel',
-    'fix',
-    'flix',
-    'fortran',
-    'fsharp',
-    'gams',
-    'gauss',
-    'gcode',
-    'gherkin',
-    'glsl',
-    'gml',
-    'go',
-    'golo',
-    'gradle',
-    'groovy',
-    'haml',
-    'handlebars',
-    'haskell',
-    'haxe',
-    'hsp',
-    'htmlbars',
-    'http',
-    'hy',
-    'inform7',
-    'ini',
-    'irpf90',
-    'isbl',
-    'java',
-    'javascript',
-    'jbossCli (jboss-cli)',
-    'json',
-    'juliaRepl (julia-repl)',
-    'julia',
-    'kotlin',
-    'lasso',
-    'latex',
-    'ldif',
-    'leaf',
-    'less',
-    'lisp',
-    'livecodeserver',
-    'livescript',
-    'llvm',
-    'lsl',
-    'lua',
-    'makefile',
-    'markdown',
-    'mathematica',
-    'matlab',
-    'maxima',
-    'mel',
-    'mercury',
-    'mipsasm',
-    'mizar',
-    'mojolicious',
-    'monkey',
-    'moonscript',
-    'n1ql',
-    'nginx',
-    'nim',
-    'nix',
-    'nodeRepl (node-repl)',
-    'nsis',
-    'objectivec',
-    'ocaml',
-    'openscad',
-    'oxygene',
-    'parser3',
-    'perl',
-    'pf',
-    'pgsql',
-    'phpTemplate (php-template)',
-    'php',
-    'plaintext',
-    'pony',
-    'powershell',
-    'processing',
-    'profile',
-    'prolog',
-    'properties',
-    'protobuf',
-    'puppet',
-    'purebasic',
-    'pythonRepl (python-repl)',
-    'python',
-    'q',
-    'qml',
-    'r',
-    'reasonml',
-    'rib',
-    'roboconf',
-    'routeros',
-    'rsl',
-    'ruby',
-    'ruleslanguage',
-    'rust',
-    'sas',
-    'scala',
-    'scheme',
-    'scilab',
-    'scss',
-    'shell',
-    'smali',
-    'smalltalk',
-    'sml',
-    'sqf',
-    'sql',
-    'sqlMore (sql_more)',
-    'stan',
-    'stata',
-    'step21',
-    'stylus',
-    'subunit',
-    'swift',
-    'taggerscript',
-    'tap',
-    'tcl',
-    'thrift',
-    'tp',
-    'twig',
-    'typescript',
-    'vala',
-    'vbnet',
-    'vbscriptHtml (vbscript-html)',
-    'vbscript',
-    'verilog',
-    'vhdl',
-    'vim',
-    'x86asm',
-    'xl',
-    'xml',
-    'xquery',
-    'yaml',
-    'zephir',
-  ];
+
   type chatMessage = {
     timestamp: string;
     role: string;
@@ -248,21 +58,20 @@ export const Chatbot = () => {
   }
 
   function processResponse(response) {
-    const matchedLang = response.replace(/(\r\n|\n|\r)/gm, '').match(/```(?<lang>\w+).*```/m);
-    let lang = 'javascript';
-    if (matchedLang) {
-      if (matchedLang.groups.lang in availableLangs) {
-        lang = matchedLang.groups.lang;
-      }
-    }
     const responses = response.split('```');
     let i = 0;
     const res = [<></>];
     for (const txt of responses) {
       if (i % 2 == 0) {
-        res.push(txt);
+        res.push(
+          <p 
+          dangerouslySetInnerHTML={{
+            __html : sanitize(marked(txt), {USE_PROFILES: {html: true}})
+        }}
+          />
+        )
       } else {
-        res.push(<SyntaxHighlighter style={dark}>{txt}</SyntaxHighlighter>);
+        res.push(<SyntaxHighlighter style={oneLight}>{txt}</SyntaxHighlighter>);
       }
       i++;
     }
@@ -350,7 +159,7 @@ export const Chatbot = () => {
                 <Grid.Column className="chat-container">
                   <div id="chat-messages">
                     {chatMessages.map((m) => (
-                      <div id={m.message} className="foobar">
+                      <div>
                         <Comment.Group
                           className={
                             m.role == 'user'
