@@ -56,11 +56,7 @@ describe('App.js', () => {
   });
 
   it('can search for a standard by name, section and the standard page works as expected', async () => {
-    await page.goto('http://127.0.0.1:5000');
-    await page.waitForSelector('#SearchBar', { timeout: 1000 });
-    await page.waitForSelector('#SearchButton', { timeout: 1000 });
-    await page.type('#SearchBar > div > input', 'asvs');
-    await page.click('#SearchButton');
+    await page.goto('http://127.0.0.1:5000/node/standard/ASVS');
     await page.waitForSelector('.content', { timeout: 10000 });
     await page.waitForSelector('.standard-page__links-container', { timeout: 1000 });
     const text = await page.$$('.content', (e) => e.textContent);
@@ -68,7 +64,7 @@ describe('App.js', () => {
 
     // title match
     const page_title = await page.$eval('.standard-page__heading', (e) => e.textContent);
-    expect(page_title).toContain('asvs');
+    expect(page_title).toContain('ASVS');
 
     // results
     const results = await page.$$('.standard-page__links-container');
@@ -85,8 +81,8 @@ describe('App.js', () => {
     await page.waitForSelector('.content', { timeout: 1000 });
     const url = await page.url();
     expect(url).toContain('section');
-    const section = await page.$eval('.section-page > h5.standard-page__sub-heading', (e) => e.textContent);
-    expect(section).toContain('Section:');
+    const section = await page.$eval('.standard-page > span:nth-child(2)', (e) => e.textContent);
+    expect(section).toContain('Reference:');
 
     // show reference
     const hrefs = await page.evaluate(() =>
@@ -112,26 +108,26 @@ describe('App.js', () => {
     await page.type('#SearchBar > div > input', '558-807');
     await page.click('#SearchButton');
     await page.waitForSelector('.content', { timeout: 10000 });
-    await page.waitForSelector('.cre-page__links-container', { timeout: 20000 });
+    await page.waitForSelector('.standard-page__links-container', { timeout: 200000 });
     const text = await page.$$('.content', (e) => e.textContent);
     expect(text).not.toContain('Document could not be loaded');
 
     // title match
-    const page_title = await page.$eval('.cre-page__heading', (e) => e.textContent);
-    expect(page_title).toContain('Mutually authenticate application and credential service provider');
+    const entry_title = await page.$eval('div.title.document-node', (e) => e.textContent);
+    expect(entry_title).toContain('Mutually authenticate application and credential service provider');
 
     // results
-    const results = await page.$$('.cre-page__links-container');
-    expect(results.length).toBeGreaterThan(1);
+    const results = await page.$$('.standard-page__links-container');
+    expect(results.length).toBe(1);
 
     // // nesting
-    await page.click('div.cre-page__links:nth-child(2) > div:nth-child(2)');
+    await page.click('.dropdown');
     const selector =
-      '.cre-page__links-container>.document-node>.document-node__link-type-container:nth-child(2)';
+      '.standard-page__links-container>.document-node>.document-node__link-type-container:nth-child(2)';
     await page.waitForSelector(selector, { timeout: 2000 });
 
     const nested = await page.$$(
-      '.cre-page__links-container>.document-node>.document-node__link-type-container>div>.accordion'
+      '.standard-page__links-container>.document-node>.document-node__link-type-container>div>.accordion'
     );
     expect(nested.length).toBeGreaterThan(1);
   });
