@@ -187,8 +187,9 @@ export const Chatbot = () => {
                                 <i>
                                   Note: The content of OpenCRE could not be used to answer your question, as
                                   no matching standard was found. The answer therefore has no reference and
-                                  needs to be regarded as less reliable. Try rephrasing your question
-                                  or searching for similar topics
+                                  needs to be regarded as less reliable. Try rephrasing your question, 
+                                  use similar topics, or{' '}
+                                  <a href="https://opencre.org">OpenCRE search</a>.
                                 </i>
                               )}
                             </Comment.Content>
