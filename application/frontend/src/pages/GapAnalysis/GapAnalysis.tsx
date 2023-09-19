@@ -203,7 +203,9 @@ export const GapAnalysis = () => {
                   <Button
                     onClick={() => {
                       navigator.clipboard.writeText(
-                        `${window.location.origin}/gap_analysis?base=${encodeURIComponent(BaseStandard || "")}&compare=${encodeURIComponent(CompareStandard || "")}`
+                        `${window.location.origin}/gap_analysis?base=${encodeURIComponent(
+                          BaseStandard || ''
+                        )}&compare=${encodeURIComponent(CompareStandard || '')}`
                       );
                     }}
                     target="_blank"
