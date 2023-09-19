@@ -106,6 +106,7 @@ class TestGapAnalysis(unittest.TestCase):
             ],
         }
         self.assertEqual(get_path_score(path), PENALTIES["CONTAINS_UP"])
+        self.assertEqual(path["path"][1]["score"], PENALTIES["CONTAINS_UP"])
 
     def test_get_path_score_one_down_one_returns_one_down_penaltiy(self):
         path = {
@@ -140,6 +141,7 @@ class TestGapAnalysis(unittest.TestCase):
             ],
         }
         self.assertEqual(get_path_score(path), PENALTIES["CONTAINS_DOWN"])
+        self.assertEqual(path["path"][1]["score"], PENALTIES["CONTAINS_DOWN"])
 
     def test_get_path_score_related_returns_related_penalty(self):
         path = {
@@ -174,6 +176,7 @@ class TestGapAnalysis(unittest.TestCase):
             ],
         }
         self.assertEqual(get_path_score(path), PENALTIES["RELATED"])
+        self.assertEqual(path["path"][1]["score"], PENALTIES["RELATED"])
 
     def test_get_path_score_one_of_each_returns_penalty(self):
         path = {
@@ -225,3 +228,6 @@ class TestGapAnalysis(unittest.TestCase):
             + PENALTIES["CONTAINS_UP"]
             + PENALTIES["CONTAINS_DOWN"],
         )
+        self.assertEqual(path["path"][1]["score"], PENALTIES["CONTAINS_DOWN"])
+        self.assertEqual(path["path"][2]["score"], PENALTIES["RELATED"])
+        self.assertEqual(path["path"][3]["score"], PENALTIES["CONTAINS_UP"])
