@@ -49,12 +49,14 @@ function useQuery() {
 }
 
 const GetStrength = (score) => {
+  if (score == 0) return 'Direct';
   if (score < 5) return 'Strong';
   if (score > 20) return 'Weak';
   return 'Average';
 };
 
 const GetStrengthColor = (score) => {
+  if (score === 0) return '#D1B000';
   if (score < 5) return 'Green';
   if (score > 20) return 'Red';
   return 'Orange';
@@ -63,52 +65,52 @@ const GetStrengthColor = (score) => {
 const GetResultLine = (path, gapAnalysis, key) => {
   let segmentID = gapAnalysis[key].start.id;
   return (
-    <span key={path.end.id}>
-      <Popup
-        wide="very"
-        size="large"
-        style={{ textAlign: 'center' }}
-        hoverable
-        trigger={<span>{getDocumentDisplayName(path.end, true)} </span>}
-      >
-        <Popup.Content>
-          {getDocumentDisplayName(gapAnalysis[key].start, true)}
-          {path.path.map((segment) => {
-            const { text, nextID } = GetSegmentText(segment, segmentID);
-            segmentID = nextID;
-            return text;
-          })}
-        </Popup.Content>
-      </Popup>
-      <Popup
-        wide="very"
-        size="large"
-        style={{ textAlign: 'center' }}
-        hoverable
-        trigger={
-          <b style={{ color: GetStrengthColor(path.score) }}>
-            ({GetStrength(path.score)}:{path.score})
-          </b>
-        }
-      >
-        <Popup.Content>
-          <b>Generally: lower is better</b>
-          <br />
-          <b style={{ color: GetStrengthColor(0) }}>{GetStrength(0)}</b>: Closely connected likely to have
-          majority overlap
-          <br />
-          <b style={{ color: GetStrengthColor(6) }}>{GetStrength(6)}</b>: Connected likely to have partial
-          overlap
-          <br />
-          <b style={{ color: GetStrengthColor(22) }}>{GetStrength(22)}</b>: Weakly connected likely to have
-          small or no overlap
-        </Popup.Content>
-      </Popup>
+    <div key={path.end.id} style={{ marginBottom: '.25em', fontWeight: 'bold' }}>
       <a href={`/node/standard/${path.end.name}/section/${path.end.section}`} target="_blank">
-        <Icon name="external" />
+        <Popup
+          wide="very"
+          size="large"
+          style={{ textAlign: 'center' }}
+          hoverable
+          trigger={<span>{getDocumentDisplayName(path.end, true)} </span>}
+        >
+          <Popup.Content>
+            {getDocumentDisplayName(gapAnalysis[key].start, true)}
+            {path.path.map((segment) => {
+              const { text, nextID } = GetSegmentText(segment, segmentID);
+              segmentID = nextID;
+              return text;
+            })}
+          </Popup.Content>
+        </Popup>
+        <Popup
+          wide="very"
+          size="large"
+          style={{ textAlign: 'center' }}
+          hoverable
+          trigger={
+            <b style={{ color: GetStrengthColor(path.score) }}>
+              ({GetStrength(path.score)}:{path.score})
+            </b>
+          }
+        >
+          <Popup.Content>
+            <b>Generally: lower is better</b>
+            <br />
+            <b style={{ color: GetStrengthColor(0) }}>{GetStrength(0)}</b>: Directly Linked
+            <br />
+            <b style={{ color: GetStrengthColor(3) }}>{GetStrength(3)}</b>: Closely connected likely to have
+            majority overlap
+            <br />
+            <b style={{ color: GetStrengthColor(6) }}>{GetStrength(6)}</b>: Connected likely to have partial
+            overlap
+            <br />
+            <b style={{ color: GetStrengthColor(22) }}>{GetStrength(22)}</b>: Weakly connected likely to have
+            small or no overlap
+          </Popup.Content>
+        </Popup>
       </a>
-      <br />
-    </span>
+    </div>
   );
 };
 
@@ -129,7 +131,12 @@ export const GapAnalysis = () => {
   const { apiUrl } = useEnvironment();
 
   const GetStrongPathsCount = (paths) =>
-    Math.max(Object.values<any>(paths).filter((x) => GetStrength(x.score) === 'Strong').length, 3);
+    Math.max(
+      Object.values<any>(paths).filter(
+        (x) => GetStrength(x.score) === 'Strong' || GetStrength(x.score) === 'Direct'
+      ).length,
+      3
+    );
 
   useEffect(() => {
     const fetchData = async () => {
@@ -223,16 +230,15 @@ export const GapAnalysis = () => {
             <>
               {Object.keys(gapAnalysis).map((key) => (
                 <Table.Row key={key}>
-                  <Table.Cell>
-                    <p>
-                      <b>{getDocumentDisplayName(gapAnalysis[key].start, true)}</b>{' '}
-                      <a
-                        href={`/node/standard/${gapAnalysis[key].start.name}/section/${gapAnalysis[key].start.section}`}
-                        target="_blank"
-                      >
-                        <Icon name="external" />
-                      </a>
-                    </p>
+                  <Table.Cell textAlign="left" verticalAlign="top" selectable>
+                    <a
+                      href={`/node/standard/${gapAnalysis[key].start.name}/section/${gapAnalysis[key].start.section}`}
+                      target="_blank"
+                    >
+                      <p>
+                        <b>{getDocumentDisplayName(gapAnalysis[key].start, true)}</b>
+                      </p>
+                    </a>
                   </Table.Cell>
                   <Table.Cell style={{ minWidth: '35vw' }}>
                     {Object.values<any>(gapAnalysis[key].paths)
