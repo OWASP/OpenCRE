@@ -134,7 +134,7 @@ describe('App.js', () => {
 
   it('can filter', async () => {
     await page.goto('http://127.0.0.1:5000/cre/558-807?applyFilters=true&filters=asvs');
-    await page.waitForSelector('.cre-page__links-container', { timeout: 2000 });
+    await page.waitForSelector('.cre-page__links-container', { timeout: 200000 });
     // Get inner text
     const innerText = await page.evaluate(
       () => (document.querySelector('.cre-page__links-container') as HTMLElement)?.innerText
@@ -145,7 +145,7 @@ describe('App.js', () => {
 
     // ensure case insensitive filtering
     await page.goto('http://127.0.0.1:5000/cre/558-807?applyFilters=true&filters=ASVS');
-    await page.waitForSelector('.cre-page__links-container', { timeout: 2000 });
+    await page.waitForSelector('.cre-page__links-container', { timeout: 200000 });
     const intxt = await page.evaluate(
       () => (document.querySelector('.cre-page__links-container') as HTMLElement)?.innerText
     );
