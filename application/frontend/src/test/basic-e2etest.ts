@@ -25,8 +25,8 @@ describe('App.js', () => {
 
   it('can search for random strs', async () => {
     await page.goto('http://127.0.0.1:5000');
-    await page.waitForSelector('#SearchBar', { timeout: 1000 });
-    await page.waitForSelector('#SearchButton', { timeout: 1000 });
+    await page.waitForSelector('#SearchBar', { timeout: 10000 });
+    await page.waitForSelector('#SearchButton', { timeout: 10000 });
     await page.type('#SearchBar > div > input', 'asdf');
     await page.click('#SearchButton');
     await page.waitForSelector('.content', { timeout: 10000 });
@@ -36,11 +36,11 @@ describe('App.js', () => {
 
   it('can search for cryptography using the free text method and it returns both Nodes and CRES', async () => {
     await page.goto('http://127.0.0.1:5000');
-    await page.waitForSelector('#SearchBar', { timeout: 1000 });
-    await page.waitForSelector('#SearchButton', { timeout: 1000 });
+    await page.waitForSelector('#SearchBar', { timeout: 10000 });
+    await page.waitForSelector('#SearchButton', { timeout: 10000 });
     await page.type('#SearchBar > div > input', 'crypto');
     await page.click('#SearchButton');
-    await page.waitForSelector('.content', { timeout: 1000 });
+    await page.waitForSelector('.content', { timeout: 10000 });
     await page.waitForSelector('.standard-page__links-container', { timeout: 10000 });
     const text = await page.$eval('.content', (e) => e.textContent);
     expect(text).not.toContain('Document could not be loaded');
@@ -73,12 +73,12 @@ describe('App.js', () => {
     // pagination
     const original_content = await page.content();
     await page.click('a[type="pageItem"][value="2"]');
-    await page.waitForSelector('.content', { timeout: 1000 });
+    await page.waitForSelector('.content', { timeout: 10000 });
     expect(await page.content()).not.toEqual(original_content);
 
     // link to section
     await page.click('.standard-page__links-container>.title>a');
-    await page.waitForSelector('.content', { timeout: 1000 });
+    await page.waitForSelector('.content', { timeout: 10000 });
     const url = await page.url();
     expect(url).toContain('section');
     const section = await page.$eval('.standard-page > span:nth-child(2)', (e) => e.textContent);
@@ -103,12 +103,12 @@ describe('App.js', () => {
 
   it('can search for a cre', async () => {
     await page.goto('http://127.0.0.1:5000');
-    await page.waitForSelector('#SearchBar', { timeout: 1000 });
-    await page.waitForSelector('#SearchButton', { timeout: 1000 });
+    await page.waitForSelector('#SearchBar', { timeout: 10000 });
+    await page.waitForSelector('#SearchButton', { timeout: 10000 });
     await page.type('#SearchBar > div > input', '558-807');
     await page.click('#SearchButton');
     await page.waitForSelector('.content', { timeout: 10000 });
-    await page.waitForSelector('.standard-page__links-container', { timeout: 200000 });
+    await page.waitForSelector('.standard-page__links-container', { timeout: 10000 });
     const text = await page.$$('.content', (e) => e.textContent);
     expect(text).not.toContain('Document could not be loaded');
 
@@ -124,7 +124,7 @@ describe('App.js', () => {
     await page.click('.dropdown');
     const selector =
       '.standard-page__links-container>.document-node>.document-node__link-type-container:nth-child(2)';
-    await page.waitForSelector(selector, { timeout: 2000 });
+    await page.waitForSelector(selector, { timeout: 10000 });
 
     const nested = await page.$$(
       '.standard-page__links-container>.document-node>.document-node__link-type-container>div>.accordion'
@@ -134,7 +134,7 @@ describe('App.js', () => {
 
   it('can filter', async () => {
     await page.goto('http://127.0.0.1:5000/cre/558-807?applyFilters=true&filters=asvs');
-    await page.waitForSelector('.cre-page__links-container', { timeout: 200000 });
+    await page.waitForSelector('.cre-page__links-container', { timeout: 10000 });
     // Get inner text
     const innerText = await page.evaluate(
       () => (document.querySelector('.cre-page__links-container') as HTMLElement)?.innerText
@@ -145,7 +145,7 @@ describe('App.js', () => {
 
     // ensure case insensitive filtering
     await page.goto('http://127.0.0.1:5000/cre/558-807?applyFilters=true&filters=ASVS');
-    await page.waitForSelector('.cre-page__links-container', { timeout: 200000 });
+    await page.waitForSelector('.cre-page__links-container', { timeout: 10000 });
     const intxt = await page.evaluate(
       () => (document.querySelector('.cre-page__links-container') as HTMLElement)?.innerText
     );
