@@ -19,3 +19,19 @@ export interface LinkedDocument {
   document: Document;
   ltype: string;
 }
+
+interface GapAnalysisPathSegment {
+  start: Document;
+  end: Document;
+  relationship: string;
+}
+
+interface GapAnalysisPath {
+  end: Document;
+  path: GapAnalysisPathSegment[];
+}
+
+export interface GapAnalysisPathStart {
+  start: Document;
+  paths: Record<string, GapAnalysisPath>;
+}
