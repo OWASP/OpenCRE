@@ -24,6 +24,7 @@ interface GapAnalysisPathSegment {
   start: Document;
   end: Document;
   relationship: string;
+  score: number;
 }
 
 interface GapAnalysisPath {
