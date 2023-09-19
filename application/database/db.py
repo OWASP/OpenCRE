@@ -343,7 +343,7 @@ class NEO_DB:
             OPTIONAL MATCH (CompareStandard:Standard|Tool {name: $name2})
             OPTIONAL MATCH p = shortestPath((BaseStandard)-[*..20]-(CompareStandard)) 
             WITH p
-            WHERE length(p) > 1 AND ALL(n in NODES(p) WHERE n:CRE or n.name = $name1 or n.name = $name2) 
+            WHERE length(p) > 1 AND ALL(n in NODES(p) WHERE n:CRE or n = BaseStandard or n = CompareStandard) 
             RETURN p
             """,
             name1=name_1,
@@ -356,7 +356,7 @@ class NEO_DB:
             OPTIONAL MATCH (CompareStandard:Standard|Tool {name: $name2})
             OPTIONAL MATCH p = shortestPath((BaseStandard)-[:(LINKED_TO|CONTAINS)*..20]-(CompareStandard)) 
             WITH p
-            WHERE length(p) > 1 AND ALL(n in NODES(p) WHERE n:CRE or n.name = $name1 or n.name = $name2) 
+            WHERE length(p) > 1 AND ALL(n in NODES(p) WHERE n:CRE or n = BaseStandard or n = CompareStandard) 
             RETURN p
             """,
             name1=name_1,

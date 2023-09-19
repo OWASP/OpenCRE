@@ -33,7 +33,7 @@ const GetSegmentText = (segment, segmentID) => {
       <br />
       {arrow}{' '}
       <span style={{ textTransform: 'capitalize' }}>
-        {segment.relationship.replace('_', ' ').toLowerCase()}
+        {segment.relationship.replace('_', ' ').toLowerCase()} {segment.score > 0 && <> (+{segment.score})</>}
       </span>
       <br /> {getDocumentDisplayName(textPart, true)} {textPart.section ?? ''} {textPart.subsection ?? ''}{' '}
       {textPart.description ?? ''}
@@ -51,14 +51,14 @@ function useQuery() {
 const GetStrength = (score) => {
   if (score == 0) return 'Direct';
   if (score < 5) return 'Strong';
-  if (score > 20) return 'Weak';
+  if (score >= 20) return 'Weak';
   return 'Average';
 };
 
 const GetStrengthColor = (score) => {
   if (score === 0) return '#D1B000';
   if (score < 5) return 'Green';
-  if (score > 20) return 'Red';
+  if (score >= 20) return 'Red';
   return 'Orange';
 };
 
