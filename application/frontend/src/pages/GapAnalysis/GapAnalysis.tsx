@@ -48,6 +48,70 @@ function useQuery() {
   return React.useMemo(() => new URLSearchParams(search), [search]);
 }
 
+const GetStrength = (score) => {
+  if (score < 5) return 'Strong';
+  if (score > 20) return 'Weak';
+  return 'Average';
+};
+
+const GetStrengthColor = (score) => {
+  if (score < 5) return 'Green';
+  if (score > 20) return 'Red';
+  return 'Orange';
+};
+
+const GetResultLine = (path, gapAnalysis, key) => {
+  let segmentID = gapAnalysis[key].start.id;
+  return (
+    <span key={path.end.id}>
+      <Popup
+        wide="very"
+        size="large"
+        style={{ textAlign: 'center' }}
+        hoverable
+        trigger={<span>{getDocumentDisplayName(path.end, true)} </span>}
+      >
+        <Popup.Content>
+          {getDocumentDisplayName(gapAnalysis[key].start, true)}
+          {path.path.map((segment) => {
+            const { text, nextID } = GetSegmentText(segment, segmentID);
+            segmentID = nextID;
+            return text;
+          })}
+        </Popup.Content>
+      </Popup>
+      <Popup
+        wide="very"
+        size="large"
+        style={{ textAlign: 'center' }}
+        hoverable
+        trigger={
+          <b style={{ color: GetStrengthColor(path.score) }}>
+            ({GetStrength(path.score)}:{path.score})
+          </b>
+        }
+      >
+        <Popup.Content>
+          <b>Generally: lower is better</b>
+          <br />
+          <b style={{ color: GetStrengthColor(0) }}>{GetStrength(0)}</b>: Closely connected likely to have
+          majority overlap
+          <br />
+          <b style={{ color: GetStrengthColor(6) }}>{GetStrength(6)}</b>: Connected likely to have partial
+          overlap
+          <br />
+          <b style={{ color: GetStrengthColor(22) }}>{GetStrength(22)}</b>: Weakly connected likely to have
+          small or no overlap
+        </Popup.Content>
+      </Popup>
+      <a href={`/node/standard/${path.end.name}/section/${path.end.section}`} target="_blank">
+        <Icon name="external" />
+      </a>
+      <br />
+    </span>
+  );
+};
+
 export const GapAnalysis = () => {
   const standardOptionsDefault = [{ key: '', text: '', value: undefined }];
   const searchParams = useQuery();
@@ -63,18 +127,6 @@ export const GapAnalysis = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null | object>(null);
   const { apiUrl } = useEnvironment();
-
-  const GetStrength = (score) => {
-    if (score < 5) return 'Strong';
-    if (score > 20) return 'Weak';
-    return 'Average';
-  };
-
-  const GetStrengthColor = (score) => {
-    if (score < 5) return 'Green';
-    if (score > 20) return 'Red';
-    return 'Orange';
-  };
 
   const GetStrongPathsCount = (paths) =>
     Math.max(Object.values<any>(paths).filter((x) => GetStrength(x.score) === 'Strong').length, 3);
@@ -120,12 +172,13 @@ export const GapAnalysis = () => {
   };
 
   return (
-    <div style={{ margin: '0 20px' }}>
-      <Grid centered padded relaxed>
-        <Grid.Row>
-          <Grid.Column width={4}>
-            <label>
-              Base Sandard{' '}
+    <div style={{ margin: '0 auto', maxWidth: '95vw' }}>
+      <Table celled padded compact style={{ margin: '5px' }}>
+        <Table.Header>
+          <Table.Row>
+            <Table.HeaderCell>
+              {' '}
+              Base:{' '}
               <Dropdown
                 placeholder="Base Standard"
                 search
@@ -134,11 +187,9 @@ export const GapAnalysis = () => {
                 onChange={(e, { value }) => setBaseStandard(value?.toString())}
                 value={BaseStandard}
               />
-            </label>
-          </Grid.Column>
-          <Grid.Column width={4}>
-            <label>
-              Compare Sandard{' '}
+            </Table.HeaderCell>
+            <Table.HeaderCell>
+              Compare:{' '}
               <Dropdown
                 placeholder="Compare Standard"
                 search
@@ -147,169 +198,73 @@ export const GapAnalysis = () => {
                 onChange={(e, { value }) => setCompareStandard(value?.toString())}
                 value={CompareStandard}
               />
-            </label>
-          </Grid.Column>
-        </Grid.Row>
-        {gapAnalysis && (
-          <>
-            <Grid.Column width={4} style={{ border: '1px solid black', margin: '2px' }}>
-              <b>Generally: lower is better</b>
-              <br />
-              <b style={{ color: GetStrengthColor(0) }}>{GetStrength(0)}</b>: Closely connected likely to have
-              majority overlap
-              <br />
-              <b style={{ color: GetStrengthColor(6) }}>{GetStrength(6)}</b>: Connected likely to have partial
-              overlap
-              <br />
-              <b style={{ color: GetStrengthColor(22) }}>{GetStrength(22)}</b>: Weakly connected likely to
-              have small or no overlap
-              <br />
-            </Grid.Column>
-            <Grid.Column width={2} floated="right">
-              <Button
-                onClick={() => {
-                  navigator.clipboard.writeText(
-                    `${window.location.origin}/gap_analysis?base=${BaseStandard}&compare=${CompareStandard}`
-                  );
-                }}
-                target="_blank"
-              >
-                <Icon name="share square" /> Share this anyalysis
-              </Button>
-            </Grid.Column>
-          </>
-        )}
-      </Grid>
-      <LoadingAndErrorIndicator loading={loading} error={error} />
-      {gapAnalysis && (
-        <Table celled padded compact style={{ margin: '5px' }}>
-          <Table.Header>
-            <Table.Row>
-              <Table.HeaderCell>{BaseStandard}</Table.HeaderCell>
-              <Table.HeaderCell>{CompareStandard}</Table.HeaderCell>
-            </Table.Row>
-          </Table.Header>
-
-          <Table.Body>
-            {Object.keys(gapAnalysis).map((key) => (
-              <Table.Row key={key}>
-                <Table.Cell>
-                  <p>
-                    <b>{getDocumentDisplayName(gapAnalysis[key].start, true)}</b>{' '}
-                    <a
-                      href={`/node/standard/${gapAnalysis[key].start.name}/section/${gapAnalysis[key].start.section}`}
-                      target="_blank"
-                    >
-                      <Icon name="external" />
-                    </a>
-                  </p>
-                </Table.Cell>
-                <Table.Cell style={{ minWidth: '35vw' }}>
-                  {Object.values<any>(gapAnalysis[key].paths)
-                    .sort((a, b) => a.score - b.score)
-                    .slice(0, GetStrongPathsCount(gapAnalysis[key].paths))
-                    .map((path) => {
-                      let segmentID = gapAnalysis[key].start.id;
-                      return (
-                        <span key={path.end.id}>
-                          <Popup
-                            wide="very"
-                            size="large"
-                            style={{ textAlign: 'center' }}
-                            hoverable
-                            trigger={
-                              <span>
-                                {getDocumentDisplayName(path.end, true)} (
-                                <b style={{ color: GetStrengthColor(path.score) }}>
-                                  {GetStrength(path.score)}:{path.score}
-                                </b>
-                                ){' '}
-                                <a
-                                  href={`/node/standard/${path.end.name}/section/${path.end.section}`}
-                                  target="_blank"
-                                >
-                                  <Icon name="external" />
-                                </a>
-                              </span>
-                            }
-                          >
-                            <Popup.Content>
-                              {getDocumentDisplayName(gapAnalysis[key].start, true)}
-                              {path.path.map((segment) => {
-                                const { text, nextID } = GetSegmentText(segment, segmentID);
-                                segmentID = nextID;
-                                return text;
-                              })}
-                            </Popup.Content>
-                          </Popup>
-                          <br />
-                        </span>
+              {gapAnalysis && (
+                <div style={{ float: 'right' }}>
+                  <Button
+                    onClick={() => {
+                      navigator.clipboard.writeText(
+                        `${window.location.origin}/gap_analysis?base=${BaseStandard}&compare=${CompareStandard}`
                       );
-                    })}
-                  {Object.keys(gapAnalysis[key].paths).length > 3 && (
-                    <Accordion>
-                      <Accordion.Title
-                        active={activeIndex === key}
-                        index={key}
-                        onClick={handleAccordionClick}
+                    }}
+                    target="_blank"
+                  >
+                    <Icon name="share square" /> Share this anyalysis
+                  </Button>
+                </div>
+              )}
+            </Table.HeaderCell>
+          </Table.Row>
+        </Table.Header>
+        <Table.Body>
+          <LoadingAndErrorIndicator loading={loading} error={error} />
+          {gapAnalysis && (
+            <>
+              {Object.keys(gapAnalysis).map((key) => (
+                <Table.Row key={key}>
+                  <Table.Cell>
+                    <p>
+                      <b>{getDocumentDisplayName(gapAnalysis[key].start, true)}</b>{' '}
+                      <a
+                        href={`/node/standard/${gapAnalysis[key].start.name}/section/${gapAnalysis[key].start.section}`}
+                        target="_blank"
                       >
-                        <Button>More Links (Total: {Object.keys(gapAnalysis[key].paths).length})</Button>
-                      </Accordion.Title>
-                      <Accordion.Content active={activeIndex === key}>
-                        {Object.values<any>(gapAnalysis[key].paths)
-                          .sort((a, b) => a.score - b.score)
-                          .slice(
-                            GetStrongPathsCount(gapAnalysis[key].paths),
-                            Object.keys(gapAnalysis[key].paths).length
-                          )
-                          .map((path) => {
-                            let segmentID = gapAnalysis[key].start.id;
-                            return (
-                              <span key={path.end.id}>
-                                <Popup
-                                  wide="very"
-                                  size="large"
-                                  style={{ textAlign: 'center' }}
-                                  hoverable
-                                  trigger={
-                                    <span>
-                                      {getDocumentDisplayName(path.end, true)} (
-                                      <b style={{ color: GetStrengthColor(path.score) }}>
-                                        {GetStrength(path.score)}:{path.score}
-                                      </b>
-                                      ){' '}
-                                      <a
-                                        href={`/node/standard/${path.end.name}/section/${path.end.section}`}
-                                        target="_blank"
-                                      >
-                                        <Icon name="external" />
-                                      </a>
-                                    </span>
-                                  }
-                                >
-                                  <Popup.Content>
-                                    {getDocumentDisplayName(gapAnalysis[key].start, true)}
-                                    {path.path.map((segment) => {
-                                      const { text, nextID } = GetSegmentText(segment, segmentID);
-                                      segmentID = nextID;
-                                      return text;
-                                    })}
-                                  </Popup.Content>
-                                </Popup>
-                                <br />
-                              </span>
-                            );
-                          })}
-                      </Accordion.Content>
-                    </Accordion>
-                  )}
-                  {Object.keys(gapAnalysis[key].paths).length === 0 && <i>No links Found</i>}
-                </Table.Cell>
-              </Table.Row>
-            ))}
-          </Table.Body>
-        </Table>
-      )}
+                        <Icon name="external" />
+                      </a>
+                    </p>
+                  </Table.Cell>
+                  <Table.Cell style={{ minWidth: '35vw' }}>
+                    {Object.values<any>(gapAnalysis[key].paths)
+                      .sort((a, b) => a.score - b.score)
+                      .slice(0, GetStrongPathsCount(gapAnalysis[key].paths))
+                      .map((path) => GetResultLine(path, gapAnalysis, key))}
+                    {Object.keys(gapAnalysis[key].paths).length > 3 && (
+                      <Accordion>
+                        <Accordion.Title
+                          active={activeIndex === key}
+                          index={key}
+                          onClick={handleAccordionClick}
+                        >
+                          <Button>More Links (Total: {Object.keys(gapAnalysis[key].paths).length})</Button>
+                        </Accordion.Title>
+                        <Accordion.Content active={activeIndex === key}>
+                          {Object.values<any>(gapAnalysis[key].paths)
+                            .sort((a, b) => a.score - b.score)
+                            .slice(
+                              GetStrongPathsCount(gapAnalysis[key].paths),
+                              Object.keys(gapAnalysis[key].paths).length
+                            )
+                            .map((path) => GetResultLine(path, gapAnalysis, key))}
+                        </Accordion.Content>
+                      </Accordion>
+                    )}
+                    {Object.keys(gapAnalysis[key].paths).length === 0 && <i>No links Found</i>}
+                  </Table.Cell>
+                </Table.Row>
+              ))}
+            </>
+          )}
+        </Table.Body>
+      </Table>
     </div>
   );
 };
