@@ -15,7 +15,9 @@ def get_path_score(path):
 
         if step["relationship"] == "CONTAINS":
             penalty_type = f"CONTAINS_{get_relation_direction(step, previous_id)}"
-        score += PENALTIES[penalty_type]
+        pentalty = PENALTIES[penalty_type]
+        score += pentalty
+        step["score"] = pentalty
         previous_id = get_next_id(step, previous_id)
     return score
 
