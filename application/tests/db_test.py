@@ -9,6 +9,7 @@ from copy import copy, deepcopy
 from pprint import pprint
 from pydoc import doc
 from typing import Any, Dict, List, Union
+import neo4j
 
 import yaml
 from application import create_app, sqla  # type: ignore
@@ -1139,9 +1140,12 @@ class TestDB(unittest.TestCase):
         self.maxDiff = None
         self.assertEqual(root_cres, [cres[0], cres[1], cres[7]])
 
-    def test_gap_analysis_disconnected(self):
+    @patch.object(db.NEO_DB, "gap_analysis")
+    def test_gap_analysis_disconnected(self, gap_mock):
         collection = db.Node_collection()
         collection.neo_db.connected = False
+        gap_mock.return_value = (None, None)
+
         self.assertEqual(collection.gap_analysis(["a", "b"]), None)
 
     @patch.object(db.NEO_DB, "gap_analysis")
@@ -1157,9 +1161,10 @@ class TestDB(unittest.TestCase):
         collection = db.Node_collection()
         collection.neo_db.connected = True
 
-        gap_mock.return_value = ([{"id": 1}], [])
+        gap_mock.return_value = ([defs.CRE(name="bob", id=1)], [])
         self.assertEqual(
-            collection.gap_analysis(["a", "b"]), {1: {"start": {"id": 1}, "paths": {}}}
+            collection.gap_analysis(["a", "b"]),
+            {1: {"start": defs.CRE(name="bob", id=1), "paths": {}}},
         )
 
     @patch.object(db.NEO_DB, "gap_analysis")
@@ -1168,30 +1173,32 @@ class TestDB(unittest.TestCase):
         collection.neo_db.connected = True
         path = [
             {
-                "end": {
-                    "id": 1,
-                },
+                "end": defs.CRE(name="bob", id=1),
                 "relationship": "LINKED_TO",
-                "start": {
-                    "id": "a",
-                },
+                "start": defs.CRE(name="bob", id="a"),
             },
             {
-                "end": {
-                    "id": 2,
-                },
+                "end": defs.CRE(name="bob", id=2),
                 "relationship": "LINKED_TO",
-                "start": {"id": "a"},
+                "start": defs.CRE(name="bob", id="a"),
             },
         ]
         gap_mock.return_value = (
-            [{"id": 1}],
-            [{"start": {"id": 1}, "end": {"id": 2}, "path": path}],
+            [defs.CRE(name="bob", id=1)],
+            [
+                {
+                    "start": defs.CRE(name="bob", id=1),
+                    "end": defs.CRE(name="bob", id=2),
+                    "path": path,
+                }
+            ],
         )
         expected = {
             1: {
-                "start": {"id": 1},
-                "paths": {2: {"end": {"id": 2}, "path": path, "score": 0}},
+                "start": defs.CRE(name="bob", id=1),
+                "paths": {
+                    2: {"end": defs.CRE(name="bob", id=2), "path": path, "score": 0}
+                },
             }
         }
         self.assertEqual(collection.gap_analysis(["a", "b"]), expected)
@@ -1202,51 +1209,49 @@ class TestDB(unittest.TestCase):
         collection.neo_db.connected = True
         path = [
             {
-                "end": {
-                    "id": 1,
-                },
+                "end": defs.CRE(name="bob", id=1),
                 "relationship": "LINKED_TO",
-                "start": {
-                    "id": "a",
-                },
+                "start": defs.CRE(name="bob", id="a"),
             },
             {
-                "end": {
-                    "id": 2,
-                },
+                "end": defs.CRE(name="bob", id=2),
                 "relationship": "LINKED_TO",
-                "start": {"id": "a"},
+                "start": defs.CRE(name="bob", id="a"),
             },
         ]
         path2 = [
             {
-                "end": {
-                    "id": 1,
-                },
+                "end": defs.CRE(name="bob", id=1),
                 "relationship": "LINKED_TO",
-                "start": {
-                    "id": "a",
-                },
+                "start": defs.CRE(name="bob", id="a"),
             },
             {
-                "end": {
-                    "id": 2,
-                },
+                "end": defs.CRE(name="bob", id=2),
                 "relationship": "RELATED",
-                "start": {"id": "a"},
+                "start": defs.CRE(name="bob", id="a"),
             },
         ]
         gap_mock.return_value = (
-            [{"id": 1}],
+            [defs.CRE(name="bob", id=1)],
             [
-                {"start": {"id": 1}, "end": {"id": 2}, "path": path},
-                {"start": {"id": 1}, "end": {"id": 2}, "path": path2},
+                {
+                    "start": defs.CRE(name="bob", id=1),
+                    "end": defs.CRE(name="bob", id=2),
+                    "path": path,
+                },
+                {
+                    "start": defs.CRE(name="bob", id=1),
+                    "end": defs.CRE(name="bob", id=2),
+                    "path": path2,
+                },
             ],
         )
         expected = {
             1: {
-                "start": {"id": 1},
-                "paths": {2: {"end": {"id": 2}, "path": path, "score": 0}},
+                "start": defs.CRE(name="bob", id=1),
+                "paths": {
+                    2: {"end": defs.CRE(name="bob", id=2), "path": path, "score": 0}
+                },
             }
         }
         self.assertEqual(collection.gap_analysis(["a", "b"]), expected)
@@ -1257,54 +1262,201 @@ class TestDB(unittest.TestCase):
         collection.neo_db.connected = True
         path = [
             {
-                "end": {
-                    "id": 1,
-                },
+                "end": defs.CRE(name="bob", id=1),
                 "relationship": "LINKED_TO",
-                "start": {
-                    "id": "a",
-                },
+                "start": defs.CRE(name="bob", id="a"),
             },
             {
-                "end": {
-                    "id": 2,
-                },
+                "end": defs.CRE(name="bob", id=2),
                 "relationship": "LINKED_TO",
-                "start": {"id": "a"},
+                "start": defs.CRE(name="bob", id="a"),
             },
         ]
         path2 = [
             {
-                "end": {
-                    "id": 1,
-                },
+                "end": defs.CRE(name="bob", id=1),
                 "relationship": "LINKED_TO",
-                "start": {
-                    "id": "a",
-                },
+                "start": defs.CRE(name="bob", id="a"),
             },
             {
-                "end": {
-                    "id": 2,
-                },
+                "end": defs.CRE(name="bob", id=2),
                 "relationship": "RELATED",
-                "start": {"id": "a"},
+                "start": defs.CRE(name="bob", id="a"),
             },
         ]
         gap_mock.return_value = (
-            [{"id": 1}],
+            [defs.CRE(name="bob", id=1)],
             [
-                {"start": {"id": 1}, "end": {"id": 2}, "path": path2},
-                {"start": {"id": 1}, "end": {"id": 2}, "path": path},
+                {
+                    "start": defs.CRE(name="bob", id=1),
+                    "end": defs.CRE(name="bob", id=2),
+                    "path": path2,
+                },
+                {
+                    "start": defs.CRE(name="bob", id=1),
+                    "end": defs.CRE(name="bob", id=2),
+                    "path": path,
+                },
             ],
         )
         expected = {
             1: {
-                "start": {"id": 1},
-                "paths": {2: {"end": {"id": 2}, "path": path, "score": 0}},
+                "start": defs.CRE(name="bob", id=1),
+                "paths": {
+                    2: {"end": defs.CRE(name="bob", id=2), "path": path, "score": 0}
+                },
             }
         }
         self.assertEqual(collection.gap_analysis(["a", "b"]), expected)
+
+    def test_neo_db_parse_node_code(self):
+        name = "name"
+        id = "id"
+        description = "description"
+        tags = "tags"
+        version = "version"
+        expected = defs.Code(
+            name=name,
+            id=id,
+            description=description,
+            tags=tags,
+            version=version,
+        )
+        graph_node = neo4j.graph.Node(
+            None,
+            "123",
+            "id",
+            n_labels=[defs.Credoctypes.Code.value],
+            properties={
+                "name": name,
+                "id": id,
+                "description": description,
+                "tags": tags,
+                "version": version,
+            },
+        )
+        self.assertEqual(db.NEO_DB.parse_node(graph_node), expected)
+
+    def test_neo_db_parse_node_standard(self):
+        name = "name"
+        id = "id"
+        description = "description"
+        tags = "tags"
+        version = "version"
+        section = "section"
+        sectionID = "sectionID"
+        subsection = "subsection"
+        expected = defs.Standard(
+            name=name,
+            id=id,
+            description=description,
+            tags=tags,
+            version=version,
+            section=section,
+            sectionID=sectionID,
+            subsection=subsection,
+        )
+        graph_node = neo4j.graph.Node(
+            None,
+            "123",
+            "id",
+            n_labels=[defs.Credoctypes.Standard.value],
+            properties={
+                "name": name,
+                "id": id,
+                "description": description,
+                "tags": tags,
+                "version": version,
+                "section": section,
+                "sectionID": sectionID,
+                "subsection": subsection,
+            },
+        )
+        self.assertEqual(db.NEO_DB.parse_node(graph_node), expected)
+
+    def test_neo_db_parse_node_tool(self):
+        name = "name"
+        id = "id"
+        description = "description"
+        tags = "tags"
+        version = "version"
+        section = "section"
+        sectionID = "sectionID"
+        subsection = "subsection"
+        expected = defs.Tool(
+            name=name,
+            id=id,
+            description=description,
+            tags=tags,
+            version=version,
+            section=section,
+            sectionID=sectionID,
+            subsection=subsection,
+        )
+        graph_node = neo4j.graph.Node(
+            None,
+            "123",
+            "id",
+            n_labels=[defs.Credoctypes.Tool.value],
+            properties={
+                "name": name,
+                "id": id,
+                "description": description,
+                "tags": tags,
+                "version": version,
+                "section": section,
+                "sectionID": sectionID,
+                "subsection": subsection,
+            },
+        )
+        self.assertEqual(db.NEO_DB.parse_node(graph_node), expected)
+
+    def test_neo_db_parse_node_cre(self):
+        name = "name"
+        id = "id"
+        description = "description"
+        tags = "tags"
+        expected = defs.CRE(
+            name=name,
+            id=id,
+            description=description,
+            tags=tags,
+        )
+        graph_node = neo4j.graph.Node(
+            None,
+            "123",
+            "id",
+            n_labels=[defs.Credoctypes.CRE.value],
+            properties={
+                "name": name,
+                "id": id,
+                "description": description,
+                "tags": tags,
+            },
+        )
+        self.assertEqual(db.NEO_DB.parse_node(graph_node), expected)
+
+    def test_neo_db_parse_node_unknown(self):
+        name = "name"
+        id = "id"
+        description = "description"
+        tags = "tags"
+        graph_node = neo4j.graph.Node(
+            None,
+            "123",
+            "id",
+            n_labels=["ABC"],
+            properties={
+                "name": name,
+                "id": id,
+                "description": description,
+                "tags": tags,
+            },
+        )
+        with self.assertRaises(Exception) as cm:
+            db.NEO_DB.parse_node(graph_node)
+
+        self.assertEqual(str(cm.exception), "Unknown node frozenset({'ABC'})")
 
     def test_get_embeddings_by_doc_type_paginated(self):
         """Given: a range of embedding for Nodes and a range of embeddings for CREs

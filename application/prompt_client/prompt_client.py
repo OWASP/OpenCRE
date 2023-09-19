@@ -175,6 +175,7 @@ class in_memory_embeddings:
                 )
                 # cls.cre_embeddings[id] = embedding
 
+
 class PromptHandler:
     def __init__(self, database: db.Node_collection) -> None:
         self.ai_client = None
