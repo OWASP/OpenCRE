@@ -11,6 +11,7 @@ import {
   SECTION,
   SECTION_ID,
   STANDARD,
+EXPLORER,
 } from './const';
 import { CommonRequirementEnumeration, Graph, Search, Standard } from './pages';
 import { BrowseRootCres } from './pages/BrowseRootCres/browseRootCres';
@@ -20,6 +21,7 @@ import { GapAnalysis } from './pages/GapAnalysis/GapAnalysis';
 import { MembershipRequired } from './pages/MembershipRequired/MembershipRequired';
 import { SearchName } from './pages/Search/SearchName';
 import { StandardSection } from './pages/Standard/StandardSection';
+import { Explorer } from './pages/Explorer/explorer';
 
 export interface IRoute {
   path: string;
@@ -122,6 +124,12 @@ export const ROUTES: IRoute[] = [
   {
     path: `${BROWSEROOT}`,
     component: BrowseRootCres,
+    showHeader: true,
+    showFilter: false,
+  },
+  {
+    path: `${EXPLORER}`,
+    component: Explorer,
     showHeader: true,
     showFilter: false,
   },

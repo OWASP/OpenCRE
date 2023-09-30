@@ -1091,7 +1091,7 @@ class Node_collection:
             cres.append(cre)
         return cres
 
-    def export(self, dir: str = None, dry_run: bool = False) -> List[cre_defs.Document]:
+    def export(self, dir: str = "", dry_run: bool = False) -> List[cre_defs.Document]:
         """Exports the database to a CRE file collection on disk"""
         docs: Dict[str, cre_defs.Document] = {}
         cre, standard = None, None

@@ -631,6 +631,16 @@ def logout():
     session.clear()
     return redirect("/")
 
+@app.route("/rest/v1/everything", methods=["GET"])
+def everything() -> Any:
+    database = db.Node_collection()
+    documents = database.export(dry_run=True)
+    if documents:
+        res = [doc.todict() for doc in documents]
+        result = {"data": res}
+        return jsonify(result)
+    abort(404)
+
 
 if __name__ == "__main__":
     app.run(use_reloader=False, debug=False)
