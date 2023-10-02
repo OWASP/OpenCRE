@@ -12,6 +12,7 @@ import {
   SECTION_ID,
   STANDARD,
 EXPLORER,
+CIRCLES,
 } from './const';
 import { CommonRequirementEnumeration, Graph, Search, Standard } from './pages';
 import { BrowseRootCres } from './pages/BrowseRootCres/browseRootCres';
@@ -22,6 +23,7 @@ import { MembershipRequired } from './pages/MembershipRequired/MembershipRequire
 import { SearchName } from './pages/Search/SearchName';
 import { StandardSection } from './pages/Standard/StandardSection';
 import { Explorer } from './pages/Explorer/explorer';
+import { Circles } from './pages/circles/circles';
 
 export interface IRoute {
   path: string;
@@ -130,6 +132,12 @@ export const ROUTES: IRoute[] = [
   {
     path: `${EXPLORER}`,
     component: Explorer,
+    showHeader: true,
+    showFilter: false,
+  },
+  {
+    path: `${CIRCLES}`,
+    component: Circles,
     showHeader: true,
     showFilter: false,
   },

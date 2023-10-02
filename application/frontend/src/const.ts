@@ -40,3 +40,4 @@ export const EXPLORER = '/explorer';
 export const GAP_ANALYSIS = '/map_analysis';
 
 export const GA_STRONG_UPPER_LIMIT = 2; // remember to change this in the Python code too
+export const CIRCLES = '/circles';

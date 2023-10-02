@@ -1,98 +1,115 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-    <style>
+import { useQuery } from 'react-query';
+import './circles.scss';
+import {select,scaleLinear,interpolateHcl,pack,hierarchy,event,transition,interpolateZoom} from 'd3'
+import { useEnvironment } from '../../hooks';
+import React, { useContext, useEffect, useMemo, useState } from 'react';
+import { Document, LinkedDocument } from '../../types';
+import { TYPE_CONTAINS } from '../../const';
 
-        .node {
-            cursor: pointer;
+const RenderCircle = () => {
+    const { apiUrl } = useEnvironment();
+    const [rootCREs, setRootCREs] = useState<Document[]>()
+    const [data, setData] = useState<Document[]>()
+
+    useQuery<{ data: Document }, string>(
+        'root_cres',
+        () =>
+            fetch(`${apiUrl}/root_cres`)
+                .then((res) => res.json())
+                .then((resjson) => {
+                    setRootCREs(resjson.data);
+                    return resjson;
+                }),
+        {
+            retry: false,
+            enabled: false,
+            onSettled: () => {
+            },
         }
-
-        .node:hover {
-            stroke: #000;
-            stroke-width: 1.5px;
+    );
+    const docs = localStorage.getItem("documents")
+    useEffect(() => {
+        if (docs != null) {
+            setData(JSON.parse(docs).sort((a, b) => (a.id + '').localeCompare(b.id + '')));
         }
+    }, [docs])
 
-        .node--leaf {
-            fill: white;
+    const query = useQuery(
+        'everything',
+        () => {
+            if (docs == null) {
+                fetch(`${apiUrl}/everything`)
+                    .then((res) => { return res.json() })
+                    .then((resjson) => {
+                        return resjson.data
+                    }).then((data) => {
+                        if (data) {
+                            localStorage.setItem("documents", JSON.stringify(data));
+                            setData(data)
+                        }
+                    }),
+                {
+                    retry: false,
+                    enabled: false,
+                    onSettled: () => {
+                    },
+                }
+            }
+
         }
+    );
 
-        .label {
-            font: 11px "Helvetica Neue", Helvetica, Arial, sans-serif;
-            text-anchor: middle;
-            text-shadow: 0 1px 0 #fff, 1px 0 0 #fff, -1px 0 0 #fff, 0 -1px 0 #fff;
-        }
-
-        .label,
-        .node--root,
-        .node--leaf {
-            pointer-events: none;
-        }
-
-    </style>
-</head>
-<body>
-<svg width="960" height="960" style="background: rgb(163, 245, 207);">
-    <g transform="translate(480,480)"></g>
-</svg>
-<script src="https://d3js.org/d3.v4.js"></script>
-<script>
-
-    var svg = d3.select("svg"),
+    var svg = select("svg"),
         margin = 20,
         diameter = +svg.attr("width"),
         g = svg.append("g").attr("transform", "translate(" + diameter / 2 + "," + diameter / 2 + ")");
 
-    var color = d3.scaleLinear()
+    var color = scaleLinear()
         .domain([-1, 5])
         .range(["hsl(152,80%,80%)", "hsl(228,30%,40%)"])
-        .interpolate(d3.interpolateHcl);
+        .interpolate(interpolateHcl);
 
-    var pack = d3.pack()
+    var pack = pack()
         .size([diameter - margin, diameter - margin])
         .padding(2);
 
 
-    links.forEach(link => {
-        link.children = [];
-    })
-
-    function getById(id) {
-        return links.filter(i => i.id === id)[0];
+    // data?.forEach(dat => {
+    //     dat.links = [];
+    // })
+    interface circleDoc extends Document {
+        size: number
     }
-
-    const rootNodes = [
-        getById('546-564'),
-        getById('567-755'),
-        getById('616-305'),
-        getById('636-660'),
-        getById('862-452'),
-    ]
-    console.log(rootNodes);
+    function getById(id) {
+        let x = data?.filter(i => i.id === id)[0]
+        if (x) {
+            let y: Partial<circleDoc> = x
+            y.size = 0
+            return y
+        }
+    }
 
     function populateChildren(id) {
         const cre = getById(id);
         if (cre)
-            cre.links.filter(link => link.ltype === 'Contains').forEach(link => {
-                let child = getById(link.document.id);
-                cre.children.push(child);
+            cre.links?.filter(link => link.ltype === TYPE_CONTAINS).forEach(link => {
+                let child: any = getById(link.document.id);
+                if (child) { cre.links?.push({ document: child, ltype: TYPE_CONTAINS }) }
                 populateChildren(link.document.id);
-                if (child.children.length === 0) {
+                if (child?.links?.length === 0) {
                     child.size = 1;
                 }
             });
     }
 
-    rootNodes.forEach(node => populateChildren(node.id));
+    rootCREs?.forEach(node => populateChildren(node?.id));
 
-    console.log(rootNodes);
-
-    let root = {
+    let root: any = {
         "name": "cluster",
-        "children": rootNodes
+        "children": rootCREs
     }
 
-    root = d3.hierarchy(root)
+    root = hierarchy(root)
         .sum(function (d) {
             return d.size;
         })
@@ -114,7 +131,7 @@
             return d.children ? color(d.depth) : (d.data.color ? d.data.color : null);
         })
         .on("click", function (d) {
-            if (focus !== d) zoom(d), d3.event.stopPropagation();
+            if (focus !== d) zoom(d), event.stopPropagation();
         });
 
     var text = g.selectAll("text")
@@ -147,10 +164,10 @@
         var focus0 = focus;
         focus = d;
 
-        var transition = d3.transition()
-            .duration(d3.event.altKey ? 7500 : 750)
+        var transition = transition()
+            .duration(event.altKey ? 7500 : 750)
             .tween("zoom", function (d) {
-                var i = d3.interpolateZoom(view, [focus.x, focus.y, focus.r * 2 + margin]);
+                var i = interpolateZoom(view, [focus.x, focus.y, focus.r * 2 + margin]);
                 return function (t) {
                     zoomTo(i(t));
                 };
@@ -181,7 +198,15 @@
             return d.r * k;
         });
     }
-
-</script>
-</body>
-</html>
+    return svg
+}
+export const Circles = () => {
+    return (
+        <>
+        <svg width="960" height="960">
+            <g transform="translate(480,480)"></g>
+        </svg>
+            <RenderCircle />
+        </>
+    )
+}

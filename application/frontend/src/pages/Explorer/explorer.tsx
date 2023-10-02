@@ -9,7 +9,7 @@ import { ClearFilterButton, FilterButton } from '../../components/FilterButton/F
 import { LoadingAndErrorIndicator } from '../../components/LoadingAndErrorIndicator';
 import { useEnvironment } from '../../hooks';
 import { applyFilters, filterContext } from '../../hooks/applyFilters';
-import { Document } from '../../types';
+import { Document, LinkedDocument } from '../../types';
 import { groupLinksByType } from '../../utils';
 import { SearchResults } from '../Search/components/SearchResults';
 
@@ -40,13 +40,13 @@ export const Explorer = () => {
     }
   );
   const docs = localStorage.getItem("documents")
-  useEffect(()=>{
+  useEffect(() => {
     if (docs != null) {
       setData(JSON.parse(docs).sort((a, b) => (a.id + '').localeCompare(b.id + '')));
       setFilteredData(data)
     }
-  },[docs])
-  
+  }, [docs])
+
   const query = useQuery(
     'everything',
     () => {
@@ -89,20 +89,67 @@ export const Explorer = () => {
     }
   }
 
-  function processNode(item) {
-    if (!item) {
+
+  function processGroupedLinks(link) {
+    let title = ""
+    if (link.document.hyperlink) {
+      title = link.document.name;
+      if (link.sections.length > 0) {
+        title += ':\n - ';
+        title += link.sections.join('\n - ');
+      }
+    }
+    return (
+      <div id="grouped-link">
+        {link.document.hyperlink ?
+          <a target="_blank" href={link.document.hyperlink} title={title}>
+            {link.document.name}
+            {link.sections.length > 1 ? '(' + link.sections.length + ')' : ""}
+          </a> : ""}
+      </div>
+    )
+  }
+
+  function processNode(item: Document) {
+    if (!item || !item.id) {
       return (<></>)
+    }
+
+    const groupedLinks: LinkedDocument[] = [];
+    const groupedLinksMap = [];
+    item.links?.filter(link => link.ltype === 'Linked To').forEach(link => {
+      const doc = link.ltype + ' ' + link.document.doctype + ' ' + link.document.name;
+      if (!groupedLinksMap[doc]) {
+        groupedLinksMap[doc] = link
+        groupedLinksMap[doc].sections = []
+        groupedLinks.push(link);
+      }
+      if (link.document.section) {
+        groupedLinksMap[doc].sections.push(link.document.section);
+      }
+    });
+    let name
+    if (filter.length && item.name.toLocaleLowerCase() === filter.toLocaleLowerCase()) {
+      name = <span className='bg-yellow'>{filter.charAt(0).toUpperCase() + filter.slice(1)}</span>
     }
     return (
       <div className="group" >
         <div className="group-1">
           <div className='group-2'>
             <a target="_blank" href={"https://opencre.org/cre/" + item?.id}>
-              {item?.name}
+              <span id="group-span"> {item.id} : </span>
+              {name}
             </a>
           </div>
+          <div id="grouped-links-container">
+            {groupedLinks.map(link => { return processGroupedLinks(link) })}
+          </div>
           <div /*style="font-size: 90%"*/>
-            {item?.links?.forEach(child => processNode(child))}
+            {
+              item.links?.map(child =>
+                processNode(child.document)
+              )
+            }
           </div>
         </div>
       </div>
