@@ -327,7 +327,9 @@ def smartlink(
         if found_section_id:
             return redirect(f"/node/{ntype}/{name}/sectionid/{section}")
         return redirect(f"/node/{ntype}/{name}/section/{section}")
-    elif doctype == defs.Credoctypes.Standard.value and redirectors.redirect(name, section):
+    elif doctype == defs.Credoctypes.Standard.value and redirectors.redirect(
+        name, section
+    ):
         logger.info(
             f"did not find node of type {ntype}, name {name} and section {section}, redirecting to external resource"
         )

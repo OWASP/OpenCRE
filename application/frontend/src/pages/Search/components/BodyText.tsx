@@ -25,10 +25,10 @@ export const SearchBody = () => {
         </b>
       </p>
       <b>
-        Use <a href="/chatbot">OpenCRE Chat</a> to ask any security question (Google account required to maximize queries per minute). In collaboration 
-        with Google, we injected all the standards in OpenCRE into an AI model to create the world's first
-        security-specialized chatbot. This ensures you get a more reliable answer, and also a reference to a
-        reputable source.
+        Use <a href="/chatbot">OpenCRE Chat</a> to ask any security question (Google account required to
+        maximize queries per minute). In collaboration with Google, we injected all the standards in OpenCRE
+        into an AI model to create the world's first security-specialized chatbot. This ensures you get a more
+        reliable answer, and also a reference to a reputable source.
       </b>
       <h2>HOW?</h2>
       <p>
@@ -48,10 +48,10 @@ export const SearchBody = () => {
       </p>
       <h2>WHO?</h2>
       <p>
-        OpenCRE is the brainchild of software security professionals Spyros Gasteratos and Rob van
-        der Veer, who joined forces to tackle the complexities and segmentation in current security standards
-        and guidelines. They collaborated closely with many initiatives, including SKF, OpenSSF and the Owasp
-        Top 10 project. OpenCRE is an open-source platform overseen by the OWASP foundation through the
+        OpenCRE is the brainchild of software security professionals Spyros Gasteratos and Rob van der Veer,
+        who joined forces to tackle the complexities and segmentation in current security standards and
+        guidelines. They collaborated closely with many initiatives, including SKF, OpenSSF and the Owasp Top
+        10 project. OpenCRE is an open-source platform overseen by the OWASP foundation through the
         <a href="https://owasp.org/www-project-integration-standards/"> OWASP Integration standard project</a>
         . The goal is to foster better coordination among security initiatives.
       </p>
@@ -61,8 +61,8 @@ export const SearchBody = () => {
         Cloud Control Matrix, ISO27001, ISO27002, and NIST SSDF).
       </p>
       <p>
-        Contact us via (rob.vanderveer [at] owasp.org) for any questions, remarks or to join the movement. Currently, a stakeholder group is
-        being formed.
+        Contact us via (rob.vanderveer [at] owasp.org) for any questions, remarks or to join the movement.
+        Currently, a stakeholder group is being formed.
       </p>
       <p>
         For more details, see this
@@ -72,7 +72,11 @@ export const SearchBody = () => {
           OpenCRE explanation document{' '}
         </a>
         , follow our
-        <a href="https://www.linkedin.com/company/96695329"> LinkedIn page </a>, click the diagram below, or <a href="https://zeljkoobrenovic.github.io/opencre-explorer/">browse our catalogue textually or graphically</a>.
+        <a href="https://www.linkedin.com/company/96695329"> LinkedIn page </a>, click the diagram below, or{' '}
+        <a href="https://zeljkoobrenovic.github.io/opencre-explorer/">
+          browse our catalogue textually or graphically
+        </a>
+        .
       </p>
 
       <a href="/opencregraphic2.png" target="_blank">

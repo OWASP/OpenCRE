@@ -1,7 +1,7 @@
 import './chatbot.scss';
 
-import DOMPurify,{sanitize} from 'dompurify';
-import {marked} from 'marked';
+import DOMPurify, { sanitize } from 'dompurify';
+import { marked } from 'marked';
 import React, { createElement, useEffect, useState } from 'react';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
@@ -13,7 +13,6 @@ import { useEnvironment } from '../../hooks';
 import { Document } from '../../types';
 
 export const Chatbot = () => {
-
   type chatMessage = {
     timestamp: string;
     role: string;
@@ -64,12 +63,12 @@ export const Chatbot = () => {
     for (const txt of responses) {
       if (i % 2 == 0) {
         res.push(
-          <p 
-          dangerouslySetInnerHTML={{
-            __html : sanitize(marked(txt), {USE_PROFILES: {html: true}})
-        }}
+          <p
+            dangerouslySetInnerHTML={{
+              __html: sanitize(marked(txt), { USE_PROFILES: { html: true } }),
+            }}
           />
-        )
+        );
       } else {
         res.push(<SyntaxHighlighter style={oneLight}>{txt}</SyntaxHighlighter>);
       }
@@ -171,9 +170,7 @@ export const Chatbot = () => {
                             <Comment.Content>
                               <Comment.Author as="b">{m.role}</Comment.Author>
                               <Comment.Metadata>
-                                <span className="timestamp">
-                                  {m.timestamp}
-                                </span>
+                                <span className="timestamp">{m.timestamp}</span>
                               </Comment.Metadata>
                               <Comment.Text>{processResponse(m.message)}</Comment.Text>
                               {m.data
@@ -187,9 +184,8 @@ export const Chatbot = () => {
                                 <i>
                                   Note: The content of OpenCRE could not be used to answer your question, as
                                   no matching standard was found. The answer therefore has no reference and
-                                  needs to be regarded as less reliable. Try rephrasing your question, 
-                                  use similar topics, or{' '}
-                                  <a href="https://opencre.org">OpenCRE search</a>.
+                                  needs to be regarded as less reliable. Try rephrasing your question, use
+                                  similar topics, or <a href="https://opencre.org">OpenCRE search</a>.
                                 </i>
                               )}
                             </Comment.Content>
