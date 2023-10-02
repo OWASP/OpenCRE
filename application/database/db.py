@@ -1,7 +1,14 @@
 from neo4j import GraphDatabase
 import neo4j
-from neomodel import (config, StructuredNode, StringProperty, IntegerProperty,
-    UniqueIdProperty, RelationshipTo, ArrayProperty)
+from neomodel import (
+    config,
+    StructuredNode,
+    StringProperty,
+    UniqueIdProperty,
+    Relationship,
+    RelationshipTo,
+    ArrayProperty,
+)
 from sqlalchemy.orm import aliased
 import os
 import logging
@@ -16,7 +23,6 @@ from application.defs import cre_defs
 from application.utils import file
 from flask_sqlalchemy.model import DefaultMeta
 from sqlalchemy import func
-from sqlalchemy.sql.expression import desc  # type: ignore
 import uuid
 
 from application.utils.gap_analysis import get_path_score
@@ -162,6 +168,43 @@ class Embeddings(BaseModel):  # type: ignore
     )
 
 
+class NeoDocument(StructuredNode):
+    id = UniqueIdProperty()
+    name = StringProperty(required=True)
+    description = StringProperty(required=True)
+    tags = ArrayProperty(StringProperty())
+    doctype = StringProperty(required=True)
+    related = Relationship("NeoDocument", "RELATED")
+
+
+class NeoNode(NeoDocument):
+    doctype = StringProperty()
+    version = StringProperty(required=True)
+    hyperlink = StringProperty()
+
+
+class NeoStandard(NeoNode):
+    section = StringProperty()
+    subsection = StringProperty(required=True)
+    section_id = StringProperty()
+
+
+class NeoTool(NeoStandard):
+    tooltype = StringProperty(required=True)
+
+
+class NeoCode(NeoNode):
+    pass
+
+
+class NeoCRE(NeoDocument):  # type: ignore
+    id = UniqueIdProperty()
+    external_id = StringProperty()
+    description = StringProperty()
+    name = StringProperty(required=True)
+    contains = RelationshipTo("NeoCRE", "CONTAINS")
+    linked = RelationshipTo("NeoStandard", "LINKED_TO")
+    same_as = RelationshipTo("NeoStandard", "SAME")
 
 
 class NEO_DB:
@@ -169,38 +212,6 @@ class NEO_DB:
 
     driver = None
     connected = False
-
-    class Document(StructuredNode):
-        id = UniqueIdProperty()
-        name = StringProperty(required=True)
-        description = StringProperty(required=True)
-        tags = ArrayProperty()
-        doctype = StringProperty(required=True)
-
-    class Node(Document):
-        version = StringProperty(required=True)
-        hyperlink = StringProperty()
-
-    class Standard(Node):
-        doctype = "Standard"
-        section = StringProperty()
-        subsection = StringProperty(required=True)
-        section_id = StringProperty()
-
-    class Tool(Standard):
-        doctype = "Tool"
-        tooltype = StringProperty(required=True)
-
-    class Code(Node):
-        doctype = "Code"
-
-
-    class CRE(Document):  # type: ignore
-        id = UniqueIdProperty()
-        external_id = StringProperty()
-        description = StringProperty()
-        name = StringProperty(required=True)
-
 
     @classmethod
     def instance(self):
@@ -260,15 +271,15 @@ class NEO_DB:
     def add_cre(self, dbcre: CRE):
         if not self.connected:
             return
-        self.CRE(
-            name=dbcre.name,
-            doctype="CRE",  # dbcre.ntype,
-            nid=dbcre.id,
-            description=dbcre.description,
-            links=[],  # dbcre.links,
-            tags=dbcre.tags,
-            metadata="{}",  # dbcre.metadata,
-            database_="neo4j",
+        NeoCRE.create_or_update(
+            {
+                "name": dbcre.name,
+                "doctype": "CRE",  # dbcre.ntype,
+                "id": dbcre.id,
+                "description": dbcre.description,
+                "links": [],  # dbcre.links,
+                "tags": dbcre.tags,
+            }
         )
 
     @classmethod
@@ -276,48 +287,53 @@ class NEO_DB:
         if not self.connected:
             return
         if dbnode.ntype == "Standard":
-            self.Standard(
-                name=dbnode.name,
-                doctype=dbnode.ntype,
-                nid=dbnode.id,
-                description=dbnode.description,
-                links=[],  # dbnode.links,
-                tags=dbnode.tags,
-                metadata="{}",  # dbnode.metadata,
-                hyperlink="",  # dbnode.hyperlink or "",
-                version=dbnode.version or "",
-                section=dbnode.section,
-                sectionID=dbnode.section_id,  # dbnode.sectionID,
-                subsection=dbnode.subsection or ""
+            NeoStandard.create_or_update(
+                {
+                    "name": dbnode.name,
+                    "doctype": dbnode.ntype,
+                    "id": dbnode.id,
+                    "description": dbnode.description or "",
+                    "tags": dbnode.tags or [],
+                    "hyperlink": "",  # dbnode.hyperlink or "",
+                    "version": dbnode.version or "",
+                    "section": dbnode.section or "",
+                    "sectionID": dbnode.section_id or "",
+                    "subsection": dbnode.subsection or ""
+                }
             )
             return
         if dbnode.ntype == "Tool":
-            self.Tool(
-                name=dbnode.name,
-                doctype=dbnode.ntype,
-                nid=dbnode.id,
-                description=dbnode.description,
-                links=[],  # dbnode.links,
-                tags=dbnode.tags,
-                metadata="{}",  # dbnode.metadata,
-                hyperlink="",  # dbnode.hyperlink or "",
-                version=dbnode.version or "",
-                section=dbnode.section,
-                sectionID=dbnode.section_id,  # dbnode.sectionID,
-                subsection=dbnode.subsection or "",
-                tooltype="",  # dbnode.tooltype,
+            NeoTool.create_or_update(
+                {
+                    "name": dbnode.name,
+                    "doctype": dbnode.ntype,
+                    "id": dbnode.id,
+                    "description": dbnode.description,
+                    "links": [],  # dbnode.links,
+                    "tags": dbnode.tags,
+                    "metadata": "{}",  # dbnode.metadata,
+                    "hyperlink": "",  # dbnode.hyperlink or "",
+                    "version": dbnode.version or "",
+                    "section": dbnode.section,
+                    "sectionID": dbnode.section_id,  # dbnode.sectionID,
+                    "subsection": dbnode.subsection or "",
+                    "tooltype": "",  # dbnode.tooltype,
+                }
             )
             return
         if dbnode.ntype == "Code":
-            self.Code(name=dbnode.name,
-                doctype=dbnode.ntype,
-                nid=dbnode.id,
-                description=dbnode.description,
-                links=[],  # dbnode.links,
-                tags=dbnode.tags,
-                metadata="{}",  # dbnode.metadata,
-                hyperlink="",  # dbnode.hyperlink or "",
-                version=dbnode.version or "",
+            NeoCode.create_or_update(
+                {
+                    "name": dbnode.name,
+                    "doctype": dbnode.ntype,
+                    "id": dbnode.id,
+                    "description": dbnode.description,
+                    "links": [],  # dbnode.links,
+                    "tags": dbnode.tags,
+                    "metadata": "{}",  # dbnode.metadata,
+                    "hyperlink": "",  # dbnode.hyperlink or "",
+                    "version": dbnode.version or "",
+                }
             )
             return
         raise Exception(f"Unknown DB type: {dbnode.ntype}")
@@ -326,33 +342,30 @@ class NEO_DB:
     def link_CRE_to_CRE(self, id1, id2, link_type):
         if not self.connected:
             return
-        self.driver.execute_query(
-            "MATCH (a:CRE), (b:CRE) "
-            "WHERE a.id = $aID AND b.id = $bID "
-            "CALL apoc.create.relationship(a,$relType, {},b) "
-            "YIELD rel "
-            "RETURN rel",
-            aID=id1,
-            bID=id2,
-            relType=str.upper(link_type).replace(" ", "_"),
-            database_="neo4j",
-        )
+        cre1 = NeoCRE.nodes.get(id=id1)
+        cre2 = NeoCRE.nodes.get(id=id2)
+
+        if link_type == "Contains":
+            cre1.contains.connect(cre2)
+            return
+        if link_type == "Related":
+            cre1.related.connect(cre2)
+            return
+        raise Exception(f"Unknown relation type {link_type}")
 
     @classmethod
     def link_CRE_to_Node(self, CRE_id, node_id, link_type):
         if not self.connected:
             return
-        self.driver.execute_query(
-            "MATCH (a:CRE), (b:Standard|Tool) "
-            "WHERE a.id = $aID AND b.id = $bID "
-            "CALL apoc.create.relationship(a,$relType, {},b) "
-            "YIELD rel "
-            "RETURN rel",
-            aID=CRE_id,
-            bID=node_id,
-            relType=str.upper(link_type).replace(" ", "_"),
-            database_="neo4j",
-        )
+        cre = NeoCRE.nodes.get(id=CRE_id)
+        node = NeoNode.nodes.get(id=node_id)
+        if link_type == "Linked To":
+            cre.linked.connect(node)
+            return
+        if link_type == "SAME":
+            cre.same_as.connect(node)
+            return
+        raise Exception(f"Unknown relation type {link_type}")
 
     @classmethod
     def gap_analysis(self, name_1, name_2):
@@ -416,13 +429,14 @@ class NEO_DB:
     def standards(self) -> List[str]:
         if not self.connected:
             return
-        tools = self.Tool.nodes.all()
-        standards = self.Standard.nodes.all()
-        print(tools, standards)
-        return ['Bob']
+        tools = NeoTool.nodes.all()
+        standards = NeoStandard.nodes.all()
+        
+        return list(set([x.name for x in tools] +  [x.name for x in standards]))
 
     @staticmethod
     def parse_node(node: neo4j.graph.Node) -> cre_defs.Document:
+        # TODO: Parse via NeoDocument classes
         name = node["name"]
         id = node["id"] if "id" in node else None
         description = node["description"] if "description" in node else None
