@@ -557,7 +557,7 @@ class TestMain(unittest.TestCase):
             self.assertEqual(location, "/node/standard/ASVS/section/v0.1.2")
             self.assertEqual(302, response.status_code)
 
-            # negative test, this cwe does not exist, therefore there is nowhere to redirect to
+            # negative test, this cwe does not exist, therefore we redirect to Mitre!
             response = client.get(
                 "/smartlink/standard/CWE/999",
                 headers={"Content-Type": "application/json"},
@@ -566,5 +566,7 @@ class TestMain(unittest.TestCase):
             for head in response.headers:
                 if head[0] == "Location":
                     location = head[1]
-            self.assertEqual(location, "")
-            self.assertEqual(404, response.status_code)
+            self.assertEqual(
+                location, "https://cwe.mitre.org/data/definitions/999.html"
+            )
+            self.assertEqual(302, response.status_code)
