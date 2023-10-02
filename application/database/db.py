@@ -1,5 +1,7 @@
 from neo4j import GraphDatabase
 import neo4j
+from neomodel import (config, StructuredNode, StringProperty, IntegerProperty,
+    UniqueIdProperty, RelationshipTo, ArrayProperty)
 from sqlalchemy.orm import aliased
 import os
 import logging
@@ -160,11 +162,45 @@ class Embeddings(BaseModel):  # type: ignore
     )
 
 
+
+
 class NEO_DB:
     __instance = None
 
     driver = None
     connected = False
+
+    class Document(StructuredNode):
+        id = UniqueIdProperty()
+        name = StringProperty(required=True)
+        description = StringProperty(required=True)
+        tags = ArrayProperty()
+        doctype = StringProperty(required=True)
+
+    class Node(Document):
+        version = StringProperty(required=True)
+        hyperlink = StringProperty()
+
+    class Standard(Node):
+        doctype = "Standard"
+        section = StringProperty()
+        subsection = StringProperty(required=True)
+        section_id = StringProperty()
+
+    class Tool(Standard):
+        doctype = "Tool"
+        tooltype = StringProperty(required=True)
+
+    class Code(Node):
+        doctype = "Code"
+
+
+    class CRE(Document):  # type: ignore
+        id = UniqueIdProperty()
+        external_id = StringProperty()
+        description = StringProperty()
+        name = StringProperty(required=True)
+
 
     @classmethod
     def instance(self):
@@ -173,9 +209,10 @@ class NEO_DB:
 
             URI = os.getenv("NEO4J_URI") or "neo4j://localhost:7687"
             AUTH = (
-                os.getenv("NEO4J_USR") or "neo4j",
-                os.getenv("NEO4J_PASS") or "password",
+                os.getenv("NEO4J_USERNAME") or "neo4j",
+                os.getenv("NEO4J_PASSWORD") or "password",
             )
+            config.DATABASE_URL = os.getenv("NEO4J_BOLT_URL")
             self.driver = GraphDatabase.driver(URI, auth=AUTH)
 
             try:
@@ -223,8 +260,7 @@ class NEO_DB:
     def add_cre(self, dbcre: CRE):
         if not self.connected:
             return
-        self.driver.execute_query(
-            "MERGE (n:CRE {id: $nid, name: $name, description: $description, doctype: $doctype, links: $links, metadata: $metadata, tags: $tags})",
+        self.CRE(
             name=dbcre.name,
             doctype="CRE",  # dbcre.ntype,
             nid=dbcre.id,
@@ -240,8 +276,7 @@ class NEO_DB:
         if not self.connected:
             return
         if dbnode.ntype == "Standard":
-            self.driver.execute_query(
-                "MERGE (n:Standard {id: $nid, name: $name, section: $section, sectionID: $sectionID, subsection: $subsection, tags: $tags, version: $version, description: $description, doctype: $doctype, links: $links, metadata: $metadata, hyperlink: $hyperlink})",
+            self.Standard(
                 name=dbnode.name,
                 doctype=dbnode.ntype,
                 nid=dbnode.id,
@@ -253,13 +288,11 @@ class NEO_DB:
                 version=dbnode.version or "",
                 section=dbnode.section,
                 sectionID=dbnode.section_id,  # dbnode.sectionID,
-                subsection=dbnode.subsection or "",
-                database_="neo4j",
+                subsection=dbnode.subsection or ""
             )
             return
         if dbnode.ntype == "Tool":
-            self.driver.execute_query(
-                "MERGE (n:Tool {id: $nid, name: $name, section: $section, sectionID: $sectionID, subsection: $subsection, tags: $tags, version: $version, description: $description, doctype: $doctype, links: $links, metadata: $metadata, hyperlink: $hyperlink, tooltype: $tooltype})",
+            self.Tool(
                 name=dbnode.name,
                 doctype=dbnode.ntype,
                 nid=dbnode.id,
@@ -273,13 +306,10 @@ class NEO_DB:
                 sectionID=dbnode.section_id,  # dbnode.sectionID,
                 subsection=dbnode.subsection or "",
                 tooltype="",  # dbnode.tooltype,
-                database_="neo4j",
             )
             return
         if dbnode.ntype == "Code":
-            self.driver.execute_query(
-                "MERGE (n:Code {id: $nid, name: $name, section: $section, sectionID: $sectionID, subsection: $subsection, tags: $tags, version: $version, description: $description, doctype: $doctype, links: $links, metadata: $metadata, hyperlink: $hyperlink})",
-                name=dbnode.name,
+            self.Code(name=dbnode.name,
                 doctype=dbnode.ntype,
                 nid=dbnode.id,
                 description=dbnode.description,
@@ -386,11 +416,10 @@ class NEO_DB:
     def standards(self) -> List[str]:
         if not self.connected:
             return
-        records, _, _ = self.driver.execute_query(
-            "MATCH (n:Standard|Tool) " "RETURN collect(distinct n.name)",
-            database_="neo4j",
-        )
-        return records[0][0]
+        tools = self.Tool.nodes.all()
+        standards = self.Standard.nodes.all()
+        print(tools, standards)
+        return ['Bob']
 
     @staticmethod
     def parse_node(node: neo4j.graph.Node) -> cre_defs.Document:
