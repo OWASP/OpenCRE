@@ -18,6 +18,7 @@ e2e:
 	yarn test:e2e
 	killall yarn
 	killall flask
+
 test:
 	[ -d "./venv" ] && . ./venv/bin/activate
 	export FLASK_APP=$(CURDIR)/cre.py
