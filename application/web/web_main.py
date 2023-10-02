@@ -290,13 +290,13 @@ def smartlink(
     name: str, ntype: str = defs.Credoctypes.Standard.value, section: str = ""
 ) -> Any:
     """if node is found, show node, else redirect"""
+    # ATTENTION: DO NOT MESS WITH THIS FUNCTIONALITY WITHOUT A TICKET AND CORE CONTRIBUTORS APPROVAL!
+    # CRITICAL FUNCTIONALITY DEPENDS ON THIS!
     database = db.Node_collection()
     opt_version = request.args.get("version")
     # match ntype to the credoctypes case-insensitive
-    typ = [t for t in defs.Credoctypes if t.value.lower() == ntype.lower()]
-    doctype = None
-    if typ:
-        doctype = typ[0]
+    typ = [t.value for t in defs.Credoctypes if t.value.lower() == ntype.lower()]
+    doctype = None if not typ else typ[0]
 
     page = 1
     items_per_page = 1
@@ -327,7 +327,7 @@ def smartlink(
         if found_section_id:
             return redirect(f"/node/{ntype}/{name}/sectionid/{section}")
         return redirect(f"/node/{ntype}/{name}/section/{section}")
-    elif ntype == defs.Credoctypes.Standard.value and redirectors.redirect(
+    elif doctype == defs.Credoctypes.Standard.value and redirectors.redirect(
         name, section
     ):
         logger.info(
