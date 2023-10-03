@@ -223,6 +223,7 @@ def gap_analysis() -> Any:
     gap_analysis = database.gap_analysis(standards)
     if gap_analysis is None:
         return neo4j_not_running_rejection()
+    print(gap_analysis)
     return jsonify(gap_analysis)
 
 
