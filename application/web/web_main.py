@@ -215,8 +215,7 @@ def find_document_by_tag() -> Any:
 
 
 @app.route("/rest/v1/gap_analysis", methods=["GET"])
-@cache.cached(timeout=50)
-def gap_analysis() -> Any:
+def gap_analysis() -> Any:  # TODO (spyros): add export result to spreadsheet
     database = db.Node_collection()
     standards = request.args.getlist("standard")
     gap_analysis = database.gap_analysis(standards)
@@ -296,8 +295,6 @@ def find_root_cres() -> Any:
 
 @app.errorhandler(404)
 def page_not_found(e) -> Any:
-    from pprint import pprint
-
     return "Resource Not found", 404
 
 
