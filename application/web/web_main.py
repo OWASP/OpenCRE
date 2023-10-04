@@ -216,7 +216,7 @@ def find_document_by_tag() -> Any:
 
 
 @app.route("/rest/v1/gap_analysis", methods=["GET"])
-@cache.cached(timeout=50)
+@cache.cached(timeout=50, query_string=True)
 def gap_analysis() -> Any:
     database = db.Node_collection()
     standards = request.args.getlist("standard")
