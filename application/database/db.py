@@ -1,5 +1,3 @@
-from neo4j import GraphDatabase
-import neo4j
 from neomodel import (
     config,
     StructuredNode,
@@ -288,22 +286,9 @@ class NEO_DB:
         if self.__instance is None:
             self.__instance = self.__new__(self)
 
-            URI = os.getenv("NEO4J_URI") or "neo4j://localhost:7687"
-            AUTH = (
-                os.getenv("NEO4J_USERNAME") or "neo4j",
-                os.getenv("NEO4J_PASSWORD") or "password",
+            config.DATABASE_URL = (
+                os.getenv("NEO4J_BOLT_URL") or "bolt://neo4j:password@localhost:7687"
             )
-            config.DATABASE_URL = os.getenv("NEO4J_BOLT_URL")
-            self.driver = GraphDatabase.driver(URI, auth=AUTH)
-
-            try:
-                self.driver.verify_connectivity()
-                self.connected = True
-            except neo4j.exceptions.ServiceUnavailable:
-                logger.error(
-                    "NEO4J ServiceUnavailable error - disabling neo4j related features"
-                )
-
         return self.__instance
 
     def __init__(sel):
@@ -339,8 +324,6 @@ class NEO_DB:
 
     @classmethod
     def add_cre(self, dbcre: CRE):
-        if not self.connected:
-            return
         NeoCRE.create_or_update(
             {
                 "name": dbcre.name,
@@ -354,8 +337,6 @@ class NEO_DB:
 
     @classmethod
     def add_dbnode(self, dbnode: Node):
-        if not self.connected:
-            return
         if dbnode.ntype == "Standard":
             NeoStandard.create_or_update(
                 {
@@ -410,8 +391,6 @@ class NEO_DB:
 
     @classmethod
     def link_CRE_to_CRE(self, id1, id2, link_type):
-        if not self.connected:
-            return
         cre1 = NeoCRE.nodes.get(id=id1)
         cre2 = NeoCRE.nodes.get(id=id2)
 
@@ -425,8 +404,6 @@ class NEO_DB:
 
     @classmethod
     def link_CRE_to_Node(self, CRE_id, node_id, link_type):
-        if not self.connected:
-            return
         cre = NeoCRE.nodes.get(id=CRE_id)
         node = NeoNode.nodes.get(id=node_id)
         if link_type == "Linked To":
@@ -439,8 +416,6 @@ class NEO_DB:
 
     @classmethod
     def gap_analysis(self, name_1, name_2):
-        if not self.connected:
-            return None, None
         base_standard = NeoStandard.nodes.filter(name=name_1)
 
         path_records_all, _ = db.cypher_query(
@@ -502,8 +477,6 @@ class NEO_DB:
 
     @classmethod
     def standards(self) -> List[str]:
-        if not self.connected:
-            return
         tools = NeoTool.nodes.all()
         standards = NeoStandard.nodes.all()
 
