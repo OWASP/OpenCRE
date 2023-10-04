@@ -196,7 +196,7 @@ class NeoDocument(StructuredNode):
     related = Relationship("NeoDocument", "RELATED", model=RelatedRel)
 
     @classmethod
-    def to_cre_def(self):
+    def to_cre_def(self, node):
         raise Exception(f"Shouldn't be parsing a NeoDocument")
 
 
