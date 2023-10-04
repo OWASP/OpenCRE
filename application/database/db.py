@@ -9,6 +9,7 @@ from neomodel import (
     RelationshipTo,
     ArrayProperty,
     StructuredRel,
+    NeomodelPath,
     db,
 )
 from sqlalchemy.orm import aliased
@@ -205,7 +206,7 @@ class NeoNode(NeoDocument):
     hyperlink = StringProperty()
 
     @classmethod
-    def to_cre_def(self):
+    def to_cre_def(self, node):
         raise Exception(f"Shouldn't be parsing a NeoNode")
 
 
@@ -215,17 +216,17 @@ class NeoStandard(NeoNode):
     section_id = StringProperty()
 
     @classmethod
-    def to_cre_def(self) -> cre_defs.Standard:
+    def to_cre_def(self, node) -> cre_defs.Standard:
         return cre_defs.Standard(
-            name=self.name,
-            id=self.id,
-            description=self.description,
-            tags=self.tags,
-            hyperlink=self.hyperlink,
-            version=self.version,
-            section=self.section,
-            sectionID=self.section_id,
-            subsection=self.subsection,
+            name=node.name,
+            id=node.id,
+            description=node.description,
+            tags=node.tags,
+            hyperlink=node.hyperlink,
+            version=node.version,
+            section=node.section,
+            sectionID=node.section_id,
+            subsection=node.subsection,
         )
 
 
@@ -233,30 +234,30 @@ class NeoTool(NeoStandard):
     tooltype = StringProperty(required=True)
 
     @classmethod
-    def to_cre_def(self) -> cre_defs.Tool:
+    def to_cre_def(self, node) -> cre_defs.Tool:
         return cre_defs.Tool(
-            name=self.name,
-            id=self.id,
-            description=self.description,
-            tags=self.tags,
-            hyperlink=self.hyperlink,
-            version=self.version,
-            section=self.section,
-            sectionID=self.section_id,
-            subsection=self.subsection,
+            name=node.name,
+            id=node.id,
+            description=node.description,
+            tags=node.tags,
+            hyperlink=node.hyperlink,
+            version=node.version,
+            section=node.section,
+            sectionID=node.section_id,
+            subsection=node.subsection,
         )
 
 
 class NeoCode(NeoNode):
     @classmethod
-    def to_cre_def(self) -> cre_defs.Code:
+    def to_cre_def(self, node) -> cre_defs.Code:
         return cre_defs.Code(
-            name=self.name,
-            id=self.id,
-            description=self.description,
-            tags=self.tags,
-            hyperlink=self.hyperlink,
-            version=self.version,
+            name=node.name,
+            id=node.id,
+            description=node.description,
+            tags=node.tags,
+            hyperlink=node.hyperlink,
+            version=node.version,
         )
 
 
@@ -267,12 +268,12 @@ class NeoCRE(NeoDocument):  # type: ignore
     same_as = RelationshipTo("NeoStandard", "SAME", model=SameRel)
 
     @classmethod
-    def to_cre_def(self) -> cre_defs.CRE:
+    def to_cre_def(self, node) -> cre_defs.CRE:
         return cre_defs.CRE(
-            name=self.name,
-            id=self.id,
-            description=self.description,
-            tags=self.tags,
+            name=node.name,
+            id=node.id,
+            description=node.description,
+            tags=node.tags,
         )
 
 
@@ -468,25 +469,31 @@ class NEO_DB:
             resolve_objects=True,
         )
 
-        def format_segment(seg: StructuredRel):
+        def format_segment(seg: StructuredRel, nodes):
             relation_map = {
                 RelatedRel: "RELATED",
                 ContainsRel: "CONTAINS",
                 LinkedToRel: "LINKED_TO",
                 SameRel: "SAME",
             }
+            start_node = [
+                node for node in nodes if node.element_id == seg._start_node_element_id
+            ][0]
+            end_node = [
+                node for node in nodes if node.element_id == seg._end_node_element_id
+            ][0]
 
             return {
-                "start": NEO_DB.parse_node(seg.start_node()),
-                "end": NEO_DB.parse_node(seg.end_node()),
+                "start": NEO_DB.parse_node(start_node),
+                "end": NEO_DB.parse_node(end_node),
                 "relationship": relation_map[type(seg)],
             }
 
-        def format_path_record(rec):
+        def format_path_record(rec: NeomodelPath):
             return {
                 "start": NEO_DB.parse_node(rec.start_node),
                 "end": NEO_DB.parse_node(rec.end_node),
-                "path": [format_segment(seg) for seg in rec.relationships],
+                "path": [format_segment(seg, rec.nodes) for seg in rec.relationships],
             }
 
         return [NEO_DB.parse_node(rec) for rec in base_standard], [
@@ -504,7 +511,7 @@ class NEO_DB:
 
     @staticmethod
     def parse_node(node: NeoDocument) -> cre_defs.Document:
-        return node.to_cre_def()
+        return node.to_cre_def(node)
 
 
 class CRE_Graph:
