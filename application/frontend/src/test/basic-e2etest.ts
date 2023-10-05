@@ -20,7 +20,7 @@ describe('App.js', () => {
     await page.goto('http://localhost:5000');
     await page.waitForSelector('#SearchBar');
     const text = await page.$eval('#SearchBar', (e) => e.textContent);
-    expect(text).toContain('Topic text');
+    expect(text).toContain('Search');
   });
 
   it('can search for random strs', async () => {
@@ -28,10 +28,10 @@ describe('App.js', () => {
     await page.waitForSelector('#SearchBar', { timeout: 1000 });
     await page.waitForSelector('#SearchButton', { timeout: 1000 });
     await page.type('#SearchBar > div > input', 'asdf');
-    await page.click('#SearchButton > button');
+    await page.click('#SearchButton');
     await page.waitForSelector('.content', { timeout: 1000 });
     const text = await page.$eval('.content', (e) => e.textContent);
-    expect(text).toContain('Document could not be loaded');
+    expect(text).toContain('No results match your search term');
   });
 
   it('can search for cryptography using the free text method and it returns both Nodes and CRES', async () => {
@@ -39,11 +39,11 @@ describe('App.js', () => {
     await page.waitForSelector('#SearchBar', { timeout: 1000 });
     await page.waitForSelector('#SearchButton', { timeout: 1000 });
     await page.type('#SearchBar > div > input', 'crypto');
-    await page.click('#SearchButton > button');
+    await page.click('#SearchButton');
     await page.waitForSelector('.content', { timeout: 1000 });
     await page.waitForSelector('.standard-page__links-container', { timeout: 1000 });
     const text = await page.$eval('.content', (e) => e.textContent);
-    expect(text).not.toContain('Document could not be loaded');
+    expect(text).not.toContain('No results match your search term');
 
     const results = await page.$$('.standard-page__links-container');
     expect(results.length).toBeGreaterThan(1);
@@ -55,22 +55,16 @@ describe('App.js', () => {
     expect(docs.length).toBeGreaterThan(1);
   });
 
-  it('can search for a standard by name, section and the standard page works as expected', async () => {
-    await page.goto('http://127.0.0.1:5000');
-    await page.waitForSelector('#SearchBar', { timeout: 1000 });
-    await page.waitForSelector('#SearchButton', { timeout: 1000 });
-    await page.type('#SearchBar > div > input', 'asvs');
-    await page.click('#SearchBar > .ui > .dropdown');
-    await page.click('div[path="/node/standard"]');
-    await page.click('#SearchButton > button');
-    await page.waitForSelector('.content', { timeout: 1000 });
+  it('the standard page works as expected', async () => {
+    await page.goto('http://127.0.0.1:5000/node/standard/ASVS');
+    await page.waitForSelector('.standard-page', { timeout: 1000 });
     await page.waitForSelector('.standard-page__links-container', { timeout: 1000 });
-    const text = await page.$$('.content', (e) => e.textContent);
-    expect(text).not.toContain('Document could not be loaded');
+    const text = await page.$$('.standard-page', (e) => e.textContent);
+    expect(text).not.toContain('Standard does not exist, please check your search parameters');
 
     // title match
     const page_title = await page.$eval('.standard-page__heading', (e) => e.textContent);
-    expect(page_title).toContain('asvs');
+    expect(page_title).toContain('ASVS');
 
     // results
     const results = await page.$$('.standard-page__links-container');
@@ -79,12 +73,12 @@ describe('App.js', () => {
     // pagination
     const original_content = await page.content();
     await page.click('a[type="pageItem"][value="2"]');
-    await page.waitForSelector('.content', { timeout: 1000 });
+    await page.waitForSelector('.standard-page', { timeout: 1000 });
     expect(await page.content()).not.toEqual(original_content);
 
     // link to section
     await page.click('.standard-page__links-container>.title>a');
-    await page.waitForSelector('.content', { timeout: 1000 });
+    await page.waitForSelector('.standard-page', { timeout: 1000 });
     const url = await page.url();
     expect(url).toContain('section');
     const section = await page.$eval('.section-page > h5.standard-page__sub-heading', (e) => e.textContent);
@@ -107,18 +101,13 @@ describe('App.js', () => {
     expect(cre_links_hrefs[0]).toContain('/cre/');
   });
 
-  it('can search for a cre', async () => {
-    await page.goto('http://127.0.0.1:5000');
-    await page.waitForSelector('#SearchBar', { timeout: 1000 });
-    await page.waitForSelector('#SearchButton', { timeout: 1000 });
-    await page.type('#SearchBar > div > input', '558-807');
-    await page.click('#SearchBar > .ui > .dropdown');
-    await page.click('div[path="/cre"]');
-    await page.click('#SearchButton > button');
-    await page.waitForSelector('.content', { timeout: 1000 });
+  it('cre page works as expected', async () => {
+    await page.goto('http://127.0.0.1:5000/cre/558-807');
+    await page.click('#SearchButton');
+    await page.waitForSelector('.cre-page', { timeout: 1000 });
     await page.waitForSelector('.cre-page__links-container', { timeout: 2000 });
-    const text = await page.$$('.content', (e) => e.textContent);
-    expect(text).not.toContain('Document could not be loaded');
+    const text = await page.$$('.cre-page', (e) => e.textContent);
+    expect(text).not.toContain('CRE does not exist in the DB, please check your search parameters');
 
     // title match
     const page_title = await page.$eval('.cre-page__heading', (e) => e.textContent);
