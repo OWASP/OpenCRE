@@ -94,7 +94,7 @@ def find_cre(creid: str = None, crename: str = None) -> Any:  # refer
             result = {"data": json.loads(oscal_utils.document_to_oscal(cre))}
 
         return jsonify(result)
-    abort(404)
+    abort(404, "CRE does not exist")
 
 
 @app.route("/rest/v1/<ntype>/<name>", methods=["GET"])
@@ -171,7 +171,7 @@ def find_node_by_name(name: str, ntype: str = defs.Credoctypes.Standard.value) -
 
         return jsonify(result)
     else:
-        abort(404)
+        abort(404, "Node does not exist")
 
 
 # TODO: (spyros) paginate
@@ -197,7 +197,7 @@ def find_document_by_tag() -> Any:
 
         return jsonify(result)
     logger.info("tags aborting 404")
-    abort(404)
+    abort(404, "Tag does not exist")
 
 
 @app.route("/rest/v1/gap_analysis", methods=["GET"])
@@ -239,7 +239,7 @@ def text_search() -> Any:
         res = [doc.todict() for doc in documents]
         return jsonify(res)
     else:
-        abort(404)
+        abort(404, "No object matches the given search terms")
 
 
 @app.route("/rest/v1/root_cres", methods=["GET"])
@@ -266,11 +266,13 @@ def find_root_cres() -> Any:
             return jsonify(json.loads(oscal_utils.list_to_oscal(documents)))
 
         return jsonify(result)
-    abort(404)
+    abort(404, "No root CREs")
 
 
 @app.errorhandler(404)
 def page_not_found(e) -> Any:
+    from pprint import pprint
+
     return "Resource Not found", 404
 
 
@@ -336,7 +338,7 @@ def smartlink(
         return redirect(redirectors.redirect(name, section))
     else:
         logger.info(f"not sure what happened, 404")
-        return abort(404)
+        return abort(404, "Document does not exist")
 
 
 @app.before_request
