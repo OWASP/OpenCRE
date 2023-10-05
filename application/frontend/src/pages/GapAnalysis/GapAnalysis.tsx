@@ -50,14 +50,14 @@ function useQuery() {
 
 const GetStrength = (score) => {
   if (score == 0) return 'Direct';
-  if (score < 5) return 'Strong';
+  if (score <= 2) return 'Strong';
   if (score >= 20) return 'Weak';
   return 'Average';
 };
 
 const GetStrengthColor = (score) => {
   if (score === 0) return 'darkgreen';
-  if (score < 5) return '#93C54B';
+  if (score <= 2) return '#93C54B';
   if (score >= 20) return 'Red';
   return 'Orange';
 };
