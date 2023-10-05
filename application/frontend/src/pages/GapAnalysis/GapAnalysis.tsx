@@ -99,7 +99,7 @@ const GetResultLine = (path, gapAnalysis, key) => {
             <br />
             <b style={{ color: GetStrengthColor(0) }}>{GetStrength(0)}</b>: Directly Linked
             <br />
-            <b style={{ color: GetStrengthColor(3) }}>{GetStrength(3)}</b>: Closely connected likely to have
+            <b style={{ color: GetStrengthColor(2) }}>{GetStrength(2)}</b>: Closely connected likely to have
             majority overlap
             <br />
             <b style={{ color: GetStrengthColor(6) }}>{GetStrength(6)}</b>: Connected likely to have partial
@@ -157,7 +157,7 @@ export const GapAnalysis = () => {
   useEffect(() => {
     const fetchData = async () => {
       const result = await axios.get(
-        `${apiUrl}/gap_analysis?standard=${BaseStandard}&standard=${CompareStandard}`
+        `${apiUrl}/map_analysis?standard=${BaseStandard}&standard=${CompareStandard}`
       );
       setLoading(false);
       setGapAnalysis(result.data);
@@ -210,7 +210,7 @@ export const GapAnalysis = () => {
                   <Button
                     onClick={() => {
                       navigator.clipboard.writeText(
-                        `${window.location.origin}/gap_analysis?base=${encodeURIComponent(
+                        `${window.location.origin}/map_analysis?base=${encodeURIComponent(
                           BaseStandard || ''
                         )}&compare=${encodeURIComponent(CompareStandard || '')}`
                       );

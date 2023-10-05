@@ -215,7 +215,7 @@ def find_document_by_tag() -> Any:
     abort(404)
 
 
-@app.route("/rest/v1/gap_analysis", methods=["GET"])
+@app.route("/rest/v1/map_analysis", methods=["GET"])
 @cache.cached(timeout=50, query_string=True)
 def gap_analysis() -> Any:
     database = db.Node_collection()
