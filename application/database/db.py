@@ -7,7 +7,6 @@ from neomodel import (
     RelationshipTo,
     ArrayProperty,
     StructuredRel,
-    NeomodelPath,
     db,
 )
 from sqlalchemy.orm import aliased
@@ -470,7 +469,7 @@ class NEO_DB:
                 "relationship": relation_map[type(seg)],
             }
 
-        def format_path_record(rec: NeomodelPath):
+        def format_path_record(rec):
             return {
                 "start": NEO_DB.parse_node(rec.start_node),
                 "end": NEO_DB.parse_node(rec.end_node),
