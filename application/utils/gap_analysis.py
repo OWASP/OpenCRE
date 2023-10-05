@@ -1,5 +1,5 @@
 PENALTIES = {
-    "RELATED": 20,
+    "RELATED": 2,
     "CONTAINS_UP": 2,
     "CONTAINS_DOWN": 1,
     "LINKED_TO": 0,
