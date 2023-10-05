@@ -36,3 +36,8 @@ export interface GapAnalysisPathStart {
   start: Document;
   paths: Record<string, GapAnalysisPath>;
 }
+
+export interface PaginatedResponse {
+  standards: Document[];
+  total_pages: number;
+}
