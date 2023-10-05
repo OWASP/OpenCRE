@@ -331,7 +331,7 @@ class NEO_DB:
                 "document_id": dbcre.id,
                 "description": dbcre.description,
                 "links": [],  # dbcre.links,
-                "tags": dbcre.tags,
+                "tags": [dbcre.tags] if isinstance(dbcre.tags, str) else dbcre.tags,
             }
         )
 
@@ -344,7 +344,7 @@ class NEO_DB:
                     "doctype": dbnode.ntype,
                     "document_id": dbnode.id,
                     "description": dbnode.description or "",
-                    "tags": dbnode.tags or [],
+                    "tags": [dbnode.tags] if isinstance(dbnode.tags, str) else dbnode.tags,
                     "hyperlink": "",  # dbnode.hyperlink or "",
                     "version": dbnode.version or "",
                     "section": dbnode.section or "",
@@ -361,7 +361,7 @@ class NEO_DB:
                     "document_id": dbnode.id,
                     "description": dbnode.description,
                     "links": [],  # dbnode.links,
-                    "tags": dbnode.tags,
+                    "tags": [dbnode.tags] if isinstance(dbnode.tags, str) else dbnode.tags,
                     "metadata": "{}",  # dbnode.metadata,
                     "hyperlink": "",  # dbnode.hyperlink or "",
                     "version": dbnode.version or "",
@@ -380,7 +380,7 @@ class NEO_DB:
                     "document_id": dbnode.id,
                     "description": dbnode.description,
                     "links": [],  # dbnode.links,
-                    "tags": dbnode.tags,
+                    "tags": [dbnode.tags] if isinstance(dbnode.tags, str) else dbnode.tags,
                     "metadata": "{}",  # dbnode.metadata,
                     "hyperlink": "",  # dbnode.hyperlink or "",
                     "version": dbnode.version or "",
