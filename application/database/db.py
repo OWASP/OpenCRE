@@ -186,7 +186,7 @@ class SameRel(StructuredRel):
 
 
 class NeoDocument(StructuredNode):
-    id = UniqueIdProperty()
+    document_id = UniqueIdProperty()
     name = StringProperty(required=True)
     description = StringProperty(required=True)
     tags = ArrayProperty(StringProperty())
@@ -217,7 +217,7 @@ class NeoStandard(NeoNode):
     def to_cre_def(self, node) -> cre_defs.Standard:
         return cre_defs.Standard(
             name=node.name,
-            id=node.id,
+            id=node.document_id,
             description=node.description,
             tags=node.tags,
             hyperlink=node.hyperlink,
@@ -235,7 +235,7 @@ class NeoTool(NeoStandard):
     def to_cre_def(self, node) -> cre_defs.Tool:
         return cre_defs.Tool(
             name=node.name,
-            id=node.id,
+            id=node.document_id,
             description=node.description,
             tags=node.tags,
             hyperlink=node.hyperlink,
@@ -251,7 +251,7 @@ class NeoCode(NeoNode):
     def to_cre_def(self, node) -> cre_defs.Code:
         return cre_defs.Code(
             name=node.name,
-            id=node.id,
+            id=node.document_id,
             description=node.description,
             tags=node.tags,
             hyperlink=node.hyperlink,
@@ -269,7 +269,7 @@ class NeoCRE(NeoDocument):  # type: ignore
     def to_cre_def(self, node) -> cre_defs.CRE:
         return cre_defs.CRE(
             name=node.name,
-            id=node.id,
+            id=node.document_id,
             description=node.description,
             tags=node.tags,
         )
@@ -328,7 +328,7 @@ class NEO_DB:
             {
                 "name": dbcre.name,
                 "doctype": "CRE",  # dbcre.ntype,
-                "id": dbcre.id,
+                "document_id": dbcre.id,
                 "description": dbcre.description,
                 "links": [],  # dbcre.links,
                 "tags": dbcre.tags,
@@ -342,13 +342,13 @@ class NEO_DB:
                 {
                     "name": dbnode.name,
                     "doctype": dbnode.ntype,
-                    "id": dbnode.id,
+                    "document_id": dbnode.id,
                     "description": dbnode.description or "",
                     "tags": dbnode.tags or [],
                     "hyperlink": "",  # dbnode.hyperlink or "",
                     "version": dbnode.version or "",
                     "section": dbnode.section or "",
-                    "sectionID": dbnode.section_id or "",
+                    "section_id": dbnode.section_id or "",
                     "subsection": dbnode.subsection or "",
                 }
             )
@@ -358,7 +358,7 @@ class NEO_DB:
                 {
                     "name": dbnode.name,
                     "doctype": dbnode.ntype,
-                    "id": dbnode.id,
+                    "document_id": dbnode.id,
                     "description": dbnode.description,
                     "links": [],  # dbnode.links,
                     "tags": dbnode.tags,
@@ -366,7 +366,7 @@ class NEO_DB:
                     "hyperlink": "",  # dbnode.hyperlink or "",
                     "version": dbnode.version or "",
                     "section": dbnode.section,
-                    "sectionID": dbnode.section_id,  # dbnode.sectionID,
+                    "section_id": dbnode.section_id,  # dbnode.sectionID,
                     "subsection": dbnode.subsection or "",
                     "tooltype": "",  # dbnode.tooltype,
                 }
@@ -377,7 +377,7 @@ class NEO_DB:
                 {
                     "name": dbnode.name,
                     "doctype": dbnode.ntype,
-                    "id": dbnode.id,
+                    "document_id": dbnode.id,
                     "description": dbnode.description,
                     "links": [],  # dbnode.links,
                     "tags": dbnode.tags,
@@ -391,8 +391,8 @@ class NEO_DB:
 
     @classmethod
     def link_CRE_to_CRE(self, id1, id2, link_type):
-        cre1 = NeoCRE.nodes.get(id=id1)
-        cre2 = NeoCRE.nodes.get(id=id2)
+        cre1 = NeoCRE.nodes.get(document_id=id1)
+        cre2 = NeoCRE.nodes.get(document_id=id2)
 
         if link_type == "Contains":
             cre1.contains.connect(cre2)
@@ -404,8 +404,8 @@ class NEO_DB:
 
     @classmethod
     def link_CRE_to_Node(self, CRE_id, node_id, link_type):
-        cre = NeoCRE.nodes.get(id=CRE_id)
-        node = NeoNode.nodes.get(id=node_id)
+        cre = NeoCRE.nodes.get(document_id=CRE_id)
+        node = NeoNode.nodes.get(document_id=node_id)
         if link_type == "Linked To":
             cre.linked.connect(node)
             return

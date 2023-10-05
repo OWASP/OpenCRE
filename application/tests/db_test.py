@@ -1326,7 +1326,7 @@ class TestDB(unittest.TestCase):
         )
         graph_node = db.NeoCode(
             name=name,
-            id=id,
+            document_id=id,
             description=description,
             tags=tags,
             version=version,
@@ -1357,7 +1357,7 @@ class TestDB(unittest.TestCase):
         )
         graph_node = db.NeoStandard(
             name=name,
-            id=id,
+            document_id=id,
             description=description,
             tags=tags,
             version=version,
@@ -1391,7 +1391,7 @@ class TestDB(unittest.TestCase):
         )
         graph_node = db.NeoTool(
             name=name,
-            id=id,
+            document_id=id,
             description=description,
             tags=tags,
             version=version,
@@ -1415,7 +1415,7 @@ class TestDB(unittest.TestCase):
         )
         graph_node = db.NeoCRE(
             name=name,
-            id=id,
+            document_id=id,
             description=description,
             tags=tags,
         )
@@ -1428,7 +1428,7 @@ class TestDB(unittest.TestCase):
         tags = "tags"
         graph_node = db.NeoDocument(
             name=name,
-            id=id,
+            document_id=id,
             description=description,
             tags=tags,
         )
@@ -1444,7 +1444,7 @@ class TestDB(unittest.TestCase):
         tags = "tags"
         graph_node = db.NeoNode(
             name=name,
-            id=id,
+            document_id=id,
             description=description,
             tags=tags,
         )
