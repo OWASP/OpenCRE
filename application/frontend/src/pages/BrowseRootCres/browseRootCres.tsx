@@ -1,8 +1,7 @@
 import './browseRootCres.scss';
 
+import axios from 'axios';
 import React, { useContext, useEffect, useMemo, useState } from 'react';
-import { useQuery } from 'react-query';
-import { useParams } from 'react-router-dom';
 
 import { DocumentNode } from '../../components/DocumentNode';
 import { ClearFilterButton, FilterButton } from '../../components/FilterButton/FilterButton';
@@ -17,30 +16,29 @@ export const BrowseRootCres = () => {
   const { apiUrl } = useEnvironment();
   const [loading, setLoading] = useState<boolean>(false);
   const [display, setDisplay] = useState<Document[]>();
-  const { error, data, refetch } = useQuery<{ data: Document }, string>(
-    'cre',
-    () =>
-      fetch(`${apiUrl}/root_cres`)
-        .then((res) => res.json())
-        .then((resjson) => {
-          setDisplay(resjson.data);
-          return resjson;
-        }),
-    {
-      retry: false,
-      enabled: false,
-      onSettled: () => {
-        setLoading(false);
-      },
-    }
-  );
+  const [error, setError] = useState<string | Object | null>(null);
 
   useEffect(() => {
-    window.scrollTo(0, 0);
     setLoading(true);
-    refetch();
-  }, []);
+    window.scrollTo(0, 0);
 
+    axios
+      .get(`${apiUrl}/root_cres`)
+      .then(function (response) {
+        setError(null);
+        setDisplay(response?.data?.data);
+      })
+      .catch(function (axiosError) {
+        if (axiosError.response.status === 404) {
+          setError('Standard does not exist in the DB, please check your search parameters');
+        } else {
+          setError(axiosError.response);
+        }
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, []);
   return (
     <div className="cre-page">
       <h1 className="standard-page__heading">Root CREs:</h1>

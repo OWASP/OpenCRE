@@ -16,7 +16,7 @@ export const SearchName = () => {
   const { apiUrl } = useEnvironment();
   const [loading, setLoading] = useState<boolean>(false);
   const [documents, setDocuments] = useState<Document[]>([]);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | Object | null>(null);
 
   useEffect(() => {
     setLoading(true);
@@ -27,9 +27,13 @@ export const SearchName = () => {
         setDocuments(response.data);
       })
       .catch(function (axiosError) {
-        // TODO: backend errors if no matches, shoudl return
+        // TODO: backend errors if no matches, should return
         //       proper error instead.
-        setError(axiosError);
+        if (axiosError.response.status === 404) {
+          setError('No results match your search term');
+        } else {
+          setError(axiosError.response);
+        }
       })
       .finally(() => {
         setLoading(false);

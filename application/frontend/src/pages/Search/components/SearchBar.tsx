@@ -45,7 +45,7 @@ export const SearchBar = () => {
               });
             }}
             label={
-              <Button primary onSubmit={onSubmit}>
+              <Button id="SearchButton" primary onSubmit={onSubmit}>
                 <Icon name="search" />
                 Search
               </Button>
