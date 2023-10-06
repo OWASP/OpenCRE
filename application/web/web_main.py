@@ -296,6 +296,8 @@ def find_root_cres() -> Any:
 
 @app.errorhandler(404)
 def page_not_found(e) -> Any:
+    from pprint import pprint
+
     return "Resource Not found", 404
 
 

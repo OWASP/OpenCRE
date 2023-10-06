@@ -33,7 +33,7 @@ export const Deeplink = () => {
     window.scrollTo(0, 0);
     setLoading(true);
     axios
-      .get(`${url}`)
+      .get(url)
       .then(function (response) {
         setError(null);
         setData(response.data?.standard);
