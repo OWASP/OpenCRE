@@ -19,3 +19,7 @@ export interface LinkedDocument {
   document: Document;
   ltype: string;
 }
+export interface PaginatedResponse {
+  standards: Document[];
+  total_pages: number;
+}

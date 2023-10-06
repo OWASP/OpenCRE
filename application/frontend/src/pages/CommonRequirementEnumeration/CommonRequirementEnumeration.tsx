@@ -1,7 +1,7 @@
 import './commonRequirementEnumeration.scss';
 
-import React, { useContext, useEffect, useMemo, useState } from 'react';
-import { useQuery } from 'react-query';
+import axios from 'axios';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
 import { DocumentNode } from '../../components/DocumentNode';
@@ -17,27 +17,32 @@ export const CommonRequirementEnumeration = () => {
   const { id } = useParams();
   const { apiUrl } = useEnvironment();
   const [loading, setLoading] = useState<boolean>(false);
-  const globalState = useContext(filterContext);
-
-  const { error, data, refetch } = useQuery<{ data: Document }, string>(
-    'cre',
-    () => fetch(`${apiUrl}/id/${id}`).then((res) => res.json()),
-    {
-      retry: false,
-      enabled: false,
-      onSettled: () => {
-        setLoading(false);
-      },
-    }
-  );
+  const [error, setError] = useState<string | Object | null>(null);
+  const [data, setData] = useState<Document | null>();
 
   useEffect(() => {
-    window.scrollTo(0, 0);
     setLoading(true);
-    refetch();
+    window.scrollTo(0, 0);
+
+    axios
+      .get(`${apiUrl}/id/${id}`)
+      .then(function (response) {
+        setError(null);
+        setData(response?.data?.data);
+      })
+      .catch(function (axiosError) {
+        if (axiosError.response.status === 404) {
+          setError('CRE does not exist in the DB, please check your search parameters');
+        } else {
+          setError(axiosError.response);
+        }
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   }, [id]);
 
-  const cre = data?.data;
+  const cre = data;
   let filteredCRE;
   if (cre != undefined) {
     filteredCRE = applyFilters(JSON.parse(JSON.stringify(cre))); // dirty deepcopy
