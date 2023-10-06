@@ -14,8 +14,8 @@ const getLinks = (): { to: string; name: string }[] => [
     name: 'Open CRE',
   },
   {
-    to: `/gap_analysis`,
-    name: 'Gap Analysis',
+    to: `/map_analysis`,
+    name: 'Map analysis',
   },
 ];
 
