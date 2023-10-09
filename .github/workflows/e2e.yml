@@ -9,7 +9,11 @@ jobs:
         uses: actions/checkout@v2
       - uses: actions/setup-python@v4
         with:
-          python-version: '3.11.4' 
+          python-version: '3.11.4'
+          cache: 'pip'
+      - uses: actions/setup-node@v3
+        with:
+          cache: 'yarn'
       - name: Install python dependencies
         run: sudo apt-get update && sudo apt-get install -y python3-setuptools python3-pip chromium-browser libgbm1 && make install-deps 
       - name: Test-e2e
