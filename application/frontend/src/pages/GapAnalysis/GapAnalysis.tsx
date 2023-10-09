@@ -18,6 +18,7 @@ import { LoadingAndErrorIndicator } from '../../components/LoadingAndErrorIndica
 import { useEnvironment } from '../../hooks';
 import { GapAnalysisPathStart } from '../../types';
 import { getDocumentDisplayName } from '../../utils';
+import { getInternalUrl } from '../../utils/document';
 
 const GetSegmentText = (segment, segmentID) => {
   let textPart = segment.end;
@@ -66,7 +67,7 @@ const GetResultLine = (path, gapAnalysis, key) => {
   let segmentID = gapAnalysis[key].start.id;
   return (
     <div key={path.end.id} style={{ marginBottom: '.25em', fontWeight: 'bold' }}>
-      <a href={`/node/standard/${path.end.name}/section/${path.end.section}`} target="_blank">
+      <a href={getInternalUrl(path.end)} target="_blank">
         <Popup
           wide="very"
           size="large"
@@ -231,10 +232,7 @@ export const GapAnalysis = () => {
               {Object.keys(gapAnalysis).map((key) => (
                 <Table.Row key={key}>
                   <Table.Cell textAlign="left" verticalAlign="top" selectable>
-                    <a
-                      href={`/node/standard/${gapAnalysis[key].start.name}/section/${gapAnalysis[key].start.section}`}
-                      target="_blank"
-                    >
+                    <a href={getInternalUrl(gapAnalysis[key].start)} target="_blank">
                       <p>
                         <b>{getDocumentDisplayName(gapAnalysis[key].start, true)}</b>
                       </p>
