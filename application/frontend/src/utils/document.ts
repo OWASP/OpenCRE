@@ -47,7 +47,7 @@ export const groupBy = <T, K extends keyof any>(list: T[], getKey: (item: T) => 
     return previous;
   }, {} as Record<K, T[]>);
 
-export const getInternalUrl = (doc: Document): String => {
+export const getInternalUrl = (doc: Document): string => {
   if (doc.doctype.toLowerCase() != 'cre') {
     var standardAPIPath = `/node/${doc.doctype.toLowerCase()}/${doc.name}/`;
     if (doc) {
