@@ -218,7 +218,7 @@ export const GapAnalysis = () => {
                     }}
                     target="_blank"
                   >
-                    <Icon name="share square" /> Share this anyalysis
+                    <Icon name="share square" /> Copy link to analysis
                   </Button>
                 </div>
               )}
