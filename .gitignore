@@ -16,6 +16,7 @@ Vagrantfile
 
 ## act secrets
 .secrets/
+.env
 
 ### conventions ###
 venv/
