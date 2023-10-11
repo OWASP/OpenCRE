@@ -1315,25 +1315,22 @@ class TestDB(unittest.TestCase):
         description = "description"
         tags = "tags"
         version = "version"
+        hyperlink = "version"
         expected = defs.Code(
             name=name,
             id=id,
             description=description,
             tags=tags,
             version=version,
+            hyperlink=hyperlink,
         )
-        graph_node = neo4j.graph.Node(
-            None,
-            "123",
-            "id",
-            n_labels=[defs.Credoctypes.Code.value],
-            properties={
-                "name": name,
-                "id": id,
-                "description": description,
-                "tags": tags,
-                "version": version,
-            },
+        graph_node = db.NeoCode(
+            name=name,
+            document_id=id,
+            description=description,
+            tags=tags,
+            version=version,
+            hyperlink=hyperlink,
         )
         self.assertEqual(db.NEO_DB.parse_node(graph_node), expected)
 
@@ -1346,6 +1343,7 @@ class TestDB(unittest.TestCase):
         section = "section"
         sectionID = "sectionID"
         subsection = "subsection"
+        hyperlink = "version"
         expected = defs.Standard(
             name=name,
             id=id,
@@ -1355,22 +1353,18 @@ class TestDB(unittest.TestCase):
             section=section,
             sectionID=sectionID,
             subsection=subsection,
+            hyperlink=hyperlink,
         )
-        graph_node = neo4j.graph.Node(
-            None,
-            "123",
-            "id",
-            n_labels=[defs.Credoctypes.Standard.value],
-            properties={
-                "name": name,
-                "id": id,
-                "description": description,
-                "tags": tags,
-                "version": version,
-                "section": section,
-                "sectionID": sectionID,
-                "subsection": subsection,
-            },
+        graph_node = db.NeoStandard(
+            name=name,
+            document_id=id,
+            description=description,
+            tags=tags,
+            version=version,
+            section=section,
+            section_id=sectionID,
+            subsection=subsection,
+            hyperlink=hyperlink,
         )
         self.assertEqual(db.NEO_DB.parse_node(graph_node), expected)
 
@@ -1383,6 +1377,7 @@ class TestDB(unittest.TestCase):
         section = "section"
         sectionID = "sectionID"
         subsection = "subsection"
+        hyperlink = "version"
         expected = defs.Tool(
             name=name,
             id=id,
@@ -1392,22 +1387,18 @@ class TestDB(unittest.TestCase):
             section=section,
             sectionID=sectionID,
             subsection=subsection,
+            hyperlink=hyperlink,
         )
-        graph_node = neo4j.graph.Node(
-            None,
-            "123",
-            "id",
-            n_labels=[defs.Credoctypes.Tool.value],
-            properties={
-                "name": name,
-                "id": id,
-                "description": description,
-                "tags": tags,
-                "version": version,
-                "section": section,
-                "sectionID": sectionID,
-                "subsection": subsection,
-            },
+        graph_node = db.NeoTool(
+            name=name,
+            document_id=id,
+            description=description,
+            tags=tags,
+            version=version,
+            section=section,
+            section_id=sectionID,
+            subsection=subsection,
+            hyperlink=hyperlink,
         )
         self.assertEqual(db.NEO_DB.parse_node(graph_node), expected)
 
@@ -1422,41 +1413,45 @@ class TestDB(unittest.TestCase):
             description=description,
             tags=tags,
         )
-        graph_node = neo4j.graph.Node(
-            None,
-            "123",
-            "id",
-            n_labels=[defs.Credoctypes.CRE.value],
-            properties={
-                "name": name,
-                "id": id,
-                "description": description,
-                "tags": tags,
-            },
+        graph_node = db.NeoCRE(
+            name=name,
+            document_id=id,
+            description=description,
+            tags=tags,
         )
         self.assertEqual(db.NEO_DB.parse_node(graph_node), expected)
 
-    def test_neo_db_parse_node_unknown(self):
+    def test_neo_db_parse_node_Document(self):
         name = "name"
         id = "id"
         description = "description"
         tags = "tags"
-        graph_node = neo4j.graph.Node(
-            None,
-            "123",
-            "id",
-            n_labels=["ABC"],
-            properties={
-                "name": name,
-                "id": id,
-                "description": description,
-                "tags": tags,
-            },
+        graph_node = db.NeoDocument(
+            name=name,
+            document_id=id,
+            description=description,
+            tags=tags,
         )
         with self.assertRaises(Exception) as cm:
             db.NEO_DB.parse_node(graph_node)
 
-        self.assertEqual(str(cm.exception), "Unknown node frozenset({'ABC'})")
+        self.assertEqual(str(cm.exception), "Shouldn't be parsing a NeoDocument")
+
+    def test_neo_db_parse_node_Node(self):
+        name = "name"
+        id = "id"
+        description = "description"
+        tags = "tags"
+        graph_node = db.NeoNode(
+            name=name,
+            document_id=id,
+            description=description,
+            tags=tags,
+        )
+        with self.assertRaises(Exception) as cm:
+            db.NEO_DB.parse_node(graph_node)
+
+        self.assertEqual(str(cm.exception), "Shouldn't be parsing a NeoNode")
 
     def test_get_embeddings_by_doc_type_paginated(self):
         """Given: a range of embedding for Nodes and a range of embeddings for CREs
