@@ -58,7 +58,7 @@ const GetStrength = (score) => {
 
 const GetStrengthColor = (score) => {
   if (score === 0) return 'darkgreen';
-  if (score < 5) return '#93C54B';
+  if (score <= 2) return '#93C54B';
   if (score >= 20) return 'Red';
   return 'Orange';
 };
