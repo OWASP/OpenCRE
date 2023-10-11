@@ -286,7 +286,7 @@ class NEO_DB:
             self.__instance = self.__new__(self)
 
             config.DATABASE_URL = (
-                os.getenv("NEO4J_BOLT_URL") or "bolt://neo4j:password@localhost:7687"
+                os.getenv("NEO4J_URL") or "neo4j://neo4j:password@localhost:7687"
             )
         return self.__instance
 
