@@ -1,5 +1,14 @@
-from neo4j import GraphDatabase
-import neo4j
+from neomodel import (
+    config,
+    StructuredNode,
+    StringProperty,
+    UniqueIdProperty,
+    Relationship,
+    RelationshipTo,
+    ArrayProperty,
+    StructuredRel,
+    db,
+)
 from sqlalchemy.orm import aliased
 import os
 import logging
@@ -14,7 +23,6 @@ from application.defs import cre_defs
 from application.utils import file
 from flask_sqlalchemy.model import DefaultMeta
 from sqlalchemy import func
-from sqlalchemy.sql.expression import desc  # type: ignore
 import uuid
 
 from application.utils.gap_analysis import get_path_score
@@ -160,6 +168,112 @@ class Embeddings(BaseModel):  # type: ignore
     )
 
 
+class RelatedRel(StructuredRel):
+    pass
+
+
+class ContainsRel(StructuredRel):
+    pass
+
+
+class LinkedToRel(StructuredRel):
+    pass
+
+
+class SameRel(StructuredRel):
+    pass
+
+
+class NeoDocument(StructuredNode):
+    document_id = UniqueIdProperty()
+    name = StringProperty(required=True)
+    description = StringProperty(required=True)
+    tags = ArrayProperty(StringProperty())
+    doctype = StringProperty(required=True)
+    related = Relationship("NeoDocument", "RELATED", model=RelatedRel)
+
+    @classmethod
+    def to_cre_def(self, node):
+        raise Exception(f"Shouldn't be parsing a NeoDocument")
+
+
+class NeoNode(NeoDocument):
+    doctype = StringProperty()
+    version = StringProperty(required=True)
+    hyperlink = StringProperty()
+
+    @classmethod
+    def to_cre_def(self, node):
+        raise Exception(f"Shouldn't be parsing a NeoNode")
+
+
+class NeoStandard(NeoNode):
+    section = StringProperty()
+    subsection = StringProperty(required=True)
+    section_id = StringProperty()
+
+    @classmethod
+    def to_cre_def(self, node) -> cre_defs.Standard:
+        return cre_defs.Standard(
+            name=node.name,
+            id=node.document_id,
+            description=node.description,
+            tags=node.tags,
+            hyperlink=node.hyperlink,
+            version=node.version,
+            section=node.section,
+            sectionID=node.section_id,
+            subsection=node.subsection,
+        )
+
+
+class NeoTool(NeoStandard):
+    tooltype = StringProperty(required=True)
+
+    @classmethod
+    def to_cre_def(self, node) -> cre_defs.Tool:
+        return cre_defs.Tool(
+            name=node.name,
+            id=node.document_id,
+            description=node.description,
+            tags=node.tags,
+            hyperlink=node.hyperlink,
+            version=node.version,
+            section=node.section,
+            sectionID=node.section_id,
+            subsection=node.subsection,
+        )
+
+
+class NeoCode(NeoNode):
+    @classmethod
+    def to_cre_def(self, node) -> cre_defs.Code:
+        return cre_defs.Code(
+            name=node.name,
+            id=node.document_id,
+            description=node.description,
+            tags=node.tags,
+            hyperlink=node.hyperlink,
+            version=node.version,
+        )
+
+
+class NeoCRE(NeoDocument):  # type: ignore
+    external_id = StringProperty()
+    contains = RelationshipTo("NeoCRE", "CONTAINS", model=ContainsRel)
+    linked = RelationshipTo("NeoStandard", "LINKED_TO", model=LinkedToRel)
+    same_as = RelationshipTo("NeoStandard", "SAME", model=SameRel)
+
+    @classmethod
+    def to_cre_def(self, node) -> cre_defs.CRE:
+        return cre_defs.CRE(
+            name=node.name,
+            id=node.document_id,
+            description=node.description,
+            tags=node.tags,
+        )
+
+
 class NEO_DB:
     __instance = None
 
@@ -171,21 +285,9 @@ class NEO_DB:
         if self.__instance is None:
             self.__instance = self.__new__(self)
 
-            URI = os.getenv("NEO4J_URI") or "neo4j://localhost:7687"
-            AUTH = (
-                os.getenv("NEO4J_USR") or "neo4j",
-                os.getenv("NEO4J_PASS") or "password",
+            config.DATABASE_URL = (
+                os.getenv("NEO4J_BOLT_URL") or "bolt://neo4j:password@localhost:7687"
             )
-            self.driver = GraphDatabase.driver(URI, auth=AUTH)
-
-            try:
-                self.driver.verify_connectivity()
-                self.connected = True
-            except neo4j.exceptions.ServiceUnavailable:
-                logger.error(
-                    "NEO4J ServiceUnavailable error - disabling neo4j related features"
-                )
-
         return self.__instance
 
     def __init__(sel):
@@ -221,238 +323,173 @@ class NEO_DB:
 
     @classmethod
     def add_cre(self, dbcre: CRE):
-        if not self.connected:
-            return
-        self.driver.execute_query(
-            "MERGE (n:CRE {id: $nid, name: $name, description: $description, doctype: $doctype, links: $links, metadata: $metadata, tags: $tags})",
-            name=dbcre.name,
-            doctype="CRE",  # dbcre.ntype,
-            nid=dbcre.id,
-            description=dbcre.description,
-            links=[],  # dbcre.links,
-            tags=dbcre.tags,
-            metadata="{}",  # dbcre.metadata,
-            database_="neo4j",
+        NeoCRE.create_or_update(
+            {
+                "name": dbcre.name,
+                "doctype": "CRE",  # dbcre.ntype,
+                "document_id": dbcre.id,
+                "description": dbcre.description,
+                "links": [],  # dbcre.links,
+                "tags": [dbcre.tags] if isinstance(dbcre.tags, str) else dbcre.tags,
+            }
         )
 
     @classmethod
     def add_dbnode(self, dbnode: Node):
-        if not self.connected:
-            return
         if dbnode.ntype == "Standard":
-            self.driver.execute_query(
-                "MERGE (n:Standard {id: $nid, name: $name, section: $section, sectionID: $sectionID, subsection: $subsection, tags: $tags, version: $version, description: $description, doctype: $doctype, links: $links, metadata: $metadata, hyperlink: $hyperlink})",
-                name=dbnode.name,
-                doctype=dbnode.ntype,
-                nid=dbnode.id,
-                description=dbnode.description,
-                links=[],  # dbnode.links,
-                tags=dbnode.tags,
-                metadata="{}",  # dbnode.metadata,
-                hyperlink="",  # dbnode.hyperlink or "",
-                version=dbnode.version or "",
-                section=dbnode.section,
-                sectionID=dbnode.section_id,  # dbnode.sectionID,
-                subsection=dbnode.subsection or "",
-                database_="neo4j",
+            NeoStandard.create_or_update(
+                {
+                    "name": dbnode.name,
+                    "doctype": dbnode.ntype,
+                    "document_id": dbnode.id,
+                    "description": dbnode.description or "",
+                    "tags": [dbnode.tags]
+                    if isinstance(dbnode.tags, str)
+                    else dbnode.tags,
+                    "hyperlink": "",  # dbnode.hyperlink or "",
+                    "version": dbnode.version or "",
+                    "section": dbnode.section or "",
+                    "section_id": dbnode.section_id or "",
+                    "subsection": dbnode.subsection or "",
+                }
             )
             return
         if dbnode.ntype == "Tool":
-            self.driver.execute_query(
-                "MERGE (n:Tool {id: $nid, name: $name, section: $section, sectionID: $sectionID, subsection: $subsection, tags: $tags, version: $version, description: $description, doctype: $doctype, links: $links, metadata: $metadata, hyperlink: $hyperlink, tooltype: $tooltype})",
-                name=dbnode.name,
-                doctype=dbnode.ntype,
-                nid=dbnode.id,
-                description=dbnode.description,
-                links=[],  # dbnode.links,
-                tags=dbnode.tags,
-                metadata="{}",  # dbnode.metadata,
-                hyperlink="",  # dbnode.hyperlink or "",
-                version=dbnode.version or "",
-                section=dbnode.section,
-                sectionID=dbnode.section_id,  # dbnode.sectionID,
-                subsection=dbnode.subsection or "",
-                tooltype="",  # dbnode.tooltype,
-                database_="neo4j",
+            NeoTool.create_or_update(
+                {
+                    "name": dbnode.name,
+                    "doctype": dbnode.ntype,
+                    "document_id": dbnode.id,
+                    "description": dbnode.description,
+                    "links": [],  # dbnode.links,
+                    "tags": [dbnode.tags]
+                    if isinstance(dbnode.tags, str)
+                    else dbnode.tags,
+                    "metadata": "{}",  # dbnode.metadata,
+                    "hyperlink": "",  # dbnode.hyperlink or "",
+                    "version": dbnode.version or "",
+                    "section": dbnode.section,
+                    "section_id": dbnode.section_id,  # dbnode.sectionID,
+                    "subsection": dbnode.subsection or "",
+                    "tooltype": "",  # dbnode.tooltype,
+                }
             )
             return
         if dbnode.ntype == "Code":
-            self.driver.execute_query(
-                "MERGE (n:Code {id: $nid, name: $name, section: $section, sectionID: $sectionID, subsection: $subsection, tags: $tags, version: $version, description: $description, doctype: $doctype, links: $links, metadata: $metadata, hyperlink: $hyperlink})",
-                name=dbnode.name,
-                doctype=dbnode.ntype,
-                nid=dbnode.id,
-                description=dbnode.description,
-                links=[],  # dbnode.links,
-                tags=dbnode.tags,
-                metadata="{}",  # dbnode.metadata,
-                hyperlink="",  # dbnode.hyperlink or "",
-                version=dbnode.version or "",
+            NeoCode.create_or_update(
+                {
+                    "name": dbnode.name,
+                    "doctype": dbnode.ntype,
+                    "document_id": dbnode.id,
+                    "description": dbnode.description,
+                    "links": [],  # dbnode.links,
+                    "tags": [dbnode.tags]
+                    if isinstance(dbnode.tags, str)
+                    else dbnode.tags,
+                    "metadata": "{}",  # dbnode.metadata,
+                    "hyperlink": "",  # dbnode.hyperlink or "",
+                    "version": dbnode.version or "",
+                }
             )
             return
         raise Exception(f"Unknown DB type: {dbnode.ntype}")
 
     @classmethod
     def link_CRE_to_CRE(self, id1, id2, link_type):
-        if not self.connected:
+        cre1 = NeoCRE.nodes.get(document_id=id1)
+        cre2 = NeoCRE.nodes.get(document_id=id2)
+
+        if link_type == "Contains":
+            cre1.contains.connect(cre2)
             return
-        self.driver.execute_query(
-            "MATCH (a:CRE), (b:CRE) "
-            "WHERE a.id = $aID AND b.id = $bID "
-            "CALL apoc.create.relationship(a,$relType, {},b) "
-            "YIELD rel "
-            "RETURN rel",
-            aID=id1,
-            bID=id2,
-            relType=str.upper(link_type).replace(" ", "_"),
-            database_="neo4j",
-        )
+        if link_type == "Related":
+            cre1.related.connect(cre2)
+            return
+        raise Exception(f"Unknown relation type {link_type}")
 
     @classmethod
     def link_CRE_to_Node(self, CRE_id, node_id, link_type):
-        if not self.connected:
+        cre = NeoCRE.nodes.get(document_id=CRE_id)
+        node = NeoNode.nodes.get(document_id=node_id)
+        if link_type == "Linked To":
+            cre.linked.connect(node)
             return
-        self.driver.execute_query(
-            "MATCH (a:CRE), (b:Standard|Tool) "
-            "WHERE a.id = $aID AND b.id = $bID "
-            "CALL apoc.create.relationship(a,$relType, {},b) "
-            "YIELD rel "
-            "RETURN rel",
-            aID=CRE_id,
-            bID=node_id,
-            relType=str.upper(link_type).replace(" ", "_"),
-            database_="neo4j",
-        )
+        if link_type == "SAME":
+            cre.same_as.connect(node)
+            return
+        raise Exception(f"Unknown relation type {link_type}")
 
     @classmethod
     def gap_analysis(self, name_1, name_2):
-        if not self.connected:
-            return None, None
-        base_standard, _, _ = self.driver.execute_query(
-            """
-            MATCH (BaseStandard:Standard|Tool {name: $name1})
-            RETURN BaseStandard
-            """,
-            name1=name_1,
-            database_="neo4j",
-        )
+        base_standard = NeoStandard.nodes.filter(name=name_1)
 
-        path_records_all, _, _ = self.driver.execute_query(
+        path_records_all, _ = db.cypher_query(
             """
-            OPTIONAL MATCH (BaseStandard:Standard|Tool {name: $name1})
-            OPTIONAL MATCH (CompareStandard:Standard|Tool {name: $name2})
+            OPTIONAL MATCH (BaseStandard:NeoStandard {name: $name1})
+            OPTIONAL MATCH (CompareStandard:NeoStandard {name: $name2})
             OPTIONAL MATCH p = shortestPath((BaseStandard)-[*..20]-(CompareStandard)) 
             WITH p
-            WHERE length(p) > 1 AND ALL(n in NODES(p) WHERE n:CRE or n = BaseStandard or n = CompareStandard) 
+            WHERE length(p) > 1 AND ALL(n in NODES(p) WHERE n:NeoCRE or n = BaseStandard or n = CompareStandard) 
             RETURN p
             """,
-            name1=name_1,
-            name2=name_2,
-            database_="neo4j",
-        )
-        path_records, _, _ = self.driver.execute_query(
-            """
-            OPTIONAL MATCH (BaseStandard:Standard|Tool {name: $name1})
-            OPTIONAL MATCH (CompareStandard:Standard|Tool {name: $name2})
-            OPTIONAL MATCH p = shortestPath((BaseStandard)-[:(LINKED_TO|CONTAINS)*..20]-(CompareStandard)) 
-            WITH p
-            WHERE length(p) > 1 AND ALL(n in NODES(p) WHERE n:CRE or n = BaseStandard or n = CompareStandard) 
-            RETURN p
-            """,
-            name1=name_1,
-            name2=name_2,
-            database_="neo4j",
+            {"name1": name_1, "name2": name_2},
+            resolve_objects=True,
         )
 
-        def format_segment(seg):
+        path_records, _ = db.cypher_query(
+            """
+            OPTIONAL MATCH (BaseStandard:NeoStandard {name: $name1})
+            OPTIONAL MATCH (CompareStandard:NeoStandard {name: $name2})
+            OPTIONAL MATCH p = shortestPath((BaseStandard)-[:(LINKED_TO|CONTAINS)*..20]-(CompareStandard)) 
+            WITH p
+            WHERE length(p) > 1 AND ALL(n in NODES(p) WHERE n:NeoCRE or n = BaseStandard or n = CompareStandard) 
+            RETURN p
+            """,
+            {"name1": name_1, "name2": name_2},
+            resolve_objects=True,
+        )
+
+        def format_segment(seg: StructuredRel, nodes):
+            relation_map = {
+                RelatedRel: "RELATED",
+                ContainsRel: "CONTAINS",
+                LinkedToRel: "LINKED_TO",
+                SameRel: "SAME",
+            }
+            start_node = [
+                node for node in nodes if node.element_id == seg._start_node_element_id
+            ][0]
+            end_node = [
+                node for node in nodes if node.element_id == seg._end_node_element_id
+            ][0]
+
             return {
-                "start": NEO_DB.parse_node(seg.start_node),
-                "end": NEO_DB.parse_node(seg.end_node),
-                "relationship": seg.type,
+                "start": NEO_DB.parse_node(start_node),
+                "end": NEO_DB.parse_node(end_node),
+                "relationship": relation_map[type(seg)],
             }
 
         def format_path_record(rec):
             return {
                 "start": NEO_DB.parse_node(rec.start_node),
                 "end": NEO_DB.parse_node(rec.end_node),
-                "path": [format_segment(seg) for seg in rec.relationships],
+                "path": [format_segment(seg, rec.nodes) for seg in rec.relationships],
             }
 
-        return [NEO_DB.parse_node(rec["BaseStandard"]) for rec in base_standard], [
-            format_path_record(rec["p"]) for rec in (path_records + path_records_all)
+        return [NEO_DB.parse_node(rec) for rec in base_standard], [
+            format_path_record(rec[0]) for rec in (path_records + path_records_all)
         ]
 
     @classmethod
     def standards(self) -> List[str]:
-        if not self.connected:
-            return
-        records, _, _ = self.driver.execute_query(
-            "MATCH (n:Standard|Tool) " "RETURN collect(distinct n.name)",
-            database_="neo4j",
-        )
-        return records[0][0]
+        tools = NeoTool.nodes.all()
+        standards = NeoStandard.nodes.all()
+
+        return list(set([x.name for x in tools] + [x.name for x in standards]))
 
     @staticmethod
-    def parse_node(node: neo4j.graph.Node) -> cre_defs.Document:
-        name = node["name"]
-        id = node["id"] if "id" in node else None
-        description = node["description"] if "description" in node else None
-        # links = [self.parse_link(link) for link in node["links"]]
-        tags = node["tags"]
-        # metadata = node["metadata"]
-        if cre_defs.Credoctypes.Code.value in node.labels:
-            return cre_defs.Code(
-                name=name,
-                id=id,
-                description=description,
-                # links=links,
-                tags=tags,
-                # metadata=metadata,
-                # hyperlink=(node["hyperlink"] if "hyperlink" in node else None),
-                version=(node["version"] if "version" in node else None),
-            )
-        if cre_defs.Credoctypes.Standard.value in node.labels:
-            return cre_defs.Standard(
-                name=name,
-                id=id,
-                description=description,
-                # links=links,
-                tags=tags,
-                # metadata=metadata,
-                # hyperlink=(node["hyperlink"] if "hyperlink" in node else None),
-                version=(node["version"] if "version" in node else None),
-                section=node["section"],
-                sectionID=node["sectionID"],
-                subsection=(node["subsection"] if "subsection" in node else None),
-            )
-        if cre_defs.Credoctypes.Tool.value in node.labels:
-            return cre_defs.Tool(
-                name=name,
-                id=id,
-                description=description,
-                # links=links,
-                tags=tags,
-                # metadata=metadata,
-                # hyperlink=(node["hyperlink"] if "hyperlink" in node else None),
-                version=(node["version"] if "version" in node else None),
-                section=node["section"],
-                sectionID=node["sectionID"],
-                subsection=(node["subsection"] if "subsection" in node else None),
-            )
-        if cre_defs.Credoctypes.CRE.value in node.labels:
-            return cre_defs.CRE(
-                name=name,
-                id=id,
-                description=description,
-                # links=links,
-                tags=tags,
-                # metadata=metadata,
-            )
-        raise Exception(f"Unknown node {node.labels}")
-
-    # @classmethod
-    # def parse_link(self, link):
-    #     return cre_defs.Link(ltype=link["ltype"], tags=link["tags"])
+    def parse_node(node: NeoDocument) -> cre_defs.Document:
+        return node.to_cre_def(node)
 
 
 class CRE_Graph:
