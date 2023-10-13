@@ -34,7 +34,7 @@ compliance-trestle
 nose==1.3.7
 numpy==1.23.0
 neo4j
-neomodel
+neomodel==5.1.2
 openapi-schema-validator==0.3.4
 openapi-spec-validator==0.5.1
 openpyxl==3.1.0
@@ -89,7 +89,7 @@ ruamel.yaml.clib==0.2.7
 scikit-learn==1.2.2
 Shapely==1.8.5.post1
 simplify-docx==0.1.2
-six==1.15.0
+six
 smmap==3.0.4
 sniffio==1.3.0
 soupsieve==2.4.1
