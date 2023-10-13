@@ -224,7 +224,6 @@ class NeoStandard(NeoNode):
     def to_cre_def(self, node, parse_links=True) -> cre_defs.Standard:
         return cre_defs.Standard(
             name=node.name,
-            id=node.document_id,
             description=node.description,
             tags=node.tags,
             hyperlink=node.hyperlink,
@@ -242,7 +241,6 @@ class NeoTool(NeoStandard):
     def to_cre_def(self, node, parse_links=True) -> cre_defs.Tool:
         return cre_defs.Tool(
             name=node.name,
-            id=node.document_id,
             description=node.description,
             tags=node.tags,
             hyperlink=node.hyperlink,
@@ -258,7 +256,6 @@ class NeoCode(NeoNode):
     def to_cre_def(self, node, parse_links=True) -> cre_defs.Code:
         return cre_defs.Code(
             name=node.name,
-            id=node.document_id,
             description=node.description,
             tags=node.tags,
             hyperlink=node.hyperlink,
@@ -277,7 +274,7 @@ class NeoCRE(NeoDocument):  # type: ignore
     def to_cre_def(self, node, parse_links=True) -> cre_defs.CRE:
         return cre_defs.CRE(
             name=node.name,
-            id=node.document_id,
+            id=node.external_id,
             description=node.description,
             tags=node.tags,
             links=self.get_links({
@@ -346,6 +343,7 @@ class NEO_DB:
                 "description": dbcre.description,
                 "links": [],  # dbcre.links,
                 "tags": [dbcre.tags] if isinstance(dbcre.tags, str) else dbcre.tags,
+                "external_id": dbcre.external_id
             }
         )
 
@@ -1017,10 +1015,10 @@ class Node_collection:
                 "You need to search by external_id, internal_id name or description"
             )
             return []
-
         if external_id:
             if not partial:
-                query = query.filter(CRE.external_id == external_id)
+                return [NEO_DB.parse_node(NeoCRE.nodes.get(external_id=external_id))]
+                # query = query.filter(CRE.external_id == external_id)
             else:
                 query = query.filter(CRE.external_id.like(external_id))
         if name:
