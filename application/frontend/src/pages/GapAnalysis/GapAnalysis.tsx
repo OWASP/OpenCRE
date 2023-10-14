@@ -229,7 +229,10 @@ export const GapAnalysis = () => {
           <LoadingAndErrorIndicator loading={loading} error={error} />
           {gapAnalysis && (
             <>
-              {Object.keys(gapAnalysis).map((key) => (
+              {Object.keys(gapAnalysis)
+              .sort((a, b) =>
+                getDocumentDisplayName(gapAnalysis[a].start, true).localeCompare(getDocumentDisplayName(gapAnalysis[b].start, true))
+              ).map((key) => (
                 <Table.Row key={key}>
                   <Table.Cell textAlign="left" verticalAlign="top" selectable>
                     <a href={getInternalUrl(gapAnalysis[key].start)} target="_blank">
