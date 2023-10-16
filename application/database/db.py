@@ -1017,8 +1017,6 @@ class Node_collection:
         include_only: Optional[List[str]] = None,
         internal_id: Optional[str] = None,
     ) -> List[cre_defs.CRE]:
-        cres: List[cre_defs.CRE] = []
-        query = CRE.query
         if not external_id and not name and not description and not internal_id:
             logger.error(
                 "You need to search by external_id, internal_id name or description"
