@@ -422,7 +422,7 @@ class NEO_DB:
     @classmethod
     def gap_analysis(self, name_1, name_2):
         base_standard = NeoStandard.nodes.filter(name=name_1)
-        blacklist = [["Cross-cutting concerns"]]
+        blacklist = ["Cross-cutting concerns"]
         path_records_all, _ = db.cypher_query(
             """
             OPTIONAL MATCH (BaseStandard:NeoStandard {name: $name1})
