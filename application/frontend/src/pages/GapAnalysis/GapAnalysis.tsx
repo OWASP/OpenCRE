@@ -127,7 +127,8 @@ export const GapAnalysis = () => {
   );
   const [gapAnalysis, setGapAnalysis] = useState<Record<string, GapAnalysisPathStart>>();
   const [activeIndex, SetActiveIndex] = useState<string>();
-  const [loading, setLoading] = useState<boolean>(false);
+  const [loadingStandards, setLoadingStandards] = useState<boolean>(false);
+  const [loadingGA, setLoadingGA] = useState<boolean>(false);
   const [error, setError] = useState<string | null | object>(null);
   const { apiUrl } = useEnvironment();
 
@@ -142,36 +143,36 @@ export const GapAnalysis = () => {
   useEffect(() => {
     const fetchData = async () => {
       const result = await axios.get(`${apiUrl}/standards`);
-      setLoading(false);
+      setLoadingStandards(false);
       setStandardOptions(
         standardOptionsDefault.concat(result.data.sort().map((x) => ({ key: x, text: x, value: x })))
       );
     };
 
-    setLoading(true);
+    setLoadingStandards(true);
     fetchData().catch((e) => {
-      setLoading(false);
+      setLoadingStandards(false);
       setError(e.response.data.message ?? e.message);
     });
-  }, [setStandardOptions, setLoading, setError]);
+  }, [setStandardOptions, setLoadingStandards, setError]);
 
   useEffect(() => {
     const fetchData = async () => {
       const result = await axios.get(
         `${apiUrl}/map_analysis?standard=${BaseStandard}&standard=${CompareStandard}`
       );
-      setLoading(false);
+      setLoadingGA(false);
       setGapAnalysis(result.data);
     };
 
     if (!BaseStandard || !CompareStandard || BaseStandard === CompareStandard) return;
     setGapAnalysis(undefined);
-    setLoading(true);
+    setLoadingGA(true);
     fetchData().catch((e) => {
-      setLoading(false);
+      setLoadingGA(false);
       setError(e.response.data.message ?? e.message);
     });
-  }, [BaseStandard, CompareStandard, setGapAnalysis, setLoading, setError]);
+  }, [BaseStandard, CompareStandard, setGapAnalysis, setLoadingGA, setError]);
 
   const handleAccordionClick = (e, titleProps) => {
     const { index } = titleProps;
@@ -226,50 +227,53 @@ export const GapAnalysis = () => {
           </Table.Row>
         </Table.Header>
         <Table.Body>
-          <LoadingAndErrorIndicator loading={loading} error={error} />
+          <LoadingAndErrorIndicator loading={loadingGA || loadingStandards} error={error} />
           {gapAnalysis && (
             <>
               {Object.keys(gapAnalysis)
-              .sort((a, b) =>
-                getDocumentDisplayName(gapAnalysis[a].start, true).localeCompare(getDocumentDisplayName(gapAnalysis[b].start, true))
-              ).map((key) => (
-                <Table.Row key={key}>
-                  <Table.Cell textAlign="left" verticalAlign="top" selectable>
-                    <a href={getInternalUrl(gapAnalysis[key].start)} target="_blank">
-                      <p>
-                        <b>{getDocumentDisplayName(gapAnalysis[key].start, true)}</b>
-                      </p>
-                    </a>
-                  </Table.Cell>
-                  <Table.Cell style={{ minWidth: '35vw' }}>
-                    {Object.values<any>(gapAnalysis[key].paths)
-                      .sort((a, b) => a.score - b.score)
-                      .slice(0, GetStrongPathsCount(gapAnalysis[key].paths))
-                      .map((path) => GetResultLine(path, gapAnalysis, key))}
-                    {Object.keys(gapAnalysis[key].paths).length > 3 && (
-                      <Accordion>
-                        <Accordion.Title
-                          active={activeIndex === key}
-                          index={key}
-                          onClick={handleAccordionClick}
-                        >
-                          <Button>More Links (Total: {Object.keys(gapAnalysis[key].paths).length})</Button>
-                        </Accordion.Title>
-                        <Accordion.Content active={activeIndex === key}>
-                          {Object.values<any>(gapAnalysis[key].paths)
-                            .sort((a, b) => a.score - b.score)
-                            .slice(
-                              GetStrongPathsCount(gapAnalysis[key].paths),
-                              Object.keys(gapAnalysis[key].paths).length
-                            )
-                            .map((path) => GetResultLine(path, gapAnalysis, key))}
-                        </Accordion.Content>
-                      </Accordion>
-                    )}
-                    {Object.keys(gapAnalysis[key].paths).length === 0 && <i>No links Found</i>}
-                  </Table.Cell>
-                </Table.Row>
-              ))}
+                .sort((a, b) =>
+                  getDocumentDisplayName(gapAnalysis[a].start, true).localeCompare(
+                    getDocumentDisplayName(gapAnalysis[b].start, true)
+                  )
+                )
+                .map((key) => (
+                  <Table.Row key={key}>
+                    <Table.Cell textAlign="left" verticalAlign="top" selectable>
+                      <a href={getInternalUrl(gapAnalysis[key].start)} target="_blank">
+                        <p>
+                          <b>{getDocumentDisplayName(gapAnalysis[key].start, true)}</b>
+                        </p>
+                      </a>
+                    </Table.Cell>
+                    <Table.Cell style={{ minWidth: '35vw' }}>
+                      {Object.values<any>(gapAnalysis[key].paths)
+                        .sort((a, b) => a.score - b.score)
+                        .slice(0, GetStrongPathsCount(gapAnalysis[key].paths))
+                        .map((path) => GetResultLine(path, gapAnalysis, key))}
+                      {Object.keys(gapAnalysis[key].paths).length > 3 && (
+                        <Accordion>
+                          <Accordion.Title
+                            active={activeIndex === key}
+                            index={key}
+                            onClick={handleAccordionClick}
+                          >
+                            <Button>More Links (Total: {Object.keys(gapAnalysis[key].paths).length})</Button>
+                          </Accordion.Title>
+                          <Accordion.Content active={activeIndex === key}>
+                            {Object.values<any>(gapAnalysis[key].paths)
+                              .sort((a, b) => a.score - b.score)
+                              .slice(
+                                GetStrongPathsCount(gapAnalysis[key].paths),
+                                Object.keys(gapAnalysis[key].paths).length
+                              )
+                              .map((path) => GetResultLine(path, gapAnalysis, key))}
+                          </Accordion.Content>
+                        </Accordion>
+                      )}
+                      {Object.keys(gapAnalysis[key].paths).length === 0 && <i>No links Found</i>}
+                    </Table.Cell>
+                  </Table.Row>
+                ))}
             </>
           )}
         </Table.Body>
