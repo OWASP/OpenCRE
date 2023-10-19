@@ -427,7 +427,7 @@ class NEO_DB:
             """
             OPTIONAL MATCH (BaseStandard:NeoStandard {name: $name1})
             OPTIONAL MATCH (CompareStandard:NeoStandard {name: $name2})
-            OPTIONAL MATCH p = allShortestPaths((BaseStandard)-[*..20]-(CompareStandard)) 
+            OPTIONAL MATCH p = shortestPath((BaseStandard)-[*..20]-(CompareStandard)) 
             WITH p
             WHERE length(p) > 1 AND ALL(n in NODES(p) WHERE (n:NeoCRE or n = BaseStandard or n = CompareStandard) AND NOT n.name in $denylist) 
             RETURN p
@@ -440,7 +440,7 @@ class NEO_DB:
             """
             OPTIONAL MATCH (BaseStandard:NeoStandard {name: $name1})
             OPTIONAL MATCH (CompareStandard:NeoStandard {name: $name2})
-            OPTIONAL MATCH p = allShortestPaths((BaseStandard)-[:(LINKED_TO|CONTAINS)*..20]-(CompareStandard)) 
+            OPTIONAL MATCH p = shortestPath((BaseStandard)-[:(LINKED_TO|CONTAINS)*..20]-(CompareStandard)) 
             WITH p
             WHERE length(p) > 1 AND ALL(n in NODES(p) WHERE (n:NeoCRE or n = BaseStandard or n = CompareStandard) AND NOT n.name in $denylist) 
             RETURN p
