@@ -423,6 +423,8 @@ class NEO_DB:
     def gap_analysis(self, name_1, name_2):
         base_standard = NeoStandard.nodes.filter(name=name_1)
         denylist = ["Cross-cutting concerns"]
+        from datetime import datetime
+        t1 = datetime.now()
         path_records_all, _ = db.cypher_query(
             """
             OPTIONAL MATCH (BaseStandard:NeoStandard {name: $name1})
@@ -435,6 +437,7 @@ class NEO_DB:
             {"name1": name_1, "name2": name_2, "denylist": denylist},
             resolve_objects=True,
         )
+        t2 = datetime.now()
 
         path_records, _ = db.cypher_query(
             """
@@ -448,7 +451,7 @@ class NEO_DB:
             {"name1": name_1, "name2": name_2, "denylist": denylist},
             resolve_objects=True,
         )
-
+        t3 = datetime.now()
         def format_segment(seg: StructuredRel, nodes):
             relation_map = {
                 RelatedRel: "RELATED",
@@ -476,6 +479,8 @@ class NEO_DB:
                 "path": [format_segment(seg, rec.nodes) for seg in rec.relationships],
             }
 
+        from pprint import pprint
+        pprint(f"path records all took {t2-t1} path records took {t3 - t2}, total: {t3 - t1}")
         return [NEO_DB.parse_node(rec) for rec in base_standard], [
             format_path_record(rec[0]) for rec in (path_records + path_records_all)
         ]
