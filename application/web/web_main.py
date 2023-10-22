@@ -218,6 +218,7 @@ def find_document_by_tag() -> Any:
     logger.info("tags aborting 404")
     abort(404)
 
+
 @app.route("/rest/v1/map_analysis", methods=["GET"])
 @cache.cached(timeout=50, query_string=True)
 def gap_analysis() -> Any:
@@ -236,9 +237,17 @@ def gap_analysis() -> Any:
                 return jsonify({"job_id": gap_analysis_dict.get("job_id")})
 
     q = Queue(connection=conn)
-    gap_analysis_job = q.enqueue_call(db.gap_analysis, kwargs={"neo_db":database.neo_db, "node_names": standards,"store_in_cache":True, "cache_key":standards_hash})
+    gap_analysis_job = q.enqueue_call(
+        db.gap_analysis,
+        kwargs={
+            "neo_db": database.neo_db,
+            "node_names": standards,
+            "store_in_cache": True,
+            "cache_key": standards_hash,
+        },
+    )
 
-    conn.set(standards_hash, json.dumps({"job_id":gap_analysis_job.id,"result":""}))
+    conn.set(standards_hash, json.dumps({"job_id": gap_analysis_job.id, "result": ""}))
     return jsonify({"job_id": gap_analysis_job.id})
 
 
@@ -287,7 +296,9 @@ def fetch_job() -> Any:
                     if ga.get("result"):
                         return jsonify({"result": ga.get("result")})
                     else:
-                        logger.error("Finished job does not have a result object, this is a bug!")
+                        logger.error(
+                            "Finished job does not have a result object, this is a bug!"
+                        )
                         abort(500, "this is a bug, please raise a ticket")
 
     elif res.latest_result().type == result.Type.FAILED:
