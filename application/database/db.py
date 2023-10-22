@@ -1,3 +1,6 @@
+from flask import json as flask_json
+import json
+import redis
 from neomodel import (
     config,
     StructuredNode,
@@ -25,6 +28,8 @@ from sqlalchemy import func
 import uuid
 
 from application.utils.gap_analysis import get_path_score
+from application.utils.hash import make_array_hash
+
 
 from .. import sqla  # type: ignore
 
@@ -1759,7 +1764,7 @@ def dbCREfromCRE(cre: cre_defs.CRE) -> CRE:
     )
 
 
-def gap_analysis(neo_db, node_names: List[str]):
+def gap_analysis(neo_db:NEO_DB, node_names: List[str],store_in_cache:bool=False, cache_key:str=""):
     base_standard, paths = neo_db.gap_analysis(node_names[0], node_names[1])
     if base_standard is None:
         return None
@@ -1779,4 +1784,14 @@ def gap_analysis(neo_db, node_names: List[str]):
                 grouped_paths[key]["paths"][end_key] = path
         else:
             grouped_paths[key]["paths"][end_key] = path
+
+    if store_in_cache: # lightweight memory option to not return potentially huge object and instead store in a cache, 
+        # in case this is called via worker, we save both this and the caller memory by avoiding duplicate object in mem
+        conn = redis.from_url(os.getenv("REDIS_URL", "redis://localhost:6379"))
+        if cache_key == "":
+            cache_key = make_array_hash(node_names)
+
+        conn.set(cache_key,flask_json.dumps(grouped_paths))
+        return (node_names,{})
+
     return (node_names, grouped_paths)

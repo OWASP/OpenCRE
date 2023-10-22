@@ -2,7 +2,6 @@
 # silence mypy for the routes file
 from functools import wraps
 import json
-import hashlib
 import logging
 import os
 import pathlib
@@ -37,6 +36,7 @@ from google_auth_oauthlib.flow import Flow
 from application.utils.spreadsheet import write_csv
 import oauthlib
 import google.auth.transport.requests
+from application.utils.hash import make_array_hash
 
 ITEMS_PER_PAGE = 20
 
@@ -218,11 +218,6 @@ def find_document_by_tag() -> Any:
     logger.info("tags aborting 404")
     abort(404)
 
-
-def make_standards_hash(standards: list):
-    return hashlib.md5(":".join(standards).encode("utf-8")).hexdigest()
-
-
 @app.route("/rest/v1/map_analysis", methods=["GET"])
 @cache.cached(timeout=50, query_string=True)
 def gap_analysis() -> Any:
@@ -230,15 +225,16 @@ def gap_analysis() -> Any:
     standards = request.args.getlist("standard")
     redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
     conn = redis.from_url(redis_url)
-    standards_hash = make_standards_hash(standards)
+    standards_hash = make_array_hash(standards)
     if conn.exists(standards_hash):
         ga = conn.get(standards_hash)
         if ga:
             ga_result = conn.get(standards_hash)
             ga_obj = json.loads(ga_result)
             return jsonify({"result": ga_obj})
+
     q = Queue(connection=conn)
-    ga_job = q.enqueue_call(db.gap_analysis, [database.neo_db, standards])
+    ga_job = q.enqueue_call(db.gap_analysis, kwargs={"neo_db":database.neo_db, "node_names": standards,"store_in_cache":True, "cache_key":standards_hash})
 
     conn.set(standards_hash, "")
     return jsonify({"job_id": ga_job.id})
@@ -278,25 +274,21 @@ def fetch_job() -> Any:
 
         if len(ga_result) == 2:
             standards = ga_result[0]
-            standards_hash = make_standards_hash(standards=standards)
+            standards_hash = make_array_hash(standards)
 
             if conn.exists(standards_hash):
                 logger.info("and hash is already in cache")
                 ga = conn.get(standards_hash)
                 if ga != "":
-                    logger.info("and results already in cache")
-
-                    logger.warning(
-                        f"there was already a gap analysis for standards {standards}, this could be a bug"
-                    )
-            return jsonify({"result": ga_result[1]})
+                    logger.info("and results in cache")
+                    ga = json.loads(ga)
+            return jsonify({"result": ga})
     elif res.latest_result().type == result.Type.FAILED:
         logger.error(res.latest_result().exc_string)
         abort(500)
     else:
         logger.warning(f"job stopped? {res.latest_result().type}")
         abort(500)
-        return jsonify({})
 
 
 @app.route("/rest/v1/standards", methods=["GET"])
