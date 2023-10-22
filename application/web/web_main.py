@@ -218,6 +218,7 @@ def find_document_by_tag() -> Any:
     logger.info("tags aborting 404")
     abort(404)
 
+
 @app.route("/rest/v1/map_analysis", methods=["GET"])
 @cache.cached(timeout=50, query_string=True)
 def gap_analysis() -> Any:
