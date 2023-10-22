@@ -1,5 +1,5 @@
 import axios from 'axios';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import {
   Accordion,
@@ -125,12 +125,14 @@ export const GapAnalysis = () => {
   const [CompareStandard, setCompareStandard] = useState<string | undefined>(
     searchParams.get('compare') ?? ''
   );
+  const [gaJob, setgaJob] = useState<string>("");
   const [gapAnalysis, setGapAnalysis] = useState<Record<string, GapAnalysisPathStart>>();
   const [activeIndex, SetActiveIndex] = useState<string>();
   const [loadingStandards, setLoadingStandards] = useState<boolean>(false);
   const [loadingGA, setLoadingGA] = useState<boolean>(false);
   const [error, setError] = useState<string | null | object>(null);
   const { apiUrl } = useEnvironment();
+  const timerIdRef = useRef<NodeJS.Timer>();
 
   const GetStrongPathsCount = (paths) =>
     Math.max(
@@ -157,12 +159,64 @@ export const GapAnalysis = () => {
   }, [setStandardOptions, setLoadingStandards, setError]);
 
   useEffect(() => {
+    console.log("gajob changed, polling")
+    const pollingCallback = () => {
+      const fetchData = async () => {
+        const result = await axios.get(
+          `${apiUrl}/ma_job_results?id=` + gaJob,
+          {
+            headers: {
+              'Cache-Control': 'no-cache',
+              'Pragma': 'no-cache',
+              'Expires': '0',
+            }
+          },
+        );
+        if (result.data.result) {
+          setLoadingGA(false);
+          setGapAnalysis(result.data.result);
+          setgaJob("")
+        }
+      }
+      if (!gaJob) return;
+      fetchData().catch((e) => {
+        setLoadingGA(false);
+        setError(e.response.data.message ?? e.message);
+      });
+    }
+
+    const startPolling = () => {
+      // Polling every 10 seconds
+      timerIdRef.current = setInterval(pollingCallback, 10000);
+    };
+    const stopPolling = () => {
+      clearInterval(timerIdRef.current);
+    };
+
+    if (gaJob) {
+      console.log("started polling")
+      startPolling();
+    } else {
+      console.log("stoped polling")
+      stopPolling();
+    }
+
+    return () => {
+      stopPolling();
+    };
+  }, [gaJob])
+
+  useEffect(() => {
     const fetchData = async () => {
       const result = await axios.get(
         `${apiUrl}/map_analysis?standard=${BaseStandard}&standard=${CompareStandard}`
       );
-      setLoadingGA(false);
-      setGapAnalysis(result.data);
+      if (result.data.result) {
+        setLoadingGA(false);
+        setGapAnalysis(result.data.result);
+      } else if (result.data.job_id) {
+        setgaJob(result.data.job_id)
+      }
     };
 
     if (!BaseStandard || !CompareStandard || BaseStandard === CompareStandard) return;

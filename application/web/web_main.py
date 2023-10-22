@@ -2,12 +2,15 @@
 # silence mypy for the routes file
 from functools import wraps
 import json
+import hashlib
 import logging
 import os
 import pathlib
 import urllib.parse
 from typing import Any
 from application.utils import oscal_utils
+import redis
+from rq import Worker, Queue, Connection, job, exceptions
 
 from application import cache
 from application.database import db
@@ -17,6 +20,7 @@ from application.utils import spreadsheet as sheet_utils
 from application.utils import mdutils, redirectors
 from application.prompt_client import prompt_client as prompt_client
 from enum import Enum
+from flask import json as flask_json
 from flask import (
     Blueprint,
     abort,
@@ -215,25 +219,91 @@ def find_document_by_tag() -> Any:
     abort(404)
 
 
+def make_standards_hash(standards: list):
+    return hashlib.md5(":".join(standards).encode("utf-8")).hexdigest()
+
+
 @app.route("/rest/v1/map_analysis", methods=["GET"])
 @cache.cached(timeout=50, query_string=True)
 def gap_analysis() -> Any:
     database = db.Node_collection()
     standards = request.args.getlist("standard")
-    gap_analysis = database.gap_analysis(standards)
-    if gap_analysis is None:
-        return neo4j_not_running_rejection()
-    return jsonify(gap_analysis)
+    redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
+    conn = redis.from_url(redis_url)
+    standards_hash = make_standards_hash(standards)
+    if conn.exists(standards_hash):
+        ga = conn.get(standards_hash)
+        if ga:
+            ga_result = conn.get(standards_hash)
+            ga_obj = json.loads(ga_result)
+            return jsonify({"result":ga_obj})
+    q = Queue(connection=conn)
+    ga_job = q.enqueue_call(db.gap_analysis, [database.neo_db, standards])
+
+    conn.set(standards_hash, "")
+    return jsonify({"job_id": ga_job.id})
+
+
+@app.route("/rest/v1/ma_job_results", methods=["GET"])
+def fetch_job() -> Any:
+    logger.info("fetching job results")
+    jobid = request.args.get("id")
+    redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
+    conn = redis.from_url(redis_url)
+    try:
+        res = job.Job.fetch(id=jobid, connection=conn)
+    except exceptions.NoSuchJobError as nje:
+        abort(404, "No such job")
+
+    logger.info("job exists")
+    if res.get_status() != job.JobStatus.FINISHED:
+        logger.info("but hasn't finished")
+        return jsonify({"status": res.get_status()})
+    result = res.latest_result()
+    logger.info("and has finished")
+
+    if res.latest_result().type == result.Type.SUCCESSFUL:
+        ga_result = result.return_value
+        logger.info("and has results")
+
+        if len(ga_result) == 2:
+            standards = ga_result[0]
+            standards_hash = make_standards_hash(standards=standards)
+
+            if conn.exists(standards_hash):
+                logger.info("and hash is already in cache")
+                ga = conn.get(standards_hash)
+                if ga != "":
+                    logger.info("and results already in cache")
+
+                    logger.warning(
+                        f"there was already a gap analysis for standards {standards}, this could be a bug"
+                    )
+            return jsonify({"result":ga_result[1]})
+    elif res.latest_result().type == result.Type.FAILED:
+        logger.error(res.latest_result().exc_string)
+        abort(500)
+    else:
+        logger.warning(f"job stopped? {res.latest_result().type}")
+        abort(500)
+        return jsonify({})
 
 
 @app.route("/rest/v1/standards", methods=["GET"])
 @cache.cached(timeout=50)
 def standards() -> Any:
-    database = db.Node_collection()
-    standards = database.standards()
-    if standards is None:
-        neo4j_not_running_rejection()
-    return standards
+    redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
+    conn = redis.from_url(redis_url)
+    standards = conn.get("NodeNames")
+    if standards:
+        return standards
+    else:
+        database = db.Node_collection()
+        standards = database.standards()
+        if standards is None:
+            neo4j_not_running_rejection()
+        conn.set("NodeNames", flask_json.dumps(standards))
+        return standards
 
 
 @app.route("/rest/v1/text_search", methods=["GET"])

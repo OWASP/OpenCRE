@@ -16,7 +16,7 @@ import re
 from collections import Counter
 from itertools import permutations
 from typing import Any, Dict, List, Optional, Tuple, cast
-
+from itertools import chain
 import networkx as nx
 import yaml
 from application.defs import cre_defs
@@ -294,8 +294,13 @@ class NEO_DB:
         raise ValueError("NEO_DB is a singleton, please call instance() instead")
 
     @classmethod
-    def populate_DB(self, session) -> nx.Graph:
-        graph = nx.DiGraph()
+    def add_gap_analysis(self, standard1: NeoNode, standard2: NeoNode):
+        """
+        Populates the DB with a precompute of the gap analysis between the two specific standards
+        """
+
+    @classmethod
+    def populate_DB(self, session):
         for il in session.query(InternalLinks).all():
             group = session.query(CRE).filter(CRE.id == il.group).first()
             if not group:
@@ -319,7 +324,6 @@ class NEO_DB:
             self.add_cre(cre)
 
             self.link_CRE_to_Node(lnk.cre, lnk.node, lnk.type)
-        return graph
 
     @classmethod
     def add_cre(self, dbcre: CRE):
@@ -425,6 +429,7 @@ class NEO_DB:
         denylist = ["Cross-cutting concerns"]
         from pprint import pprint
         from datetime import datetime
+
         t1 = datetime.now()
         path_records_all, _ = db.cypher_query(
             """
@@ -440,7 +445,8 @@ class NEO_DB:
         )
         t2 = datetime.now()
         pprint(f"path records all took {t2-t1}")
-
+        pprint(path_records_all.__len__())
+        #  [<Path start=<NeoStandard: {'document_id': '73be20a0-e1dd-4c01-9166-6a51e21a141d', 'name': 'ASVS', 'description': '', 'tags': [''], 'doctype': 'Standard', 'version': '','hyperlink': '', 'section': 'Verify that the application or framework enforces a strong anti-CSRF mechanism to protect authenticated functionality, and effective anti-automation or anti-CSRF protects unauthenticated functionality.', 'subsection': '', 'section_id': 'V4.2.2', 'element_id_property': '4:bee1d85e-034b-4f2b-ab7c-fd953841902a:1480'}> end=<NeoStandard: {'document_id': '2da87f8a-dc7e-4c47-b6d7-2295fff79dbb', 'name': 'CWE', 'description': '', 'tags': [''], 'doctype': 'Standard', 'version': '', 'hyperlink': '', 'section': '', 'subsection': '', 'section_id': '275', 'element_id_property': '4:bee1d85e-034b-4f2b-ab7c-fd953841902a:1479'}> size=4>]]
         path_records, _ = db.cypher_query(
             """
             OPTIONAL MATCH (BaseStandard:NeoStandard {name: $name1})
@@ -454,6 +460,7 @@ class NEO_DB:
             resolve_objects=True,
         )
         t3 = datetime.now()
+
         def format_segment(seg: StructuredRel, nodes):
             relation_map = {
                 RelatedRel: "RELATED",
@@ -481,17 +488,24 @@ class NEO_DB:
                 "path": [format_segment(seg, rec.nodes) for seg in rec.relationships],
             }
 
-        pprint(f"path records all took {t2-t1} path records took {t3 - t2}, total: {t3 - t1}")
+        pprint(
+            f"path records all took {t2-t1} path records took {t3 - t2}, total: {t3 - t1}"
+        )
         return [NEO_DB.parse_node(rec) for rec in base_standard], [
             format_path_record(rec[0]) for rec in (path_records + path_records_all)
         ]
 
     @classmethod
     def standards(self) -> List[str]:
-        tools = NeoTool.nodes.all()
-        standards = NeoStandard.nodes.all()
-
-        return list(set([x.name for x in tools] + [x.name for x in standards]))
+        tools = []
+        for x in db.cypher_query("""MATCH (n:NeoTool) RETURN DISTINCT n.name""")[0]:
+            tools.extend(x)
+        standards = []
+        for x in db.cypher_query("""MATCH (n:NeoStandard) RETURN DISTINCT n.name""")[
+            0
+        ]:  # 0 is the results, 1 is the "n.name" param
+            standards.extend(x)
+        return list(set([x for x in tools] + [x for x in standards]))
 
     @staticmethod
     def parse_node(node: NeoDocument) -> cre_defs.Document:
@@ -1405,28 +1419,6 @@ class Node_collection:
 
         return res
 
-    def gap_analysis(self, node_names: List[str]):
-        base_standard, paths = self.neo_db.gap_analysis(node_names[0], node_names[1])
-        if base_standard is None:
-            return None
-        grouped_paths = {}
-        for node in base_standard:
-            key = node.id
-            if key not in grouped_paths:
-                grouped_paths[key] = {"start": node, "paths": {}}
-
-        for path in paths:
-            key = path["start"].id
-            end_key = path["end"].id
-            path["score"] = get_path_score(path)
-            del path["start"]
-            if end_key in grouped_paths[key]["paths"]:
-                if grouped_paths[key]["paths"][end_key]["score"] > path["score"]:
-                    grouped_paths[key]["paths"][end_key] = path
-            else:
-                grouped_paths[key]["paths"][end_key] = path
-        return grouped_paths
-
     def standards(self) -> List[str]:
         return self.neo_db.standards()
 
@@ -1773,3 +1765,26 @@ def dbCREfromCRE(cre: cre_defs.CRE) -> CRE:
         external_id=cre.id,
         tags=",".join(tags),
     )
+
+
+def gap_analysis(neo_db, node_names: List[str]):
+    base_standard, paths = neo_db.gap_analysis(node_names[0], node_names[1])
+    if base_standard is None:
+        return None
+    grouped_paths = {}
+    for node in base_standard:
+        key = node.id
+        if key not in grouped_paths:
+            grouped_paths[key] = {"start": node, "paths": {}}
+
+    for path in paths:
+        key = path["start"].id
+        end_key = path["end"].id
+        path["score"] = get_path_score(path)
+        del path["start"]
+        if end_key in grouped_paths[key]["paths"]:
+            if grouped_paths[key]["paths"][end_key]["score"] > path["score"]:
+                grouped_paths[key]["paths"][end_key] = path
+        else:
+            grouped_paths[key]["paths"][end_key] = path
+    return (node_names, grouped_paths)
