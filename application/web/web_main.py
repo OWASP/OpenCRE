@@ -2,6 +2,7 @@
 # silence mypy for the routes file
 from functools import wraps
 import json
+import hashlib
 import logging
 import os
 import pathlib
@@ -217,6 +218,10 @@ def find_document_by_tag() -> Any:
         return jsonify(result)
     logger.info("tags aborting 404")
     abort(404)
+
+
+def make_standards_hash(standards: list):
+    return hashlib.md5(":".join(standards).encode("utf-8")).hexdigest()
 
 
 @app.route("/rest/v1/map_analysis", methods=["GET"])

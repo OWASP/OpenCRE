@@ -457,6 +457,7 @@ class NEO_DB:
             resolve_objects=True,
         )
         t3 = datetime.now()
+
         def format_segment(seg: StructuredRel, nodes):
             relation_map = {
                 RelatedRel: "RELATED",
