@@ -236,7 +236,7 @@ def gap_analysis() -> Any:
         if ga:
             ga_result = conn.get(standards_hash)
             ga_obj = json.loads(ga_result)
-            return jsonify({"result":ga_obj})
+            return jsonify({"result": ga_obj})
     q = Queue(connection=conn)
     ga_job = q.enqueue_call(db.gap_analysis, [database.neo_db, standards])
 
@@ -262,7 +262,10 @@ def fetch_job() -> Any:
         abort(500, "background job stopped")
     elif res.get_status() == job.JobStatus.CANCELED:
         abort(500, "background job canceled")
-    elif res.get_status() == job.JobStatus.STARTED or res.get_status() == job.JobStatus.QUEUED:
+    elif (
+        res.get_status() == job.JobStatus.STARTED
+        or res.get_status() == job.JobStatus.QUEUED
+    ):
         logger.info("but hasn't finished")
         return jsonify({"status": res.get_status()})
 
@@ -286,7 +289,7 @@ def fetch_job() -> Any:
                     logger.warning(
                         f"there was already a gap analysis for standards {standards}, this could be a bug"
                     )
-            return jsonify({"result":ga_result[1]})
+            return jsonify({"result": ga_result[1]})
     elif res.latest_result().type == result.Type.FAILED:
         logger.error(res.latest_result().exc_string)
         abort(500)

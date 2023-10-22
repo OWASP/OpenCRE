@@ -125,7 +125,7 @@ export const GapAnalysis = () => {
   const [CompareStandard, setCompareStandard] = useState<string | undefined>(
     searchParams.get('compare') ?? ''
   );
-  const [gaJob, setgaJob] = useState<string>("");
+  const [gaJob, setgaJob] = useState<string>('');
   const [gapAnalysis, setGapAnalysis] = useState<Record<string, GapAnalysisPathStart>>();
   const [activeIndex, SetActiveIndex] = useState<string>();
   const [loadingStandards, setLoadingStandards] = useState<boolean>(false);
@@ -159,31 +159,28 @@ export const GapAnalysis = () => {
   }, [setStandardOptions, setLoadingStandards, setError]);
 
   useEffect(() => {
-    console.log("gajob changed, polling")
+    console.log('gajob changed, polling');
     const pollingCallback = () => {
       const fetchData = async () => {
-        const result = await axios.get(
-          `${apiUrl}/ma_job_results?id=` + gaJob,
-          {
-            headers: {
-              'Cache-Control': 'no-cache',
-              'Pragma': 'no-cache',
-              'Expires': '0',
-            }
+        const result = await axios.get(`${apiUrl}/ma_job_results?id=` + gaJob, {
+          headers: {
+            'Cache-Control': 'no-cache',
+            Pragma: 'no-cache',
+            Expires: '0',
           },
-        );
+        });
         if (result.data.result) {
           setLoadingGA(false);
           setGapAnalysis(result.data.result);
-          setgaJob("")
+          setgaJob('');
         }
-      }
+      };
       if (!gaJob) return;
       fetchData().catch((e) => {
         setLoadingGA(false);
         setError(e.response.data.message ?? e.message);
       });
-    }
+    };
 
     const startPolling = () => {
       // Polling every 10 seconds
@@ -194,17 +191,17 @@ export const GapAnalysis = () => {
     };
 
     if (gaJob) {
-      console.log("started polling")
+      console.log('started polling');
       startPolling();
     } else {
-      console.log("stoped polling")
+      console.log('stoped polling');
       stopPolling();
     }
 
     return () => {
       stopPolling();
     };
-  }, [gaJob])
+  }, [gaJob]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -215,7 +212,7 @@ export const GapAnalysis = () => {
         setLoadingGA(false);
         setGapAnalysis(result.data.result);
       } else if (result.data.job_id) {
-        setgaJob(result.data.job_id)
+        setgaJob(result.data.job_id);
       }
     };
 
