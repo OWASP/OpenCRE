@@ -256,9 +256,16 @@ def fetch_job() -> Any:
         abort(404, "No such job")
 
     logger.info("job exists")
-    if res.get_status() != job.JobStatus.FINISHED:
+    if res.get_status() == job.JobStatus.FAILED:
+        abort(500, "background job failed")
+    elif res.get_status() == job.JobStatus.STOPPED:
+        abort(500, "background job stopped")
+    elif res.get_status() == job.JobStatus.CANCELED:
+        abort(500, "background job canceled")
+    elif res.get_status() == job.JobStatus.STARTED or res.get_status() == job.JobStatus.QUEUED:
         logger.info("but hasn't finished")
         return jsonify({"status": res.get_status()})
+
     result = res.latest_result()
     logger.info("and has finished")
 
