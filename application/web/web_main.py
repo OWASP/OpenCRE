@@ -227,17 +227,19 @@ def gap_analysis() -> Any:
     conn = redis.from_url(redis_url)
     standards_hash = make_array_hash(standards)
     if conn.exists(standards_hash):
-        ga = conn.get(standards_hash)
-        if ga:
-            ga_result = conn.get(standards_hash)
-            ga_obj = json.loads(ga_result)
-            return jsonify({"result": ga_obj})
+        gap_analysis_results = conn.get(standards_hash)
+        if gap_analysis_results:
+            gap_analysis_dict = json.loads(gap_analysis_results)
+            if gap_analysis_dict.get("result"):
+                return jsonify({"result": gap_analysis_dict.get("result")})
+            elif gap_analysis_dict.get("job_id"):
+                return jsonify({"job_id": gap_analysis_dict.get("job_id")})
 
     q = Queue(connection=conn)
-    ga_job = q.enqueue_call(db.gap_analysis, kwargs={"neo_db":database.neo_db, "node_names": standards,"store_in_cache":True, "cache_key":standards_hash})
+    gap_analysis_job = q.enqueue_call(db.gap_analysis, kwargs={"neo_db":database.neo_db, "node_names": standards,"store_in_cache":True, "cache_key":standards_hash})
 
-    conn.set(standards_hash, "")
-    return jsonify({"job_id": ga_job.id})
+    conn.set(standards_hash, json.dumps({"job_id":gap_analysis_job.id,"result":""}))
+    return jsonify({"job_id": gap_analysis_job.id})
 
 
 @app.route("/rest/v1/ma_job_results", methods=["GET"])
@@ -279,10 +281,15 @@ def fetch_job() -> Any:
             if conn.exists(standards_hash):
                 logger.info("and hash is already in cache")
                 ga = conn.get(standards_hash)
-                if ga != "":
+                if ga:
                     logger.info("and results in cache")
                     ga = json.loads(ga)
-            return jsonify({"result": ga})
+                    if ga.get("result"):
+                        return jsonify({"result": ga.get("result")})
+                    else:
+                        logger.error("Finished job does not have a result object, this is a bug!")
+                        abort(500, "this is a bug, please raise a ticket")
+
     elif res.latest_result().type == result.Type.FAILED:
         logger.error(res.latest_result().exc_string)
         abort(500)

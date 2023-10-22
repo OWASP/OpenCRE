@@ -1791,7 +1791,7 @@ def gap_analysis(neo_db:NEO_DB, node_names: List[str],store_in_cache:bool=False,
         if cache_key == "":
             cache_key = make_array_hash(node_names)
 
-        conn.set(cache_key,flask_json.dumps(grouped_paths))
+        conn.set(cache_key,flask_json.dumps({"result":grouped_paths}))
         return (node_names,{})
 
     return (node_names, grouped_paths)
