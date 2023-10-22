@@ -16,7 +16,6 @@ import re
 from collections import Counter
 from itertools import permutations
 from typing import Any, Dict, List, Optional, Tuple, cast
-from itertools import chain
 import networkx as nx
 import yaml
 from application.defs import cre_defs
@@ -294,12 +293,6 @@ class NEO_DB:
         raise ValueError("NEO_DB is a singleton, please call instance() instead")
 
     @classmethod
-    def add_gap_analysis(self, standard1: NeoNode, standard2: NeoNode):
-        """
-        Populates the DB with a precompute of the gap analysis between the two specific standards
-        """
-
-    @classmethod
     def populate_DB(self, session):
         for il in session.query(InternalLinks).all():
             group = session.query(CRE).filter(CRE.id == il.group).first()
@@ -446,7 +439,6 @@ class NEO_DB:
         t2 = datetime.now()
         pprint(f"path records all took {t2-t1}")
         pprint(path_records_all.__len__())
-        #  [<Path start=<NeoStandard: {'document_id': '73be20a0-e1dd-4c01-9166-6a51e21a141d', 'name': 'ASVS', 'description': '', 'tags': [''], 'doctype': 'Standard', 'version': '','hyperlink': '', 'section': 'Verify that the application or framework enforces a strong anti-CSRF mechanism to protect authenticated functionality, and effective anti-automation or anti-CSRF protects unauthenticated functionality.', 'subsection': '', 'section_id': 'V4.2.2', 'element_id_property': '4:bee1d85e-034b-4f2b-ab7c-fd953841902a:1480'}> end=<NeoStandard: {'document_id': '2da87f8a-dc7e-4c47-b6d7-2295fff79dbb', 'name': 'CWE', 'description': '', 'tags': [''], 'doctype': 'Standard', 'version': '', 'hyperlink': '', 'section': '', 'subsection': '', 'section_id': '275', 'element_id_property': '4:bee1d85e-034b-4f2b-ab7c-fd953841902a:1479'}> size=4>]]
         path_records, _ = db.cypher_query(
             """
             OPTIONAL MATCH (BaseStandard:NeoStandard {name: $name1})
