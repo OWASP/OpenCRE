@@ -494,15 +494,12 @@ class NEO_DB:
 
     @classmethod
     def standards(self) -> List[str]:
-        tools = []
+        results = []
         for x in db.cypher_query("""MATCH (n:NeoTool) RETURN DISTINCT n.name""")[0]:
-            tools.extend(x)
-        standards = []
-        for x in db.cypher_query("""MATCH (n:NeoStandard) RETURN DISTINCT n.name""")[
-            0
-        ]:  # 0 is the results, 1 is the "n.name" param
-            standards.extend(x)
-        return list(set([x for x in tools] + [x for x in standards]))
+            results.extend(x)
+        for x in db.cypher_query("""MATCH (n:NeoStandard) RETURN DISTINCT n.name""")[0]:
+            results.extend(x)
+        return list(set(results))
 
     @staticmethod
     def parse_node(node: NeoDocument) -> cre_defs.Document:
@@ -1774,21 +1771,38 @@ def gap_analysis(
     if base_standard is None:
         return None
     grouped_paths = {}
+    extra_paths_dict = {}
+    GA_STRONG_UPPER_LIMIT = 2
+
     for node in base_standard:
         key = node.id
         if key not in grouped_paths:
-            grouped_paths[key] = {"start": node, "paths": {}}
+            grouped_paths[key] = {"start": node, "paths": {}, "extra": 0}
+            extra_paths_dict[key] = {"paths": {}}
 
     for path in paths:
         key = path["start"].id
         end_key = path["end"].id
         path["score"] = get_path_score(path)
         del path["start"]
-        if end_key in grouped_paths[key]["paths"]:
-            if grouped_paths[key]["paths"][end_key]["score"] > path["score"]:
+        if path["score"] <= GA_STRONG_UPPER_LIMIT:
+            if end_key in extra_paths_dict[key]["paths"]:
+                del extra_paths_dict[key]["paths"][end_key]
+                grouped_paths[key]["extra"] -= 1
+            if end_key in grouped_paths[key]["paths"]:
+                if grouped_paths[key]["paths"][end_key]["score"] > path["score"]:
+                    grouped_paths[key]["paths"][end_key] = path
+            else:
                 grouped_paths[key]["paths"][end_key] = path
         else:
-            grouped_paths[key]["paths"][end_key] = path
+            if end_key in grouped_paths[key]["paths"]:
+                continue
+            if end_key in extra_paths_dict[key]:
+                if extra_paths_dict[key]["paths"][end_key]["score"] > path["score"]:
+                    extra_paths_dict[key]["paths"][end_key] = path
+            else:
+                extra_paths_dict[key]["paths"][end_key] = path
+                grouped_paths[key]["extra"] += 1
 
     if (
         store_in_cache
@@ -1799,6 +1813,11 @@ def gap_analysis(
             cache_key = make_array_hash(node_names)
 
         conn.set(cache_key, flask_json.dumps({"result": grouped_paths}))
-        return (node_names, {})
+        for key in extra_paths_dict:
+            conn.set(
+                cache_key + "->" + key,
+                flask_json.dumps({"result": extra_paths_dict[key]}),
+            )
+        return (node_names, {}, {})
 
-    return (node_names, grouped_paths)
+    return (node_names, grouped_paths, extra_paths_dict)

@@ -35,6 +35,8 @@ interface GapAnalysisPath {
 export interface GapAnalysisPathStart {
   start: Document;
   paths: Record<string, GapAnalysisPath>;
+  extra: number;
+  weakLinks: Record<string, GapAnalysisPath>;
 }
 
 export interface PaginatedResponse {
