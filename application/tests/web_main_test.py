@@ -1,18 +1,15 @@
 import re
 import json
-import logging
-import os
-import tempfile
 import unittest
-from pprint import pprint
-from typing import Any, Dict, List
+from unittest.mock import patch
+
+import redis
 
 from application import create_app, sqla  # type: ignore
 from application.database import db
 from application.defs import cre_defs as defs
 from application.defs import osib_defs
 from application.web import web_main
-from application.utils import mdutils
 
 
 class TestMain(unittest.TestCase):
@@ -568,3 +565,26 @@ class TestMain(unittest.TestCase):
                     location = head[1]
             self.assertEqual(location, "")
             self.assertEqual(404, response.status_code)
+
+    # TODO: (JOHN) Basic gap analysis endpoint tests
+
+    def test_gap_analysis_weak_links_no_cache(self) -> None:
+        with self.app.test_client() as client:
+            response = client.get(
+                "/rest/v1/map_analysis_weak_links?standard=aaa&standard=bbb&key=ccc`",
+                headers={"Content-Type": "application/json"},
+            )
+            self.assertEqual(404, response.status_code)
+
+    @patch.object(redis, "from_url")
+    def test_gap_analysis_weak_links_response(self, redis_conn_mock) -> None:
+        expected = {"result": "hello"}
+        redis_conn_mock.return_value.exists.return_value = True
+        redis_conn_mock.return_value.get.return_value = json.dumps(expected)
+        with self.app.test_client() as client:
+            response = client.get(
+                "/rest/v1/map_analysis_weak_links?standard=aaa&standard=bbb&key=ccc`",
+                headers={"Content-Type": "application/json"},
+            )
+            self.assertEqual(200, response.status_code)
+            self.assertEqual(expected, json.loads(response.data))

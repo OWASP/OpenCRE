@@ -119,7 +119,6 @@ export const GapAnalysis = () => {
   );
   const [gaJob, setgaJob] = useState<string>('');
   const [gapAnalysis, setGapAnalysis] = useState<Record<string, GapAnalysisPathStart>>();
-  const [activeIndex, SetActiveIndex] = useState<string>();
   const [loadingStandards, setLoadingStandards] = useState<boolean>(false);
   const [loadingGA, setLoadingGA] = useState<boolean>(false);
   const [error, setError] = useState<string | null | object>(null);
