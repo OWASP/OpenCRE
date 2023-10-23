@@ -494,6 +494,7 @@ class NEO_DB:
 
     @classmethod
     def standards(self) -> List[str]:
+        # TODO (JOHN) REDUCE DUPLICATION & SIMPLIFY
         tools = []
         for x in db.cypher_query("""MATCH (n:NeoTool) RETURN DISTINCT n.name""")[0]:
             tools.extend(x)
@@ -1774,31 +1775,54 @@ def gap_analysis(
     if base_standard is None:
         return None
     grouped_paths = {}
+    extra_paths_dict = {}
+    GA_STRONG_UPPER_LIMIT = 2
+
     for node in base_standard:
         key = node.id
         if key not in grouped_paths:
-            grouped_paths[key] = {"start": node, "paths": {}}
+            grouped_paths[key] = {"start": node, "paths": {}, "extra": 0}
+            extra_paths_dict[key] = {"paths": {}}
 
     for path in paths:
         key = path["start"].id
         end_key = path["end"].id
         path["score"] = get_path_score(path)
         del path["start"]
-        if end_key in grouped_paths[key]["paths"]:
-            if grouped_paths[key]["paths"][end_key]["score"] > path["score"]:
+        if path["score"] <= GA_STRONG_UPPER_LIMIT:
+            if end_key in extra_paths_dict[key]['paths']:
+                del extra_paths_dict[key]['paths'][end_key]
+                grouped_paths[key]["extra"] -= 1
+            if end_key in grouped_paths[key]["paths"]:
+                if grouped_paths[key]["paths"][end_key]["score"] > path["score"]:
+                    grouped_paths[key]["paths"][end_key] = path
+            else:
                 grouped_paths[key]["paths"][end_key] = path
         else:
-            grouped_paths[key]["paths"][end_key] = path
+            if end_key in grouped_paths[key]["paths"]:
+                continue
+            if end_key in extra_paths_dict[key]:
+                if extra_paths_dict[key]["paths"][end_key]["score"] > path["score"]:
+                    extra_paths_dict[key]["paths"][end_key] = path
+            else:
+                extra_paths_dict[key]["paths"][end_key] = path
+                grouped_paths[key]["extra"] += 1
 
     if (
         store_in_cache
     ):  # lightweight memory option to not return potentially huge object and instead store in a cache,
         # in case this is called via worker, we save both this and the caller memory by avoiding duplicate object in mem
+        # TODO (JOHN) MOCK AND TEST REDIS CALLS
         conn = redis.from_url(os.getenv("REDIS_URL", "redis://localhost:6379"))
         if cache_key == "":
             cache_key = make_array_hash(node_names)
 
         conn.set(cache_key, flask_json.dumps({"result": grouped_paths}))
-        return (node_names, {})
+        for key in extra_paths_dict:
+            conn.set(
+                cache_key + "->" + key,
+                flask_json.dumps({"result": extra_paths_dict[key]}),
+            )
+        return (node_names, {}, {})
 
-    return (node_names, grouped_paths)
+    return (node_names, grouped_paths, extra_paths_dict)
