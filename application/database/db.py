@@ -494,16 +494,12 @@ class NEO_DB:
 
     @classmethod
     def standards(self) -> List[str]:
-        # TODO (JOHN) REDUCE DUPLICATION & SIMPLIFY
-        tools = []
+        results = []
         for x in db.cypher_query("""MATCH (n:NeoTool) RETURN DISTINCT n.name""")[0]:
-            tools.extend(x)
-        standards = []
-        for x in db.cypher_query("""MATCH (n:NeoStandard) RETURN DISTINCT n.name""")[
-            0
-        ]:  # 0 is the results, 1 is the "n.name" param
-            standards.extend(x)
-        return list(set([x for x in tools] + [x for x in standards]))
+            results.extend(x)
+        for x in db.cypher_query("""MATCH (n:NeoStandard) RETURN DISTINCT n.name""")[0]:
+            results.extend(x)
+        return list(set(results))
 
     @staticmethod
     def parse_node(node: NeoDocument) -> cre_defs.Document:
@@ -1812,7 +1808,6 @@ def gap_analysis(
         store_in_cache
     ):  # lightweight memory option to not return potentially huge object and instead store in a cache,
         # in case this is called via worker, we save both this and the caller memory by avoiding duplicate object in mem
-        # TODO (JOHN) MOCK AND TEST REDIS CALLS
         conn = redis.from_url(os.getenv("REDIS_URL", "redis://localhost:6379"))
         if cache_key == "":
             cache_key = make_array_hash(node_names)
