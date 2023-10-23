@@ -1808,6 +1808,7 @@ def gap_analysis(
         store_in_cache
     ):  # lightweight memory option to not return potentially huge object and instead store in a cache,
         # in case this is called via worker, we save both this and the caller memory by avoiding duplicate object in mem
+
         conn = redis.from_url(os.getenv("REDIS_URL", "redis://localhost:6379"))
         if cache_key == "":
             cache_key = make_array_hash(node_names)
