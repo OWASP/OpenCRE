@@ -1790,8 +1790,8 @@ def gap_analysis(
         path["score"] = get_path_score(path)
         del path["start"]
         if path["score"] <= GA_STRONG_UPPER_LIMIT:
-            if end_key in extra_paths_dict[key]['paths']:
-                del extra_paths_dict[key]['paths'][end_key]
+            if end_key in extra_paths_dict[key]["paths"]:
+                del extra_paths_dict[key]["paths"][end_key]
                 grouped_paths[key]["extra"] -= 1
             if end_key in grouped_paths[key]["paths"]:
                 if grouped_paths[key]["paths"][end_key]["score"] > path["score"]:

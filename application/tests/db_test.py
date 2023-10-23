@@ -3,13 +3,14 @@ import random
 import os
 import tempfile
 import unittest
+from unittest import mock
 from unittest.mock import patch
 import uuid
 from copy import copy, deepcopy
 from pprint import pprint
-from pydoc import doc
 from typing import Any, Dict, List, Union
-import neo4j
+import redis
+from flask import json as flask_json
 
 import yaml
 from application import create_app, sqla  # type: ignore
@@ -1169,7 +1170,7 @@ class TestDB(unittest.TestCase):
             (
                 ["a", "b"],
                 {1: {"start": defs.CRE(name="bob", id=1), "paths": {}, "extra": 0}},
-                {1: {'paths': {}}}
+                {1: {"paths": {}}},
             ),
         )
 
@@ -1210,7 +1211,7 @@ class TestDB(unittest.TestCase):
                     "extra": 0,
                 }
             },
-            {1: {'paths': {}}}
+            {1: {"paths": {}}},
         )
         self.assertEqual(db.gap_analysis(collection.neo_db, ["a", "b"]), expected)
 
@@ -1253,7 +1254,13 @@ class TestDB(unittest.TestCase):
         expected = (
             ["a", "b"],
             {1: {"start": defs.CRE(name="bob", id=1), "paths": {}, "extra": 1}},
-            {1: {'paths': { 2: {"end": defs.CRE(name="bob", id=2), "path": path, "score": 4}}}}
+            {
+                1: {
+                    "paths": {
+                        2: {"end": defs.CRE(name="bob", id=2), "path": path, "score": 4}
+                    }
+                }
+            },
         )
 
         self.assertEqual(db.gap_analysis(collection.neo_db, ["a", "b"]), expected)
@@ -1312,12 +1319,14 @@ class TestDB(unittest.TestCase):
                     "extra": 0,
                 },
             },
-            {1: {'paths': {}}}
+            {1: {"paths": {}}},
         )
         self.assertEqual(db.gap_analysis(collection.neo_db, ["a", "b"]), expected)
 
     @patch.object(db.NEO_DB, "gap_analysis")
-    def test_gap_analysis_duplicate_link_path_existing_lower_new_in_extras(self, gap_mock):
+    def test_gap_analysis_duplicate_link_path_existing_lower_new_in_extras(
+        self, gap_mock
+    ):
         collection = db.Node_collection()
         collection.neo_db.connected = True
         path = [
@@ -1375,7 +1384,7 @@ class TestDB(unittest.TestCase):
                     "extra": 0,
                 },
             },
-            {1: {'paths': {}}}
+            {1: {"paths": {}}},
         )
         self.assertEqual(db.gap_analysis(collection.neo_db, ["a", "b"]), expected)
 
@@ -1433,12 +1442,14 @@ class TestDB(unittest.TestCase):
                     "extra": 0,
                 }
             },
-            {1: {'paths': {}}}
+            {1: {"paths": {}}},
         )
         self.assertEqual(db.gap_analysis(collection.neo_db, ["a", "b"]), expected)
 
     @patch.object(db.NEO_DB, "gap_analysis")
-    def test_gap_analysis_duplicate_link_path_existing_higher_and_in_extras(self, gap_mock):
+    def test_gap_analysis_duplicate_link_path_existing_higher_and_in_extras(
+        self, gap_mock
+    ):
         collection = db.Node_collection()
         collection.neo_db.connected = True
         path = [
@@ -1496,9 +1507,79 @@ class TestDB(unittest.TestCase):
                     "extra": 0,
                 }
             },
-            {1: {'paths': {}}}
+            {1: {"paths": {}}},
         )
         self.assertEqual(db.gap_analysis(collection.neo_db, ["a", "b"]), expected)
+
+    @patch.object(redis, "from_url")
+    @patch.object(db.NEO_DB, "gap_analysis")
+    def test_gap_analysis_dump_to_cache(self, gap_mock, redis_conn_mock):
+        collection = db.Node_collection()
+        collection.neo_db.connected = True
+        path = [
+            {
+                "end": defs.CRE(name="bob", id=1),
+                "relationship": "LINKED_TO",
+                "start": defs.CRE(name="bob", id="a"),
+            },
+            {
+                "end": defs.CRE(name="bob", id=2),
+                "relationship": "RELATED",
+                "start": defs.CRE(name="bob", id=1),
+            },
+            {
+                "end": defs.CRE(name="bob", id=1),
+                "relationship": "RELATED",
+                "start": defs.CRE(name="bob", id=2),
+            },
+            {
+                "end": defs.CRE(name="bob", id=3),
+                "relationship": "LINKED_TO",
+                "start": defs.CRE(name="bob", id=2),
+            },
+        ]
+        gap_mock.return_value = (
+            [defs.CRE(name="bob", id="a")],
+            [
+                {
+                    "start": defs.CRE(name="bob", id="a"),
+                    "end": defs.CRE(name="bob", id="b"),
+                    "path": path,
+                }
+            ],
+        )
+
+        expected_response = (
+            ["a", "b"],
+            {"a": {"start": defs.CRE(name="bob", id="a"), "paths": {}, "extra": 1}},
+            {
+                "a": {
+                    "paths": {
+                        "b": {
+                            "end": defs.CRE(name="bob", id="b"),
+                            "path": path,
+                            "score": 4,
+                        }
+                    }
+                }
+            },
+        )
+        response = db.gap_analysis(collection.neo_db, ["a", "b"], True)
+
+        self.assertEqual(response, (expected_response[0], {}, {}))
+
+        redis_conn_mock.return_value.set.assert_has_calls(
+            [
+                mock.call(
+                    "d8160c9b3dc20d4e931aeb4f45262155",
+                    flask_json.dumps({"result": expected_response[1]}),
+                ),
+                mock.call(
+                    "d8160c9b3dc20d4e931aeb4f45262155->a",
+                    flask_json.dumps({"result": expected_response[2]["a"]}),
+                ),
+            ]
+        )
 
     def test_neo_db_parse_node_code(self):
         name = "name"
