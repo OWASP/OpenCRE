@@ -192,7 +192,11 @@ def main() -> None:
         action="store_true",
         help="populate the neo4j db",
     )
-
+    parser.add_argument(
+        "--start_worker",
+        action="store_true",
+        help="start redis queue worker",
+    )
     args = parser.parse_args()
 
     from application.cmd import cre_main

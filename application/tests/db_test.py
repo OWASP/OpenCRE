@@ -1146,7 +1146,7 @@ class TestDB(unittest.TestCase):
         collection.neo_db.connected = False
         gap_mock.return_value = (None, None)
 
-        self.assertEqual(collection.gap_analysis(["a", "b"]), None)
+        self.assertEqual(db.gap_analysis(collection.neo_db, ["a", "b"]), None)
 
     @patch.object(db.NEO_DB, "gap_analysis")
     def test_gap_analysis_no_nodes(self, gap_mock):
@@ -1154,7 +1154,9 @@ class TestDB(unittest.TestCase):
         collection.neo_db.connected = True
 
         gap_mock.return_value = ([], [])
-        self.assertEqual(collection.gap_analysis(["a", "b"]), {})
+        self.assertEqual(
+            db.gap_analysis(collection.neo_db, ["a", "b"]), (["a", "b"], {})
+        )
 
     @patch.object(db.NEO_DB, "gap_analysis")
     def test_gap_analysis_no_links(self, gap_mock):
@@ -1163,8 +1165,8 @@ class TestDB(unittest.TestCase):
 
         gap_mock.return_value = ([defs.CRE(name="bob", id=1)], [])
         self.assertEqual(
-            collection.gap_analysis(["a", "b"]),
-            {1: {"start": defs.CRE(name="bob", id=1), "paths": {}}},
+            db.gap_analysis(collection.neo_db, ["a", "b"]),
+            (["a", "b"], {1: {"start": defs.CRE(name="bob", id=1), "paths": {}}}),
         )
 
     @patch.object(db.NEO_DB, "gap_analysis")
@@ -1193,15 +1195,18 @@ class TestDB(unittest.TestCase):
                 }
             ],
         )
-        expected = {
-            1: {
-                "start": defs.CRE(name="bob", id=1),
-                "paths": {
-                    2: {"end": defs.CRE(name="bob", id=2), "path": path, "score": 0}
-                },
-            }
-        }
-        self.assertEqual(collection.gap_analysis(["a", "b"]), expected)
+        expected = (
+            ["a", "b"],
+            {
+                1: {
+                    "start": defs.CRE(name="bob", id=1),
+                    "paths": {
+                        2: {"end": defs.CRE(name="bob", id=2), "path": path, "score": 0}
+                    },
+                }
+            },
+        )
+        self.assertEqual(db.gap_analysis(collection.neo_db, ["a", "b"]), expected)
 
     @patch.object(db.NEO_DB, "gap_analysis")
     def test_gap_analysis_duplicate_link_path_existing_lower(self, gap_mock):
@@ -1246,15 +1251,18 @@ class TestDB(unittest.TestCase):
                 },
             ],
         )
-        expected = {
-            1: {
-                "start": defs.CRE(name="bob", id=1),
-                "paths": {
-                    2: {"end": defs.CRE(name="bob", id=2), "path": path, "score": 0}
-                },
-            }
-        }
-        self.assertEqual(collection.gap_analysis(["a", "b"]), expected)
+        expected = (
+            ["a", "b"],
+            {
+                1: {
+                    "start": defs.CRE(name="bob", id=1),
+                    "paths": {
+                        2: {"end": defs.CRE(name="bob", id=2), "path": path, "score": 0}
+                    },
+                }
+            },
+        )
+        self.assertEqual(db.gap_analysis(collection.neo_db, ["a", "b"]), expected)
 
     @patch.object(db.NEO_DB, "gap_analysis")
     def test_gap_analysis_duplicate_link_path_existing_higher(self, gap_mock):
@@ -1299,15 +1307,18 @@ class TestDB(unittest.TestCase):
                 },
             ],
         )
-        expected = {
-            1: {
-                "start": defs.CRE(name="bob", id=1),
-                "paths": {
-                    2: {"end": defs.CRE(name="bob", id=2), "path": path, "score": 0}
-                },
-            }
-        }
-        self.assertEqual(collection.gap_analysis(["a", "b"]), expected)
+        expected = (
+            ["a", "b"],
+            {
+                1: {
+                    "start": defs.CRE(name="bob", id=1),
+                    "paths": {
+                        2: {"end": defs.CRE(name="bob", id=2), "path": path, "score": 0}
+                    },
+                }
+            },
+        )
+        self.assertEqual(db.gap_analysis(collection.neo_db, ["a", "b"]), expected)
 
     def test_neo_db_parse_node_code(self):
         name = "name"
