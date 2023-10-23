@@ -251,6 +251,24 @@ def gap_analysis() -> Any:
     return jsonify({"job_id": gap_analysis_job.id})
 
 
+@app.route("/rest/v1/map_analysis_weak_links", methods=["GET"])
+@cache.cached(timeout=50, query_string=True)
+def gap_analysis_weak_links() -> Any:
+    standards = request.args.getlist("standard")
+    key = request.args.get("key")
+    redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
+    conn = redis.from_url(redis_url)
+    standards_hash = make_array_hash(standards)
+    cache_key = standards_hash + "->" + key
+    if conn.exists(cache_key):
+        gap_analysis_results = conn.get(cache_key)
+        if gap_analysis_results:
+            gap_analysis_dict = json.loads(gap_analysis_results)
+            if gap_analysis_dict.get("result"):
+                return jsonify({"result": gap_analysis_dict.get("result")})
+    abort(404, "No such Cache")
+
+
 @app.route("/rest/v1/ma_job_results", methods=["GET"])
 def fetch_job() -> Any:
     logger.info("fetching job results")
@@ -321,7 +339,7 @@ def standards() -> Any:
         database = db.Node_collection()
         standards = database.standards()
         if standards is None:
-            neo4j_not_running_rejection()
+            return neo4j_not_running_rejection()
         conn.set("NodeNames", flask_json.dumps(standards))
         return standards
 
