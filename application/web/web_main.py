@@ -234,8 +234,15 @@ def gap_analysis() -> Any:
             if gap_analysis_dict.get("result"):
                 return jsonify({"result": gap_analysis_dict.get("result")})
             elif gap_analysis_dict.get("job_id"):
-                return jsonify({"job_id": gap_analysis_dict.get("job_id")})
-
+                try:
+                    res = job.Job.fetch(id=gap_analysis_dict.get("job_id"), connection=conn)
+                except exceptions.NoSuchJobError as nje:
+                    abort(404, "No such job")
+                if res.get_status() != job.JobStatus.FAILED and\
+                   res.get_status() == job.JobStatus.STOPPED and\
+                   res.get_status() == job.JobStatus.CANCELED:
+                    logger.info("gap analysis job id already exists, returning early")
+                    return jsonify({"job_id": gap_analysis_dict.get("job_id")})
     q = Queue(connection=conn)
     gap_analysis_job = q.enqueue_call(
         db.gap_analysis,
