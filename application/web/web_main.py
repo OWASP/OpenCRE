@@ -339,7 +339,7 @@ def standards() -> Any:
         database = db.Node_collection()
         standards = database.standards()
         if standards is None:
-            neo4j_not_running_rejection()
+            return neo4j_not_running_rejection()
         conn.set("NodeNames", flask_json.dumps(standards))
         return standards
 
