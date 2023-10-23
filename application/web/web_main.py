@@ -7,8 +7,8 @@ import os
 import pathlib
 import urllib.parse
 from typing import Any
-from application.utils import oscal_utils
-import redis
+from application.utils import oscal_utils, redis
+
 from rq import Worker, Queue, Connection, job, exceptions
 
 from application import cache
@@ -222,8 +222,7 @@ def find_document_by_tag() -> Any:
 def gap_analysis() -> Any:  # TODO (spyros): add export result to spreadsheet
     database = db.Node_collection()
     standards = request.args.getlist("standard")
-    redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
-    conn = redis.from_url(redis_url)
+    conn = redis.connect()
     standards_hash = make_array_hash(standards)
     if conn.exists(standards_hash):
         gap_analysis_results = conn.get(standards_hash)
@@ -233,12 +232,16 @@ def gap_analysis() -> Any:  # TODO (spyros): add export result to spreadsheet
                 return jsonify({"result": gap_analysis_dict.get("result")})
             elif gap_analysis_dict.get("job_id"):
                 try:
-                    res = job.Job.fetch(id=gap_analysis_dict.get("job_id"), connection=conn)
+                    res = job.Job.fetch(
+                        id=gap_analysis_dict.get("job_id"), connection=conn
+                    )
                 except exceptions.NoSuchJobError as nje:
                     abort(404, "No such job")
-                if res.get_status() != job.JobStatus.FAILED and\
-                   res.get_status() == job.JobStatus.STOPPED and\
-                   res.get_status() == job.JobStatus.CANCELED:
+                if (
+                    res.get_status() != job.JobStatus.FAILED
+                    and res.get_status() == job.JobStatus.STOPPED
+                    and res.get_status() == job.JobStatus.CANCELED
+                ):
                     logger.info("gap analysis job id already exists, returning early")
                     return jsonify({"job_id": gap_analysis_dict.get("job_id")})
     q = Queue(connection=conn)
@@ -261,8 +264,7 @@ def gap_analysis() -> Any:  # TODO (spyros): add export result to spreadsheet
 def gap_analysis_weak_links() -> Any:
     standards = request.args.getlist("standard")
     key = request.args.get("key")
-    redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
-    conn = redis.from_url(redis_url)
+    conn = redis.connect()
     standards_hash = make_array_hash(standards)
     cache_key = standards_hash + "->" + key
     if conn.exists(cache_key):
@@ -278,8 +280,7 @@ def gap_analysis_weak_links() -> Any:
 def fetch_job() -> Any:
     logger.info("fetching job results")
     jobid = request.args.get("id")
-    redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
-    conn = redis.from_url(redis_url)
+    conn = redis.connect()
     try:
         res = job.Job.fetch(id=jobid, connection=conn)
     except exceptions.NoSuchJobError as nje:
@@ -335,8 +336,7 @@ def fetch_job() -> Any:
 @app.route("/rest/v1/standards", methods=["GET"])
 @cache.cached(timeout=50)
 def standards() -> Any:
-    redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
-    conn = redis.from_url(redis_url)
+    conn = redis.connect()
     standards = conn.get("NodeNames")
     if standards:
         return standards
