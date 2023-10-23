@@ -1,6 +1,6 @@
 from flask import json as flask_json
 import json
-import redis
+from application.utils import redis
 from neomodel import (
     config,
     StructuredNode,
@@ -1809,7 +1809,7 @@ def gap_analysis(
     ):  # lightweight memory option to not return potentially huge object and instead store in a cache,
         # in case this is called via worker, we save both this and the caller memory by avoiding duplicate object in mem
 
-        conn = redis.from_url(os.getenv("REDIS_URL", "redis://localhost:6379"))
+        conn = redis.connect()
         if cache_key == "":
             cache_key = make_array_hash(node_names)
 
