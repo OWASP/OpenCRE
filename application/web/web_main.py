@@ -326,7 +326,8 @@ def fetch_job() -> Any:
                             "Finished job does not have a result object, this is a bug!"
                         )
                         abort(500, "this is a bug, please raise a ticket")
-
+        
+        reutrn jsonify({"status": res.get_status()})
     elif res.latest_result().type == result.Type.FAILED:
         logger.error(res.latest_result().exc_string)
         abort(500)
