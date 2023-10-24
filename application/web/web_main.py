@@ -229,7 +229,7 @@ def gap_analysis() -> Any:
     result = database.get_gap_analysis_result(standards_hash)
     if result:
         gap_analysis_dict = json.loads(result)
-        if gap_analysis_dict.get("results")
+        if gap_analysis_dict.get("results"):
             return jsonify({"result": gap_analysis_dict.get("result")})
 
     gap_analysis_results = conn.get(standards_hash)
