@@ -1569,12 +1569,12 @@ class TestDB(unittest.TestCase):
         self.assertEqual(response, (expected_response[0], {}, {}))
         self.assertEqual(
             collection.get_gap_analysis_result("d8160c9b3dc20d4e931aeb4f45262155"),
-            flask_json.dumps({"result": expected_response[1]})
-            )
+            flask_json.dumps({"result": expected_response[1]}),
+        )
         self.assertEqual(
             collection.get_gap_analysis_result("d8160c9b3dc20d4e931aeb4f45262155->a"),
-              flask_json.dumps({"result": expected_response[2]["a"]}),
-            )
+            flask_json.dumps({"result": expected_response[2]["a"]}),
+        )
 
     def test_neo_db_parse_node_code(self):
         name = "name"

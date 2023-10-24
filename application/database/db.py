@@ -1837,13 +1837,14 @@ def gap_analysis(
 
         # conn.set(cache_key, flask_json.dumps({"result": grouped_paths}))
         cre_db.add_gap_analysis_result(
-                cache_key=cache_key, ga_object={"result": grouped_paths}
-            )
+            cache_key=cache_key, ga_object={"result": grouped_paths}
+        )
 
         for key in extra_paths_dict:
             cre_db.add_gap_analysis_result(
-                    cache_key=make_cache_key(node_names,key), ga_object={"result": extra_paths_dict[key]}
-                )
+                cache_key=make_cache_key(node_names, key),
+                ga_object={"result": extra_paths_dict[key]},
+            )
             # conn.set(
             #     cache_key + "->" + key,
             #     flask_json.dumps({"result": extra_paths_dict[key]}),

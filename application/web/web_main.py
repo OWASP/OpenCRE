@@ -237,9 +237,7 @@ def gap_analysis() -> Any:
         gap_analysis_dict = json.loads(gap_analysis_results)
         if gap_analysis_dict.get("job_id"):
             try:
-                res = job.Job.fetch(
-                    id=gap_analysis_dict.get("job_id"), connection=conn
-                )
+                res = job.Job.fetch(id=gap_analysis_dict.get("job_id"), connection=conn)
             except exceptions.NoSuchJobError as nje:
                 abort(404, "No such job")
             if (
@@ -269,7 +267,7 @@ def gap_analysis() -> Any:
 def gap_analysis_weak_links() -> Any:
     standards = request.args.getlist("standard")
     key = request.args.get("key")
-    cache_key = make_cache_key(standards=standards,key=key)
+    cache_key = make_cache_key(standards=standards, key=key)
 
     database = db.Node_collection()
     result = database.get_gap_analysis_result(cache_key=cache_key)
