@@ -1636,7 +1636,7 @@ class Node_collection:
 
             return existing
 
-    def get_gap_analysis_result(self, cache_key)->str:
+    def get_gap_analysis_result(self, cache_key) -> str:
         res = (
             self.session.query(GapAnalysisResults)
             .filter(GapAnalysisResults.cache_key == cache_key)
@@ -1648,11 +1648,10 @@ class Node_collection:
     def add_gap_analysis_result(self, cache_key: str, ga_object: str):
         existing = self.get_gap_analysis_result(cache_key)
         if not existing:
-            res = GapAnalysisResults(
-                cache_key=cache_key, ga_object=ga_object
-            )
+            res = GapAnalysisResults(cache_key=cache_key, ga_object=ga_object)
             self.session.add(res)
             self.session.commit()
+
 
 def dbNodeFromNode(doc: cre_defs.Node) -> Optional[Node]:
     if doc.doctype == cre_defs.Credoctypes.Standard:
@@ -1841,7 +1840,7 @@ def gap_analysis(
             cre_db.add_gap_analysis_result(
                 cache_key=make_cache_key(node_names, key),
                 ga_object=flask_json.dumps({"result": extra_paths_dict[key]}),
-                                        )
+            )
             # conn.set(
             #     cache_key + "->" + key,
             #     flask_json.dumps({"result": extra_paths_dict[key]}),
