@@ -22,6 +22,7 @@ class MockJob:
     def get_status(self):
         return rq.job.JobStatus.STARTED
 
+
 class TestMain(unittest.TestCase):
     def tearDown(self) -> None:
         sqla.session.remove()
@@ -578,7 +579,9 @@ class TestMain(unittest.TestCase):
 
     @patch.object(redis, "from_url")
     @patch.object(db, "Node_collection")
-    def test_gap_analysis_from_cache_full_response(self,db_mock, redis_conn_mock) -> None:
+    def test_gap_analysis_from_cache_full_response(
+        self, db_mock, redis_conn_mock
+    ) -> None:
         expected = {"result": "hello"}
         redis_conn_mock.return_value.exists.return_value = True
         redis_conn_mock.return_value.get.return_value = json.dumps(expected)
