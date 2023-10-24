@@ -1511,7 +1511,6 @@ class TestDB(unittest.TestCase):
         )
         self.assertEqual(db.gap_analysis(collection.neo_db, ["a", "b"]), expected)
 
-    @patch.object(redis, "from_url")
     @patch.object(db.NEO_DB, "gap_analysis")
     def test_gap_analysis_dump_to_cache(self, gap_mock):
         collection = db.Node_collection()
