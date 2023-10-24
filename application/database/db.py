@@ -171,7 +171,13 @@ class Embeddings(BaseModel):  # type: ignore
         ),
     )
 
-
+class GapAnalysisResults(BaseModel):
+    __tablename__ = "gap_analysis_results"
+    cache_key = sqla.Column(sqla.String,primary_key=True)
+    ga_object = sqla.Column(sqla.String)
+    __table_args__ = (
+        sqla.UniqueConstraint(cache_key, name="unique_cache_key_field"),
+    )
 class RelatedRel(StructuredRel):
     pass
 
@@ -425,7 +431,6 @@ class NEO_DB:
     def gap_analysis(self, name_1, name_2):
         base_standard = NeoStandard.nodes.filter(name=name_1)
         denylist = ["Cross-cutting concerns"]
-        from pprint import pprint
         from datetime import datetime
 
         t1 = datetime.now()
@@ -442,8 +447,6 @@ class NEO_DB:
             resolve_objects=True,
         )
         t2 = datetime.now()
-        pprint(f"path records all took {t2-t1}")
-        pprint(path_records_all.__len__())
         path_records, _ = db.cypher_query(
             """
             OPTIONAL MATCH (BaseStandard:NeoStandard {name: $name1})
@@ -484,10 +487,6 @@ class NEO_DB:
                 "end": NEO_DB.parse_node(rec.end_node),
                 "path": [format_segment(seg, rec.nodes) for seg in rec.relationships],
             }
-
-        pprint(
-            f"path records all took {t2-t1} path records took {t3 - t2}, total: {t3 - t1}"
-        )
         return [NEO_DB.parse_node(rec) for rec in base_standard], [
             format_path_record(rec[0]) for rec in (path_records + path_records_all)
         ]
@@ -1634,8 +1633,21 @@ class Node_collection:
             self.session.commit()
 
             return existing
+        
+    def get_gap_analysis_result(self,cache_key):
+        res = self.session.query(GapAnalysisResults).filter(GapAnalysisResults.cache_key==cache_key).first()
+        if res:
+            return res.ga_object
 
-
+    def add_gap_analysis_result(self,cache_key:str,ga_object: dict):
+        existing = self.get_gap_analysis_result(cache_key)
+        if not existing:
+            res = GapAnalysisResults(cache_key=cache_key,ga_object=flask_json.dumps(ga_object))
+            self.session.add(res)
+            self.session.commit()
+        else:
+            return existing.ga_object
+        
 def dbNodeFromNode(doc: cre_defs.Node) -> Optional[Node]:
     if doc.doctype == cre_defs.Credoctypes.Standard:
         return dbNodeFromStandard(doc)
@@ -1766,7 +1778,9 @@ def gap_analysis(
     node_names: List[str],
     store_in_cache: bool = False,
     cache_key: str = "",
+
 ):
+    cre_db = Node_collection()
     base_standard, paths = neo_db.gap_analysis(node_names[0], node_names[1])
     if base_standard is None:
         return None
@@ -1809,16 +1823,21 @@ def gap_analysis(
     ):  # lightweight memory option to not return potentially huge object and instead store in a cache,
         # in case this is called via worker, we save both this and the caller memory by avoiding duplicate object in mem
 
-        conn = redis.connect()
+        # conn = redis.connect()
         if cache_key == "":
             cache_key = make_array_hash(node_names)
 
-        conn.set(cache_key, flask_json.dumps({"result": grouped_paths}))
+        # conn.set(cache_key, flask_json.dumps({"result": grouped_paths}))
+        if cre_db:
+            cre_db.add_gap_analysis_result(cache_key=cache_key,ga_object={"result": extra_paths_dict[key]})
+
         for key in extra_paths_dict:
-            conn.set(
-                cache_key + "->" + key,
-                flask_json.dumps({"result": extra_paths_dict[key]}),
-            )
+            if cre_db:
+                cre_db.add_gap_analysis_result(cache_key=cache_key,ga_object={"result": extra_paths_dict[key]})
+            # conn.set(
+            #     cache_key + "->" + key,
+            #     flask_json.dumps({"result": extra_paths_dict[key]}),
+            # )
         return (node_names, {}, {})
 
     return (node_names, grouped_paths, extra_paths_dict)
