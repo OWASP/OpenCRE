@@ -228,9 +228,9 @@ def gap_analysis() -> Any:
     standards_hash = make_array_hash(standards)
     result = database.get_gap_analysis_result(standards_hash)
     if result:
-        gap_analysis_dict = json.loads(result)
+        gap_analysis_dict = flask_json.loads(result)
         if gap_analysis_dict.get("result"):
-            return jsonify({"result": gap_analysis_dict.get("result")})
+            return jsonify(gap_analysis_dict)
 
     gap_analysis_results = conn.get(standards_hash)
     if gap_analysis_results:
@@ -327,9 +327,9 @@ def fetch_job() -> Any:
                 ga = database.get_gap_analysis_result(standards_hash)
                 if ga:
                     logger.info("and results in cache")
-                    ga = json.loads(ga)
+                    ga = flask_json.loads(ga)
                     if ga.get("result"):
-                        return jsonify({"result": ga.get("result")})
+                        return jsonify(ga)
                     else:
                         logger.error(
                             "Finished job does not have a result object, this is a bug!"

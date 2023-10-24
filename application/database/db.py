@@ -1636,7 +1636,7 @@ class Node_collection:
 
             return existing
 
-    def get_gap_analysis_result(self, cache_key):
+    def get_gap_analysis_result(self, cache_key)->str:
         res = (
             self.session.query(GapAnalysisResults)
             .filter(GapAnalysisResults.cache_key == cache_key)
@@ -1645,17 +1645,14 @@ class Node_collection:
         if res:
             return res.ga_object
 
-    def add_gap_analysis_result(self, cache_key: str, ga_object: dict):
+    def add_gap_analysis_result(self, cache_key: str, ga_object: str):
         existing = self.get_gap_analysis_result(cache_key)
         if not existing:
             res = GapAnalysisResults(
-                cache_key=cache_key, ga_object=flask_json.dumps(ga_object)
+                cache_key=cache_key, ga_object=ga_object
             )
             self.session.add(res)
             self.session.commit()
-        else:
-            return existing
-
 
 def dbNodeFromNode(doc: cre_defs.Node) -> Optional[Node]:
     if doc.doctype == cre_defs.Credoctypes.Standard:
@@ -1837,14 +1834,14 @@ def gap_analysis(
 
         # conn.set(cache_key, flask_json.dumps({"result": grouped_paths}))
         cre_db.add_gap_analysis_result(
-            cache_key=cache_key, ga_object={"result": grouped_paths}
+            cache_key=cache_key, ga_object=flask_json.dumps({"result": grouped_paths})
         )
 
         for key in extra_paths_dict:
             cre_db.add_gap_analysis_result(
                 cache_key=make_cache_key(node_names, key),
-                ga_object={"result": extra_paths_dict[key]},
-            )
+                ga_object=flask_json.dumps({"result": extra_paths_dict[key]}),
+                                        )
             # conn.set(
             #     cache_key + "->" + key,
             #     flask_json.dumps({"result": extra_paths_dict[key]}),
