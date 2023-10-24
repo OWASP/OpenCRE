@@ -270,8 +270,8 @@ def gap_analysis_weak_links() -> Any:
     cache_key = make_cache_key(standards=standards, key=key)
 
     database = db.Node_collection()
-    result = database.get_gap_analysis_result(cache_key=cache_key)
-    if result:
+    gap_analysis_results = database.get_gap_analysis_result(cache_key=cache_key)
+    if gap_analysis_results:
         gap_analysis_dict = json.loads(gap_analysis_results)
         if gap_analysis_dict.get("result"):
             return jsonify({"result": gap_analysis_dict.get("result")})
