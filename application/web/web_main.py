@@ -229,7 +229,7 @@ def gap_analysis() -> Any:
     result = database.get_gap_analysis_result(standards_hash)
     if result:
         gap_analysis_dict = json.loads(result)
-        if gap_analysis_dict.get("results"):
+        if gap_analysis_dict.get("result"):
             return jsonify({"result": gap_analysis_dict.get("result")})
 
     gap_analysis_results = conn.get(standards_hash)
@@ -242,8 +242,8 @@ def gap_analysis() -> Any:
                 abort(404, "No such job")
             if (
                 res.get_status() != job.JobStatus.FAILED
-                and res.get_status() == job.JobStatus.STOPPED
-                and res.get_status() == job.JobStatus.CANCELED
+                and res.get_status() != job.JobStatus.STOPPED
+                and res.get_status() != job.JobStatus.CANCELED
             ):
                 logger.info("gap analysis job id already exists, returning early")
                 return jsonify({"job_id": gap_analysis_dict.get("job_id")})

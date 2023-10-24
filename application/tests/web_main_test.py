@@ -19,6 +19,8 @@ class MockJob:
     def id(self):
         return "ABC"
 
+    def get_status(self):
+        return rq.job.JobStatus.STARTED
 
 class TestMain(unittest.TestCase):
     def tearDown(self) -> None:
@@ -575,10 +577,12 @@ class TestMain(unittest.TestCase):
             self.assertEqual(404, response.status_code)
 
     @patch.object(redis, "from_url")
-    def test_gap_analysis_from_cache_full_response(self, redis_conn_mock) -> None:
+    @patch.object(db, "Node_collection")
+    def test_gap_analysis_from_cache_full_response(self,db_mock, redis_conn_mock) -> None:
         expected = {"result": "hello"}
         redis_conn_mock.return_value.exists.return_value = True
         redis_conn_mock.return_value.get.return_value = json.dumps(expected)
+        db_mock.return_value.get_gap_analysis_result.return_value = json.dumps(expected)
         with self.app.test_client() as client:
             response = client.get(
                 "/rest/v1/map_analysis?standard=aaa&standard=bbb",
@@ -587,14 +591,16 @@ class TestMain(unittest.TestCase):
             self.assertEqual(200, response.status_code)
             self.assertEqual(expected, json.loads(response.data))
 
+    @patch.object(rq.job.Job, "fetch")
     @patch.object(rq.Queue, "enqueue_call")
     @patch.object(redis, "from_url")
     def test_gap_analysis_from_cache_job_id(
-        self, redis_conn_mock, enqueue_call_mock
+        self, redis_conn_mock, enqueue_call_mock, fetch_mock
     ) -> None:
         expected = {"job_id": "hello"}
         redis_conn_mock.return_value.exists.return_value = True
         redis_conn_mock.return_value.get.return_value = json.dumps(expected)
+        fetch_mock.return_value = MockJob()
         with self.app.test_client() as client:
             response = client.get(
                 "/rest/v1/map_analysis?standard=aaa&standard=bbb",
@@ -611,8 +617,9 @@ class TestMain(unittest.TestCase):
         self, redis_conn_mock, enqueue_call_mock, db_mock
     ) -> None:
         expected = {"job_id": "ABC"}
-        redis_conn_mock.return_value.exists.return_value = False
+        redis_conn_mock.return_value.get.return_value = None
         enqueue_call_mock.return_value = MockJob()
+        db_mock.return_value.get_gap_analysis_result.return_value = None
         with self.app.test_client() as client:
             response = client.get(
                 "/rest/v1/map_analysis?standard=aaa&standard=bbb",
@@ -684,14 +691,10 @@ class TestMain(unittest.TestCase):
             )
             self.assertEqual(404, response.status_code)
 
-    @patch.object(redis, "from_url")
-    def test_gap_analysis_weak_links_response(self, redis_conn_mock) -> None:
+    @patch.object(db, "Node_collection")
+    def test_gap_analysis_weak_links_response(self, db_mock) -> None:
         expected = {"result": "hello"}
-        collection = db.Node_collection()
-        standards = ["aaa", "bbb"]
-        key = "ccc"
-        cache_key = make_cache_key(standards=standards, key=key)
-        collection.add_gap_analysis_result(cache_key=cache_key, ga_object=expected)
+        db_mock.return_value.get_gap_analysis_result.return_value = json.dumps(expected)
         with self.app.test_client() as client:
             response = client.get(
                 "/rest/v1/map_analysis_weak_links?standard=aaa&standard=bbb&key=ccc`",
