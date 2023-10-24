@@ -36,7 +36,7 @@ from google_auth_oauthlib.flow import Flow
 from application.utils.spreadsheet import write_csv
 import oauthlib
 import google.auth.transport.requests
-from application.utils.hash import make_array_hash
+from application.utils.hash import make_array_hash, make_cache_key
 
 ITEMS_PER_PAGE = 20
 
@@ -224,26 +224,27 @@ def gap_analysis() -> Any:  # TODO (spyros): add export result to spreadsheet
     standards = request.args.getlist("standard")
     conn = redis.connect()
     standards_hash = make_array_hash(standards)
-    if conn.exists(standards_hash):
-        gap_analysis_results = conn.get(standards_hash)
-        if gap_analysis_results:
-            gap_analysis_dict = json.loads(gap_analysis_results)
-            if gap_analysis_dict.get("result"):
-                return jsonify({"result": gap_analysis_dict.get("result")})
-            elif gap_analysis_dict.get("job_id"):
-                try:
-                    res = job.Job.fetch(
-                        id=gap_analysis_dict.get("job_id"), connection=conn
-                    )
-                except exceptions.NoSuchJobError as nje:
-                    abort(404, "No such job")
-                if (
-                    res.get_status() != job.JobStatus.FAILED
-                    and res.get_status() == job.JobStatus.STOPPED
-                    and res.get_status() == job.JobStatus.CANCELED
-                ):
-                    logger.info("gap analysis job id already exists, returning early")
-                    return jsonify({"job_id": gap_analysis_dict.get("job_id")})
+    result = database.get_gap_analysis_result(standards_hash)
+    if result:
+        gap_analysis_dict = flask_json.loads(result)
+        if gap_analysis_dict.get("result"):
+            return jsonify(gap_analysis_dict)
+
+    gap_analysis_results = conn.get(standards_hash)
+    if gap_analysis_results:
+        gap_analysis_dict = json.loads(gap_analysis_results)
+        if gap_analysis_dict.get("job_id"):
+            try:
+                res = job.Job.fetch(id=gap_analysis_dict.get("job_id"), connection=conn)
+            except exceptions.NoSuchJobError as nje:
+                abort(404, "No such job")
+            if (
+                res.get_status() != job.JobStatus.FAILED
+                and res.get_status() != job.JobStatus.STOPPED
+                and res.get_status() != job.JobStatus.CANCELED
+            ):
+                logger.info("gap analysis job id already exists, returning early")
+                return jsonify({"job_id": gap_analysis_dict.get("job_id")})
     q = Queue(connection=conn)
     gap_analysis_job = q.enqueue_call(
         db.gap_analysis,
@@ -264,15 +265,21 @@ def gap_analysis() -> Any:  # TODO (spyros): add export result to spreadsheet
 def gap_analysis_weak_links() -> Any:
     standards = request.args.getlist("standard")
     key = request.args.get("key")
-    conn = redis.connect()
-    standards_hash = make_array_hash(standards)
-    cache_key = standards_hash + "->" + key
-    if conn.exists(cache_key):
-        gap_analysis_results = conn.get(cache_key)
-        if gap_analysis_results:
-            gap_analysis_dict = json.loads(gap_analysis_results)
-            if gap_analysis_dict.get("result"):
-                return jsonify({"result": gap_analysis_dict.get("result")})
+    cache_key = make_cache_key(standards=standards, key=key)
+
+    database = db.Node_collection()
+    gap_analysis_results = database.get_gap_analysis_result(cache_key=cache_key)
+    if gap_analysis_results:
+        gap_analysis_dict = json.loads(gap_analysis_results)
+        if gap_analysis_dict.get("result"):
+            return jsonify({"result": gap_analysis_dict.get("result")})
+
+    # if conn.exists(cache_key):
+    #     gap_analysis_results = conn.get(cache_key)
+    #     if gap_analysis_results:
+    #         gap_analysis_dict = json.loads(gap_analysis_results)
+    #         if gap_analysis_dict.get("result"):
+    #             return jsonify({"result": gap_analysis_dict.get("result")})
     abort(404, "No such Cache")
 
 
@@ -313,12 +320,14 @@ def fetch_job() -> Any:
 
             if conn.exists(standards_hash):
                 logger.info("and hash is already in cache")
-                ga = conn.get(standards_hash)
+                # ga = conn.get(standards_hash)
+                database = db.Node_collection()
+                ga = database.get_gap_analysis_result(standards_hash)
                 if ga:
                     logger.info("and results in cache")
-                    ga = json.loads(ga)
+                    ga = flask_json.loads(ga)
                     if ga.get("result"):
-                        return jsonify({"result": ga.get("result")})
+                        return jsonify(ga)
                     else:
                         logger.error(
                             "Finished job does not have a result object, this is a bug!"
