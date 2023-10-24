@@ -11,7 +11,7 @@ from application.database import db
 from application.defs import cre_defs as defs
 from application.defs import osib_defs
 from application.web import web_main
-
+from application.utils.hash import make_array_hash, make_cache_key
 
 class MockJob:
     @property
@@ -686,8 +686,11 @@ class TestMain(unittest.TestCase):
     @patch.object(redis, "from_url")
     def test_gap_analysis_weak_links_response(self, redis_conn_mock) -> None:
         expected = {"result": "hello"}
-        redis_conn_mock.return_value.exists.return_value = True
-        redis_conn_mock.return_value.get.return_value = json.dumps(expected)
+        collection = db.Node_collection()
+        standards =["aaa","bbb"]
+        key = "ccc"
+        cache_key =  make_cache_key(standards=standards,key=key)
+        collection.add_gap_analysis_result(cache_key=cache_key,ga_object=expected)
         with self.app.test_client() as client:
             response = client.get(
                 "/rest/v1/map_analysis_weak_links?standard=aaa&standard=bbb&key=ccc`",

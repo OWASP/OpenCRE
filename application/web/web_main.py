@@ -36,7 +36,7 @@ from google_auth_oauthlib.flow import Flow
 from application.utils.spreadsheet import write_csv
 import oauthlib
 import google.auth.transport.requests
-from application.utils.hash import make_array_hash
+from application.utils.hash import make_array_hash, make_cache_key
 
 ITEMS_PER_PAGE = 20
 
@@ -269,9 +269,7 @@ def gap_analysis() -> Any:
 def gap_analysis_weak_links() -> Any:
     standards = request.args.getlist("standard")
     key = request.args.get("key")
-    conn = redis.connect()
-    standards_hash = make_array_hash(standards)
-    cache_key = standards_hash + "->" + key
+    cache_key = make_cache_key(standards=standards,key=key)
 
     database = db.Node_collection()
     result = database.get_gap_analysis_result(cache_key=cache_key)

@@ -28,7 +28,7 @@ from sqlalchemy import func
 import uuid
 
 from application.utils.gap_analysis import get_path_score
-from application.utils.hash import make_array_hash
+from application.utils.hash import make_array_hash, make_cache_key
 
 
 from .. import sqla  # type: ignore
@@ -1654,7 +1654,7 @@ class Node_collection:
             self.session.add(res)
             self.session.commit()
         else:
-            return existing.ga_object
+            return existing
 
 
 def dbNodeFromNode(doc: cre_defs.Node) -> Optional[Node]:
@@ -1836,15 +1836,13 @@ def gap_analysis(
             cache_key = make_array_hash(node_names)
 
         # conn.set(cache_key, flask_json.dumps({"result": grouped_paths}))
-        if cre_db:
-            cre_db.add_gap_analysis_result(
-                cache_key=cache_key, ga_object={"result": extra_paths_dict[key]}
+        cre_db.add_gap_analysis_result(
+                cache_key=cache_key, ga_object={"result": grouped_paths}
             )
 
         for key in extra_paths_dict:
-            if cre_db:
-                cre_db.add_gap_analysis_result(
-                    cache_key=cache_key, ga_object={"result": extra_paths_dict[key]}
+            cre_db.add_gap_analysis_result(
+                    cache_key=make_cache_key(node_names,key), ga_object={"result": extra_paths_dict[key]}
                 )
             # conn.set(
             #     cache_key + "->" + key,

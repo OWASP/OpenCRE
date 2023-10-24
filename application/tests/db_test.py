@@ -1513,7 +1513,7 @@ class TestDB(unittest.TestCase):
 
     @patch.object(redis, "from_url")
     @patch.object(db.NEO_DB, "gap_analysis")
-    def test_gap_analysis_dump_to_cache(self, gap_mock, redis_conn_mock):
+    def test_gap_analysis_dump_to_cache(self, gap_mock):
         collection = db.Node_collection()
         collection.neo_db.connected = True
         path = [
@@ -1567,19 +1567,14 @@ class TestDB(unittest.TestCase):
         response = db.gap_analysis(collection.neo_db, ["a", "b"], True)
 
         self.assertEqual(response, (expected_response[0], {}, {}))
-
-        redis_conn_mock.return_value.set.assert_has_calls(
-            [
-                mock.call(
-                    "d8160c9b3dc20d4e931aeb4f45262155",
-                    flask_json.dumps({"result": expected_response[1]}),
-                ),
-                mock.call(
-                    "d8160c9b3dc20d4e931aeb4f45262155->a",
-                    flask_json.dumps({"result": expected_response[2]["a"]}),
-                ),
-            ]
-        )
+        self.assertEqual(
+            collection.get_gap_analysis_result("d8160c9b3dc20d4e931aeb4f45262155"),
+            flask_json.dumps({"result": expected_response[1]})
+            )
+        self.assertEqual(
+            collection.get_gap_analysis_result("d8160c9b3dc20d4e931aeb4f45262155->a"),
+              flask_json.dumps({"result": expected_response[2]["a"]}),
+            )
 
     def test_neo_db_parse_node_code(self):
         name = "name"
