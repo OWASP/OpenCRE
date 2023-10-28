@@ -254,7 +254,7 @@ def gap_analysis() -> Any:  # TODO (spyros): add export result to spreadsheet
             "store_in_cache": True,
             "cache_key": standards_hash,
         },
-        timeout='30m',
+        timeout="30m",
     )
 
     conn.set(standards_hash, json.dumps({"job_id": gap_analysis_job.id, "result": ""}))
