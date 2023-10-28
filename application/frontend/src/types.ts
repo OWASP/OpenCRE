@@ -43,19 +43,3 @@ export interface PaginatedResponse {
   standards: Document[];
   total_pages: number;
 }
-
-interface GapAnalysisPathSegment {
-  start: Document;
-  end: Document;
-  relationship: string;
-}
-
-interface GapAnalysisPath {
-  end: Document;
-  path: GapAnalysisPathSegment[];
-}
-
-export interface GapAnalysisPathStart {
-  start: Document;
-  paths: Record<string, GapAnalysisPath>;
-}

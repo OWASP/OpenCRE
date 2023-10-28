@@ -11,7 +11,6 @@ from application.utils import oscal_utils, redis
 
 from rq import Worker, Queue, Connection, job, exceptions
 
-from application import cache
 from application.database import db
 from application.defs import cre_defs as defs
 from application.defs import osib_defs as odefs
@@ -83,7 +82,6 @@ def neo4j_not_running_rejection():
 
 @app.route("/rest/v1/id/<creid>", methods=["GET"])
 @app.route("/rest/v1/name/<crename>", methods=["GET"])
-@cache.cached(timeout=50)
 def find_cre(creid: str = None, crename: str = None) -> Any:  # refer
     database = db.Node_collection()
     include_only = request.args.getlist("include_only")
@@ -421,6 +419,8 @@ def find_root_cres() -> Any:
 
 @app.errorhandler(404)
 def page_not_found(e) -> Any:
+    from pprint import pprint
+
     return "Resource Not found", 404
 
 
