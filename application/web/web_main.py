@@ -254,6 +254,7 @@ def gap_analysis() -> Any:  # TODO (spyros): add export result to spreadsheet
             "store_in_cache": True,
             "cache_key": standards_hash,
         },
+        timeout='30m',
     )
 
     conn.set(standards_hash, json.dumps({"job_id": gap_analysis_job.id, "result": ""}))
@@ -350,10 +351,12 @@ def standards() -> Any:
     if standards:
         return standards
     else:
+        print("standards not in redis getting from neo")
         database = db.Node_collection()
         standards = database.standards()
         if standards is None:
             return neo4j_not_running_rejection()
+        print("got standards from neo")
         conn.set("NodeNames", flask_json.dumps(standards))
         return standards
 
