@@ -16,6 +16,7 @@ Vagrantfile
 
 ## act secrets
 .secrets/
+.env
 
 ### conventions ###
 venv/
@@ -34,3 +35,4 @@ standards_cache.sqlite
 
 ### Neo4j
 neo4j/
+.neo4j/

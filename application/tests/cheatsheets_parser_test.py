@@ -40,7 +40,7 @@ class TestCheatsheetsParser(unittest.TestCase):
             repo_path="https://github.com/foo/bar.git",
         )
         expected = defs.Standard(
-            name="Cheat_sheets",
+            name="OWASP Cheat Sheets",
             hyperlink="https://github.com/foo/bar/tree/master/cs.md",
             section="Secrets Management Cheat Sheet",
         )
