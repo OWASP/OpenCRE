@@ -28,6 +28,7 @@ e2e:
 	export FLASK_APP=$(CURDIR)/cre.py
 	export FLASK_CONFIG=development
 	flask run&
+	sleep 5
 
 	yarn test:e2e
 	killall yarn
@@ -36,7 +37,7 @@ e2e:
 test:
 	[ -d "./venv" ] && . ./venv/bin/activate
 	export FLASK_APP=$(CURDIR)/cre.py
-	flask routes && flask test
+	flask test
 
 cover:
 	. ./venv/bin/activate && FLASK_APP=cre.py FLASK_CONFIG=testing flask test --cover

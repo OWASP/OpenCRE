@@ -56,7 +56,7 @@ export const SearchName = () => {
   }
 
   return (
-    <div className="cre-page">
+    <div className="cre-page content">
       <h1 className="standard-page__heading">
         Results matching : <i>{searchTerm}</i>
       </h1>

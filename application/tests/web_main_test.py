@@ -651,7 +651,6 @@ class TestMain(unittest.TestCase):
     @patch.object(redis, "from_url")
     def test_standards_from_cache(self, redis_conn_mock) -> None:
         expected = ["A", "B"]
-        redis_conn_mock.return_value.exists.return_value = True
         redis_conn_mock.return_value.get.return_value = json.dumps(expected)
         with self.app.test_client() as client:
             response = client.get(

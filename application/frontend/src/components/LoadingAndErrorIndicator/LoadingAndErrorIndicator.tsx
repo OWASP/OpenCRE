@@ -18,7 +18,7 @@ export const LoadingAndErrorIndicator: FunctionComponent<LoadingAndErrorIndicato
       {!loading && error && (
         <Message icon negative floating>
           <Icon name="warning" />
-          <Message.Content>
+          <Message.Content className="error-content">
             {typeof error === 'string' ? error : 'Document could not be loaded'}
           </Message.Content>
         </Message>

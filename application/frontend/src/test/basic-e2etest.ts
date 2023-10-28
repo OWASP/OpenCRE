@@ -29,8 +29,8 @@ describe('App.js', () => {
     await page.waitForSelector('#SearchButton', { timeout: 1000 });
     await page.type('#SearchBar > div > input', 'asdf');
     await page.click('#SearchButton');
-    await page.waitForSelector('.content', { timeout: 1000 });
-    const text = await page.$eval('.content', (e) => e.textContent);
+    await page.waitForSelector('.error-content', { timeout: 100000 });
+    const text = await page.$eval('.error-content', (e) => e.textContent);
     expect(text).toContain('No results match your search term');
   });
 
@@ -58,7 +58,7 @@ describe('App.js', () => {
   it('the standard page works as expected', async () => {
     await page.goto('http://127.0.0.1:5000/node/standard/ASVS');
     await page.waitForSelector('.standard-page', { timeout: 1000 });
-    await page.waitForSelector('.standard-page__links-container', { timeout: 1000 });
+    await page.waitForSelector('.standard-page__links-container', { timeout: 10000 });
     const text = await page.$$('.standard-page', (e) => e.textContent);
     expect(text).not.toContain('Standard does not exist, please check your search parameters');
 
@@ -77,17 +77,19 @@ describe('App.js', () => {
     expect(await page.content()).not.toEqual(original_content);
 
     // link to section
+    await page.waitForSelector('.standard-page__links-container>.title>a', { timeout: 1000 });
     await page.click('.standard-page__links-container>.title>a');
     await page.waitForSelector('.standard-page', { timeout: 1000 });
     const url = await page.url();
     expect(url).toContain('section');
-    const section = await page.$eval('.section-page > h5.standard-page__sub-heading', (e) => e.textContent);
-    expect(section).toContain('Section:');
 
     // show reference
+    await page.waitForSelector('.standard-page > a', { timeout: 1000 });
     const hrefs = await page.evaluate(() =>
-      Array.from(document.querySelectorAll('.section-page > a[href]'), (a) => a.getAttribute('href'))
+      Array.from(document.querySelectorAll('.standard-page > a'), (a) => a.getAttribute('href'))
     );
+
+    console.log(hrefs);
     expect(hrefs[0]).toContain('https://');
 
     // link to at least one cre

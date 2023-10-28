@@ -236,7 +236,7 @@ def gap_analysis() -> Any:  # TODO (spyros): add export result to spreadsheet
         if gap_analysis_dict.get("job_id"):
             try:
                 res = job.Job.fetch(id=gap_analysis_dict.get("job_id"), connection=conn)
-            except exceptions.NoSuchJobError as nje:
+            except exceptions.NoSuchJobError:
                 abort(404, "No such job")
             if (
                 res.get_status() != job.JobStatus.FAILED
@@ -256,7 +256,6 @@ def gap_analysis() -> Any:  # TODO (spyros): add export result to spreadsheet
         },
         timeout="30m",
     )
-
     conn.set(standards_hash, json.dumps({"job_id": gap_analysis_job.id, "result": ""}))
     return jsonify({"job_id": gap_analysis_job.id})
 
