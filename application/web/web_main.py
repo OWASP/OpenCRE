@@ -259,7 +259,6 @@ def gap_analysis() -> Any:  # TODO (spyros): add export result to spreadsheet
 
 
 @app.route("/rest/v1/map_analysis_weak_links", methods=["GET"])
-@cache.cached(timeout=50, query_string=True)
 def gap_analysis_weak_links() -> Any:
     standards = request.args.getlist("standard")
     key = request.args.get("key")
@@ -341,7 +340,6 @@ def fetch_job() -> Any:
 
 
 @app.route("/rest/v1/standards", methods=["GET"])
-@cache.cached(timeout=50)
 def standards() -> Any:
     conn = redis.connect()
     standards = conn.get("NodeNames")
