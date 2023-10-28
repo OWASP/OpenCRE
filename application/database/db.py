@@ -293,12 +293,14 @@ class NEO_DB:
 
     @classmethod
     def instance(self):
-        if self.__instance is None:
+        if not self.__instance:
             self.__instance = self.__new__(self)
 
             config.DATABASE_URL = (
                 os.getenv("NEO4J_URL") or "neo4j://neo4j:password@localhost:7687"
             )
+        else:
+            print("Neo singleton exists, returning")
         return self.__instance
 
     def __init__(sel):
