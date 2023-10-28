@@ -1,3 +1,4 @@
+import axios from 'axios';
 import Elk, { ElkEdge, ElkNode, ElkPort, ElkPrimitiveEdge } from 'elkjs';
 import React, { useEffect, useState } from 'react';
 import ReactFlow, {
@@ -14,7 +15,6 @@ import ReactFlow, {
   isNode,
   removeElements,
 } from 'react-flow-renderer';
-import { useQuery } from 'react-query';
 import { useParams } from 'react-router-dom';
 import { FlowNode } from 'typescript';
 
@@ -94,22 +94,29 @@ export const Graph = () => {
   const { id } = useParams();
   const { apiUrl } = useEnvironment();
   const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | Object | null>(null);
+  const [data, setData] = useState<Document | null>();
 
-  const { error, data, refetch } = useQuery<{ data: Document }, string>(
-    'cre',
-    () => fetch(`${apiUrl}/id/${id}`).then((res) => res.json()),
-    {
-      retry: false,
-      enabled: false,
-      onSettled: () => {
-        setLoading(false);
-      },
-    }
-  );
   useEffect(() => {
-    window.scrollTo(0, 0);
     setLoading(true);
-    refetch();
+    window.scrollTo(0, 0);
+
+    axios
+      .get(`${apiUrl}/id/${id}`)
+      .then(function (response) {
+        setError(null);
+        setData(response?.data?.data);
+      })
+      .catch(function (axiosError) {
+        if (axiosError.response.status === 404) {
+          setError('CRE does not exist in the DB, please check your search parameters');
+        } else {
+          setError(axiosError.response);
+        }
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   }, [id]);
 
   const [layout, setLayout] = useState<(Node<ReactFlowNode> | Edge<ReactFlowNode>)[]>();
@@ -119,7 +126,7 @@ export const Graph = () => {
       if (data) {
         console.log('flow running:', id);
 
-        let cre = data.data;
+        let cre = data;
         let graph = documentToReactFlowNode(cre);
         const els = await createGraphLayoutElk(graph.nodes, graph.edges);
         setLayout(els);

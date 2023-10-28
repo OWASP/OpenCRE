@@ -1,5 +1,5 @@
+import axios from 'axios';
 import React, { useEffect, useState } from 'react';
-import { useQuery } from 'react-query';
 import { useLocation, useParams } from 'react-router-dom';
 
 import { LoadingAndErrorIndicator } from '../../components/LoadingAndErrorIndicator';
@@ -10,6 +10,8 @@ export const Deeplink = () => {
   let { type, nodeName, section, subsection, tooltype, sectionID } = useParams();
   const { apiUrl } = useEnvironment();
   const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | Object | null>(null);
+  const [data, setData] = useState<Document[] | null>();
   const search = useLocation().search;
   section = section ? section : new URLSearchParams(search).get('section');
   subsection = subsection ? subsection : new URLSearchParams(search).get('subsection');
@@ -27,25 +29,28 @@ export const Deeplink = () => {
     (tooltype != null ? `tooltype=${tooltype}&` : '') +
     (sectionID != null ? `sectionID=${sectionID}&` : '');
 
-  const { error, data, refetch } = useQuery<{ standards: Document[] }, string>(
-    'deeplink',
-    () => fetch(url).then((res) => res.json()),
-    {
-      retry: false,
-      enabled: false,
-      onSettled: () => {
-        setLoading(false);
-      },
-    }
-  );
   useEffect(() => {
     window.scrollTo(0, 0);
     setLoading(true);
-    refetch();
+    axios
+      .get(url)
+      .then(function (response) {
+        setError(null);
+        setData(response.data?.standard);
+      })
+      .catch(function (axiosError) {
+        if (axiosError.response.status === 404) {
+          setError('Standard does not exist, please check your search parameters');
+        } else {
+          setError(axiosError.response);
+        }
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   }, [type, nodeName]);
-  // const { error, data, } = useQuery<{ standards: Document[]; }, string>('deeplink', () => fetch(url).then((res) => res.json()), {});
 
-  const documents = data?.standards || [];
+  const documents = data || [];
   return (
     <>
       <div className="standard-page">

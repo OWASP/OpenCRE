@@ -11,7 +11,6 @@ from application.utils import oscal_utils, redis
 
 from rq import Worker, Queue, Connection, job, exceptions
 
-from application import cache
 from application.database import db
 from application.defs import cre_defs as defs
 from application.defs import osib_defs as odefs
@@ -83,7 +82,6 @@ def neo4j_not_running_rejection():
 
 @app.route("/rest/v1/id/<creid>", methods=["GET"])
 @app.route("/rest/v1/name/<crename>", methods=["GET"])
-@cache.cached(timeout=50)
 def find_cre(creid: str = None, crename: str = None) -> Any:  # refer
     database = db.Node_collection()
     include_only = request.args.getlist("include_only")
@@ -112,12 +110,11 @@ def find_cre(creid: str = None, crename: str = None) -> Any:  # refer
             result = {"data": json.loads(oscal_utils.document_to_oscal(cre))}
 
         return jsonify(result)
-    abort(404)
+    abort(404, "CRE does not exist")
 
 
 @app.route("/rest/v1/<ntype>/<name>", methods=["GET"])
 @app.route("/rest/v1/standard/<name>", methods=["GET"])
-# @cache.cached(timeout=50)
 def find_node_by_name(name: str, ntype: str = defs.Credoctypes.Standard.value) -> Any:
     database = db.Node_collection()
     opt_section = request.args.get("section")
@@ -190,7 +187,7 @@ def find_node_by_name(name: str, ntype: str = defs.Credoctypes.Standard.value) -
 
         return jsonify(result)
     else:
-        abort(404)
+        abort(404, "Node does not exist")
 
 
 # TODO: (spyros) paginate
@@ -216,8 +213,7 @@ def find_document_by_tag() -> Any:
 
         return jsonify(result)
     logger.info("tags aborting 404")
-    abort(404)
-
+    abort(404, "Tag does not exist")
 
 @app.route("/rest/v1/map_analysis", methods=["GET"])
 @cache.cached(timeout=50, query_string=True)
@@ -361,7 +357,6 @@ def standards() -> Any:
 
 
 @app.route("/rest/v1/text_search", methods=["GET"])
-# @cache.cached(timeout=50)
 def text_search() -> Any:
     """
     Performs arbitrary text search among all known documents.
@@ -390,7 +385,7 @@ def text_search() -> Any:
         res = [doc.todict() for doc in documents]
         return jsonify(res)
     else:
-        abort(404)
+        abort(404, "No object matches the given search terms")
 
 
 @app.route("/rest/v1/root_cres", methods=["GET"])
@@ -417,18 +412,19 @@ def find_root_cres() -> Any:
             return jsonify(json.loads(oscal_utils.list_to_oscal(documents)))
 
         return jsonify(result)
-    abort(404)
+    abort(404, "No root CREs")
 
 
 @app.errorhandler(404)
 def page_not_found(e) -> Any:
+    from pprint import pprint
+
     return "Resource Not found", 404
 
 
 # If no other routes are matched, serve the react app, or any other static files (like bundle.js)
 @app.route("/", defaults={"path": ""})
 @app.route("/<path:path>")
-# @cache.cached(timeout=50)
 def index(path: str) -> Any:
     if path != "" and os.path.exists(app.static_folder + "/" + path):
         return send_from_directory(app.static_folder, path)
@@ -437,18 +433,17 @@ def index(path: str) -> Any:
 
 
 @app.route("/smartlink/<ntype>/<name>/<section>", methods=["GET"])
-# @cache.cached(timeout=50)
 def smartlink(
     name: str, ntype: str = defs.Credoctypes.Standard.value, section: str = ""
 ) -> Any:
     """if node is found, show node, else redirect"""
+    # ATTENTION: DO NOT MESS WITH THIS FUNCTIONALITY WITHOUT A TICKET AND CORE CONTRIBUTORS APPROVAL!
+    # CRITICAL FUNCTIONALITY DEPENDS ON THIS!
     database = db.Node_collection()
     opt_version = request.args.get("version")
     # match ntype to the credoctypes case-insensitive
-    typ = [t for t in defs.Credoctypes if t.value.lower() == ntype.lower()]
-    doctype = None
-    if typ:
-        doctype = typ[0]
+    typ = [t.value for t in defs.Credoctypes if t.value.lower() == ntype.lower()]
+    doctype = None if not typ else typ[0]
 
     page = 1
     items_per_page = 1
@@ -479,7 +474,7 @@ def smartlink(
         if found_section_id:
             return redirect(f"/node/{ntype}/{name}/sectionid/{section}")
         return redirect(f"/node/{ntype}/{name}/section/{section}")
-    elif ntype == defs.Credoctypes.Standard.value and redirectors.redirect(
+    elif doctype == defs.Credoctypes.Standard.value and redirectors.redirect(
         name, section
     ):
         logger.info(
@@ -488,7 +483,7 @@ def smartlink(
         return redirect(redirectors.redirect(name, section))
     else:
         logger.info(f"not sure what happened, 404")
-        return abort(404)
+        return abort(404, "Document does not exist")
 
 
 @app.before_request

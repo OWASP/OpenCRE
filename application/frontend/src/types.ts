@@ -37,4 +37,8 @@ export interface GapAnalysisPathStart {
   paths: Record<string, GapAnalysisPath>;
   extra: number;
   weakLinks: Record<string, GapAnalysisPath>;
+
+export interface PaginatedResponse {
+  standards: Document[];
+  total_pages: number;
 }
