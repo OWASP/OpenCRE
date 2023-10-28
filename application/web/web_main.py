@@ -430,7 +430,6 @@ def page_not_found(e) -> Any:
 @app.route("/<path:path>")
 # @cache.cached(timeout=50)
 def index(path: str) -> Any:
-    print(1)
     if path != "" and os.path.exists(app.static_folder + "/" + path):
         return send_from_directory(app.static_folder, path)
     else:
