@@ -14,9 +14,14 @@ const getLinks = (): { to: string; name: string }[] => [
     name: 'Open CRE',
   },
   {
+    to: `/chatbot`,
+    name: 'OpenCRE Chat',
+  },
+  {
     to: `/map_analysis`,
     name: 'Map analysis',
   },
+
 ];
 
 export const Header = () => {
