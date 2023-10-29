@@ -30,6 +30,9 @@ export const SearchBody = () => {
         into an AI model to create the world's first security-specialized chatbot. This ensures you get a more
         reliable answer, and also a reference to a reputable source.
       </b>
+      <b>
+        Use <a href="/map_analysis">Map Analysis</a> to find how any two Resources connect with eachother
+      </b>
       <h2>HOW?</h2>
       <p>
         OpenCRE links each section of a resource (like a standard or guideline) to a shared topic, known as a
