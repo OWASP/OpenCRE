@@ -98,4 +98,13 @@ import-neo4j:
 	[ -d "./venv" ] && . ./venv/bin/activate
 	export FLASK_APP=$(CURDIR)/cre.py && python cre.py --populate_neo4j_db
 
+preload-map-analysis: 
+	make start-worker& make start-worker& make  start-worker& make  start-worker& make  start-worker& make  start-worker& make  start-worker& make  start-worker& make  start-worker& make  start-worker& make dev-flask&
+	[ -d "./venv" ] && . ./venv/bin/activate
+	export FLASK_APP=$(CURDIR)/cre.py 
+	
+	python cre.py --preload_map_analysis_target_url 'http://127.0.0.1:5000'	
+	killall python flask
+
+
 all: clean lint test dev dev-run

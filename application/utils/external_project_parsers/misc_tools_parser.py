@@ -17,7 +17,6 @@ logger.setLevel(logging.INFO)
 
 tool_urls = [
     "https://github.com/commjoen/wrongsecrets.git",
-    # "https://github.com/northdpole/wrongsecrets.git",
 ]
 
 
@@ -47,7 +46,7 @@ def parse_tool(tool_repo: str, cache: db.Node_collection, dry_run: boolean = Fal
     if not dry_run:
         repo = git.clone(tool_repo)
     readme = os.path.join(repo.working_dir, "README.md")
-    title_regexp = r"# (?P<title>(\w+ )+)"
+    title_regexp = r"# (?P<title>(\w+ ?)+)"
     cre_link = (
         r".*\[.*\]\((?P<url>(https\:\/\/www\.)?opencre\.org\/cre\/(?P<cre>\d+-\d+).*)"
     )

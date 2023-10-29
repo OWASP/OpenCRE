@@ -197,6 +197,11 @@ def main() -> None:
         action="store_true",
         help="start redis queue worker",
     )
+    parser.add_argument(
+        "--preload_map_analysis_target_url",
+        default="",
+        help="preload map analysis for all possible 2 standards combinations, use target url as an OpenCRE base",
+    )
     args = parser.parse_args()
 
     from application.cmd import cre_main

@@ -27,6 +27,7 @@ from application.utils.external_project_parsers import (
     juiceshop,
 )
 from application.prompt_client import prompt_client as prompt_client
+from application.utils import gap_analysis
 from dacite import from_dict
 from dacite.config import Config
 
@@ -423,6 +424,8 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
         from application.worker import start_worker
 
         start_worker(args.cache_file)
+    if args.preload_map_analysis_target_url:
+        gap_analysis.preload(target_url=args.preload_map_analysis_target_url)
 
 
 def db_connect(path: str):
