@@ -21,7 +21,6 @@ const getLinks = (): { to: string; name: string }[] => [
     to: `/map_analysis`,
     name: 'Map analysis',
   },
-
 ];
 
 export const Header = () => {
