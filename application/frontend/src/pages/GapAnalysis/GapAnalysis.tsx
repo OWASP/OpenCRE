@@ -298,7 +298,7 @@ export const GapAnalysis = () => {
                           .map((path) => GetResultLine(path, gapAnalysis, key))}
                       {gapAnalysis[key].extra > 0 && !gapAnalysis[key].weakLinks && (
                         <Button onClick={async () => await getWeakLinks(key)}>
-                          See Weak Links ({gapAnalysis[key].extra})
+                          Show average and weak links ({gapAnalysis[key].extra})
                         </Button>
                       )}
                       {Object.keys(gapAnalysis[key].paths).length === 0 && gapAnalysis[key].extra === 0 && (
