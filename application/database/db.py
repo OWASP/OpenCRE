@@ -1415,6 +1415,7 @@ class Node_collection:
         return res
 
     def standards(self) -> List[str]:
+        logger.info("found unique db standards, returning")
         return self.neo_db.standards()
 
     def text_search(self, text: str) -> List[Optional[cre_defs.Document]]:
