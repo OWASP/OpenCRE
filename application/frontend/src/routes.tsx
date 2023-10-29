@@ -1,10 +1,22 @@
 import { ReactNode } from 'react';
 
-import { BROWSEROOT, CRE, DEEPLINK, GRAPH, INDEX, SEARCH, SECTION, SECTION_ID, STANDARD } from './const';
+import {
+  BROWSEROOT,
+  CRE,
+  DEEPLINK,
+  GAP_ANALYSIS,
+  GRAPH,
+  INDEX,
+  SEARCH,
+  SECTION,
+  SECTION_ID,
+  STANDARD,
+} from './const';
 import { CommonRequirementEnumeration, Graph, Search, Standard } from './pages';
 import { BrowseRootCres } from './pages/BrowseRootCres/browseRootCres';
 import { Chatbot } from './pages/chatbot/chatbot';
 import { Deeplink } from './pages/Deeplink/Deeplink';
+import { GapAnalysis } from './pages/GapAnalysis/GapAnalysis';
 import { MembershipRequired } from './pages/MembershipRequired/MembershipRequired';
 import { SearchName } from './pages/Search/SearchName';
 import { StandardSection } from './pages/Standard/StandardSection';
@@ -22,6 +34,12 @@ export const ROUTES: IRoute[] = [
     component: Search,
     showFilter: false,
     showHeader: false,
+  },
+  {
+    path: GAP_ANALYSIS,
+    component: GapAnalysis,
+    showHeader: true,
+    showFilter: false,
   },
   {
     path: `/node${STANDARD}/:id${SECTION}/:section`,

@@ -3,11 +3,14 @@ import random
 import os
 import tempfile
 import unittest
+from unittest import mock
+from unittest.mock import patch
 import uuid
 from copy import copy, deepcopy
 from pprint import pprint
-from pydoc import doc
 from typing import Any, Dict, List, Union
+import redis
+from flask import json as flask_json
 
 import yaml
 from application import create_app, sqla  # type: ignore
@@ -763,153 +766,6 @@ class TestDB(unittest.TestCase):
             (None, None, None),
         )
 
-    def test_gap_analysis(self) -> None:
-        """Given
-        the following standards SA1, SA2, SA3 SAA1 , SB1, SD1, SDD1, SW1, SX1
-        the following CREs CA, CB, CC, CD, CDD , CW, CX
-        the following links
-        CC -> CA, CB,CD
-        CD -> CDD
-        CA-> SA1, SAA1
-        CB -> SB1
-        CD -> SD1
-        CDD -> SDD1
-        CW -> SW1
-        CX -> SA3, SX1
-        NoCRE -> SA2
-
-        Then:
-        gap_analysis(SA) returns SA1, SA2, SA3
-        gap_analysis(SA,SAA) returns SA1 <-> SAA1, SA2, SA3
-        gap_analysis(SA,SDD) returns SA1 <-> SDD1, SA2, SA3
-        gap_analysis(SA, SW) returns SA1,SA2,SA3, SW1 # no connection
-        gap_analysis(SA, SB, SD, SW) returns SA1 <->(SB1,SD1), SA2 , SW1, SA3
-        gap_analysis(SA, SX) returns SA1, SA2, SA3->SX1
-
-            give me a single standard
-            give me two standards connected by same cre
-            give me two standards connected by cres who are children of the same cre
-            give me two standards connected by completely different cres
-            give me two standards with sections on different trees.
-
-            give me two standards without  connections
-            give me 3 or more standards
-
-        """
-
-        collection = db.Node_collection()
-        collection.graph.graph = db.CRE_Graph.load_cre_graph(sqla.session)
-
-        cres = {
-            "dbca": collection.add_cre(defs.CRE(id="1", description="CA", name="CA")),
-            "dbcb": collection.add_cre(defs.CRE(id="2", description="CB", name="CB")),
-            "dbcc": collection.add_cre(defs.CRE(id="3", description="CC", name="CC")),
-            "dbcd": collection.add_cre(defs.CRE(id="4", description="CD", name="CD")),
-            "dbcdd": collection.add_cre(
-                defs.CRE(id="5", description="CDD", name="CDD")
-            ),
-            "dbcw": collection.add_cre(defs.CRE(id="6", description="CW", name="CW")),
-            "dbcx": collection.add_cre(defs.CRE(id="7", description="CX", name="CX")),
-        }
-        def_standards = {
-            "sa1": defs.Standard(name="SA", section="SA1"),
-            "sa2": defs.Standard(name="SA", section="SA2"),
-            "sa3": defs.Standard(name="SA", section="SA3"),
-            "saa1": defs.Standard(name="SAA", section="SAA1"),
-            "sb1": defs.Standard(name="SB", section="SB1"),
-            "sd1": defs.Standard(name="SD", section="SD1"),
-            "sdd1": defs.Standard(name="SDD", section="SDD1"),
-            "sw1": defs.Standard(name="SW", section="SW1"),
-            "sx1": defs.Standard(name="SX", section="SX1"),
-        }
-        standards = {}
-        for k, s in def_standards.items():
-            standards["db" + k] = collection.add_node(s)
-        ltype = defs.LinkTypes.LinkedTo
-        collection.add_link(cre=cres["dbca"], node=standards["dbsa1"])
-        collection.add_link(cre=cres["dbca"], node=standards["dbsaa1"])
-        collection.add_link(cre=cres["dbcb"], node=standards["dbsb1"])
-        collection.add_link(cre=cres["dbcd"], node=standards["dbsd1"])
-        collection.add_link(cre=cres["dbcdd"], node=standards["dbsdd1"])
-        collection.add_link(cre=cres["dbcw"], node=standards["dbsw1"])
-        collection.add_link(cre=cres["dbcx"], node=standards["dbsa3"])
-        collection.add_link(cre=cres["dbcx"], node=standards["dbsx1"])
-
-        collection.add_internal_link(group=cres["dbcc"], cre=cres["dbca"])
-        collection.add_internal_link(group=cres["dbcc"], cre=cres["dbcb"])
-        collection.add_internal_link(group=cres["dbcc"], cre=cres["dbcd"])
-        collection.add_internal_link(group=cres["dbcd"], cre=cres["dbcdd"])
-
-        expected = {
-            "SA": [def_standards["sa1"], def_standards["sa2"], def_standards["sa3"]],
-            "SA,SAA": [
-                copy(def_standards["sa1"]).add_link(
-                    defs.Link(ltype=ltype, document=def_standards["saa1"])
-                ),
-                copy(def_standards["saa1"]).add_link(
-                    defs.Link(ltype=ltype, document=def_standards["sa1"])
-                ),
-                def_standards["sa2"],
-                def_standards["sa3"],
-            ],
-            "SAA,SA": [
-                copy(def_standards["sa1"]).add_link(
-                    defs.Link(ltype=ltype, document=def_standards["saa1"])
-                ),
-                copy(def_standards["saa1"]).add_link(
-                    defs.Link(ltype=ltype, document=def_standards["sa1"])
-                ),
-                def_standards["sa2"],
-                def_standards["sa3"],
-            ],
-            "SA,SDD": [
-                copy(def_standards["sa1"]).add_link(
-                    defs.Link(ltype=ltype, document=def_standards["sdd1"])
-                ),
-                copy(def_standards["sdd1"]).add_link(
-                    defs.Link(ltype=ltype, document=def_standards["sa1"])
-                ),
-                def_standards["sa2"],
-                def_standards["sa3"],
-            ],
-            "SA,SW": [
-                def_standards["sa1"],
-                def_standards["sa2"],
-                def_standards["sa3"],
-                def_standards["sw1"],
-            ],
-            "SA,SB,SD,SW": [
-                copy(def_standards["sa1"])
-                .add_link(defs.Link(ltype=ltype, document=def_standards["sb1"]))
-                .add_link(defs.Link(ltype=ltype, document=def_standards["sd1"])),
-                copy(def_standards["sb1"])
-                .add_link(defs.Link(ltype=ltype, document=def_standards["sa1"]))
-                .add_link(defs.Link(ltype=ltype, document=def_standards["sd1"])),
-                copy(def_standards["sd1"])
-                .add_link(defs.Link(ltype=ltype, document=def_standards["sa1"]))
-                .add_link(defs.Link(ltype=ltype, document=def_standards["sb1"])),
-                def_standards["sa2"],
-                def_standards["sa3"],
-                def_standards["sw1"],
-            ],
-            "SA,SX": [
-                def_standards["sa1"],
-                def_standards["sa2"],
-                copy(def_standards["sa3"]).add_link(
-                    defs.Link(ltype=ltype, document=def_standards["sx1"])
-                ),
-                copy(def_standards["sx1"]).add_link(
-                    defs.Link(ltype=ltype, document=def_standards["sa3"])
-                ),
-            ],
-        }
-
-        self.maxDiff = None
-        for args, expected_vals in expected.items():
-            stands = args.split(",")
-            res = collection.gap_analysis(stands)
-            self.assertCountEqual(res, expected_vals)
-
     def test_add_internal_link(self) -> None:
         """test that internal links are added successfully,
         edge cases:
@@ -1284,6 +1140,584 @@ class TestDB(unittest.TestCase):
         root_cres = collection.get_root_cres()
         self.maxDiff = None
         self.assertEqual(root_cres, [cres[0], cres[1], cres[7]])
+
+    @patch.object(db.NEO_DB, "gap_analysis")
+    def test_gap_analysis_disconnected(self, gap_mock):
+        collection = db.Node_collection()
+        collection.neo_db.connected = False
+        gap_mock.return_value = (None, None)
+
+        self.assertEqual(db.gap_analysis(collection.neo_db, ["a", "b"]), None)
+
+    @patch.object(db.NEO_DB, "gap_analysis")
+    def test_gap_analysis_no_nodes(self, gap_mock):
+        collection = db.Node_collection()
+        collection.neo_db.connected = True
+
+        gap_mock.return_value = ([], [])
+        self.assertEqual(
+            db.gap_analysis(collection.neo_db, ["a", "b"]), (["a", "b"], {}, {})
+        )
+
+    @patch.object(db.NEO_DB, "gap_analysis")
+    def test_gap_analysis_no_links(self, gap_mock):
+        collection = db.Node_collection()
+        collection.neo_db.connected = True
+
+        gap_mock.return_value = ([defs.CRE(name="bob", id=1)], [])
+        self.assertEqual(
+            db.gap_analysis(collection.neo_db, ["a", "b"]),
+            (
+                ["a", "b"],
+                {1: {"start": defs.CRE(name="bob", id=1), "paths": {}, "extra": 0}},
+                {1: {"paths": {}}},
+            ),
+        )
+
+    @patch.object(db.NEO_DB, "gap_analysis")
+    def test_gap_analysis_one_link(self, gap_mock):
+        collection = db.Node_collection()
+        collection.neo_db.connected = True
+        path = [
+            {
+                "end": defs.CRE(name="bob", id=1),
+                "relationship": "LINKED_TO",
+                "start": defs.CRE(name="bob", id="a"),
+            },
+            {
+                "end": defs.CRE(name="bob", id=2),
+                "relationship": "LINKED_TO",
+                "start": defs.CRE(name="bob", id="a"),
+            },
+        ]
+        gap_mock.return_value = (
+            [defs.CRE(name="bob", id=1)],
+            [
+                {
+                    "start": defs.CRE(name="bob", id=1),
+                    "end": defs.CRE(name="bob", id=2),
+                    "path": path,
+                }
+            ],
+        )
+        expected = (
+            ["a", "b"],
+            {
+                1: {
+                    "start": defs.CRE(name="bob", id=1),
+                    "paths": {
+                        2: {"end": defs.CRE(name="bob", id=2), "path": path, "score": 0}
+                    },
+                    "extra": 0,
+                }
+            },
+            {1: {"paths": {}}},
+        )
+        self.assertEqual(db.gap_analysis(collection.neo_db, ["a", "b"]), expected)
+
+    @patch.object(db.NEO_DB, "gap_analysis")
+    def test_gap_analysis_one_weak_link(self, gap_mock):
+        collection = db.Node_collection()
+        collection.neo_db.connected = True
+        path = [
+            {
+                "end": defs.CRE(name="bob", id=1),
+                "relationship": "LINKED_TO",
+                "start": defs.CRE(name="bob", id="a"),
+            },
+            {
+                "end": defs.CRE(name="bob", id=2),
+                "relationship": "RELATED",
+                "start": defs.CRE(name="bob", id=1),
+            },
+            {
+                "end": defs.CRE(name="bob", id=1),
+                "relationship": "RELATED",
+                "start": defs.CRE(name="bob", id=2),
+            },
+            {
+                "end": defs.CRE(name="bob", id=3),
+                "relationship": "LINKED_TO",
+                "start": defs.CRE(name="bob", id=2),
+            },
+        ]
+        gap_mock.return_value = (
+            [defs.CRE(name="bob", id=1)],
+            [
+                {
+                    "start": defs.CRE(name="bob", id=1),
+                    "end": defs.CRE(name="bob", id=2),
+                    "path": path,
+                }
+            ],
+        )
+        expected = (
+            ["a", "b"],
+            {1: {"start": defs.CRE(name="bob", id=1), "paths": {}, "extra": 1}},
+            {
+                1: {
+                    "paths": {
+                        2: {"end": defs.CRE(name="bob", id=2), "path": path, "score": 4}
+                    }
+                }
+            },
+        )
+
+        self.assertEqual(db.gap_analysis(collection.neo_db, ["a", "b"]), expected)
+
+    @patch.object(db.NEO_DB, "gap_analysis")
+    def test_gap_analysis_duplicate_link_path_existing_lower(self, gap_mock):
+        collection = db.Node_collection()
+        collection.neo_db.connected = True
+        path = [
+            {
+                "end": defs.CRE(name="bob", id=1),
+                "relationship": "LINKED_TO",
+                "start": defs.CRE(name="bob", id="a"),
+            },
+            {
+                "end": defs.CRE(name="bob", id=2),
+                "relationship": "LINKED_TO",
+                "start": defs.CRE(name="bob", id="a"),
+            },
+        ]
+        path2 = [
+            {
+                "end": defs.CRE(name="bob", id=1),
+                "relationship": "LINKED_TO",
+                "start": defs.CRE(name="bob", id="a"),
+            },
+            {
+                "end": defs.CRE(name="bob", id=2),
+                "relationship": "RELATED",
+                "start": defs.CRE(name="bob", id="a"),
+            },
+        ]
+        gap_mock.return_value = (
+            [defs.CRE(name="bob", id=1)],
+            [
+                {
+                    "start": defs.CRE(name="bob", id=1),
+                    "end": defs.CRE(name="bob", id=2),
+                    "path": path,
+                },
+                {
+                    "start": defs.CRE(name="bob", id=1),
+                    "end": defs.CRE(name="bob", id=2),
+                    "path": path2,
+                },
+            ],
+        )
+        expected = (
+            ["a", "b"],
+            {
+                1: {
+                    "start": defs.CRE(name="bob", id=1),
+                    "paths": {
+                        2: {"end": defs.CRE(name="bob", id=2), "path": path, "score": 0}
+                    },
+                    "extra": 0,
+                },
+            },
+            {1: {"paths": {}}},
+        )
+        self.assertEqual(db.gap_analysis(collection.neo_db, ["a", "b"]), expected)
+
+    @patch.object(db.NEO_DB, "gap_analysis")
+    def test_gap_analysis_duplicate_link_path_existing_lower_new_in_extras(
+        self, gap_mock
+    ):
+        collection = db.Node_collection()
+        collection.neo_db.connected = True
+        path = [
+            {
+                "end": defs.CRE(name="bob", id=1),
+                "relationship": "LINKED_TO",
+                "start": defs.CRE(name="bob", id="a"),
+            },
+            {
+                "end": defs.CRE(name="bob", id=2),
+                "relationship": "LINKED_TO",
+                "start": defs.CRE(name="bob", id="a"),
+            },
+        ]
+        path2 = [
+            {
+                "end": defs.CRE(name="bob", id=1),
+                "relationship": "LINKED_TO",
+                "start": defs.CRE(name="bob", id="a"),
+            },
+            {
+                "end": defs.CRE(name="bob", id=2),
+                "relationship": "RELATED",
+                "start": defs.CRE(name="bob", id="a"),
+            },
+            {
+                "end": defs.CRE(name="bob", id=2),
+                "relationship": "RELATED",
+                "start": defs.CRE(name="bob", id="a"),
+            },
+        ]
+        gap_mock.return_value = (
+            [defs.CRE(name="bob", id=1)],
+            [
+                {
+                    "start": defs.CRE(name="bob", id=1),
+                    "end": defs.CRE(name="bob", id=2),
+                    "path": path,
+                },
+                {
+                    "start": defs.CRE(name="bob", id=1),
+                    "end": defs.CRE(name="bob", id=2),
+                    "path": path2,
+                },
+            ],
+        )
+        expected = (
+            ["a", "b"],
+            {
+                1: {
+                    "start": defs.CRE(name="bob", id=1),
+                    "paths": {
+                        2: {"end": defs.CRE(name="bob", id=2), "path": path, "score": 0}
+                    },
+                    "extra": 0,
+                },
+            },
+            {1: {"paths": {}}},
+        )
+        self.assertEqual(db.gap_analysis(collection.neo_db, ["a", "b"]), expected)
+
+    @patch.object(db.NEO_DB, "gap_analysis")
+    def test_gap_analysis_duplicate_link_path_existing_higher(self, gap_mock):
+        collection = db.Node_collection()
+        collection.neo_db.connected = True
+        path = [
+            {
+                "end": defs.CRE(name="bob", id=1),
+                "relationship": "LINKED_TO",
+                "start": defs.CRE(name="bob", id="a"),
+            },
+            {
+                "end": defs.CRE(name="bob", id=2),
+                "relationship": "LINKED_TO",
+                "start": defs.CRE(name="bob", id="a"),
+            },
+        ]
+        path2 = [
+            {
+                "end": defs.CRE(name="bob", id=1),
+                "relationship": "LINKED_TO",
+                "start": defs.CRE(name="bob", id="a"),
+            },
+            {
+                "end": defs.CRE(name="bob", id=2),
+                "relationship": "RELATED",
+                "start": defs.CRE(name="bob", id="a"),
+            },
+        ]
+        gap_mock.return_value = (
+            [defs.CRE(name="bob", id=1)],
+            [
+                {
+                    "start": defs.CRE(name="bob", id=1),
+                    "end": defs.CRE(name="bob", id=2),
+                    "path": path2,
+                },
+                {
+                    "start": defs.CRE(name="bob", id=1),
+                    "end": defs.CRE(name="bob", id=2),
+                    "path": path,
+                },
+            ],
+        )
+        expected = (
+            ["a", "b"],
+            {
+                1: {
+                    "start": defs.CRE(name="bob", id=1),
+                    "paths": {
+                        2: {"end": defs.CRE(name="bob", id=2), "path": path, "score": 0}
+                    },
+                    "extra": 0,
+                }
+            },
+            {1: {"paths": {}}},
+        )
+        self.assertEqual(db.gap_analysis(collection.neo_db, ["a", "b"]), expected)
+
+    @patch.object(db.NEO_DB, "gap_analysis")
+    def test_gap_analysis_duplicate_link_path_existing_higher_and_in_extras(
+        self, gap_mock
+    ):
+        collection = db.Node_collection()
+        collection.neo_db.connected = True
+        path = [
+            {
+                "end": defs.CRE(name="bob", id=1),
+                "relationship": "LINKED_TO",
+                "start": defs.CRE(name="bob", id="a"),
+            },
+            {
+                "end": defs.CRE(name="bob", id=2),
+                "relationship": "LINKED_TO",
+                "start": defs.CRE(name="bob", id="a"),
+            },
+        ]
+        path2 = [
+            {
+                "end": defs.CRE(name="bob", id=1),
+                "relationship": "LINKED_TO",
+                "start": defs.CRE(name="bob", id="a"),
+            },
+            {
+                "end": defs.CRE(name="bob", id=2),
+                "relationship": "RELATED",
+                "start": defs.CRE(name="bob", id="a"),
+            },
+            {
+                "end": defs.CRE(name="bob", id=2),
+                "relationship": "RELATED",
+                "start": defs.CRE(name="bob", id="a"),
+            },
+        ]
+        gap_mock.return_value = (
+            [defs.CRE(name="bob", id=1)],
+            [
+                {
+                    "start": defs.CRE(name="bob", id=1),
+                    "end": defs.CRE(name="bob", id=2),
+                    "path": path2,
+                },
+                {
+                    "start": defs.CRE(name="bob", id=1),
+                    "end": defs.CRE(name="bob", id=2),
+                    "path": path,
+                },
+            ],
+        )
+        expected = (
+            ["a", "b"],
+            {
+                1: {
+                    "start": defs.CRE(name="bob", id=1),
+                    "paths": {
+                        2: {"end": defs.CRE(name="bob", id=2), "path": path, "score": 0}
+                    },
+                    "extra": 0,
+                }
+            },
+            {1: {"paths": {}}},
+        )
+        self.assertEqual(db.gap_analysis(collection.neo_db, ["a", "b"]), expected)
+
+    @patch.object(db.NEO_DB, "gap_analysis")
+    def test_gap_analysis_dump_to_cache(self, gap_mock):
+        collection = db.Node_collection()
+        collection.neo_db.connected = True
+        path = [
+            {
+                "end": defs.CRE(name="bob", id=1),
+                "relationship": "LINKED_TO",
+                "start": defs.CRE(name="bob", id="a"),
+            },
+            {
+                "end": defs.CRE(name="bob", id=2),
+                "relationship": "RELATED",
+                "start": defs.CRE(name="bob", id=1),
+            },
+            {
+                "end": defs.CRE(name="bob", id=1),
+                "relationship": "RELATED",
+                "start": defs.CRE(name="bob", id=2),
+            },
+            {
+                "end": defs.CRE(name="bob", id=3),
+                "relationship": "LINKED_TO",
+                "start": defs.CRE(name="bob", id=2),
+            },
+        ]
+        gap_mock.return_value = (
+            [defs.CRE(name="bob", id="a")],
+            [
+                {
+                    "start": defs.CRE(name="bob", id="a"),
+                    "end": defs.CRE(name="bob", id="b"),
+                    "path": path,
+                }
+            ],
+        )
+
+        expected_response = (
+            ["a", "b"],
+            {"a": {"start": defs.CRE(name="bob", id="a"), "paths": {}, "extra": 1}},
+            {
+                "a": {
+                    "paths": {
+                        "b": {
+                            "end": defs.CRE(name="bob", id="b"),
+                            "path": path,
+                            "score": 4,
+                        }
+                    }
+                }
+            },
+        )
+        response = db.gap_analysis(collection.neo_db, ["a", "b"], True)
+
+        self.assertEqual(response, (expected_response[0], {}, {}))
+        self.assertEqual(
+            collection.get_gap_analysis_result("d8160c9b3dc20d4e931aeb4f45262155"),
+            flask_json.dumps({"result": expected_response[1]}),
+        )
+        self.assertEqual(
+            collection.get_gap_analysis_result("d8160c9b3dc20d4e931aeb4f45262155->a"),
+            flask_json.dumps({"result": expected_response[2]["a"]}),
+        )
+
+    def test_neo_db_parse_node_code(self):
+        name = "name"
+        id = "id"
+        description = "description"
+        tags = "tags"
+        version = "version"
+        hyperlink = "version"
+        expected = defs.Code(
+            name=name,
+            id=id,
+            description=description,
+            tags=tags,
+            version=version,
+            hyperlink=hyperlink,
+        )
+        graph_node = db.NeoCode(
+            name=name,
+            document_id=id,
+            description=description,
+            tags=tags,
+            version=version,
+            hyperlink=hyperlink,
+        )
+        self.assertEqual(db.NEO_DB.parse_node(graph_node), expected)
+
+    def test_neo_db_parse_node_standard(self):
+        name = "name"
+        id = "id"
+        description = "description"
+        tags = "tags"
+        version = "version"
+        section = "section"
+        sectionID = "sectionID"
+        subsection = "subsection"
+        hyperlink = "version"
+        expected = defs.Standard(
+            name=name,
+            id=id,
+            description=description,
+            tags=tags,
+            version=version,
+            section=section,
+            sectionID=sectionID,
+            subsection=subsection,
+            hyperlink=hyperlink,
+        )
+        graph_node = db.NeoStandard(
+            name=name,
+            document_id=id,
+            description=description,
+            tags=tags,
+            version=version,
+            section=section,
+            section_id=sectionID,
+            subsection=subsection,
+            hyperlink=hyperlink,
+        )
+        self.assertEqual(db.NEO_DB.parse_node(graph_node), expected)
+
+    def test_neo_db_parse_node_tool(self):
+        name = "name"
+        id = "id"
+        description = "description"
+        tags = "tags"
+        version = "version"
+        section = "section"
+        sectionID = "sectionID"
+        subsection = "subsection"
+        hyperlink = "version"
+        expected = defs.Tool(
+            name=name,
+            id=id,
+            description=description,
+            tags=tags,
+            version=version,
+            section=section,
+            sectionID=sectionID,
+            subsection=subsection,
+            hyperlink=hyperlink,
+        )
+        graph_node = db.NeoTool(
+            name=name,
+            document_id=id,
+            description=description,
+            tags=tags,
+            version=version,
+            section=section,
+            section_id=sectionID,
+            subsection=subsection,
+            hyperlink=hyperlink,
+        )
+        self.assertEqual(db.NEO_DB.parse_node(graph_node), expected)
+
+    def test_neo_db_parse_node_cre(self):
+        name = "name"
+        id = "id"
+        description = "description"
+        tags = "tags"
+        expected = defs.CRE(
+            name=name,
+            id=id,
+            description=description,
+            tags=tags,
+        )
+        graph_node = db.NeoCRE(
+            name=name,
+            document_id=id,
+            description=description,
+            tags=tags,
+        )
+        self.assertEqual(db.NEO_DB.parse_node(graph_node), expected)
+
+    def test_neo_db_parse_node_Document(self):
+        name = "name"
+        id = "id"
+        description = "description"
+        tags = "tags"
+        graph_node = db.NeoDocument(
+            name=name,
+            document_id=id,
+            description=description,
+            tags=tags,
+        )
+        with self.assertRaises(Exception) as cm:
+            db.NEO_DB.parse_node(graph_node)
+
+        self.assertEqual(str(cm.exception), "Shouldn't be parsing a NeoDocument")
+
+    def test_neo_db_parse_node_Node(self):
+        name = "name"
+        id = "id"
+        description = "description"
+        tags = "tags"
+        graph_node = db.NeoNode(
+            name=name,
+            document_id=id,
+            description=description,
+            tags=tags,
+        )
+        with self.assertRaises(Exception) as cm:
+            db.NEO_DB.parse_node(graph_node)
+
+        self.assertEqual(str(cm.exception), "Shouldn't be parsing a NeoNode")
 
     def test_get_embeddings_by_doc_type_paginated(self):
         """Given: a range of embedding for Nodes and a range of embeddings for CREs

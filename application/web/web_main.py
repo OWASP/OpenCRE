@@ -7,7 +7,9 @@ import os
 import pathlib
 import urllib.parse
 from typing import Any
-from application.utils import oscal_utils
+from application.utils import oscal_utils, redis
+
+from rq import Worker, Queue, Connection, job, exceptions
 
 from application.database import db
 from application.defs import cre_defs as defs
@@ -16,6 +18,7 @@ from application.utils import spreadsheet as sheet_utils
 from application.utils import mdutils, redirectors
 from application.prompt_client import prompt_client as prompt_client
 from enum import Enum
+from flask import json as flask_json
 from flask import (
     Blueprint,
     abort,
@@ -32,6 +35,7 @@ from google_auth_oauthlib.flow import Flow
 from application.utils.spreadsheet import write_csv
 import oauthlib
 import google.auth.transport.requests
+from application.utils.hash import make_array_hash, make_cache_key
 
 ITEMS_PER_PAGE = 20
 
@@ -62,6 +66,18 @@ def extend_cre_with_tag_links(
         o.links = []
         cre.add_link(defs.Link(ltype=defs.LinkTypes.Related, document=o))
     return cre
+
+
+def neo4j_not_running_rejection():
+    logger.info("Neo4j is disabled")
+    return (
+        jsonify(
+            {
+                "message": "Backend services connected to this feature are not running at the moment."
+            }
+        ),
+        500,
+    )
 
 
 @app.route("/rest/v1/id/<creid>", methods=["GET"])
@@ -200,14 +216,142 @@ def find_document_by_tag() -> Any:
     abort(404, "Tag does not exist")
 
 
-@app.route("/rest/v1/gap_analysis", methods=["GET"])
-def gap_analysis() -> Any:  # TODO (spyros): add export result to spreadsheet
+@app.route("/rest/v1/map_analysis", methods=["GET"])
+def gap_analysis() -> Any:
     database = db.Node_collection()
     standards = request.args.getlist("standard")
-    documents = database.gap_analysis(standards=standards)
-    if documents:
-        res = [doc.todict() for doc in documents]
-        return jsonify(res)
+    conn = redis.connect()
+    standards_hash = make_array_hash(standards)
+    result = database.get_gap_analysis_result(standards_hash)
+    if result:
+        gap_analysis_dict = flask_json.loads(result)
+        if gap_analysis_dict.get("result"):
+            return jsonify(gap_analysis_dict)
+
+    gap_analysis_results = conn.get(standards_hash)
+    if gap_analysis_results:
+        gap_analysis_dict = json.loads(gap_analysis_results)
+        if gap_analysis_dict.get("job_id"):
+            try:
+                res = job.Job.fetch(id=gap_analysis_dict.get("job_id"), connection=conn)
+            except exceptions.NoSuchJobError as nje:
+                abort(404, "No such job")
+            if (
+                res.get_status() != job.JobStatus.FAILED
+                and res.get_status() != job.JobStatus.STOPPED
+                and res.get_status() != job.JobStatus.CANCELED
+            ):
+                logger.info("gap analysis job id already exists, returning early")
+                return jsonify({"job_id": gap_analysis_dict.get("job_id")})
+    q = Queue(connection=conn)
+    gap_analysis_job = q.enqueue_call(
+        db.gap_analysis,
+        kwargs={
+            "neo_db": database.neo_db,
+            "node_names": standards,
+            "store_in_cache": True,
+            "cache_key": standards_hash,
+        },
+    )
+
+    conn.set(standards_hash, json.dumps({"job_id": gap_analysis_job.id, "result": ""}))
+    return jsonify({"job_id": gap_analysis_job.id})
+
+
+@app.route("/rest/v1/map_analysis_weak_links", methods=["GET"])
+def gap_analysis_weak_links() -> Any:
+    standards = request.args.getlist("standard")
+    key = request.args.get("key")
+    cache_key = make_cache_key(standards=standards, key=key)
+
+    database = db.Node_collection()
+    gap_analysis_results = database.get_gap_analysis_result(cache_key=cache_key)
+    if gap_analysis_results:
+        gap_analysis_dict = json.loads(gap_analysis_results)
+        if gap_analysis_dict.get("result"):
+            return jsonify({"result": gap_analysis_dict.get("result")})
+
+    # if conn.exists(cache_key):
+    #     gap_analysis_results = conn.get(cache_key)
+    #     if gap_analysis_results:
+    #         gap_analysis_dict = json.loads(gap_analysis_results)
+    #         if gap_analysis_dict.get("result"):
+    #             return jsonify({"result": gap_analysis_dict.get("result")})
+    abort(404, "No such Cache")
+
+
+@app.route("/rest/v1/ma_job_results", methods=["GET"])
+def fetch_job() -> Any:
+    logger.info("fetching job results")
+    jobid = request.args.get("id")
+    conn = redis.connect()
+    try:
+        res = job.Job.fetch(id=jobid, connection=conn)
+    except exceptions.NoSuchJobError as nje:
+        abort(404, "No such job")
+
+    logger.info("job exists")
+    if res.get_status() == job.JobStatus.FAILED:
+        abort(500, "background job failed")
+    elif res.get_status() == job.JobStatus.STOPPED:
+        abort(500, "background job stopped")
+    elif res.get_status() == job.JobStatus.CANCELED:
+        abort(500, "background job canceled")
+    elif (
+        res.get_status() == job.JobStatus.STARTED
+        or res.get_status() == job.JobStatus.QUEUED
+    ):
+        logger.info("but hasn't finished")
+        return jsonify({"status": res.get_status()})
+
+    result = res.latest_result()
+    logger.info("and has finished")
+
+    if res.latest_result().type == result.Type.SUCCESSFUL:
+        ga_result = result.return_value
+        logger.info("and has results")
+
+        if len(ga_result) > 1:
+            standards = ga_result[0]
+            standards_hash = make_array_hash(standards)
+
+            if conn.exists(standards_hash):
+                logger.info("and hash is already in cache")
+                # ga = conn.get(standards_hash)
+                database = db.Node_collection()
+                ga = database.get_gap_analysis_result(standards_hash)
+                if ga:
+                    logger.info("and results in cache")
+                    ga = flask_json.loads(ga)
+                    if ga.get("result"):
+                        return jsonify(ga)
+                    else:
+                        logger.error(
+                            "Finished job does not have a result object, this is a bug!"
+                        )
+                        abort(500, "this is a bug, please raise a ticket")
+        return jsonify({"status": res.get_status()})
+    elif res.latest_result().type == result.Type.FAILED:
+        logger.error(res.latest_result().exc_string)
+        abort(500)
+    else:
+        logger.warning(f"job stopped? {res.latest_result().type}")
+        abort(500)
+
+
+@app.route("/rest/v1/standards", methods=["GET"])
+def standards() -> Any:
+    conn = redis.connect()
+    standards = conn.get("NodeNames")
+    if standards:
+        return standards
+    else:
+        database = db.Node_collection()
+        standards = database.standards()
+        if standards is None:
+            return neo4j_not_running_rejection()
+        conn.set("NodeNames", flask_json.dumps(standards))
+        return standards
 
 
 @app.route("/rest/v1/text_search", methods=["GET"])
@@ -280,7 +424,6 @@ def page_not_found(e) -> Any:
 @app.route("/", defaults={"path": ""})
 @app.route("/<path:path>")
 def index(path: str) -> Any:
-    print(1)
     if path != "" and os.path.exists(app.static_folder + "/" + path):
         return send_from_directory(app.static_folder, path)
     else:

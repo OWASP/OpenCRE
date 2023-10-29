@@ -60,10 +60,21 @@ To add a remote spreadsheet to your local database you can run
 <pre>python cre.py --add --from_spreadsheet < google sheets url></pre>
 
 To run the web application for development you can run
-<pre>make dev-run</pre>
+<pre>
+$ make start-containers
+$ make start-worker 
+
+# in a seperate shell
+$ make dev-flask
+</pre>
 
 Alternatively, you can use the dockerfile with
 <pre>make docker && make docker-run</pre>
+
+Some features like Gap Analysis require a neo4j DB running, you can start this with
+<pre>make docker-neo4j</pre>
+enviroment varaibles for app to connect to neo4jDB (default):
+- NEO4J_URL (neo4j//neo4j:password@localhost:7687)
 
 To run the web application for production you need gunicorn and you can run from within the cre_sync dir
 <pre>make prod-run</pre>

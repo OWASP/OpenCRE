@@ -17,7 +17,6 @@ from application.utils import spreadsheet_parsers
 from application.utils.external_project_parsers import (
     capec_parser,
     cwe,
-    ccmv3,
     ccmv4,
     cheatsheets_parser,
     misc_tools_parser,
@@ -375,14 +374,6 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
     if args.export:
         cache = db_connect(args.cache_file)
         cache.export(args.export)
-    if args.csa_ccm_v3_in:
-        ccmv3.parse_ccm(
-            ccmFile=sheet_utils.readSpreadsheet(
-                alias="",
-                url="https://docs.google.com/spreadsheets/d/1b5i8OV919aiqW2KcYWOQvkLorL1bRPqjthJxLH0QpD8",
-            ),
-            cache=db_connect(args.cache_file),
-        )
     if args.csa_ccm_v4_in:
         ccmv4.parse_ccm(
             ccmFile=sheet_utils.readSpreadsheet(
@@ -426,6 +417,12 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
         generate_embeddings(args.cache_file)
     if args.owasp_proj_meta:
         owasp_metadata_to_cre(args.owasp_proj_meta)
+    if args.populate_neo4j_db:
+        populate_neo4j_db(args.cache_file)
+    if args.start_worker:
+        from application.worker import start_worker
+
+        start_worker(args.cache_file)
 
 
 def db_connect(path: str):
@@ -530,3 +527,11 @@ def owasp_metadata_to_cre(meta_file: str):
     },
     """
     raise NotImplementedError("someone needs to work on this")
+
+
+def populate_neo4j_db(cache: str):
+    logger.info(f"Populating neo4j DB: Connecting to SQL DB")
+    database = db_connect(path=cache)
+    logger.info(f"Populating neo4j DB: Populating")
+    database.neo_db.populate_DB(database.session)
+    logger.info(f"Populating neo4j DB: Complete")

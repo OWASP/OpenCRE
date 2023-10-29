@@ -1,18 +1,26 @@
 import re
 import json
-import logging
-import os
-import tempfile
 import unittest
-from pprint import pprint
-from typing import Any, Dict, List
+from unittest.mock import patch
+
+import redis
+import rq
 
 from application import create_app, sqla  # type: ignore
 from application.database import db
 from application.defs import cre_defs as defs
 from application.defs import osib_defs
 from application.web import web_main
-from application.utils import mdutils
+from application.utils.hash import make_array_hash, make_cache_key
+
+
+class MockJob:
+    @property
+    def id(self):
+        return "ABC"
+
+    def get_status(self):
+        return rq.job.JobStatus.STARTED
 
 
 class TestMain(unittest.TestCase):
@@ -570,3 +578,132 @@ class TestMain(unittest.TestCase):
                 location, "https://cwe.mitre.org/data/definitions/999.html"
             )
             self.assertEqual(302, response.status_code)
+
+    @patch.object(redis, "from_url")
+    @patch.object(db, "Node_collection")
+    def test_gap_analysis_from_cache_full_response(
+        self, db_mock, redis_conn_mock
+    ) -> None:
+        expected = {"result": "hello"}
+        redis_conn_mock.return_value.exists.return_value = True
+        redis_conn_mock.return_value.get.return_value = json.dumps(expected)
+        db_mock.return_value.get_gap_analysis_result.return_value = json.dumps(expected)
+        with self.app.test_client() as client:
+            response = client.get(
+                "/rest/v1/map_analysis?standard=aaa&standard=bbb",
+                headers={"Content-Type": "application/json"},
+            )
+            self.assertEqual(200, response.status_code)
+            self.assertEqual(expected, json.loads(response.data))
+
+    @patch.object(rq.job.Job, "fetch")
+    @patch.object(rq.Queue, "enqueue_call")
+    @patch.object(redis, "from_url")
+    def test_gap_analysis_from_cache_job_id(
+        self, redis_conn_mock, enqueue_call_mock, fetch_mock
+    ) -> None:
+        expected = {"job_id": "hello"}
+        redis_conn_mock.return_value.exists.return_value = True
+        redis_conn_mock.return_value.get.return_value = json.dumps(expected)
+        fetch_mock.return_value = MockJob()
+        with self.app.test_client() as client:
+            response = client.get(
+                "/rest/v1/map_analysis?standard=aaa&standard=bbb",
+                headers={"Content-Type": "application/json"},
+            )
+            self.assertEqual(200, response.status_code)
+            self.assertEqual(expected, json.loads(response.data))
+            self.assertFalse(enqueue_call_mock.called)
+
+    @patch.object(db, "Node_collection")
+    @patch.object(rq.Queue, "enqueue_call")
+    @patch.object(redis, "from_url")
+    def test_gap_analysis_create_job_id(
+        self, redis_conn_mock, enqueue_call_mock, db_mock
+    ) -> None:
+        expected = {"job_id": "ABC"}
+        redis_conn_mock.return_value.get.return_value = None
+        enqueue_call_mock.return_value = MockJob()
+        db_mock.return_value.get_gap_analysis_result.return_value = None
+        with self.app.test_client() as client:
+            response = client.get(
+                "/rest/v1/map_analysis?standard=aaa&standard=bbb",
+                headers={"Content-Type": "application/json"},
+            )
+            self.assertEqual(200, response.status_code)
+            self.assertEqual(expected, json.loads(response.data))
+            enqueue_call_mock.assert_called_with(
+                db.gap_analysis,
+                kwargs={
+                    "neo_db": db_mock().neo_db,
+                    "node_names": ["aaa", "bbb"],
+                    "store_in_cache": True,
+                    "cache_key": "7aa45d88f69a131890f8e4a769bbb07b",
+                },
+            )
+            redis_conn_mock.return_value.set.assert_called_with(
+                "7aa45d88f69a131890f8e4a769bbb07b", '{"job_id": "ABC", "result": ""}'
+            )
+
+    @patch.object(redis, "from_url")
+    def test_standards_from_cache(self, redis_conn_mock) -> None:
+        expected = ["A", "B"]
+        redis_conn_mock.return_value.exists.return_value = True
+        redis_conn_mock.return_value.get.return_value = json.dumps(expected)
+        with self.app.test_client() as client:
+            response = client.get(
+                "/rest/v1/standards",
+                headers={"Content-Type": "application/json"},
+            )
+            self.assertEqual(200, response.status_code)
+            self.assertEqual(expected, json.loads(response.data))
+
+    @patch.object(redis, "from_url")
+    @patch.object(db, "Node_collection")
+    def test_standards_from_db(self, node_mock, redis_conn_mock) -> None:
+        expected = ["A", "B"]
+        redis_conn_mock.return_value.get.return_value = None
+        node_mock.return_value.standards.return_value = expected
+        with self.app.test_client() as client:
+            response = client.get(
+                "/rest/v1/standards",
+                headers={"Content-Type": "application/json"},
+            )
+            self.assertEqual(200, response.status_code)
+            self.assertEqual(expected, json.loads(response.data))
+
+    @patch.object(redis, "from_url")
+    @patch.object(db, "Node_collection")
+    def test_standards_from_db_off(self, node_mock, redis_conn_mock) -> None:
+        expected = {
+            "message": "Backend services connected to this feature are not running at the moment."
+        }
+        redis_conn_mock.return_value.get.return_value = None
+        node_mock.return_value.standards.return_value = None
+        with self.app.test_client() as client:
+            response = client.get(
+                "/rest/v1/standards",
+                headers={"Content-Type": "application/json"},
+            )
+            self.assertEqual(500, response.status_code)
+            self.assertEqual(expected, json.loads(response.data))
+
+    def test_gap_analysis_weak_links_no_cache(self) -> None:
+        with self.app.test_client() as client:
+            response = client.get(
+                "/rest/v1/map_analysis_weak_links?standard=aaa&standard=bbb&key=ccc`",
+                headers={"Content-Type": "application/json"},
+            )
+            self.assertEqual(404, response.status_code)
+
+    @patch.object(db, "Node_collection")
+    def test_gap_analysis_weak_links_response(self, db_mock) -> None:
+        expected = {"result": "hello"}
+        db_mock.return_value.get_gap_analysis_result.return_value = json.dumps(expected)
+        with self.app.test_client() as client:
+            response = client.get(
+                "/rest/v1/map_analysis_weak_links?standard=aaa&standard=bbb&key=ccc`",
+                headers={"Content-Type": "application/json"},
+            )
+            self.assertEqual(200, response.status_code)
+            self.assertEqual(expected, json.loads(response.data))

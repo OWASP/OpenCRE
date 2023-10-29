@@ -13,6 +13,10 @@ const getLinks = (): { to: string; name: string }[] => [
     to: `/`,
     name: 'Open CRE',
   },
+  {
+    to: `/map_analysis`,
+    name: 'Map analysis',
+  },
 ];
 
 export const Header = () => {
