@@ -217,7 +217,6 @@ def find_document_by_tag() -> Any:
 
 
 @app.route("/rest/v1/map_analysis", methods=["GET"])
-@cache.cached(timeout=50, query_string=True)
 def gap_analysis() -> Any:
     database = db.Node_collection()
     standards = request.args.getlist("standard")
@@ -260,7 +259,6 @@ def gap_analysis() -> Any:
 
 
 @app.route("/rest/v1/map_analysis_weak_links", methods=["GET"])
-@cache.cached(timeout=50, query_string=True)
 def gap_analysis_weak_links() -> Any:
     standards = request.args.getlist("standard")
     key = request.args.get("key")
@@ -342,7 +340,6 @@ def fetch_job() -> Any:
 
 
 @app.route("/rest/v1/standards", methods=["GET"])
-@cache.cached(timeout=50)
 def standards() -> Any:
     conn = redis.connect()
     standards = conn.get("NodeNames")

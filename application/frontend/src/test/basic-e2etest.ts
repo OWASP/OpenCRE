@@ -31,7 +31,7 @@ describe('App.js', () => {
     await page.click('#SearchButton');
     await page.waitForSelector('.content', { timeout: 10000 });
     const text = await page.$eval('.content', (e) => e.textContent);
-    expect(text).toContain('Document could not be loaded');
+    expect(text).toContain('No results match your search term');
   });
 
   it('can search for cryptography using the free text method and it returns both Nodes and CRES', async () => {
@@ -43,7 +43,7 @@ describe('App.js', () => {
     await page.waitForSelector('.content', { timeout: 10000 });
     await page.waitForSelector('.standard-page__links-container', { timeout: 10000 });
     const text = await page.$eval('.content', (e) => e.textContent);
-    expect(text).not.toContain('Document could not be loaded');
+    expect(text).not.toContain('No results match your search term');
 
     const results = await page.$$('.standard-page__links-container');
     expect(results.length).toBeGreaterThan(1);
@@ -60,7 +60,7 @@ describe('App.js', () => {
     await page.waitForSelector('.content', { timeout: 10000 });
     await page.waitForSelector('.standard-page__links-container', { timeout: 10000 });
     const text = await page.$$('.content', (e) => e.textContent);
-    expect(text).not.toContain('Document could not be loaded');
+    expect(text).not.toContain('No results match your search term');
 
     // title match
     const page_title = await page.$eval('.standard-page__heading', (e) => e.textContent);
@@ -110,7 +110,7 @@ describe('App.js', () => {
     await page.waitForSelector('.content', { timeout: 10000 });
     await page.waitForSelector('.standard-page__links-container', { timeout: 10000 });
     const text = await page.$$('.content', (e) => e.textContent);
-    expect(text).not.toContain('Document could not be loaded');
+    expect(text).not.toContain('No results match your search term');
 
     // title match
     const entry_title = await page.$eval('div.title.document-node', (e) => e.textContent);
@@ -162,7 +162,9 @@ describe('App.js', () => {
   it('can smartlink', async () => {
     const response = await page.goto('http://127.0.0.1:5000/smartlink/standard/CWE/1002');
     expect(response.url()).toBe('http://127.0.0.1:5000/node/standard/CWE/sectionid/1002');
+    
     const redirectResponse = await page.goto('http://127.0.0.1:5000/smartlink/standard/CWE/404');
+    page.waitForNavigation('networkidle2');
     expect(redirectResponse.url()).toBe('https://cwe.mitre.org/data/definitions/404.html');
   });
 
