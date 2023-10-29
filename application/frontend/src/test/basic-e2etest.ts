@@ -162,7 +162,7 @@ describe('App.js', () => {
   it('can smartlink', async () => {
     const response = await page.goto('http://127.0.0.1:5000/smartlink/standard/CWE/1002');
     expect(response.url()).toBe('http://127.0.0.1:5000/node/standard/CWE/sectionid/1002');
-    
+
     const redirectResponse = await page.goto('http://127.0.0.1:5000/smartlink/standard/CWE/404');
     page.waitForNavigation('networkidle2');
     expect(redirectResponse.url()).toBe('https://cwe.mitre.org/data/definitions/404.html');
