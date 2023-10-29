@@ -9,7 +9,7 @@ import re
 
 def cheatsheet(section: str, hyperlink: str, tags: List[str]) -> defs.Standard:
     return defs.Standard(
-        name=f"Cheat_sheets",
+        name=f"OWASP Cheat Sheets",
         section=section,
         tags=tags,
         hyperlink=hyperlink,

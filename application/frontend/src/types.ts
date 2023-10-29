@@ -19,6 +19,25 @@ export interface LinkedDocument {
   document: Document;
   ltype: string;
 }
+
+interface GapAnalysisPathSegment {
+  start: Document;
+  end: Document;
+  relationship: string;
+  score: number;
+}
+
+interface GapAnalysisPath {
+  end: Document;
+  path: GapAnalysisPathSegment[];
+}
+
+export interface GapAnalysisPathStart {
+  start: Document;
+  paths: Record<string, GapAnalysisPath>;
+  extra: number;
+  weakLinks: Record<string, GapAnalysisPath>;
+}
 export interface PaginatedResponse {
   standards: Document[];
   total_pages: number;

@@ -1,3 +1,17 @@
+from flask import json as flask_json
+import json
+from application.utils import redis
+from neomodel import (
+    config,
+    StructuredNode,
+    StringProperty,
+    UniqueIdProperty,
+    Relationship,
+    RelationshipTo,
+    ArrayProperty,
+    StructuredRel,
+    db,
+)
 from sqlalchemy.orm import aliased
 import os
 import logging
@@ -5,15 +19,17 @@ import re
 from collections import Counter
 from itertools import permutations
 from typing import Any, Dict, List, Optional, Tuple, cast
-
 import networkx as nx
 import yaml
 from application.defs import cre_defs
 from application.utils import file
 from flask_sqlalchemy.model import DefaultMeta
 from sqlalchemy import func
-from sqlalchemy.sql.expression import desc  # type: ignore
 import uuid
+
+from application.utils.gap_analysis import get_path_score
+from application.utils.hash import make_array_hash, make_cache_key
+
 
 from .. import sqla  # type: ignore
 
@@ -156,6 +172,341 @@ class Embeddings(BaseModel):  # type: ignore
     )
 
 
+class GapAnalysisResults(BaseModel):
+    __tablename__ = "gap_analysis_results"
+    cache_key = sqla.Column(sqla.String, primary_key=True)
+    ga_object = sqla.Column(sqla.String)
+    __table_args__ = (sqla.UniqueConstraint(cache_key, name="unique_cache_key_field"),)
+
+
+class RelatedRel(StructuredRel):
+    pass
+
+
+class ContainsRel(StructuredRel):
+    pass
+
+
+class LinkedToRel(StructuredRel):
+    pass
+
+
+class SameRel(StructuredRel):
+    pass
+
+
+class NeoDocument(StructuredNode):
+    document_id = UniqueIdProperty()
+    name = StringProperty(required=True)
+    description = StringProperty(required=True)
+    tags = ArrayProperty(StringProperty())
+    doctype = StringProperty(required=True)
+    related = Relationship("NeoDocument", "RELATED", model=RelatedRel)
+
+    @classmethod
+    def to_cre_def(self, node):
+        raise Exception(f"Shouldn't be parsing a NeoDocument")
+
+
+class NeoNode(NeoDocument):
+    doctype = StringProperty()
+    version = StringProperty(required=True)
+    hyperlink = StringProperty()
+
+    @classmethod
+    def to_cre_def(self, node):
+        raise Exception(f"Shouldn't be parsing a NeoNode")
+
+
+class NeoStandard(NeoNode):
+    section = StringProperty()
+    subsection = StringProperty(required=True)
+    section_id = StringProperty()
+
+    @classmethod
+    def to_cre_def(self, node) -> cre_defs.Standard:
+        return cre_defs.Standard(
+            name=node.name,
+            id=node.document_id,
+            description=node.description,
+            tags=node.tags,
+            hyperlink=node.hyperlink,
+            version=node.version,
+            section=node.section,
+            sectionID=node.section_id,
+            subsection=node.subsection,
+        )
+
+
+class NeoTool(NeoStandard):
+    tooltype = StringProperty(required=True)
+
+    @classmethod
+    def to_cre_def(self, node) -> cre_defs.Tool:
+        return cre_defs.Tool(
+            name=node.name,
+            id=node.document_id,
+            description=node.description,
+            tags=node.tags,
+            hyperlink=node.hyperlink,
+            version=node.version,
+            section=node.section,
+            sectionID=node.section_id,
+            subsection=node.subsection,
+        )
+
+
+class NeoCode(NeoNode):
+    @classmethod
+    def to_cre_def(self, node) -> cre_defs.Code:
+        return cre_defs.Code(
+            name=node.name,
+            id=node.document_id,
+            description=node.description,
+            tags=node.tags,
+            hyperlink=node.hyperlink,
+            version=node.version,
+        )
+
+
+class NeoCRE(NeoDocument):  # type: ignore
+    external_id = StringProperty()
+    contains = RelationshipTo("NeoCRE", "CONTAINS", model=ContainsRel)
+    linked = RelationshipTo("NeoStandard", "LINKED_TO", model=LinkedToRel)
+    same_as = RelationshipTo("NeoStandard", "SAME", model=SameRel)
+
+    @classmethod
+    def to_cre_def(self, node) -> cre_defs.CRE:
+        return cre_defs.CRE(
+            name=node.name,
+            id=node.document_id,
+            description=node.description,
+            tags=node.tags,
+        )
+
+
+class NEO_DB:
+    __instance = None
+
+    driver = None
+    connected = False
+
+    @classmethod
+    def instance(self):
+        if self.__instance is None:
+            self.__instance = self.__new__(self)
+
+            config.DATABASE_URL = (
+                os.getenv("NEO4J_URL") or "neo4j://neo4j:password@localhost:7687"
+            )
+        return self.__instance
+
+    def __init__(sel):
+        raise ValueError("NEO_DB is a singleton, please call instance() instead")
+
+    @classmethod
+    def populate_DB(self, session):
+        for il in session.query(InternalLinks).all():
+            group = session.query(CRE).filter(CRE.id == il.group).first()
+            if not group:
+                logger.error(f"CRE {il.group} does not exist?")
+            self.add_cre(group)
+
+            cre = session.query(CRE).filter(CRE.id == il.cre).first()
+            if not cre:
+                logger.error(f"CRE {il.cre} does not exist?")
+            self.add_cre(cre)
+
+            self.link_CRE_to_CRE(il.group, il.cre, il.type)
+
+        for lnk in session.query(Links).all():
+            node = session.query(Node).filter(Node.id == lnk.node).first()
+            if not node:
+                logger.error(f"Node {lnk.node} does not exist?")
+            self.add_dbnode(node)
+
+            cre = session.query(CRE).filter(CRE.id == lnk.cre).first()
+            self.add_cre(cre)
+
+            self.link_CRE_to_Node(lnk.cre, lnk.node, lnk.type)
+
+    @classmethod
+    def add_cre(self, dbcre: CRE):
+        NeoCRE.create_or_update(
+            {
+                "name": dbcre.name,
+                "doctype": "CRE",  # dbcre.ntype,
+                "document_id": dbcre.id,
+                "description": dbcre.description,
+                "links": [],  # dbcre.links,
+                "tags": [dbcre.tags] if isinstance(dbcre.tags, str) else dbcre.tags,
+            }
+        )
+
+    @classmethod
+    def add_dbnode(self, dbnode: Node):
+        if dbnode.ntype == "Standard":
+            NeoStandard.create_or_update(
+                {
+                    "name": dbnode.name,
+                    "doctype": dbnode.ntype,
+                    "document_id": dbnode.id,
+                    "description": dbnode.description or "",
+                    "tags": [dbnode.tags]
+                    if isinstance(dbnode.tags, str)
+                    else dbnode.tags,
+                    "hyperlink": "",  # dbnode.hyperlink or "",
+                    "version": dbnode.version or "",
+                    "section": dbnode.section or "",
+                    "section_id": dbnode.section_id or "",
+                    "subsection": dbnode.subsection or "",
+                }
+            )
+            return
+        if dbnode.ntype == "Tool":
+            NeoTool.create_or_update(
+                {
+                    "name": dbnode.name,
+                    "doctype": dbnode.ntype,
+                    "document_id": dbnode.id,
+                    "description": dbnode.description,
+                    "links": [],  # dbnode.links,
+                    "tags": [dbnode.tags]
+                    if isinstance(dbnode.tags, str)
+                    else dbnode.tags,
+                    "metadata": "{}",  # dbnode.metadata,
+                    "hyperlink": "",  # dbnode.hyperlink or "",
+                    "version": dbnode.version or "",
+                    "section": dbnode.section,
+                    "section_id": dbnode.section_id,  # dbnode.sectionID,
+                    "subsection": dbnode.subsection or "",
+                    "tooltype": "",  # dbnode.tooltype,
+                }
+            )
+            return
+        if dbnode.ntype == "Code":
+            NeoCode.create_or_update(
+                {
+                    "name": dbnode.name,
+                    "doctype": dbnode.ntype,
+                    "document_id": dbnode.id,
+                    "description": dbnode.description,
+                    "links": [],  # dbnode.links,
+                    "tags": [dbnode.tags]
+                    if isinstance(dbnode.tags, str)
+                    else dbnode.tags,
+                    "metadata": "{}",  # dbnode.metadata,
+                    "hyperlink": "",  # dbnode.hyperlink or "",
+                    "version": dbnode.version or "",
+                }
+            )
+            return
+        raise Exception(f"Unknown DB type: {dbnode.ntype}")
+
+    @classmethod
+    def link_CRE_to_CRE(self, id1, id2, link_type):
+        cre1 = NeoCRE.nodes.get(document_id=id1)
+        cre2 = NeoCRE.nodes.get(document_id=id2)
+
+        if link_type == "Contains":
+            cre1.contains.connect(cre2)
+            return
+        if link_type == "Related":
+            cre1.related.connect(cre2)
+            return
+        raise Exception(f"Unknown relation type {link_type}")
+
+    @classmethod
+    def link_CRE_to_Node(self, CRE_id, node_id, link_type):
+        cre = NeoCRE.nodes.get(document_id=CRE_id)
+        node = NeoNode.nodes.get(document_id=node_id)
+        if link_type == "Linked To":
+            cre.linked.connect(node)
+            return
+        if link_type == "SAME":
+            cre.same_as.connect(node)
+            return
+        raise Exception(f"Unknown relation type {link_type}")
+
+    @classmethod
+    def gap_analysis(self, name_1, name_2):
+        base_standard = NeoStandard.nodes.filter(name=name_1)
+        denylist = ["Cross-cutting concerns"]
+        from datetime import datetime
+
+        t1 = datetime.now()
+        path_records_all, _ = db.cypher_query(
+            """
+            OPTIONAL MATCH (BaseStandard:NeoStandard {name: $name1})
+            OPTIONAL MATCH (CompareStandard:NeoStandard {name: $name2})
+            OPTIONAL MATCH p = allShortestPaths((BaseStandard)-[*..20]-(CompareStandard)) 
+            WITH p
+            WHERE length(p) > 1 AND ALL(n in NODES(p) WHERE (n:NeoCRE or n = BaseStandard or n = CompareStandard) AND NOT n.name in $denylist) 
+            RETURN p
+            """,
+            {"name1": name_1, "name2": name_2, "denylist": denylist},
+            resolve_objects=True,
+        )
+        t2 = datetime.now()
+        path_records, _ = db.cypher_query(
+            """
+            OPTIONAL MATCH (BaseStandard:NeoStandard {name: $name1})
+            OPTIONAL MATCH (CompareStandard:NeoStandard {name: $name2})
+            OPTIONAL MATCH p = allShortestPaths((BaseStandard)-[:(LINKED_TO|CONTAINS)*..20]-(CompareStandard)) 
+            WITH p
+            WHERE length(p) > 1 AND ALL(n in NODES(p) WHERE (n:NeoCRE or n = BaseStandard or n = CompareStandard) AND NOT n.name in $denylist) 
+            RETURN p
+            """,
+            {"name1": name_1, "name2": name_2, "denylist": denylist},
+            resolve_objects=True,
+        )
+        t3 = datetime.now()
+
+        def format_segment(seg: StructuredRel, nodes):
+            relation_map = {
+                RelatedRel: "RELATED",
+                ContainsRel: "CONTAINS",
+                LinkedToRel: "LINKED_TO",
+                SameRel: "SAME",
+            }
+            start_node = [
+                node for node in nodes if node.element_id == seg._start_node_element_id
+            ][0]
+            end_node = [
+                node for node in nodes if node.element_id == seg._end_node_element_id
+            ][0]
+
+            return {
+                "start": NEO_DB.parse_node(start_node),
+                "end": NEO_DB.parse_node(end_node),
+                "relationship": relation_map[type(seg)],
+            }
+
+        def format_path_record(rec):
+            return {
+                "start": NEO_DB.parse_node(rec.start_node),
+                "end": NEO_DB.parse_node(rec.end_node),
+                "path": [format_segment(seg, rec.nodes) for seg in rec.relationships],
+            }
+
+        return [NEO_DB.parse_node(rec) for rec in base_standard], [
+            format_path_record(rec[0]) for rec in (path_records + path_records_all)
+        ]
+
+    @classmethod
+    def standards(self) -> List[str]:
+        results = []
+        for x in db.cypher_query("""MATCH (n:NeoTool) RETURN DISTINCT n.name""")[0]:
+            results.extend(x)
+        for x in db.cypher_query("""MATCH (n:NeoStandard) RETURN DISTINCT n.name""")[0]:
+            results.extend(x)
+        return list(set(results))
+
+    @staticmethod
+    def parse_node(node: NeoDocument) -> cre_defs.Document:
+        return node.to_cre_def(node)
+
+
 class CRE_Graph:
     graph: nx.Graph = None
     __instance = None
@@ -189,6 +540,8 @@ class CRE_Graph:
     @classmethod
     def add_dbnode(cls, dbnode: Node, graph: nx.DiGraph) -> nx.DiGraph:
         if dbnode:
+            # coma separated tags
+
             graph.add_node(
                 "Node: " + str(dbnode.id),
                 internal_id=dbnode.id,
@@ -231,11 +584,13 @@ class CRE_Graph:
 
 class Node_collection:
     graph: nx.Graph = None
+    neo_db: NEO_DB = None
     session = sqla.session
 
     def __init__(self) -> None:
         if not os.environ.get("NO_LOAD_GRAPH"):
             self.graph = CRE_Graph.instance(sqla.session)
+        self.neo_db = NEO_DB.instance()
         self.session = sqla.session
 
     def __get_external_links(self) -> List[Tuple[CRE, Node, str]]:
@@ -1059,30 +1414,8 @@ class Node_collection:
 
         return res
 
-    def gap_analysis(self, node_names: List[str]) -> List[cre_defs.Node]:
-        """Since the CRE structure is a tree-like graph with
-        leaves being nodes we can find the paths between nodes
-        find_path_between_nodes() is a graph-path-finding method
-        """
-        processed_nodes = []
-        dbnodes: List[Node] = []
-        for name in node_names:
-            dbnodes.extend(self.session.query(Node).filter(Node.name == name).all())
-
-        for node in dbnodes:
-            working_node = nodeFromDB(node)
-            for other_node in dbnodes:
-                if node.id == other_node.id:
-                    continue
-                if self.find_path_between_nodes(node.id, other_node.id):
-                    working_node.add_link(
-                        cre_defs.Link(
-                            ltype=cre_defs.LinkTypes.LinkedTo,
-                            document=nodeFromDB(other_node),
-                        )
-                    )
-            processed_nodes.append(working_node)
-        return processed_nodes
+    def standards(self) -> List[str]:
+        return self.neo_db.standards()
 
     def text_search(self, text: str) -> List[Optional[cre_defs.Document]]:
         """Given a piece of text, tries to find the best match
@@ -1303,6 +1636,22 @@ class Node_collection:
 
             return existing
 
+    def get_gap_analysis_result(self, cache_key) -> str:
+        res = (
+            self.session.query(GapAnalysisResults)
+            .filter(GapAnalysisResults.cache_key == cache_key)
+            .first()
+        )
+        if res:
+            return res.ga_object
+
+    def add_gap_analysis_result(self, cache_key: str, ga_object: str):
+        existing = self.get_gap_analysis_result(cache_key)
+        if not existing:
+            res = GapAnalysisResults(cache_key=cache_key, ga_object=ga_object)
+            self.session.add(res)
+            self.session.commit()
+
 
 def dbNodeFromNode(doc: cre_defs.Node) -> Optional[Node]:
     if doc.doctype == cre_defs.Credoctypes.Standard:
@@ -1427,3 +1776,75 @@ def dbCREfromCRE(cre: cre_defs.CRE) -> CRE:
         external_id=cre.id,
         tags=",".join(tags),
     )
+
+
+def gap_analysis(
+    neo_db: NEO_DB,
+    node_names: List[str],
+    store_in_cache: bool = False,
+    cache_key: str = "",
+):
+    cre_db = Node_collection()
+    base_standard, paths = neo_db.gap_analysis(node_names[0], node_names[1])
+    if base_standard is None:
+        return None
+    grouped_paths = {}
+    extra_paths_dict = {}
+    GA_STRONG_UPPER_LIMIT = 2
+
+    for node in base_standard:
+        key = node.id
+        if key not in grouped_paths:
+            grouped_paths[key] = {"start": node, "paths": {}, "extra": 0}
+            extra_paths_dict[key] = {"paths": {}}
+
+    for path in paths:
+        key = path["start"].id
+        end_key = path["end"].id
+        path["score"] = get_path_score(path)
+        del path["start"]
+        if path["score"] <= GA_STRONG_UPPER_LIMIT:
+            if end_key in extra_paths_dict[key]["paths"]:
+                del extra_paths_dict[key]["paths"][end_key]
+                grouped_paths[key]["extra"] -= 1
+            if end_key in grouped_paths[key]["paths"]:
+                if grouped_paths[key]["paths"][end_key]["score"] > path["score"]:
+                    grouped_paths[key]["paths"][end_key] = path
+            else:
+                grouped_paths[key]["paths"][end_key] = path
+        else:
+            if end_key in grouped_paths[key]["paths"]:
+                continue
+            if end_key in extra_paths_dict[key]:
+                if extra_paths_dict[key]["paths"][end_key]["score"] > path["score"]:
+                    extra_paths_dict[key]["paths"][end_key] = path
+            else:
+                extra_paths_dict[key]["paths"][end_key] = path
+                grouped_paths[key]["extra"] += 1
+
+    if (
+        store_in_cache
+    ):  # lightweight memory option to not return potentially huge object and instead store in a cache,
+        # in case this is called via worker, we save both this and the caller memory by avoiding duplicate object in mem
+
+        # conn = redis.connect()
+        if cache_key == "":
+            cache_key = make_array_hash(node_names)
+
+        # conn.set(cache_key, flask_json.dumps({"result": grouped_paths}))
+        cre_db.add_gap_analysis_result(
+            cache_key=cache_key, ga_object=flask_json.dumps({"result": grouped_paths})
+        )
+
+        for key in extra_paths_dict:
+            cre_db.add_gap_analysis_result(
+                cache_key=make_cache_key(node_names, key),
+                ga_object=flask_json.dumps({"result": extra_paths_dict[key]}),
+            )
+            # conn.set(
+            #     cache_key + "->" + key,
+            #     flask_json.dumps({"result": extra_paths_dict[key]}),
+            # )
+        return (node_names, {}, {})
+
+    return (node_names, grouped_paths, extra_paths_dict)

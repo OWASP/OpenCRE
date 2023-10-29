@@ -7,14 +7,14 @@ import {
 } from '../const';
 import { Document, LinkedDocument } from '../types';
 
-export const getDocumentDisplayName = (document: Document) => {
+export const getDocumentDisplayName = (document: Document, noID = false) => {
   // [document.doctype, document.id, document.name, document.section, document.subsection].filter(Boolean).join(' - '); // format: Standard - ASVS - V1.1
   if (!document) {
     return '';
   }
   return [
     document.doctype,
-    document.id,
+    noID ? '' : document.id,
     document.name,
     document.version,
     document.sectionID,
@@ -47,7 +47,7 @@ export const groupBy = <T, K extends keyof any>(list: T[], getKey: (item: T) => 
     return previous;
   }, {} as Record<K, T[]>);
 
-export const getInternalUrl = (doc: Document): String => {
+export const getInternalUrl = (doc: Document): string => {
   if (doc.doctype.toLowerCase() != 'cre') {
     var standardAPIPath = `/node/${doc.doctype.toLowerCase()}/${doc.name}/`;
     if (doc) {
