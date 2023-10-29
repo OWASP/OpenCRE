@@ -422,6 +422,7 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
         populate_neo4j_db(args.cache_file)
     if args.start_worker:
         from application.worker import start_worker
+
         start_worker(args.cache_file)
     if args.preload_map_analysis_target_url:
         gap_analysis.preload(target_url=args.preload_map_analysis_target_url)
