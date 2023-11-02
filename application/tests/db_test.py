@@ -476,163 +476,437 @@ class TestDB(unittest.TestCase):
         cres = self.collection.find_cres_of_node(lone_standard)
         self.assertIsNone(cres)
 
-    def test_get_CREs(self) -> None:
-        """Given: a cre 'C1' that links to cres both as a group and a cre and other standards
-        return the CRE in Document format"""
+    @patch.object(db.NeoCRE, "nodes")
+    def test_get_CREs_no_params(self, nodes_mock) -> None:
+        nodes_mock.filter.return_value = []
+
         collection = db.Node_collection()
-        dbc1 = db.CRE(external_id="123", description="gcCD1", name="gcC1")
-        dbc2 = db.CRE(description="gcCD2", name="gcC2")
-        dbc3 = db.CRE(description="gcCD3", name="gcC3")
-        db_id_only = db.CRE(description="c_get_by_internal_id_only", name="cgbiio")
-        dbs1 = db.Node(
-            ntype=defs.Standard.__name__,
-            name="gcS2",
-            section="gc1",
-            subsection="gc2",
-            link="gc3",
-            version="gc1.1.1",
+
+        self.assertEqual([], collection.get_CREs())
+
+    @patch.object(db.NeoCRE, "nodes")
+    def test_get_CREs_no_match(self, nodes_mock) -> None:
+        nodes_mock.filter.return_value = []
+
+        collection = db.Node_collection()
+
+        self.assertEqual([], collection.get_CREs(external_id="123"))
+
+    @patch.object(db.NeoCRE, "nodes")
+    def test_get_CREs_by_single_parameter(self, nodes_mock) -> None:
+        db_response = db.NeoCRE(
+            external_id="123",
+            description="gcCD1",
+            name="gcC1",
+            contained_in=[],
+            contains=[
+                db.NeoCRE(external_id="123", description="gcCD2", name="gcC2"),
+                db.NeoCRE(external_id="123", description="gcCD3", name="gcC3"),
+            ],
+            linked=[
+                db.NeoStandard(
+                    hyperlink="gc3",
+                    name="gcS2",
+                    section="gc1",
+                    subsection="gc2",
+                    version="gc1.1.1",
+                )
+            ],
+            same_as=[],
+            related=[],
+        )
+        nodes_mock.filter.return_value = [db_response]
+        expected = db.NEO_DB.parse_node(db_response)
+
+        collection = db.Node_collection()
+
+        res = collection.get_CREs(external_id="123")
+        self.assertEqual(1, len(res))
+        self.assertDictEqual(expected.todict(), res[0].todict())
+        nodes_mock.filter.assert_called_with(external_id="123")
+
+        res2 = collection.get_CREs(name="gcC1")
+        self.assertEqual(1, len(res2))
+        self.assertDictEqual(expected.todict(), res2[0].todict())
+        nodes_mock.filter.assert_called_with(name="gcC1")
+
+        res3 = collection.get_CREs(description="gcCD1")
+        self.assertEqual(1, len(res3))
+        self.assertDictEqual(expected.todict(), res3[0].todict())
+        nodes_mock.filter.assert_called_with(description="gcCD1")
+
+        res3 = collection.get_CREs(internal_id="abc")
+        self.assertEqual(1, len(res3))
+        self.assertDictEqual(expected.todict(), res3[0].todict())
+        nodes_mock.filter.assert_called_with(id="abc")
+
+    @patch.object(db.NeoCRE, "nodes")
+    def test_get_CREs_by_single_parameter_partial(self, nodes_mock) -> None:
+        db_response = db.NeoCRE(
+            external_id="123",
+            description="gcCD1",
+            name="gcC1",
+            contained_in=[],
+            contains=[
+                db.NeoCRE(external_id="123", description="gcCD2", name="gcC2"),
+                db.NeoCRE(external_id="123", description="gcCD3", name="gcC3"),
+            ],
+            linked=[
+                db.NeoStandard(
+                    hyperlink="gc3",
+                    name="gcS2",
+                    section="gc1",
+                    subsection="gc2",
+                    version="gc1.1.1",
+                )
+            ],
+            same_as=[],
+            related=[],
+        )
+        nodes_mock.filter.return_value = [db_response]
+        expected = db.NEO_DB.parse_node(db_response)
+
+        collection = db.Node_collection()
+
+        res = collection.get_CREs(partial=True, external_id="123")
+        self.assertEqual(1, len(res))
+        self.assertDictEqual(expected.todict(), res[0].todict())
+        nodes_mock.filter.assert_called_with(external_id__icontains="123")
+
+        res2 = collection.get_CREs(partial=True, name="gcC1")
+        self.assertEqual(1, len(res2))
+        self.assertDictEqual(expected.todict(), res2[0].todict())
+        nodes_mock.filter.assert_called_with(name__icontains="gcC1")
+
+        res3 = collection.get_CREs(partial=True, description="gcCD1")
+        self.assertEqual(1, len(res3))
+        self.assertDictEqual(expected.todict(), res3[0].todict())
+        nodes_mock.filter.assert_called_with(description__icontains="gcCD1")
+
+        res3 = collection.get_CREs(partial=True, internal_id="abc")
+        self.assertEqual(1, len(res3))
+        self.assertDictEqual(expected.todict(), res3[0].todict())
+        nodes_mock.filter.assert_called_with(id__icontains="abc")
+
+    @patch.object(db.NeoCRE, "nodes")
+    def test_get_CREs_by_combination(self, nodes_mock) -> None:
+        db_response = db.NeoCRE(
+            external_id="123",
+            description="gcCD1",
+            name="gcC1",
+            contained_in=[],
+            contains=[
+                db.NeoCRE(external_id="123", description="gcCD2", name="gcC2"),
+                db.NeoCRE(external_id="123", description="gcCD3", name="gcC3"),
+            ],
+            linked=[
+                db.NeoStandard(
+                    hyperlink="gc3",
+                    name="gcS2",
+                    section="gc1",
+                    subsection="gc2",
+                    version="gc1.1.1",
+                )
+            ],
+            same_as=[],
+            related=[],
+        )
+        nodes_mock.filter.return_value = [db_response]
+        expected = db.NEO_DB.parse_node(db_response)
+
+        collection = db.Node_collection()
+
+        res = collection.get_CREs(external_id="123", name="gcCD1")
+        self.assertEqual(1, len(res))
+        self.assertDictEqual(expected.todict(), res[0].todict())
+        nodes_mock.filter.assert_called_with(external_id="123", name="gcCD1")
+
+        res = collection.get_CREs(external_id="123", name="gcCD1", description="gcCD1")
+        self.assertEqual(1, len(res))
+        self.assertDictEqual(expected.todict(), res[0].todict())
+        nodes_mock.filter.assert_called_with(
+            external_id="123", name="gcCD1", description="gcCD1"
         )
 
-        dbs2 = db.Node(
-            ntype=defs.Standard.__name__,
-            name="gcS3",
-            section="gc1",
-            subsection="gc2",
-            link="gc3",
-            version="gc3.1.2",
+        res = collection.get_CREs(
+            external_id="123", name="gcCD1", description="gcCD1", internal_id="abc"
+        )
+        self.assertEqual(1, len(res))
+        self.assertDictEqual(expected.todict(), res[0].todict())
+        nodes_mock.filter.assert_called_with(
+            external_id="123", name="gcCD1", description="gcCD1", id="abc"
         )
 
-        collection.session.add(dbc1)
-        collection.session.add(dbc2)
-        collection.session.add(dbc3)
-        collection.session.add(dbs1)
-        collection.session.add(dbs2)
-        collection.session.add(db_id_only)
-        collection.session.commit()
-
-        collection.session.add(
-            db.InternalLinks(type="Contains", group=dbc1.id, cre=dbc2.id)
-        )
-        collection.session.add(
-            db.InternalLinks(type="Contains", group=dbc1.id, cre=dbc3.id)
-        )
-        collection.session.add(db.Links(type="Linked To", cre=dbc1.id, node=dbs1.id))
-
-        collection.session.commit()
-
-        cd1 = defs.CRE(id="123", description="gcCD1", name="gcC1", links=[])
-        cd2 = defs.CRE(description="gcCD2", name="gcC2")
-        cd3 = defs.CRE(description="gcCD3", name="gcC3")
-        c_id_only = defs.CRE(description="c_get_by_internal_id_only", name="cgbiio")
-
-        expected = [
-            copy(cd1)
-            .add_link(
-                defs.Link(
-                    ltype=defs.LinkTypes.LinkedTo,
-                    document=defs.Standard(
+    @patch.object(db.NeoCRE, "nodes")
+    def test_get_CREs_by_include_only(self, nodes_mock) -> None:
+        nodes_mock.filter.return_value = [
+            db.NeoCRE(
+                external_id="123",
+                description="gcCD1",
+                name="gcC1",
+                contained_in=[],
+                contains=[
+                    db.NeoCRE(external_id="123", description="gcCD2", name="gcC2"),
+                    db.NeoCRE(external_id="123", description="gcCD3", name="gcC3"),
+                ],
+                linked=[
+                    db.NeoStandard(
+                        hyperlink="gc3",
                         name="gcS2",
                         section="gc1",
                         subsection="gc2",
-                        hyperlink="gc3",
                         version="gc1.1.1",
-                    ),
-                )
+                    )
+                ],
+                same_as=[],
+                related=[],
             )
-            .add_link(
-                defs.Link(
-                    ltype=defs.LinkTypes.Contains,
-                    document=copy(cd2),
-                )
-            )
-            .add_link(defs.Link(ltype=defs.LinkTypes.Contains, document=copy(cd3)))
         ]
-        self.maxDiff = None
-        shallow_cd1 = copy(cd1)
-        shallow_cd1.links = []
-        cd2.add_link(defs.Link(ltype=defs.LinkTypes.PartOf, document=shallow_cd1))
-        cd3.add_link(defs.Link(ltype=defs.LinkTypes.PartOf, document=shallow_cd1))
-        self.assertEqual([], collection.get_CREs())
 
-        res = collection.get_CREs(name="gcC1")
-        self.assertEqual(len(expected), len(res))
-        self.assertDictEqual(expected[0].todict(), res[0].todict())
-
-        res = collection.get_CREs(external_id="123")
-        self.assertEqual(len(expected), len(res))
-        self.assertDictEqual(expected[0].todict(), res[0].todict())
-
-        res = collection.get_CREs(external_id="12%", partial=True)
-        self.assertEqual(len(expected), len(res))
-        self.assertDictEqual(expected[0].todict(), res[0].todict())
-
-        res = collection.get_CREs(name="gcC%", partial=True)
-
-        res = collection.get_CREs(external_id="1%", name="gcC%", partial=True)
-        self.assertEqual(len(expected), len(res))
-        self.assertDictEqual(expected[0].todict(), res[0].todict())
-
-        res = collection.get_CREs(description="gcCD1")
-        self.assertEqual(len(expected), len(res))
-        self.assertDictEqual(expected[0].todict(), res[0].todict())
-
-        res = collection.get_CREs(external_id="1%", description="gcC%", partial=True)
-        self.assertEqual(len(expected), len(res))
-        self.assertDictEqual(expected[0].todict(), res[0].todict())
-
-        res = collection.get_CREs(description="gcC%", name="gcC%", partial=True)
-        want = [expected[0], cd2, cd3]
-        for el in res:
-            found = False
-            for wel in want:
-                if el.todict() == wel.todict():
-                    found = True
-            self.assertTrue(found)
-
-        self.assertEqual([], collection.get_CREs(external_id="123", name="gcC5"))
-        self.assertEqual([], collection.get_CREs(external_id="1234"))
-        self.assertEqual([], collection.get_CREs(name="gcC5"))
-
-        collection.session.add(db.Links(type="Linked To", cre=dbc1.id, node=dbs2.id))
-
-        only_gcS2 = deepcopy(expected)
-        expected[0].add_link(
-            defs.Link(
-                ltype=defs.LinkTypes.LinkedTo,
-                document=defs.Standard(
-                    name="gcS3",
-                    section="gc1",
-                    subsection="gc2",
-                    hyperlink="gc3",
-                    version="gc3.1.2",
-                ),
+        expected = db.NEO_DB.parse_node(
+            db.NeoCRE(
+                external_id="123",
+                description="gcCD1",
+                name="gcC1",
+                contained_in=[],
+                contains=[
+                    db.NeoCRE(external_id="123", description="gcCD2", name="gcC2")
+                ],
+                linked=[],
+                same_as=[],
+                related=[],
             )
         )
-        res = collection.get_CREs(name="gcC1")
-        self.assertCountEqual(expected[0].todict(), res[0].todict())
 
-        res = collection.get_CREs(name="gcC1", include_only=["gcS2"])
-        self.assertDictEqual(only_gcS2[0].todict(), res[0].todict())
+        collection = db.Node_collection()
 
-        ccd2 = copy(cd2)
-        ccd2.links = []
-        ccd3 = copy(cd3)
-        ccd3.links = []
-        no_standards = [
-            copy(cd1)
-            .add_link(
-                defs.Link(
-                    ltype=defs.LinkTypes.Contains,
-                    document=ccd2,
-                )
+        res = collection.get_CREs(external_id="123", include_only=["gcC2"])
+        self.assertEqual(1, len(res))
+        self.assertDictEqual(expected.todict(), res[0].todict())
+        nodes_mock.filter.assert_called_with(external_id="123")
+
+    @patch.object(db.NeoNode, "nodes")
+    def test_get_nodes_params(self, nodes_mock) -> None:
+        nodes_mock.filter.return_value = []
+
+        collection = db.Node_collection()
+        with self.assertRaises(ValueError) as context:
+            collection.get_nodes()
+        self.assertEqual(
+            str(context.exception), "tried to retrieve node with no values"
+        )
+
+    @patch.object(db.NeoNode, "nodes")
+    def test_get_nodes_no_match(self, nodes_mock) -> None:
+        nodes_mock.filter.return_value = []
+
+        collection = db.Node_collection()
+
+        self.assertEqual([], collection.get_nodes(name="123"))
+
+    @patch.object(db.NeoNode, "nodes")
+    def test_get_nodes_by_single_parameter(self, nodes_mock) -> None:
+        db_response = db.NeoStandard(
+            name="name",
+            description="description",
+            hyperlink="hyperlink",
+            version="version",
+            section="section",
+            section_id="section_id",
+            subsection="subsection",
+            related=[
+                db.NeoCRE(external_id="123", description="gcCD2", name="gcC2"),
+                db.NeoCRE(external_id="123", description="gcCD3", name="gcC3"),
+            ],
+        )
+        nodes_mock.filter.return_value = [db_response]
+        expected = db.NEO_DB.parse_node(db_response)
+
+        collection = db.Node_collection()
+
+        res = collection.get_nodes(name="name")
+        self.assertEqual(1, len(res))
+        self.assertDictEqual(expected.todict(), res[0].todict())
+        nodes_mock.filter.assert_called_with(doctype="Standard", name="name")
+
+        res2 = collection.get_nodes(section="section")
+        self.assertEqual(1, len(res2))
+        self.assertDictEqual(expected.todict(), res2[0].todict())
+        nodes_mock.filter.assert_called_with(doctype="Standard", section="section")
+
+        res3 = collection.get_nodes(description="description")
+        self.assertEqual(1, len(res3))
+        self.assertDictEqual(expected.todict(), res3[0].todict())
+        nodes_mock.filter.assert_called_with(
+            doctype="Standard", description="description"
+        )
+
+        res4 = collection.get_nodes(section="section")
+        self.assertEqual(1, len(res4))
+        self.assertDictEqual(expected.todict(), res4[0].todict())
+        nodes_mock.filter.assert_called_with(doctype="Standard", section="section")
+
+        res5 = collection.get_nodes(subsection="subsection")
+        self.assertEqual(1, len(res5))
+        self.assertDictEqual(expected.todict(), res5[0].todict())
+        nodes_mock.filter.assert_called_with(
+            doctype="Standard", subsection="subsection"
+        )
+
+        res6 = collection.get_nodes(version="version")
+        self.assertEqual(1, len(res6))
+        self.assertDictEqual(expected.todict(), res6[0].todict())
+        nodes_mock.filter.assert_called_with(doctype="Standard", version="version")
+
+        res8 = collection.get_nodes(sectionID="sectionID")
+        self.assertEqual(1, len(res8))
+        self.assertDictEqual(expected.todict(), res8[0].todict())
+        nodes_mock.filter.assert_called_with(doctype="Standard", section_id="sectionID")
+
+    @patch.object(db.NeoNode, "nodes")
+    def test_get_nodes_by_single_parameter_partial(self, nodes_mock) -> None:
+        db_response = db.NeoStandard(
+            name="name",
+            description="description",
+            hyperlink="hyperlink",
+            version="version",
+            section="section",
+            section_id="section_id",
+            subsection="subsection",
+            related=[
+                db.NeoCRE(external_id="123", description="gcCD2", name="gcC2"),
+                db.NeoCRE(external_id="123", description="gcCD3", name="gcC3"),
+            ],
+        )
+        nodes_mock.filter.return_value = [db_response]
+        expected = db.NEO_DB.parse_node(db_response)
+
+        collection = db.Node_collection()
+
+        res = collection.get_nodes(partial=True, name="name")
+        self.assertEqual(1, len(res))
+        self.assertDictEqual(expected.todict(), res[0].todict())
+        nodes_mock.filter.assert_called_with(
+            doctype__icontains="Standard", name__icontains="name"
+        )
+
+        res3 = collection.get_nodes(partial=True, description="description")
+        self.assertEqual(1, len(res3))
+        self.assertDictEqual(expected.todict(), res3[0].todict())
+        nodes_mock.filter.assert_called_with(
+            doctype__icontains="Standard", description__icontains="description"
+        )
+
+        res4 = collection.get_nodes(partial=True, section="section")
+        self.assertEqual(1, len(res4))
+        self.assertDictEqual(expected.todict(), res4[0].todict())
+        nodes_mock.filter.assert_called_with(
+            doctype__icontains="Standard", section__icontains="section"
+        )
+
+        res5 = collection.get_nodes(partial=True, subsection="subsection")
+        self.assertEqual(1, len(res5))
+        self.assertDictEqual(expected.todict(), res5[0].todict())
+        nodes_mock.filter.assert_called_with(
+            doctype__icontains="Standard", subsection__icontains="subsection"
+        )
+
+        res6 = collection.get_nodes(partial=True, version="version")
+        self.assertEqual(1, len(res6))
+        self.assertDictEqual(expected.todict(), res6[0].todict())
+        nodes_mock.filter.assert_called_with(
+            doctype__icontains="Standard", version__icontains="version"
+        )
+
+        res8 = collection.get_nodes(partial=True, sectionID="sectionID")
+        self.assertEqual(1, len(res8))
+        self.assertDictEqual(expected.todict(), res8[0].todict())
+        nodes_mock.filter.assert_called_with(
+            doctype__icontains="Standard", section_id__icontains="sectionID"
+        )
+
+    @patch.object(db.NeoNode, "nodes")
+    def test_get_nodes_by_combination(self, nodes_mock) -> None:
+        db_response = db.NeoStandard(
+            name="name",
+            description="description",
+            hyperlink="hyperlink",
+            version="version",
+            section="section",
+            section_id="section_id",
+            subsection="subsection",
+            related=[
+                db.NeoCRE(external_id="123", description="gcCD2", name="gcC2"),
+                db.NeoCRE(external_id="123", description="gcCD3", name="gcC3"),
+            ],
+        )
+        nodes_mock.filter.return_value = [db_response]
+        expected = db.NEO_DB.parse_node(db_response)
+
+        collection = db.Node_collection()
+
+        res = collection.get_nodes(
+            name="name",
+            section="section",
+            description="description",
+            subsection="subsection",
+            version="version",
+            sectionID="sectionID",
+        )
+        self.assertEqual(1, len(res))
+        self.assertDictEqual(expected.todict(), res[0].todict())
+        nodes_mock.filter.assert_called_with(
+            section="section",
+            name="name",
+            description="description",
+            subsection="subsection",
+            version="version",
+            section_id="sectionID",
+            doctype="Standard",
+        )
+
+    @patch.object(db.NeoNode, "nodes")
+    def test_get_nodes_include_only(self, nodes_mock) -> None:
+        db_response = db.NeoStandard(
+            name="name",
+            description="description",
+            hyperlink="hyperlink",
+            version="version",
+            section="section",
+            section_id="section_id",
+            subsection="subsection",
+            related=[
+                db.NeoCRE(external_id="123", description="gcCD2", name="gcC2"),
+                db.NeoCRE(external_id="123", description="gcCD3", name="gcC3"),
+            ],
+        )
+        nodes_mock.filter.return_value = [db_response]
+        expected = db.NEO_DB.parse_node(
+            db.NeoStandard(
+                name="name",
+                description="description",
+                hyperlink="hyperlink",
+                version="version",
+                section="section",
+                section_id="section_id",
+                subsection="subsection",
+                related=[
+                    db.NeoCRE(external_id="123", description="gcCD2", name="gcC2")
+                ],
             )
-            .add_link(defs.Link(ltype=defs.LinkTypes.Contains, document=ccd3))
-        ]
-        res = collection.get_CREs(name="gcC1", include_only=["gcS0"])
-        self.assertEqual(no_standards, res)
+        )
 
-        self.assertEqual([c_id_only], collection.get_CREs(internal_id=db_id_only.id))
+        collection = db.Node_collection()
 
+        res = collection.get_nodes(name="name", include_only=["gcC2"])
+        self.assertEqual(1, len(res))
+        self.assertDictEqual(expected.todict(), res[0].todict())
+        nodes_mock.filter.assert_called_with(
+            name="name",
+            doctype="Standard",
+        )
+
+    # TODO: Legacy break apart
     def test_get_standards(self) -> None:
         """Given: a Standard 'S1' that links to cres
         return the Standard in Document format"""
@@ -1047,99 +1321,50 @@ class TestDB(unittest.TestCase):
 
         self.assertEqual(collection.object_select(None), [])
 
-    def test_get_root_cres(self):
-        """Given:
-        6 CRES:
-            * C0 <-- Root
-            * C1 <-- Root
-            * C2 Part Of C0
-            * C3 Part Of C1
-            * C4 Part Of C2
-            * C5 Related to C0
-            * C6 Part Of C1 but registered as C6 being the "group"
-            * C7 Contains C6 but registered as C6 being the "group" <-- Root
-        3 Nodes:
-            * N0  Unlinked
-            * N1 Linked To C1
-            * N2 Linked to C2
-            * N3 Linked to C3
-            * N4 Linked to C4
-        Get_root_cres should return C0, C1
-        """
-        cres = []
-        nodes = []
-        dbcres = []
-        dbnodes = []
-        sqla.session.remove()
-        sqla.drop_all()
-        sqla.create_all()
+    @patch.object(db.NeoCRE, "nodes")
+    def test_get_root_cres(self, nodes_mock):
         collection = db.Node_collection()
-        collection.graph.graph = db.CRE_Graph.load_cre_graph(sqla.session)
-
-        for i in range(0, 8):
-            if i == 0 or i == 1:
-                cres.append(defs.CRE(name=f">> C{i}", id=f"{i}"))
-            else:
-                cres.append(defs.CRE(name=f"C{i}", id=f"{i}"))
-
-            dbcres.append(collection.add_cre(cres[i]))
-            nodes.append(defs.Standard(section=f"S{i}", name=f"N{i}"))
-            dbnodes.append(collection.add_node(nodes[i]))
-            cres[i].add_link(
-                defs.Link(document=copy(nodes[i]), ltype=defs.LinkTypes.LinkedTo)
-            )
-            collection.add_link(
-                cre=dbcres[i], node=dbnodes[i], type=defs.LinkTypes.LinkedTo
-            )
-
-        cres[0].add_link(
-            defs.Link(document=cres[2].shallow_copy(), ltype=defs.LinkTypes.Contains)
-        )
-        cres[0].add_link(
-            defs.Link(document=cres[5].shallow_copy(), ltype=defs.LinkTypes.Related)
-        )
-        cres[1].add_link(
-            defs.Link(document=cres[3].shallow_copy(), ltype=defs.LinkTypes.Contains)
-        )
-        cres[2].add_link(
-            defs.Link(document=cres[4].shallow_copy(), ltype=defs.LinkTypes.Contains)
-        )
-
-        cres[3].add_link(
-            defs.Link(document=cres[5].shallow_copy(), ltype=defs.LinkTypes.Contains)
-        )
-
-        cres[6].add_link(
-            defs.Link(document=cres[7].shallow_copy(), ltype=defs.LinkTypes.PartOf)
-        )
-        collection.add_internal_link(
-            group=dbcres[0], cre=dbcres[2], type=defs.LinkTypes.Contains
-        )
-        collection.add_internal_link(
-            group=dbcres[1], cre=dbcres[3], type=defs.LinkTypes.Contains
-        )
-        collection.add_internal_link(
-            group=dbcres[2], cre=dbcres[4], type=defs.LinkTypes.Contains
-        )
-        collection.add_internal_link(
-            group=dbcres[5], cre=dbcres[0], type=defs.LinkTypes.Related
-        )
-        collection.add_internal_link(
-            group=dbcres[3], cre=dbcres[5], type=defs.LinkTypes.Contains
-        )
-        collection.add_internal_link(
-            group=dbcres[6], cre=dbcres[7], type=defs.LinkTypes.PartOf
-        )
-
-        collection.session.commit()
-
-        cres[7].add_link(
-            defs.Link(document=cres[6].shallow_copy(), ltype=defs.LinkTypes.Contains)
-        )
+        db_response = [
+            db.NeoCRE(
+                external_id="123",
+                description="gcCD1",
+                name="gcC1",
+                contained_in=[],
+                contains=[
+                    db.NeoCRE(external_id="123", description="gcCD2", name="gcC2"),
+                    db.NeoCRE(external_id="123", description="gcCD3", name="gcC3"),
+                ],
+                linked=[
+                    db.NeoStandard(
+                        hyperlink="gc3",
+                        name="gcS2",
+                        section="gc1",
+                        subsection="gc2",
+                        version="gc1.1.1",
+                    )
+                ],
+                same_as=[],
+                related=[],
+            ),
+            db.NeoCRE(
+                external_id="345",
+                description="gcCD2",
+                name="gcC2",
+                contained_in=[],
+                contains=[],
+                linked=[],
+                same_as=[],
+                related=[],
+            ),
+        ]
+        collection = db.Node_collection()
+        nodes_mock.has.return_value = db_response
+        expected = [db.NEO_DB.parse_node(x).todict() for x in db_response]
 
         root_cres = collection.get_root_cres()
         self.maxDiff = None
-        self.assertEqual(root_cres, [cres[0], cres[1], cres[7]])
+        self.assertEqual([x.todict() for x in root_cres], expected)
+        nodes_mock.has.assert_called_with(contained_in=False)
 
     @patch.object(db.NEO_DB, "gap_analysis")
     def test_gap_analysis_disconnected(self, gap_mock):
@@ -1577,32 +1802,37 @@ class TestDB(unittest.TestCase):
 
     def test_neo_db_parse_node_code(self):
         name = "name"
-        id = "id"
         description = "description"
         tags = "tags"
         version = "version"
         hyperlink = "version"
         expected = defs.Code(
             name=name,
-            id=id,
             description=description,
             tags=tags,
             version=version,
             hyperlink=hyperlink,
+            links=[
+                defs.Link(
+                    defs.CRE(id="123", description="gcCD2", name="gcC2"), "Related"
+                )
+            ],
         )
         graph_node = db.NeoCode(
             name=name,
-            document_id=id,
             description=description,
             tags=tags,
             version=version,
             hyperlink=hyperlink,
+            related=[
+                db.NeoCRE(external_id="123", description="gcCD2", name="gcC2"),
+            ],
         )
-        self.assertEqual(db.NEO_DB.parse_node(graph_node), expected)
+
+        self.assertEqual(db.NEO_DB.parse_node(graph_node).todict(), expected.todict())
 
     def test_neo_db_parse_node_standard(self):
         name = "name"
-        id = "id"
         description = "description"
         tags = "tags"
         version = "version"
@@ -1612,7 +1842,6 @@ class TestDB(unittest.TestCase):
         hyperlink = "version"
         expected = defs.Standard(
             name=name,
-            id=id,
             description=description,
             tags=tags,
             version=version,
@@ -1620,10 +1849,14 @@ class TestDB(unittest.TestCase):
             sectionID=sectionID,
             subsection=subsection,
             hyperlink=hyperlink,
+            links=[
+                defs.Link(
+                    defs.CRE(id="123", description="gcCD2", name="gcC2"), "Related"
+                )
+            ],
         )
         graph_node = db.NeoStandard(
             name=name,
-            document_id=id,
             description=description,
             tags=tags,
             version=version,
@@ -1631,12 +1864,14 @@ class TestDB(unittest.TestCase):
             section_id=sectionID,
             subsection=subsection,
             hyperlink=hyperlink,
+            related=[
+                db.NeoCRE(external_id="123", description="gcCD2", name="gcC2"),
+            ],
         )
-        self.assertEqual(db.NEO_DB.parse_node(graph_node), expected)
+        self.assertEqual(db.NEO_DB.parse_node(graph_node).todict(), expected.todict())
 
     def test_neo_db_parse_node_tool(self):
         name = "name"
-        id = "id"
         description = "description"
         tags = "tags"
         version = "version"
@@ -1646,7 +1881,6 @@ class TestDB(unittest.TestCase):
         hyperlink = "version"
         expected = defs.Tool(
             name=name,
-            id=id,
             description=description,
             tags=tags,
             version=version,
@@ -1654,10 +1888,14 @@ class TestDB(unittest.TestCase):
             sectionID=sectionID,
             subsection=subsection,
             hyperlink=hyperlink,
+            links=[
+                defs.Link(
+                    defs.CRE(id="123", description="gcCD2", name="gcC2"), "Related"
+                )
+            ],
         )
         graph_node = db.NeoTool(
             name=name,
-            document_id=id,
             description=description,
             tags=tags,
             version=version,
@@ -1665,27 +1903,102 @@ class TestDB(unittest.TestCase):
             section_id=sectionID,
             subsection=subsection,
             hyperlink=hyperlink,
+            related=[
+                db.NeoCRE(external_id="123", description="gcCD2", name="gcC2"),
+            ],
         )
-        self.assertEqual(db.NEO_DB.parse_node(graph_node), expected)
+        self.assertEqual(db.NEO_DB.parse_node(graph_node).todict(), expected.todict())
 
     def test_neo_db_parse_node_cre(self):
         name = "name"
-        id = "id"
         description = "description"
         tags = "tags"
+        external_id = "abc"
         expected = defs.CRE(
             name=name,
-            id=id,
             description=description,
+            id=external_id,
             tags=tags,
+            links=[
+                defs.Link(
+                    defs.CRE(id="123", description="gcCD2", name="gcC2"), "Contains"
+                ),
+                defs.Link(
+                    defs.CRE(id="123", description="gcCD3", name="gcC3"), "Contains"
+                ),
+                defs.Link(
+                    defs.Standard(
+                        hyperlink="gc3",
+                        name="gcS2",
+                        section="gc1",
+                        subsection="gc2",
+                        version="gc1.1.1",
+                    ),
+                    "Linked To",
+                ),
+            ],
         )
         graph_node = db.NeoCRE(
             name=name,
-            document_id=id,
             description=description,
             tags=tags,
+            external_id=external_id,
+            contained_in=[],
+            contains=[
+                db.NeoCRE(external_id="123", description="gcCD2", name="gcC2"),
+                db.NeoCRE(external_id="123", description="gcCD3", name="gcC3"),
+            ],
+            linked=[
+                db.NeoStandard(
+                    hyperlink="gc3",
+                    name="gcS2",
+                    section="gc1",
+                    subsection="gc2",
+                    version="gc1.1.1",
+                )
+            ],
+            same_as=[],
+            related=[],
         )
-        self.assertEqual(db.NEO_DB.parse_node(graph_node), expected)
+
+        parsed = db.NEO_DB.parse_node(graph_node)
+        self.maxDiff = None
+        self.assertEqual(parsed.todict(), expected.todict())
+
+    def test_neo_db_parse_node_no_links_cre(self):
+        name = "name"
+        description = "description"
+        tags = "tags"
+        external_id = "abc"
+        expected = defs.CRE(
+            name=name, description=description, id=external_id, tags=tags, links=[]
+        )
+        graph_node = db.NeoCRE(
+            name=name,
+            description=description,
+            tags=tags,
+            external_id=external_id,
+            contained_in=[],
+            contains=[
+                db.NeoCRE(external_id="123", description="gcCD2", name="gcC2"),
+                db.NeoCRE(external_id="123", description="gcCD3", name="gcC3"),
+            ],
+            linked=[
+                db.NeoStandard(
+                    hyperlink="gc3",
+                    name="gcS2",
+                    section="gc1",
+                    subsection="gc2",
+                    version="gc1.1.1",
+                )
+            ],
+            same_as=[],
+            related=[],
+        )
+
+        parsed = db.NEO_DB.parse_node_no_links(graph_node)
+        self.maxDiff = None
+        self.assertEqual(parsed.todict(), expected.todict())
 
     def test_neo_db_parse_node_Document(self):
         name = "name"

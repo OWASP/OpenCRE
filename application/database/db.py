@@ -8,6 +8,7 @@ from neomodel import (
     UniqueIdProperty,
     Relationship,
     RelationshipTo,
+    RelationshipFrom,
     ArrayProperty,
     StructuredRel,
     db,
@@ -204,8 +205,20 @@ class NeoDocument(StructuredNode):
     related = Relationship("NeoDocument", "RELATED", model=RelatedRel)
 
     @classmethod
-    def to_cre_def(self, node):
+    def to_cre_def(self, node, parse_links=True):
         raise Exception(f"Shouldn't be parsing a NeoDocument")
+
+    @classmethod
+    def get_links(self, links_dict):
+        links = []
+        for key in links_dict:
+            links.extend(
+                [
+                    cre_defs.Link(c.to_cre_def(c, parse_links=False), key)
+                    for c in links_dict[key]
+                ]
+            )
+        return links
 
 
 class NeoNode(NeoDocument):
@@ -214,7 +227,7 @@ class NeoNode(NeoDocument):
     hyperlink = StringProperty()
 
     @classmethod
-    def to_cre_def(self, node):
+    def to_cre_def(self, node, parse_links=True):
         raise Exception(f"Shouldn't be parsing a NeoNode")
 
 
@@ -224,10 +237,9 @@ class NeoStandard(NeoNode):
     section_id = StringProperty()
 
     @classmethod
-    def to_cre_def(self, node) -> cre_defs.Standard:
+    def to_cre_def(self, node, parse_links=True) -> cre_defs.Standard:
         return cre_defs.Standard(
             name=node.name,
-            id=node.document_id,
             description=node.description,
             tags=node.tags,
             hyperlink=node.hyperlink,
@@ -235,6 +247,13 @@ class NeoStandard(NeoNode):
             section=node.section,
             sectionID=node.section_id,
             subsection=node.subsection,
+            links=self.get_links(
+                {
+                    "Related": node.related,
+                }
+            )
+            if parse_links
+            else [],
         )
 
 
@@ -242,10 +261,9 @@ class NeoTool(NeoStandard):
     tooltype = StringProperty(required=True)
 
     @classmethod
-    def to_cre_def(self, node) -> cre_defs.Tool:
+    def to_cre_def(self, node, parse_links=True) -> cre_defs.Tool:
         return cre_defs.Tool(
             name=node.name,
-            id=node.document_id,
             description=node.description,
             tags=node.tags,
             hyperlink=node.hyperlink,
@@ -253,35 +271,59 @@ class NeoTool(NeoStandard):
             section=node.section,
             sectionID=node.section_id,
             subsection=node.subsection,
+            links=self.get_links(
+                {
+                    "Related": node.related,
+                }
+            )
+            if parse_links
+            else [],
         )
 
 
 class NeoCode(NeoNode):
     @classmethod
-    def to_cre_def(self, node) -> cre_defs.Code:
+    def to_cre_def(self, node, parse_links=True) -> cre_defs.Code:
         return cre_defs.Code(
             name=node.name,
-            id=node.document_id,
             description=node.description,
             tags=node.tags,
             hyperlink=node.hyperlink,
             version=node.version,
+            links=self.get_links(
+                {
+                    "Related": node.related,
+                }
+            )
+            if parse_links
+            else [],
         )
 
 
 class NeoCRE(NeoDocument):  # type: ignore
     external_id = StringProperty()
+    contained_in = RelationshipFrom("NeoCRE", "CONTAINS", model=ContainsRel)
     contains = RelationshipTo("NeoCRE", "CONTAINS", model=ContainsRel)
     linked = RelationshipTo("NeoStandard", "LINKED_TO", model=LinkedToRel)
     same_as = RelationshipTo("NeoStandard", "SAME", model=SameRel)
 
     @classmethod
-    def to_cre_def(self, node) -> cre_defs.CRE:
+    def to_cre_def(self, node, parse_links=True) -> cre_defs.CRE:
         return cre_defs.CRE(
             name=node.name,
-            id=node.document_id,
+            id=node.external_id,
             description=node.description,
             tags=node.tags,
+            links=self.get_links(
+                {
+                    "Contains": [*node.contains, *node.contained_in],
+                    "Linked To": node.linked,
+                    "Same as": node.same_as,
+                    "Related": node.related,
+                }
+            )
+            if parse_links
+            else [],
         )
 
 
@@ -340,6 +382,7 @@ class NEO_DB:
                 "description": dbcre.description,
                 "links": [],  # dbcre.links,
                 "tags": [dbcre.tags] if isinstance(dbcre.tags, str) else dbcre.tags,
+                "external_id": dbcre.external_id,
             }
         )
 
@@ -477,19 +520,19 @@ class NEO_DB:
             ][0]
 
             return {
-                "start": NEO_DB.parse_node(start_node),
-                "end": NEO_DB.parse_node(end_node),
+                "start": NEO_DB.parse_node_no_links(start_node),
+                "end": NEO_DB.parse_node_no_links(end_node),
                 "relationship": relation_map[type(seg)],
             }
 
         def format_path_record(rec):
             return {
-                "start": NEO_DB.parse_node(rec.start_node),
-                "end": NEO_DB.parse_node(rec.end_node),
+                "start": NEO_DB.parse_node_no_links(rec.start_node),
+                "end": NEO_DB.parse_node_no_links(rec.end_node),
                 "path": [format_segment(seg, rec.nodes) for seg in rec.relationships],
             }
 
-        return [NEO_DB.parse_node(rec) for rec in base_standard], [
+        return [NEO_DB.parse_node_no_links(rec) for rec in base_standard], [
             format_path_record(rec[0]) for rec in (path_records + path_records_all)
         ]
 
@@ -505,6 +548,10 @@ class NEO_DB:
     @staticmethod
     def parse_node(node: NeoDocument) -> cre_defs.Document:
         return node.to_cre_def(node)
+
+    @staticmethod
+    def parse_node_no_links(node: NeoDocument) -> cre_defs.Document:
+        return node.to_cre_def(node, parse_links=False)
 
 
 class CRE_Graph:
@@ -872,7 +919,7 @@ class Node_collection:
         sectionID: Optional[str] = None,
     ) -> Optional[List[cre_defs.Node]]:
         nodes = []
-        nodes_query = self.__get_nodes_query__(
+        nodes = self.__get_nodes_query__(
             name=name,
             section=section,
             subsection=subsection,
@@ -882,32 +929,9 @@ class Node_collection:
             ntype=ntype,
             description=description,
             sectionID=sectionID,
+            include_only=include_only,
         )
-        dbnodes = nodes_query.all()
-        if dbnodes:
-            for dbnode in dbnodes:
-                node = nodeFromDB(dbnode=dbnode)
-                linked_cres = Links.query.filter(Links.node == dbnode.id).all()
-                for dbcre_link in linked_cres:
-                    dbcre = CRE.query.filter(CRE.id == dbcre_link.cre).first()
-                    if not dbcre:
-                        logger.fatal(
-                            f"CRE {dbcre_link.cre} exists in the links but not in the cre table, database corrupt?"
-                        )
-                    if not include_only or (
-                        include_only
-                        and (
-                            dbcre.external_id in include_only
-                            or dbcre.name in include_only
-                        )
-                    ):
-                        node.add_link(
-                            cre_defs.Link(
-                                ltype=cre_defs.LinkTypes.from_str(dbcre_link.type),
-                                document=CREfromDB(dbcre),
-                            )
-                        )
-                nodes.append(node)
+        if nodes:
             return nodes
         else:
             logger.warning(
@@ -939,7 +963,8 @@ class Node_collection:
         ntype: Optional[str] = None,
         description: Optional[str] = None,
         sectionID: Optional[str] = None,
-    ) -> sqla.Query:
+        include_only: Optional[List[str]] = None,
+    ):
         if (
             not name
             and not section
@@ -950,52 +975,37 @@ class Node_collection:
             and not sectionID
         ):
             raise ValueError("tried to retrieve node with no values")
-        query = Node.query
-        if name:
-            if not partial:
-                query = Node.query.filter(func.lower(Node.name) == name.lower())
-            else:
-                query = Node.query.filter(func.lower(Node.name).like(name.lower()))
-        if section:
-            if not partial:
-                query = query.filter(func.lower(Node.section) == section.lower())
-            else:
-                query = query.filter(func.lower(Node.section).like(section.lower()))
-        if subsection:
-            if not partial:
-                query = query.filter(func.lower(Node.subsection) == subsection.lower())
-            else:
-                query = query.filter(
-                    func.lower(Node.subsection).like(subsection.lower())
-                )
-        if link:
-            if not partial:
-                query = query.filter(Node.link == link)
-            else:
-                query = query.filter(Node.link.like(link))
-        if version:
-            if not partial:
-                query = query.filter(Node.version == version)
-            else:
-                query = query.filter(Node.version.like(version))
-        if ntype:
-            if not partial:
-                query = query.filter(Node.ntype == ntype)
-            else:
-                query = query.filter(Node.ntype.like(ntype))
-        if description:
-            if not partial:
-                query = query.filter(Node.description == description)
-            else:
-                query = query.filter(Node.description.like(description))
-        if sectionID:
-            if not partial:
-                query = query.filter(func.lower(Node.section_id) == sectionID.lower())
-            else:
-                query = query.filter(
-                    func.lower(Node.section_id).like(sectionID.lower())
-                )
-        return query
+
+        params = dict(
+            section=section,
+            name=name,
+            description=description,
+            subsection=subsection,
+            version=version,
+            section_id=sectionID,
+            doctype=ntype,
+        )
+        if partial:
+            params = dict(
+                section__icontains=section,
+                name__icontains=name,
+                description__icontains=description,
+                subsection__icontains=subsection,
+                version__icontains=version,
+                section_id__icontains=sectionID,
+                doctype__icontains=ntype,
+            )
+
+        params_filtered = {k: v for k, v in params.items() if v is not None}
+        parsed_response = [
+            NEO_DB.parse_node(x) for x in NeoStandard.nodes.filter(**params_filtered)
+        ]
+        if include_only:
+            for node in parsed_response:
+                node.links = [
+                    link for link in node.links if link.document.name in include_only
+                ]
+        return parsed_response
 
     def get_CREs(
         self,
@@ -1006,90 +1016,35 @@ class Node_collection:
         include_only: Optional[List[str]] = None,
         internal_id: Optional[str] = None,
     ) -> List[cre_defs.CRE]:
-        cres: List[cre_defs.CRE] = []
-        query = CRE.query
         if not external_id and not name and not description and not internal_id:
             logger.error(
                 "You need to search by external_id, internal_id name or description"
             )
             return []
-
-        if external_id:
-            if not partial:
-                query = query.filter(CRE.external_id == external_id)
-            else:
-                query = query.filter(CRE.external_id.like(external_id))
-        if name:
-            if not partial:
-                query = query.filter(func.lower(CRE.name) == name.lower())
-            else:
-                query = query.filter(func.lower(CRE.name).like(name.lower()))
-        if description:
-            if not partial:
-                query = query.filter(func.lower(CRE.description) == description.lower())
-            else:
-                query = query.filter(
-                    func.lower(CRE.description).like(description.lower())
-                )
-        if internal_id:
-            query = CRE.query.filter(CRE.id == internal_id)
-
-        dbcres = query.all()
-        if not dbcres:
-            logger.warning(
-                "CRE %s:%s:%s does not exist in the db"
-                % (external_id, name, description)
+        params = dict(
+            external_id=external_id,
+            name=name,
+            description=description,
+            id=internal_id,
+        )
+        if partial:
+            params = dict(
+                external_id__icontains=external_id,
+                name__icontains=name,
+                description__icontains=description,
+                id__icontains=internal_id,
             )
-            return []
 
-        # todo figure a way to return both the Node
-        # and the link_type for that link
-        for dbcre in dbcres:
-            cre = CREfromDB(dbcre)
-            linked_nodes = self.session.query(Links).filter(Links.cre == dbcre.id).all()
-            for ls in linked_nodes:
-                nd = self.session.query(Node).filter(Node.id == ls.node).first()
-                if not include_only or (include_only and nd.name in include_only):
-                    cre.add_link(
-                        cre_defs.Link(
-                            document=nodeFromDB(nd),
-                            ltype=cre_defs.LinkTypes.from_str(ls.type),
-                        )
-                    )
-            # todo figure the query to merge the following two
-            internal_links = (
-                self.session.query(InternalLinks)
-                .filter(
-                    sqla.or_(
-                        InternalLinks.cre == dbcre.id, InternalLinks.group == dbcre.id
-                    )
-                )
-                .all()
-            )
-            for il in internal_links:
-                q = self.session.query(CRE)
-
-                res: CRE
-                ltype = cre_defs.LinkTypes.from_str(il.type)
-
-                if il.cre == dbcre.id:  # if we are a CRE in this relationship
-                    res = q.filter(
-                        CRE.id == il.group
-                    ).first()  # get the group in order to add the link
-                    # if this CRE is the lower level cre the relationship will be tagged "Contains"
-                    # in that case the implicit relationship is "Is Part Of"
-                    # otherwise the relationship will be "Related" and we don't need to do anything
-                    if ltype == cre_defs.LinkTypes.Contains:
-                        # important, this is the only implicit link we have for now
-                        ltype = cre_defs.LinkTypes.PartOf
-                    elif ltype == cre_defs.LinkTypes.PartOf:
-                        ltype = cre_defs.LinkTypes.Contains
-                elif il.group == dbcre.id:
-                    res = q.filter(CRE.id == il.cre).first()
-                    ltype = cre_defs.LinkTypes.from_str(il.type)
-                cre.add_link(cre_defs.Link(document=CREfromDB(res), ltype=ltype))
-            cres.append(cre)
-        return cres
+        params_filtered = {k: v for k, v in params.items() if v is not None}
+        parsed_response = [
+            NEO_DB.parse_node(x) for x in NeoCRE.nodes.filter(**params_filtered)
+        ]
+        if include_only:
+            for node in parsed_response:
+                node.links = [
+                    link for link in node.links if link.document.name in include_only
+                ]
+        return parsed_response
 
     def export(self, dir: str = None, dry_run: bool = False) -> List[cre_defs.Document]:
         """Exports the database to a CRE file collection on disk"""
@@ -1507,30 +1462,8 @@ class Node_collection:
 
     def get_root_cres(self):
         """Returns CRES that only have "Contains" links"""
-        linked_groups = aliased(InternalLinks)
-        linked_cres = aliased(InternalLinks)
-        cres = (
-            self.session.query(CRE)
-            .filter(
-                ~CRE.id.in_(
-                    self.session.query(InternalLinks.cre).filter(
-                        InternalLinks.type == cre_defs.LinkTypes.Contains,
-                    )
-                )
-            )
-            .filter(
-                ~CRE.id.in_(
-                    self.session.query(InternalLinks.group).filter(
-                        InternalLinks.type == cre_defs.LinkTypes.PartOf,
-                    )
-                )
-            )
-            .all()
-        )
-        result = []
-        for c in cres:
-            result.extend(self.get_CREs(external_id=c.external_id))
-        return result
+        neo_cres = NeoCRE.nodes.has(contained_in=False)
+        return [c.to_cre_def(c) for c in neo_cres]
 
     def get_embeddings_by_doc_type(self, doc_type: str) -> Dict[str, List[float]]:
         res = {}
