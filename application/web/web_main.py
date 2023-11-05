@@ -631,6 +631,7 @@ def logout():
     session.clear()
     return redirect("/")
 
+
 @app.route("/rest/v1/everything", methods=["GET"])
 def everything() -> Any:
     database = db.Node_collection()

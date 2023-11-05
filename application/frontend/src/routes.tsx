@@ -2,8 +2,10 @@ import { ReactNode } from 'react';
 
 import {
   BROWSEROOT,
+  CIRCLES,
   CRE,
   DEEPLINK,
+  EXPLORER,
   GAP_ANALYSIS,
   GRAPH,
   INDEX,
@@ -11,19 +13,17 @@ import {
   SECTION,
   SECTION_ID,
   STANDARD,
-EXPLORER,
-CIRCLES,
 } from './const';
 import { CommonRequirementEnumeration, Graph, Search, Standard } from './pages';
 import { BrowseRootCres } from './pages/BrowseRootCres/browseRootCres';
 import { Chatbot } from './pages/chatbot/chatbot';
+import { Circles } from './pages/circles/circles';
 import { Deeplink } from './pages/Deeplink/Deeplink';
+import { Explorer } from './pages/Explorer/explorer';
 import { GapAnalysis } from './pages/GapAnalysis/GapAnalysis';
 import { MembershipRequired } from './pages/MembershipRequired/MembershipRequired';
 import { SearchName } from './pages/Search/SearchName';
 import { StandardSection } from './pages/Standard/StandardSection';
-import { Explorer } from './pages/Explorer/explorer';
-import { Circles } from './pages/circles/circles';
 
 export interface IRoute {
   path: string;
