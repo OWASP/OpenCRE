@@ -20,7 +20,6 @@ jobs:
       - name: DB setup
         run: |
             make migrate-upgrade
-            make import-all
       - name: Run App in background
         run: |
           yarn build
