@@ -8,10 +8,12 @@ from neomodel import (
     UniqueIdProperty,
     Relationship,
     RelationshipTo,
+    RelationshipFrom,
     ArrayProperty,
     StructuredRel,
     db,
 )
+import neo4j
 from sqlalchemy.orm import aliased
 import os
 import logging
@@ -204,8 +206,20 @@ class NeoDocument(StructuredNode):
     related = Relationship("NeoDocument", "RELATED", model=RelatedRel)
 
     @classmethod
-    def to_cre_def(self, node):
+    def to_cre_def(self, node, parse_links=True):
         raise Exception(f"Shouldn't be parsing a NeoDocument")
+
+    @classmethod
+    def get_links(self, links_dict):
+        links = []
+        for key in links_dict:
+            links.extend(
+                [
+                    cre_defs.Link(c.to_cre_def(c, parse_links=False), key)
+                    for c in links_dict[key]
+                ]
+            )
+        return links
 
 
 class NeoNode(NeoDocument):
@@ -214,7 +228,7 @@ class NeoNode(NeoDocument):
     hyperlink = StringProperty()
 
     @classmethod
-    def to_cre_def(self, node):
+    def to_cre_def(self, node, parse_links=True):
         raise Exception(f"Shouldn't be parsing a NeoNode")
 
 
@@ -224,10 +238,9 @@ class NeoStandard(NeoNode):
     section_id = StringProperty()
 
     @classmethod
-    def to_cre_def(self, node) -> cre_defs.Standard:
+    def to_cre_def(self, node, parse_links=True) -> cre_defs.Standard:
         return cre_defs.Standard(
             name=node.name,
-            id=node.document_id,
             description=node.description,
             tags=node.tags,
             hyperlink=node.hyperlink,
@@ -235,6 +248,13 @@ class NeoStandard(NeoNode):
             section=node.section,
             sectionID=node.section_id,
             subsection=node.subsection,
+            links=self.get_links(
+                {
+                    "Related": node.related,
+                }
+            )
+            if parse_links
+            else [],
         )
 
 
@@ -242,10 +262,9 @@ class NeoTool(NeoStandard):
     tooltype = StringProperty(required=True)
 
     @classmethod
-    def to_cre_def(self, node) -> cre_defs.Tool:
+    def to_cre_def(self, node, parse_links=True) -> cre_defs.Tool:
         return cre_defs.Tool(
             name=node.name,
-            id=node.document_id,
             description=node.description,
             tags=node.tags,
             hyperlink=node.hyperlink,
@@ -253,35 +272,59 @@ class NeoTool(NeoStandard):
             section=node.section,
             sectionID=node.section_id,
             subsection=node.subsection,
+            links=self.get_links(
+                {
+                    "Related": node.related,
+                }
+            )
+            if parse_links
+            else [],
         )
 
 
 class NeoCode(NeoNode):
     @classmethod
-    def to_cre_def(self, node) -> cre_defs.Code:
+    def to_cre_def(self, node, parse_links=True) -> cre_defs.Code:
         return cre_defs.Code(
             name=node.name,
-            id=node.document_id,
             description=node.description,
             tags=node.tags,
             hyperlink=node.hyperlink,
             version=node.version,
+            links=self.get_links(
+                {
+                    "Related": node.related,
+                }
+            )
+            if parse_links
+            else [],
         )
 
 
 class NeoCRE(NeoDocument):  # type: ignore
     external_id = StringProperty()
     contains = RelationshipTo("NeoCRE", "CONTAINS", model=ContainsRel)
+    contained_in = RelationshipFrom("NeoCRE", "CONTAINS", model=ContainsRel)
     linked = RelationshipTo("NeoStandard", "LINKED_TO", model=LinkedToRel)
     same_as = RelationshipTo("NeoStandard", "SAME", model=SameRel)
 
     @classmethod
-    def to_cre_def(self, node) -> cre_defs.CRE:
+    def to_cre_def(self, node, parse_links=True) -> cre_defs.CRE:
         return cre_defs.CRE(
             name=node.name,
-            id=node.document_id,
+            id=node.external_id,
             description=node.description,
             tags=node.tags,
+            links=self.get_links(
+                {
+                    "Contains": [*node.contains, *node.contained_in],
+                    "Linked To": node.linked,
+                    "Same as": node.same_as,
+                    "Related": node.related,
+                }
+            )
+            if parse_links
+            else [],
         )
 
 
@@ -340,6 +383,7 @@ class NEO_DB:
                 "description": dbcre.description,
                 "links": [],  # dbcre.links,
                 "tags": [dbcre.tags] if isinstance(dbcre.tags, str) else dbcre.tags,
+                "external_id": dbcre.external_id,
             }
         )
 
@@ -477,19 +521,19 @@ class NEO_DB:
             ][0]
 
             return {
-                "start": NEO_DB.parse_node(start_node),
-                "end": NEO_DB.parse_node(end_node),
+                "start": NEO_DB.parse_node_no_links(start_node),
+                "end": NEO_DB.parse_node_no_links(end_node),
                 "relationship": relation_map[type(seg)],
             }
 
         def format_path_record(rec):
             return {
-                "start": NEO_DB.parse_node(rec.start_node),
-                "end": NEO_DB.parse_node(rec.end_node),
+                "start": NEO_DB.parse_node_no_links(rec.start_node),
+                "end": NEO_DB.parse_node_no_links(rec.end_node),
                 "path": [format_segment(seg, rec.nodes) for seg in rec.relationships],
             }
 
-        return [NEO_DB.parse_node(rec) for rec in base_standard], [
+        return [NEO_DB.parse_node_no_links(rec) for rec in base_standard], [
             format_path_record(rec[0]) for rec in (path_records + path_records_all)
         ]
 
@@ -502,9 +546,21 @@ class NEO_DB:
             results.extend(x)
         return list(set(results))
 
+    @classmethod
+    def everything(self) -> List[str]:
+        try:
+            return [NEO_DB.parse_node(rec) for rec in NeoDocument.nodes.all()]
+        except neo4j.exceptions.ServiceUnavailable:
+            logger.error("Neo4j DB offline")
+            return None
+
     @staticmethod
     def parse_node(node: NeoDocument) -> cre_defs.Document:
         return node.to_cre_def(node)
+
+    @staticmethod
+    def parse_node_no_links(node: NeoDocument) -> cre_defs.Document:
+        return node.to_cre_def(node, parse_links=False)
 
 
 class CRE_Graph:
@@ -1182,6 +1238,9 @@ class Node_collection:
                 )
 
         return list(docs.values())
+
+    def all_nodes_flat(self) -> List[cre_defs.Document]:
+        return self.neo_db.everything()
 
     def add_cre(self, cre: cre_defs.CRE) -> CRE:
         entry: CRE

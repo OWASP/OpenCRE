@@ -1577,32 +1577,37 @@ class TestDB(unittest.TestCase):
 
     def test_neo_db_parse_node_code(self):
         name = "name"
-        id = "id"
         description = "description"
         tags = "tags"
         version = "version"
         hyperlink = "version"
         expected = defs.Code(
             name=name,
-            id=id,
             description=description,
             tags=tags,
             version=version,
             hyperlink=hyperlink,
+            links=[
+                defs.Link(
+                    defs.CRE(id="123", description="gcCD2", name="gcC2"), "Related"
+                )
+            ],
         )
         graph_node = db.NeoCode(
             name=name,
-            document_id=id,
             description=description,
             tags=tags,
             version=version,
             hyperlink=hyperlink,
+            related=[
+                db.NeoCRE(external_id="123", description="gcCD2", name="gcC2"),
+            ],
         )
-        self.assertEqual(db.NEO_DB.parse_node(graph_node), expected)
+
+        self.assertEqual(db.NEO_DB.parse_node(graph_node).todict(), expected.todict())
 
     def test_neo_db_parse_node_standard(self):
         name = "name"
-        id = "id"
         description = "description"
         tags = "tags"
         version = "version"
@@ -1612,7 +1617,6 @@ class TestDB(unittest.TestCase):
         hyperlink = "version"
         expected = defs.Standard(
             name=name,
-            id=id,
             description=description,
             tags=tags,
             version=version,
@@ -1620,10 +1624,14 @@ class TestDB(unittest.TestCase):
             sectionID=sectionID,
             subsection=subsection,
             hyperlink=hyperlink,
+            links=[
+                defs.Link(
+                    defs.CRE(id="123", description="gcCD2", name="gcC2"), "Related"
+                )
+            ],
         )
         graph_node = db.NeoStandard(
             name=name,
-            document_id=id,
             description=description,
             tags=tags,
             version=version,
@@ -1631,12 +1639,14 @@ class TestDB(unittest.TestCase):
             section_id=sectionID,
             subsection=subsection,
             hyperlink=hyperlink,
+            related=[
+                db.NeoCRE(external_id="123", description="gcCD2", name="gcC2"),
+            ],
         )
-        self.assertEqual(db.NEO_DB.parse_node(graph_node), expected)
+        self.assertEqual(db.NEO_DB.parse_node(graph_node).todict(), expected.todict())
 
     def test_neo_db_parse_node_tool(self):
         name = "name"
-        id = "id"
         description = "description"
         tags = "tags"
         version = "version"
@@ -1646,7 +1656,6 @@ class TestDB(unittest.TestCase):
         hyperlink = "version"
         expected = defs.Tool(
             name=name,
-            id=id,
             description=description,
             tags=tags,
             version=version,
@@ -1654,10 +1663,14 @@ class TestDB(unittest.TestCase):
             sectionID=sectionID,
             subsection=subsection,
             hyperlink=hyperlink,
+            links=[
+                defs.Link(
+                    defs.CRE(id="123", description="gcCD2", name="gcC2"), "Related"
+                )
+            ],
         )
         graph_node = db.NeoTool(
             name=name,
-            document_id=id,
             description=description,
             tags=tags,
             version=version,
@@ -1665,27 +1678,102 @@ class TestDB(unittest.TestCase):
             section_id=sectionID,
             subsection=subsection,
             hyperlink=hyperlink,
+            related=[
+                db.NeoCRE(external_id="123", description="gcCD2", name="gcC2"),
+            ],
         )
-        self.assertEqual(db.NEO_DB.parse_node(graph_node), expected)
+        self.assertEqual(db.NEO_DB.parse_node(graph_node).todict(), expected.todict())
 
     def test_neo_db_parse_node_cre(self):
         name = "name"
-        id = "id"
         description = "description"
         tags = "tags"
+        external_id = "abc"
         expected = defs.CRE(
             name=name,
-            id=id,
             description=description,
+            id=external_id,
             tags=tags,
+            links=[
+                defs.Link(
+                    defs.CRE(id="123", description="gcCD2", name="gcC2"), "Contains"
+                ),
+                defs.Link(
+                    defs.CRE(id="123", description="gcCD3", name="gcC3"), "Contains"
+                ),
+                defs.Link(
+                    defs.Standard(
+                        hyperlink="gc3",
+                        name="gcS2",
+                        section="gc1",
+                        subsection="gc2",
+                        version="gc1.1.1",
+                    ),
+                    "Linked To",
+                ),
+            ],
         )
         graph_node = db.NeoCRE(
             name=name,
-            document_id=id,
             description=description,
             tags=tags,
+            external_id=external_id,
+            contained_in=[],
+            contains=[
+                db.NeoCRE(external_id="123", description="gcCD2", name="gcC2"),
+                db.NeoCRE(external_id="123", description="gcCD3", name="gcC3"),
+            ],
+            linked=[
+                db.NeoStandard(
+                    hyperlink="gc3",
+                    name="gcS2",
+                    section="gc1",
+                    subsection="gc2",
+                    version="gc1.1.1",
+                )
+            ],
+            same_as=[],
+            related=[],
         )
-        self.assertEqual(db.NEO_DB.parse_node(graph_node), expected)
+
+        parsed = db.NEO_DB.parse_node(graph_node)
+        self.maxDiff = None
+        self.assertEqual(parsed.todict(), expected.todict())
+
+    def test_neo_db_parse_node_no_links_cre(self):
+        name = "name"
+        description = "description"
+        tags = "tags"
+        external_id = "abc"
+        expected = defs.CRE(
+            name=name, description=description, id=external_id, tags=tags, links=[]
+        )
+        graph_node = db.NeoCRE(
+            name=name,
+            description=description,
+            tags=tags,
+            external_id=external_id,
+            contained_in=[],
+            contains=[
+                db.NeoCRE(external_id="123", description="gcCD2", name="gcC2"),
+                db.NeoCRE(external_id="123", description="gcCD3", name="gcC3"),
+            ],
+            linked=[
+                db.NeoStandard(
+                    hyperlink="gc3",
+                    name="gcS2",
+                    section="gc1",
+                    subsection="gc2",
+                    version="gc1.1.1",
+                )
+            ],
+            same_as=[],
+            related=[],
+        )
+
+        parsed = db.NEO_DB.parse_node_no_links(graph_node)
+        self.maxDiff = None
+        self.assertEqual(parsed.todict(), expected.todict())
 
     def test_neo_db_parse_node_Document(self):
         name = "name"

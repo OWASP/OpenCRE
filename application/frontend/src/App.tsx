@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from 'react-query';
 import { BrowserRouter } from 'react-router-dom';
 
 import { GlobalFilterState, filterContext } from './hooks/applyFilters';
+import { DataProvider } from './providers/DataProvider';
 import { MainContentArea } from './scaffolding';
 
 const queryClient = new QueryClient();
@@ -14,10 +15,12 @@ const App = () => (
   <div className="app">
     <filterContext.Provider value={GlobalFilterState}>
       <QueryClientProvider client={queryClient}>
-        <BrowserRouter>
-          <Toaster />
-          <MainContentArea />
-        </BrowserRouter>
+        <DataProvider>
+          <BrowserRouter>
+            <Toaster />
+            <MainContentArea />
+          </BrowserRouter>
+        </DataProvider>
       </QueryClientProvider>
     </filterContext.Provider>
   </div>
