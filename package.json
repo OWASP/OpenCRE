@@ -7,7 +7,7 @@
     "lint": "prettier --write '**/*.tsx' '**/*.ts' '**/*.js'",
     "build": "webpack --config webpack.prod.js",
     "start": "webpack serve",
-    "test:e2e": "jest -c jest.config.js --testPathPattern=.*-e2etest.tsx?$",
+    "test:e2e": "jest",
     "postinstall": "del-cli node_modules/@types/react-dom/node_modules/@types && del-cli node_modules/webpack/types.d.ts"
   },
   "keywords": [],

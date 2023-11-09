@@ -13,6 +13,7 @@ from neomodel import (
     StructuredRel,
     db,
 )
+import neo4j
 from sqlalchemy.orm import aliased
 import os
 import logging
@@ -547,7 +548,11 @@ class NEO_DB:
 
     @classmethod
     def everything(self) -> List[str]:
-        return [NEO_DB.parse_node(rec) for rec in NeoDocument.nodes.all()]
+        try:
+            return [NEO_DB.parse_node(rec) for rec in NeoDocument.nodes.all()]
+        except neo4j.exceptions.ServiceUnavailable:
+            logger.error("Neo4j DB offline")
+            return None
 
     @staticmethod
     def parse_node(node: NeoDocument) -> cre_defs.Document:
