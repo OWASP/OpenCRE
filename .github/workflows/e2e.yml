@@ -16,13 +16,17 @@ jobs:
         with:
           cache: 'yarn'
       - name: Install python dependencies
-        run: sudo apt-get update && sudo apt-get install -y python3-setuptools python3-pip chromium-browser libgbm1 && make install-deps 
-      - name: Run App in background
+        run: sudo apt-get update && sudo apt-get install -y python3-setuptools python3-pip chromium-browser libgbm1 && make install-deps
+      - name: DB setup
+        run: |
+            cp cres/db.sqlite standards_cache.sqlite
+            make migrate-upgrade
+      - name: Run app and e2e tests
         run: |
           yarn build
           [ -d "./venv" ] && . ./venv/bin/activate
           export FLASK_APP=./cre.py
           export FLASK_CONFIG=development
-          FLASK_CONFIG=development flask run& 
+          FLASK_CONFIG=development flask run &
+          sleep 20s
           yarn test:e2e
-          exit $?

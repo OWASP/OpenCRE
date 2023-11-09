@@ -1,3 +1,5 @@
+export const TWO_DAYS_MILLISECONDS = 1.728e8;
+
 export const TYPE_IS_PART_OF = 'Is Part Of';
 export const TYPE_LINKED_TO = 'Linked To';
 export const TYPE_LINKED_FROM = 'Linked From';
@@ -37,5 +39,6 @@ export const GRAPH = '/graph';
 export const DEEPLINK = '/deeplink';
 export const BROWSEROOT = '/root_cres';
 export const GAP_ANALYSIS = '/map_analysis';
+export const EXPLORER = '/explorer';
 
 export const GA_STRONG_UPPER_LIMIT = 2; // remember to change this in the Python code too

@@ -44,13 +44,11 @@ export const SearchBar = () => {
                 term: e.target.value,
               });
             }}
-            label={
-              <Button id="SearchButton" primary onSubmit={onSubmit}>
-                <Icon name="search" />
-                Search
-              </Button>
-            }
-            labelPosition="right"
+            action={{
+              icon: 'search',
+              content: 'Search',
+              color: 'primary',
+            }}
             placeholder="Search..."
           />
         </Form.Field>

@@ -38,6 +38,18 @@ export interface GapAnalysisPathStart {
   extra: number;
   weakLinks: Record<string, GapAnalysisPath>;
 }
+
+export interface TreeDocument extends Document {
+  displayName: string;
+  url: string;
+  links: LinkedTreeDocument[];
+}
+
+export interface LinkedTreeDocument {
+  document: TreeDocument;
+  ltype: string;
+}
+
 export interface PaginatedResponse {
   standards: Document[];
   total_pages: number;

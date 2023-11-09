@@ -21,6 +21,10 @@ const getLinks = (): { to: string; name: string }[] => [
     to: `/map_analysis`,
     name: 'Map analysis',
   },
+  {
+    to: `/explorer`,
+    name: 'Explorer',
+  },
 ];
 
 export const Header = () => {
