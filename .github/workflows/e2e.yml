@@ -26,6 +26,6 @@ jobs:
           [ -d "./venv" ] && . ./venv/bin/activate
           export FLASK_APP=./cre.py
           export FLASK_CONFIG=development
-          FLASK_CONFIG=development flask run& 
-          yarn test:e2e
-          exit $?
+          FLASK_CONFIG=development flask run&
+      - name: Test-e2e
+        run: yarn test:e2e
