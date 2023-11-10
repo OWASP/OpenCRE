@@ -13,6 +13,7 @@ logger.setLevel(logging.INFO)
 
 means_none = [
     "Not explicitly covered by ISO 27001 - too specific",
+    "Not explicitly covered by ISO 27001",
     "May be part of project management",
     "May be part of risk assessment",
 ]
@@ -56,7 +57,7 @@ def parse(
                     embeddings = cache.get_embeddings_for_doc(existing[0])
                     if embeddings:
                         logger.info(
-                            f"Node {standard.todict()} already exists and has embeddings, skipping"
+                            f"Node {standard.section} already exists and has embeddings, skipping"
                         )
                         continue
                     else:
