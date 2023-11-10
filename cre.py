@@ -181,7 +181,11 @@ def main() -> None:
         action="store_true",
         help="import juiceshop challenges from their repo",
     )
-
+    parser.add_argument(
+        "--dsomm_in",
+        action="store_true",
+        help="import dsomm from their repo",
+    )
     parser.add_argument(
         "--generate_embeddings",
         action="store_true",

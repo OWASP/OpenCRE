@@ -25,6 +25,7 @@ from application.utils.external_project_parsers import (
     secure_headers,
     pci_dss,
     juiceshop,
+    dsomm,
 )
 from application.prompt_client import prompt_client as prompt_client
 from application.utils import gap_analysis
@@ -414,6 +415,11 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
         juiceshop.parse(
             cache=db_connect(args.cache_file),
         )
+    if args.dsomm_in:
+        dsomm.parse(
+            cache=db_connect(args.cache_file),
+        )
+
     if args.generate_embeddings:
         generate_embeddings(args.cache_file)
     if args.owasp_proj_meta:

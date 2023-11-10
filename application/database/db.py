@@ -950,6 +950,7 @@ class Node_collection:
                         logger.fatal(
                             f"CRE {dbcre_link.cre} exists in the links but not in the cre table, database corrupt?"
                         )
+                        raise AssertionError(f"CRE {dbcre_link.cre} exists in the links but not in the cre table, database corrupt?")
                     if not include_only or (
                         include_only
                         and (
