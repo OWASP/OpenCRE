@@ -1,3 +1,5 @@
 cres/
 .devcontainer/
 docs/
+application/tests
+application/frontend/src/test/basic-e2e.test.ts
