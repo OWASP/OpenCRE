@@ -4,6 +4,7 @@ import {
   BROWSEROOT,
   CRE,
   DEEPLINK,
+  EXPLORER,
   GAP_ANALYSIS,
   GRAPH,
   INDEX,
@@ -16,6 +17,9 @@ import { CommonRequirementEnumeration, Graph, Search, Standard } from './pages';
 import { BrowseRootCres } from './pages/BrowseRootCres/browseRootCres';
 import { Chatbot } from './pages/chatbot/chatbot';
 import { Deeplink } from './pages/Deeplink/Deeplink';
+import { Explorer } from './pages/Explorer/explorer';
+import { ExplorerCircles } from './pages/Explorer/visuals/circles/circles';
+import { ExplorerForceGraph } from './pages/Explorer/visuals/force-graph/forceGraph';
 import { GapAnalysis } from './pages/GapAnalysis/GapAnalysis';
 import { MembershipRequired } from './pages/MembershipRequired/MembershipRequired';
 import { SearchName } from './pages/Search/SearchName';
@@ -122,6 +126,24 @@ export const ROUTES: IRoute[] = [
   {
     path: `${BROWSEROOT}`,
     component: BrowseRootCres,
+    showHeader: true,
+    showFilter: false,
+  },
+  {
+    path: `${EXPLORER}/circles`,
+    component: ExplorerCircles,
+    showHeader: true,
+    showFilter: false,
+  },
+  {
+    path: `${EXPLORER}/force_graph`,
+    component: ExplorerForceGraph,
+    showHeader: true,
+    showFilter: false,
+  },
+  {
+    path: `${EXPLORER}`,
+    component: Explorer,
     showHeader: true,
     showFilter: false,
   },
