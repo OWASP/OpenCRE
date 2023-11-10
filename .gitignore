@@ -36,3 +36,6 @@ standards_cache.sqlite
 ### Neo4j
 neo4j/
 .neo4j/
+
+.mypy_cache
+tmp/
