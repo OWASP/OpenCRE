@@ -16,6 +16,21 @@ means_none = [
     "Not explicitly covered by ISO 27001",
     "May be part of project management",
     "May be part of risk assessment",
+    "Mutual review of source code is not explicitly required in ISO 27001 may be",
+    "Mutual security testing is not explicitly required in ISO 27001 may be",
+    "War games are not explicitly required in ISO 27001 may be",
+    "Security champions are missing in ISO 27001 most likely",
+    "Security champions are missing in ISO 27001",
+    "ISO 27001:2022 mapping is missing",
+    "Security consulting is missing in ISO 27001 may be",
+    "Peer review - four eyes principle is not explicitly required by ISO 27001",
+    "Hardening is not explicitly covered by ISO 27001 - too specific",
+    "Virtual environments are not explicitly covered by ISO 27001 - too specific",
+    "{'TODO': \"Incorporate advanced WAF input validation processes into the organization's ISMS.\"}",
+    "{'TODO': 'Integrate WAF deployment with ISO 27001 controls for system hardening.'}",
+    "System hardening is not explicitly covered by ISO 27001 - too specific",
+    "vcs usage is not explicitly covered by ISO 27001 - too specific",
+    "System hardening, virtual environments are not explicitly covered by ISO 27001 - too specific",
 ]
 
 
@@ -62,12 +77,12 @@ def parse(
                         continue
                     else:
                         standard_embeddings = prompt.get_text_embeddings(
-                            standard.__repr__
+                            standard.__repr__()
                         )
                         cache.add_embedding(
                             doctype=standard.doctype,
                             embeddings=standard_embeddings,
-                            embedding_text=standard.__repr__,
+                            embedding_text=standard.__repr__(),
                         )
 
                 dbstandard = cache.add_node(standard)
