@@ -31,7 +31,7 @@ export const SearchBody = () => {
         reliable answer, and also a reference to a reputable source.
       </b>
       <b>
-        Use <a href="/map_analysis">Map Analysis</a> to find how any two Resources connect with eachother
+        Use <a href="/map_analysis">Map Analysis</a> to find how any two standards connect with eachother
       </b>
       <h2>HOW?</h2>
       <p>
@@ -70,9 +70,9 @@ export const SearchBody = () => {
       <p>
         For more details, see this
         <a href="https://www.youtube.com/watch?v=TwNroVARmB0"> interview and demo video</a>, read the
-        <a href="https://github.com/OWASP/www-project-integration-standards/raw/master/writeups/CRE-Explained6.pdf">
+        <a href="https://github.com/OWASP/www-project-integration-standards/raw/master/writeups/opencredcslides.pdf">
           {' '}
-          OpenCRE explanation document{' '}
+          OpenCRE slides from the 2023 Appsec conference in Washington DC{' '}
         </a>
         , follow our
         <a href="https://www.linkedin.com/company/96695329"> LinkedIn page </a>, click the diagram below, or{' '}
