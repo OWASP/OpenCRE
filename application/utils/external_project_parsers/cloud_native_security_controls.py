@@ -16,6 +16,7 @@ logging.basicConfig()
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+
 def parse(
     cache: db.Node_collection,
 ):
@@ -31,14 +32,14 @@ def parse(
         return
     entries = csv.DictReader(StringIO(resp.text), delimiter=",")
     for entry in entries:
-
         cnsc = defs.Standard(
             description=entry.get("Control Implementation"),
             name="Cloud Native Security Controls",
             section=entry.get("Section"),
             sectionID=entry.get("ID"),
             subsection=entry.get("Control Title"),
-            hyperlink="https://github.com/cloud-native-security-controls/controls-catalog/blob/main/controls/controls_catalog.csv#L"+entry.get("ID"),
+            hyperlink="https://github.com/cloud-native-security-controls/controls-catalog/blob/main/controls/controls_catalog.csv#L"
+            + entry.get("ID"),
             version=entry.get("Originating Document"),
         )
         existing = cache.get_nodes(
@@ -64,7 +65,7 @@ def parse(
             )
             cres = cache.find_cres_of_node(dbstandard)
             if cres:
-                cre_id = cres[0].id        
+                cre_id = cres[0].id
         cre = cache.get_cre_by_db_id(cre_id)
         cnsc_copy = cnsc.shallow_copy()
         cnsc_copy.description = ""
