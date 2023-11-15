@@ -1,3 +1,4 @@
+import re
 import yaml
 import urllib
 from pprint import pprint
@@ -27,7 +28,9 @@ means_none = [
     "Hardening is not explicitly covered by ISO 27001 - too specific",
     "Virtual environments are not explicitly covered by ISO 27001 - too specific",
     "{'TODO': \"Incorporate advanced WAF input validation processes into the organization's ISMS.\"}",
+    "{'TODO': \"Incorporate advanced WAF input validation processes into the organization's ISMS.\"}",
     "{'TODO': 'Integrate WAF deployment with ISO 27001 controls for system hardening.'}",
+    "{'TODO': 'Integrate WAF deployment with ISO 27001 controls for system hardening.'}"
     "System hardening is not explicitly covered by ISO 27001 - too specific",
     "vcs usage is not explicitly covered by ISO 27001 - too specific",
     "System hardening, virtual environments are not explicitly covered by ISO 27001 - too specific",
@@ -80,29 +83,56 @@ def parse(
                             standard.__repr__()
                         )
                         cache.add_embedding(
+                            db_object=existing[0],
                             doctype=standard.doctype,
                             embeddings=standard_embeddings,
                             embedding_text=standard.__repr__(),
                         )
 
                 dbstandard = cache.add_node(standard)
-                # use iso as glue
-                if not activity.get("references").get("iso27001-2022"):
-                    logger.error(f"Activity {aname} does not link to iso")
-                    return
-                for sectionID in activity.get("references").get("iso27001-2022"):
-                    if sectionID in means_none:
-                        continue
-                    isos = cache.get_nodes(name="ISO 27001", sectionID=f"{sectionID}")
-                    if not len(isos):
-                        logger.error(
-                            f"could not find iso with sectionID '{sectionID}' in the db"
-                        )
-                        return
-                    for iso in isos:
-                        for c_link in iso.links:
-                            cache.add_link(
-                                cre=db.dbCREfromCRE(c_link.document),
-                                node=dbstandard,
-                                type=defs.LinkTypes.LinkedTo,
+                # use SAMM as Glue
+                if activity.get("references").get("samm2"):
+                    for sectionID in activity.get("references").get("samm2"):
+                        if sectionID in means_none:
+                            continue
+                        samms = cache.get_nodes(name="SAMM", sectionID=f"{sectionID}")
+                        if not len(samms):
+                            sectionID = re.sub("-\d", sectionID, "")
+                            samms = cache.get_nodes(
+                                name="SAMM", sectionID=f"{sectionID}"
                             )
+                            if not len(samms):
+                                logger.error(
+                                    f"could not find samm with sectionID '{sectionID}' in the db"
+                                )
+                        for samm in samms:
+                            for c_link in samm.links:
+                                cache.add_link(
+                                    cre=db.dbCREfromCRE(c_link.document),
+                                    node=dbstandard,
+                                    type=defs.LinkTypes.LinkedTo,
+                                )
+                else:
+                    logger.error(f"Activity {aname} does not link to SAMM, using ISO")
+                    # use iso as glue
+                    if not activity.get("references").get("iso27001-2022"):
+                        logger.error(f"Activity {aname} does not link to ISO")
+                        return
+                    for sectionID in activity.get("references").get("iso27001-2022"):
+                        if sectionID in means_none:
+                            continue
+                        isos = cache.get_nodes(
+                            name="ISO 27001", sectionID=f"{sectionID}"
+                        )
+                        if not len(isos):
+                            logger.error(
+                                f"could not find iso with sectionID '{sectionID}' in the db"
+                            )
+                            return
+                        for iso in isos:
+                            for c_link in iso.links:
+                                cache.add_link(
+                                    cre=db.dbCREfromCRE(c_link.document),
+                                    node=dbstandard,
+                                    type=defs.LinkTypes.LinkedTo,
+                                )
