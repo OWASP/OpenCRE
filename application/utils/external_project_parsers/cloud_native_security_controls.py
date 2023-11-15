@@ -41,9 +41,6 @@ def parse(
             hyperlink="https://github.com/cloud-native-security-controls/controls-catalog/blob/main/controls/controls_catalog.csv#L"+entry.get("ID"),
             version=entry.get("Originating Document"),
         )
-        pprint(cnsc)
-        input()
-
         existing = cache.get_nodes(
             name=cnsc.name, section=cnsc.section, sectionID=cnsc.sectionID
         )
