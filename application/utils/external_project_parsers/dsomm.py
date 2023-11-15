@@ -30,7 +30,8 @@ means_none = [
     "{'TODO': \"Incorporate advanced WAF input validation processes into the organization's ISMS.\"}",
     "{'TODO': \"Incorporate advanced WAF input validation processes into the organization's ISMS.\"}",
     "{'TODO': 'Integrate WAF deployment with ISO 27001 controls for system hardening.'}",
-    "{'TODO': 'Integrate WAF deployment with ISO 27001 controls for system hardening.'}"
+    "{'TODO': 'Integrate WAF deployment with ISO 27001 controls for system hardening.'}",
+    "{'TODO': 'Identify and implement SAMM security practices relevant to WAF configuration.'}",
     "System hardening is not explicitly covered by ISO 27001 - too specific",
     "vcs usage is not explicitly covered by ISO 27001 - too specific",
     "System hardening, virtual environments are not explicitly covered by ISO 27001 - too specific",
@@ -97,7 +98,7 @@ def parse(
                             continue
                         samms = cache.get_nodes(name="SAMM", sectionID=f"{sectionID}")
                         if not len(samms):
-                            sectionID = re.sub("-\d", sectionID, "")
+                            sectionID = re.sub("-\d", "", f"{sectionID}")
                             samms = cache.get_nodes(
                                 name="SAMM", sectionID=f"{sectionID}"
                             )
