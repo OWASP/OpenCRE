@@ -14,7 +14,7 @@ describe('App.js', () => {
     jest.setTimeout(1000000);
     browser = await puppeteer.launch(debug);
     page = await browser.newPage();
-    page.setDefaultTimeout(15000)
+    page.setDefaultTimeout(15000);
   });
 
   it('contains the welcome text', async () => {
@@ -42,7 +42,7 @@ describe('App.js', () => {
     await page.waitForSelector('.content');
     const text = await page.$eval('.content', (e) => e.textContent);
     expect(text).not.toContain('No results match your search term');
-    
+
     await page.waitForSelector('.standard-page__links-container');
     const results = await page.$$('.standard-page__links-container');
     expect(results.length).toBeGreaterThan(1);
@@ -61,7 +61,7 @@ describe('App.js', () => {
     expect(text).not.toContain('No results match your search term');
 
     await page.waitForSelector('.standard-page__links-container');
-    
+
     // title match
     const page_title = await page.$eval('.standard-page__heading', (e) => e.textContent);
     expect(page_title).toContain('ASVS');
@@ -109,7 +109,7 @@ describe('App.js', () => {
     await page.waitForSelector('.content');
     const text = await page.$$('.content', (e) => e.textContent);
     expect(text).not.toContain('No results match your search term');
-    
+
     await page.waitForSelector('.standard-page__links-container');
 
     // title match
