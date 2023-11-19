@@ -25,6 +25,7 @@ from application.utils.external_project_parsers import (
     secure_headers,
     pci_dss,
     juiceshop,
+    cloud_native_security_controls,
 )
 from application.prompt_client import prompt_client as prompt_client
 from application.utils import gap_analysis
@@ -412,6 +413,10 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
         )
     if args.juiceshop_in:
         juiceshop.parse(
+            cache=db_connect(args.cache_file),
+        )
+    if args.cloud_native_security_controls_in:
+        cloud_native_security_controls.parse(
             cache=db_connect(args.cache_file),
         )
     if args.generate_embeddings:
