@@ -182,9 +182,14 @@ def main() -> None:
         help="import juiceshop challenges from their repo",
     )
     parser.add_argument(
+        "--dsomm_in",
+        action="store_true",
+        help="import dsomm from their repo (https://raw.githubusercontent.com/devsecopsmaturitymodel/DevSecOps-MaturityModel-data/main/src/assets/YAML/generated/generated.yaml)",
+    )
+    parser.add_argument(
         "--cloud_native_security_controls_in",
         action="store_true",
-        help="import cloud native security controls challenges from their repo (https://raw.githubusercontent.com/cloud-native-security-controls/controls-catalog/main/controls/controls_catalog.csv)",
+        help="import cloud native security controls from their repo (https://raw.githubusercontent.com/cloud-native-security-controls/controls-catalog/main/controls/controls_catalog.csv)",
     )
     parser.add_argument(
         "--generate_embeddings",
