@@ -36,10 +36,11 @@ means_none = [
     "vcs usage is not explicitly covered by ISO 27001 - too specific",
     "System hardening, virtual environments are not explicitly covered by ISO 27001 - too specific",
 ]
-manual_mappings= {
-    "Usage of feature toggles":"344-611",
-    "Usage of edge encryption at transit":"435-702",
+manual_mappings = {
+    "Usage of feature toggles": "344-611",
+    "Usage of edge encryption at transit": "435-702",
 }
+
 
 def parse(
     cache: db.Node_collection,
@@ -97,7 +98,11 @@ def parse(
                 if manual_mappings.get(aname):
                     cs = cache.get_CREs(manual_mappings.get(aname))
                     for c in cs:
-                        cache.add_link(cre=db.dbCREfromCRE(c),node=dbstandard,type=defs.LinkTypes.LinkedTo)
+                        cache.add_link(
+                            cre=db.dbCREfromCRE(c),
+                            node=dbstandard,
+                            type=defs.LinkTypes.LinkedTo,
+                        )
                 # use SAMM as Glue
                 if activity.get("references").get("samm2"):
                     for sectionID in activity.get("references").get("samm2"):
