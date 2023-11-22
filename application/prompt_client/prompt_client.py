@@ -189,7 +189,7 @@ class PromptHandler:
             )
         else:
             logger.error(
-                "cannot instantiate ai client, neither OPENAI_API_KEY nor GOOGLE_APPLICATION_CREDENTIALS are set "
+                "cannot instantiate ai client, neither OPENAI_API_KEY nor SERVICE_ACCOUNT_CREDENTIALS are set "
             )
         self.database = database
         self.embeddings_instance = in_memory_embeddings.instance(
