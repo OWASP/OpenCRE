@@ -8,6 +8,6 @@ FROM python:3.11.0 as run
 
 COPY --from=build /code /code
 WORKDIR /code
-RUN pip install -r requirements.txt gunicorn
+RUN pip install -r requirements.txt
 
 ENTRYPOINT "make dev-flask"
