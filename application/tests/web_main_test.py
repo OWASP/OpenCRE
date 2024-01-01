@@ -13,6 +13,8 @@ from application.defs import osib_defs
 from application.web import web_main
 from application.utils.hash import make_array_hash, make_cache_key
 
+import os
+
 
 class MockJob:
     @property
@@ -33,6 +35,7 @@ class TestMain(unittest.TestCase):
         self.app = create_app(mode="test")
         self.app_context = self.app.app_context()
         self.app_context.push()
+        os.environ["INSECURE_REQUESTS"] = "True"
         sqla.create_all()
 
     def test_extend_cre_with_tag_links(self) -> None:
@@ -639,6 +642,7 @@ class TestMain(unittest.TestCase):
                     "node_names": ["aaa", "bbb"],
                     "store_in_cache": True,
                     "cache_key": "7aa45d88f69a131890f8e4a769bbb07b",
+                    "timeout": "10m",
                 },
             )
             redis_conn_mock.return_value.set.assert_called_with(

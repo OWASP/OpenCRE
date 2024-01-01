@@ -35,6 +35,7 @@ compress = Compress()
 cache = Cache()
 tracer = None
 
+
 def create_app(mode: str = "production", conf: any = None) -> Any:
     global tracer
     app = Flask(__name__)
@@ -54,17 +55,14 @@ def create_app(mode: str = "production", conf: any = None) -> Any:
 
     app.register_blueprint(app_blueprint)
 
-
     CORS(app)
     app.config["CORS_HEADERS"] = "Content-Type"
 
     compress.init_app(app)
     cache.init_app(app)
 
-
-    if os.environ.get("ENABLE_GCP_TRACING"):
-        """Configures OpenTelemetry context propagation to use Cloud Trace context
-        """
+    if os.environ.get("ENABLE_TRACING"):
+        """Configures OpenTelemetry context propagation to use Cloud Trace context"""
         set_global_textmap(CloudTraceFormatPropagator())
         tracer_provider = TracerProvider()
         tracer_provider.add_span_processor(BatchSpanProcessor(CloudTraceSpanExporter()))
@@ -74,7 +72,9 @@ def create_app(mode: str = "production", conf: any = None) -> Any:
         FlaskInstrumentor().instrument_app(app)
 
         with app.app_context():
-            SQLAlchemyInstrumentor().instrument(engine=sqla.engine, enable_commenter=True, commenter_options={})
+            SQLAlchemyInstrumentor().instrument(
+                engine=sqla.engine, enable_commenter=True, commenter_options={}
+            )
 
         RequestsInstrumentor().instrument(
             enable_commenter=True,
@@ -84,7 +84,5 @@ def create_app(mode: str = "production", conf: any = None) -> Any:
                 "controller": True,
             },
         )
-
-
 
     return app

@@ -23,7 +23,9 @@ def connect():
             ssl_cert_reqs=None,
         )
     elif redis_url:
-        logger.info(f"Attempting to connect to Redis instance using a URL at {redis_url}")
+        logger.info(
+            f"Attempting to connect to Redis instance using a URL at {redis_url}"
+        )
         if redis_url == "redis://localhost:6379":
             return redis.from_url(redis_url)
         else:

@@ -55,7 +55,6 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-
 class SupportedFormats(Enum):
     Markdown = "md"
     CSV = "csv"
@@ -89,8 +88,9 @@ def neo4j_not_running_rejection():
         500,
     )
 
+
 class CRETracer:
-    def __init__(self,trace_name:str) -> None:
+    def __init__(self, trace_name: str) -> None:
         self.trace_name = trace_name
 
     def __enter__(self):
@@ -103,6 +103,7 @@ class CRETracer:
         if tracer:
             self.span.end()
 
+
 @app.route("/rest/v1/id/<creid>", methods=["GET"])
 @app.route("/rest/v1/name/<crename>", methods=["GET"])
 def find_cre(creid: str = None, crename: str = None) -> Any:  # refer
@@ -111,7 +112,9 @@ def find_cre(creid: str = None, crename: str = None) -> Any:  # refer
     opt_osib = request.args.get("osib")
     opt_format = request.args.get("format")
     with CRETracer("get_cres"):
-        cres = database.get_CREs(external_id=creid, name=crename, include_only=include_only)
+        cres = database.get_CREs(
+            external_id=creid, name=crename, include_only=include_only
+        )
 
     if cres:
         if len(cres) > 1:

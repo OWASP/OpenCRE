@@ -60,7 +60,9 @@ class VertexPromptClient:
                     "GOOGLE_APPLICATION_CREDENTIALS"
                 ] = service_account_secrets_file
         elif not os.environ.get("GCP_NATIVE"):
-            logger.fatal("neither GCP_NATIVE nor SERVICE_ACCOUNT_CREDENTIALS have been set")
+            logger.fatal(
+                "neither GCP_NATIVE nor SERVICE_ACCOUNT_CREDENTIALS have been set"
+            )
 
         vertexai.init(
             project=os.environ.get("GOOGLE_PROJECT_ID"),

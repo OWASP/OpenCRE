@@ -2,7 +2,7 @@ import './chatbot.scss';
 
 import DOMPurify, { sanitize } from 'dompurify';
 import { marked } from 'marked';
-import React, {useState } from 'react';
+import React, { useState } from 'react';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { Button, Comment, Container, Form, GridRow, Header, Icon } from 'semantic-ui-react';
