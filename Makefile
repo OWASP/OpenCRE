@@ -43,17 +43,25 @@ test:
 cover:
 	. ./venv/bin/activate && FLASK_APP=cre.py FLASK_CONFIG=testing flask test --cover
 
-install-deps:
+install-deps-python:
 	[ -d "./venv" ] && . ./venv/bin/activate 
 	pip install -r requirements.txt
+
+install-deps-typescript:
 	cd application/frontend
 	yarn install
 
-install:
+install-deps: install-deps-python install-deps-typescript
+
+install-python:
 	virtualenv -p python3 venv
 	. ./venv/bin/activate
 	make install-deps
-	(cd application/frontend && yarn build)
+	
+install-typescript:
+	cd application/frontend && yarn build
+
+install: install-deps install-typescript install-python
 
 docker-dev:
 	docker build -f Dockerfile-dev -t opencre-dev:$(shell git rev-parse HEAD) .

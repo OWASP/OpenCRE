@@ -11,4 +11,4 @@ WORKDIR /code
 RUN pip install -r requirements.txt gunicorn
 
 ENTRYPOINT gunicorn
-CMD '--bind 0.0.0.0:8081 --log-level debug -w 3 --timeout 800 cre:app'
+CMD ["--timeout","800","--workers","8","cre:app"]

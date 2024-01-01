@@ -2,12 +2,13 @@ FROM node:lts as build
 
 WORKDIR /code
 COPY . /code
-RUN yarn install && yarn build
+RUN make install-deps-typescript && make install-typescript
 
 FROM python:3.11.0 as run
 
 COPY --from=build /code /code
 WORKDIR /code
-RUN pip install -r requirements.txt
+RUN pip install virtualenv &&\
+    make install-deps-python && make install-python
 
-ENTRYPOINT "make dev-flask"
+ENTRYPOINT make dev-flask
