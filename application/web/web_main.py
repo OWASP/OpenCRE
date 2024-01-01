@@ -90,10 +90,13 @@ def neo4j_not_running_rejection():
     )
 
 class CRETracer:
-    def __enter__(self,trace_name):
+    def __init__(self,trace_name:str) -> None:
+        self.trace_name = trace_name
+
+    def __enter__(self):
         global tracer
         if tracer:
-            self.span = tracer.start_span(trace_name)
+            self.span = tracer.start_span(self.trace_name)
 
     def __exit__(self, *args):
         global tracer
