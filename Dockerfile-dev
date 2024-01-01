@@ -1,22 +1,13 @@
-FROM python:alpine
+FROM node:lts as build
 
-# For pete's sake do not put this on the internet
+WORKDIR /code
+COPY . /code
+RUN yarn install && yarn build
 
-RUN apk add  --no-cache --update --upgrade linux-headers py3-numpy &&\
- apk add --no-cache --virtual .build-deps gcc g++ zlib-dev make python3-dev py3-numpy-dev jpeg-dev
+FROM python:3.11.0 as run
 
-RUN addgroup -S credev && adduser -S credev -G credev
+COPY --from=build /code /code
+WORKDIR /code
+RUN pip install -r requirements.txt gunicorn
 
-COPY --chown=credev:credev . /home/credev/cre_sync
-USER credev
-
-WORKDIR /home/credev/cre_sync
-
-RUN export PATH=$PATH:/home/credev/.local/bin &&\
-    pip install -r requirements.txt &&\
-    chmod +x docker-entrypoint.sh
-
-ENTRYPOINT ["/home/credev/cre_sync/docker-entrypoint.sh"]
-
-
-
+ENTRYPOINT "make dev-flask"
