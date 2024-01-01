@@ -11,6 +11,17 @@ from application.config import config
 import os
 import random
 
+from opentelemetry import trace
+from opentelemetry.exporter.cloud_trace import CloudTraceSpanExporter
+from opentelemetry.instrumentation.flask import FlaskInstrumentor
+from opentelemetry.instrumentation.requests import RequestsInstrumentor
+from opentelemetry.propagate import set_global_textmap
+from opentelemetry.propagators.cloud_trace_propagator import CloudTraceFormatPropagator
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
+
+
 convention = {
     "ix": "ix_%(column_0_label)s",
     "uq": "uq_%(table_name)s_%(column_0_name)s",
@@ -22,9 +33,10 @@ metadata = MetaData(naming_convention=convention)
 sqla = SQLAlchemy(metadata=metadata)
 compress = Compress()
 cache = Cache()
-
+tracer = None
 
 def create_app(mode: str = "production", conf: any = None) -> Any:
+    global tracer
     app = Flask(__name__)
     if not conf:
         app.config.from_object(config[mode])
@@ -42,9 +54,37 @@ def create_app(mode: str = "production", conf: any = None) -> Any:
 
     app.register_blueprint(app_blueprint)
 
+
     CORS(app)
     app.config["CORS_HEADERS"] = "Content-Type"
 
     compress.init_app(app)
     cache.init_app(app)
+
+
+    if os.environ.get("ENABLE_GCP_TRACING"):
+        """Configures OpenTelemetry context propagation to use Cloud Trace context
+        """
+        set_global_textmap(CloudTraceFormatPropagator())
+        tracer_provider = TracerProvider()
+        tracer_provider.add_span_processor(BatchSpanProcessor(CloudTraceSpanExporter()))
+        trace.set_tracer_provider(tracer_provider)
+
+        tracer = trace.get_tracer(__name__)
+        FlaskInstrumentor().instrument_app(app)
+
+        with app.app_context():
+            SQLAlchemyInstrumentor().instrument(engine=sqla.engine, enable_commenter=True, commenter_options={})
+
+        RequestsInstrumentor().instrument(
+            enable_commenter=True,
+            commenter_options={
+                "framework": True,
+                "route": True,
+                "controller": True,
+            },
+        )
+
+
+
     return app

@@ -58,13 +58,15 @@ def preload(target_url: str):
                 )
                 if res1.json():
                     if res1.json().get("result"):
-                        waiting.remove(f"{sa}->{sb}")
+                        if f"{sa}->{sb}" in waiting:
+                            waiting.remove(f"{sa}->{sb}")
                 res2 = requests.get(
                     f"{target_url}/rest/v1/map_analysis?standard={sb}&standard={sa}"
                 )
                 if res2.json():
                     if res2.json().get("result"):
-                        waiting.remove(f"{sb}->{sa}")
+                        if f"{sb}->{sa}" in waiting:
+                            waiting.remove(f"{sb}->{sa}")
         print(f"calculating {len(waiting)} gap analyses")
         print(waiting)
         time.sleep(30)

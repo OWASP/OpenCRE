@@ -8,6 +8,7 @@ flask_compress==1.13
 Flask_Cors==4.0.0
 Flask_Migrate==4.0.4
 Flask-SQLAlchemy
+
 gitpython
 google-api-core
 google_auth_oauthlib
@@ -112,3 +113,9 @@ untangle==1.1.1
 urllib3==1.26.8
 vertexai==0.0.1
 xmltodict==0.13.0
+opentelemetry-exporter-gcp-trace
+opentelemetry-propagator-gcp
+opentelemetry-instrumentation-flask
+opentelemetry-instrumentation-requests
+opentelemetry-instrumentation-sqlalchemy
+google-cloud-trace==1.11.1
