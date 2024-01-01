@@ -18,10 +18,9 @@ export const SearchBody = () => {
           Use the search bar or <a href="/root_cres">browse the catalogue of all top-level topics</a>, try
           <a href="/node/standard/OWASP%20Top%2010%202021"> the Top10 2021 page</a> and click around, or{' '}
           <a href="/search/session">search for "Session"</a>, or check out{' '}
-          <a href="/cre/764-507"> CRE 764-507 </a> or <a href="/cre/581-525">CRE 581-525</a> to access a wide
-          array of relevant details. This includes criteria in several standards, testing advice, development
-          tips, in-depth technical information, threat descriptions, articles, tool settings, and related
-          topics.
+          <a href="/cre/764-507"> CRE 764-507 </a> or <a href="/cre/581-525">CRE 581-525</a> to see the <b>Multilink</b>
+          feature: one link to OpenCRE gives access to a wide range of standards and related topics: testing advice, 
+          development, in-depth technical information, threat descriptions, articles, and tool settings.
         </b>
       </p>
       <b>
