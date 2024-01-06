@@ -8,7 +8,10 @@ FROM python:3.11.0 as run
 
 COPY --from=build /code /code
 WORKDIR /code
-RUN pip install virtualenv &&\
-    make install-deps-python && make install-python
+RUN apt update &&\
+    apt install -y python3-numpy &&\
+    pip install virtualenv &&\
+    make install-deps-python &&\
+    make install-python
 
 ENTRYPOINT make dev-flask
