@@ -27,6 +27,7 @@ jobs:
           [ -d "./venv" ] && . ./venv/bin/activate
           export FLASK_APP=./cre.py
           export FLASK_CONFIG=development
+          export INSECURE_REQUESTS=1
           FLASK_CONFIG=development flask run &
           sleep 20s
           yarn test:e2e
