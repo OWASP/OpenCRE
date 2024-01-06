@@ -1,5 +1,5 @@
 name: Test-e2e
-on: [push]
+on: [push, pull_request]
 jobs:
   build:
     name: Test-e2e

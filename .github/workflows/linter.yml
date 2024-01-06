@@ -1,12 +1,7 @@
 ---
 name: Lint Code Base
 
-on:
-  push:
-    branches-ignore: [master, main]
-    # Main branch should be protected
-  pull_request:
-    branches: [master, main]
+on: [push, pull_request]
 jobs:
   build:
     name: Lint Code Base
