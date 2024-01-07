@@ -1,9 +1,11 @@
 import {
   DOCUMENT_TYPES,
   DOCUMENT_TYPE_NAMES,
+  TYPE_CONTAINS,
   TYPE_IS_PART_OF,
   TYPE_LINKED_FROM,
   TYPE_LINKED_TO,
+  TYPE_RELATED,
 } from '../const';
 import { Document, LinkedDocument } from '../types';
 
@@ -88,4 +90,14 @@ export const getDocumentTypeText = (linkType, docType, parentDocType = ''): stri
         : DOCUMENT_TYPE_NAMES[TYPE_IS_PART_OF];
   }
   return docText;
+};
+
+export const getTopicsToDisplayOrderdByLinkType = (linksByType: LinksByType, isNestedInRelated: boolean) => {
+  const linkTypesExcludedInNesting = [TYPE_CONTAINS];
+  const linkTypesExcludedWhenNestingRelatedTo = [TYPE_RELATED, TYPE_IS_PART_OF, TYPE_CONTAINS];
+  return Object.entries(linksByType)
+    .filter(([type, _]) => !linkTypesExcludedInNesting.includes(type))
+    .filter(([type, _]) =>
+      isNestedInRelated ? !linkTypesExcludedWhenNestingRelatedTo.includes(type) : true
+    );
 };

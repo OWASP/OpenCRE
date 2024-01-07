@@ -14,14 +14,14 @@ export const SearchResults = ({ results }) => {
       <>
         {sortedResults.map((document, i) => {
           let temp = (
-            <>
+            <div key={`search-results-container-${i}`}>
               {document.doctype != DOCUMENT_TYPES.TYPE_CRE && lastDocumentName !== document.name && (
                 <span style={{ margin: '5px' }} />
               )}
-              <div key={i} className="accordion ui fluid styled standard-page__links-container">
+              <div className="accordion ui fluid styled standard-page__links-container">
                 <DocumentNode node={document} linkType={'Standard'} />
               </div>
-            </>
+            </div>
           );
           lastDocumentName = document.id ?? document.name;
           return temp;

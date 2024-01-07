@@ -1,28 +1,34 @@
 import './documentNode.scss';
 
 import axios from 'axios';
-import React, { FunctionComponent, useContext, useEffect, useMemo, useState } from 'react';
-import { Link, useHistory } from 'react-router-dom';
-import { Icon } from 'semantic-ui-react';
+import React, { FunctionComponent, useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 
-import { TYPE_CONTAINS, TYPE_IS_PART_OF, TYPE_RELATED } from '../../const';
+import { TYPE_IS_PART_OF, TYPE_LINKED_TO, TYPE_RELATED } from '../../const';
 import { useEnvironment } from '../../hooks';
 import { applyFilters } from '../../hooks/applyFilters';
 import { Document } from '../../types';
 import { getDocumentDisplayName, groupLinksByType } from '../../utils';
-import { getApiEndpoint, getDocumentTypeText, getInternalUrl } from '../../utils/document';
+import {
+  getApiEndpoint,
+  getDocumentTypeText,
+  getInternalUrl,
+  getTopicsToDisplayOrderdByLinkType,
+} from '../../utils/document';
 import { FilterButton } from '../FilterButton/FilterButton';
+import Hyperlink from '../hyper-links/hyper-link/HyperLink';
 import { LoadingAndErrorIndicator } from '../LoadingAndErrorIndicator';
+import SimpleView from './SimpleView';
+
+const MAX_ALLOWED_LINKED_SOURCES = 5;
 
 export interface DocumentNode {
   node: Document;
   linkType: string;
-  hasLinktypeRelatedParent?: Boolean;
+  hasLinktypeRelatedParent?: boolean;
 }
 
 const linkTypesToNest = [TYPE_IS_PART_OF, TYPE_RELATED];
-const linkTypesExcludedInNesting = [TYPE_CONTAINS];
-const linkTypesExcludedWhenNestingRelatedTo = [TYPE_RELATED, TYPE_IS_PART_OF, TYPE_CONTAINS];
 
 export const DocumentNode: FunctionComponent<DocumentNode> = ({
   node,
@@ -30,18 +36,26 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({
   hasLinktypeRelatedParent,
 }) => {
   const [expanded, setExpanded] = useState<boolean>(false);
+  const active = useMemo(() => (expanded ? ' active' : ''), [expanded]);
   const isStandard = node.doctype in ['Tool', 'Code', 'Standard'];
   const { apiUrl } = useEnvironment();
   const [nestedNode, setNestedNode] = useState<Document>();
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
   const id = isStandard ? node.name : node.id;
-  const active = expanded ? ' active' : '';
-  const history = useHistory();
   var usedNode = applyFilters(nestedNode || node);
-  const hasExternalLink = Boolean(usedNode.hyperlink);
   const linksByType = useMemo(() => groupLinksByType(usedNode), [usedNode]);
-  let currentUrlParams = new URLSearchParams(window.location.search);
+
+  const isNestedInRelated = hasLinktypeRelatedParent || linkType === TYPE_RELATED;
+
+  const hasActiveLinks = getTopicsToDisplayOrderdByLinkType(linksByType, isNestedInRelated).length > 0;
+
+  const topicsToDisplay = useMemo(() => {
+    return getTopicsToDisplayOrderdByLinkType(linksByType, isNestedInRelated).map(([type, links]) => ({
+      links,
+      type,
+    }));
+  }, [linksByType, isNestedInRelated]);
 
   useEffect(() => {
     if (!isStandard && linkTypesToNest.includes(linkType)) {
@@ -49,10 +63,14 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({
       axios
         .get(getApiEndpoint(node, apiUrl))
         .then(function (response) {
+          const responseNode: Document = response.data.data;
+          const responseLinks = responseNode.links ?? [];
           setLoading(false);
-          setNestedNode(response.data.data);
-          setExpanded(true);
           setError('');
+          setNestedNode(responseNode);
+          setExpanded(
+            responseLinks.filter(({ ltype }) => TYPE_LINKED_TO === ltype).length <= MAX_ALLOWED_LINKED_SOURCES
+          );
         })
         .catch(function (axiosError) {
           setLoading(false);
@@ -61,119 +79,55 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({
     }
   }, [id]);
 
-  const fetchedNodeHasLinks = () => {
-    return usedNode.links && usedNode.links.length > 0;
-  };
+  if (!hasActiveLinks) return <SimpleView usedNode={usedNode} />;
 
-  const hasActiveLinks = () => {
-    return getTopicsToDisplayOrderdByLinkType().length > 0;
-  };
+  return (
+    <>
+      <LoadingAndErrorIndicator loading={loading} error={error} />
+      <div className={`title ${active} document-node`} onClick={() => setExpanded(!expanded)}>
+        <i aria-hidden="true" className="dropdown icon"></i>
+        <Link to={getInternalUrl(usedNode)}>{getDocumentDisplayName(usedNode)}</Link>
+      </div>
+      <div className={`content${active} document-node`}>
+        <Hyperlink hyperLink={usedNode.hyperlink} />
+        {expanded &&
+          topicsToDisplay.map(({ type, links }, idx) => {
+            const sortedResults = [...links].sort((a, b) =>
+              getDocumentDisplayName(a.document).localeCompare(getDocumentDisplayName(b.document))
+            );
+            let lastDocumentName = sortedResults[0].document.name;
 
-  const isNestedInRelated = (): Boolean => {
-    return hasLinktypeRelatedParent || linkType === TYPE_RELATED;
-  };
-
-  const getTopicsToDisplayOrderdByLinkType = () => {
-    return Object.entries(linksByType)
-      .filter(([type, _]) => !linkTypesExcludedInNesting.includes(type))
-      .filter(([type, _]) =>
-        isNestedInRelated() ? !linkTypesExcludedWhenNestingRelatedTo.includes(type) : true
-      );
-  };
-
-  const Hyperlink = (hyperlink) => {
-    if (!hyperlink.hyperlink) {
-      return <></>;
-    }
-
-    return (
-      <>
-        <span>Reference:</span>
-        <a href={hyperlink.hyperlink} target="_blank">
-          {' '}
-          {hyperlink.hyperlink}
-        </a>
-      </>
-    );
-  };
-
-  const HyperlinkIcon = (hyperlink) => {
-    if (!hyperlink.hyperlink) {
-      return <></>;
-    }
-
-    return (
-      <a href={hyperlink.hyperlink} target="_blank">
-        <Icon name="external" />
-      </a>
-    );
-  };
-  const SimpleView = () => {
-    return (
-      <>
-        <div className={`title external-link document-node f2`}>
-          <Link to={getInternalUrl(usedNode)}>
-            <i aria-hidden="true" className="circle icon"></i>
-            {getDocumentDisplayName(usedNode)}
-          </Link>
-          <HyperlinkIcon hyperlink={usedNode.hyperlink} />
-        </div>
-        <div className={`content`}></div>
-      </>
-    );
-  };
-
-  const NestedView = () => {
-    return (
-      <>
-        <LoadingAndErrorIndicator loading={loading} error={error} />
-        <div className={`title ${active} document-node`} onClick={() => setExpanded(!expanded)}>
-          <i aria-hidden="true" className="dropdown icon"></i>
-          <Link to={getInternalUrl(usedNode)}>{getDocumentDisplayName(usedNode)}</Link>
-        </div>
-        <div className={`content${active} document-node`}>
-          <Hyperlink hyperlink={usedNode.hyperlink} />
-          {expanded &&
-            getTopicsToDisplayOrderdByLinkType().map(([type, links], idx) => {
-              const sortedResults = links.sort((a, b) =>
-                getDocumentDisplayName(a.document).localeCompare(getDocumentDisplayName(b.document))
-              );
-              let lastDocumentName = sortedResults[0].document.name;
-              return (
-                <div className="document-node__link-type-container" key={type}>
-                  {idx > 0 && <hr style={{ borderColor: 'transparent', margin: '20px 0' }} />}
-                  <div>
-                    <b>Which {getDocumentTypeText(type, links[0].document.doctype, node.doctype)}</b>:
-                    {/* Risk here of mixed doctype in here causing odd output */}
-                  </div>
-                  <div>
-                    <div className="accordion ui fluid styled f0">
-                      {sortedResults.map((link, i) => {
-                        const temp = (
-                          <div key={Math.random()}>
-                            {lastDocumentName !== link.document.name && <span style={{ margin: '5px' }} />}
-                            <DocumentNode
-                              node={link.document}
-                              linkType={type}
-                              hasLinktypeRelatedParent={isNestedInRelated()}
-                              key={Math.random()}
-                            />
-                            <FilterButton document={link.document} />
-                          </div>
-                        );
-                        lastDocumentName = link.document.name;
-                        return temp;
-                      })}
-                    </div>
+            return (
+              <div className="document-node__link-type-container" key={`${type}-${idx}`}>
+                {idx > 0 && <hr style={{ borderColor: 'transparent', margin: '20px 0' }} />}
+                <div>
+                  <b>Which {getDocumentTypeText(type, links[0].document.doctype, node.doctype)}</b>:
+                  {/* Risk here of mixed doctype in here causing odd output */}
+                </div>
+                <div>
+                  <div className="accordion ui fluid styled f0">
+                    {sortedResults.map((link, i) => {
+                      const temp = (
+                        <div key={`document-node-container-${type}-${idx}-${i}`}>
+                          {lastDocumentName !== link.document.name && <span style={{ margin: '5px' }} />}
+                          <DocumentNode
+                            node={link.document}
+                            linkType={type}
+                            hasLinktypeRelatedParent={isNestedInRelated}
+                            key={`document-sub-node-${type}-${idx}-${i}`}
+                          />
+                          <FilterButton document={link.document} />
+                        </div>
+                      );
+                      lastDocumentName = link.document.name;
+                      return temp;
+                    })}
                   </div>
                 </div>
-              );
-            })}
-          {/* <FilterButton/> */}
-        </div>
-      </>
-    );
-  };
-
-  return hasActiveLinks() ? <NestedView /> : <SimpleView />;
+              </div>
+            );
+          })}
+      </div>
+    </>
+  );
 };
