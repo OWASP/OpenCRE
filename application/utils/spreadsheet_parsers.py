@@ -169,7 +169,9 @@ def parse_export_format(lfile: List[Dict[str, Any]]) -> Dict[str, defs.Document]
                 name = str(mapping.pop(defs.ExportFormat.linked_cre_name_key(str(i))))
                 if not is_empty(name):
                     id = str(mapping.pop(defs.ExportFormat.linked_cre_id_key(str(i))))
-                    link_type = str(mapping.pop(defs.ExportFormat.linked_cre_link_type_key(str(i))))
+                    link_type = str(
+                        mapping.pop(defs.ExportFormat.linked_cre_link_type_key(str(i)))
+                    )
                     if name in cres:
                         internal_mapping = cres[name]
                         if internal_mapping.id != id:
@@ -240,7 +242,8 @@ def parse_uknown_key_val_standards_spreadsheet(
             else:
                 # pop is important here, if the primary standard is not removed, it will end up linking to itself
                 primary_standard = defs.Standard(
-                    name=main_standard_name, section=str(mapping.pop(main_standard_name))
+                    name=main_standard_name,
+                    section=str(mapping.pop(main_standard_name)),
                 )
 
             for key, value in mapping.items():
