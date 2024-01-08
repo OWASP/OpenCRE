@@ -3,15 +3,26 @@ import io
 import logging
 from copy import deepcopy
 from typing import Any, Dict, List, Optional
-
+import os
 import gspread
 import yaml
 from application.database import db
 from application.defs import cre_defs as defs
+from enum import Enum
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 logging.basicConfig()
+
+
+class GspreadAuth(Enum):
+    OAuth = "oauth"
+    ServiceAccount = "service_account"
+
+
+def findDups(x):
+    seen = set()
+    return {val for val in x if (val in seen or seen.add(val))}
 
 
 def readSpreadsheet(
@@ -19,13 +30,22 @@ def readSpreadsheet(
 ) -> Dict[str, Any]:
     """given remote google spreadsheet url,
     reads each workbook into a collection of documents"""
+    result = {}
     try:
-        gc = gspread.oauth()  # oauth config,
-        # TODO (northdpole): make this configurable
-        # gc = gspread.service_account()
+        if (
+            os.environ.get("OpenCRE_gspread_Auth")
+            and os.environ.get("OpenCRE_gspread_Auth")
+            == GspreadAuth.ServiceAccount.value
+        ):
+            logger.info("Gspread configured to use a Service Account")
+            gc = gspread.service_account()
+        else:
+            logger.info("Gspread configured to use OAuth")
+            gc = gspread.oauth()  # oauth config,
         sh = gc.open_by_url(url)
         logger.info('accessing spreadsheet "%s" : "%s"' % (alias, url))
         result = {}
+
         for wsh in sh.worksheets():
             if parse_numbered_only and wsh.title[0].isdigit():
                 logger.info(
@@ -33,16 +53,27 @@ def readSpreadsheet(
                     "(remember, only numbered worksheets"
                     " will be processed by convention)" % wsh.title
                 )
-                records = wsh.get_all_records()
+                records = wsh.get_all_records(
+                    wsh.row_values(1)
+                )  # workaround because of https://github.com/burnash/gspread/issues/1007 # this will break if the column names are in any other line
                 toyaml = yaml.safe_load(yaml.safe_dump(records))
                 result[wsh.title] = toyaml
             elif not parse_numbered_only:
-                records = wsh.get_all_records()
+                records = wsh.get_all_records(
+                    wsh.row_values(1)
+                )  # workaround because of https://github.com/burnash/gspread/issues/1007 # this will break if the column names are in any other line
                 toyaml = yaml.safe_load(yaml.safe_dump(records))
                 result[wsh.title] = toyaml
     except gspread.exceptions.APIError as ae:
         logger.error('Error opening spreadsheet "%s" : "%s"' % (alias, url))
         logger.error(ae)
+        exit(1)
+    except gspread.exceptions.GSpreadException as gse:
+        logger.error(
+            "If this exception says you have a duplicate cell name, the duplicate is",
+            findDups(wsh.row_values(1)),
+        )
+
     return result
 
 
