@@ -37,9 +37,18 @@ import oauthlib
 import google.auth.transport.requests
 from application.utils.hash import make_array_hash, make_cache_key
 
+from application import tracer
+
+
 ITEMS_PER_PAGE = 20
 
-app = Blueprint("web", __name__, static_folder="../frontend/www")
+app = Blueprint(
+    "web",
+    __name__,
+    static_folder=os.path.join(
+        os.path.dirname(os.path.realpath(__file__)), "../frontend/www"
+    ),
+)
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
@@ -69,7 +78,7 @@ def extend_cre_with_tag_links(
 
 
 def neo4j_not_running_rejection():
-    logger.info("Neo4j is disabled")
+    logger.info("Neo4j is disabled functionality will be limited!")
     return (
         jsonify(
             {
@@ -80,6 +89,21 @@ def neo4j_not_running_rejection():
     )
 
 
+class CRETracer:
+    def __init__(self, trace_name: str) -> None:
+        self.trace_name = trace_name
+
+    def __enter__(self):
+        global tracer
+        if tracer:
+            self.span = tracer.start_span(self.trace_name)
+
+    def __exit__(self, *args):
+        global tracer
+        if tracer:
+            self.span.end()
+
+
 @app.route("/rest/v1/id/<creid>", methods=["GET"])
 @app.route("/rest/v1/name/<crename>", methods=["GET"])
 def find_cre(creid: str = None, crename: str = None) -> Any:  # refer
@@ -87,7 +111,10 @@ def find_cre(creid: str = None, crename: str = None) -> Any:  # refer
     include_only = request.args.getlist("include_only")
     opt_osib = request.args.get("osib")
     opt_format = request.args.get("format")
-    cres = database.get_CREs(external_id=creid, name=crename, include_only=include_only)
+    with CRETracer("get_cres"):
+        cres = database.get_CREs(
+            external_id=creid, name=crename, include_only=include_only
+        )
 
     if cres:
         if len(cres) > 1:
@@ -116,6 +143,7 @@ def find_cre(creid: str = None, crename: str = None) -> Any:  # refer
 @app.route("/rest/v1/<ntype>/<name>", methods=["GET"])
 @app.route("/rest/v1/standard/<name>", methods=["GET"])
 def find_node_by_name(name: str, ntype: str = defs.Credoctypes.Standard.value) -> Any:
+    global tracer
     database = db.Node_collection()
     opt_section = request.args.get("section")
     opt_sectionID = request.args.get("sectionID")
@@ -141,30 +169,31 @@ def find_node_by_name(name: str, ntype: str = defs.Credoctypes.Standard.value) -
 
     include_only = request.args.getlist("include_only")
     total_pages, nodes = None, None
-    if not opt_format:
-        total_pages, nodes, _ = database.get_nodes_with_pagination(
-            name=name,
-            section=opt_section,
-            subsection=opt_subsection,
-            link=opt_hyperlink,
-            page=int(page),
-            items_per_page=int(items_per_page),
-            include_only=include_only,
-            version=opt_version,
-            ntype=ntype,
-            sectionID=opt_sectionID,
-        )
-    else:
-        nodes = database.get_nodes(
-            name=name,
-            section=opt_section,
-            subsection=opt_subsection,
-            link=opt_hyperlink,
-            include_only=include_only,
-            version=opt_version,
-            ntype=ntype,
-            sectionID=opt_sectionID,
-        )
+    with CRETracer("get nodes with/without pagination"):
+        if not opt_format:
+            total_pages, nodes, _ = database.get_nodes_with_pagination(
+                name=name,
+                section=opt_section,
+                subsection=opt_subsection,
+                link=opt_hyperlink,
+                page=int(page),
+                items_per_page=int(items_per_page),
+                include_only=include_only,
+                version=opt_version,
+                ntype=ntype,
+                sectionID=opt_sectionID,
+            )
+        else:
+            nodes = database.get_nodes(
+                name=name,
+                section=opt_section,
+                subsection=opt_subsection,
+                link=opt_hyperlink,
+                include_only=include_only,
+                version=opt_version,
+                ntype=ntype,
+                sectionID=opt_sectionID,
+            )
     result = {}
     result["total_pages"] = total_pages
     result["page"] = page
@@ -212,7 +241,6 @@ def find_document_by_tag() -> Any:
             return jsonify(json.loads(oscal_utils.list_to_oscal(documents)))
 
         return jsonify(result)
-    logger.info("tags aborting 404")
     abort(404, "Tag does not exist")
 
 
@@ -283,7 +311,7 @@ def gap_analysis_weak_links() -> Any:
 
 @app.route("/rest/v1/ma_job_results", methods=["GET"])
 def fetch_job() -> Any:
-    logger.info("fetching job results")
+    logger.debug("fetching job results")
     jobid = request.args.get("id")
     conn = redis.connect()
     try:
@@ -291,7 +319,7 @@ def fetch_job() -> Any:
     except exceptions.NoSuchJobError as nje:
         abort(404, "No such job")
 
-    logger.info("job exists")
+    logger.debug("job exists")
     if res.get_status() == job.JobStatus.FAILED:
         abort(500, "background job failed")
     elif res.get_status() == job.JobStatus.STOPPED:
@@ -302,27 +330,27 @@ def fetch_job() -> Any:
         res.get_status() == job.JobStatus.STARTED
         or res.get_status() == job.JobStatus.QUEUED
     ):
-        logger.info("but hasn't finished")
+        logger.debug("but hasn't finished")
         return jsonify({"status": res.get_status()})
 
     result = res.latest_result()
-    logger.info("and has finished")
+    logger.debug("and has finished")
 
     if res.latest_result().type == result.Type.SUCCESSFUL:
         ga_result = result.return_value
-        logger.info("and has results")
+        logger.debug("and has results")
 
         if len(ga_result) > 1:
             standards = ga_result[0]
             standards_hash = make_array_hash(standards)
 
             if conn.exists(standards_hash):
-                logger.info("and hash is already in cache")
+                logger.debug("and hash is already in cache")
                 # ga = conn.get(standards_hash)
                 database = db.Node_collection()
                 ga = database.get_gap_analysis_result(standards_hash)
                 if ga:
-                    logger.info("and results in cache")
+                    logger.__delattr__("and results in cache")
                     ga = flask_json.loads(ga)
                     if ga.get("result"):
                         return jsonify(ga)
@@ -347,6 +375,9 @@ def standards() -> Any:
     if standards:
         return standards
     else:
+        logger.info(
+            "'NodeNames' does not exist in Redis, getting from database, this should only happen once"
+        )
         database = db.Node_collection()
         standards = database.standards()
         if standards is None:
@@ -391,11 +422,12 @@ def text_search() -> Any:
 def find_root_cres() -> Any:
     """Useful for fast browsing the graph from the top"""
     database = db.Node_collection()
-    logger.info("got database")
+    logger.debug("got database")
     opt_osib = request.args.get("osib")
     opt_format = request.args.get("format")
-    documents = database.get_root_cres()
-    logger.info(f"got {len(documents)} cres")
+    with CRETracer("get root cres"):
+        documents = database.get_root_cres()
+    logger.debug(f"got {len(documents)} cres")
 
     if documents:
         res = [doc.todict() for doc in documents]
@@ -416,8 +448,6 @@ def find_root_cres() -> Any:
 
 @app.errorhandler(404)
 def page_not_found(e) -> Any:
-    from pprint import pprint
-
     return "Resource Not found", 404
 
 
@@ -425,7 +455,7 @@ def page_not_found(e) -> Any:
 @app.route("/", defaults={"path": ""})
 @app.route("/<path:path>")
 def index(path: str) -> Any:
-    if path != "" and os.path.exists(app.static_folder + "/" + path):
+    if path != "" and os.path.exists(os.path.join(app.static_folder, path)):
         return send_from_directory(app.static_folder, path)
     else:
         return send_from_directory(app.static_folder, "index.html")
@@ -481,16 +511,15 @@ def smartlink(
         )
         return redirect(redirectors.redirect(name, section))
     else:
-        logger.info(f"not sure what happened, 404")
+        logger.warning(f"not sure what happened, 404")
         return abort(404, "Document does not exist")
 
 
 @app.before_request
 def before_request():
-    if current_app.config["ENVIRONMENT"] != "PRODUCTION":
+    if os.environ.get("INSECURE_REQUESTS"):
         return
-
-    if not request.is_secure:
+    elif not request.is_secure:
         url = request.url.replace("http://", "https://", 1)
         code = 301
         return redirect(url, code=code)
@@ -557,7 +586,9 @@ class CREFlow:
                     "https://www.googleapis.com/auth/userinfo.email",
                     "openid",
                 ],
-                redirect_uri=request.root_url.rstrip("/") + url_for("web.callback"),
+                redirect_uri=(
+                    request.root_url.rstrip("/") + url_for("web.callback")
+                ).replace("http://", "https://"),
             )
         return cls.__instance
 
@@ -590,7 +621,9 @@ def logged_in_user():
 def callback():
     flow_instance = CREFlow.instance()
     try:
-        flow_instance.flow.fetch_token(authorization_response=request.url)
+        flow_instance.flow.fetch_token(
+            authorization_response=request.url.replace("http://", "https://")
+        )  # cloud run (and others) rewrite https to http at the container
     except oauthlib.oauth2.rfc6749.errors.MismatchingStateError as mse:
         return redirect("/chatbot")
     if not session.get("state") or session.get("state") != request.args["state"]:
@@ -644,4 +677,4 @@ def everything() -> Any:
 
 
 if __name__ == "__main__":
-    app.run(use_reloader=False, debug=False)
+    app.run(use_reloader=False, debug=True)
