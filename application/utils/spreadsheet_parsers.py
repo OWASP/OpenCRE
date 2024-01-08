@@ -169,7 +169,9 @@ def parse_export_format(lfile: List[Dict[str, Any]]) -> Dict[str, defs.Document]
                 name = str(mapping.pop(defs.ExportFormat.linked_cre_name_key(str(i))))
                 if not is_empty(name):
                     id = str(mapping.pop(defs.ExportFormat.linked_cre_id_key(str(i))))
-                    link_type = str(mapping.pop(defs.ExportFormat.linked_cre_link_type_key(str(i))))
+                    link_type = str(
+                        mapping.pop(defs.ExportFormat.linked_cre_link_type_key(str(i)))
+                    )
                     if name in cres:
                         internal_mapping = cres[name]
                         if internal_mapping.id != id:
@@ -240,7 +242,8 @@ def parse_uknown_key_val_standards_spreadsheet(
             else:
                 # pop is important here, if the primary standard is not removed, it will end up linking to itself
                 primary_standard = defs.Standard(
-                    name=main_standard_name, section=str(mapping.pop(main_standard_name))
+                    name=main_standard_name,
+                    section=str(mapping.pop(main_standard_name)),
                 )
 
             for key, value in mapping.items():
@@ -308,9 +311,9 @@ def parse_hierarchical_export_format(
         update_cre_in_links(cres, cre)
 
         # TODO(spyros): temporary until we agree what we want to do with tags
-        mapping[
-            "Link to other CRE"
-        ] = f'{mapping["Link to other CRE"]},{",".join(cre.tags)}'
+        mapping["Link to other CRE"] = (
+            f'{mapping["Link to other CRE"]},{",".join(cre.tags)}'
+        )
         if not is_empty(mapping.get("Link to other CRE")):
             other_cres = list(
                 set(
@@ -483,7 +486,9 @@ def parse_standards(
         }
     links: List[defs.Link] = []
     for name, struct in standards_mapping.get("Standards", {}).items():
-        if not is_empty(mapping.get(struct["section"])) or not is_empty(mapping.get(struct["sectionID"])):
+        if not is_empty(mapping.get(struct["section"])) or not is_empty(
+            mapping.get(struct["sectionID"])
+        ):
             if "separator" in struct:
                 separator = struct["separator"]
                 sections = str(mapping.pop(struct["section"])).split(separator)
