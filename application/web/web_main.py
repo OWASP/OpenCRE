@@ -515,6 +515,38 @@ def smartlink(
         return abort(404, "Document does not exist")
 
 
+@app.route("/rest/v1/deeplink/<ntype>/<name>", methods=["GET"])
+@app.route("/rest/v1/deeplink/<name>", methods=["GET"])
+def deeplink(name: str, ntype: str = "") -> Any:
+    database = db.Node_collection()
+    opt_section = request.args.get("section")
+    opt_sectionID = request.args.get("sectionID")
+    opt_sectionid = request.args.get("sectionid")
+    opt_version = request.args.get("version")
+    opt_subsection = request.args.get("subsection")
+
+    if opt_section:
+        opt_section = urllib.parse.unquote(opt_section)
+    if opt_sectionID:
+        opt_sectionID = urllib.parse.unquote(opt_sectionID)
+    elif opt_sectionid:
+        opt_sectionID = urllib.parse.unquote(opt_sectionid)
+
+    nodes = None
+    nodes = database.get_nodes(
+        name=name,
+        section=opt_section,
+        subsection=opt_subsection,
+        version=opt_version,
+        sectionID=opt_sectionID,
+    )
+    for node in nodes:
+        if len(node.hyperlink) > 0:
+            return redirect(node.hyperlink)
+
+    return abort(404)
+
+
 @app.before_request
 def before_request():
     if os.environ.get("INSECURE_REQUESTS"):

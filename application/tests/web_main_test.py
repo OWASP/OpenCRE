@@ -1,3 +1,5 @@
+import random
+import string
 import re
 import json
 import unittest
@@ -80,15 +82,18 @@ class TestMain(unittest.TestCase):
                 )
             ),
             "cc": cres["cc"],
-            "cd": cres["cd"]
-            .add_link(
-                defs.Link(
-                    ltype=defs.LinkTypes.PartOf, document=cres["ca"].shallow_copy()
+            "cd": (
+                cres["cd"]
+                .add_link(
+                    defs.Link(
+                        ltype=defs.LinkTypes.PartOf, document=cres["ca"].shallow_copy()
+                    )
                 )
-            )
-            .add_link(
-                defs.Link(
-                    ltype=defs.LinkTypes.Contains, document=cres["cb"].shallow_copy()
+                .add_link(
+                    defs.Link(
+                        ltype=defs.LinkTypes.Contains,
+                        document=cres["cb"].shallow_copy(),
+                    )
                 )
             ),
         }
@@ -711,3 +716,93 @@ class TestMain(unittest.TestCase):
             )
             self.assertEqual(200, response.status_code)
             self.assertEqual(expected, json.loads(response.data))
+
+    def test_deeplink(self) -> None:
+        self.maxDiff = None
+        collection = db.Node_collection()
+        with self.app.test_client() as client:
+            response = client.get(
+                f"/rest/v1/deeplink/{''.join(random.choice(string.ascii_letters) for i in range(10))}",
+            )
+            self.assertEqual(404, response.status_code)
+
+            cres = {
+                "ca": defs.CRE(id="1", description="CA", name="CA", tags=["ta"]),
+                "cd": defs.CRE(id="2", description="CD", name="CD", tags=["td"]),
+                "cb": defs.CRE(id="3", description="CB", name="CB", tags=["tb"]),
+            }
+            standards = {
+                "cwe0": defs.Standard(name="CWE", sectionID="456"),
+                "ASVS": defs.Standard(
+                    name="ASVS",
+                    section="sectionASVS",
+                    sectionID="v0.1.2",
+                    hyperlink="https://github.com/owasp/asvs/blah",
+                ),
+            }
+            cres["ca"].add_link(
+                defs.Link(
+                    ltype=defs.LinkTypes.Contains, document=cres["cd"].shallow_copy()
+                )
+            )
+            cres["cb"].add_link(
+                defs.Link(
+                    ltype=defs.LinkTypes.Contains, document=cres["cd"].shallow_copy()
+                )
+            )
+            cres["cd"].add_link(defs.Link(document=standards["cwe0"]))
+            cres["cb"].add_link(defs.Link(document=standards["ASVS"]))
+
+            dca = collection.add_cre(cres["ca"])
+            dcb = collection.add_cre(cres["cb"])
+            dcd = collection.add_cre(cres["cd"])
+            dasvs = collection.add_node(standards["ASVS"])
+            dcwe = collection.add_node(standards["cwe0"])
+            collection.add_internal_link(
+                group=dca, cre=dcd, type=defs.LinkTypes.Contains
+            )
+            collection.add_internal_link(
+                group=dcb, cre=dcd, type=defs.LinkTypes.Contains
+            )
+
+            collection.add_link(dcb, dasvs)
+            collection.add_link(dcd, dcwe)
+
+            response = client.get("/rest/v1/deeplink/CWE?sectionid=456")
+            self.assertEqual(404, response.status_code)
+
+            response = client.get("/rest/v1/deeplink/ASVS?sectionid=v0.1.2")
+            location = ""
+            for head in response.headers:
+                if head[0] == "Location":
+                    location = head[1]
+            self.assertEqual(location, standards["ASVS"].hyperlink)
+            self.assertEqual(302, response.status_code)
+
+            response = client.get("/rest/v1/deeplink/ASVS?sectionID=v0.1.2")
+            location = ""
+            for head in response.headers:
+                if head[0] == "Location":
+                    location = head[1]
+            self.assertEqual(location, standards["ASVS"].hyperlink)
+            self.assertEqual(302, response.status_code)
+
+            response = client.get(
+                f'/rest/v1/deeplink/ASVS?section={standards["ASVS"].section}'
+            )
+            location = ""
+            for head in response.headers:
+                if head[0] == "Location":
+                    location = head[1]
+            self.assertEqual(location, standards["ASVS"].hyperlink)
+            self.assertEqual(302, response.status_code)
+
+            response = client.get(
+                f'/rest/v1/deeplink/ASVS?section={standards["ASVS"].section}&sectionID={standards["ASVS"].sectionID}'
+            )
+            location = ""
+            for head in response.headers:
+                if head[0] == "Location":
+                    location = head[1]
+            self.assertEqual(location, standards["ASVS"].hyperlink)
+            self.assertEqual(302, response.status_code)
