@@ -7,31 +7,37 @@ export const SearchBody = () => {
     <div className="index-text">
       <h1>OpenCRE</h1>
       <p>
-        <b>
+        <strong>
           OpenCRE is the interactive content linking platform for uniting security standards and guidelines
           into one overview. It offers easy and robust access to relevant information when designing,
           developing, testing, procuring and organising secure software.
-        </b>
+        </strong>
       </p>
       <p>
-        <b>
+        <strong>
           Use the search bar or <a href="/root_cres">browse the catalogue of all top-level topics</a>, try
           <a href="/node/standard/OWASP%20Top%2010%202021"> the Top10 2021 page</a> and click around, or{' '}
           <a href="/search/session">search for "Session"</a>, or check out{' '}
-          <a href="/cre/764-507"> CRE 764-507 </a> or <a href="/cre/581-525">CRE 581-525</a> to see the <b>Multilink</b>
-          feature: one link to OpenCRE gives access to a wide range of standards and related topics: testing advice, 
-          development, in-depth technical information, threat descriptions, articles, and tool settings.
-        </b>
+          <a href="/cre/764-507"> CRE 764-507 </a> or <a href="/cre/581-525">CRE 581-525</a> to see the{' '}
+          <b>Multilink</b>
+          feature: one link to OpenCRE gives access to a wide range of standards and related topics: testing
+          advice, development, in-depth technical information, threat descriptions, articles, and tool
+          settings.
+        </strong>
       </p>
-      <b>
-        Use <a href="/chatbot">OpenCRE Chat</a> to ask any security question (Google account required to
-        maximize queries per minute). In collaboration with Google, we injected all the standards in OpenCRE
-        into an AI model to create the world's first security-specialized chatbot. This ensures you get a more
-        reliable answer, and also a reference to a reputable source.
-      </b>
-      <b>
-        Use <a href="/map_analysis">Map Analysis</a> to find how any two standards connect with eachother
-      </b>
+      <p>
+        <strong>
+          Use <a href="/chatbot">OpenCRE Chat</a> to ask any security question (Google account required to
+          maximize queries per minute). In collaboration with Google, we injected all the standards in OpenCRE
+          into an AI model to create the world's first security-specialized chatbot. This ensures you get a
+          more reliable answer, and also a reference to a reputable source.
+        </strong>
+      </p>
+      <p>
+        <strong>
+          Use <a href="/map_analysis">Map Analysis</a> to find how any two standards connect with eachother
+        </strong>
+      </p>
       <h2>HOW?</h2>
       <p>
         OpenCRE links each section of a resource (like a standard or guideline) to a shared topic, known as a
