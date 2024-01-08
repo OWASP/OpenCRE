@@ -55,15 +55,15 @@ def get_linked_nodes(mapping: Dict[str, str]) -> List[defs.Link]:
             raise ValueError(
                 f"Mapping of {name} not in format of <type>:{name}:<attribute>"
             )
-        section = mapping.get(defs.ExportFormat.section_key(name, type))
-        subsection = mapping.get(defs.ExportFormat.subsection_key(name, type))
-        hyperlink = mapping.get(defs.ExportFormat.hyperlink_key(name, type))
-        link_type = mapping.get(defs.ExportFormat.link_type_key(name, type))
+        section = str(mapping.get(defs.ExportFormat.section_key(name, type)))
+        subsection = str(mapping.get(defs.ExportFormat.subsection_key(name, type)))
+        hyperlink = str(mapping.get(defs.ExportFormat.hyperlink_key(name, type)))
+        link_type = str(mapping.get(defs.ExportFormat.link_type_key(name, type)))
         tooltype = defs.ToolTypes.from_str(
-            mapping.get(defs.ExportFormat.tooltype_key(name, type))
+            str(mapping.get(defs.ExportFormat.tooltype_key(name, type)))
         )
-        sectionID = mapping.get(defs.ExportFormat.sectionID_key(name, type))
-        description = mapping.get(defs.ExportFormat.description_key(name, type))
+        sectionID = str(mapping.get(defs.ExportFormat.sectionID_key(name, type)))
+        description = str(mapping.get(defs.ExportFormat.description_key(name, type)))
         node = None
         if type == defs.Credoctypes.Standard:
             node = defs.Standard(
@@ -135,8 +135,8 @@ def parse_export_format(lfile: List[Dict[str, Any]]) -> Dict[str, defs.Document]
                     f"adding node: {st.document.doctype}:{st.document.name}:{st.document.section}"
                 )
         else:  # cre -> standards, other cres
-            name = mapping.pop(defs.ExportFormat.cre_name_key())
-            id = mapping.pop(defs.ExportFormat.cre_id_key())
+            name = str(mapping.pop(defs.ExportFormat.cre_name_key()))
+            id = str(mapping.pop(defs.ExportFormat.cre_id_key()))
             description = ""
             if defs.ExportFormat.cre_description_key() in mapping:
                 description = mapping.pop(defs.ExportFormat.cre_description_key())
@@ -166,11 +166,11 @@ def parse_export_format(lfile: List[Dict[str, Any]]) -> Dict[str, defs.Document]
 
             # add the CRE links
             for i in range(0, max_internal_cre_links):
-                name = mapping.pop(defs.ExportFormat.linked_cre_name_key(str(i)))
+                name = str(mapping.pop(defs.ExportFormat.linked_cre_name_key(str(i))))
                 if not is_empty(name):
-                    id = mapping.pop(defs.ExportFormat.linked_cre_id_key(str(i)))
-                    link_type = mapping.pop(
-                        defs.ExportFormat.linked_cre_link_type_key(str(i))
+                    id = str(mapping.pop(defs.ExportFormat.linked_cre_id_key(str(i))))
+                    link_type = str(
+                        mapping.pop(defs.ExportFormat.linked_cre_link_type_key(str(i)))
                     )
                     if name in cres:
                         internal_mapping = cres[name]
@@ -242,7 +242,8 @@ def parse_uknown_key_val_standards_spreadsheet(
             else:
                 # pop is important here, if the primary standard is not removed, it will end up linking to itself
                 primary_standard = defs.Standard(
-                    name=main_standard_name, section=mapping.pop(main_standard_name)
+                    name=main_standard_name,
+                    section=str(mapping.pop(main_standard_name)),
                 )
 
             for key, value in mapping.items():
@@ -275,7 +276,7 @@ def parse_hierarchical_export_format(
             key = [key for key in mapping if key.startswith("CRE hierarchy %s" % i)][0]
             if not is_empty(mapping.get(key)):
                 if current_hierarchy == 0:
-                    name = mapping.pop(key).strip().replace("\n", " ")
+                    name = str(mapping.pop(key)).strip().replace("\n", " ")
                     current_hierarchy = i
                 else:
                     higher_cre = i
@@ -287,7 +288,7 @@ def parse_hierarchical_export_format(
             )
             continue
         if name in cres.keys():
-            new_id = mapping.get("CRE ID")
+            new_id = str(mapping.get("CRE ID"))
             if cres[name].id != new_id and cres[name].id != "" and new_id != "":
                 logger.fatal(
                     f"duplicate entry for cre named {name}, previous id:{cres[name].id}, new id {new_id}"
@@ -297,13 +298,13 @@ def parse_hierarchical_export_format(
             cre = defs.CRE(name=name)
 
         if not is_empty(mapping.get("CRE ID")):
-            cre.id = mapping.pop("CRE ID")
+            cre.id = str(mapping.pop("CRE ID"))
         else:
             logger.warning(f"empty Id for {name}")
 
         if not is_empty(mapping.get("CRE Tags")):
             ts = set()
-            for x in mapping.pop("CRE Tags").split(","):
+            for x in str(mapping.pop("CRE Tags")).split(","):
                 ts.add(x.strip())
             cre.tags = list(ts)
 
@@ -318,7 +319,7 @@ def parse_hierarchical_export_format(
                 set(
                     [
                         x.strip()
-                        for x in mapping.pop("Link to other CRE").split(",")
+                        for x in str(mapping.pop("Link to other CRE")).split(",")
                         if not is_empty(x.strip())
                     ]
                 )
@@ -346,7 +347,7 @@ def parse_hierarchical_export_format(
 
         if higher_cre:
             cre_hi: defs.CRE
-            name_hi = mapping.pop(f"CRE hierarchy {str(higher_cre)}").strip()
+            name_hi = str(mapping.pop(f"CRE hierarchy {str(higher_cre)}")).strip()
             if cres.get(name_hi):
                 cre_hi = cres[name_hi]
             else:
@@ -495,7 +496,7 @@ def parse_standards(
                     separator
                 )
 
-                hyperlinks = mapping.get(struct["hyperlink"], "").split(separator)
+                hyperlinks = str(mapping.get(struct["hyperlink"], "")).split(separator)
                 if len(sections) > len(subsections):
                     subsections.extend([""] * (len(sections) - len(subsections)))
                 if len(sections) > len(hyperlinks):
@@ -526,8 +527,8 @@ def parse_standards(
                         )
             else:
                 section = str(mapping.get(struct["section"], ""))
-                subsection = mapping.get(struct["subsection"], "")
-                hyperlink = mapping.get(struct["hyperlink"], "")
+                subsection = str(mapping.get(struct["subsection"], ""))
+                hyperlink = str(mapping.get(struct["hyperlink"], ""))
                 sectionID = str(mapping.get(struct["sectionID"], ""))
 
                 links.append(
