@@ -159,11 +159,11 @@ def parse_file(
             data_class = (
                 defs.Standard
                 if doctype == defs.Credoctypes.Standard.value
-                else defs.Code
-                if doctype == defs.Credoctypes.Code.value
-                else defs.Tool
-                if doctype == defs.Credoctypes.Tool.value
-                else None
+                else (
+                    defs.Code
+                    if doctype == defs.Credoctypes.Code.value
+                    else defs.Tool if doctype == defs.Credoctypes.Tool.value else None
+                )
             )
             document = from_dict(
                 data_class=data_class,
