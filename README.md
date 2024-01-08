@@ -99,6 +99,7 @@ The environment variables used by OpenCRE are:
         - name: GOOGLE_CLIENT_SECRET # useful for login only
         - name: LOGIN_ALLOWED_DOMAINS # useful for login only
         - name: ENABLE_TRACING
+        - name: OpenCRE_gspread_Auth # useful only when importing data, possible values 'oauth' or 'service_account'
 ```
 You can run the containers with `make docker-prod-run` and `make-docker-dev-run`
 
