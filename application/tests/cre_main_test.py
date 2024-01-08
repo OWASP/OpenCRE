@@ -378,7 +378,9 @@ class TestMain(unittest.TestCase):
                 "Standard CWE (from ASVS)-hyperlink": "https://example.com/cwe19876",
                 "Link to other CRE": "FooBar",
                 "Standard NIST 800-53 v5": "SA-22 Unsupported System Components",
-                "Standard NIST 800-53 v5-hyperlink": "https://example.com/nist-800-53-v5",
+                "Standard NIST 800-53 v5-hyperlink": (
+                    "https://example.com/nist-800-53-v5"
+                ),
                 "Standard NIST-800-63 (from ASVS)": "4444/3333",
                 "Standard OPC (ASVS source)": "123654",
                 "Standard OPC (ASVS source)-hyperlink": "https://example.com/opc",
@@ -406,7 +408,9 @@ class TestMain(unittest.TestCase):
                 "Standard CWE (from ASVS)-hyperlink": "",
                 "Link to other CRE": "",
                 "Standard NIST 800-53 v5": "",
-                "Standard NIST 800-53 v5-hyperlink": "https://example.com/nist-800-53-v5",
+                "Standard NIST 800-53 v5-hyperlink": (
+                    "https://example.com/nist-800-53-v5"
+                ),
                 "Standard NIST-800-63 (from ASVS)": "",
                 "Standard OPC (ASVS source)": "",
                 "Standard OPC (ASVS source)-hyperlink": "",
@@ -433,12 +437,16 @@ class TestMain(unittest.TestCase):
                 "Standard CWE (from ASVS)": 306,
                 "Standard CWE (from ASVS)-hyperlink": "https://example.com/cwe306",
                 "Link to other CRE": "Logging and Error handling",
-                "Standard NIST 800-53 v5": "PL-8 Information Security Architecture\n"
-                "SC-39 PROCESS ISOLATION\n"
-                "SC-3 SECURITY FUNCTION",
-                "Standard NIST 800-53 v5-hyperlink": "https://example.com/nist-800-53-v5\n"
-                "https://example.com/nist-800-53-v5\n"
-                "https://example.com/nist-800-53-v5",
+                "Standard NIST 800-53 v5": (
+                    "PL-8 Information Security Architecture\n"
+                    "SC-39 PROCESS ISOLATION\n"
+                    "SC-3 SECURITY FUNCTION"
+                ),
+                "Standard NIST 800-53 v5-hyperlink": (
+                    "https://example.com/nist-800-53-v5\n"
+                    "https://example.com/nist-800-53-v5\n"
+                    "https://example.com/nist-800-53-v5"
+                ),
                 "Standard NIST-800-63 (from ASVS)": "None",
                 "Standard OPC (ASVS source)": "None",
                 "Standard OPC (ASVS source)-hyperlink": "",
