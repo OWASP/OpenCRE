@@ -20,13 +20,14 @@ start-worker:
 
 dev-flask:
 	. ./venv/bin/activate
-	FLASK_APP=`pwd`/cre.py  FLASK_CONFIG=development flask run
+	INSECURE_REQUESTS=1 FLASK_APP=`pwd`/cre.py  FLASK_CONFIG=development flask run
 
 e2e:
 	yarn build
 	[ -d "./venv" ] && . ./venv/bin/activate
 	export FLASK_APP=$(CURDIR)/cre.py
 	export FLASK_CONFIG=development
+	export INSECURE_REQUESTS=1
 	flask run &
 	sleep 5
 	yarn test:e2e
@@ -42,22 +43,36 @@ test:
 cover:
 	. ./venv/bin/activate && FLASK_APP=cre.py FLASK_CONFIG=testing flask test --cover
 
-install-deps:
+install-deps-python:
 	[ -d "./venv" ] && . ./venv/bin/activate 
 	pip install -r requirements.txt
-	cd application/frontend
-	yarn install
 
-install:
+install-deps-typescript:
+	(cd application/frontend && yarn install)
+
+install-deps: install-deps-python install-deps-typescript
+
+install-python:
 	virtualenv -p python3 venv
 	. ./venv/bin/activate
-	make install-deps
-	(cd application/frontend && yarn build)
+	make install-deps-python
+	playwright install
+	
+install-typescript:
+	cd application/frontend && yarn build
 
-docker:
-	docker build -f Dockerfile-dev -t opencre:$(shell git rev-parse HEAD) .
+install: install-typescript install-python
 
-docker-run:
+docker-dev:
+	docker build -f Dockerfile-dev -t opencre-dev:$(shell git rev-parse HEAD) .
+
+docker-prod:
+	docker build -f Dockerfile -t opencre:$(shell git rev-parse HEAD) .
+
+docker-dev-run:
+	 docker run -it -p 5000:5000 opencre-dev:$(shell git rev-parse HEAD)
+
+docker-prod-run:
 	 docker run -it -p 5000:5000 opencre:$(shell git rev-parse HEAD)
 
 lint:
@@ -104,12 +119,21 @@ import-neo4j:
 	export FLASK_APP=$(CURDIR)/cre.py && python cre.py --populate_neo4j_db
 
 preload-map-analysis: 
-	make start-worker& make start-worker& make  start-worker& make  start-worker& make  start-worker& make  start-worker& make  start-worker& make  start-worker& make  start-worker& make  start-worker& make dev-flask&
+	make docker-redis&\
+	make start-worker&\
+	make start-worker&\
+	make  start-worker&\
+	make  start-worker&\
+	make  start-worker&\
+	make start-worker&\
+	make  start-worker&\
+	make  start-worker&\
+	make  start-worker&\
+	make  start-worker&\
+	make dev-flask&
+	sleep 5
 	[ -d "./venv" ] && . ./venv/bin/activate
 	export FLASK_APP=$(CURDIR)/cre.py 
-	
 	python cre.py --preload_map_analysis_target_url 'http://127.0.0.1:5000'	
 	killall python flask
-
-
 all: clean lint test dev dev-run

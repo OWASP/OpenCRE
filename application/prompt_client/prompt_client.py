@@ -179,7 +179,9 @@ class in_memory_embeddings:
 class PromptHandler:
     def __init__(self, database: db.Node_collection) -> None:
         self.ai_client = None
-        if os.environ.get("SERVICE_ACCOUNT_CREDENTIALS"):
+        if os.environ.get("GCP_NATIVE") or os.environ.get(
+            "SERVICE_ACCOUNT_CREDENTIALS"
+        ):
             logger.info("using Google Vertex AI engine")
             self.ai_client = vertex_prompt_client.VertexPromptClient()
         elif os.getenv("OPENAI_API_KEY"):

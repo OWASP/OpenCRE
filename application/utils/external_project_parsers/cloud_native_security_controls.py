@@ -39,7 +39,7 @@ def parse(
             sectionID=entry.get("ID"),
             subsection=entry.get("Control Title"),
             hyperlink="https://github.com/cloud-native-security-controls/controls-catalog/blob/main/controls/controls_catalog.csv#L"
-            + str(entry.get("ID") + 1),
+            + str(int(entry.get("ID")) + 1),
             version=entry.get("Originating Document"),
         )
         existing = cache.get_nodes(

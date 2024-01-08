@@ -9,6 +9,7 @@ import coverage  # type: ignore
 from flask_migrate import Migrate  # type: ignore
 
 from application import create_app, sqla  # type: ignore
+from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
 
 # Hacky solutions to make this both a command line application with argparse and a flask application
 

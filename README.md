@@ -13,19 +13,18 @@
 
 [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://github.com/codespaces/new?hide_repo_select=true&ref=main&repo=400297709&machine=standardLinux32gb&devcontainer_path=.devcontainer%2Fdevcontainer.json&location=WestEurope)
 
-Common Requirements Enumeration Application
-===============================
+# Common Requirements Enumeration Application
+
 See the application working and more explanation at https://www.opencre.org
 CRE is an interactive content linking platform for uniting security standards and guidelines. It offers easy and robust access to relevant information when designing, developing, testing and procuring secure software.
 This python web and cli application handles adding and presenting CREs.
 
-WHY?
-==========
+# WHY?
 
 Independent software security professionals got together to find a solution for the complexity and fragmentation in today’s landscape of security standards and guidelines. These people are Spyros Gasteratos, Rob van der Veer and friends, in close collaboration with the SKF, OpenSSF and Owasp Top 10 project.
 
-HOW?
-======
+# HOW?
+
 The CRE links each section of a standard to a shared topic (a Common Requirement), causing that section to also link with all other resources that map to the same topic. This 1) enables users to find all combined information from relevant sources, 2) it facilitates a shared and better understanding of cyber security, and 3) it allows standard makers to have links that keep working and offer all the information that readers need, so they don’t have to cover it all themselves. The CRE maintains itself: topic links in the standard text are scanned automatically. Furthermore, topics are linked with related other topics, creating a semantic web for security.
 
 Example: the session time-out topic will take the user to relevant criteria in several standards, and to testing guides, development tips, more technical detail, threat descriptions, articles etc. From there, the user can navigate to resources about session management in general.
@@ -33,8 +32,8 @@ WHEN?
 
 Some of the data has been kindly contributed by the SKF and ASVS projects
 
-Installing
----
+# Installing
+
 
 To install this application you need python3, yarn and virtualenv.
 Clone the repository:
@@ -47,8 +46,9 @@ Install dependencies
 <pre> make install </pre>
 
 
-Running
--------
+# Running
+
+### Locally
 
 To run the CLI application, you can run
 <pre>python cre.py --help</pre>
@@ -79,15 +79,36 @@ enviroment varaibles for app to connect to neo4jDB (default):
 To run the web application for production you need gunicorn and you can run from within the cre_sync dir
 <pre>make prod-run</pre>
 
-Developing
----
+# Docker
+You can build the production or the development docker images with 
+`make docker-prod` and `make docker-dev` respectively
+The environment variables used by OpenCRE are:
+```
+        - name: NEO4J_URL
+        - name: NO_GEN_EMBEDDINGS
+        - name: FLASK_CONFIG
+        - name: DEV_DATABASE_URL
+        - name: INSECURE_REQUESTS # development or TLS terminated environments only
+        - name: REDIS_HOST
+        - name: REDIS_PORT
+        - name: REDIS_NO_SSL
+        - name: REDIS_URL # in case REDIS_HOST and REDIS_PORT are unavailable
+        - name: GCP_NATIVE # if there are ambient GCP credentials, only useful for VERTEX chatbot
+        - name: GOOGLE_SECRET_JSON # if not running on GCP
+        - name: GOOGLE_CLIENT_ID # useful for login only
+        - name: GOOGLE_CLIENT_SECRET # useful for login only
+        - name: LOGIN_ALLOWED_DOMAINS # useful for login only
+        - name: ENABLE_TRACING
+```
+You can run the containers with `make docker-prod-run` and `make-docker-dev-run`
+
+# Developing
+
 You can run backend tests with
 <pre>make test</pre>
 You can run get a coverage report with 
 <pre>make cover</pre>
 Try to keep the coverage above 70%
-
-Repo Moved here from https://github.com/northdpole/www-project-integration-standards
 
 Contributing
 ---

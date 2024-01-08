@@ -137,6 +137,5 @@ export const useDataStore = () => {
   if (!dataContext) {
     throw new Error('useDataStore must be used within a DataProvider');
   }
-
   return dataContext;
 };
