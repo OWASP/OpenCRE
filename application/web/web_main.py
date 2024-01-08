@@ -517,7 +517,7 @@ def smartlink(
 
 @app.route("/rest/v1/deeplink/<ntype>/<name>", methods=["GET"])
 @app.route("/rest/v1/deeplink/<name>", methods=["GET"])
-def deeplink(name: str,ntype:str="") -> Any:
+def deeplink(name: str, ntype: str = "") -> Any:
     database = db.Node_collection()
     opt_section = request.args.get("section")
     opt_sectionID = request.args.get("sectionID")
@@ -534,19 +534,17 @@ def deeplink(name: str,ntype:str="") -> Any:
 
     nodes = None
     nodes = database.get_nodes(
-            name=name,
-            section=opt_section,
-            subsection=opt_subsection,
-            version=opt_version,
-            sectionID=opt_sectionID,
-        )
+        name=name,
+        section=opt_section,
+        subsection=opt_subsection,
+        version=opt_version,
+        sectionID=opt_sectionID,
+    )
     for node in nodes:
-        if len(node.hyperlink) > 0 :
+        if len(node.hyperlink) > 0:
             return redirect(node.hyperlink)
 
     return abort(404)
-
-
 
 
 @app.before_request
