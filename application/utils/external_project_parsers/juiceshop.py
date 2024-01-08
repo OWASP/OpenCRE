@@ -36,7 +36,7 @@ def parse(
             name="OWASP Juice Shop",
             section=challenge["name"],
             sectionID=challenge["key"],
-            hyperlink="https://demo.owasp-juice.shop//#/score-board?challenge="
+            hyperlink="https://demo.owasp-juice.shop//#/score-board?searchQuery="
             + urllib.parse.quote(challenge["name"]),
             tooltype=defs.ToolTypes.Training,
             tags=[challenge["category"]],
