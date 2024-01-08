@@ -29,8 +29,8 @@ export const SearchBody = () => {
         <strong>
           Use <a href="/chatbot">OpenCRE Chat</a> to ask any security question (Google account required to
           maximize queries per minute). In collaboration with Google, we injected all the standards in OpenCRE
-          into an AI model to create the world's first security-specialized chatbot. This ensures you get a more
-          reliable answer, and also a reference to a reputable source.
+          into an AI model to create the world's first security-specialized chatbot. This ensures you get a
+          more reliable answer, and also a reference to a reputable source.
         </strong>
       </p>
       <p>
