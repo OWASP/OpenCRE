@@ -311,9 +311,9 @@ def parse_hierarchical_export_format(
         update_cre_in_links(cres, cre)
 
         # TODO(spyros): temporary until we agree what we want to do with tags
-        mapping[
-            "Link to other CRE"
-        ] = f'{mapping["Link to other CRE"]},{",".join(cre.tags)}'
+        mapping["Link to other CRE"] = (
+            f'{mapping["Link to other CRE"]},{",".join(cre.tags)}'
+        )
         if not is_empty(mapping.get("Link to other CRE")):
             other_cres = list(
                 set(
@@ -486,7 +486,9 @@ def parse_standards(
         }
     links: List[defs.Link] = []
     for name, struct in standards_mapping.get("Standards", {}).items():
-        if not is_empty(mapping.get(struct["section"])) or not is_empty(mapping.get(struct["sectionID"])):
+        if not is_empty(mapping.get(struct["section"])) or not is_empty(
+            mapping.get(struct["sectionID"])
+        ):
             if "separator" in struct:
                 separator = struct["separator"]
                 sections = str(mapping.pop(struct["section"])).split(separator)

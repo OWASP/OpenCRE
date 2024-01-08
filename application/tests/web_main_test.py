@@ -716,7 +716,7 @@ class TestMain(unittest.TestCase):
             )
             self.assertEqual(200, response.status_code)
             self.assertEqual(expected, json.loads(response.data))
-    
+
     def test_deeplink(self) -> None:
         self.maxDiff = None
         collection = db.Node_collection()
@@ -733,7 +733,12 @@ class TestMain(unittest.TestCase):
             }
             standards = {
                 "cwe0": defs.Standard(name="CWE", sectionID="456"),
-                "ASVS": defs.Standard(name="ASVS", section="sectionASVS",sectionID="v0.1.2",hyperlink="https://github.com/owasp/asvs/blah"),
+                "ASVS": defs.Standard(
+                    name="ASVS",
+                    section="sectionASVS",
+                    sectionID="v0.1.2",
+                    hyperlink="https://github.com/owasp/asvs/blah",
+                ),
             }
             cres["ca"].add_link(
                 defs.Link(
@@ -782,7 +787,9 @@ class TestMain(unittest.TestCase):
             self.assertEqual(location, standards["ASVS"].hyperlink)
             self.assertEqual(302, response.status_code)
 
-            response = client.get(f'/rest/v1/deeplink/ASVS?section={standards["ASVS"].section}')
+            response = client.get(
+                f'/rest/v1/deeplink/ASVS?section={standards["ASVS"].section}'
+            )
             location = ""
             for head in response.headers:
                 if head[0] == "Location":
@@ -790,7 +797,9 @@ class TestMain(unittest.TestCase):
             self.assertEqual(location, standards["ASVS"].hyperlink)
             self.assertEqual(302, response.status_code)
 
-            response = client.get(f'/rest/v1/deeplink/ASVS?section={standards["ASVS"].section}&sectionID={standards["ASVS"].sectionID}')
+            response = client.get(
+                f'/rest/v1/deeplink/ASVS?section={standards["ASVS"].section}&sectionID={standards["ASVS"].sectionID}'
+            )
             location = ""
             for head in response.headers:
                 if head[0] == "Location":
