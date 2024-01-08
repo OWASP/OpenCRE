@@ -486,7 +486,9 @@ def parse_standards(
         }
     links: List[defs.Link] = []
     for name, struct in standards_mapping.get("Standards", {}).items():
-        if not is_empty(mapping.get(struct["section"])) or not is_empty(mapping.get(struct["sectionID"])):
+        if not is_empty(mapping.get(struct["section"])) or not is_empty(
+            mapping.get(struct["sectionID"])
+        ):
             if "separator" in struct:
                 separator = struct["separator"]
                 sections = str(mapping.pop(struct["section"])).split(separator)
