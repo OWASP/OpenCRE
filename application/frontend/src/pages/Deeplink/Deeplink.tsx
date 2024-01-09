@@ -5,7 +5,6 @@ import { useLocation, useParams } from 'react-router-dom';
 import { LoadingAndErrorIndicator } from '../../components/LoadingAndErrorIndicator';
 import { useEnvironment } from '../../hooks';
 import { Document } from '../../types';
-import { Standard } from '../Standard/Standard';
 
 export const Deeplink = () => {
   let { type, nodeName, section, subsection, tooltype, sectionID, sectionid } = useParams();
@@ -24,7 +23,7 @@ export const Deeplink = () => {
     type = 'Standard';
   }
 
-  var apiCall = new URL(`${apiUrl}/${type}/${nodeName}?`);
+  var apiCall = new URL(`${apiUrl}/${type}/${nodeName}`);
 
   if (section != null) {
     apiCall.searchParams.append('section', section);
