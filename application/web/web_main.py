@@ -517,7 +517,16 @@ def smartlink(
 
 @app.route("/rest/v1/deeplink/<ntype>/<name>", methods=["GET"])
 @app.route("/rest/v1/deeplink/<name>", methods=["GET"])
-def deeplink(name: str, ntype: str = "") -> Any:
+@app.route("/deeplink/<ntype>/<name>", methods=["GET"])
+@app.route("/deeplink/<name>", methods=["GET"])
+@app.route("/deeplink/<name>/section/<section>", methods=["GET"])
+@app.route("/deeplink/<name>/section/<section>/sectionid/<section_id>", methods=["GET"])
+@app.route("/deeplink/<name>/section/<section>/sectionID/<section_id>", methods=["GET"])
+@app.route("/deeplink/<name>/sectionid/<section_id>", methods=["GET"])
+@app.route("/deeplink/<name>/sectionID/<section_id>", methods=["GET"])
+def deeplink(
+    name: str, ntype: str = "", section: str = "", section_id: str = ""
+) -> Any:
     database = db.Node_collection()
     opt_section = request.args.get("section")
     opt_sectionID = request.args.get("sectionID")
@@ -527,10 +536,15 @@ def deeplink(name: str, ntype: str = "") -> Any:
 
     if opt_section:
         opt_section = urllib.parse.unquote(opt_section)
+    elif section:
+        opt_section = urllib.parse.unquote(section)
+
     if opt_sectionID:
         opt_sectionID = urllib.parse.unquote(opt_sectionID)
     elif opt_sectionid:
         opt_sectionID = urllib.parse.unquote(opt_sectionid)
+    elif section_id:
+        opt_sectionID = urllib.parse.unquote(section_id)
 
     nodes = None
     nodes = database.get_nodes(
@@ -542,7 +556,7 @@ def deeplink(name: str, ntype: str = "") -> Any:
     )
     for node in nodes:
         if len(node.hyperlink) > 0:
-            return redirect(node.hyperlink)
+            return redirect(location=node.hyperlink)
 
     return abort(404)
 
