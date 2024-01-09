@@ -3,7 +3,6 @@ import { ReactNode } from 'react';
 import {
   BROWSEROOT,
   CRE,
-  DEEPLINK,
   EXPLORER,
   GAP_ANALYSIS,
   GRAPH,
@@ -16,7 +15,6 @@ import {
 import { CommonRequirementEnumeration, Graph, Search, Standard } from './pages';
 import { BrowseRootCres } from './pages/BrowseRootCres/browseRootCres';
 import { Chatbot } from './pages/chatbot/chatbot';
-import { Deeplink } from './pages/Deeplink/Deeplink';
 import { Explorer } from './pages/Explorer/explorer';
 import { ExplorerCircles } from './pages/Explorer/visuals/circles/circles';
 import { ExplorerForceGraph } from './pages/Explorer/visuals/force-graph/forceGraph';
@@ -80,36 +78,6 @@ export const ROUTES: IRoute[] = [
     component: SearchName,
     showHeader: true,
     showFilter: true,
-  },
-  {
-    path: `${DEEPLINK}/node/:type/:nodeName/section/:section`,
-    component: Deeplink,
-    showHeader: true,
-    showFilter: false,
-  },
-  {
-    path: `${DEEPLINK}/node/:type/:nodeName/section/:section/subsection/:subsection`,
-    component: Deeplink,
-    showHeader: true,
-    showFilter: false,
-  },
-  {
-    path: `${DEEPLINK}/node/:type/:nodeName/tooltype/:tooltype`,
-    component: Deeplink,
-    showHeader: true,
-    showFilter: false,
-  },
-  {
-    path: `${DEEPLINK}/node/:type/:nodeName`,
-    component: Deeplink,
-    showHeader: true,
-    showFilter: false,
-  },
-  {
-    path: `${DEEPLINK}/:nodeName`,
-    component: Deeplink,
-    showHeader: true,
-    showFilter: false,
   },
   {
     path: `/chatbot`,
