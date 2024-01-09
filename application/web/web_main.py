@@ -524,7 +524,9 @@ def smartlink(
 @app.route("/deeplink/<name>/section/<section>/sectionID/<section_id>", methods=["GET"])
 @app.route("/deeplink/<name>/sectionid/<section_id>", methods=["GET"])
 @app.route("/deeplink/<name>/sectionID/<section_id>", methods=["GET"])
-def deeplink(name: str, ntype: str = "",section:str="",section_id:str="") -> Any:
+def deeplink(
+    name: str, ntype: str = "", section: str = "", section_id: str = ""
+) -> Any:
     database = db.Node_collection()
     opt_section = request.args.get("section")
     opt_sectionID = request.args.get("sectionID")

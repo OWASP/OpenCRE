@@ -736,7 +736,6 @@ class TestMain(unittest.TestCase):
             )
             self.assertEqual(404, response.status_code)
 
-
             cres = {
                 "ca": defs.CRE(id="1", description="CA", name="CA", tags=["ta"]),
                 "cd": defs.CRE(id="2", description="CD", name="CD", tags=["td"]),
@@ -789,7 +788,6 @@ class TestMain(unittest.TestCase):
                     self.assertEqual(head[1], standards["ASVS"].hyperlink)
             self.assertEqual(302, response.status_code)
 
-
             # Can retrieve with sectionid
             response = client.get("/deeplink/ASVS?sectionid=v0.1.2")
             for head in response.headers:
@@ -805,9 +803,7 @@ class TestMain(unittest.TestCase):
             self.assertEqual(302, response.status_code)
 
             # Can retrieve with section
-            response = client.get(
-                f'/deeplink/ASVS?section={standards["ASVS"].section}'
-            )
+            response = client.get(f'/deeplink/ASVS?section={standards["ASVS"].section}')
             for head in response.headers:
                 if head[0] == "Location":
                     self.assertEqual(head[1], standards["ASVS"].hyperlink)
@@ -822,7 +818,7 @@ class TestMain(unittest.TestCase):
                     self.assertEqual(head[1], standards["ASVS"].hyperlink)
             self.assertEqual(302, response.status_code)
 
-           # Can retrieve with sectionid in path params
+            # Can retrieve with sectionid in path params
             response = client.get(
                 f'/deeplink/ASVS/sectionid/{standards["ASVS"].sectionID}'
             )
@@ -831,7 +827,7 @@ class TestMain(unittest.TestCase):
                     self.assertEqual(head[1], standards["ASVS"].hyperlink)
             self.assertEqual(302, response.status_code)
 
-           # Can retrieve with sectionID in path params
+            # Can retrieve with sectionID in path params
             response = client.get(
                 f'/deeplink/ASVS/sectionID/{standards["ASVS"].sectionID}'
             )
@@ -840,10 +836,8 @@ class TestMain(unittest.TestCase):
                     self.assertEqual(head[1], standards["ASVS"].hyperlink)
             self.assertEqual(302, response.status_code)
 
-           # Can retrieve with section in path params
-            response = client.get(
-                f'/deeplink/ASVS/section/{standards["ASVS"].section}'
-            )
+            # Can retrieve with section in path params
+            response = client.get(f'/deeplink/ASVS/section/{standards["ASVS"].section}')
             for head in response.headers:
                 if head[0] == "Location":
                     self.assertEqual(head[1], standards["ASVS"].hyperlink)
