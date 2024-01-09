@@ -424,7 +424,7 @@ def parse_standards(
                     "sectionID": "",
                     "subsection": "",
                     "hyperlink": "Standard WSTG-Hyperlink",
-                    "separator": "\n",
+                    "separator": ";",
                 },
                 "OWASP Cheat Sheets": {
                     "section": "Standard Cheat_sheets",
