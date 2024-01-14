@@ -56,18 +56,22 @@ def preload(target_url: str):
                 res1 = requests.get(
                     f"{target_url}/rest/v1/map_analysis?standard={sa}&standard={sb}"
                 )
-                if res1.json():
+                if res1.status_code != 200:
+                    print(f"{sa}->{sb} returned {res1.status_code}")
+                elif res1.json():
                     if res1.json().get("result"):
                         if f"{sa}->{sb}" in waiting:
                             waiting.remove(f"{sa}->{sb}")
                 res2 = requests.get(
                     f"{target_url}/rest/v1/map_analysis?standard={sb}&standard={sa}"
                 )
-                if res2.json():
+                if res2.status_code != 200:
+                    print(f"{sb}->{sa} returned {res1.status_code}")
+                elif res2.json():
                     if res2.json().get("result"):
                         if f"{sb}->{sa}" in waiting:
                             waiting.remove(f"{sb}->{sa}")
         print(f"calculating {len(waiting)} gap analyses")
-        print(waiting)
+        # print(waiting)
         time.sleep(30)
     print("map analysis preloaded successfully")
