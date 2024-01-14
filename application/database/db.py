@@ -76,8 +76,6 @@ class Node(BaseModel):  # type: ignore
             name,
             section,
             subsection,
-            ntype,
-            description,
             version,
             section_id,
             name="uq_node",

@@ -84,9 +84,9 @@ class in_memory_embeddings:
                     cls.__playwright = sync_playwright().start()
                     nltk.download("punkt")
                     nltk.download("stopwords")
-                    cls.__webkit = cls.__playwright.webkit
+                    cls.__firefox = cls.__playwright.firefox
                     cls.__browser = (
-                        cls.__webkit.launch()
+                        cls.__firefox.launch()
                     )  # headless=False, slow_mo=1000)
                     cls.__context = cls.__browser.new_context()
 

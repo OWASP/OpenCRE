@@ -263,6 +263,7 @@ def gap_analysis() -> Any:
             try:
                 res = job.Job.fetch(id=gap_analysis_dict.get("job_id"), connection=conn)
             except exceptions.NoSuchJobError as nje:
+                logger.error(f"Could not find job id for gap analysis {standards}")
                 abort(404, "No such job")
             if (
                 res.get_status() != job.JobStatus.FAILED
