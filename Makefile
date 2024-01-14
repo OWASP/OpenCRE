@@ -1,4 +1,3 @@
-
 .ONESHELL:
 
 .PHONY: run test covers install-deps dev docker lint frontend clean all
@@ -122,14 +121,14 @@ preload-map-analysis:
 	make docker-redis&\
 	make start-worker&\
 	make start-worker&\
-	make  start-worker&\
-	make  start-worker&\
-	make  start-worker&\
 	make start-worker&\
-	make  start-worker&\
-	make  start-worker&\
-	make  start-worker&\
-	make  start-worker&\
+	make start-worker&\
+	make start-worker&\
+	make start-worker&\
+	make start-worker&\
+	make start-worker&\
+	make start-worker&\
+	make start-worker&\
 	make dev-flask&
 	sleep 5
 	[ -d "./venv" ] && . ./venv/bin/activate

@@ -95,13 +95,13 @@ def get_linked_nodes(mapping: Dict[str, str]) -> List[defs.Link]:
 
 
 def update_cre_in_links(
-    cres: Dict[str, defs.CRE], cre: defs.CRE
-) -> Dict[str, defs.CRE]:
-    for k, c in cres.items():
+    documents: Dict[str,defs.CRE], cre: defs.CRE
+) -> List[defs.CRE]:
+    for c in documents.values():
         for link in c.links:
             if link.document.name == cre.name:
                 link.document = cre.shallow_copy()
-    return cres
+    return documents
 
 
 def parse_export_format(lfile: List[Dict[str, Any]]) -> Dict[str, defs.Document]:
@@ -111,13 +111,13 @@ def parse_export_format(lfile: List[Dict[str, Any]]) -> Dict[str, defs.Document]
     cases:
         standard
         standard -> standard
-        cre -> other cres
+        cre -> other documents
         cre -> standards
-        cre -> standards, other cres
+        cre -> standards, other documents
     """
     cre: defs.Document
     internal_mapping: defs.Document
-    cres: Dict[str, defs.Document] = {}
+    documents: Dict[str, defs.Document] = {}
     lone_nodes: Dict[str, defs.Node] = {}
     link_types_regexp = re.compile(defs.ExportFormat.linked_cre_name_key("(\d+)"))
     max_internal_cre_links = len(
@@ -134,18 +134,18 @@ def parse_export_format(lfile: List[Dict[str, Any]]) -> Dict[str, defs.Document]
                 logger.info(
                     f"adding node: {st.document.doctype}:{st.document.name}:{st.document.section}"
                 )
-        else:  # cre -> standards, other cres
+        else:  # cre -> standards, other documents
             name = str(mapping.pop(defs.ExportFormat.cre_name_key()))
             id = str(mapping.pop(defs.ExportFormat.cre_id_key()))
             description = ""
             if defs.ExportFormat.cre_description_key() in mapping:
                 description = mapping.pop(defs.ExportFormat.cre_description_key())
 
-            if name not in cres.keys():  # register new cre
+            if name not in documents.keys():  # register new cre
                 cre = defs.CRE(name=name, id=id, description=description)
             else:  # it's a conflict mapping so we've seen this before,
                 # just retrieve so we can add the new info
-                cre = cres[name]
+                cre = documents[name]
                 if cre.id != id:
                     if is_empty(id):
                         id = cre.id
@@ -172,8 +172,8 @@ def parse_export_format(lfile: List[Dict[str, Any]]) -> Dict[str, defs.Document]
                     link_type = str(
                         mapping.pop(defs.ExportFormat.linked_cre_link_type_key(str(i)))
                     )
-                    if name in cres:
-                        internal_mapping = cres[name]
+                    if name in documents:
+                        internal_mapping = documents[name]
                         if internal_mapping.id != id:
                             if is_empty(id):
                                 id = internal_mapping.id
@@ -199,7 +199,7 @@ def parse_export_format(lfile: List[Dict[str, Any]]) -> Dict[str, defs.Document]
                                 ltype=sub_lt,
                             )
                         )
-                        cres[name] = internal_mapping
+                        documents[name] = internal_mapping
 
                     if name not in [l.document.name for l in cre.links]:
                         cre.add_link(
@@ -212,15 +212,14 @@ def parse_export_format(lfile: List[Dict[str, Any]]) -> Dict[str, defs.Document]
                                 ltype=defs.LinkTypes.from_str(link_type),
                             )
                         )
-            cres[cre.name] = cre
-    cres.update(lone_nodes)
-    return cres
+            documents[cre.name] = cre
+    documents.update(lone_nodes)
+    return documents
 
 
 def parse_uknown_key_val_standards_spreadsheet(
     link_file: List[Dict[str, str]]
 ) -> Dict[str, defs.Standard]:
-    """parses a cre-less spreadsheet into a list of Standards documents"""
     standards: Dict[str, defs.Standard] = {}
     standards_registered: List[str] = []
     # get the first Key of the first row, pretty much, choose a standard at random to be the main one
@@ -259,133 +258,8 @@ def parse_uknown_key_val_standards_spreadsheet(
                 standards[sname] = primary_standard
     return standards
 
-
-def parse_hierarchical_export_format(
-    cre_file: List[Dict[str, str]]
-) -> Dict[str, defs.CRE]:
-    logger.info("Spreadsheet is hierarchical export format")
-    cres: Dict[str, defs.CRE] = {}
-    max_hierarchy = len([key for key in cre_file[0].keys() if "CRE hierarchy" in key])
-    for mapping in cre_file:
-        cre: defs.CRE
-        name: str = ""
-        current_hierarchy: int = 0
-        higher_cre: int = 0
-        # a CRE's name is the last hierarchy item which is not blank
-        for i in range(max_hierarchy, 0, -1):
-            key = [key for key in mapping if key.startswith("CRE hierarchy %s" % i)][0]
-            if not is_empty(mapping.get(key)):
-                if current_hierarchy == 0:
-                    name = str(mapping.pop(key)).strip().replace("\n", " ")
-                    current_hierarchy = i
-                else:
-                    higher_cre = i
-                    break
-        if is_empty(name):
-            logger.warning(
-                f'Found entry with ID {mapping.get("CRE ID")}'
-                " without a cre name, skipping"
-            )
-            continue
-        if name in cres.keys():
-            new_id = str(mapping.get("CRE ID"))
-            if cres[name].id != new_id and cres[name].id != "" and new_id != "":
-                logger.fatal(
-                    f"duplicate entry for cre named {name}, previous id:{cres[name].id}, new id {new_id}"
-                )
-            cre = cres[name]
-        else:
-            cre = defs.CRE(name=name)
-
-        if not is_empty(mapping.get("CRE ID")):
-            cre.id = str(mapping.pop("CRE ID"))
-        else:
-            logger.warning(f"empty Id for {name}")
-
-        if not is_empty(mapping.get("CRE Tags")):
-            ts = set()
-            for x in str(mapping.pop("CRE Tags")).split(","):
-                ts.add(x.strip())
-            cre.tags = list(ts)
-
-        update_cre_in_links(cres, cre)
-
-        # TODO(spyros): temporary until we agree what we want to do with tags
-        mapping[
-            "Link to other CRE"
-        ] = f'{mapping["Link to other CRE"]},{",".join(cre.tags)}'
-        if not is_empty(mapping.get("Link to other CRE")):
-            other_cres = list(
-                set(
-                    [
-                        x.strip()
-                        for x in str(mapping.pop("Link to other CRE")).split(",")
-                        if not is_empty(x.strip())
-                    ]
-                )
-            )
-            for other_cre in other_cres:
-                if not cres.get(other_cre):
-                    logger.warning(
-                        "%s linking to not yet existent cre %s" % (cre.name, other_cre)
-                    )
-                    new_cre = defs.CRE(name=other_cre.strip())
-                    cres[new_cre.name] = new_cre
-                else:
-                    new_cre = cres[other_cre]
-
-                # we only need a shallow copy here
-                cre.add_link(
-                    defs.Link(
-                        ltype=defs.LinkTypes.Related, document=new_cre.shallow_copy()
-                    )
-                )
-        for link in parse_standards(mapping):
-            cre.add_link(link)
-
-        # link CRE to a higher level one
-
-        if higher_cre:
-            cre_hi: defs.CRE
-            name_hi = str(mapping.pop(f"CRE hierarchy {str(higher_cre)}")).strip()
-            if cres.get(name_hi):
-                cre_hi = cres[name_hi]
-            else:
-                cre_hi = defs.CRE(name=name_hi)
-
-            existing_link = [
-                c
-                for c in cre_hi.links
-                if c.document.doctype == defs.Credoctypes.CRE
-                and c.document.name == cre.name
-            ]
-            # there is no need to capture the entirety of the cre tree, we just need to register this shallow relation
-            # the "cres" dict should contain the rest of the info
-            if existing_link:
-                cre_hi.links[
-                    cre_hi.links.index(existing_link[0])
-                    # ugliest way ever to write "update the object in that pointer"
-                ].document = cre.shallow_copy()
-            else:
-                cre_hi = cre_hi.add_link(
-                    defs.Link(
-                        ltype=defs.LinkTypes.Contains, document=cre.shallow_copy()
-                    )
-                )
-            cres[cre_hi.name] = cre_hi
-        else:
-            pass  # add the cre to cres and make the connection
-        if cre:
-            cres[cre.name] = cre
-
-    return cres
-
-
-def parse_standards(
-    mapping: Dict[str, str], standards_mapping: Dict[str, Dict[str, Any]] = None
-) -> List[defs.Link]:
-    if not standards_mapping:
-        standards_mapping = {
+# the supported resources from the main CSV
+supported_resource_mapping = {
             "CRE": {
                 "id": "CRE ID",
                 "name": "CRE hierarchy",
@@ -484,6 +358,171 @@ def parse_standards(
                 },
             },
         }
+def get_supported_resources_from_main_csv()->List[str]:
+    return supported_resource_mapping["Standards"].keys()
+
+def add_standard_to_documents_array(standard:defs.Standard,documents:Dict[str,List[defs.Document]])->Dict[defs.Credoctypes,Dict[str,List[defs.Document]]]:
+    if standard.name not in documents.keys():
+        documents[standard.name] = []
+    found = False
+    for doc in documents[standard.name]:
+        if  doc.name == standard.name and\
+            doc.section == standard.section and\
+            doc.subsection == standard.subsection and\
+            doc.sectionID == standard.sectionID and\
+            doc.version == standard.version:
+                doc = standard
+                found = True
+    if not found:
+        documents[standard.name].append(standard)
+    return documents
+    
+def parse_hierarchical_export_format(
+    cre_file: List[Dict[str, str]]
+) -> Dict[str,List[defs.Document]]:
+    """parses the main OpenCRE csv and creates a list of standards in it
+
+    Args:
+        cre_file (List[Dict[str, str]]): the Dict representation of the spreadsheet, entries in the dict are {<Header-Entry>:<Value-Entry>}
+
+    Returns:
+        Dict[str,List[defs.Document]]] a dictionary of
+        {
+            <Name of resource>:[<resource documents>]
+            }
+        
+        for example:
+        {
+            "CRE":[<list of cre docs>],
+            "ASVS":[<list of ASVS docs>]
+        }
+    """
+    logger.info("Spreadsheet is hierarchical export format")
+    documents: Dict[str,List[defs.Document]] = {defs.Credoctypes.CRE.value:[]}
+    cre_dict = {}
+    max_hierarchy = len([key for key in cre_file[0].keys() if "CRE hierarchy" in key])
+    for mapping in cre_file:
+        cre: defs.CRE 
+        name: str = ""
+        current_hierarchy: int = 0
+        higher_cre: int = 0
+        
+        # a CRE's name is the last hierarchy item which is not blank
+        for i in range(max_hierarchy, 0, -1):
+            key = [key for key in mapping if key.startswith("CRE hierarchy %s" % i)][0]
+            if not is_empty(mapping.get(key)):
+                if current_hierarchy == 0:
+                    name = str(mapping.pop(key)).strip().replace("\n", " ")
+                    current_hierarchy = i
+                else:
+                    higher_cre = i
+                    break
+        if is_empty(name):
+            logger.warning(
+                f'Found entry with ID {mapping.get("CRE ID")}'
+                " without a cre name, skipping"
+            )
+            continue
+        if name in cre_dict.keys():
+            new_id = str(mapping.get("CRE ID"))
+            if cre_dict[name].id != new_id and cre_dict[name].id != "" and new_id != "":
+                logger.fatal(
+                    f"duplicate entry for cre named {name}, previous id:{cre_dict[name].id}, new id {new_id}"
+                )
+            cre = cre_dict[name]
+        else:
+            cre = defs.CRE(name=name)
+
+        if not is_empty(mapping.get("CRE ID")):
+            cre.id = str(mapping.pop("CRE ID"))
+        else:
+            logger.warning(f"empty Id for {name}")
+
+        if not is_empty(mapping.get("CRE Tags")):
+            ts = set()
+            for x in str(mapping.pop("CRE Tags")).split(","):
+                ts.add(x.strip())
+            cre.tags = list(ts)
+
+        cre_dict = update_cre_in_links(cre_dict, cre)
+
+        # TODO(spyros): temporary until we agree what we want to do with tags
+        mapping[
+            "Link to other CRE"
+        ] = f'{mapping["Link to other CRE"]},{",".join(cre.tags)}'
+        if not is_empty(mapping.get("Link to other CRE")):
+            other_cres = list(
+                set(
+                    [
+                        x.strip()
+                        for x in str(mapping.pop("Link to other CRE")).split(",")
+                        if not is_empty(x.strip())
+                    ]
+                )
+            )
+            for other_cre in other_cres:
+                if not cre_dict.get(other_cre):
+                    logger.warning(
+                        "%s linking to not yet existent cre %s" % (cre.name, other_cre)
+                    )
+                    new_cre = defs.CRE(name=other_cre.strip())
+                    cre_dict[new_cre.name] = new_cre
+                else:
+                    new_cre = cre_dict[other_cre.strip()]
+                    
+                # we only need a shallow copy here
+                cre.add_link(
+                    defs.Link(
+                        ltype=defs.LinkTypes.Related, document=new_cre.shallow_copy()
+                    )
+                )
+        for link in parse_standards(mapping):
+            link.document.add_link(defs.Link(document=cre.shallow_copy(), ltype=defs.LinkTypes.LinkedTo))
+            documents = add_standard_to_documents_array(link.document,documents)
+
+        # link CRE to a higher level one
+
+        if higher_cre:
+            name_hi = str(mapping.pop(f"CRE hierarchy {str(higher_cre)}")).strip()
+            cre_hi = cre_dict.get(name_hi)
+            if not cre_hi:
+                cre_hi = defs.CRE(name=name_hi)
+
+            existing_link = [
+                c
+                for c in cre_hi.links
+                if c.document.doctype == defs.Credoctypes.CRE
+                and c.document.name == cre.name
+            ]
+            # there is no need to capture the entirety of the cre tree, we just need to register this shallow relation
+            # the "documents" dict should contain the rest of the info
+            if existing_link:
+                cre_hi.links[
+                    cre_hi.links.index(existing_link[0])
+                    # ugliest way ever to write "update the object in that pointer"
+                ].document = cre.shallow_copy()
+            else:
+                cre_hi = cre_hi.add_link(
+                    defs.Link(
+                        ltype=defs.LinkTypes.Contains, document=cre.shallow_copy()
+                    )
+                )
+            cre_dict[cre_hi.name] = cre_hi
+        else:
+            pass  # add the cre to documents and make the connection
+        if cre:
+           cre_dict[cre.name] = cre
+
+    documents[defs.Credoctypes.CRE.value] = list(cre_dict.values())
+    return documents
+
+
+def parse_standards(
+    mapping: Dict[str, str], standards_mapping: Dict[str, Dict[str, Any]] = None
+) -> List[defs.Link]:
+    if not standards_mapping:
+        standards_mapping = supported_resource_mapping
+
     links: List[defs.Link] = []
     for name, struct in standards_mapping.get("Standards", {}).items():
         if not is_empty(mapping.get(struct["section"])) or not is_empty(
