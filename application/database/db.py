@@ -982,6 +982,9 @@ class Node_collection:
     def list_node_ids_by_ntype(self, ntype: str) -> List[str]:
         return self.session.query(Node.id).filter(Node.ntype == ntype).all()
 
+    def list_node_ids_by_name(self, name: str) -> List[str]:
+        return self.session.query(Node.id).filter(Node.name == name).all()
+
     def list_cre_ids(self) -> List[str]:
         return self.session.query(CRE.id).all()
 
