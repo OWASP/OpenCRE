@@ -95,7 +95,7 @@ def get_linked_nodes(mapping: Dict[str, str]) -> List[defs.Link]:
 
 
 def update_cre_in_links(
-    documents: Dict[str,defs.CRE], cre: defs.CRE
+    documents: Dict[str, defs.CRE], cre: defs.CRE
 ) -> List[defs.CRE]:
     for c in documents.values():
         for link in c.links:
@@ -258,128 +258,137 @@ def parse_uknown_key_val_standards_spreadsheet(
                 standards[sname] = primary_standard
     return standards
 
+
 # the supported resources from the main CSV
 supported_resource_mapping = {
-            "CRE": {
-                "id": "CRE ID",
-                "name": "CRE hierarchy",
-                "tags": "CRE Tags",
-                "links": "Link to other CRE",
-                "description": "",
-            },
-            "Standards": {
-                "ASVS": {
-                    "section": "Standard ASVS 4.0.3 description",
-                    "sectionID": "Standard ASVS 4.0.3 Item",
-                    "subsection": "",
-                    "hyperlink": "Standard ASVS 4.0.3 Hyperlink",
-                },
-                "OWASP Proactive Controls": {
-                    "section": "Standard OPC (ASVS source)",
-                    "sectionID": "",
-                    "subsection": "",
-                    "hyperlink": "Standard OPC (ASVS source)-hyperlink",
-                },
-                "CWE": {
-                    "section": "",
-                    "sectionID": "Standard CWE (from ASVS)",
-                    "subsection": "",
-                    "hyperlink": "Standard CWE (from ASVS)-hyperlink",
-                },
-                "NIST 800-53 v5": {
-                    "section": "Standard NIST 800-53 v5",
-                    "sectionID": "",
-                    "subsection": "",
-                    "hyperlink": "Standard NIST 800-53 v5-hyperlink",
-                    "separator": "\n",
-                },
-                "OWASP Web Security Testing Guide (WSTG)": {
-                    "section": "Standard WSTG-item",
-                    "sectionID": "",
-                    "subsection": "",
-                    "hyperlink": "Standard WSTG-Hyperlink",
-                    "separator": ";",
-                },
-                "OWASP Cheat Sheets": {
-                    "section": "Standard Cheat_sheets",
-                    "sectionID": "",
-                    "subsection": "",
-                    "hyperlink": "Standard Cheat_sheets-Hyperlink",
-                    "separator": ";",
-                },
-                "NIST 800-63": {
-                    "section": "Standard NIST-800-63 (from ASVS)",
-                    "sectionID": "",
-                    "subsection": "",
-                    "hyperlink": "",
-                    "separator": "/",
-                },
-                "OWASP Top 10 2021": {
-                    "section": "OWASP Top 10 2021 item",
-                    "sectionID": "OWASP Top 10 2021 item ID",
-                    "subsection": "",
-                    "hyperlink": "OWASP Top 10 2021 hyperlink",
-                },
-                "OWASP Top 10 2017": {
-                    "section": "Standard Top 10 2017 item",
-                    "sectionID": "",
-                    "subsection": "",
-                    "hyperlink": "Standard Top 10 2017 Hyperlink",
-                },
-                "Cloud Controls Matrix": {
-                    "section": "Source-CCM-Control Title",
-                    "sectionID": "Source-CCM ID",
-                    "subsection": "",
-                    "hyperlink": "",
-                    "separator": "\n",
-                },
-                "ISO 27001": {
-                    "section": "Standard 27001/2:2022",
-                    "sectionID": "Standard 27001/2:2022 Section ID",
-                    "subsection": "",
-                    "hyperlink": "",
-                    "separator": "\n",
-                },
-                "SAMM": {
-                    "section": "Standard SAMM v2",
-                    "sectionID": "Standard SAMM v2 ID",
-                    "subsection": "",
-                    "hyperlink": "Standard SAMM v2 hyperlink",
-                    # "version":"v2",
-                    "separator": "\n",
-                },
-                "NIST SSDF": {
-                    "section": "Standard NIST SSDF",
-                    "sectionID": "Standard NIST SSDF ID",
-                    "subsection": "",
-                    "hyperlink": "",
-                    # "version":"v2",
-                    "separator": "\n",
-                },
-            },
-        }
-def get_supported_resources_from_main_csv()->List[str]:
+    "CRE": {
+        "id": "CRE ID",
+        "name": "CRE hierarchy",
+        "tags": "CRE Tags",
+        "links": "Link to other CRE",
+        "description": "",
+    },
+    "Standards": {
+        "ASVS": {
+            "section": "Standard ASVS 4.0.3 description",
+            "sectionID": "Standard ASVS 4.0.3 Item",
+            "subsection": "",
+            "hyperlink": "Standard ASVS 4.0.3 Hyperlink",
+        },
+        "OWASP Proactive Controls": {
+            "section": "Standard OPC (ASVS source)",
+            "sectionID": "",
+            "subsection": "",
+            "hyperlink": "Standard OPC (ASVS source)-hyperlink",
+        },
+        "CWE": {
+            "section": "",
+            "sectionID": "Standard CWE (from ASVS)",
+            "subsection": "",
+            "hyperlink": "Standard CWE (from ASVS)-hyperlink",
+        },
+        "NIST 800-53 v5": {
+            "section": "Standard NIST 800-53 v5",
+            "sectionID": "",
+            "subsection": "",
+            "hyperlink": "Standard NIST 800-53 v5-hyperlink",
+            "separator": "\n",
+        },
+        "OWASP Web Security Testing Guide (WSTG)": {
+            "section": "Standard WSTG-item",
+            "sectionID": "",
+            "subsection": "",
+            "hyperlink": "Standard WSTG-Hyperlink",
+            "separator": ";",
+        },
+        "OWASP Cheat Sheets": {
+            "section": "Standard Cheat_sheets",
+            "sectionID": "",
+            "subsection": "",
+            "hyperlink": "Standard Cheat_sheets-Hyperlink",
+            "separator": ";",
+        },
+        "NIST 800-63": {
+            "section": "Standard NIST-800-63 (from ASVS)",
+            "sectionID": "",
+            "subsection": "",
+            "hyperlink": "",
+            "separator": "/",
+        },
+        "OWASP Top 10 2021": {
+            "section": "OWASP Top 10 2021 item",
+            "sectionID": "OWASP Top 10 2021 item ID",
+            "subsection": "",
+            "hyperlink": "OWASP Top 10 2021 hyperlink",
+        },
+        "OWASP Top 10 2017": {
+            "section": "Standard Top 10 2017 item",
+            "sectionID": "",
+            "subsection": "",
+            "hyperlink": "Standard Top 10 2017 Hyperlink",
+        },
+        "Cloud Controls Matrix": {
+            "section": "Source-CCM-Control Title",
+            "sectionID": "Source-CCM ID",
+            "subsection": "",
+            "hyperlink": "",
+            "separator": "\n",
+        },
+        "ISO 27001": {
+            "section": "Standard 27001/2:2022",
+            "sectionID": "Standard 27001/2:2022 Section ID",
+            "subsection": "",
+            "hyperlink": "",
+            "separator": "\n",
+        },
+        "SAMM": {
+            "section": "Standard SAMM v2",
+            "sectionID": "Standard SAMM v2 ID",
+            "subsection": "",
+            "hyperlink": "Standard SAMM v2 hyperlink",
+            # "version":"v2",
+            "separator": "\n",
+        },
+        "NIST SSDF": {
+            "section": "Standard NIST SSDF",
+            "sectionID": "Standard NIST SSDF ID",
+            "subsection": "",
+            "hyperlink": "",
+            # "version":"v2",
+            "separator": "\n",
+        },
+    },
+}
+
+
+def get_supported_resources_from_main_csv() -> List[str]:
     return supported_resource_mapping["Standards"].keys()
 
-def add_standard_to_documents_array(standard:defs.Standard,documents:Dict[str,List[defs.Document]])->Dict[defs.Credoctypes,Dict[str,List[defs.Document]]]:
+
+def add_standard_to_documents_array(
+    standard: defs.Standard, documents: Dict[str, List[defs.Document]]
+) -> Dict[defs.Credoctypes, Dict[str, List[defs.Document]]]:
     if standard.name not in documents.keys():
         documents[standard.name] = []
     found = False
     for doc in documents[standard.name]:
-        if  doc.name == standard.name and\
-            doc.section == standard.section and\
-            doc.subsection == standard.subsection and\
-            doc.sectionID == standard.sectionID and\
-            doc.version == standard.version:
-                doc = standard
-                found = True
+        if (
+            doc.name == standard.name
+            and doc.section == standard.section
+            and doc.subsection == standard.subsection
+            and doc.sectionID == standard.sectionID
+            and doc.version == standard.version
+        ):
+            doc = standard
+            found = True
     if not found:
         documents[standard.name].append(standard)
     return documents
-    
+
+
 def parse_hierarchical_export_format(
     cre_file: List[Dict[str, str]]
-) -> Dict[str,List[defs.Document]]:
+) -> Dict[str, List[defs.Document]]:
     """parses the main OpenCRE csv and creates a list of standards in it
 
     Args:
@@ -390,7 +399,7 @@ def parse_hierarchical_export_format(
         {
             <Name of resource>:[<resource documents>]
             }
-        
+
         for example:
         {
             "CRE":[<list of cre docs>],
@@ -398,15 +407,15 @@ def parse_hierarchical_export_format(
         }
     """
     logger.info("Spreadsheet is hierarchical export format")
-    documents: Dict[str,List[defs.Document]] = {defs.Credoctypes.CRE.value:[]}
+    documents: Dict[str, List[defs.Document]] = {defs.Credoctypes.CRE.value: []}
     cre_dict = {}
     max_hierarchy = len([key for key in cre_file[0].keys() if "CRE hierarchy" in key])
     for mapping in cre_file:
-        cre: defs.CRE 
+        cre: defs.CRE
         name: str = ""
         current_hierarchy: int = 0
         higher_cre: int = 0
-        
+
         # a CRE's name is the last hierarchy item which is not blank
         for i in range(max_hierarchy, 0, -1):
             key = [key for key in mapping if key.startswith("CRE hierarchy %s" % i)][0]
@@ -447,9 +456,9 @@ def parse_hierarchical_export_format(
         cre_dict = update_cre_in_links(cre_dict, cre)
 
         # TODO(spyros): temporary until we agree what we want to do with tags
-        mapping[
-            "Link to other CRE"
-        ] = f'{mapping["Link to other CRE"]},{",".join(cre.tags)}'
+        mapping["Link to other CRE"] = (
+            f'{mapping["Link to other CRE"]},{",".join(cre.tags)}'
+        )
         if not is_empty(mapping.get("Link to other CRE")):
             other_cres = list(
                 set(
@@ -469,7 +478,7 @@ def parse_hierarchical_export_format(
                     cre_dict[new_cre.name] = new_cre
                 else:
                     new_cre = cre_dict[other_cre.strip()]
-                    
+
                 # we only need a shallow copy here
                 cre.add_link(
                     defs.Link(
@@ -477,8 +486,10 @@ def parse_hierarchical_export_format(
                     )
                 )
         for link in parse_standards(mapping):
-            link.document.add_link(defs.Link(document=cre.shallow_copy(), ltype=defs.LinkTypes.LinkedTo))
-            documents = add_standard_to_documents_array(link.document,documents)
+            link.document.add_link(
+                defs.Link(document=cre.shallow_copy(), ltype=defs.LinkTypes.LinkedTo)
+            )
+            documents = add_standard_to_documents_array(link.document, documents)
 
         # link CRE to a higher level one
 
@@ -511,7 +522,7 @@ def parse_hierarchical_export_format(
         else:
             pass  # add the cre to documents and make the connection
         if cre:
-           cre_dict[cre.name] = cre
+            cre_dict[cre.name] = cre
 
     documents[defs.Credoctypes.CRE.value] = list(cre_dict.values())
     return documents
