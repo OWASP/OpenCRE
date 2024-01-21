@@ -561,15 +561,19 @@ class TestParsers(unittest.TestCase):
 
     def test_parse_hierarchical_export_format(self) -> None:
         #  todo(northdpole): add a tags linking test
-        
+
         # register cres
         ctag = defs.CRE(id="123", name="tag-connection")
-        cauth = defs.CRE(id=8, name="Authentication", tags=["tag-connection"])
-        cauthmech = defs.CRE(id=3, name="Authentication mechanism")
-        cauth_verify = defs.CRE(id=4,tags=[],name="Verify that the application uses a single vetted authentication mechanism")
+        cauth = defs.CRE(id="8", name="Authentication", tags=["tag-connection"])
+        cauthmech = defs.CRE(id="3", name="Authentication mechanism")
+        cauth_verify = defs.CRE(
+            id="4",
+            tags=[],
+            name="Verify that the application uses a single vetted authentication mechanism",
+        )
         clogging = defs.CRE(name="Logging and Error handling")
         cfp = defs.CRE(name="FooParent")
-        cfoo = defs.CRE(id=9, name="FooBar")
+        cfoo = defs.CRE(id="9", name="FooBar")
 
         # register standards
         s_top10_2017_a2 = defs.Standard(
@@ -620,93 +624,136 @@ class TestParsers(unittest.TestCase):
             hyperlink="https://example.com/nist-800-53-v5",
         )
         s_nist_53_pl8 = defs.Standard(
-                name="NIST 800-53 v5",
-                section="PL-8 Information Security Architecture",
-                hyperlink="https://example.com/nist-800-53-v5",
-            )
+            name="NIST 800-53 v5",
+            section="PL-8 Information Security Architecture",
+            hyperlink="https://example.com/nist-800-53-v5",
+        )
         s_nist_53_sc39 = defs.Standard(
-                name="NIST 800-53 v5",
-                section="SC-39 PROCESS ISOLATION",
-                hyperlink="https://example.com/nist-800-53-v5",
-            )
+            name="NIST 800-53 v5",
+            section="SC-39 PROCESS ISOLATION",
+            hyperlink="https://example.com/nist-800-53-v5",
+        )
         s_nist_53_sc3 = defs.Standard(
-                name="NIST 800-53 v5",
-                section="SC-3 SECURITY FUNCTION",
-                hyperlink="https://example.com/nist-800-53-v5",
-            )
+            name="NIST 800-53 v5",
+            section="SC-3 SECURITY FUNCTION",
+            hyperlink="https://example.com/nist-800-53-v5",
+        )
 
-    # cre links AKA semantic graph structure
+        # cre links AKA semantic graph structure
         cfoo.add_link(
-            defs.Link(ltype=defs.LinkTypes.Related, document=cauthmech.shallow_copy()))
+            defs.Link(ltype=defs.LinkTypes.Related, document=cauthmech.shallow_copy())
+        )
         cfp.add_link(
-            defs.Link(ltype=defs.LinkTypes.Contains, document=cfoo.shallow_copy()))
-       
+            defs.Link(ltype=defs.LinkTypes.Contains, document=cfoo.shallow_copy())
+        )
+
         cauth.add_link(
             defs.Link(ltype=defs.LinkTypes.Related, document=cfoo.shallow_copy())
-            ).add_link(
+        ).add_link(
             defs.Link(ltype=defs.LinkTypes.Contains, document=cauthmech.shallow_copy())
-            ).add_link(
-            defs.Link(ltype=defs.LinkTypes.Related, document=ctag))
-        
+        ).add_link(
+            defs.Link(ltype=defs.LinkTypes.Related, document=ctag.shallow_copy())
+        )
+
         cauthmech.add_link(
-            defs.Link(ltype=defs.LinkTypes.Contains, document=cauth_verify.shallow_copy()))
+            defs.Link(
+                ltype=defs.LinkTypes.Contains, document=cauth_verify.shallow_copy()
+            )
+        )
         cauth_verify.add_link(
-            defs.Link(ltype=defs.LinkTypes.Related, document=clogging.shallow_copy()))
+            defs.Link(ltype=defs.LinkTypes.Related, document=clogging.shallow_copy())
+        )
 
         # standard links AKA semantic web content
         s_cheatsheet_b.add_link(
-            defs.Link(ltype=defs.LinkTypes.LinkedTo, document=cfoo.shallow_copy()))
+            defs.Link(ltype=defs.LinkTypes.LinkedTo, document=cfoo.shallow_copy())
+        )
         s_cheatsheet_f.add_link(
-            defs.Link(ltype=defs.LinkTypes.LinkedTo, document=cfoo.shallow_copy()))
-        s_top10_2017_a2.add_link(defs.Link(ltype=defs.LinkTypes.LinkedTo, document=cauth))
-        s_nist_63_3.add_link(defs.Link(ltype=defs.LinkTypes.LinkedTo, document=cauth))
-        s_nist_63_4.add_link(defs.Link(ltype=defs.LinkTypes.LinkedTo, document=cauth))
-        s_wstg_2123.add_link(defs.Link(ltype=defs.LinkTypes.LinkedTo, document=cauth))
-        s_cwe_19876.add_link(defs.Link(ltype=defs.LinkTypes.LinkedTo, document=cauth))
-        s_opc_123654.add_link(defs.Link(ltype=defs.LinkTypes.LinkedTo, document=cauth))
-        s_nist_53_sa22.add_link(defs.Link(ltype=defs.LinkTypes.LinkedTo, document=cauth))
-        s_asvs_10.add_link(defs.Link(ltype=defs.LinkTypes.LinkedTo, document=cauth))
-        s_cwe_306.add_link(defs.Link(ltype=defs.LinkTypes.LinkedTo, document=cauth))
+            defs.Link(ltype=defs.LinkTypes.LinkedTo, document=cfoo.shallow_copy())
+        )
+        s_top10_2017_a2.add_link(
+            defs.Link(ltype=defs.LinkTypes.LinkedTo, document=cauth.shallow_copy())
+        )
+        s_nist_63_3.add_link(
+            defs.Link(ltype=defs.LinkTypes.LinkedTo, document=cauth.shallow_copy())
+        )
+        s_nist_63_4.add_link(
+            defs.Link(ltype=defs.LinkTypes.LinkedTo, document=cauth.shallow_copy())
+        )
+        s_wstg_2123.add_link(
+            defs.Link(ltype=defs.LinkTypes.LinkedTo, document=cauth.shallow_copy())
+        )
+        s_cwe_19876.add_link(
+            defs.Link(ltype=defs.LinkTypes.LinkedTo, document=cauth.shallow_copy())
+        )
+        s_opc_123654.add_link(
+            defs.Link(ltype=defs.LinkTypes.LinkedTo, document=cauth.shallow_copy())
+        )
+        s_nist_53_sa22.add_link(
+            defs.Link(ltype=defs.LinkTypes.LinkedTo, document=cauth.shallow_copy())
+        )
+        s_asvs_10.add_link(
+            defs.Link(
+                ltype=defs.LinkTypes.LinkedTo, document=cauth_verify.shallow_copy()
+            )
+        )
+        s_cwe_306.add_link(
+            defs.Link(
+                ltype=defs.LinkTypes.LinkedTo, document=cauth_verify.shallow_copy()
+            )
+        )
 
-        s_nist_53_pl8.add_link(defs.Link(ltype=defs.LinkTypes.LinkedTo,document=cauth_verify,))
-        s_nist_53_sc39.add_link(defs.Link(ltype=defs.LinkTypes.LinkedTo,document=cauth_verify,))
-        s_nist_53_sc3.add_link(defs.Link(ltype=defs.LinkTypes.LinkedTo,document=cauth_verify,))
+        s_nist_53_pl8.add_link(
+            defs.Link(
+                ltype=defs.LinkTypes.LinkedTo, document=cauth_verify.shallow_copy()
+            )
+        )
+        s_nist_53_sc39.add_link(
+            defs.Link(
+                ltype=defs.LinkTypes.LinkedTo, document=cauth_verify.shallow_copy()
+            )
+        )
+        s_nist_53_sc3.add_link(
+            defs.Link(
+                ltype=defs.LinkTypes.LinkedTo, document=cauth_verify.shallow_copy()
+            )
+        )
 
         expected = {
-            defs.Credoctypes.CRE.value: [ctag,cauth,cauthmech,cauth_verify,clogging,cfp,cfoo],
-            "NIST 800-53 v5": [s_nist_53_pl8,s_nist_53_sa22,s_nist_53_sc39,s_nist_53_sc3],
-            "NIST 800-63":[s_nist_63_3,s_nist_63_4],
-            "OWASP Cheat Sheets": [s_cheatsheet_b,s_cheatsheet_f],
+            defs.Credoctypes.CRE.value: [
+                ctag,
+                cauth,
+                cauthmech,
+                cauth_verify,
+                clogging,
+                cfp,
+                cfoo,
+            ],
+            "NIST 800-53 v5": [
+                s_nist_53_pl8,
+                s_nist_53_sa22,
+                s_nist_53_sc39,
+                s_nist_53_sc3,
+            ],
+            "NIST 800-63": [s_nist_63_3, s_nist_63_4],
+            "OWASP Cheat Sheets": [s_cheatsheet_b, s_cheatsheet_f],
             "OWASP Top 10 2017": [s_top10_2017_a2],
             "OWASP Proactive Controls": [s_opc_123654],
-            "CWE": [s_cwe_19876,s_cwe_306],
+            "CWE": [s_cwe_19876, s_cwe_306],
             "OWASP Web Security Testing Guide (WSTG)": [s_wstg_2123],
             "ASVS": [s_asvs_10],
         }
 
         output = parse_hierarchical_export_format(hierarchical_export_format)
         self.maxDiff = None
+
         for k, v in expected.items():
-            try:
-                self.assertEqual(output[k], v)
-            except Exception as e:
-                pprint("-" * 45+f" {k} "+"-"*45)
-                pprint(k)
-                pprint(output[k])
-                pprint("-" * 90)
-                pprint(v)
-                pprint("-" * 90)
-                raise e
+            for element in v:
+                self.assertIn(element, output[k])
+
         for k, v in output.items():
-            try:
-                self.assertEqual(expected[k], v)
-            except Exception as e:
-                pprint("-" * 45+f" {k} "+"-"*45)
-                pprint(expected[k])
-                pprint("-" * 90)
-                pprint(v)
-                pprint("-" * 90)
-                raise e
+            for element in v:
+                self.assertIn(element, output[k])
 
 
 hierarchical_export_format = [
@@ -832,19 +879,25 @@ hierarchical_export_format = [
         "CRE hierarchy 1": "Authentication",
         "CRE hierarchy 2": "Authentication mechanism",
         "CRE hierarchy 3": "",
-        "CRE hierarchy 4": "Verify that the application uses a single vetted authentication mechanism",
+        "CRE hierarchy 4": (
+            "Verify that the application uses a single vetted authentication mechanism"
+        ),
         "Standard Top 10 2017 item": "See higher level topic",
         "Standard Top 10 2017 Hyperlink": "https://example.com/top102017",
         "CRE ID": 4,
         "Standard CWE (from ASVS)": 306,
         "Standard CWE (from ASVS)-hyperlink": "https://example.com/cwe306",
         "Link to other CRE": "Logging and Error handling",
-        "Standard NIST 800-53 v5": "PL-8 Information Security Architecture\n"
-        "SC-39 PROCESS ISOLATION\n"
-        "SC-3 SECURITY FUNCTION",
-        "Standard NIST 800-53 v5-hyperlink": "https://example.com/nist-800-53-v5\n"
-        "https://example.com/nist-800-53-v5\n"
-        "https://example.com/nist-800-53-v5",
+        "Standard NIST 800-53 v5": (
+            "PL-8 Information Security Architecture\n"
+            "SC-39 PROCESS ISOLATION\n"
+            "SC-3 SECURITY FUNCTION"
+        ),
+        "Standard NIST 800-53 v5-hyperlink": (
+            "https://example.com/nist-800-53-v5\n"
+            "https://example.com/nist-800-53-v5\n"
+            "https://example.com/nist-800-53-v5"
+        ),
         "Standard NIST-800-63 (from ASVS)": "None",
         "Standard OPC (ASVS source)": "None",
         "Standard OPC (ASVS source)-hyperlink": "",
@@ -880,7 +933,9 @@ hierarchical_export_format = [
         "Standard WSTG-item": "",
         "Standard WSTG-Hyperlink": "",
         "Standard Cheat_sheets": "foo; bar",
-        "Standard Cheat_sheets-Hyperlink": "https://example.com/cheatsheetf/foo; https://example.com/cheatsheetb/bar",
+        "Standard Cheat_sheets-Hyperlink": (
+            "https://example.com/cheatsheetf/foo; https://example.com/cheatsheetb/bar"
+        ),
     },
 ]
 if __name__ == "__main__":

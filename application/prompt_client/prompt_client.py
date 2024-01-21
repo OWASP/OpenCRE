@@ -27,23 +27,23 @@ def is_valid_url(url):
     return url.startswith("http://") or url.startswith("https://")
 
 
-class in_memory_embeddings:
+class __in_memory_embeddings:
     __instance = None
     __webkit = None
     __browser = None
     __context = None
     __playwright = None
+    ai_client = None
 
     def __init__(sel):
         raise ValueError(
-            "class in_memory_embeddings is a singleton, please call instance() instead"
+            "class __in_memory_embeddings is a singleton, please call instance() instead"
         )
 
     # Function to get text content from a URL
-    @classmethod
-    def get_content(cls, url):
+    def get_content(self, url):
         try:
-            page = cls.__context.new_page()
+            page = self.__context.new_page()
             logger.info(f"loading page {url}")
             page.goto(url)
             text = page.locator("body").inner_text()
@@ -53,8 +53,7 @@ class in_memory_embeddings:
             print(f"Error fetching content for URL: {url} - {str(e)}")
             return ""
 
-    @classmethod
-    def clean_content(cls, content):
+    def clean_content(self, content):
         content = re.sub("\s+", " ", content.strip())
 
         # split into words
@@ -72,35 +71,29 @@ class in_memory_embeddings:
         return " ".join(words)
 
     @classmethod
-    def instance(cls, database: db.Node_collection, ai_client: Any):
+    def instance(cls):
         if cls.__instance is None:
             cls.__instance = cls.__new__(cls)
-
-            missing_embeddings = cls.find_missing_embeddings(database)
-            if missing_embeddings:
-                if not os.environ.get(
-                    "NO_GEN_EMBEDDINGS"
-                ):  # in case we want to run without connectivity to ai_client or playwright
-                    cls.__playwright = sync_playwright().start()
-                    nltk.download("punkt")
-                    nltk.download("stopwords")
-                    cls.__firefox = cls.__playwright.firefox
-                    cls.__browser = (
-                        cls.__firefox.launch()
-                    )  # headless=False, slow_mo=1000)
-                    cls.__context = cls.__browser.new_context()
-
-                    cls.generate_embeddings(database, missing_embeddings, ai_client)
-                    cls.__browser.close()
-                    cls.__playwright.stop()
-                else:
-                    logger.info(
-                        f"there are {len(missing_embeddings)} embeddings missing from the dataset, your db is inclompete"
-                    )
         return cls.__instance
 
-    @classmethod
-    def find_missing_embeddings(cls, database: db.Node_collection) -> List[str]:
+    def with_ai_client(self, ai_client):
+        self.ai_client = ai_client
+        return self
+
+    def setup_playwright(self):
+        # in case we want to run without connectivity to ai_client or playwright
+        self.__playwright = sync_playwright().start()
+        nltk.download("punkt")
+        nltk.download("stopwords")
+        self.__firefox = self.__playwright.firefox
+        self.__browser = self.__firefox.launch()  # headless=False, slow_mo=1000)
+        self.__context = self.__browser.new_context()
+
+    def teardown_playwright(self):
+        self.__browser.close()
+        self.__playwright.stop()
+
+    def find_missing_embeddings(self, database: db.Node_collection) -> List[str]:
         """
         Method used to update embeddings in the database, it needs an environment with access to a supported LLM and playwright
 
@@ -132,12 +125,24 @@ class in_memory_embeddings:
                 missing_embeddings.extend(b)
         return missing_embeddings
 
-    @classmethod
+    def generate_embeddings_for(self, database: db.Node_collection, item_name: str):
+        """Iterates over all database documents related to the item identified by item_name and generates embeddings for it if the embeddings do not already exist
+            For example if "ASVS" is passed the method will generate all embeddings for ASVS
+        Args:
+            database (db.Node_collection): the Node_collection instance to use
+            item_name (str): the item for which to generate embeddings, this can be either `cre_defs.Credoctypes.CRE.value` for generating all CRE embeddings or the name of any Standard or Tool.
+        """
+        if item_name == cre_defs.Credoctypes.CRE.value:
+            ids = [a[0] for a in database.list_cre_ids()]
+        else:
+            ids = [a[0] for a in database.list_node_ids_by_name(item_name)]
+
+        for dbID in ids:
+            if not database.get_embedding(dbID):
+                self.generate_embeddings(database, [dbID])
+
     def generate_embeddings(
-        cls,
-        database: db.Node_collection,
-        missing_embeddings: List[str],
-        ai_client,
+        self, database: db.Node_collection, missing_embeddings: List[str]
     ):
         """method generate embeddings accepts a list of Database IDs of object which do not have embeddings and generates embeddings for those objects"""
         logger.info(f"generating {len(missing_embeddings)} embeddings")
@@ -147,14 +152,14 @@ class in_memory_embeddings:
             content = ""
             if node:
                 if is_valid_url(node.hyperlink):
-                    content = cls.clean_content(cls.get_content(node.hyperlink))
+                    content = self.clean_content(self.get_content(node.hyperlink))
                 else:
                     content = node.__repr__()
                 logger.info(
                     f"making embedding for {node.hyperlink if node.hyperlink else content}"
                 )
 
-                embedding = ai_client.get_text_embeddings(content)
+                embedding = self.ai_client.get_text_embeddings(content)
                 dbnode = db.dbNodeFromNode(node)
                 if not dbnode:
                     logger.fatal(node, "cannot be converted to database Node")
@@ -165,7 +170,7 @@ class in_memory_embeddings:
             elif cre:
                 content = f"{cre.doctype}\n name:{cre.name}\n description:{cre.description}\n id:{cre.id}\n "
                 logger.info(f"making embedding for {content}")
-                embedding = ai_client.get_text_embeddings(content)
+                embedding = self.ai_client.get_text_embeddings(content)
                 dbcre = db.dbCREfromCRE(cre)
                 if not dbcre:
                     logger.fatal(node, "cannot be converted to database Node")
@@ -177,7 +182,7 @@ class in_memory_embeddings:
 
 
 class PromptHandler:
-    def __init__(self, database: db.Node_collection) -> None:
+    def __init__(self, database: db.Node_collection, load_all_embeddings=False) -> None:
         self.ai_client = None
         if os.environ.get("GCP_NATIVE") or os.environ.get(
             "SERVICE_ACCOUNT_CREDENTIALS"
@@ -194,9 +199,28 @@ class PromptHandler:
                 "cannot instantiate ai client, neither OPENAI_API_KEY nor SERVICE_ACCOUNT_CREDENTIALS are set "
             )
         self.database = database
-        self.embeddings_instance = in_memory_embeddings.instance(
-            database, ai_client=self.ai_client
+        self.embeddings_instance = __in_memory_embeddings.instance().with_ai_client(
+            client=self.ai_client
         )
+        if not os.environ.get("NO_GEN_EMBEDDINGS") and load_all_embeddings:
+            missing_embeddings = self.embeddings_instance.find_missing_embeddings(
+                database
+            )
+            if missing_embeddings:
+                self.embeddings_instance.setup_playwright()
+                self.embeddings_instance.generate_embeddings(
+                    database, missing_embeddings, self.ai_client
+                )
+                self.embeddings_instance.teardown_playwright()
+            else:
+                logger.info(
+                    f"there are {len(missing_embeddings)} embeddings missing from the dataset, db inclompete"
+                )
+
+    def generate_embeddings_for(self, item_name: str):
+        self.embeddings_instance.setup_playwright()
+        self.embeddings_instance.generate_embeddings_for(self.database, item_name)
+        self.embeddings_instance.teardown_playwright()
 
     def __load_cre_embeddings(
         self, db_embeddings: Dict[str, List[float]]

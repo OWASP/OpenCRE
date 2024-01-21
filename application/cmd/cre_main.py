@@ -159,11 +159,11 @@ def parse_file(
             data_class = (
                 defs.Standard
                 if doctype == defs.Credoctypes.Standard.value
-                else defs.Code
-                if doctype == defs.Credoctypes.Code.value
-                else defs.Tool
-                if doctype == defs.Credoctypes.Tool.value
-                else None
+                else (
+                    defs.Code
+                    if doctype == defs.Credoctypes.Code.value
+                    else defs.Tool if doctype == defs.Credoctypes.Tool.value else None
+                )
             )
             document = from_dict(
                 data_class=data_class,
@@ -200,19 +200,31 @@ def parse_file(
 
 
 def parse_standards_from_spreadsheeet(
-    cre_file: List[Dict[str, Any]], result: db.Node_collection
+    cre_file: List[Dict[str, Any]], collection: db.Node_collection
 ) -> None:
     """given a yaml with standards, build a list of standards in the db"""
     cres = {}
     if "CRE:name" in cre_file[0].keys():
-        cres = spreadsheet_parsers.parse_export_format(cre_file)
+        documents = spreadsheet_parsers.parse_export_format(cre_file)
+        pc = prompt_client.PromptHandler(collection)
+        for _, cres in cres.pop(defs.Credoctypes.CRE.value):
+            for cre in cres:
+                register_cre(cre, collection)
+            # TODO(notrhdpole): sync GraphDB
+            pc.generate_embeddings_for(defs.Credoctypes.CRE.value)
+        for standard_name, standards in documents:
+            # TODO (northdpole): parallelise, send each element of this array to a different worker and move the following to a worker method
+            for node in standards:
+                register_node(node, collection)
+            pc.generate_embeddings_for(standard_name)
+            # TODO(notrhdpole): sync GraphDB
+            # TODO(notrhdpole): calculate gap analysis
+
     elif any(key.startswith("CRE hierarchy") for key in cre_file[0].keys()):
         cres = spreadsheet_parsers.parse_hierarchical_export_format(cre_file)
+        register_cre(cres, collection)
     else:
         logger.fatal(f"could not find any useful keys { cre_file[0].keys()}")
-    # register groupless cres first
-    for _, cre in cres.items():
-        register_cre(cre, result)
 
 
 def get_cre_files_from_disk(cre_loc: str) -> Generator[str, None, None]:
@@ -520,7 +532,7 @@ def export_to_osib(file_loc: str, cache: str) -> None:
 
 def generate_embeddings(db_url: str) -> None:
     database = db_connect(path=db_url)
-    prompt = prompt_client.PromptHandler(database)
+    prompt_client.PromptHandler(database, load_all_embeddings=True)
 
 
 def owasp_metadata_to_cre(meta_file: str):
