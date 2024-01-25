@@ -58,7 +58,7 @@ install-python:
 	playwright install
 	
 install-typescript:
-	cd application/frontend && yarn build
+	yarn add webpack && cd application/frontend && yarn build
 
 install: install-typescript install-python
 
