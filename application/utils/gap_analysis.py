@@ -72,6 +72,5 @@ def preload(target_url: str):
                         if f"{sb}->{sa}" in waiting:
                             waiting.remove(f"{sb}->{sa}")
         print(f"calculating {len(waiting)} gap analyses")
-        # print(waiting)
         time.sleep(30)
     print("map analysis preloaded successfully")
