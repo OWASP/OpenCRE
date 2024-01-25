@@ -9,7 +9,7 @@ import urllib.parse
 from typing import Any
 from application.utils import oscal_utils, redis
 
-from rq import Worker, Queue, Connection, job, exceptions
+from rq import Queue, job, exceptions
 
 from application.database import db
 from application.defs import cre_defs as defs
