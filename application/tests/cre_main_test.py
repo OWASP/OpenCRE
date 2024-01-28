@@ -3,11 +3,13 @@ import os
 import shutil
 import tempfile
 import unittest
-from pprint import pprint
 from typing import Any, Dict, List
 from unittest import mock
 from unittest.mock import Mock, patch
-
+from rq import Queue
+from application.utils import redis
+from application.prompt_client import prompt_client as prompt_client
+from application.tests.utils import data_gen
 from application import create_app, sqla  # type: ignore
 from application.cmd import cre_main as main
 from application.database import db
@@ -69,7 +71,7 @@ class TestMain(unittest.TestCase):
         self.assertEqual(ret.section, "Standard With Links")
 
         # assert db structure makes sense
-        # no links since our nodes don't have a CRE to map to
+        # no links since our nodes do not have a CRE to map to
         for thing in self.collection.session.query(db.Links).all():
             self.assertIsNone(thing.cre)
 
@@ -302,187 +304,60 @@ class TestMain(unittest.TestCase):
         )
         self.assertCountEqual(res, expected)
 
-    def test_parse_standards_from_spreadsheeet(self) -> None:
-        input = [
-            {
-                "Standard ASVS 4.0.3 Item": "",
-                "Standard ASVS 4.0.3 description": "",
-                "Standard ASVS 4.0.3 Hyperlink": "",
-                "ASVS-L1": "",
-                "ASVS-L2": "",
-                "ASVS-L3": "",
-                "CRE hierarchy 1": "",
-                "CRE hierarchy 2": "",
-                "CRE hierarchy 3": "",
-                "CRE hierarchy 4": "",
-                "Standard Top 10 2017 item": "A2_Broken_Authentication",
-                "Standard Top 10 2017 Hyperlink": "https://example.com/top102017",
-                "CRE ID": "",
-                "Standard CWE (from ASVS)": "",
-                "Standard CWE (from ASVS)-hyperlink": "",
-                "Link to other CRE": "",
-                "Standard NIST 800-53 v5": "",
-                "Standard NIST 800-53 v5-hyperlink": "",
-                "Standard NIST 800-63 (from ASVS)": "",
-                "Standard OPC (ASVS source)": "",
-                "Standard OPC (ASVS source)-hyperlink": "",
-                "CRE Tags": "",
-                "Standard WSTG-item": "",
-                "Standard WSTG-Hyperlink": "",
-                "Standard Cheat_sheets": "",
-                "Standard Cheat_sheets-Hyperlink": "",
-            },
-            {
-                "Standard ASVS 4.0.3 Item": "",
-                "Standard ASVS 4.0.3 description": "",
-                "Standard ASVS 4.0.3 Hyperlink": "",
-                "ASVS-L1": "",
-                "ASVS-L2": "",
-                "ASVS-L3": "",
-                "CRE hierarchy 1": "",
-                "CRE hierarchy 2": "",
-                "CRE hierarchy 3": "",
-                "CRE hierarchy 4": "tag-connection",
-                "Standard Top 10 2017 item": "",
-                "Standard Top 10 2017 Hyperlink": "",
-                "CRE ID": "123",
-                "Standard CWE (from ASVS)": "",
-                "Standard CWE (from ASVS)-hyperlink": "",
-                "Link to other CRE": "",
-                "Standard NIST 800-53 v5": "",
-                "Standard NIST 800-53 v5-hyperlink": "",
-                "Standard NIST 800-63 (from ASVS)": "",
-                "Standard OPC (ASVS source)": "",
-                "Standard OPC (ASVS source)-hyperlink": "",
-                "CRE Tags": "",
-                "Standard WSTG-item": "",
-                "Standard WSTG-Hyperlink": "",
-                "Standard Cheat_sheets": "",
-                "Standard Cheat_sheets-Hyperlink": "",
-            },
-            {
-                "Standard ASVS 4.0.3 Item": "",
-                "Standard ASVS 4.0.3 description": "",
-                "Standard ASVS 4.0.3 Hyperlink": "",
-                "ASVS-L1": "",
-                "ASVS-L2": "",
-                "ASVS-L3": "",
-                "CRE hierarchy 1": "Authentication",
-                "CRE hierarchy 2": "",
-                "CRE hierarchy 3": "",
-                "CRE hierarchy 4": "",
-                "Standard Top 10 2017 item": "A2_Broken_Authentication",
-                "Standard Top 10 2017 Hyperlink": "https://example.com/top102017",
-                "CRE ID": 8,
-                "Standard CWE (from ASVS)": "19876",
-                "Standard CWE (from ASVS)-hyperlink": "https://example.com/cwe19876",
-                "Link to other CRE": "FooBar",
-                "Standard NIST 800-53 v5": "SA-22 Unsupported System Components",
-                "Standard NIST 800-53 v5-hyperlink": "https://example.com/nist-800-53-v5",
-                "Standard NIST-800-63 (from ASVS)": "4444/3333",
-                "Standard OPC (ASVS source)": "123654",
-                "Standard OPC (ASVS source)-hyperlink": "https://example.com/opc",
-                "CRE Tags": "tag-connection",
-                "Standard WSTG-item": "2.1.2.3",
-                "Standard WSTG-Hyperlink": "https://example.com/wstg",
-                "Standard Cheat_sheets": "",
-                "Standard Cheat_sheets-Hyperlink": "",
-            },
-            {
-                "Standard ASVS 4.0.3 Item": "",
-                "Standard ASVS 4.0.3 description": "",
-                "Standard ASVS 4.0.3 Hyperlink": "",
-                "ASVS-L1": "",
-                "ASVS-L2": "",
-                "ASVS-L3": "",
-                "CRE hierarchy 1": "Authentication",
-                "CRE hierarchy 2": "Authentication mechanism",
-                "CRE hierarchy 3": "",
-                "CRE hierarchy 4": "",
-                "Standard Top 10 2017 item": "See higher level topic",
-                "Standard Top 10 2017 Hyperlink": "https://example.com/top102017",
-                "CRE ID": 3,
-                "Standard CWE (from ASVS)": "",
-                "Standard CWE (from ASVS)-hyperlink": "",
-                "Link to other CRE": "",
-                "Standard NIST 800-53 v5": "",
-                "Standard NIST 800-53 v5-hyperlink": "https://example.com/nist-800-53-v5",
-                "Standard NIST-800-63 (from ASVS)": "",
-                "Standard OPC (ASVS source)": "",
-                "Standard OPC (ASVS source)-hyperlink": "",
-                "CRE Tags": "",
-                "Standard WSTG-item": "",
-                "Standard WSTG-Hyperlink": "",
-                "Standard Cheat_sheets": "",
-                "Standard Cheat_sheets-Hyperlink": "",
-            },
-            {
-                "Standard ASVS 4.0.3 Item": "V1.2.3",
-                "Standard ASVS 4.0.3 description": 10,
-                "Standard ASVS 4.0.3 Hyperlink": "https://example.com/asvs",
-                "ASVS-L1": "",
-                "ASVS-L2": "X",
-                "ASVS-L3": "X",
-                "CRE hierarchy 1": "Authentication",
-                "CRE hierarchy 2": "Authentication mechanism",
-                "CRE hierarchy 3": "",
-                "CRE hierarchy 4": "Verify that the application uses a single vetted authentication mechanism",
-                "Standard Top 10 2017 item": "See higher level topic",
-                "Standard Top 10 2017 Hyperlink": "https://example.com/top102017",
-                "CRE ID": 4,
-                "Standard CWE (from ASVS)": 306,
-                "Standard CWE (from ASVS)-hyperlink": "https://example.com/cwe306",
-                "Link to other CRE": "Logging and Error handling",
-                "Standard NIST 800-53 v5": "PL-8 Information Security Architecture\n"
-                "SC-39 PROCESS ISOLATION\n"
-                "SC-3 SECURITY FUNCTION",
-                "Standard NIST 800-53 v5-hyperlink": "https://example.com/nist-800-53-v5\n"
-                "https://example.com/nist-800-53-v5\n"
-                "https://example.com/nist-800-53-v5",
-                "Standard NIST-800-63 (from ASVS)": "None",
-                "Standard OPC (ASVS source)": "None",
-                "Standard OPC (ASVS source)-hyperlink": "",
-                "CRE Tags": "",
-                "Standard WSTG-item": "",
-                "Standard WSTG-Hyperlink": "",
-                "Standard Cheat_sheets": "",
-                "Standard Cheat_sheets-Hyperlink": "",
-            },
-            {
-                "Standard ASVS 4.0.3 Item": "",
-                "Standard ASVS 4.0.3 description": "",
-                "Standard ASVS 4.0.3 Hyperlink": "",
-                "ASVS-L1": "",
-                "ASVS-L2": "",
-                "ASVS-L3": "",
-                "CRE hierarchy 1": "FooParent",
-                "CRE hierarchy 2": "",
-                "CRE hierarchy 3": "",
-                "CRE hierarchy 4": "FooBar",
-                "Standard Top 10 2017 item": "",
-                "Standard Top 10 2017 Hyperlink": "",
-                "CRE ID": 9,
-                "Standard CWE (from ASVS)": "",
-                "Standard CWE (from ASVS)-hyperlink": "",
-                "Link to other CRE": "Authentication mechanism",
-                "Standard NIST 800-53 v5": "",
-                "Standard NIST 800-53 v5-hyperlink": "",
-                "Standard NIST-800-63 (from ASVS)": "",
-                "Standard OPC (ASVS source)": "",
-                "Standard OPC (ASVS source)-hyperlink": "",
-                "CRE Tags": "",
-                "Standard WSTG-item": "",
-                "Standard WSTG-Hyperlink": "",
-                "Standard Cheat_sheets": "foo; bar",
-                "Standard Cheat_sheets-Hyperlink": "https://example.com/cheatsheetf/foo; https://example.com/cheatsheetb/bar",
-            },
-        ]
-        main.parse_standards_from_spreadsheeet(input, self.collection)
-        self.assertEqual(len(self.collection.session.query(db.Node).all()), 14)
-        self.assertEqual(len(self.collection.session.query(db.CRE).all()), 7)
-        # assert the one CRE in the inpu externally links to all the 8 standards
-        self.assertEqual(len(self.collection.session.query(db.Links).all()), 14)
-        self.assertEqual(len(self.collection.session.query(db.InternalLinks).all()), 7)
+    @patch.object(Queue, "enqueue_call")
+    @patch.object(redis, "connect")
+    @patch.object(prompt_client.PromptHandler, "generate_embeddings_for")
+    @patch.object(main, "populate_neo4j_db")
+    def test_parse_standards_from_spreadsheeet(
+        self,
+        mock_populate_neo4j_db,
+        mock_generate_embeddings_for,
+        mock_redis_connect,
+        mock_enqueue_call,
+    ) -> None:
+        self.maxDiff = None
+        prompt_handler = prompt_client.PromptHandler(database=self.collection)
+
+        # No jobs scheduled when we're registering CREs only
+        expected_input, _ = data_gen.root_csv_cre_only()
+        main.parse_standards_from_spreadsheeet(
+            expected_input, self.collection, prompt_handler
+        )
+        mock_enqueue_call.assert_not_called()
+
+        # Jobs scheduled when we're registering Standards only
+        expected_input, expected_output = data_gen.root_csv_data()
+        main.parse_standards_from_spreadsheeet(
+            expected_input, self.collection, prompt_handler
+        )
+        mock_enqueue_call.assert_called()
+        expected_output.pop(defs.Credoctypes.CRE.value)
+        expected_names = list(expected_output.keys())
+        # This is a roundabout way of doing mock_enqueue_call.assert_has_calls([calls])
+        # the reason is: in its current implementation assert_has_calls()
+        # serialises kwargs to str, this ends up serialising a defs.Document
+        #  using double quotes, meanwhile the standard library uses double quotes,
+        # this causes the call to fail.
+        for call in mock_enqueue_call.mock_calls:
+            standard_name = call.kwargs["kwargs"]["standard_entries"][0].name
+            for entry in call.kwargs["kwargs"]["standard_entries"]:
+                self.assertIn(entry, expected_output[standard_name])
+                expected_output[standard_name].pop(
+                    expected_output[standard_name].index(entry)
+                )
+            self.assertEqual(
+                expected_output[standard_name], []
+            )  # assert ALL elements of the call exist in expected
+            self.assertEqual(self.collection, call.kwargs["kwargs"]["collection"])
+            self.assertEqual(prompt_handler, call.kwargs["kwargs"]["prompt_client"])
+            expected_names.pop(expected_names.index(standard_name))
+        self.assertEqual(
+            expected_names,
+            [],
+            f"method parse_standards_from_spreadsheeet failed to process standards {','.join(expected_names)}",
+        )
+
+        # test with export_format
 
     def test_get_standards_files_from_disk(self) -> None:
         loc = tempfile.mkdtemp()
@@ -494,6 +369,7 @@ class TestMain(unittest.TestCase):
             ymls.append(location)
         self.assertCountEqual(ymls, [x for x in main.get_cre_files_from_disk(loc)])
 
+    @patch("application.cmd.cre_main.ai_client_init")
     @patch("application.cmd.cre_main.db_connect")
     @patch("application.cmd.cre_main.parse_standards_from_spreadsheeet")
     @patch("application.utils.spreadsheet.readSpreadsheet")
@@ -504,11 +380,15 @@ class TestMain(unittest.TestCase):
         mocked_readSpreadsheet: Mock,
         mocked_parse_standards_from_spreadsheeet: Mock,
         mocked_db_connect: Mock,
+        mocked_ai_client_init: Mock,
     ) -> None:
         dir = tempfile.mkdtemp()
         self.tmpdirs.append(dir)
         cache = tempfile.mkstemp(dir=dir, suffix=".sqlite")[1]
 
+        mocked_ai_client_init.return_value = prompt_client.PromptHandler(
+            self.collection
+        )
         mocked_db_connect.return_value = self.collection
         mocked_export.return_value = [
             defs.CRE(name="c0"),
@@ -527,10 +407,11 @@ class TestMain(unittest.TestCase):
             validate=False,
         )
         mocked_parse_standards_from_spreadsheeet.assert_called_with(
-            [{"cre": "cre"}], self.collection
+            [{"cre": "cre"}], self.collection, mocked_ai_client_init.return_value
         )
         mocked_export.assert_called_with(dir)
 
+    @patch("application.cmd.cre_main.ai_client_init")
     @patch("application.cmd.cre_main.prepare_for_review")
     @patch("application.cmd.cre_main.db_connect")
     @patch("application.cmd.cre_main.parse_standards_from_spreadsheeet")
@@ -545,6 +426,7 @@ class TestMain(unittest.TestCase):
         mocked_parse_standards_from_spreadsheeet: Mock,
         mocked_db_connect: Mock,
         mocked_prepare_for_review: Mock,
+        mocked_ai_client_init: Mock,
     ) -> None:
         dir = tempfile.mkdtemp()
         self.tmpdirs.append(dir)
@@ -552,6 +434,9 @@ class TestMain(unittest.TestCase):
         cache = tempfile.mkstemp(dir=dir)[1]
         mocked_prepare_for_review.return_value = (loc, cache)
         mocked_db_connect.return_value = self.collection
+        mocked_ai_client_init.return_value = prompt_client.PromptHandler(
+            self.collection
+        )
 
         mocked_create_spreadsheet.return_value = "https://example.com/sheeet"
         mocked_export.return_value = [
@@ -569,7 +454,7 @@ class TestMain(unittest.TestCase):
         mocked_prepare_for_review.assert_called_with(cache)
         mocked_db_connect.assert_called_with(path=cache)
         mocked_parse_standards_from_spreadsheeet.assert_called_with(
-            [{"cre": "cre"}], self.collection
+            [{"cre": "cre"}], self.collection, mocked_ai_client_init.return_value
         )
         # mocked_create_spreadsheet.assert_called_with(
         #     collection=self.collection,

@@ -27,7 +27,7 @@ def is_valid_url(url):
     return url.startswith("http://") or url.startswith("https://")
 
 
-class __in_memory_embeddings:
+class in_memory_embeddings:
     __instance = None
     __webkit = None
     __browser = None
@@ -35,9 +35,9 @@ class __in_memory_embeddings:
     __playwright = None
     ai_client = None
 
-    def __init__(sel):
+    def __init__(cls):
         raise ValueError(
-            "class __in_memory_embeddings is a singleton, please call instance() instead"
+            "class in_memory_embeddings is a singleton, please call instance() instead"
         )
 
     # Function to get text content from a URL
@@ -199,8 +199,8 @@ class PromptHandler:
                 "cannot instantiate ai client, neither OPENAI_API_KEY nor SERVICE_ACCOUNT_CREDENTIALS are set "
             )
         self.database = database
-        self.embeddings_instance = __in_memory_embeddings.instance().with_ai_client(
-            client=self.ai_client
+        self.embeddings_instance = in_memory_embeddings.instance().with_ai_client(
+            ai_client=self.ai_client
         )
         if not os.environ.get("NO_GEN_EMBEDDINGS") and load_all_embeddings:
             missing_embeddings = self.embeddings_instance.find_missing_embeddings(
