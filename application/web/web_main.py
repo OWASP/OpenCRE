@@ -15,7 +15,7 @@ from application.database import db
 from application.defs import cre_defs as defs
 from application.defs import osib_defs as odefs
 from application.utils import spreadsheet as sheet_utils
-from application.utils import mdutils, redirectors
+from application.utils import mdutils, redirectors, gap_analysis
 from application.prompt_client import prompt_client as prompt_client
 from enum import Enum
 from flask import json as flask_json
@@ -245,51 +245,19 @@ def find_document_by_tag() -> Any:
 
 
 @app.route("/rest/v1/map_analysis", methods=["GET"])
-def gap_analysis() -> Any:
+def map_analysis() -> Any:
     database = db.Node_collection()
     standards = request.args.getlist("standard")
-    conn = redis.connect()
-    standards_hash = make_array_hash(standards)
-    result = database.get_gap_analysis_result(standards_hash)
-    if result:
-        gap_analysis_dict = flask_json.loads(result)
-        if gap_analysis_dict.get("result"):
-            return jsonify(gap_analysis_dict)
-
-    gap_analysis_results = conn.get(standards_hash)
-    if gap_analysis_results:
-        gap_analysis_dict = json.loads(gap_analysis_results)
-        if gap_analysis_dict.get("job_id"):
-            try:
-                res = job.Job.fetch(id=gap_analysis_dict.get("job_id"), connection=conn)
-            except exceptions.NoSuchJobError as nje:
-                logger.error(f"Could not find job id for gap analysis {standards}")
-                abort(404, "No such job")
-            if (
-                res.get_status() != job.JobStatus.FAILED
-                and res.get_status() != job.JobStatus.STOPPED
-                and res.get_status() != job.JobStatus.CANCELED
-            ):
-                logger.info("gap analysis job id already exists, returning early")
-                return jsonify({"job_id": gap_analysis_dict.get("job_id")})
-    q = Queue(connection=conn)
-    gap_analysis_job = q.enqueue_call(
-        db.gap_analysis,
-        kwargs={
-            "neo_db": database.neo_db,
-            "node_names": standards,
-            "store_in_cache": True,
-            "cache_key": standards_hash,
-        },
-        timeout="10m",
-    )
-
-    conn.set(standards_hash, json.dumps({"job_id": gap_analysis_job.id, "result": ""}))
-    return jsonify({"job_id": gap_analysis_job.id})
+    gap_analysis_dict = gap_analysis.schedule(standards, database)
+    if gap_analysis_dict.get("result"):
+        return jsonify(gap_analysis_dict)
+    if gap_analysis_dict.get("error"):
+        abort(404)
+    return jsonify({"job_id": gap_analysis_dict.get("job_id")})
 
 
 @app.route("/rest/v1/map_analysis_weak_links", methods=["GET"])
-def gap_analysis_weak_links() -> Any:
+def map_analysis_weak_links() -> Any:
     standards = request.args.getlist("standard")
     key = request.args.get("key")
     cache_key = make_cache_key(standards=standards, key=key)

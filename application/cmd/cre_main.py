@@ -5,8 +5,8 @@ import os
 import shutil
 import tempfile
 from typing import Any, Callable, Dict, Generator, List, Optional, Tuple
-from application.utils.hash import make_cache_key
-from rq import Worker, Queue, Connection, job, exceptions
+from application.utils.hash import make_array_hash
+from rq import Queue
 import yaml
 from application import create_app  # type: ignore
 from application.config import CMDConfig
@@ -201,19 +201,6 @@ def parse_file(
     return resulting_objects
 
 
-def send_job_to_worker(job_info_hash: str, job: function, kwargs: Dict):
-    conn = redis.connect()
-    if conn.get(job_info_hash):
-        logger.debug(
-            f"Job with info-hash {job_info_hash} has already returned, skipping running {job.__name__} with args {kwargs}"
-        )
-        return
-
-    q = Queue(connection=conn)
-    job = q.enqueue_call(job, kwargs, timeout="10m")
-    return job
-
-
 def register_standard(
     standard_entries: List[defs.Standard],
     collection: db.Node_collection,
@@ -221,43 +208,65 @@ def register_standard(
 ):
     if not standard_entries:
         return
+    standard_hash = make_array_hash(standards=standard_entries[0].name)
+    if conn.get(standard_hash):
+        logger.debug(
+            f"Standard importing job with info-hash {standard_hash} has already returned, skipping"
+        )
+        return
+
     for node in standard_entries:
         register_node(node, collection)
     prompt_client.generate_embeddings_for(node.name)
     populate_neo4j_db(collection)
     conn = redis.connect()
-    conn.set(make_cache_key(standards=standard_entries, key=""), value="")
+    conn.set(standard_hash, value="")
+
+    # calculate gap analysis
+    for standard_name in collection.standards():
+        if standard_name != standard_entries[0].name:
+            forward_job_id = gap_analysis.schedule(
+                [standard_entries[0].name, standard_name]
+            )
+            backward_job_id = gap_analysis.schedule(
+                [standard_name, standard_entries[0].name]
+            )
 
 
-# TODO (spyros): test, mock send_job_to_worker
 def parse_standards_from_spreadsheeet(
-    cre_file: List[Dict[str, Any]], collection: db.Node_collection
+    cre_file: List[Dict[str, Any]],
+    collection: db.Node_collection,
+    prompt_handler: prompt_client.PromptHandler,
 ) -> None:
     """given a yaml with standards, build a list of standards in the db"""
     cres = {}
     if "CRE:name" in cre_file[0].keys():
         documents = spreadsheet_parsers.parse_export_format(cre_file)
-        pc = prompt_client.PromptHandler(collection)
-        for _, cres in cres.pop(defs.Credoctypes.CRE.value):
-            for cre in cres:
-                register_cre(cre, collection)
-            populate_neo4j_db(collection)
-            pc.generate_embeddings_for(defs.Credoctypes.CRE.value)
-        for _, standard_entries in documents:
-            send_job_to_worker(
-                job_info_hash=make_cache_key(standard_entries, ""),
-                job=register_standard,
+        register_cre(documents, collection)
+        pass
+
+    elif any(key.startswith("CRE hierarchy") for key in cre_file[0].keys()):
+        conn = redis.connect()
+        q = Queue(connection=conn)
+        docs = spreadsheet_parsers.parse_hierarchical_export_format(cre_file)
+        jobs = []
+        for cre in docs.pop(defs.Credoctypes.CRE.value):
+            register_cre(cre, collection)
+        populate_neo4j_db(collection)
+        prompt_handler.generate_embeddings_for(defs.Credoctypes.CRE.value)
+        for _, standard_entries in docs.items():
+            job = q.enqueue_call(
+                func=register_standard,
                 kwargs={
                     "standard_entries": standard_entries,
                     "collection": collection,
-                    "prompt_client": pc,
+                    "prompt_client": prompt_handler,
                 },
+                timeout="10m",
             )
-            # TODO(notrhdpole): calculate gap analysis
 
-    elif any(key.startswith("CRE hierarchy") for key in cre_file[0].keys()):
-        cres = spreadsheet_parsers.parse_hierarchical_export_format(cre_file)
-        register_cre(cres, collection)
+            jobs.append(job)
+            # TODO(notrhdpole): monitor jobs and alert when done
     else:
         logger.fatal(f"could not find any useful keys { cre_file[0].keys()}")
 
@@ -276,11 +285,12 @@ def add_from_spreadsheet(spreadsheet_url: str, cache_loc: str, cre_loc: str) -> 
     export db to ../../cres/
     """
     database = db_connect(path=cache_loc)
+    prompt_handler = ai_client_init(database=database)
     spreadsheet = sheet_utils.readSpreadsheet(
         url=spreadsheet_url, alias="new spreadsheet", validate=False
     )
-    for worksheet, contents in spreadsheet.items():
-        parse_standards_from_spreadsheeet(contents, database)
+    for _, contents in spreadsheet.items():
+        parse_standards_from_spreadsheeet(contents, database, prompt_handler)
 
     database.export(cre_loc)
 
@@ -315,19 +325,14 @@ def review_from_spreadsheet(cache: str, spreadsheet_url: str, share_with: str) -
     """
     loc, cache = prepare_for_review(cache)
     database = db_connect(path=cache)
+    prompt_handler = ai_client_init(database=database)
     spreadsheet = sheet_utils.readSpreadsheet(
         url=spreadsheet_url, alias="new spreadsheet", validate=False
     )
     for _, contents in spreadsheet.items():
-        parse_standards_from_spreadsheeet(contents, database)
+        parse_standards_from_spreadsheeet(contents, database, prompt_handler)
     docs = database.export(loc)
 
-    # sheet_url = create_spreadsheet(
-    #     collection=database,
-    #     exported_documents=docs,
-    #     title="cre_review",
-    #     share_with=[share_with],
-    # )
     logger.info(
         "Stored temporary files and database in %s if you want to use them next time, set cache to the location of the database in that dir"
         % loc
@@ -483,6 +488,10 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
         start_worker(args.cache_file)
     if args.preload_map_analysis_target_url:
         gap_analysis.preload(target_url=args.preload_map_analysis_target_url)
+
+
+def ai_client_init(database: db.Node_collection):
+    return prompt_client.PromptHandler(database=database)
 
 
 def db_connect(path: str):
