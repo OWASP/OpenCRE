@@ -1,3 +1,4 @@
+import time
 import argparse
 import json
 import logging
@@ -16,6 +17,7 @@ from application.defs import osib_defs as odefs
 from application.utils import spreadsheet as sheet_utils
 from application.utils import redis
 from application.utils import spreadsheet_parsers
+from alive_progress import alive_bar
 from application.utils.external_project_parsers import (
     capec_parser,
     cwe,
@@ -250,23 +252,49 @@ def parse_standards_from_spreadsheeet(
         q = Queue(connection=conn)
         docs = spreadsheet_parsers.parse_hierarchical_export_format(cre_file)
         jobs = []
-        for cre in docs.pop(defs.Credoctypes.CRE.value):
-            register_cre(cre, collection)
+        with alive_bar(len(docs.get(defs.Credoctypes.CRE.value))):
+            logger.info(f"Importing {len(docs.get(defs.Credoctypes.CRE.value))} CREs")
+            for cre in docs.pop(defs.Credoctypes.CRE.value):
+                register_cre(cre, collection)
         populate_neo4j_db(collection)
         prompt_handler.generate_embeddings_for(defs.Credoctypes.CRE.value)
-        for _, standard_entries in docs.items():
-            job = q.enqueue_call(
-                func=register_standard,
-                kwargs={
-                    "standard_entries": standard_entries,
-                    "collection": collection,
-                    "prompt_client": prompt_handler,
-                },
-                timeout="10m",
+        for standard_name, standard_entries in docs.items():
+            jobs.append(
+                q.enqueue_call(
+                    description=standard_name,
+                    func=register_standard,
+                    kwargs={
+                        "standard_entries": standard_entries,
+                        "collection": collection,
+                        "prompt_client": prompt_handler,
+                    },
+                    timeout="10m",
+                )
             )
-
-            jobs.append(job)
-            # TODO(notrhdpole): monitor jobs and alert when done
+        t0 = time.perf_counter()
+        total_standards = len(jobs)
+        with alive_bar(theme="classic", total=total_standards) as bar:
+            while jobs:
+                bar.text = f"importing {len(jobs)} standards"
+                for job in jobs:
+                    if job.is_finished():
+                        logger.info(f"{job.description} registered successfully")
+                        jobs.pop(jobs.index(job))
+                    elif job.is_failed():
+                        logger.fatal(
+                            f"Job to register standard {job.description} failed, check logs for reason"
+                        )
+                    elif job.is_canceled():
+                        logger.fatal(
+                            f"Job to register standard {job.description} was cancelled, check logs for reason but this looks like a bug"
+                        )
+                    elif job.is_stopped:
+                        logger.fatal(
+                            f"Job to register standard {job.description} was stopped, check logs for reason but this looks like a bug"
+                        )
+        logger.info(
+            f"imported {total_standards} standards in {time.perf_counter()-t0} seconds"
+        )
     else:
         logger.fatal(f"could not find any useful keys { cre_file[0].keys()}")
 
