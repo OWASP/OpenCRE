@@ -241,7 +241,6 @@ def parse_standards_from_spreadsheeet(
     prompt_handler: prompt_client.PromptHandler,
 ) -> None:
     """given a yaml with standards, build a list of standards in the db"""
-    cres = {}
     if "CRE:name" in cre_file[0].keys():
         documents = spreadsheet_parsers.parse_export_format(cre_file)
         register_cre(documents, collection)
@@ -251,6 +250,7 @@ def parse_standards_from_spreadsheeet(
         conn = redis.connect()
         q = Queue(connection=conn)
         docs = spreadsheet_parsers.parse_hierarchical_export_format(cre_file)
+        total_resource = docs.keys()
         jobs = []
         with alive_bar(len(docs.get(defs.Credoctypes.CRE.value))):
             logger.info(f"Importing {len(docs.get(defs.Credoctypes.CRE.value))} CREs")
@@ -295,6 +295,7 @@ def parse_standards_from_spreadsheeet(
         logger.info(
             f"imported {total_standards} standards in {time.perf_counter()-t0} seconds"
         )
+        return docs
     else:
         logger.fatal(f"could not find any useful keys { cre_file[0].keys()}")
 
