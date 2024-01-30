@@ -119,3 +119,4 @@ opentelemetry-instrumentation-flask
 opentelemetry-instrumentation-requests
 opentelemetry-instrumentation-sqlalchemy
 google-cloud-trace==1.11.1
+alive-progress

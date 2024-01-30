@@ -339,8 +339,10 @@ class TestMain(unittest.TestCase):
         #  using double quotes, meanwhile the standard library uses double quotes,
         # this causes the call to fail.
         for call in mock_enqueue_call.mock_calls:
-            standard_name = call.kwargs["kwargs"]["standard_entries"][0].name
-            for entry in call.kwargs["kwargs"]["standard_entries"]:
+            if not call.kwargs:
+                continue
+            standard_name = call.kwargs.get("kwargs").get("standard_entries")[0].name
+            for entry in call.kwargs.get("kwargs").get("standard_entries"):
                 self.assertIn(entry, expected_output[standard_name])
                 expected_output[standard_name].pop(
                     expected_output[standard_name].index(entry)
