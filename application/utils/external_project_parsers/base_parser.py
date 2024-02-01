@@ -8,6 +8,7 @@ from application.prompt_client import prompt_client as prompt_client
 import logging
 import time
 from alive_progress import alive_bar
+from application.utils.external_project_parsers.parsers import *
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
@@ -18,24 +19,13 @@ logger.setLevel(logging.INFO)
 class ParserInterface:
     # The name of the resource being parsed
     name: str 
-    def parse(database: db.Node_collection,prompt_client: prompt_client.PromptHandler):
+    def parse(database: db.Node_collection,prompt_client: Optional[prompt_client.PromptHandler])->List[defs.Document]:
         """
-         calls parse_project() and link_project()
-        """
-        raise NotImplementedError
-    def link_project(database:db.Node_collection,prompt_client: prompt_client.PromptHandler):
-        """
-        links the resource of the project to CREs
-        this can be done either using glue resources, AI or any other supported method.
-        Returns a list of documents with CRE links
-        """
-        raise NotImplementedError
-
-    def parse_project(database:db.Node_collection):
-        """
-        interface
         Parses the resources of a project, 
-        returns an array of Documents with each document populated with the relevant details
+        links the resource of the project to CREs
+        this can be done either using glue resources, AI or any other supported method
+        then calls cre_main.register_node
+        Returns a list of documents with CRE links       
         """
         raise NotImplementedError
 
