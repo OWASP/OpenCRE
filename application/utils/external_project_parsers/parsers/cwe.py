@@ -15,10 +15,11 @@ logging.basicConfig()
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+
 class CWE(ParserInterface):
     # TODO(spyros): make this work with cre_main.register_node instead of doing DB ops, make parse return list of CWEs
-    
-    name="CWE"
+
+    name = "CWE"
 
     def parse(self, cache: db.Node_collection):
         cwe_zip = "https://cwe.mitre.org/data/xml/cwec_latest.xml.zip"
@@ -32,18 +33,16 @@ class CWE(ParserInterface):
                     zipfile.write(chunk)
 
         shutil.unpack_archive(fname, tmp_dir)
-        for root, dirs, files in os.walk(tmp_dir, topdown=False):
+        for _, _, files in os.walk(tmp_dir, topdown=False):
             for file in files:
                 if file.startswith("cwe") and file.endswith(".xml"):
                     self.register_cwe(xml_file=os.path.join(tmp_dir, file), cache=cache)
 
-
-    def make_hyperlink(self,cwe_id: int):
+    def make_hyperlink(self, cwe_id: int):
         return f"https://cwe.mitre.org/data/definitions/{cwe_id}.html"
 
-
     def link_cwe_to_capec_cre(
-        self,cwe: db.Node, cache: db.Node_collection, capec_id: str
+        self, cwe: db.Node, cache: db.Node_collection, capec_id: str
     ) -> bool:
         capecs = cache.get_nodes(name="CAPEC", sectionID=capec_id)
         linked = False
@@ -53,14 +52,15 @@ class CWE(ParserInterface):
                 for c in capecs[0].links
                 if c.document.doctype == defs.Credoctypes.CRE
             ]:
-                logger.debug(f"linked CWE with id {cwe.section_id} to CRE with ID {cre.id}")
+                logger.debug(
+                    f"linked CWE with id {cwe.section_id} to CRE with ID {cre.id}"
+                )
                 cache.add_link(cre=db.dbCREfromCRE(cre), node=cwe)
                 linked = True
         return linked
 
-
     def link_to_related_weaknesses(
-        self,cwe: db.Node, cache: db.Node_collection, related_id: str
+        self, cwe: db.Node, cache: db.Node_collection, related_id: str
     ) -> bool:
         related_cwes = cache.get_nodes(name="CWE", sectionID=related_id)
         linked = False
@@ -70,13 +70,14 @@ class CWE(ParserInterface):
                 for c in related_cwes[0].links
                 if c.document.doctype == defs.Credoctypes.CRE
             ]:
-                logger.debug(f"linked CWE with id {cwe.section_id} to CRE with ID {cre.id}")
+                logger.debug(
+                    f"linked CWE with id {cwe.section_id} to CRE with ID {cre.id}"
+                )
                 cache.add_link(cre=db.dbCREfromCRE(cre), node=cwe)
                 linked = True
         return linked
 
-
-    def register_cwe(self,cache: db.Node_collection, xml_file: str):
+    def register_cwe(self, cache: db.Node_collection, xml_file: str):
         statuses = {}
 
         with open(xml_file, "r") as xml:

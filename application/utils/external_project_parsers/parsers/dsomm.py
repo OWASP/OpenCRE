@@ -1,7 +1,6 @@
-from application.cmd.cre_main import register_node
+from application.cmd.cre_main import register_standard
 import re
 import yaml
-import urllib
 from pprint import pprint
 import logging
 from application.database import db
@@ -14,8 +13,9 @@ logging.basicConfig()
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-class DSOMMParser(ParserInterface):
-    name="DevSecOps Maturity Model (DSOMM)"
+
+class DSOMM(ParserInterface):
+    name = "DevSecOps Maturity Model (DSOMM)"
     means_none = [
         "Not explicitly covered by ISO 27001 - too specific",
         "Not explicitly covered by ISO 27001",
@@ -45,20 +45,64 @@ class DSOMMParser(ParserInterface):
         "Usage of edge encryption at transit": "435-702",
     }
 
+    def link_to_samm(self, activity, cache, standard):
+        for sectionID in activity.get("references").get("samm2"):
+            if sectionID in self.means_none:
+                continue
+            samms = cache.get_nodes(name="SAMM", sectionID=f"{sectionID}")
+            if not len(samms):
+                sectionID = re.sub("-\d", "", f"{sectionID}")
+                samms = cache.get_nodes(name="SAMM", sectionID=f"{sectionID}")
+                if not len(samms):
+                    logger.error(
+                        f"could not find samm with sectionID '{sectionID}' in the db"
+                    )
+            for samm in samms:
+                for c_link in samm.links:
+                    standard.add_link(
+                        defs.Link(
+                            document=c_link.document, ltype=defs.LinkTypes.LinkedTo
+                        )
+                    )
+        return standard
+
+    def link_to_iso(self, aname, activity, cache, standard):
+        if not activity.get("references").get("iso27001-2022"):
+            logger.error(f"Activity {aname} does not link to ISO")
+            return
+        for sectionID in activity.get("references").get("iso27001-2022"):
+            if sectionID in self.means_none:
+                continue
+            isos = cache.get_nodes(name="ISO 27001", sectionID=f"{sectionID}")
+            if not len(isos):
+                logger.error(
+                    f"could not find iso with sectionID '{sectionID}' in the db"
+                )
+                return
+            for iso in isos:
+                for c_link in iso.links:
+                    standard.add_link(
+                        defs.Link(
+                            document=c_link.document, ltype=defs.LinkTypes.LinkedTo
+                        )
+                    )
+        return standard
 
     def parse(
-            self,
+        self,
         cache: db.Node_collection,
         prompt: prompt_client.PromptHandler,
     ):
         resp = requests.get(
             "https://raw.githubusercontent.com/devsecopsmaturitymodel/DevSecOps-MaturityModel-data/main/src/assets/YAML/generated/generated.yaml"
         )
-
         if resp.status_code != 200:
-            logger.fatal(f"could not retrieve dsomm yaml, status code {resp.status_code}")
+            logger.fatal(
+                f"could not retrieve dsomm yaml, status code {resp.status_code}"
+            )
             return
         dsomm = yaml.safe_load(resp.text)
+        standard_entries = []
         for _, dimension in dsomm.items():
             for sname, subdimension in dimension.items():
                 for aname, activity in subdimension.items():
@@ -82,68 +126,30 @@ class DSOMMParser(ParserInterface):
                         sectionID=f"{standard.sectionID}",
                     )
                     if existing:
-                        embeddings = cache.get_embeddings_for_doc(existing[0])
-                        if embeddings:
-                            logger.info(
-                                f"Node {standard.section} already exists and has embeddings, skipping"
-                            )
-                            continue
-                        else:
-                            standard_embeddings = prompt.get_text_embeddings(
-                                standard.__repr__()
-                            )
-                            cache.add_embedding(
-                                db_object=existing[0],
-                                doctype=standard.doctype,
-                                embeddings=standard_embeddings,
-                                embedding_text=standard.__repr__(),
-                            )
+                        logger.info(
+                            f"Node {standard.section} already exists and has embeddings, skipping"
+                        )
+                        continue
 
-                    # dbstandard = cache.add_node(standard)
                     if self.manual_mappings.get(aname):
                         cs = cache.get_CREs(self.manual_mappings.get(aname))
                         for c in cs:
-                            standard.add_link(defs.Link(
-                                document=c,
-                                ltype=defs.LinkTypes.LinkedTo
-                            ))
+                            standard.add_link(
+                                defs.Link(document=c, ltype=defs.LinkTypes.LinkedTo)
+                            )
                     # use SAMM as Glue
                     if activity.get("references").get("samm2"):
-                        for sectionID in activity.get("references").get("samm2"):
-                            if sectionID in self.means_none:
-                                continue
-                            samms = cache.get_nodes(name="SAMM", sectionID=f"{sectionID}")
-                            if not len(samms):
-                                sectionID = re.sub("-\d", "", f"{sectionID}")
-                                samms = cache.get_nodes(
-                                    name="SAMM", sectionID=f"{sectionID}"
-                                )
-                                if not len(samms):
-                                    logger.error(
-                                        f"could not find samm with sectionID '{sectionID}' in the db"
-                                    )
-                            for samm in samms:
-                                for c_link in samm.links:
-                                    standard.add_link(defs.Link(document=c_link.document,ltype=defs.LinkTypes.LinkedTo))
-                        register_node(standard,collection=cache)
+                        standard = self.link_to_samm(activity, cache, standard)
+                        standard_entries.append(standard)
                     else:
-                        logger.error(f"Activity {aname} does not link to SAMM, using ISO")
+                        logger.error(
+                            f"Activity {aname} does not link to SAMM, using ISO"
+                        )
                         # use iso as glue
-                        if not activity.get("references").get("iso27001-2022"):
-                            logger.error(f"Activity {aname} does not link to ISO")
-                            return
-                        for sectionID in activity.get("references").get("iso27001-2022"):
-                            if sectionID in self.means_none:
-                                continue
-                            isos = cache.get_nodes(
-                                name="ISO 27001", sectionID=f"{sectionID}"
-                            )
-                            if not len(isos):
-                                logger.error(
-                                    f"could not find iso with sectionID '{sectionID}' in the db"
-                                )
-                                return
-                            for iso in isos:
-                                for c_link in iso.links:
-                                    standard.add_link(defs.Link(document=c_link.document,ltype=defs.LinkTypes.LinkedTo))
-                        register_node(standard,collection=cache)
+                        standard = self.link_to_iso(aname, activity, cache, standard)
+                        standard_entries.append(standard)
+                    register_standard(
+                        standard_entries=standard_entries,
+                        collection=cache,
+                        prompt_client=prompt,
+                    )

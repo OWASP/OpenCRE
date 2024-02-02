@@ -16,25 +16,38 @@ logger.setLevel(logging.INFO)
 
 # abstract class/interface that shows how to import a project that is not cre or its core resources
 
+
 class ParserInterface:
     # The name of the resource being parsed
-    name: str 
-    def parse(database: db.Node_collection,prompt_client: Optional[prompt_client.PromptHandler])->List[defs.Document]:
+    name: str
+
+    def parse(
+        database: db.Node_collection,
+        prompt_client: Optional[prompt_client.PromptHandler],
+    ) -> List[defs.Document]:
         """
-        Parses the resources of a project, 
+        Parses the resources of a project,
         links the resource of the project to CREs
         this can be done either using glue resources, AI or any other supported method
         then calls cre_main.register_node
-        Returns a list of documents with CRE links       
+        Returns a list of documents with CRE links
         """
         raise NotImplementedError
 
-class BaseParser():
-    @classmethod
-    def register_resource(self,sclass:ParserInterface,db:db.Node_collection, ph:prompt_client.PromptHandler):
-        cre_main.register_standard(sclass.parse(),db,ph)
 
-    def call_importers(self,db:db.Node_collection, prompt_handler:prompt_client.PromptHandler):
+class BaseParser:
+    @classmethod
+    def register_resource(
+        self,
+        sclass: ParserInterface,
+        db: db.Node_collection,
+        ph: prompt_client.PromptHandler,
+    ):
+        cre_main.register_standard(sclass.parse(), db, ph)
+
+    def call_importers(
+        self, db: db.Node_collection, prompt_handler: prompt_client.PromptHandler
+    ):
         """
         somehow finds all the importers that have been registered (either reflection for implementing classes or an explicit method that registers all available importers)
         and schedules jobs to call those importers, monitors the jobs and alerts when done same as cre_main
@@ -53,7 +66,7 @@ class BaseParser():
                     description=sclass.name,
                     func=BaseParser.register_resource,
                     kwargs={
-                        "sclass":sclass,
+                        "sclass": sclass,
                         "db": db,
                         "ph": prompt_handler,
                     },
@@ -87,4 +100,3 @@ class BaseParser():
         return total_resources
         # TODO(spyros): perhaps it makes sense to abstract the "schedule parser package and monitor" to another method as we're doing this twice
         # can be done by first importing everything and then calling  __subclass__() https://stackoverflow.com/questions/5881873/python-find-all-classes-which-inherit-from-this-one
-  

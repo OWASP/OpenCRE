@@ -1,3 +1,4 @@
+from application.utils.external_project_parsers.base_parser import BaseParser
 import time
 import argparse
 import json
@@ -18,7 +19,7 @@ from application.utils import spreadsheet as sheet_utils
 from application.utils import redis
 from application.utils import spreadsheet_parsers
 from alive_progress import alive_bar
-from application.utils.external_project_parsers import (
+from application.utils.external_project_parsers.parsers import (
     capec_parser,
     cwe,
     ccmv4,
@@ -207,6 +208,7 @@ def register_standard(
     standard_entries: List[defs.Standard],
     collection: db.Node_collection,
     prompt_client: prompt_client.PromptHandler,
+    generate_embeddings=True,
 ):
     if not standard_entries:
         return
@@ -219,7 +221,8 @@ def register_standard(
 
     for node in standard_entries:
         register_node(node, collection)
-    prompt_client.generate_embeddings_for(node.name)
+    if generate_embeddings:
+        prompt_client.generate_embeddings_for(node.name)
     populate_neo4j_db(collection)
     conn = redis.connect()
     conn.set(standard_hash, value="")
@@ -295,7 +298,7 @@ def parse_standards_from_spreadsheeet(
         logger.info(
             f"imported {total_standards} standards in {time.perf_counter()-t0} seconds"
         )
-        return docs
+        return total_resource
     else:
         logger.fatal(f"could not find any useful keys { cre_file[0].keys()}")
 
@@ -441,70 +444,42 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
 
     elif args.osib_out:
         export_to_osib(file_loc=args.osib_out, cache=args.cache_file)
+
+    cache = db_connect(args.cache_file)
+    ph = prompt_client.PromptHandler(cache)
     if args.zap_in:
-        zap_alerts_parser.parse_zap_alerts(db_connect(args.cache_file))
+        BaseParser().register_resource(zap_alerts_parser.ZAP, db=cache, ph=ph)
     if args.cheatsheets_in:
-        cheatsheets_parser.parse_cheatsheets(db_connect(args.cache_file))
+        BaseParser().register_resource(cheatsheets_parser.Cheatsheets, db=cache, ph=ph)
     if args.github_tools_in:
-        for url in misc_tools_parser.tool_urls:
-            misc_tools_parser.parse_tool(
-                cache=db_connect(args.cache_file), tool_repo=url
-            )
+        BaseParser().register_resource(misc_tools_parser.MiscTools, db=cache, ph=ph)
+
     if args.capec_in:
-        capec_parser.parse_capec(cache=db_connect(args.cache_file))
+        BaseParser().register_resource(capec_parser.Capec, db=cache, ph=ph)
     if args.cwe_in:
-        cwe.parse_cwe(cache=db_connect(args.cache_file))
+        BaseParser().register_resource(cwe.CWE, db=cache, ph=ph)
+    if args.csa_ccm_v4_in:
+        BaseParser().register_resource(ccmv4.CloudControlsMatrix, db=cache, ph=ph)
+    if args.iso_27001_in:
+        BaseParser().register_resource(iso27001.ISO27001, db=cache, ph=ph)
+    if args.owasp_secure_headers_in:
+        BaseParser().register_resource(secure_headers.SeecureHeaders, db=cache, ph=ph)
+    if args.pci_dss_4_in:
+        BaseParser().register_resource(pci_dss.PciDss, db=cache, ph=ph)
+    if args.juiceshop_in:
+        BaseParser().register_resource(juiceshop.JuiceShop, db=cache, ph=ph)
+
+    if args.dsomm_in:
+        BaseParser().register_resource(dsomm.DSOMM, db=cache, ph=ph)
+    if args.cloud_native_security_controls_in:
+        BaseParser().register_resource(
+            cloud_native_security_controls.CloudNativeSecurityControls, db=cache, ph=ph
+        )
 
     if args.export:
         cache = db_connect(args.cache_file)
         cache.export(args.export)
-    if args.csa_ccm_v4_in:
-        ccmv4.parse_ccm(
-            ccmFile=sheet_utils.readSpreadsheet(
-                alias="",
-                url="https://docs.google.com/spreadsheets/d/1QDzQy0wt1blGjehyXS3uaHh7k5OOR12AWgAA1DeACyc",
-            ),
-            cache=db_connect(args.cache_file),
-        )
-    if args.iso_27001_in:
-        iso27001.parse_iso(
-            url="https://csrc.nist.gov/CSRC/media/Publications/sp/800-53/rev-5/final/documents/sp800-53r5-to-iso-27001-mapping.docx",
-            cache=db_connect(args.cache_file),
-        )
-    if args.owasp_secure_headers_in:
-        secure_headers.parse(
-            cache=db_connect(args.cache_file),
-        )
-    if args.pci_dss_3_2_in:
-        pci_dss.parse_3_2(
-            pci_file=sheet_utils.readSpreadsheet(
-                alias="",
-                url="https://docs.google.com/spreadsheets/d/1p-s65MaVrKOnWPEQ_tt7e0fmutCeiJx8EORPNF5TyME",
-                parse_numbered_only=False,
-            ),
-            cache=db_connect(args.cache_file),
-        )
-    if args.pci_dss_4_in:
-        pci_dss.parse_4(
-            pci_file=sheet_utils.readSpreadsheet(
-                alias="",
-                url="https://docs.google.com/spreadsheets/d/18weo-qbik_C7SdYq7FSP2OMgUmsWdWWI1eaXcAfMz8I",
-                parse_numbered_only=False,
-            ),
-            cache=db_connect(args.cache_file),
-        )
-    if args.juiceshop_in:
-        juiceshop.parse(
-            cache=db_connect(args.cache_file),
-        )
-    if args.dsomm_in:
-        dsomm.parse(
-            cache=db_connect(args.cache_file),
-        )
-    if args.cloud_native_security_controls_in:
-        cloud_native_security_controls.parse(
-            cache=db_connect(args.cache_file),
-        )
+
     if args.generate_embeddings:
         generate_embeddings(args.cache_file)
     if args.owasp_proj_meta:

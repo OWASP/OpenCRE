@@ -7,62 +7,67 @@ from application.defs import cre_defs as defs
 import os
 import re
 from urllib.parse import urlparse, parse_qs
+from application.utils.external_project_parsers.base_parser import ParserInterface
+from application.cmd.cre_main import register_standard
+from application.prompt_client import prompt_client as prompt_client
 
 # GENERIC Markdown file parser for self-contained links! when we have more projects using this setup add them in the list
 
 
-def entry(name: str, section: str, hyperlink: str, tags: List[str]) -> defs.Standard:
-    return defs.Standard(
-        name=name,
-        section=section,
-        tags=tags,
-        hyperlink=hyperlink,
-    )
+class SeecureHeaders(ParserInterface):
 
+    name = "Secure Headers"
 
-def parse(cache: db.Node_collection):
-    sh_repo = "https://github.com/owasp/www-project-secure-headers.git"
-    file_path = "./"
-    repo = git.clone(sh_repo)
-    register_headers(repo=repo, cache=cache, file_path=file_path, repo_path=sh_repo)
+    def entry(self, section: str, hyperlink: str, tags: List[str]) -> defs.Standard:
+        return defs.Standard(
+            name=self.name,
+            section=section,
+            tags=tags,
+            hyperlink=hyperlink,
+        )
 
+    def parse(self, cache: db.Node_collection, ph: prompt_client.PromptHandler):
+        sh_repo = "https://github.com/owasp/www-project-secure-headers.git"
+        file_path = "./"
+        repo = git.clone(sh_repo)
+        entries = self.register_headers(
+            repo=repo, cache=cache, file_path=file_path, repo_path=sh_repo
+        )
+        return register_standard(entries, cache, ph)
 
-def register_headers(cache: db.Node_collection, repo, file_path, repo_path):
-    cre_link = r"\[([\w\s\d]+)\]\((?P<url>((?:\/|https:\/\/)(www\.)?opencre\.org/cre/(?P<creID>\d+-\d+)\?[\w\d\.\/\=\#\+\&\%\-]+))\)"
-    files = os.listdir(os.path.join(repo.working_dir, file_path))
-    for mdfile in files:
-        pth = os.path.join(repo.working_dir, file_path, mdfile)
-        if not os.path.isfile(pth):
-            continue
-        with open(pth) as mdf:
-            mdtext = mdf.read()
-
-            if "opencre.org" not in mdtext:
+    def register_headers(self, cache: db.Node_collection, repo, file_path, repo_path):
+        cre_link = r"\[([\w\s\d]+)\]\((?P<url>((?:\/|https:\/\/)(www\.)?opencre\.org/cre/(?P<creID>\d+-\d+)\?[\w\d\.\/\=\#\+\&\%\-]+))\)"
+        files = os.listdir(os.path.join(repo.working_dir, file_path))
+        entries = []
+        for mdfile in files:
+            pth = os.path.join(repo.working_dir, file_path, mdfile)
+            if not os.path.isfile(pth):
                 continue
+            with open(pth) as mdf:
+                mdtext = mdf.read()
 
-            links = re.finditer(cre_link, mdtext, re.MULTILINE)
-            for cre in links:
-                if cre:
-                    parsed = urlparse(cre.group("url"))
-                    creID = cre.group("creID")
-                    queries = parse_qs(parsed.query)
-                    name = queries.get("name")
-                    section = queries.get("section")
-                    link = queries.get("link")
-                    cres = cache.get_CREs(external_id=creID)
-                    for dbcre in cres:
-                        cs = entry(
+                if "opencre.org" not in mdtext:
+                    continue
+
+                links = re.finditer(cre_link, mdtext, re.MULTILINE)
+                for cre in links:
+                    if cre:
+                        parsed = urlparse(cre.group("url"))
+                        creID = cre.group("creID")
+                        queries = parse_qs(parsed.query)
+                        name = queries.get("name")
+                        section = queries.get("section")
+                        link = queries.get("link")
+                        cres = cache.get_CREs(external_id=creID)
+                        cs = self.entry(
                             name=name[0] if name else "",
                             section=section[0] if section else "",
                             hyperlink=link[0] if link else "",
                             tags=[],
                         )
-                        dbnode = cache.add_node(cs)
-                        if dbnode:
-                            cache.add_link(
-                                cre=db.dbCREfromCRE(dbcre),
-                                node=dbnode,
-                                type=defs.LinkTypes.LinkedTo,
+                        for dbcre in cres:
+                            cs.add_link(
+                                defs.Link(document=dbcre, ltype=defs.LinkTypes.LinkedTo)
                             )
-                        else:
-                            print(f"could not register link to {name}, {section}")
+                entries.append(cs)
+        return entries
