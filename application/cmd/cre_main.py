@@ -445,6 +445,7 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
     elif args.osib_out:
         export_to_osib(file_loc=args.osib_out, cache=args.cache_file)
 
+    # individual resource importing
     cache = db_connect(args.cache_file)
     ph = prompt_client.PromptHandler(cache)
     if args.zap_in:
@@ -453,7 +454,6 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
         BaseParser().register_resource(cheatsheets_parser.Cheatsheets, db=cache, ph=ph)
     if args.github_tools_in:
         BaseParser().register_resource(misc_tools_parser.MiscTools, db=cache, ph=ph)
-
     if args.capec_in:
         BaseParser().register_resource(capec_parser.Capec, db=cache, ph=ph)
     if args.cwe_in:
@@ -475,6 +475,10 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
         BaseParser().register_resource(
             cloud_native_security_controls.CloudNativeSecurityControls, db=cache, ph=ph
         )
+    # /end individual resource importing
+
+    if args.import_external_projects:
+        BaseParser().call_importers(db=cache, prompt_handler=ph)
 
     if args.export:
         cache = db_connect(args.cache_file)
