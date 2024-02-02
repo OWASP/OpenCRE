@@ -12,65 +12,86 @@ logging.basicConfig()
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-
-def make_nist_map(cache: db.Node_collection):
-    nist_map = {}
-    re_id = re.compile("(?P<id>\w+-\d+)")
-
-    nist = cache.get_nodes(name="NIST 800-53 v5")
-    if not nist:
-        logger.fatal("This CRE DB does not contain NIST, this is fatal")
-        return
-
-    for nst in nist:
-        ri = re_id.search(nst.section)
-        if ri:
-            nist_map[ri.group("id")] = nst
-    return nist_map
+from application.utils.external_project_parsers.base_parser import ParserInterface
+from application.prompt_client import prompt_client as prompt_client
+from application.cmd.cre_main import register_standard
+from application.utils import spreadsheet as sheet_utils
 
 
-def parse_ccm(ccmFile: Dict[str, Any], cache: db.Node_collection):
-    nist_map = make_nist_map(cache)
-    re_nist = re.compile("(\w+-\d+)")
+class CloudControlsMatrix(ParserInterface):
+    name = "Cloud Controls Matrix v4.0"
 
-    for ccm_mapping in ccmFile.get("0.ccmv4"):
-        # cre: defs.CRE
-        # linked_standard: defs.Standard
-        if "Control ID" not in ccm_mapping:
-            logger.error("string 'CCM V4.0 Control ID' was not found in mapping line")
-            continue
+    def make_nist_map(self, cache: db.Node_collection):
+        nist_map = {}
+        re_id = re.compile("(?P<id>\w+-\d+)")
 
-        ccm = defs.Standard(
-            name="Cloud Controls Matrix v4.0",
-            section=f'{ccm_mapping.pop("Control ID")}:{ccm_mapping.pop("Control Title")}',
-            subsection="",
-            version="v4.0",
-            hyperlink="",
+        nist = cache.get_nodes(name="NIST 800-53 v5")
+        if not nist:
+            logger.fatal("This CRE DB does not contain NIST, this is fatal")
+            return
+
+        for nst in nist:
+            ri = re_id.search(nst.section)
+            if ri:
+                nist_map[ri.group("id")] = nst
+        return nist_map
+
+    def get_ccm_file(self) -> Dict[str, Any]:
+        return sheet_utils.readSpreadsheet(
+            alias="",
+            url="https://docs.google.com/spreadsheets/d/1QDzQy0wt1blGjehyXS3uaHh7k5OOR12AWgAA1DeACyc",
         )
-        dbccm = cache.add_node(ccm)
-        logger.debug(f"Registered CCM with id {ccm.section}")
 
-        if ccm_mapping.get("NIST 800-53 rev 5"):
-            nist_links = ccm_mapping.pop("NIST 800-53 rev 5").split("\n")
+    def parse(self, cache: db.Node_collection, ph: prompt_client.PromptHandler):
+        ccmFile: Dict[str, Any] = self.get_ccm_file()
+        nist_map = self.make_nist_map(cache)
+        re_nist = re.compile("(\w+-\d+)")
+        standard_entries = []
+        for ccm_mapping in ccmFile.get("0.ccmv4"):
+            # cre: defs.CRE
+            # linked_standard: defs.Standard
+            if "Control ID" not in ccm_mapping:
+                logger.error(
+                    "string 'CCM V4.0 Control ID' was not found in mapping line"
+                )
+                continue
 
-            for nl in nist_links:
-                actual = ""
-                found = re_nist.search(nl.strip())
-                if found:
-                    actual = found.group(1)
-                if actual not in nist_map.keys():
-                    logger.error(
-                        f"could not find NIST '{actual}' in the database, mapping was '{nl.strip()}'"
-                    )
-                    continue
-                relevant_cres = [
-                    el.document
-                    for el in nist_map.get(actual).links
-                    if el.document.doctype == defs.Credoctypes.CRE
-                ]
+            ccm = defs.Standard(
+                name=self.name,
+                section=f'{ccm_mapping.pop("Control ID")}:{ccm_mapping.pop("Control Title")}',
+                subsection="",
+                version="v4.0",
+                hyperlink="",
+            )
 
-                for c in relevant_cres:
-                    cache.add_link(cre=dbCREfromCRE(cre=c), node=dbccm)
-                    logger.debug(
-                        f"Added link between CRE {c.id} and CCM v4.0 {dbccm.section}"
-                    )
+            if ccm_mapping.get("NIST 800-53 rev 5"):
+                nist_links = ccm_mapping.pop("NIST 800-53 rev 5").split("\n")
+
+                for nl in nist_links:
+                    actual = ""
+                    found = re_nist.search(nl.strip())
+                    if found:
+                        actual = found.group(1)
+                    if actual not in nist_map.keys():
+                        logger.error(
+                            f"could not find NIST '{actual}' in the database, mapping was '{nl.strip()}'"
+                        )
+                        continue
+                    relevant_cres = [
+                        el.document
+                        for el in nist_map.get(actual).links
+                        if el.document.doctype == defs.Credoctypes.CRE
+                    ]
+
+                    for c in relevant_cres:
+                        ccm.add_link(
+                            defs.Link(document=c, ltype=defs.LinkTypes.LinkedTo)
+                        )
+                        logger.debug(
+                            f"Added link between CRE {c.id} and CCM v4.0 {ccm.section}"
+                        )
+            logger.debug(f"Registered CCM with id {ccm.section}")
+            standard_entries.append(ccm)
+        register_standard(
+            standard_entries=standard_entries, collection=cache, prompt_client=ph
+        )
