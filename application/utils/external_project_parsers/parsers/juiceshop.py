@@ -7,7 +7,6 @@ from typing import Dict, Any
 from application.database import db
 from application.defs import cre_defs as defs
 import re
-from application.cmd.cre_main import register_standard
 from application.prompt_client import prompt_client as prompt_client
 from application.utils.external_project_parsers.base_parser import ParserInterface
 import requests
@@ -55,6 +54,9 @@ class JuiceShop(ParserInterface):
                     )
                     continue
             challenge_embeddings = prompt.get_text_embeddings(",".join(chal.tags))
+            chal.embeddings = challenge_embeddings
+            chal.embeddings_text = ",".join(chal.tags)
+
             cre_id = prompt.get_id_of_most_similar_cre(challenge_embeddings)
             if not cre_id:
                 logger.info(
@@ -70,21 +72,18 @@ class JuiceShop(ParserInterface):
                     cre_id = cres[0].id
 
             cre = cache.get_cre_by_db_id(cre_id)
-            chal_copy = chal.shallow_copy()
-            chal_copy.description = ""
-            dbnode = cache.add_node(chal_copy)
-            if not dbnode:
-                logger.error(f"could not store database node {chal_copy.__repr__()}")
-                continue
-            cache.add_embedding(
-                dbnode, chal_copy.doctype, challenge_embeddings, chal_copy.__repr__()
-            )
+            # chal_copy = chal.shallow_copy()
+            # chal_copy.description = ""
+            # dbnode = cache.add_node(chal_copy)
+            # if not dbnode:
+            #     logger.error(f"could not store database node {chal_copy.__repr__()}")
+            #     continue
             if cre:
                 chal.add_link(defs.Link(document=cre, ltype=defs.LinkTypes.LinkedTo))
-                logger.info(f"successfully stored {chal_copy.__repr__()}")
+                logger.info(f"successfully stored {chal.__repr__()}")
             else:
                 logger.info(
-                    f"stored {chal_copy.__repr__()} but could not link it to any CRE reliably"
+                    f"stored {chal.__repr__()} but could not link it to any CRE reliably"
                 )
             chals.append(chal)
-        register_standard(chals, cache, prompt, generate_embeddings=False)
+        return chals

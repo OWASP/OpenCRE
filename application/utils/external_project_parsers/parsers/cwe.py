@@ -1,12 +1,10 @@
 import logging
 import os
-from pprint import pprint
 import tempfile
 import requests
 from typing import Dict
 from application.database import db
 from application.defs import cre_defs as defs
-from typing import Any, Dict, List, Optional, Tuple, cast
 import shutil
 import xmltodict
 from application.utils.external_project_parsers.base_parser import ParserInterface
@@ -36,13 +34,15 @@ class CWE(ParserInterface):
         for _, _, files in os.walk(tmp_dir, topdown=False):
             for file in files:
                 if file.startswith("cwe") and file.endswith(".xml"):
-                    self.register_cwe(xml_file=os.path.join(tmp_dir, file), cache=cache)
+                    return self.register_cwe(
+                        xml_file=os.path.join(tmp_dir, file), cache=cache
+                    )
 
     def make_hyperlink(self, cwe_id: int):
         return f"https://cwe.mitre.org/data/definitions/{cwe_id}.html"
 
     def link_cwe_to_capec_cre(
-        self, cwe: db.Node, cache: db.Node_collection, capec_id: str
+        self, cwe: defs.Standard, cache: db.Node_collection, capec_id: str
     ) -> bool:
         capecs = cache.get_nodes(name="CAPEC", sectionID=capec_id)
         linked = False
@@ -55,9 +55,9 @@ class CWE(ParserInterface):
                 logger.debug(
                     f"linked CWE with id {cwe.section_id} to CRE with ID {cre.id}"
                 )
-                cache.add_link(cre=db.dbCREfromCRE(cre), node=cwe)
+                cwe.add_link(defs.Link(document=cre, ltype=defs.LinkTypes.LinkedTo))
                 linked = True
-        return linked
+        return linked, cwe
 
     def link_to_related_weaknesses(
         self, cwe: db.Node, cache: db.Node_collection, related_id: str
@@ -73,13 +73,13 @@ class CWE(ParserInterface):
                 logger.debug(
                     f"linked CWE with id {cwe.section_id} to CRE with ID {cre.id}"
                 )
-                cache.add_link(cre=db.dbCREfromCRE(cre), node=cwe)
+                cwe.add_link(defs.Link(document=cre, ltype=defs.LinkTypes.LinkedTo))
                 linked = True
-        return linked
+        return linked, cwe
 
     def register_cwe(self, cache: db.Node_collection, xml_file: str):
         statuses = {}
-
+        entries = []
         with open(xml_file, "r") as xml:
             weakness_catalog = xmltodict.parse(xml.read()).get("Weakness_Catalog")
             version = weakness_catalog["@Version"]
@@ -94,9 +94,6 @@ class CWE(ParserInterface):
                         hyperlink=self.make_hyperlink(weakness["@ID"]),
                         version=version,
                     )
-                    dbcwe = cache.add_node(
-                        cwe, comparison_skip_attributes=["link", "section", "version"]
-                    )
                     logger.debug(f"Registered CWE with id {cwe.section}")
                     link_found = False
                     if weakness.get("Related_Attack_Patterns"):
@@ -104,13 +101,13 @@ class CWE(ParserInterface):
                             for capec_entry in lst:
                                 if isinstance(capec_entry, Dict):
                                     for _, capec_id in capec_entry.items():
-                                        link_found = self.link_cwe_to_capec_cre(
-                                            cwe=dbcwe, cache=cache, capec_id=capec_id
+                                        link_found, cwe = self.link_cwe_to_capec_cre(
+                                            cwe=cwe, cache=cache, capec_id=capec_id
                                         )
                                 else:
                                     id = lst["@CAPEC_ID"]
-                                    link_found = self.link_cwe_to_capec_cre(
-                                        cwe=dbcwe, cache=cache, capec_id=id
+                                    link_found, cwe = self.link_cwe_to_capec_cre(
+                                        cwe=cwe, cache=cache, capec_id=id
                                     )
                     else:
                         logger.info(
@@ -121,6 +118,8 @@ class CWE(ParserInterface):
                             for cwe_entry in lst:
                                 if isinstance(cwe_entry, Dict):
                                     id = cwe_entry["@CWE_ID"]
-                                    link_found = self.link_to_related_weaknesses(
-                                        cwe=dbcwe, cache=cache, related_id=id
+                                    link_found, cwe = self.link_to_related_weaknesses(
+                                        cwe=cwe, cache=cache, related_id=id
                                     )
+                    entries.append(cwe)
+        return entries

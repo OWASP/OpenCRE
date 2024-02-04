@@ -5,13 +5,11 @@ from typing import Dict, Any
 from application.database import db
 from application.defs import cre_defs as defs
 import urllib
-from application.database.db import dbCREfromCRE
 import re
 from simplify_docx import simplify
 import docx
 import tempfile
 from application.utils.external_project_parsers.base_parser import ParserInterface
-from application.cmd.cre_main import register_standard
 from application.prompt_client import prompt_client as prompt_client
 from typing import List
 
@@ -90,7 +88,6 @@ class ISO27001(ParserInterface):
         self.download_iso_doc(url, tmpdir, "iso.docx")
         table = self.extract_iso_table(f"{tmpdir}/iso.docx")
         nist_dict = self.iso_table_to_nist_dict(table, nist_nodes)
-
         nist_id_to_node_map = {}
         for node in nist_nodes:
             id_match = re.search(nist_id_re, node.section)
@@ -113,5 +110,4 @@ class ISO27001(ParserInterface):
                 stand = defs.Standard(name=self.name, section=iso)
                 [stand.add_link(link) for link in node.links]
                 documents.append(stand)
-        register_standard(documents, cache, ph)
         return documents

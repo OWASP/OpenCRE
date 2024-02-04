@@ -1,12 +1,10 @@
 import logging
 import os
-from pprint import pprint
 import tempfile
 import requests
 from typing import Dict
 from application.database import db
 from application.defs import cre_defs as defs
-from typing import Any, Dict, List, Optional, Tuple, cast
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
@@ -28,9 +26,8 @@ class Capec(ParserInterface):
             handle, fname = tempfile.mkstemp(suffix=".xml")
             with os.fdopen(handle, "w") as xmlfile:
                 xmlfile.write(xml.text)
-            register_standard(
-                self.register_capec(xml_file=fname, cache=cache), cache, ph
-            )
+
+                return self.register_capec(xml_file=fname, cache=cache)
         else:
             logger.fatal(f"Could not get CAPEC's XML data, error was {xml.text}")
 

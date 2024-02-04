@@ -7,7 +7,6 @@ import os
 import re
 from application.utils.external_project_parsers.base_parser import ParserInterface
 from application.prompt_client import prompt_client as prompt_client
-from application.cmd.cre_main import register_standard
 
 
 class Cheatsheets(ParserInterface):
@@ -30,7 +29,7 @@ class Cheatsheets(ParserInterface):
         cheatsheets = self.register_cheatsheets(
             repo=repo, cache=cache, cheatsheets_path=cheatsheets_path, repo_path=c_repo
         )
-        register_standard(cheatsheets, cache, ph)
+        return cheatsheets
 
     def register_cheatsheets(
         self, cache: db.Node_collection, repo, cheatsheets_path, repo_path

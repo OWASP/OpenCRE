@@ -1,11 +1,8 @@
 import logging
-import os
-from pprint import pprint
 from typing import Dict, Any
 from application.database import db
 from application.defs import cre_defs as defs
 
-from application.database.db import dbCREfromCRE
 import re
 
 logging.basicConfig()
@@ -92,6 +89,4 @@ class CloudControlsMatrix(ParserInterface):
                         )
             logger.debug(f"Registered CCM with id {ccm.section}")
             standard_entries.append(ccm)
-        register_standard(
-            standard_entries=standard_entries, collection=cache, prompt_client=ph
-        )
+        return standard_entries
