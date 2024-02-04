@@ -3,10 +3,15 @@ from application.defs import cre_defs as defs
 import unittest
 from application import create_app, sqla  # type: ignore
 from application.database import db
+from application.utils import redis
+from application.cmd import cre_main as main
 import tempfile
+from unittest.mock import Mock, patch
+from rq import Queue
 import os
 
-from application.utils.external_project_parsers import zap_alerts_parser
+from application.utils.external_project_parsers.parsers import zap_alerts_parser
+from application.prompt_client import prompt_client
 
 
 class TestZAPAlertsParser(unittest.TestCase):
@@ -21,6 +26,10 @@ class TestZAPAlertsParser(unittest.TestCase):
 
         self.collection = db.Node_collection()
 
+    @patch.object(Queue, "enqueue_call")
+    @patch.object(redis, "connect")
+    @patch.object(prompt_client.PromptHandler, "generate_embeddings_for")
+    @patch.object(main, "populate_neo4j_db")
     def test_register_zap_alert_top_10_tags(self) -> None:
         alert = """
       ---
@@ -41,12 +50,7 @@ class TestZAPAlertsParser(unittest.TestCase):
       _Unavailable_
       """
 
-        class Repo:
-            working_dir = ""
-
-        repo = Repo()
         loc = tempfile.mkdtemp()
-        repo.working_dir = loc
         top10s = [
             self.collection.add_node(
                 defs.Standard(
@@ -93,8 +97,9 @@ class TestZAPAlertsParser(unittest.TestCase):
 
         with open(os.path.join(loc, "alert0.md"), "w") as mdf:
             mdf.write(alert)
-        zap_alerts_parser.register_alerts(
-            cache=self.collection, repo=repo, alerts_path=""
+        zap_alerts_parser.ZAP().parse(
+            cache=self.collection,
+            ph=prompt_client.PromptHandler(database=self.collection),
         )
 
         expected = defs.Tool(
@@ -109,12 +114,13 @@ class TestZAPAlertsParser(unittest.TestCase):
         )
 
         self.maxDiff = None
-        node = db.nodeFromDB(
+        nodes = db.nodeFromDB(
             self.collection.session.query(db.Node)
             .filter(db.Node.name == expected.name)
-            .first()
+            .all()
         )
-        self.assertCountEqual(expected.todict(), node.todict())
+        self.assertCountEqual(expected, nodes)
+        # self.assertCountEqual(expected.todict(), nodes.todict())
 
         node = self.collection.get_nodes(name=expected.name, ntype=expected.doctype)[0]
         self.assertNotIn(cre3.external_id, [link.document.id for link in node.links])

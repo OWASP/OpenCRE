@@ -52,6 +52,13 @@ def register_node(node: defs.Node, collection: db.Node_collection) -> db.Node:
     if both don't map to anything, just add them in the db as unlinked nodes
     """
     linked_node = collection.add_node(node)
+    if node.embeddings:
+        collection.add_embedding(
+            linked_node,
+            doctype=node.doctype,
+            embeddings=node.embeddings,
+            embedding_text=node.embeddings_text,
+        )
     cre_less_nodes: List[defs.Node] = []
 
     # we need to know the cres added in case we encounter a higher level CRE,
@@ -221,6 +228,11 @@ def register_standard(
 
     for node in standard_entries:
         register_node(node, collection)
+        if node.embeddings:
+            logger.debug(
+                f"node has embeddings populated, skipping generation for resource {node.name}"
+            )
+            generate_embeddings = False
     if generate_embeddings:
         prompt_client.generate_embeddings_for(node.name)
     populate_neo4j_db(collection)

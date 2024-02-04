@@ -83,7 +83,9 @@ class TestCreDefs(unittest.TestCase):
                                 "document": {
                                     "doctype": "Standard",
                                     "name": "ASVS",
-                                    "section": "SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING",
+                                    "section": (
+                                        "SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING"
+                                    ),
                                     "subsection": "3.1.1",
                                     "version": "0.0.0",
                                 },

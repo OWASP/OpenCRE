@@ -8,7 +8,6 @@ import os
 import re
 from urllib.parse import urlparse, parse_qs
 from application.utils.external_project_parsers.base_parser import ParserInterface
-from application.cmd.cre_main import register_standard
 from application.prompt_client import prompt_client as prompt_client
 
 # GENERIC Markdown file parser for self-contained links! when we have more projects using this setup add them in the list
@@ -33,7 +32,7 @@ class SeecureHeaders(ParserInterface):
         entries = self.register_headers(
             repo=repo, cache=cache, file_path=file_path, repo_path=sh_repo
         )
-        return register_standard(entries, cache, ph)
+        return entries
 
     def register_headers(self, cache: db.Node_collection, repo, file_path, repo_path):
         cre_link = r"\[([\w\s\d]+)\]\((?P<url>((?:\/|https:\/\/)(www\.)?opencre\.org/cre/(?P<creID>\d+-\d+)\?[\w\d\.\/\=\#\+\&\%\-]+))\)"

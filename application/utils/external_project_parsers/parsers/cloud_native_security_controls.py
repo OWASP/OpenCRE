@@ -1,15 +1,8 @@
 from io import StringIO
 import csv
-import urllib
-from pprint import pprint
 import logging
-import os
-from typing import Dict, Any
 from application.database import db
 from application.defs import cre_defs as defs
-import re
-from application.utils import spreadsheet as sheet_utils
-from application.cmd.cre_main import register_standard
 from application.prompt_client import prompt_client as prompt_client
 from application.utils.external_project_parsers.base_parser import ParserInterface
 import requests
@@ -56,6 +49,8 @@ class CloudNativeSecurityControls(ParserInterface):
                     )
                     continue
             cnsc_embeddings = prompt.get_text_embeddings(cnsc.subsection)
+            cnsc.embeddings = cnsc_embeddings
+            cnsc.embeddings_text = cnsc.subsection
             cre_id = prompt.get_id_of_most_similar_cre(cnsc_embeddings)
             if not cre_id:
                 logger.info(
@@ -70,22 +65,22 @@ class CloudNativeSecurityControls(ParserInterface):
                 if cres:
                     cre_id = cres[0].id
             cre = cache.get_cre_by_db_id(cre_id)
-            cnsc_copy = cnsc.shallow_copy()
-            cnsc_copy.description = ""
-            dbnode = cache.add_node(cnsc_copy)
-            if not dbnode:
-                logger.error(f"could not store database node {cnsc_copy.__repr__()}")
-                continue
-            cache.add_embedding(
-                dbnode, cnsc_copy.doctype, cnsc_embeddings, cnsc_copy.__repr__()
-            )
+            # cnsc_copy = cnsc.shallow_copy()
+            # cnsc_copy.description = ""
+            # dbnode = cache.add_node(cnsc_copy)
+            # if not dbnode:
+            #     logger.error(f"could not store database node {cnsc_copy.__repr__()}")
+            #     continue
+            # cache.add_embedding(
+            #     dbnode, cnsc_copy.doctype, cnsc_embeddings, cnsc_copy.__repr__()
+            # )
             if cre:
                 cnsc.add_link(defs.Link(document=cre, ltype=defs.LinkTypes.LinkedTo))
                 # cache.add_link(db.dbCREfromCRE(cre), dbnode)
-                logger.info(f"successfully stored {cnsc_copy.__repr__()}")
+                logger.info(f"successfully stored {cnsc.__repr__()}")
             else:
                 logger.info(
-                    f"stored {cnsc_copy.__repr__()} but could not link it to any CRE reliably"
+                    f"stored {cnsc.__repr__()} but could not link it to any CRE reliably"
                 )
             standard_entries.append(cnsc)
-        register_standard(cnsc, cache, prompt)
+        return cnsc

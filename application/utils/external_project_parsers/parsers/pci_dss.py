@@ -8,7 +8,6 @@ import re
 from application.utils import spreadsheet as sheet_utils
 from application.prompt_client import prompt_client as prompt_client
 from application.utils.external_project_parsers.base_parser import ParserInterface
-from application.cmd.cre_main import register_standard
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
@@ -27,7 +26,7 @@ class PciDss(ParserInterface):
             ),
             cache=cache,
         )
-        register_standard(entries, cache, ph, generate_embeddings=False)
+        return entries
 
     def __parse(
         self,
@@ -68,6 +67,8 @@ class PciDss(ParserInterface):
                     )
 
             control_embeddings = prompt.get_text_embeddings(pci_control.__repr__())
+            pci_control.embeddings = control_embeddings
+            pci_control.embeddings_text = pci_control.__repr__()
             # these embeddings are different to the ones generated from --generate embeddings, this is because we want these embedding to include the optional "description" field, it is not a big difference and cosine similarity works reasonably accurately without it but good to have
             cre_id = prompt.get_id_of_most_similar_cre(control_embeddings)
             if not cre_id:
@@ -86,18 +87,21 @@ class PciDss(ParserInterface):
                 cre = cache.get_cre_by_db_id(cre_id)
             ctrl_copy = pci_control.shallow_copy()
             pci_control.description = ""
-            dbnode = cache.add_node(pci_control)
-            if not dbnode:
-                logger.error(f"could not store database node {pci_control.__repr__()}")
-                continue
-            cache.add_embedding(
-                dbnode, pci_control.doctype, control_embeddings, ctrl_copy.__repr__()
-            )
+            # dbnode = cache.add_node(pci_control)
+            # if not dbnode:
+            #     logger.error(f"could not store database node {pci_control.__repr__()}")
+            #     continue
+            # cache.add_embedding(
+            #     dbnode, pci_control.doctype, control_embeddings, ctrl_copy.__repr__()
+            # )
             if cre:
                 pci_control.add_link(
                     defs.Link(document=cre, ltype=defs.LinkTypes.LinkedTo)
                 )
-                cache.add_link(db.dbCREfromCRE(cre), dbnode)
+                pci_control.add_link(
+                    defs.Link(ltype=defs.LinkTypes.LinkedTo, document=cre)
+                )
+                # cache.add_link(db.dbCREfromCRE(cre), dbnode)
                 logger.info(f"successfully stored {pci_control.__repr__()}")
             else:
                 logger.info(
@@ -107,7 +111,7 @@ class PciDss(ParserInterface):
         return standard_entries
 
     def parse_3_2(self, pci_file: Dict[str, Any], cache: db.Node_collection):
-        __parse(
+        self.__parse(
             pci_file=pci_file,
             cache=cache,
             version="3.2",

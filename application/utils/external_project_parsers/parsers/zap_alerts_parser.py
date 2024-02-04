@@ -14,7 +14,6 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 from application.utils.external_project_parsers.base_parser import ParserInterface
-from application.cmd.cre_main import register_standard
 from application.prompt_client import prompt_client as prompt_client
 
 
@@ -28,7 +27,7 @@ class ZAP(ParserInterface):
     zap_md_code_regexp = r"code: ?(?P<code>.+)"
     zap_md_top10_regexp = r"OWASP_(?P<year>\d\d\d\d)_A(?P<num>\d\d?)"
 
-    def zap_alert(
+    def __zap_alert(
         self, name: str, alert_id: str, description: str, tags: List[str], code: str
     ) -> defs.Tool:
         tags.append(alert_id)
@@ -46,10 +45,10 @@ class ZAP(ParserInterface):
         zaproxy_website = "https://github.com/zaproxy/zaproxy-website.git"
         alerts_path = "site/content/docs/alerts/"
         repo = git.clone(zaproxy_website)
-        alerts = self.register_alerts(repo=repo, cache=cache, alerts_path=alerts_path)
-        register_standard(alerts)
+        alerts = self.__register_alerts(repo=repo, cache=cache, alerts_path=alerts_path)
+        return alerts
 
-    def link_to_top10(
+    def __link_to_top10(
         self, alert: defs.Tool, top10: re.Match[str] | None, cache: db.Node_collection
     ):
         for match in top10:
@@ -74,7 +73,7 @@ class ZAP(ParserInterface):
                     f"Zap Alert {alert.name} links to OWASP top 10 {year}:{num} but CRE doesn't know about it, incomplete data?"
                 )
 
-    def link_to_cwe(
+    def __link_to_cwe(
         self, alert: defs.Tool, cwe: re.Match[str] | None, cache: db.Node_collection
     ):
         cweId = cwe.group("cweId")
@@ -91,7 +90,7 @@ class ZAP(ParserInterface):
                 f"opencre.org does not know of CWE {cweId}, it is linked to by zap alert: {alert.name}"
             )
 
-    def parse_md_file(self, mdtext: str, cache: db.Node_collection):
+    def __parse_md_file(self, mdtext: str, cache: db.Node_collection):
         title = re.search(self.zap_md_title_regexp, mdtext)
         name = title.group("title") if title else None
 
@@ -113,7 +112,7 @@ class ZAP(ParserInterface):
             )
             return
         cwe = re.search(self.zap_md_cwe_regexp, mdtext)
-        alert = self.zap_alert(
+        alert = self.__zap_alert(
             name=name.replace('"', ""),
             alert_id=externalId,
             description=description.replace('"', "") if description else "",
@@ -123,17 +122,17 @@ class ZAP(ParserInterface):
 
         top10 = re.finditer(self.zap_md_top10_regexp, mdtext)
         if top10:
-            alert = self.link_to_top10(alert=alert, top10=top10, cache=cache)
+            alert = self.__link_to_top10(alert=alert, top10=top10, cache=cache)
 
         if cwe:
-            alert = self.link_to_cwe(alert=alert, cwe=cwe, cache=cache)
+            alert = self.__link_to_cwe(alert=alert, cwe=cwe, cache=cache)
         else:
             logger.error(
                 f"CWE id not found in alert {externalId}:{alert.name}, skipping linking"
             )
         return alert
 
-    def register_alerts(
+    def __register_alerts(
         self, cache: db.Node_collection, repo: git.git, alerts_path: str
     ):
         alerts = []
@@ -141,7 +140,7 @@ class ZAP(ParserInterface):
             pth = os.path.join(repo.working_dir, alerts_path, mdfile)
             with open(pth) as mdf:
                 mdtext = mdf.read()
-                alert = self.parse_md_file(mdtext=mdtext)
+                alert = self.__parse_md_file(mdtext=mdtext)
                 if alert:
                     alerts.append(alert)
                 else:

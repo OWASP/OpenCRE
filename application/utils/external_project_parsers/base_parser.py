@@ -3,7 +3,7 @@ from application.cmd import cre_main
 from application.defs import cre_defs as defs
 from rq import Queue
 from application.utils import redis
-from typing import List
+from typing import List, Optional
 from application.prompt_client import prompt_client as prompt_client
 import logging
 import time
@@ -30,7 +30,7 @@ class ParserInterface:
         links the resource of the project to CREs
         this can be done either using glue resources, AI or any other supported method
         then calls cre_main.register_node
-        Returns a list of documents with CRE links
+        Returns a list of documents with CRE links, optionally with their embeddings filled in
         """
         raise NotImplementedError
 
@@ -43,7 +43,8 @@ class BaseParser:
         db: db.Node_collection,
         ph: prompt_client.PromptHandler,
     ):
-        cre_main.register_standard(sclass.parse(), db, ph)
+        documents = sclass.parse(db, ph)
+        cre_main.register_standard(documents, db, ph)
 
     def call_importers(
         self, db: db.Node_collection, prompt_handler: prompt_client.PromptHandler

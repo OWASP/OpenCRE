@@ -9,7 +9,6 @@ from xmlrpc.client import boolean
 from application.database import db
 from application.defs import cre_defs as defs
 from application.utils import git
-from application.cmd.cre_main import register_standard
 from application.prompt_client import prompt_client as prompt_client
 from application.utils.external_project_parsers.base_parser import ParserInterface
 import requests
@@ -46,9 +45,10 @@ class MiscTools(ParserInterface):
     # TODO (spyros): need to decouple git ops from parsing in order to make this testable
     # although i could just mock the git ops :$
     def parse(self, cache: db.Node_collection, ph: prompt_client.PromptHandler):
+        tool_entries = []
         for url in self.tool_urls:
-            tool_entries = self.parse_tool(cache=cache, tool_repo=url)
-            register_standard(tool_entries)
+            tool_entries.append(self.parse_tool(cache=cache, tool_repo=url))
+        return tool_entries
 
     def parse_tool(
         self, tool_repo: str, cache: db.Node_collection, dry_run: boolean = False

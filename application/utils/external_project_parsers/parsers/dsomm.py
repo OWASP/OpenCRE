@@ -1,7 +1,5 @@
-from application.cmd.cre_main import register_standard
 import re
 import yaml
-from pprint import pprint
 import logging
 from application.database import db
 from application.defs import cre_defs as defs
@@ -148,8 +146,4 @@ class DSOMM(ParserInterface):
                         # use iso as glue
                         standard = self.link_to_iso(aname, activity, cache, standard)
                         standard_entries.append(standard)
-                    register_standard(
-                        standard_entries=standard_entries,
-                        collection=cache,
-                        prompt_client=prompt,
-                    )
+                    return standard_entries
