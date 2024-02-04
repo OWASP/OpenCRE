@@ -11,7 +11,6 @@ logger.setLevel(logging.INFO)
 
 from application.utils.external_project_parsers.base_parser import ParserInterface
 from application.prompt_client import prompt_client as prompt_client
-from application.cmd.cre_main import register_standard
 from application.utils import spreadsheet as sheet_utils
 
 

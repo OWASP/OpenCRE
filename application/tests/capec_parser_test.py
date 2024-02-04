@@ -3,10 +3,12 @@ import unittest
 from application import create_app, sqla  # type: ignore
 from application.database import db
 import tempfile
+from unittest.mock import Mock, patch
 import os
 
-from application.utils.external_project_parsers import capec_parser
-
+from application.utils.external_project_parsers.parsers import capec_parser
+from application.prompt_client import prompt_client
+import requests
 
 class TestCapecParser(unittest.TestCase):
     def tearDown(self) -> None:
@@ -19,20 +21,23 @@ class TestCapecParser(unittest.TestCase):
         sqla.create_all()
         self.collection = db.Node_collection()
 
-    def test_register_capec(self) -> None:
-        fd, fname = tempfile.mkstemp()
-        with os.fdopen(fd=fd, mode="w") as xml:
-            xml.write(self.capec_xml)
+    @patch.object(requests, "get")
+    def test_register_capec(self,mock_requests) -> None:
+        class fakeRequest:
+            status_code = 200
+            text = self.capec_xml
+        mock_requests.return_value = fakeRequest()
         cres = []
+        nodes = []
         for cwe in [276, 285, 434]:
             dbnode = self.collection.add_node(defs.Standard(name="CWE", sectionID=cwe))
             cre = defs.CRE(id=f"{cwe}-{cwe}", name=f"CRE-{cwe}")
             cres.append(cre)
             dbcre = self.collection.add_cre(cre=cre)
             self.collection.add_link(cre=dbcre, node=dbnode)
-        capec_parser.register_capec(cache=self.collection, xml_file=fname)
+            nodes = capec_parser.Capec().parse(cache=self.collection,ph=prompt_client.PromptHandler(database=self.collection))
 
-        expected = defs.Standard(
+        expected = [defs.Standard(
             name="CAPEC",
             doctype=defs.Credoctypes.Standard,
             links=[
@@ -44,14 +49,19 @@ class TestCapecParser(unittest.TestCase):
             sectionID="1",
             section="Accessing Functionality Not Properly Constrained by ACLs",
             version="3.7",
-        )
-
-        node = self.collection.get_nodes(
+        ),
+        defs.Standard(
             name="CAPEC",
-            sectionID="1",
-            section="Accessing Functionality Not Properly Constrained by ACLs",
-        )[0]
-        self.assertEquals(node, expected)
+            doctype=defs.Credoctypes.Standard,
+            hyperlink="https://capec.mitre.org/data/definitions/10.html",
+            sectionID="10",
+            section="Another CAPEC",
+            version="3.7"
+        )
+        ]
+        self.assertEqual(len(nodes),2)
+        self.assertCountEqual(nodes[0].todict(), expected[0].todict())
+        self.assertCountEqual(nodes[1].todict(), expected[1].todict())
 
     capec_xml = """<?xml version="1.0" encoding="UTF-8"?>
 <Attack_Pattern_Catalog xmlns="http://capec.mitre.org/capec-3"
@@ -84,7 +94,7 @@ class TestCapecParser(unittest.TestCase):
             <Related_Weakness CWE_ID="1327"/>
          </Related_Weaknesses>
       </Attack_Pattern>
-         <Attack_Pattern ID="10" Name="Accessing Functionality Not Properly Constrained by ACLs"
+         <Attack_Pattern ID="10" Name="Another CAPEC"
                       Abstraction="Standard"
                       Status="Stable"> 
          <Related_Weaknesses>
