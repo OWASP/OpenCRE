@@ -289,7 +289,7 @@ class Document:
     id: Optional[str] = ""
     description: Optional[str] = ""
     links: List[Link] = field(default_factory=list)
-    embeddings: List[float]
+    embeddings: List[float] = field(default_factory=list)
     embeddings_text: str = ""
     tags: List[str] = field(default_factory=list)
     metadata: Dict[str, Any] = field(default_factory=dict)
