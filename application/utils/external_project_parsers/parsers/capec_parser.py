@@ -5,6 +5,7 @@ import requests
 from typing import Dict
 from application.database import db
 from application.defs import cre_defs as defs
+import xmltodict
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
@@ -12,21 +13,16 @@ logger.setLevel(logging.INFO)
 
 from application.utils.external_project_parsers.base_parser import ParserInterface
 from application.prompt_client import prompt_client as prompt_client
-from application.utils import spreadsheet as sheet_utils
 
 
 class Capec(ParserInterface):
     name = "CAPEC"
+    capec_xml = "https://capec.mitre.org/data/xml/capec_latest.xml"
 
     def parse(self, cache: db.Node_collection, ph: prompt_client.PromptHandler):
-        capec_xml = "https://capec.mitre.org/data/xml/capec_latest.xml"
-        xml = requests.get(capec_xml)
+        xml = requests.get(self.capec_xml)
         if xml.status_code == 200:
-            handle, fname = tempfile.mkstemp(suffix=".xml")
-            with os.fdopen(handle, "w") as xmlfile:
-                xmlfile.write(xml.text)
-
-                return self.register_capec(xml_file=fname, cache=cache)
+            return self.register_capec(xml_contents=xml.text, cache=cache)
         else:
             logger.fatal(f"Could not get CAPEC's XML data, error was {xml.text}")
 
@@ -51,15 +47,13 @@ class Capec(ParserInterface):
                 )
         return capec
 
-    def register_capec(self, cache: db.Node_collection, xml_file: str):
+    def register_capec(self, cache: db.Node_collection, xml_contents: str):
         attack_pattern_catalogue = {}
-        import xmltodict
 
-        with open(xml_file) as xml:
-            attack_pattern_catalogue = xmltodict.parse(xml.read()).get(
+        attack_pattern_catalogue = xmltodict.parse(xml_contents).get(
                 "Attack_Pattern_Catalog"
             )
-            version = attack_pattern_catalogue["@Version"]
+        version = attack_pattern_catalogue["@Version"]
         standard_entries = []
         for _, attack_pattern in attack_pattern_catalogue.get(
             "Attack_Patterns"

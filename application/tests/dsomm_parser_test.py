@@ -6,10 +6,9 @@ from application.database import db
 import tempfile
 import os
 
-from application.utils.external_project_parsers import zap_alerts_parser
 
 
-class TestZAPAlertsParser(unittest.TestCase):
+class TestDSOMM(unittest.TestCase):
     def tearDown(self) -> None:
         self.app_context.pop()
 
@@ -22,7 +21,6 @@ class TestZAPAlertsParser(unittest.TestCase):
         self.collection = db.Node_collection()
 
     def test_parse(self) -> None:
-        # mock prompt client to return static embeddings, ensure things are in tables as expected
         pass
 
 

@@ -1,5 +1,4 @@
 from application.database import db
-from application.cmd import cre_main
 from application.defs import cre_defs as defs
 from rq import Queue
 from application.utils import redis
@@ -44,6 +43,7 @@ class BaseParser:
         ph: prompt_client.PromptHandler,
     ):
         documents = sclass.parse(db, ph)
+        from application.cmd import cre_main
         cre_main.register_standard(documents, db, ph)
 
     def call_importers(

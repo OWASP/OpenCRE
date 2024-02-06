@@ -23,24 +23,6 @@ class MiscTools(ParserInterface):
         "https://github.com/commjoen/wrongsecrets.git",
     ]
 
-    def project(
-        name: str,
-        hyperlink: str,
-        tags: List[str],
-        ttype: str,
-        description: str,
-        sectionID: str,
-        section: str,
-    ) -> defs.Tool:
-        return defs.Tool(
-            name=name,
-            tooltype=defs.ToolTypes.from_str(ttype),
-            tags=tags,
-            hyperlink=hyperlink,
-            description=description,
-            sectionID=sectionID,
-            section=section,
-        )
 
     # TODO (spyros): need to decouple git ops from parsing in order to make this testable
     # although i could just mock the git ops :$
@@ -72,7 +54,7 @@ class MiscTools(ParserInterface):
                 parsed = urllib.parse.urlparse(cre.group("url"))
                 values = urllib.parse.parse_qs(parsed.query)
 
-                name = title.group("title").strip()
+                tool_name = title.group("title").strip()
                 cre_id = cre.group("cre").strip()
                 register = True if "register" in values else False
                 type = (
@@ -84,13 +66,13 @@ class MiscTools(ParserInterface):
                 if cre_id and register:
                     cres = cache.get_CREs(external_id=cre_id)
                     hyperlink = f"{tool_repo.replace('.git','')}"
-                    cs = self.project(
-                        name=name,
+                    cs =defs.Tool(
+                        name=tool_name,
+                        tooltype=defs.ToolTypes.from_str(tool_type),
+                        tags=tags,
                         hyperlink=hyperlink,
-                        tags=tags or [],
-                        ttype=tool_type,
                         description=description,
-                        sectionID="",  # we don't support sectionID and section when linking to a whole tool
+                        sectionID="", # we don't support sectionID and section when linking to a whole tool
                         section="",
                     )
                     for dbcre in cres:
@@ -98,7 +80,7 @@ class MiscTools(ParserInterface):
                             defs.Link(ltype=defs.LinkTypes.LinkedTo, document=dbcre)
                         )
                         print(
-                            f"Registered new Document of type:Tool, toolType: {tool_type}, name:{name} and hyperlink:{hyperlink},"
+                            f"Registered new Document of type:Tool, toolType: {tool_type}, name:{tool_name} and hyperlink:{hyperlink},"
                             f"linked to cre:{dbcre.id}"
                         )
                     tool_entries.append(cs)

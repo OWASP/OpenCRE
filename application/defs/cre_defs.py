@@ -282,7 +282,7 @@ class Link:
         return res
 
 
-@dataclass
+@dataclass(init=True, repr=True, eq=True, order=True)
 class Document:
     name: str
     doctype: Credoctypes
@@ -361,7 +361,8 @@ class Document:
 @dataclass(eq=False)
 class CRE(Document):
     doctype: Credoctypes = Credoctypes.CRE
-
+    def todict(self) -> Dict[str, Dict[str, str] | List[Any] | Set[str] | str]:
+        return super().todict()
 
 @dataclass
 class Node(Document):
