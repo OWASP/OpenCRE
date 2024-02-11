@@ -281,7 +281,6 @@ class TestCreDefs(unittest.TestCase):
         owasp.children = {"CRE": root, "ZAP": osibs["ZAP"]}
         tree = Osib_tree(children={"OWASP": owasp})
         self.assertEqual(tree, defs.cre2osib(list(cres.values())))
-        # self.fail()
 
     def test_paths_to_osib(self) -> None:
         """

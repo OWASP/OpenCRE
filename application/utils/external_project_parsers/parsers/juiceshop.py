@@ -71,12 +71,6 @@ class JuiceShop(ParserInterface):
                     cre_id = cres[0].id
 
             cre = cache.get_cre_by_db_id(cre_id)
-            # chal_copy = chal.shallow_copy()
-            # chal_copy.description = ""
-            # dbnode = cache.add_node(chal_copy)
-            # if not dbnode:
-            #     logger.error(f"could not store database node {chal_copy.__repr__()}")
-            #     continue
             if cre:
                 chal.add_link(defs.Link(document=cre, ltype=defs.LinkTypes.LinkedTo))
                 logger.info(f"successfully stored {chal.__repr__()}")

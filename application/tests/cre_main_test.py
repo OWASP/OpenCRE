@@ -359,8 +359,6 @@ class TestMain(unittest.TestCase):
             f"method parse_standards_from_spreadsheeet failed to process standards {','.join(expected_names)}",
         )
 
-        # test with export_format
-
     def test_get_standards_files_from_disk(self) -> None:
         loc = tempfile.mkdtemp()
         ymls = []
@@ -458,15 +456,6 @@ class TestMain(unittest.TestCase):
         mocked_parse_standards_from_spreadsheeet.assert_called_with(
             [{"cre": "cre"}], self.collection, mocked_ai_client_init.return_value
         )
-        # mocked_create_spreadsheet.assert_called_with(
-        #     collection=self.collection,
-        #     exported_documents=[
-        #         defs.CRE(name="c0"),
-        #         defs.Standard(name="s0", section="s1"),
-        #     ],
-        #     title="cre_review",
-        #     share_with=["foo@example.com"],
-        # )
         mocked_export.assert_called_with(loc)
 
     @patch("application.cmd.cre_main.prepare_for_review")
@@ -683,7 +672,6 @@ class TestMain(unittest.TestCase):
     ) -> None:
         dir = tempfile.mkdtemp()
         self.tmpdirs.append(dir)
-        # osib_yaml = tempfile.mkstemp(dir=dir,suffix=".yaml")[1]
         loc = tempfile.mkstemp(dir=dir)[1]
         cache = tempfile.mkstemp(dir=dir, suffix=".sqlite")[1]
         mocked_db_connect.return_value = self.collection
@@ -694,8 +682,6 @@ class TestMain(unittest.TestCase):
         mocked_db_connect.assert_called_with(path=cache)
         mocked_cre2osib.assert_called_with([defs.CRE(name="c0")])
 
-    # def test_prepare_for_Review(self):
-    #     raise NotImplementedError
 
 
 if __name__ == "__main__":

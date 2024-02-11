@@ -103,7 +103,6 @@ def main() -> None:
     parser.add_argument(
         "--owasp_proj_meta",
         default=None,
-        # default=os.path.join(os.path.dirname(os.path.realpath(__file__)), "./cres/owasp/projects.yaml"),
         help="define location of owasp project metadata",
     )
     parser.add_argument(

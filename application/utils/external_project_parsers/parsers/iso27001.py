@@ -98,15 +98,9 @@ class ISO27001(ParserInterface):
             if not isos:
                 continue
             node = nist_id_to_node_map.get(nist)
-            # node_cres = [
-            #     dbCREfromCRE(c.document)
-            #     for c in node.links
-            #     if c.document.doctype == defs.Credoctypes.CRE
-            # ]
             for iso in isos:
                 if not iso:
                     continue
-                # stand = cache.add_node(defs.Standard(name="ISO 27001", section=iso))
                 stand = defs.Standard(name=self.name, section=iso)
                 [stand.add_link(link) for link in node.links]
                 documents.append(stand)

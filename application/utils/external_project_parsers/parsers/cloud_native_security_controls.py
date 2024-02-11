@@ -65,18 +65,8 @@ class CloudNativeSecurityControls(ParserInterface):
                 if cres:
                     cre_id = cres[0].id
             cre = cache.get_cre_by_db_id(cre_id)
-            # cnsc_copy = cnsc.shallow_copy()
-            # cnsc_copy.description = ""
-            # dbnode = cache.add_node(cnsc_copy)
-            # if not dbnode:
-            #     logger.error(f"could not store database node {cnsc_copy.__repr__()}")
-            #     continue
-            # cache.add_embedding(
-            #     dbnode, cnsc_copy.doctype, cnsc_embeddings, cnsc_copy.__repr__()
-            # )
             if cre:
                 cnsc.add_link(defs.Link(document=cre, ltype=defs.LinkTypes.LinkedTo))
-                # cache.add_link(db.dbCREfromCRE(cre), dbnode)
                 logger.info(f"successfully stored {cnsc.__repr__()}")
             else:
                 logger.info(

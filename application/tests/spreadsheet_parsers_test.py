@@ -130,7 +130,7 @@ class TestParsers(unittest.TestCase):
         self.assertCountEqual(expected, actual)
 
     def test_parse_hierarchical_export_format(self) -> None:
-        #  todo(northdpole): add a tags linking test
+        #  TODO(northdpole): add a tags linking test
         input_data, expected_output = data_gen.root_csv_data()
         output = parse_hierarchical_export_format(input_data)
         self.maxDiff = None

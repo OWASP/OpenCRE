@@ -269,12 +269,6 @@ def map_analysis_weak_links() -> Any:
         if gap_analysis_dict.get("result"):
             return jsonify({"result": gap_analysis_dict.get("result")})
 
-    # if conn.exists(cache_key):
-    #     gap_analysis_results = conn.get(cache_key)
-    #     if gap_analysis_results:
-    #         gap_analysis_dict = json.loads(gap_analysis_results)
-    #         if gap_analysis_dict.get("result"):
-    #             return jsonify({"result": gap_analysis_dict.get("result")})
     abort(404, "No such Cache")
 
 
