@@ -607,9 +607,6 @@ class CRE_Graph:
             graph.add_node(
                 "Node: " + str(dbnode.id),
                 internal_id=dbnode.id,
-                # name=dbnode.name,
-                # section=dbnode.section,
-                # section_id=dbnode.section_id,
             )
         else:
             logger.error("Called with dbnode being none")
@@ -1110,7 +1107,7 @@ class Node_collection:
             )
             return []
 
-        # todo figure a way to return both the Node
+        # TODO figure a way to return both the Node
         # and the link_type for that link
         for dbcre in dbcres:
             cre = CREfromDB(dbcre)
@@ -1124,7 +1121,7 @@ class Node_collection:
                             ltype=cre_defs.LinkTypes.from_str(ls.type),
                         )
                     )
-            # todo figure the query to merge the following two
+            # TODO figure the query to merge the following two
             internal_links = (
                 self.session.query(InternalLinks)
                 .filter(
@@ -1899,11 +1896,9 @@ def gap_analysis(
     ):  # lightweight memory option to not return potentially huge object and instead store in a cache,
         # in case this is called via worker, we save both this and the caller memory by avoiding duplicate object in mem
 
-        # conn = redis.connect()
         if cache_key == "":
             cache_key = make_array_hash(node_names)
 
-        # conn.set(cache_key, flask_json.dumps({"result": grouped_paths}))
         cre_db.add_gap_analysis_result(
             cache_key=cache_key, ga_object=flask_json.dumps({"result": grouped_paths})
         )
@@ -1913,10 +1908,6 @@ def gap_analysis(
                 cache_key=make_cache_key(node_names, key),
                 ga_object=flask_json.dumps({"result": extra_paths_dict[key]}),
             )
-            # conn.set(
-            #     cache_key + "->" + key,
-            #     flask_json.dumps({"result": extra_paths_dict[key]}),
-            # )
         return (node_names, {}, {})
 
     return (node_names, grouped_paths, extra_paths_dict)

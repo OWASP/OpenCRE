@@ -60,14 +60,6 @@ class in_memory_embeddings:
         tokens = word_tokenize(content)
         # convert to lower case
         words = [w.lower() for w in tokens]
-        # # remove punctuation from each word
-        # table = str.maketrans("", "", string.punctuation)
-        # stripped = [w.translate(table) for w in tokens]
-        # # remove remaining tokens that are not alphabetic
-        # words = [word for word in stripped if word.isalpha()]
-        # filter out stop words
-        # stop_words = set(stopwords.words("english"))
-        # words = [w for w in words if not w in stop_words]
         return " ".join(words)
 
     @classmethod
@@ -480,7 +472,6 @@ class PromptHandler:
             accurate = True
         else:
             answer = self.ai_client.query_llm(prompt)
-            # return {"response": "An adequate answer could not be found", "table": [""]}
 
         logger.debug(f"retrieved completion for {prompt}")
         table = [closest_object]

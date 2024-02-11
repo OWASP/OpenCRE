@@ -44,8 +44,6 @@ class CloudControlsMatrix(ParserInterface):
         re_nist = re.compile("(\w+-\d+)")
         standard_entries = []
         for ccm_mapping in ccmFile.get("0.ccmv4"):
-            # cre: defs.CRE
-            # linked_standard: defs.Standard
             if "Control ID" not in ccm_mapping:
                 logger.error(
                     "string 'CCM V4.0 Control ID' was not found in mapping line"

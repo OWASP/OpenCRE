@@ -125,7 +125,6 @@ class TestZAPAlertsParser(unittest.TestCase):
 
         self.maxDiff = None
         self.assertEqual(len(nodes), 1)
-        # self.assertCountEqual([expected], nodes)
         self.assertCountEqual(expected.todict(), nodes[0].todict())
         for node in nodes:
             self.assertNotIn(
