@@ -41,11 +41,10 @@ class TestDSOMM(unittest.TestCase):
             dbcre = self.collection.add_cre(cre=cre)
             self.collection.add_link(cre=dbcre, node=dbsamm)
             self.collection.add_link(cre=dbcre, node=dbiso)
-        nodes = dsomm.DSOMM().parse(
+        entries = dsomm.DSOMM().parse(
             cache=self.collection,
             ph=prompt_client.PromptHandler(database=self.collection),
         )
-
         expected = [
             defs.Standard(
                 name=dsomm.DSOMM().name,
@@ -99,9 +98,11 @@ class TestDSOMM(unittest.TestCase):
                 subsection="Defined build process",
             ),
         ]
-        self.assertEqual(len(nodes), 2)
-        self.assertCountEqual(nodes[0].todict(), expected[0].todict())
-        self.assertCountEqual(nodes[1].todict(), expected[1].todict())
+        for name, nodes in entries.items():
+            self.assertEqual(name, dsomm.DSOMM().name)
+            self.assertEqual(len(nodes), 2)
+            self.assertCountEqual(nodes[0].todict(), expected[0].todict())
+            self.assertCountEqual(nodes[1].todict(), expected[1].todict())
 
 
 gen_yaml = """

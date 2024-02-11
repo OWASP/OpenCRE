@@ -32,7 +32,7 @@ class SeecureHeaders(ParserInterface):
         entries = self.register_headers(
             repo=repo, cache=cache, file_path=file_path, repo_path=sh_repo
         )
-        return entries
+        return {self.name: entries}
 
     def register_headers(self, cache: db.Node_collection, repo, file_path, repo_path):
         cre_link = r"\[([\w\s\d]+)\]\((?P<url>((?:\/|https:\/\/)(www\.)?opencre\.org/cre/(?P<creID>\d+-\d+)\?[\w\d\.\/\=\#\+\&\%\-]+))\)"

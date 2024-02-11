@@ -2,7 +2,7 @@ from application.database import db
 from application.defs import cre_defs as defs
 from rq import Queue
 from application.utils import redis
-from typing import List, Optional
+from typing import List, Dict, Optional
 from application.prompt_client import prompt_client as prompt_client
 import logging
 import time
@@ -23,13 +23,13 @@ class ParserInterface:
     def parse(
         database: db.Node_collection,
         prompt_client: Optional[prompt_client.PromptHandler],
-    ) -> List[defs.Document]:
+    ) -> Dict[str, List[defs.Document]]:
         """
         Parses the resources of a project,
         links the resource of the project to CREs
         this can be done either using glue resources, AI or any other supported method
         then calls cre_main.register_node
-        Returns a list of documents with CRE links, optionally with their embeddings filled in
+        Returns a dict with a key of the resource for importing and a value of list of documents with CRE links, optionally with their embeddings filled in
         """
         raise NotImplementedError
 
@@ -42,10 +42,11 @@ class BaseParser:
         db: db.Node_collection,
         ph: prompt_client.PromptHandler,
     ):
-        documents = sclass.parse(db, ph)
-        from application.cmd import cre_main
+        result = sclass.parse(db, ph)
+        for _, documents in result.values():
+            from application.cmd import cre_main
 
-        cre_main.register_standard(documents, db, ph)
+            cre_main.register_standard(documents, db, ph)
 
     def call_importers(
         self, db: db.Node_collection, prompt_handler: prompt_client.PromptHandler

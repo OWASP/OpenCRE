@@ -104,4 +104,4 @@ class ISO27001(ParserInterface):
                 stand = defs.Standard(name=self.name, section=iso)
                 [stand.add_link(link) for link in node.links]
                 documents.append(stand)
-        return documents
+        return {self.name: documents}

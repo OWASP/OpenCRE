@@ -79,4 +79,4 @@ class JuiceShop(ParserInterface):
                     f"stored {chal.__repr__()} but could not link it to any CRE reliably"
                 )
             chals.append(chal)
-        return chals
+        return {self.name: chals}

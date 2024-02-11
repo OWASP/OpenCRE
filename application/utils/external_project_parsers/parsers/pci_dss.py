@@ -26,7 +26,7 @@ class PciDss(ParserInterface):
             ),
             cache=cache,
         )
-        return entries
+        return {self.name: entries}
 
     def __parse(
         self,

@@ -35,9 +35,11 @@ class CWE(ParserInterface):
         for _, _, files in os.walk(tmp_dir, topdown=False):
             for file in files:
                 if file.startswith("cwe") and file.endswith(".xml"):
-                    return self.register_cwe(
-                        xml_file=os.path.join(tmp_dir, file), cache=cache
-                    )
+                    return {
+                        self.name: self.register_cwe(
+                            xml_file=os.path.join(tmp_dir, file), cache=cache
+                        ),
+                    }
 
     def make_hyperlink(self, cwe_id: int):
         return f"https://cwe.mitre.org/data/definitions/{cwe_id}.html"

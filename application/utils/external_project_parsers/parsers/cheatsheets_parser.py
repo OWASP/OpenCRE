@@ -29,7 +29,7 @@ class Cheatsheets(ParserInterface):
         cheatsheets = self.register_cheatsheets(
             repo=repo, cache=cache, cheatsheets_path=cheatsheets_path, repo_path=c_repo
         )
-        return cheatsheets
+        return {self.name: cheatsheets}
 
     def register_cheatsheets(
         self, cache: db.Node_collection, repo, cheatsheets_path, repo_path

@@ -73,4 +73,4 @@ class CloudNativeSecurityControls(ParserInterface):
                     f"stored {cnsc.__repr__()} but could not link it to any CRE reliably"
                 )
             standard_entries.append(cnsc)
-        return standard_entries
+        return {self.name: standard_entries}

@@ -48,7 +48,7 @@ class ZAP(ParserInterface):
         zaproxy_website = "https://github.com/zaproxy/zaproxy-website.git"
         repo = git.clone(zaproxy_website)
         alerts = self.__register_alerts(repo=repo, cache=cache)
-        return alerts
+        return {self.name: alerts}
 
     def __link_to_top10(
         self, alert: defs.Tool, top10: re.Match[str] | None, cache: db.Node_collection

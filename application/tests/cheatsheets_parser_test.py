@@ -37,7 +37,7 @@ class TestCheatsheetsParser(unittest.TestCase):
         with open(os.path.join(os.path.join(loc, "cheatsheets"), "cs.md"), "w") as mdf:
             mdf.write(cs)
         mock_clone.return_value = repo
-        nodes = cheatsheets_parser.Cheatsheets().parse(
+        entries = cheatsheets_parser.Cheatsheets().parse(
             cache=self.collection, ph=PromptHandler(database=self.collection)
         )
         expected = defs.Standard(
@@ -47,8 +47,10 @@ class TestCheatsheetsParser(unittest.TestCase):
             links=[defs.Link(document=cre, ltype=defs.LinkTypes.LinkedTo)],
         )
         self.maxDiff = None
-        self.assertEqual(len(nodes), 1)
-        self.assertCountEqual(expected.todict(), nodes[0].todict())
+        for name, nodes in entries.items():
+            self.assertEqual(name, cheatsheets_parser.Cheatsheets().name)
+            self.assertEqual(len(nodes), 1)
+            self.assertCountEqual(expected.todict(), nodes[0].todict())
 
     cheatsheets_md = """ # Secrets Management Cheat Sheet
 

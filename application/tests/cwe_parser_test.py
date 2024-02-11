@@ -56,11 +56,10 @@ class TestCWEParser(unittest.TestCase):
             self.collection.add_link(dbcre, dbcwe, defs.LinkTypes.LinkedTo)
             self.collection.add_link(dbcre, dbcapec, defs.LinkTypes.LinkedTo)
 
-        nodes = cwe.CWE().parse(
+        entries = cwe.CWE().parse(
             cache=self.collection,
             ph=prompt_client.PromptHandler(database=self.collection),
         )
-
         expected = [
             defs.Standard(
                 name="CWE",
@@ -87,9 +86,11 @@ class TestCWEParser(unittest.TestCase):
                 ],
             ),
         ]
-        self.assertEqual(len(nodes), 2)
-        self.assertCountEqual(nodes[0].todict(), expected[0].todict())
-        self.assertCountEqual(nodes[1].todict(), expected[1].todict())
+        for name, nodes in entries.items():
+            self.assertEqual(name, cwe.CWE().name)
+            self.assertEqual(len(nodes), 2)
+            self.assertCountEqual(nodes[0].todict(), expected[0].todict())
+            self.assertCountEqual(nodes[1].todict(), expected[1].todict())
 
     CWE_xml = """<?xml version="1.0" encoding="UTF-8"?>
 <Weakness_Catalog Name="CWE" Version="4.10" Date="2023-01-31" xmlns="http://cwe.mitre.org/cwe-6"
