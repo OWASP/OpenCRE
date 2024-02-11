@@ -87,13 +87,6 @@ class PciDss(ParserInterface):
                 cre = cache.get_cre_by_db_id(cre_id)
             ctrl_copy = pci_control.shallow_copy()
             pci_control.description = ""
-            # dbnode = cache.add_node(pci_control)
-            # if not dbnode:
-            #     logger.error(f"could not store database node {pci_control.__repr__()}")
-            #     continue
-            # cache.add_embedding(
-            #     dbnode, pci_control.doctype, control_embeddings, ctrl_copy.__repr__()
-            # )
             if cre:
                 pci_control.add_link(
                     defs.Link(document=cre, ltype=defs.LinkTypes.LinkedTo)
@@ -101,7 +94,6 @@ class PciDss(ParserInterface):
                 pci_control.add_link(
                     defs.Link(ltype=defs.LinkTypes.LinkedTo, document=cre)
                 )
-                # cache.add_link(db.dbCREfromCRE(cre), dbnode)
                 logger.info(f"successfully stored {pci_control.__repr__()}")
             else:
                 logger.info(
@@ -135,9 +127,3 @@ class PciDss(ParserInterface):
                 "description": "Requirement Description",
             },
         )
-
-        # load/create CRE embeddings
-        # parse spreadsheet
-        # for every line generate embedding of content
-        # find closest CRE to this embedding
-        # add link

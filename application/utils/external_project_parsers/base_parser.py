@@ -101,4 +101,3 @@ class BaseParser:
         )
         return total_resources
         # TODO(spyros): perhaps it makes sense to abstract the "schedule parser package and monitor" to another method as we're doing this twice
-        # can be done by first importing everything and then calling  __subclass__() https://stackoverflow.com/questions/5881873/python-find-all-classes-which-inherit-from-this-one

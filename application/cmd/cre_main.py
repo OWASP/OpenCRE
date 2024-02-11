@@ -265,7 +265,7 @@ def parse_standards_from_spreadsheeet(
         conn = redis.connect()
         q = Queue(connection=conn)
         docs = spreadsheet_parsers.parse_hierarchical_export_format(cre_file)
-        total_resource = docs.keys()
+        total_resources = docs.keys()
         jobs = []
         with alive_bar(len(docs.get(defs.Credoctypes.CRE.value))):
             logger.info(f"Importing {len(docs.get(defs.Credoctypes.CRE.value))} CREs")
@@ -310,7 +310,7 @@ def parse_standards_from_spreadsheeet(
         logger.info(
             f"imported {total_standards} standards in {time.perf_counter()-t0} seconds"
         )
-        return total_resource
+        return total_resources
     else:
         logger.fatal(f"could not find any useful keys { cre_file[0].keys()}")
 
