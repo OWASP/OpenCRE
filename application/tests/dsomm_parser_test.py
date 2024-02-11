@@ -46,59 +46,57 @@ class TestDSOMM(unittest.TestCase):
             ph=prompt_client.PromptHandler(database=self.collection),
         )
         expected = [
-              defs.Standard(
-                  name=dsomm.DSOMM().name,
-                  doctype=defs.Credoctypes.Standard,
-                  links=[
-                      defs.Link(
-                          document=defs.CRE(
-                              name="CRE-I-SB-2-A", id="I-SB-2-A-I-SB-2-A"
-                          )
-                      ),
-                  ],
-                  description="Description:While building and testing artifacts, third party "
-                  "systems, application frameworks\n"
-                  "and 3rd party libraries are used. These might be malicious as "
-                  "a result of\n"
-                  "vulnerable libraries or because they are altered during the "
-                  "delivery phase.\n"
-                  " Risk:While building and testing artifacts, third party "
-                  "systems, application frameworks\n"
-                  "and 3rd party libraries are used. These might be malicious as "
-                  "a result of\n"
-                  "vulnerable libraries or because they are altered during the "
-                  "delivery phase.\n"
-                  " Measure:Each step during within the build and testing phase "
-                  "is performed in a separate virtual environments, which is "
-                  "destroyed afterward.",
-                  hyperlink="https://capec.mitre.org/data/definitions/1.html",
-                  sectionID="a340f46b-6360-4cb8-847b-a0d3483d09d3",
-                  section="Build",
-                  subsection="Building and testing of artifacts in virtual environments",
-              ),
-              defs.Standard(
-                  name=dsomm.DSOMM().name,
-                  doctype=defs.Credoctypes.Standard,
-                  links=[
-                      defs.Link(document=defs.CRE(name="CRE-5.37", id="5.37-5.37")),
-                  ],
-                  description="Description:Sample evidence as an attribute in the yaml: The "
-                  "build process is defined in [REPLACE-ME "
-                  "Pipeline](https://replace-me/jenkins/job)\n"
-                  "in the folder _vars_. Projects are using a _Jenkinsfile_ to "
-                  "use the\n"
-                  "defined process.\n"
-                  "\n"
-                  " Risk:Performing builds without a defined process is error "
-                  "prone; for example, as a result of incorrect security related "
-                  "configuration.\n"
-                  " Measure:A well defined build process lowers the possibility "
-                  "of errors during the build process.",
-                  hyperlink="https://capec.mitre.org/data/definitions/1.html",
-                  sectionID="f6f7737f-25a9-4317-8de2-09bf59f29b5b",
-                  section="Build",
-                  subsection="Defined build process",
-              ),
+            defs.Standard(
+                name=dsomm.DSOMM().name,
+                doctype=defs.Credoctypes.Standard,
+                links=[
+                    defs.Link(
+                        document=defs.CRE(name="CRE-I-SB-2-A", id="I-SB-2-A-I-SB-2-A")
+                    ),
+                ],
+                description="Description:While building and testing artifacts, third party "
+                "systems, application frameworks\n"
+                "and 3rd party libraries are used. These might be malicious as "
+                "a result of\n"
+                "vulnerable libraries or because they are altered during the "
+                "delivery phase.\n"
+                " Risk:While building and testing artifacts, third party "
+                "systems, application frameworks\n"
+                "and 3rd party libraries are used. These might be malicious as "
+                "a result of\n"
+                "vulnerable libraries or because they are altered during the "
+                "delivery phase.\n"
+                " Measure:Each step during within the build and testing phase "
+                "is performed in a separate virtual environments, which is "
+                "destroyed afterward.",
+                hyperlink="https://capec.mitre.org/data/definitions/1.html",
+                sectionID="a340f46b-6360-4cb8-847b-a0d3483d09d3",
+                section="Build",
+                subsection="Building and testing of artifacts in virtual environments",
+            ),
+            defs.Standard(
+                name=dsomm.DSOMM().name,
+                doctype=defs.Credoctypes.Standard,
+                links=[
+                    defs.Link(document=defs.CRE(name="CRE-5.37", id="5.37-5.37")),
+                ],
+                description="Description:Sample evidence as an attribute in the yaml: The "
+                "build process is defined in [REPLACE-ME "
+                "Pipeline](https://replace-me/jenkins/job)\n"
+                "in the folder _vars_. Projects are using a _Jenkinsfile_ to "
+                "use the\n"
+                "defined process.\n"
+                "\n"
+                " Risk:Performing builds without a defined process is error "
+                "prone; for example, as a result of incorrect security related "
+                "configuration.\n"
+                " Measure:A well defined build process lowers the possibility "
+                "of errors during the build process.",
+                hyperlink="https://capec.mitre.org/data/definitions/1.html",
+                sectionID="f6f7737f-25a9-4317-8de2-09bf59f29b5b",
+                section="Build",
+                subsection="Defined build process",
+            ),
         ]
         for name, nodes in entries.items():
             self.assertEqual(name, dsomm.DSOMM().name)

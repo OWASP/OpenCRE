@@ -42,10 +42,11 @@ class TestSecureHeadersParser(unittest.TestCase):
             cache=self.collection, ph=PromptHandler(database=self.collection)
         )
         expected = defs.Standard(
-                name="Secure Headers",
-                hyperlink="https://example.com/foo/bar",
-                section="headerAsection",
-                links=[defs.Link(document=cre, ltype=defs.LinkTypes.LinkedTo)])
+            name="Secure Headers",
+            hyperlink="https://example.com/foo/bar",
+            section="headerAsection",
+            links=[defs.Link(document=cre, ltype=defs.LinkTypes.LinkedTo)],
+        )
         for name, nodes in entries.items():
             self.assertEqual(name, secure_headers.SeecureHeaders().name)
 

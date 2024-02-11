@@ -26,67 +26,67 @@ class TestCWEParser(unittest.TestCase):
 
     @patch.object(requests, "get")
     def test_register_CWE(self, mock_requests) -> None:
-         tmpdir = mkdtemp()
-         tmpFile = os.path.join(tmpdir, "cwe.xml")
-         tmpzip = os.path.join(tmpdir, "cwe.zip")
-         with open(tmpFile, "w") as cx:
+        tmpdir = mkdtemp()
+        tmpFile = os.path.join(tmpdir, "cwe.xml")
+        tmpzip = os.path.join(tmpdir, "cwe.zip")
+        with open(tmpFile, "w") as cx:
             cx.write(self.CWE_xml)
-         with zipfile.ZipFile(tmpzip, "w", zipfile.ZIP_DEFLATED) as zipf:
+        with zipfile.ZipFile(tmpzip, "w", zipfile.ZIP_DEFLATED) as zipf:
             zipf.write(tmpFile, arcname="cwe.xml")
 
-         class fakeRequest:
+        class fakeRequest:
             def iter_content(self, chunk_size=None):
-                  zipdata = ""
-                  with open(tmpzip, "rb") as zipf:
-                     zipdata = zipf.read()
-                  return [zipdata]
+                zipdata = ""
+                with open(tmpzip, "rb") as zipf:
+                    zipdata = zipf.read()
+                return [zipdata]
 
-         mock_requests.return_value = fakeRequest()
-         cres = []
-         for cid in [276, 285, 434, 632, 732, 733, 451]:
+        mock_requests.return_value = fakeRequest()
+        cres = []
+        for cid in [276, 285, 434, 632, 732, 733, 451]:
             cre = defs.CRE(id=f"{cid}-{cid}", name=f"CRE-{cid}")
             cres.append(cre)
             dbcre = self.collection.add_cre(cre=cre)
             dbcapec = self.collection.add_node(
-                  defs.Standard(name="CAPEC", sectionID=cid)
+                defs.Standard(name="CAPEC", sectionID=cid)
             )  # test link to capec
             dbcwe = self.collection.add_node(
-                  defs.Standard(name="CWE", sectionID=cid)
+                defs.Standard(name="CWE", sectionID=cid)
             )  # test link to related weaknesses
             self.collection.add_link(dbcre, dbcwe, defs.LinkTypes.LinkedTo)
             self.collection.add_link(dbcre, dbcapec, defs.LinkTypes.LinkedTo)
 
-         entries = cwe.CWE().parse(
+        entries = cwe.CWE().parse(
             cache=self.collection,
             ph=prompt_client.PromptHandler(database=self.collection),
-         )
-         expected = [
-               defs.Standard(
-                  name="CWE",
-                  doctype=defs.Credoctypes.Standard,
-                  links=[
-                     defs.Link(document=defs.CRE(name="CRE-732", id="732-732")),
-                     defs.Link(document=defs.CRE(name="CRE-733", id="733-733")),
-                  ],
-                  hyperlink="https://CWE.mitre.org/data/definitions/1004.html",
-                  sectionID="1004",
-                  section="Accessing Functionality Not Properly Constrained by ACLs",
-                  version="3.7",
-               ),
-               defs.Standard(
-                  name="CWE",
-                  doctype=defs.Credoctypes.Standard,
-                  hyperlink="https://CWE.mitre.org/data/definitions/10.html",
-                  sectionID="1007",
-                  section="Another CWE",
-                  version="3.7",
-                  links=[
-                     defs.Link(document=defs.CRE(name="CRE-451", id="451-451")),
-                     defs.Link(document=defs.CRE(name="CRE-632", id="632-632")),
-                  ],
-               ),
-         ]
-         for name, nodes in entries.items():
+        )
+        expected = [
+            defs.Standard(
+                name="CWE",
+                doctype=defs.Credoctypes.Standard,
+                links=[
+                    defs.Link(document=defs.CRE(name="CRE-732", id="732-732")),
+                    defs.Link(document=defs.CRE(name="CRE-733", id="733-733")),
+                ],
+                hyperlink="https://CWE.mitre.org/data/definitions/1004.html",
+                sectionID="1004",
+                section="Accessing Functionality Not Properly Constrained by ACLs",
+                version="3.7",
+            ),
+            defs.Standard(
+                name="CWE",
+                doctype=defs.Credoctypes.Standard,
+                hyperlink="https://CWE.mitre.org/data/definitions/10.html",
+                sectionID="1007",
+                section="Another CWE",
+                version="3.7",
+                links=[
+                    defs.Link(document=defs.CRE(name="CRE-451", id="451-451")),
+                    defs.Link(document=defs.CRE(name="CRE-632", id="632-632")),
+                ],
+            ),
+        ]
+        for name, nodes in entries.items():
             self.assertEqual(name, cwe.CWE().name)
             self.assertEqual(len(nodes), 2)
             self.assertCountEqual(nodes[0].todict(), expected[0].todict())
