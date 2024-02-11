@@ -683,6 +683,5 @@ class TestMain(unittest.TestCase):
         mocked_cre2osib.assert_called_with([defs.CRE(name="c0")])
 
 
-
 if __name__ == "__main__":
     unittest.main()
