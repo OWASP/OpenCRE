@@ -15,7 +15,7 @@ logger.setLevel(logging.INFO)
 class CloudNativeSecurityControls(ParserInterface):
     name = "Cloud Native Security Controls"
 
-    def parse(self, cache: db.Node_collection, prompt: prompt_client.PromptHandler):
+    def parse(self, cache: db.Node_collection, ph: prompt_client.PromptHandler):
         resp = requests.get(
             "https://raw.githubusercontent.com/cloud-native-security-controls/controls-catalog/main/controls/controls_catalog.csv"
         )
@@ -48,15 +48,15 @@ class CloudNativeSecurityControls(ParserInterface):
                         f"Node {cnsc.todict()} already exists and has embeddings, skipping"
                     )
                     continue
-            cnsc_embeddings = prompt.get_text_embeddings(cnsc.subsection)
+            cnsc_embeddings = ph.get_text_embeddings(cnsc.subsection)
             cnsc.embeddings = cnsc_embeddings
             cnsc.embeddings_text = cnsc.subsection
-            cre_id = prompt.get_id_of_most_similar_cre(cnsc_embeddings)
+            cre_id = ph.get_id_of_most_similar_cre(cnsc_embeddings)
             if not cre_id:
                 logger.info(
                     f"could not find an appropriate CRE for Clound Native Security Control {cnsc.section}, findings similarities with standards instead"
                 )
-                standard_id = prompt.get_id_of_most_similar_node(cnsc_embeddings)
+                standard_id = ph.get_id_of_most_similar_node(cnsc_embeddings)
                 dbstandard = cache.get_node_by_db_id(standard_id)
                 logger.info(
                     f"found an appropriate standard for Cloud Native Security Control {cnsc.section}:{cnsc.subsection}, it is: {dbstandard.name}:{dbstandard.section}"
@@ -83,4 +83,4 @@ class CloudNativeSecurityControls(ParserInterface):
                     f"stored {cnsc.__repr__()} but could not link it to any CRE reliably"
                 )
             standard_entries.append(cnsc)
-        return cnsc
+        return standard_entries
