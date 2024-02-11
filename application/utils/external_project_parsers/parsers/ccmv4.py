@@ -33,7 +33,7 @@ class CloudControlsMatrix(ParserInterface):
         return nist_map
 
     def get_ccm_file(self) -> Dict[str, Any]:
-        return sheet_utils.readSpreadsheet(
+        return sheet_utils.read_spreadsheet(
             alias="",
             url="https://docs.google.com/spreadsheets/d/1QDzQy0wt1blGjehyXS3uaHh7k5OOR12AWgAA1DeACyc",
         )
@@ -54,8 +54,9 @@ class CloudControlsMatrix(ParserInterface):
 
             ccm = defs.Standard(
                 name=self.name,
-                section=f'{ccm_mapping.pop("Control ID")}:{ccm_mapping.pop("Control Title")}',
+                section=f'{ccm_mapping.get("Control ID")}:{ccm_mapping.pop("Control Title")}',
                 subsection="",
+                sectionID=ccm_mapping.pop("Control ID"),
                 version="v4.0",
                 hyperlink="",
             )
