@@ -662,8 +662,8 @@ class TestMain(unittest.TestCase):
                     "node_names": ["aaa", "bbb"],
                     "store_in_cache": True,
                     "cache_key": "7aa45d88f69a131890f8e4a769bbb07b",
-                    "timeout": "10m",
                 },
+                timeout="10m",
             )
             redis_conn_mock.return_value.set.assert_called_with(
                 "7aa45d88f69a131890f8e4a769bbb07b", '{"job_id": "ABC", "result": ""}'
