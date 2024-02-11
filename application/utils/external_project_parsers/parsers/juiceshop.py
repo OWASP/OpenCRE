@@ -20,8 +20,7 @@ class JuiceShop(ParserInterface):
     name = "OWASP Juice Shop"
     url = "https://raw.githubusercontent.com/juice-shop/juice-shop/master/data/static/challenges.yml"
 
-    def parse(self, cache: db.Node_collection, prompt: prompt_client.PromptHandler):
-        prompt = prompt_client.PromptHandler(cache)
+    def parse(self, cache: db.Node_collection, ph: prompt_client.PromptHandler):
         resp = requests.get(self.url)
 
         if resp.status_code != 200:
@@ -53,16 +52,16 @@ class JuiceShop(ParserInterface):
                         f"Node {chal.todict()} already exists and has embeddings, skipping"
                     )
                     continue
-            challenge_embeddings = prompt.get_text_embeddings(",".join(chal.tags))
+            challenge_embeddings = ph.get_text_embeddings(",".join(chal.tags))
             chal.embeddings = challenge_embeddings
             chal.embeddings_text = ",".join(chal.tags)
 
-            cre_id = prompt.get_id_of_most_similar_cre(challenge_embeddings)
+            cre_id = ph.get_id_of_most_similar_cre(challenge_embeddings)
             if not cre_id:
                 logger.info(
                     f"could not find an appropriate CRE for Juiceshop challenge {chal.section}, findings similarities with standards instead"
                 )
-                standard_id = prompt.get_id_of_most_similar_node(challenge_embeddings)
+                standard_id = ph.get_id_of_most_similar_node(challenge_embeddings)
                 dbstandard = cache.get_node_by_db_id(standard_id)
                 logger.info(
                     f"found an appropriate standard for Juiceshop challenge {chal.section}, it is: {dbstandard.section}"
