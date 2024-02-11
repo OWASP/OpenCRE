@@ -53,11 +53,10 @@ class TestCloudNativeSecurityControlsParser(unittest.TestCase):
         mock_get_id_of_most_similar_cre.return_value = dbcre.id
         mock_get_id_of_most_similar_node.return_value = dbnode.id
 
-        nodes = cloud_native_security_controls.CloudNativeSecurityControls().parse(
+        entries = cloud_native_security_controls.CloudNativeSecurityControls().parse(
             cache=self.collection,
             ph=prompt_client.PromptHandler(database=self.collection),
         )
-
         expected = [
             defs.Standard(
                 embeddings=[0.1, 0.2],
@@ -88,9 +87,13 @@ class TestCloudNativeSecurityControlsParser(unittest.TestCase):
                 version="CNSWP v1.0",
             ),
         ]
-        self.assertEqual(len(nodes), 2)
-        self.assertCountEqual(nodes[0].todict(), expected[0].todict())
-        self.assertCountEqual(nodes[1].todict(), expected[1].todict())
+        for name, nodes in entries.items():
+            self.assertEqual(
+                name, cloud_native_security_controls.CloudNativeSecurityControls().name
+            )
+            self.assertEqual(len(nodes), 2)
+            self.assertCountEqual(nodes[0].todict(), expected[0].todict())
+            self.assertCountEqual(nodes[1].todict(), expected[1].todict())
 
     csv = """ID,Originating Document,Section,Control Title,Control Implementation,NIST SP800-53r5 references,Assurance Level,Risk Categories
 1,CNSWP v1.0,Access,"Secrets are injected at runtime, such as environment variables or as a file",,IA-5(7) Authenticator Management | No Embedded Unencrypted Static Authenticators,N/A,N/A

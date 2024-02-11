@@ -146,4 +146,4 @@ class DSOMM(ParserInterface):
                         # use iso as glue
                         standard = self.link_to_iso(aname, activity, cache, standard)
                         standard_entries.append(standard)
-        return standard_entries
+        return {self.name: standard_entries}

@@ -102,36 +102,47 @@ class TestZAPAlertsParser(unittest.TestCase):
 
         with open(os.path.join(loc, "alert0.md"), "w") as mdf:
             mdf.write(alert)
-        nodes = zap_alerts_parser.ZAP().parse(
+        entries = zap_alerts_parser.ZAP().parse(
             cache=self.collection,
             ph=prompt_client.PromptHandler(database=self.collection),
         )
-
-        expected = defs.Tool(
-            name="ZAP Rule",
-            sectionID="10003",
-            section="Vulnerable JS Library",
-            doctype=defs.Credoctypes.Tool,
-            description="_Unavailable_",
-            tags=["10003", "Passive"],
-            hyperlink="https://github.com/zaproxy/zap-extensions/blob/main/addOns/retire/src/main/java/org/zaproxy/addon/retire/RetireScanRule.java",
-            tooltype=defs.ToolTypes.Offensive,
-            links=[
-                defs.Link(document=db.CREfromDB(cre), ltype=defs.LinkTypes.LinkedTo),
-                defs.Link(document=db.CREfromDB(cre2), ltype=defs.LinkTypes.LinkedTo),
-                defs.Link(document=db.CREfromDB(cre3), ltype=defs.LinkTypes.LinkedTo),
-            ],
-        )
-
-        self.maxDiff = None
-        self.assertEqual(len(nodes), 1)
-        self.assertCountEqual(expected.todict(), nodes[0].todict())
-        for node in nodes:
-            self.assertNotIn(
-                cre3.external_id, [link.document.id for link in node.links]
+        for name, nodes in entries.items():
+            self.assertEqual(name, zap_alerts_parser.ZAP().name)
+            expected = defs.Tool(
+                name="ZAP Rule",
+                sectionID="10003",
+                section="Vulnerable JS Library",
+                doctype=defs.Credoctypes.Tool,
+                description="_Unavailable_",
+                tags=["10003", "Passive"],
+                hyperlink="https://github.com/zaproxy/zap-extensions/blob/main/addOns/retire/src/main/java/org/zaproxy/addon/retire/RetireScanRule.java",
+                tooltype=defs.ToolTypes.Offensive,
+                links=[
+                    defs.Link(
+                        document=db.CREfromDB(cre), ltype=defs.LinkTypes.LinkedTo
+                    ),
+                    defs.Link(
+                        document=db.CREfromDB(cre2), ltype=defs.LinkTypes.LinkedTo
+                    ),
+                    defs.Link(
+                        document=db.CREfromDB(cre3), ltype=defs.LinkTypes.LinkedTo
+                    ),
+                ],
             )
-            self.assertIn(cre.external_id, [link.document.id for link in node.links])
-            self.assertIn(cre2.external_id, [link.document.id for link in node.links])
+
+            self.maxDiff = None
+            self.assertEqual(len(nodes), 1)
+            self.assertCountEqual(expected.todict(), nodes[0].todict())
+            for node in nodes:
+                self.assertNotIn(
+                    cre3.external_id, [link.document.id for link in node.links]
+                )
+                self.assertIn(
+                    cre.external_id, [link.document.id for link in node.links]
+                )
+                self.assertIn(
+                    cre2.external_id, [link.document.id for link in node.links]
+                )
 
     @patch.object(git, "clone")
     def test_register_zap_alert_cwe(self, mock_git) -> None:
@@ -176,7 +187,7 @@ class TestZAPAlertsParser(unittest.TestCase):
         self.collection.add_link(cre=dbcre0, node=dbcwe)
         self.collection.add_link(cre=dbcre1, node=dbcwe)
 
-        actual = zap_alerts_parser.ZAP().parse(
+        entries = zap_alerts_parser.ZAP().parse(
             cache=self.collection, ph=prompt_client.PromptHandler(self.collection)
         )
 
@@ -195,5 +206,7 @@ class TestZAPAlertsParser(unittest.TestCase):
             ],
         )
         self.maxDiff = None
-        self.assertEqual(len(actual), 1)
-        self.assertCountEqual(expected.todict(), actual[0].todict())
+        for name, nodes in entries.items():
+            self.assertEqual(name, zap_alerts_parser.ZAP().name)
+            self.assertEqual(len(nodes), 1)
+            self.assertCountEqual(expected.todict(), nodes[0].todict())

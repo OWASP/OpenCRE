@@ -43,7 +43,7 @@ class TestCloudControlsMappingParser(unittest.TestCase):
             self.collection.add_link(dbcre, dbnode)
         mock_read_spreadsheet.return_value = self.csv
 
-        nodes = ccmv4.CloudControlsMatrix().parse(
+        entries = ccmv4.CloudControlsMatrix().parse(
             cache=self.collection,
             ph=prompt_client.PromptHandler(database=self.collection),
         )
@@ -70,9 +70,11 @@ class TestCloudControlsMappingParser(unittest.TestCase):
                 version="v4.0",
             ),
         ]
-        self.assertEqual(len(nodes), 2)
-        self.assertCountEqual(nodes[0].todict(), expected[0].todict())
-        self.assertCountEqual(nodes[1].todict(), expected[1].todict())
+        for name, nodes in entries.items():
+            self.assertEqual(name, ccmv4.CloudControlsMatrix().name)
+            self.assertEqual(len(nodes), 2)
+            self.assertCountEqual(nodes[0].todict(), expected[0].todict())
+            self.assertCountEqual(nodes[1].todict(), expected[1].todict())
 
     csv = {
         "0.ccmv4": [

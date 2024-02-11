@@ -29,19 +29,15 @@ class TestCapecParser(unittest.TestCase):
             text = self.capec_xml
 
         mock_requests.return_value = fakeRequest()
-        cres = []
-        nodes = []
         for cwe in [276, 285, 434]:
             dbnode = self.collection.add_node(defs.Standard(name="CWE", sectionID=cwe))
             cre = defs.CRE(id=f"{cwe}-{cwe}", name=f"CRE-{cwe}")
-            cres.append(cre)
             dbcre = self.collection.add_cre(cre=cre)
             self.collection.add_link(cre=dbcre, node=dbnode)
-            nodes = capec_parser.Capec().parse(
-                cache=self.collection,
-                ph=prompt_client.PromptHandler(database=self.collection),
-            )
-
+        entries = capec_parser.Capec().parse(
+            cache=self.collection,
+            ph=prompt_client.PromptHandler(database=self.collection),
+        )
         expected = [
             defs.Standard(
                 name="CAPEC",
@@ -65,9 +61,11 @@ class TestCapecParser(unittest.TestCase):
                 version="3.7",
             ),
         ]
-        self.assertEqual(len(nodes), 2)
-        self.assertCountEqual(nodes[0].todict(), expected[0].todict())
-        self.assertCountEqual(nodes[1].todict(), expected[1].todict())
+        for name, nodes in entries.items():
+            self.assertEqual(name, capec_parser.Capec().name)
+            self.assertEqual(len(nodes), 2)
+            self.assertCountEqual(nodes[0].todict(), expected[0].todict())
+            self.assertCountEqual(nodes[1].todict(), expected[1].todict())
 
     capec_xml = """<?xml version="1.0" encoding="UTF-8"?>
 <Attack_Pattern_Catalog xmlns="http://capec.mitre.org/capec-3"

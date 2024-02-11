@@ -44,7 +44,7 @@ class TestMiscToolsParser(unittest.TestCase):
             tags=["secrets", "training"],
             hyperlink="https://example.com/foo/bar/project",
             tooltype=defs.ToolTypes.Training,
-        )
+        ).add_link(defs.Link(document=cre, ltype=defs.LinkTypes.LinkedTo))
         tags = [expected.tooltype.value]
         tags.extend(expected.tags)
 
@@ -59,10 +59,12 @@ class TestMiscToolsParser(unittest.TestCase):
             rdm.write(readme_content)
 
         collection = db.Node_collection()
-        tools = misc_tools_parser.MiscTools().parse(
+        entries = misc_tools_parser.MiscTools().parse(
             cache=collection, ph=PromptHandler(database=self.collection)
         )
-        self.assertEqual(len(tools), 1)
-        self.assertCountEqual(expected.todict(), tools[0].todict())
-        self.maxDiff = None
-        mocked_get_cres.assert_called_with(external_id=cre.id)
+        for name, tools in entries.items():
+            self.assertEqual(name, "OWASP WrongSecrets")
+            self.assertEqual(len(tools), 1)
+            self.assertCountEqual(expected.todict(), tools[0].todict())
+            self.maxDiff = None
+            mocked_get_cres.assert_called_with(external_id=cre.id)

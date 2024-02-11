@@ -22,7 +22,7 @@ class Capec(ParserInterface):
     def parse(self, cache: db.Node_collection, ph: prompt_client.PromptHandler):
         xml = requests.get(self.capec_xml)
         if xml.status_code == 200:
-            return self.register_capec(xml_contents=xml.text, cache=cache)
+            return {self.name: self.register_capec(xml_contents=xml.text, cache=cache)}
         else:
             logger.fatal(f"Could not get CAPEC's XML data, error was {xml.text}")
 

@@ -49,7 +49,7 @@ class TestJuiceshopParser(unittest.TestCase):
         mock_get_id_of_most_similar_cre.return_value = dbcre.id
         mock_get_id_of_most_similar_node.return_value = dbnode.id
 
-        nodes = juiceshop.JuiceShop().parse(
+        entries = juiceshop.JuiceShop().parse(
             cache=self.collection,
             ph=prompt_client.PromptHandler(database=self.collection),
         )
@@ -84,9 +84,11 @@ class TestJuiceshopParser(unittest.TestCase):
                 tooltype=defs.ToolTypes.Training,
             ),
         ]
-        self.assertEqual(len(nodes), 2)
-        self.assertCountEqual(nodes[0].todict(), expected[0].todict())
-        self.assertCountEqual(nodes[1].todict(), expected[1].todict())
+        for name, nodes in entries.items():
+            self.assertEqual(name, juiceshop.JuiceShop().name)
+            self.assertEqual(len(nodes), 2)
+            self.assertCountEqual(nodes[0].todict(), expected[0].todict())
+            self.assertCountEqual(nodes[1].todict(), expected[1].todict())
 
     csv = """-
   name: 'API-only XSS'

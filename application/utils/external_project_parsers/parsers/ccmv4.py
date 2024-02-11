@@ -87,4 +87,4 @@ class CloudControlsMatrix(ParserInterface):
                         )
             logger.debug(f"Registered CCM with id {ccm.section}")
             standard_entries.append(ccm)
-        return standard_entries
+        return {self.name: standard_entries}
