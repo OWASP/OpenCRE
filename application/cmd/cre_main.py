@@ -330,7 +330,7 @@ def add_from_spreadsheet(spreadsheet_url: str, cache_loc: str, cre_loc: str) -> 
     """
     database = db_connect(path=cache_loc)
     prompt_handler = ai_client_init(database=database)
-    spreadsheet = sheet_utils.readSpreadsheet(
+    spreadsheet = sheet_utils.read_spreadsheet(
         url=spreadsheet_url, alias="new spreadsheet", validate=False
     )
     for _, contents in spreadsheet.items():
@@ -370,7 +370,7 @@ def review_from_spreadsheet(cache: str, spreadsheet_url: str, share_with: str) -
     loc, cache = prepare_for_review(cache)
     database = db_connect(path=cache)
     prompt_handler = ai_client_init(database=database)
-    spreadsheet = sheet_utils.readSpreadsheet(
+    spreadsheet = sheet_utils.read_spreadsheet(
         url=spreadsheet_url, alias="new spreadsheet", validate=False
     )
     for _, contents in spreadsheet.items():

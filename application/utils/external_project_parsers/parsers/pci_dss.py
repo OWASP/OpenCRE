@@ -19,7 +19,7 @@ class PciDss(ParserInterface):
 
     def parse(self, cache: db.Node_collection, ph: prompt_client.PromptHandler):
         entries = self.parse_4(
-            pci_file=sheet_utils.readSpreadsheet(
+            pci_file=sheet_utils.read_spreadsheet(
                 alias="",
                 url="https://docs.google.com/spreadsheets/d/18weo-qbik_C7SdYq7FSP2OMgUmsWdWWI1eaXcAfMz8I",
                 parse_numbered_only=False,
