@@ -57,7 +57,7 @@ class DSOMM(ParserInterface):
                     )
             for samm in samms:
                 for c_link in samm.links:
-                    standard.add_link(
+                    standard = standard.add_link(
                         defs.Link(
                             document=c_link.document, ltype=defs.LinkTypes.LinkedTo
                         )
@@ -79,7 +79,7 @@ class DSOMM(ParserInterface):
                 return
             for iso in isos:
                 for c_link in iso.links:
-                    standard.add_link(
+                    standard = standard.add_link(
                         defs.Link(
                             document=c_link.document, ltype=defs.LinkTypes.LinkedTo
                         )
@@ -89,7 +89,7 @@ class DSOMM(ParserInterface):
     def parse(
         self,
         cache: db.Node_collection,
-        prompt: prompt_client.PromptHandler,
+        ph: prompt_client.PromptHandler,
     ):
         resp = requests.get(
             "https://raw.githubusercontent.com/devsecopsmaturitymodel/DevSecOps-MaturityModel-data/main/src/assets/YAML/generated/generated.yaml"
@@ -146,4 +146,4 @@ class DSOMM(ParserInterface):
                         # use iso as glue
                         standard = self.link_to_iso(aname, activity, cache, standard)
                         standard_entries.append(standard)
-                    return standard_entries
+        return standard_entries
