@@ -23,14 +23,14 @@ class MiscTools(ParserInterface):
         "https://github.com/commjoen/wrongsecrets.git",
     ]
 
-
     # TODO (spyros): need to decouple git ops from parsing in order to make this testable
     # although i could just mock the git ops :$
     def parse(self, cache: db.Node_collection, ph: prompt_client.PromptHandler):
-        tool_entries = []
+        tools = {}
         for url in self.tool_urls:
-            tool_entries.append(self.parse_tool(cache=cache, tool_repo=url))
-        return tool_entries
+            tool_entries = self.parse_tool(cache=cache, tool_repo=url)
+            tools[tool_entries[0].name] = tool_entries
+        return tools
 
     def parse_tool(
         self, tool_repo: str, cache: db.Node_collection, dry_run: boolean = False
@@ -66,13 +66,13 @@ class MiscTools(ParserInterface):
                 if cre_id and register:
                     cres = cache.get_CREs(external_id=cre_id)
                     hyperlink = f"{tool_repo.replace('.git','')}"
-                    cs =defs.Tool(
+                    cs = defs.Tool(
                         name=tool_name,
                         tooltype=defs.ToolTypes.from_str(tool_type),
                         tags=tags,
                         hyperlink=hyperlink,
                         description=description,
-                        sectionID="", # we don't support sectionID and section when linking to a whole tool
+                        sectionID="",  # we don't support sectionID and section when linking to a whole tool
                         section="",
                     )
                     for dbcre in cres:
