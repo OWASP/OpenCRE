@@ -317,6 +317,14 @@ class Document:
                 ]
             )
             and self.metadata == other.metadata
+            and all(
+                [
+                    a in other.embeddings and b in self.embeddings
+                    for a in self.embeddings
+                    for b in other.embeddings
+                ]
+            )
+            and self.embeddings_text == other.embeddings_text
         )
 
     def __hash__(self) -> int:
