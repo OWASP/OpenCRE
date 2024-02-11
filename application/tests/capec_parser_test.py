@@ -10,6 +10,7 @@ from application.utils.external_project_parsers.parsers import capec_parser
 from application.prompt_client import prompt_client
 import requests
 
+
 class TestCapecParser(unittest.TestCase):
     def tearDown(self) -> None:
         self.app_context.pop()
@@ -22,10 +23,11 @@ class TestCapecParser(unittest.TestCase):
         self.collection = db.Node_collection()
 
     @patch.object(requests, "get")
-    def test_register_capec(self,mock_requests) -> None:
+    def test_register_capec(self, mock_requests) -> None:
         class fakeRequest:
             status_code = 200
             text = self.capec_xml
+
         mock_requests.return_value = fakeRequest()
         cres = []
         nodes = []
@@ -35,31 +37,35 @@ class TestCapecParser(unittest.TestCase):
             cres.append(cre)
             dbcre = self.collection.add_cre(cre=cre)
             self.collection.add_link(cre=dbcre, node=dbnode)
-            nodes = capec_parser.Capec().parse(cache=self.collection,ph=prompt_client.PromptHandler(database=self.collection))
+            nodes = capec_parser.Capec().parse(
+                cache=self.collection,
+                ph=prompt_client.PromptHandler(database=self.collection),
+            )
 
-        expected = [defs.Standard(
-            name="CAPEC",
-            doctype=defs.Credoctypes.Standard,
-            links=[
-                defs.Link(document=defs.CRE(name="CRE-276", id="276-276")),
-                defs.Link(document=defs.CRE(name="CRE-285", id="285-285")),
-                defs.Link(document=defs.CRE(name="CRE-434", id="434-434")),
-            ],
-            hyperlink="https://capec.mitre.org/data/definitions/1.html",
-            sectionID="1",
-            section="Accessing Functionality Not Properly Constrained by ACLs",
-            version="3.7",
-        ),
-        defs.Standard(
-            name="CAPEC",
-            doctype=defs.Credoctypes.Standard,
-            hyperlink="https://capec.mitre.org/data/definitions/10.html",
-            sectionID="10",
-            section="Another CAPEC",
-            version="3.7"
-        )
+        expected = [
+            defs.Standard(
+                name="CAPEC",
+                doctype=defs.Credoctypes.Standard,
+                links=[
+                    defs.Link(document=defs.CRE(name="CRE-276", id="276-276")),
+                    defs.Link(document=defs.CRE(name="CRE-285", id="285-285")),
+                    defs.Link(document=defs.CRE(name="CRE-434", id="434-434")),
+                ],
+                hyperlink="https://capec.mitre.org/data/definitions/1.html",
+                sectionID="1",
+                section="Accessing Functionality Not Properly Constrained by ACLs",
+                version="3.7",
+            ),
+            defs.Standard(
+                name="CAPEC",
+                doctype=defs.Credoctypes.Standard,
+                hyperlink="https://capec.mitre.org/data/definitions/10.html",
+                sectionID="10",
+                section="Another CAPEC",
+                version="3.7",
+            ),
         ]
-        self.assertEqual(len(nodes),2)
+        self.assertEqual(len(nodes), 2)
         self.assertCountEqual(nodes[0].todict(), expected[0].todict())
         self.assertCountEqual(nodes[1].todict(), expected[1].todict())
 

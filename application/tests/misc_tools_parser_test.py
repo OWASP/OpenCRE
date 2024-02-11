@@ -10,6 +10,7 @@ from application.defs import cre_defs as defs
 from application.utils.external_project_parsers.parsers import misc_tools_parser
 from application.prompt_client.prompt_client import PromptHandler
 
+
 class TestMiscToolsParser(unittest.TestCase):
     def tearDown(self) -> None:
         self.app_context.pop()
@@ -47,7 +48,6 @@ class TestMiscToolsParser(unittest.TestCase):
         tags = [expected.tooltype.value]
         tags.extend(expected.tags)
 
-
         mocked_clone.return_value = repo
         mocked_get_cres.return_value = [cre]
         mocked_dbCREfromCRE.return_value = dbcre
@@ -59,10 +59,10 @@ class TestMiscToolsParser(unittest.TestCase):
             rdm.write(readme_content)
 
         collection = db.Node_collection()
-        tools = misc_tools_parser.MiscTools().parse(cache=collection, ph=PromptHandler(database=self.collection)
+        tools = misc_tools_parser.MiscTools().parse(
+            cache=collection, ph=PromptHandler(database=self.collection)
         )
-        self.assertEqual(len(tools),1)
-        self.assertCountEqual(expected.todict(),tools[0].todict())
+        self.assertEqual(len(tools), 1)
+        self.assertCountEqual(expected.todict(), tools[0].todict())
         self.maxDiff = None
         mocked_get_cres.assert_called_with(external_id=cre.id)
-        

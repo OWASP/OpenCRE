@@ -42,7 +42,9 @@ class ZAP(ParserInterface):
             hyperlink=code,
         )
 
-    def parse(self, cache: db.Node_collection, ph: prompt_client.PromptHandler)->List[defs.Tool]:
+    def parse(
+        self, cache: db.Node_collection, ph: prompt_client.PromptHandler
+    ) -> List[defs.Tool]:
         zaproxy_website = "https://github.com/zaproxy/zaproxy-website.git"
         repo = git.clone(zaproxy_website)
         alerts = self.__register_alerts(repo=repo, cache=cache)

@@ -117,9 +117,9 @@ class TestZAPAlertsParser(unittest.TestCase):
             hyperlink="https://github.com/zaproxy/zap-extensions/blob/main/addOns/retire/src/main/java/org/zaproxy/addon/retire/RetireScanRule.java",
             tooltype=defs.ToolTypes.Offensive,
             links=[
-                defs.Link(document=db.CREfromDB(cre),ltype=defs.LinkTypes.LinkedTo),
-                defs.Link(document=db.CREfromDB(cre2),ltype=defs.LinkTypes.LinkedTo),
-                defs.Link(document=db.CREfromDB(cre3),ltype=defs.LinkTypes.LinkedTo),
+                defs.Link(document=db.CREfromDB(cre), ltype=defs.LinkTypes.LinkedTo),
+                defs.Link(document=db.CREfromDB(cre2), ltype=defs.LinkTypes.LinkedTo),
+                defs.Link(document=db.CREfromDB(cre3), ltype=defs.LinkTypes.LinkedTo),
             ],
         )
 
@@ -192,7 +192,7 @@ class TestZAPAlertsParser(unittest.TestCase):
             tooltype=defs.ToolTypes.Offensive,
             links=[
                 defs.Link(document=db.CREfromDB(dbcre0), ltype=defs.LinkTypes.LinkedTo),
-                defs.Link(document=db.CREfromDB(dbcre1), ltype=defs.LinkTypes.LinkedTo)
+                defs.Link(document=db.CREfromDB(dbcre1), ltype=defs.LinkTypes.LinkedTo),
             ],
         )
         self.maxDiff = None

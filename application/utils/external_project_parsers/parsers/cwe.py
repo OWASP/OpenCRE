@@ -8,6 +8,7 @@ from application.defs import cre_defs as defs
 import shutil
 import xmltodict
 from application.utils.external_project_parsers.base_parser import ParserInterface
+from application.prompt_client import prompt_client
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
@@ -18,11 +19,11 @@ class CWE(ParserInterface):
     # TODO(spyros): make this work with cre_main.register_node instead of doing DB ops, make parse return list of CWEs
 
     name = "CWE"
+    cwe_zip = "https://cwe.mitre.org/data/xml/cwec_latest.xml.zip"
 
-    def parse(self, cache: db.Node_collection):
-        cwe_zip = "https://cwe.mitre.org/data/xml/cwec_latest.xml.zip"
-        response = requests.get(cwe_zip, stream=True)
-        tmp_dir = tempfile.mkdtemp(suffix=".zip")
+    def parse(self, cache: db.Node_collection, ph: prompt_client.PromptHandler):
+        response = requests.get(self.cwe_zip, stream=True)
+        tmp_dir = tempfile.mkdtemp()
         handle, fname = tempfile.mkstemp(suffix=".zip", dir=tmp_dir)
 
         with open(handle, "wb") as zipfile:
@@ -43,9 +44,8 @@ class CWE(ParserInterface):
 
     def link_cwe_to_capec_cre(
         self, cwe: defs.Standard, cache: db.Node_collection, capec_id: str
-    ) -> bool:
+    ) -> defs.Standard:
         capecs = cache.get_nodes(name="CAPEC", sectionID=capec_id)
-        linked = False
         if capecs:
             for cre in [
                 c.document
@@ -53,17 +53,16 @@ class CWE(ParserInterface):
                 if c.document.doctype == defs.Credoctypes.CRE
             ]:
                 logger.debug(
-                    f"linked CWE with id {cwe.section_id} to CRE with ID {cre.id}"
+                    f"linked CWE with id {cwe.sectionID} to CRE with ID {cre.id}"
                 )
                 cwe.add_link(defs.Link(document=cre, ltype=defs.LinkTypes.LinkedTo))
-                linked = True
-        return linked, cwe
+        return cwe
 
-    def link_to_related_weaknesses(
-        self, cwe: db.Node, cache: db.Node_collection, related_id: str
-    ) -> bool:
+    def link_to_related_cwe(
+        self, cwe: defs.Standard, cache: db.Node_collection, related_id: str
+    ) -> defs.Standard:
+
         related_cwes = cache.get_nodes(name="CWE", sectionID=related_id)
-        linked = False
         if related_cwes:
             for cre in [
                 c.document
@@ -71,11 +70,10 @@ class CWE(ParserInterface):
                 if c.document.doctype == defs.Credoctypes.CRE
             ]:
                 logger.debug(
-                    f"linked CWE with id {cwe.section_id} to CRE with ID {cre.id}"
+                    f"linked CWE with id {cwe.sectionID} to CRE with ID {cre.id}"
                 )
                 cwe.add_link(defs.Link(document=cre, ltype=defs.LinkTypes.LinkedTo))
-                linked = True
-        return linked, cwe
+        return cwe
 
     def register_cwe(self, cache: db.Node_collection, xml_file: str):
         statuses = {}
@@ -95,31 +93,40 @@ class CWE(ParserInterface):
                         version=version,
                     )
                     logger.debug(f"Registered CWE with id {cwe.section}")
-                    link_found = False
                     if weakness.get("Related_Attack_Patterns"):
                         for lst in weakness["Related_Attack_Patterns"].values():
                             for capec_entry in lst:
                                 if isinstance(capec_entry, Dict):
                                     for _, capec_id in capec_entry.items():
-                                        link_found, cwe = self.link_cwe_to_capec_cre(
+                                        cwe = self.link_cwe_to_capec_cre(
                                             cwe=cwe, cache=cache, capec_id=capec_id
                                         )
                                 else:
                                     id = lst["@CAPEC_ID"]
-                                    link_found, cwe = self.link_cwe_to_capec_cre(
+                                    cwe = self.link_cwe_to_capec_cre(
                                         cwe=cwe, cache=cache, capec_id=id
                                     )
                     else:
                         logger.info(
                             f"CWE '{cwe.sectionID}-{cwe.section}' does not have any related CAPEC attack patterns, skipping automated linking"
                         )
-                    if not link_found and weakness.get("Related_Weaknesses"):
-                        for lst in weakness["Related_Weaknesses"].values():
-                            for cwe_entry in lst:
-                                if isinstance(cwe_entry, Dict):
-                                    id = cwe_entry["@CWE_ID"]
-                                    link_found, cwe = self.link_to_related_weaknesses(
-                                        cwe=cwe, cache=cache, related_id=id
-                                    )
+                    if weakness.get("Related_Weaknesses"):
+                        if isinstance(weakness.get("Related_Weaknesses"), list):
+                            for related_weakness in weakness.get("Related_Weaknesses"):
+                                cwe = self.parse_related_weakness(
+                                    cache, related_weakness, cwe
+                                )
+                        else:
+                            cwe = self.parse_related_weakness(
+                                cache, weakness.get("Related_Weaknesses"), cwe
+                            )
                     entries.append(cwe)
         return entries
+
+    def parse_related_weakness(
+        self, cache: db.Node_collection, rw: Dict[str, Dict], cwe: defs.Standard
+    ) -> defs.Standard:
+        cwe_entry = rw.get("Related_Weakness")
+        if isinstance(cwe_entry, Dict):
+            id = cwe_entry["@CWE_ID"]
+            return self.link_to_related_cwe(cwe=cwe, cache=cache, related_id=id)

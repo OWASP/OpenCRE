@@ -22,7 +22,7 @@ class TestCheatsheetsParser(unittest.TestCase):
         self.collection = db.Node_collection()
 
     @patch.object(git, "clone")
-    def test_register_cheatsheet(self,mock_clone) -> None:
+    def test_register_cheatsheet(self, mock_clone) -> None:
         cs = self.cheatsheets_md
 
         class Repo:
@@ -30,11 +30,11 @@ class TestCheatsheetsParser(unittest.TestCase):
 
         repo = Repo()
         loc = tempfile.mkdtemp()
-        os.mkdir(os.path.join(loc,"cheatsheets"))
+        os.mkdir(os.path.join(loc, "cheatsheets"))
         repo.working_dir = loc
         cre = defs.CRE(name="blah", id="223-780")
         self.collection.add_cre(cre)
-        with open(os.path.join(os.path.join(loc,"cheatsheets"), "cs.md"), "w") as mdf:
+        with open(os.path.join(os.path.join(loc, "cheatsheets"), "cs.md"), "w") as mdf:
             mdf.write(cs)
         mock_clone.return_value = repo
         nodes = cheatsheets_parser.Cheatsheets().parse(
@@ -44,7 +44,7 @@ class TestCheatsheetsParser(unittest.TestCase):
             name="OWASP Cheat Sheets",
             hyperlink="https://github.com/foo/bar/tree/master/cs.md",
             section="Secrets Management Cheat Sheet",
-            links=[ defs.Link(document=cre,ltype=defs.LinkTypes.LinkedTo)]
+            links=[defs.Link(document=cre, ltype=defs.LinkTypes.LinkedTo)],
         )
         self.maxDiff = None
         self.assertEqual(len(nodes), 1)

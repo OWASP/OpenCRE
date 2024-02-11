@@ -44,6 +44,7 @@ class BaseParser:
     ):
         documents = sclass.parse(db, ph)
         from application.cmd import cre_main
+
         cre_main.register_standard(documents, db, ph)
 
     def call_importers(

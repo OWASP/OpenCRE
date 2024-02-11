@@ -51,8 +51,8 @@ class Capec(ParserInterface):
         attack_pattern_catalogue = {}
 
         attack_pattern_catalogue = xmltodict.parse(xml_contents).get(
-                "Attack_Pattern_Catalog"
-            )
+            "Attack_Pattern_Catalog"
+        )
         version = attack_pattern_catalogue["@Version"]
         standard_entries = []
         for _, attack_pattern in attack_pattern_catalogue.get(
