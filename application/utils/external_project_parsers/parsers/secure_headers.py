@@ -36,37 +36,39 @@ class SeecureHeaders(ParserInterface):
 
     def register_headers(self, cache: db.Node_collection, repo, file_path, repo_path):
         cre_link = r"\[([\w\s\d]+)\]\((?P<url>((?:\/|https:\/\/)(www\.)?opencre\.org/cre/(?P<creID>\d+-\d+)\?[\w\d\.\/\=\#\+\&\%\-]+))\)"
-        files = os.listdir(os.path.join(repo.working_dir, file_path))
         entries = []
-        for mdfile in files:
-            pth = os.path.join(repo.working_dir, file_path, mdfile)
-            if not os.path.isfile(pth):
-                continue
-            with open(pth) as mdf:
-                mdtext = mdf.read()
+        for path, _, files in os.walk(repo.working_dir):
+            for mdfile in files:
 
-                if "opencre.org" not in mdtext:
+                pth = os.path.join(path, mdfile)
+
+                if not os.path.isfile(pth):
                     continue
+                with open(pth) as mdf:
+                    mdtext = mdf.read()
 
-                links = re.finditer(cre_link, mdtext, re.MULTILINE)
-                for cre in links:
-                    if cre:
-                        parsed = urlparse(cre.group("url"))
-                        creID = cre.group("creID")
-                        queries = parse_qs(parsed.query)
-                        name = queries.get("name")
-                        section = queries.get("section")
-                        link = queries.get("link")
-                        cres = cache.get_CREs(external_id=creID)
-                        cs = self.entry(
-                            name=name[0] if name else "",
-                            section=section[0] if section else "",
-                            hyperlink=link[0] if link else "",
-                            tags=[],
-                        )
-                        for dbcre in cres:
-                            cs.add_link(
-                                defs.Link(document=dbcre, ltype=defs.LinkTypes.LinkedTo)
+                    if "opencre.org" not in mdtext:
+                        continue
+                    links = re.finditer(cre_link, mdtext, re.MULTILINE)
+                    for cre in links:
+                        if cre:
+                            parsed = urlparse(cre.group("url"))
+                            creID = cre.group("creID")
+                            queries = parse_qs(parsed.query)
+                            name = queries.get("name")
+                            section = queries.get("section")
+                            link = queries.get("link")
+                            cres = cache.get_CREs(external_id=creID)
+                            cs = self.entry(
+                                section=section[0] if section else "",
+                                hyperlink=link[0] if link else "",
+                                tags=[],
                             )
-                entries.append(cs)
+                            for dbcre in cres:
+                                cs.add_link(
+                                    defs.Link(
+                                        document=dbcre, ltype=defs.LinkTypes.LinkedTo
+                                    )
+                                )
+                    entries.append(cs)
         return entries
