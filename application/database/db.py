@@ -246,13 +246,15 @@ class NeoStandard(NeoNode):
             section=node.section,
             sectionID=node.section_id,
             subsection=node.subsection,
-            links=self.get_links(
-                {
-                    "Related": node.related,
-                }
-            )
-            if parse_links
-            else [],
+            links=(
+                self.get_links(
+                    {
+                        "Related": node.related,
+                    }
+                )
+                if parse_links
+                else []
+            ),
         )
 
 
@@ -270,13 +272,15 @@ class NeoTool(NeoStandard):
             section=node.section,
             sectionID=node.section_id,
             subsection=node.subsection,
-            links=self.get_links(
-                {
-                    "Related": node.related,
-                }
-            )
-            if parse_links
-            else [],
+            links=(
+                self.get_links(
+                    {
+                        "Related": node.related,
+                    }
+                )
+                if parse_links
+                else []
+            ),
         )
 
 
@@ -289,13 +293,15 @@ class NeoCode(NeoNode):
             tags=node.tags,
             hyperlink=node.hyperlink,
             version=node.version,
-            links=self.get_links(
-                {
-                    "Related": node.related,
-                }
-            )
-            if parse_links
-            else [],
+            links=(
+                self.get_links(
+                    {
+                        "Related": node.related,
+                    }
+                )
+                if parse_links
+                else []
+            ),
         )
 
 
@@ -313,16 +319,18 @@ class NeoCRE(NeoDocument):  # type: ignore
             id=node.external_id,
             description=node.description,
             tags=node.tags,
-            links=self.get_links(
-                {
-                    "Contains": [*node.contains, *node.contained_in],
-                    "Linked To": node.linked,
-                    "Same as": node.same_as,
-                    "Related": node.related,
-                }
-            )
-            if parse_links
-            else [],
+            links=(
+                self.get_links(
+                    {
+                        "Contains": [*node.contains, *node.contained_in],
+                        "Linked To": node.linked,
+                        "Same as": node.same_as,
+                        "Related": node.related,
+                    }
+                )
+                if parse_links
+                else []
+            ),
         )
 
 
@@ -394,9 +402,9 @@ class NEO_DB:
                     "doctype": dbnode.ntype,
                     "document_id": dbnode.id,
                     "description": dbnode.description or "",
-                    "tags": [dbnode.tags]
-                    if isinstance(dbnode.tags, str)
-                    else dbnode.tags,
+                    "tags": (
+                        [dbnode.tags] if isinstance(dbnode.tags, str) else dbnode.tags
+                    ),
                     "hyperlink": "",  # dbnode.hyperlink or "",
                     "version": dbnode.version or "",
                     "section": dbnode.section or "",
@@ -413,9 +421,9 @@ class NEO_DB:
                     "document_id": dbnode.id,
                     "description": dbnode.description,
                     "links": [],  # dbnode.links,
-                    "tags": [dbnode.tags]
-                    if isinstance(dbnode.tags, str)
-                    else dbnode.tags,
+                    "tags": (
+                        [dbnode.tags] if isinstance(dbnode.tags, str) else dbnode.tags
+                    ),
                     "metadata": "{}",  # dbnode.metadata,
                     "hyperlink": "",  # dbnode.hyperlink or "",
                     "version": dbnode.version or "",
@@ -434,9 +442,9 @@ class NEO_DB:
                     "document_id": dbnode.id,
                     "description": dbnode.description,
                     "links": [],  # dbnode.links,
-                    "tags": [dbnode.tags]
-                    if isinstance(dbnode.tags, str)
-                    else dbnode.tags,
+                    "tags": (
+                        [dbnode.tags] if isinstance(dbnode.tags, str) else dbnode.tags
+                    ),
                     "metadata": "{}",  # dbnode.metadata,
                     "hyperlink": "",  # dbnode.hyperlink or "",
                     "version": dbnode.version or "",

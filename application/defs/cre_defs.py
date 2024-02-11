@@ -361,8 +361,10 @@ class Document:
 @dataclass(eq=False)
 class CRE(Document):
     doctype: Credoctypes = Credoctypes.CRE
+
     def todict(self) -> Dict[str, Dict[str, str] | List[Any] | Set[str] | str]:
         return super().todict()
+
 
 @dataclass
 class Node(Document):
