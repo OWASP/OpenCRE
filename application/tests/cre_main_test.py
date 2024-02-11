@@ -374,7 +374,7 @@ class TestMain(unittest.TestCase):
     @patch("application.cmd.cre_main.ai_client_init")
     @patch("application.cmd.cre_main.db_connect")
     @patch("application.cmd.cre_main.parse_standards_from_spreadsheeet")
-    @patch("application.utils.spreadsheet.readSpreadsheet")
+    @patch("application.utils.spreadsheet.read_spreadsheet")
     @patch("application.database.db.Node_collection.export")
     def test_add_from_spreadsheet(
         self,
@@ -417,7 +417,7 @@ class TestMain(unittest.TestCase):
     @patch("application.cmd.cre_main.prepare_for_review")
     @patch("application.cmd.cre_main.db_connect")
     @patch("application.cmd.cre_main.parse_standards_from_spreadsheeet")
-    @patch("application.utils.spreadsheet.readSpreadsheet")
+    @patch("application.utils.spreadsheet.read_spreadsheet")
     @patch("application.cmd.cre_main.create_spreadsheet")
     @patch("application.database.db.Node_collection.export")
     def test_review_from_spreadsheet(

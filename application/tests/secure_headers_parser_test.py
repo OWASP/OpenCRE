@@ -10,7 +10,7 @@ from unittest.mock import patch
 import os
 
 
-class TestCheatsheetsParser(unittest.TestCase):
+class TestSecureHeadersParser(unittest.TestCase):
     def tearDown(self) -> None:
         self.app_context.pop()
 

@@ -12,7 +12,7 @@ from application.utils.external_project_parsers.parsers import ccmv4
 from application.prompt_client import prompt_client
 
 
-class TestCloudNativeSecurityControlsParser(unittest.TestCase):
+class TestCloudControlsMappingParser(unittest.TestCase):
     def tearDown(self) -> None:
         self.app_context.pop()
 
