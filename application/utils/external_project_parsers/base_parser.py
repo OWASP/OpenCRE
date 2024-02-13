@@ -39,17 +39,18 @@ class BaseParser:
     def register_resource(
         self,
         sclass: ParserInterface,
-        db: db.Node_collection,
-        ph: prompt_client.PromptHandler,
+        db_connection_str: str,
     ):
+        
+        from application.cmd import cre_main
+        db = cre_main.db_connect(db_connection_str)
+        ph = prompt_client.PromptHandler(database=db)
         result = sclass.parse(db, ph)
         for _, documents in result.values():
-            from application.cmd import cre_main
-
-            cre_main.register_standard(documents, db, ph)
+            cre_main.register_standard(documents, db)
 
     def call_importers(
-        self, db: db.Node_collection, prompt_handler: prompt_client.PromptHandler
+        self, db_connection_str: str, prompt_handler: prompt_client.PromptHandler
     ):
         """
         somehow finds all the importers that have been registered (either reflection for implementing classes or an explicit method that registers all available importers)

@@ -6,6 +6,7 @@ from multiprocessing import Pool
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from playwright.sync_api import sync_playwright
+import playwright
 from scipy import sparse
 from sklearn.metrics.pairwise import cosine_similarity
 from typing import Dict, List, Any, Tuple, Optional
@@ -42,16 +43,21 @@ class in_memory_embeddings:
 
     # Function to get text content from a URL
     def get_content(self, url):
-        try:
-            page = self.__context.new_page()
-            logger.info(f"loading page {url}")
-            page.goto(url)
-            text = page.locator("body").inner_text()
-            page.close()
-            return text
-        except requests.exceptions.RequestException as e:
-            print(f"Error fetching content for URL: {url} - {str(e)}")
-            return ""
+        for attempts in range(1,10):
+            try:
+                page = self.__context.new_page()
+                logger.info(f"loading page {url}")
+                page.goto(url)
+                text = page.locator("body").inner_text()
+                page.close()
+                return text
+            except requests.exceptions.RequestException as e:
+                print(f"Error fetching content for URL: {url} - {str(e)}")
+                return ""
+            except playwright._impl._api_types.TimeoutError as te:
+                print(f"Page: {url}, took too long to load, playwright timedout, trying again - {str(e)}, attempt num {attempts}")
+
+
 
     def clean_content(self, content):
         content = re.sub("\s+", " ", content.strip())

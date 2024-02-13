@@ -214,12 +214,16 @@ def parse_file(
 def register_standard(
     standard_entries: List[defs.Standard],
     collection: db.Node_collection,
-    prompt_client: prompt_client.PromptHandler,
     generate_embeddings=True,
+    db_connection_str: str = ""
 ):
+    if not collection:
+        collection = db_connect(db_connection_str)
     if not standard_entries:
         return
-    standard_hash = make_array_hash(standards=standard_entries[0].name)
+    conn = redis.connect()
+    ph = prompt_client.PromptHandler(database=collection)
+    standard_hash = make_array_hash([standard_entries[0].name])
     if conn.get(standard_hash):
         logger.debug(
             f"Standard importing job with info-hash {standard_hash} has already returned, skipping"
@@ -234,7 +238,7 @@ def register_standard(
             )
             generate_embeddings = False
     if generate_embeddings:
-        prompt_client.generate_embeddings_for(node.name)
+        ph.generate_embeddings_for(node.name)
     populate_neo4j_db(collection)
     conn = redis.connect()
     conn.set(standard_hash, value="")
@@ -242,20 +246,16 @@ def register_standard(
     # calculate gap analysis
     for standard_name in collection.standards():
         if standard_name != standard_entries[0].name:
-            forward_job_id = gap_analysis.schedule(
-                [standard_entries[0].name, standard_name]
-            )
-            backward_job_id = gap_analysis.schedule(
-                [standard_name, standard_entries[0].name]
-            )
-
+            forward_job_id = gap_analysis.schedule(standards=[standard_entries[0].name, standard_name],database=collection)
+            backward_job_id = gap_analysis.schedule(standards=[standard_name, standard_entries[0].name],database=collection)
 
 def parse_standards_from_spreadsheeet(
     cre_file: List[Dict[str, Any]],
-    collection: db.Node_collection,
+    cache_location: str,
     prompt_handler: prompt_client.PromptHandler,
 ) -> None:
     """given a yaml with standards, build a list of standards in the db"""
+    collection = db_connect(cache_location)
     if "CRE:name" in cre_file[0].keys():
         documents = spreadsheet_parsers.parse_export_format(cre_file)
         register_cre(documents, collection)
@@ -280,8 +280,8 @@ def parse_standards_from_spreadsheeet(
                     func=register_standard,
                     kwargs={
                         "standard_entries": standard_entries,
-                        "collection": collection,
-                        "prompt_client": prompt_handler,
+                        "collection": None,
+                        "db_connection_str":cache_location,
                     },
                     timeout="10m",
                 )
@@ -292,21 +292,24 @@ def parse_standards_from_spreadsheeet(
             while jobs:
                 bar.text = f"importing {len(jobs)} standards"
                 for job in jobs:
-                    if job.is_finished():
+                    if job.is_finished:
                         logger.info(f"{job.description} registered successfully")
                         jobs.pop(jobs.index(job))
-                    elif job.is_failed():
+                    elif job.is_failed:
                         logger.fatal(
                             f"Job to register standard {job.description} failed, check logs for reason"
                         )
-                    elif job.is_canceled():
+                        jobs.pop(jobs.index(job))
+                    elif job.is_canceled:
                         logger.fatal(
                             f"Job to register standard {job.description} was cancelled, check logs for reason but this looks like a bug"
                         )
+                        jobs.pop(jobs.index(job))
                     elif job.is_stopped:
                         logger.fatal(
                             f"Job to register standard {job.description} was stopped, check logs for reason but this looks like a bug"
                         )
+                        jobs.pop(jobs.index(job))
         logger.info(
             f"imported {total_standards} standards in {time.perf_counter()-t0} seconds"
         )
@@ -334,7 +337,7 @@ def add_from_spreadsheet(spreadsheet_url: str, cache_loc: str, cre_loc: str) -> 
         url=spreadsheet_url, alias="new spreadsheet", validate=False
     )
     for _, contents in spreadsheet.items():
-        parse_standards_from_spreadsheeet(contents, database, prompt_handler)
+        parse_standards_from_spreadsheeet(contents, cache_loc, prompt_handler)
 
     database.export(cre_loc)
 

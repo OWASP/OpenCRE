@@ -106,12 +106,18 @@ migrate-downgrade:
 
 import-all:
 	[ -d "./venv" ] && . ./venv/bin/activate
-	rm -rf standards_cache.sqlite &&\
-	make migrate-upgrade && export FLASK_APP=$(CURDIR)/cre.py &&\
+	# rm -rf standards_cache.sqlite
+	make migrate-upgrade
+	make docker-redis
+	make start-worker&\
+	make start-worker&\
+	make start-worker&\
+	make start-worker&\
+	make start-worker&\
+
+	export FLASK_APP=$(CURDIR)/cre.py &&\
 	python cre.py --add --from_spreadsheet https://docs.google.com/spreadsheets/d/1eZOEYgts7d_-Dr-1oAbogPfzBLh6511b58pX3b59kvg &&\
-	python cre.py --generate_embeddings && \
-	python cre.py --zap_in --cheatsheets_in --github_tools_in  --capec_in --owasp_secure_headers_in --pci_dss_4_in --juiceshop_in --dsomm_in --dsomm_in --cloud_native_security_controls_in &&\
-	python cre.py --generate_embeddings
+	python cre.py --import_external_projects
 
 import-neo4j:
 	[ -d "./venv" ] && . ./venv/bin/activate
