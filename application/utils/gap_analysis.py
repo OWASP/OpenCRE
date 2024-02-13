@@ -83,7 +83,7 @@ def schedule(standards: List[str], database):
             "store_in_cache": True,
             "cache_key": standards_hash,
         },
-        timeout="10m",
+        timeout="120m",
     )
     conn.set(standards_hash, json.dumps({"job_id": gap_analysis_job.id, "result": ""}))
     return {"job_id": gap_analysis_job.id}

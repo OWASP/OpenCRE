@@ -43,7 +43,7 @@ class in_memory_embeddings:
 
     # Function to get text content from a URL
     def get_content(self, url):
-        for attempts in range(1,10):
+        for attempts in range(1, 10):
             try:
                 page = self.__context.new_page()
                 logger.info(f"loading page {url}")
@@ -55,9 +55,9 @@ class in_memory_embeddings:
                 print(f"Error fetching content for URL: {url} - {str(e)}")
                 return ""
             except playwright._impl._api_types.TimeoutError as te:
-                print(f"Page: {url}, took too long to load, playwright timedout, trying again - {str(e)}, attempt num {attempts}")
-
-
+                print(
+                    f"Page: {url}, took too long to load, playwright timedout, trying again - {str(te)}, attempt num {attempts}"
+                )
 
     def clean_content(self, content):
         content = re.sub("\s+", " ", content.strip())
@@ -134,10 +134,11 @@ class in_memory_embeddings:
             ids = [a[0] for a in database.list_cre_ids()]
         else:
             ids = [a[0] for a in database.list_node_ids_by_name(item_name)]
-
+        ids = []
         for dbID in ids:
             if not database.get_embedding(dbID):
-                self.generate_embeddings(database, [dbID])
+                ids.append(dbID)
+        self.generate_embeddings(database, ids)
 
     def generate_embeddings(
         self, database: db.Node_collection, missing_embeddings: List[str]
@@ -164,7 +165,6 @@ class in_memory_embeddings:
                     continue
                 dbnode.id = id
                 database.add_embedding(dbnode, node.doctype, embedding, content)
-                # cls.node_embeddings[id] = embedding
             elif cre:
                 content = f"{cre.doctype}\n name:{cre.name}\n description:{cre.description}\n id:{cre.id}\n "
                 logger.info(f"making embedding for {content}")
@@ -176,7 +176,6 @@ class in_memory_embeddings:
                 database.add_embedding(
                     dbcre, cre_defs.Credoctypes.CRE, embedding, content
                 )
-                # cls.cre_embeddings[id] = embedding
 
 
 class PromptHandler:

@@ -197,7 +197,7 @@ def main() -> None:
     parser.add_argument(
         "--import_external_projects",
         action="store_true",
-        help="import all external projects, shortcut for calling all of *_in"
+        help="import all external projects, shortcut for calling all of *_in",
     )
     parser.add_argument(
         "--generate_embeddings",

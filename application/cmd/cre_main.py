@@ -8,7 +8,7 @@ import shutil
 import tempfile
 from typing import Any, Callable, Dict, Generator, List, Optional, Tuple
 from application.utils.hash import make_array_hash
-from rq import Queue
+from rq import Queue, job, exceptions
 import yaml
 from application import create_app  # type: ignore
 from application.config import CMDConfig
@@ -215,7 +215,7 @@ def register_standard(
     standard_entries: List[defs.Standard],
     collection: db.Node_collection,
     generate_embeddings=True,
-    db_connection_str: str = ""
+    db_connection_str: str = "",
 ):
     if not collection:
         collection = db_connect(db_connection_str)
@@ -240,14 +240,29 @@ def register_standard(
     if generate_embeddings:
         ph.generate_embeddings_for(node.name)
     populate_neo4j_db(collection)
-    conn = redis.connect()
+    # calculate gap analysis
+    jobs = []
+    pending_stadards = collection.standards()
+    for standard_name in pending_stadards:
+        if standard_name != standard_entries[0].name:
+            forward_job_id = gap_analysis.schedule(
+                standards=[standard_entries[0].name, standard_name], database=collection
+            ).get("job_id")
+            backward_job_id = gap_analysis.schedule(
+                standards=[standard_name, standard_entries[0].name], database=collection
+            ).get("job_id")
+            if forward_job_id and backward_job_id:
+                try:
+                    forward_job = job.Job.fetch(id=forward_job_id, connection=conn)
+                    backward_job = job.Job.fetch(id=backward_job_id, connection=conn)
+                    jobs.extend([forward_job, backward_job])
+                except exceptions.NoSuchJobError as nje:
+                    pending_stadards.append(standard_name)
+            else:
+                pending_stadards.append(standard_name)
+    redis.wait_for_jobs(jobs)
     conn.set(standard_hash, value="")
 
-    # calculate gap analysis
-    for standard_name in collection.standards():
-        if standard_name != standard_entries[0].name:
-            forward_job_id = gap_analysis.schedule(standards=[standard_entries[0].name, standard_name],database=collection)
-            backward_job_id = gap_analysis.schedule(standards=[standard_name, standard_entries[0].name],database=collection)
 
 def parse_standards_from_spreadsheeet(
     cre_file: List[Dict[str, Any]],
@@ -263,14 +278,17 @@ def parse_standards_from_spreadsheeet(
 
     elif any(key.startswith("CRE hierarchy") for key in cre_file[0].keys()):
         conn = redis.connect()
+        redis.empty_queues(conn)
         q = Queue(connection=conn)
         docs = spreadsheet_parsers.parse_hierarchical_export_format(cre_file)
         total_resources = docs.keys()
         jobs = []
-        with alive_bar(len(docs.get(defs.Credoctypes.CRE.value))):
-            logger.info(f"Importing {len(docs.get(defs.Credoctypes.CRE.value))} CREs")
+        logger.info(f"Importing {len(docs.get(defs.Credoctypes.CRE.value))} CREs")
+        with alive_bar(len(docs.get(defs.Credoctypes.CRE.value))) as bar:
             for cre in docs.pop(defs.Credoctypes.CRE.value):
                 register_cre(cre, collection)
+                bar()
+
         populate_neo4j_db(collection)
         prompt_handler.generate_embeddings_for(defs.Credoctypes.CRE.value)
         for standard_name, standard_entries in docs.items():
@@ -281,35 +299,16 @@ def parse_standards_from_spreadsheeet(
                     kwargs={
                         "standard_entries": standard_entries,
                         "collection": None,
-                        "db_connection_str":cache_location,
+                        "db_connection_str": cache_location,
                     },
-                    timeout="10m",
+                    timeout="120m",
                 )
             )
         t0 = time.perf_counter()
         total_standards = len(jobs)
+        logger.info(f"Importing {total_standards} Standards")
         with alive_bar(theme="classic", total=total_standards) as bar:
-            while jobs:
-                bar.text = f"importing {len(jobs)} standards"
-                for job in jobs:
-                    if job.is_finished:
-                        logger.info(f"{job.description} registered successfully")
-                        jobs.pop(jobs.index(job))
-                    elif job.is_failed:
-                        logger.fatal(
-                            f"Job to register standard {job.description} failed, check logs for reason"
-                        )
-                        jobs.pop(jobs.index(job))
-                    elif job.is_canceled:
-                        logger.fatal(
-                            f"Job to register standard {job.description} was cancelled, check logs for reason but this looks like a bug"
-                        )
-                        jobs.pop(jobs.index(job))
-                    elif job.is_stopped:
-                        logger.fatal(
-                            f"Job to register standard {job.description} was stopped, check logs for reason but this looks like a bug"
-                        )
-                        jobs.pop(jobs.index(job))
+            redis.wait_for_jobs(jobs, bar)
         logger.info(
             f"imported {total_standards} standards in {time.perf_counter()-t0} seconds"
         )
@@ -493,7 +492,9 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
     # /end individual resource importing
 
     if args.import_external_projects:
-        BaseParser().call_importers(db=cache, prompt_handler=ph)
+        BaseParser().call_importers(
+            db_connection_str=args.cache_file, prompt_handler=ph
+        )
 
     if args.export:
         cache = db_connect(args.cache_file)

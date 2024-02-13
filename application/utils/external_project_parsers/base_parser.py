@@ -16,7 +16,7 @@ logger.setLevel(logging.INFO)
 # abstract class/interface that shows how to import a project that is not cre or its core resources
 
 
-class ParserInterface:
+class ParserInterface(object):
     # The name of the resource being parsed
     name: str
 
@@ -41,8 +41,9 @@ class BaseParser:
         sclass: ParserInterface,
         db_connection_str: str,
     ):
-        
+
         from application.cmd import cre_main
+
         db = cre_main.db_connect(db_connection_str)
         ph = prompt_client.PromptHandler(database=db)
         result = sclass.parse(db, ph)
@@ -80,24 +81,7 @@ class BaseParser:
         t0 = time.perf_counter()
         total_resources = len(jobs)
         with alive_bar(theme="classic", total=total_resources) as bar:
-            while jobs:
-                bar.text = f"importing {len(jobs)} standards"
-                for job in jobs:
-                    if job.is_finished():
-                        logger.info(f"{job.description} registered successfully")
-                        jobs.pop(jobs.index(job))
-                    elif job.is_failed():
-                        logger.fatal(
-                            f"Job to register resource {job.description} failed, check logs for reason"
-                        )
-                    elif job.is_canceled():
-                        logger.fatal(
-                            f"Job to register resource {job.description} was cancelled, check logs for reason but this looks like a bug"
-                        )
-                    elif job.is_stopped:
-                        logger.fatal(
-                            f"Job to register resource {job.description} was stopped, check logs for reason but this looks like a bug"
-                        )
+            redis.wait_for_jobs(jobs=jobs, callback=bar)
         logger.info(
             f"imported {total_resources} standards in {time.perf_counter()-t0} seconds"
         )

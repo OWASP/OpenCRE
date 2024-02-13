@@ -106,7 +106,7 @@ migrate-downgrade:
 
 import-all:
 	[ -d "./venv" ] && . ./venv/bin/activate
-	# rm -rf standards_cache.sqlite
+	rm -rf standards_cache.sqlite
 	make migrate-upgrade
 	make docker-redis
 	make start-worker&\
@@ -118,6 +118,9 @@ import-all:
 	export FLASK_APP=$(CURDIR)/cre.py &&\
 	python cre.py --add --from_spreadsheet https://docs.google.com/spreadsheets/d/1eZOEYgts7d_-Dr-1oAbogPfzBLh6511b58pX3b59kvg &&\
 	python cre.py --import_external_projects
+
+	killall python
+	killall make
 
 import-neo4j:
 	[ -d "./venv" ] && . ./venv/bin/activate
