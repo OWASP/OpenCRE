@@ -2,10 +2,20 @@ import redis
 import os
 from urllib.parse import urlparse
 import logging
+from typing import Callable, List
+import rq
+import time
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
+
+
+def empty_queues(redis: redis.Redis):
+    deleted_keys = 0
+    for key in redis.scan_iter():
+        deleted_keys += 1
+        redis.delete(key)
 
 
 def connect():
@@ -39,3 +49,34 @@ def connect():
             )
     else:
         logger.warning("Starting without Redis, functionality may be limited!")
+
+
+def wait_for_jobs(jobs: List[rq.job.Job], callback: Callable = None):
+    def do_nothing():
+        pass
+
+    if not callback:
+        callback = do_nothing
+    while jobs:
+        for job in jobs:
+            if job.is_finished:
+                logger.info(f"{job.description} finished")
+                jobs.pop(jobs.index(job))
+                callback()
+            elif job.is_failed:
+                logger.fatal(f"Job {job.description} failed, check logs for reason")
+                jobs.pop(jobs.index(job))
+                callback()
+            elif job.is_canceled:
+                logger.fatal(
+                    f"Job {job.description} was cancelled, check logs for reason but this looks like a bug"
+                )
+                jobs.pop(jobs.index(job))
+                callback()
+            elif job.is_stopped:
+                logger.fatal(
+                    f"Job {job.description} was stopped, check logs for reason but this looks like a bug"
+                )
+                jobs.pop(jobs.index(job))
+                callback()
+        time.sleep(5)

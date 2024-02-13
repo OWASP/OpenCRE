@@ -146,6 +146,7 @@ def main() -> None:
         default=None,
         help="export all data into yaml files under the directory pointed to by this argument",
     )
+    # Start External Project importing
     parser.add_argument(
         "--csa_ccm_v3_in",
         action="store_true",
@@ -190,6 +191,13 @@ def main() -> None:
         "--cloud_native_security_controls_in",
         action="store_true",
         help="import cloud native security controls from their repo (https://raw.githubusercontent.com/cloud-native-security-controls/controls-catalog/main/controls/controls_catalog.csv)",
+    )
+    # End External Project importing
+
+    parser.add_argument(
+        "--import_external_projects",
+        action="store_true",
+        help="import all external projects, shortcut for calling all of *_in",
     )
     parser.add_argument(
         "--generate_embeddings",
