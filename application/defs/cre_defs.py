@@ -1,9 +1,11 @@
+import re
 import collections
 import json
 from copy import copy
 from dataclasses import asdict, dataclass, field
 from enum import Enum, EnumMeta
 from typing import Any, Dict, List, Optional, Set, Union
+from application.defs import cre_exceptions
 
 
 class ExportFormat(
@@ -223,6 +225,25 @@ class LinkTypes(str, Enum, metaclass=EnumMetaWithContains):
             )
         return res[0]
 
+    @classmethod
+    def opposite(cls, typ) -> Any:  # it returns the opposite of the type provided
+        if typ == cls.Contains:
+            return cls.PartOf
+        elif typ == cls.PartOf:
+            return cls.Contains
+        elif typ == cls.LinkedTo:
+            return typ
+        elif typ == cls.Related:
+            return typ
+        elif typ == cls.RemediatedBy:
+            return cls.Remediates
+        elif typ == cls.Remediates:
+            return cls.RemediatedBy
+        elif typ == cls.TestedBy:
+            return cls.Tests
+        elif typ == cls.Tests:
+            return cls.TestedBy
+
 
 class ToolTypes(str, Enum, metaclass=EnumMetaWithContains):
     Offensive = "Offensive"
@@ -286,7 +307,6 @@ class Link:
 class Document:
     name: str
     doctype: Credoctypes
-    id: Optional[str] = ""
     description: Optional[str] = ""
     links: List[Link] = field(default_factory=list)
     embeddings: List[float] = field(default_factory=list)
@@ -365,17 +385,27 @@ class Document:
         self.links.append(link)
         return self
 
+    def __post_init__(self):
+        if not re.match(r"\w{3,}", self.name):
+            raise cre_exceptions.InvalidDocumentNameException(self)
+
 
 @dataclass(eq=False)
 class CRE(Document):
     doctype: Credoctypes = Credoctypes.CRE
+    id: Optional[str] = ""
 
     def todict(self) -> Dict[str, Dict[str, str] | List[Any] | Set[str] | str]:
         return super().todict()
 
+    def __post_init__(self):
+        if not re.match(r"\d\d\d-\d\d\d", self.id):
+            raise cre_exceptions.InvalidCREIDException(self)
+
 
 @dataclass
 class Node(Document):
+    id: Optional[str] = ""
     hyperlink: Optional[str] = ""
     version: Optional[str] = ""
 

@@ -19,6 +19,7 @@ logger.setLevel(logging.INFO)
 
 
 class MiscTools(ParserInterface):
+    name = "miscelaneous tools"
     tool_urls = [
         "https://github.com/commjoen/wrongsecrets.git",
     ]
