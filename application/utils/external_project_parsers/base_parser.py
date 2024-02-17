@@ -50,19 +50,16 @@ class BaseParser:
         for _, documents in result.values():
             cre_main.register_standard(documents, db)
 
-    def call_importers(
-        self, db_connection_str: str, prompt_handler: prompt_client.PromptHandler
-    ):
+    def call_importers(self, db_connection_str: str):
         """
         somehow finds all the importers that have been registered (either reflection for implementing classes or an explicit method that registers all available importers)
         and schedules jobs to call those importers, monitors the jobs and alerts when done same as cre_main
         """
-        interface = ParserInterface()
         importers = []
         jobs = []
         conn = redis.connect()
         q = Queue(connection=conn)
-        for subclass in interface.__subclasses__():
+        for subclass in ParserInterface.__subclasses__():
             importers.append(subclass)
             sclass = subclass()
 
@@ -72,8 +69,7 @@ class BaseParser:
                     func=BaseParser.register_resource,
                     kwargs={
                         "sclass": sclass,
-                        "db": db,
-                        "ph": prompt_handler,
+                        "db_connection_str": db_connection_str,
                     },
                     timeout="10m",
                 )

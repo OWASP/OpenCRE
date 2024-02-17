@@ -1,8 +1,8 @@
 import logging
 import re
 from copy import copy
-from pprint import pprint
-from typing import Any, Dict, List, Optional, Tuple, cast
+from typing import Any, Dict, List, Optional
+from dataclasses import dataclass
 
 from application.defs import cre_defs as defs
 
@@ -27,6 +27,7 @@ def is_empty(value: Optional[str]) -> bool:
         or value.lower() == "tbd"
         or value.lower() == "see higher level topic"
         or value.lower() == "tbd"
+        or value.lower() == "0"
     )
 
 
@@ -386,6 +387,46 @@ def add_standard_to_documents_array(
     return documents
 
 
+@dataclass
+class UninitializedMapping:
+    complete_cre: defs.CRE
+    other_cre_name: str
+    relationship: defs.LinkTypes  # Relationship is complete_cre->other_cre_name
+
+
+def reconcile_uninitializedMappings(
+    cres: Dict[str, defs.CRE], u_mappings: List[UninitializedMapping]
+) -> Dict[str, defs.CRE]:
+    for mapping in u_mappings:
+        other_cre = cres.get(mapping.other_cre_name)
+        if not other_cre:
+            raise ValueError(
+                f"CRE named: '{mapping.other_cre_name}' does not have an id in the sheet"
+            )
+        cre = cres[mapping.complete_cre.name]
+        cres[other_cre.name] = other_cre.add_link(
+            defs.Link(
+                ltype=defs.LinkTypes.opposite(mapping.relationship),
+                document=cre.shallow_copy(),
+            )
+        )
+        cres[cre.name] = cre.add_link(
+            defs.Link(ltype=mapping.relationship, document=other_cre.shallow_copy())
+        )
+    return cres
+
+
+def get_highest_cre_name(
+    mapping: Dict[str, str], highest_hierarchy: int = 5
+) -> tuple[int, str]:
+    """
+    given a line of the root CSV, returns the highest hierarchy CRE and a number from 1 to 5 based on where in the hierarchy it found the CRE
+    """
+    for i in range(highest_hierarchy, 0, -1):
+        if not is_empty(mapping.get(f"CRE hierarchy {i}")):
+            return i, mapping.get(f"CRE hierarchy {i}").strip()
+
+
 def parse_hierarchical_export_format(
     cre_file: List[Dict[str, str]]
 ) -> Dict[str, List[defs.Document]]:
@@ -406,9 +447,14 @@ def parse_hierarchical_export_format(
             "ASVS":[<list of ASVS docs>]
         }
     """
+
     logger.info("Spreadsheet is hierarchical export format")
     documents: Dict[str, List[defs.Document]] = {defs.Credoctypes.CRE.value: []}
     cre_dict = {}
+    uninitialized_cre_mappings: List[UninitializedMapping] = (
+        []
+    )  # the csv has a column "Link to Other CRE", this column linksa complete CRE entry to another CRE by name.
+    # The other CRE might not have been initialized yet at the time of linking so it cannot be part of our main document collection yet
     max_hierarchy = len([key for key in cre_file[0].keys() if "CRE hierarchy" in key])
     for mapping in cre_file:
         cre: defs.CRE
@@ -416,50 +462,46 @@ def parse_hierarchical_export_format(
         current_hierarchy: int = 0
         higher_cre: int = 0
 
-        # a CRE's name is the last hierarchy item which is not blank
-        for i in range(max_hierarchy, 0, -1):
-            key = [key for key in mapping if key.startswith("CRE hierarchy %s" % i)][0]
-            if not is_empty(mapping.get(key)):
-                if current_hierarchy == 0:
-                    name = str(mapping.pop(key)).strip().replace("\n", " ")
-                    current_hierarchy = i
-                else:
-                    higher_cre = i
-                    break
-        if is_empty(name):
-            logger.warning(
-                f'Found entry with ID {mapping.get("CRE ID")}'
-                " without a cre name, skipping"
-            )
-            continue
-        if name in cre_dict.keys():
-            new_id = str(mapping.get("CRE ID"))
-            if cre_dict[name].id != new_id and cre_dict[name].id != "" and new_id != "":
-                logger.fatal(
-                    f"duplicate entry for cre named {name}, previous id:{cre_dict[name].id}, new id {new_id}"
-                )
-            cre = cre_dict[name]
-        else:
-            cre = defs.CRE(name=name)
+        current_hierarchy, name = get_highest_cre_name(
+            mapping=mapping, highest_hierarchy=max_hierarchy
+        )
+        if current_hierarchy > 0:
+            higher_cre = current_hierarchy - 1
 
-        if not is_empty(mapping.get("CRE ID")):
-            cre.id = str(mapping.pop("CRE ID"))
+        if is_empty(name):
+            raise ValueError(
+                f'Found entry with ID \'{mapping.get("CRE ID")}\' hierarchy {current_hierarchy} without a cre name'
+            )
+
+        if name in cre_dict.keys():
+            curr_id = str(mapping.get("CRE ID")).strip()
+            if (
+                cre_dict[name].id != curr_id
+                and cre_dict[name].id != ""
+                and curr_id != ""
+            ):
+                err_msg = f"duplicate entry for cre named {name}, previous id:{cre_dict[name].id}, new id {curr_id}"
+                raise ValueError(err_msg)
+            cre = cre_dict[name]
+        elif not is_empty(str(mapping.get("CRE ID")).strip()):
+            cre = defs.CRE(name=name, id=str(mapping.pop("CRE ID")))
         else:
             logger.warning(f"empty Id for {name}")
+            input()
 
-        if not is_empty(mapping.get("CRE Tags")):
+        if not is_empty(str(mapping.get("CRE Tags")).strip()):
             ts = set()
             for x in str(mapping.pop("CRE Tags")).split(","):
                 ts.add(x.strip())
             cre.tags = list(ts)
-
-        cre_dict = update_cre_in_links(cre_dict, cre)
+        if cre:
+            cre_dict = update_cre_in_links(cre_dict, cre)
 
         # TODO(spyros): temporary until we agree what we want to do with tags
         mapping["Link to other CRE"] = (
             f'{mapping["Link to other CRE"]},{",".join(cre.tags)}'
         )
-        if not is_empty(mapping.get("Link to other CRE")):
+        if not is_empty(str(mapping.get("Link to other CRE")).strip()):
             other_cres = list(
                 set(
                     [
@@ -471,20 +513,22 @@ def parse_hierarchical_export_format(
             )
             for other_cre in other_cres:
                 if not cre_dict.get(other_cre):
-                    logger.warning(
-                        "%s linking to not yet existent cre %s" % (cre.name, other_cre)
+                    uninitialized_cre_mappings.append(
+                        UninitializedMapping(
+                            complete_cre=cre,
+                            other_cre_name=other_cre.strip(),
+                            relationship=defs.LinkTypes.Related,
+                        )
                     )
-                    new_cre = defs.CRE(name=other_cre.strip())
-                    cre_dict[new_cre.name] = new_cre
                 else:
                     new_cre = cre_dict[other_cre.strip()]
-
-                # we only need a shallow copy here
-                cre.add_link(
-                    defs.Link(
-                        ltype=defs.LinkTypes.Related, document=new_cre.shallow_copy()
+                    # we only need a shallow copy here
+                    cre.add_link(
+                        defs.Link(
+                            ltype=defs.LinkTypes.Related,
+                            document=new_cre.shallow_copy(),
+                        )
                     )
-                )
         for link in parse_standards(mapping):
             link.document.add_link(
                 defs.Link(document=cre.shallow_copy(), ltype=defs.LinkTypes.LinkedTo)
@@ -492,38 +536,46 @@ def parse_hierarchical_export_format(
             documents = add_standard_to_documents_array(link.document, documents)
 
         # link CRE to a higher level one
-
-        if higher_cre:
+        if higher_cre and not is_empty(
+            str(mapping.get(f"CRE hierarchy {str(higher_cre)}")).strip()
+        ):
             name_hi = str(mapping.pop(f"CRE hierarchy {str(higher_cre)}")).strip()
             cre_hi = cre_dict.get(name_hi)
             if not cre_hi:
-                cre_hi = defs.CRE(name=name_hi)
-
-            existing_link = [
-                c
-                for c in cre_hi.links
-                if c.document.doctype == defs.Credoctypes.CRE
-                and c.document.name == cre.name
-            ]
-            # there is no need to capture the entirety of the cre tree, we just need to register this shallow relation
-            # the "documents" dict should contain the rest of the info
-            if existing_link:
-                cre_hi.links[
-                    cre_hi.links.index(existing_link[0])
-                    # ugliest way ever to write "update the object in that pointer"
-                ].document = cre.shallow_copy()
-            else:
-                cre_hi = cre_hi.add_link(
-                    defs.Link(
-                        ltype=defs.LinkTypes.Contains, document=cre.shallow_copy()
+                uninitialized_cre_mappings.append(
+                    UninitializedMapping(
+                        complete_cre=cre,
+                        other_cre_name=name_hi,
+                        relationship=defs.LinkTypes.PartOf,
                     )
                 )
-            cre_dict[cre_hi.name] = cre_hi
+            else:
+                existing_link = [
+                    c
+                    for c in cre_hi.links
+                    if c.document.doctype == defs.Credoctypes.CRE
+                    and c.document.name == cre.name
+                ]
+                # there is no need to capture the entirety of the cre tree, we just need to register this shallow relation
+                # the "documents" dict should contain the rest of the info
+                if existing_link:
+                    cre_hi.links[
+                        cre_hi.links.index(existing_link[0])
+                        # ugliest way ever to write "update the object in that pointer"
+                    ].document = cre.shallow_copy()
+                else:
+                    cre_hi = cre_hi.add_link(
+                        defs.Link(
+                            ltype=defs.LinkTypes.Contains, document=cre.shallow_copy()
+                        )
+                    )
+                cre_dict[cre_hi.name] = cre_hi
         else:
             pass  # add the cre to documents and make the connection
         if cre:
             cre_dict[cre.name] = cre
 
+    cre_dict = reconcile_uninitializedMappings(cre_dict, uninitialized_cre_mappings)
     documents[defs.Credoctypes.CRE.value] = list(cre_dict.values())
     return documents
 

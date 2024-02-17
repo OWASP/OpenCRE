@@ -1411,11 +1411,30 @@ class Node_collection:
                         f"CRE: {group.id}", f"CRE: {cre.id}", ltype=type.value
                     )
             else:
+                for item in cycle:
+                    from_id = item[0].replace("CRE: ", "")
+                    to_id = item[1].replace("CRE: ", "")
+                    from_cre = self.session.query(CRE).filter(cre.id == from_id).first()
+                    to_cre = self.session.query(CRE).filter(cre.id == to_id).first()
+                    if from_cre and to_cre:
+                        item[0].replace(from_id, from_cre.name)
+                        item[1].replace(to_id, to_cre.name)
+
+                    from pprint import pprint
+
+                    pprint("=================")
+                    pprint(f"{from_cre},{to_cre}")
+                    pprint(item[0].replace("CRE: ", ""))
+                    pprint(item[1].replace("CRE: ", ""))
+                    pprint("=================")
+                    # input()
+
                 logger.warning(
                     f"A link between CREs {group.external_id}-{group.name} and"
                     f" {cre.external_id}-{cre.name} "
                     f"would introduce cycle {cycle}, skipping"
                 )
+                # input()
 
     def add_link(
         self,

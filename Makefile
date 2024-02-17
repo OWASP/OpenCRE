@@ -5,11 +5,36 @@
 prod-run:
 	cp cres/db.sqlite standards_cache.sqlite; gunicorn cre:app --log-file=-
 
+docker-neo4j-rm:
+	docker stop cre-neo4j
+	docker rm -f cre-neo4j
+	docker volume rm cre_neo4j_data
+	docker volume rm cre_neo4j_logs
+
 docker-neo4j:
-	docker start cre-neo4j 2>/dev/null   || docker run -d --name cre-neo4j --env NEO4J_PLUGINS='["apoc"]'  --env NEO4J_AUTH=neo4j/password --volume=`pwd`/.neo4j/data:/data --volume=`pwd`/.neo4j/logs:/logs --workdir=/var/lib/neo4j -p 7474:7474 -p 7687:7687 neo4j
+	docker start cre-neo4j 2>/dev/null   ||\
+	(docker volume create --driver local \
+      --opt type=none \
+      --opt device=`pwd`/.neo4j/data \
+      --opt o=bind \
+	  cre_neo4j_data &&\
+	  docker volume create --driver local \
+      --opt type=none \
+      --opt device=`pwd`/.neo4j/data \
+      --opt o=bind \
+	  cre_neo4j_logs &&\
+	docker run -d\
+	 --name cre-neo4j\
+	 --env NEO4J_PLUGINS='["apoc"]'  --env NEO4J_AUTH=neo4j/password\
+	 --volume=cre_neo4j_data:/data\
+	 --volume=cre_neo4j_logs:/logs\
+	 --workdir=/var/lib/neo4j\
+	 -p 7474:7474\
+	 -p 7687:7687\
+	 neo4j)
 
 docker-redis:
-	docker start redis-stack 2>/dev/null || docker run -d --name redis-stack -p 6379:6379 -p 8001:8001 redis/redis-stack:latest
+	docker start cre-redis-stack 2>/dev/null || docker run -d --name cre-redis-stack -p 6379:6379 -p 8001:8001 redis/redis-stack:latest
 
 start-containers: docker-neo4j docker-redis
 
@@ -126,7 +151,7 @@ import-neo4j:
 	[ -d "./venv" ] && . ./venv/bin/activate
 	export FLASK_APP=$(CURDIR)/cre.py && python cre.py --populate_neo4j_db
 
-preload-map-analysis: 
+preload-map-analysis:
 	make docker-redis&\
 	make start-worker&\
 	make start-worker&\

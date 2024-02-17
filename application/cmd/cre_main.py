@@ -492,9 +492,7 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
     # /end individual resource importing
 
     if args.import_external_projects:
-        BaseParser().call_importers(
-            db_connection_str=args.cache_file, prompt_handler=ph
-        )
+        BaseParser().call_importers(db_connection_str=args.cache_file)
 
     if args.export:
         cache = db_connect(args.cache_file)
