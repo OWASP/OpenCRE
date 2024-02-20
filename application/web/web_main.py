@@ -109,7 +109,7 @@ class CRETracer:
 def find_cre(creid: str = None, crename: str = None) -> Any:  # refer
     database = db.Node_collection()
     include_only = request.args.getlist("include_only")
-    opt_osib = request.args.get("osib")
+    # opt_osib = request.args.get("osib")
     opt_format = request.args.get("format")
     with CRETracer("get_cres"):
         cres = database.get_CREs(
@@ -123,8 +123,8 @@ def find_cre(creid: str = None, crename: str = None) -> Any:  # refer
         result = {"data": cre.todict()}
         # disable until we have a consensus on tag behaviour
         # cre = extend_cre_with_tag_links(cre=cre, collection=database)
-        if opt_osib:
-            result["osib"] = odefs.cre2osib([cre]).todict()
+        # if opt_osib:
+        #     result["osib"] = odefs.cre2osib([cre]).todict()
 
         if opt_format == SupportedFormats.Markdown.value:
             return f"<pre>{mdutils.cre_to_md([cre])}</pre>"
@@ -147,7 +147,7 @@ def find_node_by_name(name: str, ntype: str = defs.Credoctypes.Standard.value) -
     database = db.Node_collection()
     opt_section = request.args.get("section")
     opt_sectionID = request.args.get("sectionID")
-    opt_osib = request.args.get("osib")
+    # opt_osib = request.args.get("osib")
     opt_version = request.args.get("version")
     opt_format = request.args.get("format")
     if opt_section:
@@ -208,8 +208,8 @@ def find_node_by_name(name: str, ntype: str = defs.Credoctypes.Standard.value) -
         elif opt_format == SupportedFormats.OSCAL.value:
             return jsonify(json.loads(oscal_utils.list_to_oscal(nodes)))
 
-        if opt_osib:
-            result["osib"] = odefs.cre2osib(nodes).todict()
+        # if opt_osib:
+        #     result["osib"] = odefs.cre2osib(nodes).todict()
 
         res = [node.todict() for node in nodes]
         result["standards"] = res
@@ -224,14 +224,14 @@ def find_node_by_name(name: str, ntype: str = defs.Credoctypes.Standard.value) -
 def find_document_by_tag() -> Any:
     database = db.Node_collection()
     tags = request.args.getlist("tag")
-    opt_osib = request.args.get("osib")
+    # opt_osib = request.args.get("osib")
     opt_format = request.args.get("format")
     documents = database.get_by_tags(tags)
     if documents:
         res = [doc.todict() for doc in documents]
         result = {"data": res}
-        if opt_osib:
-            result["osib"] = odefs.cre2osib(documents).todict()
+        # if opt_osib:
+        #     result["osib"] = odefs.cre2osib(documents).todict()
         if opt_format == SupportedFormats.Markdown.value:
             return f"<pre>{mdutils.cre_to_md(documents)}</pre>"
         elif opt_format == SupportedFormats.CSV.value:
@@ -386,7 +386,7 @@ def find_root_cres() -> Any:
     """Useful for fast browsing the graph from the top"""
     database = db.Node_collection()
     logger.debug("got database")
-    opt_osib = request.args.get("osib")
+    # opt_osib = request.args.get("osib")
     opt_format = request.args.get("format")
     with CRETracer("get root cres"):
         documents = database.get_root_cres()
@@ -395,8 +395,8 @@ def find_root_cres() -> Any:
     if documents:
         res = [doc.todict() for doc in documents]
         result = {"data": res}
-        if opt_osib:
-            result["osib"] = odefs.cre2osib(documents).todict()
+        # if opt_osib:
+        #     result["osib"] = odefs.cre2osib(documents).todict()
         if opt_format == SupportedFormats.Markdown.value:
             return f"<pre>{mdutils.cre_to_md(documents)}</pre>"
         elif opt_format == SupportedFormats.CSV.value:
