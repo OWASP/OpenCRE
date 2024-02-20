@@ -13,6 +13,12 @@ from neomodel import (
     StructuredRel,
     db,
 )
+from neomodel.exceptions import (
+    DoesNotExist,
+    FeatureNotSupported,
+    NodeClassAlreadyDefined,
+)
+from neomodel import core
 import neo4j
 from sqlalchemy.orm import aliased
 import os
@@ -372,6 +378,7 @@ class NEO_DB:
             node = session.query(Node).filter(Node.id == lnk.node).first()
             if not node:
                 logger.error(f"Node {lnk.node} does not exist?")
+                continue
             self.add_dbnode(node)
 
             cre = session.query(CRE).filter(CRE.id == lnk.cre).first()
@@ -381,95 +388,122 @@ class NEO_DB:
 
     @classmethod
     def add_cre(self, dbcre: CRE):
-        NeoCRE.create_or_update(
-            {
-                "name": dbcre.name,
-                "doctype": "CRE",  # dbcre.ntype,
-                "document_id": dbcre.id,
-                "description": dbcre.description,
-                "links": [],  # dbcre.links,
-                "tags": [dbcre.tags] if isinstance(dbcre.tags, str) else dbcre.tags,
-                "external_id": dbcre.external_id,
-            }
-        )
+        document = NeoCRE.nodes.first_or_none(document_id=dbcre.id)
+        if not document:
+            return NeoCRE(
+                name=dbcre.name,
+                doctype=cre_defs.Credoctypes.CRE.value,  # dbcre.ntype,
+                document_id=dbcre.id,
+                description=dbcre.description,
+                links=[],  # dbcre.links,
+                tags=[dbcre.tags] if isinstance(dbcre.tags, str) else dbcre.tags,
+                external_id=dbcre.external_id,
+                ).save()
+        
+        document.name=dbcre.name
+        document.doctype=cre_defs.Credoctypes.CRE.value,
+        document.document_id=dbcre.id
+        document.description=dbcre.description or ""
+        document.tags=[dbcre.tags] if isinstance(dbcre.tags, str) else dbcre.tags
+        document.metadata={}
+        document.external_id=dbcre.external_id or ""
+        return document.save()
+
+        
+
+    def __create_dbnode(dbnode:Node):
+        if dbnode.ntype == "Standard":
+            return NeoStandard(
+                name=dbnode.name,
+                doctype=dbnode.ntype,
+                document_id=dbnode.id,
+                description=dbnode.description or "",
+                tags=[dbnode.tags] if isinstance(dbnode.tags, str) else dbnode.tags,
+                metadata={},
+                version=dbnode.version or "",
+                section=dbnode.section,
+                section_id=dbnode.section_id,  # dbnode.sectionID,
+                subsection=dbnode.subsection or "",
+                tooltype="",  # dbnode.tooltype,
+            ).save()
+        elif dbnode.ntype == "Code":
+            return NeoCode(
+                    name=dbnode.name,
+                    doctype=dbnode.ntype,
+                    document_id=dbnode.id,
+                    description=dbnode.description,
+                    links=[],  # dbnode.links,
+                    tags=(
+                        [dbnode.tags] if isinstance(dbnode.tags, str) else dbnode.tags
+                    ),
+                    metadata="{}",  # dbnode.metadata,
+                    hyperlink="",  # dbnode.hyperlink or "",
+                    version=dbnode.version or "",
+            ).save()
+        else:
+            raise Exception(f"Unknown DB type: {dbnode.ntype}")
+    def __update_dbnode(dbnode:Node):
+        existing = NeoNode.nodes.first_or_none(document_id=dbnode.id)
+        if dbnode.ntype == "Standard":
+            existing.name=dbnode.name
+            existing.doctype=dbnode.ntype
+            existing.document_id=dbnode.id
+            existing.description=dbnode.description or ""
+            existing.tags=[dbnode.tags] if isinstance(dbnode.tags, str) else dbnode.tags
+            existing.metadata={}
+            existing.version=dbnode.version or ""
+            existing.section=dbnode.section
+            existing.section_id=dbnode.section_id  # dbnode.sectionID
+            existing.subsection=dbnode.subsection or ""
+            existing.tooltype=""  # dbnode.tooltype
+            return existing.save()
+        elif dbnode.ntype == "Code":
+            existing.name=dbnode.name
+            existing.doctype=dbnode.ntype
+            existing.document_id=dbnode.id
+            existing.description=dbnode.description
+            existing.links=[]  # dbnode.links
+            existing.tags=(
+                [dbnode.tags] if isinstance(dbnode.tags, str) else dbnode.tags
+            )
+            existing.metadata="{}"  # dbnode.metadata,
+            existing.hyperlink=""  # dbnode.hyperlink or "",
+            existing.version=dbnode.version or ""
+            return existing.save()
+        else:
+            raise Exception(f"Unknown DB type: {dbnode.ntype}")
+
 
     @classmethod
+    @db.transaction
     def add_dbnode(self, dbnode: Node):
-        if dbnode.ntype == "Standard":
-            NeoStandard.create_or_update(
-                {
-                    "name": dbnode.name,
-                    "doctype": dbnode.ntype,
-                    "document_id": dbnode.id,
-                    "description": dbnode.description or "",
-                    "tags": (
-                        [dbnode.tags] if isinstance(dbnode.tags, str) else dbnode.tags
-                    ),
-                    "hyperlink": "",  # dbnode.hyperlink or "",
-                    "version": dbnode.version or "",
-                    "section": dbnode.section or "",
-                    "section_id": dbnode.section_id or "",
-                    "subsection": dbnode.subsection or "",
-                }
-            )
-            return
-        if dbnode.ntype == "Tool":
-            NeoTool.create_or_update(
-                {
-                    "name": dbnode.name,
-                    "doctype": dbnode.ntype,
-                    "document_id": dbnode.id,
-                    "description": dbnode.description,
-                    "links": [],  # dbnode.links,
-                    "tags": (
-                        [dbnode.tags] if isinstance(dbnode.tags, str) else dbnode.tags
-                    ),
-                    "metadata": "{}",  # dbnode.metadata,
-                    "hyperlink": "",  # dbnode.hyperlink or "",
-                    "version": dbnode.version or "",
-                    "section": dbnode.section,
-                    "section_id": dbnode.section_id,  # dbnode.sectionID,
-                    "subsection": dbnode.subsection or "",
-                    "tooltype": "",  # dbnode.tooltype,
-                }
-            )
-            return
-        if dbnode.ntype == "Code":
-            NeoCode.create_or_update(
-                {
-                    "name": dbnode.name,
-                    "doctype": dbnode.ntype,
-                    "document_id": dbnode.id,
-                    "description": dbnode.description,
-                    "links": [],  # dbnode.links,
-                    "tags": (
-                        [dbnode.tags] if isinstance(dbnode.tags, str) else dbnode.tags
-                    ),
-                    "metadata": "{}",  # dbnode.metadata,
-                    "hyperlink": "",  # dbnode.hyperlink or "",
-                    "version": dbnode.version or "",
-                }
-            )
-            return
-        raise Exception(f"Unknown DB type: {dbnode.ntype}")
+        document = NeoNode.nodes.first_or_none(document_id=dbnode.id)
+        if document:
+            return self.__update_dbnode(dbnode)
+        return self.__create_dbnode(dbnode)
 
     @classmethod
     def link_CRE_to_CRE(self, id1, id2, link_type):
         cre1 = NeoCRE.nodes.get(document_id=id1)
         cre2 = NeoCRE.nodes.get(document_id=id2)
 
-        if link_type == "Contains":
+        if link_type == cre_defs.LinkTypes.Contains.value:
             cre1.contains.connect(cre2)
             return
-        if link_type == "Related":
+        if link_type == cre_defs.LinkTypes.Related.value:
             cre1.related.connect(cre2)
+            return
+        if link_type == cre_defs.LinkTypes.PartOf.value:
+            cre2.contains.connect(cre1)
             return
         raise Exception(f"Unknown relation type {link_type}")
 
     @classmethod
     def link_CRE_to_Node(self, CRE_id, node_id, link_type):
-        cre = NeoCRE.nodes.get(document_id=CRE_id)
-        node = NeoNode.nodes.get(document_id=node_id)
+        cre = NeoCRE.nodes.first_or_none(document_id=CRE_id)
+        node = NeoNode.nodes.first_or_none(document_id=node_id)
+        if not node:
+            return
         if link_type == "Linked To":
             cre.linked.connect(node)
             return
@@ -1502,7 +1536,6 @@ class Node_collection:
         return res
 
     def standards(self) -> List[str]:
-        logger.info("found unique db standards, returning")
         return self.neo_db.standards()
 
     def text_search(self, text: str) -> List[Optional[cre_defs.Document]]:

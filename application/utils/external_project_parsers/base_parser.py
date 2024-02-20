@@ -47,8 +47,15 @@ class BaseParser:
         db = cre_main.db_connect(db_connection_str)
         ph = prompt_client.PromptHandler(database=db)
         result = sclass.parse(db, ph)
-        for _, documents in result.values():
-            cre_main.register_standard(documents, db)
+        try:
+            for _, documents in result.items():
+                cre_main.register_standard(documents, db)
+        except ValueError as ve:
+            from pprint import pprint
+            pprint(sclass.name)
+            pprint(sclass)
+            err_str = f"error importing {sclass.name}, received 1 value but expected 2"
+            raise ValueError(err_str)
 
     def call_importers(self, db_connection_str: str):
         """

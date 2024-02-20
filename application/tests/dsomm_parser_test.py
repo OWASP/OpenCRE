@@ -36,7 +36,7 @@ class TestDSOMM(unittest.TestCase):
             dbiso = self.collection.add_node(
                 defs.Standard(name="ISO 27001", sectionID=item)
             )
-            cre = defs.CRE(id=f"{item}-{item}", name=f"CRE-{item}")
+            cre = defs.CRE(id=f"123-123", name=f"CRE-{item}")
             cres.append(cre)
             dbcre = self.collection.add_cre(cre=cre)
             self.collection.add_link(cre=dbcre, node=dbsamm)
@@ -51,7 +51,7 @@ class TestDSOMM(unittest.TestCase):
                 doctype=defs.Credoctypes.Standard,
                 links=[
                     defs.Link(
-                        document=defs.CRE(name="CRE-I-SB-2-A", id="I-SB-2-A-I-SB-2-A")
+                        document=defs.CRE(name="CRE-I-SB-2-A", id="123-123")
                     ),
                 ],
                 description="Description:While building and testing artifacts, third party "
@@ -78,7 +78,7 @@ class TestDSOMM(unittest.TestCase):
                 name=dsomm.DSOMM().name,
                 doctype=defs.Credoctypes.Standard,
                 links=[
-                    defs.Link(document=defs.CRE(name="CRE-5.37", id="5.37-5.37")),
+                    defs.Link(document=defs.CRE(name="CRE-5.37", id="537-537")),
                 ],
                 description="Description:Sample evidence as an attribute in the yaml: The "
                 "build process is defined in [REPLACE-ME "

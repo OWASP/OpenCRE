@@ -47,7 +47,7 @@ class MiscTools(ParserInterface):
 
             if "opencre.org" not in mdtext:
                 logging.error("didn't find a link, bye")
-                return
+                return []
             title = re.search(title_regexp, mdtext)
             cre = re.search(cre_link, mdtext, flags=re.IGNORECASE)
 

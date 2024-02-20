@@ -37,7 +37,7 @@ class TestJuiceshopParser(unittest.TestCase):
             status_code = 200
             text = self.csv
 
-        cre = defs.CRE(id="123", name=f"CRE-123")
+        cre = defs.CRE(id="123-123", name=f"CRE-123")
         dbcre = self.collection.add_cre(cre=cre)
         dbnode = self.collection.add_node(
             defs.Standard(name="fakeNode", sectionID="123")
@@ -60,7 +60,7 @@ class TestJuiceshopParser(unittest.TestCase):
                 embeddings_text="XSS",
                 hyperlink="https://demo.owasp-juice.shop//#/score-board?searchQuery=API-only%20XSS",
                 links=[
-                    defs.Link(document=defs.CRE(name="CRE-123", id="123")),
+                    defs.Link(document=defs.CRE(name="CRE-123", id="123-123")),
                 ],
                 tags=["XSS"],
                 name="OWASP Juice Shop",
@@ -75,7 +75,7 @@ class TestJuiceshopParser(unittest.TestCase):
                 embeddings_text="Sensitive Data Exposure",
                 hyperlink="https://demo.owasp-juice.shop//#/score-board?searchQuery=Access%20Log",
                 links=[
-                    defs.Link(document=defs.CRE(name="CRE-123", id="123")),
+                    defs.Link(document=defs.CRE(name="CRE-123", id="123-123")),
                 ],
                 name="OWASP Juice Shop",
                 section="Access Log",
