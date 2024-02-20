@@ -311,7 +311,10 @@ class TestDB(unittest.TestCase):
         name = str(uuid.uuid4())
 
         c = defs.CRE(
-            id="243-243", doctype=defs.Credoctypes.CRE, description=original_desc, name=name
+            id="243-243",
+            doctype=defs.Credoctypes.CRE,
+            description=original_desc,
+            name=name,
         )
         self.assertIsNone(
             self.collection.session.query(db.CRE).filter(db.CRE.name == c.name).first()
@@ -484,7 +487,11 @@ class TestDB(unittest.TestCase):
         dbc1 = db.CRE(external_id="123-123", description="gcCD1", name="gcC1")
         dbc2 = db.CRE(description="gcCD2", name="gcC2", external_id="444-444")
         dbc3 = db.CRE(description="gcCD3", name="gcC3", external_id="555-555")
-        db_id_only = db.CRE(description="c_get_by_internal_id_only", name="cgbiio",external_id="666-666")
+        db_id_only = db.CRE(
+            description="c_get_by_internal_id_only",
+            name="cgbiio",
+            external_id="666-666",
+        )
         dbs1 = db.Node(
             ntype=defs.Standard.__name__,
             name="gcS2",

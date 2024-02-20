@@ -30,7 +30,11 @@ class TestOSCALUtils(unittest.TestCase):
         cre = defs.CRE(name="cre-1", id="001-001", description="cre-desc")
         for i in range(0, 5):
             if i % 5 == 0:
-                cre.add_link(defs.Link(document=defs.CRE(name=f"cre-{i}", id=f"{i}{i}{i}-{i}{i}{i}")))
+                cre.add_link(
+                    defs.Link(
+                        document=defs.CRE(name=f"cre-{i}", id=f"{i}{i}{i}-{i}{i}{i}")
+                    )
+                )
             elif i % 5 == 1:
                 cre.add_link(
                     defs.Link(
@@ -122,7 +126,9 @@ class TestOSCALUtils(unittest.TestCase):
             hyperlink="https://example.com/s-1/s-section",
         )
         for i in range(0, 5):
-            standard.add_link(defs.Link(document=defs.CRE(name=f"cre-{i}", id=f"{i}{i}{i}-{i}{i}{i}")))
+            standard.add_link(
+                defs.Link(document=defs.CRE(name=f"cre-{i}", id=f"{i}{i}{i}-{i}{i}{i}"))
+            )
 
         expected = {
             "uuid": "46c335c9-b9b7-4043-a722-2e5fdc3ccf67",
@@ -205,7 +211,9 @@ class TestOSCALUtils(unittest.TestCase):
             hyperlink="https://example.com/t-1/t-rule",
         )
         for i in range(0, 5):
-            tool.add_link(defs.Link(document=defs.CRE(name=f"cre-{i}", id=f"{i}{i}{i}-{i}{i}{i}")))
+            tool.add_link(
+                defs.Link(document=defs.CRE(name=f"cre-{i}", id=f"{i}{i}{i}-{i}{i}{i}"))
+            )
 
         expected = {
             "uuid": "46c335c9-b9b7-4043-a722-2e5fdc3ccf67",
@@ -290,7 +298,11 @@ class TestOSCALUtils(unittest.TestCase):
                 hyperlink=f"https://example.com/s-{i}/s-section",
             )
             for j in range(0, 5):
-                standard.add_link(defs.Link(document=defs.CRE(name=f"cre-{j}", id=f"{j}{j}{j}-{j}{j}{j}")))
+                standard.add_link(
+                    defs.Link(
+                        document=defs.CRE(name=f"cre-{j}", id=f"{j}{j}{j}-{j}{j}{j}")
+                    )
+                )
             standards.append(standard)
 
         expected = {
@@ -349,7 +361,9 @@ class TestOSCALUtils(unittest.TestCase):
             hyperlink="https://example.com/t-1/t-rule",
         )
         for i in range(0, 5):
-            tool.add_link(defs.Link(document=defs.CRE(name=f"cre-{i}", id=f"{i}{i}{i}-{i}{i}{i}")))
+            tool.add_link(
+                defs.Link(document=defs.CRE(name=f"cre-{i}", id=f"{i}{i}{i}-{i}{i}{i}"))
+            )
 
         expected = {
             "uuid": "46c335c9-b9b7-4043-a722-2e5fdc3ccf67",

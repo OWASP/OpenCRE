@@ -58,7 +58,9 @@ class TestMain(unittest.TestCase):
         collection = db.Node_collection()
         cres = {
             "ca": defs.CRE(id="111-111", description="CA", name="CA", tags=["ta"]),
-            "cb": defs.CRE(id="222-222", description="CB", name="CB", tags=["ta", "td"]),
+            "cb": defs.CRE(
+                id="222-222", description="CB", name="CB", tags=["ta", "td"]
+            ),
             "cc": defs.CRE(id="333-333", description="CC", name="CC", tags=["tc"]),
             "cd": defs.CRE(id="444-444", description="CD", name="CD", tags=["", "td"]),
         }
@@ -400,7 +402,8 @@ class TestMain(unittest.TestCase):
         collection = db.Node_collection()
         cres = {
             "ca": defs.CRE(id="111-111", description="CA", name="CA", tags=["ta"]),
-            "cb": defs.CRE(id="333-333", description="CB", name="CB", tags=["ta", "tb", "tc"]
+            "cb": defs.CRE(
+                id="333-333", description="CB", name="CB", tags=["ta", "tb", "tc"]
             ),
         }
 

@@ -52,6 +52,7 @@ class BaseParser:
                 cre_main.register_standard(documents, db)
         except ValueError as ve:
             from pprint import pprint
+
             pprint(sclass.name)
             pprint(sclass)
             err_str = f"error importing {sclass.name}, received 1 value but expected 2"

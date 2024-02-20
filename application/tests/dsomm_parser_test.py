@@ -50,9 +50,7 @@ class TestDSOMM(unittest.TestCase):
                 name=dsomm.DSOMM().name,
                 doctype=defs.Credoctypes.Standard,
                 links=[
-                    defs.Link(
-                        document=defs.CRE(name="CRE-I-SB-2-A", id="123-123")
-                    ),
+                    defs.Link(document=defs.CRE(name="CRE-I-SB-2-A", id="123-123")),
                 ],
                 description="Description:While building and testing artifacts, third party "
                 "systems, application frameworks\n"

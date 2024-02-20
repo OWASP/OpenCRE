@@ -21,7 +21,9 @@ class CloudNativeSecurityControls(ParserInterface):
         )
 
         if resp.status_code != 200:
-            err_str = f"could not retrieve cnsclenges yaml, status code {resp.status_code}"
+            err_str = (
+                f"could not retrieve cnsclenges yaml, status code {resp.status_code}"
+            )
             logger.fatal(err_str)
             raise RuntimeError(err_str)
         standard_entries = []

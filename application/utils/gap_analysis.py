@@ -21,7 +21,8 @@ PENALTIES = {
     "SAME": 0,
 }
 
-GAP_ANALYSIS_TIMEOUT="120m"
+GAP_ANALYSIS_TIMEOUT = "120m"
+
 
 def get_path_score(path):
     score = 0
@@ -73,7 +74,9 @@ def schedule(standards: List[str], database):
                 and res.get_status() != job.JobStatus.STOPPED
                 and res.get_status() != job.JobStatus.CANCELED
             ):
-                logger.info(f'gap analysis job id  {gap_analysis_dict.get("job_id")} already exists, returning early')
+                logger.info(
+                    f'gap analysis job id  {gap_analysis_dict.get("job_id")} already exists, returning early'
+                )
                 return {"job_id": gap_analysis_dict.get("job_id")}
     q = Queue(connection=conn)
     gap_analysis_job = q.enqueue_call(

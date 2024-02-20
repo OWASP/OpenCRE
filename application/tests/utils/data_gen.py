@@ -189,7 +189,7 @@ def root_csv_data():
         name="Verify that the application uses a single vetted authentication mechanism",
     )
     cre_logging = defs.CRE(id="543-543", name="Logging and Error handling")
-    cre_fooParent = defs.CRE(id="168-176",name="FooParent")
+    cre_fooParent = defs.CRE(id="168-176", name="FooParent")
     cre_9 = defs.CRE(id="999-999", name="FooBar")
 
     # register standards
@@ -811,7 +811,9 @@ def export_format_data():
             links=[
                 defs.Link(
                     ltype=defs.LinkTypes.PartOf,
-                    document=defs.CRE(id="666-666", description="C6 description", name="C6"),
+                    document=defs.CRE(
+                        id="666-666", description="C6 description", name="C6"
+                    ),
                 )
             ],
         ),
@@ -821,7 +823,9 @@ def export_format_data():
             links=[
                 defs.Link(
                     ltype=defs.LinkTypes.PartOf,
-                    document=defs.CRE(id="666-666", description="C6 description", name="C6"),
+                    document=defs.CRE(
+                        id="666-666", description="C6 description", name="C6"
+                    ),
                 )
             ],
         ),

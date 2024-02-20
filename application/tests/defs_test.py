@@ -168,7 +168,7 @@ class TestCreDefs(unittest.TestCase):
                 vars(code)[v] = [0.001]
                 c.append(code)
             elif v == "links":
-                code.links = [defs.Link(document=defs.CRE(id="123-123",name="asdf"))]
+                code.links = [defs.Link(document=defs.CRE(id="123-123", name="asdf"))]
                 c.append(code)
             elif v == "tags":
                 vars(code)[v] = [tag + "_a" for tag in d1.tags]
@@ -236,7 +236,7 @@ class TestCreDefs(unittest.TestCase):
                 vars(code)[v] = [0.001]
                 s["embeddings"] = code
             elif v == "links":
-                code.links = [defs.Link(document=defs.CRE(id="123-123",name="asdf"))]
+                code.links = [defs.Link(document=defs.CRE(id="123-123", name="asdf"))]
                 s["links"] = code
             elif v == "tags":
                 vars(code)[v] = [tag + "_a" for tag in s1.tags]

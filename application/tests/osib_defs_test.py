@@ -123,7 +123,9 @@ class TestCreDefs(unittest.TestCase):
         res: Dict[str, Osib_node] = {}
         for i in range(0, 13):
             cres[i] = cdefs.CRE(
-                name=f"cre-{i}", id=f"{i%10}{i%10}{i%10}-{i%10}{i%10}{i%10}", description=f"description-{i}"
+                name=f"cre-{i}",
+                id=f"{i%10}{i%10}{i%10}-{i%10}{i%10}{i%10}",
+                description=f"description-{i}",
             )
             osibs[i] = defs.Osib_node(
                 attributes=defs.Node_attributes(
@@ -304,7 +306,9 @@ class TestCreDefs(unittest.TestCase):
         osibs = {}
         for i in range(0, 9):
             cres[f"{i}"] = cdefs.CRE(
-                name=f"cre-{i}", id=f"{i}{i}{i}-{i}{i}{i}", description=f"description-{i}"
+                name=f"cre-{i}",
+                id=f"{i}{i}{i}-{i}{i}{i}",
+                description=f"description-{i}",
             )
             osibs[f"{i}"] = defs.Osib_node(
                 attributes=defs.Node_attributes(
@@ -355,7 +359,7 @@ class TestCreDefs(unittest.TestCase):
         cre.children = {"0": osibs["0"], "1": osibs["1"]}
         expected_tree = defs.Osib_tree(children={"OWASP": owasp})
         tree = defs.paths_to_osib(osib_paths=paths, cres=cres, related_nodes=[])
-        self.maxDiff=None
+        self.maxDiff = None
         self.assertDictEqual(tree.todict(), expected_tree.todict())
 
 

@@ -24,7 +24,9 @@ class JuiceShop(ParserInterface):
         resp = requests.get(self.url)
 
         if resp.status_code != 200:
-            err_str = f"could not retrieve challenges yaml, status code {resp.status_code}"
+            err_str = (
+                f"could not retrieve challenges yaml, status code {resp.status_code}"
+            )
             logger.fatal(err_str)
             raise RuntimeError(err_str)
         challenges = yaml.safe_load(resp.text)

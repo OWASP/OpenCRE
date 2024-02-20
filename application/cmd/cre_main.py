@@ -231,7 +231,9 @@ def register_standard(
             f"Standard importing job with info-hash {standard_hash} has already returned, skipping"
         )
         return
-    logger.info(f"Registering resource {standard_entries[0].name} of length {len(standard_entries)}")
+    logger.info(
+        f"Registering resource {standard_entries[0].name} of length {len(standard_entries)}"
+    )
     for node in standard_entries:
         register_node(node, collection)
         if node.embeddings:

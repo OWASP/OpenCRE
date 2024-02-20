@@ -386,7 +386,7 @@ class Document:
         return self
 
     def __post_init__(self):
-        if not len(self.name)>1:
+        if not len(self.name) > 1:
             raise cre_exceptions.InvalidDocumentNameException(self)
 
 

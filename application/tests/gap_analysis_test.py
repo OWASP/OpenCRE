@@ -46,28 +46,18 @@ class TestGapAnalysis(unittest.TestCase):
 
     def test_get_path_score_direct_siblings_returns_zero(self):
         path = {
-            "start": cre_defs.CRE(
-                name="bob", id="029-029"
-            ),
+            "start": cre_defs.CRE(name="bob", id="029-029"),
             "end": cre_defs.CRE(name="bob", id="703-703"),
             "path": [
                 {
-                    "end": cre_defs.CRE(
-                        name="bob", id="029-029"
-                    ),
+                    "end": cre_defs.CRE(name="bob", id="029-029"),
                     "relationship": "LINKED_TO",
-                    "start": cre_defs.CRE(
-                        name="bob", id="079-079"
-                    ),
+                    "start": cre_defs.CRE(name="bob", id="079-079"),
                 },
                 {
-                    "end": cre_defs.CRE(
-                        name="bob", id="703-703"
-                    ),
+                    "end": cre_defs.CRE(name="bob", id="703-703"),
                     "relationship": "LINKED_TO",
-                    "start": cre_defs.CRE(
-                        name="bob", id="259-259"
-                    ),
+                    "start": cre_defs.CRE(name="bob", id="259-259"),
                 },
             ],
         }
@@ -75,31 +65,21 @@ class TestGapAnalysis(unittest.TestCase):
 
     def test_get_path_score_one_up_returns_one_up_penaltiy(self):
         path = {
-            "start": cre_defs.CRE(
-                name="bob", id="029-029"
-            ),
+            "start": cre_defs.CRE(name="bob", id="029-029"),
             "end": cre_defs.CRE(name="bob", id="703-703"),
             "path": [
                 {
-                    "end": cre_defs.CRE(
-                        name="bob", id="029-029"
-                    ),
+                    "end": cre_defs.CRE(name="bob", id="029-029"),
                     "relationship": "LINKED_TO",
-                    "start": cre_defs.CRE(
-                        name="bob", id="079-079"
-                    ),
+                    "start": cre_defs.CRE(name="bob", id="079-079"),
                 },
                 {
                     "end": cre_defs.CRE(name="bob", id="123-123"),
                     "relationship": "CONTAINS",
-                    "start": cre_defs.CRE(
-                        name="bob", id="079-079"
-                    ),
+                    "start": cre_defs.CRE(name="bob", id="079-079"),
                 },
                 {
-                    "end": cre_defs.CRE(
-                        name="bob", id="703-703"
-                    ),
+                    "end": cre_defs.CRE(name="bob", id="703-703"),
                     "relationship": "LINKED_TO",
                     "start": cre_defs.CRE(name="bob", id="123-123"),
                 },
@@ -110,31 +90,21 @@ class TestGapAnalysis(unittest.TestCase):
 
     def test_get_path_score_one_down_one_returns_one_down_penaltiy(self):
         path = {
-            "start": cre_defs.CRE(
-                name="bob", id="029-029"
-            ),
+            "start": cre_defs.CRE(name="bob", id="029-029"),
             "end": cre_defs.CRE(name="bob", id="703-703"),
             "path": [
                 {
-                    "end": cre_defs.CRE(
-                        name="bob", id="029-029"
-                    ),
+                    "end": cre_defs.CRE(name="bob", id="029-029"),
                     "relationship": "LINKED_TO",
-                    "start": cre_defs.CRE(
-                        name="bob", id="079-079"
-                    ),
+                    "start": cre_defs.CRE(name="bob", id="079-079"),
                 },
                 {
-                    "end": cre_defs.CRE(
-                        name="bob", id="079-079"
-                    ),
+                    "end": cre_defs.CRE(name="bob", id="079-079"),
                     "relationship": "CONTAINS",
                     "start": cre_defs.CRE(name="bob", id="123-123"),
                 },
                 {
-                    "end": cre_defs.CRE(
-                        name="bob", id="703-703"
-                    ),
+                    "end": cre_defs.CRE(name="bob", id="703-703"),
                     "relationship": "LINKED_TO",
                     "start": cre_defs.CRE(name="bob", id="123-123"),
                 },
@@ -145,31 +115,21 @@ class TestGapAnalysis(unittest.TestCase):
 
     def test_get_path_score_related_returns_related_penalty(self):
         path = {
-            "start": cre_defs.CRE(
-                name="bob", id="029-029"
-            ),
+            "start": cre_defs.CRE(name="bob", id="029-029"),
             "end": cre_defs.CRE(name="bob", id="703-703"),
             "path": [
                 {
-                    "end": cre_defs.CRE(
-                        name="bob", id="029-029"
-                    ),
+                    "end": cre_defs.CRE(name="bob", id="029-029"),
                     "relationship": "LINKED_TO",
-                    "start": cre_defs.CRE(
-                        name="bob", id="079-079"
-                    ),
+                    "start": cre_defs.CRE(name="bob", id="079-079"),
                 },
                 {
-                    "end": cre_defs.CRE(
-                        name="bob", id="079-079"
-                    ),
+                    "end": cre_defs.CRE(name="bob", id="079-079"),
                     "relationship": "RELATED",
                     "start": cre_defs.CRE(name="bob", id="123-123"),
                 },
                 {
-                    "end": cre_defs.CRE(
-                        name="bob", id="703-703"
-                    ),
+                    "end": cre_defs.CRE(name="bob", id="703-703"),
                     "relationship": "LINKED_TO",
                     "start": cre_defs.CRE(name="bob", id="123-123"),
                 },
@@ -180,24 +140,16 @@ class TestGapAnalysis(unittest.TestCase):
 
     def test_get_path_score_one_of_each_returns_penalty(self):
         path = {
-            "start": cre_defs.CRE(
-                name="bob", id="029-029"
-            ),
+            "start": cre_defs.CRE(name="bob", id="029-029"),
             "end": cre_defs.CRE(name="bob", id="703-703"),
             "path": [
                 {
-                    "end": cre_defs.CRE(
-                        name="bob", id="029-029"
-                    ),
+                    "end": cre_defs.CRE(name="bob", id="029-029"),
                     "relationship": "LINKED_TO",
-                    "start": cre_defs.CRE(
-                        name="bob", id="079-079"
-                    ),
+                    "start": cre_defs.CRE(name="bob", id="079-079"),
                 },
                 {
-                    "end": cre_defs.CRE(
-                        name="bob", id="079-079"
-                    ),
+                    "end": cre_defs.CRE(name="bob", id="079-079"),
                     "relationship": "CONTAINS",
                     "start": cre_defs.CRE(name="bob", id="123-123"),
                 },
@@ -207,16 +159,12 @@ class TestGapAnalysis(unittest.TestCase):
                     "start": cre_defs.CRE(name="bob", id="123-123"),
                 },
                 {
-                    "end": cre_defs.CRE(
-                        name="bob", id="703-703"
-                    ),
+                    "end": cre_defs.CRE(name="bob", id="703-703"),
                     "relationship": "CONTAINS",
                     "start": cre_defs.CRE(name="bob", id="456-456"),
                 },
                 {
-                    "end": cre_defs.CRE(
-                        name="bob", id="703-703"
-                    ),
+                    "end": cre_defs.CRE(name="bob", id="703-703"),
                     "relationship": "LINKED_TO",
                     "start": cre_defs.CRE(name="bob", id="456-456"),
                 },

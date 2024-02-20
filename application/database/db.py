@@ -398,20 +398,18 @@ class NEO_DB:
                 links=[],  # dbcre.links,
                 tags=[dbcre.tags] if isinstance(dbcre.tags, str) else dbcre.tags,
                 external_id=dbcre.external_id,
-                ).save()
-        
-        document.name=dbcre.name
-        document.doctype=cre_defs.Credoctypes.CRE.value,
-        document.document_id=dbcre.id
-        document.description=dbcre.description or ""
-        document.tags=[dbcre.tags] if isinstance(dbcre.tags, str) else dbcre.tags
-        document.metadata={}
-        document.external_id=dbcre.external_id or ""
+            ).save()
+
+        document.name = dbcre.name
+        document.doctype = (cre_defs.Credoctypes.CRE.value,)
+        document.document_id = dbcre.id
+        document.description = dbcre.description or ""
+        document.tags = [dbcre.tags] if isinstance(dbcre.tags, str) else dbcre.tags
+        document.metadata = {}
+        document.external_id = dbcre.external_id or ""
         return document.save()
 
-        
-
-    def __create_dbnode(dbnode:Node):
+    def __create_dbnode(dbnode: Node):
         if dbnode.ntype == "Standard":
             return NeoStandard(
                 name=dbnode.name,
@@ -428,51 +426,51 @@ class NEO_DB:
             ).save()
         elif dbnode.ntype == "Code":
             return NeoCode(
-                    name=dbnode.name,
-                    doctype=dbnode.ntype,
-                    document_id=dbnode.id,
-                    description=dbnode.description,
-                    links=[],  # dbnode.links,
-                    tags=(
-                        [dbnode.tags] if isinstance(dbnode.tags, str) else dbnode.tags
-                    ),
-                    metadata="{}",  # dbnode.metadata,
-                    hyperlink="",  # dbnode.hyperlink or "",
-                    version=dbnode.version or "",
+                name=dbnode.name,
+                doctype=dbnode.ntype,
+                document_id=dbnode.id,
+                description=dbnode.description,
+                links=[],  # dbnode.links,
+                tags=([dbnode.tags] if isinstance(dbnode.tags, str) else dbnode.tags),
+                metadata="{}",  # dbnode.metadata,
+                hyperlink="",  # dbnode.hyperlink or "",
+                version=dbnode.version or "",
             ).save()
         else:
             raise Exception(f"Unknown DB type: {dbnode.ntype}")
-    def __update_dbnode(dbnode:Node):
+
+    def __update_dbnode(dbnode: Node):
         existing = NeoNode.nodes.first_or_none(document_id=dbnode.id)
         if dbnode.ntype == "Standard":
-            existing.name=dbnode.name
-            existing.doctype=dbnode.ntype
-            existing.document_id=dbnode.id
-            existing.description=dbnode.description or ""
-            existing.tags=[dbnode.tags] if isinstance(dbnode.tags, str) else dbnode.tags
-            existing.metadata={}
-            existing.version=dbnode.version or ""
-            existing.section=dbnode.section
-            existing.section_id=dbnode.section_id  # dbnode.sectionID
-            existing.subsection=dbnode.subsection or ""
-            existing.tooltype=""  # dbnode.tooltype
-            return existing.save()
-        elif dbnode.ntype == "Code":
-            existing.name=dbnode.name
-            existing.doctype=dbnode.ntype
-            existing.document_id=dbnode.id
-            existing.description=dbnode.description
-            existing.links=[]  # dbnode.links
-            existing.tags=(
+            existing.name = dbnode.name
+            existing.doctype = dbnode.ntype
+            existing.document_id = dbnode.id
+            existing.description = dbnode.description or ""
+            existing.tags = (
                 [dbnode.tags] if isinstance(dbnode.tags, str) else dbnode.tags
             )
-            existing.metadata="{}"  # dbnode.metadata,
-            existing.hyperlink=""  # dbnode.hyperlink or "",
-            existing.version=dbnode.version or ""
+            existing.metadata = {}
+            existing.version = dbnode.version or ""
+            existing.section = dbnode.section
+            existing.section_id = dbnode.section_id  # dbnode.sectionID
+            existing.subsection = dbnode.subsection or ""
+            existing.tooltype = ""  # dbnode.tooltype
+            return existing.save()
+        elif dbnode.ntype == "Code":
+            existing.name = dbnode.name
+            existing.doctype = dbnode.ntype
+            existing.document_id = dbnode.id
+            existing.description = dbnode.description
+            existing.links = []  # dbnode.links
+            existing.tags = (
+                [dbnode.tags] if isinstance(dbnode.tags, str) else dbnode.tags
+            )
+            existing.metadata = "{}"  # dbnode.metadata,
+            existing.hyperlink = ""  # dbnode.hyperlink or "",
+            existing.version = dbnode.version or ""
             return existing.save()
         else:
             raise Exception(f"Unknown DB type: {dbnode.ntype}")
-
 
     @classmethod
     @db.transaction
