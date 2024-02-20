@@ -41,10 +41,10 @@ class TestCloudNativeSecurityControlsParser(unittest.TestCase):
             status_code = 200
             text = self.csv
 
-        cre = defs.CRE(id="123", name=f"CRE-123")
+        cre = defs.CRE(id="123-123", name=f"CRE-123")
         dbcre = self.collection.add_cre(cre=cre)
         dbnode = self.collection.add_node(
-            defs.Standard(name="fakeNode", sectionID="123")
+            defs.Standard(name="fakeNode", sectionID="123-123")
         )
         self.collection.add_link(dbcre, dbnode)
 
@@ -64,7 +64,7 @@ class TestCloudNativeSecurityControlsParser(unittest.TestCase):
                 "variables or as a file",
                 hyperlink="https://github.com/cloud-native-security-controls/controls-catalog/blob/main/controls/controls_catalog.csv#L2",
                 links=[
-                    defs.Link(document=defs.CRE(name="CRE-123", id="123")),
+                    defs.Link(document=defs.CRE(name="CRE-123", id="123-123")),
                 ],
                 name="Cloud Native Security Controls",
                 section="Access",
@@ -78,7 +78,7 @@ class TestCloudNativeSecurityControlsParser(unittest.TestCase):
                 embeddings_text="Secrets are injected at runtime, such as environment variables or as a file",
                 hyperlink="https://github.com/cloud-native-security-controls/controls-catalog/blob/main/controls/controls_catalog.csv#L2",
                 links=[
-                    defs.Link(document=defs.CRE(name="CRE-123", id="123")),
+                    defs.Link(document=defs.CRE(name="CRE-123", id="123-123")),
                 ],
                 name="Cloud Native Security Controls",
                 section="Access",

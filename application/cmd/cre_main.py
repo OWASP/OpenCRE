@@ -51,6 +51,8 @@ def register_node(node: defs.Node, collection: db.Node_collection) -> db.Node:
     then map the one who doesn't to the CRE
     if both don't map to anything, just add them in the db as unlinked nodes
     """
+    if not node:
+        raise ValueError("node is None")
     linked_node = collection.add_node(node)
     if node.embeddings:
         collection.add_embedding(
@@ -229,7 +231,9 @@ def register_standard(
             f"Standard importing job with info-hash {standard_hash} has already returned, skipping"
         )
         return
-
+    logger.info(
+        f"Registering resource {standard_entries[0].name} of length {len(standard_entries)}"
+    )
     for node in standard_entries:
         register_node(node, collection)
         if node.embeddings:

@@ -201,7 +201,7 @@ class TestMain(unittest.TestCase):
         )
         tool = defs.Tool(name="Tooly", tooltype=defs.ToolTypes.Defensive)
         cre = defs.CRE(
-            id="100",
+            id="100-100",
             description="CREdesc",
             name="CREname",
             links=[defs.Link(document=standard), defs.Link(document=tool)],
@@ -222,7 +222,7 @@ class TestMain(unittest.TestCase):
             {
                 "description": "Verify that approved cryptographic algorithms are used in the generation, seeding, and verification.",
                 "doctype": "CRE",
-                "id": "001-005-073",
+                "id": "157-573",
                 "links": [
                     {
                         "type": "SAM",
@@ -246,14 +246,14 @@ class TestMain(unittest.TestCase):
             {
                 "description": "Desc",
                 "doctype": "CRE",
-                "id": "14",
+                "id": "141-141",
                 "name": "name",
             },
         ]
         expected = [
             defs.CRE(
                 doctype=defs.Credoctypes.CRE,
-                id="001-005-073",
+                id="157-573",
                 description="Verify that approved cryptographic algorithms are used in the generation, seeding, and verification.",
                 name="CREDENTIALS_MANAGEMENT_CRYPTOGRAPHIC_DIRECTIVES",
                 links=[
@@ -273,7 +273,7 @@ class TestMain(unittest.TestCase):
                     ),
                 ],
             ),
-            defs.CRE(id="14", description="Desc", name="name"),
+            defs.CRE(id="141-141", description="Desc", name="name"),
         ]
         with self.assertLogs("application.cmd.cre_main", level=logging.FATAL) as logs:
             # negative test first parse_file accepts a list of objects
@@ -362,7 +362,7 @@ class TestMain(unittest.TestCase):
     def test_get_standards_files_from_disk(self) -> None:
         loc = tempfile.mkdtemp()
         ymls = []
-        cre = defs.CRE(name="c", description="cd")
+        cre = defs.CRE(id="333-333", name="ccc", description="cd")
         for _ in range(1, 5):
             ymldesc, location = tempfile.mkstemp(dir=loc, suffix=".yaml", text=True)
             os.write(ymldesc, bytes(str(cre), "utf-8"))
@@ -391,7 +391,7 @@ class TestMain(unittest.TestCase):
         )
         mocked_db_connect.return_value = self.collection
         mocked_export.return_value = [
-            defs.CRE(name="c0"),
+            defs.CRE(id="000-000", name="c0"),
             defs.Standard(name="s0", section="s1"),
         ]
         mocked_readSpreadsheet.return_value = {"worksheet0": [{"cre": "cre"}]}
@@ -407,7 +407,7 @@ class TestMain(unittest.TestCase):
             validate=False,
         )
         mocked_parse_standards_from_spreadsheeet.assert_called_with(
-            [{"cre": "cre"}], self.collection, mocked_ai_client_init.return_value
+            [{"cre": "cre"}], cache, mocked_ai_client_init.return_value
         )
         mocked_export.assert_called_with(dir)
 
@@ -440,7 +440,7 @@ class TestMain(unittest.TestCase):
 
         mocked_create_spreadsheet.return_value = "https://example.com/sheeet"
         mocked_export.return_value = [
-            defs.CRE(name="c0"),
+            defs.CRE(id="000-000", name="c0"),
             defs.Standard(name="s0", section="s1"),
         ]
         mocked_readSpreadsheet.return_value = {"worksheet0": [{"cre": "cre"}]}
@@ -482,7 +482,7 @@ class TestMain(unittest.TestCase):
         mocked_db_connect.return_value = self.collection
         mocked_get_standards_files_from_disk.return_value = [yml for i in range(0, 3)]
         mocked_export.return_value = [
-            defs.CRE(name="c0"),
+            defs.CRE(id="000-000", name="c0"),
             defs.Standard(name="s0", section="s1"),
             defs.Code(name="code0", description="code1"),
             defs.Tool(
@@ -526,7 +526,7 @@ class TestMain(unittest.TestCase):
         mocked_db_connect.return_value = self.collection
         mocked_get_standards_files_from_disk.return_value = [yml for i in range(0, 3)]
         mocked_export.return_value = [
-            defs.CRE(name="c0"),
+            defs.CRE(id="000-000", name="c0"),
             defs.Standard(name="s0", section="s1"),
             defs.Code(name="code0", description="code1"),
             defs.Tool(
@@ -577,14 +577,14 @@ class TestMain(unittest.TestCase):
         ]
 
         mocked_osib2cre.return_value = (
-            [defs.CRE(name="c0")],
+            [defs.CRE(name="c0", id="000-000")],
             [defs.Standard(name="s0", section="s1")],
         )
-        mocked_register_cre.return_value = db.CRE(name="c0")
+        mocked_register_cre.return_value = db.CRE(name="c0", id="000-000")
         mocked_register_node.return_value = db.Node(name="s0", section="s1")
         mocked_create_spreadsheet.return_value = "https://example.com/sheeet"
         mocked_export.return_value = [
-            defs.CRE(name="c0"),
+            defs.CRE(name="c0", id="000-000"),
             defs.Standard(name="s0", section="s1"),
         ]
 
@@ -596,7 +596,9 @@ class TestMain(unittest.TestCase):
         mocked_try_from_file.assert_called_with([{"osib": "osib"}])
         mocked_osib2cre.assert_called_with(odefs.Osib_tree(aliases=[Osib_id("t1")]))
         mocked_osib2cre.assert_called_with(odefs.Osib_tree(aliases=[Osib_id("t2")]))
-        mocked_register_cre.assert_called_with(defs.CRE(name="c0"), self.collection)
+        mocked_register_cre.assert_called_with(
+            defs.CRE(id="000-000", name="c0"), self.collection
+        )
         mocked_register_node.assert_called_with(
             mocked_osib2cre.return_value[1][0], self.collection
         )
@@ -638,13 +640,13 @@ class TestMain(unittest.TestCase):
             odefs.Osib_tree(aliases=[Osib_id("t2")]),
         ]
         mocked_osib2cre.return_value = (
-            [defs.CRE(name="c0")],
+            [defs.CRE(id="000-000", name="c0")],
             [defs.Standard(name="s0", section="s1")],
         )
         mocked_register_cre.return_value = db.CRE(name="c0")
         mocked_register_node.return_value = db.Node(name="s0", section="s1")
         mocked_export.return_value = [
-            defs.CRE(name="c0"),
+            defs.CRE(id="000-000", name="c0"),
             defs.Standard(name="s0", section="s1"),
         ]
 
@@ -655,7 +657,9 @@ class TestMain(unittest.TestCase):
         mocked_try_from_file.assert_called_with([{"osib": "osib"}])
         mocked_osib2cre.assert_called_with(odefs.Osib_tree(aliases=[Osib_id("t1")]))
         mocked_osib2cre.assert_called_with(odefs.Osib_tree(aliases=[Osib_id("t2")]))
-        mocked_register_cre.assert_called_with(defs.CRE(name="c0"), self.collection)
+        mocked_register_cre.assert_called_with(
+            defs.CRE(id="000-000", name="c0"), self.collection
+        )
         mocked_register_node.assert_called_with(
             defs.Standard(name="s0", section="s1"), self.collection
         )
@@ -676,11 +680,11 @@ class TestMain(unittest.TestCase):
         cache = tempfile.mkstemp(dir=dir, suffix=".sqlite")[1]
         mocked_db_connect.return_value = self.collection
         mocked_cre2osib.return_value = odefs.Osib_tree(aliases=[Osib_id("t1")])
-        mocked_export.return_value = [defs.CRE(name="c0")]
+        mocked_export.return_value = [defs.CRE(id="000-000", name="c0")]
 
         main.export_to_osib(file_loc=f"{dir}/osib.yaml", cache=cache)
         mocked_db_connect.assert_called_with(path=cache)
-        mocked_cre2osib.assert_called_with([defs.CRE(name="c0")])
+        mocked_cre2osib.assert_called_with([defs.CRE(id="000-000", name="c0")])
 
 
 if __name__ == "__main__":

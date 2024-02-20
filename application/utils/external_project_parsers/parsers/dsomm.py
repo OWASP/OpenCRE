@@ -95,10 +95,9 @@ class DSOMM(ParserInterface):
             "https://raw.githubusercontent.com/devsecopsmaturitymodel/DevSecOps-MaturityModel-data/main/src/assets/YAML/generated/generated.yaml"
         )
         if resp.status_code != 200:
-            logger.fatal(
-                f"could not retrieve dsomm yaml, status code {resp.status_code}"
-            )
-            return
+            err_str = f"could not retrieve dsomm yaml, status code {resp.status_code}"
+            logger.fatal(err_str)
+            raise RuntimeError(err_str)
         dsomm = yaml.safe_load(resp.text)
         standard_entries = []
         for _, dimension in dsomm.items():
@@ -116,7 +115,7 @@ class DSOMM(ParserInterface):
                         )
                     else:
                         logger.error(f"Activity {aname} does not have uuid")
-                        return
+                        continue
 
                     existing = cache.get_nodes(
                         name=standard.name,

@@ -14,7 +14,7 @@ from application.database import db
 from application.defs import cre_defs as defs
 from application.defs import osib_defs
 from application.web import web_main
-from application.utils.hash import make_array_hash, make_cache_key
+from application.utils.gap_analysis import GAP_ANALYSIS_TIMEOUT
 
 import os
 
@@ -57,10 +57,12 @@ class TestMain(unittest.TestCase):
         """
         collection = db.Node_collection()
         cres = {
-            "ca": defs.CRE(id="1", description="CA", name="CA", tags=["ta"]),
-            "cb": defs.CRE(id="2", description="CB", name="CB", tags=["ta", "td"]),
-            "cc": defs.CRE(id="3", description="CC", name="CC", tags=["tc"]),
-            "cd": defs.CRE(id="4", description="CD", name="CD", tags=["", "td"]),
+            "ca": defs.CRE(id="111-111", description="CA", name="CA", tags=["ta"]),
+            "cb": defs.CRE(
+                id="222-222", description="CB", name="CB", tags=["ta", "td"]
+            ),
+            "cc": defs.CRE(id="333-333", description="CC", name="CC", tags=["tc"]),
+            "cd": defs.CRE(id="444-444", description="CD", name="CD", tags=["", "td"]),
         }
         cres["ca"].add_link(
             defs.Link(ltype=defs.LinkTypes.Contains, document=cres["cd"].shallow_copy())
@@ -111,9 +113,9 @@ class TestMain(unittest.TestCase):
         collection.graph.graph = db.CRE_Graph.load_cre_graph(sqla.session)
 
         cres = {
-            "ca": defs.CRE(id="1", description="CA", name="CA", tags=["ta"]),
-            "cd": defs.CRE(id="2", description="CD", name="CD", tags=["td"]),
-            "cb": defs.CRE(id="3", description="CB", name="CB", tags=["tb"]),
+            "ca": defs.CRE(id="111-111", description="CA", name="CA", tags=["ta"]),
+            "cd": defs.CRE(id="222-222", description="CD", name="CD", tags=["td"]),
+            "cb": defs.CRE(id="333-333", description="CB", name="CB", tags=["tb"]),
         }
         cres["ca"].add_link(
             defs.Link(ltype=defs.LinkTypes.Contains, document=cres["cd"].shallow_copy())
@@ -152,7 +154,7 @@ class TestMain(unittest.TestCase):
             self.assertEqual(json.loads(osib_response.data.decode()), osib_expected)
             self.assertEqual(200, osib_response.status_code)
 
-            md_expected = "<pre>CRE---[2CD](https://www.opencre.org/cre/2),[1CA](https://www.opencre.org/cre/1),[3CB](https://www.opencre.org/cre/3)</pre>"
+            md_expected = "<pre>CRE---[2CD](https://www.opencre.org/cre/222-222),[1CA](https://www.opencre.org/cre/111-111),[3CB](https://www.opencre.org/cre/333-333)</pre>"
             md_response = client.get(
                 f"/rest/v1/id/{cres['cd'].id}?format=md",
                 headers={"Content-Type": "application/json"},
@@ -164,10 +166,10 @@ class TestMain(unittest.TestCase):
         collection.graph.graph = db.CRE_Graph.load_cre_graph(sqla.session)
 
         cres = {
-            "ca": defs.CRE(id="1", description="CA", name="CA", tags=["ta"]),
-            "cd": defs.CRE(id="2", description="CD", name="CD", tags=["td"]),
-            "cb": defs.CRE(id="3", description="CB", name="CB", tags=["tb"]),
-            "cc": defs.CRE(id="4", description="CC", name="CC", tags=["tc"]),
+            "ca": defs.CRE(id="111-111", description="CA", name="CA", tags=["ta"]),
+            "cd": defs.CRE(id="222-222", description="CD", name="CD", tags=["td"]),
+            "cb": defs.CRE(id="333-333", description="CB", name="CB", tags=["tb"]),
+            "cc": defs.CRE(id="444-444", description="CC", name="CC", tags=["tc"]),
         }
         cres["ca"].add_link(
             defs.Link(ltype=defs.LinkTypes.Contains, document=cres["cd"].shallow_copy())
@@ -210,7 +212,7 @@ class TestMain(unittest.TestCase):
             self.assertEqual(json.loads(osib_response.data.decode()), osib_expected)
             self.assertEqual(200, osib_response.status_code)
 
-            md_expected = "<pre>CRE---[2CD](https://www.opencre.org/cre/2),[1CA](https://www.opencre.org/cre/1),[3CB](https://www.opencre.org/cre/3),[4CC](https://www.opencre.org/cre/4)</pre>"
+            md_expected = "<pre>CRE---[2CD](https://www.opencre.org/cre/222-222),[1CA](https://www.opencre.org/cre/111-111),[3CB](https://www.opencre.org/cre/333-333),[4CC](https://www.opencre.org/cre/444-444)</pre>"
             md_response = client.get(
                 f"/rest/v1/name/{cres['cd'].name}?format=md",
                 headers={"Content-Type": "application/json"},
@@ -399,9 +401,9 @@ class TestMain(unittest.TestCase):
     def test_find_document_by_tag(self) -> None:
         collection = db.Node_collection()
         cres = {
-            "ca": defs.CRE(id="1", description="CA", name="CA", tags=["ta"]),
+            "ca": defs.CRE(id="111-111", description="CA", name="CA", tags=["ta"]),
             "cb": defs.CRE(
-                id="3", description="CB", name="CB", tags=["ta", "tb", "tc"]
+                id="333-333", description="CB", name="CB", tags=["ta", "tb", "tc"]
             ),
         }
 
@@ -476,9 +478,9 @@ class TestMain(unittest.TestCase):
             self.assertEqual(404, response.status_code)
 
             cres = {
-                "ca": defs.CRE(id="1", description="CA", name="CA", tags=["ta"]),
-                "cd": defs.CRE(id="2", description="CD", name="CD", tags=["td"]),
-                "cb": defs.CRE(id="3", description="CB", name="CB", tags=["tb"]),
+                "ca": defs.CRE(id="111-111", description="CA", name="CA", tags=["ta"]),
+                "cd": defs.CRE(id="222-222", description="CD", name="CD", tags=["td"]),
+                "cb": defs.CRE(id="333-333", description="CB", name="CB", tags=["tb"]),
             }
             cres["ca"].add_link(
                 defs.Link(
@@ -530,9 +532,9 @@ class TestMain(unittest.TestCase):
             self.assertEqual(404, response.status_code)
 
             cres = {
-                "ca": defs.CRE(id="1", description="CA", name="CA", tags=["ta"]),
-                "cd": defs.CRE(id="2", description="CD", name="CD", tags=["td"]),
-                "cb": defs.CRE(id="3", description="CB", name="CB", tags=["tb"]),
+                "ca": defs.CRE(id="111-111", description="CA", name="CA", tags=["ta"]),
+                "cd": defs.CRE(id="222-222", description="CD", name="CD", tags=["td"]),
+                "cb": defs.CRE(id="333-333", description="CB", name="CB", tags=["tb"]),
             }
             standards = {
                 "cwe0": defs.Standard(name="CWE", sectionID="456"),
@@ -663,7 +665,7 @@ class TestMain(unittest.TestCase):
                     "store_in_cache": True,
                     "cache_key": "7aa45d88f69a131890f8e4a769bbb07b",
                 },
-                timeout="10m",
+                timeout=GAP_ANALYSIS_TIMEOUT,
             )
             redis_conn_mock.return_value.set.assert_called_with(
                 "7aa45d88f69a131890f8e4a769bbb07b", '{"job_id": "ABC", "result": ""}'
@@ -752,9 +754,9 @@ class TestMain(unittest.TestCase):
             self.assertEqual(404, response.status_code)
 
             cres = {
-                "ca": defs.CRE(id="1", description="CA", name="CA", tags=["ta"]),
-                "cd": defs.CRE(id="2", description="CD", name="CD", tags=["td"]),
-                "cb": defs.CRE(id="3", description="CB", name="CB", tags=["tb"]),
+                "ca": defs.CRE(id="111-111", description="CA", name="CA", tags=["ta"]),
+                "cd": defs.CRE(id="222-222", description="CD", name="CD", tags=["td"]),
+                "cb": defs.CRE(id="333-333", description="CB", name="CB", tags=["tb"]),
             }
             standards = {
                 "cwe0": defs.Standard(name="CWE", sectionID="456"),

@@ -386,7 +386,7 @@ class Document:
         return self
 
     def __post_init__(self):
-        if not re.match(r"\w{3,}", self.name):
+        if not len(self.name) > 1:
             raise cre_exceptions.InvalidDocumentNameException(self)
 
 

@@ -31,7 +31,7 @@ class TestCloudControlsMappingParser(unittest.TestCase):
 
         for i in range(1, 4):
             dbcre = self.collection.add_cre(
-                cre=defs.CRE(id=f"123-{i}", name=f"CRE-123-{i}")
+                cre=defs.CRE(id=f"123-{i}{i}{i}", name=f"CRE-123-{i}{i}{i}")
             )
             dbnode = self.collection.add_node(
                 defs.Standard(
@@ -51,8 +51,8 @@ class TestCloudControlsMappingParser(unittest.TestCase):
         expected = [
             defs.Standard(
                 links=[
-                    defs.Link(document=defs.CRE(name="CRE-123-1", id="123-1")),
-                    defs.Link(document=defs.CRE(name="CRE-123-2", id="123-2")),
+                    defs.Link(document=defs.CRE(name="CRE-123-111", id="123-111")),
+                    defs.Link(document=defs.CRE(name="CRE-123-222", id="123-222")),
                 ],
                 name="Cloud Native Security Controls",
                 section="asdf:123",
@@ -61,8 +61,8 @@ class TestCloudControlsMappingParser(unittest.TestCase):
             ),
             defs.Standard(
                 links=[
-                    defs.Link(document=defs.CRE(name="CRE-123-3", id="123-4")),
-                    defs.Link(document=defs.CRE(name="CRE-123-4", id="123-3")),
+                    defs.Link(document=defs.CRE(name="CRE-123-333", id="123-444")),
+                    defs.Link(document=defs.CRE(name="CRE-123-444", id="123-333")),
                 ],
                 name="Cloud Native Security Controls",
                 section="asdf:124",

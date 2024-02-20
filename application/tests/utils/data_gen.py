@@ -44,7 +44,7 @@ def root_csv_data():
             "CRE hierarchy 4": "tag-connection",
             "Standard Top 10 2017 item": "",
             "Standard Top 10 2017 Hyperlink": "",
-            "CRE ID": "123",
+            "CRE ID": "123-123",
             "Standard CWE (from ASVS)": "",
             "Standard CWE (from ASVS)-hyperlink": "",
             "Link to other CRE": "",
@@ -72,14 +72,14 @@ def root_csv_data():
             "CRE hierarchy 4": "",
             "Standard Top 10 2017 item": "A2_Broken_Authentication",
             "Standard Top 10 2017 Hyperlink": "https://example.com/top102017",
-            "CRE ID": 8,
+            "CRE ID": "888-888",
             "Standard CWE (from ASVS)": "19876",
             "Standard CWE (from ASVS)-hyperlink": "https://example.com/cwe19876",
             "Link to other CRE": "FooBar",
             "Standard NIST 800-53 v5": "SA-22 Unsupported System Components",
             "Standard NIST 800-53 v5-hyperlink": "https://example.com/nist-800-53-v5",
             "Standard NIST-800-63 (from ASVS)": "4444/3333",
-            "Standard OPC (ASVS source)": "123654",
+            "Standard OPC (ASVS source)": "123-123654",
             "Standard OPC (ASVS source)-hyperlink": "https://example.com/opc",
             "CRE Tags": "tag-connection",
             "Standard WSTG-item": "2.1.2.3",
@@ -100,7 +100,7 @@ def root_csv_data():
             "CRE hierarchy 4": "",
             "Standard Top 10 2017 item": "See higher level topic",
             "Standard Top 10 2017 Hyperlink": "https://example.com/top102017",
-            "CRE ID": 3,
+            "CRE ID": "333-333",
             "Standard CWE (from ASVS)": "",
             "Standard CWE (from ASVS)-hyperlink": "",
             "Link to other CRE": "",
@@ -128,7 +128,7 @@ def root_csv_data():
             "CRE hierarchy 4": "Verify that the application uses a single vetted authentication mechanism",
             "Standard Top 10 2017 item": "See higher level topic",
             "Standard Top 10 2017 Hyperlink": "https://example.com/top102017",
-            "CRE ID": 4,
+            "CRE ID": "444-444",
             "Standard CWE (from ASVS)": 306,
             "Standard CWE (from ASVS)-hyperlink": "https://example.com/cwe306",
             "Link to other CRE": "Logging and Error handling",
@@ -164,7 +164,7 @@ def root_csv_data():
             "CRE hierarchy 4": "FooBar",
             "Standard Top 10 2017 item": "",
             "Standard Top 10 2017 Hyperlink": "",
-            "CRE ID": 9,
+            "CRE ID": "999-999",
             "Standard CWE (from ASVS)": "",
             "Standard CWE (from ASVS)-hyperlink": "",
             "Link to other CRE": "Authentication mechanism",
@@ -181,16 +181,16 @@ def root_csv_data():
         },
     ]
     # register cres
-    cre_123 = defs.CRE(id="123", name="tag-connection")
-    cre_8 = defs.CRE(id="8", name="Authentication", tags=["tag-connection"])
-    cre_3 = defs.CRE(id="3", name="Authentication mechanism")
+    cre_123 = defs.CRE(id="123-123", name="tag-connection")
+    cre_8 = defs.CRE(id="888-888", name="Authentication", tags=["tag-connection"])
+    cre_3 = defs.CRE(id="333-333", name="Authentication mechanism")
     cre_4 = defs.CRE(
-        id="4",
+        id="444-444",
         name="Verify that the application uses a single vetted authentication mechanism",
     )
-    cre_logging = defs.CRE(name="Logging and Error handling")
-    cre_fooParent = defs.CRE(name="FooParent")
-    cre_9 = defs.CRE(id="9", name="FooBar")
+    cre_logging = defs.CRE(id="543-543", name="Logging and Error handling")
+    cre_fooParent = defs.CRE(id="168-176", name="FooParent")
+    cre_9 = defs.CRE(id="999-999", name="FooBar")
 
     # register standards
     s_top10_2017_a2 = defs.Standard(
@@ -198,9 +198,9 @@ def root_csv_data():
         name="OWASP Top 10 2017",
         section="A2_Broken_Authentication",
     )
-    s_opc_123654 = defs.Standard(
+    s_opc_123 = defs.Standard(
         name="OWASP Proactive Controls",
-        section="123654",
+        section="123-123654",
         hyperlink="https://example.com/opc",
     )
     s_cwe_19876 = defs.Standard(
@@ -298,7 +298,7 @@ def root_csv_data():
     s_cwe_19876.add_link(
         defs.Link(ltype=defs.LinkTypes.LinkedTo, document=cre_8.shallow_copy())
     )
-    s_opc_123654.add_link(
+    s_opc_123.add_link(
         defs.Link(ltype=defs.LinkTypes.LinkedTo, document=cre_8.shallow_copy())
     )
     s_nist_53_sa22.add_link(
@@ -340,7 +340,7 @@ def root_csv_data():
         "NIST 800-63": [s_nist_63_3, s_nist_63_4],
         "OWASP Cheat Sheets": [s_cheatsheet_b, s_cheatsheet_f],
         "OWASP Top 10 2017": [s_top10_2017_a2],
-        "OWASP Proactive Controls": [s_opc_123654],
+        "OWASP Proactive Controls": [s_opc_123],
         "CWE": [s_cwe_19876, s_cwe_306],
         "OWASP Web Security Testing Guide (WSTG)": [s_wstg_2123],
         "ASVS": [s_asvs_10],
@@ -363,7 +363,7 @@ def root_csv_cre_only():
             "CRE hierarchy 4": "FooBar",
             "Standard Top 10 2017 item": "",
             "Standard Top 10 2017 Hyperlink": "",
-            "CRE ID": 9,
+            "CRE ID": "999-999",
             "Standard CWE (from ASVS)": "",
             "Standard CWE (from ASVS)-hyperlink": "",
             "Link to other CRE": "Authentication mechanism",
@@ -379,7 +379,7 @@ def root_csv_cre_only():
             "Standard Cheat_sheets-Hyperlink": "",
         },
     ]
-    cre9 = defs.CRE(name="FooBar", id="9")
+    cre9 = defs.CRE(name="FooBar", id="999-999")
     expected = {defs.Credoctypes.CRE.value: [cre9]}
     return input_data, expected
 
@@ -399,7 +399,7 @@ def root_csv_minimum_data():
             "CRE hierarchy 4": "FooBar",
             "Standard Top 10 2017 item": "",
             "Standard Top 10 2017 Hyperlink": "",
-            "CRE ID": 9,
+            "CRE ID": "999-999",
             "Standard CWE (from ASVS)": "",
             "Standard CWE (from ASVS)-hyperlink": "",
             "Link to other CRE": "Authentication mechanism",
@@ -422,7 +422,7 @@ def export_format_data():
     input_data = [
         {
             "CRE:description": "C1 description",
-            "CRE:id": "1",
+            "CRE:id": "111-111",
             "CRE:name": "C1",
             "Standard:S1:hyperlink": "https://example.com/S1",
             "Standard:S1:link_type": "Linked To",
@@ -456,7 +456,7 @@ def export_format_data():
         },
         {
             "CRE:description": "C2 description",
-            "CRE:id": "2",
+            "CRE:id": "222-222",
             "CRE:name": "C2",
             "Standard:S1:hyperlink": "",
             "Standard:S1:link_type": "",
@@ -469,7 +469,7 @@ def export_format_data():
             "Code:S3:hyperlink": "",
             "Code:S3:link_type": "",
             "Code:S3:description": "",
-            "Linked_CRE_0:id": "3",
+            "Linked_CRE_0:id": "333-333",
             "Linked_CRE_0:link_type": "Contains",
             "Linked_CRE_0:name": "C3",
             "Linked_CRE_1:id": "",
@@ -490,7 +490,7 @@ def export_format_data():
         },
         {
             "CRE:description": "C3 description",
-            "CRE:id": "3",
+            "CRE:id": "333-333",
             "CRE:name": "C3",
             "Standard:S1:hyperlink": "",
             "Standard:S1:link_type": "",
@@ -503,7 +503,7 @@ def export_format_data():
             "Code:S3:hyperlink": "https://example.com/S3",
             "Code:S3:link_type": "Linked To",
             "Code:S3:description": "SE3",
-            "Linked_CRE_0:id": "2",
+            "Linked_CRE_0:id": "222-222",
             "Linked_CRE_0:link_type": "Is Part Of",
             "Linked_CRE_0:name": "C2",
             "Linked_CRE_1:id": "",
@@ -524,7 +524,7 @@ def export_format_data():
         },
         {
             "CRE:description": "C5 description",
-            "CRE:id": "5",
+            "CRE:id": "555-555",
             "CRE:name": "C5",
             "Standard:S1:hyperlink": "https://example.com/S1",
             "Standard:S1:link_type": "Linked To",
@@ -558,7 +558,7 @@ def export_format_data():
         },
         {
             "CRE:description": "C5 description",
-            "CRE:id": "5",
+            "CRE:id": "555-555",
             "CRE:name": "C5",
             "Standard:S1:hyperlink": "https://example.com/S1",
             "Standard:S1:link_type": "Linked To",
@@ -592,7 +592,7 @@ def export_format_data():
         },
         {
             "CRE:description": "C6 description",
-            "CRE:id": "6",
+            "CRE:id": "666-666",
             "CRE:name": "C6",
             "Standard:S1:hyperlink": "https://example.com/S1",
             "Standard:S1:link_type": "Linked To",
@@ -607,10 +607,10 @@ def export_format_data():
             "Code:S3:hyperlink": "",
             "Code:S3:link_type": "",
             "Code:S3:description": "",
-            "Linked_CRE_0:id": "7",
+            "Linked_CRE_0:id": "777-777",
             "Linked_CRE_0:link_type": "Contains",
             "Linked_CRE_0:name": "C7",
-            "Linked_CRE_1:id": "8",
+            "Linked_CRE_1:id": "888-888",
             "Linked_CRE_1:link_type": "Contains",
             "Linked_CRE_1:name": "C8",
             "SL:hyperlink": "",
@@ -698,7 +698,7 @@ def export_format_data():
 
     expected = {
         "C1": defs.CRE(
-            id="1",
+            id="111-111",
             description="C1 description",
             name="C1",
             links=[
@@ -714,24 +714,26 @@ def export_format_data():
             ],
         ),
         "C2": defs.CRE(
-            id="2",
+            id="222-222",
             description="C2 description",
             name="C2",
             links=[
                 defs.Link(
                     ltype=defs.LinkTypes.Contains,
-                    document=defs.CRE(id="3", name="C3"),
+                    document=defs.CRE(id="333-333", name="C3"),
                 )
             ],
         ),
         "C3": defs.CRE(
-            id="3",
+            id="333-333",
             description="C3 description",
             name="C3",
             links=[
                 defs.Link(
                     ltype=defs.LinkTypes.PartOf,
-                    document=defs.CRE(id="2", description="C2 description", name="C2"),
+                    document=defs.CRE(
+                        id="222-222", description="C2 description", name="C2"
+                    ),
                 ),
                 defs.Link(
                     ltype=defs.LinkTypes.LinkedTo,
@@ -744,7 +746,7 @@ def export_format_data():
             ],
         ),
         "C5": defs.CRE(
-            id="5",
+            id="555-555",
             description="C5 description",
             name="C5",
             links=[
@@ -769,7 +771,7 @@ def export_format_data():
             ],
         ),
         "C6": defs.CRE(
-            id="6",
+            id="666-666",
             description="C6 description",
             name="C6",
             links=[
@@ -795,31 +797,35 @@ def export_format_data():
                 ),
                 defs.Link(
                     ltype=defs.LinkTypes.Contains,
-                    document=defs.CRE(id="7", name="C7"),
+                    document=defs.CRE(id="777-777", name="C7"),
                 ),
                 defs.Link(
                     ltype=defs.LinkTypes.Contains,
-                    document=defs.CRE(id="8", name="C8"),
+                    document=defs.CRE(id="888-888", name="C8"),
                 ),
             ],
         ),
         "C7": defs.CRE(
-            id="7",
+            id="777-777",
             name="C7",
             links=[
                 defs.Link(
                     ltype=defs.LinkTypes.PartOf,
-                    document=defs.CRE(id="6", description="C6 description", name="C6"),
+                    document=defs.CRE(
+                        id="666-666", description="C6 description", name="C6"
+                    ),
                 )
             ],
         ),
         "C8": defs.CRE(
-            id="8",
+            id="888-888",
             name="C8",
             links=[
                 defs.Link(
                     ltype=defs.LinkTypes.PartOf,
-                    document=defs.CRE(id="6", description="C6 description", name="C6"),
+                    document=defs.CRE(
+                        id="666-666", description="C6 description", name="C6"
+                    ),
                 )
             ],
         ),

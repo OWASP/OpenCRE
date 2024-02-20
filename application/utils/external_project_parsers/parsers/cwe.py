@@ -40,6 +40,7 @@ class CWE(ParserInterface):
                             xml_file=os.path.join(tmp_dir, file), cache=cache
                         ),
                     }
+        raise RuntimeError("there is no file named cwe.xml in the target zip")
 
     def make_hyperlink(self, cwe_id: int):
         return f"https://cwe.mitre.org/data/definitions/{cwe_id}.html"

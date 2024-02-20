@@ -21,10 +21,11 @@ class CloudNativeSecurityControls(ParserInterface):
         )
 
         if resp.status_code != 200:
-            logger.fatal(
+            err_str = (
                 f"could not retrieve cnsclenges yaml, status code {resp.status_code}"
             )
-            return
+            logger.fatal(err_str)
+            raise RuntimeError(err_str)
         standard_entries = []
         entries = csv.DictReader(StringIO(resp.text), delimiter=",")
         for entry in entries:

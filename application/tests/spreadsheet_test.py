@@ -41,9 +41,9 @@ class TestDB(unittest.TestCase):
 
         collection = self.collection
 
-        dbcre = db.CRE(description="CREdesc", name="CREname", external_id="06-06-06")
+        dbcre = db.CRE(description="CREdesc", name="CREname", external_id="060-060")
         dbgroup = db.CRE(
-            description="CREGroupDesc", name="CREGroup", external_id="09-09-09"
+            description="CREGroupDesc", name="CREGroup", external_id="999-999"
         )
         collection.session.add(dbcre)
         collection.session.add(dbgroup)
@@ -119,7 +119,7 @@ class TestDB(unittest.TestCase):
         expected = [
             {
                 "CRE:description": "CREGroupDesc",
-                "CRE:id": "09-09-09",
+                "CRE:id": "999-999",
                 "CRE:name": "CREGroup",
                 "Standard:ConflictStandName:hyperlink": None,
                 "Standard:ConflictStandName:link_type": None,
@@ -129,7 +129,7 @@ class TestDB(unittest.TestCase):
                 "Standard:GroupStand2:link_type": "SAME",
                 "Standard:GroupStand2:section": "GroupStandSection2",
                 "Standard:GroupStand2:subsection": "4.5.2",
-                "Linked_CRE_0:id": "06-06-06",
+                "Linked_CRE_0:id": "060-060",
                 "Linked_CRE_0:link_type": "SAME",
                 "Linked_CRE_0:name": "CREname",
                 "Standard:LoneStand:hyperlink": None,
@@ -151,7 +151,7 @@ class TestDB(unittest.TestCase):
             },
             {
                 "CRE:description": "CREdesc",
-                "CRE:id": "06-06-06",
+                "CRE:id": "060-060",
                 "CRE:name": "CREname",
                 "Standard:ConflictStandName:hyperlink": "https://example.com/1",
                 "Standard:ConflictStandName:link_type": "SAME",
@@ -161,7 +161,7 @@ class TestDB(unittest.TestCase):
                 "Standard:GroupStand2:link_type": None,
                 "Standard:GroupStand2:section": None,
                 "Standard:GroupStand2:subsection": None,
-                "Linked_CRE_0:id": "09-09-09",
+                "Linked_CRE_0:id": "999-999",
                 "Linked_CRE_0:link_type": "SAME",
                 "Linked_CRE_0:name": "CREGroup",
                 "Standard:LoneStand:hyperlink": None,
@@ -183,7 +183,7 @@ class TestDB(unittest.TestCase):
             },
             {
                 "CRE:description": "CREdesc",
-                "CRE:id": "06-06-06",
+                "CRE:id": "060-060",
                 "CRE:name": "CREname",
                 "Standard:ConflictStandName:hyperlink": "https://example.com/2",
                 "Standard:ConflictStandName:link_type": "SAME",
@@ -300,9 +300,9 @@ class TestDB(unittest.TestCase):
         """
         collection = self.collection
 
-        dbcre = db.CRE(description="CREdesc", name="CREname", external_id="06-06-06")
+        dbcre = db.CRE(description="CREdesc", name="CREname", external_id="060-060")
         dbgroup = db.CRE(
-            description="CREGroupDesc", name="CREGroup", external_id="09-09-09"
+            description="CREGroupDesc", name="CREGroup", external_id="999-999"
         )
         collection.session.add(dbcre)
         collection.session.add(dbgroup)
@@ -362,7 +362,7 @@ class TestDB(unittest.TestCase):
         expected = [
             {
                 "CRE:description": "CREGroupDesc",
-                "CRE:id": "09-09-09",
+                "CRE:id": "999-999",
                 "CRE:name": "CREGroup",
                 "Standard:ConflictStandName:hyperlink": None,
                 "Standard:ConflictStandName:link_type": None,
@@ -372,7 +372,7 @@ class TestDB(unittest.TestCase):
                 "Standard:GroupStand2:link_type": "SAME",
                 "Standard:GroupStand2:section": "GroupStandSection2",
                 "Standard:GroupStand2:subsection": "4.5.2",
-                "Linked_CRE_0:id": "06-06-06",
+                "Linked_CRE_0:id": "060-060",
                 "Linked_CRE_0:link_type": "SAME",
                 "Linked_CRE_0:name": "CREname",
                 "Standard:NormalStand1:hyperlink": None,
@@ -386,7 +386,7 @@ class TestDB(unittest.TestCase):
             },
             {
                 "CRE:description": "CREdesc",
-                "CRE:id": "06-06-06",
+                "CRE:id": "060-060",
                 "CRE:name": "CREname",
                 "Standard:ConflictStandName:hyperlink": "https://example.com/1",
                 "Standard:ConflictStandName:link_type": "SAME",
@@ -396,7 +396,7 @@ class TestDB(unittest.TestCase):
                 "Standard:GroupStand2:link_type": None,
                 "Standard:GroupStand2:section": None,
                 "Standard:GroupStand2:subsection": None,
-                "Linked_CRE_0:id": "09-09-09",
+                "Linked_CRE_0:id": "999-999",
                 "Linked_CRE_0:link_type": "SAME",
                 "Linked_CRE_0:name": "CREGroup",
                 "Standard:NormalStand1:hyperlink": "https://example.com/1",
@@ -410,7 +410,7 @@ class TestDB(unittest.TestCase):
             },
             {
                 "CRE:description": "CREdesc",
-                "CRE:id": "06-06-06",
+                "CRE:id": "060-060",
                 "CRE:name": "CREname",
                 "Standard:ConflictStandName:hyperlink": "https://example.com/2",
                 "Standard:ConflictStandName:link_type": "SAME",

@@ -12,7 +12,6 @@ from dacite import Config, from_dict
 class TestCreDefs(unittest.TestCase):
     def test_document_todict(self) -> None:
         standard = defs.Standard(
-            doctype=defs.Credoctypes.Standard,
             name="ASVS",
             section="SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING",
             subsection="3.1.1",
@@ -27,7 +26,7 @@ class TestCreDefs(unittest.TestCase):
         }
 
         cre = defs.CRE(
-            id="100",
+            id="100-100",
             description="CREdesc",
             name="CREname",
             links=[defs.Link(document=standard)],
@@ -36,7 +35,7 @@ class TestCreDefs(unittest.TestCase):
         cre_output = {
             "description": "CREdesc",
             "doctype": "CRE",
-            "id": "100",
+            "id": "100-100",
             "links": [
                 {
                     "ltype": "SAME",
@@ -54,13 +53,12 @@ class TestCreDefs(unittest.TestCase):
         }
 
         standard2 = defs.Standard(
-            doctype=defs.Credoctypes.Standard,
             name="Standard",
             section="StandardSection",
             subsection="3.1.1",
         )
         group = defs.CRE(
-            id="500",
+            id="500-500",
             description="desc",
             name="name",
             links=[defs.Link(document=cre), defs.Link(document=standard2)],
@@ -69,14 +67,14 @@ class TestCreDefs(unittest.TestCase):
         group_output = {
             "description": "desc",
             "doctype": "CRE",
-            "id": "500",
+            "id": "500-500",
             "links": [
                 {
                     "ltype": "SAME",
                     "document": {
                         "description": "CREdesc",
                         "doctype": "CRE",
-                        "id": "100",
+                        "id": "100-100",
                         "links": [
                             {
                                 "ltype": "SAME",
@@ -109,7 +107,6 @@ class TestCreDefs(unittest.TestCase):
             "tags": ["tag1", "t2"],
         }
         nested = defs.Standard(
-            doctype=defs.Credoctypes.Standard,
             name="ASVS",
             section="SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING",
             subsection="3.1.1",
@@ -171,7 +168,7 @@ class TestCreDefs(unittest.TestCase):
                 vars(code)[v] = [0.001]
                 c.append(code)
             elif v == "links":
-                code.links = [defs.Link(document=defs.CRE(name="asdf"))]
+                code.links = [defs.Link(document=defs.CRE(id="123-123", name="asdf"))]
                 c.append(code)
             elif v == "tags":
                 vars(code)[v] = [tag + "_a" for tag in d1.tags]
@@ -239,7 +236,7 @@ class TestCreDefs(unittest.TestCase):
                 vars(code)[v] = [0.001]
                 s["embeddings"] = code
             elif v == "links":
-                code.links = [defs.Link(document=defs.CRE(name="asdf"))]
+                code.links = [defs.Link(document=defs.CRE(id="123-123", name="asdf"))]
                 s["links"] = code
             elif v == "tags":
                 vars(code)[v] = [tag + "_a" for tag in s1.tags]
