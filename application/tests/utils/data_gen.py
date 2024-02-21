@@ -161,6 +161,34 @@ def root_csv_data():
             "CRE hierarchy 1": "FooParent",
             "CRE hierarchy 2": "",
             "CRE hierarchy 3": "",
+            "CRE hierarchy 4": "",
+            "Standard Top 10 2017 item": "",
+            "Standard Top 10 2017 Hyperlink": "",
+            "CRE ID": "168-176",
+            "Standard CWE (from ASVS)": "",
+            "Standard CWE (from ASVS)-hyperlink": "",
+            "Link to other CRE": "",
+            "Standard NIST 800-53 v5": "",
+            "Standard NIST 800-53 v5-hyperlink": "",
+            "Standard NIST-800-63 (from ASVS)": "",
+            "Standard OPC (ASVS source)": "",
+            "Standard OPC (ASVS source)-hyperlink": "",
+            "CRE Tags": "",
+            "Standard WSTG-item": "",
+            "Standard WSTG-Hyperlink": "",
+            "Standard Cheat_sheets": "",
+            "Standard Cheat_sheets-Hyperlink": "",
+        },
+        {
+            "Standard ASVS 4.0.3 Item": "",
+            "Standard ASVS 4.0.3 description": "",
+            "Standard ASVS 4.0.3 Hyperlink": "",
+            "ASVS-L1": "",
+            "ASVS-L2": "",
+            "ASVS-L3": "",
+            "CRE hierarchy 1": "FooParent",
+            "CRE hierarchy 2": "",
+            "CRE hierarchy 3": "",
             "CRE hierarchy 4": "FooBar",
             "Standard Top 10 2017 item": "",
             "Standard Top 10 2017 Hyperlink": "",
@@ -178,6 +206,34 @@ def root_csv_data():
             "Standard WSTG-Hyperlink": "",
             "Standard Cheat_sheets": "foo; bar",
             "Standard Cheat_sheets-Hyperlink": "https://example.com/cheatsheetf/foo; https://example.com/cheatsheetb/bar",
+        },
+        {
+            "Standard ASVS 4.0.3 Item": "",
+            "Standard ASVS 4.0.3 description": "",
+            "Standard ASVS 4.0.3 Hyperlink": "",
+            "ASVS-L1": "",
+            "ASVS-L2": "",
+            "ASVS-L3": "",
+            "CRE hierarchy 1": "Logging and Error handling",
+            "CRE hierarchy 2": "",
+            "CRE hierarchy 3": "",
+            "CRE hierarchy 4": "",
+            "Standard Top 10 2017 item": "",
+            "Standard Top 10 2017 Hyperlink": "",
+            "CRE ID": "543-543",
+            "Standard CWE (from ASVS)": "",
+            "Standard CWE (from ASVS)-hyperlink": "",
+            "Link to other CRE": "",
+            "Standard NIST 800-53 v5": "",
+            "Standard NIST 800-53 v5-hyperlink": "",
+            "Standard NIST-800-63 (from ASVS)": "",
+            "Standard OPC (ASVS source)": "",
+            "Standard OPC (ASVS source)-hyperlink": "",
+            "CRE Tags": "",
+            "Standard WSTG-item": "",
+            "Standard WSTG-Hyperlink": "",
+            "Standard Cheat_sheets": "",
+            "Standard Cheat_sheets-Hyperlink": "",
         },
     ]
     # register cres
@@ -268,14 +324,12 @@ def root_csv_data():
     ).add_link(
         defs.Link(ltype=defs.LinkTypes.Related, document=cre_123.shallow_copy())
     )
-
     cre_3.add_link(
         defs.Link(ltype=defs.LinkTypes.Contains, document=cre_4.shallow_copy())
     )
     cre_4.add_link(
         defs.Link(ltype=defs.LinkTypes.Related, document=cre_logging.shallow_copy())
     )
-
     # standard links AKA semantic web content
     s_cheatsheet_b.add_link(
         defs.Link(ltype=defs.LinkTypes.LinkedTo, document=cre_9.shallow_copy())
@@ -378,9 +432,38 @@ def root_csv_cre_only():
             "Standard Cheat_sheets": "",
             "Standard Cheat_sheets-Hyperlink": "",
         },
+        {
+            "Standard ASVS 4.0.3 Item": "",
+            "Standard ASVS 4.0.3 description": "",
+            "Standard ASVS 4.0.3 Hyperlink": "",
+            "ASVS-L1": "",
+            "ASVS-L2": "",
+            "ASVS-L3": "",
+            "CRE hierarchy 1": "",
+            "CRE hierarchy 2": "",
+            "CRE hierarchy 3": "",
+            "CRE hierarchy 4": "Authentication mechanism",
+            "Standard Top 10 2017 item": "",
+            "Standard Top 10 2017 Hyperlink": "",
+            "CRE ID": "992-992",
+            "Standard CWE (from ASVS)": "",
+            "Standard CWE (from ASVS)-hyperlink": "",
+            "Link to other CRE": "",
+            "Standard NIST 800-53 v5": "",
+            "Standard NIST 800-53 v5-hyperlink": "",
+            "Standard NIST-800-63 (from ASVS)": "",
+            "Standard OPC (ASVS source)": "",
+            "Standard OPC (ASVS source)-hyperlink": "",
+            "CRE Tags": "",
+            "Standard WSTG-item": "",
+            "Standard WSTG-Hyperlink": "",
+            "Standard Cheat_sheets": "",
+            "Standard Cheat_sheets-Hyperlink": "",
+        },
     ]
     cre9 = defs.CRE(name="FooBar", id="999-999")
-    expected = {defs.Credoctypes.CRE.value: [cre9]}
+    cre8 = defs.CRE(name="Authentication Mechanism", id="992-992")
+    expected = {defs.Credoctypes.CRE.value: [cre9, cre8]}
     return input_data, expected
 
 

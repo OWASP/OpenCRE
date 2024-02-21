@@ -404,12 +404,6 @@ def reconcile_uninitializedMappings(
                 f"CRE named: '{mapping.other_cre_name}' does not have an id in the sheet"
             )
         cre = cres[mapping.complete_cre.name]
-        cres[other_cre.name] = other_cre.add_link(
-            defs.Link(
-                ltype=defs.LinkTypes.opposite(mapping.relationship),
-                document=cre.shallow_copy(),
-            )
-        )
         cres[cre.name] = cre.add_link(
             defs.Link(ltype=mapping.relationship, document=other_cre.shallow_copy())
         )
@@ -425,6 +419,7 @@ def get_highest_cre_name(
     for i in range(highest_hierarchy, 0, -1):
         if not is_empty(mapping.get(f"CRE hierarchy {i}")):
             return i, mapping.get(f"CRE hierarchy {i}").strip()
+    return -1, None
 
 
 def parse_hierarchical_export_format(
@@ -465,8 +460,15 @@ def parse_hierarchical_export_format(
         current_hierarchy, name = get_highest_cre_name(
             mapping=mapping, highest_hierarchy=max_hierarchy
         )
-        if current_hierarchy > 0:
-            higher_cre = current_hierarchy - 1
+        if name == None:  # skip empty lines
+            continue
+
+        if current_hierarchy > 0:  # find the previous higher CRE so we can link
+            higher_cre = 0
+            for i in range(current_hierarchy - 1, 0, -1):
+                if not is_empty(mapping.get(f"CRE hierarchy {str(i)}").strip()):
+                    higher_cre = i
+                    break
 
         if is_empty(name):
             raise ValueError(
@@ -487,7 +489,6 @@ def parse_hierarchical_export_format(
             cre = defs.CRE(name=name, id=str(mapping.pop("CRE ID")))
         else:
             logger.warning(f"empty Id for {name}")
-            input()
 
         if not is_empty(str(mapping.get("CRE Tags")).strip()):
             ts = set()
@@ -501,6 +502,7 @@ def parse_hierarchical_export_format(
         mapping["Link to other CRE"] = (
             f'{mapping["Link to other CRE"]},{",".join(cre.tags)}'
         )
+
         if not is_empty(str(mapping.get("Link to other CRE")).strip()):
             other_cres = list(
                 set(
@@ -529,6 +531,7 @@ def parse_hierarchical_export_format(
                             document=new_cre.shallow_copy(),
                         )
                     )
+
         for link in parse_standards(mapping):
             link.document.add_link(
                 defs.Link(document=cre.shallow_copy(), ltype=defs.LinkTypes.LinkedTo)
