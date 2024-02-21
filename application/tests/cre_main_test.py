@@ -304,6 +304,7 @@ class TestMain(unittest.TestCase):
         )
         self.assertCountEqual(res, expected)
 
+    @patch.object(main, "db_connect")
     @patch.object(Queue, "enqueue_call")
     @patch.object(redis, "connect")
     @patch.object(prompt_client.PromptHandler, "generate_embeddings_for")
@@ -314,29 +315,26 @@ class TestMain(unittest.TestCase):
         mock_generate_embeddings_for,
         mock_redis_connect,
         mock_enqueue_call,
+        mock_db_connect,
     ) -> None:
         self.maxDiff = None
         prompt_handler = prompt_client.PromptHandler(database=self.collection)
-
+        mock_db_connect.return_value = self.collection
         # No jobs scheduled when we're registering CREs only
         expected_input, _ = data_gen.root_csv_cre_only()
-        main.parse_standards_from_spreadsheeet(
-            expected_input, self.collection, prompt_handler
-        )
+        main.parse_standards_from_spreadsheeet(expected_input, "", prompt_handler)
         mock_enqueue_call.assert_not_called()
 
         # Jobs scheduled when we're registering Standards only
         expected_input, expected_output = data_gen.root_csv_data()
-        main.parse_standards_from_spreadsheeet(
-            expected_input, self.collection, prompt_handler
-        )
+        main.parse_standards_from_spreadsheeet(expected_input, "", prompt_handler)
         mock_enqueue_call.assert_called()
         expected_output.pop(defs.Credoctypes.CRE.value)
         expected_names = list(expected_output.keys())
         # This is a roundabout way of doing mock_enqueue_call.assert_has_calls([calls])
         # the reason is: in its current implementation assert_has_calls()
         # serialises kwargs to str, this ends up serialising a defs.Document
-        #  using double quotes, meanwhile the standard library uses double quotes,
+        #  using single quotes, meanwhile the standard library uses double quotes,
         # this causes the call to fail.
         for call in mock_enqueue_call.mock_calls:
             if not call.kwargs:
@@ -350,8 +348,8 @@ class TestMain(unittest.TestCase):
             self.assertEqual(
                 expected_output[standard_name], []
             )  # assert ALL elements of the call exist in expected
-            self.assertEqual(self.collection, call.kwargs["kwargs"]["collection"])
-            self.assertEqual(prompt_handler, call.kwargs["kwargs"]["prompt_client"])
+            self.assertEqual(None, call.kwargs["kwargs"]["collection"])
+            self.assertEqual("", call.kwargs["kwargs"]["db_connection_str"])
             expected_names.pop(expected_names.index(standard_name))
         self.assertEqual(
             expected_names,
