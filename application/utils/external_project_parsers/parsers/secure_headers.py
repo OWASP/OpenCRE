@@ -14,7 +14,6 @@ from application.prompt_client import prompt_client as prompt_client
 
 
 class SeecureHeaders(ParserInterface):
-
     name = "Secure Headers"
 
     def entry(self, section: str, hyperlink: str, tags: List[str]) -> defs.Standard:
@@ -39,7 +38,6 @@ class SeecureHeaders(ParserInterface):
         entries = []
         for path, _, files in os.walk(repo.working_dir):
             for mdfile in files:
-
                 pth = os.path.join(path, mdfile)
 
                 if not os.path.isfile(pth):

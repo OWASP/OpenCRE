@@ -64,7 +64,6 @@ class CWE(ParserInterface):
     def link_to_related_cwe(
         self, cwe: defs.Standard, cache: db.Node_collection, related_id: str
     ) -> defs.Standard:
-
         related_cwes = cache.get_nodes(name="CWE", sectionID=related_id)
         if related_cwes:
             for cre in [

@@ -446,7 +446,9 @@ def parse_hierarchical_export_format(
     logger.info("Spreadsheet is hierarchical export format")
     documents: Dict[str, List[defs.Document]] = {defs.Credoctypes.CRE.value: []}
     cre_dict = {}
-    uninitialized_cre_mappings: List[UninitializedMapping] = (
+    uninitialized_cre_mappings: List[
+        UninitializedMapping
+    ] = (
         []
     )  # the csv has a column "Link to Other CRE", this column linksa complete CRE entry to another CRE by name.
     # The other CRE might not have been initialized yet at the time of linking so it cannot be part of our main document collection yet
@@ -499,9 +501,9 @@ def parse_hierarchical_export_format(
             cre_dict = update_cre_in_links(cre_dict, cre)
 
         # TODO(spyros): temporary until we agree what we want to do with tags
-        mapping["Link to other CRE"] = (
-            f'{mapping["Link to other CRE"]},{",".join(cre.tags)}'
-        )
+        mapping[
+            "Link to other CRE"
+        ] = f'{mapping["Link to other CRE"]},{",".join(cre.tags)}'
 
         if not is_empty(str(mapping.get("Link to other CRE")).strip()):
             other_cres = list(

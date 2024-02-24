@@ -146,7 +146,6 @@ class TestZAPAlertsParser(unittest.TestCase):
 
     @patch.object(git, "clone")
     def test_register_zap_alert_cwe(self, mock_git) -> None:
-
         alert = """
         ---
         title: "Multiple X-Frame-Options Header Entries"
