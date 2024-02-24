@@ -176,7 +176,9 @@ def parse_file(
                 else (
                     defs.Code
                     if doctype == defs.Credoctypes.Code.value
-                    else defs.Tool if doctype == defs.Credoctypes.Tool.value else None
+                    else defs.Tool
+                    if doctype == defs.Credoctypes.Tool.value
+                    else None
                 )
             )
             document = from_dict(

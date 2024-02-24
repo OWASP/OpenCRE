@@ -41,7 +41,6 @@ class BaseParser:
         sclass: ParserInterface,
         db_connection_str: str,
     ):
-
         from application.cmd import cre_main
 
         db = cre_main.db_connect(db_connection_str)

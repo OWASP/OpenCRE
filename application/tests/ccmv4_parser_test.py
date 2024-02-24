@@ -28,7 +28,6 @@ class TestCloudControlsMappingParser(unittest.TestCase):
         self,
         mock_read_spreadsheet,
     ) -> None:
-
         for i in range(1, 4):
             dbcre = self.collection.add_cre(
                 cre=defs.CRE(id=f"123-{i}{i}{i}", name=f"CRE-123-{i}{i}{i}")

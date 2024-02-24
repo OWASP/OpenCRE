@@ -79,7 +79,6 @@ class ZAP(ParserInterface):
     def __link_to_cwe(
         self, alert: defs.Tool, cwe: re.Match[str] | None, cache: db.Node_collection
     ):
-
         cweId = cwe.group("cweId")
         logger.info(f"Found zap alert {alert.name} linking to CWE {cweId}")
         cwe_nodes = cache.get_nodes(name="CWE", sectionID=cweId)
