@@ -1632,11 +1632,13 @@ class TestDB(unittest.TestCase):
 
         self.assertEqual(response, (expected_response[0], {}, {}))
         self.assertEqual(
-            collection.get_gap_analysis_result("d8160c9b3dc20d4e931aeb4f45262155"),
+            collection.get_gap_analysis_result("e10eea28cac7ad9337f240d2d9acbaa1"),
             flask_json.dumps({"result": expected_response[1]}),
         )
         self.assertEqual(
-            collection.get_gap_analysis_result("d8160c9b3dc20d4e931aeb4f45262155->a"),
+            collection.get_gap_analysis_result(
+                "e10eea28cac7ad9337f240d2d9acbaa1->788-788"
+            ),
             flask_json.dumps({"result": expected_response[2]["788-788"]}),
         )
 
