@@ -517,6 +517,7 @@ class NEO_DB:
         from datetime import datetime
 
         t1 = datetime.now()
+
         path_records_all, _ = db.cypher_query(
             """
             OPTIONAL MATCH (BaseStandard:NeoStandard {name: $name1})
@@ -1452,21 +1453,11 @@ class Node_collection:
                         item[0].replace(from_id, from_cre.name)
                         item[1].replace(to_id, to_cre.name)
 
-                    from pprint import pprint
-
-                    pprint("=================")
-                    pprint(f"{from_cre},{to_cre}")
-                    pprint(item[0].replace("CRE: ", ""))
-                    pprint(item[1].replace("CRE: ", ""))
-                    pprint("=================")
-                    # input()
-
                 logger.warning(
                     f"A link between CREs {group.external_id}-{group.name} and"
                     f" {cre.external_id}-{cre.name} "
                     f"would introduce cycle {cycle}, skipping"
                 )
-                # input()
 
     def add_link(
         self,
