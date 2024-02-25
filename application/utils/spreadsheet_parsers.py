@@ -281,6 +281,7 @@ supported_resource_mapping = {
             "sectionID": "",
             "subsection": "",
             "hyperlink": "Standard OPC (ASVS source)-hyperlink",
+            "separator": ";",
         },
         "CWE": {
             "section": "",
@@ -372,6 +373,8 @@ def add_standard_to_documents_array(
     if standard.name not in documents.keys():
         documents[standard.name] = []
     found = False
+    index = 0
+    docs = documents[standard.name]
     for doc in documents[standard.name]:
         if (
             doc.name == standard.name
@@ -380,8 +383,14 @@ def add_standard_to_documents_array(
             and doc.sectionID == standard.sectionID
             and doc.version == standard.version
         ):
-            doc = standard
+            for lnk in standard.links:
+                if lnk.document.id not in list([l.document.id for l in doc.links]):
+                    doc = doc.add_link(lnk)
+            docs[index] = doc
+
             found = True
+        index += 1
+    documents[standard.name] = docs
     if not found:
         documents[standard.name].append(standard)
     return documents
@@ -535,10 +544,16 @@ def parse_hierarchical_export_format(
                     )
 
         for link in parse_standards(mapping):
-            link.document.add_link(
+            doc = link.document
+            # if "Proactive" in doc.name:
+            #     from pprint import pprint
+            #     pprint(link)
+            #     pprint(cre.id)
+            #     input()
+            doc = doc.add_link(
                 defs.Link(document=cre.shallow_copy(), ltype=defs.LinkTypes.LinkedTo)
             )
-            documents = add_standard_to_documents_array(link.document, documents)
+            documents = add_standard_to_documents_array(doc, documents)
 
         # link CRE to a higher level one
         if higher_cre and not is_empty(

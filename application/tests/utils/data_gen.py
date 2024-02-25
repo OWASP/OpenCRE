@@ -107,8 +107,8 @@ def root_csv_data():
             "Standard NIST 800-53 v5": "",
             "Standard NIST 800-53 v5-hyperlink": "https://example.com/nist-800-53-v5",
             "Standard NIST-800-63 (from ASVS)": "",
-            "Standard OPC (ASVS source)": "",
-            "Standard OPC (ASVS source)-hyperlink": "",
+            "Standard OPC (ASVS source)": "123-123654",
+            "Standard OPC (ASVS source)-hyperlink": "https://example.com/opc",
             "CRE Tags": "",
             "Standard WSTG-item": "",
             "Standard WSTG-Hyperlink": "",
@@ -143,8 +143,8 @@ def root_csv_data():
                 "https://example.com/nist-800-53-v5"
             ),
             "Standard NIST-800-63 (from ASVS)": "None",
-            "Standard OPC (ASVS source)": "None",
-            "Standard OPC (ASVS source)-hyperlink": "",
+            "Standard OPC (ASVS source)": "123-123654;123-123653",
+            "Standard OPC (ASVS source)-hyperlink": "https://example.com/opc",
             "CRE Tags": "",
             "Standard WSTG-item": "",
             "Standard WSTG-Hyperlink": "",
@@ -259,6 +259,11 @@ def root_csv_data():
         section="123-123654",
         hyperlink="https://example.com/opc",
     )
+    s_opc_653 = defs.Standard(
+        name="OWASP Proactive Controls",
+        section="123-123653",
+        hyperlink="https://example.com/opc",
+    )
     s_cwe_19876 = defs.Standard(
         name="CWE", sectionID="19876", hyperlink="https://example.com/cwe19876"
     )
@@ -354,6 +359,13 @@ def root_csv_data():
     )
     s_opc_123.add_link(
         defs.Link(ltype=defs.LinkTypes.LinkedTo, document=cre_8.shallow_copy())
+    ).add_link(
+        defs.Link(ltype=defs.LinkTypes.LinkedTo, document=cre_3.shallow_copy())
+    ).add_link(
+        defs.Link(ltype=defs.LinkTypes.LinkedTo, document=cre_4.shallow_copy())
+    )
+    s_opc_653.add_link(
+        defs.Link(ltype=defs.LinkTypes.LinkedTo, document=cre_4.shallow_copy())
     )
     s_nist_53_sa22.add_link(
         defs.Link(ltype=defs.LinkTypes.LinkedTo, document=cre_8.shallow_copy())
@@ -394,7 +406,7 @@ def root_csv_data():
         "NIST 800-63": [s_nist_63_3, s_nist_63_4],
         "OWASP Cheat Sheets": [s_cheatsheet_b, s_cheatsheet_f],
         "OWASP Top 10 2017": [s_top10_2017_a2],
-        "OWASP Proactive Controls": [s_opc_123],
+        "OWASP Proactive Controls": [s_opc_123, s_opc_653],
         "CWE": [s_cwe_19876, s_cwe_306],
         "OWASP Web Security Testing Guide (WSTG)": [s_wstg_2123],
         "ASVS": [s_asvs_10],
