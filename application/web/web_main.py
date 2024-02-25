@@ -35,7 +35,7 @@ from google_auth_oauthlib.flow import Flow
 from application.utils.spreadsheet import write_csv
 import oauthlib
 import google.auth.transport.requests
-from application.utils.hash import make_array_hash, make_cache_key
+from application.utils.hash import make_array_key, make_cache_key
 
 from application import tracer
 
@@ -305,7 +305,7 @@ def fetch_job() -> Any:
 
         if len(ga_result) > 1:
             standards = ga_result[0]
-            standards_hash = make_array_hash(standards)
+            standards_hash = make_array_key(standards)
 
             if conn.exists(standards_hash):
                 logger.debug("and hash is already in cache")
@@ -313,7 +313,7 @@ def fetch_job() -> Any:
                 database = db.Node_collection()
                 ga = database.get_gap_analysis_result(standards_hash)
                 if ga:
-                    logger.__delattr__("and results in cache")
+                    # logger.__delattr__("and results in cache")
                     ga = flask_json.loads(ga)
                     if ga.get("result"):
                         return jsonify(ga)

@@ -430,6 +430,16 @@ class Standard(Node):
     doctype: Credoctypes = Credoctypes.Standard
     subsection: Optional[str] = ""
 
+    def __post_init__(self):
+        self.id = f"{self.name}"
+        if self.sectionID:
+            self.id += f":{self.sectionID}"
+        if self.section:
+            self.id += f":{self.section}"
+        if self.subsection:
+            self.id += f":{self.subsection}"
+        return super().__post_init__()
+
     def todict(self) -> Dict[Any, Any]:
         res = super().todict()
         res["section"] = self.section
@@ -458,6 +468,16 @@ class Standard(Node):
 class Tool(Standard):
     tooltype: ToolTypes = ToolTypes.Unknown
     doctype: Credoctypes = Credoctypes.Tool
+
+    def __post_init__(self):
+        self.id = f"{self.name}"
+        if self.sectionID:
+            self.id += f":{self.sectionID}"
+        if self.section:
+            self.id += f":{self.section}"
+        if self.subsection:
+            self.id += f":{self.subsection}"
+        return super().__post_init__()
 
     def __eq__(self, other: object) -> bool:
         return super().__eq__(other) and self.tooltype == other.tooltype

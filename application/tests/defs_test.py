@@ -18,6 +18,7 @@ class TestCreDefs(unittest.TestCase):
             version="0.0.0",
         )
         standard_output = {
+            "id": "ASVS:SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING:3.1.1",
             "doctype": "Standard",
             "name": "ASVS",
             "section": "SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING",
@@ -40,6 +41,7 @@ class TestCreDefs(unittest.TestCase):
                 {
                     "ltype": "SAME",
                     "document": {
+                        "id": "ASVS:SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING:3.1.1",
                         "doctype": "Standard",
                         "name": "ASVS",
                         "section": "SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING",
@@ -79,6 +81,7 @@ class TestCreDefs(unittest.TestCase):
                             {
                                 "ltype": "SAME",
                                 "document": {
+                                    "id": "ASVS:SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING:3.1.1",
                                     "doctype": "Standard",
                                     "name": "ASVS",
                                     "section": (
@@ -96,6 +99,7 @@ class TestCreDefs(unittest.TestCase):
                 {
                     "ltype": "SAME",
                     "document": {
+                        "id": "Standard:StandardSection:3.1.1",
                         "doctype": "Standard",
                         "name": "Standard",
                         "section": "StandardSection",
@@ -112,6 +116,7 @@ class TestCreDefs(unittest.TestCase):
             subsection="3.1.1",
         )
         nested_output = {
+            "id": "ASVS:SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING:3.1.1",
             "doctype": "Standard",
             "name": "ASVS",
             "section": "SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING",
@@ -362,6 +367,7 @@ class TestCreDefs(unittest.TestCase):
             "tooltype": "Offensive",
             "sectionID": "15",
             "section": "Rule 15 Title",
+            "id": "toolmctoolface:15:Rule 15 Title",
         }
         self.assertDictEqual(t0.todict(), expected)
         expected["toolType"] = "Defensive"

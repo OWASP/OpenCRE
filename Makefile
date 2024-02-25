@@ -35,8 +35,13 @@ docker-neo4j:
 	 -p 7687:7687\
 	 neo4j)
 
+docker-redis-rm:
+	docker stop cre-redis-stack
+	docker rm -f cre-redis-stack
+
 docker-redis:
-	docker start cre-redis-stack 2>/dev/null || docker run -d --name cre-redis-stack -p 6379:6379 -p 8001:8001 redis/redis-stack:latest
+	docker start cre-redis-stack 2>/dev/null ||\
+	docker run -d --name cre-redis-stack -p 6379:6379 -p 8001:8001 redis/redis-stack:latest
 
 start-containers: docker-neo4j docker-redis
 

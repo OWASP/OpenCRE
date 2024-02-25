@@ -36,7 +36,7 @@ from sqlalchemy import func
 import uuid
 
 from application.utils.gap_analysis import get_path_score
-from application.utils.hash import make_array_hash, make_cache_key
+from application.utils.hash import make_array_key, make_cache_key
 
 
 from .. import sqla  # type: ignore
@@ -1900,7 +1900,6 @@ def dbCREfromCRE(cre: cre_defs.CRE) -> CRE:
 def gap_analysis(
     neo_db: NEO_DB,
     node_names: List[str],
-    store_in_cache: bool = False,
     cache_key: str = "",
 ):
     cre_db = Node_collection()
@@ -1913,6 +1912,11 @@ def gap_analysis(
 
     for node in base_standard:
         key = node.id
+        if not key:
+            logger.error(
+                f"key is empty, this is a bug and this gap analysis will not progress"
+            )
+            continue
         if key not in grouped_paths:
             grouped_paths[key] = {"start": node, "paths": {}, "extra": 0}
             extra_paths_dict[key] = {"paths": {}}
@@ -1920,14 +1924,23 @@ def gap_analysis(
     for path in paths:
         key = path["start"].id
         end_key = path["end"].id
+        if not end_key:
+            logger.error(
+                f"end_key is empty, this is a bug and this gap analysis will not progress"
+            )
+            continue
         path["score"] = get_path_score(path)
         del path["start"]
-        if path["score"] <= GA_STRONG_UPPER_LIMIT:
+        if (
+            path["score"] <= GA_STRONG_UPPER_LIMIT
+        ):  # strong paths, return them in the main object
             if end_key in extra_paths_dict[key]["paths"]:
+                # if we found a shortest path to a node previously in the weak paths
                 del extra_paths_dict[key]["paths"][end_key]
                 grouped_paths[key]["extra"] -= 1
             if end_key in grouped_paths[key]["paths"]:
                 if grouped_paths[key]["paths"][end_key]["score"] > path["score"]:
+                    # if we found a shortest path to an existing strong path
                     grouped_paths[key]["paths"][end_key] = path
             else:
                 grouped_paths[key]["paths"][end_key] = path
@@ -1941,23 +1954,16 @@ def gap_analysis(
                 extra_paths_dict[key]["paths"][end_key] = path
                 grouped_paths[key]["extra"] += 1
 
-    if (
-        store_in_cache
-    ):  # lightweight memory option to not return potentially huge object and instead store in a cache,
-        # in case this is called via worker, we save both this and the caller memory by avoiding duplicate object in mem
+    if cache_key == "":
+        cache_key = make_array_key(node_names)
 
-        if cache_key == "":
-            cache_key = make_array_hash(node_names)
+    cre_db.add_gap_analysis_result(
+        cache_key=cache_key, ga_object=flask_json.dumps({"result": grouped_paths})
+    )
 
+    for key in extra_paths_dict:
         cre_db.add_gap_analysis_result(
-            cache_key=cache_key, ga_object=flask_json.dumps({"result": grouped_paths})
+            cache_key=make_cache_key(node_names, key),
+            ga_object=flask_json.dumps({"result": extra_paths_dict[key]}),
         )
-
-        for key in extra_paths_dict:
-            cre_db.add_gap_analysis_result(
-                cache_key=make_cache_key(node_names, key),
-                ga_object=flask_json.dumps({"result": extra_paths_dict[key]}),
-            )
-        return (node_names, {}, {})
-
     return (node_names, grouped_paths, extra_paths_dict)

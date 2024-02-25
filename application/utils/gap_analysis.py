@@ -4,7 +4,7 @@ import logging
 from rq import Queue, job, exceptions
 from typing import List, Dict
 from application.utils import redis
-from application.utils.hash import make_array_hash, make_cache_key
+from application.utils.hash import make_array_key, make_cache_key
 from application.database import db
 from flask import json as flask_json
 import json
@@ -53,7 +53,7 @@ def get_next_id(step, previous_id):
 
 def schedule(standards: List[str], database):
     conn = redis.connect()
-    standards_hash = make_array_hash(standards)
+    standards_hash = make_array_key(standards)
     result = database.get_gap_analysis_result(standards_hash)
     if result:
         return flask_json.loads(result)
@@ -75,7 +75,7 @@ def schedule(standards: List[str], database):
                 and res.get_status() != job.JobStatus.CANCELED
             ):
                 logger.info(
-                    f'gap analysis job id  {gap_analysis_dict.get("job_id")} already exists, returning early'
+                    f'gap analysis job id  {gap_analysis_dict.get("job_id")}, for standards: {standards[0]}>>{standards[1]} already exists, returning early'
                 )
                 return {"job_id": gap_analysis_dict.get("job_id")}
     q = Queue(connection=conn)
@@ -84,7 +84,6 @@ def schedule(standards: List[str], database):
         kwargs={
             "neo_db": database.neo_db,
             "node_names": standards,
-            "store_in_cache": True,
             "cache_key": standards_hash,
         },
         timeout=GAP_ANALYSIS_TIMEOUT,
