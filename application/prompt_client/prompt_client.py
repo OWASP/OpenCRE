@@ -179,6 +179,10 @@ class in_memory_embeddings:
 
 
 class PromptHandler:
+    ai_client = None  # a client instance for a support Chat model
+    database: db.Node_collection = None  # instance of our primary db
+    embeddings_instance = None  # instance of our in_memory_embeddings singletton
+
     def __init__(self, database: db.Node_collection, load_all_embeddings=False) -> None:
         self.ai_client = None
         if os.environ.get("GCP_NATIVE") or os.environ.get(
@@ -206,7 +210,7 @@ class PromptHandler:
             if missing_embeddings:
                 self.embeddings_instance.setup_playwright()
                 self.embeddings_instance.generate_embeddings(
-                    database, missing_embeddings, self.ai_client
+                    database, missing_embeddings
                 )
                 self.embeddings_instance.teardown_playwright()
             else:

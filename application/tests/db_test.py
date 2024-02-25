@@ -1,3 +1,4 @@
+from application.utils.hash import make_array_key, make_cache_key
 import string
 import random
 import os
@@ -1579,21 +1580,25 @@ class TestDB(unittest.TestCase):
                 "end": defs.CRE(name="bob1", id="111-111"),
                 "relationship": "LINKED_TO",
                 "start": defs.CRE(name="bob7", id="788-788"),
+                "score": 0,
             },
             {
                 "end": defs.CRE(name="bob2", id="222-222"),
                 "relationship": "RELATED",
                 "start": defs.CRE(name="bob1", id="111-111"),
+                "score": 2,
             },
             {
                 "end": defs.CRE(name="bob1", id="111-111"),
                 "relationship": "RELATED",
                 "start": defs.CRE(name="bob2", id="222-222"),
+                "score": 2,
             },
             {
                 "end": defs.CRE(name="bob3", id="333-333"),
                 "relationship": "LINKED_TO",
                 "start": defs.CRE(name="bob2", id="222-222"),
+                "score": 4,
             },
         ]
         gap_mock.return_value = (
@@ -1628,16 +1633,19 @@ class TestDB(unittest.TestCase):
                 }
             },
         )
-        response = db.gap_analysis(collection.neo_db, ["788-788", "222-222"], True)
+        response = db.gap_analysis(collection.neo_db, ["788-788", "222-222"])
 
-        self.assertEqual(response, (expected_response[0], {}, {}))
+        self.maxDiff = None
         self.assertEqual(
-            collection.get_gap_analysis_result("e10eea28cac7ad9337f240d2d9acbaa1"),
+            response, (expected_response[0], expected_response[1], expected_response[2])
+        )
+        self.assertEqual(
+            collection.get_gap_analysis_result(make_array_key(["788-788", "222-222"])),
             flask_json.dumps({"result": expected_response[1]}),
         )
         self.assertEqual(
             collection.get_gap_analysis_result(
-                "e10eea28cac7ad9337f240d2d9acbaa1->788-788"
+                make_cache_key(["788-788", "222-222"], "788-788")
             ),
             flask_json.dumps({"result": expected_response[2]["788-788"]}),
         )

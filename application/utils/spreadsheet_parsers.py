@@ -16,7 +16,7 @@ logging.basicConfig()
 
 
 def is_empty(value: Optional[str]) -> bool:
-    value = str(value)
+    value = str(value).strip()
     return (
         value is None
         or value == "None"
@@ -468,7 +468,7 @@ def parse_hierarchical_export_format(
         if current_hierarchy > 0:  # find the previous higher CRE so we can link
             higher_cre = 0
             for i in range(current_hierarchy - 1, 0, -1):
-                if not is_empty(mapping.get(f"CRE hierarchy {str(i)}").strip()):
+                if not is_empty(mapping.get(f"CRE hierarchy {str(i)}")):
                     higher_cre = i
                     break
 

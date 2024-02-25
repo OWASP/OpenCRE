@@ -3,8 +3,8 @@ from typing import List
 
 
 def make_cache_key(standards: List[str], key: str) -> str:
-    return make_array_hash(standards) + "->" + key
+    return str(make_array_key(standards)) + "->" + key
 
 
-def make_array_hash(array: List[str]):
-    return hashlib.md5(":".join(array).encode("utf-8")).hexdigest()
+def make_array_key(array: List[str]):
+    return " >> ".join(array).encode("utf-8")

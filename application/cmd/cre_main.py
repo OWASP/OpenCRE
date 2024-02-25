@@ -7,7 +7,7 @@ import os
 import shutil
 import tempfile
 from typing import Any, Callable, Dict, Generator, List, Optional, Tuple
-from application.utils.hash import make_array_hash
+from application.utils.hash import make_array_key
 from rq import Queue, job, exceptions
 import yaml
 from application import create_app  # type: ignore
@@ -227,7 +227,7 @@ def register_standard(
         return
     conn = redis.connect()
     ph = prompt_client.PromptHandler(database=collection)
-    standard_hash = make_array_hash([standard_entries[0].name])
+    standard_hash = make_array_key([standard_entries[0].name])
     if conn.get(standard_hash):
         logger.debug(
             f"Standard importing job with info-hash {standard_hash} has already returned, skipping"
