@@ -144,7 +144,7 @@ def root_csv_data():
             ),
             "Standard NIST-800-63 (from ASVS)": "None",
             "Standard OPC (ASVS source)": "123-123654;123-123653",
-            "Standard OPC (ASVS source)-hyperlink": "https://example.com/opc",
+            "Standard OPC (ASVS source)-hyperlink": "https://example.com/opc;https://example.com/opc",
             "CRE Tags": "",
             "Standard WSTG-item": "",
             "Standard WSTG-Hyperlink": "",
