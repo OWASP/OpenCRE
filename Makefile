@@ -147,6 +147,7 @@ import-neo4j:
 	export FLASK_APP=$(CURDIR)/cre.py && python cre.py --populate_neo4j_db
 
 preload-map-analysis:
+	make docker-neo4j&\
 	make docker-redis&\
 	make start-worker&\
 	make start-worker&\
