@@ -2045,6 +2045,17 @@ class TestDB(unittest.TestCase):
         )
         self.assertEqual(tool_emb, {})
 
+    def test_get_standard_names(self):
+        for s in ["sa", "sb", "sc", "sd"]:
+            for sub in ["suba", "subb", "subc", "subd"]:
+                self.collection.add_node(
+                    defs.Standard(name=s, section=sub, subsection=sub)
+                )
+        self.assertEqual(
+            ["BarStand", "Unlinked", "sa", "sb", "sc", "sd"],
+            self.collection.standards(),
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

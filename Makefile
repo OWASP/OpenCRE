@@ -159,7 +159,7 @@ import-all:
 
 	export FLASK_APP=$(CURDIR)/cre.py &&\
 	python cre.py --add --from_spreadsheet https://docs.google.com/spreadsheets/d/1eZOEYgts7d_-Dr-1oAbogPfzBLh6511b58pX3b59kvg &&\
-	# python cre.py --import_external_projects
+	python cre.py --import_external_projects
 
 	killall python
 	killall make
@@ -169,6 +169,7 @@ import-neo4j:
 	export FLASK_APP=$(CURDIR)/cre.py && python cre.py --populate_neo4j_db
 
 preload-map-analysis:
+	make docker-neo4j&\
 	make docker-redis&\
 	make start-worker&\
 	make start-worker&\

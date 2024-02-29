@@ -270,6 +270,7 @@ class NeoTool(NeoStandard):
     @classmethod
     def to_cre_def(self, node, parse_links=True) -> cre_defs.Tool:
         return cre_defs.Tool(
+            tooltype=node.tooltype,
             name=node.name,
             description=node.description,
             tags=node.tags,
@@ -436,8 +437,19 @@ class NEO_DB:
                 hyperlink="",  # dbnode.hyperlink or "",
                 version=dbnode.version or "",
             ).save()
-        else:
-            raise Exception(f"Unknown DB type: {dbnode.ntype}")
+        elif dbnode.ntype == "Tool":
+            return NeoTool(
+                tooltype="",
+                name=dbnode.name,
+                doctype=dbnode.ntype,
+                document_id=dbnode.id,
+                description=dbnode.description,
+                links=[],  # dbnode.links,
+                tags=([dbnode.tags] if isinstance(dbnode.tags, str) else dbnode.tags),
+                metadata="{}",  # dbnode.metadata,
+                hyperlink="",  # dbnode.hyperlink or "",
+                version=dbnode.version or "",
+            ).save()
 
     def __update_dbnode(dbnode: Node):
         existing = NeoNode.nodes.first_or_none(document_id=dbnode.id)
@@ -1525,7 +1537,12 @@ class Node_collection:
         return res
 
     def standards(self) -> List[str]:
-        return self.neo_db.standards()
+        standards = (
+            self.session.query(Node.name)
+            .filter(Node.ntype == cre_defs.Credoctypes.Standard)
+            .distinct()
+        )
+        return [s[0] for s in standards]
 
     def text_search(self, text: str) -> List[Optional[cre_defs.Document]]:
         """Given a piece of text, tries to find the best match
