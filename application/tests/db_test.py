@@ -1729,8 +1729,10 @@ class TestDB(unittest.TestCase):
         sectionID = "sectionID"
         subsection = "subsection"
         hyperlink = "version"
+        tooltype = defs.ToolTypes.Defensive
         expected = defs.Tool(
             name=name,
+            tooltype=tooltype,
             description=description,
             tags=tags,
             version=version,
@@ -1747,6 +1749,7 @@ class TestDB(unittest.TestCase):
         graph_node = db.NeoTool(
             name=name,
             description=description,
+            tooltype=tooltype,
             tags=tags,
             version=version,
             section=section,

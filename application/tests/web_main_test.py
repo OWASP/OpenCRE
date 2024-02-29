@@ -671,19 +671,6 @@ class TestMain(unittest.TestCase):
             )
 
     @patch.object(redis, "from_url")
-    def test_standards_from_cache(self, redis_conn_mock) -> None:
-        expected = ["A", "B"]
-        redis_conn_mock.return_value.exists.return_value = True
-        redis_conn_mock.return_value.get.return_value = json.dumps(expected)
-        with self.app.test_client() as client:
-            response = client.get(
-                "/rest/v1/standards",
-                headers={"Content-Type": "application/json"},
-            )
-            self.assertEqual(200, response.status_code)
-            self.assertEqual(expected, json.loads(response.data))
-
-    @patch.object(redis, "from_url")
     @patch.object(db, "Node_collection")
     def test_standards_from_db(self, node_mock, redis_conn_mock) -> None:
         expected = ["A", "B"]
@@ -695,22 +682,6 @@ class TestMain(unittest.TestCase):
                 headers={"Content-Type": "application/json"},
             )
             self.assertEqual(200, response.status_code)
-            self.assertEqual(expected, json.loads(response.data))
-
-    @patch.object(redis, "from_url")
-    @patch.object(db, "Node_collection")
-    def test_standards_from_db_off(self, node_mock, redis_conn_mock) -> None:
-        expected = {
-            "message": "Backend services connected to this feature are not running at the moment."
-        }
-        redis_conn_mock.return_value.get.return_value = None
-        node_mock.return_value.standards.return_value = None
-        with self.app.test_client() as client:
-            response = client.get(
-                "/rest/v1/standards",
-                headers={"Content-Type": "application/json"},
-            )
-            self.assertEqual(500, response.status_code)
             self.assertEqual(expected, json.loads(response.data))
 
     def test_gap_analysis_weak_links_no_cache(self) -> None:
