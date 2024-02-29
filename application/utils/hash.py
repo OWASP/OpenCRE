@@ -7,4 +7,4 @@ def make_cache_key(standards: List[str], key: str) -> str:
 
 
 def make_array_key(array: List[str]):
-    return " >> ".join(array).encode("utf-8")
+    return " >> ".join(array)

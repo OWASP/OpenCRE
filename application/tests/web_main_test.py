@@ -662,12 +662,12 @@ class TestMain(unittest.TestCase):
                 kwargs={
                     "neo_db": db_mock().neo_db,
                     "node_names": ["aaa", "bbb"],
-                    "cache_key": b"aaa >> bbb",
+                    "cache_key": "aaa >> bbb",
                 },
                 timeout=GAP_ANALYSIS_TIMEOUT,
             )
             redis_conn_mock.return_value.set.assert_called_with(
-                b"aaa >> bbb", '{"job_id": "ABC", "result": ""}'
+                "aaa >> bbb", '{"job_id": "ABC", "result": ""}'
             )
 
     @patch.object(redis, "from_url")
