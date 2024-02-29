@@ -333,20 +333,9 @@ def fetch_job() -> Any:
 
 @app.route("/rest/v1/standards", methods=["GET"])
 def standards() -> Any:
-    conn = redis.connect()
-    standards = conn.get("NodeNames")
-    if standards:
-        return standards
-    else:
-        logger.info(
-            "'NodeNames' does not exist in Redis, getting from database, this should only happen once"
-        )
-        database = db.Node_collection()
-        standards = database.standards()
-        if standards is None:
-            return neo4j_not_running_rejection()
-        conn.set("NodeNames", flask_json.dumps(standards))
-        return standards
+    database = db.Node_collection()
+    standards = database.standards()
+    return standards
 
 
 @app.route("/rest/v1/text_search", methods=["GET"])
