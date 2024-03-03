@@ -77,8 +77,7 @@ class ISO27001(ParserInterface):
         return nist_table
 
     def parse(self, cache: db.Node_collection, ph: prompt_client.PromptHandler):
-        if not url:
-            url = self.url
+        url = self.url
         documents: List[defs.Standard] = []
         nist_nodes = cache.get_nodes(name="NIST 800-53 v5")
 

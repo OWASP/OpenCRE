@@ -8,6 +8,7 @@ import logging
 import time
 from alive_progress import alive_bar
 from application.utils.external_project_parsers.parsers import *
+from application.utils import gap_analysis
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
@@ -45,15 +46,12 @@ class BaseParser:
 
         db = cre_main.db_connect(db_connection_str)
         ph = prompt_client.PromptHandler(database=db)
-        result = sclass.parse(db, ph)
+        scalss_instance = sclass()
+        result = scalss_instance.parse(db, ph)
         try:
             for _, documents in result.items():
                 cre_main.register_standard(documents, db)
         except ValueError as ve:
-            from pprint import pprint
-
-            pprint(sclass.name)
-            pprint(sclass)
             err_str = f"error importing {sclass.name}, received 1 value but expected 2"
             raise ValueError(err_str)
 
@@ -68,7 +66,7 @@ class BaseParser:
         q = Queue(connection=conn)
         for subclass in ParserInterface.__subclasses__():
             importers.append(subclass)
-            sclass = subclass()
+            sclass = subclass
 
             jobs.append(
                 q.enqueue_call(
@@ -78,7 +76,7 @@ class BaseParser:
                         "sclass": sclass,
                         "db_connection_str": db_connection_str,
                     },
-                    timeout="10m",
+                    timeout=gap_analysis.GAP_ANALYSIS_TIMEOUT,
                 )
             )
         t0 = time.perf_counter()

@@ -38,7 +38,7 @@ class TestSecureHeadersParser(unittest.TestCase):
         with open(os.path.join(tmpdir, "cs.md"), "w") as mdf:
             mdf.write(cs)
         mock_clone.return_value = repo
-        entries = secure_headers.SeecureHeaders().parse(
+        entries = secure_headers.SecureHeaders().parse(
             cache=self.collection, ph=PromptHandler(database=self.collection)
         )
         expected = defs.Standard(
@@ -48,7 +48,7 @@ class TestSecureHeadersParser(unittest.TestCase):
             links=[defs.Link(document=cre, ltype=defs.LinkTypes.LinkedTo)],
         )
         for name, nodes in entries.items():
-            self.assertEqual(name, secure_headers.SeecureHeaders().name)
+            self.assertEqual(name, secure_headers.SecureHeaders().name)
 
             self.maxDiff = None
             self.assertEqual(len(nodes), 1)

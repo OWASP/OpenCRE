@@ -238,7 +238,7 @@ class NeoNode(NeoDocument):
 
 class NeoStandard(NeoNode):
     section = StringProperty()
-    subsection = StringProperty(required=True)
+    subsection = StringProperty()
     section_id = StringProperty()
 
     @classmethod
@@ -438,8 +438,13 @@ class NEO_DB:
                 version=dbnode.version or "",
             ).save()
         elif dbnode.ntype == "Tool":
+            ttype = [tag for tag in dbnode.tags if tag in cre_defs.ToolTypes]
+            if ttype:
+                ttype = ttype[0]
+            else:
+                ttype = cre_defs.ToolTypes.Unknown
             return NeoTool(
-                tooltype="",
+                tooltype=ttype,
                 name=dbnode.name,
                 doctype=dbnode.ntype,
                 document_id=dbnode.id,
@@ -477,6 +482,25 @@ class NEO_DB:
             existing.tags = (
                 [dbnode.tags] if isinstance(dbnode.tags, str) else dbnode.tags
             )
+            existing.metadata = "{}"  # dbnode.metadata,
+            existing.hyperlink = ""  # dbnode.hyperlink or "",
+            existing.version = dbnode.version or ""
+            return existing.save()
+        elif dbnode.ntype == "Tool":
+            existing.name = dbnode.name
+            existing.doctype = dbnode.ntype
+            existing.document_id = dbnode.id
+            existing.description = dbnode.description
+            existing.links = []  # dbnode.links
+            existing.tags = (
+                [dbnode.tags] if isinstance(dbnode.tags, str) else dbnode.tags
+            )
+            ttype = [tag for tag in dbnode.tags if tag in cre_defs.ToolTypes]
+            if ttype:
+                ttype = ttype[0]
+            else:
+                ttype = cre_defs.ToolTypes.Unknown
+            existing.tooltype = ttype
             existing.metadata = "{}"  # dbnode.metadata,
             existing.hyperlink = ""  # dbnode.hyperlink or "",
             existing.version = dbnode.version or ""

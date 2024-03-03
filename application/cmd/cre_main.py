@@ -237,6 +237,8 @@ def register_standard(
         f"Registering resource {standard_entries[0].name} of length {len(standard_entries)}"
     )
     for node in standard_entries:
+        if not node:
+            continue
         register_node(node, collection)
         if node.embeddings:
             logger.debug(
@@ -307,7 +309,7 @@ def parse_standards_from_spreadsheeet(
                         "collection": None,
                         "db_connection_str": cache_location,
                     },
-                    timeout="120m",
+                    timeout=gap_analysis.GAP_ANALYSIS_TIMEOUT,
                 )
             )
         t0 = time.perf_counter()
@@ -469,31 +471,50 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
     cache = db_connect(args.cache_file)
     ph = prompt_client.PromptHandler(cache)
     if args.zap_in:
-        BaseParser().register_resource(zap_alerts_parser.ZAP, db=cache, ph=ph)
+        BaseParser().register_resource(
+            zap_alerts_parser.ZAP, db_connection_str=args.cache_file
+        )
     if args.cheatsheets_in:
-        BaseParser().register_resource(cheatsheets_parser.Cheatsheets, db=cache, ph=ph)
+        BaseParser().register_resource(
+            cheatsheets_parser.Cheatsheets, db_connection_str=args.cache_file
+        )
     if args.github_tools_in:
-        BaseParser().register_resource(misc_tools_parser.MiscTools, db=cache, ph=ph)
+        BaseParser().register_resource(
+            misc_tools_parser.MiscTools, db_connection_str=args.cache_file
+        )
     if args.capec_in:
-        BaseParser().register_resource(capec_parser.Capec, db=cache, ph=ph)
+        BaseParser().register_resource(
+            capec_parser.Capec, db_connection_str=args.cache_file
+        )
     if args.cwe_in:
-        BaseParser().register_resource(cwe.CWE, db=cache, ph=ph)
+        BaseParser().register_resource(cwe.CWE, db_connection_str=args.cache_file)
     if args.csa_ccm_v4_in:
-        BaseParser().register_resource(ccmv4.CloudControlsMatrix, db=cache, ph=ph)
+        BaseParser().register_resource(
+            ccmv4.CloudControlsMatrix, db_connection_str=args.cache_file
+        )
     if args.iso_27001_in:
-        BaseParser().register_resource(iso27001.ISO27001, db=cache, ph=ph)
+        BaseParser().register_resource(
+            iso27001.ISO27001, db_connection_str=args.cache_file
+        )
     if args.owasp_secure_headers_in:
-        BaseParser().register_resource(secure_headers.SeecureHeaders, db=cache, ph=ph)
+        BaseParser().register_resource(
+            secure_headers.SecureHeaders, db_connection_str=args.cache_file
+        )
     if args.pci_dss_4_in:
-        BaseParser().register_resource(pci_dss.PciDss, db=cache, ph=ph)
+        BaseParser().register_resource(
+            pci_dss.PciDss, db_connection_str=args.cache_file
+        )
     if args.juiceshop_in:
-        BaseParser().register_resource(juiceshop.JuiceShop, db=cache, ph=ph)
+        BaseParser().register_resource(
+            juiceshop.JuiceShop, db_connection_str=args.cache_file
+        )
 
     if args.dsomm_in:
-        BaseParser().register_resource(dsomm.DSOMM, db=cache, ph=ph)
+        BaseParser().register_resource(dsomm.DSOMM, db_connection_str=args.cache_file)
     if args.cloud_native_security_controls_in:
         BaseParser().register_resource(
-            cloud_native_security_controls.CloudNativeSecurityControls, db=cache, ph=ph
+            cloud_native_security_controls.CloudNativeSecurityControls,
+            db_connection_str=args.cache_file,
         )
     # /end individual resource importing
 

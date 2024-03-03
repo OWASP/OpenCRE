@@ -1,6 +1,5 @@
 import yaml
 import urllib
-from pprint import pprint
 import logging
 import os
 from typing import Dict, Any
@@ -20,7 +19,17 @@ class JuiceShop(ParserInterface):
     name = "OWASP Juice Shop"
     url = "https://raw.githubusercontent.com/juice-shop/juice-shop/master/data/static/challenges.yml"
 
-    def parse(self, cache: db.Node_collection, ph: prompt_client.PromptHandler):
+    def parse(
+        self, cache: db.Node_collection = None, ph: prompt_client.PromptHandler = None
+    ):
+        if not cache:
+            raise ValueError(
+                "Juiceshop importer parse method called with Null db(cache) argument"
+            )
+        if not ph:
+            raise ValueError(
+                "Juiceshop importer parse method called with Null prompt handler(ph) argument"
+            )
         resp = requests.get(self.url)
 
         if resp.status_code != 200:
@@ -56,6 +65,9 @@ class JuiceShop(ParserInterface):
             challenge_embeddings = ph.get_text_embeddings(",".join(chal.tags))
             chal.embeddings = challenge_embeddings
             chal.embeddings_text = ",".join(chal.tags)
+            if not challenge_embeddings:
+                logger.fatal(f"Cannot get embeddings for challenge {chal.section}")
+                return
 
             cre_id = ph.get_id_of_most_similar_cre(challenge_embeddings)
             if not cre_id:
@@ -74,10 +86,10 @@ class JuiceShop(ParserInterface):
             cre = cache.get_cre_by_db_id(cre_id)
             if cre:
                 chal.add_link(defs.Link(document=cre, ltype=defs.LinkTypes.LinkedTo))
-                logger.info(f"successfully stored {chal.__repr__()}")
+                logger.info(f"successfully stored {chal.section}")
             else:
                 logger.info(
-                    f"stored {chal.__repr__()} but could not link it to any CRE reliably"
+                    f"stored {chal.section} but could not link it to any CRE reliably"
                 )
             chals.append(chal)
         return {self.name: chals}
