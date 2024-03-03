@@ -58,13 +58,14 @@ class CloudNativeSecurityControls(ParserInterface):
                     f"could not find an appropriate CRE for Clound Native Security Control {cnsc.section}, findings similarities with standards instead"
                 )
                 standard_id = ph.get_id_of_most_similar_node(cnsc_embeddings)
-                dbstandard = cache.get_node_by_db_id(standard_id)
-                logger.info(
-                    f"found an appropriate standard for Cloud Native Security Control {cnsc.section}:{cnsc.subsection}, it is: {dbstandard.name}:{dbstandard.section}"
-                )
-                cres = cache.find_cres_of_node(dbstandard)
-                if cres:
-                    cre_id = cres[0].id
+                if standard_id:
+                    dbstandard = cache.get_node_by_db_id(standard_id)
+                    logger.info(
+                        f"found an appropriate standard for Cloud Native Security Control {cnsc.section}:{cnsc.subsection}, it is: {dbstandard.name}:{dbstandard.section}"
+                    )
+                    cres = cache.find_cres_of_node(dbstandard)
+                    if cres:
+                        cre_id = cres[0].id
             cre = cache.get_cre_by_db_id(cre_id)
             if cre:
                 cnsc.add_link(defs.Link(document=cre, ltype=defs.LinkTypes.LinkedTo))

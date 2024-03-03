@@ -13,7 +13,7 @@ from application.prompt_client import prompt_client as prompt_client
 # GENERIC Markdown file parser for self-contained links! when we have more projects using this setup add them in the list
 
 
-class SeecureHeaders(ParserInterface):
+class SecureHeaders(ParserInterface):
     name = "Secure Headers"
 
     def entry(self, section: str, hyperlink: str, tags: List[str]) -> defs.Standard:

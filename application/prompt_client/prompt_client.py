@@ -278,6 +278,10 @@ class PromptHandler:
             ) = self.__load_cre_embeddings(
                 self.database.get_embeddings_by_doc_type(cre_defs.Credoctypes.CRE.value)
             )
+        if not self.existing_cre_embeddings.getnnz() or not len(self.existing_cre_ids):
+            raise ValueError(
+                "cre embeddings or cre_ids empty, have ANY embeddings been generated?"
+            )
 
         embedding_array = sparse.csr_matrix(
             np.array(item_embedding).reshape(1, -1)
@@ -314,6 +318,12 @@ class PromptHandler:
                 self.database.get_embeddings_by_doc_type(
                     cre_defs.Credoctypes.Standard.value
                 )
+            )
+        if not self.existing_node_embeddings.getnnz() or not len(
+            self.existing_node_ids
+        ):
+            raise ValueError(
+                "node embeddings or node_ids empty, have ANY embeddings been generated?"
             )
 
         embedding_array = sparse.csr_matrix(
