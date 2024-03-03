@@ -219,6 +219,16 @@ def main() -> None:
         default="",
         help="preload map analysis for all possible 2 standards combinations, use target url as an OpenCRE base",
     )
+    parser.add_argument(
+        "--delete_map_analysis_for",
+        default="",
+        help="delete all map analyses for resource spcified",
+    )
+    parser.add_argument(
+        "--delete_resource",
+        default="",
+        help="delete all the mappings, embeddings and gap analysis for the resource",
+    )
     args = parser.parse_args()
 
     from application.cmd import cre_main

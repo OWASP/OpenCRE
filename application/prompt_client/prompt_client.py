@@ -282,7 +282,6 @@ class PromptHandler:
             raise ValueError(
                 "cre embeddings or cre_ids empty, have ANY embeddings been generated?"
             )
-
         embedding_array = sparse.csr_matrix(
             np.array(item_embedding).reshape(1, -1)
         )  # convert embedding into a 1-dimentional numpy array

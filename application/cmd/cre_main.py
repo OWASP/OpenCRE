@@ -122,9 +122,16 @@ def register_cre(cre: defs.CRE, collection: db.Node_collection) -> db.CRE:
     dbcre: db.CRE = collection.add_cre(cre)
     for link in cre.links:
         if type(link.document) == defs.CRE:
-            collection.add_internal_link(
-                dbcre, register_cre(link.document, collection), type=link.ltype
-            )
+            if link.ltype == defs.LinkTypes.PartOf:
+                collection.add_internal_link(
+                    register_cre(link.document, collection),
+                    dbcre,
+                    type=defs.LinkTypes.Contains,
+                )
+            else:
+                collection.add_internal_link(
+                    dbcre, register_cre(link.document, collection), type=link.ltype
+                )
         else:
             collection.add_link(
                 cre=dbcre,
@@ -537,6 +544,12 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
         start_worker(args.cache_file)
     if args.preload_map_analysis_target_url:
         gap_analysis.preload(target_url=args.preload_map_analysis_target_url)
+    if args.delete_map_analysis_for:
+        cache = db_connect(args.cache_file)
+        cache.delete_gapanalysis_results_for(args.delete_map_analysis_for)
+    if args.delete_resource:
+        cache = db_connect(args.cache_file)
+        cache.delete_nodes(args.delete_resource)
 
 
 def ai_client_init(database: db.Node_collection):
