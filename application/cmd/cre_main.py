@@ -537,6 +537,12 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
         start_worker(args.cache_file)
     if args.preload_map_analysis_target_url:
         gap_analysis.preload(target_url=args.preload_map_analysis_target_url)
+    if args.delete_map_analysis_for:
+        cache = db_connect(args.cache_file)
+        cache.delete_gapanalysis_results_for(args.delete_map_analysis_for)
+    if args.delete_resource:
+        cache = db_connect(args.cache_file)
+        cache.delete_nodes(args.delete_resource)
 
 
 def ai_client_init(database: db.Node_collection):

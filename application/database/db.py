@@ -32,7 +32,7 @@ import yaml
 from application.defs import cre_defs
 from application.utils import file
 from flask_sqlalchemy.model import DefaultMeta
-from sqlalchemy import func
+from sqlalchemy import func, delete
 import uuid
 
 from application.utils.gap_analysis import get_path_score
@@ -1319,6 +1319,42 @@ class Node_collection:
 
     def all_nodes_flat(self) -> List[cre_defs.Document]:
         return self.neo_db.everything()
+
+    def delete_nodes(self, node_name: str):
+        entries = (
+            self.session.query(Node)
+            .filter(func.lower(Node.name) == node_name.lower())
+            .all()
+        )
+        if not entries:
+            logger.debug(f"Nodes {node_name} is already deleted")
+            return
+
+        for entry in entries:
+            entry_links = self.session.query(Links).filter(Links.node == entry.id).all()
+            for link in entry_links:
+                self.session.delete(link)
+
+            embeddings = self.get_embeddings_for_doc(nodeFromDB(entry))
+            if embeddings:
+                self.session.delete(embeddings)
+            self.session.delete(entry)
+
+        self.delete_gapanalysis_results_for(node_name)
+        self.session.commit()
+
+    def delete_gapanalysis_results_for(self, node_name):
+        res = (
+            self.session.query(GapAnalysisResults)
+            .filter(GapAnalysisResults.cache_key.like(f"%{node_name}%"))
+            .all()
+        )
+        for r in res:
+            result = r.delete()
+            logger.info(f"deleted {result.rowcount} objects")
+        self.session.commit()
+        self.session.flush()
+        return res
 
     def add_cre(self, cre: cre_defs.CRE) -> CRE:
         entry: CRE
