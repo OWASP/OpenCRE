@@ -1350,8 +1350,9 @@ class Node_collection:
             .all()
         )
         for r in res:
-            result = r.delete()
-            logger.info(f"deleted {result.rowcount} objects")
+            result = self.session.delete(r)
+            if result:
+                logger.info(f"deleted {result.rowcount} objects")
         self.session.commit()
         self.session.flush()
         return res

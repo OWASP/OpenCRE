@@ -122,9 +122,16 @@ def register_cre(cre: defs.CRE, collection: db.Node_collection) -> db.CRE:
     dbcre: db.CRE = collection.add_cre(cre)
     for link in cre.links:
         if type(link.document) == defs.CRE:
-            collection.add_internal_link(
-                dbcre, register_cre(link.document, collection), type=link.ltype
-            )
+            if link.ltype == defs.LinkTypes.PartOf:
+                collection.add_internal_link(
+                    register_cre(link.document, collection),
+                    dbcre,
+                    type=defs.LinkTypes.Contains,
+                )
+            else:
+                collection.add_internal_link(
+                    dbcre, register_cre(link.document, collection), type=link.ltype
+                )
         else:
             collection.add_link(
                 cre=dbcre,

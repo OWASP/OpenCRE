@@ -58,6 +58,7 @@ def schedule(standards: List[str], database):
     if result:
         return flask_json.loads(result)
 
+    logger.info(f"Gap analysis result for {standards_hash} does not exist")
     gap_analysis_results = conn.get(standards_hash)
     if gap_analysis_results:
         gap_analysis_dict = json.loads(gap_analysis_results)
