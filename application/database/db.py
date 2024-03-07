@@ -717,10 +717,13 @@ class Node_collection:
 
     def __init__(self) -> None:
         if not os.environ.get("NO_LOAD_GRAPH"):
+            print("getting mem graph instance")
             self.graph = CRE_Graph.instance(sqla.session)
         if not os.environ.get("NO_LOAD_GRAPH_DB"):
+            print("getting graph db instance")
             self.neo_db = NEO_DB.instance()
         self.session = sqla.session
+        print("out of db init")
 
     def __get_external_links(self) -> List[Tuple[CRE, Node, str]]:
         external_links: List[Tuple[CRE, Node, str]] = []
