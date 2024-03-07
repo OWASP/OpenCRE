@@ -374,12 +374,12 @@ def text_search() -> Any:
 def find_root_cres() -> Any:
     """Useful for fast browsing the graph from the top"""
     database = db.Node_collection()
-    logger.debug("got database")
+    print("got database")
     # opt_osib = request.args.get("osib")
     opt_format = request.args.get("format")
     with CRETracer("get root cres"):
         documents = database.get_root_cres()
-    logger.debug(f"got {len(documents)} cres")
+    print(f"got {len(documents)} cres")
 
     if documents:
         res = [doc.todict() for doc in documents]
