@@ -718,7 +718,8 @@ class Node_collection:
     def __init__(self) -> None:
         if not os.environ.get("NO_LOAD_GRAPH"):
             self.graph = CRE_Graph.instance(sqla.session)
-        self.neo_db = NEO_DB.instance()
+        if not os.environ.get("NO_LOAD_GRAPH_DB"):
+            self.neo_db = NEO_DB.instance()
         self.session = sqla.session
 
     def __get_external_links(self) -> List[Tuple[CRE, Node, str]]:

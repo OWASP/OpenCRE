@@ -373,6 +373,7 @@ def text_search() -> Any:
 @app.route("/rest/v1/root_cres", methods=["GET"])
 def find_root_cres() -> Any:
     """Useful for fast browsing the graph from the top"""
+    print("getting database")
     database = db.Node_collection()
     print("got database")
     # opt_osib = request.args.get("osib")
