@@ -15,7 +15,7 @@ from application.utils import spreadsheet as sheet_utils
 
 
 class CloudControlsMatrix(ParserInterface):
-    name = "Cloud Controls Matrix v4.0"
+    name = "Cloud Controls Matrix"
 
     def make_nist_map(self, cache: db.Node_collection):
         nist_map = {}
