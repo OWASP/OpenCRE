@@ -474,9 +474,15 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
     elif args.osib_out:
         export_to_osib(file_loc=args.osib_out, cache=args.cache_file)
 
+    if args.delete_map_analysis_for:
+        cache = db_connect(args.cache_file)
+        cache.delete_gapanalysis_results_for(args.delete_map_analysis_for)
+    if args.delete_resource:
+        cache = db_connect(args.cache_file)
+        cache.delete_nodes(args.delete_resource)
+
+
     # individual resource importing
-    cache = db_connect(args.cache_file)
-    ph = prompt_client.PromptHandler(cache)
     if args.zap_in:
         BaseParser().register_resource(
             zap_alerts_parser.ZAP, db_connection_str=args.cache_file
@@ -515,7 +521,6 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
         BaseParser().register_resource(
             juiceshop.JuiceShop, db_connection_str=args.cache_file
         )
-
     if args.dsomm_in:
         BaseParser().register_resource(dsomm.DSOMM, db_connection_str=args.cache_file)
     if args.cloud_native_security_controls_in:
@@ -540,17 +545,10 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
         populate_neo4j_db(args.cache_file)
     if args.start_worker:
         from application.worker import start_worker
-
         start_worker(args.cache_file)
+
     if args.preload_map_analysis_target_url:
         gap_analysis.preload(target_url=args.preload_map_analysis_target_url)
-    if args.delete_map_analysis_for:
-        cache = db_connect(args.cache_file)
-        cache.delete_gapanalysis_results_for(args.delete_map_analysis_for)
-    if args.delete_resource:
-        cache = db_connect(args.cache_file)
-        cache.delete_nodes(args.delete_resource)
-
 
 def ai_client_init(database: db.Node_collection):
     return prompt_client.PromptHandler(database=database)
