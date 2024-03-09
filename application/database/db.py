@@ -1434,7 +1434,6 @@ class Node_collection:
         if not dbnode.ntype:
             logger.warning(f"{node} has no registered type, cannot add, skipping")
             return None
-
         entries = self.object_select(dbnode, skip_attributes=comparison_skip_attributes)
         if entries:
             entry = entries[0]
@@ -1696,7 +1695,7 @@ class Node_collection:
                 return list(set(results))
         # fuzzy matches second
         args = [f"%{text}%", "", "", "", "", ""]
-        results = []
+        results = {}
         s = set([p for p in permutations(args, 6)])
         for combo in s:
             nodes = self.get_nodes(
@@ -1710,15 +1709,18 @@ class Node_collection:
                 sectionID=combo[5],
             )
             if nodes:
-                results.extend(nodes)
+                for node in nodes:
+                    node_key = f"{node.name}:{node.version}:{node.section}:{node.sectionID}:{node.subsection}:"
+                    results[node_key] = node
         args = [f"%{text}%", None, None]
         for combo in permutations(args, 3):
             cres = self.get_CREs(
                 name=combo[0], external_id=combo[1], description=combo[2], partial=True
             )
             if cres:
-                results.extend(cres)
-        return list(set(results))
+                for cre in cres:
+                    results[cre.id] = cre
+        return list(results.values())
 
     def get_root_cres(self):
         """Returns CRES that only have "Contains" links"""

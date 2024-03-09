@@ -92,7 +92,7 @@ export const CommonRequirementEnumeration = () => {
                   <div className="cre-page__links" key={type}>
                     <div className="cre-page__links-eader">
                       <b>Which {getDocumentTypeText(type, links[0].document.doctype)}</b>:
-                      {/* Risk here of mixed doctype in here causing odd output */}
+                      {/* Risk of mixed doctype in here causing odd output */}
                     </div>
                     {sortedResults.map((link, i) => {
                       const temp = (
