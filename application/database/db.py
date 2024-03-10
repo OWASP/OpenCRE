@@ -1686,7 +1686,7 @@ class Node_collection:
             )
             if nodes:
                 for node in nodes:
-                    node_key = f"{node.name}:{node.version}:{node.section}:{node.section_id}:{node.subsection}:"
+                    node_key = f"{node.name}:{node.version}:{node.section}:{node.sectionID}:{node.subsection}:"
                     results[node_key] = node
         args = [f"%{text}%", None, None]
         for combo in permutations(args, 3):
