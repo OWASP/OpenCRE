@@ -1686,7 +1686,7 @@ class Node_collection:
             )
             if nodes:
                 print(f"found {len(nodes)}nodes")
-                results.extend(nodes)
+                results.extend(list(set(nodes)))
         args = [f"%{text}%", None, None]
         for combo in permutations(args, 3):
             cres = self.get_CREs(
@@ -1694,9 +1694,8 @@ class Node_collection:
             )
             if cres:
                 print(f"found {len(cres)}cres")
-                results.extend(cres)
-        print(f"got {list(set(results))}")
-        return list(set(results))
+                results.extend(list(set(cres)))
+        return results
 
     def get_root_cres(self):
         """Returns CRES that only have "Contains" links"""
