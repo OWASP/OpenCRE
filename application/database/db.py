@@ -1695,7 +1695,8 @@ class Node_collection:
             if cres:
                 print(f"found {len(cres)}cres")
                 results.extend(list(set(cres)))
-        return results
+        print(f"got {list(set(results))}")
+        return list(set(results))
 
     def get_root_cres(self):
         """Returns CRES that only have "Contains" links"""
