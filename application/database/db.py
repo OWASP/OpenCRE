@@ -1672,7 +1672,6 @@ class Node_collection:
         args = [f"%{text}%", "", "", "", "", ""]
         results = {}
         s = set([p for p in permutations(args, 6)])
-        print(f"searching for {len(s)}")
         for combo in s:
             nodes = self.get_nodes(
                 name=combo[0],
@@ -1696,7 +1695,6 @@ class Node_collection:
             if cres:
                 for cre in cres:
                     results[cre.id] = cre
-        print(f"got {len(list(results.values()))}")
         return list(results.values())
 
     def get_root_cres(self):
