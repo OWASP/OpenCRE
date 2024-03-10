@@ -481,7 +481,6 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
         cache = db_connect(args.cache_file)
         cache.delete_nodes(args.delete_resource)
 
-
     # individual resource importing
     if args.zap_in:
         BaseParser().register_resource(
@@ -545,10 +544,12 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
         populate_neo4j_db(args.cache_file)
     if args.start_worker:
         from application.worker import start_worker
+
         start_worker(args.cache_file)
 
     if args.preload_map_analysis_target_url:
         gap_analysis.preload(target_url=args.preload_map_analysis_target_url)
+
 
 def ai_client_init(database: db.Node_collection):
     return prompt_client.PromptHandler(database=database)
