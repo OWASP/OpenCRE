@@ -1670,7 +1670,7 @@ class Node_collection:
                 return list(set(results))
         # fuzzy matches second
         args = [f"%{text}%", "", "", "", "", ""]
-        results = []
+        results = {}
         s = set([p for p in permutations(args, 6)])
         print(f"searching for {len(s)}")
         for combo in s:
@@ -1685,18 +1685,19 @@ class Node_collection:
                 sectionID=combo[5],
             )
             if nodes:
-                print(f"found {len(nodes)}nodes")
-                results.extend(list(set(nodes)))
+                for node in nodes:
+                    node_key = f"{node.name}:{node.version}:{node.section}:{node.section_id}:{node.subsection}:"
+                    results[node_key] = node
         args = [f"%{text}%", None, None]
         for combo in permutations(args, 3):
             cres = self.get_CREs(
                 name=combo[0], external_id=combo[1], description=combo[2], partial=True
             )
             if cres:
-                print(f"found {len(cres)}cres")
-                results.extend(list(set(cres)))
-        print(f"got {list(set(results))}")
-        return list(set(results))
+                for cre in cres:
+                    results[cre.external_id] = cre
+        print(f"got {len(list(results.values()))}")
+        return list(results.values())
 
     def get_root_cres(self):
         """Returns CRES that only have "Contains" links"""
