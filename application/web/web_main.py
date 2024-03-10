@@ -355,6 +355,9 @@ def text_search() -> Any:
     text = request.args.get("text")
     opt_format = request.args.get("format")
     documents = database.text_search(text)
+    from pprint import pprint
+    pprint(documents)
+    
     if documents:
         if opt_format == SupportedFormats.Markdown.value:
             return f"<pre>{mdutils.cre_to_md(documents)}</pre>"
