@@ -1685,6 +1685,7 @@ class Node_collection:
                 sectionID=combo[5],
             )
             if nodes:
+                print(f"found {len(nodes)}nodes")
                 results.extend(nodes)
         args = [f"%{text}%", None, None]
         for combo in permutations(args, 3):
@@ -1692,6 +1693,7 @@ class Node_collection:
                 name=combo[0], external_id=combo[1], description=combo[2], partial=True
             )
             if cres:
+                print(f"found {len(cres)}cres")
                 results.extend(cres)
         print(f"got {list(set(results))}")
         return list(set(results))
