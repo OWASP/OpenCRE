@@ -355,7 +355,6 @@ def text_search() -> Any:
     text = request.args.get("text")
     opt_format = request.args.get("format")
     documents = database.text_search(text)
-    from pprint import pprint
     print(f"returning {len(documents)}")
 
     if documents:

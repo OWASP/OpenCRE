@@ -1693,7 +1693,7 @@ class Node_collection:
             )
             if cres:
                 results.extend(cres)
-        print(f"got {len(results)}")
+        print(f"got {list(set(results))}")
         return list(set(results))
 
     def get_root_cres(self):
