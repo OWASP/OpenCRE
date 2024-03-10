@@ -1695,7 +1695,7 @@ class Node_collection:
             )
             if cres:
                 for cre in cres:
-                    results[cre.external_id] = cre
+                    results[cre.id] = cre
         print(f"got {len(list(results.values()))}")
         return list(results.values())
 
