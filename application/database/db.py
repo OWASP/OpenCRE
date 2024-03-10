@@ -1408,7 +1408,6 @@ class Node_collection:
         if not dbnode.ntype:
             logger.warning(f"{node} has no registered type, cannot add, skipping")
             return None
-
         entries = self.object_select(dbnode, skip_attributes=comparison_skip_attributes)
         if entries:
             entry = entries[0]

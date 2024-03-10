@@ -306,7 +306,12 @@ def parse_standards_from_spreadsheeet(
 
         populate_neo4j_db(collection)
         prompt_handler.generate_embeddings_for(defs.Credoctypes.CRE.value)
+        import_only = []
+        if os.environ.get("CRE_ROOT_CSV_IMPORT_ONLY"):
+            import_only = json.loads(os.environ.get("CRE_ROOT_CSV_IMPORT_ONLY"))
         for standard_name, standard_entries in docs.items():
+            if import_only and standard_name not in import_only:
+                continue
             jobs.append(
                 q.enqueue_call(
                     description=standard_name,

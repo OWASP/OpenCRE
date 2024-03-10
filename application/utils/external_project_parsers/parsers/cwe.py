@@ -77,6 +77,9 @@ class CWE(ParserInterface):
                 cwe.add_link(defs.Link(document=cre, ltype=defs.LinkTypes.LinkedTo))
         return cwe
 
+    # cwe is a special case because it already partially exists in our spreadsheet
+    # register should, instead of linking Just find the existing CWEs, update them with relevant info and update the relationships between CRE and CWE
+    # let's make CAPEC optional and by default off for now
     def register_cwe(self, cache: db.Node_collection, xml_file: str):
         statuses = {}
         entries = []
@@ -87,15 +90,23 @@ class CWE(ParserInterface):
             for weakness in weaknesses:
                 statuses[weakness["@Status"]] = 1
                 if weakness["@Status"] in ["Stable", "Incomplete", "Draft"]:
-                    cwe = defs.Standard(
-                        name="CWE",
-                        sectionID=weakness["@ID"],
-                        section=weakness["@Name"],
-                        hyperlink=self.make_hyperlink(weakness["@ID"]),
-                        version=version,
-                    )
-                    logger.debug(f"Registered CWE with id {cwe.section}")
-                    if weakness.get("Related_Attack_Patterns"):
+                    cwe = cache.get_nodes(self.name, sectionID=weakness["@ID"])
+                    if cwe:  # update the CWE in the database
+                        cwe.section = (weakness["@Name"],)
+                        cwe.hyperlink = self.make_hyperlink(weakness["@ID"])
+                        cwe.version = version
+                        cache.add_node(cwe,comparison_skip_attributes=["link","section","version","subsection"])
+                    else: # we found something new
+                        cwe = defs.Standard(
+                            name="CWE",
+                            sectionID=weakness["@ID"],
+                            section=weakness["@Name"],
+                            hyperlink=self.make_hyperlink(weakness["@ID"]),
+                            version=version,
+                        )
+                    logger.debug(f"Registered CWE with id {cwe.sectionID}")
+
+                    if weakness.get("Related_Attack_Patterns") and os.environ.get("CRE_LINK_CWE_THROUGH_CAPEC"):
                         for lst in weakness["Related_Attack_Patterns"].values():
                             for capec_entry in lst:
                                 if isinstance(capec_entry, Dict):
