@@ -123,7 +123,9 @@ def register_cre(cre: defs.CRE, collection: db.Node_collection) -> db.CRE:
     for link in cre.links:
         if type(link.document) == defs.CRE:
             collection.add_internal_link(
-                higher=dbcre, lower=register_cre(link.document, collection), type=link.ltype
+                higher=dbcre,
+                lower=register_cre(link.document, collection),
+                type=link.ltype,
             )
         else:
             collection.add_link(
