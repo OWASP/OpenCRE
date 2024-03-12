@@ -63,7 +63,7 @@ class TestDB(unittest.TestCase):
 
         collection.session.add(dbcre)
         collection.add_link(cre=dbcre, node=dbstandard)
-        collection.add_internal_link(cre=dbcre, group=dbgroup)
+        collection.add_internal_link(lower=dbcre, higher=dbgroup)
 
         self.collection = collection
 
@@ -801,17 +801,17 @@ class TestDB(unittest.TestCase):
 
         # happy path
         self.collection.add_internal_link(
-            cres["dbca"], cres["dbcb"], defs.LinkTypes.Same
+            higher=cres["dbca"], lower=cres["dbcb"], type=defs.LinkTypes.Same
         )
 
         # no cycle, free to insert
         self.collection.add_internal_link(
-            group=cres["dbcb"], cre=cres["dbcc"], type=defs.LinkTypes.Same
+            higher=cres["dbcb"], lower=cres["dbcc"], type=defs.LinkTypes.Same
         )
 
         # introdcues a cycle, should not be inserted
         self.collection.add_internal_link(
-            group=cres["dbcc"], cre=cres["dbca"], type=defs.LinkTypes.Same
+            higher=cres["dbcc"], lower=cres["dbca"], type=defs.LinkTypes.Same
         )
 
         #   "happy path, internal link exists"
@@ -1132,22 +1132,22 @@ class TestDB(unittest.TestCase):
             defs.Link(document=cres[7].shallow_copy(), ltype=defs.LinkTypes.PartOf)
         )
         collection.add_internal_link(
-            group=dbcres[0], cre=dbcres[2], type=defs.LinkTypes.Contains
+            higher=dbcres[0], lower=dbcres[2], type=defs.LinkTypes.Contains
         )
         collection.add_internal_link(
-            group=dbcres[1], cre=dbcres[3], type=defs.LinkTypes.Contains
+            higher=dbcres[1], lower=dbcres[3], type=defs.LinkTypes.Contains
         )
         collection.add_internal_link(
-            group=dbcres[2], cre=dbcres[4], type=defs.LinkTypes.Contains
+            higher=dbcres[2], lower=dbcres[4], type=defs.LinkTypes.Contains
         )
         collection.add_internal_link(
-            group=dbcres[5], cre=dbcres[0], type=defs.LinkTypes.Related
+            higher=dbcres[5], lower=dbcres[0], type=defs.LinkTypes.Related
         )
         collection.add_internal_link(
-            group=dbcres[3], cre=dbcres[5], type=defs.LinkTypes.Contains
+            higher=dbcres[3], lower=dbcres[5], type=defs.LinkTypes.Contains
         )
         collection.add_internal_link(
-            group=dbcres[6], cre=dbcres[7], type=defs.LinkTypes.PartOf
+            higher=dbcres[6], lower=dbcres[7], type=defs.LinkTypes.PartOf
         )
 
         collection.session.commit()
