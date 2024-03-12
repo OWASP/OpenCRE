@@ -95,8 +95,16 @@ class CWE(ParserInterface):
                         cwe.section = (weakness["@Name"],)
                         cwe.hyperlink = self.make_hyperlink(weakness["@ID"])
                         cwe.version = version
-                        cache.add_node(cwe,comparison_skip_attributes=["link","section","version","subsection"])
-                    else: # we found something new
+                        cache.add_node(
+                            cwe,
+                            comparison_skip_attributes=[
+                                "link",
+                                "section",
+                                "version",
+                                "subsection",
+                            ],
+                        )
+                    else:  # we found something new
                         cwe = defs.Standard(
                             name="CWE",
                             sectionID=weakness["@ID"],
@@ -106,7 +114,9 @@ class CWE(ParserInterface):
                         )
                     logger.debug(f"Registered CWE with id {cwe.sectionID}")
 
-                    if weakness.get("Related_Attack_Patterns") and os.environ.get("CRE_LINK_CWE_THROUGH_CAPEC"):
+                    if weakness.get("Related_Attack_Patterns") and os.environ.get(
+                        "CRE_LINK_CWE_THROUGH_CAPEC"
+                    ):
                         for lst in weakness["Related_Attack_Patterns"].values():
                             for capec_entry in lst:
                                 if isinstance(capec_entry, Dict):

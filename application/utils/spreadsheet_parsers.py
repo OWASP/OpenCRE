@@ -545,11 +545,6 @@ def parse_hierarchical_export_format(
 
         for link in parse_standards(mapping):
             doc = link.document
-            # if "Proactive" in doc.name:
-            #     from pprint import pprint
-            #     pprint(link)
-            #     pprint(cre.id)
-            #     input()
             doc = doc.add_link(
                 defs.Link(document=cre.shallow_copy(), ltype=defs.LinkTypes.LinkedTo)
             )

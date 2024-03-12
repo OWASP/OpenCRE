@@ -1426,109 +1426,137 @@ class Node_collection:
         return dbnode
 
     def add_internal_link(
-        self, group: CRE, cre: CRE, type: cre_defs.LinkTypes = cre_defs.LinkTypes.Same
+        self,
+        higher: CRE,
+        lower: CRE,
+        type: cre_defs.LinkTypes = cre_defs.LinkTypes.Same,
     ) -> None:
-        if cre.id is None:
-            if cre.external_id is None:
-                cre = (
+        """
+        adds a link between two CREs in the database,
+        Args:
+            higher (CRE): the higher level CRE that CONTAINS or is the SAME or is RELATED to lower
+            lower (CRE): the lower level CRE that is CONTAINED or is the SAME or is RELATED to higher
+            type (cre_defs.LinkTypes, optional): the linktype
+             Defaults to cre_defs.LinkTypes.Same.
+        """
+        if lower.id is None:
+            if lower.external_id is None:
+                lower = (
                     self.session.query(CRE)
                     .filter(
                         sqla.and_(
-                            CRE.name == cre.name, CRE.description == cre.description
+                            CRE.name == lower.name, CRE.description == lower.description
                         )
                     )
                     .first()
                 )
             else:
-                cre = (
+                lower = (
                     self.session.query(CRE)
                     .filter(
                         sqla.and_(
-                            CRE.name == cre.name, CRE.external_id == cre.external_id
+                            CRE.name == lower.name, CRE.external_id == lower.external_id
                         )
                     )
                     .first()
                 )
-        if group.id is None:
-            if group.external_id is None:
-                group = (
+        if higher.id is None:
+            if higher.external_id is None:
+                higher = (
                     self.session.query(CRE)
                     .filter(
                         sqla.and_(
-                            CRE.name == group.name, CRE.description == group.description
+                            CRE.name == higher.name,
+                            CRE.description == higher.description,
                         )
                     )
                     .first()
                 )
             else:
-                group = (
+                higher = (
                     self.session.query(CRE)
                     .filter(
                         sqla.and_(
-                            CRE.name == group.name, CRE.external_id == group.external_id
+                            CRE.name == higher.name,
+                            CRE.external_id == higher.external_id,
                         )
                     )
                     .first()
                 )
-        if cre is None or group is None:
+        if lower is None or higher is None:
             logger.fatal(
                 "Tried to insert internal mapping with element"
                 " that doesn't exist in db, this looks like a bug"
             )
             return None
 
-        entry = (
+        entry_exists = (
             self.session.query(InternalLinks)
             .filter(
-                sqla.or_(
-                    sqla.and_(
-                        InternalLinks.cre == group.id, InternalLinks.group == cre.id
-                    ),
-                    sqla.and_(
-                        InternalLinks.cre == cre.id, InternalLinks.group == group.id
-                    ),
+                sqla.and_(
+                    InternalLinks.cre == lower.id, InternalLinks.group == higher.id
+                ),
+            )
+            .first()
+        )
+        entry_exists_opposite_direction = (
+            self.session.query(InternalLinks)
+            .filter(
+                sqla.and_(
+                    InternalLinks.cre == higher.id, InternalLinks.group == lower.id
                 )
             )
             .first()
         )
-        if entry is not None:
-            logger.debug(
-                f"knew of internal link {cre.name} == {group.name} of type {entry.type},updating to type {type.value}"
+        if (
+            entry_exists_opposite_direction
+            and entry_exists_opposite_direction.type != cre_defs.LinkTypes.Related
+        ):
+            raise ValueError(
+                f"CRE Relationship from {higher.external_id} to {lower.external_id} already exists in the database but in the opposite direction, this is a bug and you have likely corrupted data"
             )
-            entry.type = type.value
+
+        if entry_exists:
+            logger.debug(
+                f"knew of internal link {lower.name} == {higher.name} of type {entry_exists.type},"
+                "updating to type {type.value}"
+            )
+            entry_exists.type = type.value
             self.session.commit()
 
-            return None
+            return
 
         else:
             logger.debug(
                 "did not know of internal link"
-                f" {group.external_id}:{group.name}"
-                f" == {cre.external_id}:{cre.name} ,adding"
+                f" {higher.external_id}:{higher.name}"
+                f" == {lower.external_id}:{lower.name} ,adding"
             )
-            cycle = self.__introduces_cycle(f"CRE: {group.id}", f"CRE: {cre.id}")
+            cycle = self.__introduces_cycle(f"CRE: {higher.id}", f"CRE: {lower.id}")
             if not cycle:
                 self.session.add(
-                    InternalLinks(type=type.value, cre=cre.id, group=group.id)
+                    InternalLinks(type=type.value, cre=lower.id, group=higher.id)
                 )
                 self.session.commit()
                 if self.graph:
                     self.graph.add_edge(
-                        f"CRE: {group.id}", f"CRE: {cre.id}", ltype=type.value
+                        f"CRE: {higher.id}", f"CRE: {lower.id}", ltype=type.value
                     )
             else:
                 for item in cycle:
                     from_id = item[0].replace("CRE: ", "")
                     to_id = item[1].replace("CRE: ", "")
-                    from_cre = self.session.query(CRE).filter(cre.id == from_id).first()
-                    to_cre = self.session.query(CRE).filter(cre.id == to_id).first()
+                    from_cre = (
+                        self.session.query(CRE).filter(lower.id == from_id).first()
+                    )
+                    to_cre = self.session.query(CRE).filter(lower.id == to_id).first()
                     if from_cre and to_cre:
                         item[0].replace(from_id, from_cre.name)
                         item[1].replace(to_id, to_cre.name)
 
                 logger.warning(
-                    f"A link between CREs {group.external_id}-{group.name} and"
-                    f" {cre.external_id}-{cre.name} "
+                    f"A link between CREs {higher.external_id}-{higher.name} and"
+                    f" {lower.external_id}-{lower.name} "
                     f"would introduce cycle {cycle}, skipping"
                 )
 
