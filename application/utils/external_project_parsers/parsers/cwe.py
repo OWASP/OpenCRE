@@ -90,8 +90,9 @@ class CWE(ParserInterface):
             for weakness in weaknesses:
                 statuses[weakness["@Status"]] = 1
                 if weakness["@Status"] in ["Stable", "Incomplete", "Draft"]:
-                    cwe = cache.get_nodes(self.name, sectionID=weakness["@ID"])
-                    if cwe:  # update the CWE in the database
+                    cwes = cache.get_nodes(self.name, sectionID=weakness["@ID"])
+                    if cwes:  # update the CWE in the database
+                        cwe = cwes[0]
                         cwe.section = (weakness["@Name"],)
                         cwe.hyperlink = self.make_hyperlink(weakness["@ID"])
                         cwe.version = version

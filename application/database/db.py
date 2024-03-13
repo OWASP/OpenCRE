@@ -1493,29 +1493,17 @@ class Node_collection:
         entry_exists = (
             self.session.query(InternalLinks)
             .filter(
-                sqla.and_(
-                    InternalLinks.cre == lower.id, InternalLinks.group == higher.id
-                ),
-            )
-            .first()
-        )
-        entry_exists_opposite_direction = (
-            self.session.query(InternalLinks)
-            .filter(
-                sqla.and_(
-                    InternalLinks.cre == higher.id, InternalLinks.group == lower.id
+                sqla.or_(
+                    sqla.and_(
+                        InternalLinks.cre == lower.id, InternalLinks.group == higher.id
+                    ),
+                    sqla.and_(
+                        InternalLinks.cre == higher.id, InternalLinks.group == lower.id
+                    ),
                 )
             )
             .first()
         )
-        if (
-            entry_exists_opposite_direction
-            and entry_exists_opposite_direction.type != cre_defs.LinkTypes.Related
-        ):
-            raise ValueError(
-                f"CRE Relationship from {higher.external_id} to {lower.external_id} already exists in the database but in the opposite direction, this is a bug and you have likely corrupted data"
-            )
-
         if entry_exists:
             logger.debug(
                 f"knew of internal link {lower.name} == {higher.name} of type {entry_exists.type},"

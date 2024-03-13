@@ -22,7 +22,7 @@ def connect():
     redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
     redis_no_ssl = os.getenv("REDIS_NO_SSL")
     if os.getenv("REDIS_HOST") and os.getenv("REDIS_PORT"):
-        logger.info(
+        logger.debug(
             f'Attempting to connect to Redis instance using host and port at {os.getenv("REDIS_HOST")}:{os.getenv("REDIS_PORT")} using password? {"yes" if os.getenv("REDIS_PASSWORD", None) else "no"}. Using SSL? {False if redis_no_ssl else True}'
         )
         return redis.StrictRedis(
@@ -33,7 +33,7 @@ def connect():
             ssl_cert_reqs=None,
         )
     elif redis_url:
-        logger.info(
+        logger.debug(
             f"Attempting to connect to Redis instance using a URL at {redis_url}"
         )
         if redis_url == "redis://localhost:6379":
