@@ -130,15 +130,16 @@ class in_memory_embeddings:
             database (db.Node_collection): the Node_collection instance to use
             item_name (str): the item for which to generate embeddings, this can be either `cre_defs.Credoctypes.CRE.value` for generating all CRE embeddings or the name of any Standard or Tool.
         """
+        db_ids = []
         if item_name == cre_defs.Credoctypes.CRE.value:
             ids = [a[0] for a in database.list_cre_ids()]
         else:
             ids = [a[0] for a in database.list_node_ids_by_name(item_name)]
-        ids = []
-        for dbID in ids:
+        missing_embedding_ids = []
+        for dbID in db_ids:
             if not database.get_embedding(dbID):
-                ids.append(dbID)
-        self.generate_embeddings(database, ids)
+                missing_embedding_ids.append(dbID)
+        self.generate_embeddings(database, missing_embedding_ids)
 
     def generate_embeddings(
         self, database: db.Node_collection, missing_embeddings: List[str]
