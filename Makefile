@@ -7,10 +7,10 @@ prod-run:
 
 docker-neo4j-rm:
 	docker stop cre-neo4j
-	docker rm -f cre-neo4j
+	docker rm cre-neo4j
 	docker volume rm cre_neo4j_data
 	docker volume rm cre_neo4j_logs
-	rm -rf .neo4j
+	# rm -rf .neo4j
 
 docker-neo4j:
 	mkdir -p .neo4j/data .neo4j/logs
@@ -158,32 +158,7 @@ import-projects:
 
 
 import-all:
-	[ -d "./venv" ] && . ./venv/bin/activate
-	docker stop cre-neo4j cre-redis-stack
-	make docker-neo4j-rm
-	docker rm -f cre-neo4j cre-redis-stack
-	rm -rf standards_cache.sqlite
-
-	make migrate-upgrade
-	make docker-redis
-	make docker-neo4j
-	export SERVICE_ACCOUNT_CREDENTIALS=`cat ${HOME}/.config/gcloud/application_default_credentials.json`
-	export OpenCRE_gspread_Auth='service_account'
-	export GOOGLE_PROJECT_ID='opencre-vertex'
-	export NEO4J_URL='neo4j://neo4j:password@127.0.0.1:7687'
-
-	(rm -f worker-1.log && make start-worker&> worker-1.log&)
-	(rm -f worker-2.log && make start-worker&> worker-2.log&)
-	(rm -f worker-3.log && make start-worker&> worker-3.log&)
-	(rm -f worker-4.log && make start-worker&> worker-4.log&)
-	(rm -f worker-5.log && make start-worker&> worker-5.log&)
-
-	export FLASK_APP=$(CURDIR)/cre.py &&\
-	python cre.py --add --from_spreadsheet https://docs.google.com/spreadsheets/d/1eZOEYgts7d_-Dr-1oAbogPfzBLh6511b58pX3b59kvg &&\
-	python cre.py --import_external_projects
-
-	killall python
-	killall make
+	$(shell bash ./scripts/import-all.sh)
 
 import-neo4j:
 	[ -d "./venv" ] && . ./venv/bin/activate
