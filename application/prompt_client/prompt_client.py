@@ -132,9 +132,9 @@ class in_memory_embeddings:
         """
         db_ids = []
         if item_name == cre_defs.Credoctypes.CRE.value:
-            ids = [a[0] for a in database.list_cre_ids()]
+            db_ids = [a[0] for a in database.list_cre_ids()]
         else:
-            ids = [a[0] for a in database.list_node_ids_by_name(item_name)]
+            db_ids = [a[0] for a in database.list_node_ids_by_name(item_name)]
         missing_embedding_ids = []
         for dbID in db_ids:
             if not database.get_embedding(dbID):
