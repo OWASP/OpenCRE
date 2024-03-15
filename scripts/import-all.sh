@@ -7,10 +7,15 @@ export GOOGLE_PROJECT_ID='opencre-vertex'
 export NEO4J_URL='neo4j://neo4j:password@127.0.0.1:7687'
 export FLASK_APP=$(pwd)/cre.py
 
+if -n $(docker ps | grep cre-neo4); then
+    docker stop cre-neo4j
+    make docker-neo4j-rm || true
+fi
 
-docker stop cre-neo4j cre-redis-stack
-make docker-neo4j-rm
-docker rm -f cre-neo4j cre-redis-stack
+if -n $(docker ps | grep cre-redis-stack); then
+    docker stop cre-redis-stack
+fi
+
 rm -rf standards_cache.sqlite
 make migrate-upgrade
 make docker-redis
