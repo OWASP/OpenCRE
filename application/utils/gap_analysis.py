@@ -21,7 +21,7 @@ PENALTIES = {
     "SAME": 0,
 }
 
-GAP_ANALYSIS_TIMEOUT = "120m"
+GAP_ANALYSIS_TIMEOUT = "129600s" # 36 hours
 
 
 def get_path_score(path):
