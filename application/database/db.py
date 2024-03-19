@@ -1242,8 +1242,19 @@ class Node_collection:
 
         return list(docs.values())
 
-    def all_nodes_flat(self) -> List[cre_defs.Document]:
-        return self.neo_db.everything()
+    def all_cres_with_pagination(self,page) -> List[cre_defs.CRE]:
+        result:List[cre_defs.CRE] = []
+        cres,page,total_pages = self.session.query(CRE).paginate(page=int(page), per_page=10, error_out=False)
+        for cre in cres:
+           result.extend(self.get_CREs(external_id=cre.external_id))
+        return result,page,total_pages
+        
+    def all_nodes_with_pagination(self,page) -> List[cre_defs.Document]:
+        result:List[cre_defs.Node] = []
+        nodes,page,total_pages = self.session.query(Node).paginate(page=int(page), per_page=10, error_out=False)
+        for node in nodes:
+           result.extend(self.get_nodes(name=node.name,section=node.section,subsection=node.subsection,sectionID=node.section_id))
+        return result,page,total_pages
 
     def add_cre(self, cre: cre_defs.CRE) -> CRE:
         entry: CRE
