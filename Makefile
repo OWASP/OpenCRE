@@ -51,7 +51,7 @@ start-worker:
 
 dev-flask:
 	. ./venv/bin/activate
-	INSECURE_REQUESTS=1 FLASK_APP=`pwd`/cre.py  FLASK_CONFIG=development flask run
+	FLASK_RUN_PORT="5001" INSECURE_REQUESTS=1 FLASK_APP=`pwd`/cre.py  FLASK_CONFIG=development flask run
 
 e2e:
 	yarn build
@@ -101,10 +101,10 @@ docker-prod:
 	docker build -f Dockerfile -t opencre:$(shell git rev-parse HEAD) .
 
 docker-dev-run:
-	 docker run -it -p 5000:5000 opencre-dev:$(shell git rev-parse HEAD)
+	 docker run -it -p 5001:5001 opencre-dev:$(shell git rev-parse HEAD)
 
 docker-prod-run:
-	 docker run -it -p 5000:5000 opencre:$(shell git rev-parse HEAD)
+	 docker run -it -p 5001:5001 opencre:$(shell git rev-parse HEAD)
 
 lint:
 	[ -d "./venv" ] && . ./venv/bin/activate && black . && yarn lint
@@ -181,6 +181,6 @@ preload-map-analysis:
 	sleep 5
 	[ -d "./venv" ] && . ./venv/bin/activate
 	export FLASK_APP=$(CURDIR)/cre.py 
-	python cre.py --preload_map_analysis_target_url 'http://127.0.0.1:5000'	
+	python cre.py --preload_map_analysis_target_url 'http://127.0.0.1:5001'	
 	killall python flask
 all: clean lint test dev dev-run
