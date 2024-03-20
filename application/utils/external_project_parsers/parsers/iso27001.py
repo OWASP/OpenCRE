@@ -77,7 +77,9 @@ class ISO27001(ParserInterface):
         return nist_table
 
     def parse(self, cache: db.Node_collection, ph: prompt_client.PromptHandler):
-        return {self.name:[]} # the doc above does not have names we get the names from the spreadsheet for now, disable
+        return {
+            self.name: []
+        }  # the doc above does not have names we get the names from the spreadsheet for now, disable
         url = self.url
         documents: List[defs.Standard] = []
         nist_nodes = cache.get_nodes(name="NIST 800-53 v5")
