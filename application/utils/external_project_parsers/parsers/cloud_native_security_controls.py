@@ -26,6 +26,8 @@ class CloudNativeSecurityControls(ParserInterface):
             )
             logger.fatal(err_str)
             raise RuntimeError(err_str)
+        if not ph:
+            raise RuntimeError("PromprtHandler instance is uninitialized")
         standard_entries = []
         entries = csv.DictReader(StringIO(resp.text), delimiter=",")
         for entry in entries:
