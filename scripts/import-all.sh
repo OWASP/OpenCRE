@@ -26,7 +26,7 @@ make docker-redis
 make docker-neo4j
 
 for i in seq 1 $RUN_COUNT; do
- (rm -f "worker-$$i.log" && make start-worker&> "worker-$$i.log")&
+ (rm -f "worker-$i.log" && make start-worker&> "worker-$i.log")&
  done
 
 [ -d "./venv" ] && . ./venv/bin/activate
