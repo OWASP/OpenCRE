@@ -39,6 +39,7 @@ class CloudControlsMatrix(ParserInterface):
         )
 
     def parse(self, cache: db.Node_collection, ph: prompt_client.PromptHandler):
+        return {self.name: []}  # disabled
         ccmFile: Dict[str, Any] = self.get_ccm_file()
         nist_map = self.make_nist_map(cache)
         re_nist = re.compile("(\w+-\d+)")
