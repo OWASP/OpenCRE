@@ -56,7 +56,9 @@ class Cheatsheets(ParserInterface):
                     cs = self.cheatsheet(section=name, hyperlink=hyperlink, tags=[])
                     for cre in cres:
                         cs.add_link(
-                            defs.Link(document=cre, ltype=defs.LinkTypes.LinkedTo)
+                            defs.Link(
+                                document=cre, ltype=defs.LinkTypes.AutomaticallyLinkedTo
+                            )
                         )
                     standard_entries.append(cs)
         return standard_entries

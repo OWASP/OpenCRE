@@ -132,7 +132,10 @@ class DSOMM(ParserInterface):
                         cs = cache.get_CREs(self.manual_mappings.get(aname))
                         for c in cs:
                             standard.add_link(
-                                defs.Link(document=c, ltype=defs.LinkTypes.LinkedTo)
+                                defs.Link(
+                                    document=c,
+                                    ltype=defs.LinkTypes.AutomaticallyLinkedTo,
+                                )
                             )
                     # use SAMM as Glue
                     if activity.get("references").get("samm2"):

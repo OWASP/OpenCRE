@@ -78,7 +78,10 @@ class MiscTools(ParserInterface):
                     )
                     for dbcre in cres:
                         cs.add_link(
-                            defs.Link(ltype=defs.LinkTypes.LinkedTo, document=dbcre)
+                            defs.Link(
+                                ltype=defs.LinkTypes.AutomaticallyLinkedTo,
+                                document=dbcre,
+                            )
                         )
                         print(
                             f"Registered new Document of type:Tool, toolType: {tool_type}, name:{tool_name} and hyperlink:{hyperlink},"

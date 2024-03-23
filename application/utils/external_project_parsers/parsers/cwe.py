@@ -58,7 +58,9 @@ class CWE(ParserInterface):
                 logger.debug(
                     f"linked CWE with id {cwe.sectionID} to CRE with ID {cre.id}"
                 )
-                cwe.add_link(defs.Link(document=cre, ltype=defs.LinkTypes.LinkedTo))
+                cwe.add_link(
+                    defs.Link(document=cre, ltype=defs.LinkTypes.AutomaticallyLinkedTo)
+                )
         return cwe
 
     def link_to_related_cwe(
@@ -74,7 +76,9 @@ class CWE(ParserInterface):
                 logger.debug(
                     f"linked CWE with id {cwe.sectionID} to CRE with ID {cre.id}"
                 )
-                cwe.add_link(defs.Link(document=cre, ltype=defs.LinkTypes.LinkedTo))
+                cwe.add_link(
+                    defs.Link(document=cre, ltype=defs.LinkTypes.AutomaticallyLinkedTo)
+                )
         return cwe
 
     # cwe is a special case because it already partially exists in our spreadsheet

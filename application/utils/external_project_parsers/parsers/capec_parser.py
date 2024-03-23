@@ -43,7 +43,7 @@ class Capec(ParserInterface):
                     f"linked CAPEC with id {capec.section} to CRE with ID {cre.id}"
                 )
                 capec = capec.add_link(
-                    defs.Link(document=cre, ltype=defs.LinkTypes.LinkedTo)
+                    defs.Link(document=cre, ltype=defs.LinkTypes.AutomaticallyLinkedTo)
                 )
         return capec
 
