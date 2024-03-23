@@ -208,6 +208,7 @@ class LinkTypes(str, Enum, metaclass=EnumMetaWithContains):
     Contains = "Contains"  # Hierarchy below: “Contains”
     Related = "Related"  # Hierarchy across (other CRE topic or Tag): “related”
 
+    AutomaticallyLinkedTo = "Automatically linked to"
     RemediatedBy = "Remediated by"
     Remediates = "Remediates"
 

@@ -80,7 +80,9 @@ class CloudControlsMatrix(ParserInterface):
 
                     for c in relevant_cres:
                         ccm.add_link(
-                            defs.Link(document=c, ltype=defs.LinkTypes.LinkedTo)
+                            defs.Link(
+                                document=c, ltype=defs.LinkTypes.AutomaticallyLinkedTo
+                            )
                         )
                         logger.debug(
                             f"Added link between CRE {c.id} and CCM v4.0 {ccm.section}"

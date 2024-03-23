@@ -85,7 +85,9 @@ class JuiceShop(ParserInterface):
 
             cre = cache.get_cre_by_db_id(cre_id)
             if cre:
-                chal.add_link(defs.Link(document=cre, ltype=defs.LinkTypes.LinkedTo))
+                chal.add_link(
+                    defs.Link(document=cre, ltype=defs.LinkTypes.AutomaticallyLinkedTo)
+                )
                 logger.info(f"successfully stored {chal.section}")
             else:
                 logger.info(

@@ -68,7 +68,10 @@ class ZAP(ParserInterface):
                     if nl.document.doctype == defs.Credoctypes.CRE
                 ]:
                     alert.add_link(
-                        defs.Link(ltype=defs.LinkTypes.LinkedTo, document=cre.document)
+                        defs.Link(
+                            ltype=defs.LinkTypes.AutomaticallyLinkedTo,
+                            document=cre.document,
+                        )
                     )
             else:
                 logger.error(
@@ -86,7 +89,10 @@ class ZAP(ParserInterface):
             for link in node.links:
                 if link.document.doctype == defs.Credoctypes.CRE:
                     alert.add_link(
-                        defs.Link(ltype=defs.LinkTypes.LinkedTo, document=link.document)
+                        defs.Link(
+                            ltype=defs.LinkTypes.AutomaticallyLinkedTo,
+                            document=link.document,
+                        )
                     )
         if not cwe_nodes:
             logger.error(

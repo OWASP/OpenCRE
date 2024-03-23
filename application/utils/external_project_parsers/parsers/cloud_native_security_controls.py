@@ -26,6 +26,8 @@ class CloudNativeSecurityControls(ParserInterface):
             )
             logger.fatal(err_str)
             raise RuntimeError(err_str)
+        if not ph:
+            raise RuntimeError("PromprtHandler instance is uninitialized")
         standard_entries = []
         entries = csv.DictReader(StringIO(resp.text), delimiter=",")
         for entry in entries:
@@ -68,7 +70,9 @@ class CloudNativeSecurityControls(ParserInterface):
                         cre_id = cres[0].id
             cre = cache.get_cre_by_db_id(cre_id)
             if cre:
-                cnsc.add_link(defs.Link(document=cre, ltype=defs.LinkTypes.LinkedTo))
+                cnsc.add_link(
+                    defs.Link(document=cre, ltype=defs.LinkTypes.AutomaticallyLinkedTo)
+                )
                 logger.info(f"successfully stored {cnsc.__repr__()}")
             else:
                 logger.info(

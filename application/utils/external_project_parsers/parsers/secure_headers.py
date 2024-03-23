@@ -65,7 +65,8 @@ class SecureHeaders(ParserInterface):
                             for dbcre in cres:
                                 cs.add_link(
                                     defs.Link(
-                                        document=dbcre, ltype=defs.LinkTypes.LinkedTo
+                                        document=dbcre,
+                                        ltype=defs.LinkTypes.AutomaticallyLinkedTo,
                                     )
                                 )
                     entries.append(cs)
