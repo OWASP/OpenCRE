@@ -137,12 +137,12 @@ migrate-downgrade:
 	flask db downgrade
 
 import-projects:
-	$(shell bash CRE_SKIP_IMPORT_CORE=1 ./scripts/import-all.sh)
+	$(shell CRE_SKIP_IMPORT_CORE=1 bash  ./scripts/import-all.sh)
 
 
 
 import-all:
-	$(shell bash CRE_DELETE_DB=1 ./scripts/import-all.sh)
+	$(shell CRE_DELETE_DB=1 bash ./scripts/import-all.sh)
 
 import-neo4j:
 	[ -d "./venv" ] && . ./venv/bin/activate
