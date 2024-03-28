@@ -1,8 +1,8 @@
 import logging
 import re
 from copy import copy
-from pprint import pprint
-from typing import Any, Dict, List, Optional, Tuple, cast
+from typing import Any, Dict, List, Optional
+from dataclasses import dataclass
 
 from application.defs import cre_defs as defs
 
@@ -16,7 +16,7 @@ logging.basicConfig()
 
 
 def is_empty(value: Optional[str]) -> bool:
-    value = str(value)
+    value = str(value).strip()
     return (
         value is None
         or value == "None"
@@ -27,6 +27,7 @@ def is_empty(value: Optional[str]) -> bool:
         or value.lower() == "tbd"
         or value.lower() == "see higher level topic"
         or value.lower() == "tbd"
+        or value.lower() == "0"
     )
 
 
@@ -95,13 +96,13 @@ def get_linked_nodes(mapping: Dict[str, str]) -> List[defs.Link]:
 
 
 def update_cre_in_links(
-    cres: Dict[str, defs.CRE], cre: defs.CRE
-) -> Dict[str, defs.CRE]:
-    for k, c in cres.items():
+    documents: Dict[str, defs.CRE], cre: defs.CRE
+) -> List[defs.CRE]:
+    for c in documents.values():
         for link in c.links:
             if link.document.name == cre.name:
                 link.document = cre.shallow_copy()
-    return cres
+    return documents
 
 
 def parse_export_format(lfile: List[Dict[str, Any]]) -> Dict[str, defs.Document]:
@@ -111,13 +112,13 @@ def parse_export_format(lfile: List[Dict[str, Any]]) -> Dict[str, defs.Document]
     cases:
         standard
         standard -> standard
-        cre -> other cres
+        cre -> other documents
         cre -> standards
-        cre -> standards, other cres
+        cre -> standards, other documents
     """
     cre: defs.Document
     internal_mapping: defs.Document
-    cres: Dict[str, defs.Document] = {}
+    documents: Dict[str, defs.Document] = {}
     lone_nodes: Dict[str, defs.Node] = {}
     link_types_regexp = re.compile(defs.ExportFormat.linked_cre_name_key("(\d+)"))
     max_internal_cre_links = len(
@@ -134,18 +135,18 @@ def parse_export_format(lfile: List[Dict[str, Any]]) -> Dict[str, defs.Document]
                 logger.info(
                     f"adding node: {st.document.doctype}:{st.document.name}:{st.document.section}"
                 )
-        else:  # cre -> standards, other cres
+        else:  # cre -> standards, other documents
             name = str(mapping.pop(defs.ExportFormat.cre_name_key()))
             id = str(mapping.pop(defs.ExportFormat.cre_id_key()))
             description = ""
             if defs.ExportFormat.cre_description_key() in mapping:
                 description = mapping.pop(defs.ExportFormat.cre_description_key())
 
-            if name not in cres.keys():  # register new cre
+            if name not in documents.keys():  # register new cre
                 cre = defs.CRE(name=name, id=id, description=description)
             else:  # it's a conflict mapping so we've seen this before,
                 # just retrieve so we can add the new info
-                cre = cres[name]
+                cre = documents[name]
                 if cre.id != id:
                     if is_empty(id):
                         id = cre.id
@@ -172,8 +173,8 @@ def parse_export_format(lfile: List[Dict[str, Any]]) -> Dict[str, defs.Document]
                     link_type = str(
                         mapping.pop(defs.ExportFormat.linked_cre_link_type_key(str(i)))
                     )
-                    if name in cres:
-                        internal_mapping = cres[name]
+                    if name in documents:
+                        internal_mapping = documents[name]
                         if internal_mapping.id != id:
                             if is_empty(id):
                                 id = internal_mapping.id
@@ -199,7 +200,7 @@ def parse_export_format(lfile: List[Dict[str, Any]]) -> Dict[str, defs.Document]
                                 ltype=sub_lt,
                             )
                         )
-                        cres[name] = internal_mapping
+                        documents[name] = internal_mapping
 
                     if name not in [l.document.name for l in cre.links]:
                         cre.add_link(
@@ -212,15 +213,14 @@ def parse_export_format(lfile: List[Dict[str, Any]]) -> Dict[str, defs.Document]
                                 ltype=defs.LinkTypes.from_str(link_type),
                             )
                         )
-            cres[cre.name] = cre
-    cres.update(lone_nodes)
-    return cres
+            documents[cre.name] = cre
+    documents.update(lone_nodes)
+    return documents
 
 
 def parse_uknown_key_val_standards_spreadsheet(
     link_file: List[Dict[str, str]]
 ) -> Dict[str, defs.Standard]:
-    """parses a cre-less spreadsheet into a list of Standards documents"""
     standards: Dict[str, defs.Standard] = {}
     standards_registered: List[str] = []
     # get the first Key of the first row, pretty much, choose a standard at random to be the main one
@@ -260,61 +260,261 @@ def parse_uknown_key_val_standards_spreadsheet(
     return standards
 
 
+# the supported resources from the main CSV
+supported_resource_mapping = {
+    "CRE": {
+        "id": "CRE ID",
+        "name": "CRE hierarchy",
+        "tags": "CRE Tags",
+        "links": "Link to other CRE",
+        "description": "",
+    },
+    "Standards": {
+        "ASVS": {
+            "section": "Standard ASVS 4.0.3 description",
+            "sectionID": "Standard ASVS 4.0.3 Item",
+            "subsection": "",
+            "hyperlink": "Standard ASVS 4.0.3 Hyperlink",
+        },
+        "OWASP Proactive Controls": {
+            "section": "Standard OPC (ASVS source)",
+            "sectionID": "",
+            "subsection": "",
+            "hyperlink": "Standard OPC (ASVS source)-hyperlink",
+            "separator": ";",
+        },
+        "CWE": {
+            "section": "",
+            "sectionID": "Standard CWE (from ASVS)",
+            "subsection": "",
+            "hyperlink": "Standard CWE (from ASVS)-hyperlink",
+        },
+        "NIST 800-53 v5": {
+            "section": "Standard NIST 800-53 v5",
+            "sectionID": "",
+            "subsection": "",
+            "hyperlink": "Standard NIST 800-53 v5-hyperlink",
+            "separator": "\n",
+        },
+        "OWASP Web Security Testing Guide (WSTG)": {
+            "section": "Standard WSTG-item",
+            "sectionID": "",
+            "subsection": "",
+            "hyperlink": "Standard WSTG-Hyperlink",
+            "separator": ";",
+        },
+        "OWASP Cheat Sheets": {
+            "section": "Standard Cheat_sheets",
+            "sectionID": "",
+            "subsection": "",
+            "hyperlink": "Standard Cheat_sheets-Hyperlink",
+            "separator": ";",
+        },
+        "NIST 800-63": {
+            "section": "Standard NIST-800-63 (from ASVS)",
+            "sectionID": "",
+            "subsection": "",
+            "hyperlink": "",
+            "separator": "/",
+        },
+        "OWASP Top 10 2021": {
+            "section": "OWASP Top 10 2021 item",
+            "sectionID": "OWASP Top 10 2021 item ID",
+            "subsection": "",
+            "hyperlink": "OWASP Top 10 2021 hyperlink",
+        },
+        "OWASP Top 10 2017": {
+            "section": "Standard Top 10 2017 item",
+            "sectionID": "",
+            "subsection": "",
+            "hyperlink": "Standard Top 10 2017 Hyperlink",
+        },
+        "Cloud Controls Matrix": {
+            "section": "Source-CCM-Control Title",
+            "sectionID": "Source-CCM ID",
+            "subsection": "",
+            "hyperlink": "",
+            "separator": "\n",
+        },
+        "ISO 27001": {
+            "section": "Standard 27001/2:2022",
+            "sectionID": "Standard 27001/2:2022 Section ID",
+            "subsection": "",
+            "hyperlink": "",
+            "separator": "\n",
+        },
+        "SAMM": {
+            "section": "Standard SAMM v2",
+            "sectionID": "Standard SAMM v2 ID",
+            "subsection": "",
+            "hyperlink": "Standard SAMM v2 hyperlink",
+            # "version":"v2",
+            "separator": "\n",
+        },
+        "NIST SSDF": {
+            "section": "Standard NIST SSDF",
+            "sectionID": "Standard NIST SSDF ID",
+            "subsection": "",
+            "hyperlink": "",
+            # "version":"v2",
+            "separator": "\n",
+        },
+    },
+}
+
+
+def get_supported_resources_from_main_csv() -> List[str]:
+    return supported_resource_mapping["Standards"].keys()
+
+
+def add_standard_to_documents_array(
+    standard: defs.Standard, documents: Dict[str, List[defs.Document]]
+) -> Dict[defs.Credoctypes, Dict[str, List[defs.Document]]]:
+    if standard.name not in documents.keys():
+        documents[standard.name] = []
+    found = False
+    index = 0
+    docs = documents[standard.name]
+    for doc in documents[standard.name]:
+        if (
+            doc.name == standard.name
+            and doc.section == standard.section
+            and doc.subsection == standard.subsection
+            and doc.sectionID == standard.sectionID
+            and doc.version == standard.version
+        ):
+            for lnk in standard.links:
+                if lnk.document.id not in list([l.document.id for l in doc.links]):
+                    doc = doc.add_link(lnk)
+            docs[index] = doc
+
+            found = True
+        index += 1
+    documents[standard.name] = docs
+    if not found:
+        documents[standard.name].append(standard)
+    return documents
+
+
+@dataclass
+class UninitializedMapping:
+    complete_cre: defs.CRE
+    other_cre_name: str
+    relationship: defs.LinkTypes  # Relationship is complete_cre->other_cre_name
+
+
+def reconcile_uninitializedMappings(
+    cres: Dict[str, defs.CRE], u_mappings: List[UninitializedMapping]
+) -> Dict[str, defs.CRE]:
+    for mapping in u_mappings:
+        other_cre = cres.get(mapping.other_cre_name)
+        if not other_cre:
+            raise ValueError(
+                f"CRE named: '{mapping.other_cre_name}' does not have an id in the sheet"
+            )
+        cre = cres[mapping.complete_cre.name]
+        cres[cre.name] = cre.add_link(
+            defs.Link(ltype=mapping.relationship, document=other_cre.shallow_copy())
+        )
+    return cres
+
+
+def get_highest_cre_name(
+    mapping: Dict[str, str], highest_hierarchy: int = 5
+) -> tuple[int, str]:
+    """
+    given a line of the root CSV, returns the highest hierarchy CRE and a number from 1 to 5 based on where in the hierarchy it found the CRE
+    """
+    for i in range(highest_hierarchy, 0, -1):
+        if not is_empty(mapping.get(f"CRE hierarchy {i}")):
+            return i, mapping.get(f"CRE hierarchy {i}").strip()
+    return -1, None
+
+
 def parse_hierarchical_export_format(
     cre_file: List[Dict[str, str]]
-) -> Dict[str, defs.CRE]:
+) -> Dict[str, List[defs.Document]]:
+    """parses the main OpenCRE csv and creates a list of standards in it
+
+    Args:
+        cre_file (List[Dict[str, str]]): the Dict representation of the spreadsheet, entries in the dict are {<Header-Entry>:<Value-Entry>}
+
+    Returns:
+        Dict[str,List[defs.Document]]] a dictionary of
+        {
+            <Name of resource>:[<resource documents>]
+            }
+
+        for example:
+        {
+            "CRE":[<list of cre docs>],
+            "ASVS":[<list of ASVS docs>]
+        }
+    """
+
     logger.info("Spreadsheet is hierarchical export format")
-    cres: Dict[str, defs.CRE] = {}
+    documents: Dict[str, List[defs.Document]] = {defs.Credoctypes.CRE.value: []}
+    cre_dict = {}
+    uninitialized_cre_mappings: List[
+        UninitializedMapping
+    ] = (
+        []
+    )  # the csv has a column "Link to Other CRE", this column linksa complete CRE entry to another CRE by name.
+    # The other CRE might not have been initialized yet at the time of linking so it cannot be part of our main document collection yet
     max_hierarchy = len([key for key in cre_file[0].keys() if "CRE hierarchy" in key])
     for mapping in cre_file:
         cre: defs.CRE
         name: str = ""
         current_hierarchy: int = 0
         higher_cre: int = 0
-        # a CRE's name is the last hierarchy item which is not blank
-        for i in range(max_hierarchy, 0, -1):
-            key = [key for key in mapping if key.startswith("CRE hierarchy %s" % i)][0]
-            if not is_empty(mapping.get(key)):
-                if current_hierarchy == 0:
-                    name = str(mapping.pop(key)).strip().replace("\n", " ")
-                    current_hierarchy = i
-                else:
+
+        current_hierarchy, name = get_highest_cre_name(
+            mapping=mapping, highest_hierarchy=max_hierarchy
+        )
+        if name == None:  # skip empty lines
+            continue
+
+        if current_hierarchy > 0:  # find the previous higher CRE so we can link
+            higher_cre = 0
+            for i in range(current_hierarchy - 1, 0, -1):
+                if not is_empty(mapping.get(f"CRE hierarchy {str(i)}")):
                     higher_cre = i
                     break
-        if is_empty(name):
-            logger.warning(
-                f'Found entry with ID {mapping.get("CRE ID")}'
-                " without a cre name, skipping"
-            )
-            continue
-        if name in cres.keys():
-            new_id = str(mapping.get("CRE ID"))
-            if cres[name].id != new_id and cres[name].id != "" and new_id != "":
-                logger.fatal(
-                    f"duplicate entry for cre named {name}, previous id:{cres[name].id}, new id {new_id}"
-                )
-            cre = cres[name]
-        else:
-            cre = defs.CRE(name=name)
 
-        if not is_empty(mapping.get("CRE ID")):
-            cre.id = str(mapping.pop("CRE ID"))
+        if is_empty(name):
+            raise ValueError(
+                f'Found entry with ID \'{mapping.get("CRE ID")}\' hierarchy {current_hierarchy} without a cre name'
+            )
+
+        if name in cre_dict.keys():
+            curr_id = str(mapping.get("CRE ID")).strip()
+            if (
+                cre_dict[name].id != curr_id
+                and cre_dict[name].id != ""
+                and curr_id != ""
+            ):
+                err_msg = f"duplicate entry for cre named {name}, previous id:{cre_dict[name].id}, new id {curr_id}"
+                raise ValueError(err_msg)
+            cre = cre_dict[name]
+        elif not is_empty(str(mapping.get("CRE ID")).strip()):
+            cre = defs.CRE(name=name, id=str(mapping.pop("CRE ID")))
         else:
             logger.warning(f"empty Id for {name}")
 
-        if not is_empty(mapping.get("CRE Tags")):
+        if not is_empty(str(mapping.get("CRE Tags")).strip()):
             ts = set()
             for x in str(mapping.pop("CRE Tags")).split(","):
                 ts.add(x.strip())
             cre.tags = list(ts)
-
-        update_cre_in_links(cres, cre)
+        if cre:
+            cre_dict = update_cre_in_links(cre_dict, cre)
 
         # TODO(spyros): temporary until we agree what we want to do with tags
         mapping[
             "Link to other CRE"
         ] = f'{mapping["Link to other CRE"]},{",".join(cre.tags)}'
-        if not is_empty(mapping.get("Link to other CRE")):
+
+        if not is_empty(str(mapping.get("Link to other CRE")).strip()):
             other_cres = list(
                 set(
                     [
@@ -325,165 +525,82 @@ def parse_hierarchical_export_format(
                 )
             )
             for other_cre in other_cres:
-                if not cres.get(other_cre):
-                    logger.warning(
-                        "%s linking to not yet existent cre %s" % (cre.name, other_cre)
+                if not cre_dict.get(other_cre):
+                    uninitialized_cre_mappings.append(
+                        UninitializedMapping(
+                            complete_cre=cre,
+                            other_cre_name=other_cre.strip(),
+                            relationship=defs.LinkTypes.Related,
+                        )
                     )
-                    new_cre = defs.CRE(name=other_cre.strip())
-                    cres[new_cre.name] = new_cre
                 else:
-                    new_cre = cres[other_cre]
-
-                # we only need a shallow copy here
-                cre.add_link(
-                    defs.Link(
-                        ltype=defs.LinkTypes.Related, document=new_cre.shallow_copy()
+                    new_cre = cre_dict[other_cre.strip()]
+                    # we only need a shallow copy here
+                    cre.add_link(
+                        defs.Link(
+                            ltype=defs.LinkTypes.Related,
+                            document=new_cre.shallow_copy(),
+                        )
                     )
-                )
+
         for link in parse_standards(mapping):
-            cre.add_link(link)
+            doc = link.document
+            doc = doc.add_link(
+                defs.Link(document=cre.shallow_copy(), ltype=defs.LinkTypes.LinkedTo)
+            )
+            documents = add_standard_to_documents_array(doc, documents)
 
         # link CRE to a higher level one
-
-        if higher_cre:
-            cre_hi: defs.CRE
+        if higher_cre and not is_empty(
+            str(mapping.get(f"CRE hierarchy {str(higher_cre)}")).strip()
+        ):
             name_hi = str(mapping.pop(f"CRE hierarchy {str(higher_cre)}")).strip()
-            if cres.get(name_hi):
-                cre_hi = cres[name_hi]
-            else:
-                cre_hi = defs.CRE(name=name_hi)
-
-            existing_link = [
-                c
-                for c in cre_hi.links
-                if c.document.doctype == defs.Credoctypes.CRE
-                and c.document.name == cre.name
-            ]
-            # there is no need to capture the entirety of the cre tree, we just need to register this shallow relation
-            # the "cres" dict should contain the rest of the info
-            if existing_link:
-                cre_hi.links[
-                    cre_hi.links.index(existing_link[0])
-                    # ugliest way ever to write "update the object in that pointer"
-                ].document = cre.shallow_copy()
-            else:
-                cre_hi = cre_hi.add_link(
-                    defs.Link(
-                        ltype=defs.LinkTypes.Contains, document=cre.shallow_copy()
+            cre_hi = cre_dict.get(name_hi)
+            if not cre_hi:
+                uninitialized_cre_mappings.append(
+                    UninitializedMapping(
+                        complete_cre=cre,
+                        other_cre_name=name_hi,
+                        relationship=defs.LinkTypes.PartOf,
                     )
                 )
-            cres[cre_hi.name] = cre_hi
+            else:
+                existing_link = [
+                    c
+                    for c in cre_hi.links
+                    if c.document.doctype == defs.Credoctypes.CRE
+                    and c.document.name == cre.name
+                ]
+                # there is no need to capture the entirety of the cre tree, we just need to register this shallow relation
+                # the "documents" dict should contain the rest of the info
+                if existing_link:
+                    cre_hi.links[
+                        cre_hi.links.index(existing_link[0])
+                        # ugliest way ever to write "update the object in that pointer"
+                    ].document = cre.shallow_copy()
+                else:
+                    cre_hi = cre_hi.add_link(
+                        defs.Link(
+                            ltype=defs.LinkTypes.Contains, document=cre.shallow_copy()
+                        )
+                    )
+                cre_dict[cre_hi.name] = cre_hi
         else:
-            pass  # add the cre to cres and make the connection
+            pass  # add the cre to documents and make the connection
         if cre:
-            cres[cre.name] = cre
+            cre_dict[cre.name] = cre
 
-    return cres
+    cre_dict = reconcile_uninitializedMappings(cre_dict, uninitialized_cre_mappings)
+    documents[defs.Credoctypes.CRE.value] = list(cre_dict.values())
+    return documents
 
 
 def parse_standards(
     mapping: Dict[str, str], standards_mapping: Dict[str, Dict[str, Any]] = None
 ) -> List[defs.Link]:
     if not standards_mapping:
-        standards_mapping = {
-            "CRE": {
-                "id": "CRE ID",
-                "name": "CRE hierarchy",
-                "tags": "CRE Tags",
-                "links": "Link to other CRE",
-                "description": "",
-            },
-            "Standards": {
-                "ASVS": {
-                    "section": "Standard ASVS 4.0.3 description",
-                    "sectionID": "Standard ASVS 4.0.3 Item",
-                    "subsection": "",
-                    "hyperlink": "Standard ASVS 4.0.3 Hyperlink",
-                },
-                "OWASP Proactive Controls": {
-                    "section": "Standard OPC (ASVS source)",
-                    "sectionID": "",
-                    "subsection": "",
-                    "hyperlink": "Standard OPC (ASVS source)-hyperlink",
-                },
-                "CWE": {
-                    "section": "",
-                    "sectionID": "Standard CWE (from ASVS)",
-                    "subsection": "",
-                    "hyperlink": "Standard CWE (from ASVS)-hyperlink",
-                },
-                "NIST 800-53 v5": {
-                    "section": "Standard NIST 800-53 v5",
-                    "sectionID": "",
-                    "subsection": "",
-                    "hyperlink": "Standard NIST 800-53 v5-hyperlink",
-                    "separator": "\n",
-                },
-                "OWASP Web Security Testing Guide (WSTG)": {
-                    "section": "Standard WSTG-item",
-                    "sectionID": "",
-                    "subsection": "",
-                    "hyperlink": "Standard WSTG-Hyperlink",
-                    "separator": ";",
-                },
-                "OWASP Cheat Sheets": {
-                    "section": "Standard Cheat_sheets",
-                    "sectionID": "",
-                    "subsection": "",
-                    "hyperlink": "Standard Cheat_sheets-Hyperlink",
-                    "separator": ";",
-                },
-                "NIST 800-63": {
-                    "section": "Standard NIST-800-63 (from ASVS)",
-                    "sectionID": "",
-                    "subsection": "",
-                    "hyperlink": "",
-                    "separator": "/",
-                },
-                "OWASP Top 10 2021": {
-                    "section": "OWASP Top 10 2021 item",
-                    "sectionID": "OWASP Top 10 2021 item ID",
-                    "subsection": "",
-                    "hyperlink": "OWASP Top 10 2021 hyperlink",
-                },
-                "OWASP Top 10 2017": {
-                    "section": "Standard Top 10 2017 item",
-                    "sectionID": "",
-                    "subsection": "",
-                    "hyperlink": "Standard Top 10 2017 Hyperlink",
-                },
-                "Cloud Controls Matrix": {
-                    "section": "Source-CCM-Control Title",
-                    "sectionID": "Source-CCM ID",
-                    "subsection": "",
-                    "hyperlink": "",
-                    "separator": "\n",
-                },
-                "ISO 27001": {
-                    "section": "Standard 27001/2:2022",
-                    "sectionID": "Standard 27001/2:2022 Section ID",
-                    "subsection": "",
-                    "hyperlink": "",
-                    "separator": "\n",
-                },
-                "SAMM": {
-                    "section": "Standard SAMM v2",
-                    "sectionID": "Standard SAMM v2 ID",
-                    "subsection": "",
-                    "hyperlink": "Standard SAMM v2 hyperlink",
-                    # "version":"v2",
-                    "separator": "\n",
-                },
-                "NIST SSDF": {
-                    "section": "Standard NIST SSDF",
-                    "sectionID": "Standard NIST SSDF ID",
-                    "subsection": "",
-                    "hyperlink": "",
-                    # "version":"v2",
-                    "separator": "\n",
-                },
-            },
-        }
+        standards_mapping = supported_resource_mapping
+
     links: List[defs.Link] = []
     for name, struct in standards_mapping.get("Standards", {}).items():
         if not is_empty(mapping.get(struct["section"])) or not is_empty(

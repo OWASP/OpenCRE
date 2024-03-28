@@ -25,7 +25,7 @@ def findDups(x):
     return {val for val in x if (val in seen or seen.add(val))}
 
 
-def readSpreadsheet(
+def read_spreadsheet(
     url: str, alias: str, validate: bool = True, parse_numbered_only=True
 ) -> Dict[str, Any]:
     """given remote google spreadsheet url,

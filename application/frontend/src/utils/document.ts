@@ -8,9 +8,11 @@ import {
 import { Document, LinkedDocument } from '../types';
 
 export const getDocumentDisplayName = (document: Document, noID = false) => {
-  // [document.doctype, document.id, document.name, document.section, document.subsection].filter(Boolean).join(' - '); // format: Standard - ASVS - V1.1
   if (!document) {
     return '';
+  }
+  if (document.doctype != DOCUMENT_TYPES.TYPE_CRE) {
+    document.id = '';
   }
   return [
     document.doctype,

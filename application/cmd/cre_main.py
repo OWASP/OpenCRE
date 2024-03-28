@@ -1,3 +1,5 @@
+from application.utils.external_project_parsers.base_parser import BaseParser
+import time
 import argparse
 import json
 import logging
@@ -5,7 +7,8 @@ import os
 import shutil
 import tempfile
 from typing import Any, Callable, Dict, Generator, List, Optional, Tuple
-
+from application.utils.hash import make_array_key
+from rq import Queue, job, exceptions
 import yaml
 from application import create_app  # type: ignore
 from application.config import CMDConfig
@@ -13,8 +16,10 @@ from application.database import db
 from application.defs import cre_defs as defs
 from application.defs import osib_defs as odefs
 from application.utils import spreadsheet as sheet_utils
+from application.utils import redis
 from application.utils import spreadsheet_parsers
-from application.utils.external_project_parsers import (
+from alive_progress import alive_bar
+from application.utils.external_project_parsers.parsers import (
     capec_parser,
     cwe,
     ccmv4,
@@ -46,7 +51,16 @@ def register_node(node: defs.Node, collection: db.Node_collection) -> db.Node:
     then map the one who doesn't to the CRE
     if both don't map to anything, just add them in the db as unlinked nodes
     """
+    if not node:
+        raise ValueError("node is None")
     linked_node = collection.add_node(node)
+    if node.embeddings:
+        collection.add_embedding(
+            linked_node,
+            doctype=node.doctype,
+            embeddings=node.embeddings,
+            embedding_text=node.embeddings_text,
+        )
     cre_less_nodes: List[defs.Node] = []
 
     # we need to know the cres added in case we encounter a higher level CRE,
@@ -109,7 +123,9 @@ def register_cre(cre: defs.CRE, collection: db.Node_collection) -> db.CRE:
     for link in cre.links:
         if type(link.document) == defs.CRE:
             collection.add_internal_link(
-                dbcre, register_cre(link.document, collection), type=link.ltype
+                higher=dbcre,
+                lower=register_cre(link.document, collection),
+                type=link.ltype,
             )
         else:
             collection.add_link(
@@ -159,11 +175,13 @@ def parse_file(
             data_class = (
                 defs.Standard
                 if doctype == defs.Credoctypes.Standard.value
-                else defs.Code
-                if doctype == defs.Credoctypes.Code.value
-                else defs.Tool
-                if doctype == defs.Credoctypes.Tool.value
-                else None
+                else (
+                    defs.Code
+                    if doctype == defs.Credoctypes.Code.value
+                    else defs.Tool
+                    if doctype == defs.Credoctypes.Tool.value
+                    else None
+                )
             )
             document = from_dict(
                 data_class=data_class,
@@ -199,20 +217,119 @@ def parse_file(
     return resulting_objects
 
 
+def register_standard(
+    standard_entries: List[defs.Standard],
+    collection: db.Node_collection,
+    generate_embeddings=True,
+    db_connection_str: str = "",
+):
+    if not collection:
+        collection = db_connect(db_connection_str)
+    if not standard_entries:
+        return
+    conn = redis.connect()
+    ph = prompt_client.PromptHandler(database=collection)
+    standard_hash = make_array_key([standard_entries[0].name])
+    if conn.get(standard_hash):
+        logger.debug(
+            f"Standard importing job with info-hash {standard_hash} has already returned, skipping"
+        )
+        return
+    logger.info(
+        f"Registering resource {standard_entries[0].name} of length {len(standard_entries)}"
+    )
+    for node in standard_entries:
+        if not node:
+            continue
+        register_node(node, collection)
+        if node.embeddings:
+            logger.debug(
+                f"node has embeddings populated, skipping generation for resource {node.name}"
+            )
+            generate_embeddings = False
+    if generate_embeddings:
+        ph.generate_embeddings_for(node.name)
+    populate_neo4j_db(collection)
+    # calculate gap analysis
+    jobs = []
+    pending_stadards = collection.standards()
+    for standard_name in pending_stadards:
+        if standard_name != standard_entries[0].name:
+            forward_job_id = gap_analysis.schedule(
+                standards=[standard_entries[0].name, standard_name], database=collection
+            ).get("job_id")
+            backward_job_id = gap_analysis.schedule(
+                standards=[standard_name, standard_entries[0].name], database=collection
+            ).get("job_id")
+            if forward_job_id and backward_job_id:
+                try:
+                    forward_job = job.Job.fetch(id=forward_job_id, connection=conn)
+                    backward_job = job.Job.fetch(id=backward_job_id, connection=conn)
+                    jobs.extend([forward_job, backward_job])
+                except exceptions.NoSuchJobError as nje:
+                    pending_stadards.append(standard_name)
+            else:
+                pending_stadards.append(standard_name)
+    redis.wait_for_jobs(jobs)
+    conn.set(standard_hash, value="")
+
+
 def parse_standards_from_spreadsheeet(
-    cre_file: List[Dict[str, Any]], result: db.Node_collection
+    cre_file: List[Dict[str, Any]],
+    cache_location: str,
+    prompt_handler: prompt_client.PromptHandler,
 ) -> None:
     """given a yaml with standards, build a list of standards in the db"""
-    cres = {}
+    collection = db_connect(cache_location)
     if "CRE:name" in cre_file[0].keys():
-        cres = spreadsheet_parsers.parse_export_format(cre_file)
+        documents = spreadsheet_parsers.parse_export_format(cre_file)
+        register_cre(documents, collection)
+        pass
+
     elif any(key.startswith("CRE hierarchy") for key in cre_file[0].keys()):
-        cres = spreadsheet_parsers.parse_hierarchical_export_format(cre_file)
+        conn = redis.connect()
+        redis.empty_queues(conn)
+        q = Queue(connection=conn)
+        docs = spreadsheet_parsers.parse_hierarchical_export_format(cre_file)
+        total_resources = docs.keys()
+        jobs = []
+        logger.info(f"Importing {len(docs.get(defs.Credoctypes.CRE.value))} CREs")
+        with alive_bar(len(docs.get(defs.Credoctypes.CRE.value))) as bar:
+            for cre in docs.pop(defs.Credoctypes.CRE.value):
+                register_cre(cre, collection)
+                bar()
+
+        populate_neo4j_db(collection)
+        prompt_handler.generate_embeddings_for(defs.Credoctypes.CRE.value)
+        import_only = []
+        if os.environ.get("CRE_ROOT_CSV_IMPORT_ONLY"):
+            import_only = json.loads(os.environ.get("CRE_ROOT_CSV_IMPORT_ONLY"))
+        for standard_name, standard_entries in docs.items():
+            if import_only and standard_name not in import_only:
+                continue
+            jobs.append(
+                q.enqueue_call(
+                    description=standard_name,
+                    func=register_standard,
+                    kwargs={
+                        "standard_entries": standard_entries,
+                        "collection": None,
+                        "db_connection_str": cache_location,
+                    },
+                    timeout=gap_analysis.GAP_ANALYSIS_TIMEOUT,
+                )
+            )
+        t0 = time.perf_counter()
+        total_standards = len(jobs)
+        logger.info(f"Importing {total_standards} Standards")
+        with alive_bar(theme="classic", total=total_standards) as bar:
+            redis.wait_for_jobs(jobs, bar)
+        logger.info(
+            f"imported {total_standards} standards in {time.perf_counter()-t0} seconds"
+        )
+        return total_resources
     else:
         logger.fatal(f"could not find any useful keys { cre_file[0].keys()}")
-    # register groupless cres first
-    for _, cre in cres.items():
-        register_cre(cre, result)
 
 
 def get_cre_files_from_disk(cre_loc: str) -> Generator[str, None, None]:
@@ -229,13 +346,12 @@ def add_from_spreadsheet(spreadsheet_url: str, cache_loc: str, cre_loc: str) -> 
     export db to ../../cres/
     """
     database = db_connect(path=cache_loc)
-    spreadsheet = sheet_utils.readSpreadsheet(
+    prompt_handler = ai_client_init(database=database)
+    spreadsheet = sheet_utils.read_spreadsheet(
         url=spreadsheet_url, alias="new spreadsheet", validate=False
     )
-    for worksheet, contents in spreadsheet.items():
-        parse_standards_from_spreadsheeet(contents, database)
-
-    database.export(cre_loc)
+    for _, contents in spreadsheet.items():
+        parse_standards_from_spreadsheeet(contents, cache_loc, prompt_handler)
 
     logger.info(
         "Db located at %s got updated, files extracted at %s" % (cache_loc, cre_loc)
@@ -256,7 +372,6 @@ def add_from_disk(cache_loc: str, cre_loc: str) -> None:
                 yamldocs=list(yaml.safe_load_all(standard)),
                 scollection=database,
             )
-    docs = database.export(cre_loc)
 
 
 def review_from_spreadsheet(cache: str, spreadsheet_url: str, share_with: str) -> None:
@@ -268,19 +383,13 @@ def review_from_spreadsheet(cache: str, spreadsheet_url: str, share_with: str) -
     """
     loc, cache = prepare_for_review(cache)
     database = db_connect(path=cache)
-    spreadsheet = sheet_utils.readSpreadsheet(
+    prompt_handler = ai_client_init(database=database)
+    spreadsheet = sheet_utils.read_spreadsheet(
         url=spreadsheet_url, alias="new spreadsheet", validate=False
     )
     for _, contents in spreadsheet.items():
-        parse_standards_from_spreadsheeet(contents, database)
-    docs = database.export(loc)
+        parse_standards_from_spreadsheeet(contents, database, prompt_handler)
 
-    # sheet_url = create_spreadsheet(
-    #     collection=database,
-    #     exported_documents=docs,
-    #     title="cre_review",
-    #     share_with=[share_with],
-    # )
     logger.info(
         "Stored temporary files and database in %s if you want to use them next time, set cache to the location of the database in that dir"
         % loc
@@ -305,7 +414,6 @@ def review_from_disk(cache: str, cre_file_loc: str, share_with: str) -> None:
                 scollection=database,
             )
 
-    docs = database.export(loc)
     sheet_url = create_spreadsheet(
         collection=database,
         exported_documents=docs,
@@ -360,70 +468,65 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
 
     elif args.osib_out:
         export_to_osib(file_loc=args.osib_out, cache=args.cache_file)
-    if args.zap_in:
-        zap_alerts_parser.parse_zap_alerts(db_connect(args.cache_file))
-    if args.cheatsheets_in:
-        cheatsheets_parser.parse_cheatsheets(db_connect(args.cache_file))
-    if args.github_tools_in:
-        for url in misc_tools_parser.tool_urls:
-            misc_tools_parser.parse_tool(
-                cache=db_connect(args.cache_file), tool_repo=url
-            )
-    if args.capec_in:
-        capec_parser.parse_capec(cache=db_connect(args.cache_file))
-    if args.cwe_in:
-        cwe.parse_cwe(cache=db_connect(args.cache_file))
 
-    if args.export:
+    if args.delete_map_analysis_for:
         cache = db_connect(args.cache_file)
-        cache.export(args.export)
+        cache.delete_gapanalysis_results_for(args.delete_map_analysis_for)
+    if args.delete_resource:
+        cache = db_connect(args.cache_file)
+        cache.delete_nodes(args.delete_resource)
+
+    # individual resource importing
+    if args.zap_in:
+        BaseParser().register_resource(
+            zap_alerts_parser.ZAP, db_connection_str=args.cache_file
+        )
+    if args.cheatsheets_in:
+        BaseParser().register_resource(
+            cheatsheets_parser.Cheatsheets, db_connection_str=args.cache_file
+        )
+    if args.github_tools_in:
+        BaseParser().register_resource(
+            misc_tools_parser.MiscTools, db_connection_str=args.cache_file
+        )
+    if args.capec_in:
+        BaseParser().register_resource(
+            capec_parser.Capec, db_connection_str=args.cache_file
+        )
+    if args.cwe_in:
+        BaseParser().register_resource(cwe.CWE, db_connection_str=args.cache_file)
     if args.csa_ccm_v4_in:
-        ccmv4.parse_ccm(
-            ccmFile=sheet_utils.readSpreadsheet(
-                alias="",
-                url="https://docs.google.com/spreadsheets/d/1QDzQy0wt1blGjehyXS3uaHh7k5OOR12AWgAA1DeACyc",
-            ),
-            cache=db_connect(args.cache_file),
+        BaseParser().register_resource(
+            ccmv4.CloudControlsMatrix, db_connection_str=args.cache_file
         )
     if args.iso_27001_in:
-        iso27001.parse_iso(
-            url="https://csrc.nist.gov/CSRC/media/Publications/sp/800-53/rev-5/final/documents/sp800-53r5-to-iso-27001-mapping.docx",
-            cache=db_connect(args.cache_file),
+        BaseParser().register_resource(
+            iso27001.ISO27001, db_connection_str=args.cache_file
         )
     if args.owasp_secure_headers_in:
-        secure_headers.parse(
-            cache=db_connect(args.cache_file),
-        )
-    if args.pci_dss_3_2_in:
-        pci_dss.parse_3_2(
-            pci_file=sheet_utils.readSpreadsheet(
-                alias="",
-                url="https://docs.google.com/spreadsheets/d/1p-s65MaVrKOnWPEQ_tt7e0fmutCeiJx8EORPNF5TyME",
-                parse_numbered_only=False,
-            ),
-            cache=db_connect(args.cache_file),
+        BaseParser().register_resource(
+            secure_headers.SecureHeaders, db_connection_str=args.cache_file
         )
     if args.pci_dss_4_in:
-        pci_dss.parse_4(
-            pci_file=sheet_utils.readSpreadsheet(
-                alias="",
-                url="https://docs.google.com/spreadsheets/d/18weo-qbik_C7SdYq7FSP2OMgUmsWdWWI1eaXcAfMz8I",
-                parse_numbered_only=False,
-            ),
-            cache=db_connect(args.cache_file),
+        BaseParser().register_resource(
+            pci_dss.PciDss, db_connection_str=args.cache_file
         )
     if args.juiceshop_in:
-        juiceshop.parse(
-            cache=db_connect(args.cache_file),
+        BaseParser().register_resource(
+            juiceshop.JuiceShop, db_connection_str=args.cache_file
         )
     if args.dsomm_in:
-        dsomm.parse(
-            cache=db_connect(args.cache_file),
-        )
+        BaseParser().register_resource(dsomm.DSOMM, db_connection_str=args.cache_file)
     if args.cloud_native_security_controls_in:
-        cloud_native_security_controls.parse(
-            cache=db_connect(args.cache_file),
+        BaseParser().register_resource(
+            cloud_native_security_controls.CloudNativeSecurityControls,
+            db_connection_str=args.cache_file,
         )
+    # /end individual resource importing
+
+    if args.import_external_projects:
+        BaseParser().call_importers(db_connection_str=args.cache_file)
+
     if args.generate_embeddings:
         generate_embeddings(args.cache_file)
     if args.owasp_proj_meta:
@@ -434,8 +537,13 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
         from application.worker import start_worker
 
         start_worker(args.cache_file)
+
     if args.preload_map_analysis_target_url:
         gap_analysis.preload(target_url=args.preload_map_analysis_target_url)
+
+
+def ai_client_init(database: db.Node_collection):
+    return prompt_client.PromptHandler(database=database)
 
 
 def db_connect(path: str):
@@ -475,52 +583,52 @@ def prepare_for_review(cache: str) -> Tuple[str, str]:
     return loc, os.path.join(loc, cache_filename)
 
 
-def review_osib_from_file(file_loc: str, cache: str, cre_loc: str) -> None:
-    """Given the location of an osib.yaml, parse osib, convert to cres and add to db
-    export db to yamls and spreadsheet for review"""
-    loc, cache = prepare_for_review(cache)
-    database = db_connect(path=cache)
-    ymls = odefs.read_osib_yaml(file_loc)
-    osibs = odefs.try_from_file(ymls)
-    for osib in osibs:
-        cres, standards = odefs.osib2cre(osib)
-        [register_cre(c, database) for c in cres]
-        [register_node(s, database) for s in standards]
+# def review_osib_from_file(file_loc: str, cache: str, cre_loc: str) -> None:
+#     """Given the location of an osib.yaml, parse osib, convert to cres and add to db
+#     export db to yamls and spreadsheet for review"""
+#     loc, cache = prepare_for_review(cache)
+#     database = db_connect(path=cache)
+#     ymls = odefs.read_osib_yaml(file_loc)
+#     osibs = odefs.try_from_file(ymls)
+#     for osib in osibs:
+#         cres, standards = odefs.osib2cre(osib)
+#         [register_cre(c, database) for c in cres]
+#         [register_node(s, database) for s in standards]
 
-    sheet_url = create_spreadsheet(
-        collection=database,
-        exported_documents=database.export(loc),
-        title="osib_review",
-        share_with=[],
-    )
-    logger.info(
-        f"Stored temporary files and database in {loc} if you want to use them next time, set cache to the location of the database in that dir"
-    )
-    logger.info(f"A spreadsheet view is at {sheet_url}")
-
-
-def add_osib_from_file(file_loc: str, cache: str, cre_loc: str) -> None:
-    database = db_connect(path=cache)
-    ymls = odefs.read_osib_yaml(file_loc)
-    osibs = odefs.try_from_file(ymls)
-    for osib in osibs:
-        cre, standard = odefs.osib2cre(osib)
-        [register_cre(c, database) for c in cre]
-        [register_node(s, database) for s in standard]
-    database.export(cre_loc)
+#     sheet_url = create_spreadsheet(
+#         collection=database,
+#         exported_documents=database.export(loc),
+#         title="osib_review",
+#         share_with=[],
+#     )
+#     logger.info(
+#         f"Stored temporary files and database in {loc} if you want to use them next time, set cache to the location of the database in that dir"
+#     )
+#     logger.info(f"A spreadsheet view is at {sheet_url}")
 
 
-def export_to_osib(file_loc: str, cache: str) -> None:
-    docs = db_connect(path=cache).export(file_loc, dry_run=True)
-    tree = odefs.cre2osib(docs)
-    with open(file_loc, "x"):
-        with open(file_loc, "w") as f:
-            f.write(json.dumps(tree.todict()))
+# def add_osib_from_file(file_loc: str, cache: str, cre_loc: str) -> None:
+#     database = db_connect(path=cache)
+#     ymls = odefs.read_osib_yaml(file_loc)
+#     osibs = odefs.try_from_file(ymls)
+#     for osib in osibs:
+#         cre, standard = odefs.osib2cre(osib)
+#         [register_cre(c, database) for c in cre]
+#         [register_node(s, database) for s in standard]
+#     database.export(cre_loc)
+
+
+# def export_to_osib(file_loc: str, cache: str) -> None:
+#     docs = db_connect(path=cache).export(file_loc, dry_run=True)
+#     tree = odefs.cre2osib(docs)
+#     with open(file_loc, "x"):
+#         with open(file_loc, "w") as f:
+#             f.write(json.dumps(tree.todict()))
 
 
 def generate_embeddings(db_url: str) -> None:
     database = db_connect(path=db_url)
-    prompt = prompt_client.PromptHandler(database)
+    prompt_client.PromptHandler(database, load_all_embeddings=True)
 
 
 def owasp_metadata_to_cre(meta_file: str):

@@ -1,5 +1,17 @@
 import requests
 import time
+import logging
+from rq import Queue, job, exceptions
+from typing import List, Dict
+from application.utils import redis
+from application.utils.hash import make_array_key, make_cache_key
+from application.database import db
+from flask import json as flask_json
+import json
+
+logging.basicConfig()
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 PENALTIES = {
     "RELATED": 2,
@@ -8,6 +20,8 @@ PENALTIES = {
     "LINKED_TO": 0,
     "SAME": 0,
 }
+
+GAP_ANALYSIS_TIMEOUT = "129600s"  # 36 hours
 
 
 def get_path_score(path):
@@ -37,6 +51,48 @@ def get_next_id(step, previous_id):
     return step["start"].id
 
 
+def schedule(standards: List[str], database):
+    conn = redis.connect()
+    standards_hash = make_array_key(standards)
+    result = database.get_gap_analysis_result(standards_hash)
+    if result:
+        return flask_json.loads(result)
+
+    logger.info(f"Gap analysis result for {standards_hash} does not exist")
+    gap_analysis_results = conn.get(standards_hash)
+    if gap_analysis_results:
+        gap_analysis_dict = json.loads(gap_analysis_results)
+        if gap_analysis_dict.get("job_id"):
+            try:
+                res = job.Job.fetch(id=gap_analysis_dict.get("job_id"), connection=conn)
+            except exceptions.NoSuchJobError as nje:
+                logger.error(
+                    f"Could not find job id for gap analysis {standards}, this is a bug"
+                )
+                return {"error": 404}
+            if (
+                res.get_status() != job.JobStatus.FAILED
+                and res.get_status() != job.JobStatus.STOPPED
+                and res.get_status() != job.JobStatus.CANCELED
+            ):
+                logger.info(
+                    f'gap analysis job id  {gap_analysis_dict.get("job_id")}, for standards: {standards[0]}>>{standards[1]} already exists, returning early'
+                )
+                return {"job_id": gap_analysis_dict.get("job_id")}
+    q = Queue(connection=conn)
+    gap_analysis_job = q.enqueue_call(
+        db.gap_analysis,
+        kwargs={
+            "neo_db": database.neo_db,
+            "node_names": standards,
+            "cache_key": standards_hash,
+        },
+        timeout=GAP_ANALYSIS_TIMEOUT,
+    )
+    conn.set(standards_hash, json.dumps({"job_id": gap_analysis_job.id, "result": ""}))
+    return {"job_id": gap_analysis_job.id}
+
+
 def preload(target_url: str):
     waiting = []
     standards_request = requests.get(f"{target_url}/rest/v1/standards")
@@ -56,18 +112,21 @@ def preload(target_url: str):
                 res1 = requests.get(
                     f"{target_url}/rest/v1/map_analysis?standard={sa}&standard={sb}"
                 )
-                if res1.json():
+                if res1.status_code != 200:
+                    print(f"{sa}->{sb} returned {res1.status_code}")
+                elif res1.json():
                     if res1.json().get("result"):
                         if f"{sa}->{sb}" in waiting:
                             waiting.remove(f"{sa}->{sb}")
                 res2 = requests.get(
                     f"{target_url}/rest/v1/map_analysis?standard={sb}&standard={sa}"
                 )
-                if res2.json():
+                if res2.status_code != 200:
+                    print(f"{sb}->{sa} returned {res1.status_code}")
+                elif res2.json():
                     if res2.json().get("result"):
                         if f"{sb}->{sa}" in waiting:
                             waiting.remove(f"{sb}->{sa}")
         print(f"calculating {len(waiting)} gap analyses")
-        print(waiting)
         time.sleep(30)
     print("map analysis preloaded successfully")

@@ -1,4 +1,3 @@
-
 .ONESHELL:
 
 .PHONY: run test covers install-deps dev docker lint frontend clean all
@@ -6,11 +5,43 @@
 prod-run:
 	cp cres/db.sqlite standards_cache.sqlite; gunicorn cre:app --log-file=-
 
+docker-neo4j-rm:
+	docker stop cre-neo4j
+	docker rm cre-neo4j
+	docker volume rm cre_neo4j_data
+	docker volume rm cre_neo4j_logs
+	# rm -rf .neo4j
+
 docker-neo4j:
-	docker start cre-neo4j 2>/dev/null   || docker run -d --name cre-neo4j --env NEO4J_PLUGINS='["apoc"]'  --env NEO4J_AUTH=neo4j/password --volume=`pwd`/.neo4j/data:/data --volume=`pwd`/.neo4j/logs:/logs --workdir=/var/lib/neo4j -p 7474:7474 -p 7687:7687 neo4j
+	mkdir -p .neo4j/data .neo4j/logs
+	docker start cre-neo4j 2>/dev/null   ||\
+	(docker volume create --driver local \
+      --opt type=none \
+      --opt device=`pwd`/.neo4j/data \
+      --opt o=bind \
+	  cre_neo4j_data &&\
+	  docker volume create --driver local \
+      --opt type=none \
+      --opt device=`pwd`/.neo4j/data \
+      --opt o=bind \
+	  cre_neo4j_logs &&\
+	docker run -d\
+	 --name cre-neo4j\
+	 --env NEO4J_PLUGINS='["apoc"]'  --env NEO4J_AUTH=neo4j/password\
+	 --volume=cre_neo4j_data:/data\
+	 --volume=cre_neo4j_logs:/logs\
+	 --workdir=/var/lib/neo4j\
+	 -p 7474:7474\
+	 -p 7687:7687\
+	 neo4j)
+
+docker-redis-rm:
+	docker stop cre-redis-stack
+	docker rm -f cre-redis-stack
 
 docker-redis:
-	docker start redis-stack 2>/dev/null || docker run -d --name redis-stack -p 6379:6379 -p 8001:8001 redis/redis-stack:latest
+	docker start cre-redis-stack 2>/dev/null ||\
+	docker run -d --name cre-redis-stack -p 6379:6379 -p 8001:8001 redis/redis-stack:latest
 
 start-containers: docker-neo4j docker-redis
 
@@ -20,7 +51,7 @@ start-worker:
 
 dev-flask:
 	. ./venv/bin/activate
-	INSECURE_REQUESTS=1 FLASK_APP=`pwd`/cre.py  FLASK_CONFIG=development flask run
+	FLASK_RUN_PORT="5001" INSECURE_REQUESTS=1 FLASK_APP=`pwd`/cre.py  FLASK_CONFIG=development flask run
 
 e2e:
 	yarn build
@@ -44,7 +75,7 @@ cover:
 	. ./venv/bin/activate && FLASK_APP=cre.py FLASK_CONFIG=testing flask test --cover
 
 install-deps-python:
-	[ -d "./venv" ] && . ./venv/bin/activate 
+	[ -d "./venv" ] && source ./venv/bin/activate
 	pip install -r requirements.txt
 
 install-deps-typescript:
@@ -70,10 +101,10 @@ docker-prod:
 	docker build -f Dockerfile -t opencre:$(shell git rev-parse HEAD) .
 
 docker-dev-run:
-	 docker run -it -p 5000:5000 opencre-dev:$(shell git rev-parse HEAD)
+	 docker run -it -p 5001:5001 opencre-dev:$(shell git rev-parse HEAD)
 
 docker-prod-run:
-	 docker run -it -p 5000:5000 opencre:$(shell git rev-parse HEAD)
+	 docker run -it -p 5001:5001 opencre:$(shell git rev-parse HEAD)
 
 lint:
 	[ -d "./venv" ] && . ./venv/bin/activate && black . && yarn lint
@@ -105,35 +136,35 @@ migrate-downgrade:
 	export FLASK_APP=$(CURDIR)/cre.py
 	flask db downgrade
 
+import-projects:
+	$(shell CRE_SKIP_IMPORT_CORE=1 bash  ./scripts/import-all.sh)
+
+
+
 import-all:
-	[ -d "./venv" ] && . ./venv/bin/activate
-	rm -rf standards_cache.sqlite &&\
-	make migrate-upgrade && export FLASK_APP=$(CURDIR)/cre.py &&\
-	python cre.py --add --from_spreadsheet https://docs.google.com/spreadsheets/d/1eZOEYgts7d_-Dr-1oAbogPfzBLh6511b58pX3b59kvg &&\
-	python cre.py --generate_embeddings && \
-	python cre.py --zap_in --cheatsheets_in --github_tools_in  --capec_in --owasp_secure_headers_in --pci_dss_4_in --juiceshop_in --dsomm_in --dsomm_in --cloud_native_security_controls_in &&\
-	python cre.py --generate_embeddings
+	$(shell CRE_DELETE_DB=1 bash ./scripts/import-all.sh)
 
 import-neo4j:
 	[ -d "./venv" ] && . ./venv/bin/activate
 	export FLASK_APP=$(CURDIR)/cre.py && python cre.py --populate_neo4j_db
 
-preload-map-analysis: 
+preload-map-analysis:
+	make docker-neo4j&\
 	make docker-redis&\
 	make start-worker&\
 	make start-worker&\
-	make  start-worker&\
-	make  start-worker&\
-	make  start-worker&\
 	make start-worker&\
-	make  start-worker&\
-	make  start-worker&\
-	make  start-worker&\
-	make  start-worker&\
+	make start-worker&\
+	make start-worker&\
+	make start-worker&\
+	make start-worker&\
+	make start-worker&\
+	make start-worker&\
+	make start-worker&\
 	make dev-flask&
 	sleep 5
 	[ -d "./venv" ] && . ./venv/bin/activate
 	export FLASK_APP=$(CURDIR)/cre.py 
-	python cre.py --preload_map_analysis_target_url 'http://127.0.0.1:5000'	
+	python cre.py --preload_map_analysis_target_url 'http://127.0.0.1:5001'	
 	killall python flask
 all: clean lint test dev dev-run

@@ -103,7 +103,6 @@ def main() -> None:
     parser.add_argument(
         "--owasp_proj_meta",
         default=None,
-        # default=os.path.join(os.path.dirname(os.path.realpath(__file__)), "./cres/owasp/projects.yaml"),
         help="define location of owasp project metadata",
     )
     parser.add_argument(
@@ -147,6 +146,7 @@ def main() -> None:
         default=None,
         help="export all data into yaml files under the directory pointed to by this argument",
     )
+    # Start External Project importing
     parser.add_argument(
         "--csa_ccm_v3_in",
         action="store_true",
@@ -192,6 +192,13 @@ def main() -> None:
         action="store_true",
         help="import cloud native security controls from their repo (https://raw.githubusercontent.com/cloud-native-security-controls/controls-catalog/main/controls/controls_catalog.csv)",
     )
+    # End External Project importing
+
+    parser.add_argument(
+        "--import_external_projects",
+        action="store_true",
+        help="import all external projects, shortcut for calling all of *_in",
+    )
     parser.add_argument(
         "--generate_embeddings",
         action="store_true",
@@ -211,6 +218,16 @@ def main() -> None:
         "--preload_map_analysis_target_url",
         default="",
         help="preload map analysis for all possible 2 standards combinations, use target url as an OpenCRE base",
+    )
+    parser.add_argument(
+        "--delete_map_analysis_for",
+        default="",
+        help="delete all map analyses for resource spcified",
+    )
+    parser.add_argument(
+        "--delete_resource",
+        default="",
+        help="delete all the mappings, embeddings and gap analysis for the resource",
     )
     args = parser.parse_args()
 

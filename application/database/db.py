@@ -13,6 +13,12 @@ from neomodel import (
     StructuredRel,
     db,
 )
+from neomodel.exceptions import (
+    DoesNotExist,
+    FeatureNotSupported,
+    NodeClassAlreadyDefined,
+)
+from neomodel import core
 import neo4j
 from sqlalchemy.orm import aliased
 import os
@@ -26,11 +32,11 @@ import yaml
 from application.defs import cre_defs
 from application.utils import file
 from flask_sqlalchemy.model import DefaultMeta
-from sqlalchemy import func
+from sqlalchemy import func, delete
 import uuid
 
 from application.utils.gap_analysis import get_path_score
-from application.utils.hash import make_array_hash, make_cache_key
+from application.utils.hash import make_array_key, make_cache_key
 
 
 from .. import sqla  # type: ignore
@@ -76,8 +82,6 @@ class Node(BaseModel):  # type: ignore
             name,
             section,
             subsection,
-            ntype,
-            description,
             version,
             section_id,
             name="uq_node",
@@ -234,7 +238,7 @@ class NeoNode(NeoDocument):
 
 class NeoStandard(NeoNode):
     section = StringProperty()
-    subsection = StringProperty(required=True)
+    subsection = StringProperty()
     section_id = StringProperty()
 
     @classmethod
@@ -248,13 +252,15 @@ class NeoStandard(NeoNode):
             section=node.section,
             sectionID=node.section_id,
             subsection=node.subsection,
-            links=self.get_links(
-                {
-                    "Related": node.related,
-                }
-            )
-            if parse_links
-            else [],
+            links=(
+                self.get_links(
+                    {
+                        "Related": node.related,
+                    }
+                )
+                if parse_links
+                else []
+            ),
         )
 
 
@@ -264,6 +270,7 @@ class NeoTool(NeoStandard):
     @classmethod
     def to_cre_def(self, node, parse_links=True) -> cre_defs.Tool:
         return cre_defs.Tool(
+            tooltype=node.tooltype,
             name=node.name,
             description=node.description,
             tags=node.tags,
@@ -272,13 +279,15 @@ class NeoTool(NeoStandard):
             section=node.section,
             sectionID=node.section_id,
             subsection=node.subsection,
-            links=self.get_links(
-                {
-                    "Related": node.related,
-                }
-            )
-            if parse_links
-            else [],
+            links=(
+                self.get_links(
+                    {
+                        "Related": node.related,
+                    }
+                )
+                if parse_links
+                else []
+            ),
         )
 
 
@@ -291,13 +300,15 @@ class NeoCode(NeoNode):
             tags=node.tags,
             hyperlink=node.hyperlink,
             version=node.version,
-            links=self.get_links(
-                {
-                    "Related": node.related,
-                }
-            )
-            if parse_links
-            else [],
+            links=(
+                self.get_links(
+                    {
+                        "Related": node.related,
+                    }
+                )
+                if parse_links
+                else []
+            ),
         )
 
 
@@ -315,16 +326,18 @@ class NeoCRE(NeoDocument):  # type: ignore
             id=node.external_id,
             description=node.description,
             tags=node.tags,
-            links=self.get_links(
-                {
-                    "Contains": [*node.contains, *node.contained_in],
-                    "Linked To": node.linked,
-                    "Same as": node.same_as,
-                    "Related": node.related,
-                }
-            )
-            if parse_links
-            else [],
+            links=(
+                self.get_links(
+                    {
+                        "Contains": [*node.contains, *node.contained_in],
+                        "Linked To": node.linked,
+                        "Same as": node.same_as,
+                        "Related": node.related,
+                    }
+                )
+                if parse_links
+                else []
+            ),
         )
 
 
@@ -366,6 +379,7 @@ class NEO_DB:
             node = session.query(Node).filter(Node.id == lnk.node).first()
             if not node:
                 logger.error(f"Node {lnk.node} does not exist?")
+                continue
             self.add_dbnode(node)
 
             cre = session.query(CRE).filter(CRE.id == lnk.cre).first()
@@ -375,99 +389,162 @@ class NEO_DB:
 
     @classmethod
     def add_cre(self, dbcre: CRE):
-        NeoCRE.create_or_update(
-            {
-                "name": dbcre.name,
-                "doctype": "CRE",  # dbcre.ntype,
-                "document_id": dbcre.id,
-                "description": dbcre.description,
-                "links": [],  # dbcre.links,
-                "tags": [dbcre.tags] if isinstance(dbcre.tags, str) else dbcre.tags,
-                "external_id": dbcre.external_id,
-            }
-        )
+        document = NeoCRE.nodes.first_or_none(document_id=dbcre.id)
+        if not document:
+            return NeoCRE(
+                name=dbcre.name,
+                doctype=cre_defs.Credoctypes.CRE.value,  # dbcre.ntype,
+                document_id=dbcre.id,
+                description=dbcre.description,
+                links=[],  # dbcre.links,
+                tags=[dbcre.tags] if isinstance(dbcre.tags, str) else dbcre.tags,
+                external_id=dbcre.external_id,
+            ).save()
+
+        document.name = dbcre.name
+        document.doctype = (cre_defs.Credoctypes.CRE.value,)
+        document.document_id = dbcre.id
+        document.description = dbcre.description or ""
+        document.tags = [dbcre.tags] if isinstance(dbcre.tags, str) else dbcre.tags
+        document.metadata = {}
+        document.external_id = dbcre.external_id or ""
+        return document.save()
+
+    def __create_dbnode(dbnode: Node):
+        if dbnode.ntype == "Standard":
+            return NeoStandard(
+                name=dbnode.name,
+                doctype=dbnode.ntype,
+                document_id=dbnode.id,
+                description=dbnode.description or "",
+                tags=[dbnode.tags] if isinstance(dbnode.tags, str) else dbnode.tags,
+                metadata={},
+                version=dbnode.version or "",
+                section=dbnode.section,
+                section_id=dbnode.section_id,  # dbnode.sectionID,
+                subsection=dbnode.subsection or "",
+                tooltype="",  # dbnode.tooltype,
+            ).save()
+        elif dbnode.ntype == "Code":
+            return NeoCode(
+                name=dbnode.name,
+                doctype=dbnode.ntype,
+                document_id=dbnode.id,
+                description=dbnode.description,
+                links=[],  # dbnode.links,
+                tags=([dbnode.tags] if isinstance(dbnode.tags, str) else dbnode.tags),
+                metadata="{}",  # dbnode.metadata,
+                hyperlink="",  # dbnode.hyperlink or "",
+                version=dbnode.version or "",
+            ).save()
+        elif dbnode.ntype == "Tool":
+            ttype = [tag for tag in dbnode.tags if tag in cre_defs.ToolTypes]
+            if ttype:
+                ttype = ttype[0]
+            else:
+                ttype = cre_defs.ToolTypes.Unknown
+            return NeoTool(
+                tooltype=ttype,
+                name=dbnode.name,
+                doctype=dbnode.ntype,
+                document_id=dbnode.id,
+                description=dbnode.description,
+                links=[],  # dbnode.links,
+                tags=([dbnode.tags] if isinstance(dbnode.tags, str) else dbnode.tags),
+                metadata="{}",  # dbnode.metadata,
+                hyperlink="",  # dbnode.hyperlink or "",
+                version=dbnode.version or "",
+            ).save()
+
+    def __update_dbnode(dbnode: Node):
+        existing = NeoNode.nodes.first_or_none(document_id=dbnode.id)
+        if dbnode.ntype == "Standard":
+            existing.name = dbnode.name
+            existing.doctype = dbnode.ntype
+            existing.document_id = dbnode.id
+            existing.description = dbnode.description or ""
+            existing.tags = (
+                [dbnode.tags] if isinstance(dbnode.tags, str) else dbnode.tags
+            )
+            existing.metadata = {}
+            existing.version = dbnode.version or ""
+            existing.section = dbnode.section
+            existing.section_id = dbnode.section_id  # dbnode.sectionID
+            existing.subsection = dbnode.subsection or ""
+            existing.tooltype = ""  # dbnode.tooltype
+            return existing.save()
+        elif dbnode.ntype == "Code":
+            existing.name = dbnode.name
+            existing.doctype = dbnode.ntype
+            existing.document_id = dbnode.id
+            existing.description = dbnode.description
+            existing.links = []  # dbnode.links
+            existing.tags = (
+                [dbnode.tags] if isinstance(dbnode.tags, str) else dbnode.tags
+            )
+            existing.metadata = "{}"  # dbnode.metadata,
+            existing.hyperlink = ""  # dbnode.hyperlink or "",
+            existing.version = dbnode.version or ""
+            return existing.save()
+        elif dbnode.ntype == "Tool":
+            existing.name = dbnode.name
+            existing.doctype = dbnode.ntype
+            existing.document_id = dbnode.id
+            existing.description = dbnode.description
+            existing.links = []  # dbnode.links
+            existing.tags = (
+                [dbnode.tags] if isinstance(dbnode.tags, str) else dbnode.tags
+            )
+            ttype = [tag for tag in dbnode.tags if tag in cre_defs.ToolTypes]
+            if ttype:
+                ttype = ttype[0]
+            else:
+                ttype = cre_defs.ToolTypes.Unknown
+            existing.tooltype = ttype
+            existing.metadata = "{}"  # dbnode.metadata,
+            existing.hyperlink = ""  # dbnode.hyperlink or "",
+            existing.version = dbnode.version or ""
+            return existing.save()
+        else:
+            raise Exception(f"Unknown DB type: {dbnode.ntype}")
 
     @classmethod
+    @db.transaction
     def add_dbnode(self, dbnode: Node):
-        if dbnode.ntype == "Standard":
-            NeoStandard.create_or_update(
-                {
-                    "name": dbnode.name,
-                    "doctype": dbnode.ntype,
-                    "document_id": dbnode.id,
-                    "description": dbnode.description or "",
-                    "tags": [dbnode.tags]
-                    if isinstance(dbnode.tags, str)
-                    else dbnode.tags,
-                    "hyperlink": "",  # dbnode.hyperlink or "",
-                    "version": dbnode.version or "",
-                    "section": dbnode.section or "",
-                    "section_id": dbnode.section_id or "",
-                    "subsection": dbnode.subsection or "",
-                }
-            )
-            return
-        if dbnode.ntype == "Tool":
-            NeoTool.create_or_update(
-                {
-                    "name": dbnode.name,
-                    "doctype": dbnode.ntype,
-                    "document_id": dbnode.id,
-                    "description": dbnode.description,
-                    "links": [],  # dbnode.links,
-                    "tags": [dbnode.tags]
-                    if isinstance(dbnode.tags, str)
-                    else dbnode.tags,
-                    "metadata": "{}",  # dbnode.metadata,
-                    "hyperlink": "",  # dbnode.hyperlink or "",
-                    "version": dbnode.version or "",
-                    "section": dbnode.section,
-                    "section_id": dbnode.section_id,  # dbnode.sectionID,
-                    "subsection": dbnode.subsection or "",
-                    "tooltype": "",  # dbnode.tooltype,
-                }
-            )
-            return
-        if dbnode.ntype == "Code":
-            NeoCode.create_or_update(
-                {
-                    "name": dbnode.name,
-                    "doctype": dbnode.ntype,
-                    "document_id": dbnode.id,
-                    "description": dbnode.description,
-                    "links": [],  # dbnode.links,
-                    "tags": [dbnode.tags]
-                    if isinstance(dbnode.tags, str)
-                    else dbnode.tags,
-                    "metadata": "{}",  # dbnode.metadata,
-                    "hyperlink": "",  # dbnode.hyperlink or "",
-                    "version": dbnode.version or "",
-                }
-            )
-            return
-        raise Exception(f"Unknown DB type: {dbnode.ntype}")
+        document = NeoNode.nodes.first_or_none(document_id=dbnode.id)
+        if document:
+            return self.__update_dbnode(dbnode)
+        return self.__create_dbnode(dbnode)
 
     @classmethod
     def link_CRE_to_CRE(self, id1, id2, link_type):
         cre1 = NeoCRE.nodes.get(document_id=id1)
         cre2 = NeoCRE.nodes.get(document_id=id2)
 
-        if link_type == "Contains":
+        if link_type == cre_defs.LinkTypes.Contains.value:
             cre1.contains.connect(cre2)
             return
-        if link_type == "Related":
+        if link_type == cre_defs.LinkTypes.Related.value:
             cre1.related.connect(cre2)
+            return
+        if link_type == cre_defs.LinkTypes.PartOf.value:
+            cre2.contains.connect(cre1)
             return
         raise Exception(f"Unknown relation type {link_type}")
 
     @classmethod
     def link_CRE_to_Node(self, CRE_id, node_id, link_type):
-        cre = NeoCRE.nodes.get(document_id=CRE_id)
-        node = NeoNode.nodes.get(document_id=node_id)
-        if link_type == "Linked To":
+        cre = NeoCRE.nodes.first_or_none(document_id=CRE_id)
+        node = NeoNode.nodes.first_or_none(document_id=node_id)
+        if not node:
+            return
+        if link_type == cre_defs.LinkTypes.AutomaticallyLinkedTo.value:
             cre.linked.connect(node)
             return
-        if link_type == "SAME":
+        if link_type == cre_defs.LinkTypes.LinkedTo.value:
+            cre.linked.connect(node)
+            return
+        if link_type == cre_defs.LinkTypes.Same.value:
             cre.same_as.connect(node)
             return
         raise Exception(f"Unknown relation type {link_type}")
@@ -479,6 +556,7 @@ class NEO_DB:
         from datetime import datetime
 
         t1 = datetime.now()
+
         path_records_all, _ = db.cypher_query(
             """
             OPTIONAL MATCH (BaseStandard:NeoStandard {name: $name1})
@@ -601,9 +679,6 @@ class CRE_Graph:
             graph.add_node(
                 "Node: " + str(dbnode.id),
                 internal_id=dbnode.id,
-                # name=dbnode.name,
-                # section=dbnode.section,
-                # section_id=dbnode.section_id,
             )
         else:
             logger.error("Called with dbnode being none")
@@ -646,7 +721,8 @@ class Node_collection:
     def __init__(self) -> None:
         if not os.environ.get("NO_LOAD_GRAPH"):
             self.graph = CRE_Graph.instance(sqla.session)
-        self.neo_db = NEO_DB.instance()
+        if not os.environ.get("NO_LOAD_GRAPH_DB"):
+            self.neo_db = NEO_DB.instance()
         self.session = sqla.session
 
     def __get_external_links(self) -> List[Tuple[CRE, Node, str]]:
@@ -984,6 +1060,9 @@ class Node_collection:
     def list_node_ids_by_ntype(self, ntype: str) -> List[str]:
         return self.session.query(Node.id).filter(Node.ntype == ntype).all()
 
+    def list_node_ids_by_name(self, name: str) -> List[str]:
+        return self.session.query(Node.id).filter(Node.name == name).all()
+
     def list_cre_ids(self) -> List[str]:
         return self.session.query(CRE.id).all()
 
@@ -1101,7 +1180,7 @@ class Node_collection:
             )
             return []
 
-        # todo figure a way to return both the Node
+        # TODO figure a way to return both the Node
         # and the link_type for that link
         for dbcre in dbcres:
             cre = CREfromDB(dbcre)
@@ -1115,7 +1194,7 @@ class Node_collection:
                             ltype=cre_defs.LinkTypes.from_str(ls.type),
                         )
                     )
-            # todo figure the query to merge the following two
+            # TODO figure the query to merge the following two
             internal_links = (
                 self.session.query(InternalLinks)
                 .filter(
@@ -1245,6 +1324,43 @@ class Node_collection:
     def all_nodes_flat(self) -> List[cre_defs.Document]:
         return self.neo_db.everything()
 
+    def delete_nodes(self, node_name: str):
+        entries = (
+            self.session.query(Node)
+            .filter(func.lower(Node.name) == node_name.lower())
+            .all()
+        )
+        if not entries:
+            logger.debug(f"Nodes {node_name} is already deleted")
+            return
+
+        for entry in entries:
+            entry_links = self.session.query(Links).filter(Links.node == entry.id).all()
+            for link in entry_links:
+                self.session.delete(link)
+
+            embeddings = self.get_embeddings_for_doc(nodeFromDB(entry))
+            if embeddings:
+                self.session.delete(embeddings)
+            self.session.delete(entry)
+
+        self.delete_gapanalysis_results_for(node_name)
+        self.session.commit()
+
+    def delete_gapanalysis_results_for(self, node_name):
+        res = (
+            self.session.query(GapAnalysisResults)
+            .filter(GapAnalysisResults.cache_key.like(f"%{node_name}%"))
+            .all()
+        )
+        for r in res:
+            result = self.session.delete(r)
+            if result:
+                logger.info(f"deleted {result.rowcount} objects")
+        self.session.commit()
+        self.session.flush()
+        return res
+
     def add_cre(self, cre: cre_defs.CRE) -> CRE:
         entry: CRE
         query: sqla.Query = self.session.query(CRE).filter(
@@ -1295,7 +1411,6 @@ class Node_collection:
         if not dbnode.ntype:
             logger.warning(f"{node} has no registered type, cannot add, skipping")
             return None
-
         entries = self.object_select(dbnode, skip_attributes=comparison_skip_attributes)
         if entries:
             entry = entries[0]
@@ -1314,100 +1429,125 @@ class Node_collection:
         return dbnode
 
     def add_internal_link(
-        self, group: CRE, cre: CRE, type: cre_defs.LinkTypes = cre_defs.LinkTypes.Same
+        self,
+        higher: CRE,
+        lower: CRE,
+        type: cre_defs.LinkTypes = cre_defs.LinkTypes.Same,
     ) -> None:
-        if cre.id is None:
-            if cre.external_id is None:
-                cre = (
+        """
+        adds a link between two CREs in the database,
+        Args:
+            higher (CRE): the higher level CRE that CONTAINS or is the SAME or is RELATED to lower
+            lower (CRE): the lower level CRE that is CONTAINED or is the SAME or is RELATED to higher
+            type (cre_defs.LinkTypes, optional): the linktype
+             Defaults to cre_defs.LinkTypes.Same.
+        """
+        if lower.id is None:
+            if lower.external_id is None:
+                lower = (
                     self.session.query(CRE)
                     .filter(
                         sqla.and_(
-                            CRE.name == cre.name, CRE.description == cre.description
+                            CRE.name == lower.name, CRE.description == lower.description
                         )
                     )
                     .first()
                 )
             else:
-                cre = (
+                lower = (
                     self.session.query(CRE)
                     .filter(
                         sqla.and_(
-                            CRE.name == cre.name, CRE.external_id == cre.external_id
+                            CRE.name == lower.name, CRE.external_id == lower.external_id
                         )
                     )
                     .first()
                 )
-        if group.id is None:
-            if group.external_id is None:
-                group = (
+        if higher.id is None:
+            if higher.external_id is None:
+                higher = (
                     self.session.query(CRE)
                     .filter(
                         sqla.and_(
-                            CRE.name == group.name, CRE.description == group.description
+                            CRE.name == higher.name,
+                            CRE.description == higher.description,
                         )
                     )
                     .first()
                 )
             else:
-                group = (
+                higher = (
                     self.session.query(CRE)
                     .filter(
                         sqla.and_(
-                            CRE.name == group.name, CRE.external_id == group.external_id
+                            CRE.name == higher.name,
+                            CRE.external_id == higher.external_id,
                         )
                     )
                     .first()
                 )
-        if cre is None or group is None:
+        if lower is None or higher is None:
             logger.fatal(
                 "Tried to insert internal mapping with element"
                 " that doesn't exist in db, this looks like a bug"
             )
             return None
 
-        entry = (
+        entry_exists = (
             self.session.query(InternalLinks)
             .filter(
                 sqla.or_(
                     sqla.and_(
-                        InternalLinks.cre == group.id, InternalLinks.group == cre.id
+                        InternalLinks.cre == lower.id, InternalLinks.group == higher.id
                     ),
                     sqla.and_(
-                        InternalLinks.cre == cre.id, InternalLinks.group == group.id
+                        InternalLinks.cre == higher.id, InternalLinks.group == lower.id
                     ),
                 )
             )
             .first()
         )
-        if entry is not None:
+        if entry_exists:
             logger.debug(
-                f"knew of internal link {cre.name} == {group.name} of type {entry.type},updating to type {type.value}"
+                f"knew of internal link {lower.name} == {higher.name} of type {entry_exists.type},"
+                "updating to type {type.value}"
             )
-            entry.type = type.value
+            entry_exists.type = type.value
             self.session.commit()
 
-            return None
+            return
 
         else:
             logger.debug(
                 "did not know of internal link"
-                f" {group.external_id}:{group.name}"
-                f" == {cre.external_id}:{cre.name} ,adding"
+                f" {higher.external_id}:{higher.name}"
+                f" == {lower.external_id}:{lower.name} ,adding"
             )
-            cycle = self.__introduces_cycle(f"CRE: {group.id}", f"CRE: {cre.id}")
+            cycle = self.__introduces_cycle(f"CRE: {higher.id}", f"CRE: {lower.id}")
             if not cycle:
                 self.session.add(
-                    InternalLinks(type=type.value, cre=cre.id, group=group.id)
+                    InternalLinks(type=type.value, cre=lower.id, group=higher.id)
                 )
                 self.session.commit()
                 if self.graph:
                     self.graph.add_edge(
-                        f"CRE: {group.id}", f"CRE: {cre.id}", ltype=type.value
+                        f"CRE: {higher.id}", f"CRE: {lower.id}", ltype=type.value
                     )
             else:
+                for item in cycle:
+                    from_id = item[0].replace("CRE: ", "")
+                    to_id = item[1].replace("CRE: ", "")
+                    from_cre = (
+                        self.session.query(CRE).filter(lower.id == from_id).first()
+                    )
+                    to_cre = self.session.query(CRE).filter(lower.id == to_id).first()
+                    if from_cre and to_cre:
+                        item[0].replace(from_id, from_cre.name)
+                        item[1].replace(to_id, to_cre.name)
+
                 logger.warning(
-                    f"A link between CREs {group.external_id}-{group.name} and"
-                    f" {cre.external_id}-{cre.name} "
+                    f"A link between CREs {higher.external_id}-{higher.name} and"
+                    f" {lower.external_id}-{lower.name} "
                     f"would introduce cycle {cycle}, skipping"
                 )
 
@@ -1477,8 +1617,12 @@ class Node_collection:
         return res
 
     def standards(self) -> List[str]:
-        logger.info("found unique db standards, returning")
-        return self.neo_db.standards()
+        standards = (
+            self.session.query(Node.name)
+            .filter(Node.ntype == cre_defs.Credoctypes.Standard)
+            .distinct()
+        )
+        return [s[0] for s in standards]
 
     def text_search(self, text: str) -> List[Optional[cre_defs.Document]]:
         """Given a piece of text, tries to find the best match
@@ -1544,7 +1688,7 @@ class Node_collection:
                 return list(set(results))
         # fuzzy matches second
         args = [f"%{text}%", "", "", "", "", ""]
-        results = []
+        results = {}
         s = set([p for p in permutations(args, 6)])
         for combo in s:
             nodes = self.get_nodes(
@@ -1558,15 +1702,18 @@ class Node_collection:
                 sectionID=combo[5],
             )
             if nodes:
-                results.extend(nodes)
+                for node in nodes:
+                    node_key = f"{node.name}:{node.version}:{node.section}:{node.sectionID}:{node.subsection}:"
+                    results[node_key] = node
         args = [f"%{text}%", None, None]
         for combo in permutations(args, 3):
             cres = self.get_CREs(
                 name=combo[0], external_id=combo[1], description=combo[2], partial=True
             )
             if cres:
-                results.extend(cres)
-        return list(set(results))
+                for cre in cres:
+                    results[cre.id] = cre
+        return list(results.values())
 
     def get_root_cres(self):
         """Returns CRES that only have "Contains" links"""
@@ -1844,7 +1991,6 @@ def dbCREfromCRE(cre: cre_defs.CRE) -> CRE:
 def gap_analysis(
     neo_db: NEO_DB,
     node_names: List[str],
-    store_in_cache: bool = False,
     cache_key: str = "",
 ):
     cre_db = Node_collection()
@@ -1857,6 +2003,11 @@ def gap_analysis(
 
     for node in base_standard:
         key = node.id
+        if not key:
+            logger.error(
+                f"key is empty, this is a bug and this gap analysis will not progress"
+            )
+            continue
         if key not in grouped_paths:
             grouped_paths[key] = {"start": node, "paths": {}, "extra": 0}
             extra_paths_dict[key] = {"paths": {}}
@@ -1864,14 +2015,23 @@ def gap_analysis(
     for path in paths:
         key = path["start"].id
         end_key = path["end"].id
+        if not end_key:
+            logger.error(
+                f"end_key is empty, this is a bug and this gap analysis will not progress"
+            )
+            continue
         path["score"] = get_path_score(path)
         del path["start"]
-        if path["score"] <= GA_STRONG_UPPER_LIMIT:
+        if (
+            path["score"] <= GA_STRONG_UPPER_LIMIT
+        ):  # strong paths, return them in the main object
             if end_key in extra_paths_dict[key]["paths"]:
+                # if we found a shortest path to a node previously in the weak paths
                 del extra_paths_dict[key]["paths"][end_key]
                 grouped_paths[key]["extra"] -= 1
             if end_key in grouped_paths[key]["paths"]:
                 if grouped_paths[key]["paths"][end_key]["score"] > path["score"]:
+                    # if we found a shortest path to an existing strong path
                     grouped_paths[key]["paths"][end_key] = path
             else:
                 grouped_paths[key]["paths"][end_key] = path
@@ -1885,29 +2045,16 @@ def gap_analysis(
                 extra_paths_dict[key]["paths"][end_key] = path
                 grouped_paths[key]["extra"] += 1
 
-    if (
-        store_in_cache
-    ):  # lightweight memory option to not return potentially huge object and instead store in a cache,
-        # in case this is called via worker, we save both this and the caller memory by avoiding duplicate object in mem
+    if cache_key == "":
+        cache_key = make_array_key(node_names)
 
-        # conn = redis.connect()
-        if cache_key == "":
-            cache_key = make_array_hash(node_names)
+    cre_db.add_gap_analysis_result(
+        cache_key=cache_key, ga_object=flask_json.dumps({"result": grouped_paths})
+    )
 
-        # conn.set(cache_key, flask_json.dumps({"result": grouped_paths}))
+    for key in extra_paths_dict:
         cre_db.add_gap_analysis_result(
-            cache_key=cache_key, ga_object=flask_json.dumps({"result": grouped_paths})
+            cache_key=make_cache_key(node_names, key),
+            ga_object=flask_json.dumps({"result": extra_paths_dict[key]}),
         )
-
-        for key in extra_paths_dict:
-            cre_db.add_gap_analysis_result(
-                cache_key=make_cache_key(node_names, key),
-                ga_object=flask_json.dumps({"result": extra_paths_dict[key]}),
-            )
-            # conn.set(
-            #     cache_key + "->" + key,
-            #     flask_json.dumps({"result": extra_paths_dict[key]}),
-            # )
-        return (node_names, {}, {})
-
     return (node_names, grouped_paths, extra_paths_dict)
