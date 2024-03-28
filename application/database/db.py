@@ -538,10 +538,13 @@ class NEO_DB:
         node = NeoNode.nodes.first_or_none(document_id=node_id)
         if not node:
             return
-        if link_type == "Linked To":
+        if link_type == cre_defs.LinkTypes.AutomaticallyLinkedTo.value:
             cre.linked.connect(node)
             return
-        if link_type == "SAME":
+        if link_type == cre_defs.LinkTypes.LinkedTo.value:
+            cre.linked.connect(node)
+            return
+        if link_type == cre_defs.LinkTypes.Same.value:
             cre.same_as.connect(node)
             return
         raise Exception(f"Unknown relation type {link_type}")
