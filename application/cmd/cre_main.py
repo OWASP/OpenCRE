@@ -397,34 +397,34 @@ def review_from_spreadsheet(cache: str, spreadsheet_url: str, share_with: str) -
     # logger.info("A spreadsheet view is at %s" % sheet_url)
 
 
-def review_from_disk(cache: str, cre_file_loc: str, share_with: str) -> None:
-    """--review --cre_loc <path>
-    copy db to new temp dir,
-    import new mappings from yaml files defined in <cre_loc>
-    export db to tmp dir
-    create new spreadsheet of the new CRE landscape for review
-    """
-    loc, cache = prepare_for_review(cache)
-    database = db_connect(path=cache)
-    for file in get_cre_files_from_disk(cre_file_loc):
-        with open(file, "rb") as standard:
-            parse_file(
-                filename=file,
-                yamldocs=list(yaml.safe_load_all(standard)),
-                scollection=database,
-            )
+# def review_from_disk(cache: str, cre_file_loc: str, share_with: str) -> None:
+#     """--review --cre_loc <path>
+#     copy db to new temp dir,
+#     import new mappings from yaml files defined in <cre_loc>
+#     export db to tmp dir
+#     create new spreadsheet of the new CRE landscape for review
+#     """
+#     loc, cache = prepare_for_review(cache)
+#     database = db_connect(path=cache)
+#     for file in get_cre_files_from_disk(cre_file_loc):
+#         with open(file, "rb") as standard:
+#             parse_file(
+#                 filename=file,
+#                 yamldocs=list(yaml.safe_load_all(standard)),
+#                 scollection=database,
+#             )
 
-    sheet_url = create_spreadsheet(
-        collection=database,
-        exported_documents=docs,
-        title="cre_review",
-        share_with=[share_with],
-    )
-    logger.info(
-        "Stored temporary files and database in %s if you want to use them next time, set cache to the location of the database in that dir"
-        % loc
-    )
-    logger.info("A spreadsheet view is at %s" % sheet_url)
+#     sheet_url = create_spreadsheet(
+#         collection=database,
+#         exported_documents=docs,
+#         title="cre_review",
+#         share_with=[share_with],
+#     )
+#     logger.info(
+#         "Stored temporary files and database in %s if you want to use them next time, set cache to the location of the database in that dir"
+#         % loc
+#     )
+#     logger.info("A spreadsheet view is at %s" % sheet_url)
 
 
 def print_graph() -> None:
@@ -436,17 +436,17 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
     script_path = os.path.dirname(os.path.realpath(__file__))
     os.path.join(script_path, "../cres")
 
-    if args.review and args.from_spreadsheet:
-        review_from_spreadsheet(
-            cache=args.cache_file,
-            spreadsheet_url=args.from_spreadsheet,
-            share_with=args.email,
-        )
-    elif args.review and args.cre_loc:
-        review_from_disk(
-            cache=args.cache_file, cre_file_loc=args.cre_loc, share_with=args.email
-        )
-    elif args.add and args.from_spreadsheet:
+    # if args.review and args.from_spreadsheet:
+    #     review_from_spreadsheet(
+    #         cache=args.cache_file,
+    #         spreadsheet_url=args.from_spreadsheet,
+    #         share_with=args.email,
+    #     )
+    # elif args.review and args.cre_loc:
+    #     review_from_disk(
+    #         cache=args.cache_file, cre_file_loc=args.cre_loc, share_with=args.email
+    #     )
+    if args.add and args.from_spreadsheet:
         add_from_spreadsheet(
             spreadsheet_url=args.from_spreadsheet,
             cache_loc=args.cache_file,
@@ -456,18 +456,18 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
         add_from_disk(cache_loc=args.cache_file, cre_loc=args.cre_loc)
     elif args.print_graph:
         print_graph()
-    elif args.review and args.osib_in:
-        review_osib_from_file(
-            file_loc=args.osib_in, cache=args.cache_file, cre_loc=args.cre_loc
-        )
+    # elif args.review and args.osib_in:
+    #     review_osib_from_file(
+    #         file_loc=args.osib_in, cache=args.cache_file, cre_loc=args.cre_loc
+    #     )
 
-    elif args.add and args.osib_in:
-        add_osib_from_file(
-            file_loc=args.osib_in, cache=args.cache_file, cre_loc=args.cre_loc
-        )
+    # elif args.add and args.osib_in:
+    #     add_osib_from_file(
+    #         file_loc=args.osib_in, cache=args.cache_file, cre_loc=args.cre_loc
+    #     )
 
-    elif args.osib_out:
-        export_to_osib(file_loc=args.osib_out, cache=args.cache_file)
+    # elif args.osib_out:
+    #     export_to_osib(file_loc=args.osib_out, cache=args.cache_file)
 
     if args.delete_map_analysis_for:
         cache = db_connect(args.cache_file)
