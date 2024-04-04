@@ -71,12 +71,12 @@ def main() -> None:
         action="store_true",
         help="will treat the incoming spreadsheet as a reviewed cre and add to the database",
     )
-    parser.add_argument(
-        "--review",
-        action="store_true",
-        help="will treat the incoming spreadsheet as a new mapping, will try to map the incoming connections to existing cre\
-            and will create a new spreadsheet with the result for review. Nothing will be added to the database at this point",
-    )
+    # parser.add_argument(
+    #     "--review",
+    #     action="store_true",
+    #     help="will treat the incoming spreadsheet as a new mapping, will try to map the incoming connections to existing cre\
+    #         and will create a new spreadsheet with the result for review. Nothing will be added to the database at this point",
+    # )
     parser.add_argument(
         "--email",
         help="used in conjuctions with --review, what email to share the resulting spreadsheet with",

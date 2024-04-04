@@ -9,6 +9,7 @@ import time
 from alive_progress import alive_bar
 from application.utils.external_project_parsers.parsers import *
 from application.utils import gap_analysis
+import os, json
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
@@ -64,7 +65,14 @@ class BaseParser:
         jobs = []
         conn = redis.connect()
         q = Queue(connection=conn)
+        import_only = {}
+        if os.environ.get("CRE_IMPORTERS_IMPORT_ONLY"):
+            import_only = json.loads(os.environ.get("CRE_IMPORTERS_IMPORT_ONLY"))
+
         for subclass in ParserInterface.__subclasses__():
+            if import_only and subclass.name not in import_only:
+                continue
+
             importers.append(subclass)
             sclass = subclass
 

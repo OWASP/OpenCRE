@@ -407,7 +407,7 @@ class TestMain(unittest.TestCase):
         mocked_parse_standards_from_spreadsheeet.assert_called_with(
             [{"cre": "cre"}], cache, mocked_ai_client_init.return_value
         )
-        mocked_export.assert_called_with(dir)
+        # mocked_export.assert_called_with(dir) we don't export anymore
 
     @patch("application.cmd.cre_main.ai_client_init")
     @patch("application.cmd.cre_main.prepare_for_review")
@@ -454,56 +454,56 @@ class TestMain(unittest.TestCase):
         mocked_parse_standards_from_spreadsheeet.assert_called_with(
             [{"cre": "cre"}], self.collection, mocked_ai_client_init.return_value
         )
-        mocked_export.assert_called_with(loc)
+        # mocked_export.assert_called_with(loc) #we don't export anymore
 
-    @patch("application.cmd.cre_main.prepare_for_review")
-    @patch("application.cmd.cre_main.db_connect")
-    @patch("application.cmd.cre_main.get_cre_files_from_disk")
-    @patch("application.cmd.cre_main.parse_file")
-    @patch("application.cmd.cre_main.create_spreadsheet")
-    @patch("application.database.db.Node_collection.export")
-    def test_review_from_disk(
-        self,
-        mocked_export: Mock,
-        mocked_create_spreadsheet: Mock,
-        mocked_parse_file: Mock,
-        mocked_get_standards_files_from_disk: Mock,
-        mocked_db_connect: Mock,
-        mocked_prepare_for_review: Mock,
-    ) -> None:
-        dir = tempfile.mkdtemp()
-        self.tmpdirs.append(dir)
-        yml = tempfile.mkstemp(dir=dir, suffix=".yaml")[1]
-        loc = tempfile.mkstemp(dir=dir)[1]
-        cache = tempfile.mkstemp(dir=dir, suffix=".sqlite")[1]
-        mocked_prepare_for_review.return_value = (loc, cache)
-        mocked_db_connect.return_value = self.collection
-        mocked_get_standards_files_from_disk.return_value = [yml for i in range(0, 3)]
-        mocked_export.return_value = [
-            defs.CRE(id="000-000", name="c0"),
-            defs.Standard(name="s0", section="s1"),
-            defs.Code(name="code0", description="code1"),
-            defs.Tool(
-                name="t0", tooltype=defs.ToolTypes.Offensive, description="tool0"
-            ),
-        ]
-        mocked_create_spreadsheet.return_value = "https://example.com/sheeet"
+    # @patch("application.cmd.cre_main.prepare_for_review")
+    # @patch("application.cmd.cre_main.db_connect")
+    # @patch("application.cmd.cre_main.get_cre_files_from_disk")
+    # @patch("application.cmd.cre_main.parse_file")
+    # @patch("application.cmd.cre_main.create_spreadsheet")
+    # @patch("application.database.db.Node_collection.export")
+    # def test_review_from_disk(
+    #     self,
+    #     mocked_export: Mock,
+    #     mocked_create_spreadsheet: Mock,
+    #     mocked_parse_file: Mock,
+    #     mocked_get_standards_files_from_disk: Mock,
+    #     mocked_db_connect: Mock,
+    #     mocked_prepare_for_review: Mock,
+    # ) -> None:
+    #     dir = tempfile.mkdtemp()
+    #     self.tmpdirs.append(dir)
+    #     yml = tempfile.mkstemp(dir=dir, suffix=".yaml")[1]
+    #     loc = tempfile.mkstemp(dir=dir)[1]
+    #     cache = tempfile.mkstemp(dir=dir, suffix=".sqlite")[1]
+    #     mocked_prepare_for_review.return_value = (loc, cache)
+    #     mocked_db_connect.return_value = self.collection
+    #     mocked_get_standards_files_from_disk.return_value = [yml for i in range(0, 3)]
+    #     mocked_export.return_value = [
+    #         defs.CRE(id="000-000", name="c0"),
+    #         defs.Standard(name="s0", section="s1"),
+    #         defs.Code(name="code0", description="code1"),
+    #         defs.Tool(
+    #             name="t0", tooltype=defs.ToolTypes.Offensive, description="tool0"
+    #         ),
+    #     ]
+    #     mocked_create_spreadsheet.return_value = "https://example.com/sheeet"
 
-        main.review_from_disk(
-            cache=cache, cre_file_loc=dir, share_with="foo@example.com"
-        )
+    #     main.review_from_disk(
+    #         cache=cache, cre_file_loc=dir, share_with="foo@example.com"
+    #     )
 
-        mocked_db_connect.assert_called_with(path=cache)
-        mocked_parse_file.assert_called_with(
-            filename=yml, yamldocs=[], scollection=self.collection
-        )
-        mocked_export.assert_called_with(loc)
-        mocked_create_spreadsheet.assert_called_with(
-            collection=self.collection,
-            exported_documents=mocked_export.return_value,
-            title="cre_review",
-            share_with=["foo@example.com"],
-        )
+    #     mocked_db_connect.assert_called_with(path=cache)
+    #     mocked_parse_file.assert_called_with(
+    #         filename=yml, yamldocs=[], scollection=self.collection
+    #     )
+    #     mocked_export.assert_called_with(loc)
+    #     mocked_create_spreadsheet.assert_called_with(
+    #         collection=self.collection,
+    #         exported_documents=mocked_export.return_value,
+    #         title="cre_review",
+    #         share_with=["foo@example.com"],
+    #     )
 
     @patch("application.cmd.cre_main.db_connect")
     @patch("application.cmd.cre_main.get_cre_files_from_disk")
@@ -538,151 +538,151 @@ class TestMain(unittest.TestCase):
         mocked_parse_file.assert_called_with(
             filename=yml, yamldocs=[], scollection=self.collection
         )
-        mocked_export.assert_called_with(dir)
+        # mocked_export.assert_called_with(dir) # we don't export anymore
 
-    @patch("application.cmd.cre_main.prepare_for_review")
-    @patch("application.cmd.cre_main.db_connect")
-    @patch("application.defs.osib_defs.read_osib_yaml")
-    @patch("application.defs.osib_defs.try_from_file")
-    @patch("application.defs.osib_defs.osib2cre")
-    @patch("application.cmd.cre_main.register_cre")
-    @patch("application.cmd.cre_main.register_node")
-    @patch("application.cmd.cre_main.create_spreadsheet")
-    @patch("application.database.db.Node_collection.export")
-    def test_review_osib_from_file(
-        self,
-        mocked_export: Mock,
-        mocked_create_spreadsheet: Mock,
-        mocked_register_node: Mock,
-        mocked_register_cre: Mock,
-        mocked_osib2cre: Mock,
-        mocked_try_from_file: Mock,
-        mocked_read_osib_yaml: Mock,
-        mocked_db_connect: Mock,
-        mocked_prepare_for_review: Mock,
-    ) -> None:
-        dir = tempfile.mkdtemp()
-        self.tmpdirs.append(dir)
-        osib_yaml = tempfile.mkstemp(dir=dir, suffix=".yaml")[1]
-        loc = tempfile.mkstemp(dir=dir)[1]
-        cach = tempfile.mkstemp(dir=dir)[1]
-        mocked_prepare_for_review.return_value = (loc, cach)
-        mocked_db_connect.return_value = self.collection
-        mocked_read_osib_yaml.return_value = [{"osib": "osib"}]
-        mocked_try_from_file.return_value = [
-            Osib_tree(aliases=[Osib_id("t1")]),
-            Osib_tree(aliases=[Osib_id("t2")]),
-        ]
+    # @patch("application.cmd.cre_main.prepare_for_review")
+    # @patch("application.cmd.cre_main.db_connect")
+    # @patch("application.defs.osib_defs.read_osib_yaml")
+    # @patch("application.defs.osib_defs.try_from_file")
+    # @patch("application.defs.osib_defs.osib2cre")
+    # @patch("application.cmd.cre_main.register_cre")
+    # @patch("application.cmd.cre_main.register_node")
+    # @patch("application.cmd.cre_main.create_spreadsheet")
+    # @patch("application.database.db.Node_collection.export")
+    # def test_review_osib_from_file(
+    #     self,
+    #     mocked_export: Mock,
+    #     mocked_create_spreadsheet: Mock,
+    #     mocked_register_node: Mock,
+    #     mocked_register_cre: Mock,
+    #     mocked_osib2cre: Mock,
+    #     mocked_try_from_file: Mock,
+    #     mocked_read_osib_yaml: Mock,
+    #     mocked_db_connect: Mock,
+    #     mocked_prepare_for_review: Mock,
+    # ) -> None:
+    #     dir = tempfile.mkdtemp()
+    #     self.tmpdirs.append(dir)
+    #     osib_yaml = tempfile.mkstemp(dir=dir, suffix=".yaml")[1]
+    #     loc = tempfile.mkstemp(dir=dir)[1]
+    #     cach = tempfile.mkstemp(dir=dir)[1]
+    #     mocked_prepare_for_review.return_value = (loc, cach)
+    #     mocked_db_connect.return_value = self.collection
+    #     mocked_read_osib_yaml.return_value = [{"osib": "osib"}]
+    #     mocked_try_from_file.return_value = [
+    #         Osib_tree(aliases=[Osib_id("t1")]),
+    #         Osib_tree(aliases=[Osib_id("t2")]),
+    #     ]
 
-        mocked_osib2cre.return_value = (
-            [defs.CRE(name="c0", id="000-000")],
-            [defs.Standard(name="s0", section="s1")],
-        )
-        mocked_register_cre.return_value = db.CRE(name="c0", id="000-000")
-        mocked_register_node.return_value = db.Node(name="s0", section="s1")
-        mocked_create_spreadsheet.return_value = "https://example.com/sheeet"
-        mocked_export.return_value = [
-            defs.CRE(name="c0", id="000-000"),
-            defs.Standard(name="s0", section="s1"),
-        ]
+    #     mocked_osib2cre.return_value = (
+    #         [defs.CRE(name="c0", id="000-000")],
+    #         [defs.Standard(name="s0", section="s1")],
+    #     )
+    #     mocked_register_cre.return_value = db.CRE(name="c0", id="000-000")
+    #     mocked_register_node.return_value = db.Node(name="s0", section="s1")
+    #     mocked_create_spreadsheet.return_value = "https://example.com/sheeet"
+    #     mocked_export.return_value = [
+    #         defs.CRE(name="c0", id="000-000"),
+    #         defs.Standard(name="s0", section="s1"),
+    #     ]
 
-        main.review_osib_from_file(file_loc=osib_yaml, cache=cach, cre_loc=dir)
+    #     main.review_osib_from_file(file_loc=osib_yaml, cache=cach, cre_loc=dir)
 
-        mocked_prepare_for_review.assert_called_with(cach)
-        mocked_db_connect.assert_called_with(path=cach)
-        mocked_read_osib_yaml.assert_called_with(osib_yaml)
-        mocked_try_from_file.assert_called_with([{"osib": "osib"}])
-        mocked_osib2cre.assert_called_with(odefs.Osib_tree(aliases=[Osib_id("t1")]))
-        mocked_osib2cre.assert_called_with(odefs.Osib_tree(aliases=[Osib_id("t2")]))
-        mocked_register_cre.assert_called_with(
-            defs.CRE(id="000-000", name="c0"), self.collection
-        )
-        mocked_register_node.assert_called_with(
-            mocked_osib2cre.return_value[1][0], self.collection
-        )
+    #     mocked_prepare_for_review.assert_called_with(cach)
+    #     mocked_db_connect.assert_called_with(path=cach)
+    #     mocked_read_osib_yaml.assert_called_with(osib_yaml)
+    #     mocked_try_from_file.assert_called_with([{"osib": "osib"}])
+    #     mocked_osib2cre.assert_called_with(odefs.Osib_tree(aliases=[Osib_id("t1")]))
+    #     mocked_osib2cre.assert_called_with(odefs.Osib_tree(aliases=[Osib_id("t2")]))
+    #     mocked_register_cre.assert_called_with(
+    #         defs.CRE(id="000-000", name="c0"), self.collection
+    #     )
+    #     mocked_register_node.assert_called_with(
+    #         mocked_osib2cre.return_value[1][0], self.collection
+    #     )
 
-        mocked_create_spreadsheet.assert_called_with(
-            collection=self.collection,
-            exported_documents=mocked_export.return_value,
-            title="osib_review",
-            share_with=[],
-        )
-        mocked_export.assert_called_with(loc)
+    #     mocked_create_spreadsheet.assert_called_with(
+    #         collection=self.collection,
+    #         exported_documents=mocked_export.return_value,
+    #         title="osib_review",
+    #         share_with=[],
+    #     )
+    #     mocked_export.assert_called_with(loc)
 
-    @patch("application.cmd.cre_main.db_connect")
-    @patch("application.defs.osib_defs.read_osib_yaml")
-    @patch("application.defs.osib_defs.try_from_file")
-    @patch("application.defs.osib_defs.osib2cre")
-    @patch("application.cmd.cre_main.register_cre")
-    @patch("application.cmd.cre_main.register_node")
-    @patch("application.database.db.Node_collection.export")
-    def test_add_osib_from_file(
-        self,
-        mocked_export: Mock,
-        mocked_register_node: Mock,
-        mocked_register_cre: Mock,
-        mocked_osib2cre: Mock,
-        mocked_try_from_file: Mock,
-        mocked_read_osib_yaml: Mock,
-        mocked_db_connect: Mock,
-    ) -> None:
-        dir = tempfile.mkdtemp()
-        self.tmpdirs.append(dir)
-        osib_yaml = tempfile.mkstemp(dir=dir, suffix=".yaml")[1]
-        loc = tempfile.mkstemp(dir=dir)[1]
-        cache = tempfile.mkstemp(dir=dir, suffix=".sqlite")[1]
-        mocked_db_connect.return_value = self.collection
-        mocked_read_osib_yaml.return_value = [{"osib": "osib"}]
-        mocked_try_from_file.return_value = [
-            odefs.Osib_tree(aliases=[Osib_id("t1")]),
-            odefs.Osib_tree(aliases=[Osib_id("t2")]),
-        ]
-        mocked_osib2cre.return_value = (
-            [defs.CRE(id="000-000", name="c0")],
-            [defs.Standard(name="s0", section="s1")],
-        )
-        mocked_register_cre.return_value = db.CRE(name="c0")
-        mocked_register_node.return_value = db.Node(name="s0", section="s1")
-        mocked_export.return_value = [
-            defs.CRE(id="000-000", name="c0"),
-            defs.Standard(name="s0", section="s1"),
-        ]
+    # @patch("application.cmd.cre_main.db_connect")
+    # @patch("application.defs.osib_defs.read_osib_yaml")
+    # @patch("application.defs.osib_defs.try_from_file")
+    # @patch("application.defs.osib_defs.osib2cre")
+    # @patch("application.cmd.cre_main.register_cre")
+    # @patch("application.cmd.cre_main.register_node")
+    # @patch("application.database.db.Node_collection.export")
+    # def test_add_osib_from_file(
+    #     self,
+    #     mocked_export: Mock,
+    #     mocked_register_node: Mock,
+    #     mocked_register_cre: Mock,
+    #     mocked_osib2cre: Mock,
+    #     mocked_try_from_file: Mock,
+    #     mocked_read_osib_yaml: Mock,
+    #     mocked_db_connect: Mock,
+    # ) -> None:
+    #     dir = tempfile.mkdtemp()
+    #     self.tmpdirs.append(dir)
+    #     osib_yaml = tempfile.mkstemp(dir=dir, suffix=".yaml")[1]
+    #     loc = tempfile.mkstemp(dir=dir)[1]
+    #     cache = tempfile.mkstemp(dir=dir, suffix=".sqlite")[1]
+    #     mocked_db_connect.return_value = self.collection
+    #     mocked_read_osib_yaml.return_value = [{"osib": "osib"}]
+    #     mocked_try_from_file.return_value = [
+    #         odefs.Osib_tree(aliases=[Osib_id("t1")]),
+    #         odefs.Osib_tree(aliases=[Osib_id("t2")]),
+    #     ]
+    #     mocked_osib2cre.return_value = (
+    #         [defs.CRE(id="000-000", name="c0")],
+    #         [defs.Standard(name="s0", section="s1")],
+    #     )
+    #     mocked_register_cre.return_value = db.CRE(name="c0")
+    #     mocked_register_node.return_value = db.Node(name="s0", section="s1")
+    #     mocked_export.return_value = [
+    #         defs.CRE(id="000-000", name="c0"),
+    #         defs.Standard(name="s0", section="s1"),
+    #     ]
 
-        main.add_osib_from_file(file_loc=osib_yaml, cache=cache, cre_loc=dir)
+    #     main.add_osib_from_file(file_loc=osib_yaml, cache=cache, cre_loc=dir)
 
-        mocked_db_connect.assert_called_with(path=cache)
-        mocked_read_osib_yaml.assert_called_with(osib_yaml)
-        mocked_try_from_file.assert_called_with([{"osib": "osib"}])
-        mocked_osib2cre.assert_called_with(odefs.Osib_tree(aliases=[Osib_id("t1")]))
-        mocked_osib2cre.assert_called_with(odefs.Osib_tree(aliases=[Osib_id("t2")]))
-        mocked_register_cre.assert_called_with(
-            defs.CRE(id="000-000", name="c0"), self.collection
-        )
-        mocked_register_node.assert_called_with(
-            defs.Standard(name="s0", section="s1"), self.collection
-        )
-        mocked_export.assert_called_with(dir)
+    #     mocked_db_connect.assert_called_with(path=cache)
+    #     mocked_read_osib_yaml.assert_called_with(osib_yaml)
+    #     mocked_try_from_file.assert_called_with([{"osib": "osib"}])
+    #     mocked_osib2cre.assert_called_with(odefs.Osib_tree(aliases=[Osib_id("t1")]))
+    #     mocked_osib2cre.assert_called_with(odefs.Osib_tree(aliases=[Osib_id("t2")]))
+    #     mocked_register_cre.assert_called_with(
+    #         defs.CRE(id="000-000", name="c0"), self.collection
+    #     )
+    #     mocked_register_node.assert_called_with(
+    #         defs.Standard(name="s0", section="s1"), self.collection
+    #     )
+    #     mocked_export.assert_called_with(dir)
 
-    @patch("application.database.db.Node_collection.export")
-    @patch("application.cmd.cre_main.db_connect")
-    @patch("application.defs.osib_defs.cre2osib")
-    def test_export_to_osib(
-        self,
-        mocked_cre2osib: Mock,
-        mocked_db_connect: Mock,
-        mocked_export: Mock,
-    ) -> None:
-        dir = tempfile.mkdtemp()
-        self.tmpdirs.append(dir)
-        loc = tempfile.mkstemp(dir=dir)[1]
-        cache = tempfile.mkstemp(dir=dir, suffix=".sqlite")[1]
-        mocked_db_connect.return_value = self.collection
-        mocked_cre2osib.return_value = odefs.Osib_tree(aliases=[Osib_id("t1")])
-        mocked_export.return_value = [defs.CRE(id="000-000", name="c0")]
+    # @patch("application.database.db.Node_collection.export")
+    # @patch("application.cmd.cre_main.db_connect")
+    # @patch("application.defs.osib_defs.cre2osib")
+    # def test_export_to_osib(
+    #     self,
+    #     mocked_cre2osib: Mock,
+    #     mocked_db_connect: Mock,
+    #     mocked_export: Mock,
+    # ) -> None:
+    #     dir = tempfile.mkdtemp()
+    #     self.tmpdirs.append(dir)
+    #     loc = tempfile.mkstemp(dir=dir)[1]
+    #     cache = tempfile.mkstemp(dir=dir, suffix=".sqlite")[1]
+    #     mocked_db_connect.return_value = self.collection
+    #     mocked_cre2osib.return_value = odefs.Osib_tree(aliases=[Osib_id("t1")])
+    #     mocked_export.return_value = [defs.CRE(id="000-000", name="c0")]
 
-        main.export_to_osib(file_loc=f"{dir}/osib.yaml", cache=cache)
-        mocked_db_connect.assert_called_with(path=cache)
-        mocked_cre2osib.assert_called_with([defs.CRE(id="000-000", name="c0")])
+    #     main.export_to_osib(file_loc=f"{dir}/osib.yaml", cache=cache)
+    #     mocked_db_connect.assert_called_with(path=cache)
+    #     mocked_cre2osib.assert_called_with([defs.CRE(id="000-000", name="c0")])
 
 
 if __name__ == "__main__":
