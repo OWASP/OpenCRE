@@ -97,7 +97,7 @@ class CWE(ParserInterface):
                     cwes = cache.get_nodes(self.name, sectionID=weakness["@ID"])
                     if cwes:  # update the CWE in the database
                         cwe = cwes[0]
-                        cwe.section = (weakness["@Name"],)
+                        cwe.section = weakness["@Name"]
                         cwe.hyperlink = self.make_hyperlink(weakness["@ID"])
                         cwe.version = version
                         cache.add_node(
