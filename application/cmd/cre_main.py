@@ -238,17 +238,19 @@ def register_standard(
     logger.info(
         f"Registering resource {standard_entries[0].name} of length {len(standard_entries)}"
     )
+    name = ""
     for node in standard_entries:
         if not node:
             continue
+        name = node.name
         register_node(node, collection)
         if node.embeddings:
             logger.debug(
                 f"node has embeddings populated, skipping generation for resource {node.name}"
             )
             generate_embeddings = False
-    if generate_embeddings:
-        ph.generate_embeddings_for(node.name)
+    if generate_embeddings and name:
+        ph.generate_embeddings_for(name)
     populate_neo4j_db(collection)
     # calculate gap analysis
     jobs = []
