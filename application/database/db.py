@@ -1329,8 +1329,6 @@ class Node_collection:
 
         return list(docs.values())
 
-    def all_nodes_flat(self) -> List[cre_defs.Document]:
-        return self.neo_db.everything()
     def all_cres_with_pagination(
         self, page: int = 1, per_page: int = 10
     ) -> List[cre_defs.CRE]:

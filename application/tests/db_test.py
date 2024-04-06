@@ -2102,6 +2102,42 @@ class TestDB(unittest.TestCase):
         self.assertEqual(page, 1)
         self.assertEqual(total_pages, 4)
 
+    def test_all_cres_with_pagination(self):
+        """"""
+        cres = []
+        nodes = []
+        dbcres = []
+        dbnodes = []
+        sqla.session.remove()
+        sqla.drop_all()
+        sqla.create_all()
+        collection = db.Node_collection()
+        for i in range(0, 8):
+            if i == 0 or i == 1:
+                cres.append(defs.CRE(name=f">> C{i}", id=f"{i}{i}{i}-{i}{i}{i}"))
+            else:
+                cres.append(defs.CRE(name=f"C{i}", id=f"{i}"))
+
+            dbcres.append(collection.add_cre(cres[i]))
+            nodes.append(defs.Standard(section=f"S{i}", name=f"N{i}"))
+            dbnodes.append(collection.add_node(nodes[i]))
+            cres[i].add_link(
+                defs.Link(document=copy(nodes[i]), ltype=defs.LinkTypes.LinkedTo)
+            )
+            collection.add_link(
+                cre=dbcres[i], node=dbnodes[i], type=defs.LinkTypes.LinkedTo
+            )
+
+        collection.session.commit()
+
+        paginated_cres, page, total_pages = collection.all_cres_with_pagination(
+            page=1, per_page=2
+        )
+        self.maxDiff = None
+        self.assertEqual(paginated_cres, [cres[0], cres[1]])
+        self.assertEqual(page, 1)
+        self.assertEqual(total_pages, 4)
+
 
 if __name__ == "__main__":
     unittest.main()
