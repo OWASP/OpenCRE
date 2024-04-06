@@ -78,27 +78,30 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
         try {
           setDataLoading(true);
           const result = await axios.get(`${apiUrl}/all_cres`);
-          const { data, page, all_pages } = result.data.data;
+          let data = result.data.data;
+          const page = result.data.page;
+          const total_pages = result.data.total_pages;
+          let store = {};
 
-          if (data) {
-            console.log("retrieved data")
-            console.log(data)
-  
-            let store = {};
-            data.forEach((x) => {
-              store[getStoreKey(x)] = {
-                links: [],
-                displayName: getDocumentDisplayName(x),
-                url: getInternalUrl(x),
-                ...x,
-              };
-            });
+          if (data.length && total_pages && page) {
+            for (let p = page; p < total_pages; p++) {
+              data.forEach((x) => {
+                store[getStoreKey(x)] = {
+                  links: x.links,
+                  displayName: getDocumentDisplayName(x),
+                  url: getInternalUrl(x),
+                  ...x,
+                };
+              });
+              const result = await axios.get(`${apiUrl}/all_cres?page=${p}`);
+              data = result.data.data;
+            }
             setLocalStorageObject(DATA_STORE_KEY, store, TWO_DAYS_MILLISECONDS);
             setDataStore(store);
-            console.log("retrieved all cres")
+            console.log('retrieved all cres');
           }
         } catch (error) {
-          console.error("Could not retrieve CREs error:");
+          console.error('Could not retrieve CREs error:');
           console.error(error);
         }
       }

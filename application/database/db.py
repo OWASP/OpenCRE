@@ -1242,21 +1242,36 @@ class Node_collection:
 
         return list(docs.values())
 
-    def all_cres_with_pagination(self, page: int = 1, per_page: int = 10) -> List[cre_defs.CRE]:
-        result:List[cre_defs.CRE] = []
-        cres = self.session.query(CRE).paginate(page=int(page), per_page=per_page, error_out=False)
+    def all_cres_with_pagination(
+        self, page: int = 1, per_page: int = 10
+    ) -> List[cre_defs.CRE]:
+        result: List[cre_defs.CRE] = []
+        cres = self.session.query(CRE).paginate(
+            page=int(page), per_page=per_page, error_out=False
+        )
         total_pages = cres.pages
         for cre in cres.items:
-           result.extend(self.get_CREs(external_id=cre.external_id))
-        return result,page,total_pages
-        
-    def all_nodes_with_pagination(self, page: int = 1, per_page: int = 10) -> List[cre_defs.Document]:
-        result:List[cre_defs.Node] = []
-        nodes = self.session.query(Node).paginate(page=int(page), per_page=per_page, error_out=False)
+            result.extend(self.get_CREs(external_id=cre.external_id))
+        return result, page, total_pages
+
+    def all_nodes_with_pagination(
+        self, page: int = 1, per_page: int = 10
+    ) -> List[cre_defs.Document]:
+        result: List[cre_defs.Node] = []
+        nodes = self.session.query(Node).paginate(
+            page=int(page), per_page=per_page, error_out=False
+        )
         total_pages = nodes.pages
         for node in nodes.items:
-           result.extend(self.get_nodes(name=node.name,section=node.section,subsection=node.subsection,sectionID=node.section_id))
-        return result,page,total_pages
+            result.extend(
+                self.get_nodes(
+                    name=node.name,
+                    section=node.section,
+                    subsection=node.subsection,
+                    sectionID=node.section_id,
+                )
+            )
+        return result, page, total_pages
 
     def add_cre(self, cre: cre_defs.CRE) -> CRE:
         entry: CRE

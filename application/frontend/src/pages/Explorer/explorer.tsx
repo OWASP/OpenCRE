@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 import { Label, List } from 'semantic-ui-react';
 
 import { LoadingAndErrorIndicator } from '../../components/LoadingAndErrorIndicator';
-import { DataProvider, useDataStore } from '../../providers/DataProvider';
+import { useDataStore } from '../../providers/DataProvider';
 import { LinkedTreeDocument, TreeDocument } from '../../types';
 
 export const Explorer = () => {
@@ -57,15 +57,7 @@ export const Explorer = () => {
             filTree.push(x);
           }
         });
-      console.log("filTree")
-      console.log(filTree)
-
       setFilteredTree(filTree);
-    }else{
-      console.log("dataTree")
-      console.log(dataTree)
-      console.log("dataLoading")
-      console.log(dataLoading)
     }
   }, [filter, dataTree, setFilteredTree]);
 
@@ -108,7 +100,6 @@ export const Explorer = () => {
 
   return (
     <>
-      <DataProvider>
       <div id="explorer-content">
         <h1>
           <b>Explorer</b>
@@ -128,11 +119,11 @@ export const Explorer = () => {
           </div>
           <div id="graphs">
             graphs (3D):
-            <a target="_blank" href="explorer/force_graph">
+            <a target="_blank" href="force_graph">
               CRE dependencies
             </a>{' '}
             -
-            <a target="_blank" href="visuals/force-graph-3d-contains.html">
+            {/* <a target="_blank" href="visuals/force-graph-3d-contains.html">
               hierarchy only
             </a>{' '}
             -
@@ -142,9 +133,9 @@ export const Explorer = () => {
             |
             <a target="_blank" href="visuals/force-graph-3d-linked.html">
               links to external standards
-            </a>{' '}
+            </a>{' '} */}
             |
-            <a target="_blank" href="explorer/circles">
+            <a target="_blank" href="circles">
               zoomable circles
             </a>
           </div>
@@ -156,7 +147,6 @@ export const Explorer = () => {
           })}
         </List>
       </div>
-      </DataProvider>
     </>
   );
 };

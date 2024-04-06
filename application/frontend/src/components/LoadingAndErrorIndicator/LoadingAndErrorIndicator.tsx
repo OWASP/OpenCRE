@@ -10,8 +10,6 @@ export const LoadingAndErrorIndicator: FunctionComponent<LoadingAndErrorIndicato
   loading,
   error,
 }) => {
-  console.log(loading);
-  console.log(error);
   return (
     <>
       {loading && <Loader inline="centered" size="huge" active={loading} />}

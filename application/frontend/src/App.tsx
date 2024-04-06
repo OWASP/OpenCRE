@@ -16,10 +16,10 @@ const App = () => (
     <filterContext.Provider value={GlobalFilterState}>
       <QueryClientProvider client={queryClient}>
         <DataProvider>
-        <BrowserRouter>
-          <Toaster />
-          <MainContentArea />
-        </BrowserRouter>
+          <BrowserRouter>
+            <Toaster />
+            <MainContentArea />
+          </BrowserRouter>
         </DataProvider>
       </QueryClientProvider>
     </filterContext.Provider>

@@ -720,7 +720,7 @@ def all_cres() -> Any:
     items_per_page = request.args.get("items_per_page") or ITEMS_PER_PAGE
 
     documents, page, total_pages = database.all_cres_with_pagination(
-        page, 9999999999999
+        page, ITEMS_PER_PAGE
     )
     if documents:
         res = [doc.todict() for doc in documents]
