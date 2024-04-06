@@ -711,15 +711,37 @@ def logout():
     return redirect("/")
 
 
-@app.route("/rest/v1/everything", methods=["GET"])
-def everything() -> Any:
+@app.route("/rest/v1/all_cres", methods=["GET"])
+def all_cres() -> Any:
     database = db.Node_collection()
-    documents = database.all_nodes_flat()
+    page = 1
+    if request.args.get("page") is not None and int(request.args.get("page")) > 0:
+        page = request.args.get("page")
+
+    documents, page, total_pages = database.all_cres_with_pagination(
+        page, ITEMS_PER_PAGE
+    )
     if documents:
         res = [doc.todict() for doc in documents]
-        result = {"data": res}
-        return jsonify(result)
+        return jsonify({"data": res, "page": page, "total_pages": total_pages})
     abort(404)
+
+
+# @app.route("/rest/v1/all_nodes", methods=["GET"])
+# def all_nodes() -> Any:
+#     database = db.Node_collection()
+#     page = 1
+#     if request.args.get("page") is not None and int(request.args.get("page")) > 0:
+#         page = request.args.get("page")
+#     items_per_page = request.args.get("items_per_page") or ITEMS_PER_PAGE
+
+#     documents, page, total_pages = database.all_nodes_with_pagination(
+#         page, items_per_page
+#     )
+#     if documents:
+#         res = [doc.todict() for doc in documents]
+#         return jsonify({"data": res, "page": page, "total_pages": total_pages})
+#     abort(404)
 
 
 if __name__ == "__main__":

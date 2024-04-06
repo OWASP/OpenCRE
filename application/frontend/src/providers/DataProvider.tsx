@@ -30,15 +30,13 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
 
   const getStoreKey = (doc: Document): string => {
     if (doc.doctype === 'CRE') return doc.id;
-    return `${doc.name}-${doc.sectionID}`;
+    return `${doc.name}-${doc.sectionID}-${doc.section}`;
   };
 
   const buildTree = (doc: Document, keyPath: string[] = []): TreeDocument => {
     const selfKey = getStoreKey(doc);
     keyPath.push(selfKey);
-    if (selfKey === '567-755') {
-      console.log('BLA');
-    }
+
     const storedDoc = structuredClone(dataStore[selfKey]);
     storedDoc.links = storedDoc.links
       .filter(
@@ -74,27 +72,36 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
   );
 
   const getStoreQuery = useQuery(
-    'everything',
+    'all_cres',
     async () => {
       if (!Object.keys(dataStore).length) {
         try {
           setDataLoading(true);
-          const result = await axios.get(`${apiUrl}/everything`);
-          const data = result.data.data;
-          if (data) {
-            let store = {};
-            data.forEach((x) => {
-              store[getStoreKey(x)] = {
-                links: [],
-                displayName: getDocumentDisplayName(x),
-                url: getInternalUrl(x),
-                ...x,
-              };
-            });
+          const result = await axios.get(`${apiUrl}/all_cres`);
+          let data = result.data.data;
+          const page = result.data.page;
+          const total_pages = result.data.total_pages;
+          let store = {};
+
+          if (data.length && total_pages && page) {
+            for (let p = page; p < total_pages; p++) {
+              data.forEach((x) => {
+                store[getStoreKey(x)] = {
+                  links: x.links,
+                  displayName: getDocumentDisplayName(x),
+                  url: getInternalUrl(x),
+                  ...x,
+                };
+              });
+              const result = await axios.get(`${apiUrl}/all_cres?page=${p}`);
+              data = result.data.data;
+            }
             setLocalStorageObject(DATA_STORE_KEY, store, TWO_DAYS_MILLISECONDS);
             setDataStore(store);
+            console.log('retrieved all cres');
           }
         } catch (error) {
+          console.error('Could not retrieve CREs error:');
           console.error(error);
         }
       }
