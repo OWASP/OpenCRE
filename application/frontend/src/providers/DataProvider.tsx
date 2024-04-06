@@ -30,15 +30,13 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
 
   const getStoreKey = (doc: Document): string => {
     if (doc.doctype === 'CRE') return doc.id;
-    return `${doc.name}-${doc.sectionID}`;
+    return `${doc.name}-${doc.sectionID}-${doc.section}`;
   };
 
   const buildTree = (doc: Document, keyPath: string[] = []): TreeDocument => {
     const selfKey = getStoreKey(doc);
     keyPath.push(selfKey);
-    if (selfKey === '567-755') {
-      console.log('BLA');
-    }
+
     const storedDoc = structuredClone(dataStore[selfKey]);
     storedDoc.links = storedDoc.links
       .filter(
@@ -74,14 +72,18 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
   );
 
   const getStoreQuery = useQuery(
-    'everything',
+    'all_cres',
     async () => {
       if (!Object.keys(dataStore).length) {
         try {
           setDataLoading(true);
-          const result = await axios.get(`${apiUrl}/everything`);
-          const data = result.data.data;
+          const result = await axios.get(`${apiUrl}/all_cres`);
+          const { data, page, all_pages } = result.data.data;
+
           if (data) {
+            console.log("retrieved data")
+            console.log(data)
+  
             let store = {};
             data.forEach((x) => {
               store[getStoreKey(x)] = {
@@ -93,8 +95,10 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
             });
             setLocalStorageObject(DATA_STORE_KEY, store, TWO_DAYS_MILLISECONDS);
             setDataStore(store);
+            console.log("retrieved all cres")
           }
         } catch (error) {
+          console.error("Could not retrieve CREs error:");
           console.error(error);
         }
       }

@@ -5,14 +5,13 @@ import { Link } from 'react-router-dom';
 import { Label, List } from 'semantic-ui-react';
 
 import { LoadingAndErrorIndicator } from '../../components/LoadingAndErrorIndicator';
-import { useDataStore } from '../../providers/DataProvider';
+import { DataProvider, useDataStore } from '../../providers/DataProvider';
 import { LinkedTreeDocument, TreeDocument } from '../../types';
 
 export const Explorer = () => {
   const { dataLoading, dataTree } = useDataStore();
   const [filter, setFilter] = useState('');
   const [filteredTree, setFilteredTree] = useState<TreeDocument[]>();
-
   const applyHighlight = (text, term) => {
     if (!term) return text;
     var index = text.toLowerCase().indexOf(term);
@@ -58,7 +57,15 @@ export const Explorer = () => {
             filTree.push(x);
           }
         });
+      console.log("filTree")
+      console.log(filTree)
+
       setFilteredTree(filTree);
+    }else{
+      console.log("dataTree")
+      console.log(dataTree)
+      console.log("dataLoading")
+      console.log(dataLoading)
     }
   }, [filter, dataTree, setFilteredTree]);
 
@@ -101,6 +108,7 @@ export const Explorer = () => {
 
   return (
     <>
+      <DataProvider>
       <div id="explorer-content">
         <h1>
           <b>Explorer</b>
@@ -124,7 +132,7 @@ export const Explorer = () => {
               CRE dependencies
             </a>{' '}
             -
-            {/* <a target="_blank" href="visuals/force-graph-3d-contains.html">
+            <a target="_blank" href="visuals/force-graph-3d-contains.html">
               hierarchy only
             </a>{' '}
             -
@@ -135,7 +143,7 @@ export const Explorer = () => {
             <a target="_blank" href="visuals/force-graph-3d-linked.html">
               links to external standards
             </a>{' '}
-            | */}
+            |
             <a target="_blank" href="explorer/circles">
               zoomable circles
             </a>
@@ -148,6 +156,7 @@ export const Explorer = () => {
           })}
         </List>
       </div>
+      </DataProvider>
     </>
   );
 };
