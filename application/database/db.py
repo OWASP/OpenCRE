@@ -551,6 +551,7 @@ class NEO_DB:
 
     @classmethod
     def gap_analysis(self, name_1, name_2):
+        logger.info(f"Performing DB queries for gap analysis {name_1}>>{name_2}")
         base_standard = NeoStandard.nodes.filter(name=name_1)
         denylist = ["Cross-cutting concerns"]
         from datetime import datetime
@@ -2021,6 +2022,7 @@ def gap_analysis(
 ):
     cre_db = Node_collection()
     base_standard, paths = neo_db.gap_analysis(node_names[0], node_names[1])
+    logger.info(f"got db gap analysis for {'>>>'.join(node_names)}, calculating paths")
     if base_standard is None:
         return None
     grouped_paths = {}
@@ -2073,7 +2075,7 @@ def gap_analysis(
 
     if cache_key == "":
         cache_key = make_array_key(node_names)
-
+    logger.info(f"got gap analysis paths for {'>>>'.join(node_names)}, storing result")
     cre_db.add_gap_analysis_result(
         cache_key=cache_key, ga_object=flask_json.dumps({"result": grouped_paths})
     )
@@ -2083,4 +2085,5 @@ def gap_analysis(
             cache_key=make_cache_key(node_names, key),
             ga_object=flask_json.dumps({"result": extra_paths_dict[key]}),
         )
+    logger.info(f"stored gapa analysis for {'>>>'.join(node_names)}, successfully")
     return (node_names, grouped_paths, extra_paths_dict)
