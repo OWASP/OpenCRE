@@ -79,4 +79,5 @@ def wait_for_jobs(jobs: List[rq.job.Job], callback: Callable = None):
                 )
                 jobs.pop(jobs.index(job))
                 callback()
-        time.sleep(5)
+            logger.info(f"waiting for {job.description}")
+        time.sleep(10)
