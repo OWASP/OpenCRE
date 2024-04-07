@@ -16,7 +16,6 @@ logger.setLevel(logging.INFO)
 
 
 class CWE(ParserInterface):
-
     name = "CWE"
     cwe_zip = "https://cwe.mitre.org/data/xml/cwec_latest.xml.zip"
 
@@ -92,7 +91,7 @@ class CWE(ParserInterface):
         for _, weaknesses in weakness_catalog.get("Weaknesses").items():
             for weakness in weaknesses:
                 statuses[weakness["@Status"]] = 1
-                cwe = None  
+                cwe = None
                 if weakness["@Status"] in ["Stable", "Incomplete", "Draft"]:
                     cwes = cache.get_nodes(self.name, sectionID=weakness["@ID"])
                     if cwes:  # update the CWE in the database
