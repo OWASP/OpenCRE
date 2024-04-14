@@ -1322,6 +1322,8 @@ class Node_collection:
 
         return list(docs.values())
 
+    def all_nodes_flat(self) -> List[cre_defs.Document]:
+        return self.neo_db.everything()
     def all_cres_with_pagination(
         self, page: int = 1, per_page: int = 10
     ) -> List[cre_defs.CRE]:
@@ -1392,7 +1394,9 @@ class Node_collection:
 
     def add_cre(self, cre: cre_defs.CRE) -> CRE:
         entry: CRE
-        query = self.session.query(CRE).filter(func.lower(CRE.name) == cre.name.lower())
+        query: sqla.Query = self.session.query(CRE).filter(
+            func.lower(CRE.name) == cre.name.lower()
+        )
         if cre.id:
             entry = query.filter(CRE.external_id == cre.id).first()
         else:
