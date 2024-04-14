@@ -1364,7 +1364,7 @@ class Node_collection:
 
     def add_cre(self, cre: cre_defs.CRE) -> CRE:
         entry: CRE
-        query: sqla.Query = self.session.query(CRE).filter(
+        query = self.session.query(CRE).filter(
             func.lower(CRE.name) == cre.name.lower()
         )
         if cre.id:
@@ -1375,7 +1375,7 @@ class Node_collection:
             ).first()
 
         if entry is not None:
-            logger.debug("knew of %s ,updating" % cre.name)
+            logger.info("knew of %s ,updating" % cre.name)
             if not entry.external_id:
                 if entry.external_id != cre.id:
                     raise ValueError(
@@ -1389,7 +1389,7 @@ class Node_collection:
                 entry.tags = ",".join(cre.tags)
             return entry
         else:
-            logger.debug("did not know of %s ,adding" % cre.name)
+            logger.info("did not know of %s ,adding" % cre.name)
             entry = CRE(
                 description=cre.description,
                 name=cre.name,
@@ -1422,7 +1422,7 @@ class Node_collection:
             self.session.commit()
             return entry
         else:
-            logger.debug(f"did not know of {dbnode.name}:{dbnode.section} ,adding")
+            logger.info(f"did not know of {dbnode.name}:{dbnode.section} ,adding")
             self.session.add(dbnode)
             self.session.commit()
             if self.graph:

@@ -306,7 +306,11 @@ def parse_standards_from_spreadsheeet(
         import_only = []
         if os.environ.get("CRE_ROOT_CSV_IMPORT_ONLY"):
             import_only = json.loads(os.environ.get("CRE_ROOT_CSV_IMPORT_ONLY"))
+        database = db_connect(cache_location)
         for standard_name, standard_entries in docs.items():
+            if os.environ.get("CRE_NO_REIMPORT_IF_EXISTS") and database.get_nodes(name=standard_name):
+                logger.info(f"Already know of {standard_name} and CRE_NO_REIMPORT_IF_EXISTS is set, skipping")
+                continue
             if import_only and standard_name not in import_only:
                 continue
             jobs.append(
