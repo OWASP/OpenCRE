@@ -142,7 +142,7 @@ import-projects:
 
 
 import-all:
-	$(shell CRE_DELETE_DB=1 bash ./scripts/import-all.sh)
+	$(shell bash ./scripts/import-all.sh)
 
 import-neo4j:
 	[ -d "./venv" ] && . ./venv/bin/activate
