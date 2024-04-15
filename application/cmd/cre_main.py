@@ -223,10 +223,10 @@ def register_standard(
     generate_embeddings=True,
     db_connection_str: str = "",
 ):
-    if not collection:
-        collection = db_connect(db_connection_str)
     if not standard_entries:
         return
+    if not collection:
+        collection = db_connect(path=db_connection_str, no_load_graph=True)
     conn = redis.connect()
     ph = prompt_client.PromptHandler(database=collection)
     standard_hash = make_array_key([standard_entries[0].name])
@@ -308,8 +308,12 @@ def parse_standards_from_spreadsheeet(
             import_only = json.loads(os.environ.get("CRE_ROOT_CSV_IMPORT_ONLY"))
         database = db_connect(cache_location)
         for standard_name, standard_entries in docs.items():
-            if os.environ.get("CRE_NO_REIMPORT_IF_EXISTS") and database.get_nodes(name=standard_name):
-                logger.info(f"Already know of {standard_name} and CRE_NO_REIMPORT_IF_EXISTS is set, skipping")
+            if os.environ.get("CRE_NO_REIMPORT_IF_EXISTS") and database.get_nodes(
+                name=standard_name
+            ):
+                logger.info(
+                    f"Already know of {standard_name} and CRE_NO_REIMPORT_IF_EXISTS is set, skipping"
+                )
                 continue
             if import_only and standard_name not in import_only:
                 continue
@@ -552,11 +556,11 @@ def ai_client_init(database: db.Node_collection):
     return prompt_client.PromptHandler(database=database)
 
 
-def db_connect(path: str):
+def db_connect(path: str, no_load_graph=False):
     global app
     conf = CMDConfig(db_uri=path)
     app = create_app(conf=conf)
-    collection = db.Node_collection()
+    collection = db.Node_collection(no_load_graph=no_load_graph)
     app_context = app.app_context()
     app_context.push()
 

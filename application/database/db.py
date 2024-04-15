@@ -719,8 +719,9 @@ class Node_collection:
     neo_db: NEO_DB = None
     session = sqla.session
 
-    def __init__(self) -> None:
-        if not os.environ.get("NO_LOAD_GRAPH"):
+    def __init__(self, no_load_graph=False) -> None:
+        if not os.environ.get("NO_LOAD_GRAPH") and not no_load_graph:
+            logger.info("Loading CRE graph in memory, memory-heavy operation!")
             self.graph = CRE_Graph.instance(sqla.session)
         if not os.environ.get("NO_LOAD_GRAPH_DB"):
             self.neo_db = NEO_DB.instance()
@@ -1405,7 +1406,7 @@ class Node_collection:
             ).first()
 
         if entry is not None:
-            logger.debug("knew of %s ,updating" % cre.name)
+            logger.info("knew of %s ,updating" % cre.name)
             if not entry.external_id:
                 if entry.external_id != cre.id:
                     raise ValueError(
@@ -1419,7 +1420,7 @@ class Node_collection:
                 entry.tags = ",".join(cre.tags)
             return entry
         else:
-            logger.debug("did not know of %s ,adding" % cre.name)
+            logger.info("did not know of %s ,adding" % cre.name)
             entry = CRE(
                 description=cre.description,
                 name=cre.name,
@@ -1452,7 +1453,7 @@ class Node_collection:
             self.session.commit()
             return entry
         else:
-            logger.debug(f"did not know of {dbnode.name}:{dbnode.section} ,adding")
+            logger.info(f"did not know of {dbnode.name}:{dbnode.section} ,adding")
             self.session.add(dbnode)
             self.session.commit()
             if self.graph:
@@ -1878,13 +1879,16 @@ class Node_collection:
             return existing
 
     def get_gap_analysis_result(self, cache_key) -> str:
+        logger.info(f"looking for gap analysis with cache key: {cache_key}")
         res = (
             self.session.query(GapAnalysisResults)
             .filter(GapAnalysisResults.cache_key == cache_key)
             .first()
         )
         if res:
+            logger.info(f"found gap analysis with cache key: {cache_key}")
             return res.ga_object
+        logger.info(f"did not find gap analysis with cache key: {cache_key}")
 
     def add_gap_analysis_result(self, cache_key: str, ga_object: str):
         existing = self.get_gap_analysis_result(cache_key)

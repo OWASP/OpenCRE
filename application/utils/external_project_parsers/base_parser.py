@@ -47,12 +47,15 @@ class BaseParser:
 
         db = cre_main.db_connect(db_connection_str)
 
-
         ph = prompt_client.PromptHandler(database=db)
         sclass_instance = sclass()
 
-        if os.environ.get("CRE_NO_REIMPORT_IF_EXISTS") and db.get_nodes(name=sclass_instance.name):
-            logger.info(f"Already know of {sclass_instance.name} and CRE_NO_REIMPORT_IF_EXISTS is set, skipping")
+        if os.environ.get("CRE_NO_REIMPORT_IF_EXISTS") and db.get_nodes(
+            name=sclass_instance.name
+        ):
+            logger.info(
+                f"Already know of {sclass_instance.name} and CRE_NO_REIMPORT_IF_EXISTS is set, skipping"
+            )
             return
 
         result = sclass_instance.parse(db, ph)
