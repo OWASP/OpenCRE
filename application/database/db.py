@@ -1848,6 +1848,7 @@ class Node_collection:
             return existing
 
     def get_gap_analysis_result(self, cache_key) -> str:
+        logger.info(f"looking for gap analysis with cache key: {cache_key}")
         res = (
             self.session.query(GapAnalysisResults)
             .filter(GapAnalysisResults.cache_key == cache_key)
