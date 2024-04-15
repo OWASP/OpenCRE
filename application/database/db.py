@@ -1365,9 +1365,7 @@ class Node_collection:
 
     def add_cre(self, cre: cre_defs.CRE) -> CRE:
         entry: CRE
-        query = self.session.query(CRE).filter(
-            func.lower(CRE.name) == cre.name.lower()
-        )
+        query = self.session.query(CRE).filter(func.lower(CRE.name) == cre.name.lower())
         if cre.id:
             entry = query.filter(CRE.external_id == cre.id).first()
         else:
