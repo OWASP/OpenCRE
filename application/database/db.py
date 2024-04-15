@@ -1855,7 +1855,9 @@ class Node_collection:
             .first()
         )
         if res:
+            logger.info(f"found gap analysis with cache key: {cache_key}")
             return res.ga_object
+        logger.info(f"did not find gap analysis with cache key: {cache_key}")
 
     def add_gap_analysis_result(self, cache_key: str, ga_object: str):
         existing = self.get_gap_analysis_result(cache_key)
