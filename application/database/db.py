@@ -719,8 +719,9 @@ class Node_collection:
     neo_db: NEO_DB = None
     session = sqla.session
 
-    def __init__(self) -> None:
-        if not os.environ.get("NO_LOAD_GRAPH"):
+    def __init__(self, no_load_graph=False) -> None:
+        if not os.environ.get("NO_LOAD_GRAPH") and not no_load_graph:
+            logger.info("Loading CRE graph in memory, memory-heavy operation!")
             self.graph = CRE_Graph.instance(sqla.session)
         if not os.environ.get("NO_LOAD_GRAPH_DB"):
             self.neo_db = NEO_DB.instance()
