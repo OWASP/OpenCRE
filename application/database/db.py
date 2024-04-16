@@ -1624,7 +1624,7 @@ class Node_collection:
             .filter(Node.ntype == cre_defs.Credoctypes.Standard)
             .distinct()
         )
-        return [s[0] for s in standards]
+        return list(set([s[0] for s in standards]))
 
     def text_search(self, text: str) -> List[Optional[cre_defs.Document]]:
         """Given a piece of text, tries to find the best match
@@ -1861,6 +1861,7 @@ class Node_collection:
         logger.info(f"did not find gap analysis with cache key: {cache_key}")
 
     def add_gap_analysis_result(self, cache_key: str, ga_object: str):
+        logger.info(f"adding gap analysis result with cache key: {cache_key}")
         existing = self.get_gap_analysis_result(cache_key)
         if not existing:
             res = GapAnalysisResults(cache_key=cache_key, ga_object=ga_object)

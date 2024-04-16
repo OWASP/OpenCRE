@@ -229,49 +229,52 @@ def register_standard(
         collection = db_connect(path=db_connection_str)
     conn = redis.connect()
     ph = prompt_client.PromptHandler(database=collection)
-    standard_hash = make_array_key([standard_entries[0].name])
+    importing_name = standard_entries[0].name
+    standard_hash = make_array_key([importing_name])
     if conn.get(standard_hash):
         logger.debug(
             f"Standard importing job with info-hash {standard_hash} has already returned, skipping"
         )
         return
     logger.info(
-        f"Registering resource {standard_entries[0].name} of length {len(standard_entries)}"
+        f"Registering resource {importing_name} of length {len(standard_entries)}"
     )
-    name = ""
     for node in standard_entries:
         if not node:
             continue
-        name = node.name
         register_node(node, collection)
         if node.embeddings:
             logger.debug(
-                f"node has embeddings populated, skipping generation for resource {node.name}"
+                f"node has embeddings populated, skipping generation for resource {importing_name}"
             )
             generate_embeddings = False
-    if generate_embeddings and name:
-        ph.generate_embeddings_for(name)
+    if generate_embeddings and importing_name:
+        ph.generate_embeddings_for(importing_name)
     populate_neo4j_db(collection)
     # calculate gap analysis
     jobs = []
     pending_stadards = collection.standards()
     for standard_name in pending_stadards:
-        if standard_name != standard_entries[0].name:
-            forward_job_id = gap_analysis.schedule(
-                standards=[standard_entries[0].name, standard_name], database=collection
-            ).get("job_id")
-            backward_job_id = gap_analysis.schedule(
-                standards=[standard_name, standard_entries[0].name], database=collection
-            ).get("job_id")
-            if forward_job_id and backward_job_id:
-                try:
-                    forward_job = job.Job.fetch(id=forward_job_id, connection=conn)
-                    backward_job = job.Job.fetch(id=backward_job_id, connection=conn)
-                    jobs.extend([forward_job, backward_job])
-                except exceptions.NoSuchJobError as nje:
-                    pending_stadards.append(standard_name)
-            else:
+        if standard_name == importing_name:
+            continue
+
+        forward_job_id = gap_analysis.schedule(
+            standards=[importing_name, standard_name], database=collection
+        ).get("job_id")
+        backward_job_id = gap_analysis.schedule(
+            standards=[standard_name, importing_name], database=collection
+        ).get("job_id")
+        if forward_job_id and backward_job_id:
+            try:
+                forward_job = job.Job.fetch(id=forward_job_id, connection=conn)
+                backward_job = job.Job.fetch(id=backward_job_id, connection=conn)
+                jobs.extend([forward_job, backward_job])
+            except exceptions.NoSuchJobError as nje:
+                logger.error(f"Could not find gap analysis job for for {importing_name} and {standard_name} putting {standard_name} back in the queue")
                 pending_stadards.append(standard_name)
+        else:
+            logger.error(f"Could not calculate gap analysis for {importing_name} and {standard_name} putting {standard_name} back in the queue")
+            pending_stadards.append(standard_name)
     redis.wait_for_jobs(jobs)
     conn.set(standard_hash, value="")
 
