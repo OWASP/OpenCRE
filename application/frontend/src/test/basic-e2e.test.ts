@@ -14,18 +14,18 @@ describe('App.js', () => {
     jest.setTimeout(1000000);
     browser = await puppeteer.launch(debug);
     page = await browser.newPage();
-    page.setDefaultTimeout(15000);
+    page.setDefaultTimeout(15001);
   });
 
   it('contains the welcome text', async () => {
-    await page.goto('http://localhost:5000');
+    await page.goto('http://localhost:5002');
     await page.waitForSelector('#SearchBar');
     const text = await page.$eval('#SearchBar', (e) => e.textContent);
     expect(text).toContain('Search');
   });
 
   it('can search for random strs', async () => {
-    await page.goto('http://127.0.0.1:5000');
+    await page.goto('http://127.0.0.1:5002');
     await page.waitForSelector('#SearchBar');
     await page.type('#SearchBar > div > input', 'asdf');
     await page.click('#SearchBar > div > button');
@@ -35,7 +35,7 @@ describe('App.js', () => {
   });
 
   it('can search for cryptography using the free text method and it returns both Nodes and CRES', async () => {
-    await page.goto('http://127.0.0.1:5000');
+    await page.goto('http://127.0.0.1:5002');
     await page.waitForSelector('#SearchBar');
     await page.type('#SearchBar > div > input', 'crypto');
     await page.click('#SearchBar > div > button');
@@ -55,7 +55,7 @@ describe('App.js', () => {
   });
 
   it('can search for a standard by name, section and the standard page works as expected', async () => {
-    await page.goto('http://127.0.0.1:5000/node/standard/ASVS');
+    await page.goto('http://127.0.0.1:5002/node/standard/ASVS');
     await page.waitForSelector('.content');
     const text = await page.$$('.content', (e) => e.textContent);
     expect(text).not.toContain('No results match your search term');
@@ -102,7 +102,7 @@ describe('App.js', () => {
   });
 
   it('can search for a cre', async () => {
-    await page.goto('http://127.0.0.1:5000');
+    await page.goto('http://127.0.0.1:5002');
     await page.waitForSelector('#SearchBar');
     await page.type('#SearchBar > div > input', '558-807');
     await page.click('#SearchBar > div > button');
@@ -133,7 +133,7 @@ describe('App.js', () => {
   });
 
   it('can filter', async () => {
-    await page.goto('http://127.0.0.1:5000/cre/558-807?applyFilters=true&filters=asvs');
+    await page.goto('http://127.0.0.1:5002/cre/558-807?applyFilters=true&filters=asvs');
     await page.waitForSelector('.cre-page__links-container');
     // Get inner text
     const innerText = await page.evaluate(
@@ -144,7 +144,7 @@ describe('App.js', () => {
     expect(innerText).not.toContain('NIST');
 
     // ensure case insensitive filtering
-    await page.goto('http://127.0.0.1:5000/cre/558-807?applyFilters=true&filters=ASVS');
+    await page.goto('http://127.0.0.1:5002/cre/558-807?applyFilters=true&filters=ASVS');
     await page.waitForSelector('.cre-page__links-container');
     const intxt = await page.evaluate(
       () => (document.querySelector('.cre-page__links-container') as HTMLElement)?.innerText
@@ -160,10 +160,10 @@ describe('App.js', () => {
   });
 
   it('can smartlink', async () => {
-    const response = await page.goto('http://127.0.0.1:5000/smartlink/standard/CWE/1002');
-    expect(response.url()).toBe('http://127.0.0.1:5000/node/standard/CWE/sectionid/1002');
+    const response = await page.goto('http://127.0.0.1:5002/smartlink/standard/CWE/1002');
+    expect(response.url()).toBe('http://127.0.0.1:5002/node/standard/CWE/sectionid/1002');
 
-    const redirectResponse = await page.goto('http://127.0.0.1:5000/smartlink/standard/CWE/404');
+    const redirectResponse = await page.goto('http://127.0.0.1:5002/smartlink/standard/CWE/404');
     expect(redirectResponse.url()).toBe('https://cwe.mitre.org/data/definitions/404.html');
   });
 

@@ -10,9 +10,7 @@ FROM python:3.11.0 as run
 COPY --from=build /code /code
 WORKDIR /code
 RUN apt update &&\
-    apt install -y python3-numpy &&\
-    pip install virtualenv &&\
-    make install-deps-python &&\
+    apt install -y python3-numpy  python3-virtualenv python3-pip &&\
     make install-python
 
 ENTRYPOINT make dev-flask
