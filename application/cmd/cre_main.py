@@ -284,12 +284,14 @@ def parse_standards_from_spreadsheeet(
     """given a yaml with standards, build a list of standards in the db"""
     collection = db_connect(cache_location)
     if "CRE:name" in cre_file[0].keys():
+        collection=collection.with_graph()
         documents = spreadsheet_parsers.parse_export_format(cre_file)
         register_cre(documents, collection)
         pass
 
     elif any(key.startswith("CRE hierarchy") for key in cre_file[0].keys()):
         conn = redis.connect()
+        collection=collection.with_graph()
         redis.empty_queues(conn)
         q = Queue(connection=conn)
         docs = spreadsheet_parsers.parse_hierarchical_export_format(cre_file)
