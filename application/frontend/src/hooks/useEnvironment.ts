@@ -10,7 +10,7 @@ const prodEnvironment: Environment = {
 
 const devEnvironment: Environment = {
   name: 'dev',
-  apiUrl: 'http://127.0.0.1:5000/rest/v1',
+  apiUrl: 'http://127.0.0.1:5002/rest/v1',
 };
 
 export const useEnvironment = (): Environment =>
