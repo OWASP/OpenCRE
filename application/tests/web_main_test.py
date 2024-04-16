@@ -109,8 +109,8 @@ class TestMain(unittest.TestCase):
             self.assertEqual(res, v)
 
     def test_find_by_id(self) -> None:
-        collection = db.Node_collection()
-        collection.graph.graph = db.CRE_Graph.load_cre_graph(sqla.session)
+        collection = db.Node_collection().with_graph()
+        # collection.graph.graph = db.CRE_Graph.load_cre_graph(sqla.session)
 
         cres = {
             "ca": defs.CRE(id="111-111", description="CA", name="CA", tags=["ta"]),
@@ -166,9 +166,7 @@ class TestMain(unittest.TestCase):
             self.assertEqual(re.sub("\s", "", md_response.data.decode()), md_expected)
 
     def test_find_by_name(self) -> None:
-        collection = db.Node_collection()
-        collection.graph.graph = db.CRE_Graph.load_cre_graph(sqla.session)
-
+        collection = db.Node_collection().with_graph()
         cres = {
             "ca": defs.CRE(id="111-111", description="CA", name="CA", tags=["ta"]),
             "cd": defs.CRE(id="222-222", description="CD", name="CD", tags=["td"]),

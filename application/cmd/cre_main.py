@@ -226,7 +226,7 @@ def register_standard(
     if not standard_entries:
         return
     if not collection:
-        collection = db_connect(path=db_connection_str, no_load_graph=True)
+        collection = db_connect(path=db_connection_str)
     conn = redis.connect()
     ph = prompt_client.PromptHandler(database=collection)
     standard_hash = make_array_key([standard_entries[0].name])
@@ -284,12 +284,14 @@ def parse_standards_from_spreadsheeet(
     """given a yaml with standards, build a list of standards in the db"""
     collection = db_connect(cache_location)
     if "CRE:name" in cre_file[0].keys():
+        collection=collection.with_graph()
         documents = spreadsheet_parsers.parse_export_format(cre_file)
         register_cre(documents, collection)
         pass
 
     elif any(key.startswith("CRE hierarchy") for key in cre_file[0].keys()):
         conn = redis.connect()
+        collection=collection.with_graph()
         redis.empty_queues(conn)
         q = Queue(connection=conn)
         docs = spreadsheet_parsers.parse_hierarchical_export_format(cre_file)
@@ -556,11 +558,11 @@ def ai_client_init(database: db.Node_collection):
     return prompt_client.PromptHandler(database=database)
 
 
-def db_connect(path: str, no_load_graph=False):
+def db_connect(path: str):
     global app
     conf = CMDConfig(db_uri=path)
     app = create_app(conf=conf)
-    collection = db.Node_collection(no_load_graph=no_load_graph)
+    collection = db.Node_collection()
     app_context = app.app_context()
     app_context.push()
 

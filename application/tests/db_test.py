@@ -31,9 +31,10 @@ class TestDB(unittest.TestCase):
         self.app_context.push()
         sqla.create_all()
 
-        self.collection = db.Node_collection()
+        self.collection = db.Node_collection().with_graph()
         collection = self.collection
-        collection.graph.graph = db.CRE_Graph.load_cre_graph(sqla.session)
+        # collection.graph.graph = db.CRE_Graph.load_cre_graph(sqla.session)
+
 
         dbcre = collection.add_cre(
             defs.CRE(id="111-000", description="CREdesc", name="CREname")
@@ -161,9 +162,9 @@ class TestDB(unittest.TestCase):
             with a link to "BarStand" and "GroupName" and one for "GroupName" with a link to "CREName"
         """
         loc = tempfile.mkdtemp()
-        collection = db.Node_collection()
+        self.collection = db.Node_collection().with_graph()
         collection = self.collection
-        collection.graph.graph = db.CRE_Graph.load_cre_graph(sqla.session)
+        # collection.graph.graph = db.CRE_Graph.load_cre_graph(sqla.session)
         code0 = defs.Code(name="co0")
         code1 = defs.Code(name="co1")
         tool0 = defs.Tool(name="t0", tooltype=defs.ToolTypes.Unknown)
@@ -1092,8 +1093,8 @@ class TestDB(unittest.TestCase):
         sqla.session.remove()
         sqla.drop_all()
         sqla.create_all()
-        collection = db.Node_collection()
-        collection.graph.graph = db.CRE_Graph.load_cre_graph(sqla.session)
+        collection = db.Node_collection().with_graph()
+        # collection.graph.graph = db.CRE_Graph.load_cre_graph(sqla.session)
 
         for i in range(0, 8):
             if i == 0 or i == 1:
