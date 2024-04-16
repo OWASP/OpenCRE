@@ -621,6 +621,7 @@ class TestMain(unittest.TestCase):
         redis_conn_mock.return_value.exists.return_value = True
         redis_conn_mock.return_value.get.return_value = json.dumps(expected)
         db_mock.return_value.get_gap_analysis_result.return_value = json.dumps(expected)
+        db_mock.return_value.gap_analysis_exists.return_value = True
         with self.app.test_client() as client:
             response = client.get(
                 "/rest/v1/map_analysis?standard=aaa&standard=bbb",
@@ -629,16 +630,19 @@ class TestMain(unittest.TestCase):
             self.assertEqual(200, response.status_code)
             self.assertEqual(expected, json.loads(response.data))
 
+    @patch.object(db, "Node_collection")
     @patch.object(rq.job.Job, "fetch")
     @patch.object(rq.Queue, "enqueue_call")
     @patch.object(redis, "from_url")
     def test_gap_analysis_from_cache_job_id(
-        self, redis_conn_mock, enqueue_call_mock, fetch_mock
+        self, redis_conn_mock, enqueue_call_mock, fetch_mock, db_mock
     ) -> None:
         expected = {"job_id": "hello"}
         redis_conn_mock.return_value.exists.return_value = True
         redis_conn_mock.return_value.get.return_value = json.dumps(expected)
         fetch_mock.return_value = MockJob()
+        db_mock.return_value.gap_analysis_exists.return_value = True
+        db_mock.return_value.get_gap_analysis_result.return_value = json.dumps(expected)
         with self.app.test_client() as client:
             response = client.get(
                 "/rest/v1/map_analysis?standard=aaa&standard=bbb",
@@ -658,6 +662,7 @@ class TestMain(unittest.TestCase):
         redis_conn_mock.return_value.get.return_value = None
         enqueue_call_mock.return_value = MockJob()
         db_mock.return_value.get_gap_analysis_result.return_value = None
+        db_mock.return_value.gap_analysis_exists.return_value = False
         with self.app.test_client() as client:
             response = client.get(
                 "/rest/v1/map_analysis?standard=aaa&standard=bbb",

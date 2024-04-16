@@ -35,7 +35,6 @@ from google_auth_oauthlib.flow import Flow
 from application.utils.spreadsheet import write_csv
 import oauthlib
 import google.auth.transport.requests
-from application.utils.hash import make_array_key, make_cache_key
 
 from application import tracer
 
@@ -260,7 +259,7 @@ def map_analysis() -> Any:
 def map_analysis_weak_links() -> Any:
     standards = request.args.getlist("standard")
     key = request.args.get("key")
-    cache_key = make_cache_key(standards=standards, key=key)
+    cache_key = gap_analysis.make_subresources_key(standards=standards, key=key)
 
     database = db.Node_collection()
     gap_analysis_results = database.get_gap_analysis_result(cache_key=cache_key)
@@ -305,7 +304,7 @@ def fetch_job() -> Any:
 
         if len(ga_result) > 1:
             standards = ga_result[0]
-            standards_hash = make_array_key(standards)
+            standards_hash = gap_analysis.make_resources_key(standards)
 
             if conn.exists(standards_hash):
                 logger.debug("and hash is already in cache")

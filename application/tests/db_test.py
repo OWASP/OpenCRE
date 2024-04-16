@@ -1,4 +1,4 @@
-from application.utils.hash import make_array_key, make_cache_key
+from application.utils.gap_analysis import make_resources_key, make_subresources_key
 import string
 import random
 import os
@@ -1641,12 +1641,14 @@ class TestDB(unittest.TestCase):
             response, (expected_response[0], expected_response[1], expected_response[2])
         )
         self.assertEqual(
-            collection.get_gap_analysis_result(make_array_key(["788-788", "222-222"])),
+            collection.gap_analysis_exists(make_resources_key(["788-788", "222-222"])), True)
+        self.assertEqual(
+            collection.get_gap_analysis_result(make_resources_key(["788-788", "222-222"])),
             flask_json.dumps({"result": expected_response[1]}),
         )
         self.assertEqual(
             collection.get_gap_analysis_result(
-                make_cache_key(["788-788", "222-222"], "788-788")
+                make_subresources_key(["788-788", "222-222"], "788-788")
             ),
             flask_json.dumps({"result": expected_response[2]["788-788"]}),
         )
@@ -2056,6 +2058,8 @@ class TestDB(unittest.TestCase):
                     defs.Standard(name=s, section=sub, subsection=sub)
                 )
         self.assertEqual(
+            ["BarStand", "Unlinked", "sa", "sb", "sc", "sd"],
+            self.collection.standards(),
             ["BarStand", "Unlinked", "sa", "sb", "sc", "sd"],
             self.collection.standards())
 
