@@ -8,7 +8,7 @@ flask_compress==1.13
 Flask_Cors==4.0.0
 Flask_Migrate==4.0.4
 Flask-SQLAlchemy
-
+setuptools
 gitpython
 google-api-core
 google_auth_oauthlib
