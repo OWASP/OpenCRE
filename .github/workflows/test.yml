@@ -15,6 +15,10 @@ jobs:
         with:
           cache: 'yarn'
       - name: Install python dependencies
-        run: sudo apt-get update && sudo apt-get install -y python3-setuptools python3-pip && make install-deps
+        run: |
+         sudo apt-get update
+         sudo apt-get install -y python3-setuptools python3-virtualenv python3-pip
+         pip install --upgrade pip
+         make install-python
       - name: Test
         run: make test
