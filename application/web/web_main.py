@@ -745,4 +745,4 @@ def all_cres() -> Any:
 
 
 if __name__ == "__main__":
-    app.run(use_reloader=False, debug=True, port=5002)
+    app.run(use_reloader=False, debug=True)
