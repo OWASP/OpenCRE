@@ -44,7 +44,8 @@ cover:
 	. ./venv/bin/activate && FLASK_APP=cre.py FLASK_CONFIG=testing flask test --cover
 
 install-deps-python:
-	[ -d "./venv" ] && . ./venv/bin/activate 
+	[ -d "./venv" ] && . ./venv/bin/activate &&\
+	pip install --upgrade pip &&\
 	pip install -r requirements.txt
 
 install-deps-typescript:
