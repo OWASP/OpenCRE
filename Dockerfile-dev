@@ -2,7 +2,8 @@ FROM node:lts as build
 
 WORKDIR /code
 COPY . /code
-RUN make install-deps-typescript && make install-typescript
+
+RUN make install-deps-typescript && make install-typescript && make frontend
 
 FROM python:3.11.0 as run
 

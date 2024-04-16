@@ -67,10 +67,14 @@ coverage/
 ### Dev DBDumps
 *.sql
 *.dump
+*.backup
 
 ### Neo4j
 neo4j/
 .neo4j/
+
+### Random YAML files
+*.yaml
 
 .mypy_cache
 tmp/

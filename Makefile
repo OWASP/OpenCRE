@@ -3,9 +3,6 @@
 
 .PHONY: run test covers install-deps dev docker lint frontend clean all
 
-prod-run:
-	cp cres/db.sqlite standards_cache.sqlite; gunicorn cre:app --log-file=-
-
 docker-neo4j:
 	docker start cre-neo4j 2>/dev/null   || docker run -d --name cre-neo4j --env NEO4J_PLUGINS='["apoc"]'  --env NEO4J_AUTH=neo4j/password --volume=`pwd`/.neo4j/data:/data --volume=`pwd`/.neo4j/logs:/logs --workdir=/var/lib/neo4j -p 7474:7474 -p 7687:7687 neo4j
 
@@ -54,7 +51,7 @@ install-deps-typescript:
 install-deps: install-deps-python install-deps-typescript
 
 install-python:
-	virtualenv -p python3 venv
+	virtualenv -p python3.11 venv
 	. ./venv/bin/activate &&\
 	make install-deps-python &&\
 	playwright install
