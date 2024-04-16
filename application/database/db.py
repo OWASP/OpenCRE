@@ -35,8 +35,7 @@ from flask_sqlalchemy.model import DefaultMeta
 from sqlalchemy import func, delete
 import uuid
 
-from application.utils.gap_analysis import get_path_score
-from application.utils.hash import make_array_key, make_cache_key
+from application.utils.gap_analysis import get_path_score, make_resources_key, make_subresources_key
 
 
 from .. import sqla  # type: ignore
@@ -1847,6 +1846,9 @@ class Node_collection:
             self.session.commit()
 
             return existing
+    def gap_analysis_exists(self,cache_key)->bool:
+        q = self.session.query(GapAnalysisResults).filter(GapAnalysisResults.cache_key == cache_key)
+        return self.session.query(q.exists()).scalar()
 
     def get_gap_analysis_result(self, cache_key) -> str:
         logger.info(f"looking for gap analysis with cache key: {cache_key}")
@@ -1861,9 +1863,8 @@ class Node_collection:
         logger.info(f"did not find gap analysis with cache key: {cache_key}")
 
     def add_gap_analysis_result(self, cache_key: str, ga_object: str):
-        logger.info(f"adding gap analysis result with cache key: {cache_key}")
-        existing = self.get_gap_analysis_result(cache_key)
-        if not existing:
+        if not self.gap_analysis_exists(cache_key):
+            logger.info(f"adding gap analysis result with cache key: {cache_key}")
             res = GapAnalysisResults(cache_key=cache_key, ga_object=ga_object)
             self.session.add(res)
             self.session.commit()
@@ -2053,7 +2054,7 @@ def gap_analysis(
                 grouped_paths[key]["extra"] += 1
 
     if cache_key == "":
-        cache_key = make_array_key(node_names)
+        cache_key = make_resources_key(node_names)
     logger.info(f"got gap analysis paths for {'>>>'.join(node_names)}, storing result")
     cre_db.add_gap_analysis_result(
         cache_key=cache_key, ga_object=flask_json.dumps({"result": grouped_paths})
@@ -2061,7 +2062,7 @@ def gap_analysis(
 
     for key in extra_paths_dict:
         cre_db.add_gap_analysis_result(
-            cache_key=make_cache_key(node_names, key),
+            cache_key=make_subresources_key(node_names, key),
             ga_object=flask_json.dumps({"result": extra_paths_dict[key]}),
         )
     logger.info(f"stored gapa analysis for {'>>>'.join(node_names)}, successfully")

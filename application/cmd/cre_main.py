@@ -7,7 +7,6 @@ import os
 import shutil
 import tempfile
 from typing import Any, Callable, Dict, Generator, List, Optional, Tuple
-from application.utils.hash import make_array_key
 from rq import Queue, job, exceptions
 import yaml
 from application import create_app  # type: ignore
@@ -230,7 +229,7 @@ def register_standard(
     conn = redis.connect()
     ph = prompt_client.PromptHandler(database=collection)
     importing_name = standard_entries[0].name
-    standard_hash = make_array_key([importing_name])
+    standard_hash = gap_analysis.make_resources_key([importing_name])
     if conn.get(standard_hash):
         logger.debug(
             f"Standard importing job with info-hash {standard_hash} has already returned, skipping"
@@ -258,23 +257,31 @@ def register_standard(
         if standard_name == importing_name:
             continue
 
-        forward_job_id = gap_analysis.schedule(
-            standards=[importing_name, standard_name], database=collection
-        ).get("job_id")
-        backward_job_id = gap_analysis.schedule(
-            standards=[standard_name, importing_name], database=collection
-        ).get("job_id")
-        if forward_job_id and backward_job_id:
+        fw_key = gap_analysis.make_resources_key([importing_name, standard_name])
+        if not collection.gap_analysis_exists(fw_key):
+            fw_job = gap_analysis.schedule(
+                standards=[importing_name, standard_name], database=collection
+            )
+            forward_job_id = fw_job.get("job_id")
             try:
                 forward_job = job.Job.fetch(id=forward_job_id, connection=conn)
-                backward_job = job.Job.fetch(id=backward_job_id, connection=conn)
-                jobs.extend([forward_job, backward_job])
+                jobs.append(forward_job)
             except exceptions.NoSuchJobError as nje:
                 logger.error(f"Could not find gap analysis job for for {importing_name} and {standard_name} putting {standard_name} back in the queue")
                 pending_stadards.append(standard_name)
-        else:
-            logger.error(f"Could not calculate gap analysis for {importing_name} and {standard_name} putting {standard_name} back in the queue")
-            pending_stadards.append(standard_name)
+
+        bw_key = gap_analysis.make_resources_key([standard_name, importing_name])
+        if not collection.gap_analysis_exists(bw_key):
+            bw_job = gap_analysis.schedule(
+                standards=[standard_name, importing_name], database=collection
+            )
+            backward_job_id = bw_job.get("job_id")
+            try:
+                backward_job = job.Job.fetch(id=backward_job_id, connection=conn)
+                jobs.append(backward_job)
+            except exceptions.NoSuchJobError as nje:
+                logger.error(f"Could not find gap analysis job for for {importing_name} and {standard_name} putting {standard_name} back in the queue")
+                pending_stadards.append(standard_name)
     redis.wait_for_jobs(jobs)
     conn.set(standard_hash, value="")
 

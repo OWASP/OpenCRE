@@ -4,7 +4,6 @@ import logging
 from rq import Queue, job, exceptions
 from typing import List, Dict
 from application.utils import redis
-from application.utils.hash import make_array_key, make_cache_key
 from application.database import db
 from flask import json as flask_json
 import json
@@ -23,6 +22,11 @@ PENALTIES = {
 
 GAP_ANALYSIS_TIMEOUT = "129600s"  # 36 hours
 
+def make_resources_key(array: List[str]):
+    return " >> ".join(array)
+
+def make_subresources_key(standards: List[str], key: str) -> str:
+    return str(make_resources_key(standards)) + "->" + key
 
 def get_path_score(path):
     score = 0
@@ -50,17 +54,16 @@ def get_next_id(step, previous_id):
         return step["end"].id
     return step["start"].id
 
-
-def schedule(standards: List[str], database):
+# database is of type Node_collection, cannot annotate due to circular import
+def schedule(standards: List[str], database): 
     conn = redis.connect()
-    standards_hash = make_array_key(standards)
-    result = database.get_gap_analysis_result(standards_hash)
-    if result:
-        return flask_json.loads(result)
+    standards_hash = make_resources_key(standards)
+    if database.gap_analysis_exists(standards_hash): # easiest, it's been calculated and cached, get it from the db
+        return flask_json.loads(database.get_gap_analysis_result(standards_hash))
 
     logger.info(f"Gap analysis result for {standards_hash} does not exist")
     gap_analysis_results = conn.get(standards_hash)
-    if gap_analysis_results:
+    if gap_analysis_results: # perhaps its calculated but not cached yet, get it from redis
         gap_analysis_dict = json.loads(gap_analysis_results)
         if gap_analysis_dict.get("job_id"):
             try:
