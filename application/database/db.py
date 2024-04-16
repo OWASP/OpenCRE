@@ -191,6 +191,8 @@ class RelatedRel(StructuredRel):
 class ContainsRel(StructuredRel):
     pass
 
+class AutoLinkedToRel(StructuredRel):
+    pass
 
 class LinkedToRel(StructuredRel):
     pass
@@ -316,6 +318,7 @@ class NeoCRE(NeoDocument):  # type: ignore
     contains = RelationshipTo("NeoCRE", "CONTAINS", model=ContainsRel)
     contained_in = RelationshipFrom("NeoCRE", "CONTAINS", model=ContainsRel)
     linked = RelationshipTo("NeoStandard", "LINKED_TO", model=LinkedToRel)
+    auto_linked_to = RelationshipTo("NeoStandard", "AUTOMATICALLY_LINKED_TO", model=AutoLinkedToRel)
     same_as = RelationshipTo("NeoStandard", "SAME", model=SameRel)
 
     @classmethod
@@ -332,6 +335,7 @@ class NeoCRE(NeoDocument):  # type: ignore
                         "Linked To": node.linked,
                         "Same as": node.same_as,
                         "Related": node.related,
+                        "Automatically linked to":node.auto_linked_to,
                     }
                 )
                 if parse_links
@@ -538,7 +542,7 @@ class NEO_DB:
         if not node:
             return
         if link_type == cre_defs.LinkTypes.AutomaticallyLinkedTo.value:
-            cre.linked.connect(node)
+            cre.auto_linked_to.connect(node)
             return
         if link_type == cre_defs.LinkTypes.LinkedTo.value:
             cre.linked.connect(node)
@@ -574,7 +578,7 @@ class NEO_DB:
             """
             OPTIONAL MATCH (BaseStandard:NeoStandard {name: $name1})
             OPTIONAL MATCH (CompareStandard:NeoStandard {name: $name2})
-            OPTIONAL MATCH p = allShortestPaths((BaseStandard)-[:(LINKED_TO|CONTAINS)*..20]-(CompareStandard)) 
+            OPTIONAL MATCH p = allShortestPaths((BaseStandard)-[:(LINKED_TO|AUTOMATICALLY_LINKED_TO|CONTAINS)*..20]-(CompareStandard)) 
             WITH p
             WHERE length(p) > 1 AND ALL(n in NODES(p) WHERE (n:NeoCRE or n = BaseStandard or n = CompareStandard) AND NOT n.name in $denylist) 
             RETURN p
@@ -590,6 +594,7 @@ class NEO_DB:
                 ContainsRel: "CONTAINS",
                 LinkedToRel: "LINKED_TO",
                 SameRel: "SAME",
+                AutoLinkedToRel: "AUTOMATICALLY_LINKED_TO",
             }
             start_node = [
                 node for node in nodes if node.element_id == seg._start_node_element_id
@@ -778,7 +783,7 @@ class Node_collection:
     def __introduces_cycle(self, node_from: str, node_to: str) -> Any:
         if not self.graph:
             logger.error("graph is null")
-            return None
+            raise ValueError("internal CRE graph is None while importing, cannot detect cycles, this is unrecoverable")
         try:
             existing_cycle = nx.find_cycle(self.graph.graph)
             if existing_cycle:
@@ -1407,7 +1412,7 @@ class Node_collection:
             ).first()
 
         if entry is not None:
-            logger.info("knew of %s ,updating" % cre.name)
+            logger.info(f"knew of CRE {cre.name} ,updating")
             if not entry.external_id:
                 if entry.external_id != cre.id:
                     raise ValueError(
@@ -1447,7 +1452,7 @@ class Node_collection:
         entries = self.object_select(dbnode, skip_attributes=comparison_skip_attributes)
         if entries:
             entry = entries[0]
-            logger.info(f"knew of {entry.name}:{entry.section}:{entry.link} ,updating")
+            logger.info(f"knew of node {entry.name}:{entry.section_id}:{entry.section}:{entry.link} ,updating")
             if node.section and node.section != entry.section:
                 entry.section = node.section
             entry.link = node.hyperlink
@@ -1612,28 +1617,17 @@ class Node_collection:
             self.session.commit()
             return
         else:
-            cycle = self.__introduces_cycle(
-                f"CRE: {cre.id}", f"Standard: {str(node.id)}"
+            logger.debug(
+                f"did not know of link {node.id})"
+                f"{node.name}:{node.section}=={cre.id}){cre.name}"
+                " ,adding"
             )
-            if not cycle:
-                logger.debug(
-                    f"did not know of link {node.id})"
-                    f"{node.name}:{node.section}=={cre.id}){cre.name}"
-                    " ,adding"
+            self.session.add(Links(type=type.value, cre=cre.id, node=node.id))
+            if self.graph:
+                self.graph.add_edge(
+                    f"CRE: {cre.id}", f"Node: {str(node.id)}", ltype=type.value
                 )
-                self.session.add(Links(type=type.value, cre=cre.id, node=node.id))
-                if self.graph:
-                    self.graph.add_edge(
-                        f"CRE: {cre.id}", f"Node: {str(node.id)}", ltype=type.value
-                    )
-            else:
-                logger.warning(
-                    f"A link between CRE {cre.external_id}"
-                    f" and Node: {node.name}"
-                    f":{node.section}:{node.subsection}"
-                    f" would introduce cycle {cycle}, skipping"
-                )
-                logger.debug(f"{cycle}")
+        
         self.session.commit()
 
     def find_path_between_nodes(

@@ -7,16 +7,17 @@ from application.utils import redis
 from application.database import db
 from flask import json as flask_json
 import json
-
+from application.defs import cre_defs as defs
 logging.basicConfig()
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 PENALTIES = {
-    "RELATED": 2,
+    "RELATED":2,
     "CONTAINS_UP": 2,
     "CONTAINS_DOWN": 1,
     "LINKED_TO": 0,
+    "AUTOMATICALLY_LINKED_TO":0,
     "SAME": 0,
 }
 
