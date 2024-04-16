@@ -12,16 +12,18 @@ docker-redis:
 start-containers: docker-neo4j docker-redis
 
 start-worker:
-	. ./venv/bin/activate &&\
-	FLASK_APP=`pwd`/cre.py python cre.py --start_worker
+	. ./venv/bin/activate && FLASK_APP=`pwd`/cre.py python cre.py --start_worker
 
 dev-flask:
-	. ./venv/bin/activate &&\
-	FLASK_RUN_PORT="5002" INSECURE_REQUESTS=1 FLASK_APP=`pwd`/cre.py  FLASK_CONFIG=development flask run
+	. ./venv/bin/activate && INSECURE_REQUESTS=1 FLASK_APP=`pwd`/cre.py  FLASK_CONFIG=development flask run
 
 e2e:
 	yarn build
-	make dev-flask&
+	[ -d "./venv" ] && . ./venv/bin/activate &&\
+	export FLASK_APP=$(CURDIR)/cre.py &&\
+	export FLASK_CONFIG=development &&\
+	export INSECURE_REQUESTS=1 &&\
+	flask run &
 	sleep 5
 	yarn test:e2e
 	sleep 20
@@ -64,10 +66,10 @@ docker-prod:
 	docker build -f Dockerfile -t opencre:$(shell git rev-parse HEAD) .
 
 docker-dev-run:
-	 docker run -it -p 5002:5002 opencre-dev:$(shell git rev-parse HEAD)
+	 docker run -it -p 5000:5000 opencre-dev:$(shell git rev-parse HEAD)
 
 docker-prod-run:
-	 docker run -it -p 5002:5002 opencre:$(shell git rev-parse HEAD)
+	 docker run -it -p 5000:5000 opencre:$(shell git rev-parse HEAD)
 
 lint:
 	[ -d "./venv" ] && . ./venv/bin/activate && black . && yarn lint
@@ -128,6 +130,6 @@ preload-map-analysis:
 	sleep 5
 	[ -d "./venv" ] && . ./venv/bin/activate &&\
 	export FLASK_APP=$(CURDIR)/cre.py 
-	python cre.py --preload_map_analysis_target_url 'http://127.0.0.1:5002'	
+	python cre.py --preload_map_analysis_target_url 'http://127.0.0.1:5000'	
 	killall python flask
 all: clean lint test dev dev-run
