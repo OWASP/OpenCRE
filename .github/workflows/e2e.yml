@@ -18,7 +18,7 @@ jobs:
       - name: Install python dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y python3-setuptools python3-pip puthon3-virtualenv chromium-browser libgbm1
+          sudo apt-get install -y python3-setuptools python3-pip python3-virtualenv chromium-browser libgbm1
           make install
       - name: DB setup
         run: |
