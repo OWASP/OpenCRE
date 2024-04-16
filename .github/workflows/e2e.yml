@@ -27,6 +27,6 @@ jobs:
       - name: Run app and e2e tests
         run: |
           yarn build
-          make dev-flask
+          make dev-flask&
           sleep 20s
           yarn test:e2e
