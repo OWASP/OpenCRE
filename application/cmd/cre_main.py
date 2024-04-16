@@ -226,7 +226,7 @@ def register_standard(
     if not standard_entries:
         return
     if not collection:
-        collection = db_connect(path=db_connection_str, no_load_graph=True)
+        collection = db_connect(path=db_connection_str)
     conn = redis.connect()
     ph = prompt_client.PromptHandler(database=collection)
     standard_hash = make_array_key([standard_entries[0].name])
@@ -556,11 +556,11 @@ def ai_client_init(database: db.Node_collection):
     return prompt_client.PromptHandler(database=database)
 
 
-def db_connect(path: str, no_load_graph=False):
+def db_connect(path: str):
     global app
     conf = CMDConfig(db_uri=path)
     app = create_app(conf=conf)
-    collection = db.Node_collection(no_load_graph=no_load_graph)
+    collection = db.Node_collection()
     app_context = app.app_context()
     app_context.push()
 

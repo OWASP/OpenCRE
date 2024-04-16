@@ -45,7 +45,7 @@ class BaseParser:
     ):
         from application.cmd import cre_main
 
-        db = cre_main.db_connect(db_connection_str,no_load_graph=True)
+        db = cre_main.db_connect(db_connection_str)
 
         ph = prompt_client.PromptHandler(database=db)
         sclass_instance = sclass()
