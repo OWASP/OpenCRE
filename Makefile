@@ -40,7 +40,7 @@ cover:
 
 install-deps-python:
 	[ -d "./venv" ] && . ./venv/bin/activate &&\
-	pip install --upgrade pip &&\
+	pip install --upgrade pip setuptools &&\
 	pip install -r requirements.txt
 
 install-deps-typescript:
