@@ -35,6 +35,7 @@ from google_auth_oauthlib.flow import Flow
 from application.utils.spreadsheet import write_csv
 import oauthlib
 import google.auth.transport.requests
+from application.utils.hash import make_array_hash, make_cache_key
 
 from application import tracer
 
@@ -268,6 +269,12 @@ def map_analysis_weak_links() -> Any:
         if gap_analysis_dict.get("result"):
             return jsonify({"result": gap_analysis_dict.get("result")})
 
+    # if conn.exists(cache_key):
+    #     gap_analysis_results = conn.get(cache_key)
+    #     if gap_analysis_results:
+    #         gap_analysis_dict = json.loads(gap_analysis_results)
+    #         if gap_analysis_dict.get("result"):
+    #             return jsonify({"result": gap_analysis_dict.get("result")})
     abort(404, "No such Cache")
 
 
@@ -377,7 +384,6 @@ def find_root_cres() -> Any:
     opt_format = request.args.get("format")
     with CRETracer("get root cres"):
         documents = database.get_root_cres()
-
     if documents:
         res = [doc.todict() for doc in documents]
         result = {"data": res}
@@ -694,4 +700,4 @@ def all_cres() -> Any:
 
 
 if __name__ == "__main__":
-    app.run(use_reloader=False, debug=True, port=5001)
+    app.run(use_reloader=False, debug=True)
