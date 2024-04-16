@@ -176,7 +176,7 @@ class TestMain(unittest.TestCase):
             section="Session Management",
         )
 
-        main.register_node(node=with_groupped_cre_links, collection=self.collection)
+        main.register_node(node=with_groupped_cre_links, collection=self.collection.with_graph())
         # assert db structure makes sense
         self.assertEqual(
             len(self.collection.session.query(db.Links).all()), 5

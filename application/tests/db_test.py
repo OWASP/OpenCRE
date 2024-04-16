@@ -1815,6 +1815,7 @@ class TestDB(unittest.TestCase):
             ],
             same_as=[],
             related=[],
+            auto_linked_to = [],
         )
 
         parsed = db.NEO_DB.parse_node(graph_node)

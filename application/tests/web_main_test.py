@@ -477,7 +477,7 @@ class TestMain(unittest.TestCase):
 
     def test_find_root_cres(self) -> None:
         self.maxDiff = None
-        collection = db.Node_collection()
+        collection = db.Node_collection().with_graph()
         with self.app.test_client() as client:
             response = client.get(
                 "/rest/v1/root_cres",
@@ -531,7 +531,7 @@ class TestMain(unittest.TestCase):
 
     def test_smartlink(self) -> None:
         self.maxDiff = None
-        collection = db.Node_collection()
+        collection = db.Node_collection().with_graph()
         with self.app.test_client() as client:
             response = client.get(
                 "/smartlink/standard/foo/611",
@@ -719,7 +719,7 @@ class TestMain(unittest.TestCase):
 
     def test_deeplink(self) -> None:
         self.maxDiff = None
-        collection = db.Node_collection()
+        collection = db.Node_collection().with_graph()
         with self.app.test_client() as client:
             response = client.get(
                 f"/rest/v1/deeplink/{''.join(random.choice(string.ascii_letters) for i in range(10))}",
