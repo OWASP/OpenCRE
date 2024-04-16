@@ -16,7 +16,10 @@ jobs:
         with:
           cache: 'yarn'
       - name: Install python dependencies
-        run: sudo apt-get update && sudo apt-get install -y python3-setuptools python3-pip chromium-browser libgbm1 && make install-deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-setuptools python3-pip python3-virtualenv chromium-browser libgbm1
+          make install
       - name: DB setup
         run: |
             cp cres/db.sqlite standards_cache.sqlite
