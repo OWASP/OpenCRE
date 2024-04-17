@@ -860,3 +860,29 @@ class TestMain(unittest.TestCase):
                 if head[0] == "Location":
                     self.assertEqual(head[1], standards["ASVS"].hyperlink)
             self.assertEqual(302, response.status_code)
+
+    @patch.object(db, "Node_collection")
+    def test_all_cres(self, db_mock) -> None:
+        cres = []
+
+        for i in range(0, 5):
+            c = defs.CRE(name=f"cre{i}", id=f"{i}{i}{i}-{i}{i}{i}")
+            if i > 0:
+                c.add_link(
+                    defs.Link(document=cres[i - 1], ltype=defs.LinkTypes.Contains)
+                )
+            cres.append(c)
+
+        db_mock.return_value.all_cres_with_pagination.return_value = (cres, 1, 1)
+
+        with self.app.test_client() as client:
+            response = client.get(
+                "/rest/v1/all_cres",
+                headers={"Content-Type": "application/json"},
+            )
+            self.assertEqual(200, response.status_code)
+            expected = list([c.todict() for c in cres])
+            self.assertEqual(
+                {"data": expected, "page": 1, "total_pages": 1},
+                json.loads(response.data),
+            )

@@ -2,9 +2,6 @@
 
 .PHONY: run test covers install-deps dev docker lint frontend clean all
 
-prod-run:
-	cp cres/db.sqlite standards_cache.sqlite; gunicorn cre:app --log-file=-
-
 docker-neo4j-rm:
 	docker stop cre-neo4j
 	docker rm cre-neo4j
@@ -46,19 +43,17 @@ docker-redis:
 start-containers: docker-neo4j docker-redis
 
 start-worker:
-	. ./venv/bin/activate
-	FLASK_APP=`pwd`/cre.py python cre.py --start_worker
+	. ./venv/bin/activate && FLASK_APP=`pwd`/cre.py python cre.py --start_worker
 
 dev-flask:
-	. ./venv/bin/activate
-	FLASK_RUN_PORT="5001" INSECURE_REQUESTS=1 FLASK_APP=`pwd`/cre.py  FLASK_CONFIG=development flask run
+	. ./venv/bin/activate && INSECURE_REQUESTS=1 FLASK_APP=`pwd`/cre.py  FLASK_CONFIG=development flask run
 
 e2e:
 	yarn build
-	[ -d "./venv" ] && . ./venv/bin/activate
-	export FLASK_APP=$(CURDIR)/cre.py
-	export FLASK_CONFIG=development
-	export INSECURE_REQUESTS=1
+	[ -d "./venv" ] && . ./venv/bin/activate &&\
+	export FLASK_APP=$(CURDIR)/cre.py &&\
+	export FLASK_CONFIG=development &&\
+	export INSECURE_REQUESTS=1 &&\
 	flask run &
 	sleep 5
 	yarn test:e2e
@@ -67,15 +62,16 @@ e2e:
 	killall flask
 
 test:
-	[ -d "./venv" ] && . ./venv/bin/activate
-	export FLASK_APP=$(CURDIR)/cre.py
+	[ -d "./venv" ] && . ./venv/bin/activate &&\
+	export FLASK_APP=$(CURDIR)/cre.py &&\
 	flask routes && flask test
 
 cover:
 	. ./venv/bin/activate && FLASK_APP=cre.py FLASK_CONFIG=testing flask test --cover
 
 install-deps-python:
-	[ -d "./venv" ] && source ./venv/bin/activate
+	[ -d "./venv" ] && . ./venv/bin/activate &&\
+	pip install --upgrade pip setuptools &&\
 	pip install -r requirements.txt
 
 install-deps-typescript:
@@ -84,9 +80,9 @@ install-deps-typescript:
 install-deps: install-deps-python install-deps-typescript
 
 install-python:
-	virtualenv -p python3 venv
-	. ./venv/bin/activate
-	make install-deps-python
+	virtualenv -p python3.11 venv
+	. ./venv/bin/activate &&\
+	make install-deps-python &&\
 	playwright install
 	
 install-typescript:
@@ -122,17 +118,17 @@ clean:
 
 migrate-restore:
 	if ! [ -f "standards_cache.sqlite" ]; then cp cres/db.sqlite standards_cache.sqlite; fi
-	[ -d "./venv" ] && . ./venv/bin/activate
+	[ -d "./venv" ] && . ./venv/bin/activate &&\
 	export FLASK_APP=$(CURDIR)/cre.py 
 	flask db upgrade  
 
 migrate-upgrade:
-	[ -d "./venv" ] && . ./venv/bin/activate
+	[ -d "./venv" ] && . ./venv/bin/activate &&\
 	export FLASK_APP=$(CURDIR)/cre.py 
 	flask db upgrade  
 
 migrate-downgrade:
-	[ -d "./venv" ] && . ./venv/bin/activate
+	[ -d "./venv" ] && . ./venv/bin/activate &&\
 	export FLASK_APP=$(CURDIR)/cre.py
 	flask db downgrade
 
@@ -145,7 +141,7 @@ import-all:
 	$(shell bash ./scripts/import-all.sh)
 
 import-neo4j:
-	[ -d "./venv" ] && . ./venv/bin/activate
+	[ -d "./venv" ] && . ./venv/bin/activate &&\
 	export FLASK_APP=$(CURDIR)/cre.py && python cre.py --populate_neo4j_db
 
 preload-map-analysis:
@@ -163,7 +159,7 @@ preload-map-analysis:
 	make start-worker&\
 	make dev-flask&
 	sleep 5
-	[ -d "./venv" ] && . ./venv/bin/activate
+	[ -d "./venv" ] && . ./venv/bin/activate &&\
 	export FLASK_APP=$(CURDIR)/cre.py 
 	python cre.py --preload_map_analysis_target_url 'http://127.0.0.1:5001'	
 	killall python flask

@@ -12,7 +12,6 @@ export const Explorer = () => {
   const { dataLoading, dataTree } = useDataStore();
   const [filter, setFilter] = useState('');
   const [filteredTree, setFilteredTree] = useState<TreeDocument[]>();
-
   const applyHighlight = (text, term) => {
     if (!term) return text;
     var index = text.toLowerCase().indexOf(term);
@@ -120,7 +119,7 @@ export const Explorer = () => {
           </div>
           <div id="graphs">
             graphs (3D):
-            <a target="_blank" href="explorer/force_graph">
+            <a target="_blank" href="force_graph">
               CRE dependencies
             </a>{' '}
             -
@@ -134,9 +133,9 @@ export const Explorer = () => {
             |
             <a target="_blank" href="visuals/force-graph-3d-linked.html">
               links to external standards
-            </a>{' '}
-            | */}
-            <a target="_blank" href="explorer/circles">
+            </a>{' '} */}
+            |
+            <a target="_blank" href="circles">
               zoomable circles
             </a>
           </div>
