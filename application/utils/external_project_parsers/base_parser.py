@@ -63,7 +63,7 @@ class BaseParser:
             for _, documents in result.items():
                 cre_main.register_standard(documents, db)
         except ValueError as ve:
-            err_str = f"error importing {sclass.name}, received 1 value but expected 2"
+            err_str = f"error importing {sclass.name}, err: {ve}"
             raise ValueError(err_str)
 
     def call_importers(self, db_connection_str: str):

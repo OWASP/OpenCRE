@@ -106,6 +106,8 @@ class CWE(ParserInterface):
                                 "section",
                                 "version",
                                 "subsection",
+                                "tags",
+                                "description",
                             ],
                         )
                     else:  # we found something new
@@ -114,7 +116,6 @@ class CWE(ParserInterface):
                             sectionID=weakness["@ID"],
                             section=weakness["@Name"],
                             hyperlink=self.make_hyperlink(weakness["@ID"]),
-                            version=version,
                         )
                     logger.debug(f"Registered CWE with id {cwe.sectionID}")
 
