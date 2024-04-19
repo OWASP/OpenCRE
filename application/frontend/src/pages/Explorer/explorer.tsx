@@ -117,10 +117,10 @@ export const Explorer = () => {
             <h4 className='menu-title'>Explore visually:</h4>
             <ul>
               <li>
-                <a target="_blank" href="force_graph">Dependency Graph</a>
+                <a href="/explorer/force_graph">Dependency Graph</a>
               </li>
               <li>
-                <a target="_blank" href="circles">Zoomable circles</a>
+                <a href="/explorer/circles">Zoomable circles</a>
               </li>
             </ul>
             {/* <a target="_blank" href="visuals/force-graph-3d-contains.html">
