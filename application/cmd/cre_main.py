@@ -104,7 +104,8 @@ def register_node(node: defs.Node, collection: db.Node_collection) -> db.Node:
 
         elif type(link.document).__name__ == defs.CRE.__name__:
             # dbcre = register_cre(link.document, collection) # CREs are idempotent
-            dbcre = collection.get_CREs(name=link.document.name)[0]
+            c = collection.get_CREs(name=link.document.name)[0]
+            dbcre = db.dbCREfromCRE(c)
             collection.add_link(dbcre, linked_node, type=link.ltype)
             cres_added.append(dbcre)
             for unlinked_standard in cre_less_nodes:  # if anything in this
