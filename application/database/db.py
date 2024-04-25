@@ -554,7 +554,7 @@ class NEO_DB:
 
     @classmethod
     def gap_analysis(self, name_1, name_2):
-        logger.info(f"Performing DB queries for gap analysis {name_1}>>{name_2}")
+        logger.info(f"Performing GraphDB queries for gap analysis {name_1}>>{name_2}")
         base_standard = NeoStandard.nodes.filter(name=name_1)
         denylist = ["Cross-cutting concerns"]
         from datetime import datetime

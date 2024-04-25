@@ -83,5 +83,6 @@ def wait_for_jobs(jobs: List[rq.job.Job], callback: Callable = None):
                 logger.info(
                     f"job {job.description} is of unknown status {job.get_status()}"
                 )
-            logger.info(f"waiting for {job.description}")
+            else:
+                logger.info(f"waiting for {job.description}")
         time.sleep(10)
