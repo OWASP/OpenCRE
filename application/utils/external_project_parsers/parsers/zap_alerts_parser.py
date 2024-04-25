@@ -154,7 +154,4 @@ class ZAP(ParserInterface):
                     alerts.append(alert)
                 else:
                     logger.debug("ZAP Alert could not be registered")
-        from pprint import pprint
-        pprint(alerts)
-        input()
         return alerts
