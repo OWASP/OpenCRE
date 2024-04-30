@@ -1,3 +1,72 @@
+main#explorer-content {
+  padding: 20px 40px;
+
+  .search-field {
+    input {
+      font-size: 16px;
+      height: 32px;
+      width: 320px;
+      margin-bottom: 10px;
+      border-radius: 3px;
+      border: 1px solid #858585;
+      padding: 0 5px;
+    }
+  }
+
+  #graphs-menu {
+    display: flex;
+    margin-bottom: 20px;
+    .menu-title {
+      margin: 0;
+    }
+    ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      font-size: 15px;
+    }
+    li {
+      padding: 0 8px;
+      +li {
+        border-left: 1px solid #b1b0b0;
+      }
+    }
+  }
+
+  .list {
+    padding: 0;
+  }
+
+  .item {
+    border-top: 1px dotted lightgrey;
+    border-left: 6px solid lightgrey;
+    margin: 4px 4px 4px 40px;
+    background-color: rgba(200, 200, 200, 0.2);
+    vertical-align: middle;
+
+    .header {
+      margin-left: 5px;
+      overflow: hidden;
+      white-space: nowrap;
+
+      a {
+        font-size: 120%;
+        line-height: 30px;
+        font-weight: bold;
+      }
+    }
+  }
+
+  .highlight {
+    background-color: yellow;
+  }
+
+  > .list > .item {
+    margin-left: 0;
+  }
+}
+
 // #explorer-content {
 //   font-family: Vollkorn, Ubuntu, Optima, Segoe, Segoe UI, Candara, Calibri, Arial, sans-serif;
 //   margin: 40px;
