@@ -8,53 +8,30 @@ export const SearchBody = () => {
       <h1>OpenCRE</h1>
       <p>
         <strong>
-          OpenCRE is the interactive content linking platform for uniting security standards and guidelines
-          into one overview. It offers easy and robust access to relevant information when designing,
-          developing, testing, procuring and organising secure software.
+          The OWASP Open Source project “OpenCRE “ links all security standards and guidelines together at the level of requirements into one harmonized resource:
+threats, weaknesses, what to verify, how to program, how to test,  which tool settings,  in-depth discussion,  training material. Everything organized.
         </strong>
       </p>
+      <h2>Examples of use:</h2>
       <p>
-        <strong>
-          Use the search bar or <a href="/root_cres">browse the catalogue of all top-level topics</a>, try
-          <a href="/node/standard/OWASP%20Top%2010%202021"> the Top10 2021 page</a> and click around, or{' '}
-          <a href="/search/session">search for "Session"</a>, or check out{' '}
-          <a href="/cre/764-507"> CRE 764-507 </a> or <a href="/cre/581-525">CRE 581-525</a> to see the{' '}
-          <b>Multilink</b>
-          feature: one link to OpenCRE gives access to a wide range of standards and related topics: testing
-          advice, development, in-depth technical information, threat descriptions, articles, and tool
-          settings.
-        </strong>
+        <ul>
+      
+          <li><a href="/cre/764-507">CRE 764-507 </a>: the central ‘multilink’ feature of OpenCRE - one link to a common requirement shows its coverage in all the resources plus related requirements</li>
+          <li><a href="/cre/581-525">CRE 581-525</a></li>
+          <li><a href="/chatbot">OpenCRE Chat</a> to ask any security question. In collaboration with Google, we injected all the standards in OpenCRE into an AI model to create the world's first security-specialized chatbot. It provides a more reliable answer, and also a reference to the relevant standard text.</li>
+          <li><a href="/map_analysis">Map Analysis</a> to find how any two standards connect with eachother</li>     
+          <li><a href="/smartlink/standard/CWE/611">www.opencre.org/smartlink/standard/CWE/611</a>: the ‘smartlink’ feature which uses an existing standard to link to related information</li>
+          <li><a href="/node/standard/OWASP%20Top%2010%202021">OWASP Top 10 2021</a></li>
+          <li><a href="/root_cres">Browse</a> to explore our catalog (semantic web) of common requirements across development processes, technical controls, etc.</li>
+          <li><a href="https://zeljkoobrenovic.github.io/opencre-explorer/">Explore</a> our catalog in one list</li>
+          <li><a href="https://zeljkoobrenovic.github.io/opencre-explorer/visuals/force-graph-3d-contains.html">Fly</a> through our catalog in 3D</li>
+        </ul>         
+        
       </p>
+      <h2>How it works:</h2>
       <p>
-        <strong>
-          Use <a href="/chatbot">OpenCRE Chat</a> to ask any security question (Google account required to
-          maximize queries per minute). In collaboration with Google, we injected all the standards in OpenCRE
-          into an AI model to create the world's first security-specialized chatbot. This ensures you get a
-          more reliable answer, and also a reference to a reputable source.
-        </strong>
+        OpenCRE links each section of a resource to the corresponding’Common Requirement’, causing that section to also link with all other resources that link to the same requirement. This 1) enables users to find all relevant information, 2) facilitates a shared and better understanding of cyber security, and 3) allows standard makers to have links that keep working and offer all the information that readers need, alleviating their need to cover everything themselves. OpenCRE maintains itself: links to OpenCRE in the standard text are scanned automatically. 
       </p>
-      <p>
-        <strong>
-          Use <a href="/map_analysis">Map Analysis</a> to find how any two standards connect with eachother
-        </strong>
-      </p>
-      <h2>HOW?</h2>
-      <p>
-        OpenCRE links each section of a resource (like a standard or guideline) to a shared topic, known as a
-        Common Requirement, causing that section to also link with all other resources that link to the same
-        topic. This 1) enables users to find all combined information from relevant sources, 2) facilitates a
-        shared and better understanding of cyber security, and 3) allows standard makers to have links that
-        keep working and offer all the information that readers need, alleviating their need to cover
-        everything themselves. OpenCRE maintains itself: links to OpenCRE in the standard text are scanned
-        automatically. Furthermore, topics are linked with related other topics, creating a semantic web for
-        security to explore.
-      </p>
-      <p>
-        An easy way to link to OpenCRE topics, is to use a familiar standard. For example, using CWE to link
-        to OpenCRE content on the topic of XXE injection:
-        <a href="/smartlink/standard/CWE/611">www.opencre.org/smartlink/standard/CWE/611</a>.
-      </p>
-      <h2>WHO?</h2>
       <p>
         OpenCRE is the brainchild of software security professionals Spyros Gasteratos and Rob van der Veer,
         who joined forces to tackle the complexities and segmentation in current security standards and
@@ -64,13 +41,7 @@ export const SearchBody = () => {
         . The goal is to foster better coordination among security initiatives.
       </p>
       <p>
-        OpenCRE currently links OWASP standards (Top 10, ASVS, Proactive Controls, Cheat sheets, Testing
-        guide, ZAP, Juice shop, SAMM), plus several other sources (CWE, CAPEC, NIST-800 53, NIST-800 63b,
-        Cloud Control Matrix, ISO27001, ISO27002, and NIST SSDF).
-      </p>
-      <p>
-        Contact us via (rob.vanderveer [at] owasp.org) for any questions, remarks or to join the movement.
-        Currently, a stakeholder group is being formed.
+        The ever-growing list of resources: OWASP standards (Top 10, ASVS, Proactive Controls, Cheat sheets, Testing guide, ZAP, Juice shop, SAMM), plus several other sources (CWE, CAPEC, NIST-800 53, NIST-800 63b, Cloud Control Matrix, ISO27002, and NIST SSDF).
       </p>
       <p>
         For more details, see this
@@ -81,12 +52,8 @@ export const SearchBody = () => {
         </a>
         , follow our
         <a href="https://www.linkedin.com/company/96695329"> LinkedIn page </a>, click the diagram below, or{' '}
-        <a href="https://zeljkoobrenovic.github.io/opencre-explorer/">
-          browse our catalogue textually or graphically
-        </a>
-        .
+        contact project leaders Rob van der Veer and Spyros Gasteratos via (rob.vanderveer [at] owasp.org) . 
       </p>
-
       <a href="/opencregraphic2.png" target="_blank">
         <img className="align-middle mx-auto " src="/tn_opencregraphic2.jpg" alt="Diagram" />
       </a>
