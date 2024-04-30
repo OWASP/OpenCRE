@@ -12,8 +12,10 @@ export const SearchBody = () => {
 threats, weaknesses, what to verify, how to program, how to test,  which tool settings,  in-depth discussion,  training material. Everything organized.
         </strong>
       </p>
-      <h2>Examples of use:</h2><ul>
+      <h2>Examples of use:</h2>
       <p>
+        <ul>
+      
           <li><a href="/cre/764-507">CRE 764-507 </a>: the central ‘multilink’ feature of OpenCRE - one link to a common requirement shows its coverage in all the resources plus related requirements</li>
           <li><a href="/cre/581-525">CRE 581-525</a></li>
           <li><a href="/chatbot">OpenCRE Chat</a> to ask any security question. In collaboration with Google, we injected all the standards in OpenCRE into an AI model to create the world's first security-specialized chatbot. It provides a more reliable answer, and also a reference to the relevant standard text.</li>
@@ -23,7 +25,7 @@ threats, weaknesses, what to verify, how to program, how to test,  which tool se
           <li><a href="/root_cres">Browse</a> to explore our catalog (semantic web) of common requirements across development processes, technical controls, etc.</li>
           <li><a href="https://zeljkoobrenovic.github.io/opencre-explorer/">Explore</a> our catalog in one list</li>
           <li><a href="https://zeljkoobrenovic.github.io/opencre-explorer/visuals/force-graph-3d-contains.html">Fly</a> through our catalog in 3D</li>
-          </ul>         
+        </ul>         
         
       </p>
       <h2>How it works:</h2>
