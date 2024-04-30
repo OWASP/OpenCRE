@@ -14,7 +14,7 @@ export const Explorer = () => {
   const [filteredTree, setFilteredTree] = useState<TreeDocument[]>();
   const applyHighlight = (text, term) => {
     if (!term) return text;
-    var index = text.toLowerCase().indexOf(term);
+    let index = text.toLowerCase().indexOf(term);
     if (index >= 0) {
       return (
         <>
@@ -69,7 +69,6 @@ export const Explorer = () => {
     const linkedTo = item.links.filter((x) => x.ltype === 'Linked To');
     return (
       <List.Item key={Math.random()}>
-        <List.Icon name="folder" />
         <List.Content>
           <List.Header>
             <Link to={item.url}>{applyHighlight(item.displayName, filter)}</Link>
@@ -100,44 +99,39 @@ export const Explorer = () => {
 
   return (
     <>
-      <div id="explorer-content">
-        <h1>
-          <b>Explorer</b>
-        </h1>
+      <main id="explorer-content">
+        <h1>Open CRE Explorer</h1>
         <p>
           A visual explorer of Open Common Requirement Enumerations (CREs). Originally created by:{' '}
           <a target="_blank" href="https://zeljkoobrenovic.github.io/opencre-explorer/">
             Zeljko Obrenovic
-          </a>
-          .
+          </a>.
         </p>
 
         <div id="explorer-wrapper">
-          <div>
-            <input id="filter" type="text" placeholder="search..." onKeyUp={update} />
+          <div className='search-field'>
+            <input id="filter" type="text" placeholder="Search..." onKeyUp={update} />
             <div id="search-summary"></div>
           </div>
-          <div id="graphs">
-            graphs (3D):
-            <a target="_blank" href="force_graph">
-              CRE dependencies
-            </a>{' '}
-            -
+          <div id="graphs-menu">
+            <h4 className='menu-title'>Explore visually:</h4>
+            <ul>
+              <li>
+                <a href="/explorer/force_graph">Dependency Graph</a>
+              </li>
+              <li>
+                <a href="/explorer/circles">Zoomable circles</a>
+              </li>
+            </ul>
             {/* <a target="_blank" href="visuals/force-graph-3d-contains.html">
               hierarchy only
-            </a>{' '}
-            -
+            </a>
             <a target="_blank" href="visuals/force-graph-3d-related.html">
               related only
-            </a>{' '}
-            |
+            </a>
             <a target="_blank" href="visuals/force-graph-3d-linked.html">
               links to external standards
-            </a>{' '} */}
-            |
-            <a target="_blank" href="circles">
-              zoomable circles
-            </a>
+            </a>*/}
           </div>
         </div>
         <LoadingAndErrorIndicator loading={dataLoading} error={null} />
@@ -146,7 +140,7 @@ export const Explorer = () => {
             return processNode(item);
           })}
         </List>
-      </div>
+      </main>
     </>
   );
 };
