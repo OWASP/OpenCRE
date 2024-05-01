@@ -370,10 +370,10 @@ def text_search() -> Any:
 
 
 @app.route("/rest/v1/root_cres", methods=["GET"])
-def find_root_cres() ->Any:
+def find_root_cres() -> Any:
     """
     Useful for fast browsing the graph from the top
-    
+
     """
     database = db.Node_collection()
     # opt_osib = request.args.get("osib")

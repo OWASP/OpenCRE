@@ -273,7 +273,9 @@ def register_standard(
                     forward_job = job.Job.fetch(id=forward_job_id, connection=conn)
                     jobs.append(forward_job)
                 except exceptions.NoSuchJobError as nje:
-                    logger.error(f"Could not find gap analysis job for for {importing_name} and {standard_name} putting {standard_name} back in the queue")
+                    logger.error(
+                        f"Could not find gap analysis job for for {importing_name} and {standard_name} putting {standard_name} back in the queue"
+                    )
                     pending_stadards.append(standard_name)
 
             bw_key = gap_analysis.make_resources_key([standard_name, importing_name])
@@ -286,7 +288,9 @@ def register_standard(
                     backward_job = job.Job.fetch(id=backward_job_id, connection=conn)
                     jobs.append(backward_job)
                 except exceptions.NoSuchJobError as nje:
-                    logger.error(f"Could not find gap analysis job for for {importing_name} and {standard_name} putting {standard_name} back in the queue")
+                    logger.error(
+                        f"Could not find gap analysis job for for {importing_name} and {standard_name} putting {standard_name} back in the queue"
+                    )
                     pending_stadards.append(standard_name)
     redis.wait_for_jobs(jobs)
     conn.set(standard_hash, value="")
@@ -300,14 +304,14 @@ def parse_standards_from_spreadsheeet(
     """given a yaml with standards, build a list of standards in the db"""
     collection = db_connect(cache_location)
     if "CRE:name" in cre_file[0].keys():
-        collection=collection.with_graph()
+        collection = collection.with_graph()
         documents = spreadsheet_parsers.parse_export_format(cre_file)
         register_cre(documents, collection)
         pass
 
     elif any(key.startswith("CRE hierarchy") for key in cre_file[0].keys()):
         conn = redis.connect()
-        collection=collection.with_graph()
+        collection = collection.with_graph()
         redis.empty_queues(conn)
         q = Queue(connection=conn)
         docs = spreadsheet_parsers.parse_hierarchical_export_format(cre_file)

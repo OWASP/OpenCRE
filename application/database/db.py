@@ -35,7 +35,11 @@ from flask_sqlalchemy.model import DefaultMeta
 from sqlalchemy import func, delete
 import uuid
 
-from application.utils.gap_analysis import get_path_score, make_resources_key, make_subresources_key
+from application.utils.gap_analysis import (
+    get_path_score,
+    make_resources_key,
+    make_subresources_key,
+)
 
 
 from .. import sqla  # type: ignore
@@ -191,8 +195,10 @@ class RelatedRel(StructuredRel):
 class ContainsRel(StructuredRel):
     pass
 
+
 class AutoLinkedToRel(StructuredRel):
     pass
+
 
 class LinkedToRel(StructuredRel):
     pass
@@ -318,7 +324,9 @@ class NeoCRE(NeoDocument):  # type: ignore
     contains = RelationshipTo("NeoCRE", "CONTAINS", model=ContainsRel)
     contained_in = RelationshipFrom("NeoCRE", "CONTAINS", model=ContainsRel)
     linked = RelationshipTo("NeoStandard", "LINKED_TO", model=LinkedToRel)
-    auto_linked_to = RelationshipTo("NeoStandard", "AUTOMATICALLY_LINKED_TO", model=AutoLinkedToRel)
+    auto_linked_to = RelationshipTo(
+        "NeoStandard", "AUTOMATICALLY_LINKED_TO", model=AutoLinkedToRel
+    )
     same_as = RelationshipTo("NeoStandard", "SAME", model=SameRel)
 
     @classmethod
@@ -335,7 +343,7 @@ class NeoCRE(NeoDocument):  # type: ignore
                         "Linked To": node.linked,
                         "Same as": node.same_as,
                         "Related": node.related,
-                        "Automatically linked to":node.auto_linked_to,
+                        "Automatically linked to": node.auto_linked_to,
                     }
                 )
                 if parse_links
@@ -783,7 +791,9 @@ class Node_collection:
     def __introduces_cycle(self, node_from: str, node_to: str) -> Any:
         if not self.graph:
             logger.error("graph is null")
-            raise ValueError("internal CRE graph is None while importing, cannot detect cycles, this is unrecoverable")
+            raise ValueError(
+                "internal CRE graph is None while importing, cannot detect cycles, this is unrecoverable"
+            )
         try:
             existing_cycle = nx.find_cycle(self.graph.graph)
             if existing_cycle:
@@ -1448,7 +1458,9 @@ class Node_collection:
         entries = self.object_select(dbnode, skip_attributes=comparison_skip_attributes)
         if entries:
             entry = entries[0]
-            logger.info(f"knew of node {entry.name}:{entry.section_id}:{entry.section}:{entry.link} ,updating")
+            logger.info(
+                f"knew of node {entry.name}:{entry.section_id}:{entry.section}:{entry.link} ,updating"
+            )
             if node.section and node.section != entry.section:
                 entry.section = node.section
             entry.link = node.hyperlink
@@ -1623,7 +1635,7 @@ class Node_collection:
                 self.graph.add_edge(
                     f"CRE: {cre.id}", f"Node: {str(node.id)}", ltype=type.value
                 )
-        
+
         self.session.commit()
 
     def find_path_between_nodes(
@@ -1868,8 +1880,11 @@ class Node_collection:
             self.session.commit()
 
             return existing
-    def gap_analysis_exists(self,cache_key)->bool:
-        q = self.session.query(GapAnalysisResults).filter(GapAnalysisResults.cache_key == cache_key)
+
+    def gap_analysis_exists(self, cache_key) -> bool:
+        q = self.session.query(GapAnalysisResults).filter(
+            GapAnalysisResults.cache_key == cache_key
+        )
         return self.session.query(q.exists()).scalar()
 
     def get_gap_analysis_result(self, cache_key) -> str:
