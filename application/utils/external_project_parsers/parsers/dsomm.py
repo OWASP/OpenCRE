@@ -59,7 +59,8 @@ class DSOMM(ParserInterface):
                 for c_link in samm.links:
                     standard = standard.add_link(
                         defs.Link(
-                            document=c_link.document, ltype=defs.LinkTypes.AutomaticallyLinkedTo
+                            document=c_link.document,
+                            ltype=defs.LinkTypes.AutomaticallyLinkedTo,
                         )
                     )
         return standard
@@ -81,7 +82,8 @@ class DSOMM(ParserInterface):
                 for c_link in iso.links:
                     standard = standard.add_link(
                         defs.Link(
-                            document=c_link.document, ltype=defs.LinkTypes.AutomaticallyLinkedTo
+                            document=c_link.document,
+                            ltype=defs.LinkTypes.AutomaticallyLinkedTo,
                         )
                     )
         return standard

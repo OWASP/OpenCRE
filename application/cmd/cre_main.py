@@ -52,6 +52,7 @@ def register_node(node: defs.Node, collection: db.Node_collection) -> db.Node:
     """
     if not node:
         raise ValueError("node is None")
+
     linked_node = collection.add_node(node)
     if node.embeddings:
         collection.add_embedding(
@@ -224,7 +225,11 @@ def register_standard(
     generate_embeddings=True,
     db_connection_str: str = "",
 ):
+    if os.environ.get("CRE_NO_GEN_EMBEDDINGS"):
+        generate_embeddings = False
+
     if not standard_entries:
+        logger.warning("register_standard() calleed with no standard_entries")
         return
     if not collection:
         collection = db_connect(path=db_connection_str)
@@ -233,7 +238,7 @@ def register_standard(
     importing_name = standard_entries[0].name
     standard_hash = gap_analysis.make_resources_key([importing_name])
     if conn.get(standard_hash):
-        logger.debug(
+        logger.info(
             f"Standard importing job with info-hash {standard_hash} has already returned, skipping"
         )
         return
@@ -242,6 +247,7 @@ def register_standard(
     )
     for node in standard_entries:
         if not node:
+            logger.info(f"encountered empty node while importing {standard_entries[0].name}")
             continue
         register_node(node, collection)
         if node.embeddings:
@@ -255,37 +261,42 @@ def register_standard(
     # calculate gap analysis
     jobs = []
     pending_stadards = collection.standards()
-    for standard_name in pending_stadards:
-        if standard_name == importing_name:
-            continue
+    if not os.environ.get("CRE_NO_CALCULATE_GAP_ANALYSIS"):
+        for standard_name in pending_stadards:
+            if standard_name == importing_name:
+                continue
 
-        fw_key = gap_analysis.make_resources_key([importing_name, standard_name])
-        if not collection.gap_analysis_exists(fw_key):
-            fw_job = gap_analysis.schedule(
-                standards=[importing_name, standard_name], database=collection
-            )
-            forward_job_id = fw_job.get("job_id")
-            try:
-                forward_job = job.Job.fetch(id=forward_job_id, connection=conn)
-                jobs.append(forward_job)
-            except exceptions.NoSuchJobError as nje:
-                logger.error(f"Could not find gap analysis job for for {importing_name} and {standard_name} putting {standard_name} back in the queue")
-                pending_stadards.append(standard_name)
+            fw_key = gap_analysis.make_resources_key([importing_name, standard_name])
+            if not collection.gap_analysis_exists(fw_key):
+                fw_job = gap_analysis.schedule(
+                    standards=[importing_name, standard_name], database=collection
+                )
+                forward_job_id = fw_job.get("job_id")
+                try:
+                    forward_job = job.Job.fetch(id=forward_job_id, connection=conn)
+                    jobs.append(forward_job)
+                except exceptions.NoSuchJobError as nje:
+                    logger.error(
+                        f"Could not find gap analysis job for for {importing_name} and {standard_name} putting {standard_name} back in the queue"
+                    )
+                    pending_stadards.append(standard_name)
 
-        bw_key = gap_analysis.make_resources_key([standard_name, importing_name])
-        if not collection.gap_analysis_exists(bw_key):
-            bw_job = gap_analysis.schedule(
-                standards=[standard_name, importing_name], database=collection
-            )
-            backward_job_id = bw_job.get("job_id")
-            try:
-                backward_job = job.Job.fetch(id=backward_job_id, connection=conn)
-                jobs.append(backward_job)
-            except exceptions.NoSuchJobError as nje:
-                logger.error(f"Could not find gap analysis job for for {importing_name} and {standard_name} putting {standard_name} back in the queue")
-                pending_stadards.append(standard_name)
-    redis.wait_for_jobs(jobs)
-    conn.set(standard_hash, value="")
+            bw_key = gap_analysis.make_resources_key([standard_name, importing_name])
+            if not collection.gap_analysis_exists(bw_key):
+                bw_job = gap_analysis.schedule(
+                    standards=[standard_name, importing_name], database=collection
+                )
+                backward_job_id = bw_job.get("job_id")
+                try:
+                    backward_job = job.Job.fetch(id=backward_job_id, connection=conn)
+                    jobs.append(backward_job)
+                except exceptions.NoSuchJobError as nje:
+                    logger.error(
+                        f"Could not find gap analysis job for for {importing_name} and {standard_name} putting {standard_name} back in the queue"
+                    )
+                    pending_stadards.append(standard_name)
+        redis.wait_for_jobs(jobs)
+        conn.set(standard_hash, value="")
 
 
 def parse_standards_from_spreadsheeet(
@@ -296,14 +307,14 @@ def parse_standards_from_spreadsheeet(
     """given a yaml with standards, build a list of standards in the db"""
     collection = db_connect(cache_location)
     if "CRE:name" in cre_file[0].keys():
-        collection=collection.with_graph()
+        collection = collection.with_graph()
         documents = spreadsheet_parsers.parse_export_format(cre_file)
         register_cre(documents, collection)
         pass
 
     elif any(key.startswith("CRE hierarchy") for key in cre_file[0].keys()):
         conn = redis.connect()
-        collection=collection.with_graph()
+        collection = collection.with_graph()
         redis.empty_queues(conn)
         q = Queue(connection=conn)
         docs = spreadsheet_parsers.parse_hierarchical_export_format(cre_file)
@@ -312,11 +323,13 @@ def parse_standards_from_spreadsheeet(
         logger.info(f"Importing {len(docs.get(defs.Credoctypes.CRE.value))} CREs")
         with alive_bar(len(docs.get(defs.Credoctypes.CRE.value))) as bar:
             for cre in docs.pop(defs.Credoctypes.CRE.value):
+
                 register_cre(cre, collection)
                 bar()
 
         populate_neo4j_db(collection)
-        prompt_handler.generate_embeddings_for(defs.Credoctypes.CRE.value)
+        if not os.environ.get("CRE_NO_GEN_EMBEDDINGS"):
+            prompt_handler.generate_embeddings_for(defs.Credoctypes.CRE.value)
         import_only = []
         if os.environ.get("CRE_ROOT_CSV_IMPORT_ONLY"):
             import_only = json.loads(os.environ.get("CRE_ROOT_CSV_IMPORT_ONLY"))

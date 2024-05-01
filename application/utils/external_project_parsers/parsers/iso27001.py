@@ -38,7 +38,7 @@ class ISO27001(ParserInterface):
     #     # coerce to JSON us                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               ing the standard options
     #     my_doc_as_json = simplify(my_doc)
     #     table = ""
-    #     for el in my_doc_as_json.get("VALUE"):                            
+    #     for el in my_doc_as_json.get("VALUE"):
     #         if el.get("TYPE") == "body":
     #             for body_el in el.get("VALUE"):
     #                 if (

@@ -35,7 +35,6 @@ class TestDB(unittest.TestCase):
         collection = self.collection
         # collection.graph.graph = db.CRE_Graph.load_cre_graph(sqla.session)
 
-
         dbcre = collection.add_cre(
             defs.CRE(id="111-000", description="CREdesc", name="CREname")
         )
@@ -1641,9 +1640,13 @@ class TestDB(unittest.TestCase):
             response, (expected_response[0], expected_response[1], expected_response[2])
         )
         self.assertEqual(
-            collection.gap_analysis_exists(make_resources_key(["788-788", "222-222"])), True)
+            collection.gap_analysis_exists(make_resources_key(["788-788", "222-222"])),
+            True,
+        )
         self.assertEqual(
-            collection.get_gap_analysis_result(make_resources_key(["788-788", "222-222"])),
+            collection.get_gap_analysis_result(
+                make_resources_key(["788-788", "222-222"])
+            ),
             flask_json.dumps({"result": expected_response[1]}),
         )
         self.assertEqual(
@@ -1815,7 +1818,7 @@ class TestDB(unittest.TestCase):
             ],
             same_as=[],
             related=[],
-            auto_linked_to = [],
+            auto_linked_to=[],
         )
 
         parsed = db.NEO_DB.parse_node(graph_node)
@@ -2116,7 +2119,7 @@ class TestDB(unittest.TestCase):
             if i == 0 or i == 1:
                 cres.append(defs.CRE(name=f">> C{i}", id=f"{i}{i}{i}-{i}{i}{i}"))
             else:
-                cres.append(defs.CRE(name=f"C{i}", id=f"{i}"))
+                cres.append(defs.CRE(name=f"C{i}", id=f"{i}{i}{i}-{i}{i}{i}"))
 
             dbcres.append(collection.add_cre(cres[i]))
             nodes.append(defs.Standard(section=f"S{i}", name=f"N{i}"))

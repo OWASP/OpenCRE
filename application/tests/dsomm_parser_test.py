@@ -20,7 +20,6 @@ class TestDSOMM(unittest.TestCase):
 
         self.collection = db.Node_collection()
 
-
     @patch.object(requests, "get")
     def test_parse(self, mock_requests) -> None:
         class fakeRequest:
