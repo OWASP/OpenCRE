@@ -224,6 +224,9 @@ def register_standard(
     generate_embeddings=True,
     db_connection_str: str = "",
 ):
+    if os.environ.get("CRE_NO_GEN_EMBEDDINGS"):
+        generate_embeddings = False
+
     if not standard_entries:
         return
     if not collection:
@@ -255,35 +258,36 @@ def register_standard(
     # calculate gap analysis
     jobs = []
     pending_stadards = collection.standards()
-    for standard_name in pending_stadards:
-        if standard_name == importing_name:
-            continue
+    if not os.environ.get("CRE_NO_CALCULATE_GAP_ANALYSIS"):
+        for standard_name in pending_stadards:
+            if standard_name == importing_name:
+                continue
 
-        fw_key = gap_analysis.make_resources_key([importing_name, standard_name])
-        if not collection.gap_analysis_exists(fw_key):
-            fw_job = gap_analysis.schedule(
-                standards=[importing_name, standard_name], database=collection
-            )
-            forward_job_id = fw_job.get("job_id")
-            try:
-                forward_job = job.Job.fetch(id=forward_job_id, connection=conn)
-                jobs.append(forward_job)
-            except exceptions.NoSuchJobError as nje:
-                logger.error(f"Could not find gap analysis job for for {importing_name} and {standard_name} putting {standard_name} back in the queue")
-                pending_stadards.append(standard_name)
+            fw_key = gap_analysis.make_resources_key([importing_name, standard_name])
+            if not collection.gap_analysis_exists(fw_key):
+                fw_job = gap_analysis.schedule(
+                    standards=[importing_name, standard_name], database=collection
+                )
+                forward_job_id = fw_job.get("job_id")
+                try:
+                    forward_job = job.Job.fetch(id=forward_job_id, connection=conn)
+                    jobs.append(forward_job)
+                except exceptions.NoSuchJobError as nje:
+                    logger.error(f"Could not find gap analysis job for for {importing_name} and {standard_name} putting {standard_name} back in the queue")
+                    pending_stadards.append(standard_name)
 
-        bw_key = gap_analysis.make_resources_key([standard_name, importing_name])
-        if not collection.gap_analysis_exists(bw_key):
-            bw_job = gap_analysis.schedule(
-                standards=[standard_name, importing_name], database=collection
-            )
-            backward_job_id = bw_job.get("job_id")
-            try:
-                backward_job = job.Job.fetch(id=backward_job_id, connection=conn)
-                jobs.append(backward_job)
-            except exceptions.NoSuchJobError as nje:
-                logger.error(f"Could not find gap analysis job for for {importing_name} and {standard_name} putting {standard_name} back in the queue")
-                pending_stadards.append(standard_name)
+            bw_key = gap_analysis.make_resources_key([standard_name, importing_name])
+            if not collection.gap_analysis_exists(bw_key):
+                bw_job = gap_analysis.schedule(
+                    standards=[standard_name, importing_name], database=collection
+                )
+                backward_job_id = bw_job.get("job_id")
+                try:
+                    backward_job = job.Job.fetch(id=backward_job_id, connection=conn)
+                    jobs.append(backward_job)
+                except exceptions.NoSuchJobError as nje:
+                    logger.error(f"Could not find gap analysis job for for {importing_name} and {standard_name} putting {standard_name} back in the queue")
+                    pending_stadards.append(standard_name)
     redis.wait_for_jobs(jobs)
     conn.set(standard_hash, value="")
 
@@ -316,7 +320,8 @@ def parse_standards_from_spreadsheeet(
                 bar()
 
         populate_neo4j_db(collection)
-        prompt_handler.generate_embeddings_for(defs.Credoctypes.CRE.value)
+        if not os.environ.get("CRE_NO_GEN_EMBEDDINGS"):
+            prompt_handler.generate_embeddings_for(defs.Credoctypes.CRE.value)
         import_only = []
         if os.environ.get("CRE_ROOT_CSV_IMPORT_ONLY"):
             import_only = json.loads(os.environ.get("CRE_ROOT_CSV_IMPORT_ONLY"))
