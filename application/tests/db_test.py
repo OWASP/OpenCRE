@@ -2080,7 +2080,7 @@ class TestDB(unittest.TestCase):
             if i == 0 or i == 1:
                 cres.append(defs.CRE(name=f">> C{i}", id=f"{i}{i}{i}-{i}{i}{i}"))
             else:
-                cres.append(defs.CRE(name=f"C{i}", id=f"{i}"))
+                cres.append(defs.CRE(name=f"C{i}", id=f"{i}{i}{i}-{i}{i}{i}"))
 
             dbcres.append(collection.add_cre(cres[i]))
             nodes.append(defs.Standard(section=f"S{i}", name=f"N{i}"))
