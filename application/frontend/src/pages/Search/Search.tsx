@@ -18,6 +18,7 @@ export const Search = () => {
       </Header>
       <div>
         <SearchBar />
+        <div className='or-line'>OR</div>
         <Button primary fluid href="/root_cres">
           Browse Topics
         </Button>

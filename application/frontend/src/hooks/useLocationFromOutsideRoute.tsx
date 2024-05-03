@@ -6,7 +6,7 @@ import { ROUTES } from '../routes';
 interface UseLocationFromOutsideRouteReturn {
   params: Record<string, string>;
   url: string;
-  showHeader: boolean;
+  showHeaderSearch: boolean;
   showFilter: boolean;
 }
 
@@ -14,15 +14,15 @@ export const useLocationFromOutsideRoute = (): UseLocationFromOutsideRouteReturn
   // The current URL
   const { pathname } = useLocation();
   // The current ROUTE, from our URL
-  const currentRoute = ROUTES.map(({ path, showHeader, showFilter }) => ({
+  const currentRoute = ROUTES.map(({ path, showHeaderSearch, showFilter }) => ({
     ...matchPath(pathname, path),
-    showHeader,
+    showHeaderSearch,
     showFilter,
   })).find((matchedPath) => matchedPath?.isExact);
   return {
     params: currentRoute?.params || {},
     url: currentRoute?.url || '',
-    showHeader: currentRoute?.showHeader || false,
+    showHeaderSearch: currentRoute?.showHeaderSearch || false,
     showFilter: currentRoute?.showFilter || false,
   };
 };

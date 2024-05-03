@@ -7,7 +7,7 @@
   justify-content: center;
   padding-top: 40px;
   padding-bottom: 40px;
-  min-height: 100%;
+  min-height: calc(100% - 104px);
 
   .search-page__heading {
     text-align: center;
@@ -22,6 +22,24 @@
     margin-top: 0px;
     margin-bottom: 30px;
     color: #eee;
+  }
+
+  .or-line {
+    color: white;
+    margin: 16px 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &::before,
+    &::after {
+      content: '';
+      display: block;
+      width: 60px;
+      height: 1px;
+      background-color: #8596a9;
+      margin: 0 4px;
+    }
   }
 }
 

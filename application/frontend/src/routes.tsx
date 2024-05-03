@@ -26,7 +26,7 @@ import { StandardSection } from './pages/Standard/StandardSection';
 export interface IRoute {
   path: string;
   component: ReactNode | ReactNode[];
-  showHeader: boolean;
+  showHeaderSearch: boolean;
   showFilter: boolean;
 }
 
@@ -35,84 +35,84 @@ export const ROUTES: IRoute[] = [
     path: INDEX,
     component: Search,
     showFilter: false,
-    showHeader: false,
+    showHeaderSearch: false,
   },
   {
     path: GAP_ANALYSIS,
     component: GapAnalysis,
-    showHeader: true,
+    showHeaderSearch: true,
     showFilter: false,
   },
   {
     path: `/node${STANDARD}/:id${SECTION}/:section`,
     component: StandardSection,
-    showHeader: true,
+    showHeaderSearch: true,
     showFilter: true,
   },
   {
     path: `/node${STANDARD}/:id${SECTION_ID}/:sectionID`,
     component: StandardSection,
-    showHeader: true,
+    showHeaderSearch: true,
     showFilter: true,
   },
   {
     path: `/node/:type/:id`,
     component: Standard,
-    showHeader: true,
+    showHeaderSearch: true,
     showFilter: true,
   },
   {
     path: `${CRE}/:id`,
     component: CommonRequirementEnumeration,
-    showHeader: true,
+    showHeaderSearch: true,
     showFilter: true,
   },
   {
     path: `${GRAPH}/:id`,
     component: Graph,
-    showHeader: true,
+    showHeaderSearch: true,
     showFilter: false,
   },
   {
     path: `${SEARCH}/:searchTerm`,
     component: SearchName,
-    showHeader: true,
+    showHeaderSearch: true,
     showFilter: true,
   },
   {
     path: `/chatbot`,
     component: Chatbot,
-    showHeader: true,
+    showHeaderSearch: true,
     showFilter: false,
   },
   {
     path: '/members_required',
     component: MembershipRequired,
-    showHeader: true,
+    showHeaderSearch: true,
     showFilter: false,
   },
   {
     path: `${BROWSEROOT}`,
     component: BrowseRootCres,
-    showHeader: true,
+    showHeaderSearch: true,
     showFilter: false,
   },
   {
     path: `${EXPLORER}/circles`,
     component: ExplorerCircles,
-    showHeader: true,
+    showHeaderSearch: true,
     showFilter: false,
   },
   {
     path: `${EXPLORER}/force_graph`,
     component: ExplorerForceGraph,
-    showHeader: true,
+    showHeaderSearch: true,
     showFilter: false,
   },
   {
     path: `${EXPLORER}`,
     component: Explorer,
-    showHeader: true,
+    showHeaderSearch: true,
     showFilter: false,
   },
 ];
