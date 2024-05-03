@@ -14,6 +14,10 @@ const getLinks = (): { to: string; name: string }[] => [
     name: 'Open CRE',
   },
   {
+    to: `/root_cres`,
+    name: 'Browse',
+  },
+  {
     to: `/chatbot`,
     name: 'OpenCRE Chat',
   },
