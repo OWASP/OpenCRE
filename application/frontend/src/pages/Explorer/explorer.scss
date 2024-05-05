@@ -38,6 +38,21 @@ main#explorer-content {
     padding: 0;
   }
 
+  .arrow {
+    .icon {
+      transform: rotate(-90deg);
+    }
+    &.active {
+      .icon {
+        transform: rotate(0);
+      }
+    }
+
+    &:hover {
+      cursor: pointer;
+    }
+  }
+
   .item {
     border-top: 1px dotted lightgrey;
     border-left: 6px solid lightgrey;
@@ -49,6 +64,8 @@ main#explorer-content {
       margin-left: 5px;
       overflow: hidden;
       white-space: nowrap;
+      display: flex;
+      align-items: center;
 
       a {
         font-size: 120%;

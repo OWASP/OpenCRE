@@ -46,6 +46,17 @@ export const Explorer = () => {
     return null;
   };
 
+  //accordion
+  const [collapsedItems, setCollapsedItems] = useState<string[]>([]);
+  const isCollapsed = (id: string) => collapsedItems.includes(id);
+  const toggleItem = (id: string) => {
+    if (collapsedItems.includes(id)) {
+      setCollapsedItems(collapsedItems.filter((itemId) => itemId !== id));
+    } else {
+      setCollapsedItems([...collapsedItems, id]);
+    }
+  };
+
   useEffect(() => {
     if (dataTree.length) {
       const treeCopy = structuredClone(dataTree);
@@ -74,6 +85,14 @@ export const Explorer = () => {
       <List.Item key={Math.random()}>
         <List.Content>
           <List.Header>
+            {contains.length > 0 && (
+              <div
+                className={`arrow ${isCollapsed(item.id) ? '' : 'active'}`}
+                onClick={() => toggleItem(item.id)}
+              >
+                <i aria-hidden="true" className="dropdown icon"></i>
+              </div>
+            )}
             <Link to={item.url}>
               <span className="cre-code">{applyHighlight(creCode, filter)}:</span>
               <span className="cre-name">{applyHighlight(creName, filter)}</span>
@@ -92,7 +111,7 @@ export const Explorer = () => {
               </Label.Group>
             </List.Description>
           )}
-          {contains.length > 0 && (
+          {contains.length > 0 && !isCollapsed(item.id) && (
             <List.List>{contains.map((child) => processNode(child.document))}</List.List>
           )}
         </List.Content>
