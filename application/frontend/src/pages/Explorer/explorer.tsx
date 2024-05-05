@@ -28,22 +28,24 @@ export const Explorer = () => {
   };
 
   const filterFunc = (doc: TreeDocument, term: string) =>
-    doc.displayName && doc.displayName.toLowerCase().includes(term);
+    doc?.displayName?.toLowerCase().includes(term) || doc?.name?.toLowerCase().includes(term);
+
   const recursiveFilter = (doc: TreeDocument, term: string) => {
     if (doc.links) {
       const filteredLinks: LinkedTreeDocument[] = [];
       doc.links.forEach((x) => {
-        const docu = recursiveFilter(x.document, term);
-        if (docu) {
-          filteredLinks.push({ ltype: x.ltype, document: docu });
+        const filteredDoc = recursiveFilter(x.document, term);
+        if (filterFunc(x.document, term) || filteredDoc) {
+          filteredLinks.push({ ltype: x.ltype, document: filteredDoc || x.document });
         }
       });
       doc.links = filteredLinks;
     }
+
     if (filterFunc(doc, term) || doc.links?.length) {
-      return doc;
+      return doc; // Return the document if it or any of its children (links or standards) matches the term
     }
-    return null;
+    return null; // Return null if the document and its descendants do not match the term
   };
 
   //accordion
@@ -100,12 +102,12 @@ export const Explorer = () => {
           </List.Header>
           {linkedTo.length > 0 && (
             <List.Description>
-              <Label.Group size="tiny" tag>
+              <Label.Group size="small" className="tags">
                 {[...new Set(linkedTo.map((x: LinkedTreeDocument) => x.document.name))]
                   .sort()
                   .map((x: string) => (
                     <Link key={Math.random()} to={`/node/standard/${x}`}>
-                      <Label>{x}</Label>
+                      <Label>{applyHighlight(x, filter)}</Label>
                     </Link>
                   ))}
               </Label.Group>
