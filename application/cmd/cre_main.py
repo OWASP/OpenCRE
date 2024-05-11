@@ -52,11 +52,6 @@ def register_node(node: defs.Node, collection: db.Node_collection) -> db.Node:
     """
     if not node:
         raise ValueError("node is None")
-    
-    
-    if node.name=="SAMM":
-        input(node.Section)
-
 
     linked_node = collection.add_node(node)
     if node.embeddings:

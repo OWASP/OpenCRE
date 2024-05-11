@@ -1467,7 +1467,7 @@ class Node_collection:
             self.session.commit()
             return entry
         else:
-            logger.info(f"did not know of {dbnode.name}:{dbnode.section} ,adding")
+            logger.info(f"did not know of {dbnode.name}:{dbnode.section}:{dbnode.section_id} ,adding")
             self.session.add(dbnode)
             self.session.commit()
             if self.graph:
