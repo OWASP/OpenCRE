@@ -52,8 +52,12 @@ def register_node(node: defs.Node, collection: db.Node_collection) -> db.Node:
     """
     if not node:
         raise ValueError("node is None")
+    
+    
     if node.name=="SAMM":
         input(node.Section)
+
+
     linked_node = collection.add_node(node)
     if node.embeddings:
         collection.add_embedding(
@@ -230,6 +234,7 @@ def register_standard(
         generate_embeddings = False
 
     if not standard_entries:
+        logger.warning("register_standard() calleed with no standard_entries")
         return
     if not collection:
         collection = db_connect(path=db_connection_str)
@@ -238,7 +243,7 @@ def register_standard(
     importing_name = standard_entries[0].name
     standard_hash = gap_analysis.make_resources_key([importing_name])
     if conn.get(standard_hash):
-        logger.debug(
+        logger.info(
             f"Standard importing job with info-hash {standard_hash} has already returned, skipping"
         )
         return
@@ -247,6 +252,7 @@ def register_standard(
     )
     for node in standard_entries:
         if not node:
+            logger.info(f"encountered empty node while importing {standard_entries[0].name}")
             continue
         register_node(node, collection)
         if node.embeddings:
