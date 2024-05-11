@@ -509,7 +509,6 @@ def parse_hierarchical_export_format(
         if cre:
             cre_dict = update_cre_in_links(cre_dict, cre)
 
-        # TODO(spyros): temporary until we agree what we want to do with tags
         mapping[
             "Link to other CRE"
         ] = f'{mapping["Link to other CRE"]},{",".join(cre.tags)}'
@@ -525,7 +524,9 @@ def parse_hierarchical_export_format(
                 )
             )
             for other_cre in other_cres:
+                logger.info(f"{cre.id}: Found 'other cre' {other_cre}")
                 if not cre_dict.get(other_cre):
+                    logger.info(f"{cre.id}: We don't know yet of 'other cre' {other_cre}, adding to uninitialized mappings")
                     uninitialized_cre_mappings.append(
                         UninitializedMapping(
                             complete_cre=cre,
@@ -534,9 +535,10 @@ def parse_hierarchical_export_format(
                         )
                     )
                 else:
+                    logger.info(f"{cre.id}: We knew yet 'other cre' {other_cre}, adding regular link")
                     new_cre = cre_dict[other_cre.strip()]
                     # we only need a shallow copy here
-                    cre.add_link(
+                    cre = cre.add_link(
                         defs.Link(
                             ltype=defs.LinkTypes.Related,
                             document=new_cre.shallow_copy(),

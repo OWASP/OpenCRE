@@ -321,11 +321,6 @@ def parse_standards_from_spreadsheeet(
         with alive_bar(len(docs.get(defs.Credoctypes.CRE.value))) as bar:
             for cre in docs.pop(defs.Credoctypes.CRE.value):
 
-                if cre.id == "633-428":
-                    from pprint import pprint
-                    pprint(cre.todict())
-                    input()
-
                 register_cre(cre, collection)
                 bar()
 
