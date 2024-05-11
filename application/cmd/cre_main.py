@@ -292,8 +292,8 @@ def register_standard(
                         f"Could not find gap analysis job for for {importing_name} and {standard_name} putting {standard_name} back in the queue"
                     )
                     pending_stadards.append(standard_name)
-    redis.wait_for_jobs(jobs)
-    conn.set(standard_hash, value="")
+        redis.wait_for_jobs(jobs)
+        conn.set(standard_hash, value="")
 
 
 def parse_standards_from_spreadsheeet(
@@ -320,6 +320,12 @@ def parse_standards_from_spreadsheeet(
         logger.info(f"Importing {len(docs.get(defs.Credoctypes.CRE.value))} CREs")
         with alive_bar(len(docs.get(defs.Credoctypes.CRE.value))) as bar:
             for cre in docs.pop(defs.Credoctypes.CRE.value):
+
+                if cre.id == "633-428":
+                    from pprint import pprint
+                    pprint(cre.todict())
+                    input()
+
                 register_cre(cre, collection)
                 bar()
 
