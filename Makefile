@@ -63,7 +63,7 @@ install-deps-typescript:
 install-deps: install-deps-python install-deps-typescript
 
 install-python:
-	virtualenv -p python3 venv
+	virtualenv -p python3.11 venv
 	. ./venv/bin/activate &&\
 	make install-deps-python &&\
 	playwright install
@@ -130,17 +130,17 @@ import-neo4j:
 preload-map-analysis:
 	make docker-neo4j&\
 	make docker-redis&\
-	make start-worker&\
-	make start-worker&\
-	make start-worker&\
-	make start-worker&\
-	make start-worker&\
-	make start-worker&\
-	make start-worker&\
-	make start-worker&\
-	make start-worker&\
-	make start-worker&\
-	make dev-flask&
+	rm -f ma-worker1.log && make start-worker&> ma-worker1.log&\
+	rm -f ma-worker2.log && make start-worker&> ma-worker2.log&\
+	rm -f ma-worker3.log && make start-worker&> ma-worker3.log&\
+	rm -f ma-worker4.log && make start-worker&> ma-worker4.log&\
+	rm -f ma-worker5.log && make start-worker&> ma-worker5.log&\
+	rm -f ma-worker6.log && make start-worker&> ma-worker6.log&\
+	rm -f ma-worker7.log && make start-worker&> ma-worker7.log&\
+	rm -f ma-worker8.log && make start-worker&> ma-worker8.log&\
+	rm -f ma-worker9.log && make start-worker&> ma-worker9.log&\
+	rm -f ma-worker0.log && make start-worker&> ma-worker0.log&\
+	rm -f ma-flask.log && make dev-flask&>ma-flask.log&
 	sleep 5
 	[ -d "./venv" ] && . ./venv/bin/activate &&\
 	export FLASK_APP=$(CURDIR)/cre.py 

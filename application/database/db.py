@@ -571,26 +571,40 @@ class NEO_DB:
 
         path_records_all, _ = db.cypher_query(
             """
-            OPTIONAL MATCH (BaseStandard:NeoStandard {name: $name1})
-            OPTIONAL MATCH (CompareStandard:NeoStandard {name: $name2})
-            OPTIONAL MATCH p = allShortestPaths((BaseStandard)-[*..20]-(CompareStandard)) 
-            WITH p
-            WHERE length(p) > 1 AND ALL(n in NODES(p) WHERE (n:NeoCRE or n = BaseStandard or n = CompareStandard) AND NOT n.name in $denylist) 
-            RETURN p
+         MATCH (BaseStandard:NeoStandard {name: $name1})
+         MATCH (CompareStandard:NeoStandard {name: $name2})
+         MATCH p = allShortestPaths((BaseStandard)-[*..20]-(CompareStandard))
+         WHERE length(p) > 1 AND ALL (n in NODES(p) where NOT n.name in $denylist) 
+          RETURN p
             """,
+            # """
+            # OPTIONAL MATCH (BaseStandard:NeoStandard {name: $name1})
+            # OPTIONAL MATCH (CompareStandard:NeoStandard {name: $name2})
+            # OPTIONAL MATCH p = allShortestPaths((BaseStandard)-[*..20]-(CompareStandard)) 
+            # WITH p
+            # WHERE length(p) > 1 AND ALL(n in NODES(p) WHERE (n:NeoCRE or n = BaseStandard or n = CompareStandard) AND NOT n.name in $denylist) 
+            # RETURN p
+            # """,
             {"name1": name_1, "name2": name_2, "denylist": denylist},
             resolve_objects=True,
         )
         t2 = datetime.now()
         path_records, _ = db.cypher_query(
             """
-            OPTIONAL MATCH (BaseStandard:NeoStandard {name: $name1})
-            OPTIONAL MATCH (CompareStandard:NeoStandard {name: $name2})
-            OPTIONAL MATCH p = allShortestPaths((BaseStandard)-[:(LINKED_TO|AUTOMATICALLY_LINKED_TO|CONTAINS)*..20]-(CompareStandard)) 
-            WITH p
-            WHERE length(p) > 1 AND ALL(n in NODES(p) WHERE (n:NeoCRE or n = BaseStandard or n = CompareStandard) AND NOT n.name in $denylist) 
-            RETURN p
+         MATCH (BaseStandard:NeoStandard {name: $name1})
+         MATCH (CompareStandard:NeoStandard {name: $name2})
+         MATCH p = allShortestPaths((BaseStandard)-[:(LINKED_TO|AUTOMATICALLY_LINKED_TO|CONTAINS)*..20]-(CompareStandard)) 
+         WHERE length(p) > 1 AND ALL (n in NODES(p) where NOT n.name in $denylist) 
+         RETURN p
             """,
+            # """
+            # OPTIONAL MATCH (BaseStandard:NeoStandard {name: $name1})
+            # OPTIONAL MATCH (CompareStandard:NeoStandard {name: $name2})
+            # OPTIONAL MATCH p = allShortestPaths((BaseStandard)-[:(LINKED_TO|AUTOMATICALLY_LINKED_TO|CONTAINS)*..20]-(CompareStandard)) 
+            # WITH p
+            # WHERE length(p) > 1 AND ALL(n in NODES(p) WHERE (n:NeoCRE or n = BaseStandard or n = CompareStandard) AND NOT n.name in $denylist) 
+            # RETURN p
+            # """,
             {"name1": name_1, "name2": name_2, "denylist": denylist},
             resolve_objects=True,
         )

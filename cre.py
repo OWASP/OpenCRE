@@ -99,7 +99,6 @@ def main() -> None:
         default=os.path.join(os.path.dirname(os.path.realpath(__file__)), "./cres/"),
         help="define location of local cre files for review/add",
     )
-
     parser.add_argument(
         "--owasp_proj_meta",
         default=None,
@@ -116,6 +115,12 @@ def main() -> None:
         help="define location of local directory to export database in OSIB format to",
     )
 
+    parser.add_argument(
+        "--export",
+        default=None,
+        help="export all data into yaml files under the directory pointed to by this argument",
+    )
+    # Start External Project importing
     parser.add_argument(
         "--zap_in",
         action="store_true",
@@ -141,12 +146,7 @@ def main() -> None:
         action="store_true",
         help="import CWE",
     )
-    parser.add_argument(
-        "--export",
-        default=None,
-        help="export all data into yaml files under the directory pointed to by this argument",
-    )
-    # Start External Project importing
+
     parser.add_argument(
         "--csa_ccm_v3_in",
         action="store_true",

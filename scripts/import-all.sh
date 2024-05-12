@@ -37,7 +37,24 @@ if [[ -z $CRE_SKIP_IMPORT_CORE ]]; then
 fi
 if [[ -z $CRE_SKIP_IMPORT_PROJECTS ]]; then
     echo "CRE_SKIP_IMPORT_PROJECTS is not set, importing external projects"
-    python cre.py --import_external_projects
+    echo "Importing CWE"
+    python cre.py --cwe_in
+    echo "Importing CAPEC"
+    python cre.py --capec_in
+    echo "Importing SECURE HEADERS"
+    python cre.py --owasp_secure_headers_in
+    echo "Importing PCI DSS 4"
+    python cre.py --pci_dss_4_in
+    echo "Importing Juicshop"
+    python cre.py --juiceshop_in
+    echo "Importing DSOMM"
+    python cre.py --dsomm_in
+    echo "Importing ZAP"
+    python cre.py --zap_in
+    echo "Importing CheatSheets"
+    python cre.py --cheatsheets_in
+    echo "Importing Github Tools"
+    python cre.py --github_tools_in
 fi
 
 killall python
