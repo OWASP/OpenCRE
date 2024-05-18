@@ -572,12 +572,25 @@ class NEO_DB:
         path_records_all, _ = db.cypher_query(
             """
             OPTIONAL MATCH (BaseStandard:NeoStandard {name: $name1})
-            OPTIONAL MATCH (CompareStandard:NeoStandard {name: $name2})
-            OPTIONAL MATCH p = allShortestPaths((BaseStandard)-[*..20]-(CompareStandard)) 
-            WITH p
-            WHERE length(p) > 1 AND ALL(n in NODES(p) WHERE (n:NeoCRE or n = BaseStandard or n = CompareStandard) AND NOT n.name in $denylist) 
-            RETURN p
+            CALL apoc.path.subgraphAll(BaseStandard, {
+            maxLevel: 20,
+            labelFilter: "+NeoCRE|NeoStandard",
+            relationshipFilter: "RELATED|CONTAINS|LINKED_TO|SAME|AUTOMATICALLY_LINKED_TO"
+            }) YIELD nodes, relationships
+            WITH nodes, relationships, BaseStandard
+            UNWIND nodes AS node
+            MATCH (node)-[rel:%]->(CompareStandard:NeoStandard {name: $name2})
+            WHERE node:NeoCRE OR node:NeoStandard AND NOT node.name in $denylist
+            RETURN DISTINCT rel
             """,
+            # """
+            # OPTIONAL MATCH (BaseStandard:NeoStandard {name: $name1})
+            # OPTIONAL MATCH (CompareStandard:NeoStandard {name: $name2})
+            # OPTIONAL MATCH p = allShortestPaths((BaseStandard)-[*..20]-(CompareStandard)) 
+            # WITH p
+            # WHERE length(p) > 1 AND ALL(n in NODES(p) WHERE (n:NeoCRE or n = BaseStandard or n = CompareStandard) AND NOT n.name in $denylist) 
+            # RETURN p
+            # """,
             {"name1": name_1, "name2": name_2, "denylist": denylist},
             resolve_objects=True,
         )
@@ -585,12 +598,25 @@ class NEO_DB:
         path_records, _ = db.cypher_query(
             """
             OPTIONAL MATCH (BaseStandard:NeoStandard {name: $name1})
-            OPTIONAL MATCH (CompareStandard:NeoStandard {name: $name2})
-            OPTIONAL MATCH p = allShortestPaths((BaseStandard)-[:(LINKED_TO|AUTOMATICALLY_LINKED_TO|CONTAINS)*..20]-(CompareStandard)) 
-            WITH p
-            WHERE length(p) > 1 AND ALL(n in NODES(p) WHERE (n:NeoCRE or n = BaseStandard or n = CompareStandard) AND NOT n.name in $denylist) 
-            RETURN p
+            CALL apoc.path.subgraphAll(BaseStandard, {
+            maxLevel: 20,
+            labelFilter: "+NeoCRE|NeoStandard",
+            relationshipFilter: "LINKED_TO|AUTOMATICALLY_LINKED_TO|CONTAINS"
+            }) YIELD nodes, relationships
+            WITH nodes, relationships, BaseStandard
+            UNWIND nodes AS node
+            MATCH (node)-[rel:%]->(CompareStandard:NeoStandard {name: $name2})
+            WHERE node:NeoCRE OR node:NeoStandard AND NOT node.name in $denylist
+            RETURN DISTINCT rel
             """,
+            # """
+            # OPTIONAL MATCH (BaseStandard:NeoStandard {name: $name1})
+            # OPTIONAL MATCH (CompareStandard:NeoStandard {name: $name2})
+            # OPTIONAL MATCH p = allShortestPaths((BaseStandard)-[:(LINKED_TO|AUTOMATICALLY_LINKED_TO|CONTAINS)*..20]-(CompareStandard)) 
+            # WITH p
+            # WHERE length(p) > 1 AND ALL(n in NODES(p) WHERE (n:NeoCRE or n = BaseStandard or n = CompareStandard) AND NOT n.name in $denylist) 
+            # RETURN p
+            # """,
             {"name1": name_1, "name2": name_2, "denylist": denylist},
             resolve_objects=True,
         )

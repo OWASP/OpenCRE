@@ -161,6 +161,6 @@ preload-map-analysis:
 	sleep 5
 	[ -d "./venv" ] && . ./venv/bin/activate &&\
 	export FLASK_APP=$(CURDIR)/cre.py 
-	python cre.py --preload_map_analysis_target_url 'http://127.0.0.1:5001'	
+	python cre.py --preload_map_analysis_target_url 'http://127.0.0.1:5000'	
 	killall python flask
 all: clean lint test dev dev-run
