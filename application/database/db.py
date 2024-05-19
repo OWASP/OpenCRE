@@ -571,17 +571,11 @@ class NEO_DB:
 
         path_records_all, _ = db.cypher_query(
             """
-            OPTIONAL MATCH (BaseStandard:NeoStandard {name: $name1})
-            CALL apoc.path.subgraphAll(BaseStandard, {
-            maxLevel: 20,
-            labelFilter: "+NeoCRE|NeoStandard",
-            relationshipFilter: "RELATED|CONTAINS|LINKED_TO|SAME|AUTOMATICALLY_LINKED_TO"
-            }) YIELD nodes, relationships
-            WITH nodes, relationships, BaseStandard
-            UNWIND nodes AS node
-            MATCH (node)-[rel:%]->(CompareStandard:NeoStandard {name: $name2})
-            WHERE node:NeoCRE OR node:NeoStandard AND NOT node.name in $denylist
-            RETURN DISTINCT rel
+         MATCH (BaseStandard:NeoStandard {name: $name1})
+         MATCH (CompareStandard:NeoStandard {name: $name2})
+         MATCH p = allShortestPaths((BaseStandard)-[*..20]-(CompareStandard))
+         WHERE length(p) > 1 AND NOT n.name in $denylist) 
+          RETURN p
             """,
             # """
             # OPTIONAL MATCH (BaseStandard:NeoStandard {name: $name1})
@@ -597,17 +591,11 @@ class NEO_DB:
         t2 = datetime.now()
         path_records, _ = db.cypher_query(
             """
-            OPTIONAL MATCH (BaseStandard:NeoStandard {name: $name1})
-            CALL apoc.path.subgraphAll(BaseStandard, {
-            maxLevel: 20,
-            labelFilter: "+NeoCRE|NeoStandard",
-            relationshipFilter: "LINKED_TO|AUTOMATICALLY_LINKED_TO|CONTAINS"
-            }) YIELD nodes, relationships
-            WITH nodes, relationships, BaseStandard
-            UNWIND nodes AS node
-            MATCH (node)-[rel:%]->(CompareStandard:NeoStandard {name: $name2})
-            WHERE node:NeoCRE OR node:NeoStandard AND NOT node.name in $denylist
-            RETURN DISTINCT rel
+         MATCH (BaseStandard:NeoStandard {name: $name1})
+         MATCH (CompareStandard:NeoStandard {name: $name2})
+         MATCH p = allShortestPaths((BaseStandard)-[:(LINKED_TO|AUTOMATICALLY_LINKED_TO|CONTAINS)*..20]-(CompareStandard)) 
+         WHERE length(p) > 1 AND NOT n.name in $denylist) 
+         RETURN p
             """,
             # """
             # OPTIONAL MATCH (BaseStandard:NeoStandard {name: $name1})
