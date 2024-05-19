@@ -145,6 +145,7 @@ def preload(target_url: str):
                         if f"{sb}->{sa}" in waiting:
                             waiting.remove(f"{sb}->{sa}")
                 if forward and backward:
+                    print(f"removing standard {sb} from the waiting list as it has returned ")
                     standards.remove(sb)
         print(f"calculating {len(waiting)} gap analyses")
         time.sleep(30)
