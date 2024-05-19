@@ -120,6 +120,8 @@ def preload(target_url: str):
     while len(waiting):
         for sa in standards:
             for sb in standards:
+                forward = False
+                backward = False
                 if sa == sb:
                     continue
                 res1 = requests.get(
@@ -129,6 +131,7 @@ def preload(target_url: str):
                     print(f"{sa}->{sb} returned {res1.status_code}")
                 elif res1.json():
                     if res1.json().get("result"):
+                        forward = True
                         if f"{sa}->{sb}" in waiting:
                             waiting.remove(f"{sa}->{sb}")
                 res2 = requests.get(
@@ -138,8 +141,12 @@ def preload(target_url: str):
                     print(f"{sb}->{sa} returned {res1.status_code}")
                 elif res2.json():
                     if res2.json().get("result"):
+                        backward = True
                         if f"{sb}->{sa}" in waiting:
                             waiting.remove(f"{sb}->{sa}")
+                if forward and backward:
+                    print(f"removing standard {sb} from the waiting list as it has returned ")
+                    standards.remove(sb)
         print(f"calculating {len(waiting)} gap analyses")
         time.sleep(30)
     print("map analysis preloaded successfully")
