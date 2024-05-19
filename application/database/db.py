@@ -574,7 +574,7 @@ class NEO_DB:
          MATCH (BaseStandard:NeoStandard {name: $name1})
          MATCH (CompareStandard:NeoStandard {name: $name2})
          MATCH p = allShortestPaths((BaseStandard)-[*..20]-(CompareStandard))
-         WHERE length(p) > 1 AND NOT n.name in $denylist) 
+         WHERE length(p) > 1 AND NOT n.name in $denylist
           RETURN p
             """,
             # """
@@ -594,7 +594,7 @@ class NEO_DB:
          MATCH (BaseStandard:NeoStandard {name: $name1})
          MATCH (CompareStandard:NeoStandard {name: $name2})
          MATCH p = allShortestPaths((BaseStandard)-[:(LINKED_TO|AUTOMATICALLY_LINKED_TO|CONTAINS)*..20]-(CompareStandard)) 
-         WHERE length(p) > 1 AND NOT n.name in $denylist) 
+         WHERE length(p) > 1 AND NOT n.name in $denylist 
          RETURN p
             """,
             # """
