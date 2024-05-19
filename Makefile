@@ -147,17 +147,17 @@ import-neo4j:
 preload-map-analysis:
 	make docker-neo4j&\
 	make docker-redis&\
-	make start-worker&\
-	make start-worker&\
-	make start-worker&\
-	make start-worker&\
-	make start-worker&\
-	make start-worker&\
-	make start-worker&\
-	make start-worker&\
-	make start-worker&\
-	make start-worker&\
-	make dev-flask&
+	make start-worker&> ma-worker1.log&\
+	make start-worker&> ma-worker2.log&\
+	make start-worker&> ma-worker3.log&\
+	make start-worker&> ma-worker4.log&\
+	make start-worker&> ma-worker5.log&\
+	make start-worker&> ma-worker6.log&\
+	make start-worker&> ma-worker7.log&\
+	make start-worker&> ma-worker8.log&\
+	make start-worker&> ma-worker9.log&\
+	make start-worker&> ma-worker0.log&\
+	make dev-flask&>ma-flask.log&
 	sleep 5
 	[ -d "./venv" ] && . ./venv/bin/activate &&\
 	export FLASK_APP=$(CURDIR)/cre.py 
