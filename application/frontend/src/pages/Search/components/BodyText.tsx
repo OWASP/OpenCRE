@@ -5,32 +5,31 @@ import React, { useState } from 'react';
 export const SearchBody = () => {
   return (
     <div className="index-text">
-      <h1>OpenCRE</h1>
       <p>
         <strong>
-          The OWASP Open Source project “OpenCRE “ links all security standards and guidelines together at the level of requirements into one harmonized resource:
+          The Open Source project “OpenCRE “ links all security standards and guidelines together at the level of requirements into one harmonized resource:
 threats, weaknesses, what to verify, how to program, how to test,  which tool settings,  in-depth discussion,  training material. Everything organized.
         </strong>
       </p>
       <h2>Examples of use:</h2>
       <p>
         <ul>
-      
+          <li><a href="https://zeljkoobrenovic.github.io/opencre-explorer/">Explore</a> our catalog in one list</li>     
           <li><a href="/cre/764-507">CRE 764-507 </a>: the central ‘multilink’ feature of OpenCRE - one link to a common requirement shows its coverage in all the resources plus related requirements</li>
-          <li><a href="/cre/581-525">CRE 581-525</a></li>
-          <li><a href="/chatbot">OpenCRE Chat</a> to ask any security question. In collaboration with Google, we injected all the standards in OpenCRE into an AI model to create the world's first security-specialized chatbot. It provides a more reliable answer, and also a reference to the relevant standard text.</li>
-          <li><a href="/map_analysis">Map Analysis</a> to find how any two standards connect with eachother</li>     
+          <li><a href="/cre/581-525">CRE 581-525</a>: another example of a multilink page</li>
           <li><a href="/smartlink/standard/CWE/611">www.opencre.org/smartlink/standard/CWE/611</a>: the ‘smartlink’ feature which uses an existing standard to link to related information</li>
           <li><a href="/node/standard/OWASP%20Top%2010%202021">OWASP Top 10 2021</a></li>
-          <li><a href="/root_cres">Browse</a> to explore our catalog (semantic web) of common requirements across development processes, technical controls, etc.</li>
-          <li><a href="https://zeljkoobrenovic.github.io/opencre-explorer/">Explore</a> our catalog in one list</li>
           <li><a href="https://zeljkoobrenovic.github.io/opencre-explorer/visuals/force-graph-3d-contains.html">Fly</a> through our catalog in 3D</li>
+          <li>In the top menu: <a href="/root_cres">Browse</a> to explore our catalog (semantic web) of common requirements across development processes, technical controls, etc.</li>          
+          <li>In the top menu: <a href="/chatbot">OpenCRE Chat</a> to ask any security question. In collaboration with Google, we injected all the standards in OpenCRE into an AI model to create the world's first security-specialized chatbot. It provides a more reliable answer, and also a reference to the relevant standard text.</li>
+          <li>In the top menu: <a href="/map_analysis">Map Analysis</a> to find how any two standards connect with eachother</li>     
+          <li>In the top menu: <a href="/search/session">Search</a></li>
         </ul>         
         
       </p>
       <h2>How it works:</h2>
       <p>
-        OpenCRE links each section of a resource to the corresponding’Common Requirement’, causing that section to also link with all other resources that link to the same requirement. This 1) enables users to find all relevant information, 2) facilitates a shared and better understanding of cyber security, and 3) allows standard makers to have links that keep working and offer all the information that readers need, alleviating their need to cover everything themselves. OpenCRE maintains itself: links to OpenCRE in the standard text are scanned automatically. 
+        OpenCRE links each section of a standard to the corresponding’Common Requirement’, causing that section to also link with all other standards that link to the same requirement. This 1) enables users to find all relevant information, 2) facilitates a shared and better understanding of cyber security, and 3) allows standard makers to have links that keep working and offer all the information that readers need, alleviating their need to cover everything themselves. OpenCRE maintains itself: links to OpenCRE in the standard text are scanned automatically. 
       </p>
       <p>
         OpenCRE is the brainchild of software security professionals Spyros Gasteratos and Rob van der Veer,
