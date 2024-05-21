@@ -1,14 +1,26 @@
-
 .search-page {
-  background-color: #242e4c;
   display: flex;
   align-items: center;
   flex-direction: column;
   justify-content: center;
-  padding-top: 40px;
-  padding-bottom: 40px;
-  min-height: calc(100% - 104px);
+  padding: 0 0 40px;
 
+  .home-hero {
+    padding: 60px 0;
+    background-color: #2e3b61;
+    width: 100%;
+    .hero-container {
+      width: 70%;
+      margin: 0 auto;
+    }
+    .search-page__sub-heading {
+      text-align: center;
+    }
+    .browse-button {
+      max-width: 200px;
+      margin: 0 auto;
+    }
+  }
   .search-page__heading {
     text-align: center;
   }

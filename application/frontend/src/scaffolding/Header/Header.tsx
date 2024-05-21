@@ -45,7 +45,8 @@ export const Header = () => {
     <nav className="header">
       <Menu className="header__nav-bar" secondary>
         <Link to="/" className="header__nav-bar-logo">
-          <img alt="Open CRE" src="/logo.png" />
+          <img alt="Open CRE" src="/logo2.svg" />
+          <h1>OpenCRE</h1>
         </Link>
         <Menu.Menu position="left">
           {links.map(({ to, name }) => (

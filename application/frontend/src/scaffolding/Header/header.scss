@@ -1,20 +1,32 @@
 .header__nav-bar {
   padding: 0 10px;
+
   &.ui.secondary.menu {
     margin: 0;
     padding: 0 30px;
-    background: white;
-    border-bottom: 1px solid #ccc;
+    background-color: #242e4c;
 
     .header__nav-bar-logo {
       padding: 20px 0;
       margin-right: 30px;
+      display: flex;
+      align-items: center;
 
       img {
         max-width: 100px;
+        max-height: 30px;
+      }
+
+      h1 {
+        display: inline;
+        margin: 0 10px;
+        color: white;
+        font-size: 20px;
       }
     }
     .item {
+      color: white;
+      font-size: 14px;
       .ui.form {
         .fields {
           margin-bottom: 0px !important;
@@ -53,7 +65,6 @@ nav + * {
   padding-top: 30px;
 }
 
-
 // mobile
 @media (min-width: 0px) and (max-width: 799px) {
   .header__nav-bar {
@@ -80,4 +91,3 @@ nav + * {
     }
   }
 }
-
