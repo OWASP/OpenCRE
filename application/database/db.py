@@ -18,7 +18,6 @@ from neomodel.exceptions import (
     FeatureNotSupported,
     NodeClassAlreadyDefined,
 )
-from neomodel import core
 import neo4j
 from sqlalchemy.orm import aliased
 import os
@@ -580,9 +579,9 @@ class NEO_DB:
             # """
             # OPTIONAL MATCH (BaseStandard:NeoStandard {name: $name1})
             # OPTIONAL MATCH (CompareStandard:NeoStandard {name: $name2})
-            # OPTIONAL MATCH p = allShortestPaths((BaseStandard)-[*..20]-(CompareStandard)) 
+            # OPTIONAL MATCH p = allShortestPaths((BaseStandard)-[*..20]-(CompareStandard))
             # WITH p
-            # WHERE length(p) > 1 AND ALL(n in NODES(p) WHERE (n:NeoCRE or n = BaseStandard or n = CompareStandard) AND NOT n.name in $denylist) 
+            # WHERE length(p) > 1 AND ALL(n in NODES(p) WHERE (n:NeoCRE or n = BaseStandard or n = CompareStandard) AND NOT n.name in $denylist)
             # RETURN p
             # """,
             {"name1": name_1, "name2": name_2, "denylist": denylist},
@@ -600,9 +599,9 @@ class NEO_DB:
             # """
             # OPTIONAL MATCH (BaseStandard:NeoStandard {name: $name1})
             # OPTIONAL MATCH (CompareStandard:NeoStandard {name: $name2})
-            # OPTIONAL MATCH p = allShortestPaths((BaseStandard)-[:(LINKED_TO|AUTOMATICALLY_LINKED_TO|CONTAINS)*..20]-(CompareStandard)) 
+            # OPTIONAL MATCH p = allShortestPaths((BaseStandard)-[:(LINKED_TO|AUTOMATICALLY_LINKED_TO|CONTAINS)*..20]-(CompareStandard))
             # WITH p
-            # WHERE length(p) > 1 AND ALL(n in NODES(p) WHERE (n:NeoCRE or n = BaseStandard or n = CompareStandard) AND NOT n.name in $denylist) 
+            # WHERE length(p) > 1 AND ALL(n in NODES(p) WHERE (n:NeoCRE or n = BaseStandard or n = CompareStandard) AND NOT n.name in $denylist)
             # RETURN p
             # """,
             {"name1": name_1, "name2": name_2, "denylist": denylist},
@@ -1483,7 +1482,9 @@ class Node_collection:
             self.session.commit()
             return entry
         else:
-            logger.info(f"did not know of {dbnode.name}:{dbnode.section}:{dbnode.section_id} ,adding")
+            logger.info(
+                f"did not know of {dbnode.name}:{dbnode.section}:{dbnode.section_id} ,adding"
+            )
             self.session.add(dbnode)
             self.session.commit()
             if self.graph:

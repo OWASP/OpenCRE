@@ -33,7 +33,7 @@ def is_empty(value: Optional[str]) -> bool:
 
 def recurse_print_links(cre: defs.Document) -> None:
     for link in cre.links:
-        pprint(link.document)
+        print(link.document)
         recurse_print_links(link.document)
 
 
@@ -455,9 +455,7 @@ def parse_hierarchical_export_format(
     logger.info("Spreadsheet is hierarchical export format")
     documents: Dict[str, List[defs.Document]] = {defs.Credoctypes.CRE.value: []}
     cre_dict = {}
-    uninitialized_cre_mappings: List[
-        UninitializedMapping
-    ] = (
+    uninitialized_cre_mappings: List[UninitializedMapping] = (
         []
     )  # the csv has a column "Link to Other CRE", this column linksa complete CRE entry to another CRE by name.
     # The other CRE might not have been initialized yet at the time of linking so it cannot be part of our main document collection yet
@@ -509,9 +507,9 @@ def parse_hierarchical_export_format(
         if cre:
             cre_dict = update_cre_in_links(cre_dict, cre)
 
-        mapping[
-            "Link to other CRE"
-        ] = f'{mapping["Link to other CRE"]},{",".join(cre.tags)}'
+        mapping["Link to other CRE"] = (
+            f'{mapping["Link to other CRE"]},{",".join(cre.tags)}'
+        )
 
         if not is_empty(str(mapping.get("Link to other CRE")).strip()):
             other_cres = list(
@@ -526,7 +524,9 @@ def parse_hierarchical_export_format(
             for other_cre in other_cres:
                 logger.info(f"{cre.id}: Found 'other cre' {other_cre}")
                 if not cre_dict.get(other_cre):
-                    logger.info(f"{cre.id}: We don't know yet of 'other cre' {other_cre}, adding to uninitialized mappings")
+                    logger.info(
+                        f"{cre.id}: We don't know yet of 'other cre' {other_cre}, adding to uninitialized mappings"
+                    )
                     uninitialized_cre_mappings.append(
                         UninitializedMapping(
                             complete_cre=cre,
@@ -535,7 +535,9 @@ def parse_hierarchical_export_format(
                         )
                     )
                 else:
-                    logger.info(f"{cre.id}: We knew yet 'other cre' {other_cre}, adding regular link")
+                    logger.info(
+                        f"{cre.id}: We knew yet 'other cre' {other_cre}, adding regular link"
+                    )
                     new_cre = cre_dict[other_cre.strip()]
                     # we only need a shallow copy here
                     cre = cre.add_link(

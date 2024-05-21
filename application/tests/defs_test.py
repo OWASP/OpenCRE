@@ -204,7 +204,7 @@ class TestCreDefs(unittest.TestCase):
 
         # assert recursive link equality works
         s1_with_link.links[0].document.add_link(defs.Link(document=c[0]))
-        self.assertEquals(s1_with_link, copy.deepcopy(s1_with_link))
+        self.assertEqual(s1_with_link, copy.deepcopy(s1_with_link))
         s1_with_link_copy = copy.deepcopy(s1_with_link)
         s1_with_link_copy.links[0].document.links[0].document.add_link(
             defs.Link(document=c[1])
@@ -278,7 +278,7 @@ class TestCreDefs(unittest.TestCase):
         s1_with_link.links[0].document.add_link(
             defs.Link(document=s[list(s.keys())[0]])
         )
-        self.assertEquals(s1_with_link, copy.deepcopy(s1_with_link))
+        self.assertEqual(s1_with_link, copy.deepcopy(s1_with_link))
         s1_with_link_copy = copy.deepcopy(s1_with_link)
         s1_with_link_copy.links[0].document.links[0].document.add_link(
             defs.Link(document=s[list(s.keys())[1]])

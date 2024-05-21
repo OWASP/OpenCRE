@@ -20,7 +20,7 @@ export interface DocumentNode {
   hasLinktypeRelatedParent?: Boolean;
 }
 
-const linkTypesToNest = [TYPE_IS_PART_OF, TYPE_RELATED,TYPE_AUTOLINKED_TO];
+const linkTypesToNest = [TYPE_IS_PART_OF, TYPE_RELATED, TYPE_AUTOLINKED_TO];
 const linkTypesExcludedInNesting = [TYPE_CONTAINS];
 const linkTypesExcludedWhenNestingRelatedTo = [TYPE_RELATED, TYPE_IS_PART_OF, TYPE_CONTAINS];
 

@@ -87,7 +87,6 @@ class CWE(ParserInterface):
         entries = []
         with open(xml_file, "r") as xml:
             weakness_catalog = xmltodict.parse(xml.read()).get("Weakness_Catalog")
-            version = weakness_catalog["@Version"]
         for _, weaknesses in weakness_catalog.get("Weaknesses").items():
             for weakness in weaknesses:
                 statuses[weakness["@Status"]] = 1
@@ -98,7 +97,6 @@ class CWE(ParserInterface):
                         cwe = cwes[0]
                         cwe.section = weakness["@Name"]
                         cwe.hyperlink = self.make_hyperlink(weakness["@ID"])
-                        cwe.version = version
                         cache.add_node(
                             cwe,
                             comparison_skip_attributes=[

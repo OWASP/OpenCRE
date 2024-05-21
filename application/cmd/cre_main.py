@@ -180,9 +180,7 @@ def parse_file(
                 else (
                     defs.Code
                     if doctype == defs.Credoctypes.Code.value
-                    else defs.Tool
-                    if doctype == defs.Credoctypes.Tool.value
-                    else None
+                    else defs.Tool if doctype == defs.Credoctypes.Tool.value else None
                 )
             )
             document = from_dict(
@@ -247,7 +245,9 @@ def register_standard(
     )
     for node in standard_entries:
         if not node:
-            logger.info(f"encountered empty node while importing {standard_entries[0].name}")
+            logger.info(
+                f"encountered empty node while importing {standard_entries[0].name}"
+            )
             continue
         register_node(node, collection)
         if node.embeddings:
@@ -323,7 +323,6 @@ def parse_standards_from_spreadsheeet(
         logger.info(f"Importing {len(docs.get(defs.Credoctypes.CRE.value))} CREs")
         with alive_bar(len(docs.get(defs.Credoctypes.CRE.value))) as bar:
             for cre in docs.pop(defs.Credoctypes.CRE.value):
-
                 register_cre(cre, collection)
                 bar()
 

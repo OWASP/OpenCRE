@@ -16,9 +16,8 @@ from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
 app = create_app(mode=os.getenv("FLASK_CONFIG") or "default")
 migrate = Migrate(app, sqla, render_as_batch=True)
 
+
 # flask <x> commands
-
-
 @app.cli.command()  # type: ignore
 @click.option(
     "--cover/--no-cover", default=False, help="Run tests under code coverage."

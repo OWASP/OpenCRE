@@ -52,10 +52,10 @@ class in_memory_embeddings:
                 page.close()
                 return text
             except requests.exceptions.RequestException as e:
-                print(f"Error fetching content for URL: {url} - {str(e)}")
+                logger.error(f"Error fetching content for URL: {url} - {str(e)}")
                 return ""
             except playwright._impl._api_types.TimeoutError as te:
-                print(
+                logger.error(
                     f"Page: {url}, took too long to load, playwright timedout, trying again - {str(te)}, attempt num {attempts}"
                 )
 

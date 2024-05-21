@@ -71,7 +71,6 @@ class TestCWEParser(unittest.TestCase):
                 hyperlink="https://CWE.mitre.org/data/definitions/1004.html",
                 sectionID="1004",
                 section="Accessing Functionality Not Properly Constrained by ACLs",
-                version="3.7",
             ),
             defs.Standard(
                 name="CWE",
@@ -79,7 +78,6 @@ class TestCWEParser(unittest.TestCase):
                 hyperlink="https://CWE.mitre.org/data/definitions/10.html",
                 sectionID="1007",
                 section="Another CWE",
-                version="3.7",
                 links=[
                     defs.Link(document=defs.CRE(name="CRE-451", id="451-451")),
                     defs.Link(document=defs.CRE(name="CRE-632", id="632-632")),

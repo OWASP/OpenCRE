@@ -81,13 +81,15 @@ class TestMain(unittest.TestCase):
         self.assertEqual(len(self.collection.session.query(db.Node).all()), 4)
 
     def test_register_node_with_cre(self) -> None:
+        credoc = defs.CRE(id="101-202", name="crename")
         known_standard_with_cre = defs.Standard(
             name="CWE",
             sectionID="598",
             links=[
-                defs.Link(document=defs.CRE(id="101-202", name="crename")),
+                defs.Link(document=credoc),
             ],
         )
+
         standard_with_cre = defs.Standard(
             id="",
             description="",
@@ -101,7 +103,7 @@ class TestMain(unittest.TestCase):
                         sectionID="9",
                     )
                 ),
-                defs.Link(document=defs.CRE(id="101-202", name="crename")),
+                defs.Link(document=credoc),
                 defs.Link(
                     document=defs.Standard(
                         name="CWE",
@@ -112,6 +114,7 @@ class TestMain(unittest.TestCase):
             ],
             section="standard_with_cre",
         )
+        self.collection.add_cre(credoc)
         main.register_node(node=known_standard_with_cre, collection=self.collection)
         main.register_node(node=standard_with_cre, collection=self.collection)
 
@@ -127,44 +130,37 @@ class TestMain(unittest.TestCase):
         )  # 1 cre in the db
 
     def test_register_standard_with_groupped_cre_links(self) -> None:
+        credoc = defs.CRE(
+            doctype=defs.Credoctypes.CRE,
+            id="101-001",
+            description="cre2 desc",
+            name="crename2",
+        )
+        credoc2 = defs.CRE(
+            doctype=defs.Credoctypes.CRE,
+            id="101-000",
+            description="cre desc",
+            name="crename",
+        )
+        credoc3 = defs.CRE(
+            id="101-002",
+            description="group desc",
+            name="group name",
+            links=[defs.Link(document=credoc, ltype=defs.LinkTypes.Contains)],
+        )
         with_groupped_cre_links = defs.Standard(
             doctype=defs.Credoctypes.Standard,
             id="",
             description="",
             name="standard_with",
             links=[
-                defs.Link(
-                    document=defs.CRE(
-                        id="101-002",
-                        description="group desc",
-                        name="group name",
-                        links=[
-                            defs.Link(
-                                document=defs.CRE(
-                                    doctype=defs.Credoctypes.CRE,
-                                    id="101-001",
-                                    description="cre2 desc",
-                                    name="crename2",
-                                )
-                            )
-                        ],
-                    )
-                ),
+                defs.Link(document=credoc3),
                 defs.Link(
                     document=defs.Standard(
-                        doctype=defs.Credoctypes.Standard,
-                        name="CWE",
-                        sectionID="598",
+                        doctype=defs.Credoctypes.Standard, name="CWE", sectionID="598"
                     )
                 ),
-                defs.Link(
-                    document=defs.CRE(
-                        doctype=defs.Credoctypes.CRE,
-                        id="101-000",
-                        description="cre desc",
-                        name="crename",
-                    )
-                ),
+                defs.Link(document=credoc2),
                 defs.Link(
                     document=defs.Standard(
                         doctype=defs.Credoctypes.Standard,
@@ -175,6 +171,9 @@ class TestMain(unittest.TestCase):
             ],
             section="Session Management",
         )
+        self.collection.add_cre(credoc)
+        self.collection.add_cre(credoc2)
+        self.collection.add_cre(credoc3)
 
         main.register_node(
             node=with_groupped_cre_links, collection=self.collection.with_graph()
@@ -183,10 +182,6 @@ class TestMain(unittest.TestCase):
         self.assertEqual(
             len(self.collection.session.query(db.Links).all()), 5
         )  # 5 links in the db
-
-        self.assertEqual(
-            len(self.collection.session.query(db.InternalLinks).all()), 1
-        )  # 1 internal link in the db
 
         self.assertEqual(
             len(self.collection.session.query(db.Node).all()), 3
