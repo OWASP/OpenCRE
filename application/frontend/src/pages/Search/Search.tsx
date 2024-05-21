@@ -4,7 +4,6 @@ import React from 'react';
 import { Button, Header } from 'semantic-ui-react';
 
 import { SearchBody } from './components/BodyText';
-import { SearchBar } from './components/SearchBar';
 
 export const Search = () => {
   return (
@@ -17,8 +16,6 @@ export const Search = () => {
         Your gateway to security topics
       </Header>
       <div>
-        <SearchBar />
-        <div className='or-line'>OR</div>
         <Button primary fluid href="/root_cres">
           Browse Topics
         </Button>

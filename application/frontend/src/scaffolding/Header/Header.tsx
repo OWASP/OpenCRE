@@ -37,15 +37,15 @@ export const Header = () => {
 
   const history = useHistory();
 
-  const { params, url, showHeaderSearch, showFilter } = useLocationFromOutsideRoute();
+  const { params, url, showFilter } = useLocationFromOutsideRoute();
   // console.log(useLocationFromOutsideRoute())
   const links = useMemo(() => getLinks(), [params]);
 
   return (
     <nav className="header">
       <Menu className="header__nav-bar" secondary>
-        <Link to='/' className="header__nav-bar-logo">
-          <img alt='Open CRE' src='/logo.png'/>
+        <Link to="/" className="header__nav-bar-logo">
+          <img alt="Open CRE" src="/logo.png" />
         </Link>
         <Menu.Menu position="left">
           {links.map(({ to, name }) => (
@@ -54,14 +54,13 @@ export const Header = () => {
               className={`header__nav-bar__link ${url === to ? 'header__nav-bar__link--active' : ''}`}
               to={to}
             >
-              <Menu.Item as="span" onClick={() => {
-              }}>
+              <Menu.Item as="span" onClick={() => {}}>
                 {name}
               </Menu.Item>
             </Link>
           ))}
         </Menu.Menu>
-        {showHeaderSearch && <Menu.Menu position="right">
+        <Menu.Menu position="right">
           <Menu.Item>
             <SearchBar />
 
@@ -79,7 +78,7 @@ export const Header = () => {
               ''
             )}
           </Menu.Item>
-        </Menu.Menu>}
+        </Menu.Menu>
       </Menu>
     </nav>
   );
