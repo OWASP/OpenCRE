@@ -224,8 +224,9 @@ export const GapAnalysis = () => {
   );
 
   return (
-    <div style={{ margin: '0 auto', maxWidth: '95vw' }}>
-      <Table celled padded compact style={{ margin: '5px' }}>
+    <div style={{ padding: '30px' }}>
+      <h1 className="standard-page__heading">Map Analysis</h1>
+      <Table celled padded compact>
         <Table.Header>
           <Table.Row>
             <Table.HeaderCell>

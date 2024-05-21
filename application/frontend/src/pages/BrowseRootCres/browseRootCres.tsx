@@ -41,7 +41,7 @@ export const BrowseRootCres = () => {
   }, []);
   return (
     <div className="cre-page">
-      <h1 className="standard-page__heading">Root CREs:</h1>
+      <h1 className="standard-page__heading">Root CREs</h1>
       <LoadingAndErrorIndicator loading={loading} error={error} />
       {!loading && !error && (
         <div className="ui grid">

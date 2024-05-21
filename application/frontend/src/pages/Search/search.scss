@@ -1,14 +1,26 @@
-
 .search-page {
-  background-color: #242e4c;
   display: flex;
   align-items: center;
   flex-direction: column;
   justify-content: center;
-  padding-top: 40px;
-  padding-bottom: 40px;
-  min-height: 100%;
+  padding: 0 0 40px;
 
+  .home-hero {
+    padding: 60px 0;
+    background-color: #2e3b61;
+    width: 100%;
+    .hero-container {
+      width: 70%;
+      margin: 0 auto;
+    }
+    .search-page__sub-heading {
+      text-align: center;
+    }
+    .browse-button {
+      max-width: 200px;
+      margin: 0 auto;
+    }
+  }
   .search-page__heading {
     text-align: center;
   }
@@ -22,6 +34,24 @@
     margin-top: 0px;
     margin-bottom: 30px;
     color: #eee;
+  }
+
+  .or-line {
+    color: white;
+    margin: 16px 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &::before,
+    &::after {
+      content: '';
+      display: block;
+      width: 60px;
+      height: 1px;
+      background-color: #8596a9;
+      margin: 0 4px;
+    }
   }
 }
 
