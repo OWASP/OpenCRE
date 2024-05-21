@@ -30,6 +30,7 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
 
   const getStoreKey = (doc: Document): string => {
     if (doc.doctype === 'CRE') return doc.id;
+    if (doc.doctype === 'Standard') return doc.name;
     return `${doc.name}-${doc.sectionID}-${doc.section}`;
   };
 
@@ -38,12 +39,28 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
     keyPath.push(selfKey);
 
     const storedDoc = structuredClone(dataStore[selfKey]);
-    storedDoc.links = storedDoc.links
-      .filter(
-        (x) =>
-          x.document && !keyPath.includes(getStoreKey(x.document)) && getStoreKey(x.document) in dataStore
-      )
-      .map((x) => ({ ltype: x.ltype, document: buildTree(x.document, keyPath) }));
+
+    const initialLinks = storedDoc.links;
+    let creLinks = initialLinks.filter(
+      (x) => x.document && !keyPath.includes(getStoreKey(x.document)) && getStoreKey(x.document) in dataStore
+    );
+
+    if (!creLinks.length) {
+      storedDoc.links = [];
+      return storedDoc;
+    }
+
+    //continue traversing the tree
+    creLinks = creLinks.map((x) => ({ ltype: x.ltype, document: buildTree(x.document, keyPath) }));
+    storedDoc.links = [...creLinks];
+
+    //attach Standards to the CREs
+    const standards = initialLinks.filter(
+      (link) =>
+        link.document && link.document.doctype === 'Standard' && !keyPath.includes(getStoreKey(link.document))
+    );
+    storedDoc.links = [...creLinks, ...standards];
+
     return storedDoc;
   };
 

@@ -47,7 +47,7 @@ export const SearchBar = () => {
             action={{
               icon: 'search',
               content: 'Search',
-              color: 'primary',
+              color: 'blue',
             }}
             placeholder="Search..."
           />
