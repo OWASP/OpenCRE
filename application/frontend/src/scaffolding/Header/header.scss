@@ -79,9 +79,20 @@ nav + * {
   }
 }
 
-@media (min-width: 0px) and (max-width: 520px) {
+@media (min-width: 0px) and (max-width: 770px) {
   .header__nav-bar {
     justify-content: center;
+
+    &.ui.secondary.menu {
+      padding-bottom: 10px;
+      flex-direction: column;
+      align-items: center;
+
+      .header__nav-bar-logo {
+        margin-right: 0;
+        padding: 20px 0 0;
+      }
+    }
 
     &.ui.menu:not(.vertical) .right.menu {
       display: flex;

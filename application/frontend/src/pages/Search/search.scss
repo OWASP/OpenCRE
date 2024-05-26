@@ -6,7 +6,7 @@
   padding: 0 0 40px;
 
   .home-hero {
-    padding: 60px 0;
+    padding: 30px 0;
     background-color: #2e3b61;
     width: 100%;
     .hero-container {
@@ -31,8 +31,7 @@
   }
 
   .search-page__sub-heading {
-    margin-top: 0px;
-    margin-bottom: 30px;
+    margin: 0 0 10px;
     color: #eee;
   }
 
@@ -57,8 +56,7 @@
 
 // mobile
 @media (min-width: 0px) and (max-width: 599px) {
-  .search-page {
-    padding-top: 30px;
-    padding-bottom: 30px;
+  .home-hero h1.ui.header {
+    font-size: 1.5rem;
   }
 }
