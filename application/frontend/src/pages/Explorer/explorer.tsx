@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom';
 import { Label, List } from 'semantic-ui-react';
 
 import { LoadingAndErrorIndicator } from '../../components/LoadingAndErrorIndicator';
+import { TYPE_CONTAINS, TYPE_LINKED_TO } from '../../const';
 import { useDataStore } from '../../providers/DataProvider';
 import { LinkedTreeDocument, TreeDocument } from '../../types';
 
@@ -74,12 +75,18 @@ export const Explorer = () => {
     }
   }, [filter, dataTree, setFilteredTree]);
 
+  /**
+   * Get a link to a filtered version of the CRE to show the relevant standards
+   */
+  function getLinkedToUrl(standardName: string, creCode: string): string {
+    return `/cre/${creCode}?applyFilters=true&filters=${standardName}&filters=sources`;
+  }
   function processNode(item) {
     if (!item) {
       return <></>;
     }
-    const contains = item.links.filter((x) => x.ltype === 'Contains');
-    const linkedTo = item.links.filter((x) => x.ltype === 'Linked To');
+    const contains = item.links.filter((x) => x.ltype === TYPE_CONTAINS);
+    const linkedTo = item.links.filter((x) => x.ltype === TYPE_LINKED_TO);
 
     const creCode = item.id;
     const creName = item.displayName.split(' : ').pop();
@@ -106,7 +113,7 @@ export const Explorer = () => {
                 {[...new Set(linkedTo.map((x: LinkedTreeDocument) => x.document.name))]
                   .sort()
                   .map((x: string) => (
-                    <Link key={Math.random()} to={`/node/standard/${x}`}>
+                    <Link key={Math.random()} to={getLinkedToUrl(x, creCode)}>
                       <Label>{applyHighlight(x, filter)}</Label>
                     </Link>
                   ))}
