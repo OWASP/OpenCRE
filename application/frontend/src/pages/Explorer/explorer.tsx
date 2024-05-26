@@ -138,7 +138,7 @@ export const Explorer = () => {
 
         <div id="explorer-wrapper">
           <div className="search-field">
-            <input id="filter" type="text" placeholder="Search..." onKeyUp={update} />
+            <input id="filter" type="text" placeholder="Search Explorer..." onKeyUp={update} />
             <div id="search-summary"></div>
           </div>
           <div id="graphs-menu">

@@ -1,5 +1,5 @@
 main#explorer-content {
-  padding: 20px 40px;
+  padding: 30px;
 
   .search-field {
     input {
@@ -17,7 +17,7 @@ main#explorer-content {
     display: flex;
     margin-bottom: 20px;
     .menu-title {
-      margin: 0;
+      margin: 0 10px 0 0;
     }
     ul {
       list-style: none;
@@ -30,6 +30,9 @@ main#explorer-content {
       padding: 0 8px;
       + li {
         border-left: 1px solid #b1b0b0;
+      }
+      &:first-child {
+        padding-left: 0;
       }
     }
   }
@@ -116,5 +119,11 @@ main#explorer-content {
 
   > .list > .item {
     margin-left: 0;
+  }
+}
+
+@media (min-width: 0px) and (max-width: 770px) {
+  #graphs-menu {
+    flex-direction: column;
   }
 }
