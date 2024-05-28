@@ -1,3 +1,5 @@
+import './GapAnalysis.scss';
+
 import axios from 'axios';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
@@ -142,7 +144,6 @@ export const GapAnalysis = () => {
   }, [setStandardOptions, setLoadingStandards, setError]);
 
   useEffect(() => {
-    console.log('gajob changed, polling');
     const pollingCallback = () => {
       const fetchData = async () => {
         const result = await axios.get(`${apiUrl}/ma_job_results?id=` + gaJob, {
@@ -224,14 +225,15 @@ export const GapAnalysis = () => {
   );
 
   return (
-    <div style={{ padding: '30px' }}>
+    <main id="gap-analysis">
       <h1 className="standard-page__heading">Map Analysis</h1>
+      <LoadingAndErrorIndicator loading={loadingGA || loadingStandards} error={error} />
+
       <Table celled padded compact>
         <Table.Header>
           <Table.Row>
             <Table.HeaderCell>
-              {' '}
-              Base:{' '}
+              <span className="name">Base:</span>
               <Dropdown
                 placeholder="Base Standard"
                 search
@@ -242,7 +244,7 @@ export const GapAnalysis = () => {
               />
             </Table.HeaderCell>
             <Table.HeaderCell>
-              Compare:{' '}
+              <span className="name">Compare:</span>
               <Dropdown
                 placeholder="Compare Standard"
                 search
@@ -271,7 +273,6 @@ export const GapAnalysis = () => {
           </Table.Row>
         </Table.Header>
         <Table.Body>
-          <LoadingAndErrorIndicator loading={loadingGA || loadingStandards} error={error} />
           {gapAnalysis && (
             <>
               {Object.keys(gapAnalysis)
@@ -312,6 +313,6 @@ export const GapAnalysis = () => {
           )}
         </Table.Body>
       </Table>
-    </div>
+    </main>
   );
 };
