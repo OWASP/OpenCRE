@@ -1,0 +1,16 @@
+main#gap-analysis {
+  padding: 30px;
+
+  span.name {
+    padding: 0 10px;
+  }
+}
+
+@media (min-width: 0px) and (max-width: 500px) {
+  main#gap-analysis {
+    span.name {
+      width: 85px;
+      display: inline-block;
+    }
+  }
+}
