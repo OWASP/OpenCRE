@@ -1,5 +1,4 @@
 import re
-import collections
 import json
 from copy import copy
 from dataclasses import asdict, dataclass, field
@@ -389,6 +388,28 @@ class Document:
     def __post_init__(self):
         if not len(self.name) > 1:
             raise cre_exceptions.InvalidDocumentNameException(self)
+
+    @classmethod
+    def from_dict(self, input_doc: Dict):
+        document = None
+        if input_doc.get("doctype") == Credoctypes.CRE:
+            document = CRE(**input_doc)
+            document.doctype = Credoctypes.CRE
+        elif input_doc.get("doctype") == Credoctypes.Standard:
+            document = Standard(**input_doc)
+            document.doctype = Credoctypes.Standard
+
+        elif input_doc.get("doctype") == Credoctypes.Tool:
+            document = Tool(**input_doc)
+            document.doctype = Credoctypes.Tool
+            document.tooltype = ToolTypes.from_str(document.tooltype)
+        links = document.links
+        document.links = []
+        for link in links:
+            doc = Document.from_dict(link["document"])
+            l = Link(document=doc, ltype=LinkTypes.from_str(link["ltype"]))
+            document.add_link(l)
+        return document
 
 
 @dataclass(eq=False)

@@ -1571,48 +1571,44 @@ class Node_collection:
             .first()
         )
         if entry_exists:
-            logger.debug(
-                f"knew of internal link {lower.name} == {higher.name} of type {entry_exists.type},"
-                "updating to type {type.value}"
-            )
-            entry_exists.type = type.value
-            self.session.commit()
-
+            # logger.info(
+            #     f"knew of internal link {lower.name} == {higher.name} of type {entry_exists.type},"
+            #     f"updating to type {type.value}"
+            # )
+            # entry_exists.type = type.value
+            # self.session.commit()
             return
 
-        else:
-            logger.debug(
-                "did not know of internal link"
-                f" {higher.external_id}:{higher.name}"
-                f" == {lower.external_id}:{lower.name} ,adding"
+        logger.info(
+            "did not know of internal link"
+            f" {higher.external_id}:{higher.name}"
+            f" -> {lower.external_id}:{lower.name} of type {type.value},adding"
+        )
+        cycle = self.__introduces_cycle(f"CRE: {higher.id}", f"CRE: {lower.id}")
+        if not cycle:
+            self.session.add(
+                InternalLinks(type=type.value, cre=lower.id, group=higher.id)
             )
-            cycle = self.__introduces_cycle(f"CRE: {higher.id}", f"CRE: {lower.id}")
-            if not cycle:
-                self.session.add(
-                    InternalLinks(type=type.value, cre=lower.id, group=higher.id)
+            self.session.commit()
+            if self.graph:
+                self.graph.add_edge(
+                    f"CRE: {higher.id}", f"CRE: {lower.id}", ltype=type.value
                 )
-                self.session.commit()
-                if self.graph:
-                    self.graph.add_edge(
-                        f"CRE: {higher.id}", f"CRE: {lower.id}", ltype=type.value
-                    )
-            else:
-                for item in cycle:
-                    from_id = item[0].replace("CRE: ", "")
-                    to_id = item[1].replace("CRE: ", "")
-                    from_cre = (
-                        self.session.query(CRE).filter(lower.id == from_id).first()
-                    )
-                    to_cre = self.session.query(CRE).filter(lower.id == to_id).first()
-                    if from_cre and to_cre:
-                        item[0].replace(from_id, from_cre.name)
-                        item[1].replace(to_id, to_cre.name)
+        else:
+            for item in cycle:
+                from_id = item[0].replace("CRE: ", "")
+                to_id = item[1].replace("CRE: ", "")
+                from_cre = self.session.query(CRE).filter(lower.id == from_id).first()
+                to_cre = self.session.query(CRE).filter(lower.id == to_id).first()
+                if from_cre and to_cre:
+                    item[0].replace(from_id, from_cre.name)
+                    item[1].replace(to_id, to_cre.name)
 
-                logger.warning(
-                    f"A link between CREs {higher.external_id}-{higher.name} and"
-                    f" {lower.external_id}-{lower.name} "
-                    f"would introduce cycle {cycle}, skipping"
-                )
+            logger.warning(
+                f"A link between CREs {higher.external_id}-{higher.name} and"
+                f" {lower.external_id}-{lower.name} "
+                f"would introduce cycle {cycle}, skipping"
+            )
 
     def add_link(
         self,
@@ -1769,8 +1765,7 @@ class Node_collection:
 
     def get_root_cres(self):
         """Returns CRES that only have "Contains" links"""
-        linked_groups = aliased(InternalLinks)
-        linked_cres = aliased(InternalLinks)
+        # select name  from cre where cre.id not in (select cre from cre_links where type="Contains") and cre.id not in (select "group" from cre_links where type="Is Part OF");
         cres = (
             self.session.query(CRE)
             .filter(

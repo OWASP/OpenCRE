@@ -228,6 +228,12 @@ def main() -> None:
         default="",
         help="delete all the mappings, embeddings and gap analysis for the resource",
     )
+    parser.add_argument(
+        "--upstream_sync",
+        action="store_true",
+        help="download the cre graph from upstream",
+    )
+
     args = parser.parse_args()
 
     from application.cmd import cre_main

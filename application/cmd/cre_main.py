@@ -1,14 +1,19 @@
-from application.utils.external_project_parsers.base_parser import BaseParser
 import time
 import argparse
 import json
 import logging
 import os
 import shutil
+import yaml
 import tempfile
+import requests
+
 from typing import Any, Callable, Dict, Generator, List, Optional, Tuple
 from rq import Queue, job, exceptions
-import yaml
+from dacite import from_dict
+from dacite.config import Config
+
+from application.utils.external_project_parsers.base_parser import BaseParser
 from application import create_app  # type: ignore
 from application.config import CMDConfig
 from application.database import db
@@ -34,8 +39,6 @@ from application.utils.external_project_parsers.parsers import (
 )
 from application.prompt_client import prompt_client as prompt_client
 from application.utils import gap_analysis
-from dacite import from_dict
-from dacite.config import Config
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
@@ -124,6 +127,7 @@ def register_cre(cre: defs.CRE, collection: db.Node_collection) -> db.CRE:
     dbcre: db.CRE = collection.add_cre(cre)
     for link in cre.links:
         if type(link.document) == defs.CRE:
+            logger.info(f"{link.document.id} {link.ltype} {cre.id}")
             collection.add_internal_link(
                 higher=dbcre,
                 lower=register_cre(link.document, collection),
@@ -433,6 +437,48 @@ def review_from_spreadsheet(cache: str, spreadsheet_url: str, share_with: str) -
     # logger.info("A spreadsheet view is at %s" % sheet_url)
 
 
+def donwload_graph_from_upstream(cache: str) -> None:
+    imported_cres = {}
+    collection = db_connect(path=cache).with_graph()
+
+    def download_cre_from_upstream(creid: str):
+        cre_response = requests.get(
+            os.environ.get("CRE_UPSTREAM_API_URL", "https://opencre.org/rest/v1")
+            + f"/id/{creid}"
+        )
+        if cre_response.status_code != 200:
+            raise RuntimeError(
+                f"cannot connect to upstream status code {cre_response.status_code}"
+            )
+        data = cre_response.json()
+        credict = data["data"]
+        cre = defs.Document.from_dict(credict)
+        if cre.id in imported_cres:
+            return
+        register_cre(cre, collection)
+        imported_cres[cre.id] = ""
+        for link in cre.links:
+            if link.document.doctype == defs.Credoctypes.CRE:
+                download_cre_from_upstream(link.document.id)
+
+    root_cres_response = requests.get(
+        os.environ.get("CRE_UPSTREAM_API_URL", "https://opencre.org/rest/v1")
+        + "/root_cres"
+    )
+    if root_cres_response.status_code != 200:
+        raise RuntimeError(
+            f"cannot connect to upstream status code {root_cres_response.status_code}"
+        )
+    data = root_cres_response.json()
+    for root_cre in data["data"]:
+        cre = defs.Document.from_dict(root_cre)
+        register_cre(cre, collection)
+        imported_cres[cre.id] = ""
+        for link in cre.links:
+            if link.document.doctype == defs.Credoctypes.CRE:
+                download_cre_from_upstream(link.document.id)
+
+
 # def review_from_disk(cache: str, cre_file_loc: str, share_with: str) -> None:
 #     """--review --cre_loc <path>
 #     copy db to new temp dir,
@@ -461,11 +507,6 @@ def review_from_spreadsheet(cache: str, spreadsheet_url: str, share_with: str) -
 #         % loc
 #     )
 #     logger.info("A spreadsheet view is at %s" % sheet_url)
-
-
-def print_graph() -> None:
-    """export db to single json object, pass to visualise.html so it can be shown in browser"""
-    raise NotImplementedError
 
 
 def run(args: argparse.Namespace) -> None:  # pragma: no cover
@@ -576,6 +617,8 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
 
     if args.preload_map_analysis_target_url:
         gap_analysis.preload(target_url=args.preload_map_analysis_target_url)
+    if args.upstream_sync:
+        donwload_graph_from_upstream(args.cache_file)
 
 
 def ai_client_init(database: db.Node_collection):
@@ -619,71 +662,9 @@ def prepare_for_review(cache: str) -> Tuple[str, str]:
     return loc, os.path.join(loc, cache_filename)
 
 
-# def review_osib_from_file(file_loc: str, cache: str, cre_loc: str) -> None:
-#     """Given the location of an osib.yaml, parse osib, convert to cres and add to db
-#     export db to yamls and spreadsheet for review"""
-#     loc, cache = prepare_for_review(cache)
-#     database = db_connect(path=cache)
-#     ymls = odefs.read_osib_yaml(file_loc)
-#     osibs = odefs.try_from_file(ymls)
-#     for osib in osibs:
-#         cres, standards = odefs.osib2cre(osib)
-#         [register_cre(c, database) for c in cres]
-#         [register_node(s, database) for s in standards]
-
-#     sheet_url = create_spreadsheet(
-#         collection=database,
-#         exported_documents=database.export(loc),
-#         title="osib_review",
-#         share_with=[],
-#     )
-#     logger.info(
-#         f"Stored temporary files and database in {loc} if you want to use them next time, set cache to the location of the database in that dir"
-#     )
-#     logger.info(f"A spreadsheet view is at {sheet_url}")
-
-
-# def add_osib_from_file(file_loc: str, cache: str, cre_loc: str) -> None:
-#     database = db_connect(path=cache)
-#     ymls = odefs.read_osib_yaml(file_loc)
-#     osibs = odefs.try_from_file(ymls)
-#     for osib in osibs:
-#         cre, standard = odefs.osib2cre(osib)
-#         [register_cre(c, database) for c in cre]
-#         [register_node(s, database) for s in standard]
-#     database.export(cre_loc)
-
-
-# def export_to_osib(file_loc: str, cache: str) -> None:
-#     docs = db_connect(path=cache).export(file_loc, dry_run=True)
-#     tree = odefs.cre2osib(docs)
-#     with open(file_loc, "x"):
-#         with open(file_loc, "w") as f:
-#             f.write(json.dumps(tree.todict()))
-
-
 def generate_embeddings(db_url: str) -> None:
     database = db_connect(path=db_url)
     prompt_client.PromptHandler(database, load_all_embeddings=True)
-
-
-def owasp_metadata_to_cre(meta_file: str):
-    """given a file with entries like below
-    parse projects of type "tool" in file into "tool" data.
-    {
-        "name": "Security Qualitative Metrics",
-        "url": "https://owasp.org/www-project-security-qualitative-metrics/",
-        "created": "2020-07-20",
-        "updated": "2021-04-20",
-        "build": "built",
-        "title": "OWASP Security Qualitative Metrics",
-        "level": "2",
-        "type": "documentation",
-        "region": "Unknown",
-        "pitch": "The OWASP Security Qualitative Metrics is the most detailed list of metrics which evaluate security level of web projects. It shows the level of coverage of OWASP ASVS."
-    },
-    """
-    raise NotImplementedError("someone needs to work on this")
 
 
 def populate_neo4j_db(cache: str):

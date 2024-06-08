@@ -91,7 +91,12 @@ class CWE(ParserInterface):
             for weakness in weaknesses:
                 statuses[weakness["@Status"]] = 1
                 cwe = None
-                if weakness["@Status"] in ["Stable", "Incomplete", "Draft"]:
+                if weakness["@Status"] in [
+                    "Stable",
+                    "Incomplete",
+                    "Draft",
+                    "PROHIBITED",
+                ]:
                     cwes = cache.get_nodes(self.name, sectionID=weakness["@ID"])
                     if cwes:  # update the CWE in the database
                         cwe = cwes[0]
