@@ -15,7 +15,8 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           cache: 'yarn'
-      - name: Install python dependencies
+          node-version: 'v20.12.1'
+      - name: Install dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y python3-setuptools python3-pip python3-virtualenv chromium-browser libgbm1
