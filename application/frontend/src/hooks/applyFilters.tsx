@@ -1,6 +1,6 @@
 import { createContext } from 'react';
 
-import { DocumentNode } from '../components/DocumentNode';
+import { TYPE_LINKED_TO } from '../const';
 import { Document, LinkedDocument } from '../types';
 
 const filterLinks = (document: Document, filters: string[]): Document | undefined => {
@@ -47,6 +47,11 @@ export const applyFilters = (node: Document): Document => {
       filteredNodes.push(newDocNode);
     }
   });
+
+  //filter by sources specifically (for Standards links in the /explorer page)
+  if (filters.some((filter) => filter === 'sources')) {
+    filteredNodes = filteredNodes.filter((node) => node.ltype === TYPE_LINKED_TO);
+  }
   node.links = filteredNodes;
   return node;
 };

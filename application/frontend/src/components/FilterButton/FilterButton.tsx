@@ -1,13 +1,8 @@
-import axios from 'axios';
-import React, { FunctionComponent, useEffect, useMemo, useState } from 'react';
-import { Link, useHistory } from 'react-router-dom';
+import React, { FunctionComponent, useState } from 'react';
+import { useHistory } from 'react-router-dom';
 import { Button } from 'semantic-ui-react';
 
-import { useEnvironment } from '../../hooks';
-import { Document, LinkedDocument } from '../../types';
-import { getDocumentDisplayName, groupLinksByType } from '../../utils';
-import { getApiEndpoint, getInternalUrl } from '../../utils/document';
-import { LoadingAndErrorIndicator } from '../LoadingAndErrorIndicator';
+import { Document } from '../../types';
 
 export interface FilterButton {
   document: Document;

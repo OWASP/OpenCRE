@@ -2,11 +2,13 @@ import './explorer.scss';
 
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Label, List } from 'semantic-ui-react';
+import { List } from 'semantic-ui-react';
 
 import { LoadingAndErrorIndicator } from '../../components/LoadingAndErrorIndicator';
+import { TYPE_CONTAINS, TYPE_LINKED_TO } from '../../const';
 import { useDataStore } from '../../providers/DataProvider';
 import { LinkedTreeDocument, TreeDocument } from '../../types';
+import { LinkedStandards } from './LinkedStandards';
 
 export const Explorer = () => {
   const { dataLoading, dataTree } = useDataStore();
@@ -78,8 +80,8 @@ export const Explorer = () => {
     if (!item) {
       return <></>;
     }
-    const contains = item.links.filter((x) => x.ltype === 'Contains');
-    const linkedTo = item.links.filter((x) => x.ltype === 'Linked To');
+    const contains = item.links.filter((x) => x.ltype === TYPE_CONTAINS);
+    const linkedTo = item.links.filter((x) => x.ltype === TYPE_LINKED_TO);
 
     const creCode = item.id;
     const creName = item.displayName.split(' : ').pop();
@@ -100,19 +102,12 @@ export const Explorer = () => {
               <span className="cre-name">{applyHighlight(creName, filter)}</span>
             </Link>
           </List.Header>
-          {linkedTo.length > 0 && (
-            <List.Description>
-              <Label.Group size="small" className="tags">
-                {[...new Set(linkedTo.map((x: LinkedTreeDocument) => x.document.name))]
-                  .sort()
-                  .map((x: string) => (
-                    <Link key={Math.random()} to={`/node/standard/${x}`}>
-                      <Label>{applyHighlight(x, filter)}</Label>
-                    </Link>
-                  ))}
-              </Label.Group>
-            </List.Description>
-          )}
+          <LinkedStandards
+            linkedTo={linkedTo}
+            applyHighlight={applyHighlight}
+            creCode={creCode}
+            filter={filter}
+          />
           {contains.length > 0 && !isCollapsed(item.id) && (
             <List.List>{contains.map((child) => processNode(child.document))}</List.List>
           )}
