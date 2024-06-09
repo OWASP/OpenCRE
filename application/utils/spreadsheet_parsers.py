@@ -15,251 +15,6 @@ logger.setLevel(logging.INFO)
 logging.basicConfig()
 
 
-def is_empty(value: Optional[str]) -> bool:
-    value = str(value).strip()
-    return (
-        value is None
-        or value == "None"
-        or value == ""
-        or "n/a" in value.lower()
-        or value == "nan"
-        or value.lower() == "no"
-        or value.lower() == "tbd"
-        or value.lower() == "see higher level topic"
-        or value.lower() == "tbd"
-        or value.lower() == "0"
-    )
-
-
-def recurse_print_links(cre: defs.Document) -> None:
-    for link in cre.links:
-        print(link.document)
-        recurse_print_links(link.document)
-
-
-def get_linked_nodes(mapping: Dict[str, str]) -> List[defs.Link]:
-    nodes = []
-    names = set(
-        [
-            k.split(defs.ExportFormat.separator.value)[1]
-            for k, v in mapping.items()
-            if not is_empty(v)
-            and "CRE" not in k.upper()
-            and len(k.split(defs.ExportFormat.separator.value)) >= 3
-        ]
-    )
-    for name in names:
-        type = defs.ExportFormat.get_doctype(
-            [m for m in mapping.keys() if name in m][0]
-        )
-        if not type:
-            raise ValueError(
-                f"Mapping of {name} not in format of <type>:{name}:<attribute>"
-            )
-        section = str(mapping.get(defs.ExportFormat.section_key(name, type)))
-        subsection = str(mapping.get(defs.ExportFormat.subsection_key(name, type)))
-        hyperlink = str(mapping.get(defs.ExportFormat.hyperlink_key(name, type)))
-        link_type = str(mapping.get(defs.ExportFormat.link_type_key(name, type)))
-        tooltype = defs.ToolTypes.from_str(
-            str(mapping.get(defs.ExportFormat.tooltype_key(name, type)))
-        )
-        sectionID = str(mapping.get(defs.ExportFormat.sectionID_key(name, type)))
-        description = str(mapping.get(defs.ExportFormat.description_key(name, type)))
-        node = None
-        if type == defs.Credoctypes.Standard:
-            node = defs.Standard(
-                name=name,
-                section=section,
-                subsection=subsection,
-                hyperlink=hyperlink,
-                sectionID=sectionID,
-            )
-        elif type == defs.Credoctypes.Code:
-            node = defs.Code(description=description, hyperlink=hyperlink, name=name)
-        elif type == defs.Credoctypes.Tool:
-            node = defs.Tool(
-                tooltype=tooltype,
-                name=name,
-                description=description,
-                hyperlink=hyperlink,
-                section=section,
-                sectionID=sectionID,
-            )
-
-        lt: defs.LinkTypes
-        if not is_empty(link_type):
-            lt = defs.LinkTypes.from_str(link_type)
-        else:
-            lt = defs.LinkTypes.LinkedTo
-        nodes.append(defs.Link(document=node, ltype=lt))
-    return nodes
-
-
-def update_cre_in_links(
-    documents: Dict[str, defs.CRE], cre: defs.CRE
-) -> List[defs.CRE]:
-    for c in documents.values():
-        for link in c.links:
-            if link.document.name == cre.name:
-                link.document = cre.shallow_copy()
-    return documents
-
-
-def parse_export_format(lfile: List[Dict[str, Any]]) -> Dict[str, defs.Document]:
-    """
-    Given: a spreadsheet written by prepare_spreadsheet()
-    return a list of CRE docs
-    cases:
-        standard
-        standard -> standard
-        cre -> other documents
-        cre -> standards
-        cre -> standards, other documents
-    """
-    cre: defs.Document
-    internal_mapping: defs.Document
-    documents: Dict[str, defs.Document] = {}
-    lone_nodes: Dict[str, defs.Node] = {}
-    link_types_regexp = re.compile(defs.ExportFormat.linked_cre_name_key("(\d+)"))
-    max_internal_cre_links = len(
-        set([k for k, v in lfile[0].items() if link_types_regexp.match(k)])
-    )
-    for mapping in lfile:
-        # if the line does not register a CRE
-        if not mapping.get(defs.ExportFormat.cre_name_key()):
-            # standard -> nothing | standard
-            for st in get_linked_nodes(mapping):
-                lone_nodes[
-                    f"{st.document.doctype}:{st.document.name}:{st.document.section}"
-                ] = st.document
-                logger.info(
-                    f"adding node: {st.document.doctype}:{st.document.name}:{st.document.section}"
-                )
-        else:  # cre -> standards, other documents
-            name = str(mapping.pop(defs.ExportFormat.cre_name_key()))
-            id = str(mapping.pop(defs.ExportFormat.cre_id_key()))
-            description = ""
-            if defs.ExportFormat.cre_description_key() in mapping:
-                description = mapping.pop(defs.ExportFormat.cre_description_key())
-
-            if name not in documents.keys():  # register new cre
-                cre = defs.CRE(name=name, id=id, description=description)
-            else:  # it's a conflict mapping so we've seen this before,
-                # just retrieve so we can add the new info
-                cre = documents[name]
-                if cre.id != id:
-                    if is_empty(id):
-                        id = cre.id
-                    else:
-                        logger.fatal(
-                            "id from sheet %s does not match already parsed id %s for cre %s, this looks like a bug"
-                            % (id, cre.id, name)
-                        )
-                        continue
-                if is_empty(cre.description) and not is_empty(description):
-                    # might have seen the particular name/id as an internal
-                    # mapping, in which case just update the description and continue
-                    cre.description = description
-
-            # register the standards part
-            for standard in get_linked_nodes(mapping):
-                cre.add_link(standard)
-
-            # add the CRE links
-            for i in range(0, max_internal_cre_links):
-                name = str(mapping.pop(defs.ExportFormat.linked_cre_name_key(str(i))))
-                if not is_empty(name):
-                    id = str(mapping.pop(defs.ExportFormat.linked_cre_id_key(str(i))))
-                    link_type = str(
-                        mapping.pop(defs.ExportFormat.linked_cre_link_type_key(str(i)))
-                    )
-                    if name in documents:
-                        internal_mapping = documents[name]
-                        if internal_mapping.id != id:
-                            if is_empty(id):
-                                id = internal_mapping.id
-                            else:
-                                logger.fatal(
-                                    "id from sheet %s does not match already parsed id %s for cre/group %s, this looks like a bug"
-                                    % (id, internal_mapping.id, name)
-                                )
-                                continue
-                    else:
-                        internal_mapping = defs.CRE(name=name, id=id)
-                        lt = defs.LinkTypes.from_str(link_type)
-                        sub_lt: defs.LinkTypes
-                        if lt == defs.LinkTypes.Contains:
-                            sub_lt = defs.LinkTypes.PartOf
-                        internal_mapping.add_link(
-                            defs.Link(
-                                document=defs.CRE(  # add a link to the original without the links
-                                    name=cre.name,
-                                    id=cre.id,
-                                    description=cre.description,
-                                ),
-                                ltype=sub_lt,
-                            )
-                        )
-                        documents[name] = internal_mapping
-
-                    if name not in [l.document.name for l in cre.links]:
-                        cre.add_link(
-                            defs.Link(
-                                document=defs.CRE(
-                                    name=internal_mapping.name,
-                                    id=internal_mapping.id,
-                                    description=internal_mapping.description,
-                                ),
-                                ltype=defs.LinkTypes.from_str(link_type),
-                            )
-                        )
-            documents[cre.name] = cre
-    documents.update(lone_nodes)
-    return documents
-
-
-def parse_uknown_key_val_standards_spreadsheet(
-    link_file: List[Dict[str, str]]
-) -> Dict[str, defs.Standard]:
-    standards: Dict[str, defs.Standard] = {}
-    standards_registered: List[str] = []
-    # get the first Key of the first row, pretty much, choose a standard at random to be the main one
-    main_standard_name: str
-    for stand in list(link_file[0]):
-        if not is_empty(stand):
-            main_standard_name = stand
-            break
-
-    for mapping in link_file:
-        primary_standard: defs.Standard
-        linked_standard: defs.Standard
-        if not is_empty(mapping[main_standard_name]):
-            sname = f"{main_standard_name}-{str(mapping[main_standard_name])}"
-            if standards.get(sname):
-                # pop is important so that primary standard won't link to itself
-                mapping.pop(main_standard_name)
-                primary_standard = standards[sname]
-            else:
-                # pop is important here, if the primary standard is not removed, it will end up linking to itself
-                primary_standard = defs.Standard(
-                    name=main_standard_name,
-                    section=str(mapping.pop(main_standard_name)),
-                )
-
-            for key, value in mapping.items():
-                if (
-                    not is_empty(value)
-                    and not is_empty(key)
-                    and f"{key}-{value}" not in standards_registered
-                ):
-                    linked_standard = defs.Standard(name=key, section=value)
-                    standards_registered.append(f"{key}-{value}")
-                    primary_standard.add_link(defs.Link(document=linked_standard))
-            if primary_standard:
-                standards[sname] = primary_standard
-    return standards
-
-
 # the supported resources from the main CSV
 supported_resource_mapping = {
     "CRE": {
@@ -362,10 +117,199 @@ supported_resource_mapping = {
     },
 }
 
+def is_empty(value: Optional[str]) -> bool:
+    value = str(value).strip()
+    return (
+        value is None
+        or value == "None"
+        or value == ""
+        or "n/a" in value.lower()
+        or value == "nan"
+        or value.lower() == "no"
+        or value.lower() == "tbd"
+        or value.lower() == "see higher level topic"
+        or value.lower() == "tbd"
+        or value.lower() == "0"
+    )
+
+def parse_export_format(lfile: List[Dict[str, Any]]) -> Dict[str, defs.Document]:
+    """
+    Given: a spreadsheet written by prepare_spreadsheet()
+    return a list of CRE docs
+    cases:
+        standard
+        standard -> standard
+        cre -> other documents
+        cre -> standards
+        cre -> standards, other documents
+    """
+    def get_linked_nodes(mapping: Dict[str, str]) -> List[defs.Link]:
+        nodes = []
+        names = set(
+            [
+                k.split(defs.ExportFormat.separator.value)[1]
+                for k, v in mapping.items()
+                if not is_empty(v)
+                and "CRE" not in k.upper()
+                and len(k.split(defs.ExportFormat.separator.value)) >= 3
+            ]
+        )
+        for name in names:
+            type = defs.ExportFormat.get_doctype(
+                [m for m in mapping.keys() if name in m][0]
+            )
+            if not type:
+                raise ValueError(
+                    f"Mapping of {name} not in format of <type>:{name}:<attribute>"
+                )
+            section = str(mapping.get(defs.ExportFormat.section_key(name, type)))
+            subsection = str(mapping.get(defs.ExportFormat.subsection_key(name, type)))
+            hyperlink = str(mapping.get(defs.ExportFormat.hyperlink_key(name, type)))
+            link_type = str(mapping.get(defs.ExportFormat.link_type_key(name, type)))
+            tooltype = defs.ToolTypes.from_str(
+                str(mapping.get(defs.ExportFormat.tooltype_key(name, type)))
+            )
+            sectionID = str(mapping.get(defs.ExportFormat.sectionID_key(name, type)))
+            description = str(mapping.get(defs.ExportFormat.description_key(name, type)))
+            node = None
+            if type == defs.Credoctypes.Standard:
+                node = defs.Standard(
+                    name=name,
+                    section=section,
+                    subsection=subsection,
+                    hyperlink=hyperlink,
+                    sectionID=sectionID,
+                )
+            elif type == defs.Credoctypes.Code:
+                node = defs.Code(description=description, hyperlink=hyperlink, name=name)
+            elif type == defs.Credoctypes.Tool:
+                node = defs.Tool(
+                    tooltype=tooltype,
+                    name=name,
+                    description=description,
+                    hyperlink=hyperlink,
+                    section=section,
+                    sectionID=sectionID,
+                )
+
+            lt: defs.LinkTypes
+            if not is_empty(link_type):
+                lt = defs.LinkTypes.from_str(link_type)
+            else:
+                lt = defs.LinkTypes.LinkedTo
+            nodes.append(defs.Link(document=node, ltype=lt))
+        return nodes
+
+    cre: defs.Document
+    internal_mapping: defs.Document
+    documents: Dict[str, defs.Document] = {}
+    lone_nodes: Dict[str, defs.Node] = {}
+    link_types_regexp = re.compile(defs.ExportFormat.linked_cre_name_key("(\d+)"))
+    max_internal_cre_links = len(
+        set([k for k, v in lfile[0].items() if link_types_regexp.match(k)])
+    )
+    for mapping in lfile:
+        # if the line does not register a CRE
+        if not mapping.get(defs.ExportFormat.cre_name_key()):
+            # standard -> nothing | standard
+            for st in get_linked_nodes(mapping):
+                lone_nodes[
+                    f"{st.document.doctype}:{st.document.name}:{st.document.section}"
+                ] = st.document
+                logger.info(
+                    f"adding node: {st.document.doctype}:{st.document.name}:{st.document.section}"
+                )
+        else:  # cre -> standards, other documents
+            name = str(mapping.pop(defs.ExportFormat.cre_name_key()))
+            id = str(mapping.pop(defs.ExportFormat.cre_id_key()))
+            description = ""
+            if defs.ExportFormat.cre_description_key() in mapping:
+                description = mapping.pop(defs.ExportFormat.cre_description_key())
+
+            if name not in documents.keys():  # register new cre
+                cre = defs.CRE(name=name, id=id, description=description)
+            else:  # it's a conflict mapping so we've seen this before,
+                # just retrieve so we can add the new info
+                cre = documents[name]
+                if cre.id != id:
+                    if is_empty(id):
+                        id = cre.id
+                    else:
+                        logger.fatal(
+                            "id from sheet %s does not match already parsed id %s for cre %s, this looks like a bug"
+                            % (id, cre.id, name)
+                        )
+                        continue
+                if is_empty(cre.description) and not is_empty(description):
+                    # might have seen the particular name/id as an internal
+                    # mapping, in which case just update the description and continue
+                    cre.description = description
+
+            # register the standards part
+            for standard in get_linked_nodes(mapping):
+                cre.add_link(standard)
+
+            # add the CRE links
+            for i in range(0, max_internal_cre_links):
+                name = str(mapping.pop(defs.ExportFormat.linked_cre_name_key(str(i))))
+                if not is_empty(name):
+                    id = str(mapping.pop(defs.ExportFormat.linked_cre_id_key(str(i))))
+                    link_type = str(
+                        mapping.pop(defs.ExportFormat.linked_cre_link_type_key(str(i)))
+                    )
+                    if name in documents:
+                        internal_mapping = documents[name]
+                        if internal_mapping.id != id:
+                            if is_empty(id):
+                                id = internal_mapping.id
+                            else:
+                                logger.fatal(
+                                    "id from sheet %s does not match already parsed id %s for cre/group %s, this looks like a bug"
+                                    % (id, internal_mapping.id, name)
+                                )
+                                continue
+                    else:
+                        internal_mapping = defs.CRE(name=name, id=id)
+                        lt = defs.LinkTypes.from_str(link_type)
+                        sub_lt: defs.LinkTypes
+                        if lt == defs.LinkTypes.Contains:
+                            sub_lt = defs.LinkTypes.PartOf
+                        internal_mapping.add_link(
+                            defs.Link(
+                                document=defs.CRE(  # add a link to the original without the links
+                                    name=cre.name,
+                                    id=cre.id,
+                                    description=cre.description,
+                                ),
+                                ltype=sub_lt,
+                            )
+                        )
+                        documents[name] = internal_mapping
+
+                    if name not in [l.document.name for l in cre.links]:
+                        cre.add_link(
+                            defs.Link(
+                                document=defs.CRE(
+                                    name=internal_mapping.name,
+                                    id=internal_mapping.id,
+                                    description=internal_mapping.description,
+                                ),
+                                ltype=defs.LinkTypes.from_str(link_type),
+                            )
+                        )
+            documents[cre.name] = cre
+    documents.update(lone_nodes)
+    return documents
+
+
+@dataclass
+class UninitializedMapping:
+    complete_cre: defs.CRE
+    other_cre_name: str
+    relationship: defs.LinkTypes  # Relationship is complete_cre->other_cre_name
 
 def get_supported_resources_from_main_csv() -> List[str]:
     return supported_resource_mapping["Standards"].keys()
-
 
 def add_standard_to_documents_array(
     standard: defs.Standard, documents: Dict[str, List[defs.Document]]
@@ -395,14 +339,6 @@ def add_standard_to_documents_array(
         documents[standard.name].append(standard)
     return documents
 
-
-@dataclass
-class UninitializedMapping:
-    complete_cre: defs.CRE
-    other_cre_name: str
-    relationship: defs.LinkTypes  # Relationship is complete_cre->other_cre_name
-
-
 def reconcile_uninitializedMappings(
     cres: Dict[str, defs.CRE], u_mappings: List[UninitializedMapping]
 ) -> Dict[str, defs.CRE]:
@@ -418,7 +354,6 @@ def reconcile_uninitializedMappings(
         )
     return cres
 
-
 def get_highest_cre_name(
     mapping: Dict[str, str], highest_hierarchy: int = 5
 ) -> tuple[int, str]:
@@ -430,6 +365,14 @@ def get_highest_cre_name(
             return i, mapping.get(f"CRE hierarchy {i}").strip()
     return -1, None
 
+def update_cre_in_links(
+    documents: Dict[str, defs.CRE], cre: defs.CRE
+) -> List[defs.CRE]:
+    for c in documents.values():
+        for link in c.links:
+            if link.document.name == cre.name:
+                link.document = cre.shallow_copy()
+    return documents
 
 def parse_hierarchical_export_format(
     cre_file: List[Dict[str, str]]

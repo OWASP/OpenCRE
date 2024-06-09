@@ -2061,11 +2061,10 @@ class TestDB(unittest.TestCase):
                 self.collection.add_node(
                     defs.Standard(name=s, section=sub, subsection=sub)
                 )
-        self.assertEqual(
+        self.assertCountEqual(
             ["BarStand", "Unlinked", "sa", "sb", "sc", "sd"],
             self.collection.standards(),
-            ["BarStand", "Unlinked", "sa", "sb", "sc", "sd"],
-            self.collection.standards())
+        )
 
     def test_all_cres_with_pagination(self):
         """"""
