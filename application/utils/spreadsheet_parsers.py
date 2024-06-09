@@ -117,6 +117,7 @@ supported_resource_mapping = {
     },
 }
 
+
 def is_empty(value: Optional[str]) -> bool:
     value = str(value).strip()
     return (
@@ -132,6 +133,7 @@ def is_empty(value: Optional[str]) -> bool:
         or value.lower() == "0"
     )
 
+
 def parse_export_format(lfile: List[Dict[str, Any]]) -> Dict[str, defs.Document]:
     """
     Given: a spreadsheet written by prepare_spreadsheet()
@@ -143,6 +145,7 @@ def parse_export_format(lfile: List[Dict[str, Any]]) -> Dict[str, defs.Document]
         cre -> standards
         cre -> standards, other documents
     """
+
     def get_linked_nodes(mapping: Dict[str, str]) -> List[defs.Link]:
         nodes = []
         names = set(
@@ -170,7 +173,9 @@ def parse_export_format(lfile: List[Dict[str, Any]]) -> Dict[str, defs.Document]
                 str(mapping.get(defs.ExportFormat.tooltype_key(name, type)))
             )
             sectionID = str(mapping.get(defs.ExportFormat.sectionID_key(name, type)))
-            description = str(mapping.get(defs.ExportFormat.description_key(name, type)))
+            description = str(
+                mapping.get(defs.ExportFormat.description_key(name, type))
+            )
             node = None
             if type == defs.Credoctypes.Standard:
                 node = defs.Standard(
@@ -181,7 +186,9 @@ def parse_export_format(lfile: List[Dict[str, Any]]) -> Dict[str, defs.Document]
                     sectionID=sectionID,
                 )
             elif type == defs.Credoctypes.Code:
-                node = defs.Code(description=description, hyperlink=hyperlink, name=name)
+                node = defs.Code(
+                    description=description, hyperlink=hyperlink, name=name
+                )
             elif type == defs.Credoctypes.Tool:
                 node = defs.Tool(
                     tooltype=tooltype,
@@ -308,8 +315,10 @@ class UninitializedMapping:
     other_cre_name: str
     relationship: defs.LinkTypes  # Relationship is complete_cre->other_cre_name
 
+
 def get_supported_resources_from_main_csv() -> List[str]:
     return supported_resource_mapping["Standards"].keys()
+
 
 def add_standard_to_documents_array(
     standard: defs.Standard, documents: Dict[str, List[defs.Document]]
@@ -339,6 +348,7 @@ def add_standard_to_documents_array(
         documents[standard.name].append(standard)
     return documents
 
+
 def reconcile_uninitializedMappings(
     cres: Dict[str, defs.CRE], u_mappings: List[UninitializedMapping]
 ) -> Dict[str, defs.CRE]:
@@ -354,6 +364,7 @@ def reconcile_uninitializedMappings(
         )
     return cres
 
+
 def get_highest_cre_name(
     mapping: Dict[str, str], highest_hierarchy: int = 5
 ) -> tuple[int, str]:
@@ -365,6 +376,7 @@ def get_highest_cre_name(
             return i, mapping.get(f"CRE hierarchy {i}").strip()
     return -1, None
 
+
 def update_cre_in_links(
     documents: Dict[str, defs.CRE], cre: defs.CRE
 ) -> List[defs.CRE]:
@@ -373,6 +385,7 @@ def update_cre_in_links(
             if link.document.name == cre.name:
                 link.document = cre.shallow_copy()
     return documents
+
 
 def parse_hierarchical_export_format(
     cre_file: List[Dict[str, str]]
