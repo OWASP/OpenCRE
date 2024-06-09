@@ -1,4 +1,4 @@
-black
+black==24.4.2 # do not touch, same version as superlinter
 compliance-trestle
 coverage
 dacite
