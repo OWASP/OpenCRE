@@ -72,7 +72,7 @@ export const CommonRequirementEnumeration = () => {
 
           {currentUrlParams.get('applyFilters') === 'true' ? (
             <div className="cre-page__filters">
-              Filtering on:
+              Filtering on:{' '}
               {currentUrlParams.getAll('filters').map((filter) => (
                 <b key={filter}>{filter.replace('s:', '').replace('c:', '')}, </b>
               ))}
