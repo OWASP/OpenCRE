@@ -62,7 +62,7 @@ class TestMiscToolsParser(unittest.TestCase):
         entries = misc_tools_parser.MiscTools().parse(
             cache=collection, ph=PromptHandler(database=self.collection)
         )
-        for name, tools in entries.items():
+        for name, tools in entries.results.items():
             self.assertEqual(name, "OWASP WrongSecrets")
             self.assertEqual(len(tools), 1)
             self.assertCountEqual(expected.todict(), tools[0].todict())

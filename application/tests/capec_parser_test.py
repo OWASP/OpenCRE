@@ -61,7 +61,7 @@ class TestCapecParser(unittest.TestCase):
                 version="3.7",
             ),
         ]
-        for name, nodes in entries.items():
+        for name, nodes in entries.results.items():
             self.assertEqual(name, capec_parser.Capec().name)
             self.assertEqual(len(nodes), 2)
             self.assertCountEqual(nodes[0].todict(), expected[0].todict())

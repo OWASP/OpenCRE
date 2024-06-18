@@ -10,7 +10,10 @@ from application.database import db
 from application.defs import cre_defs as defs
 from application.utils import git
 from application.prompt_client import prompt_client as prompt_client
-from application.utils.external_project_parsers.base_parser import ParserInterface
+from application.utils.external_project_parsers.base_parser_defs import (
+    ParserInterface,
+    ParseResult,
+)
 import requests
 
 logging.basicConfig()
@@ -31,7 +34,7 @@ class MiscTools(ParserInterface):
         for url in self.tool_urls:
             tool_entries = self.parse_tool(cache=cache, tool_repo=url)
             tools[tool_entries[0].name] = tool_entries
-        return tools
+        return ParseResult(results=tools)
 
     def parse_tool(
         self, tool_repo: str, cache: db.Node_collection, dry_run: boolean = False

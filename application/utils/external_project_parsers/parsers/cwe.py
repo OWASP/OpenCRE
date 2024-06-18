@@ -7,8 +7,11 @@ from application.database import db
 from application.defs import cre_defs as defs
 import shutil
 import xmltodict
-from application.utils.external_project_parsers.base_parser import ParserInterface
 from application.prompt_client import prompt_client
+from application.utils.external_project_parsers.base_parser_defs import (
+    ParserInterface,
+    ParseResult,
+)
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
@@ -33,11 +36,14 @@ class CWE(ParserInterface):
         for _, _, files in os.walk(tmp_dir, topdown=False):
             for file in files:
                 if file.startswith("cwe") and file.endswith(".xml"):
-                    return {
-                        self.name: self.register_cwe(
-                            xml_file=os.path.join(tmp_dir, file), cache=cache
-                        ),
-                    }
+                    return ParseResult(
+                        results={
+                            self.name: self.register_cwe(
+                                xml_file=os.path.join(tmp_dir, file), cache=cache
+                            ),
+                        },
+                        calculate_gap_analysis=False,
+                    )
         raise RuntimeError("there is no file named cwe.xml in the target zip")
 
     def make_hyperlink(self, cwe_id: int):

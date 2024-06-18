@@ -47,7 +47,7 @@ class TestCheatsheetsParser(unittest.TestCase):
             links=[defs.Link(document=cre, ltype=defs.LinkTypes.LinkedTo)],
         )
         self.maxDiff = None
-        for name, nodes in entries.items():
+        for name, nodes in entries.results.items():
             self.assertEqual(name, cheatsheets_parser.Cheatsheets().name)
             self.assertEqual(len(nodes), 1)
             self.assertCountEqual(expected.todict(), nodes[0].todict())

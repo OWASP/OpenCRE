@@ -7,7 +7,10 @@ from application.defs import cre_defs as defs
 import re
 from application.utils import spreadsheet as sheet_utils
 from application.prompt_client import prompt_client as prompt_client
-from application.utils.external_project_parsers.base_parser import ParserInterface
+from application.utils.external_project_parsers.base_parser_defs import (
+    ParserInterface,
+    ParseResult,
+)
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
@@ -26,7 +29,7 @@ class PciDss(ParserInterface):
             ),
             cache=cache,
         )
-        return {self.name: entries}
+        return ParseResult(results={self.name: entries})
 
     def __parse(
         self,

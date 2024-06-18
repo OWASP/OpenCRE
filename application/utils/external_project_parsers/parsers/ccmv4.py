@@ -9,7 +9,10 @@ logging.basicConfig()
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-from application.utils.external_project_parsers.base_parser import ParserInterface
+from application.utils.external_project_parsers.base_parser_defs import (
+    ParserInterface,
+    ParseResult,
+)
 from application.prompt_client import prompt_client as prompt_client
 from application.utils import spreadsheet as sheet_utils
 

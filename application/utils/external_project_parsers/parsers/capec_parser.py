@@ -11,7 +11,10 @@ logging.basicConfig()
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-from application.utils.external_project_parsers.base_parser import ParserInterface
+from application.utils.external_project_parsers.base_parser_defs import (
+    ParserInterface,
+    ParseResult,
+)
 from application.prompt_client import prompt_client as prompt_client
 
 
@@ -22,7 +25,11 @@ class Capec(ParserInterface):
     def parse(self, cache: db.Node_collection, ph: prompt_client.PromptHandler):
         xml = requests.get(self.capec_xml)
         if xml.status_code == 200:
-            return {self.name: self.register_capec(xml_contents=xml.text, cache=cache)}
+            return ParseResult(
+                results={
+                    self.name: self.register_capec(xml_contents=xml.text, cache=cache)
+                }
+            )
         else:
             logger.fatal(f"Could not get CAPEC's XML data, error was {xml.text}")
 

@@ -13,8 +13,11 @@ logging.basicConfig()
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-from application.utils.external_project_parsers.base_parser import ParserInterface
 from application.prompt_client import prompt_client as prompt_client
+from application.utils.external_project_parsers.base_parser_defs import (
+    ParserInterface,
+    ParseResult,
+)
 
 
 class ZAP(ParserInterface):
@@ -48,7 +51,7 @@ class ZAP(ParserInterface):
         zaproxy_website = "https://github.com/zaproxy/zaproxy-website.git"
         repo = git.clone(zaproxy_website)
         alerts = self.__register_alerts(repo=repo, cache=cache)
-        return {self.name: alerts}
+        return ParseResult(results={self.name: alerts})
 
     def __link_to_top10(
         self, alert: defs.Tool, top10: re.Match[str] | None, cache: db.Node_collection

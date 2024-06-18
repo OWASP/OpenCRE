@@ -84,7 +84,7 @@ class TestCWEParser(unittest.TestCase):
                 ],
             ),
         ]
-        for name, nodes in entries.items():
+        for name, nodes in entries.results.items():
             self.assertEqual(name, cwe.CWE().name)
             self.assertEqual(len(nodes), 2)
             self.assertCountEqual(nodes[0].todict(), expected[0].todict())

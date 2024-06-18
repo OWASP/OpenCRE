@@ -84,7 +84,7 @@ class TestJuiceshopParser(unittest.TestCase):
                 tooltype=defs.ToolTypes.Training,
             ),
         ]
-        for name, nodes in entries.items():
+        for name, nodes in entries.results.items():
             self.assertEqual(name, juiceshop.JuiceShop().name)
             self.assertEqual(len(nodes), 2)
             self.assertCountEqual(nodes[0].todict(), expected[0].todict())

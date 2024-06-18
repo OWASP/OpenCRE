@@ -225,6 +225,7 @@ def register_standard(
     standard_entries: List[defs.Standard],
     collection: db.Node_collection,
     generate_embeddings=True,
+    calculate_gap_analysis=True,
     db_connection_str: str = "",
 ):
     if os.environ.get("CRE_NO_GEN_EMBEDDINGS"):
@@ -265,7 +266,7 @@ def register_standard(
     # calculate gap analysis
     jobs = []
     pending_stadards = collection.standards()
-    if not os.environ.get("CRE_NO_CALCULATE_GAP_ANALYSIS"):
+    if calculate_gap_analysis and not os.environ.get("CRE_NO_CALCULATE_GAP_ANALYSIS"):
         for standard_name in pending_stadards:
             if standard_name == importing_name:
                 continue

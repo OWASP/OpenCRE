@@ -106,7 +106,7 @@ class TestZAPAlertsParser(unittest.TestCase):
             cache=self.collection,
             ph=prompt_client.PromptHandler(database=self.collection),
         )
-        for name, nodes in entries.items():
+        for name, nodes in entries.results.items():
             self.assertEqual(name, zap_alerts_parser.ZAP().name)
             expected = defs.Tool(
                 name="ZAP Rule",
@@ -205,7 +205,7 @@ class TestZAPAlertsParser(unittest.TestCase):
             ],
         )
         self.maxDiff = None
-        for name, nodes in entries.items():
+        for name, nodes in entries.results.items():
             self.assertEqual(name, zap_alerts_parser.ZAP().name)
             self.assertEqual(len(nodes), 1)
             self.assertCountEqual(expected.todict(), nodes[0].todict())

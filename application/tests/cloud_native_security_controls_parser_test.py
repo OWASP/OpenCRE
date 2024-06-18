@@ -87,7 +87,7 @@ class TestCloudNativeSecurityControlsParser(unittest.TestCase):
                 version="CNSWP v1.0",
             ),
         ]
-        for name, nodes in entries.items():
+        for name, nodes in entries.results.items():
             self.assertEqual(
                 name, cloud_native_security_controls.CloudNativeSecurityControls().name
             )

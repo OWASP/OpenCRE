@@ -47,7 +47,7 @@ class TestSecureHeadersParser(unittest.TestCase):
             section="headerAsection",
             links=[defs.Link(document=cre, ltype=defs.LinkTypes.LinkedTo)],
         )
-        for name, nodes in entries.items():
+        for name, nodes in entries.results.items():
             self.assertEqual(name, secure_headers.SecureHeaders().name)
 
             self.maxDiff = None

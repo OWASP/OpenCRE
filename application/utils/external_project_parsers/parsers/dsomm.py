@@ -4,8 +4,11 @@ import logging
 from application.database import db
 from application.defs import cre_defs as defs
 from application.prompt_client import prompt_client as prompt_client
-from application.utils.external_project_parsers.base_parser import ParserInterface
 import requests
+from application.utils.external_project_parsers.base_parser_defs import (
+    ParserInterface,
+    ParseResult,
+)
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
@@ -150,4 +153,4 @@ class DSOMM(ParserInterface):
                         # use iso as glue
                         standard = self.link_to_iso(aname, activity, cache, standard)
                         standard_entries.append(standard)
-        return {self.name: standard_entries}
+        return ParseResult(results={self.name: standard_entries})

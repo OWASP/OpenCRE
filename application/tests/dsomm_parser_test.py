@@ -96,7 +96,7 @@ class TestDSOMM(unittest.TestCase):
                 subsection="Defined build process",
             ),
         ]
-        for name, nodes in entries.items():
+        for name, nodes in entries.results.items():
             self.assertEqual(name, dsomm.DSOMM().name)
             self.assertEqual(len(nodes), 2)
             self.assertCountEqual(nodes[0].todict(), expected[0].todict())

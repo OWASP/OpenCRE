@@ -1,8 +1,6 @@
-from application.database import db
-from application.defs import cre_defs as defs
+from application.utils.external_project_parsers import base_parser_defs
 from rq import Queue
 from application.utils import redis
-from typing import List, Dict, Optional
 from application.prompt_client import prompt_client as prompt_client
 import logging
 import time
@@ -15,32 +13,12 @@ logging.basicConfig()
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-# abstract class/interface that shows how to import a project that is not cre or its core resources
-
-
-class ParserInterface(object):
-    # The name of the resource being parsed
-    name: str
-
-    def parse(
-        database: db.Node_collection,
-        prompt_client: Optional[prompt_client.PromptHandler],
-    ) -> Dict[str, List[defs.Document]]:
-        """
-        Parses the resources of a project,
-        links the resource of the project to CREs
-        this can be done either using glue resources, AI or any other supported method
-        then calls cre_main.register_node
-        Returns a dict with a key of the resource for importing and a value of list of documents with CRE links, optionally with their embeddings filled in
-        """
-        raise NotImplementedError
-
 
 class BaseParser:
     @classmethod
     def register_resource(
         self,
-        sclass: ParserInterface,
+        sclass: base_parser_defs.ParserInterface,
         db_connection_str: str,
     ):
         from application.cmd import cre_main
@@ -58,10 +36,16 @@ class BaseParser:
             )
             return
 
-        result = sclass_instance.parse(db, ph)
+        resultObj = sclass_instance.parse(db, ph)
         try:
-            for _, documents in result.items():
-                cre_main.register_standard(documents, db)
+            for _, documents in resultObj.results.items():
+                cre_main.register_standard(
+                    standard_entries=documents,
+                    db_connection_str=db_connection_str,
+                    calculate_gap_analysis=resultObj.calculate_gap_analysis,
+                    generate_embeddings=resultObj.calculate_embeddings,
+                    collection=db,
+                )
         except ValueError as ve:
             err_str = f"error importing {sclass.name}, err: {ve}"
             raise ValueError(err_str)
@@ -79,7 +63,7 @@ class BaseParser:
         if os.environ.get("CRE_IMPORTERS_IMPORT_ONLY"):
             import_only = json.loads(os.environ.get("CRE_IMPORTERS_IMPORT_ONLY"))
 
-        for subclass in ParserInterface.__subclasses__():
+        for subclass in base_parser_defs.ParserInterface.__subclasses__():
             if import_only and subclass.name not in import_only:
                 continue
 

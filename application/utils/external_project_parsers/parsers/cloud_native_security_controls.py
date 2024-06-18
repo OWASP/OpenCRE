@@ -4,7 +4,10 @@ import logging
 from application.database import db
 from application.defs import cre_defs as defs
 from application.prompt_client import prompt_client as prompt_client
-from application.utils.external_project_parsers.base_parser import ParserInterface
+from application.utils.external_project_parsers.base_parser_defs import (
+    ParserInterface,
+    ParseResult,
+)
 import requests
 
 logging.basicConfig()
@@ -79,4 +82,4 @@ class CloudNativeSecurityControls(ParserInterface):
                     f"stored {cnsc.__repr__()} but could not link it to any CRE reliably"
                 )
             standard_entries.append(cnsc)
-        return {self.name: standard_entries}
+        return ParseResult(results={self.name: standard_entries})

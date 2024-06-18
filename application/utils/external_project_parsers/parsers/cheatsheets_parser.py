@@ -5,7 +5,10 @@ from application.utils import git
 from application.defs import cre_defs as defs
 import os
 import re
-from application.utils.external_project_parsers.base_parser import ParserInterface
+from application.utils.external_project_parsers.base_parser_defs import (
+    ParserInterface,
+    ParseResult,
+)
 from application.prompt_client import prompt_client as prompt_client
 
 
@@ -29,7 +32,7 @@ class Cheatsheets(ParserInterface):
         cheatsheets = self.register_cheatsheets(
             repo=repo, cache=cache, cheatsheets_path=cheatsheets_path, repo_path=c_repo
         )
-        return {self.name: cheatsheets}
+        return ParseResult(results={self.name: cheatsheets})
 
     def register_cheatsheets(
         self, cache: db.Node_collection, repo, cheatsheets_path, repo_path
