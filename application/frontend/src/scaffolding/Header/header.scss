@@ -4,13 +4,14 @@
   &.ui.secondary.menu {
     margin: 0;
     padding: 0 30px;
-    background-color: #242e4c;
+    background-color: #232e4c;
 
     .header__nav-bar-logo {
       padding: 20px 0;
-      margin-right: 30px;
+      margin-right: 20px;
       display: flex;
       align-items: center;
+      max-width: 140px;
 
       img {
         max-width: 100px;
