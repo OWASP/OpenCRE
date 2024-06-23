@@ -9,6 +9,8 @@ import { TYPE_CONTAINS, TYPE_LINKED_TO } from '../../const';
 import { useDataStore } from '../../providers/DataProvider';
 import { LinkedTreeDocument, TreeDocument } from '../../types';
 import { LinkedStandards } from './LinkedStandards';
+import { getDocumentDisplayName } from '../../utils';
+import { getInternalUrl } from '../../utils/document';
 
 export const Explorer = () => {
   const { dataLoading, dataTree } = useDataStore();
@@ -80,6 +82,10 @@ export const Explorer = () => {
     if (!item) {
       return <></>;
     }
+    item.displayName = item.displayName ?? getDocumentDisplayName(item);
+    item.url = item.url ?? getInternalUrl(item);
+    item.links = item.links ?? [];
+
     const contains = item.links.filter((x) => x.ltype === TYPE_CONTAINS);
     const linkedTo = item.links.filter((x) => x.ltype === TYPE_LINKED_TO);
 
