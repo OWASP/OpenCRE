@@ -46,7 +46,9 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
     );
 
     if (!creLinks.length) {
-      storedDoc.links = [];
+      // leaves of the tree can be links that are included in the keyPath.
+      // If we don't add this here, the leaves are filtered out above (see ticket #514 on OpenCRE)
+      storedDoc.links = initialLinks.filter((x) => x.ltype === 'Contains' && !!x.document);
       return storedDoc;
     }
 
