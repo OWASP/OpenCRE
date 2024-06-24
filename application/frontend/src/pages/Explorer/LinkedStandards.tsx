@@ -23,7 +23,6 @@ export const LinkedStandards = ({ creCode, linkedTo, applyHighlight, filter }) =
    */
   function isExternalLink(x: LinkedTreeDocument, linkedTo: any) {
     if (!x.document.hyperlink) {
-      console.log(x.document);
       return false;
     }
     const siblingCount = linkedTo.reduce((count, obj) => {
