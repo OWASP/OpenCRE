@@ -137,24 +137,12 @@ def preload(target_url: str):
     while len(waiting):
         for sa in standards:
             for sb in standards:
-                forward = False
-                backward = False
                 if sa == sb:
                     continue
                 if calculate_a_to_b(sa, sb):
-                    forward = True
-                    print(f"gap analysis {sa}->{sb} returned")
-                    waiting.remove(f"{sa}->{sb}")
+                    waiting.remove(f"{sa}->{sb}") if f"{sa}->{sb}" in waiting else ""
                 if calculate_a_to_b(sb, sa):
-                    backward = True
-                    print(f"gap analysis {sb}->{sa} returned")
-                    waiting.remove(f"{sb}->{sa}")
-
-                if forward and backward:
-                    print(
-                        f"removing standard {sb} from the waiting list as it has returned "
-                    )
-                    standards.remove(sb)
+                    waiting.remove(f"{sb}->{sa}") if f"{sb}->{sa}" in waiting else ""
         print(f"calculating {len(waiting)} gap analyses")
         time.sleep(30)
     print("map analysis preloaded successfully")

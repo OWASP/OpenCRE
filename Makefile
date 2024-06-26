@@ -118,8 +118,6 @@ migrate-downgrade:
 import-projects:
 	$(shell CRE_SKIP_IMPORT_CORE=1 bash  ./scripts/import-all.sh)
 
-
-
 import-all:
 	$(shell bash ./scripts/import-all.sh)
 
@@ -128,23 +126,6 @@ import-neo4j:
 	export FLASK_APP=$(CURDIR)/cre.py && python cre.py --populate_neo4j_db
 
 preload-map-analysis:
-	make docker-neo4j&\
-	make docker-redis&\
-	make start-worker&
-	make start-worker&
-	make start-worker&
-	make start-worker&
-	make start-worker&
-	make start-worker&
-	make start-worker&
-	make start-worker&
-	make start-worker&
-	make start-worker&
-	make dev-flask&
-	sleep 5
-	[ -d "./venv" ] && . ./venv/bin/activate &&\
-	export FLASK_APP=$(CURDIR)/cre.py 
-	python cre.py --preload_map_analysis_target_url 'http://127.0.0.1:5000'
-	echo "Map Analysis Loaded"	
-	killall python flask
+	$(shell RUN_COUNT=5 bash ./scripts/preload_gap_analysis.sh)
+
 all: clean lint test dev dev-run
