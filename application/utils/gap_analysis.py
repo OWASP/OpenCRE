@@ -111,6 +111,23 @@ def preload(target_url: str):
     standards_request = requests.get(f"{target_url}/rest/v1/standards")
     standards = standards_request.json()
 
+    def calculate_a_to_b(sa: str, sb: str) -> bool:
+        res = requests.get(
+            f"{target_url}/rest/v1/map_analysis?standard={sa}&standard={sb}"
+        )
+        if res.status_code != 200:
+            print(f"{sa}->{sb} returned {res.status_code}")
+            return False
+
+        tojson = res.json()
+        if tojson.get("result"):
+            return True
+        if tojson.get("job_id"):
+            print(f"{sa}->{sb} waiting")
+            return False
+        print(f"{sa}->{sb} returned 200 but has no 'result' or 'job_id' key")
+        return False
+
     for sa in standards:
         for sb in standards:
             if sa == sb:
@@ -124,33 +141,14 @@ def preload(target_url: str):
                 backward = False
                 if sa == sb:
                     continue
-                res1 = requests.get(
-                    f"{target_url}/rest/v1/map_analysis?standard={sa}&standard={sb}"
-                )
-                if res1.status_code != 200:
-                    print(f"{sa}->{sb} returned {res1.status_code}")
-                elif res1.json():
-                    if res1.json().get("result"):
-                        forward = True
-                        if f"{sa}->{sb}" in waiting:
-                            print(f"gap analysis {sa}->{sb} returned")
-                            waiting.remove(f"{sa}->{sb}")
-                    else:
-                        print(f"{sa}->{sb} returned 200 but has no 'result' key")
-                res2 = requests.get(
-                    f"{target_url}/rest/v1/map_analysis?standard={sb}&standard={sa}"
-                )
-                if res2.status_code != 200:
-                    print(f"{sb}->{sa} returned {res1.status_code}")
-                elif res2.json():
-                    print(f"{sb}->{sa} success")
-                    if res2.json().get("result"):
-                        backward = True
-                        if f"{sb}->{sa}" in waiting:
-                            print(f"gap analysis {sb}->{sa} returned")
-                            waiting.remove(f"{sb}->{sa}")
-                    else:
-                        print(f"{sb}->{sa} returned 200 but has no 'result' key")
+                if calculate_a_to_b(sa, sb):
+                    forward = True
+                    print(f"gap analysis {sa}->{sb} returned")
+                    waiting.remove(f"{sa}->{sb}")
+                if calculate_a_to_b(sb, sa):
+                    backward = True
+                    print(f"gap analysis {sb}->{sa} returned")
+                    waiting.remove(f"{sb}->{sa}")
 
                 if forward and backward:
                     print(
