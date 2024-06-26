@@ -13,6 +13,7 @@ class ParseResult(object):
     calculate_gap_analysis: bool = True
     calculate_embeddings: bool = True
 
+
 class ParserInterface(object):
     # The name of the resource being parsed
     name: str

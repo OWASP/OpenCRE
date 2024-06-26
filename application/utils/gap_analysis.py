@@ -133,17 +133,25 @@ def preload(target_url: str):
                     if res1.json().get("result"):
                         forward = True
                         if f"{sa}->{sb}" in waiting:
+                            print(f"gap analysis {sa}->{sb} returned")
                             waiting.remove(f"{sa}->{sb}")
+                    else:
+                        print(f"{sa}->{sb} returned 200 but has no 'result' key")
                 res2 = requests.get(
                     f"{target_url}/rest/v1/map_analysis?standard={sb}&standard={sa}"
                 )
                 if res2.status_code != 200:
                     print(f"{sb}->{sa} returned {res1.status_code}")
                 elif res2.json():
+                    print(f"{sb}->{sa} success")
                     if res2.json().get("result"):
                         backward = True
                         if f"{sb}->{sa}" in waiting:
+                            print(f"gap analysis {sb}->{sa} returned")
                             waiting.remove(f"{sb}->{sa}")
+                    else:
+                        print(f"{sb}->{sa} returned 200 but has no 'result' key")
+
                 if forward and backward:
                     print(
                         f"removing standard {sb} from the waiting list as it has returned "

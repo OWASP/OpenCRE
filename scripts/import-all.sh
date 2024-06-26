@@ -45,7 +45,7 @@ if [[ -z $CRE_SKIP_IMPORT_PROJECTS ]]; then
     python cre.py --owasp_secure_headers_in
     echo "Importing PCI DSS 4"
     python cre.py --pci_dss_4_in
-    echo "Importing Juicshop"
+    echo "Importing Juiceshop"
     python cre.py --juiceshop_in
     echo "Importing DSOMM"
     python cre.py --dsomm_in
