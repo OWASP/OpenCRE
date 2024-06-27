@@ -133,7 +133,6 @@ def preload(target_url: str):
             if sa == sb:
                 continue
             waiting.append(f"{sa}->{sb}")
-            waiting.append(f"{sb}->{sa}")
     while len(waiting):
         for sa in standards:
             for sb in standards:
@@ -141,8 +140,6 @@ def preload(target_url: str):
                     continue
                 if calculate_a_to_b(sa, sb):
                     waiting.remove(f"{sa}->{sb}") if f"{sa}->{sb}" in waiting else ""
-                if calculate_a_to_b(sb, sa):
-                    waiting.remove(f"{sb}->{sa}") if f"{sb}->{sa}" in waiting else ""
         print(f"calculating {len(waiting)} gap analyses")
         time.sleep(30)
     print("map analysis preloaded successfully")
