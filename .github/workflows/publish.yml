@@ -1,0 +1,35 @@
+name: Publish
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  # Grant the ability to checkout the repository
+  contents: write
+  # Grant the ability to push packages
+  packages: write
+
+jobs:
+  publish-docker-images:
+    name: Push Docker images
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish Docker images
+        run: |
+            CRE_VERSION_SEMVER=$(sed 's/v//' <<< ${{ github.ref_name }});
+            make docker-prod
+            docker tag opencre:$(git rev-parse HEAD) ghcr.io/owasp/OpenCRE/opencre:${CRE_VERSION_SEMVER}
+            docker tag opencre:$(git rev-parse HEAD) ghcr.io/owasp/OpenCRE/opencre:latest
+            docker push ghcr.io/owasp/OpenCRE/opencre:${CRE_VERSION_SEMVER}
+            docker push ghcr.io/owasp/OpenCRE/opencre:latest

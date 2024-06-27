@@ -5,9 +5,10 @@ Revises: 7a17989aa1e3
 Create Date: 2022-01-16 15:35:04.098829
 
 """
+
 from alembic import op
 import sqlalchemy as sa
-from sqlalchemy import engine_from_config
+from sqlalchemy import engine_from_config, text
 
 
 # revision identifiers, used by Alembic.
@@ -24,7 +25,7 @@ def migrate_data_between_standards_and_node(new_table, old_table_name):
     )
     connection = op.get_bind()
     standards = connection.execute(
-        f"Select id,name,section,subsection,link from {old_table_name}"
+        text(f"Select id,name,section,subsection,link from {old_table_name}")
     )
     standards_data = standards.fetchall() if standards else []
     if old_table_name == "standard":
@@ -65,7 +66,7 @@ def migrate_data_between_links_and_cre_node_links(
     )
     connection = op.get_bind()
     links = connection.execute(
-        f"Select type,cre,{standard_column_name} from {old_table_name}"
+        text(f"Select type,cre,{standard_column_name} from {old_table_name}")
     )
     links_data = links.fetchall() if links else []
     cre_node_links = [

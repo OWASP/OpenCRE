@@ -5,6 +5,7 @@ Revises: 455f052a44ea
 Create Date: 2022-04-03 16:05:31.487481
 
 """
+
 from alembic import op
 import sqlalchemy as sa
 from sqlalchemy import engine_from_config, text
@@ -26,17 +27,23 @@ def copy_tables(cre_table, node_table, cre_link_table, cre_node_link_table):
     )
     connection = op.get_bind()
     nodes = connection.execute(
-        "Select id,name,section,subsection,link,ntype,tags,version,description from node"
+        text(
+            "Select id,name,section,subsection,link,ntype,tags,version,description from node"
+        )
     )
     nodes_data = nodes.fetchall() if nodes else []
 
-    cre = connection.execute("Select id,name,description,external_id,tags from cre")
+    cre = connection.execute(
+        text("Select id,name,description,external_id,tags from cre")
+    )
     cre_data = cre.fetchall() if cre else []
 
-    cre_link = connection.execute('Select type, "group" ,cre from cre_links')
+    cre_link = connection.execute(text('Select type, "group" ,cre from cre_links'))
     cre_link_data = cre_link.fetchall() if cre_link else []
 
-    cre_node_link = connection.execute("Select type, cre, node from cre_node_links")
+    cre_node_link = connection.execute(
+        text("Select type, cre, node from cre_node_links")
+    )
     cre_node_link_data = cre_node_link.fetchall() if cre_node_link else []
 
     nodes = [
@@ -84,34 +91,44 @@ def update_ids_to_uuid():
     )
     connection = op.get_bind()
 
-    nodes = connection.execute(f"Select id from node{temp_table_number}")
+    nodes = connection.execute(text(f"Select id from node{temp_table_number}"))
     nodes_data = nodes.fetchall() if nodes else []
 
-    cre = connection.execute(f"Select id from cre{temp_table_number}")
+    cre = connection.execute(text(f"Select id from cre{temp_table_number}"))
     cre_data = cre.fetchall() if cre else []
 
     for id in nodes_data:
         node_uuid = generate_uuid()
         connection.execute(
-            f"UPDATE  node{temp_table_number} set id='{node_uuid}' WHERE id={id[0]}"
+            text(
+                f"UPDATE  node{temp_table_number} set id='{node_uuid}' WHERE id={id[0]}"
+            )
         )
         connection.execute(
-            f"UPDATE cre_node_links{temp_table_number} set node='{node_uuid}' WHERE node={id[0]}"
+            text(
+                f"UPDATE cre_node_links{temp_table_number} set node='{node_uuid}' WHERE node={id[0]}"
+            )
         )
 
     for id in cre_data:
         cre_uuid = generate_uuid()
         connection.execute(
-            f"UPDATE cre{temp_table_number} set id='{cre_uuid}' WHERE id={id[0]}"
+            text(f"UPDATE cre{temp_table_number} set id='{cre_uuid}' WHERE id={id[0]}")
         )
         connection.execute(
-            f"UPDATE cre_links{temp_table_number} set cre='{cre_uuid}' WHERE cre={id[0]}"
+            text(
+                f"UPDATE cre_links{temp_table_number} set cre='{cre_uuid}' WHERE cre={id[0]}"
+            )
         )
         connection.execute(
-            f'UPDATE cre_links{temp_table_number} set "group"=\'{cre_uuid}\' WHERE "group"={id[0]}'
+            text(
+                f'UPDATE cre_links{temp_table_number} set "group"=\'{cre_uuid}\' WHERE "group"={id[0]}'
+            )
         )
         connection.execute(
-            f'UPDATE cre_node_links{temp_table_number} set "cre"=\'{cre_uuid}\' WHERE "cre"={id[0]}'
+            text(
+                f'UPDATE cre_node_links{temp_table_number} set "cre"=\'{cre_uuid}\' WHERE "cre"={id[0]}'
+            )
         )
 
 
@@ -121,35 +138,45 @@ def downgrade_uuid_to_id():
         config.get_section(config.config_ini_section), prefix="sqlalchemy."
     )
     connection = op.get_bind()
-    nodes = connection.execute("Select id from node")
+    nodes = connection.execute(text("Select id from node"))
     nodes_data = nodes.fetchall() if nodes else []
 
-    cre = connection.execute("Select id from cre")
+    cre = connection.execute(text("Select id from cre"))
     cre_data = cre.fetchall() if cre else []
 
     node_id = 1
     for id in nodes_data:
         connection.execute(
-            f"UPDATE node{temp_table_number} set id='{node_id}' WHERE id='{id[0]}'"
+            text(
+                f"UPDATE node{temp_table_number} set id='{node_id}' WHERE id='{id[0]}'"
+            )
         )
         connection.execute(
-            f"UPDATE cre_node_links set node{temp_table_number}='{node_id}' WHERE node='{id[0]}'"
+            text(
+                f"UPDATE cre_node_links set node{temp_table_number}='{node_id}' WHERE node='{id[0]}'"
+            )
         )
         node_id = node_id + 1
 
     cre_id = 1
     for id in cre_data:
         connection.execute(
-            f"UPDATE cre{temp_table_number} set id='{cre_id}' WHERE id='{id[0]}'"
+            text(f"UPDATE cre{temp_table_number} set id='{cre_id}' WHERE id='{id[0]}'")
         )
         connection.execute(
-            f"UPDATE cre_links{temp_table_number} set cre='{cre_id}' WHERE cre='{id[0]}'"
+            text(
+                f"UPDATE cre_links{temp_table_number} set cre='{cre_id}' WHERE cre='{id[0]}'"
+            )
         )
         connection.execute(
-            f"UPDATE cre_links{temp_table_number} set \"group\"='{cre_id}' WHERE \"group\"='{id[0]}'"
+            text(
+                f"UPDATE cre_links{temp_table_number} set \"group\"='{cre_id}' WHERE \"group\"='{id[0]}'"
+            )
         )
         connection.execute(
-            f"UPDATE cre_node_links{temp_table_number} set \"cre\"='{cre_id}' WHERE \"cre\"='{id[0]}'"
+            text(
+                f"UPDATE cre_node_links{temp_table_number} set \"cre\"='{cre_id}' WHERE \"cre\"='{id[0]}'"
+            )
         )
         cre_id = cre_id + 1
 
