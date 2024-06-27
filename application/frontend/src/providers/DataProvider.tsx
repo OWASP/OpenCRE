@@ -39,17 +39,16 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
     keyPath.push(selfKey);
 
     const storedDoc = structuredClone(dataStore[selfKey]);
-
-    const initialLinks = storedDoc.links;
+    let initialLinks = storedDoc.links;
     let creLinks = initialLinks.filter(
-      (x) => x.document && !keyPath.includes(getStoreKey(x.document)) && getStoreKey(x.document) in dataStore
+      (x) => !!x.document && !keyPath.includes(getStoreKey(x.document)) && getStoreKey(x.document) in dataStore
     );
 
-    if (!creLinks.length) {
-      // leaves of the tree can be links that are included in the keyPath.
-      // If we don't add this here, the leaves are filtered out above (see ticket #514 on OpenCRE)
-      storedDoc.links = initialLinks.filter((x) => x.ltype === 'Contains' && !!x.document);
-      return storedDoc;
+    if (!creLinks.length && !initialLinks.length) {
+        return storedDoc;
+    }
+    else if (!creLinks.length && initialLinks.length>0) {
+        creLinks = initialLinks.filter((x) => x.ltype === 'Contains' && !!x.document && getStoreKey(x.document) in dataStore);
     }
 
     //continue traversing the tree
@@ -74,7 +73,8 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
         try {
           const result = await axios.get(`${apiUrl}/root_cres`);
           const treeData = result.data.data.map((x) => buildTree(x));
-          setLocalStorageObject(DATA_TREE_KEY, treeData, TWO_DAYS_MILLISECONDS);
+          // the tree doesn't fit into local storage:
+          // setLocalStorageObject(DATA_TREE_KEY, treeData, TWO_DAYS_MILLISECONDS);
           setDataTree(treeData);
         } catch (error) {
           console.error(error);
