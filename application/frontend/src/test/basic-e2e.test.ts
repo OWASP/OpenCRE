@@ -7,6 +7,7 @@ describe('App.js', () => {
   const debug = {
     // headless: false,
     //  slowMo: 150,
+    args: ['--no-sandbox', '--disable-setuid-sandbox'], // needed for docker, we trust the content of opencre.org
   };
   const config = {};
   beforeAll(async () => {
