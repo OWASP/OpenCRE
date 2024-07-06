@@ -1,3 +1,4 @@
+from application.utils.gap_analysis import make_resources_key, make_subresources_key
 import string
 import random
 import os
@@ -30,9 +31,9 @@ class TestDB(unittest.TestCase):
         self.app_context.push()
         sqla.create_all()
 
-        self.collection = db.Node_collection()
+        self.collection = db.Node_collection().with_graph()
         collection = self.collection
-        collection.graph.graph = db.CRE_Graph.load_cre_graph(sqla.session)
+        # collection.graph.graph = db.CRE_Graph.load_cre_graph(sqla.session)
 
         dbcre = collection.add_cre(
             defs.CRE(id="111-000", description="CREdesc", name="CREname")
@@ -47,7 +48,7 @@ class TestDB(unittest.TestCase):
                 section="FooStand",
                 name="BarStand",
                 hyperlink="https://example.com",
-                tags=["a", "b", "c"],
+                tags=["788-788", "b", "c"],
             )
         )
 
@@ -62,7 +63,7 @@ class TestDB(unittest.TestCase):
 
         collection.session.add(dbcre)
         collection.add_link(cre=dbcre, node=dbstandard)
-        collection.add_internal_link(cre=dbcre, group=dbgroup)
+        collection.add_internal_link(lower=dbcre, higher=dbgroup)
 
         self.collection = collection
 
@@ -83,9 +84,10 @@ class TestDB(unittest.TestCase):
             description="tagCREdesc1",
             name="tagCREname1",
             tags="tag1,dash-2,underscore_3,space 4,co_mb-ination%5",
+            external_id="111-111",
         )
         cre = db.CREfromDB(dbcre)
-        cre.id = ""
+        cre.id = "111-111"
         dbstandard = db.Node(
             subsection="4.5.6.7",
             section="tagsstand",
@@ -159,9 +161,9 @@ class TestDB(unittest.TestCase):
             with a link to "BarStand" and "GroupName" and one for "GroupName" with a link to "CREName"
         """
         loc = tempfile.mkdtemp()
-        collection = db.Node_collection()
+        self.collection = db.Node_collection().with_graph()
         collection = self.collection
-        collection.graph.graph = db.CRE_Graph.load_cre_graph(sqla.session)
+        # collection.graph.graph = db.CRE_Graph.load_cre_graph(sqla.session)
         code0 = defs.Code(name="co0")
         code1 = defs.Code(name="co1")
         tool0 = defs.Tool(name="t0", tooltype=defs.ToolTypes.Unknown)
@@ -169,10 +171,10 @@ class TestDB(unittest.TestCase):
             defs.Standard(
                 subsection="4.5.6",
                 section="FooStand",
-                sectionID="123",
+                sectionID="123-123",
                 name="BarStand",
                 hyperlink="https://example.com",
-                tags=["a", "b", "c"],
+                tags=["788-788", "b", "c"],
             )
         )
 
@@ -219,7 +221,7 @@ class TestDB(unittest.TestCase):
                             sectionID="456",
                             subsection="4.5.6",
                             hyperlink="https://example.com",
-                            tags=["a", "b", "c"],
+                            tags=["788-788", "b", "c"],
                         )
                     ),
                     defs.Link(document=defs.Code(name="co0")),
@@ -293,7 +295,7 @@ class TestDB(unittest.TestCase):
 
     def test_CREfromDB(self) -> None:
         c = defs.CRE(
-            id="cid",
+            id="243-243",
             doctype=defs.Credoctypes.CRE,
             description="CREdesc",
             name="CREname",
@@ -301,7 +303,7 @@ class TestDB(unittest.TestCase):
         self.assertEqual(
             c,
             db.CREfromDB(
-                db.CRE(external_id="cid", description="CREdesc", name="CREname")
+                db.CRE(external_id="243-243", description="CREdesc", name="CREname")
             ),
         )
 
@@ -310,7 +312,10 @@ class TestDB(unittest.TestCase):
         name = str(uuid.uuid4())
 
         c = defs.CRE(
-            id="cid", doctype=defs.Credoctypes.CRE, description=original_desc, name=name
+            id="243-243",
+            doctype=defs.Credoctypes.CRE,
+            description=original_desc,
+            name=name,
         )
         self.assertIsNone(
             self.collection.session.query(db.CRE).filter(db.CRE.name == c.name).first()
@@ -349,7 +354,7 @@ class TestDB(unittest.TestCase):
             section=original_section,
             subsection=original_section,
             name=name,
-            tags=["a", "b", "c"],
+            tags=["788-788", "b", "c"],
         )
 
         self.assertIsNone(
@@ -480,10 +485,14 @@ class TestDB(unittest.TestCase):
         """Given: a cre 'C1' that links to cres both as a group and a cre and other standards
         return the CRE in Document format"""
         collection = db.Node_collection()
-        dbc1 = db.CRE(external_id="123", description="gcCD1", name="gcC1")
-        dbc2 = db.CRE(description="gcCD2", name="gcC2")
-        dbc3 = db.CRE(description="gcCD3", name="gcC3")
-        db_id_only = db.CRE(description="c_get_by_internal_id_only", name="cgbiio")
+        dbc1 = db.CRE(external_id="123-123", description="gcCD1", name="gcC1")
+        dbc2 = db.CRE(description="gcCD2", name="gcC2", external_id="444-444")
+        dbc3 = db.CRE(description="gcCD3", name="gcC3", external_id="555-555")
+        db_id_only = db.CRE(
+            description="c_get_by_internal_id_only",
+            name="cgbiio",
+            external_id="666-666",
+        )
         dbs1 = db.Node(
             ntype=defs.Standard.__name__,
             name="gcS2",
@@ -520,10 +529,12 @@ class TestDB(unittest.TestCase):
 
         collection.session.commit()
 
-        cd1 = defs.CRE(id="123", description="gcCD1", name="gcC1", links=[])
-        cd2 = defs.CRE(description="gcCD2", name="gcC2")
-        cd3 = defs.CRE(description="gcCD3", name="gcC3")
-        c_id_only = defs.CRE(description="c_get_by_internal_id_only", name="cgbiio")
+        cd1 = defs.CRE(id="123-123", description="gcCD1", name="gcC1", links=[])
+        cd2 = defs.CRE(description="gcCD2", name="gcC2", id="444-444")
+        cd3 = defs.CRE(description="gcCD3", name="gcC3", id="555-555")
+        c_id_only = defs.CRE(
+            id="666-666", description="c_get_by_internal_id_only", name="cgbiio"
+        )
 
         expected = [
             copy(cd1)
@@ -558,7 +569,7 @@ class TestDB(unittest.TestCase):
         self.assertEqual(len(expected), len(res))
         self.assertDictEqual(expected[0].todict(), res[0].todict())
 
-        res = collection.get_CREs(external_id="123")
+        res = collection.get_CREs(external_id="123-123")
         self.assertEqual(len(expected), len(res))
         self.assertDictEqual(expected[0].todict(), res[0].todict())
 
@@ -589,7 +600,7 @@ class TestDB(unittest.TestCase):
                     found = True
             self.assertTrue(found)
 
-        self.assertEqual([], collection.get_CREs(external_id="123", name="gcC5"))
+        self.assertEqual([], collection.get_CREs(external_id="123-123", name="gcC5"))
         self.assertEqual([], collection.get_CREs(external_id="1234"))
         self.assertEqual([], collection.get_CREs(name="gcC5"))
 
@@ -638,16 +649,16 @@ class TestDB(unittest.TestCase):
         return the Standard in Document format"""
         collection = db.Node_collection()
         docs: Dict[str, Union[db.CRE, db.Node]] = {
-            "dbc1": db.CRE(external_id="123", description="CD1", name="C1"),
-            "dbc2": db.CRE(description="CD2", name="C2"),
-            "dbc3": db.CRE(description="CD3", name="C3"),
+            "dbc1": db.CRE(external_id="123-123", description="CD1", name="C1"),
+            "dbc2": db.CRE(external_id="222-222", description="CD2", name="C2"),
+            "dbc3": db.CRE(external_id="333-333", description="CD3", name="C3"),
             "dbs1": db.Node(
                 ntype=defs.Standard.__name__,
                 name="S1",
-                section="1",
-                section_id="123",
-                subsection="2",
-                link="3",
+                section="111-111",
+                section_id="123-123",
+                subsection="222-222",
+                link="333-333",
                 version="4",
             ),
         }
@@ -665,23 +676,23 @@ class TestDB(unittest.TestCase):
         expected = [
             defs.Standard(
                 name="S1",
-                section="1",
-                sectionID="123",
-                subsection="2",
-                hyperlink="3",
+                section="111-111",
+                sectionID="123-123",
+                subsection="222-222",
+                hyperlink="333-333",
                 version="4",
                 links=[
                     defs.Link(
                         ltype=defs.LinkTypes.LinkedTo,
-                        document=defs.CRE(name="C1", description="CD1", id="123"),
+                        document=defs.CRE(id="123-123", name="C1", description="CD1"),
                     ),
                     defs.Link(
                         ltype=defs.LinkTypes.LinkedTo,
-                        document=defs.CRE(name="C2", description="CD2"),
+                        document=defs.CRE(id="222-222", name="C2", description="CD2"),
                     ),
                     defs.Link(
                         ltype=defs.LinkTypes.LinkedTo,
-                        document=defs.CRE(name="C3", description="CD3"),
+                        document=defs.CRE(id="333-333", name="C3", description="CD3"),
                     ),
                 ],
             )
@@ -696,15 +707,15 @@ class TestDB(unittest.TestCase):
         """
         collection = db.Node_collection()
         docs: Dict[str, Union[db.Node, db.CRE]] = {
-            "dbc1": db.CRE(external_id="123", description="CD1", name="C1"),
-            "dbc2": db.CRE(description="CD2", name="C2"),
-            "dbc3": db.CRE(description="CD3", name="C3"),
+            "dbc1": db.CRE(external_id="123-123", description="CD1", name="C1"),
+            "dbc2": db.CRE(external_id="222-222", description="CD2", name="C2"),
+            "dbc3": db.CRE(external_id="333-333", description="CD3", name="C3"),
             "dbs1": db.Node(
                 name="S1",
-                section="1",
-                section_id="123",
-                subsection="2",
-                link="3",
+                section="111-111",
+                section_id="123-123",
+                subsection="222-222",
+                link="333-333",
                 version="4",
                 ntype=defs.Standard.__name__,
             ),
@@ -721,43 +732,47 @@ class TestDB(unittest.TestCase):
         expected = [
             defs.Standard(
                 name="S1",
-                section="1",
-                sectionID="123",
-                subsection="2",
-                hyperlink="3",
+                section="111-111",
+                sectionID="123-123",
+                subsection="222-222",
+                hyperlink="333-333",
                 version="4",
                 links=[
                     defs.Link(
-                        document=defs.CRE(name="C1", description="CD1", id="123")
+                        document=defs.CRE(name="C1", description="CD1", id="123-123")
                     ),
-                    defs.Link(document=defs.CRE(name="C2", description="CD2")),
-                    defs.Link(document=defs.CRE(name="C3", description="CD3")),
+                    defs.Link(
+                        document=defs.CRE(id="222-222", name="C2", description="CD2")
+                    ),
+                    defs.Link(
+                        document=defs.CRE(id="333-333", name="C3", description="CD3")
+                    ),
                 ],
             )
         ]
-        total_pages, res, pagination_object = collection.get_nodes_with_pagination(
-            name="S1"
-        )
+        total_pages, res, _ = collection.get_nodes_with_pagination(name="S1")
         self.assertEqual(total_pages, 1)
         self.assertEqual(expected, res)
 
         only_c1 = [
             defs.Standard(
                 name="S1",
-                section="1",
-                sectionID="123",
-                subsection="2",
-                hyperlink="3",
+                section="111-111",
+                sectionID="123-123",
+                subsection="222-222",
+                hyperlink="333-333",
                 version="4",
                 links=[
-                    defs.Link(document=defs.CRE(name="C1", description="CD1", id="123"))
+                    defs.Link(
+                        document=defs.CRE(name="C1", description="CD1", id="123-123")
+                    )
                 ],
             )
         ]
         _, res, _ = collection.get_nodes_with_pagination(name="S1", include_only=["C1"])
         self.assertEqual(only_c1, res)
         _, res, _ = collection.get_nodes_with_pagination(
-            name="S1", include_only=["123"]
+            name="S1", include_only=["123-123"]
         )
         self.assertEqual(only_c1, res)
 
@@ -774,29 +789,29 @@ class TestDB(unittest.TestCase):
 
         cres = {
             "dbca": self.collection.add_cre(
-                defs.CRE(id="1", description="CA", name="CA")
+                defs.CRE(id="111-111", description="CA", name="CA")
             ),
             "dbcb": self.collection.add_cre(
-                defs.CRE(id="2", description="CB", name="CB")
+                defs.CRE(id="222-222", description="CB", name="CB")
             ),
             "dbcc": self.collection.add_cre(
-                defs.CRE(id="3", description="CC", name="CC")
+                defs.CRE(id="333-333", description="CC", name="CC")
             ),
         }
 
         # happy path
         self.collection.add_internal_link(
-            cres["dbca"], cres["dbcb"], defs.LinkTypes.Same
+            higher=cres["dbca"], lower=cres["dbcb"], type=defs.LinkTypes.Same
         )
 
         # no cycle, free to insert
         self.collection.add_internal_link(
-            group=cres["dbcb"], cre=cres["dbcc"], type=defs.LinkTypes.Same
+            higher=cres["dbcb"], lower=cres["dbcc"], type=defs.LinkTypes.Same
         )
 
         # introdcues a cycle, should not be inserted
         self.collection.add_internal_link(
-            group=cres["dbcc"], cre=cres["dbca"], type=defs.LinkTypes.Same
+            higher=cres["dbcc"], lower=cres["dbca"], type=defs.LinkTypes.Same
         )
 
         #   "happy path, internal link exists"
@@ -833,7 +848,7 @@ class TestDB(unittest.TestCase):
 
     def test_text_search(self) -> None:
         """Given:
-         a cre(id=123-456,name=foo,description='lorem ipsum foo+bar')
+         a cre(id="111-111"23-456,name=foo,description='lorem ipsum foo+bar')
          a standard(name=Bar,section=blah,subsection=foo, hyperlink='https://example.com/blah/foo')
          a standard(name=Bar,section=blah,subsection=foo1, hyperlink='https://example.com/blah/foo1')
          a standard(name=Bar,section=blah1,subsection=foo, hyperlink='https://example.com/blah1/foo')
@@ -936,23 +951,25 @@ class TestDB(unittest.TestCase):
                 name="fooTool",
                 description="lorem ipsum tsSection+tsC",
                 tooltype=defs.ToolTypes.Defensive,
-                tags=["1", "2", "3"],
+                tags=["111-111", "222-222", "333-333"],
             ),
             "standard": defs.Standard(
                 name="stand", section="s1", subsection="s2", version="s3"
             ),
             "code": defs.Code(
-                name="c",
+                name="ccc",
                 description="c2",
                 hyperlink="https://example.com/code/hyperlink",
-                tags=["1", "2"],
+                tags=["111-111", "222-222"],
             ),
         }
         expected = {
             "tool": db.Node(
                 name="fooTool",
                 description="lorem ipsum tsSection+tsC",
-                tags=",".join([defs.ToolTypes.Defensive.value, "1", "2", "3"]),
+                tags=",".join(
+                    [defs.ToolTypes.Defensive.value, "111-111", "222-222", "333-333"]
+                ),
                 ntype=defs.Credoctypes.Tool.value,
             ),
             "standard": db.Node(
@@ -963,7 +980,7 @@ class TestDB(unittest.TestCase):
                 ntype=defs.Credoctypes.Standard.value,
             ),
             "code": db.Node(
-                name="c",
+                name="ccc",
                 description="c2",
                 link="https://example.com/code/hyperlink",
                 tags="1,2",
@@ -982,23 +999,25 @@ class TestDB(unittest.TestCase):
                 name="fooTool",
                 description="lorem ipsum tsSection+tsC",
                 tooltype=defs.ToolTypes.Defensive,
-                tags=["1", "2", "3"],
+                tags=["111-111", "222-222", "333-333"],
             ),
             "standard": defs.Standard(
                 name="stand", section="s1", subsection="s2", version="s3"
             ),
             "code": defs.Code(
-                name="c",
+                name="ccc",
                 description="c2",
                 hyperlink="https://example.com/code/hyperlink",
-                tags=["1", "2"],
+                tags=["111-111", "222-222"],
             ),
         }
         data = {
             "tool": db.Node(
                 name="fooTool",
                 description="lorem ipsum tsSection+tsC",
-                tags=",".join([defs.ToolTypes.Defensive.value, "1", "2", "3"]),
+                tags=",".join(
+                    [defs.ToolTypes.Defensive.value, "111-111", "222-222", "333-333"]
+                ),
                 ntype=defs.Credoctypes.Tool.value,
             ),
             "standard": db.Node(
@@ -1009,10 +1028,10 @@ class TestDB(unittest.TestCase):
                 ntype=defs.Credoctypes.Standard.value,
             ),
             "code": db.Node(
-                name="c",
+                name="ccc",
                 description="c2",
                 link="https://example.com/code/hyperlink",
-                tags="1,2",
+                tags="111-111,222-222",
                 ntype=defs.Credoctypes.Code.value,
             ),
         }
@@ -1073,14 +1092,14 @@ class TestDB(unittest.TestCase):
         sqla.session.remove()
         sqla.drop_all()
         sqla.create_all()
-        collection = db.Node_collection()
-        collection.graph.graph = db.CRE_Graph.load_cre_graph(sqla.session)
+        collection = db.Node_collection().with_graph()
+        # collection.graph.graph = db.CRE_Graph.load_cre_graph(sqla.session)
 
         for i in range(0, 8):
             if i == 0 or i == 1:
-                cres.append(defs.CRE(name=f">> C{i}", id=f"{i}"))
+                cres.append(defs.CRE(name=f">> C{i}", id=f"{i}{i}{i}-{i}{i}{i}"))
             else:
-                cres.append(defs.CRE(name=f"C{i}", id=f"{i}"))
+                cres.append(defs.CRE(name=f"C{i}", id=f"{i}{i}{i}-{i}{i}{i}"))
 
             dbcres.append(collection.add_cre(cres[i]))
             nodes.append(defs.Standard(section=f"S{i}", name=f"N{i}"))
@@ -1113,22 +1132,22 @@ class TestDB(unittest.TestCase):
             defs.Link(document=cres[7].shallow_copy(), ltype=defs.LinkTypes.PartOf)
         )
         collection.add_internal_link(
-            group=dbcres[0], cre=dbcres[2], type=defs.LinkTypes.Contains
+            higher=dbcres[0], lower=dbcres[2], type=defs.LinkTypes.Contains
         )
         collection.add_internal_link(
-            group=dbcres[1], cre=dbcres[3], type=defs.LinkTypes.Contains
+            higher=dbcres[1], lower=dbcres[3], type=defs.LinkTypes.Contains
         )
         collection.add_internal_link(
-            group=dbcres[2], cre=dbcres[4], type=defs.LinkTypes.Contains
+            higher=dbcres[2], lower=dbcres[4], type=defs.LinkTypes.Contains
         )
         collection.add_internal_link(
-            group=dbcres[5], cre=dbcres[0], type=defs.LinkTypes.Related
+            higher=dbcres[5], lower=dbcres[0], type=defs.LinkTypes.Related
         )
         collection.add_internal_link(
-            group=dbcres[3], cre=dbcres[5], type=defs.LinkTypes.Contains
+            higher=dbcres[3], lower=dbcres[5], type=defs.LinkTypes.Contains
         )
         collection.add_internal_link(
-            group=dbcres[6], cre=dbcres[7], type=defs.LinkTypes.PartOf
+            higher=dbcres[6], lower=dbcres[7], type=defs.LinkTypes.PartOf
         )
 
         collection.session.commit()
@@ -1147,7 +1166,7 @@ class TestDB(unittest.TestCase):
         collection.neo_db.connected = False
         gap_mock.return_value = (None, None)
 
-        self.assertEqual(db.gap_analysis(collection.neo_db, ["a", "b"]), None)
+        self.assertEqual(db.gap_analysis(collection.neo_db, ["788-788", "b"]), None)
 
     @patch.object(db.NEO_DB, "gap_analysis")
     def test_gap_analysis_no_nodes(self, gap_mock):
@@ -1156,7 +1175,8 @@ class TestDB(unittest.TestCase):
 
         gap_mock.return_value = ([], [])
         self.assertEqual(
-            db.gap_analysis(collection.neo_db, ["a", "b"]), (["a", "b"], {}, {})
+            db.gap_analysis(collection.neo_db, ["788-788", "b"]),
+            (["788-788", "b"], {}, {}),
         )
 
     @patch.object(db.NEO_DB, "gap_analysis")
@@ -1164,13 +1184,20 @@ class TestDB(unittest.TestCase):
         collection = db.Node_collection()
         collection.neo_db.connected = True
 
-        gap_mock.return_value = ([defs.CRE(name="bob", id=1)], [])
+        gap_mock.return_value = ([defs.CRE(name="bob", id="111-111")], [])
+        self.maxDiff = None
         self.assertEqual(
-            db.gap_analysis(collection.neo_db, ["a", "b"]),
+            db.gap_analysis(collection.neo_db, ["788-788", "b"]),
             (
-                ["a", "b"],
-                {1: {"start": defs.CRE(name="bob", id=1), "paths": {}, "extra": 0}},
-                {1: {"paths": {}}},
+                ["788-788", "b"],
+                {
+                    "111-111": {
+                        "start": defs.CRE(name="bob", id="111-111"),
+                        "paths": {},
+                        "extra": 0,
+                    }
+                },
+                {"111-111": {"paths": {}}},
             ),
         )
 
@@ -1180,40 +1207,47 @@ class TestDB(unittest.TestCase):
         collection.neo_db.connected = True
         path = [
             {
-                "end": defs.CRE(name="bob", id=1),
+                "end": defs.CRE(name="bob", id="111-111"),
                 "relationship": "LINKED_TO",
-                "start": defs.CRE(name="bob", id="a"),
+                "start": defs.CRE(name="bob", id="788-788"),
             },
             {
-                "end": defs.CRE(name="bob", id=2),
+                "end": defs.CRE(name="bob", id="222-222"),
                 "relationship": "LINKED_TO",
-                "start": defs.CRE(name="bob", id="a"),
+                "start": defs.CRE(name="bob", id="788-788"),
             },
         ]
         gap_mock.return_value = (
-            [defs.CRE(name="bob", id=1)],
+            [defs.CRE(name="bob", id="788-788")],
             [
                 {
-                    "start": defs.CRE(name="bob", id=1),
-                    "end": defs.CRE(name="bob", id=2),
+                    "start": defs.CRE(name="bob", id="788-788"),
+                    "end": defs.CRE(name="bob", id="788-789"),
                     "path": path,
                 }
             ],
         )
         expected = (
-            ["a", "b"],
+            ["788-788", "788-789"],
             {
-                1: {
-                    "start": defs.CRE(name="bob", id=1),
+                "788-788": {
+                    "start": defs.CRE(name="bob", id="788-788"),
                     "paths": {
-                        2: {"end": defs.CRE(name="bob", id=2), "path": path, "score": 0}
+                        "788-789": {
+                            "end": defs.CRE(name="bob", id="788-789"),
+                            "path": path,
+                            "score": 0,
+                        }
                     },
                     "extra": 0,
                 }
             },
-            {1: {"paths": {}}},
+            {"788-788": {"paths": {}}},
         )
-        self.assertEqual(db.gap_analysis(collection.neo_db, ["a", "b"]), expected)
+        self.maxDiff = None
+        self.assertEqual(
+            db.gap_analysis(collection.neo_db, ["788-788", "788-789"]), expected
+        )
 
     @patch.object(db.NEO_DB, "gap_analysis")
     def test_gap_analysis_one_weak_link(self, gap_mock):
@@ -1221,49 +1255,59 @@ class TestDB(unittest.TestCase):
         collection.neo_db.connected = True
         path = [
             {
-                "end": defs.CRE(name="bob", id=1),
+                "end": defs.CRE(name="bob", id="111-111"),
                 "relationship": "LINKED_TO",
-                "start": defs.CRE(name="bob", id="a"),
+                "start": defs.CRE(name="bob", id="788-788"),
             },
             {
-                "end": defs.CRE(name="bob", id=2),
+                "end": defs.CRE(name="bob", id="222-222"),
                 "relationship": "RELATED",
-                "start": defs.CRE(name="bob", id=1),
+                "start": defs.CRE(name="bob", id="111-111"),
             },
             {
-                "end": defs.CRE(name="bob", id=1),
+                "end": defs.CRE(name="bob", id="111-111"),
                 "relationship": "RELATED",
-                "start": defs.CRE(name="bob", id=2),
+                "start": defs.CRE(name="bob", id="222-222"),
             },
             {
-                "end": defs.CRE(name="bob", id=3),
+                "end": defs.CRE(name="bob", id="333-333"),
                 "relationship": "LINKED_TO",
-                "start": defs.CRE(name="bob", id=2),
+                "start": defs.CRE(name="bob", id="222-222"),
             },
         ]
         gap_mock.return_value = (
-            [defs.CRE(name="bob", id=1)],
+            [defs.CRE(name="bob", id="111-111")],
             [
                 {
-                    "start": defs.CRE(name="bob", id=1),
-                    "end": defs.CRE(name="bob", id=2),
+                    "start": defs.CRE(name="bob", id="111-111"),
+                    "end": defs.CRE(name="bob", id="222-222"),
                     "path": path,
                 }
             ],
         )
         expected = (
-            ["a", "b"],
-            {1: {"start": defs.CRE(name="bob", id=1), "paths": {}, "extra": 1}},
+            ["788-788", "b"],
             {
-                1: {
+                "111-111": {
+                    "start": defs.CRE(name="bob", id="111-111"),
+                    "paths": {},
+                    "extra": 1,
+                }
+            },
+            {
+                "111-111": {
                     "paths": {
-                        2: {"end": defs.CRE(name="bob", id=2), "path": path, "score": 4}
+                        "222-222": {
+                            "end": defs.CRE(name="bob", id="222-222"),
+                            "path": path,
+                            "score": 4,
+                        }
                     }
                 }
             },
         )
-
-        self.assertEqual(db.gap_analysis(collection.neo_db, ["a", "b"]), expected)
+        self.maxDiff = None
+        self.assertEqual(db.gap_analysis(collection.neo_db, ["788-788", "b"]), expected)
 
     @patch.object(db.NEO_DB, "gap_analysis")
     def test_gap_analysis_duplicate_link_path_existing_lower(self, gap_mock):
@@ -1271,57 +1315,61 @@ class TestDB(unittest.TestCase):
         collection.neo_db.connected = True
         path = [
             {
-                "end": defs.CRE(name="bob", id=1),
+                "end": defs.CRE(name="bob", id="111-111"),
                 "relationship": "LINKED_TO",
-                "start": defs.CRE(name="bob", id="a"),
+                "start": defs.CRE(name="bob", id="788-788"),
             },
             {
-                "end": defs.CRE(name="bob", id=2),
+                "end": defs.CRE(name="bob", id="222-222"),
                 "relationship": "LINKED_TO",
-                "start": defs.CRE(name="bob", id="a"),
+                "start": defs.CRE(name="bob", id="788-788"),
             },
         ]
         path2 = [
             {
-                "end": defs.CRE(name="bob", id=1),
+                "end": defs.CRE(name="bob", id="111-111"),
                 "relationship": "LINKED_TO",
-                "start": defs.CRE(name="bob", id="a"),
+                "start": defs.CRE(name="bob", id="788-788"),
             },
             {
-                "end": defs.CRE(name="bob", id=2),
+                "end": defs.CRE(name="bob", id="222-222"),
                 "relationship": "RELATED",
-                "start": defs.CRE(name="bob", id="a"),
+                "start": defs.CRE(name="bob", id="788-788"),
             },
         ]
         gap_mock.return_value = (
-            [defs.CRE(name="bob", id=1)],
+            [defs.CRE(name="bob", id="111-111")],
             [
                 {
-                    "start": defs.CRE(name="bob", id=1),
-                    "end": defs.CRE(name="bob", id=2),
+                    "start": defs.CRE(name="bob", id="111-111"),
+                    "end": defs.CRE(name="bob", id="222-222"),
                     "path": path,
                 },
                 {
-                    "start": defs.CRE(name="bob", id=1),
-                    "end": defs.CRE(name="bob", id=2),
+                    "start": defs.CRE(name="bob", id="111-111"),
+                    "end": defs.CRE(name="bob", id="222-222"),
                     "path": path2,
                 },
             ],
         )
         expected = (
-            ["a", "b"],
+            ["788-788", "b"],
             {
-                1: {
-                    "start": defs.CRE(name="bob", id=1),
+                "111-111": {
+                    "start": defs.CRE(name="bob", id="111-111"),
                     "paths": {
-                        2: {"end": defs.CRE(name="bob", id=2), "path": path, "score": 0}
+                        "222-222": {
+                            "end": defs.CRE(name="bob", id="222-222"),
+                            "path": path,
+                            "score": 0,
+                        }
                     },
                     "extra": 0,
                 },
             },
-            {1: {"paths": {}}},
+            {"111-111": {"paths": {}}},
         )
-        self.assertEqual(db.gap_analysis(collection.neo_db, ["a", "b"]), expected)
+        self.assertEqual(db.gap_analysis(collection.neo_db, ["788-788", "b"]), expected)
 
     @patch.object(db.NEO_DB, "gap_analysis")
     def test_gap_analysis_duplicate_link_path_existing_lower_new_in_extras(
@@ -1331,62 +1379,66 @@ class TestDB(unittest.TestCase):
         collection.neo_db.connected = True
         path = [
             {
-                "end": defs.CRE(name="bob", id=1),
+                "end": defs.CRE(name="bob", id="111-111"),
                 "relationship": "LINKED_TO",
-                "start": defs.CRE(name="bob", id="a"),
+                "start": defs.CRE(name="bob", id="788-788"),
             },
             {
-                "end": defs.CRE(name="bob", id=2),
+                "end": defs.CRE(name="bob", id="222-222"),
                 "relationship": "LINKED_TO",
-                "start": defs.CRE(name="bob", id="a"),
+                "start": defs.CRE(name="bob", id="788-788"),
             },
         ]
         path2 = [
             {
-                "end": defs.CRE(name="bob", id=1),
+                "end": defs.CRE(name="bob", id="111-111"),
                 "relationship": "LINKED_TO",
-                "start": defs.CRE(name="bob", id="a"),
+                "start": defs.CRE(name="bob", id="788-788"),
             },
             {
-                "end": defs.CRE(name="bob", id=2),
+                "end": defs.CRE(name="bob", id="222-222"),
                 "relationship": "RELATED",
-                "start": defs.CRE(name="bob", id="a"),
+                "start": defs.CRE(name="bob", id="788-788"),
             },
             {
-                "end": defs.CRE(name="bob", id=2),
+                "end": defs.CRE(name="bob", id="222-222"),
                 "relationship": "RELATED",
-                "start": defs.CRE(name="bob", id="a"),
+                "start": defs.CRE(name="bob", id="788-788"),
             },
         ]
         gap_mock.return_value = (
-            [defs.CRE(name="bob", id=1)],
+            [defs.CRE(name="bob", id="111-111")],
             [
                 {
-                    "start": defs.CRE(name="bob", id=1),
-                    "end": defs.CRE(name="bob", id=2),
+                    "start": defs.CRE(name="bob", id="111-111"),
+                    "end": defs.CRE(name="bob", id="222-222"),
                     "path": path,
                 },
                 {
-                    "start": defs.CRE(name="bob", id=1),
-                    "end": defs.CRE(name="bob", id=2),
+                    "start": defs.CRE(name="bob", id="111-111"),
+                    "end": defs.CRE(name="bob", id="222-222"),
                     "path": path2,
                 },
             ],
         )
         expected = (
-            ["a", "b"],
+            ["788-788", "b"],
             {
-                1: {
-                    "start": defs.CRE(name="bob", id=1),
+                "111-111": {
+                    "start": defs.CRE(name="bob", id="111-111"),
                     "paths": {
-                        2: {"end": defs.CRE(name="bob", id=2), "path": path, "score": 0}
+                        "222-222": {
+                            "end": defs.CRE(name="bob", id="222-222"),
+                            "path": path,
+                            "score": 0,
+                        }
                     },
                     "extra": 0,
                 },
             },
-            {1: {"paths": {}}},
+            {"111-111": {"paths": {}}},
         )
-        self.assertEqual(db.gap_analysis(collection.neo_db, ["a", "b"]), expected)
+        self.assertEqual(db.gap_analysis(collection.neo_db, ["788-788", "b"]), expected)
 
     @patch.object(db.NEO_DB, "gap_analysis")
     def test_gap_analysis_duplicate_link_path_existing_higher(self, gap_mock):
@@ -1394,57 +1446,61 @@ class TestDB(unittest.TestCase):
         collection.neo_db.connected = True
         path = [
             {
-                "end": defs.CRE(name="bob", id=1),
+                "end": defs.CRE(name="bob", id="111-111"),
                 "relationship": "LINKED_TO",
-                "start": defs.CRE(name="bob", id="a"),
+                "start": defs.CRE(name="bob", id="788-788"),
             },
             {
-                "end": defs.CRE(name="bob", id=2),
+                "end": defs.CRE(name="bob", id="222-222"),
                 "relationship": "LINKED_TO",
-                "start": defs.CRE(name="bob", id="a"),
+                "start": defs.CRE(name="bob", id="788-788"),
             },
         ]
         path2 = [
             {
-                "end": defs.CRE(name="bob", id=1),
+                "end": defs.CRE(name="bob", id="111-111"),
                 "relationship": "LINKED_TO",
-                "start": defs.CRE(name="bob", id="a"),
+                "start": defs.CRE(name="bob", id="788-788"),
             },
             {
-                "end": defs.CRE(name="bob", id=2),
+                "end": defs.CRE(name="bob", id="222-222"),
                 "relationship": "RELATED",
-                "start": defs.CRE(name="bob", id="a"),
+                "start": defs.CRE(name="bob", id="788-788"),
             },
         ]
         gap_mock.return_value = (
-            [defs.CRE(name="bob", id=1)],
+            [defs.CRE(name="bob", id="111-111")],
             [
                 {
-                    "start": defs.CRE(name="bob", id=1),
-                    "end": defs.CRE(name="bob", id=2),
+                    "start": defs.CRE(name="bob", id="111-111"),
+                    "end": defs.CRE(name="bob", id="222-222"),
                     "path": path2,
                 },
                 {
-                    "start": defs.CRE(name="bob", id=1),
-                    "end": defs.CRE(name="bob", id=2),
+                    "start": defs.CRE(name="bob", id="111-111"),
+                    "end": defs.CRE(name="bob", id="222-222"),
                     "path": path,
                 },
             ],
         )
         expected = (
-            ["a", "b"],
+            ["788-788", "b"],
             {
-                1: {
-                    "start": defs.CRE(name="bob", id=1),
+                "111-111": {
+                    "start": defs.CRE(name="bob", id="111-111"),
                     "paths": {
-                        2: {"end": defs.CRE(name="bob", id=2), "path": path, "score": 0}
+                        "222-222": {
+                            "end": defs.CRE(name="bob", id="222-222"),
+                            "path": path,
+                            "score": 0,
+                        }
                     },
                     "extra": 0,
                 }
             },
-            {1: {"paths": {}}},
+            {"111-111": {"paths": {}}},
         )
-        self.assertEqual(db.gap_analysis(collection.neo_db, ["a", "b"]), expected)
+        self.assertEqual(db.gap_analysis(collection.neo_db, ["788-788", "b"]), expected)
 
     @patch.object(db.NEO_DB, "gap_analysis")
     def test_gap_analysis_duplicate_link_path_existing_higher_and_in_extras(
@@ -1454,62 +1510,66 @@ class TestDB(unittest.TestCase):
         collection.neo_db.connected = True
         path = [
             {
-                "end": defs.CRE(name="bob", id=1),
+                "end": defs.CRE(name="bob", id="111-111"),
                 "relationship": "LINKED_TO",
-                "start": defs.CRE(name="bob", id="a"),
+                "start": defs.CRE(name="bob", id="788-788"),
             },
             {
-                "end": defs.CRE(name="bob", id=2),
+                "end": defs.CRE(name="bob", id="222-222"),
                 "relationship": "LINKED_TO",
-                "start": defs.CRE(name="bob", id="a"),
+                "start": defs.CRE(name="bob", id="788-788"),
             },
         ]
         path2 = [
             {
-                "end": defs.CRE(name="bob", id=1),
+                "end": defs.CRE(name="bob", id="111-111"),
                 "relationship": "LINKED_TO",
-                "start": defs.CRE(name="bob", id="a"),
+                "start": defs.CRE(name="bob", id="788-788"),
             },
             {
-                "end": defs.CRE(name="bob", id=2),
+                "end": defs.CRE(name="bob", id="222-222"),
                 "relationship": "RELATED",
-                "start": defs.CRE(name="bob", id="a"),
+                "start": defs.CRE(name="bob", id="788-788"),
             },
             {
-                "end": defs.CRE(name="bob", id=2),
+                "end": defs.CRE(name="bob", id="222-222"),
                 "relationship": "RELATED",
-                "start": defs.CRE(name="bob", id="a"),
+                "start": defs.CRE(name="bob", id="788-788"),
             },
         ]
         gap_mock.return_value = (
-            [defs.CRE(name="bob", id=1)],
+            [defs.CRE(name="bob", id="111-111")],
             [
                 {
-                    "start": defs.CRE(name="bob", id=1),
-                    "end": defs.CRE(name="bob", id=2),
+                    "start": defs.CRE(name="bob", id="111-111"),
+                    "end": defs.CRE(name="bob", id="222-222"),
                     "path": path2,
                 },
                 {
-                    "start": defs.CRE(name="bob", id=1),
-                    "end": defs.CRE(name="bob", id=2),
+                    "start": defs.CRE(name="bob", id="111-111"),
+                    "end": defs.CRE(name="bob", id="222-222"),
                     "path": path,
                 },
             ],
         )
         expected = (
-            ["a", "b"],
+            ["788-788", "b"],
             {
-                1: {
-                    "start": defs.CRE(name="bob", id=1),
+                "111-111": {
+                    "start": defs.CRE(name="bob", id="111-111"),
                     "paths": {
-                        2: {"end": defs.CRE(name="bob", id=2), "path": path, "score": 0}
+                        "222-222": {
+                            "end": defs.CRE(name="bob", id="222-222"),
+                            "path": path,
+                            "score": 0,
+                        }
                     },
                     "extra": 0,
                 }
             },
-            {1: {"paths": {}}},
+            {"111-111": {"paths": {}}},
         )
-        self.assertEqual(db.gap_analysis(collection.neo_db, ["a", "b"]), expected)
+        self.assertEqual(db.gap_analysis(collection.neo_db, ["788-788", "b"]), expected)
 
     @patch.object(db.NEO_DB, "gap_analysis")
     def test_gap_analysis_dump_to_cache(self, gap_mock):
@@ -1517,45 +1577,55 @@ class TestDB(unittest.TestCase):
         collection.neo_db.connected = True
         path = [
             {
-                "end": defs.CRE(name="bob", id=1),
+                "end": defs.CRE(name="bob1", id="111-111"),
                 "relationship": "LINKED_TO",
-                "start": defs.CRE(name="bob", id="a"),
+                "start": defs.CRE(name="bob7", id="788-788"),
+                "score": 0,
             },
             {
-                "end": defs.CRE(name="bob", id=2),
+                "end": defs.CRE(name="bob2", id="222-222"),
                 "relationship": "RELATED",
-                "start": defs.CRE(name="bob", id=1),
+                "start": defs.CRE(name="bob1", id="111-111"),
+                "score": 2,
             },
             {
-                "end": defs.CRE(name="bob", id=1),
+                "end": defs.CRE(name="bob1", id="111-111"),
                 "relationship": "RELATED",
-                "start": defs.CRE(name="bob", id=2),
+                "start": defs.CRE(name="bob2", id="222-222"),
+                "score": 2,
             },
             {
-                "end": defs.CRE(name="bob", id=3),
+                "end": defs.CRE(name="bob3", id="333-333"),
                 "relationship": "LINKED_TO",
-                "start": defs.CRE(name="bob", id=2),
+                "start": defs.CRE(name="bob2", id="222-222"),
+                "score": 4,
             },
         ]
         gap_mock.return_value = (
-            [defs.CRE(name="bob", id="a")],
+            [defs.CRE(name="bob7", id="788-788")],
             [
                 {
-                    "start": defs.CRE(name="bob", id="a"),
-                    "end": defs.CRE(name="bob", id="b"),
+                    "start": defs.CRE(name="bob7", id="788-788"),
+                    "end": defs.CRE(name="bob2", id="222-222"),
                     "path": path,
                 }
             ],
         )
 
         expected_response = (
-            ["a", "b"],
-            {"a": {"start": defs.CRE(name="bob", id="a"), "paths": {}, "extra": 1}},
+            ["788-788", "222-222"],
             {
-                "a": {
+                "788-788": {
+                    "start": defs.CRE(name="bob7", id="788-788"),
+                    "paths": {},
+                    "extra": 1,
+                }
+            },
+            {
+                "788-788": {
                     "paths": {
-                        "b": {
-                            "end": defs.CRE(name="bob", id="b"),
+                        "222-222": {
+                            "end": defs.CRE(name="bob2", id="222-222"),
                             "path": path,
                             "score": 4,
                         }
@@ -1563,16 +1633,27 @@ class TestDB(unittest.TestCase):
                 }
             },
         )
-        response = db.gap_analysis(collection.neo_db, ["a", "b"], True)
+        response = db.gap_analysis(collection.neo_db, ["788-788", "222-222"])
 
-        self.assertEqual(response, (expected_response[0], {}, {}))
+        self.maxDiff = None
         self.assertEqual(
-            collection.get_gap_analysis_result("d8160c9b3dc20d4e931aeb4f45262155"),
+            response, (expected_response[0], expected_response[1], expected_response[2])
+        )
+        self.assertEqual(
+            collection.gap_analysis_exists(make_resources_key(["788-788", "222-222"])),
+            True,
+        )
+        self.assertEqual(
+            collection.get_gap_analysis_result(
+                make_resources_key(["788-788", "222-222"])
+            ),
             flask_json.dumps({"result": expected_response[1]}),
         )
         self.assertEqual(
-            collection.get_gap_analysis_result("d8160c9b3dc20d4e931aeb4f45262155->a"),
-            flask_json.dumps({"result": expected_response[2]["a"]}),
+            collection.get_gap_analysis_result(
+                make_subresources_key(["788-788", "222-222"], "788-788")
+            ),
+            flask_json.dumps({"result": expected_response[2]["788-788"]}),
         )
 
     def test_neo_db_parse_node_code(self):
@@ -1589,7 +1670,7 @@ class TestDB(unittest.TestCase):
             hyperlink=hyperlink,
             links=[
                 defs.Link(
-                    defs.CRE(id="123", description="gcCD2", name="gcC2"), "Related"
+                    defs.CRE(id="123-123", description="gcCD2", name="gcC2"), "Related"
                 )
             ],
         )
@@ -1600,7 +1681,7 @@ class TestDB(unittest.TestCase):
             version=version,
             hyperlink=hyperlink,
             related=[
-                db.NeoCRE(external_id="123", description="gcCD2", name="gcC2"),
+                db.NeoCRE(external_id="123-123", description="gcCD2", name="gcC2"),
             ],
         )
 
@@ -1626,7 +1707,7 @@ class TestDB(unittest.TestCase):
             hyperlink=hyperlink,
             links=[
                 defs.Link(
-                    defs.CRE(id="123", description="gcCD2", name="gcC2"), "Related"
+                    defs.CRE(id="123-123", description="gcCD2", name="gcC2"), "Related"
                 )
             ],
         )
@@ -1640,7 +1721,7 @@ class TestDB(unittest.TestCase):
             subsection=subsection,
             hyperlink=hyperlink,
             related=[
-                db.NeoCRE(external_id="123", description="gcCD2", name="gcC2"),
+                db.NeoCRE(external_id="123-123", description="gcCD2", name="gcC2"),
             ],
         )
         self.assertEqual(db.NEO_DB.parse_node(graph_node).todict(), expected.todict())
@@ -1654,8 +1735,10 @@ class TestDB(unittest.TestCase):
         sectionID = "sectionID"
         subsection = "subsection"
         hyperlink = "version"
+        tooltype = defs.ToolTypes.Defensive
         expected = defs.Tool(
             name=name,
+            tooltype=tooltype,
             description=description,
             tags=tags,
             version=version,
@@ -1665,13 +1748,14 @@ class TestDB(unittest.TestCase):
             hyperlink=hyperlink,
             links=[
                 defs.Link(
-                    defs.CRE(id="123", description="gcCD2", name="gcC2"), "Related"
+                    defs.CRE(id="123-123", description="gcCD2", name="gcC2"), "Related"
                 )
             ],
         )
         graph_node = db.NeoTool(
             name=name,
             description=description,
+            tooltype=tooltype,
             tags=tags,
             version=version,
             section=section,
@@ -1679,7 +1763,7 @@ class TestDB(unittest.TestCase):
             subsection=subsection,
             hyperlink=hyperlink,
             related=[
-                db.NeoCRE(external_id="123", description="gcCD2", name="gcC2"),
+                db.NeoCRE(external_id="123-123", description="gcCD2", name="gcC2"),
             ],
         )
         self.assertEqual(db.NEO_DB.parse_node(graph_node).todict(), expected.todict())
@@ -1688,7 +1772,7 @@ class TestDB(unittest.TestCase):
         name = "name"
         description = "description"
         tags = "tags"
-        external_id = "abc"
+        external_id = "123-123"
         expected = defs.CRE(
             name=name,
             description=description,
@@ -1696,10 +1780,10 @@ class TestDB(unittest.TestCase):
             tags=tags,
             links=[
                 defs.Link(
-                    defs.CRE(id="123", description="gcCD2", name="gcC2"), "Contains"
+                    defs.CRE(id="123-123", description="gcCD2", name="gcC2"), "Contains"
                 ),
                 defs.Link(
-                    defs.CRE(id="123", description="gcCD3", name="gcC3"), "Contains"
+                    defs.CRE(id="123-123", description="gcCD3", name="gcC3"), "Contains"
                 ),
                 defs.Link(
                     defs.Standard(
@@ -1720,8 +1804,8 @@ class TestDB(unittest.TestCase):
             external_id=external_id,
             contained_in=[],
             contains=[
-                db.NeoCRE(external_id="123", description="gcCD2", name="gcC2"),
-                db.NeoCRE(external_id="123", description="gcCD3", name="gcC3"),
+                db.NeoCRE(external_id="123-123", description="gcCD2", name="gcC2"),
+                db.NeoCRE(external_id="123-123", description="gcCD3", name="gcC3"),
             ],
             linked=[
                 db.NeoStandard(
@@ -1734,6 +1818,7 @@ class TestDB(unittest.TestCase):
             ],
             same_as=[],
             related=[],
+            auto_linked_to=[],
         )
 
         parsed = db.NEO_DB.parse_node(graph_node)
@@ -1744,7 +1829,7 @@ class TestDB(unittest.TestCase):
         name = "name"
         description = "description"
         tags = "tags"
-        external_id = "abc"
+        external_id = "123-123"
         expected = defs.CRE(
             name=name, description=description, id=external_id, tags=tags, links=[]
         )
@@ -1755,8 +1840,8 @@ class TestDB(unittest.TestCase):
             external_id=external_id,
             contained_in=[],
             contains=[
-                db.NeoCRE(external_id="123", description="gcCD2", name="gcC2"),
-                db.NeoCRE(external_id="123", description="gcCD3", name="gcC3"),
+                db.NeoCRE(external_id="123-123", description="gcCD2", name="gcC2"),
+                db.NeoCRE(external_id="123-123", description="gcCD3", name="gcC3"),
             ],
             linked=[
                 db.NeoStandard(
@@ -1970,6 +2055,17 @@ class TestDB(unittest.TestCase):
         )
         self.assertEqual(tool_emb, {})
 
+    def test_get_standard_names(self):
+        for s in ["sa", "sb", "sc", "sd"]:
+            for sub in ["suba", "subb", "subc", "subd"]:
+                self.collection.add_node(
+                    defs.Standard(name=s, section=sub, subsection=sub)
+                )
+        self.assertCountEqual(
+            ["BarStand", "Unlinked", "sa", "sb", "sc", "sd"],
+            self.collection.standards(),
+        )
+
     def test_all_cres_with_pagination(self):
         """"""
         cres = []
@@ -2004,6 +2100,42 @@ class TestDB(unittest.TestCase):
         self.maxDiff = None
         # from pprint import pprint
         # pprint(cres)
+        self.assertEqual(paginated_cres, [cres[0], cres[1]])
+        self.assertEqual(page, 1)
+        self.assertEqual(total_pages, 4)
+
+    def test_all_cres_with_pagination(self):
+        """"""
+        cres = []
+        nodes = []
+        dbcres = []
+        dbnodes = []
+        sqla.session.remove()
+        sqla.drop_all()
+        sqla.create_all()
+        collection = db.Node_collection()
+        for i in range(0, 8):
+            if i == 0 or i == 1:
+                cres.append(defs.CRE(name=f">> C{i}", id=f"{i}{i}{i}-{i}{i}{i}"))
+            else:
+                cres.append(defs.CRE(name=f"C{i}", id=f"{i}{i}{i}-{i}{i}{i}"))
+
+            dbcres.append(collection.add_cre(cres[i]))
+            nodes.append(defs.Standard(section=f"S{i}", name=f"N{i}"))
+            dbnodes.append(collection.add_node(nodes[i]))
+            cres[i].add_link(
+                defs.Link(document=copy(nodes[i]), ltype=defs.LinkTypes.LinkedTo)
+            )
+            collection.add_link(
+                cre=dbcres[i], node=dbnodes[i], type=defs.LinkTypes.LinkedTo
+            )
+
+        collection.session.commit()
+
+        paginated_cres, page, total_pages = collection.all_cres_with_pagination(
+            page=1, per_page=2
+        )
+        self.maxDiff = None
         self.assertEqual(paginated_cres, [cres[0], cres[1]])
         self.assertEqual(page, 1)
         self.assertEqual(total_pages, 4)

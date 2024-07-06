@@ -1,30 +1,33 @@
-import copy
 import os
 import tempfile
 import unittest
 from collections import namedtuple
-from dataclasses import asdict
-from pprint import pprint
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
-import dacite
+from application import create_app, sqla  # type: ignore
 from application.database import db
 from application.defs import cre_defs as defs
-from application.utils.external_project_parsers import misc_tools_parser
-from dacite import Config, from_dict
+from application.utils.external_project_parsers.parsers import misc_tools_parser
+from application.prompt_client.prompt_client import PromptHandler
 
 
 class TestMiscToolsParser(unittest.TestCase):
+    def tearDown(self) -> None:
+        self.app_context.pop()
+
+    def setUp(self) -> None:
+        self.app = create_app(mode="test")
+        self.app_context = self.app.app_context()
+        self.app_context.push()
+        sqla.create_all()
+        self.collection = db.Node_collection()
+
     @patch("application.database.db.dbCREfromCRE")
     @patch("application.database.db.Node_collection.get_CREs")
-    @patch("application.database.db.Node_collection.add_link")
-    @patch("application.database.db.Node_collection.add_node")
     @patch("application.utils.git.clone")
     def test_document_todict(
         self,
         mocked_clone,
-        mocked_add_node,
-        mocked_add_link,
         mocked_get_cres,
         mocked_dbCREfromCRE,
     ) -> None:
@@ -41,22 +44,12 @@ class TestMiscToolsParser(unittest.TestCase):
             tags=["secrets", "training"],
             hyperlink="https://example.com/foo/bar/project",
             tooltype=defs.ToolTypes.Training,
-        )
+        ).add_link(defs.Link(document=cre, ltype=defs.LinkTypes.LinkedTo))
         tags = [expected.tooltype.value]
         tags.extend(expected.tags)
-        dbnode = db.Node(
-            name=expected.name,
-            ntype=expected.doctype.value,
-            description=expected.description,
-            tags=",".join(tags),
-            link=expected.hyperlink,
-            section=expected.section,
-            section_id=expected.sectionID,
-        )
 
         mocked_clone.return_value = repo
         mocked_get_cres.return_value = [cre]
-        mocked_add_node.return_value = dbnode
         mocked_dbCREfromCRE.return_value = dbcre
 
         readme_content = """<!-- CRE Link: [223-780](https://www.opencre.org/cre/223-780?register=true&type=tool&tool_type=training&tags=secrets,training&description=With%20this%20app%2C%20we%20have%20packed%20various%20ways%20of%20how%20to%20not%20store%20your%20secrets.%20These%20can%20help%20you%20to%20realize%20whether%20your%20secret%20management%20is%20ok.%20The%20challenge%20is%20to%20find%20all%20the%20different%20secrets%20by%20means%20of%20various%20tools%20and%20techniques.%20Can%20you%20solve%20all%20the%2014%20challenges%3F) -->
@@ -66,15 +59,12 @@ class TestMiscToolsParser(unittest.TestCase):
             rdm.write(readme_content)
 
         collection = db.Node_collection()
-        misc_tools_parser.parse_tool(
-            "https://example.com/foo/bar/project.git", collection
+        entries = misc_tools_parser.MiscTools().parse(
+            cache=collection, ph=PromptHandler(database=self.collection)
         )
-
-        self.maxDiff = None
-        mocked_get_cres.assert_called_with(external_id=cre.id)
-        mocked_add_node.assert_called_with(node=expected)
-        mocked_add_link.assert_called_with(
-            cre=dbcre,
-            node=dbnode,
-            type=defs.LinkTypes.LinkedTo,
-        )
+        for name, tools in entries.results.items():
+            self.assertEqual(name, "OWASP WrongSecrets")
+            self.assertEqual(len(tools), 1)
+            self.assertCountEqual(expected.todict(), tools[0].todict())
+            self.maxDiff = None
+            mocked_get_cres.assert_called_with(external_id=cre.id)

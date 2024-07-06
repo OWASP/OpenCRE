@@ -45,8 +45,6 @@ def export_json():
             )
         )
 
-    # print(json.dumps(nodes))
-    # print(json.dumps(edges))
     with open("cre_graph.json", "w+") as cg:
         cg.write("const graph=")
         json.dump(graph, cg)

@@ -16,9 +16,8 @@ from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
 app = create_app(mode=os.getenv("FLASK_CONFIG") or "default")
 migrate = Migrate(app, sqla, render_as_batch=True)
 
+
 # flask <x> commands
-
-
 @app.cli.command()  # type: ignore
 @click.option(
     "--cover/--no-cover", default=False, help="Run tests under code coverage."
@@ -71,12 +70,12 @@ def main() -> None:
         action="store_true",
         help="will treat the incoming spreadsheet as a reviewed cre and add to the database",
     )
-    parser.add_argument(
-        "--review",
-        action="store_true",
-        help="will treat the incoming spreadsheet as a new mapping, will try to map the incoming connections to existing cre\
-            and will create a new spreadsheet with the result for review. Nothing will be added to the database at this point",
-    )
+    # parser.add_argument(
+    #     "--review",
+    #     action="store_true",
+    #     help="will treat the incoming spreadsheet as a new mapping, will try to map the incoming connections to existing cre\
+    #         and will create a new spreadsheet with the result for review. Nothing will be added to the database at this point",
+    # )
     parser.add_argument(
         "--email",
         help="used in conjuctions with --review, what email to share the resulting spreadsheet with",
@@ -99,11 +98,9 @@ def main() -> None:
         default=os.path.join(os.path.dirname(os.path.realpath(__file__)), "./cres/"),
         help="define location of local cre files for review/add",
     )
-
     parser.add_argument(
         "--owasp_proj_meta",
         default=None,
-        # default=os.path.join(os.path.dirname(os.path.realpath(__file__)), "./cres/owasp/projects.yaml"),
         help="define location of owasp project metadata",
     )
     parser.add_argument(
@@ -117,6 +114,12 @@ def main() -> None:
         help="define location of local directory to export database in OSIB format to",
     )
 
+    parser.add_argument(
+        "--export",
+        default=None,
+        help="export all data into yaml files under the directory pointed to by this argument",
+    )
+    # Start External Project importing
     parser.add_argument(
         "--zap_in",
         action="store_true",
@@ -142,11 +145,7 @@ def main() -> None:
         action="store_true",
         help="import CWE",
     )
-    parser.add_argument(
-        "--export",
-        default=None,
-        help="export all data into yaml files under the directory pointed to by this argument",
-    )
+
     parser.add_argument(
         "--csa_ccm_v3_in",
         action="store_true",
@@ -192,6 +191,13 @@ def main() -> None:
         action="store_true",
         help="import cloud native security controls from their repo (https://raw.githubusercontent.com/cloud-native-security-controls/controls-catalog/main/controls/controls_catalog.csv)",
     )
+    # End External Project importing
+
+    parser.add_argument(
+        "--import_external_projects",
+        action="store_true",
+        help="import all external projects, shortcut for calling all of *_in",
+    )
     parser.add_argument(
         "--generate_embeddings",
         action="store_true",
@@ -212,6 +218,22 @@ def main() -> None:
         default="",
         help="preload map analysis for all possible 2 standards combinations, use target url as an OpenCRE base",
     )
+    parser.add_argument(
+        "--delete_map_analysis_for",
+        default="",
+        help="delete all map analyses for resource spcified",
+    )
+    parser.add_argument(
+        "--delete_resource",
+        default="",
+        help="delete all the mappings, embeddings and gap analysis for the resource",
+    )
+    parser.add_argument(
+        "--upstream_sync",
+        action="store_true",
+        help="download the cre graph from upstream",
+    )
+
     args = parser.parse_args()
 
     from application.cmd import cre_main

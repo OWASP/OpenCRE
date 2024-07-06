@@ -1,4 +1,3 @@
-import { nextDay } from 'date-fns';
 import puppeteer from 'puppeteer';
 require('regenerator-runtime/runtime');
 
@@ -8,6 +7,7 @@ describe('App.js', () => {
   const debug = {
     // headless: false,
     //  slowMo: 150,
+    args: ['--no-sandbox', '--disable-setuid-sandbox'], // needed for docker, we trust the content of opencre.org
   };
   const config = {};
   beforeAll(async () => {
@@ -17,14 +17,14 @@ describe('App.js', () => {
     page.setDefaultTimeout(15000);
   });
 
-  it('contains the welcome text', async () => {
+  it('contains the welcome text', { url: 'http://localhost:5000' }, async () => {
     await page.goto('http://localhost:5000');
     await page.waitForSelector('#SearchBar');
     const text = await page.$eval('#SearchBar', (e) => e.textContent);
     expect(text).toContain('Search');
   });
 
-  it('can search for random strs', async () => {
+  it('can search for random strs', { url: 'http://127.0.0.1:5000' }, async () => {
     await page.goto('http://127.0.0.1:5000');
     await page.waitForSelector('#SearchBar');
     await page.type('#SearchBar > div > input', 'asdf');
@@ -34,74 +34,82 @@ describe('App.js', () => {
     expect(text).toContain('No results match your search term');
   });
 
-  it('can search for cryptography using the free text method and it returns both Nodes and CRES', async () => {
-    await page.goto('http://127.0.0.1:5000');
-    await page.waitForSelector('#SearchBar');
-    await page.type('#SearchBar > div > input', 'crypto');
-    await page.click('#SearchBar > div > button');
-    await page.waitForSelector('.content');
-    const text = await page.$eval('.content', (e) => e.textContent);
-    expect(text).not.toContain('No results match your search term');
+  it(
+    'can search for cryptography using the free text method and it returns both Nodes and CRES',
+    { url: 'http://127.0.0.1:5000' },
+    async () => {
+      await page.goto('http://127.0.0.1:5000');
+      await page.waitForSelector('#SearchBar');
+      await page.type('#SearchBar > div > input', 'crypto');
+      await page.click('#SearchBar > div > button');
+      await page.waitForSelector('.content');
+      const text = await page.$eval('.content', (e) => e.textContent);
+      expect(text).not.toContain('No results match your search term');
 
-    await page.waitForSelector('.standard-page__links-container');
-    const results = await page.$$('.standard-page__links-container');
-    expect(results.length).toBeGreaterThan(1);
+      await page.waitForSelector('.standard-page__links-container');
+      const results = await page.$$('.standard-page__links-container');
+      expect(results.length).toBeGreaterThan(1);
 
-    const cres = await page.$$('.cre-page >div>div>.standard-page__links-container');
-    expect(cres.length).toBeGreaterThan(1);
+      const cres = await page.$$('.cre-page >div>div>.standard-page__links-container');
+      expect(cres.length).toBeGreaterThan(1);
 
-    const docs = await page.$$('.cre-page >div>div:nth-child(2)>.standard-page__links-container');
-    expect(docs.length).toBeGreaterThan(1);
-  });
+      const docs = await page.$$('.cre-page >div>div:nth-child(2)>.standard-page__links-container');
+      expect(docs.length).toBeGreaterThan(1);
+    }
+  );
 
-  it('can search for a standard by name, section and the standard page works as expected', async () => {
-    await page.goto('http://127.0.0.1:5000/node/standard/ASVS');
-    await page.waitForSelector('.content');
-    const text = await page.$$('.content', (e) => e.textContent);
-    expect(text).not.toContain('No results match your search term');
+  it(
+    'can search for a standard by name, section and the standard page works as expected',
+    { url: 'http://127.0.0.1:5000' },
+    async () => {
+      await page.goto('http://127.0.0.1:5000/node/standard/ASVS');
+      await page.waitForSelector('.content');
+      const text = await page.$$('.content', (e) => e.textContent);
+      expect(text).not.toContain('No results match your search term');
 
-    await page.waitForSelector('.standard-page__links-container');
+      await page.waitForSelector('.standard-page__links-container');
 
-    // title match
-    const page_title = await page.$eval('.standard-page__heading', (e) => e.textContent);
-    expect(page_title).toContain('ASVS');
+      // title match
+      const page_title = await page.$eval('.standard-page__heading', (e) => e.textContent);
+      expect(page_title).toContain('ASVS');
 
-    // results
-    const results = await page.$$('.standard-page__links-container');
-    expect(results.length).toBeGreaterThan(1);
+      // results
+      const results = await page.$$('.standard-page__links-container');
+      expect(results.length).toBeGreaterThan(1);
 
-    // pagination
-    const original_content = await page.content();
-    await page.click('a[type="pageItem"][value="2"]');
-    await page.waitForSelector('.content');
-    expect(await page.content()).not.toEqual(original_content);
+      // pagination
+      const original_content = await page.content();
+      await page.click('a[type="pageItem"][value="2"]');
+      await page.waitForSelector('.content');
+      expect(await page.content()).not.toEqual(original_content);
 
-    // link to section
-    await page.click('.standard-page__links-container>.title>a');
-    await page.waitForSelector('.content');
-    const url = await page.url();
-    expect(url).toContain('section');
-    const section = await page.$eval('.standard-page > span:nth-child(2)', (e) => e.textContent);
-    expect(section).toContain('Reference:');
+      // link to section
+      await page.click('.standard-page__links-container>.title>a');
+      await page.waitForSelector('.content');
+      const url = await page.url();
+      expect(url).toContain('section');
+      const section = await page.$eval('.standard-page > span:nth-child(2)', (e) => e.textContent);
+      expect(section).toContain('Reference:');
 
-    // show reference
-    const hrefs = await page.evaluate(() =>
-      Array.from(document.querySelectorAll('.section-page > a[href]'), (a) => a.getAttribute('href'))
-    );
-    expect(hrefs[0]).toContain('https://');
+      // show reference
+      const hrefs = await page.evaluate(() =>
+        Array.from(document.querySelectorAll('.section-page > a[href]'), (a) => a.getAttribute('href'))
+      );
+      expect(hrefs[0]).toContain('https://');
 
-    // link to at least one cre
-    const cre_links = await page.$$('.cre-page__links-container > .title > a:nth-child(1)');
-    expect(cre_links.length).toBeGreaterThan(0);
-    const cre_links_hrefs = await page.evaluate(() =>
-      Array.from(document.querySelectorAll('.cre-page__links-container > .title > a:nth-child(1)'), (a) =>
-        a.getAttribute('href')
-      )
-    );
-    expect(cre_links_hrefs[0]).toContain('/cre/');
-  });
+      // link to at least one cre
+      const cre_links = await page.$$('.cre-page__links-container > .title > a:nth-child(1)');
+      expect(cre_links.length).toBeGreaterThan(0);
+      const cre_links_hrefs = await page.evaluate(() =>
+        Array.from(document.querySelectorAll('.cre-page__links-container > .title > a:nth-child(1)'), (a) =>
+          a.getAttribute('href')
+        )
+      );
+      expect(cre_links_hrefs[0]).toContain('/cre/');
+    }
+  );
 
-  it('can search for a cre', async () => {
+  it('can search for a cre', { url: 'http://127.0.0.1:5000' }, async () => {
     await page.goto('http://127.0.0.1:5000');
     await page.waitForSelector('#SearchBar');
     await page.type('#SearchBar > div > input', '558-807');
@@ -132,7 +140,7 @@ describe('App.js', () => {
     expect(nested.length).toBeGreaterThan(1);
   });
 
-  it('can filter', async () => {
+  it('can filter', { url: 'http://127.0.0.1:5000' }, async () => {
     await page.goto('http://127.0.0.1:5000/cre/558-807?applyFilters=true&filters=asvs');
     await page.waitForSelector('.cre-page__links-container');
     // Get inner text
@@ -159,7 +167,7 @@ describe('App.js', () => {
     expect(clearFilters).toContain('Clear Filters');
   });
 
-  it('can smartlink', async () => {
+  it('can smartlink', { url: 'http://127.0.0.1:5000' }, async () => {
     const response = await page.goto('http://127.0.0.1:5000/smartlink/standard/CWE/1002');
     expect(response.url()).toBe('http://127.0.0.1:5000/node/standard/CWE/sectionid/1002');
 

@@ -1,9 +1,0 @@
-doctype: CRE
-id: 125-010
-links:
-- document:
-    doctype: CRE
-    id: 850-376
-    name: Facilities management
-  ltype: Contains
-name: Password management systems

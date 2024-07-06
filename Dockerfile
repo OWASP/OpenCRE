@@ -4,11 +4,14 @@ WORKDIR /code
 COPY . /code
 RUN yarn install && yarn build
 
-FROM python:3.11.0 as run
+FROM python:3.11 as run
 
 COPY --from=build /code /code
 WORKDIR /code
+COPY ./scripts/prod-docker-entrypoint.sh /code
 RUN pip install -r requirements.txt gunicorn
 
-ENTRYPOINT gunicorn
-CMD ["--timeout","800","--workers","8","cre:app"]
+ENV INSECURE_REQUESTS=1
+ENV FLASK_CONFIG="production"
+RUN chmod +x /code/prod-docker-entrypoint.sh
+ENTRYPOINT ["/code/prod-docker-entrypoint.sh"]

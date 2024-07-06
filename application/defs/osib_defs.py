@@ -96,7 +96,6 @@ class Node_attributes(_Status):
 
 @dataclass
 class Osib_node(_Osib_base):
-
     """Object-Node for building the OSIB tree"""
 
     aliases: Optional[List[Osib_id]] = field(compare=False, default=None)
@@ -207,9 +206,9 @@ def _parse_node(
                     hyperlink=english_attrs.source if english_attrs.source else "",
                     tooltype=ttype if ttype else defs.ToolTypes.Unknown,
                     section=english_attrs.section if english_attrs.section else "",
-                    sectionID=english_attrs.sectionID
-                    if english_attrs.sectionID
-                    else "",
+                    sectionID=(
+                        english_attrs.sectionID if english_attrs.sectionID else ""
+                    ),
                 )
 
             elif node_type == defs.Credoctypes.CRE:

@@ -7,8 +7,10 @@ export const TYPE_CONTAINS = 'Contains';
 export const TYPE_RELATED = 'Related';
 export const TYPE_SAME = 'SAME';
 export const TYPE_SAM = 'SAM';
+export const TYPE_AUTOLINKED_TO = 'Automatically linked to';
 
 export const DOCUMENT_TYPE_NAMES = {
+  [TYPE_AUTOLINKED_TO]: ' has been automatically mapped to',
   [TYPE_SAME]: ' has been automatically mapped to',
   [TYPE_SAM]: ' has been automatically mapped to',
   [TYPE_LINKED_TO]: ' is linked to sources',

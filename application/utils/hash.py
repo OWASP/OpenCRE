@@ -1,9 +1,10 @@
 import hashlib
+from typing import List
 
 
-def make_cache_key(standards: list, key: str) -> str:
-    return make_array_hash(standards) + "->" + key
+def make_subresources_key(standards: List[str], key: str) -> str:
+    return str(make_resources_key(standards)) + "->" + key
 
 
-def make_array_hash(array: list):
-    return hashlib.md5(":".join(array).encode("utf-8")).hexdigest()
+def make_resources_key(array: List[str]):
+    return " >> ".join(array)

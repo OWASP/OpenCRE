@@ -8,9 +8,11 @@ import {
 import { Document, LinkedDocument } from '../types';
 
 export const getDocumentDisplayName = (document: Document, noID = false) => {
-  // [document.doctype, document.id, document.name, document.section, document.subsection].filter(Boolean).join(' - '); // format: Standard - ASVS - V1.1
   if (!document) {
     return '';
+  }
+  if (document.doctype != DOCUMENT_TYPES.TYPE_CRE) {
+    document.id = '';
   }
   return [
     document.doctype,
@@ -30,7 +32,7 @@ export const groupLinksByType = (node: Document): LinksByType =>
   node.links ? groupBy(node.links, (link) => link.ltype) : {};
 
 export const orderLinksByType = (lbt: LinksByType): LinksByType => {
-  const order = ['Contains', 'Linked To', 'SAME', 'SAM', 'Is Part Of', 'Related'];
+  const order = ['Contains', 'Linked To', 'Automatically linked to', 'SAME', 'SAM', 'Is Part Of', 'Related'];
   const res: LinksByType = {};
   for (const itm of order) {
     if (lbt[itm]) {

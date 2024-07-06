@@ -1,9 +1,10 @@
-import collections
+import re
 import json
 from copy import copy
 from dataclasses import asdict, dataclass, field
 from enum import Enum, EnumMeta
 from typing import Any, Dict, List, Optional, Set, Union
+from application.defs import cre_exceptions
 
 
 class ExportFormat(
@@ -206,6 +207,7 @@ class LinkTypes(str, Enum, metaclass=EnumMetaWithContains):
     Contains = "Contains"  # Hierarchy below: “Contains”
     Related = "Related"  # Hierarchy across (other CRE topic or Tag): “related”
 
+    AutomaticallyLinkedTo = "Automatically linked to"
     RemediatedBy = "Remediated by"
     Remediates = "Remediates"
 
@@ -222,6 +224,25 @@ class LinkTypes(str, Enum, metaclass=EnumMetaWithContains):
                 f"{name} is not a valid linktype, supported linktypes are {[t for t in LinkTypes]}"
             )
         return res[0]
+
+    @classmethod
+    def opposite(cls, typ) -> Any:  # it returns the opposite of the type provided
+        if typ == cls.Contains:
+            return cls.PartOf
+        elif typ == cls.PartOf:
+            return cls.Contains
+        elif typ == cls.LinkedTo:
+            return typ
+        elif typ == cls.Related:
+            return typ
+        elif typ == cls.RemediatedBy:
+            return cls.Remediates
+        elif typ == cls.Remediates:
+            return cls.RemediatedBy
+        elif typ == cls.TestedBy:
+            return cls.Tests
+        elif typ == cls.Tests:
+            return cls.TestedBy
 
 
 class ToolTypes(str, Enum, metaclass=EnumMetaWithContains):
@@ -282,13 +303,14 @@ class Link:
         return res
 
 
-@dataclass
+@dataclass(init=True, repr=True, eq=True, order=True)
 class Document:
     name: str
     doctype: Credoctypes
-    id: Optional[str] = ""
     description: Optional[str] = ""
     links: List[Link] = field(default_factory=list)
+    embeddings: List[float] = field(default_factory=list)
+    embeddings_text: str = ""
     tags: List[str] = field(default_factory=list)
     metadata: Dict[str, Any] = field(default_factory=dict)
 
@@ -315,6 +337,14 @@ class Document:
                 ]
             )
             and self.metadata == other.metadata
+            and all(
+                [
+                    a in other.embeddings and b in self.embeddings
+                    for a in self.embeddings
+                    for b in other.embeddings
+                ]
+            )
+            and self.embeddings_text == other.embeddings_text
         )
 
     def __hash__(self) -> int:
@@ -355,14 +385,49 @@ class Document:
         self.links.append(link)
         return self
 
+    def __post_init__(self):
+        if not len(self.name) > 1:
+            raise cre_exceptions.InvalidDocumentNameException(self)
+
+    @classmethod
+    def from_dict(self, input_doc: Dict):
+        document = None
+        if input_doc.get("doctype") == Credoctypes.CRE:
+            document = CRE(**input_doc)
+            document.doctype = Credoctypes.CRE
+        elif input_doc.get("doctype") == Credoctypes.Standard:
+            document = Standard(**input_doc)
+            document.doctype = Credoctypes.Standard
+
+        elif input_doc.get("doctype") == Credoctypes.Tool:
+            document = Tool(**input_doc)
+            document.doctype = Credoctypes.Tool
+            document.tooltype = ToolTypes.from_str(document.tooltype)
+        links = document.links
+        document.links = []
+        for link in links:
+            doc = Document.from_dict(link["document"])
+            l = Link(document=doc, ltype=LinkTypes.from_str(link["ltype"]))
+            document.add_link(l)
+        return document
+
 
 @dataclass(eq=False)
 class CRE(Document):
     doctype: Credoctypes = Credoctypes.CRE
+    id: Optional[str] = ""
+
+    def todict(self) -> Dict[str, Dict[str, str] | List[Any] | Set[str] | str]:
+        return super().todict()
+
+    def __post_init__(self):
+        if not re.match(r"\d\d\d-\d\d\d", self.id):
+            raise cre_exceptions.InvalidCREIDException(self)
 
 
 @dataclass
 class Node(Document):
+    id: Optional[str] = ""
     hyperlink: Optional[str] = ""
     version: Optional[str] = ""
 
@@ -386,6 +451,16 @@ class Standard(Node):
     sectionID: str = ""
     doctype: Credoctypes = Credoctypes.Standard
     subsection: Optional[str] = ""
+
+    def __post_init__(self):
+        self.id = f"{self.name}"
+        if self.sectionID:
+            self.id += f":{self.sectionID}"
+        if self.section:
+            self.id += f":{self.section}"
+        if self.subsection:
+            self.id += f":{self.subsection}"
+        return super().__post_init__()
 
     def todict(self) -> Dict[Any, Any]:
         res = super().todict()
@@ -415,6 +490,16 @@ class Standard(Node):
 class Tool(Standard):
     tooltype: ToolTypes = ToolTypes.Unknown
     doctype: Credoctypes = Credoctypes.Tool
+
+    def __post_init__(self):
+        self.id = f"{self.name}"
+        if self.sectionID:
+            self.id += f":{self.sectionID}"
+        if self.section:
+            self.id += f":{self.section}"
+        if self.subsection:
+            self.id += f":{self.subsection}"
+        return super().__post_init__()
 
     def __eq__(self, other: object) -> bool:
         return super().__eq__(other) and self.tooltype == other.tooltype

@@ -5,7 +5,7 @@ import React, { FunctionComponent, useContext, useEffect, useMemo, useState } fr
 import { Link, useHistory } from 'react-router-dom';
 import { Icon } from 'semantic-ui-react';
 
-import { TYPE_CONTAINS, TYPE_IS_PART_OF, TYPE_RELATED } from '../../const';
+import { TYPE_AUTOLINKED_TO, TYPE_CONTAINS, TYPE_IS_PART_OF, TYPE_RELATED } from '../../const';
 import { useEnvironment } from '../../hooks';
 import { applyFilters } from '../../hooks/applyFilters';
 import { Document } from '../../types';
@@ -20,7 +20,7 @@ export interface DocumentNode {
   hasLinktypeRelatedParent?: Boolean;
 }
 
-const linkTypesToNest = [TYPE_IS_PART_OF, TYPE_RELATED];
+const linkTypesToNest = [TYPE_IS_PART_OF, TYPE_RELATED, TYPE_AUTOLINKED_TO];
 const linkTypesExcludedInNesting = [TYPE_CONTAINS];
 const linkTypesExcludedWhenNestingRelatedTo = [TYPE_RELATED, TYPE_IS_PART_OF, TYPE_CONTAINS];
 
