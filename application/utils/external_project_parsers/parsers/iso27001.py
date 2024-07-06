@@ -6,8 +6,6 @@ from application.database import db
 from application.defs import cre_defs as defs
 import urllib
 import re
-from simplify_docx import simplify
-import docx
 import tempfile
 from application.prompt_client import prompt_client as prompt_client
 from application.utils.external_project_parsers.base_parser_defs import (

@@ -63,7 +63,7 @@ install-deps-typescript:
 install-deps: install-deps-python install-deps-typescript
 
 install-python:
-	virtualenv -p python3 venv
+	virtualenv -p python3 --system-site-packages venv
 	. ./venv/bin/activate &&\
 	make install-deps-python &&\
 	playwright install

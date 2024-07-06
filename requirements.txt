@@ -2,7 +2,6 @@ black==24.4.2 # do not touch, same version as superlinter
 compliance-trestle
 coverage
 dacite
-docx
 Flask
 Flask_Caching
 flask_compress
@@ -30,7 +29,6 @@ scikit_learn
 scipy
 semver
 setuptools
-simplify_docx
 SQLAlchemy
 compliance-trestle
 nose
@@ -75,12 +73,11 @@ pytest
 pytest-base-url
 pytest-playwright
 python-dateutil
-python-docx
 python-dotenv
 python-frontmatter
 python-markdown-maker
 python-slugify
-PyYAML
+PyYAML==6.0.1
 regex
 requests
 requests-oauthlib
@@ -92,7 +89,6 @@ ruamel.yaml
 ruamel.yaml.clib
 scikit-learn
 Shapely
-simplify-docx
 six
 smmap
 sniffio
