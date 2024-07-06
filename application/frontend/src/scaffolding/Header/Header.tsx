@@ -25,10 +25,10 @@ const getLinks = (): { to: string; name: string }[] => [
     to: `/map_analysis`,
     name: 'Map Analysis',
   },
-  {
-    to: `/explorer`,
-    name: 'OpenCRE Explorer',
-  },
+  // {
+  //   to: `/explorer`,
+  //   name: 'OpenCRE Explorer',
+  // },
 ];
 
 export const Header = () => {
