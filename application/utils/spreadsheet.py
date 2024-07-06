@@ -25,7 +25,7 @@ def findDups(x):
     return {val for val in x if (val in seen or seen.add(val))}
 
 
-def readSpreadsheet(
+def read_spreadsheet(
     url: str, alias: str, validate: bool = True, parse_numbered_only=True
 ) -> Dict[str, Any]:
     """given remote google spreadsheet url,
@@ -145,12 +145,12 @@ def __add_cre_to_spreadsheet(
             for i in range(0, maxgroups):
                 if not working_array[defs.ExportFormat.linked_cre_id_key(str(i))]:
                     grp_added = True
-                    working_array[
-                        defs.ExportFormat.linked_cre_id_key(str(i))
-                    ] = link.document.id
-                    working_array[
-                        defs.ExportFormat.linked_cre_name_key(str(i))
-                    ] = link.document.name
+                    working_array[defs.ExportFormat.linked_cre_id_key(str(i))] = (
+                        link.document.id
+                    )
+                    working_array[defs.ExportFormat.linked_cre_name_key(str(i))] = (
+                        link.document.name
+                    )
                     working_array[
                         defs.ExportFormat.linked_cre_link_type_key(str(i))
                     ] = link.ltype.value

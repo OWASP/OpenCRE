@@ -9,13 +9,13 @@ import urllib.parse
 from typing import Any
 from application.utils import oscal_utils, redis
 
-from rq import Worker, Queue, Connection, job, exceptions
+from rq import Queue, job, exceptions
 
 from application.database import db
 from application.defs import cre_defs as defs
 from application.defs import osib_defs as odefs
 from application.utils import spreadsheet as sheet_utils
-from application.utils import mdutils, redirectors
+from application.utils import mdutils, redirectors, gap_analysis
 from application.prompt_client import prompt_client as prompt_client
 from enum import Enum
 from flask import json as flask_json
@@ -35,7 +35,6 @@ from google_auth_oauthlib.flow import Flow
 from application.utils.spreadsheet import write_csv
 import oauthlib
 import google.auth.transport.requests
-from application.utils.hash import make_array_hash, make_cache_key
 
 from application import tracer
 
@@ -109,7 +108,7 @@ class CRETracer:
 def find_cre(creid: str = None, crename: str = None) -> Any:  # refer
     database = db.Node_collection()
     include_only = request.args.getlist("include_only")
-    opt_osib = request.args.get("osib")
+    # opt_osib = request.args.get("osib")
     opt_format = request.args.get("format")
     with CRETracer("get_cres"):
         cres = database.get_CREs(
@@ -123,8 +122,8 @@ def find_cre(creid: str = None, crename: str = None) -> Any:  # refer
         result = {"data": cre.todict()}
         # disable until we have a consensus on tag behaviour
         # cre = extend_cre_with_tag_links(cre=cre, collection=database)
-        if opt_osib:
-            result["osib"] = odefs.cre2osib([cre]).todict()
+        # if opt_osib:
+        #     result["osib"] = odefs.cre2osib([cre]).todict()
 
         if opt_format == SupportedFormats.Markdown.value:
             return f"<pre>{mdutils.cre_to_md([cre])}</pre>"
@@ -147,7 +146,7 @@ def find_node_by_name(name: str, ntype: str = defs.Credoctypes.Standard.value) -
     database = db.Node_collection()
     opt_section = request.args.get("section")
     opt_sectionID = request.args.get("sectionID")
-    opt_osib = request.args.get("osib")
+    # opt_osib = request.args.get("osib")
     opt_version = request.args.get("version")
     opt_format = request.args.get("format")
     if opt_section:
@@ -208,8 +207,8 @@ def find_node_by_name(name: str, ntype: str = defs.Credoctypes.Standard.value) -
         elif opt_format == SupportedFormats.OSCAL.value:
             return jsonify(json.loads(oscal_utils.list_to_oscal(nodes)))
 
-        if opt_osib:
-            result["osib"] = odefs.cre2osib(nodes).todict()
+        # if opt_osib:
+        #     result["osib"] = odefs.cre2osib(nodes).todict()
 
         res = [node.todict() for node in nodes]
         result["standards"] = res
@@ -224,14 +223,14 @@ def find_node_by_name(name: str, ntype: str = defs.Credoctypes.Standard.value) -
 def find_document_by_tag() -> Any:
     database = db.Node_collection()
     tags = request.args.getlist("tag")
-    opt_osib = request.args.get("osib")
+    # opt_osib = request.args.get("osib")
     opt_format = request.args.get("format")
     documents = database.get_by_tags(tags)
     if documents:
         res = [doc.todict() for doc in documents]
         result = {"data": res}
-        if opt_osib:
-            result["osib"] = odefs.cre2osib(documents).todict()
+        # if opt_osib:
+        #     result["osib"] = odefs.cre2osib(documents).todict()
         if opt_format == SupportedFormats.Markdown.value:
             return f"<pre>{mdutils.cre_to_md(documents)}</pre>"
         elif opt_format == SupportedFormats.CSV.value:
@@ -245,53 +244,22 @@ def find_document_by_tag() -> Any:
 
 
 @app.route("/rest/v1/map_analysis", methods=["GET"])
-def gap_analysis() -> Any:
+def map_analysis() -> Any:
     database = db.Node_collection()
     standards = request.args.getlist("standard")
-    conn = redis.connect()
-    standards_hash = make_array_hash(standards)
-    result = database.get_gap_analysis_result(standards_hash)
-    if result:
-        gap_analysis_dict = flask_json.loads(result)
-        if gap_analysis_dict.get("result"):
-            return jsonify(gap_analysis_dict)
-
-    gap_analysis_results = conn.get(standards_hash)
-    if gap_analysis_results:
-        gap_analysis_dict = json.loads(gap_analysis_results)
-        if gap_analysis_dict.get("job_id"):
-            try:
-                res = job.Job.fetch(id=gap_analysis_dict.get("job_id"), connection=conn)
-            except exceptions.NoSuchJobError as nje:
-                abort(404, "No such job")
-            if (
-                res.get_status() != job.JobStatus.FAILED
-                and res.get_status() != job.JobStatus.STOPPED
-                and res.get_status() != job.JobStatus.CANCELED
-            ):
-                logger.info("gap analysis job id already exists, returning early")
-                return jsonify({"job_id": gap_analysis_dict.get("job_id")})
-    q = Queue(connection=conn)
-    gap_analysis_job = q.enqueue_call(
-        db.gap_analysis,
-        kwargs={
-            "neo_db": database.neo_db,
-            "node_names": standards,
-            "store_in_cache": True,
-            "cache_key": standards_hash,
-        },
-        timeout="10m",
-    )
-
-    conn.set(standards_hash, json.dumps({"job_id": gap_analysis_job.id, "result": ""}))
-    return jsonify({"job_id": gap_analysis_job.id})
+    gap_analysis_dict = gap_analysis.schedule(standards, database)
+    if gap_analysis_dict.get("result"):
+        return jsonify(gap_analysis_dict)
+    if gap_analysis_dict.get("error"):
+        abort(404)
+    return jsonify({"job_id": gap_analysis_dict.get("job_id")})
 
 
 @app.route("/rest/v1/map_analysis_weak_links", methods=["GET"])
-def gap_analysis_weak_links() -> Any:
+def map_analysis_weak_links() -> Any:
     standards = request.args.getlist("standard")
     key = request.args.get("key")
-    cache_key = make_cache_key(standards=standards, key=key)
+    cache_key = gap_analysis.make_subresources_key(standards=standards, key=key)
 
     database = db.Node_collection()
     gap_analysis_results = database.get_gap_analysis_result(cache_key=cache_key)
@@ -342,7 +310,7 @@ def fetch_job() -> Any:
 
         if len(ga_result) > 1:
             standards = ga_result[0]
-            standards_hash = make_array_hash(standards)
+            standards_hash = gap_analysis.make_resources_key(standards)
 
             if conn.exists(standards_hash):
                 logger.debug("and hash is already in cache")
@@ -350,7 +318,7 @@ def fetch_job() -> Any:
                 database = db.Node_collection()
                 ga = database.get_gap_analysis_result(standards_hash)
                 if ga:
-                    logger.__delattr__("and results in cache")
+                    # logger.__delattr__("and results in cache")
                     ga = flask_json.loads(ga)
                     if ga.get("result"):
                         return jsonify(ga)
@@ -370,20 +338,9 @@ def fetch_job() -> Any:
 
 @app.route("/rest/v1/standards", methods=["GET"])
 def standards() -> Any:
-    conn = redis.connect()
-    standards = conn.get("NodeNames")
-    if standards:
-        return standards
-    else:
-        logger.info(
-            "'NodeNames' does not exist in Redis, getting from database, this should only happen once"
-        )
-        database = db.Node_collection()
-        standards = database.standards()
-        if standards is None:
-            return neo4j_not_running_rejection()
-        conn.set("NodeNames", flask_json.dumps(standards))
-        return standards
+    database = db.Node_collection()
+    standards = database.standards()
+    return standards
 
 
 @app.route("/rest/v1/text_search", methods=["GET"])
@@ -420,20 +377,20 @@ def text_search() -> Any:
 
 @app.route("/rest/v1/root_cres", methods=["GET"])
 def find_root_cres() -> Any:
-    """Useful for fast browsing the graph from the top"""
+    """
+    Useful for fast browsing the graph from the top
+
+    """
     database = db.Node_collection()
-    logger.debug("got database")
-    opt_osib = request.args.get("osib")
+    # opt_osib = request.args.get("osib")
     opt_format = request.args.get("format")
     with CRETracer("get root cres"):
         documents = database.get_root_cres()
-    logger.debug(f"got {len(documents)} cres")
-
     if documents:
         res = [doc.todict() for doc in documents]
         result = {"data": res}
-        if opt_osib:
-            result["osib"] = odefs.cre2osib(documents).todict()
+        # if opt_osib:
+        #     result["osib"] = odefs.cre2osib(documents).todict()
         if opt_format == SupportedFormats.Markdown.value:
             return f"<pre>{mdutils.cre_to_md(documents)}</pre>"
         elif opt_format == SupportedFormats.CSV.value:

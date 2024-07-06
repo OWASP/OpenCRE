@@ -7,7 +7,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Check out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
       - uses: actions/setup-python@v4
         with:
           python-version: '3.11.4' 
@@ -15,22 +15,16 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           cache: 'yarn'
-      - name: Install python dependencies
+          node-version: 'v20.12.1'
+      - name: Install dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y python3-setuptools python3-pip python3-virtualenv chromium-browser libgbm1
           make install
       - name: DB setup
         run: |
-            cp cres/db.sqlite standards_cache.sqlite
             make migrate-upgrade
+            python cre.py --upstream_sync
       - name: Run app and e2e tests
         run: |
-          yarn build
-          [ -d "./venv" ] && . ./venv/bin/activate
-          export FLASK_APP=./cre.py
-          export FLASK_CONFIG=development
-          export INSECURE_REQUESTS=1
-          FLASK_CONFIG=development flask run &
-          sleep 20s
-          yarn test:e2e
+            make e2e

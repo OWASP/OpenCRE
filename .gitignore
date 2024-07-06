@@ -66,3 +66,6 @@ neo4j/
 
 .mypy_cache
 tmp/
+
+### CREs dir
+cres/*

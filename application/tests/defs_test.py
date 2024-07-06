@@ -12,13 +12,13 @@ from dacite import Config, from_dict
 class TestCreDefs(unittest.TestCase):
     def test_document_todict(self) -> None:
         standard = defs.Standard(
-            doctype=defs.Credoctypes.Standard,
             name="ASVS",
             section="SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING",
             subsection="3.1.1",
             version="0.0.0",
         )
         standard_output = {
+            "id": "ASVS:SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING:3.1.1",
             "doctype": "Standard",
             "name": "ASVS",
             "section": "SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING",
@@ -27,7 +27,7 @@ class TestCreDefs(unittest.TestCase):
         }
 
         cre = defs.CRE(
-            id="100",
+            id="100-100",
             description="CREdesc",
             name="CREname",
             links=[defs.Link(document=standard)],
@@ -36,11 +36,12 @@ class TestCreDefs(unittest.TestCase):
         cre_output = {
             "description": "CREdesc",
             "doctype": "CRE",
-            "id": "100",
+            "id": "100-100",
             "links": [
                 {
                     "ltype": "SAME",
                     "document": {
+                        "id": "ASVS:SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING:3.1.1",
                         "doctype": "Standard",
                         "name": "ASVS",
                         "section": "SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING",
@@ -54,13 +55,12 @@ class TestCreDefs(unittest.TestCase):
         }
 
         standard2 = defs.Standard(
-            doctype=defs.Credoctypes.Standard,
             name="Standard",
             section="StandardSection",
             subsection="3.1.1",
         )
         group = defs.CRE(
-            id="500",
+            id="500-500",
             description="desc",
             name="name",
             links=[defs.Link(document=cre), defs.Link(document=standard2)],
@@ -69,21 +69,24 @@ class TestCreDefs(unittest.TestCase):
         group_output = {
             "description": "desc",
             "doctype": "CRE",
-            "id": "500",
+            "id": "500-500",
             "links": [
                 {
                     "ltype": "SAME",
                     "document": {
                         "description": "CREdesc",
                         "doctype": "CRE",
-                        "id": "100",
+                        "id": "100-100",
                         "links": [
                             {
                                 "ltype": "SAME",
                                 "document": {
+                                    "id": "ASVS:SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING:3.1.1",
                                     "doctype": "Standard",
                                     "name": "ASVS",
-                                    "section": "SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING",
+                                    "section": (
+                                        "SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING"
+                                    ),
                                     "subsection": "3.1.1",
                                     "version": "0.0.0",
                                 },
@@ -96,6 +99,7 @@ class TestCreDefs(unittest.TestCase):
                 {
                     "ltype": "SAME",
                     "document": {
+                        "id": "Standard:StandardSection:3.1.1",
                         "doctype": "Standard",
                         "name": "Standard",
                         "section": "StandardSection",
@@ -107,12 +111,12 @@ class TestCreDefs(unittest.TestCase):
             "tags": ["tag1", "t2"],
         }
         nested = defs.Standard(
-            doctype=defs.Credoctypes.Standard,
             name="ASVS",
             section="SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING",
             subsection="3.1.1",
         )
         nested_output = {
+            "id": "ASVS:SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING:3.1.1",
             "doctype": "Standard",
             "name": "ASVS",
             "section": "SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING",
@@ -141,6 +145,8 @@ class TestCreDefs(unittest.TestCase):
     def test_doc_equality(self) -> None:
         d1 = defs.Standard(
             name="c1",
+            embeddings=[0.1, 0.2],
+            embeddings_text="some text",
             description="d1",
             tags=["t1", "t2", "t3"],
             metadata={"m1": "m1.1", "m2": "m2.2"},
@@ -163,10 +169,26 @@ class TestCreDefs(unittest.TestCase):
             if v == "doctype":
                 continue
             code = copy.deepcopy(d1)
-            vars(code)[v] = f"{vars(d1)[v]}_a"
-            c.append(code)
+            if v == "embeddings":
+                vars(code)[v] = [0.001]
+                c.append(code)
+            elif v == "links":
+                code.links = [defs.Link(document=defs.CRE(id="123-123", name="asdf"))]
+                c.append(code)
+            elif v == "tags":
+                vars(code)[v] = [tag + "_a" for tag in d1.tags]
+                c.append(code)
+            elif v == "metadata":
+                code.metadata = {}
+                for k, v in d1.metadata:
+                    code.metadata[k + "_a"] = v + "_a"
+                c.append(code)
+            else:
+                vars(code)[v] = f"{vars(d1)[v]}_a"
+                c.append(code)
+
         for cod in c:
-            self.assertNotEqual(cod, d1)
+            self.assertNotEqual(cod.todict(), d1.todict())
 
         s2 = defs.Standard(
             name="s2",
@@ -182,7 +204,7 @@ class TestCreDefs(unittest.TestCase):
 
         # assert recursive link equality works
         s1_with_link.links[0].document.add_link(defs.Link(document=c[0]))
-        self.assertEquals(s1_with_link, copy.deepcopy(s1_with_link))
+        self.assertEqual(s1_with_link, copy.deepcopy(s1_with_link))
         s1_with_link_copy = copy.deepcopy(s1_with_link)
         s1_with_link_copy.links[0].document.links[0].document.add_link(
             defs.Link(document=c[1])
@@ -194,6 +216,7 @@ class TestCreDefs(unittest.TestCase):
             name="s1",
             section="s1.1",
             subsection="1.1",
+            embeddings=[0.1],
             tags=["t1", "t2", "t3", ""],
             metadata={"m1": "m1.1", "m2": "m2.2"},
             hyperlink="https://example.com/s1",
@@ -208,17 +231,36 @@ class TestCreDefs(unittest.TestCase):
                 config=Config(cast=[defs.Credoctypes]),
             ),
         )  # happy path
-        s = []
-        for v in vars(
-            s1
-        ).keys():  # create a list of standards  they all differ from s1 on one attribute
+        s = {}
+        for v in vars(s1).keys():
+            # create a list of standards that all differ from s1 on one attribute
             if v == "doctype":
                 continue
-            stand = copy.deepcopy(s1)
-            vars(stand)[v] = f"{vars(s1)[v]}_a"
-            s.append(stand)
-        for stand in s:
-            self.assertNotEqual(stand, s1)
+            code = copy.deepcopy(s1)
+            if v == "embeddings":
+                vars(code)[v] = [0.001]
+                s["embeddings"] = code
+            elif v == "links":
+                code.links = [defs.Link(document=defs.CRE(id="123-123", name="asdf"))]
+                s["links"] = code
+            elif v == "tags":
+                vars(code)[v] = [tag + "_a" for tag in s1.tags]
+                s["tags"] = code
+            elif v == "metadata":
+                code.metadata = {}
+                for k, v in s1.metadata:
+                    code.metadata[k + "_a"] = v + "_a"
+                s["metadata"] = code
+            else:
+                vars(code)[v] = f"{vars(s1)[v]}_a"
+                s[v] = code
+
+        for attribute, stand in s.items():
+            self.assertNotEqual(
+                stand,
+                s1,
+                f"stand and s1 are the same but they should have different {attribute}",
+            )
 
         s2 = defs.Standard(
             name="s2",
@@ -233,11 +275,13 @@ class TestCreDefs(unittest.TestCase):
         self.assertNotEqual(s1_with_link, s1)
 
         # assert recursive link equality works
-        s1_with_link.links[0].document.add_link(defs.Link(document=s[0]))
-        self.assertEquals(s1_with_link, copy.deepcopy(s1_with_link))
+        s1_with_link.links[0].document.add_link(
+            defs.Link(document=s[list(s.keys())[0]])
+        )
+        self.assertEqual(s1_with_link, copy.deepcopy(s1_with_link))
         s1_with_link_copy = copy.deepcopy(s1_with_link)
         s1_with_link_copy.links[0].document.links[0].document.add_link(
-            defs.Link(document=s[1])
+            defs.Link(document=s[list(s.keys())[1]])
         )
         self.assertFalse(s1_with_link.__eq__(s1_with_link_copy))
 
@@ -323,6 +367,7 @@ class TestCreDefs(unittest.TestCase):
             "tooltype": "Offensive",
             "sectionID": "15",
             "section": "Rule 15 Title",
+            "id": "toolmctoolface:15:Rule 15 Title",
         }
         self.assertDictEqual(t0.todict(), expected)
         expected["toolType"] = "Defensive"

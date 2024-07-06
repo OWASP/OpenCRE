@@ -1,13 +1,13 @@
 from application.defs import cre_defs as defs
-from pprint import pprint
 import unittest
 from application import create_app, sqla  # type: ignore
-from application.utils.external_project_parsers import cheatsheets_parser
+from application.prompt_client.prompt_client import PromptHandler
+from application.utils.external_project_parsers.parsers import cheatsheets_parser
 from application.database import db
+from application.utils import git
 import tempfile
+from unittest.mock import patch
 import os
-
-from application.utils.external_project_parsers import zap_alerts_parser
 
 
 class TestCheatsheetsParser(unittest.TestCase):
@@ -21,7 +21,8 @@ class TestCheatsheetsParser(unittest.TestCase):
         sqla.create_all()
         self.collection = db.Node_collection()
 
-    def test_register_cheatsheet(self) -> None:
+    @patch.object(git, "clone")
+    def test_register_cheatsheet(self, mock_clone) -> None:
         cs = self.cheatsheets_md
 
         class Repo:
@@ -29,27 +30,27 @@ class TestCheatsheetsParser(unittest.TestCase):
 
         repo = Repo()
         loc = tempfile.mkdtemp()
+        os.mkdir(os.path.join(loc, "cheatsheets"))
         repo.working_dir = loc
-        self.collection.add_cre(defs.CRE(name="blah", id="223-780"))
-        with open(os.path.join(loc, "cs.md"), "w") as mdf:
+        cre = defs.CRE(name="blah", id="223-780")
+        self.collection.add_cre(cre)
+        with open(os.path.join(os.path.join(loc, "cheatsheets"), "cs.md"), "w") as mdf:
             mdf.write(cs)
-        cheatsheets_parser.register_cheatsheets(
-            cache=self.collection,
-            repo=repo,
-            cheatsheets_path="",
-            repo_path="https://github.com/foo/bar.git",
+        mock_clone.return_value = repo
+        entries = cheatsheets_parser.Cheatsheets().parse(
+            cache=self.collection, ph=PromptHandler(database=self.collection)
         )
         expected = defs.Standard(
             name="OWASP Cheat Sheets",
             hyperlink="https://github.com/foo/bar/tree/master/cs.md",
             section="Secrets Management Cheat Sheet",
+            links=[defs.Link(document=cre, ltype=defs.LinkTypes.LinkedTo)],
         )
         self.maxDiff = None
-        self.assertEquals(
-            expected,
-            db.nodeFromDB(self.collection.session.query(db.Node).all()[0]),
-        )
-        self.assertEquals(1, len(self.collection.session.query(db.Links).all()))
+        for name, nodes in entries.results.items():
+            self.assertEqual(name, cheatsheets_parser.Cheatsheets().name)
+            self.assertEqual(len(nodes), 1)
+            self.assertCountEqual(expected.todict(), nodes[0].todict())
 
     cheatsheets_md = """ # Secrets Management Cheat Sheet
 

@@ -18,56 +18,46 @@ class TestGapAnalysis(unittest.TestCase):
 
     def test_get_relation_direction_UP(self):
         step = {
-            "start": cre_defs.CRE(name="bob", id="123"),
-            "end": cre_defs.CRE(name="bob", id="234"),
+            "start": cre_defs.CRE(name="bob", id="123-123"),
+            "end": cre_defs.CRE(name="bob", id="234-234"),
         }
-        self.assertEqual(get_relation_direction(step, "123"), "UP")
+        self.assertEqual(get_relation_direction(step, "123-123"), "UP")
 
     def test_get_relation_direction_DOWN(self):
         step = {
-            "start": cre_defs.CRE(name="bob", id="123"),
-            "end": cre_defs.CRE(name="bob", id="234"),
+            "start": cre_defs.CRE(name="bob", id="123-123"),
+            "end": cre_defs.CRE(name="bob", id="234-234"),
         }
-        self.assertEqual(get_relation_direction(step, "234"), "DOWN")
+        self.assertEqual(get_relation_direction(step, "234-234"), "DOWN")
 
     def test_get_next_id_start(self):
         step = {
-            "start": cre_defs.CRE(name="bob", id="123"),
-            "end": cre_defs.CRE(name="bob", id="234"),
+            "start": cre_defs.CRE(name="bob", id="123-123"),
+            "end": cre_defs.CRE(name="bob", id="234-234"),
         }
-        self.assertEqual(get_next_id(step, "234"), "123")
+        self.assertEqual(get_next_id(step, "234-234"), "123-123")
 
     def test_get_next_id_end(self):
         step = {
-            "start": cre_defs.CRE(name="bob", id="123"),
-            "end": cre_defs.CRE(name="bob", id="234"),
+            "start": cre_defs.CRE(name="bob", id="123-123"),
+            "end": cre_defs.CRE(name="bob", id="234-234"),
         }
-        self.assertEqual(get_next_id(step, "123"), "234")
+        self.assertEqual(get_next_id(step, "123-123"), "234-234")
 
     def test_get_path_score_direct_siblings_returns_zero(self):
         path = {
-            "start": cre_defs.CRE(
-                name="bob", id="029f7cd7-ef2f-4f25-b0d2-3227cde4b34b"
-            ),
-            "end": cre_defs.CRE(name="bob", id="7d030730-14cc-4c43-8927-f2d0f5fbcf5d"),
+            "start": cre_defs.CRE(name="bob", id="029-029"),
+            "end": cre_defs.CRE(name="bob", id="703-703"),
             "path": [
                 {
-                    "end": cre_defs.CRE(
-                        name="bob", id="029f7cd7-ef2f-4f25-b0d2-3227cde4b34b"
-                    ),
+                    "end": cre_defs.CRE(name="bob", id="029-029"),
                     "relationship": "LINKED_TO",
-                    "start": cre_defs.CRE(
-                        name="bob", id="07bc9f6f-5387-4dc6-b277-0022ed76049f"
-                    ),
+                    "start": cre_defs.CRE(name="bob", id="079-079"),
                 },
                 {
-                    "end": cre_defs.CRE(
-                        name="bob", id="7d030730-14cc-4c43-8927-f2d0f5fbcf5d"
-                    ),
+                    "end": cre_defs.CRE(name="bob", id="703-703"),
                     "relationship": "LINKED_TO",
-                    "start": cre_defs.CRE(
-                        name="bob", id="e2ac59b2-c1d8-4525-a6b3-155d480aecc9"
-                    ),
+                    "start": cre_defs.CRE(name="bob", id="259-259"),
                 },
             ],
         }
@@ -75,33 +65,23 @@ class TestGapAnalysis(unittest.TestCase):
 
     def test_get_path_score_one_up_returns_one_up_penaltiy(self):
         path = {
-            "start": cre_defs.CRE(
-                name="bob", id="029f7cd7-ef2f-4f25-b0d2-3227cde4b34b"
-            ),
-            "end": cre_defs.CRE(name="bob", id="7d030730-14cc-4c43-8927-f2d0f5fbcf5d"),
+            "start": cre_defs.CRE(name="bob", id="029-029"),
+            "end": cre_defs.CRE(name="bob", id="703-703"),
             "path": [
                 {
-                    "end": cre_defs.CRE(
-                        name="bob", id="029f7cd7-ef2f-4f25-b0d2-3227cde4b34b"
-                    ),
+                    "end": cre_defs.CRE(name="bob", id="029-029"),
                     "relationship": "LINKED_TO",
-                    "start": cre_defs.CRE(
-                        name="bob", id="07bc9f6f-5387-4dc6-b277-0022ed76049f"
-                    ),
+                    "start": cre_defs.CRE(name="bob", id="079-079"),
                 },
                 {
-                    "end": cre_defs.CRE(name="bob", id="123"),
+                    "end": cre_defs.CRE(name="bob", id="123-123"),
                     "relationship": "CONTAINS",
-                    "start": cre_defs.CRE(
-                        name="bob", id="07bc9f6f-5387-4dc6-b277-0022ed76049f"
-                    ),
+                    "start": cre_defs.CRE(name="bob", id="079-079"),
                 },
                 {
-                    "end": cre_defs.CRE(
-                        name="bob", id="7d030730-14cc-4c43-8927-f2d0f5fbcf5d"
-                    ),
+                    "end": cre_defs.CRE(name="bob", id="703-703"),
                     "relationship": "LINKED_TO",
-                    "start": cre_defs.CRE(name="bob", id="123"),
+                    "start": cre_defs.CRE(name="bob", id="123-123"),
                 },
             ],
         }
@@ -110,33 +90,23 @@ class TestGapAnalysis(unittest.TestCase):
 
     def test_get_path_score_one_down_one_returns_one_down_penaltiy(self):
         path = {
-            "start": cre_defs.CRE(
-                name="bob", id="029f7cd7-ef2f-4f25-b0d2-3227cde4b34b"
-            ),
-            "end": cre_defs.CRE(name="bob", id="7d030730-14cc-4c43-8927-f2d0f5fbcf5d"),
+            "start": cre_defs.CRE(name="bob", id="029-029"),
+            "end": cre_defs.CRE(name="bob", id="703-703"),
             "path": [
                 {
-                    "end": cre_defs.CRE(
-                        name="bob", id="029f7cd7-ef2f-4f25-b0d2-3227cde4b34b"
-                    ),
+                    "end": cre_defs.CRE(name="bob", id="029-029"),
                     "relationship": "LINKED_TO",
-                    "start": cre_defs.CRE(
-                        name="bob", id="07bc9f6f-5387-4dc6-b277-0022ed76049f"
-                    ),
+                    "start": cre_defs.CRE(name="bob", id="079-079"),
                 },
                 {
-                    "end": cre_defs.CRE(
-                        name="bob", id="07bc9f6f-5387-4dc6-b277-0022ed76049f"
-                    ),
+                    "end": cre_defs.CRE(name="bob", id="079-079"),
                     "relationship": "CONTAINS",
-                    "start": cre_defs.CRE(name="bob", id="123"),
+                    "start": cre_defs.CRE(name="bob", id="123-123"),
                 },
                 {
-                    "end": cre_defs.CRE(
-                        name="bob", id="7d030730-14cc-4c43-8927-f2d0f5fbcf5d"
-                    ),
+                    "end": cre_defs.CRE(name="bob", id="703-703"),
                     "relationship": "LINKED_TO",
-                    "start": cre_defs.CRE(name="bob", id="123"),
+                    "start": cre_defs.CRE(name="bob", id="123-123"),
                 },
             ],
         }
@@ -145,33 +115,23 @@ class TestGapAnalysis(unittest.TestCase):
 
     def test_get_path_score_related_returns_related_penalty(self):
         path = {
-            "start": cre_defs.CRE(
-                name="bob", id="029f7cd7-ef2f-4f25-b0d2-3227cde4b34b"
-            ),
-            "end": cre_defs.CRE(name="bob", id="7d030730-14cc-4c43-8927-f2d0f5fbcf5d"),
+            "start": cre_defs.CRE(name="bob", id="029-029"),
+            "end": cre_defs.CRE(name="bob", id="703-703"),
             "path": [
                 {
-                    "end": cre_defs.CRE(
-                        name="bob", id="029f7cd7-ef2f-4f25-b0d2-3227cde4b34b"
-                    ),
+                    "end": cre_defs.CRE(name="bob", id="029-029"),
                     "relationship": "LINKED_TO",
-                    "start": cre_defs.CRE(
-                        name="bob", id="07bc9f6f-5387-4dc6-b277-0022ed76049f"
-                    ),
+                    "start": cre_defs.CRE(name="bob", id="079-079"),
                 },
                 {
-                    "end": cre_defs.CRE(
-                        name="bob", id="07bc9f6f-5387-4dc6-b277-0022ed76049f"
-                    ),
+                    "end": cre_defs.CRE(name="bob", id="079-079"),
                     "relationship": "RELATED",
-                    "start": cre_defs.CRE(name="bob", id="123"),
+                    "start": cre_defs.CRE(name="bob", id="123-123"),
                 },
                 {
-                    "end": cre_defs.CRE(
-                        name="bob", id="7d030730-14cc-4c43-8927-f2d0f5fbcf5d"
-                    ),
+                    "end": cre_defs.CRE(name="bob", id="703-703"),
                     "relationship": "LINKED_TO",
-                    "start": cre_defs.CRE(name="bob", id="123"),
+                    "start": cre_defs.CRE(name="bob", id="123-123"),
                 },
             ],
         }
@@ -180,45 +140,33 @@ class TestGapAnalysis(unittest.TestCase):
 
     def test_get_path_score_one_of_each_returns_penalty(self):
         path = {
-            "start": cre_defs.CRE(
-                name="bob", id="029f7cd7-ef2f-4f25-b0d2-3227cde4b34b"
-            ),
-            "end": cre_defs.CRE(name="bob", id="7d030730-14cc-4c43-8927-f2d0f5fbcf5d"),
+            "start": cre_defs.CRE(name="bob", id="029-029"),
+            "end": cre_defs.CRE(name="bob", id="703-703"),
             "path": [
                 {
-                    "end": cre_defs.CRE(
-                        name="bob", id="029f7cd7-ef2f-4f25-b0d2-3227cde4b34b"
-                    ),
+                    "end": cre_defs.CRE(name="bob", id="029-029"),
                     "relationship": "LINKED_TO",
-                    "start": cre_defs.CRE(
-                        name="bob", id="07bc9f6f-5387-4dc6-b277-0022ed76049f"
-                    ),
+                    "start": cre_defs.CRE(name="bob", id="079-079"),
                 },
                 {
-                    "end": cre_defs.CRE(
-                        name="bob", id="07bc9f6f-5387-4dc6-b277-0022ed76049f"
-                    ),
+                    "end": cre_defs.CRE(name="bob", id="079-079"),
                     "relationship": "CONTAINS",
-                    "start": cre_defs.CRE(name="bob", id="123"),
+                    "start": cre_defs.CRE(name="bob", id="123-123"),
                 },
                 {
-                    "end": cre_defs.CRE(name="bob", id="456"),
+                    "end": cre_defs.CRE(name="bob", id="456-456"),
                     "relationship": "RELATED",
-                    "start": cre_defs.CRE(name="bob", id="123"),
+                    "start": cre_defs.CRE(name="bob", id="123-123"),
                 },
                 {
-                    "end": cre_defs.CRE(
-                        name="bob", id="7d030730-14cc-4c43-8927-f2d0f5fbcf5d"
-                    ),
+                    "end": cre_defs.CRE(name="bob", id="703-703"),
                     "relationship": "CONTAINS",
-                    "start": cre_defs.CRE(name="bob", id="456"),
+                    "start": cre_defs.CRE(name="bob", id="456-456"),
                 },
                 {
-                    "end": cre_defs.CRE(
-                        name="bob", id="7d030730-14cc-4c43-8927-f2d0f5fbcf5d"
-                    ),
+                    "end": cre_defs.CRE(name="bob", id="703-703"),
                     "relationship": "LINKED_TO",
-                    "start": cre_defs.CRE(name="bob", id="456"),
+                    "start": cre_defs.CRE(name="bob", id="456-456"),
                 },
             ],
         }
