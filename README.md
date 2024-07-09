@@ -2,7 +2,6 @@
 
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![GitHub Super-Linter](https://github.com/OWASP/common-requirement-enumeration/workflows/Lint%20Code%20Base/badge.svg)](https://github.com/marketplace/actions/super-linter)
-[![GitHub CodeQL](https://github.com/OWASP/common-requirement-enumeration/workflows/CodeQL/badge.svg)](https://github.com/marketplace/actions/codeql-analysis)
 [![Main Branch Build](https://github.com/OWASP/common-requirement-enumeration/workflows/Test/badge.svg?branch=main)](https://github.com/OWASP/OWASP/common-requirement-enumeration/workflows/Test)
 
 [![Issues](https://img.shields.io/github/issues/owasp/common-requirement-enumeration)](https://github.com/OWASP/common-requirement-enumeration/issues)  
