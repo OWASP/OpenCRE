@@ -1,5 +1,5 @@
 FROM node:lts as build
-
+LABEL org.opencontainers.image.source = "https://github.com/OWASP/OpenCRE"
 WORKDIR /code
 COPY . /code
 RUN yarn install && yarn build
