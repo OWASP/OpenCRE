@@ -3,7 +3,7 @@
 .PHONY: run test covers install-deps dev docker lint frontend clean all
 
 prod-run:
-	cp cres/db.sqlite standards_cache.sqlite; gunicorn cre:app --log-file=-
+	gunicorn cre:app --log-file=-
 
 docker-neo4j-rm:
 	docker stop cre-neo4j
@@ -98,12 +98,6 @@ clean:
 	find . -type f -name '*.pyc' -delete
 	find . -type f -name '*.log' -delete
 	find . -type f -name '*.orig' -delete
-
-migrate-restore:
-	if ! [ -f "standards_cache.sqlite" ]; then cp cres/db.sqlite standards_cache.sqlite; fi
-	[ -d "./venv" ] && . ./venv/bin/activate &&\
-	export FLASK_APP=$(CURDIR)/cre.py 
-	flask db upgrade  
 
 migrate-upgrade:
 	[ -d "./venv" ] && . ./venv/bin/activate &&\

@@ -31,31 +31,30 @@ Example: the session time-out topic will take the user to relevant criteria in s
 
 Some of the data has been kindly contributed by the SKF and ASVS projects
 
-# Installing
-
-
-To install this application you need python3, yarn and virtualenv.
-Clone the repository:
-<pre>git clone https://github.com/OWASP/common-requirement-enumeration </pre>
-
-Copy sqlite database to required location
-<pre>cp cres/db.sqlite standards_cache.sqlite</pre>
-
-Install dependencies
-<pre> make install </pre>
-
-
 # Running
 
 ### Locally
 
 #### Docker
-The easiest weay to run OpenCRE locally is by running the published docker container.
+The easiest way to run OpenCRE locally is by running the published docker container.
 You can do so by running:
 `docker run -p 5000:5000  ghcr.io/owasp/opencre/opencre:latest`
 After the container has finished downloading the remote information you can access it in [localhost](http://127.0.0.1:5000)
 
 #### Command Line
+
+To run outside of Docker you need to install OpenCRE.
+To install this application you need python3, yarn and virtualenv.
+* Clone the repository:
+<pre>git clone https://github.com/OWASP/common-requirement-enumeration </pre>
+
+* Install dependencies
+<pre> make install </pre>
+
+* Download the latest CRE graph from upstream by running
+<pre>python cre.py --upstream_sync</pre>
+Keep in mind that until [Issue #534](https://github.com/OWASP/OpenCRE/issues/534) is fixed you won't have access to gap analysis results locally
+
 To run the CLI application, you can run
 <pre>python cre.py --help</pre>
 
