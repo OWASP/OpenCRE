@@ -5,7 +5,7 @@
   "storage": "32gb"
 },
   "image": "mcr.microsoft.com/devcontainers/universal:2",
-  "postCreateCommand": "make install &&  make frontend && cp cres/db.sqlite standards_cache.sqlite",
+  "postCreateCommand": "make install &&  make frontend && python cre.py --upstream_sync",
      "extensions": [
 		"ms-python.vscode-pylance",
 		"visualstudioexptteam.vscodeintellicode",
