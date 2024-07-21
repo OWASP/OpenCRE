@@ -2,7 +2,7 @@ import csv
 import io
 import logging
 from copy import deepcopy
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Set
 import os
 import gspread
 import yaml
@@ -237,3 +237,63 @@ def write_spreadsheet(title: str, docs: List[Dict[str, Any]], emails: List[str])
     for email in emails:
         sh.share(email, perm_type="user", role="writer")
     return "https://docs.google.com/spreadsheets/d/%s" % sh.id
+
+
+def generate_mapping_template_file(
+    database: db.Node_collection, docs: List[defs.CRE]
+) -> str:
+    maxOffset = 0
+    related = set()
+
+    def add_offset_cre(
+        cre: defs.CRE, database: db.Node_collection, offset: int, visited_cres: Set
+    ) -> List[Dict[str, str]]:
+        nonlocal maxOffset, related
+        maxOffset = max(maxOffset, offset)
+        rows = []
+
+        rows.append(
+            {f"CRE {offset}": f"{cre.id}{defs.ExportFormat.separator.value}{cre.name}"}
+        )
+        visited_cres.add(cre.id)
+        dbcre = database.get_CREs(external_id=cre.id)
+        if not dbcre:
+            raise ValueError(f"CRE with id {cre.id} not found in the database")
+        cre = dbcre[0]
+        for link in cre.links:
+            if (
+                link.document.doctype == defs.Credoctypes.CRE
+                and link.document.id not in visited_cres
+            ):
+                if link.ltype == defs.LinkTypes.Contains:
+                    rows.extend(
+                        add_offset_cre(
+                            cre=link.document,
+                            database=database,
+                            offset=offset + 1,
+                            visited_cres=visited_cres,
+                        )
+                    )
+                elif link.ltype == defs.LinkTypes.Related:
+                    related.add(link.document.id)
+        return rows
+
+    visited_cres = set()
+    csv: List[Dict[str, str]] = []
+
+    for cre in docs:
+        csv.extend(
+            add_offset_cre(
+                cre=cre, database=database, offset=0, visited_cres=visited_cres
+            )
+        )
+    result = [{f"CRE {offset}": "" for offset in range(0, maxOffset + 1)}]
+    result.extend(csv)
+
+    orphaned_documents = [doc for doc in related if doc not in visited_cres]
+    if len(orphaned_documents):
+        raise ValueError(
+            "found CREs with only related links not provided in the root_cre list, unless you are really sure for this use case, this is a bug"
+        )
+
+    return result

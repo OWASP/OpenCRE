@@ -8,9 +8,9 @@ import { LoadingAndErrorIndicator } from '../../components/LoadingAndErrorIndica
 import { TYPE_CONTAINS, TYPE_LINKED_TO } from '../../const';
 import { useDataStore } from '../../providers/DataProvider';
 import { LinkedTreeDocument, TreeDocument } from '../../types';
-import { LinkedStandards } from './LinkedStandards';
 import { getDocumentDisplayName } from '../../utils';
 import { getInternalUrl } from '../../utils/document';
+import { LinkedStandards } from './LinkedStandards';
 
 export const Explorer = () => {
   const { dataLoading, dataTree } = useDataStore();

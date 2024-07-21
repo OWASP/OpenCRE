@@ -1,3 +1,4 @@
+import io
 import csv
 import random
 import string
@@ -5,18 +6,16 @@ import re
 import json
 import unittest
 from unittest.mock import patch
-
 import redis
 import rq
+import os
 
 from application import create_app, sqla  # type: ignore
 from application.database import db
 from application.defs import cre_defs as defs
-from application.defs import osib_defs
 from application.web import web_main
 from application.utils.gap_analysis import GAP_ANALYSIS_TIMEOUT
-
-import os
+from application.utils import spreadsheet
 
 
 class MockJob:
@@ -885,4 +884,62 @@ class TestMain(unittest.TestCase):
             self.assertEqual(
                 {"data": expected, "page": 1, "total_pages": 1},
                 json.loads(response.data),
+            )
+
+    def test_get_cre_csv(self) -> None:
+        # empty string means temporary db
+        collection = db.Node_collection().with_graph()
+        roots = []
+        for j in range(2):
+            root = defs.CRE(description=f"root{j}", name=f"root{j}", id=f"123-30{j}")
+            db_root = collection.add_cre(root)
+            roots.append(root)
+            previous_db = db_root
+            previous_cre = root
+
+            for i in range(4):
+                c = defs.CRE(
+                    description=f"CREdesc{i}-{j}",
+                    name=f"CREname{i}-{j}",
+                    id=f"123-4{j}{i}",
+                )
+                dbcre = collection.add_cre(c)
+                collection.add_internal_link(
+                    higher=previous_db, lower=dbcre, type=defs.LinkTypes.Contains
+                )
+                previous_cre.add_link(
+                    defs.Link(document=c, ltype=defs.LinkTypes.Contains)
+                )
+                previous_cre = c
+                previous_db = dbcre
+
+        with self.app.test_client() as client:
+            response = client.get(
+                "/rest/v1/cre_csv",
+                headers={"Content-Type": "application/json"},
+            )
+            self.assertEqual(200, response.status_code)
+            expected_out = [
+                {
+                    "CRE 0": "",
+                    "CRE 1": "",
+                    "CRE 2": "",
+                    "CRE 3": "",
+                    "CRE 4": "",
+                },
+                {"CRE 0": "123-300|root0"},
+                {"CRE 1": "123-400|CREname0-0"},
+                {"CRE 2": "123-401|CREname0-1"},
+                {"CRE 3": "123-402|CREname0-2"},
+                {"CRE 4": "123-403|CREname0-3"},
+                {"CRE 0": "123-301|root1"},
+                {"CRE 1": "123-410|CREname1-0"},
+                {"CRE 2": "123-411|CREname1-1"},
+                {"CRE 3": "123-412|CREname1-2"},
+                {"CRE 4": "123-413|CREname1-3"},
+            ]
+            data = spreadsheet.write_csv(expected_out)
+            self.assertEqual(
+                data.getvalue(),
+                response.data.decode(),
             )
