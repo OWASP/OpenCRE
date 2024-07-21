@@ -50,7 +50,7 @@ Install dependencies
 ### Locally
 
 #### Docker
-The easiest weay to run OpenCRE locally is by running the published docker container.
+The easiest way to run OpenCRE locally is by running the published docker container.
 You can do so by running:
 `docker run -p 5000:5000  ghcr.io/owasp/opencre/opencre:latest`
 After the container has finished downloading the remote information you can access it in [localhost](http://127.0.0.1:5000)
