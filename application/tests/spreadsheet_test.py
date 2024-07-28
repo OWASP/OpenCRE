@@ -4,7 +4,10 @@ import unittest
 from application import create_app, sqla  # type: ignore
 from application.database import db
 from application.defs import cre_defs as defs
-from application.utils.spreadsheet import prepare_spreadsheet
+from application.utils.spreadsheet import (
+    prepare_spreadsheet,
+    generate_mapping_template_file,
+)
 
 
 class TestDB(unittest.TestCase):
@@ -529,6 +532,60 @@ class TestDB(unittest.TestCase):
         self.maxDiff = None
 
         self.assertCountEqual(result, expected)
+
+    def test_generate_mapping_template_file(self) -> None:
+        """
+        Given: a CRE structure with 4 depth levels and 2 root cres
+        prepare a staggered csv accordingly
+        """
+        # empty string means temporary db
+        collection = db.Node_collection().with_graph()
+        roots = []
+        for j in range(2):
+            root = defs.CRE(description=f"root{j}", name=f"root{j}", id=f"123-30{j}")
+            db_root = collection.add_cre(root)
+            roots.append(root)
+            previous_db = db_root
+            previous_cre = root
+
+            for i in range(4):
+                c = defs.CRE(
+                    description=f"CREdesc{j}-{i}",
+                    name=f"CREname{j}-{i}",
+                    id=f"123-4{j}{i}",
+                )
+                dbcre = collection.add_cre(c)
+                collection.add_internal_link(
+                    higher=previous_db, lower=dbcre, type=defs.LinkTypes.Contains
+                )
+                previous_cre.add_link(
+                    defs.Link(document=c, ltype=defs.LinkTypes.Contains)
+                )
+                previous_cre = c
+                previous_db = dbcre
+        csv = generate_mapping_template_file(database=collection, docs=roots)
+        self.assertEqual(
+            csv,
+            [
+                {
+                    "CRE 0": "",
+                    "CRE 1": "",
+                    "CRE 2": "",
+                    "CRE 3": "",
+                    "CRE 4": "",
+                },
+                {"CRE 0": "123-300|root0"},
+                {"CRE 1": "123-400|CREname0-0"},
+                {"CRE 2": "123-401|CREname0-1"},
+                {"CRE 3": "123-402|CREname0-2"},
+                {"CRE 4": "123-403|CREname0-3"},
+                {"CRE 0": "123-301|root1"},
+                {"CRE 1": "123-410|CREname1-0"},
+                {"CRE 2": "123-411|CREname1-1"},
+                {"CRE 3": "123-412|CREname1-2"},
+                {"CRE 4": "123-413|CREname1-3"},
+            ],
+        )
 
 
 if __name__ == "__main__":

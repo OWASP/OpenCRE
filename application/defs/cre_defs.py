@@ -11,7 +11,7 @@ class ExportFormat(
     Enum
 ):  # TODO: this can likely be replaced with a method that iterates over an object's vars and formats headers to
     #  <doctype>:<name>:<varname>
-    separator = ":"
+    separator = "|"
     section = "section"
     subsection = "subsection"
     hyperlink = "hyperlink"
