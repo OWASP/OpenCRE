@@ -11,18 +11,27 @@ class ExportFormat(
     Enum
 ):  # TODO: this can likely be replaced with a method that iterates over an object's vars and formats headers to
     #  <doctype>:<name>:<varname>
-    separator = ":"
-    section = "section"
-    subsection = "subsection"
+    separator = "|"
+    section = "name"
+    # subsection = "subsection"
     hyperlink = "hyperlink"
-    link_type = "link_type"
-    name = "name"
+    # link_type = "link_type"
+    # name = "name"
     id = "id"
     description = "description"
-    cre_link = "Linked_CRE_"
+    # cre_link = "Linked_CRE_"
     cre = "CRE"
     tooltype = "ToolType"
-    sectionID = "SectionID"
+    # sectionID = "SectionID"
+
+    @classmethod
+    def attributes():
+        return [
+            "name",
+            "hyperlink",
+            "description",
+            "id",
+            ]
 
     @staticmethod
     def get_doctype(header: str) -> Optional["Credoctypes"]:

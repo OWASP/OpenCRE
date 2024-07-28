@@ -4,13 +4,18 @@ from functools import wraps
 import json
 import logging
 import os
+import io
 import pathlib
 import urllib.parse
+import tempfile
 from typing import Any
 from application.utils import oscal_utils, redis
 
 from rq import Queue, job, exceptions
 
+from application.utils import spreadsheet_parsers
+from application.utils import spreadsheet
+from application.utils import oscal_utils, redis
 from application.database import db
 from application.defs import cre_defs as defs
 from application.defs import osib_defs as odefs
@@ -29,6 +34,7 @@ from flask import (
     send_from_directory,
     url_for,
     session,
+    send_file,
 )
 from google.oauth2 import id_token
 from google_auth_oauthlib.flow import Flow
@@ -681,6 +687,30 @@ def all_cres() -> Any:
     if documents:
         res = [doc.todict() for doc in documents]
         return jsonify({"data": res, "page": page, "total_pages": total_pages})
+    abort(404)
+
+
+@app.route("/rest/v1/cre_csv", methods=["GET"])
+def get_cre_csv() -> Any:
+    database = db.Node_collection()
+    root_cres = database.get_root_cres()
+    if root_cres:
+        docs = sheet_utils.generate_mapping_template_file(
+            database=database, docs=root_cres
+        )
+        csvVal = write_csv(docs=docs).getvalue().encode("utf-8")
+
+        # Creating the byteIO object from the StringIO Object
+        mem = io.BytesIO()
+        mem.write(csvVal)
+        mem.seek(0)
+
+        return send_file(
+            mem,
+            as_attachment=True,
+            download_name="CRE-Catalogue.csv",
+            mimetype="text/csv",
+        )
     abort(404)
 
 
