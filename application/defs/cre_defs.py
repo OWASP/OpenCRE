@@ -12,8 +12,8 @@ class ExportFormat(
 ):  # TODO: this can likely be replaced with a method that iterates over an object's vars and formats headers to
     #  <doctype>:<name>:<varname>
     separator = "|"
-    section = "section"
-    subsection = "subsection"
+    section = "name"
+    # subsection = "subsection"
     hyperlink = "hyperlink"
     link_type = "link_type"
     name = "name"
