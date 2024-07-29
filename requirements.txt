@@ -109,10 +109,5 @@ untangle
 urllib3
 vertexai
 xmltodict
-opentelemetry-exporter-gcp-trace
-opentelemetry-propagator-gcp
-opentelemetry-instrumentation-flask
-opentelemetry-instrumentation-requests
-opentelemetry-instrumentation-sqlalchemy
 google-cloud-trace
 alive-progress

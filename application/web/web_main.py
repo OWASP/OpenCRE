@@ -38,8 +38,6 @@ from application.utils.spreadsheet import write_csv
 import oauthlib
 import google.auth.transport.requests
 
-from application import tracer
-
 
 ITEMS_PER_PAGE = 20
 
@@ -90,21 +88,6 @@ def neo4j_not_running_rejection():
     )
 
 
-class CRETracer:
-    def __init__(self, trace_name: str) -> None:
-        self.trace_name = trace_name
-
-    def __enter__(self):
-        global tracer
-        if tracer:
-            self.span = tracer.start_span(self.trace_name)
-
-    def __exit__(self, *args):
-        global tracer
-        if tracer:
-            self.span.end()
-
-
 @app.route("/rest/v1/id/<creid>", methods=["GET"])
 @app.route("/rest/v1/name/<crename>", methods=["GET"])
 def find_cre(creid: str = None, crename: str = None) -> Any:  # refer
@@ -112,10 +95,7 @@ def find_cre(creid: str = None, crename: str = None) -> Any:  # refer
     include_only = request.args.getlist("include_only")
     # opt_osib = request.args.get("osib")
     opt_format = request.args.get("format")
-    with CRETracer("get_cres"):
-        cres = database.get_CREs(
-            external_id=creid, name=crename, include_only=include_only
-        )
+    cres = database.get_CREs(external_id=creid, name=crename, include_only=include_only)
 
     if cres:
         if len(cres) > 1:
@@ -170,31 +150,30 @@ def find_node_by_name(name: str, ntype: str = defs.Credoctypes.Standard.value) -
 
     include_only = request.args.getlist("include_only")
     total_pages, nodes = None, None
-    with CRETracer("get nodes with/without pagination"):
-        if not opt_format:
-            total_pages, nodes, _ = database.get_nodes_with_pagination(
-                name=name,
-                section=opt_section,
-                subsection=opt_subsection,
-                link=opt_hyperlink,
-                page=int(page),
-                items_per_page=int(items_per_page),
-                include_only=include_only,
-                version=opt_version,
-                ntype=ntype,
-                sectionID=opt_sectionID,
-            )
-        else:
-            nodes = database.get_nodes(
-                name=name,
-                section=opt_section,
-                subsection=opt_subsection,
-                link=opt_hyperlink,
-                include_only=include_only,
-                version=opt_version,
-                ntype=ntype,
-                sectionID=opt_sectionID,
-            )
+    if not opt_format:
+        total_pages, nodes, _ = database.get_nodes_with_pagination(
+            name=name,
+            section=opt_section,
+            subsection=opt_subsection,
+            link=opt_hyperlink,
+            page=int(page),
+            items_per_page=int(items_per_page),
+            include_only=include_only,
+            version=opt_version,
+            ntype=ntype,
+            sectionID=opt_sectionID,
+        )
+    else:
+        nodes = database.get_nodes(
+            name=name,
+            section=opt_section,
+            subsection=opt_subsection,
+            link=opt_hyperlink,
+            include_only=include_only,
+            version=opt_version,
+            ntype=ntype,
+            sectionID=opt_sectionID,
+        )
     result = {}
     result["total_pages"] = total_pages
     result["page"] = page
@@ -386,8 +365,7 @@ def find_root_cres() -> Any:
     database = db.Node_collection()
     # opt_osib = request.args.get("osib")
     opt_format = request.args.get("format")
-    with CRETracer("get root cres"):
-        documents = database.get_root_cres()
+    documents = database.get_root_cres()
     if documents:
         res = [doc.todict() for doc in documents]
         result = {"data": res}
