@@ -14,6 +14,7 @@ import { LinkedStandards } from './LinkedStandards';
 
 export const Explorer = () => {
   const { dataLoading, dataTree } = useDataStore();
+  const [loading, setLoading] = useState<boolean>(false);
   const [filter, setFilter] = useState('');
   const [filteredTree, setFilteredTree] = useState<TreeDocument[]>();
   const applyHighlight = (text, term) => {
@@ -78,6 +79,10 @@ export const Explorer = () => {
     }
   }, [filter, dataTree, setFilteredTree]);
 
+  useEffect(() => {
+    setLoading(dataLoading);
+  }, [dataLoading]);
+
   function processNode(item) {
     if (!item) {
       return <></>;
@@ -121,6 +126,7 @@ export const Explorer = () => {
       </List.Item>
     );
   }
+
   function update(event) {
     setFilter(event.target.value.toLowerCase());
   }
@@ -163,7 +169,7 @@ export const Explorer = () => {
             </a>*/}
           </div>
         </div>
-        <LoadingAndErrorIndicator loading={dataLoading} error={null} />
+        <LoadingAndErrorIndicator loading={loading} error={null} />
         <List>
           {filteredTree?.map((item) => {
             return processNode(item);

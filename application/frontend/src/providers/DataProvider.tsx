@@ -24,7 +24,7 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
   const { apiUrl } = useEnvironment();
   const [dataLoading, setDataLoading] = useState<boolean>(false);
   const [dataStore, setDataStore] = useState<Record<string, TreeDocument>>(
-    getLocalStorageObject(DATA_STORE_KEY) || {}
+    getLocalStorageObject(DATA_STORE_KEY) || {},
   );
   const [dataTree, setDataTree] = useState<TreeDocument[]>(getLocalStorageObject(DATA_TREE_KEY) || []);
 
@@ -42,7 +42,7 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
 
     const initialLinks = storedDoc.links;
     let creLinks = initialLinks.filter(
-      (x) => x.document && !keyPath.includes(getStoreKey(x.document)) && getStoreKey(x.document) in dataStore
+      (x) => x.document && !keyPath.includes(getStoreKey(x.document)) && getStoreKey(x.document) in dataStore,
     );
 
     if (!creLinks.length) {
@@ -59,7 +59,7 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
     //attach Standards to the CREs
     const standards = initialLinks.filter(
       (link) =>
-        link.document && link.document.doctype === 'Standard' && !keyPath.includes(getStoreKey(link.document))
+        link.document && link.document.doctype === 'Standard' && !keyPath.includes(getStoreKey(link.document)),
     );
     storedDoc.links = [...creLinks, ...standards];
 
@@ -70,7 +70,6 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
     'root_cres',
     async () => {
       if (!dataTree.length && Object.keys(dataStore).length) {
-        setDataLoading(true);
         try {
           const result = await axios.get(`${apiUrl}/root_cres`);
           const treeData = result.data.data.map((x) => buildTree(x));
@@ -84,10 +83,7 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
     {
       retry: false,
       enabled: false,
-      onSettled: () => {
-        setDataLoading(false);
-      },
-    }
+    },
   );
 
   const getStoreQuery = useQuery(
@@ -95,7 +91,6 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
     async () => {
       if (!Object.keys(dataStore).length) {
         try {
-          setDataLoading(true);
           const result = await axios.get(`${apiUrl}/all_cres`);
           let data = result.data.data;
           const page = result.data.page;
@@ -128,18 +123,18 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
     {
       retry: false,
       enabled: false,
-      onSettled: () => {
-        setDataLoading(false);
-      },
-    }
+    },
   );
+
   useEffect(() => {
-    setDataLoading(true);
+    setDataLoading(getStoreQuery.isLoading || getTreeQuery.isLoading);
+  }, [getStoreQuery.isLoading, getTreeQuery.isLoading]);
+
+  useEffect(() => {
     getStoreQuery.refetch();
   }, [dataTree]);
 
   useEffect(() => {
-    setDataLoading(true);
     getTreeQuery.refetch();
   }, [dataStore, setDataStore]);
 
