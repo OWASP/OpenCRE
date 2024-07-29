@@ -12,7 +12,6 @@ import os
 import random
 
 
-
 convention = {
     "ix": "ix_%(column_0_label)s",
     "uq": "uq_%(table_name)s_%(column_0_name)s",
@@ -49,6 +48,5 @@ def create_app(mode: str = "production", conf: any = None) -> Any:
 
     compress.init_app(app)
     cache.init_app(app)
-
 
     return app

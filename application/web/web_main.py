@@ -88,7 +88,6 @@ def neo4j_not_running_rejection():
     )
 
 
-
 @app.route("/rest/v1/id/<creid>", methods=["GET"])
 @app.route("/rest/v1/name/<crename>", methods=["GET"])
 def find_cre(creid: str = None, crename: str = None) -> Any:  # refer
@@ -96,9 +95,7 @@ def find_cre(creid: str = None, crename: str = None) -> Any:  # refer
     include_only = request.args.getlist("include_only")
     # opt_osib = request.args.get("osib")
     opt_format = request.args.get("format")
-    cres = database.get_CREs(
-        external_id=creid, name=crename, include_only=include_only
-    )
+    cres = database.get_CREs(external_id=creid, name=crename, include_only=include_only)
 
     if cres:
         if len(cres) > 1:
