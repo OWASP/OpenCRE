@@ -10,7 +10,7 @@ import urllib.parse
 from typing import Any
 from application.utils import oscal_utils, redis
 
-from rq import Queue, job, exceptions
+from rq import job, exceptions
 
 from application.database import db
 from application.defs import cre_defs as defs
@@ -23,7 +23,6 @@ from flask import json as flask_json
 from flask import (
     Blueprint,
     abort,
-    current_app,
     jsonify,
     redirect,
     request,

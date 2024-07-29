@@ -62,7 +62,6 @@ def get_next_id(step, previous_id):
 
 # database is of type Node_collection, cannot annotate due to circular import
 def schedule(standards: List[str], database):
-    conn = redis.connect()
     standards_hash = make_resources_key(standards)
     if database.gap_analysis_exists(
         standards_hash
@@ -70,6 +69,8 @@ def schedule(standards: List[str], database):
         return flask_json.loads(database.get_gap_analysis_result(standards_hash))
 
     logger.info(f"Gap analysis result for {standards_hash} does not exist")
+
+    conn = redis.connect()
     gap_analysis_results = conn.get(standards_hash)
     if (
         gap_analysis_results
