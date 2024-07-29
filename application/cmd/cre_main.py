@@ -543,57 +543,73 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
     # individual resource importing
     if args.zap_in:
         from application.utils.external_project_parsers.parsers import zap_alerts_parser
+
         BaseParser().register_resource(
             zap_alerts_parser.ZAP, db_connection_str=args.cache_file
         )
     if args.cheatsheets_in:
-        from application.utils.external_project_parsers.parsers import cheatsheets_parser
+        from application.utils.external_project_parsers.parsers import (
+            cheatsheets_parser,
+        )
+
         BaseParser().register_resource(
             cheatsheets_parser.Cheatsheets, db_connection_str=args.cache_file
         )
     if args.github_tools_in:
         from application.utils.external_project_parsers.parsers import misc_tools_parser
+
         BaseParser().register_resource(
             misc_tools_parser.MiscTools, db_connection_str=args.cache_file
         )
     if args.capec_in:
         from application.utils.external_project_parsers.parsers import capec_parser
+
         BaseParser().register_resource(
             capec_parser.Capec, db_connection_str=args.cache_file
         )
     if args.cwe_in:
         from application.utils.external_project_parsers.parsers import cwe
+
         BaseParser().register_resource(cwe.CWE, db_connection_str=args.cache_file)
     if args.csa_ccm_v4_in:
         from application.utils.external_project_parsers.parsers import ccmv4
+
         BaseParser().register_resource(
             ccmv4.CloudControlsMatrix, db_connection_str=args.cache_file
         )
     if args.iso_27001_in:
         from application.utils.external_project_parsers.parsers import iso27001
+
         BaseParser().register_resource(
             iso27001.ISO27001, db_connection_str=args.cache_file
         )
     if args.owasp_secure_headers_in:
         from application.utils.external_project_parsers.parsers import secure_headers
+
         BaseParser().register_resource(
             secure_headers.SecureHeaders, db_connection_str=args.cache_file
         )
     if args.pci_dss_4_in:
         from application.utils.external_project_parsers.parsers import pci_dss
+
         BaseParser().register_resource(
             pci_dss.PciDss, db_connection_str=args.cache_file
         )
     if args.juiceshop_in:
         from application.utils.external_project_parsers.parsers import juiceshop
+
         BaseParser().register_resource(
             juiceshop.JuiceShop, db_connection_str=args.cache_file
         )
     if args.dsomm_in:
         from application.utils.external_project_parsers.parsers import dsomm
+
         BaseParser().register_resource(dsomm.DSOMM, db_connection_str=args.cache_file)
     if args.cloud_native_security_controls_in:
-        from application.utils.external_project_parsers.parsers import cloud_native_security_controls
+        from application.utils.external_project_parsers.parsers import (
+            cloud_native_security_controls,
+        )
+
         BaseParser().register_resource(
             cloud_native_security_controls.CloudNativeSecurityControls,
             db_connection_str=args.cache_file,
