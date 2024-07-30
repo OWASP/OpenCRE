@@ -651,11 +651,18 @@ def logout():
 def all_cres() -> Any:
     database = db.Node_collection()
     page = 1
+    per_page = ITEMS_PER_PAGE
     if request.args.get("page") is not None and int(request.args.get("page")) > 0:
         page = request.args.get("page")
 
+    if (
+        request.args.get("per_page") is not None
+        and int(request.args.get("per_page")) > 0
+    ):
+        per_page = request.args.get("per_page")
+
     documents, page, total_pages = database.all_cres_with_pagination(
-        page, ITEMS_PER_PAGE
+        page, per_page=per_page
     )
     if documents:
         res = [doc.todict() for doc in documents]
