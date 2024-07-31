@@ -24,7 +24,7 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
   const { apiUrl } = useEnvironment();
   const [dataLoading, setDataLoading] = useState<boolean>(false);
   const [dataStore, setDataStore] = useState<Record<string, TreeDocument>>(
-    getLocalStorageObject(DATA_STORE_KEY) || {}
+    getLocalStorageObject(DATA_STORE_KEY) || {},
   );
   const [dataTree, setDataTree] = useState<TreeDocument[]>(getLocalStorageObject(DATA_TREE_KEY) || []);
 
@@ -42,15 +42,10 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
 
     const initialLinks = storedDoc.links;
     let creLinks = initialLinks.filter(
-      (x) => x.document && !keyPath.includes(getStoreKey(x.document)) && getStoreKey(x.document) in dataStore
+      (x) => !!x.document && !keyPath.includes(getStoreKey(x.document)) && getStoreKey(x.document) in dataStore,
     );
 
-    if (!creLinks.length) {
-      // leaves of the tree can be links that are included in the keyPath.
-      // If we don't add this here, the leaves are filtered out above (see ticket #514 on OpenCRE)
-      storedDoc.links = initialLinks.filter((x) => x.ltype === 'Contains' && !!x.document);
-      return storedDoc;
-    }
+    creLinks = creLinks.filter((x) => x.ltype === 'Contains');
 
     //continue traversing the tree
     creLinks = creLinks.map((x) => ({ ltype: x.ltype, document: buildTree(x.document, keyPath) }));
@@ -59,7 +54,7 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
     //attach Standards to the CREs
     const standards = initialLinks.filter(
       (link) =>
-        link.document && link.document.doctype === 'Standard' && !keyPath.includes(getStoreKey(link.document))
+        link.document && link.document.doctype === 'Standard' && !keyPath.includes(getStoreKey(link.document)),
     );
     storedDoc.links = [...creLinks, ...standards];
 
@@ -83,7 +78,7 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
     {
       retry: false,
       enabled: false,
-    }
+    },
   );
 
   const getStoreQuery = useQuery(
@@ -93,19 +88,17 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
         try {
           const result = await axios.get(`${apiUrl}/all_cres?page=1&per_page=1000`);
           let data = result.data.data;
-          const page = result.data.page;
-          const total_pages = result.data.total_pages;
           let store = {};
 
-          if (data.length && total_pages && page) {
-              data.forEach((x) => {
-                store[getStoreKey(x)] = {
-                  links: x.links,
-                  displayName: getDocumentDisplayName(x),
-                  url: getInternalUrl(x),
-                  ...x,
-                };
-              });
+          if (data.length) {
+            data.forEach((x) => {
+              store[getStoreKey(x)] = {
+                links: x.links,
+                displayName: getDocumentDisplayName(x),
+                url: getInternalUrl(x),
+                ...x,
+              };
+            });
 
             setLocalStorageObject(DATA_STORE_KEY, store, TWO_DAYS_MILLISECONDS);
             setDataStore(store);
@@ -120,7 +113,7 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
     {
       retry: false,
       enabled: false,
-    }
+    },
   );
 
   useEffect(() => {
