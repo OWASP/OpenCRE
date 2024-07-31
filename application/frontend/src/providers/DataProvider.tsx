@@ -91,14 +91,13 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
     async () => {
       if (!Object.keys(dataStore).length) {
         try {
-          const result = await axios.get(`${apiUrl}/all_cres`);
+          const result = await axios.get(`${apiUrl}/all_cres?page=1&per_page=1000`);
           let data = result.data.data;
           const page = result.data.page;
           const total_pages = result.data.total_pages;
           let store = {};
 
           if (data.length && total_pages && page) {
-            for (let p = page; p < total_pages; p++) {
               data.forEach((x) => {
                 store[getStoreKey(x)] = {
                   links: x.links,
@@ -107,9 +106,7 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
                   ...x,
                 };
               });
-              const result = await axios.get(`${apiUrl}/all_cres?page=${p}`);
-              data = result.data.data;
-            }
+
             setLocalStorageObject(DATA_STORE_KEY, store, TWO_DAYS_MILLISECONDS);
             setDataStore(store);
             console.log('retrieved all cres');
