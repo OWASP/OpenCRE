@@ -661,9 +661,7 @@ def all_cres() -> Any:
     ):
         per_page = int(request.args.get("per_page"))
 
-    documents, page, total_pages = database.all_cres_with_pagination(
-        page, per_page
-    )
+    documents, page, total_pages = database.all_cres_with_pagination(page, per_page)
     if documents:
         res = [doc.todict() for doc in documents]
         return jsonify({"data": res, "page": page, "total_pages": total_pages})

@@ -24,7 +24,7 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
   const { apiUrl } = useEnvironment();
   const [dataLoading, setDataLoading] = useState<boolean>(false);
   const [dataStore, setDataStore] = useState<Record<string, TreeDocument>>(
-    getLocalStorageObject(DATA_STORE_KEY) || {},
+    getLocalStorageObject(DATA_STORE_KEY) || {}
   );
   const [dataTree, setDataTree] = useState<TreeDocument[]>(getLocalStorageObject(DATA_TREE_KEY) || []);
 
@@ -42,7 +42,8 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
 
     const initialLinks = storedDoc.links;
     let creLinks = initialLinks.filter(
-      (x) => !!x.document && !keyPath.includes(getStoreKey(x.document)) && getStoreKey(x.document) in dataStore,
+      (x) =>
+        !!x.document && !keyPath.includes(getStoreKey(x.document)) && getStoreKey(x.document) in dataStore
     );
 
     creLinks = creLinks.filter((x) => x.ltype === 'Contains');
@@ -54,7 +55,7 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
     //attach Standards to the CREs
     const standards = initialLinks.filter(
       (link) =>
-        link.document && link.document.doctype === 'Standard' && !keyPath.includes(getStoreKey(link.document)),
+        link.document && link.document.doctype === 'Standard' && !keyPath.includes(getStoreKey(link.document))
     );
     storedDoc.links = [...creLinks, ...standards];
 
@@ -78,7 +79,7 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
     {
       retry: false,
       enabled: false,
-    },
+    }
   );
 
   const getStoreQuery = useQuery(
@@ -113,7 +114,7 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
     {
       retry: false,
       enabled: false,
-    },
+    }
   );
 
   useEffect(() => {
