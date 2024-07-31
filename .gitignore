@@ -30,9 +30,10 @@ __pycache__
 *.patch
 Vagrantfile
 
-### vscode ###
+### vscode / inteliJ ###
 .vscode/
 *.code-workspace
+.idea/
 
 ## act secrets
 .secrets/
