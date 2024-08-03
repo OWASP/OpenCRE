@@ -516,290 +516,252 @@ def root_csv_minimum_data():
 def export_format_data():
     input_data = [
         {
-            "CRE 0": "111-111|C1",
-            "S1:hyperlink": "https://example.com/S1",
-            "S1:name": "SE1",
-            "S1:id": "id1",
-            "SL:hyperlink": "",
-            "SL:name": "",
-            "SL:id": "",
-            "SL2:hyperlink": "",
-            "SL2:name": "",
-            "SL2:id": "",
-            "SLL:hyperlink": "",
-            "SLL:name": "",
-            "SLL:id": "",
+            "CRE 0": "000-001|C0",
+            "CRE 1": "",
+            "CRE 2": "",
+            "CRE 3": "",
+            "CRE 4": "",
+            "CRE 5": "",
+            "S1|hyperlink": "https://example.com/S1",
+            "S1|name": "SE1",
+            "S1|id": "id1",
+            "S1|description": "SE1 description",
+            "S2|hyperlink": "https://example.com/S1",
+            "S2|name": "",
+            "S2|id": "",
+            "S2|description": "",
+            "S3|hyperlink": "",
+            "S3|name": "",
+            "S3|id": "",
+            "S3|description": "",
+            "S4|hyperlink": "",
+            "S4|name": "",
+            "S4|id": "",
+            "S4|description": "",
+            "S5|hyperlink": "",
+            "S5|name": "",
+            "S5|id": "",
+            "S5|description": "",
+            "SL|hyperlink": "",
+            "SL|name": "",
+            "SL|id": "",
+            "SL2|hyperlink": "",
+            "SL2|name": "",
+            "SL2|id": "",
+            "SLL|hyperlink": "",
+            "SLL|name": "",
+            "SLL|id": "",
         },
         {
             "CRE 1": "222-222|C2",
         },
         {
             "CRE 3": "333-333|C3",
-            "S3:hyperlink": "https://example.com/S3",
-            "S3:description": "SE3",
-            "S3:name": "SE3 section",
+            "S3|hyperlink": "https://example.com/S3",
+            "S3|description": "SE3",
+            "S3|name": "SE3",
+            "S3|id": "5.3",
         },
         {
-            "CRE 4": "555-555|C5",
-            "S1:hyperlink": "https://example.com/S1",
-            "S1:name": "SE1",
+            "CRE 4": "444-444|C4",
+            "S1|hyperlink": "https://example.com/S1",
+            "S1|name": "SE1",
+            "S1|id": "id1",
         },
         {
-            "CRE:description": "C6 description",
-            "CRE:id": "666-666",
-            "CRE:name": "C6",
-            "Standard:S1:hyperlink": "https://example.com/S1",
-            "Standard:S1:link_type": "Linked To",
-            "Standard:S1:section": "SE1",
-            "Standard:S1:subsection": "SBE11",
-            "Tool:S2:hyperlink": "https://example.com/S2",
-            "Tool:S2:link_type": "Linked To",
-            "Tool:S2:description": "SE2",
-            "Tool:S2:ToolType": "Offensive",
-            "Tool:S2:SectionID": "0",
-            "Tool:S2:section": "rule-0",
-            "Code:S3:hyperlink": "",
-            "Code:S3:link_type": "",
-            "Code:S3:description": "",
-            "Linked_CRE_0:id": "777-777",
-            "Linked_CRE_0:link_type": "Contains",
-            "Linked_CRE_0:name": "C7",
-            "Linked_CRE_1:id": "888-888",
-            "Linked_CRE_1:link_type": "Contains",
-            "Linked_CRE_1:name": "C8",
-            "SL:hyperlink": "",
-            "SL:link_type": "",
-            "SL:section": "",
-            "SL:subsection": "",
-            "SL2:hyperlink": "",
-            "SL2:link_type": "",
-            "SL2:section": "",
-            "SL2:subsection": "",
-            "SLL:hyperlink": "",
-            "SLL:link_type": "",
-            "SLL:section": "",
-            "SLL:subsection": "",
+            "CRE 5": "555-555|C5",
+            "S1|hyperlink": "https://example.com/S1",
+            "S1|name": "SE1",
+            "S1|id": "id1",
         },
         {
-            "CRE:description": "",
-            "CRE:id": "",
-            "CRE:name": "",
-            "Standard:S1:hyperlink": "",
-            "Standard:S1:link_type": "",
-            "Standard:S1:section": "",
-            "Standard:S1:subsection": "",
-            "S2:hyperlink": "",
-            "S2:link_type": "",
-            "S2:section": "",
-            "S2:subsection": "",
-            "Code:S3:hyperlink": "",
-            "Code:S3:link_type": "",
-            "Code:S3:description": "",
-            "Linked_CRE_0:id": "",
-            "Linked_CRE_0:link_type": "",
-            "Linked_CRE_0:name": "",
-            "Linked_CRE_1:id": "",
-            "Linked_CRE_1:link_type": "",
-            "Linked_CRE_1:name": "",
-            "SL:hyperlink": "https://example.com/SL",
-            "SL:link_type": "",
-            "SL:section": "SSL",
-            "SL:subsection": "SBESL",
-            "SL2:hyperlink": "",
-            "SL2:link_type": "",
-            "SL2:section": "",
-            "SL2:subsection": "",
-            "SLL:hyperlink": "",
-            "SLL:link_type": "",
-            "SLL:section": "",
-            "SLL:subsection": "",
+            "CRE 0": "666-666|C6",
         },
         {
-            "CRE:description": "",
-            "CRE:id": "",
-            "CRE:name": "",
-            "Standard:S1:hyperlink": "",
-            "Standard:S1:link_type": "",
-            "Standard:S1:section": "",
-            "Standard:S1:subsection": "",
-            "S2:hyperlink": "",
-            "S2:link_type": "",
-            "S2:section": "",
-            "S2:subsection": "",
-            "Code:S3:hyperlink": "",
-            "Code:S3:link_type": "",
-            "Code:S3:description": "",
-            "Linked_CRE_0:id": "",
-            "Linked_CRE_0:link_type": "",
-            "Linked_CRE_0:name": "",
-            "Linked_CRE_1:id": "",
-            "Linked_CRE_1:link_type": "",
-            "Linked_CRE_1:name": "",
-            "SL:hyperlink": "",
-            "SL:link_type": "",
-            "SL:section": "",
-            "SL:subsection": "SESL",
-            "SL2:hyperlink": "https://example.com/SL2",
-            "SL2:link_type": "",
-            "SL2:section": "SSL2",
-            "SL2:subsection": "SBESL2",
-            "SLL:hyperlink": "https://example.com/SLL",
-            "SLL:link_type": "SAM",
-            "SLL:section": "SSLL",
-            "SLL:subsection": "SBESLL",
+            "CRE 0": "777-777|C7",
+        },
+        {
+            "CRE 0": "888-888|C8",
+        },
+        {
+            "S1|hyperlink": "",
+            "S1|name": "",
+            "S2|hyperlink": "",
+            "S2|name": "",
+            "SL|hyperlink": "https://example.com/SL",
+            "SL|name": "SSL",
+            "SL|id": "slid",
+            "SL2|hyperlink": "",
+            "SL2|name": "",
+            "SLL|hyperlink": "",
+            "SLL|name": "",
+        },
+        {
+            "SL2|hyperlink": "https://example.com/SL2",
+            "SL2|id": "sl2id",
+            "SL2|name": "SSL2",
+            "SLL|hyperlink": "https://example.com/SLL",
+            "SLL|name": "SSLL",
+            "SLL|id": "SBESLL",
+            "SLL|hyperlink": "",
         },
     ]
 
     expected = {
-        "C1": defs.CRE(
-            id="111-111",
-            description="C1 description",
-            name="C1",
-            links=[
-                defs.Link(
-                    ltype=defs.LinkTypes.LinkedTo,
-                    document=defs.Standard(
-                        name="S1",
-                        section="SE1",
-                        subsection="SBE1",
-                        hyperlink="https://example.com/S1",
+        defs.Credoctypes.CRE.value: [
+            defs.CRE(
+                id="000-001",
+                name="C0",
+                links=[
+                    defs.Link(
+                        ltype=defs.LinkTypes.LinkedTo,
+                        document=defs.Standard(
+                            name="S1",
+                            section="SE1",
+                            sectionID="id1",
+                            hyperlink="https://example.com/S1",
+                        ),
                     ),
-                )
-            ],
-        ),
-        "C2": defs.CRE(
-            id="222-222",
-            description="C2 description",
-            name="C2",
-            links=[
-                defs.Link(
-                    ltype=defs.LinkTypes.Contains,
-                    document=defs.CRE(id="333-333", name="C3"),
-                )
-            ],
-        ),
-        "C3": defs.CRE(
-            id="333-333",
-            description="C3 description",
-            name="C3",
-            links=[
-                defs.Link(
-                    ltype=defs.LinkTypes.PartOf,
-                    document=defs.CRE(
-                        id="222-222", description="C2 description", name="C2"
+                    defs.Link(
+                        ltype=defs.LinkTypes.Contains,
+                        document=defs.CRE(
+                            id="222-222",
+                            name="C2",
+                        ),
                     ),
-                ),
-                defs.Link(
-                    ltype=defs.LinkTypes.LinkedTo,
-                    document=defs.Code(
-                        name="S3",
-                        description="SE3",
-                        hyperlink="https://example.com/S3",
+                ],
+            ),
+            defs.CRE(
+                id="222-222",
+                name="C2",
+                links=[
+                    defs.Link(
+                        ltype=defs.LinkTypes.Contains,
+                        document=defs.CRE(id="333-333", name="C3"),
+                    )
+                ],
+            ),
+            defs.CRE(
+                id="333-333",
+                name="C3",
+                links=[
+                    defs.Link(
+                        ltype=defs.LinkTypes.LinkedTo,
+                        document=defs.Standard(
+                            name="S3",
+                            section="SE3",
+                            sectionID="5.3",
+                            hyperlink="https://example.com/S3",
+                            description="SE3",
+                        ),
                     ),
-                ),
-            ],
-        ),
-        "C5": defs.CRE(
-            id="555-555",
-            description="C5 description",
-            name="C5",
-            links=[
-                defs.Link(
-                    ltype=defs.LinkTypes.LinkedTo,
-                    document=defs.Standard(
-                        name="S1",
-                        section="SE1",
-                        subsection="SBE1",
-                        hyperlink="https://example.com/S1",
+                    defs.Link(
+                        ltype=defs.LinkTypes.Contains,
+                        document=defs.CRE(id="444-444", name="C4"),
                     ),
-                ),
-                defs.Link(
-                    ltype=defs.LinkTypes.LinkedTo,
-                    document=defs.Standard(
-                        name="S1",
-                        section="SE1",
-                        subsection="SBE11",
-                        hyperlink="https://example.com/S1",
+                ],
+            ),
+            defs.CRE(
+                id="444-444",
+                name="C4",
+                links=[
+                    defs.Link(
+                        ltype=defs.LinkTypes.LinkedTo,
+                        document=defs.Standard(
+                            name="S1",
+                            section="SE1",
+                            sectionID="id1",
+                            hyperlink="https://example.com/S1",
+                        ),
                     ),
-                ),
-            ],
-        ),
-        "C6": defs.CRE(
-            id="666-666",
-            description="C6 description",
-            name="C6",
-            links=[
-                defs.Link(
-                    ltype=defs.LinkTypes.LinkedTo,
-                    document=defs.Tool(
-                        name="S2",
-                        section="rule-0",
-                        sectionID="0",
-                        tooltype=defs.ToolTypes.Offensive,
-                        description="SE2",
-                        hyperlink="https://example.com/S2",
+                    defs.Link(
+                        ltype=defs.LinkTypes.Contains,
+                        document=defs.CRE(id="555-555", name="C5"),
                     ),
-                ),
-                defs.Link(
-                    ltype=defs.LinkTypes.LinkedTo,
-                    document=defs.Standard(
-                        name="S1",
-                        section="SE1",
-                        subsection="SBE11",
-                        hyperlink="https://example.com/S1",
+                ],
+            ),
+            defs.CRE(
+                id="555-555",
+                name="C5",
+                links=[
+                    defs.Link(
+                        ltype=defs.LinkTypes.LinkedTo,
+                        document=defs.Standard(
+                            name="S1",
+                            section="SE1",
+                            sectionID="id1",
+                            hyperlink="https://example.com/S1",
+                        ),
                     ),
-                ),
-                defs.Link(
-                    ltype=defs.LinkTypes.Contains,
-                    document=defs.CRE(id="777-777", name="C7"),
-                ),
-                defs.Link(
-                    ltype=defs.LinkTypes.Contains,
-                    document=defs.CRE(id="888-888", name="C8"),
-                ),
-            ],
-        ),
-        "C7": defs.CRE(
-            id="777-777",
-            name="C7",
-            links=[
-                defs.Link(
-                    ltype=defs.LinkTypes.PartOf,
-                    document=defs.CRE(
-                        id="666-666", description="C6 description", name="C6"
+                ],
+            ),
+            defs.CRE(
+                id="666-666",
+                name="C6",
+            ),
+            defs.CRE(
+                id="777-777",
+                name="C7",
+            ),
+            defs.CRE(
+                id="888-888",
+                name="C8",
+            ),
+        ],
+        defs.Credoctypes.Standard.value: [
+            defs.Standard(
+                name="S1",
+                section="SE1",
+                description="",
+                sectionID="id1",
+                hyperlink="https://example.com/S1",
+                links=[
+                    defs.Link(
+                        ltype=defs.LinkTypes.LinkedTo,
+                        document=defs.CRE(id="000-001", name="C0"),
                     ),
-                )
-            ],
-        ),
-        "C8": defs.CRE(
-            id="888-888",
-            name="C8",
-            links=[
-                defs.Link(
-                    ltype=defs.LinkTypes.PartOf,
-                    document=defs.CRE(
-                        id="666-666", description="C6 description", name="C6"
+                    defs.Link(
+                        ltype=defs.LinkTypes.LinkedTo,
+                        document=defs.CRE(id="444-444", name="C4"),
                     ),
-                )
-            ],
-        ),
-        "SL2:SSL2": defs.Standard(
-            name="SL2",
-            section="SSL2",
-            subsection="SBESL2",
-            hyperlink="https://example.com/SL2",
-        ),
-        "SL:SSL": defs.Standard(
-            name="SL",
-            section="SSL",
-            subsection="SBESL",
-            hyperlink="https://example.com/SL",
-        ),
-        "SLL:SSLL": defs.Standard(
-            name="SLL",
-            section="SSLL",
-            subsection="SBESLL",
-            hyperlink="https://example.com/SLL",
-        ),
+                    defs.Link(
+                        ltype=defs.LinkTypes.LinkedTo,
+                        document=defs.CRE(id="555-555", name="C5"),
+                    ),
+                ],
+            ),
+            defs.Standard(
+                name="S3",
+                section="SE3",
+                description="SE3",
+                sectionID="5.3",
+                hyperlink="https://example.com/S3",
+                links=[
+                    defs.Link(
+                        ltype=defs.LinkTypes.LinkedTo,
+                        document=defs.CRE(id="333-333", name="C3"),
+                    ),
+                ],
+            ),
+            defs.Standard(
+                name="SL",
+                section="SSL",
+                description="",
+                sectionID="slid",
+                hyperlink="https://example.com/SL",
+            ),
+            defs.Standard(
+                name="SL2",
+                section="SSL2",
+                sectionID="sl2id",
+                hyperlink="https://example.com/SL2",
+            ),
+            defs.Standard(
+                name="SLL",
+                description="",
+                section="SSLL",
+                sectionID="SBESLL",
+            ),
+        ],
     }
     return input_data, expected

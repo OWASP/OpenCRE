@@ -7,9 +7,7 @@ from typing import Any, Dict, List, Optional, Set, Union
 from application.defs import cre_exceptions
 
 
-class ExportFormat(
-    Enum
-):  # TODO: this can likely be replaced with a method that iterates over an object's vars and formats headers to
+class ExportFormat:  # TODO: this can likely be replaced with a method that iterates over an object's vars and formats headers to
     #  <doctype>:<name>:<varname>
     separator = "|"
     section = "name"
@@ -22,7 +20,10 @@ class ExportFormat(
     cre_link = "Linked_CRE_"
     cre = "CRE"
     tooltype = "ToolType"
-    sectionID = "SectionID"
+    # sectionID = "SectionID"
+
+    def __str__(self):
+        return str(self.value)
 
     @staticmethod
     def get_doctype(header: str) -> Optional["Credoctypes"]:
