@@ -11,7 +11,7 @@ class ExportFormat:  # TODO: this can likely be replaced with a method that iter
     #  <doctype>:<name>:<varname>
     separator = "|"
     section = "name"
-    # subsection = "subsection"
+    subsection = "subsection"
     hyperlink = "hyperlink"
     link_type = "link_type"
     name = "name"
@@ -20,10 +20,7 @@ class ExportFormat:  # TODO: this can likely be replaced with a method that iter
     cre_link = "Linked_CRE_"
     cre = "CRE"
     tooltype = "ToolType"
-    # sectionID = "SectionID"
-
-    def __str__(self):
-        return str(self.value)
+    sectionID = "SectionID"
 
     @staticmethod
     def get_doctype(header: str) -> Optional["Credoctypes"]:
@@ -41,143 +38,143 @@ class ExportFormat:  # TODO: this can likely be replaced with a method that iter
     def node_name_key(sname: str) -> str:
         """returns :<sname>: used mostly for matching"""
         return "%s%s%s" % (
-            ExportFormat.separator.value,
+            ExportFormat.separator,
             sname,
-            ExportFormat.separator.value,
+            ExportFormat.separator,
         )
 
     @staticmethod
     def tooltype_key(sname: str, doctype: "Credoctypes") -> str:
         "returns <doctype>:<name>:tooltype"
         return "%s%s%s%s%s" % (
-            doctype.value,
-            ExportFormat.separator.value,
+            doctype,
+            ExportFormat.separator,
             sname,
-            ExportFormat.separator.value,
-            ExportFormat.tooltype.value,
+            ExportFormat.separator,
+            ExportFormat.tooltype,
         )
 
     @staticmethod
     def sectionID_key(sname: str, doctype: "Credoctypes") -> str:
         "returns <doctype>:<name>:sectionID"
         return "%s%s%s%s%s" % (
-            doctype.value,
-            ExportFormat.separator.value,
+            doctype,
+            ExportFormat.separator,
             sname,
-            ExportFormat.separator.value,
-            ExportFormat.sectionID.value,
+            ExportFormat.separator,
+            ExportFormat.sectionID,
         )
 
     @staticmethod
     def description_key(sname: str, doctype: "Credoctypes") -> str:
         "returns <doctype>:<name>:description"
         return "%s%s%s%s%s" % (
-            doctype.value,
-            ExportFormat.separator.value,
+            doctype,
+            ExportFormat.separator,
             sname,
-            ExportFormat.separator.value,
-            ExportFormat.description.value,
+            ExportFormat.separator,
+            ExportFormat.description,
         )
 
     @staticmethod
     def section_key(sname: str, doctype: "Credoctypes") -> str:
         "returns <doctype>:<name>:section"
         return "%s%s%s%s%s" % (
-            doctype.value,
-            ExportFormat.separator.value,
+            doctype,
+            ExportFormat.separator,
             sname,
-            ExportFormat.separator.value,
-            ExportFormat.section.value,
+            ExportFormat.separator,
+            ExportFormat.section,
         )
 
     @staticmethod
     def subsection_key(sname: str, doctype: "Credoctypes") -> str:
         "returns <doctype>:<sname>:subsection"
         return "%s%s%s%s%s" % (
-            doctype.value,
-            ExportFormat.separator.value,
+            doctype,
+            ExportFormat.separator,
             sname,
-            ExportFormat.separator.value,
-            ExportFormat.subsection.value,
+            ExportFormat.separator,
+            ExportFormat.subsection,
         )
 
     @staticmethod
     def hyperlink_key(sname: str, doctype: "Credoctypes") -> str:
         "returns <sname>:hyperlink"
         return "%s%s%s%s%s" % (
-            doctype.value,
-            ExportFormat.separator.value,
+            doctype,
+            ExportFormat.separator,
             sname,
-            ExportFormat.separator.value,
-            ExportFormat.hyperlink.value,
+            ExportFormat.separator,
+            ExportFormat.hyperlink,
         )
 
     @staticmethod
     def link_type_key(sname: str, doctype: "Credoctypes") -> str:
         "returns <sname>:link_type"
         return "%s%s%s%s%s" % (
-            doctype.value,
-            ExportFormat.separator.value,
+            doctype,
+            ExportFormat.separator,
             sname,
-            ExportFormat.separator.value,
-            ExportFormat.link_type.value,
+            ExportFormat.separator,
+            ExportFormat.link_type,
         )
 
     @staticmethod
     def linked_cre_id_key(name: str) -> str:
         "returns Linked_CRE_<name>:id"
         return "%s%s%s%s" % (
-            ExportFormat.cre_link.value,
+            ExportFormat.cre_link,
             name,
-            ExportFormat.separator.value,
-            ExportFormat.id.value,
+            ExportFormat.separator,
+            ExportFormat.id,
         )
 
     @staticmethod
     def linked_cre_name_key(name: str) -> str:
         "returns Linked_CRE_<name>:name"
         return "%s%s%s%s" % (
-            ExportFormat.cre_link.value,
+            ExportFormat.cre_link,
             name,
-            ExportFormat.separator.value,
-            ExportFormat.name.value,
+            ExportFormat.separator,
+            ExportFormat.name,
         )
 
     @staticmethod
     def linked_cre_link_type_key(name: str) -> str:
         "returns Linked_CRE_<name>:link_type"
         return "%s%s%s%s" % (
-            ExportFormat.cre_link.value,
+            ExportFormat.cre_link,
             name,
-            ExportFormat.separator.value,
-            ExportFormat.link_type.value,
+            ExportFormat.separator,
+            ExportFormat.link_type,
         )
 
     @staticmethod
     def cre_id_key() -> str:
         "returns CRE:id"
         return "%s%s%s" % (
-            ExportFormat.cre.value,
-            ExportFormat.separator.value,
-            ExportFormat.id.value,
+            ExportFormat.cre,
+            ExportFormat.separator,
+            ExportFormat.id,
         )
 
     @staticmethod
     def cre_name_key() -> str:
         "returns CRE:name"
         return "%s%s%s" % (
-            ExportFormat.cre.value,
-            ExportFormat.separator.value,
-            ExportFormat.name.value,
+            ExportFormat.cre,
+            ExportFormat.separator,
+            ExportFormat.name,
         )
 
     @staticmethod
     def cre_description_key() -> str:
         "returns CRE:description"
         return "%s%s%s" % (
-            ExportFormat.cre.value,
-            ExportFormat.separator.value,
-            ExportFormat.description.value,
+            ExportFormat.cre,
+            ExportFormat.separator,
+            ExportFormat.description,
         )
 
 

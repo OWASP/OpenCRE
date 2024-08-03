@@ -93,7 +93,7 @@ def register_node(node: defs.Node, collection: db.Node_collection) -> db.Node:
                 register_node(node=link.document, collection=collection)
 
         elif type(link.document).__name__ == defs.CRE.__name__:
-            # dbcre = register_cre(link.document, collection) # CREs are idempotent
+            # dbcre,_ = register_cre(link.document, collection) # CREs are idempotent
             c = collection.get_CREs(name=link.document.name)[0]
             dbcre = db.dbCREfromCRE(c)
             collection.add_link(dbcre, linked_node, type=link.ltype)
@@ -109,14 +109,19 @@ def register_node(node: defs.Node, collection: db.Node_collection) -> db.Node:
     return linked_node
 
 
-def register_cre(cre: defs.CRE, collection: db.Node_collection) -> db.CRE:
+def register_cre(cre: defs.CRE, collection: db.Node_collection) -> Tuple[db.CRE, bool]:
+    existing = False
+    if collection.get_CREs(name=cre.id):
+        existing = True
+
     dbcre: db.CRE = collection.add_cre(cre)
     for link in cre.links:
         if type(link.document) == defs.CRE:
             logger.info(f"{link.document.id} {link.ltype} {cre.id}")
+            lower_cre, _ = register_cre(link.document, collection)
             collection.add_internal_link(
                 higher=dbcre,
-                lower=register_cre(link.document, collection),
+                lower=lower_cre,
                 type=link.ltype,
             )
         else:
@@ -125,7 +130,7 @@ def register_cre(cre: defs.CRE, collection: db.Node_collection) -> db.CRE:
                 node=register_node(node=link.document, collection=collection),
                 type=link.ltype,
             )
-    return dbcre
+    return dbcre, existing
 
 
 def parse_file(
@@ -302,7 +307,6 @@ def parse_standards_from_spreadsheeet(
         documents = spreadsheet_parsers.parse_export_format(cre_file)
         register_cre(documents, collection)
         pass
-
     elif any(key.startswith("CRE hierarchy") for key in cre_file[0].keys()):
         conn = redis.connect()
         collection = collection.with_graph()

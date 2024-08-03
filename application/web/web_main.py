@@ -1,5 +1,7 @@
 # type: ignore
+
 # silence mypy for the routes file
+import csv
 from functools import wraps
 import json
 import logging
@@ -7,16 +9,16 @@ import os
 import io
 import pathlib
 import urllib.parse
-import tempfile
+from alive_progress import alive_bar
 from typing import Any
 from application.utils import oscal_utils, redis
 
 from rq import job, exceptions
 
 from application.utils import spreadsheet_parsers
-from application.utils import spreadsheet
 from application.utils import oscal_utils, redis
 from application.database import db
+from application.cmd import cre_main
 from application.defs import cre_defs as defs
 from application.defs import osib_defs as odefs
 from application.utils import spreadsheet as sheet_utils
@@ -672,6 +674,9 @@ def all_cres() -> Any:
     abort(404)
 
 
+# Importing Handlers
+
+
 @app.route("/rest/v1/cre_csv", methods=["GET"])
 def get_cre_csv() -> Any:
     database = db.Node_collection()
@@ -694,6 +699,39 @@ def get_cre_csv() -> Any:
             mimetype="text/csv",
         )
     abort(404)
+
+
+@app.route("/rest/v1/cre_csv_import", methods=["POST"])
+def import_from_cre_csv() -> Any:
+    # TODO: (spyros) add optional gap analysis and embeddings calculation
+    database = db.Node_collection().with_graph()
+    file = request.files.get("cre_csv")
+    if file is None:
+        abort(400, "No file provided")
+    contents = file.read()
+    csv_read = csv.DictReader(contents.decode("utf-8").splitlines())
+
+    cres, standards = spreadsheet_parsers.parse_export_format(list(csv_read))
+
+    new_cres = []
+    for cre in cres:
+        new_cre, exists = cre_main.register_cre(cre, database)
+        if not exists:
+            new_cres.append(new_cre)
+
+    for standard in standards:
+        cre_main.register_node(collection=database, node=standard)
+
+    return jsonify(
+        {
+            "status": "success",
+            "new_cres": [c.external_id for c in new_cres],
+            "new_standard_entries": len(standards),
+        }
+    )
+
+
+# /End Importing Handlers
 
 
 # @app.route("/rest/v1/all_nodes", methods=["GET"])

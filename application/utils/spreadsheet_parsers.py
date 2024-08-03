@@ -142,6 +142,10 @@ def parse_export_format(lfile: List[Dict[str, Any]]) -> Dict[str, defs.Document]
     """
     cres: Dict[str, defs.CRE] = {}
     standards: Dict[str, defs.Standard] = {}
+
+    if not lfile:
+        return cres.values(), standards.values()
+
     max_internal_cre_links = len(
         set([k for k in lfile[0].keys() if k.startswith("CRE")])
     )
@@ -161,6 +165,11 @@ def parse_export_format(lfile: List[Dict[str, Any]]) -> Dict[str, defs.Document]
         for i in range(max_internal_cre_links - 1, -1, -1):
             if not is_empty(mapping_line.get(f"CRE {i}")):
                 entry = mapping_line.get(f"CRE {i}").split(defs.ExportFormat.separator)
+                if not entry or len(entry) < 2:
+                    line = mapping_line.get(f"CRE {i}")
+                    raise ValueError(
+                        f"mapping line contents: {line}, key: CRE {i} is not formatted correctly, missing separator {defs.ExportFormat.separator}"
+                    )
                 working_cre = defs.CRE(name=entry[1], id=entry[0])
 
                 if previous_index < i:  # we found a higher hierarchy CRE
