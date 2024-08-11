@@ -1374,9 +1374,10 @@ class Node_collection:
             dbid = self.session.query(CRE.id).filter(CRE.external_id == r.id).first()[0]
             root_cre_db_ids.append(dbid)
 
-        credbid = (
-            self.session.query(CRE.id).filter(CRE.external_id == cre.id).first()[0]
-        )
+        credbid = self.session.query(CRE.id).filter(CRE.external_id == cre.id).first()
+        if not credbid:
+            raise ValueError(f"CRE {cre.id} does not exist in the database")
+        credbid = credbid[0]
 
         if len(self.graph.graph.edges) == 0:
             logger.error("graph is empty")
