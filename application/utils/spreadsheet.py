@@ -306,7 +306,7 @@ def generate_mapping_template_file(
         rows = []
 
         rows.append(
-            {f"CRE {offset}": f"{cre.id}{defs.ExportFormat.separator.value}{cre.name}"}
+            {f"CRE {offset}": f"{cre.id}{defs.ExportFormat.separator}{cre.name}"}
         )
         visited_cres.add(cre.id)
         dbcre = database.get_CREs(external_id=cre.id)

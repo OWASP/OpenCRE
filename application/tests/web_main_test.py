@@ -1,3 +1,4 @@
+from pprint import pprint
 import io
 import csv
 import random
@@ -886,8 +887,8 @@ class TestMain(unittest.TestCase):
 
             for i in range(4):
                 c = defs.CRE(
-                    description=f"CREdesc{i}-{j}",
-                    name=f"CREname{i}-{j}",
+                    description=f"CREdesc{j}-{i}",
+                    name=f"CREname{j}-{i}",
                     id=f"123-4{j}{i}",
                 )
                 dbcre = collection.add_cre(c)
