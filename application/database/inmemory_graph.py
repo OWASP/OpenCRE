@@ -46,26 +46,35 @@ class CRE_Graph:
                 ):
                     include_cres.append(el[0])
                     include_cres.append(el[1])
-            
+
             for el in rootIDs:
-                if el not in include_cres: # If the root is not in the parent/children graph, add it to prevent an error and continue, there is not path to our CRE anyway
+                if (
+                    el not in include_cres
+                ):  # If the root is not in the parent/children graph, add it to prevent an error and continue, there is not path to our CRE anyway
                     include_cres.append(f"CRE: {el}")
-            self.__parent_child_subgraph = self.graph.subgraph(set(include_cres) )
-        
+            self.__parent_child_subgraph = self.graph.subgraph(set(include_cres))
+
         shortest_path = sys.maxsize
-        for root in rootIDs:            
+        for root in rootIDs:
             try:
                 shortest_path = min(
                     shortest_path,
                     len(
                         nx.shortest_path(
-                            self.__parent_child_subgraph, f"CRE: {root}", f"CRE: {creID}"
+                            self.__parent_child_subgraph,
+                            f"CRE: {root}",
+                            f"CRE: {creID}",
                         )
-                    )-1,
+                    )
+                    - 1,
                 )
-            except nx.NodeNotFound as nnf: # If the CRE is not in the parent/children graph it means that it's a lone CRE, so it's a root and we return 0
+            except (
+                nx.NodeNotFound
+            ) as nnf:  # If the CRE is not in the parent/children graph it means that it's a lone CRE, so it's a root and we return 0
                 return 0
-            except nx.NetworkXNoPath as nxnp: # If there is no path to the CRE, continue
+            except (
+                nx.NetworkXNoPath
+            ) as nxnp:  # If there is no path to the CRE, continue
                 continue
         return shortest_path
 

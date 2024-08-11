@@ -116,7 +116,7 @@ def find_cre(creid: str = None, crename: str = None) -> Any:  # refer
             return f"<pre>{mdutils.cre_to_md([cre])}</pre>"
 
         elif opt_format == SupportedFormats.CSV.value:
-            docs = sheet_utils.prepare_spreadsheet(collection=database, docs=[cre])
+            docs = sheet_utils.prepare_spreadsheet(docs=[cre])
             return write_csv(docs=docs).getvalue().encode("utf-8")
 
         elif opt_format == SupportedFormats.OSCAL.value:
@@ -187,7 +187,7 @@ def find_node_by_name(name: str, ntype: str = defs.Credoctypes.Standard.value) -
             return f"<pre>{mdutils.cre_to_md(nodes)}</pre>"
 
         elif opt_format == SupportedFormats.CSV.value:
-            docs = sheet_utils.prepare_spreadsheet(collection=database, docs=nodes)
+            docs = sheet_utils.prepare_spreadsheet(docs=nodes)
             return write_csv(docs=docs).getvalue().encode("utf-8")
 
         elif opt_format == SupportedFormats.OSCAL.value:
@@ -220,7 +220,7 @@ def find_document_by_tag() -> Any:
         if opt_format == SupportedFormats.Markdown.value:
             return f"<pre>{mdutils.cre_to_md(documents)}</pre>"
         elif opt_format == SupportedFormats.CSV.value:
-            docs = sheet_utils.prepare_spreadsheet(collection=database, docs=documents)
+            docs = sheet_utils.prepare_spreadsheet(docs=documents)
             return write_csv(docs=docs).getvalue().encode("utf-8")
         elif opt_format == SupportedFormats.OSCAL.value:
             return jsonify(json.loads(oscal_utils.list_to_oscal(documents)))
@@ -350,7 +350,7 @@ def text_search() -> Any:
         if opt_format == SupportedFormats.Markdown.value:
             return f"<pre>{mdutils.cre_to_md(documents)}</pre>"
         elif opt_format == SupportedFormats.CSV.value:
-            docs = sheet_utils.prepare_spreadsheet(collection=database, docs=documents)
+            docs = sheet_utils.prepare_spreadsheet(docs=documents)
             return write_csv(docs=docs).getvalue().encode("utf-8")
         elif opt_format == SupportedFormats.OSCAL.value:
             return jsonify(json.loads(oscal_utils.list_to_oscal(documents)))
@@ -379,7 +379,7 @@ def find_root_cres() -> Any:
         if opt_format == SupportedFormats.Markdown.value:
             return f"<pre>{mdutils.cre_to_md(documents)}</pre>"
         elif opt_format == SupportedFormats.CSV.value:
-            docs = sheet_utils.prepare_spreadsheet(collection=database, docs=documents)
+            docs = sheet_utils.prepare_spreadsheet(docs=documents)
             return write_csv(docs=docs).getvalue().encode("utf-8")
         elif opt_format == SupportedFormats.OSCAL.value:
             return jsonify(json.loads(oscal_utils.list_to_oscal(documents)))
@@ -703,30 +703,48 @@ def get_cre_csv() -> Any:
 
 @app.route("/rest/v1/cre_csv_import", methods=["POST"])
 def import_from_cre_csv() -> Any:
+    if not os.environ.get("CRE_ALLOW_IMPORT"):
+        abort(
+            403,
+            "Importing is disabled, set the environment variable CRE_ALLOW_IMPORT to allow this functionality",
+        )
+
     # TODO: (spyros) add optional gap analysis and embeddings calculation
     database = db.Node_collection().with_graph()
     file = request.files.get("cre_csv")
+    calculate_embeddings = (
+        False if not request.args.get("calculate_embeddings") else True
+    )
+    calculate_gap_analysis = (
+        False if not request.args.get("calculate_gap_analysis") else True
+    )
+
     if file is None:
         abort(400, "No file provided")
     contents = file.read()
     csv_read = csv.DictReader(contents.decode("utf-8").splitlines())
+    documents = spreadsheet_parsers.parse_export_format(list(csv_read))
+    cres = documents.pop(defs.Credoctypes.CRE.value)
 
-    cres, standards = spreadsheet_parsers.parse_export_format(list(csv_read))
-
+    standards = documents
     new_cres = []
     for cre in cres:
         new_cre, exists = cre_main.register_cre(cre, database)
         if not exists:
             new_cres.append(new_cre)
 
-    for standard in standards:
-        cre_main.register_node(collection=database, node=standard)
-
+    for _, entries in standards.items():
+        cre_main.register_standard(
+            collection=database,
+            standard_entries=list(entries),
+            generate_embeddings=calculate_embeddings,
+            calculate_gap_analysis=calculate_gap_analysis,
+        )
     return jsonify(
         {
             "status": "success",
             "new_cres": [c.external_id for c in new_cres],
-            "new_standard_entries": len(standards),
+            "new_standards": len(standards),
         }
     )
 
