@@ -1,3 +1,4 @@
+from pprint import pprint
 from application.utils.gap_analysis import make_resources_key, make_subresources_key
 import string
 import random
@@ -14,6 +15,7 @@ import redis
 from flask import json as flask_json
 
 import yaml
+from application.tests.utils.data_gen import export_format_data
 from application import create_app, sqla  # type: ignore
 from application.database import db
 from application.defs import cre_defs as defs
@@ -33,7 +35,6 @@ class TestDB(unittest.TestCase):
 
         self.collection = db.Node_collection().with_graph()
         collection = self.collection
-        # collection.graph.graph = db.CRE_Graph.load_cre_graph(sqla.session)
 
         dbcre = collection.add_cre(
             defs.CRE(id="111-000", description="CREdesc", name="CREname")
@@ -2140,6 +2141,53 @@ class TestDB(unittest.TestCase):
         self.assertEqual(page, 1)
         self.assertEqual(total_pages, 4)
 
+    def test_get_cre_hierarchy(self) -> None:
+        collection = db.Node_collection().with_graph()
+        _, inputDocs = export_format_data()
+        importItems = []
+        for name, items in inputDocs.items():
+            for item in items:
+                importItems.append(item)
+                if name == defs.Credoctypes.CRE:
+                    dbitem = collection.add_cre(item)
+                else:
+                    dbitem = collection.add_node(item)
+                for link in item.links:
+                    if link.document.doctype == defs.Credoctypes.CRE:
+                        linked_item = collection.add_cre(link.document)
+                        if item.doctype == defs.Credoctypes.CRE:
+                            collection.add_internal_link(
+                                dbitem, linked_item, type=link.ltype
+                            )
+                        else:
+                            collection.add_link(
+                                node=dbitem, cre=linked_item, type=link.ltype
+                            )
+                    else:
+                        linked_item = collection.add_node(link.document)
+                        if item.doctype == defs.Credoctypes.CRE:
+                            collection.add_link(
+                                cre=dbitem, node=linked_item, type=link.ltype
+                            )
+                        else:
+                            collection.add_internal_link(
+                                cre=linked_item, node=dbitem, type=link.ltype
+                            )
 
-if __name__ == "__main__":
-    unittest.main()
+        cres = inputDocs[defs.Credoctypes.CRE]
+        c0 = [c for c in cres if c.name == "C0"][0]
+        self.assertEqual(collection.get_cre_hierarchy(c0), 0)
+        c2 = [c for c in cres if c.name == "C2"][0]
+        self.assertEqual(collection.get_cre_hierarchy(c2), 1)
+        c3 = [c for c in cres if c.name == "C3"][0]
+        self.assertEqual(collection.get_cre_hierarchy(c3), 2)
+        c4 = [c for c in cres if c.name == "C4"][0]
+        self.assertEqual(collection.get_cre_hierarchy(c4), 3)
+        c5 = [c for c in cres if c.name == "C5"][0]
+        self.assertEqual(collection.get_cre_hierarchy(c5), 4)
+        c6 = [c for c in cres if c.name == "C6"][0]
+        self.assertEqual(collection.get_cre_hierarchy(c6), 0)
+        c7 = [c for c in cres if c.name == "C7"][0]
+        self.assertEqual(collection.get_cre_hierarchy(c7), 0)
+        c8 = [c for c in cres if c.name == "C8"][0]
+        self.assertEqual(collection.get_cre_hierarchy(c8), 0)
