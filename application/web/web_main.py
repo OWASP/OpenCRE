@@ -77,7 +77,8 @@ def extend_cre_with_tag_links(
     others = list(frozenset(others))
     for o in others:
         o.links = []
-        cre.add_link(defs.Link(ltype=defs.LinkTypes.Related, document=o))
+        if not cre.link_exists(o) and o.id != cre.id:
+            cre.add_link(defs.Link(ltype=defs.LinkTypes.Related, document=o))
     return cre
 
 
@@ -116,7 +117,9 @@ def find_cre(creid: str = None, crename: str = None) -> Any:  # refer
             return f"<pre>{mdutils.cre_to_md([cre])}</pre>"
 
         elif opt_format == SupportedFormats.CSV.value:
-            docs = sheet_utils.prepare_spreadsheet(docs=[cre])
+            docs = sheet_utils.ExportSheet().prepare_spreadsheet(
+                docs=[cre], storage=database
+            )
             return write_csv(docs=docs).getvalue().encode("utf-8")
 
         elif opt_format == SupportedFormats.OSCAL.value:
@@ -187,7 +190,9 @@ def find_node_by_name(name: str, ntype: str = defs.Credoctypes.Standard.value) -
             return f"<pre>{mdutils.cre_to_md(nodes)}</pre>"
 
         elif opt_format == SupportedFormats.CSV.value:
-            docs = sheet_utils.prepare_spreadsheet(docs=nodes)
+            docs = sheet_utils.ExportSheet().prepare_spreadsheet(
+                docs=nodes, storage=database
+            )
             return write_csv(docs=docs).getvalue().encode("utf-8")
 
         elif opt_format == SupportedFormats.OSCAL.value:
@@ -220,7 +225,9 @@ def find_document_by_tag() -> Any:
         if opt_format == SupportedFormats.Markdown.value:
             return f"<pre>{mdutils.cre_to_md(documents)}</pre>"
         elif opt_format == SupportedFormats.CSV.value:
-            docs = sheet_utils.prepare_spreadsheet(docs=documents)
+            docs = sheet_utils.ExportSheet().prepare_spreadsheet(
+                docs=documents, storage=database
+            )
             return write_csv(docs=docs).getvalue().encode("utf-8")
         elif opt_format == SupportedFormats.OSCAL.value:
             return jsonify(json.loads(oscal_utils.list_to_oscal(documents)))
@@ -350,7 +357,9 @@ def text_search() -> Any:
         if opt_format == SupportedFormats.Markdown.value:
             return f"<pre>{mdutils.cre_to_md(documents)}</pre>"
         elif opt_format == SupportedFormats.CSV.value:
-            docs = sheet_utils.prepare_spreadsheet(docs=documents)
+            docs = sheet_utils.ExportSheet().prepare_spreadsheet(
+                docs=documents, storage=database
+            )
             return write_csv(docs=docs).getvalue().encode("utf-8")
         elif opt_format == SupportedFormats.OSCAL.value:
             return jsonify(json.loads(oscal_utils.list_to_oscal(documents)))
@@ -379,7 +388,9 @@ def find_root_cres() -> Any:
         if opt_format == SupportedFormats.Markdown.value:
             return f"<pre>{mdutils.cre_to_md(documents)}</pre>"
         elif opt_format == SupportedFormats.CSV.value:
-            docs = sheet_utils.prepare_spreadsheet(docs=documents)
+            docs = sheet_utils.ExportSheet().prepare_spreadsheet(
+                docs=documents, storage=database
+            )
             return write_csv(docs=docs).getvalue().encode("utf-8")
         elif opt_format == SupportedFormats.OSCAL.value:
             return jsonify(json.loads(oscal_utils.list_to_oscal(documents)))

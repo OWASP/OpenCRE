@@ -272,8 +272,9 @@ class ExportSheet:
 
 def write_csv(docs: List[Dict[str, Any]]) -> io.StringIO:
     data = io.StringIO()
-    fieldnames: List[str] = list(docs[0].keys())
-    writer: csv.DictWriter = csv.DictWriter(data, fieldnames=fieldnames)  # type: ignore
+    fieldnames = {}
+    [fieldnames.update(d) for d in docs]
+    writer: csv.DictWriter = csv.DictWriter(data, fieldnames=fieldnames.keys())  # type: ignore
     writer.writeheader()
     writer.writerows(docs)
     return data
