@@ -14,11 +14,14 @@ class TestParsers(unittest.TestCase):
     def test_parse_export_format(self) -> None:
 
         input_data, expected = data_gen.export_format_data()
-        cres, standards = parse_export_format(input_data)
+        documents = parse_export_format(input_data)
+        actual_cres = documents.pop(defs.Credoctypes.CRE.value)
+        standards = documents
         self.maxDiff = None
 
-        self.assertListEqual(list(cres), list(expected[defs.Credoctypes.CRE]))
-        self.assertListEqual(list(expected[defs.Credoctypes.Standard]), list(standards))
+        expected_cres = expected.pop(defs.Credoctypes.CRE)
+        self.assertListEqual(list(actual_cres), list(expected_cres))
+        self.assertDictEqual(expected, standards)
 
     def test_parse_hierarchical_export_format(self) -> None:
         #  TODO(northdpole): add a tags linking test

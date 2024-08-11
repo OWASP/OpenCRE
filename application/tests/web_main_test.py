@@ -834,6 +834,8 @@ class TestMain(unittest.TestCase):
             )
 
     def test_import_from_cre_csv(self) -> None:
+        os.environ["CRE_ALLOW_IMPORT"] = "True"
+
         input_data, _ = data_gen.export_format_data()
         workspace = tempfile.mkdtemp()
         data = {}
@@ -866,7 +868,7 @@ class TestMain(unittest.TestCase):
                         "777-777",
                         "888-888",
                     ],
-                    "new_standard_entries": 5,
+                    "new_standards": 5,
                 },
                 json.loads(response.data),
             )
