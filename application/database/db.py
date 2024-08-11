@@ -742,13 +742,11 @@ class Node_collection:
         cres = []
         node_ids = self.session.query(Node.id).all()
         for nid in node_ids:
-            nodes.append(self.get_node_by_db_id(nid[0]))
-        [result.append(node) for node in nodes]
+            result.extend(self.get_nodes(db_id=nid[0]))
 
         cre_ids = self.session.query(CRE.id).all()
         for cid in cre_ids:
-            cres.append(self.get_cre_by_db_id(cid[0]))
-        [result.append(cre) for cre in cres]
+            result.append(self.get_cre_by_db_id(cid[0]))
         return result
 
     def __introduces_cycle(self, node_from: str, node_to: str) -> Any:
@@ -983,19 +981,24 @@ class Node_collection:
         description: Optional[str] = None,
         ntype: str = cre_defs.Standard.__name__,
         sectionID: Optional[str] = None,
+        db_id: Optional[str] = None,
     ) -> Optional[List[cre_defs.Node]]:
         nodes = []
-        nodes_query = self.__get_nodes_query__(
-            name=name,
-            section=section,
-            subsection=subsection,
-            link=link,
-            version=version,
-            partial=partial,
-            ntype=ntype,
-            description=description,
-            sectionID=sectionID,
-        )
+        nodes_query = None
+        if db_id:
+            nodes_query = self.session.query(Node).filter(Node.id == db_id)
+        else:
+            nodes_query = self.__get_nodes_query__(
+                name=name,
+                section=section,
+                subsection=subsection,
+                link=link,
+                version=version,
+                partial=partial,
+                ntype=ntype,
+                description=description,
+                sectionID=sectionID,
+            )
         dbnodes = nodes_query.all()
         if dbnodes:
             for dbnode in dbnodes:
@@ -1031,22 +1034,6 @@ class Node_collection:
             )
 
             return []
-
-    def get_node_by_db_id(self, id: str) -> cre_defs.Node:
-        node = self.session.query(Node).filter(Node.id == id).first()
-        if not node:
-            logger.error(f"Node {id} does not exist in the db")
-            return None
-
-        cs = linked_cres = Links.query.filter(Links.node == id).all()
-        nodes = self.get_nodes(
-            name=node.name,
-            section=node.section,
-            subsection=node.subsection,
-            ntype=node.ntype,
-            sectionID=node.section_id,
-        )[0]
-        return nodes
 
     def get_cre_by_db_id(self, id: str) -> cre_defs.CRE:
         """internal method, returns a shallow cre (no links) by its database id
@@ -1194,12 +1181,13 @@ class Node_collection:
             for ls in linked_nodes:
                 nd = self.session.query(Node).filter(Node.id == ls.node).first()
                 if not include_only or (include_only and nd.name in include_only):
-                    cre.add_link(
-                        cre_defs.Link(
-                            document=nodeFromDB(nd),
-                            ltype=cre_defs.LinkTypes.from_str(ls.type),
+                    n = nodeFromDB(nd)
+                    if not cre.link_exists(n):
+                        cre.add_link(
+                            cre_defs.Link(
+                                document=n, ltype=cre_defs.LinkTypes.from_str(ls.type)
+                            )
                         )
-                    )
             # TODO figure the query to merge the following two
             internal_links = (
                 self.session.query(InternalLinks)
@@ -1231,7 +1219,9 @@ class Node_collection:
                 elif il.group == dbcre.id:
                     res = q.filter(CRE.id == il.cre).first()
                     ltype = cre_defs.LinkTypes.from_str(il.type)
-                cre.add_link(cre_defs.Link(document=CREfromDB(res), ltype=ltype))
+                c = CREfromDB(res)
+                if not cre.link_exists(c):
+                    cre.add_link(cre_defs.Link(document=c, ltype=ltype))
             cres.append(cre)
         return cres
 

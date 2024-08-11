@@ -78,7 +78,7 @@ class JuiceShop(ParserInterface):
                     f"could not find an appropriate CRE for Juiceshop challenge {chal.section}, findings similarities with standards instead"
                 )
                 standard_id = ph.get_id_of_most_similar_node(challenge_embeddings)
-                dbstandard = cache.get_node_by_db_id(standard_id)
+                dbstandard = cache.get_nodes(db_id=standard_id)
                 logger.info(
                     f"found an appropriate standard for Juiceshop challenge {chal.section}, it is: {dbstandard.section}"
                 )

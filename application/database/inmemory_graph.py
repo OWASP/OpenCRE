@@ -14,6 +14,7 @@ class CRE_Graph:
     def instance(cls, documents: List[defs.Document] = None) -> "CRE_Graph":
         if cls.__instance is None:
             cls.__instance = cls.__new__(cls)
+            cls.graph = nx.DiGraph()
             cls.graph = cls.__load_cre_graph(documents=documents)
         return cls.__instance
 
@@ -87,7 +88,7 @@ class CRE_Graph:
     @classmethod
     def add_cre(cls, dbcre: defs.CRE, graph: nx.DiGraph) -> nx.DiGraph:
         if dbcre:
-            graph.add_node(f"CRE: {dbcre.id}", internal_id=dbcre.id)
+            cls.graph.add_node(f"CRE: {dbcre.id}", internal_id=dbcre.id)
         else:
             logger.error("Called with dbcre being none")
         return graph
@@ -95,7 +96,7 @@ class CRE_Graph:
     @classmethod
     def add_dbnode(cls, dbnode: defs.Node, graph: nx.DiGraph) -> nx.DiGraph:
         if dbnode:
-            graph.add_node(
+            cls.graph.add_node(
                 "Node: " + str(dbnode.id),
                 internal_id=dbnode.id,
             )
@@ -105,7 +106,10 @@ class CRE_Graph:
 
     @classmethod
     def __load_cre_graph(cls, documents: List[defs.Document]) -> nx.Graph:
-        graph = nx.DiGraph()
+        graph = cls.graph
+        if not graph:
+            graph = nx.DiGraph()
+
         for doc in documents:
             from_doctype = None
             if doc.doctype == defs.Credoctypes.CRE:
@@ -122,9 +126,10 @@ class CRE_Graph:
                 else:
                     graph = cls.add_dbnode(dbnode=link.document, graph=graph)
                     to_doctype = "Node"
-                graph = graph.add_edge(
+                graph.add_edge(
                     f"{from_doctype}: {doc.id}",
                     f"{to_doctype}: {link.document.id}",
                     ltype=link.ltype,
                 )
+        cls.graph = graph
         return graph
