@@ -29,7 +29,7 @@ class CRE_Graph:
     def get_hierarchy(self, rootIDs: List[str], creID: str):
         if creID in rootIDs:
             return 0
-        
+
         if self.__parent_child_subgraph == None:
             if len(self.graph.edges) == 0:
                 raise ValueError("Graph has no edges")
