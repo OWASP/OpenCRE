@@ -11,16 +11,16 @@ class ExportFormat:  # TODO: this can likely be replaced with a method that iter
     #  <doctype>:<name>:<varname>
     separator = "|"
     section = "name"
-    subsection = "subsection"
+    subsection = "section"
     hyperlink = "hyperlink"
     link_type = "link_type"
-    name = "name"
+    # name = "name"
     id = "id"
     description = "description"
     cre_link = "Linked_CRE_"
     cre = "CRE"
     tooltype = "ToolType"
-    sectionID = "SectionID"
+    sectionID = "id"
 
     @staticmethod
     def get_doctype(header: str) -> Optional["Credoctypes"]:
@@ -43,139 +43,130 @@ class ExportFormat:  # TODO: this can likely be replaced with a method that iter
             ExportFormat.separator,
         )
 
-    @staticmethod
-    def tooltype_key(sname: str, doctype: "Credoctypes") -> str:
-        "returns <doctype>:<name>:tooltype"
-        return "%s%s%s%s%s" % (
-            doctype,
-            ExportFormat.separator,
-            sname,
-            ExportFormat.separator,
-            ExportFormat.tooltype,
-        )
+    # @staticmethod
+    # def tooltype_key(sname: str, doctype: "Credoctypes") -> str:
+    #     "returns <doctype>:<name>:tooltype"
+    #     return "%s%s%s%s%s" % (
+    #         doctype,
+    #         ExportFormat.separator,
+    #         sname,
+    #         ExportFormat.separator,
+    #         ExportFormat.tooltype,
+    #     )
 
     @staticmethod
-    def sectionID_key(sname: str, doctype: "Credoctypes") -> str:
-        "returns <doctype>:<name>:sectionID"
-        return "%s%s%s%s%s" % (
-            doctype,
-            ExportFormat.separator,
+    def sectionID_key(sname: str) -> str:
+        "returns <name>|id"
+        return "%s%s%s" % (
             sname,
             ExportFormat.separator,
             ExportFormat.sectionID,
         )
 
     @staticmethod
-    def description_key(sname: str, doctype: "Credoctypes") -> str:
-        "returns <doctype>:<name>:description"
-        return "%s%s%s%s%s" % (
-            doctype,
-            ExportFormat.separator,
+    def description_key(sname: str) -> str:
+        "returns <name>|description"
+        return "%s%s%s" % (
             sname,
             ExportFormat.separator,
             ExportFormat.description,
         )
 
     @staticmethod
-    def section_key(sname: str, doctype: "Credoctypes") -> str:
-        "returns <doctype>:<name>:section"
-        return "%s%s%s%s%s" % (
-            doctype,
-            ExportFormat.separator,
+    def section_key(sname: str) -> str:
+        "returns <name>|name"
+        return "%s%s%s" % (
             sname,
             ExportFormat.separator,
             ExportFormat.section,
         )
 
     @staticmethod
-    def subsection_key(sname: str, doctype: "Credoctypes") -> str:
-        "returns <doctype>:<sname>:subsection"
-        return "%s%s%s%s%s" % (
-            doctype,
-            ExportFormat.separator,
+    def subsection_key(sname: str) -> str:
+        "returns <sname>|section"
+        return "%s%s%s" % (
             sname,
             ExportFormat.separator,
             ExportFormat.subsection,
         )
 
     @staticmethod
-    def hyperlink_key(sname: str, doctype: "Credoctypes") -> str:
-        "returns <sname>:hyperlink"
-        return "%s%s%s%s%s" % (
-            doctype,
-            ExportFormat.separator,
+    def hyperlink_key(sname: str) -> str:
+        "returns <sname>|hyperlink"
+        return "%s%s%s" % (
             sname,
             ExportFormat.separator,
             ExportFormat.hyperlink,
         )
 
-    @staticmethod
-    def link_type_key(sname: str, doctype: "Credoctypes") -> str:
-        "returns <sname>:link_type"
-        return "%s%s%s%s%s" % (
-            doctype,
-            ExportFormat.separator,
-            sname,
-            ExportFormat.separator,
-            ExportFormat.link_type,
-        )
+    # Todo(northdpole): the following to be uncommented when we import complex linktypes
+    # @staticmethod
+    # def link_type_key(sname: str, doctype: "Credoctypes") -> str:
+    #     "returns <sname>:link_type"
+    #     return "%s%s%s%s%s" % (
+    #         doctype.value,
+    #         ExportFormat.separator,
+    #         sname,
+    #         ExportFormat.separator,
+    #         ExportFormat.link_type,
+    #     )
 
-    @staticmethod
-    def linked_cre_id_key(name: str) -> str:
-        "returns Linked_CRE_<name>:id"
-        return "%s%s%s%s" % (
-            ExportFormat.cre_link,
-            name,
-            ExportFormat.separator,
-            ExportFormat.id,
-        )
+    # @staticmethod
+    # def linked_cre_id_key(name: str) -> str:
+    #     "returns Linked_CRE_<name>:id"
+    #     return "%s%s%s%s" % (
+    #         ExportFormat.cre_link,
+    #         name,
+    #         ExportFormat.separator,
+    #         ExportFormat.id,
+    #     )
 
-    @staticmethod
-    def linked_cre_name_key(name: str) -> str:
-        "returns Linked_CRE_<name>:name"
-        return "%s%s%s%s" % (
-            ExportFormat.cre_link,
-            name,
-            ExportFormat.separator,
-            ExportFormat.name,
-        )
+    # @staticmethod
+    # def linked_cre_name_key(name: str) -> str:
+    #     "returns Linked_CRE_<name>:name"
+    #     return "%s%s%s%s" % (
+    #         ExportFormat.cre_link,
+    #         name,
+    #         ExportFormat.separator,
+    #         ExportFormat.name,
+    #     )
 
-    @staticmethod
-    def linked_cre_link_type_key(name: str) -> str:
-        "returns Linked_CRE_<name>:link_type"
-        return "%s%s%s%s" % (
-            ExportFormat.cre_link,
-            name,
-            ExportFormat.separator,
-            ExportFormat.link_type,
-        )
+    # @staticmethod
+    # def linked_cre_link_type_key(name: str) -> str:
+    #     "returns Linked_CRE_<name>:link_type"
+    #     return "%s%s%s%s" % (
+    #         ExportFormat.cre_link,
+    #         name,
+    #         ExportFormat.separator,
+    #         ExportFormat.link_type,
+    #     )
 
-    @staticmethod
-    def cre_id_key() -> str:
-        "returns CRE:id"
-        return "%s%s%s" % (
-            ExportFormat.cre,
-            ExportFormat.separator,
-            ExportFormat.id,
-        )
+    # @staticmethod
+    # def cre_id_key() -> str:
+    #     "returns CRE:id"
+    #     return "%s%s%s" % (
+    #         ExportFormat.cre,
+    #         ExportFormat.separator,
+    #         ExportFormat.id,
+    #     )
 
-    @staticmethod
-    def cre_name_key() -> str:
-        "returns CRE:name"
-        return "%s%s%s" % (
-            ExportFormat.cre,
-            ExportFormat.separator,
-            ExportFormat.name,
-        )
+    # @staticmethod
+    # def cre_name_key() -> str:
+    #     "returns CRE:name"
+    #     return "%s%s%s" % (
+    #         ExportFormat.cre,
+    #         ExportFormat.separator,
+    #         ExportFormat.name,
+    #     )
 
-    @staticmethod
-    def cre_description_key() -> str:
-        "returns CRE:description"
-        return "%s%s%s" % (
-            ExportFormat.cre,
-            ExportFormat.separator,
-            ExportFormat.description,
-        )
+    # @staticmethod
+    # def cre_description_key() -> str:
+    #     "returns CRE:description"
+    #     return "%s%s%s" % (
+    #         ExportFormat.cre,
+    #         ExportFormat.separator,
+    #         ExportFormat.description,
+    #     )
 
 
 class EnumMetaWithContains(EnumMeta):
@@ -379,9 +370,16 @@ class Document:
             self.links = []
         if not isinstance(link, Link):
             raise ValueError("add_link only takes Link() types")
+        if link.document.id == self.id:
+            raise ValueError("Cannot link a document to itself")
+        if link.document.id in [l.document.id for l in self.links]:
+            raise ValueError("Cannot link the same document twice")
 
         self.links.append(link)
         return self
+
+    def link_exists(self, doc: "Document") -> bool:
+        return doc.id in [l.document.id for l in self.links]
 
     def __post_init__(self):
         if not len(self.name) > 1:
