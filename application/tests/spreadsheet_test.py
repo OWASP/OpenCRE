@@ -23,6 +23,38 @@ class TestDB(unittest.TestCase):
         sqla.create_all()
         self.collection = db.Node_collection().with_graph()
 
+    def test_prepare_spreadsheet_one_cre(self) -> None:
+        collection = self.collection
+        expected = [
+            {
+                "CRE 0": "444-444|CC",
+            },
+            {
+                "CRE 1": "222-222|CD",
+            },
+        ]
+        cd = defs.CRE(name="CD", description="CD", tags=["td"], id="222-222")
+        cc = defs.CRE(
+            name="CC",
+            description="CC",
+            links=[
+                defs.Link(
+                    document=cd,
+                    ltype=defs.LinkTypes.Contains,
+                )
+            ],
+            tags=["tc"],
+            metadata={},
+            id="444-444",
+        )
+
+        collection.add_internal_link(
+            collection.add_cre(cc), collection.add_cre(cd), type=defs.LinkTypes.Contains
+        )
+        result = ExportSheet().prepare_spreadsheet(storage=collection, docs=[cc, cd])
+
+        self.assertCountEqual(result, expected)
+
     def test_prepare_spreadsheet_empty(self) -> None:
         collection = self.collection
         expected = []

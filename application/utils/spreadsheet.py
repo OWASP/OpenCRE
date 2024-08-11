@@ -140,6 +140,7 @@ class ExportSheet:
                 if (
                     not hasStandard
                 ):  # if we have not written the entry yet (because there have been no standards to write), we write it now as a cre without standards
+
                     self.body.append(entry)
                 self.process_cre(
                     cre=self.input_cres.get(link.document.id), depth=depth + 1
@@ -195,6 +196,10 @@ class ExportSheet:
         for doc in docs:
             if doc.doctype == defs.Credoctypes.CRE:
                 self.input_cres[doc.id] = doc
+                for link in doc.links:
+                    if link.document.doctype == defs.Credoctypes.CRE:
+                        if not self.input_cres.get(link.document.id):
+                            self.input_cres[link.document.id] = link.document
             else:  # flip the link to be CRE -> Node
                 newCRE = None
                 for link in doc.links:
