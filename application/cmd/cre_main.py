@@ -93,7 +93,7 @@ def register_node(node: defs.Node, collection: db.Node_collection) -> db.Node:
                 register_node(node=link.document, collection=collection)
 
         elif type(link.document).__name__ == defs.CRE.__name__:
-            # dbcre = register_cre(link.document, collection) # CREs are idempotent
+            # dbcre,_ = register_cre(link.document, collection) # CREs are idempotent
             c = collection.get_CREs(name=link.document.name)[0]
             dbcre = db.dbCREfromCRE(c)
             collection.add_link(dbcre, linked_node, type=link.ltype)
@@ -109,14 +109,19 @@ def register_node(node: defs.Node, collection: db.Node_collection) -> db.Node:
     return linked_node
 
 
-def register_cre(cre: defs.CRE, collection: db.Node_collection) -> db.CRE:
+def register_cre(cre: defs.CRE, collection: db.Node_collection) -> Tuple[db.CRE, bool]:
+    existing = False
+    if collection.get_CREs(name=cre.id):
+        existing = True
+
     dbcre: db.CRE = collection.add_cre(cre)
     for link in cre.links:
         if type(link.document) == defs.CRE:
             logger.info(f"{link.document.id} {link.ltype} {cre.id}")
+            lower_cre, _ = register_cre(link.document, collection)
             collection.add_internal_link(
                 higher=dbcre,
-                lower=register_cre(link.document, collection),
+                lower=lower_cre,
                 type=link.ltype,
             )
         else:
@@ -125,7 +130,7 @@ def register_cre(cre: defs.CRE, collection: db.Node_collection) -> db.CRE:
                 node=register_node(node=link.document, collection=collection),
                 type=link.ltype,
             )
-    return dbcre
+    return dbcre, existing
 
 
 def parse_file(
@@ -209,7 +214,7 @@ def parse_file(
 
 def register_standard(
     standard_entries: List[defs.Standard],
-    collection: db.Node_collection,
+    collection: db.Node_collection = None,
     generate_embeddings=True,
     calculate_gap_analysis=True,
     db_connection_str: str = "",
@@ -218,15 +223,17 @@ def register_standard(
         generate_embeddings = False
 
     if not standard_entries:
-        logger.warning("register_standard() calleed with no standard_entries")
+        logger.warning("register_standard() called with no standard_entries")
         return
-    if not collection:
+
+    if collection is None:
         collection = db_connect(path=db_connection_str)
+
     conn = redis.connect()
     ph = prompt_client.PromptHandler(database=collection)
     importing_name = standard_entries[0].name
     standard_hash = gap_analysis.make_resources_key([importing_name])
-    if conn.get(standard_hash):
+    if calculate_gap_analysis and conn.get(standard_hash):
         logger.info(
             f"Standard importing job with info-hash {standard_hash} has already returned, skipping"
         )
@@ -248,11 +255,12 @@ def register_standard(
             generate_embeddings = False
     if generate_embeddings and importing_name:
         ph.generate_embeddings_for(importing_name)
-    populate_neo4j_db(collection)
-    # calculate gap analysis
-    jobs = []
-    pending_stadards = collection.standards()
+
     if calculate_gap_analysis and not os.environ.get("CRE_NO_CALCULATE_GAP_ANALYSIS"):
+        # calculate gap analysis
+        populate_neo4j_db(collection)
+        jobs = []
+        pending_stadards = collection.standards()
         for standard_name in pending_stadards:
             if standard_name == importing_name:
                 continue
@@ -297,13 +305,7 @@ def parse_standards_from_spreadsheeet(
 ) -> None:
     """given a yaml with standards, build a list of standards in the db"""
     collection = db_connect(cache_location)
-    if "CRE:name" in cre_file[0].keys():
-        collection = collection.with_graph()
-        documents = spreadsheet_parsers.parse_export_format(cre_file)
-        register_cre(documents, collection)
-        pass
-
-    elif any(key.startswith("CRE hierarchy") for key in cre_file[0].keys()):
+    if any(key.startswith("CRE hierarchy") for key in cre_file[0].keys()):
         conn = redis.connect()
         collection = collection.with_graph()
         redis.empty_queues(conn)
@@ -659,9 +661,7 @@ def create_spreadsheet(
 ) -> Any:
     """Reads cre docs exported from a standards_collection.export()
     dumps each doc into a workbook"""
-    flat_dicts = sheet_utils.prepare_spreadsheet(
-        collection=collection, docs=exported_documents
-    )
+    flat_dicts = sheet_utils.prepare_spreadsheet(docs=exported_documents)
     return sheet_utils.write_spreadsheet(
         title=title, docs=flat_dicts, emails=share_with
     )

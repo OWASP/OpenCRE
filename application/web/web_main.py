@@ -1,5 +1,7 @@
 # type: ignore
+
 # silence mypy for the routes file
+import csv
 from functools import wraps
 import json
 import logging
@@ -7,12 +9,16 @@ import os
 import io
 import pathlib
 import urllib.parse
+from alive_progress import alive_bar
 from typing import Any
 from application.utils import oscal_utils, redis
 
 from rq import job, exceptions
 
+from application.utils import spreadsheet_parsers
+from application.utils import oscal_utils, redis
 from application.database import db
+from application.cmd import cre_main
 from application.defs import cre_defs as defs
 from application.defs import osib_defs as odefs
 from application.utils import spreadsheet as sheet_utils
@@ -71,7 +77,8 @@ def extend_cre_with_tag_links(
     others = list(frozenset(others))
     for o in others:
         o.links = []
-        cre.add_link(defs.Link(ltype=defs.LinkTypes.Related, document=o))
+        if not cre.link_exists(o) and o.id != cre.id:
+            cre.add_link(defs.Link(ltype=defs.LinkTypes.Related, document=o))
     return cre
 
 
@@ -110,7 +117,9 @@ def find_cre(creid: str = None, crename: str = None) -> Any:  # refer
             return f"<pre>{mdutils.cre_to_md([cre])}</pre>"
 
         elif opt_format == SupportedFormats.CSV.value:
-            docs = sheet_utils.prepare_spreadsheet(collection=database, docs=[cre])
+            docs = sheet_utils.ExportSheet().prepare_spreadsheet(
+                docs=[cre], storage=database
+            )
             return write_csv(docs=docs).getvalue().encode("utf-8")
 
         elif opt_format == SupportedFormats.OSCAL.value:
@@ -181,7 +190,9 @@ def find_node_by_name(name: str, ntype: str = defs.Credoctypes.Standard.value) -
             return f"<pre>{mdutils.cre_to_md(nodes)}</pre>"
 
         elif opt_format == SupportedFormats.CSV.value:
-            docs = sheet_utils.prepare_spreadsheet(collection=database, docs=nodes)
+            docs = sheet_utils.ExportSheet().prepare_spreadsheet(
+                docs=nodes, storage=database
+            )
             return write_csv(docs=docs).getvalue().encode("utf-8")
 
         elif opt_format == SupportedFormats.OSCAL.value:
@@ -214,7 +225,9 @@ def find_document_by_tag() -> Any:
         if opt_format == SupportedFormats.Markdown.value:
             return f"<pre>{mdutils.cre_to_md(documents)}</pre>"
         elif opt_format == SupportedFormats.CSV.value:
-            docs = sheet_utils.prepare_spreadsheet(collection=database, docs=documents)
+            docs = sheet_utils.ExportSheet().prepare_spreadsheet(
+                docs=documents, storage=database
+            )
             return write_csv(docs=docs).getvalue().encode("utf-8")
         elif opt_format == SupportedFormats.OSCAL.value:
             return jsonify(json.loads(oscal_utils.list_to_oscal(documents)))
@@ -344,7 +357,9 @@ def text_search() -> Any:
         if opt_format == SupportedFormats.Markdown.value:
             return f"<pre>{mdutils.cre_to_md(documents)}</pre>"
         elif opt_format == SupportedFormats.CSV.value:
-            docs = sheet_utils.prepare_spreadsheet(collection=database, docs=documents)
+            docs = sheet_utils.ExportSheet().prepare_spreadsheet(
+                docs=documents, storage=database
+            )
             return write_csv(docs=docs).getvalue().encode("utf-8")
         elif opt_format == SupportedFormats.OSCAL.value:
             return jsonify(json.loads(oscal_utils.list_to_oscal(documents)))
@@ -373,7 +388,9 @@ def find_root_cres() -> Any:
         if opt_format == SupportedFormats.Markdown.value:
             return f"<pre>{mdutils.cre_to_md(documents)}</pre>"
         elif opt_format == SupportedFormats.CSV.value:
-            docs = sheet_utils.prepare_spreadsheet(collection=database, docs=documents)
+            docs = sheet_utils.ExportSheet().prepare_spreadsheet(
+                docs=documents, storage=database
+            )
             return write_csv(docs=docs).getvalue().encode("utf-8")
         elif opt_format == SupportedFormats.OSCAL.value:
             return jsonify(json.loads(oscal_utils.list_to_oscal(documents)))
@@ -668,6 +685,9 @@ def all_cres() -> Any:
     abort(404)
 
 
+# Importing Handlers
+
+
 @app.route("/rest/v1/cre_csv", methods=["GET"])
 def get_cre_csv() -> Any:
     database = db.Node_collection()
@@ -690,6 +710,57 @@ def get_cre_csv() -> Any:
             mimetype="text/csv",
         )
     abort(404)
+
+
+@app.route("/rest/v1/cre_csv_import", methods=["POST"])
+def import_from_cre_csv() -> Any:
+    if not os.environ.get("CRE_ALLOW_IMPORT"):
+        abort(
+            403,
+            "Importing is disabled, set the environment variable CRE_ALLOW_IMPORT to allow this functionality",
+        )
+
+    # TODO: (spyros) add optional gap analysis and embeddings calculation
+    database = db.Node_collection().with_graph()
+    file = request.files.get("cre_csv")
+    calculate_embeddings = (
+        False if not request.args.get("calculate_embeddings") else True
+    )
+    calculate_gap_analysis = (
+        False if not request.args.get("calculate_gap_analysis") else True
+    )
+
+    if file is None:
+        abort(400, "No file provided")
+    contents = file.read()
+    csv_read = csv.DictReader(contents.decode("utf-8").splitlines())
+    documents = spreadsheet_parsers.parse_export_format(list(csv_read))
+    cres = documents.pop(defs.Credoctypes.CRE.value)
+
+    standards = documents
+    new_cres = []
+    for cre in cres:
+        new_cre, exists = cre_main.register_cre(cre, database)
+        if not exists:
+            new_cres.append(new_cre)
+
+    for _, entries in standards.items():
+        cre_main.register_standard(
+            collection=database,
+            standard_entries=list(entries),
+            generate_embeddings=calculate_embeddings,
+            calculate_gap_analysis=calculate_gap_analysis,
+        )
+    return jsonify(
+        {
+            "status": "success",
+            "new_cres": [c.external_id for c in new_cres],
+            "new_standards": len(standards),
+        }
+    )
+
+
+# /End Importing Handlers
 
 
 # @app.route("/rest/v1/all_nodes", methods=["GET"])

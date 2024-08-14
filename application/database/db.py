@@ -1,6 +1,26 @@
+import networkx as nx
+import uuid
+import neo4j
+import os
+import logging
+import re
+import yaml
+
+from pprint import pprint
+
+from collections import Counter
+from itertools import permutations
+from typing import Any, Dict, List, Optional, Tuple, cast
+from neomodel.exceptions import (
+    DoesNotExist,
+    FeatureNotSupported,
+    NodeClassAlreadyDefined,
+)
 from flask import json as flask_json
-import json
-from application.utils import redis
+from sqlalchemy.orm import aliased
+from flask_sqlalchemy.model import DefaultMeta
+from sqlalchemy import func, delete
+
 from neomodel import (
     config,
     StructuredNode,
@@ -13,27 +33,10 @@ from neomodel import (
     StructuredRel,
     db,
 )
-from neomodel.exceptions import (
-    DoesNotExist,
-    FeatureNotSupported,
-    NodeClassAlreadyDefined,
-)
-import neo4j
-from sqlalchemy.orm import aliased
-import os
-import logging
-import re
-from collections import Counter
-from itertools import permutations
-from typing import Any, Dict, List, Optional, Tuple, cast
-import networkx as nx
-import yaml
+from application.database import inmemory_graph
+from application.utils import redis
 from application.defs import cre_defs
 from application.utils import file
-from flask_sqlalchemy.model import DefaultMeta
-from sqlalchemy import func, delete
-import uuid
-
 from application.utils.gap_analysis import (
     get_path_score,
     make_resources_key,
@@ -669,78 +672,6 @@ class NEO_DB:
         return node.to_cre_def(node, parse_links=False)
 
 
-class CRE_Graph:
-    graph: nx.Graph = None
-    __instance = None
-
-    @classmethod
-    def instance(cls, session):
-        if cls.__instance is None:
-            cls.__instance = cls.__new__(cls)
-            cls.graph = cls.load_cre_graph(session)
-        return cls.__instance
-
-    def __init__(sel):
-        raise ValueError("CRE_Graph is a singleton, please call instance() instead")
-
-    def add_edge(self, *args, **kwargs):
-        return self.graph.add_edge(*args, **kwargs)
-
-    def add_node(self, *args, **kwargs):
-        return self.graph.add_node(*args, **kwargs)
-
-    @classmethod
-    def add_cre(cls, dbcre: CRE, graph: nx.DiGraph) -> nx.DiGraph:
-        if dbcre:
-            graph.add_node(
-                f"CRE: {dbcre.id}", internal_id=dbcre.id, external_id=dbcre.external_id
-            )
-        else:
-            logger.error("Called with dbcre being none")
-        return graph
-
-    @classmethod
-    def add_dbnode(cls, dbnode: Node, graph: nx.DiGraph) -> nx.DiGraph:
-        if dbnode:
-            # coma separated tags
-
-            graph.add_node(
-                "Node: " + str(dbnode.id),
-                internal_id=dbnode.id,
-            )
-        else:
-            logger.error("Called with dbnode being none")
-        return graph
-
-    @classmethod
-    def load_cre_graph(cls, session) -> nx.Graph:
-        graph = nx.DiGraph()
-        for il in session.query(InternalLinks).all():
-            group = session.query(CRE).filter(CRE.id == il.group).first()
-            if not group:
-                logger.error(f"CRE {il.group} does not exist?")
-            graph = cls.add_cre(dbcre=group, graph=graph)
-
-            cre = session.query(CRE).filter(CRE.id == il.cre).first()
-            if not cre:
-                logger.error(f"CRE {il.cre} does not exist?")
-            graph = cls.add_cre(dbcre=cre, graph=graph)
-
-            graph.add_edge(f"CRE: {il.group}", f"CRE: {il.cre}", ltype=il.type)
-
-        for lnk in session.query(Links).all():
-            node = session.query(Node).filter(Node.id == lnk.node).first()
-            if not node:
-                logger.error(f"Node {lnk.node} does not exist?")
-            graph = cls.add_dbnode(dbnode=node, graph=graph)
-
-            cre = session.query(CRE).filter(CRE.id == lnk.cre).first()
-            graph = cls.add_cre(dbcre=cre, graph=graph)
-
-            graph.add_edge(f"CRE: {lnk.cre}", f"Node: {str(lnk.node)}", ltype=lnk.type)
-        return graph
-
-
 class Node_collection:
     graph: nx.Graph = None
     neo_db: NEO_DB = None
@@ -751,9 +682,11 @@ class Node_collection:
             self.neo_db = NEO_DB.instance()
         self.session = sqla.session
 
-    def with_graph(self):
+    def with_graph(self) -> "Node_collection":
         logger.info("Loading CRE graph in memory, memory-heavy operation!")
-        self.graph = CRE_Graph.instance(sqla.session)
+        self.graph = inmemory_graph.CRE_Graph.instance(
+            documents=self.__get_all_nodes_and_cres()
+        )
         return self
 
     def __get_external_links(self) -> List[Tuple[CRE, Node, str]]:
@@ -802,6 +735,19 @@ class Node_collection:
             .all()
         )
         return cres
+
+    def __get_all_nodes_and_cres(self) -> List[cre_defs.Document]:
+        result = []
+        nodes = []
+        cres = []
+        node_ids = self.session.query(Node.id).all()
+        for nid in node_ids:
+            result.extend(self.get_nodes(db_id=nid[0]))
+
+        cre_ids = self.session.query(CRE.id).all()
+        for cid in cre_ids:
+            result.append(self.get_cre_by_db_id(cid[0]))
+        return result
 
     def __introduces_cycle(self, node_from: str, node_to: str) -> Any:
         if not self.graph:
@@ -1035,19 +981,24 @@ class Node_collection:
         description: Optional[str] = None,
         ntype: str = cre_defs.Standard.__name__,
         sectionID: Optional[str] = None,
+        db_id: Optional[str] = None,
     ) -> Optional[List[cre_defs.Node]]:
         nodes = []
-        nodes_query = self.__get_nodes_query__(
-            name=name,
-            section=section,
-            subsection=subsection,
-            link=link,
-            version=version,
-            partial=partial,
-            ntype=ntype,
-            description=description,
-            sectionID=sectionID,
-        )
+        nodes_query = None
+        if db_id:
+            nodes_query = self.session.query(Node).filter(Node.id == db_id)
+        else:
+            nodes_query = self.__get_nodes_query__(
+                name=name,
+                section=section,
+                subsection=subsection,
+                link=link,
+                version=version,
+                partial=partial,
+                ntype=ntype,
+                description=description,
+                sectionID=sectionID,
+            )
         dbnodes = nodes_query.all()
         if dbnodes:
             for dbnode in dbnodes:
@@ -1084,11 +1035,20 @@ class Node_collection:
 
             return []
 
-    def get_node_by_db_id(self, id: str) -> cre_defs.Node:
-        return nodeFromDB(self.session.query(Node).filter(Node.id == id).first())
-
     def get_cre_by_db_id(self, id: str) -> cre_defs.CRE:
-        return CREfromDB(self.session.query(CRE).filter(CRE.id == id).first())
+        """internal method, returns a shallow cre (no links) by its database id
+
+        Args:
+            id (str): the uuid of the cre
+
+        Returns:
+            cre_defs.CRE: _description_
+        """
+        external_id = self.session.query(CRE.external_id).filter(CRE.id == id).first()
+        if not external_id:
+            logger.error(f"CRE {id} does not exist in the db")
+            return None
+        return self.get_CREs(external_id=external_id[0])[0]
 
     def list_node_ids_by_ntype(self, ntype: str) -> List[str]:
         return self.session.query(Node.id).filter(Node.ntype == ntype).all()
@@ -1221,12 +1181,13 @@ class Node_collection:
             for ls in linked_nodes:
                 nd = self.session.query(Node).filter(Node.id == ls.node).first()
                 if not include_only or (include_only and nd.name in include_only):
-                    cre.add_link(
-                        cre_defs.Link(
-                            document=nodeFromDB(nd),
-                            ltype=cre_defs.LinkTypes.from_str(ls.type),
+                    n = nodeFromDB(nd)
+                    if not cre.link_exists(n):
+                        cre.add_link(
+                            cre_defs.Link(
+                                document=n, ltype=cre_defs.LinkTypes.from_str(ls.type)
+                            )
                         )
-                    )
             # TODO figure the query to merge the following two
             internal_links = (
                 self.session.query(InternalLinks)
@@ -1258,7 +1219,9 @@ class Node_collection:
                 elif il.group == dbcre.id:
                     res = q.filter(CRE.id == il.cre).first()
                     ltype = cre_defs.LinkTypes.from_str(il.type)
-                cre.add_link(cre_defs.Link(document=CREfromDB(res), ltype=ltype))
+                c = CREfromDB(res)
+                if not cre.link_exists(c):
+                    cre.add_link(cre_defs.Link(document=c, ltype=ltype))
             cres.append(cre)
         return cres
 
@@ -1365,6 +1328,51 @@ class Node_collection:
         for cre in cres.items:
             result.extend(self.get_CREs(external_id=cre.external_id))
         return result, page, total_pages
+
+    def get_cre_path(self, fromID: str, toID: str) -> List[cre_defs.Document]:
+        if not self.graph:
+            self.with_graph()
+
+        fromDbID = (
+            self.session.query(CRE.id).filter(CRE.external_id == fromID).first()[0]
+        )
+        toDbID = self.session.query(CRE.id).filter(CRE.external_id == toID).first()[0]
+
+        forwardPath = self.graph.get_path(f"CRE: {fromDbID}", f"CRE: {toDbID}")
+        backwardsPath = self.graph.get_path(f"CRE: {toDbID}", f"CRE: {fromDbID}")
+        cres = []
+        path = []
+        if forwardPath:  # our graph is directed, so we need to check both paths
+            path = forwardPath
+        else:
+            path = backwardsPath
+
+        for entry in path:
+            entryID = entry.replace("CRE: ", "")
+            shallow_CRE = self.get_cre_by_db_id(entryID)
+
+            if shallow_CRE:
+                cres.append(self.get_CREs(external_id=shallow_CRE.id)[0])
+        return cres
+
+    def get_cre_hierarchy(self, cre: cre_defs.CRE) -> int:
+        if not self.graph:
+            self.with_graph()
+        roots = self.get_root_cres()
+        root_cre_db_ids = []
+        for r in roots:
+            dbid = self.session.query(CRE.id).filter(CRE.external_id == r.id).first()[0]
+            root_cre_db_ids.append(dbid)
+
+        credbid = self.session.query(CRE.id).filter(CRE.external_id == cre.id).first()
+        if not credbid:
+            raise ValueError(f"CRE {cre.id} does not exist in the database")
+        credbid = credbid[0]
+
+        if len(self.graph.graph.edges) == 0:
+            logger.error("graph is empty")
+            return -1
+        return self.graph.get_hierarchy(rootIDs=root_cre_db_ids, creID=credbid)
 
     # def all_nodes_with_pagination(
     #     self, page: int = 1, per_page: int = 10

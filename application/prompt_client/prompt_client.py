@@ -148,7 +148,7 @@ class in_memory_embeddings:
         logger.info(f"generating {len(missing_embeddings)} embeddings")
         for id in missing_embeddings:
             cre = database.get_cre_by_db_id(id)
-            node = database.get_node_by_db_id(id)
+            node = database.get_nodes(db_id=id)
             content = ""
             if node:
                 if is_valid_url(node.hyperlink):
@@ -464,7 +464,7 @@ class PromptHandler:
         )
         closest_object = None
         if closest_id:
-            closest_object = self.database.get_node_by_db_id(closest_id)
+            closest_object = self.database.get_nodes(db_id=closest_id)
 
             logger.info(
                 f"The prompt {prompt}, was most similar to object \n{closest_object}\n, with similarity:{similarity}"

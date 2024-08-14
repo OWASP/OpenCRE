@@ -1,3 +1,4 @@
+from pprint import pprint
 import io
 import csv
 import random
@@ -5,17 +6,20 @@ import string
 import re
 import json
 import unittest
+import tempfile
 from unittest.mock import patch
+
 import redis
 import rq
 import os
 
 from application import create_app, sqla  # type: ignore
+from application.tests.utils import data_gen
 from application.database import db
+from application.utils import spreadsheet
 from application.defs import cre_defs as defs
 from application.web import web_main
 from application.utils.gap_analysis import GAP_ANALYSIS_TIMEOUT
-from application.utils import spreadsheet
 
 
 class MockJob:
@@ -109,7 +113,6 @@ class TestMain(unittest.TestCase):
 
     def test_find_by_id(self) -> None:
         collection = db.Node_collection().with_graph()
-        # collection.graph.graph = db.CRE_Graph.load_cre_graph(sqla.session)
 
         cres = {
             "ca": defs.CRE(id="111-111", description="CA", name="CA", tags=["ta"]),
@@ -144,18 +147,6 @@ class TestMain(unittest.TestCase):
             )
             self.assertEqual(json.loads(response.data.decode()), expected)
             self.assertEqual(200, response.status_code)
-
-            # osib_response = client.get(
-            #     f"/rest/v1/id/{cres['cb'].id}?osib=true",
-            #     headers={"Content-Type": "application/json"},
-            # )
-            # osib_expected = {
-            #     "data": cres["cb"].todict(),
-            #     "osib": osib_defs.cre2osib([cres["cb"]]).todict(),
-            # }
-
-            # self.assertEqual(json.loads(osib_response.data.decode()), osib_expected)
-            # self.assertEqual(200, osib_response.status_code)
 
             md_expected = "<pre>CRE---[222-222CD](https://www.opencre.org/cre/222-222),[111-111CA](https://www.opencre.org/cre/111-111),[333-333CB](https://www.opencre.org/cre/333-333)</pre>"
             md_response = client.get(
@@ -207,17 +198,6 @@ class TestMain(unittest.TestCase):
             )
             self.assertEqual(200, response.status_code)
             self.assertEqual(json.loads(response.data.decode()), expected)
-
-            # osib_response = client.get(
-            #     f"/rest/v1/name/{cres['cb'].name}?osib=true",
-            #     headers={"Content-Type": "application/json"},
-            # )
-            # osib_expected = {
-            #     "data": cres["cb"].todict(),
-            #     "osib": osib_defs.cre2osib([cres["cb"]]).todict(),
-            # }
-            # self.assertEqual(json.loads(osib_response.data.decode()), osib_expected)
-            # self.assertEqual(200, osib_response.status_code)
 
             md_expected = "<pre>CRE---[222-222CD](https://www.opencre.org/cre/222-222),[111-111CA](https://www.opencre.org/cre/111-111),[333-333CB](https://www.opencre.org/cre/333-333),[444-444CC](https://www.opencre.org/cre/444-444)</pre>"
             md_response = client.get(
@@ -378,16 +358,6 @@ class TestMain(unittest.TestCase):
             )
             self.assertEqual(200, non_standards_response.status_code)
 
-            # osib_expected = {
-            #     "total_pages": 1,
-            #     "page": 1,
-            #     "standards": [nodes["c0"].todict()],
-            #     "osib": osib_defs.cre2osib([nodes["c0"]]).todict(),
-            # }
-            # osib_response = client.get(f"/rest/v1/code/{nodes['c0'].name}?osib=true")
-            # self.assertEqual(json.loads(osib_response.data.decode()), osib_expected)
-            # self.assertEqual(200, osib_response.status_code)
-
             md_expected = "<pre>C0--[C0](https://example.com/c0)</pre>"
             md_response = client.get(f"/rest/v1/code/{nodes['c0'].name}?format=md")
             self.assertEqual(re.sub("\s", "", md_response.data.decode()), md_expected)
@@ -426,17 +396,6 @@ class TestMain(unittest.TestCase):
             response = client.get(f"/rest/v1/tags?tag=ta")
             self.assertEqual(200, response.status_code)
             self.assertCountEqual(json.loads(response.data.decode()), expected)
-
-            # osib_response = client.get(
-            #     f"/rest/v1/tags?tag=tb&tag=tc&osib=true",
-            #     headers={"Content-Type": "application/json"},
-            # )
-            # osib_expected = {
-            #     "data": cres["cb"].todict(),
-            #     "osib": osib_defs.cre2osib([cres["cb"]]).todict(),
-            # }
-            # self.assertCountEqual(osib_response.json, osib_expected)
-            # self.assertEqual(200, osib_response.status_code)
 
     def test_test_search(self) -> None:
         collection = db.Node_collection()
@@ -516,17 +475,6 @@ class TestMain(unittest.TestCase):
             )
             self.assertEqual(json.loads(response.data.decode()), expected)
             self.assertEqual(200, response.status_code)
-
-            # osib_response = client.get(
-            #     "/rest/v1/root_cres?osib=true",
-            #     headers={"Content-Type": "application/json"},
-            # )
-            # osib_expected = {
-            #     "data": [cres["ca"].todict(), cres["cb"].todict()],
-            #     "osib": osib_defs.cre2osib([cres["ca"], cres["cb"]]).todict(),
-            # }
-            # self.assertEqual(json.loads(osib_response.data.decode()), osib_expected)
-            # self.assertEqual(200, osib_response.status_code)
 
     def test_smartlink(self) -> None:
         self.maxDiff = None
@@ -886,6 +834,46 @@ class TestMain(unittest.TestCase):
                 json.loads(response.data),
             )
 
+    def test_import_from_cre_csv(self) -> None:
+        os.environ["CRE_ALLOW_IMPORT"] = "True"
+
+        input_data, _ = data_gen.export_format_data()
+        workspace = tempfile.mkdtemp()
+        data = {}
+        response = None
+        with open(os.path.join(workspace, "cre.csv"), "w") as f:
+            cdw = csv.DictWriter(f, fieldnames=input_data[0].keys())
+            cdw.writeheader()
+            cdw.writerows(input_data)
+
+        data["cre_csv"] = open(os.path.join(workspace, "cre.csv"), "rb")
+
+        with self.app.test_client() as client:
+            response = client.post(
+                "/rest/v1/cre_csv_import",
+                data=data,
+                buffered=True,
+                content_type="multipart/form-data",
+            )
+            self.assertEqual(200, response.status_code)
+            self.assertEqual(
+                {
+                    "status": "success",
+                    "new_cres": [
+                        "000-001",
+                        "222-222",
+                        "333-333",
+                        "444-444",
+                        "555-555",
+                        "666-666",
+                        "777-777",
+                        "888-888",
+                    ],
+                    "new_standards": 5,
+                },
+                json.loads(response.data),
+            )
+
     def test_get_cre_csv(self) -> None:
         # empty string means temporary db
         collection = db.Node_collection().with_graph()
@@ -899,8 +887,8 @@ class TestMain(unittest.TestCase):
 
             for i in range(4):
                 c = defs.CRE(
-                    description=f"CREdesc{i}-{j}",
-                    name=f"CREname{i}-{j}",
+                    description=f"CREdesc{j}-{i}",
+                    name=f"CREname{j}-{i}",
                     id=f"123-4{j}{i}",
                 )
                 dbcre = collection.add_cre(c)
