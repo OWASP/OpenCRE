@@ -79,7 +79,7 @@ class PciDss(ParserInterface):
                     f"could not find an appropriate CRE for pci {pci_control.section}, findings similarities with standards instead"
                 )
                 standard_id = prompt.get_id_of_most_similar_node(control_embeddings)
-                dbstandard = cache.get_node_by_db_id(standard_id)
+                dbstandard = cache.get_nodes(db_id=standard_id)
                 logger.info(
                     f"found an appropriate standard for pci {pci_control.section}, it is: {dbstandard.section}"
                 )

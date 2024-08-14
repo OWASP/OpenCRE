@@ -64,7 +64,7 @@ class CloudNativeSecurityControls(ParserInterface):
                 )
                 standard_id = ph.get_id_of_most_similar_node(cnsc_embeddings)
                 if standard_id:
-                    dbstandard = cache.get_node_by_db_id(standard_id)
+                    dbstandard = cache.get_nodes(db_id=standard_id)
                     logger.info(
                         f"found an appropriate standard for Cloud Native Security Control {cnsc.section}:{cnsc.subsection}, it is: {dbstandard.name}:{dbstandard.section}"
                     )

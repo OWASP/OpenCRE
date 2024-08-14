@@ -205,8 +205,10 @@ class TestMain(unittest.TestCase):
             tags=["CREt1", "CREt2"],
             metadata={"tags": ["CREl1", "CREl2"]},
         )
-        self.assertEqual(main.register_cre(cre, self.collection).name, cre.name)
-        self.assertEqual(main.register_cre(cre, self.collection).external_id, cre.id)
+        c, _ = main.register_cre(cre, self.collection)
+        self.assertEqual(c.name, cre.name)
+
+        self.assertEqual(c.external_id, cre.id)
         self.assertEqual(
             len(self.collection.session.query(db.CRE).all()), 1
         )  # 1 cre in the db
