@@ -29,6 +29,8 @@ SIMILARITY_THRESHOLD = float(os.environ.get("CHATBOT_SIMILARITY_THRESHOLD", "0.7
 
 
 def is_valid_url(url):
+    if not url:
+        return False
     return url.startswith("http://") or url.startswith("https://")
 
 
@@ -154,7 +156,7 @@ class in_memory_embeddings:
         logger.info(f"generating {len(missing_embeddings)} embeddings")
         for id in missing_embeddings:
             cre = database.get_cre_by_db_id(id)
-            node = database.get_nodes(db_id=id)
+            node = database.get_nodes(db_id=id)[0]
             content = ""
             if node:
                 if is_valid_url(node.hyperlink):

@@ -931,3 +931,57 @@ class TestMain(unittest.TestCase):
                 data.getvalue(),
                 response.data.decode(),
             )
+    def test_suggest_from_cre_csv(self) -> None:
+        # empty string means temporary db
+        # self.app = create_app(mode="test")
+        # self.app_context = self.app.app_context()
+        # self.app_context.push()
+        # sqla.create_all()
+        collection = db.Node_collection()
+
+        input_data, expected_output = data_gen.export_format_data()
+        for cre in expected_output[defs.Credoctypes.CRE.value]:
+            collection.add_cre(cre=cre)
+
+        # clean every other cre
+        index = 0
+        input_data_no_cres = []
+        keys = {}
+        for line in input_data:
+            keys.update(line)
+            no_cre_line = line.copy()
+            if index % 2 == 0:
+                [no_cre_line.pop(key) for key in line.keys() if key.startswith("CRE")]
+            index += 1
+            input_data_no_cres.append(no_cre_line)
+        
+        workspace = tempfile.mkdtemp()
+        data = {}
+        with open(os.path.join(workspace, "cre.csv"), "w") as f:
+            cdw = csv.DictWriter(f, fieldnames=keys.keys())
+            cdw.writeheader()
+            cdw.writerows(input_data_no_cres)
+
+        data["cre_csv"] = open(os.path.join(workspace, "cre.csv"), "rb")
+        
+        with self.app.test_client() as client:
+            response = client.post(
+                "/rest/v1/cre_csv/suggest",
+                data=data,
+                buffered=True,
+                content_type="multipart/form-data",
+            )
+            self.assertEqual(200, response.status_code)
+            empty_lines = 0
+
+            pprint(response.data.decode())
+            input()
+
+            for line in json.loads(response.data.decode()):
+                cres_in_line = [
+                    line[c] for c in line.keys() if c.startswith("CRE") and line[c]
+                ]
+            if len(cres_in_line) == 0:
+                empty_lines += 1
+            self.assertGreater(len(input_data_no_cres)/2,empty_lines)
+
