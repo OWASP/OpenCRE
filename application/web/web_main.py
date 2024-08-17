@@ -760,6 +760,7 @@ def import_from_cre_csv() -> Any:
         }
     )
 
+
 @app.route("/rest/v1/cre_csv/suggest", methods=["POST"])
 def suggest_from_cre_csv() -> Any:
     """Given a csv file that follows the CRE import format but has missing fields, this function will return a csv file with the missing fields filled in with suggestions.
@@ -769,12 +770,14 @@ def suggest_from_cre_csv() -> Any:
     """
     database = db.Node_collection()
     file = request.files.get("cre_csv")
-    
+
     if file is None:
         abort(400, "No file provided")
     contents = file.read()
     csv_read = csv.DictReader(contents.decode("utf-8").splitlines())
-    response = spreadsheet_parsers.suggest_from_export_format(list(csv_read),database=database)
+    response = spreadsheet_parsers.suggest_from_export_format(
+        list(csv_read), database=database
+    )
     csvVal = write_csv(docs=response).getvalue().encode("utf-8")
 
     # Creating the byteIO object from the StringIO Object

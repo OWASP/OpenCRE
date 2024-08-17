@@ -579,7 +579,8 @@ def suggest_from_export_format(
         if any(
             [
                 entry.startswith("CRE ")
-                for entry,value in line.items() if not is_empty(value)
+                for entry, value in line.items()
+                if not is_empty(value)
             ]
         ):  # we found a mapping in the line, no need to do anything, flush to buffer
             output.append(line)

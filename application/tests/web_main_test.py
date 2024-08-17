@@ -931,6 +931,7 @@ class TestMain(unittest.TestCase):
                 data.getvalue(),
                 response.data.decode(),
             )
+
     def test_suggest_from_cre_csv(self) -> None:
         # empty string means temporary db
         # self.app = create_app(mode="test")
@@ -954,7 +955,7 @@ class TestMain(unittest.TestCase):
                 [no_cre_line.pop(key) for key in line.keys() if key.startswith("CRE")]
             index += 1
             input_data_no_cres.append(no_cre_line)
-        
+
         workspace = tempfile.mkdtemp()
         data = {}
         with open(os.path.join(workspace, "cre.csv"), "w") as f:
@@ -963,7 +964,7 @@ class TestMain(unittest.TestCase):
             cdw.writerows(input_data_no_cres)
 
         data["cre_csv"] = open(os.path.join(workspace, "cre.csv"), "rb")
-        
+
         with self.app.test_client() as client:
             response = client.post(
                 "/rest/v1/cre_csv/suggest",
@@ -983,5 +984,4 @@ class TestMain(unittest.TestCase):
                 ]
             if len(cres_in_line) == 0:
                 empty_lines += 1
-            self.assertGreater(len(input_data_no_cres)/2,empty_lines)
-
+            self.assertGreater(len(input_data_no_cres) / 2, empty_lines)

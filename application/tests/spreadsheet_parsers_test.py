@@ -73,11 +73,14 @@ class TestParsers(unittest.TestCase):
             if len(cres_in_line) == 0:
                 empty_lines += 1
 
-        self.assertGreater(len(input_data)/2,empty_lines)  # assert that there was at least some suggestions
+        self.assertGreater(
+            len(input_data) / 2, empty_lines
+        )  # assert that there was at least some suggestions
 
         sqla.session.remove()
         sqla.drop_all()
         self.app_context.pop()
+
 
 if __name__ == "__main__":
     unittest.main()
