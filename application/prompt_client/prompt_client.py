@@ -363,7 +363,6 @@ class PromptHandler:
         self,
         item_embedding: List[float],
         similarity_threshold: float = SIMILARITY_THRESHOLD,
-        refresh_embeddings: bool = False,
     ) -> Optional[Tuple[str, float]]:
         """this method is meant to be used when CRE runs in a web server with limited memory (e.g. firebase/heroku)
             instead of loading all our embeddings in memory we take the slower approach of paginating them
@@ -518,3 +517,22 @@ class PromptHandler:
         table = [closest_object]
         result = f"Answer: {answer}"
         return {"response": result, "table": table, "accurate": accurate}
+
+    def get_id_of_most_similar_cre_using_chat(
+        self, item: defs.Document
+    ) -> Optional[str]:
+        # load all cres
+        content = ""
+        if item.hyperlink:
+            content = self.embeddings_instance.get_content(item.hyperlink)
+        else:
+            content = item.__repr__()
+        database = self.database
+        res =   database.get_all_nodes_and_cres()
+        cres = [r for r in res if r.doctype == defs.Credoctypes.CRE.value]
+        cres_in_export_format = [f"{c.id}|{c.name}" for c in cres]
+        return self.ai_client.create_mapping_completion(
+            prompt="",
+            cre_id_and_name_in_export_format=cres_in_export_format,
+            standard_id_or_content=content,
+        )

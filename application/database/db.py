@@ -735,11 +735,11 @@ class Node_collection:
             .all()
         )
         return cres
+    def get_all_nodes_and_cres(self):
+        return self.__get_all_nodes_and_cres()
 
     def __get_all_nodes_and_cres(self) -> List[cre_defs.Document]:
         result = []
-        nodes = []
-        cres = []
         node_ids = self.session.query(Node.id).all()
         for nid in node_ids:
             result.extend(self.get_nodes(db_id=nid[0]))

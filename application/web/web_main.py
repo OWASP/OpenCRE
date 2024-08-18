@@ -793,6 +793,36 @@ def suggest_from_cre_csv() -> Any:
     )
 
 
+@app.route("/rest/v1/cre_csv/suggest_chat", methods=["POST"])
+def suggest_from_cre_csv_using_chat() -> Any:
+    """Given a csv file that follows the CRE import format but has missing fields, this function will return a csv file with the missing fields filled in with suggestions.
+
+    Returns:
+        Any: the csv file with the missing fields filled in with suggestions
+    """
+    database = db.Node_collection()
+    file = request.files.get("cre_csv")
+
+    if file is None:
+        abort(400, "No file provided")
+    contents = file.read()
+    csv_read = csv.DictReader(contents.decode("utf-8").splitlines())
+    response = spreadsheet_parsers.suggest_from_export_format(
+        list(csv_read), database=database, use_llm=True
+    )
+    csvVal = write_csv(docs=response).getvalue().encode("utf-8")
+
+    # Creating the byteIO object from the StringIO Object
+    mem = io.BytesIO()
+    mem.write(csvVal)
+    mem.seek(0)
+
+    return send_file(
+        mem,
+        as_attachment=True,
+        download_name="CRE-Catalogue.csv",
+        mimetype="text/csv",
+    )
 # /End Importing Handlers
 
 
