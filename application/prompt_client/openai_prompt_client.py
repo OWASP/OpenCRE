@@ -1,3 +1,4 @@
+from typing import List
 import openai
 import logging
 
@@ -58,3 +59,22 @@ class OpenAIPromptClient:
             messages=messages,
         )
         return response.choices[0].message["content"].strip()
+
+    def create_mapping_completion(self, prompt:str, cre_id_and_name_in_export_format:List[str], standard_id_or_content :str) -> str:
+        messages = [
+            {
+                "role": "system",
+                "content": f"You are map-gpt, a helpful assistant that is an expert in mapping standards to other standards. I will give you a standard to map to and a range of candidates and you will response ONLY with the most relevant candidate.",                
+            },
+            {
+                "role": "user",
+                "content": f"Your task is to map the following standard to the most relevant candidate in the list of candidates provided. The standard to map to is: `{standard_id_or_content}`. The candidates are: `{cre_id_and_name_in_export_format}`. Answer ONLY with the most relevant candidate exactly as it is on the input, delimit the candidate with backticks`.",
+            },
+        ]
+        openai.api_key = self.api_key
+        response = openai.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=messages,
+            temperature=0.0,
+        )
+        return response.choices[0].message.content.strip()

@@ -571,7 +571,7 @@ def parse_standards(
 
 
 def suggest_from_export_format(
-    lfile: List[Dict[str, Any]], database: db.Node_collection
+    lfile: List[Dict[str, Any]], database: db.Node_collection, use_llm: bool = False
 ) -> Dict[str, Any]:
     output: List[Dict[str, Any]] = []
     for line in lfile:
@@ -608,20 +608,33 @@ def suggest_from_export_format(
                 )
         # find nearest CRE for standards in line
         ph = prompt_client.PromptHandler(database=database, load_all_embeddings=False)
+        cre = None
+        if use_llm:
+            most_similar_id = ph.get_id_of_most_similar_cre_using_chat(item=standard)
+            if not most_similar_id:
+                logger.warning(f"Could not find a CRE for {standard.id}")
+                output.append(line)
+                continue
+            c = most_similar_id.split(defs.ExportFormat.separator)
+            cres = database.get_CREs(name=c[1])
+            if not cres:
+                logger.warning(f"Could not find a CRE for {standard.id}")
+                output.append(line)
+                continue
+            cre = cres[0]
+        else:
+            most_similar_id,_ = ph.get_id_of_most_similar_cre_paginated(item_embedding= ph.generate_embeddings_for_document(standard))
+            if not most_similar_id:
+                logger.warning(f"Could not find a CRE for {standard.id}")
+                output.append(line)
+                continue
 
-        most_similar_id, _ = ph.get_id_of_most_similar_cre_paginated(
-            item_embedding=ph.generate_embeddings_for_document(standard)
-        )
-        if not most_similar_id:
-            logger.warning(f"Could not find a CRE for {standard.id}")
-            output.append(line)
-            continue
+            cre = database.get_cre_by_db_id(most_similar_id)
+            if not cre:
+                logger.warning(f"Could not find a CRE for {standard.id}")
+                output.append(line)
+                continue
 
-        cre = database.get_cre_by_db_id(most_similar_id)
-        if not cre:
-            logger.warning(f"Could not find a CRE for {standard.id}")
-            output.append(line)
-            continue
         line[f"CRE 0"] = f"{cre.id}{defs.ExportFormat.separator}{cre.name}"
         # add it to the line
         output.append(line)
