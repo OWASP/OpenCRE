@@ -465,7 +465,8 @@ class PromptHandler:
         closest_object = None
         if closest_id:
             closest_object = self.database.get_nodes(db_id=closest_id)
-
+            if len(closest_object) > 0:
+                closest_object = closest_object[0]
             logger.info(
                 f"The prompt {prompt}, was most similar to object \n{closest_object}\n, with similarity:{similarity}"
             )
