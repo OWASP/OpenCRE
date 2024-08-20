@@ -112,3 +112,4 @@ vertexai
 xmltodict
 google-cloud-trace
 alive-progress
+spacy
