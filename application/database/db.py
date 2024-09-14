@@ -1168,62 +1168,84 @@ class Node_collection:
         dbcres = query.all()
         if not dbcres:
             logger.warning(
-                "CRE %s:%s:%s does not exist in the db"
-                % (external_id, name, description)
+                f"CRE {external_id}:{name}:{description} does not exist in the db"
             )
             return []
 
-        # TODO figure a way to return both the Node
-        # and the link_type for that link
-        for dbcre in dbcres:
-            cre = CREfromDB(dbcre)
-            linked_nodes = self.session.query(Links).filter(Links.cre == dbcre.id).all()
-            for ls in linked_nodes:
-                nd = self.session.query(Node).filter(Node.id == ls.node).first()
-                if not include_only or (include_only and nd.name in include_only):
-                    n = nodeFromDB(nd)
-                    if not cre.link_exists(n):
-                        cre.add_link(
-                            cre_defs.Link(
-                                document=n, ltype=cre_defs.LinkTypes.from_str(ls.type)
-                            )
-                        )
-            # TODO figure the query to merge the following two
-            internal_links = (
-                self.session.query(InternalLinks)
-                .filter(
-                    sqla.or_(
-                        InternalLinks.cre == dbcre.id, InternalLinks.group == dbcre.id
-                    )
-                )
-                .all()
+        for matching_cre in dbcres:
+            cre = CREfromDB(matching_cre)
+            cre.links = self.__make_cre_links(
+                cre=matching_cre, include_only_nodes=include_only
             )
-            for il in internal_links:
-                q = self.session.query(CRE)
-
-                res: CRE
-                ltype = cre_defs.LinkTypes.from_str(il.type)
-
-                if il.cre == dbcre.id:  # if we are a CRE in this relationship
-                    res = q.filter(
-                        CRE.id == il.group
-                    ).first()  # get the group in order to add the link
-                    # if this CRE is the lower level cre the relationship will be tagged "Contains"
-                    # in that case the implicit relationship is "Is Part Of"
-                    # otherwise the relationship will be "Related" and we don't need to do anything
-                    if ltype == cre_defs.LinkTypes.Contains:
-                        # important, this is the only implicit link we have for now
-                        ltype = cre_defs.LinkTypes.PartOf
-                    elif ltype == cre_defs.LinkTypes.PartOf:
-                        ltype = cre_defs.LinkTypes.Contains
-                elif il.group == dbcre.id:
-                    res = q.filter(CRE.id == il.cre).first()
-                    ltype = cre_defs.LinkTypes.from_str(il.type)
-                c = CREfromDB(res)
-                if not cre.link_exists(c):
-                    cre.add_link(cre_defs.Link(document=c, ltype=ltype))
+            cre.links.extend(self.__make_cre_internal_links(cre=matching_cre))
             cres.append(cre)
         return cres
+
+    def __make_cre_internal_links(self, cre: CRE) -> List[cre_defs.Link]:
+        links = []
+        internal_links = (
+            self.session.query(InternalLinks)
+            .filter(
+                sqla.or_(InternalLinks.cre == cre.id, InternalLinks.group == cre.id)
+            )
+            .all()
+        )
+
+        if len(internal_links) == 0:
+            logger.debug(
+                f"CRE {cre.name}:{cre.external_id}:{cre.id} has no internal links"
+            )
+
+        for internal_link in internal_links:
+            linked_cre_query = self.session.query(CRE)
+            link_type = cre_defs.LinkTypes.from_str(internal_link.type)
+
+            if (
+                internal_link.cre == cre.id
+            ):  # if we are the lower cre in this relationship, we need to flip the "Contains" linktypes
+                linked_cre = linked_cre_query.filter(
+                    CRE.id == internal_link.group
+                ).first()  # get the higher cre so we can add the link
+                if link_type == cre_defs.LinkTypes.Contains:
+                    links.append(
+                        cre_defs.Link(
+                            ltype=cre_defs.LinkTypes.PartOf,
+                            document=CREfromDB(linked_cre),
+                        )
+                    )
+                elif (
+                    link_type == cre_defs.LinkTypes.Related
+                ):  # if it's not a "Contains" link, it's a "Related" link
+                    links.append(
+                        cre_defs.Link(ltype=link_type, document=CREfromDB(linked_cre))
+                    )
+                else:
+                    raise ValueError(
+                        f"Received an unexpected link type {link_type} in internal link between {linked_cre.name} and {cre.name}"
+                    )
+            else:  # if we are are the higher cre then we don't need to do anything, relationship types are always "higher"->"lower"
+                linked_cre = linked_cre_query.filter(
+                    CRE.id == internal_link.cre
+                ).first()
+                links.append(
+                    cre_defs.Link(ltype=link_type, document=CREfromDB(linked_cre))
+                )
+        return links
+
+    def __make_cre_links(
+        self, cre: CRE, include_only_nodes: List[str]
+    ) -> List[cre_defs.Link]:
+        links = []
+        for link in self.session.query(Links).filter(Links.cre == cre.id).all():
+            node = self.session.query(Node).filter(Node.id == link.node).first()
+            if node and (not include_only_nodes or node.name in include_only_nodes):
+                links.append(
+                    cre_defs.Link(
+                        ltype=cre_defs.LinkTypes.from_str(link.type),
+                        document=nodeFromDB(node),
+                    )
+                )
+        return links
 
     def export(self, dir: str = None, dry_run: bool = False) -> List[cre_defs.Document]:
         """Exports the database to a CRE file collection on disk"""

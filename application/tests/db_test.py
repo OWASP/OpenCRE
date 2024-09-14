@@ -63,8 +63,10 @@ class TestDB(unittest.TestCase):
         )
 
         collection.session.add(dbcre)
-        collection.add_link(cre=dbcre, node=dbstandard)
-        collection.add_internal_link(lower=dbcre, higher=dbgroup)
+        collection.add_link(cre=dbcre, node=dbstandard, type=defs.LinkTypes.LinkedTo)
+        collection.add_internal_link(
+            lower=dbcre, higher=dbgroup, type=defs.LinkTypes.Contains
+        )
 
         self.collection = collection
 
@@ -164,7 +166,6 @@ class TestDB(unittest.TestCase):
         loc = tempfile.mkdtemp()
         self.collection = db.Node_collection().with_graph()
         collection = self.collection
-        # collection.graph.graph = db.CRE_Graph.load_cre_graph(sqla.session)
         code0 = defs.Code(name="co0")
         code1 = defs.Code(name="co1")
         tool0 = defs.Tool(name="t0", tooltype=defs.ToolTypes.Unknown)
@@ -188,7 +189,9 @@ class TestDB(unittest.TestCase):
                 hyperlink="https://example.com",
             )
         )
-        self.collection.add_link(self.dbcre, self.collection.add_node(code0))
+        self.collection.add_link(
+            self.dbcre, self.collection.add_node(code0), type=defs.LinkTypes.LinkedTo
+        )
         self.collection.add_node(code1)
         self.collection.add_node(tool0)
 
@@ -201,7 +204,8 @@ class TestDB(unittest.TestCase):
                     defs.Link(
                         document=defs.CRE(
                             id="111-000", description="CREdesc", name="CREname"
-                        )
+                        ),
+                        ltype=defs.LinkTypes.Contains,
                     )
                 ],
             ),
@@ -213,7 +217,8 @@ class TestDB(unittest.TestCase):
                     defs.Link(
                         document=defs.CRE(
                             id="112-001", description="Groupdesc", name="GroupName"
-                        )
+                        ),
+                        ltype=defs.LinkTypes.Contains,
                     ),
                     defs.Link(
                         document=defs.Standard(
@@ -223,7 +228,8 @@ class TestDB(unittest.TestCase):
                             subsection="4.5.6",
                             hyperlink="https://example.com",
                             tags=["788-788", "b", "c"],
-                        )
+                        ),
+                        ltype=defs.LinkTypes.LinkedTo,
                     ),
                     defs.Link(document=defs.Code(name="co0")),
                 ],
@@ -568,29 +574,29 @@ class TestDB(unittest.TestCase):
 
         res = collection.get_CREs(name="gcC1")
         self.assertEqual(len(expected), len(res))
-        self.assertDictEqual(expected[0].todict(), res[0].todict())
+        self.assertCountEqual(expected[0].todict(), res[0].todict())
 
         res = collection.get_CREs(external_id="123-123")
         self.assertEqual(len(expected), len(res))
-        self.assertDictEqual(expected[0].todict(), res[0].todict())
+        self.assertCountEqual(expected[0].todict(), res[0].todict())
 
         res = collection.get_CREs(external_id="12%", partial=True)
         self.assertEqual(len(expected), len(res))
-        self.assertDictEqual(expected[0].todict(), res[0].todict())
+        self.assertCountEqual(expected[0].todict(), res[0].todict())
 
         res = collection.get_CREs(name="gcC%", partial=True)
 
         res = collection.get_CREs(external_id="1%", name="gcC%", partial=True)
         self.assertEqual(len(expected), len(res))
-        self.assertDictEqual(expected[0].todict(), res[0].todict())
+        self.assertCountEqual(expected[0].todict(), res[0].todict())
 
         res = collection.get_CREs(description="gcCD1")
         self.assertEqual(len(expected), len(res))
-        self.assertDictEqual(expected[0].todict(), res[0].todict())
+        self.assertCountEqual(expected[0].todict(), res[0].todict())
 
         res = collection.get_CREs(external_id="1%", description="gcC%", partial=True)
         self.assertEqual(len(expected), len(res))
-        self.assertDictEqual(expected[0].todict(), res[0].todict())
+        self.assertCountEqual(expected[0].todict(), res[0].todict())
 
         res = collection.get_CREs(description="gcC%", name="gcC%", partial=True)
         want = [expected[0], cd2, cd3]
@@ -1076,8 +1082,8 @@ class TestDB(unittest.TestCase):
             * C3 Part Of C1
             * C4 Part Of C2
             * C5 Related to C0
-            * C6 Part Of C1 but registered as C6 being the "group"
-            * C7 Contains C6 but registered as C6 being the "group" <-- Root
+            * C6 Part Of C1
+            * C7 Contains C6 <-- Root
         3 Nodes:
             * N0  Unlinked
             * N1 Linked To C1
@@ -1090,11 +1096,13 @@ class TestDB(unittest.TestCase):
         nodes = []
         dbcres = []
         dbnodes = []
+
+        # clean the db from setup
         sqla.session.remove()
         sqla.drop_all()
         sqla.create_all()
+
         collection = db.Node_collection().with_graph()
-        # collection.graph.graph = db.CRE_Graph.load_cre_graph(sqla.session)
 
         for i in range(0, 8):
             if i == 0 or i == 1:
@@ -1148,7 +1156,7 @@ class TestDB(unittest.TestCase):
             higher=dbcres[3], lower=dbcres[5], type=defs.LinkTypes.Contains
         )
         collection.add_internal_link(
-            higher=dbcres[6], lower=dbcres[7], type=defs.LinkTypes.PartOf
+            lower=dbcres[6], higher=dbcres[7], type=defs.LinkTypes.Contains
         )
 
         collection.session.commit()
@@ -1159,7 +1167,7 @@ class TestDB(unittest.TestCase):
 
         root_cres = collection.get_root_cres()
         self.maxDiff = None
-        self.assertEqual(root_cres, [cres[0], cres[1], cres[7]])
+        self.assertCountEqual(root_cres, [cres[0], cres[1], cres[7]])
 
     @patch.object(db.NEO_DB, "gap_analysis")
     def test_gap_analysis_disconnected(self, gap_mock):

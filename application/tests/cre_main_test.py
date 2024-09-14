@@ -191,6 +191,10 @@ class TestMain(unittest.TestCase):
         )  # 2 cres in the db
 
     def test_register_cre(self) -> None:
+        self.maxDiff = None
+
+        self.collection = self.collection.with_graph()
+
         standard = defs.Standard(
             name="ASVS",
             section="SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING",
@@ -205,9 +209,32 @@ class TestMain(unittest.TestCase):
             tags=["CREt1", "CREt2"],
             metadata={"tags": ["CREl1", "CREl2"]},
         )
+
+        cre_lower = defs.CRE(
+            id="100-101",
+            description="CREdesc lower",
+            name="CREname lower",
+            links=[defs.Link(document=cre.shallow_copy(), ltype=defs.LinkTypes.PartOf)],
+        )
+
+        cre_higher = defs.CRE(
+            id="100-099",
+            description="CREdesc higher",
+            name="CREname higher",
+            links=[
+                defs.Link(document=cre.shallow_copy(), ltype=defs.LinkTypes.Contains)
+            ],
+        )
+        cre_equal = defs.CRE(
+            id="100-102",
+            description="CREdesc equal",
+            name="CREname equal",
+            links=[
+                defs.Link(document=cre.shallow_copy(), ltype=defs.LinkTypes.Related)
+            ],
+        )
         c, _ = main.register_cre(cre, self.collection)
         self.assertEqual(c.name, cre.name)
-
         self.assertEqual(c.external_id, cre.id)
         self.assertEqual(
             len(self.collection.session.query(db.CRE).all()), 1
@@ -215,6 +242,50 @@ class TestMain(unittest.TestCase):
         self.assertEqual(
             len(self.collection.session.query(db.Node).all()), 2
         )  # 2 nodes in the db
+
+        # hierarchy register tests
+        main.register_cre(cre_lower, self.collection)
+        main.register_cre(cre_higher, self.collection)
+        main.register_cre(cre_equal, self.collection)
+
+        c_higher = self.collection.get_CREs(cre_higher.id)[0]
+        c_lower = self.collection.get_CREs(cre_lower.id)[0]
+        c_equal = self.collection.get_CREs(cre_equal.id)[0]
+        c = self.collection.get_CREs(cre.id)[0]
+
+        self.assertCountEqual(
+            c_higher.links,
+            [defs.Link(document=c.shallow_copy(), ltype=defs.LinkTypes.Contains)],
+        )
+        self.assertCountEqual(
+            c.links,
+            [
+                defs.Link(document=standard),
+                defs.Link(document=tool),
+                defs.Link(
+                    document=c_lower.shallow_copy(), ltype=defs.LinkTypes.Contains
+                ),
+                defs.Link(
+                    document=c_higher.shallow_copy(), ltype=defs.LinkTypes.PartOf
+                ),
+                defs.Link(
+                    document=c_equal.shallow_copy(), ltype=defs.LinkTypes.Related
+                ),
+            ],
+        )
+
+        self.assertCountEqual(
+            c_lower.links,
+            [defs.Link(document=c.shallow_copy(), ltype=defs.LinkTypes.PartOf)],
+        )
+        self.assertCountEqual(
+            c_higher.links,
+            [defs.Link(document=c.shallow_copy(), ltype=defs.LinkTypes.Contains)],
+        )
+        self.assertCountEqual(
+            c_equal.links,
+            [defs.Link(document=c.shallow_copy(), ltype=defs.LinkTypes.Related)],
+        )
 
     def test_parse_file(self) -> None:
         file: List[Dict[str, Any]] = [

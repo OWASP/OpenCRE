@@ -39,8 +39,8 @@ def register_node(node: defs.Node, collection: db.Node_collection) -> db.Node:
     then map the one who doesn't to the CRE
     if both don't map to anything, just add them in the db as unlinked nodes
     """
-    if not node:
-        raise ValueError("node is None")
+    if not node or not issubclass(node.__class__, defs.Node):
+        raise ValueError(f"node is None or not of type Node, node: {node}")
 
     linked_node = collection.add_node(node)
     if node.embeddings:
@@ -118,12 +118,28 @@ def register_cre(cre: defs.CRE, collection: db.Node_collection) -> Tuple[db.CRE,
     for link in cre.links:
         if type(link.document) == defs.CRE:
             logger.info(f"{link.document.id} {link.ltype} {cre.id}")
-            lower_cre, _ = register_cre(link.document, collection)
-            collection.add_internal_link(
-                higher=dbcre,
-                lower=lower_cre,
-                type=link.ltype,
-            )
+            other_cre, _ = register_cre(link.document, collection)
+
+            if link.ltype == defs.LinkTypes.Contains:
+                collection.add_internal_link(
+                    higher=dbcre,
+                    lower=other_cre,
+                    type=link.ltype,
+                )
+            elif link.ltype == defs.LinkTypes.PartOf:
+                collection.add_internal_link(
+                    higher=other_cre,
+                    lower=dbcre,
+                    type=defs.LinkTypes.Contains,
+                )
+            elif link.ltype == defs.LinkTypes.Related:
+                collection.add_internal_link(
+                    higher=other_cre,
+                    lower=dbcre,
+                    type=defs.LinkTypes.Related,
+                )
+            else:
+                raise ValueError(f"Unknown link type {link.ltype}")
         else:
             collection.add_link(
                 cre=dbcre,
