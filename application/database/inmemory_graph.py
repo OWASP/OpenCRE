@@ -1,7 +1,6 @@
 import sys
 import networkx as nx
 from typing import List, Tuple
-from pprint import pprint
 from application.defs import cre_defs as defs
 
 
@@ -21,11 +20,30 @@ class CRE_Graph:
     def __init__(sel):
         raise ValueError("CRE_Graph is a singleton, please call instance() instead")
 
-    def add_edge(self, *args, **kwargs):
-        return self.graph.add_edge(*args, **kwargs)
-
     def add_node(self, *args, **kwargs):
         return self.graph.add_node(*args, **kwargs)
+
+    def adds_cycle(self, doc_from: defs.Document, link_to: defs.Link):
+        try:
+            existing_cycle = nx.find_cycle(self.graph)
+            if existing_cycle:
+                raise ValueError(
+                    "Existing graph contains cycle,"
+                    "this not a recoverable error,"
+                    f" manual database actions are required {existing_cycle}"
+                )
+        except nx.exception.NetworkXNoCycle:
+            pass  # happy path, we don't want cycles
+        new_graph = self.graph.copy()
+
+        # this needs our special add_edge but with the copied graph
+        new_graph = self.add_graph_edge(
+            doc_from=doc_from, link_to=link_to, graph=new_graph
+        )
+        try:
+            return nx.find_cycle(new_graph)
+        except nx.NetworkXNoCycle:
+            return False
 
     def get_hierarchy(self, rootIDs: List[str], creID: str):
         if creID in rootIDs:
@@ -105,6 +123,52 @@ class CRE_Graph:
         return graph
 
     @classmethod
+    def add_graph_edge(
+        cls,
+        doc_from: defs.Document,
+        link_to: defs.Link,
+        graph: nx.DiGraph,
+    ) -> nx.digraph:
+
+        to_doctype = defs.Credoctypes.CRE.value
+        if link_to.document.doctype != defs.Credoctypes.CRE.value:
+            to_doctype = "Node"
+
+        if doc_from.doctype == defs.Credoctypes.CRE:
+            if link_to.ltype == defs.LinkTypes.Contains:
+                graph.add_edge(
+                    f"{doc_from.doctype}: {doc_from.id}",
+                    f"{to_doctype}: {link_to.document.id}",
+                    ltype=link_to.ltype,
+                )
+            elif link_to.ltype == defs.LinkTypes.PartOf:
+                graph.add_edge(
+                    f"{to_doctype}: {link_to.document.id}",
+                    f"{doc_from.doctype}: {doc_from.id}",
+                    ltype=defs.LinkTypes.Contains,
+                )
+            elif link_to.ltype == defs.LinkTypes.Related:
+                # do nothing if the opposite already exists in the graph, otherwise we introduce a cycle
+                if graph.has_edge(
+                    f"{to_doctype}: {link_to.document.id}",
+                    f"{doc_from.doctype}: {doc_from.id}",
+                ):
+                    return graph
+
+                graph.add_edge(
+                    f"{doc_from.doctype}: {doc_from.id}",
+                    f"{to_doctype}: {link_to.document.id}",
+                    ltype=defs.LinkTypes.Related,
+                )
+        else:
+            graph.add_edge(
+                f"{doc_from.doctype}: {doc_from.id}",
+                f"{to_doctype}: {link_to.document.id}",
+                ltype=link_to.ltype,
+            )
+        return graph
+
+    @classmethod
     def __load_cre_graph(cls, documents: List[defs.Document]) -> nx.Graph:
         graph = cls.graph
         if not graph:
@@ -119,17 +183,10 @@ class CRE_Graph:
                 graph = cls.add_dbnode(dbnode=doc, graph=graph)
                 from_doctype = doc.doctype
             for link in doc.links:
-                to_doctype = None
                 if link.document.doctype == defs.Credoctypes.CRE:
                     graph = cls.add_cre(dbcre=link.document, graph=graph)
-                    to_doctype = defs.Credoctypes.CRE
                 else:
                     graph = cls.add_dbnode(dbnode=link.document, graph=graph)
-                    to_doctype = "Node"
-                graph.add_edge(
-                    f"{from_doctype}: {doc.id}",
-                    f"{to_doctype}: {link.document.id}",
-                    ltype=link.ltype,
-                )
+            graph = cls.add_graph_edge(doc_from=doc, link_to=link, graph=graph)
         cls.graph = graph
         return graph

@@ -673,7 +673,7 @@ class NEO_DB:
 
 
 class Node_collection:
-    graph: nx.Graph = None
+    graph: inmemory_graph.CRE_Graph = None
     neo_db: NEO_DB = None
     session = sqla.session
 
@@ -748,34 +748,6 @@ class Node_collection:
         for cid in cre_ids:
             result.append(self.get_cre_by_db_id(cid[0]))
         return result
-
-    def __introduces_cycle(self, node_from: str, node_to: str) -> Any:
-        if not self.graph:
-            logger.error("graph is null")
-            raise ValueError(
-                "internal CRE graph is None while importing, cannot detect cycles, this is unrecoverable"
-            )
-        try:
-            existing_cycle = nx.find_cycle(self.graph.graph)
-            if existing_cycle:
-                logger.fatal(
-                    "Existing graph contains cycle,"
-                    "this not a recoverable error,"
-                    f" manual database actions are required {existing_cycle}"
-                )
-                raise ValueError(
-                    "Existing graph contains cycle,"
-                    "this not a recoverable error,"
-                    f" manual database actions are required {existing_cycle}"
-                )
-        except nx.exception.NetworkXNoCycle:
-            pass  # happy path, we don't want cycles
-        new_graph = self.graph.graph.copy()
-        new_graph.add_edge(node_from, node_to)
-        try:
-            return nx.find_cycle(new_graph)
-        except nx.NetworkXNoCycle:
-            return False
 
     @classmethod
     def object_select(cls, node: Node, skip_attributes: List = []) -> List[Node]:
@@ -1616,15 +1588,27 @@ class Node_collection:
             f" {higher.external_id}:{higher.name}"
             f" -> {lower.external_id}:{lower.name} of type {type.value},adding"
         )
-        cycle = self.__introduces_cycle(f"CRE: {higher.id}", f"CRE: {lower.id}")
+        if not self.graph:
+            logger.error("graph is null")
+            raise ValueError(
+                "internal CRE graph is None while importing, cannot detect cycles, this is unrecoverable"
+            )
+
+        higher_cre = CREfromDB(higher)
+        lower_cre = CREfromDB(higher)
+        link_to = cre_defs.Link(document=lower_cre, ltype=type)
+        cycle = self.graph.adds_cycle(doc_from=higher_cre, link_to=link_to)
+
         if not cycle:
             self.session.add(
                 InternalLinks(type=type.value, cre=lower.id, group=higher.id)
             )
             self.session.commit()
             if self.graph:
-                self.graph.add_edge(
-                    f"CRE: {higher.id}", f"CRE: {lower.id}", ltype=type.value
+                self.graph = self.graph.add_graph_edge(
+                    doc_from=higher_cre,
+                    link_to=link_to,
+                    graph=self.graph.graph,
                 )
         else:
             for item in cycle:
@@ -1677,9 +1661,12 @@ class Node_collection:
             )
             self.session.add(Links(type=type.value, cre=cre.id, node=node.id))
             if self.graph:
-                self.graph.add_edge(
-                    f"CRE: {cre.id}", f"Node: {str(node.id)}", ltype=type.value
+                self.graph.add_graph_edge(
+                    doc_from=CREfromDB(cre),
+                    link_to=cre_defs.Link(document=nodeFromDB(node),ltype=type.value),
+                    graph=self.graph.graph
                 )
+
 
         self.session.commit()
 
