@@ -130,10 +130,10 @@ class TestMain(unittest.TestCase):
         dcd = collection.add_cre(cres["cd"])
 
         collection.add_internal_link(
-            higher=dca, lower=dcd, type=defs.LinkTypes.Contains
+            higher=dca, lower=dcd, ltype=defs.LinkTypes.Contains
         )
         collection.add_internal_link(
-            higher=dcb, lower=dcd, type=defs.LinkTypes.Contains
+            higher=dcb, lower=dcd, ltype=defs.LinkTypes.Contains
         )
         self.maxDiff = None
         with self.app.test_client() as client:
@@ -177,13 +177,13 @@ class TestMain(unittest.TestCase):
         dcc = collection.add_cre(cres["cc"])
         dcd = collection.add_cre(cres["cd"])
         collection.add_internal_link(
-            higher=dca, lower=dcd, type=defs.LinkTypes.Contains
+            higher=dca, lower=dcd, ltype=defs.LinkTypes.Contains
         )
         collection.add_internal_link(
-            higher=dcb, lower=dcd, type=defs.LinkTypes.Contains
+            higher=dcb, lower=dcd, ltype=defs.LinkTypes.Contains
         )
         collection.add_internal_link(
-            higher=dcc, lower=dcd, type=defs.LinkTypes.Contains
+            higher=dcc, lower=dcd, ltype=defs.LinkTypes.Contains
         )
 
         self.maxDiff = None
@@ -462,10 +462,10 @@ class TestMain(unittest.TestCase):
             dcb = collection.add_cre(cres["cb"])
             dcd = collection.add_cre(cres["cd"])
             collection.add_internal_link(
-                higher=dca, lower=dcd, type=defs.LinkTypes.Contains
+                higher=dca, lower=dcd, ltype=defs.LinkTypes.Contains
             )
             collection.add_internal_link(
-                higher=dcb, lower=dcd, type=defs.LinkTypes.Contains
+                higher=dcb, lower=dcd, ltype=defs.LinkTypes.Contains
             )
 
             expected = {"data": [cres["ca"].todict(), cres["cb"].todict()]}
@@ -514,10 +514,10 @@ class TestMain(unittest.TestCase):
             dasvs = collection.add_node(standards["ASVS"])
             dcwe = collection.add_node(standards["cwe0"])
             collection.add_internal_link(
-                higher=dca, lower=dcd, type=defs.LinkTypes.Contains
+                higher=dca, lower=dcd, ltype=defs.LinkTypes.Contains
             )
             collection.add_internal_link(
-                higher=dcb, lower=dcd, type=defs.LinkTypes.Contains
+                higher=dcb, lower=dcd, ltype=defs.LinkTypes.Contains
             )
 
             collection.add_link(dcb, dasvs)
@@ -716,10 +716,10 @@ class TestMain(unittest.TestCase):
             dasvs = collection.add_node(standards["ASVS"])
             dcwe = collection.add_node(standards["cwe0"])
             collection.add_internal_link(
-                higher=dca, lower=dcd, type=defs.LinkTypes.Contains
+                higher=dca, lower=dcd, ltype=defs.LinkTypes.Contains
             )
             collection.add_internal_link(
-                higher=dcb, lower=dcd, type=defs.LinkTypes.Contains
+                higher=dcb, lower=dcd, ltype=defs.LinkTypes.Contains
             )
 
             collection.add_link(dcb, dasvs)
@@ -893,7 +893,7 @@ class TestMain(unittest.TestCase):
                 )
                 dbcre = collection.add_cre(c)
                 collection.add_internal_link(
-                    higher=previous_db, lower=dbcre, type=defs.LinkTypes.Contains
+                    higher=previous_db, lower=dbcre, ltype=defs.LinkTypes.Contains
                 )
                 previous_cre.add_link(
                     defs.Link(document=c, ltype=defs.LinkTypes.Contains)

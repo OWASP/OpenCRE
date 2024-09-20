@@ -7,7 +7,7 @@ from application.defs import cre_defs as defs
 class CRE_Graph:
     graph: nx.Graph = None
     __parent_child_subgraph = None
-    __instance = None
+    __instance: "CRE_Graph" = None
 
     @classmethod
     def instance(cls, documents: List[defs.Document] = None) -> "CRE_Graph":
@@ -23,7 +23,7 @@ class CRE_Graph:
     def add_node(self, *args, **kwargs):
         return self.graph.add_node(*args, **kwargs)
 
-    def adds_cycle(self, doc_from: defs.Document, link_to: defs.Link):
+    def introduces_cycle(self, doc_from: defs.Document, link_to: defs.Link):
         try:
             existing_cycle = nx.find_cycle(self.graph)
             if existing_cycle:

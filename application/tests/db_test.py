@@ -63,9 +63,9 @@ class TestDB(unittest.TestCase):
         )
 
         collection.session.add(dbcre)
-        collection.add_link(cre=dbcre, node=dbstandard, type=defs.LinkTypes.LinkedTo)
+        collection.add_link(cre=dbcre, node=dbstandard, ltype=defs.LinkTypes.LinkedTo)
         collection.add_internal_link(
-            lower=dbcre, higher=dbgroup, type=defs.LinkTypes.Contains
+            lower=dbcre, higher=dbgroup, ltype=defs.LinkTypes.Contains
         )
 
         self.collection = collection
@@ -190,7 +190,7 @@ class TestDB(unittest.TestCase):
             )
         )
         self.collection.add_link(
-            self.dbcre, self.collection.add_node(code0), type=defs.LinkTypes.LinkedTo
+            self.dbcre, self.collection.add_node(code0), ltype=defs.LinkTypes.LinkedTo
         )
         self.collection.add_node(code1)
         self.collection.add_node(tool0)
@@ -2098,7 +2098,7 @@ class TestDB(unittest.TestCase):
                 defs.Link(document=copy(nodes[i]), ltype=defs.LinkTypes.LinkedTo)
             )
             collection.add_link(
-                cre=dbcres[i], node=dbnodes[i], type=defs.LinkTypes.LinkedTo
+                cre=dbcres[i], node=dbnodes[i], ltype=defs.LinkTypes.LinkedTo
             )
 
         collection.session.commit()
@@ -2136,7 +2136,7 @@ class TestDB(unittest.TestCase):
                 defs.Link(document=copy(nodes[i]), ltype=defs.LinkTypes.LinkedTo)
             )
             collection.add_link(
-                cre=dbcres[i], node=dbnodes[i], type=defs.LinkTypes.LinkedTo
+                cre=dbcres[i], node=dbnodes[i], ltype=defs.LinkTypes.LinkedTo
             )
 
         collection.session.commit()
@@ -2165,21 +2165,21 @@ class TestDB(unittest.TestCase):
                         linked_item = collection.add_cre(link.document)
                         if item.doctype == defs.Credoctypes.CRE:
                             collection.add_internal_link(
-                                dbitem, linked_item, type=link.ltype
+                                dbitem, linked_item, ltype=link.ltype
                             )
                         else:
                             collection.add_link(
-                                node=dbitem, cre=linked_item, type=link.ltype
+                                node=dbitem, cre=linked_item, ltype=link.ltype
                             )
                     else:
                         linked_item = collection.add_node(link.document)
                         if item.doctype == defs.Credoctypes.CRE:
                             collection.add_link(
-                                cre=dbitem, node=linked_item, type=link.ltype
+                                cre=dbitem, node=linked_item, ltype=link.ltype
                             )
                         else:
                             collection.add_internal_link(
-                                cre=linked_item, node=dbitem, type=link.ltype
+                                cre=linked_item, node=dbitem, ltype=link.ltype
                             )
 
         cres = inputDocs[defs.Credoctypes.CRE]

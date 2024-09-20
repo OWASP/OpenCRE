@@ -68,23 +68,23 @@ def register_node(node: defs.Node, collection: db.Node_collection) -> db.Node:
             db_link = collection.add_node(link.document)
             if cres:
                 for cre in cres:
-                    collection.add_link(cre=cre, node=linked_node, type=link.ltype)
+                    collection.add_link(cre=cre, node=linked_node, ltype=link.ltype)
                     for unlinked_standard in cre_less_nodes:  # if anything in this
                         collection.add_link(
                             cre=cre,
                             node=db.dbNodeFromNode(unlinked_standard),
-                            type=link.ltype,
+                            ltype=link.ltype,
                         )
             else:
                 cres = collection.find_cres_of_node(linked_node)
                 if cres:
                     for cre in cres:
-                        collection.add_link(cre=cre, node=db_link, type=link.ltype)
+                        collection.add_link(cre=cre, node=db_link, ltype=link.ltype)
                         for unlinked_node in cre_less_nodes:
                             collection.add_link(
                                 cre=cre,
                                 node=db.dbNodeFromNode(unlinked_node),
-                                type=link.ltype,
+                                ltype=link.ltype,
                             )
                 else:  # if neither the root nor a linked node has a CRE, add both as unlinked nodes
                     cre_less_nodes.append(link.document)
@@ -96,13 +96,13 @@ def register_node(node: defs.Node, collection: db.Node_collection) -> db.Node:
             # dbcre,_ = register_cre(link.document, collection) # CREs are idempotent
             c = collection.get_CREs(name=link.document.name)[0]
             dbcre = db.dbCREfromCRE(c)
-            collection.add_link(dbcre, linked_node, type=link.ltype)
+            collection.add_link(dbcre, linked_node, ltype=link.ltype)
             cres_added.append(dbcre)
             for unlinked_standard in cre_less_nodes:  # if anything in this
                 collection.add_link(
                     cre=dbcre,
                     node=db.dbNodeFromNode(unlinked_standard),
-                    type=link.ltype,
+                    ltype=link.ltype,
                 )
             cre_less_nodes = []
 
@@ -124,19 +124,19 @@ def register_cre(cre: defs.CRE, collection: db.Node_collection) -> Tuple[db.CRE,
                 collection.add_internal_link(
                     higher=dbcre,
                     lower=other_cre,
-                    type=defs.LinkTypes.Contains,
+                    ltype=defs.LinkTypes.Contains,
                 )
             elif link.ltype == defs.LinkTypes.PartOf:
                 collection.add_internal_link(
                     higher=other_cre,
                     lower=dbcre,
-                    type=defs.LinkTypes.Contains,
+                    ltype=defs.LinkTypes.Contains,
                 )
             elif link.ltype == defs.LinkTypes.Related:
                 collection.add_internal_link(
                     higher=other_cre,
                     lower=dbcre,
-                    type=defs.LinkTypes.Related,
+                    ltype=defs.LinkTypes.Related,
                 )
             else:
                 raise ValueError(f"Unknown link type {link.ltype}")
@@ -144,7 +144,7 @@ def register_cre(cre: defs.CRE, collection: db.Node_collection) -> Tuple[db.CRE,
             collection.add_link(
                 cre=dbcre,
                 node=register_node(node=link.document, collection=collection),
-                type=link.ltype,
+                ltype=link.ltype,
             )
     return dbcre, existing
 
@@ -460,6 +460,7 @@ def donwload_graph_from_upstream(cache: str) -> None:
         cre = defs.Document.from_dict(credict)
         if cre.id in imported_cres:
             return
+
         register_cre(cre, collection)
         imported_cres[cre.id] = ""
         for link in cre.links:
@@ -536,8 +537,6 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
         )
     elif args.add and args.cre_loc and not args.from_spreadsheet:
         add_from_disk(cache_loc=args.cache_file, cre_loc=args.cre_loc)
-    elif args.print_graph:
-        print_graph()
     # elif args.review and args.osib_in:
     #     review_osib_from_file(
     #         file_loc=args.osib_in, cache=args.cache_file, cre_loc=args.cre_loc
@@ -639,8 +638,6 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
 
     if args.generate_embeddings:
         generate_embeddings(args.cache_file)
-    if args.owasp_proj_meta:
-        owasp_metadata_to_cre(args.owasp_proj_meta)
     if args.populate_neo4j_db:
         populate_neo4j_db(args.cache_file)
     if args.start_worker:

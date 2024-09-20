@@ -684,9 +684,7 @@ class Node_collection:
 
     def with_graph(self) -> "Node_collection":
         logger.info("Loading CRE graph in memory, memory-heavy operation!")
-        self.graph = inmemory_graph.CRE_Graph.instance(
-            documents=self.__get_all_nodes_and_cres()
-        )
+        self.graph = inmemory_graph.CRE_Graph.instance(documents=self.__get_all_nodes_and_cres())
         return self
 
     def __get_external_links(self) -> List[Tuple[CRE, Node, str]]:
@@ -1499,14 +1497,14 @@ class Node_collection:
         self,
         higher: CRE,
         lower: CRE,
-        type: cre_defs.LinkTypes = cre_defs.LinkTypes.Same,
+        ltype: cre_defs.LinkTypes = cre_defs.LinkTypes.Same,
     ) -> None:
         """
         adds a link between two CREs in the database,
         Args:
             higher (CRE): the higher level CRE that CONTAINS or is the SAME or is RELATED to lower
             lower (CRE): the lower level CRE that is CONTAINED or is the SAME or is RELATED to higher
-            type (cre_defs.LinkTypes, optional): the linktype
+            ltype (cre_defs.LinkTypes, optional): the linktype
              Defaults to cre_defs.LinkTypes.Same.
         """
         if lower.id is None:
@@ -1576,17 +1574,17 @@ class Node_collection:
         )
         if entry_exists:
             # logger.info(
-            #     f"knew of internal link {lower.name} == {higher.name} of type {entry_exists.type},"
-            #     f"updating to type {type.value}"
+            #     f"knew of internal link {lower.name} == {higher.name} of ltype {entry_exists.ltype},"
+            #     f"updating to ltype {ltype.value}"
             # )
-            # entry_exists.type = type.value
+            # entry_exists.ltype = ltype.value
             # self.session.commit()
             return
 
         logger.info(
             "did not know of internal link"
             f" {higher.external_id}:{higher.name}"
-            f" -> {lower.external_id}:{lower.name} of type {type.value},adding"
+            f" -> {lower.external_id}:{lower.name} of type {ltype.value},adding"
         )
         if not self.graph:
             logger.error("graph is null")
@@ -1596,12 +1594,15 @@ class Node_collection:
 
         higher_cre = CREfromDB(higher)
         lower_cre = CREfromDB(higher)
-        link_to = cre_defs.Link(document=lower_cre, ltype=type)
-        cycle = self.graph.adds_cycle(doc_from=higher_cre, link_to=link_to)
+        link_to = cre_defs.Link(document=lower_cre, ltype=ltype)
+        
+        if type(self.graph) != inmemory_graph.CRE_Graph:
+            raise ValueError("wtf?")
+        cycle = self.graph.introduces_cycle(doc_from=higher_cre, link_to=link_to)
 
         if not cycle:
             self.session.add(
-                InternalLinks(type=type.value, cre=lower.id, group=higher.id)
+                InternalLinks(type=ltype.value, cre=lower.id, group=higher.id)
             )
             self.session.commit()
             if self.graph:
@@ -1630,7 +1631,7 @@ class Node_collection:
         self,
         cre: CRE,
         node: Node,
-        type: cre_defs.LinkTypes = cre_defs.LinkTypes.Same,
+        ltype: cre_defs.LinkTypes = cre_defs.LinkTypes.Same,
     ) -> None:
         if cre.id is None:
             cre = (
@@ -1648,9 +1649,9 @@ class Node_collection:
             logger.debug(
                 f"knew of link {node.name}:{node.section}"
                 f"=={cre.name} of type {entry.type},"
-                f"updating type to {type.value}"
+                f"updating type to {ltype.value}"
             )
-            entry.type = type.value
+            entry.type = ltype.value
             self.session.commit()
             return
         else:
@@ -1659,11 +1660,11 @@ class Node_collection:
                 f"{node.name}:{node.section}=={cre.id}){cre.name}"
                 " ,adding"
             )
-            self.session.add(Links(type=type.value, cre=cre.id, node=node.id))
+            self.session.add(Links(type=ltype.value, cre=cre.id, node=node.id))
             if self.graph:
                 self.graph.add_graph_edge(
                     doc_from=CREfromDB(cre),
-                    link_to=cre_defs.Link(document=nodeFromDB(node),ltype=type.value),
+                    link_to=cre_defs.Link(document=nodeFromDB(node),ltype=ltype.value),
                     graph=self.graph.graph
                 )
 
