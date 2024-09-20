@@ -117,14 +117,14 @@ def register_cre(cre: defs.CRE, collection: db.Node_collection) -> Tuple[db.CRE,
     dbcre: db.CRE = collection.add_cre(cre)
     for link in cre.links:
         if type(link.document) == defs.CRE:
-            logger.info(f"{link.document.id} {link.ltype} {cre.id}")
             other_cre, _ = register_cre(link.document, collection)
 
+            # the following flips the PartOf relationship so that we only have contains relationship in the database
             if link.ltype == defs.LinkTypes.Contains:
                 collection.add_internal_link(
                     higher=dbcre,
                     lower=other_cre,
-                    type=link.ltype,
+                    type=defs.LinkTypes.Contains,
                 )
             elif link.ltype == defs.LinkTypes.PartOf:
                 collection.add_internal_link(
