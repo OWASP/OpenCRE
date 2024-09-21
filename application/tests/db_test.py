@@ -231,7 +231,7 @@ class TestDB(unittest.TestCase):
                         ),
                         ltype=defs.LinkTypes.LinkedTo,
                     ),
-                    defs.Link(document=defs.Code(name="co0")),
+                    defs.Link(document=defs.Code(name="co0"),ltype=defs.LinkTypes.LinkedTo),
                 ],
             ),
             defs.Standard(
@@ -733,7 +733,7 @@ class TestDB(unittest.TestCase):
         collection.session.commit()
 
         for cre, standard in links:
-            collection.session.add(db.Links(cre=docs[cre].id, node=docs[standard].id))
+            collection.session.add(db.Links(cre=docs[cre].id, node=docs[standard].id,type=defs.LinkTypes.LinkedTo))
         collection.session.commit()
 
         expected = [
@@ -746,13 +746,16 @@ class TestDB(unittest.TestCase):
                 version="4",
                 links=[
                     defs.Link(
-                        document=defs.CRE(name="C1", description="CD1", id="123-123")
+                        document=defs.CRE(name="C1", description="CD1", id="123-123"),
+                        ltype=defs.LinkTypes.LinkedTo,
                     ),
                     defs.Link(
-                        document=defs.CRE(id="222-222", name="C2", description="CD2")
+                        document=defs.CRE(id="222-222", name="C2", description="CD2"),
+                        ltype=defs.LinkTypes.LinkedTo,
                     ),
                     defs.Link(
-                        document=defs.CRE(id="333-333", name="C3", description="CD3")
+                        document=defs.CRE(id="333-333", name="C3", description="CD3"),
+                        ltype=defs.LinkTypes.LinkedTo,
                     ),
                 ],
             )
@@ -771,8 +774,7 @@ class TestDB(unittest.TestCase):
                 version="4",
                 links=[
                     defs.Link(
-                        document=defs.CRE(name="C1", description="CD1", id="123-123")
-                    )
+                        document=defs.CRE(name="C1", description="CD1", id="123-123"),ltype=defs.LinkTypes.LinkedTo)
                 ],
             )
         ]
@@ -808,18 +810,29 @@ class TestDB(unittest.TestCase):
 
         # happy path
         self.collection.add_internal_link(
-            higher=cres["dbca"], lower=cres["dbcb"], type=defs.LinkTypes.Same
+            higher=cres["dbca"], lower=cres["dbcb"], ltype=defs.LinkTypes.Related
         )
 
         # no cycle, free to insert
         self.collection.add_internal_link(
-            higher=cres["dbcb"], lower=cres["dbcc"], type=defs.LinkTypes.Same
+            higher=cres["dbcb"], lower=cres["dbcc"], ltype=defs.LinkTypes.Related
         )
 
         # introdcues a cycle, should not be inserted
         self.collection.add_internal_link(
-            higher=cres["dbcc"], lower=cres["dbca"], type=defs.LinkTypes.Same
+            higher=cres["dbcc"], lower=cres["dbca"], ltype=defs.LinkTypes.Related
         )
+
+        # cycles are not inserted branch
+        none_res = (
+            self.collection.session.query(db.InternalLinks)
+            .filter(
+                db.InternalLinks.group == cres["dbcc"].id,
+                db.InternalLinks.cre == cres["dbca"].id,
+            )
+            .one_or_none()
+        )
+        self.assertIsNone(none_res)
 
         #   "happy path, internal link exists"
         res = (
@@ -841,17 +854,6 @@ class TestDB(unittest.TestCase):
             .first()
         )
         self.assertEqual((res.group, res.cre), (cres["dbcb"].id, cres["dbcc"].id))
-
-        # cycles are not inserted branch
-        none_res = (
-            self.collection.session.query(db.InternalLinks)
-            .filter(
-                db.InternalLinks.group == cres["dbcc"].id,
-                db.InternalLinks.cre == cres["dbca"].id,
-            )
-            .one_or_none()
-        )
-        self.assertIsNone(none_res)
 
     def test_text_search(self) -> None:
         """Given:
@@ -1117,7 +1119,7 @@ class TestDB(unittest.TestCase):
                 defs.Link(document=copy(nodes[i]), ltype=defs.LinkTypes.LinkedTo)
             )
             collection.add_link(
-                cre=dbcres[i], node=dbnodes[i], type=defs.LinkTypes.LinkedTo
+                cre=dbcres[i], node=dbnodes[i], ltype=defs.LinkTypes.LinkedTo
             )
 
         cres[0].add_link(
@@ -1141,22 +1143,22 @@ class TestDB(unittest.TestCase):
             defs.Link(document=cres[7].shallow_copy(), ltype=defs.LinkTypes.PartOf)
         )
         collection.add_internal_link(
-            higher=dbcres[0], lower=dbcres[2], type=defs.LinkTypes.Contains
+            higher=dbcres[0], lower=dbcres[2], ltype=defs.LinkTypes.Contains
         )
         collection.add_internal_link(
-            higher=dbcres[1], lower=dbcres[3], type=defs.LinkTypes.Contains
+            higher=dbcres[1], lower=dbcres[3], ltype=defs.LinkTypes.Contains
         )
         collection.add_internal_link(
-            higher=dbcres[2], lower=dbcres[4], type=defs.LinkTypes.Contains
+            higher=dbcres[2], lower=dbcres[4], ltype=defs.LinkTypes.Contains
         )
         collection.add_internal_link(
-            higher=dbcres[5], lower=dbcres[0], type=defs.LinkTypes.Related
+            higher=dbcres[5], lower=dbcres[0], ltype=defs.LinkTypes.Related
         )
         collection.add_internal_link(
-            higher=dbcres[3], lower=dbcres[5], type=defs.LinkTypes.Contains
+            higher=dbcres[3], lower=dbcres[5], ltype=defs.LinkTypes.Contains
         )
         collection.add_internal_link(
-            lower=dbcres[6], higher=dbcres[7], type=defs.LinkTypes.Contains
+            lower=dbcres[6], higher=dbcres[7], ltype=defs.LinkTypes.Contains
         )
 
         collection.session.commit()

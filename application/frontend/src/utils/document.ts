@@ -32,7 +32,7 @@ export const groupLinksByType = (node: Document): LinksByType =>
   node.links ? groupBy(node.links, (link) => link.ltype) : {};
 
 export const orderLinksByType = (lbt: LinksByType): LinksByType => {
-  const order = ['Contains', 'Linked To', 'Automatically linked to', 'SAME', 'SAM', 'Is Part Of', 'Related'];
+  const order = ['Contains', 'Linked To', 'Automatically linked to', 'Is Part Of', 'Related'];
   const res: LinksByType = {};
   for (const itm of order) {
     if (lbt[itm]) {

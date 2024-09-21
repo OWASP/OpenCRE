@@ -111,7 +111,7 @@ class CRE(BaseModel):  # type: ignore
 class InternalLinks(BaseModel):  # type: ignore
     # model cre-groups linking cres
     __tablename__ = "cre_links"
-    type = sqla.Column(sqla.String, default="SAME")
+    type = sqla.Column(sqla.String)
 
     group = sqla.Column(
         sqla.String,
@@ -134,7 +134,7 @@ class InternalLinks(BaseModel):  # type: ignore
 
 class Links(BaseModel):  # type: ignore
     __tablename__ = "cre_node_links"
-    type = sqla.Column(sqla.String, default="SAME")
+    type = sqla.Column(sqla.String)
     cre = sqla.Column(
         sqla.String,
         sqla.ForeignKey("cre.id", onupdate="CASCADE", ondelete="CASCADE"),
@@ -329,8 +329,6 @@ class NeoCRE(NeoDocument):  # type: ignore
     auto_linked_to = RelationshipTo(
         "NeoStandard", "AUTOMATICALLY_LINKED_TO", model=AutoLinkedToRel
     )
-    same_as = RelationshipTo("NeoStandard", "SAME", model=SameRel)
-
     @classmethod
     def to_cre_def(self, node, parse_links=True) -> cre_defs.CRE:
         return cre_defs.CRE(
@@ -554,13 +552,10 @@ class NEO_DB:
         if link_type == cre_defs.LinkTypes.AutomaticallyLinkedTo.value:
             cre.auto_linked_to.connect(node)
             return
-        if link_type == cre_defs.LinkTypes.LinkedTo.value:
+        elif link_type == cre_defs.LinkTypes.LinkedTo.value:
             cre.linked.connect(node)
             return
-        if link_type == cre_defs.LinkTypes.Same.value:
-            cre.same_as.connect(node)
-            return
-        raise Exception(f"Unknown relation type {link_type}")
+        raise Exception(f"Unknown relation type {link_type} for Nodes to CREs")
 
     @classmethod
     def gap_analysis(self, name_1, name_2):
@@ -619,7 +614,6 @@ class NEO_DB:
                 RelatedRel: "RELATED",
                 ContainsRel: "CONTAINS",
                 LinkedToRel: "LINKED_TO",
-                SameRel: "SAME",
                 AutoLinkedToRel: "AUTOMATICALLY_LINKED_TO",
             }
             start_node = [
@@ -1361,9 +1355,6 @@ class Node_collection:
             raise ValueError(f"CRE {cre.id} does not exist in the database")
         credbid = credbid[0]
 
-        if len(self.graph.graph.edges) == 0:
-            logger.error("graph is empty")
-            return -1
         return self.graph.get_hierarchy(rootIDs=root_cre_db_ids, creID=credbid)
 
     # def all_nodes_with_pagination(
@@ -1490,23 +1481,26 @@ class Node_collection:
             self.session.add(dbnode)
             self.session.commit()
             if self.graph:
-                self.graph = self.graph.add_dbnode(dbnode=dbnode, graph=self.graph)
+                self.graph.add_dbnode(dbnode=dbnode)
         return dbnode
 
     def add_internal_link(
         self,
         higher: CRE,
         lower: CRE,
-        ltype: cre_defs.LinkTypes = cre_defs.LinkTypes.Same,
-    ) -> None:
+        ltype,
+    ) -> cre_defs.Link:
         """
         adds a link between two CREs in the database,
         Args:
-            higher (CRE): the higher level CRE that CONTAINS or is the SAME or is RELATED to lower
-            lower (CRE): the lower level CRE that is CONTAINED or is the SAME or is RELATED to higher
+            higher (CRE): the higher level CRE that CONTAINS or is RELATED to lower
+            lower (CRE): the lower level CRE that is CONTAINED or is RELATED to higher
             ltype (cre_defs.LinkTypes, optional): the linktype
-             Defaults to cre_defs.LinkTypes.Same.
+        Returns: the cre_defs.Link or None in case of error (cycle)
         """
+        if ltype == None:
+            raise ValueError("Every link should have a link type")
+
         if lower.id is None:
             if lower.external_id is None:
                 lower = (
@@ -1579,7 +1573,7 @@ class Node_collection:
             # )
             # entry_exists.ltype = ltype.value
             # self.session.commit()
-            return
+            return cre_defs.Link(document=CREfromDB(lower),ltype=ltype)
 
         logger.info(
             "did not know of internal link"
@@ -1606,11 +1600,7 @@ class Node_collection:
             )
             self.session.commit()
             if self.graph:
-                self.graph = self.graph.add_graph_edge(
-                    doc_from=higher_cre,
-                    link_to=link_to,
-                    graph=self.graph.graph,
-                )
+                self.graph.add_link(doc_from=higher_cre,link_to=link_to)
         else:
             for item in cycle:
                 from_id = item[0].replace("CRE: ", "")
@@ -1626,13 +1616,18 @@ class Node_collection:
                 f" {lower.external_id}-{lower.name} "
                 f"would introduce cycle {cycle}, skipping"
             )
+            return None
+        return cre_defs.Link(document=lower,ltype=ltype)
 
     def add_link(
         self,
         cre: CRE,
         node: Node,
-        ltype: cre_defs.LinkTypes = cre_defs.LinkTypes.Same,
+        ltype: cre_defs.LinkTypes,
     ) -> None:
+        if not ltype:
+            raise ValueError("every link should have a link type")
+
         if cre.id is None:
             cre = (
                 self.session.query(CRE).filter(sqla.and_(CRE.name == cre.name)).first()
@@ -1662,11 +1657,7 @@ class Node_collection:
             )
             self.session.add(Links(type=ltype.value, cre=cre.id, node=node.id))
             if self.graph:
-                self.graph.add_graph_edge(
-                    doc_from=CREfromDB(cre),
-                    link_to=cre_defs.Link(document=nodeFromDB(node),ltype=ltype.value),
-                    graph=self.graph.graph
-                )
+                self.graph.add_link(doc_from=CREfromDB(cre),link_to=cre_defs.Link(document=nodeFromDB(node),ltype=ltype.value))
 
 
         self.session.commit()

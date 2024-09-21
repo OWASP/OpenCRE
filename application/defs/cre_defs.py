@@ -190,7 +190,6 @@ class Credoctypes(str, Enum, metaclass=EnumMetaWithContains):
 
 
 class LinkTypes(str, Enum, metaclass=EnumMetaWithContains):
-    Same = "SAME"
     LinkedTo = "Linked To"  # Any standard entry is by default “linked”
     PartOf = "Is Part Of"  # Hierarchy above: “is part of”
     Contains = "Contains"  # Hierarchy below: “Contains”
@@ -205,8 +204,6 @@ class LinkTypes(str, Enum, metaclass=EnumMetaWithContains):
 
     @staticmethod
     def from_str(name: str) -> Any:  # it returns LinkTypes but then it won't run
-        if name.upper().startswith("SAM"):
-            name = "SAME"
         res = [x for x in LinkTypes if x.value == name]
         if not res:
             raise KeyError(
@@ -252,7 +249,7 @@ class ToolTypes(str, Enum, metaclass=EnumMetaWithContains):
 @dataclass
 class Link:
     document: "Document"
-    ltype: LinkTypes = LinkTypes.Same
+    ltype: LinkTypes
     tags: List[str] = field(default_factory=list)
 
     def __post_init__(self):

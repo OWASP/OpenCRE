@@ -505,8 +505,12 @@ class TestMain(unittest.TestCase):
                     ltype=defs.LinkTypes.Contains, document=cres["cd"].shallow_copy()
                 )
             )
-            cres["cd"].add_link(defs.Link(document=standards["cwe0"]))
-            cres["cb"].add_link(defs.Link(document=standards["ASVS"]))
+            cres["cd"].add_link(
+                defs.Link(document=standards["cwe0"], ltype=defs.LinkTypes.LinkedTo)
+            )
+            cres["cb"].add_link(
+                defs.Link(document=standards["ASVS"], ltype=defs.LinkTypes.LinkedTo)
+            )
 
             dca = collection.add_cre(cres["ca"])
             dcb = collection.add_cre(cres["cb"])
@@ -520,8 +524,8 @@ class TestMain(unittest.TestCase):
                 higher=dcb, lower=dcd, ltype=defs.LinkTypes.Contains
             )
 
-            collection.add_link(dcb, dasvs)
-            collection.add_link(dcd, dcwe)
+            collection.add_link(dcb, dasvs, ltype=defs.LinkTypes.LinkedTo)
+            collection.add_link(dcd, dcwe, ltype=defs.LinkTypes.LinkedTo)
 
             response = client.get(
                 "/smartlink/standard/CWE/456",
@@ -707,8 +711,8 @@ class TestMain(unittest.TestCase):
                     ltype=defs.LinkTypes.Contains, document=cres["cd"].shallow_copy()
                 )
             )
-            cres["cd"].add_link(defs.Link(document=standards["cwe0"]))
-            cres["cb"].add_link(defs.Link(document=standards["ASVS"]))
+            cres["cd"].add_link(defs.Link(document=standards["cwe0"],ltype=defs.LinkTypes.LinkedTo))
+            cres["cb"].add_link(defs.Link(document=standards["ASVS"],ltype=defs.LinkTypes.LinkedTo))
 
             dca = collection.add_cre(cres["ca"])
             dcb = collection.add_cre(cres["cb"])
@@ -722,8 +726,8 @@ class TestMain(unittest.TestCase):
                 higher=dcb, lower=dcd, ltype=defs.LinkTypes.Contains
             )
 
-            collection.add_link(dcb, dasvs)
-            collection.add_link(dcd, dcwe)
+            collection.add_link(dcb, dasvs,ltype=defs.LinkTypes.LinkedTo)
+            collection.add_link(dcd, dcwe,ltype=defs.LinkTypes.LinkedTo)
 
             response = client.get("/rest/v1/deeplink/CWE?sectionid=456")
             self.assertEqual(404, response.status_code)
