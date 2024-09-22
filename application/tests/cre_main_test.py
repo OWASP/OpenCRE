@@ -47,20 +47,23 @@ class TestMain(unittest.TestCase):
                         doctype=defs.Credoctypes.Standard,
                         name="CWE",
                         sectionID="598",
-                    ),ltype=defs.LinkTypes.LinkedTo
+                    ),
+                    ltype=defs.LinkTypes.LinkedTo,
                 ),
                 defs.Link(
                     document=defs.Code(
                         doctype=defs.Credoctypes.Code,
                         description="print(10)",
                         name="CodemcCodeFace",
-                    ),ltype=defs.LinkTypes.LinkedTo
+                    ),
+                    ltype=defs.LinkTypes.LinkedTo,
                 ),
                 defs.Link(
                     document=defs.Tool(
                         description="awesome hacking tool",
                         name="ToolmcToolFace",
-                    ),ltype=defs.LinkTypes.LinkedTo
+                    ),
+                    ltype=defs.LinkTypes.LinkedTo,
                 ),
             ],
         )
@@ -156,20 +159,21 @@ class TestMain(unittest.TestCase):
             description="",
             name="standard_with",
             links=[
-                defs.Link(document=credoc3,ltype=defs.LinkTypes.LinkedTo),
+                defs.Link(document=credoc3, ltype=defs.LinkTypes.LinkedTo),
                 defs.Link(
                     document=defs.Standard(
                         doctype=defs.Credoctypes.Standard, name="CWE", sectionID="598"
                     ),
-                    ltype=defs.LinkTypes.LinkedTo
+                    ltype=defs.LinkTypes.LinkedTo,
                 ),
-                defs.Link(document=credoc2,ltype=defs.LinkTypes.LinkedTo),
+                defs.Link(document=credoc2, ltype=defs.LinkTypes.LinkedTo),
                 defs.Link(
                     document=defs.Standard(
                         doctype=defs.Credoctypes.Standard,
                         name="ASVS",
                         section="SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING",
-                    ),ltype=defs.LinkTypes.LinkedTo
+                    ),
+                    ltype=defs.LinkTypes.LinkedTo,
                 ),
             ],
             section="Session Management",
@@ -208,7 +212,10 @@ class TestMain(unittest.TestCase):
             id="100-100",
             description="CREdesc",
             name="CREname",
-            links=[defs.Link(document=standard,ltype=defs.LinkTypes.LinkedTo), defs.Link(document=tool,ltype=defs.LinkTypes.LinkedTo)],
+            links=[
+                defs.Link(document=standard, ltype=defs.LinkTypes.LinkedTo),
+                defs.Link(document=tool, ltype=defs.LinkTypes.LinkedTo),
+            ],
             tags=["CREt1", "CREt2"],
             metadata={"tags": ["CREl1", "CREl2"]},
         )
@@ -263,8 +270,8 @@ class TestMain(unittest.TestCase):
         self.assertCountEqual(
             c.links,
             [
-                defs.Link(document=standard,ltype=defs.LinkTypes.LinkedTo),
-                defs.Link(document=tool,ltype=defs.LinkTypes.LinkedTo),
+                defs.Link(document=standard, ltype=defs.LinkTypes.LinkedTo),
+                defs.Link(document=tool, ltype=defs.LinkTypes.LinkedTo),
                 defs.Link(
                     document=c_lower.shallow_copy(), ltype=defs.LinkTypes.Contains
                 ),

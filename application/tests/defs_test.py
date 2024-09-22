@@ -63,7 +63,10 @@ class TestCreDefs(unittest.TestCase):
             id="500-500",
             description="desc",
             name="name",
-            links=[defs.Link(document=cre,ltype=defs.LinkTypes.Related), defs.Link(document=standard2,ltype=defs.LinkTypes.LinkedTo)],
+            links=[
+                defs.Link(document=cre, ltype=defs.LinkTypes.Related),
+                defs.Link(document=standard2, ltype=defs.LinkTypes.LinkedTo),
+            ],
             tags=["tag1", "t2"],
         )
         group_output = {

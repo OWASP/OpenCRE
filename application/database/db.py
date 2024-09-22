@@ -329,6 +329,7 @@ class NeoCRE(NeoDocument):  # type: ignore
     auto_linked_to = RelationshipTo(
         "NeoStandard", "AUTOMATICALLY_LINKED_TO", model=AutoLinkedToRel
     )
+
     @classmethod
     def to_cre_def(self, node, parse_links=True) -> cre_defs.CRE:
         return cre_defs.CRE(
@@ -678,7 +679,12 @@ class Node_collection:
 
     def with_graph(self) -> "Node_collection":
         logger.info("Loading CRE graph in memory, memory-heavy operation!")
-        self.graph = inmemory_graph.CRE_Graph.instance(documents=self.__get_all_nodes_and_cres())
+        self.graph = inmemory_graph.CRE_Graph()
+        graph_singleton = inmemory_graph.Singleton_Graph_Storage.instance()
+        self.graph.with_graph(
+            graph=graph_singleton,
+            graph_data=self.__get_all_nodes_and_cres(),
+        )
         return self
 
     def __get_external_links(self) -> List[Tuple[CRE, Node, str]]:
@@ -1345,17 +1351,9 @@ class Node_collection:
         if not self.graph:
             self.with_graph()
         roots = self.get_root_cres()
-        root_cre_db_ids = []
-        for r in roots:
-            dbid = self.session.query(CRE.id).filter(CRE.external_id == r.id).first()[0]
-            root_cre_db_ids.append(dbid)
 
-        credbid = self.session.query(CRE.id).filter(CRE.external_id == cre.id).first()
-        if not credbid:
-            raise ValueError(f"CRE {cre.id} does not exist in the database")
-        credbid = credbid[0]
-
-        return self.graph.get_hierarchy(rootIDs=root_cre_db_ids, creID=credbid)
+        root_cre_ids = [r.id for r in roots]
+        return self.graph.get_hierarchy(rootIDs=root_cre_ids, creID=cre.id)
 
     # def all_nodes_with_pagination(
     #     self, page: int = 1, per_page: int = 10
@@ -1414,10 +1412,8 @@ class Node_collection:
         return res
 
     def add_cre(self, cre: cre_defs.CRE) -> CRE:
-        entry: CRE
-        query: sqla.Query = self.session.query(CRE).filter(
-            func.lower(CRE.name) == cre.name.lower()
-        )
+        entry: CRE = None
+        query = self.session.query(CRE).filter(func.lower(CRE.name) == cre.name.lower())
         if cre.id:
             entry = query.filter(CRE.external_id == cre.id).first()
         else:
@@ -1450,7 +1446,7 @@ class Node_collection:
             self.session.add(entry)
             self.session.commit()
             if self.graph:
-                self.graph = self.graph.add_cre(dbcre=entry, graph=self.graph)
+                self.graph.add_cre(cre=cre)
         return entry
 
     def add_node(
@@ -1481,14 +1477,14 @@ class Node_collection:
             self.session.add(dbnode)
             self.session.commit()
             if self.graph:
-                self.graph.add_dbnode(dbnode=dbnode)
+                self.graph.add_dbnode(dbnode=node)
         return dbnode
 
     def add_internal_link(
         self,
         higher: CRE,
         lower: CRE,
-        ltype,
+        ltype: cre_defs.LinkTypes,
     ) -> cre_defs.Link:
         """
         adds a link between two CREs in the database,
@@ -1500,6 +1496,11 @@ class Node_collection:
         """
         if ltype == None:
             raise ValueError("Every link should have a link type")
+
+        if ltype == cre_defs.LinkTypes.PartOf:
+            raise ValueError(
+                "internal_link does not support 'PartOf' relationships, call it with higher/lower being opposite and the ltype being 'Contains' "
+            )
 
         if lower.id is None:
             if lower.external_id is None:
@@ -1573,7 +1574,7 @@ class Node_collection:
             # )
             # entry_exists.ltype = ltype.value
             # self.session.commit()
-            return cre_defs.Link(document=CREfromDB(lower),ltype=ltype)
+            return cre_defs.Link(document=CREfromDB(lower), ltype=ltype)
 
         logger.info(
             "did not know of internal link"
@@ -1587,11 +1588,8 @@ class Node_collection:
             )
 
         higher_cre = CREfromDB(higher)
-        lower_cre = CREfromDB(higher)
+        lower_cre = CREfromDB(lower)
         link_to = cre_defs.Link(document=lower_cre, ltype=ltype)
-        
-        if type(self.graph) != inmemory_graph.CRE_Graph:
-            raise ValueError("wtf?")
         cycle = self.graph.introduces_cycle(doc_from=higher_cre, link_to=link_to)
 
         if not cycle:
@@ -1600,7 +1598,7 @@ class Node_collection:
             )
             self.session.commit()
             if self.graph:
-                self.graph.add_link(doc_from=higher_cre,link_to=link_to)
+                self.graph.add_link(doc_from=higher_cre, link_to=link_to)
         else:
             for item in cycle:
                 from_id = item[0].replace("CRE: ", "")
@@ -1617,7 +1615,7 @@ class Node_collection:
                 f"would introduce cycle {cycle}, skipping"
             )
             return None
-        return cre_defs.Link(document=lower,ltype=ltype)
+        return cre_defs.Link(document=lower, ltype=ltype)
 
     def add_link(
         self,
@@ -1657,8 +1655,10 @@ class Node_collection:
             )
             self.session.add(Links(type=ltype.value, cre=cre.id, node=node.id))
             if self.graph:
-                self.graph.add_link(doc_from=CREfromDB(cre),link_to=cre_defs.Link(document=nodeFromDB(node),ltype=ltype.value))
-
+                self.graph.add_link(
+                    doc_from=CREfromDB(cre),
+                    link_to=cre_defs.Link(document=nodeFromDB(node), ltype=ltype.value),
+                )
 
         self.session.commit()
 

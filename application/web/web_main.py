@@ -102,7 +102,6 @@ def find_cre(creid: str = None, crename: str = None) -> Any:  # refer
     # opt_osib = request.args.get("osib")
     opt_format = request.args.get("format")
     cres = database.get_CREs(external_id=creid, name=crename, include_only=include_only)
-
     if cres:
         if len(cres) > 1:
             logger.error("get by id returned more than one results? This looks buggy")

@@ -81,7 +81,10 @@ class TestCloudNativeSecurityControlsParser(unittest.TestCase):
                 embeddings_text="Secrets are injected at runtime, such as environment variables or as a file",
                 hyperlink="https://github.com/cloud-native-security-controls/controls-catalog/blob/main/controls/controls_catalog.csv#L2",
                 links=[
-                    defs.Link(document=defs.CRE(name="CRE-123", id="123-123"),ltype=defs.LinkTypes.LinkedTo),
+                    defs.Link(
+                        document=defs.CRE(name="CRE-123", id="123-123"),
+                        ltype=defs.LinkTypes.LinkedTo,
+                    ),
                 ],
                 name="Cloud Native Security Controls",
                 section="Access",

@@ -49,7 +49,9 @@ class TestDB(unittest.TestCase):
         )
 
         collection.add_internal_link(
-            collection.add_cre(cc), collection.add_cre(cd), ltype=defs.LinkTypes.Contains
+            collection.add_cre(cc),
+            collection.add_cre(cd),
+            ltype=defs.LinkTypes.Contains,
         )
         result = ExportSheet().prepare_spreadsheet(storage=collection, docs=[cc, cd])
 

@@ -43,8 +43,8 @@ class TestOSCALUtils(unittest.TestCase):
                             name=f"standard-{i}",
                             section=f"{i}",
                             hyperlink=f"https://example.com/{i}",
-                        
-                        ),ltype=defs.LinkTypes.LinkedTo,
+                        ),
+                        ltype=defs.LinkTypes.LinkedTo,
                     )
                 )
             else:
@@ -54,7 +54,8 @@ class TestOSCALUtils(unittest.TestCase):
                             name=f"tool-{i}",
                             sectionID=f"{i}",
                             hyperlink=f"https://example.com/{i}",
-                        ),ltype=defs.LinkTypes.LinkedTo,
+                        ),
+                        ltype=defs.LinkTypes.LinkedTo,
                     )
                 )
 

@@ -45,9 +45,18 @@ class TestCapecParser(unittest.TestCase):
                 name="CAPEC",
                 doctype=defs.Credoctypes.Standard,
                 links=[
-                    defs.Link(document=defs.CRE(name="CRE-276", id="276-276"),ltype=defs.LinkTypes.LinkedTo),
-                    defs.Link(document=defs.CRE(name="CRE-285", id="285-285"),ltype=defs.LinkTypes.LinkedTo),
-                    defs.Link(document=defs.CRE(name="CRE-434", id="434-434"),ltype=defs.LinkTypes.LinkedTo),
+                    defs.Link(
+                        document=defs.CRE(name="CRE-276", id="276-276"),
+                        ltype=defs.LinkTypes.LinkedTo,
+                    ),
+                    defs.Link(
+                        document=defs.CRE(name="CRE-285", id="285-285"),
+                        ltype=defs.LinkTypes.LinkedTo,
+                    ),
+                    defs.Link(
+                        document=defs.CRE(name="CRE-434", id="434-434"),
+                        ltype=defs.LinkTypes.LinkedTo,
+                    ),
                 ],
                 hyperlink="https://capec.mitre.org/data/definitions/1.html",
                 sectionID="1",

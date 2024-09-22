@@ -78,7 +78,10 @@ class TestJuiceshopParser(unittest.TestCase):
                 embeddings_text="Sensitive Data Exposure",
                 hyperlink="https://demo.owasp-juice.shop//#/score-board?searchQuery=Access%20Log",
                 links=[
-                    defs.Link(document=defs.CRE(name="CRE-123", id="123-123"),ltype=defs.LinkTypes.LinkedTo),
+                    defs.Link(
+                        document=defs.CRE(name="CRE-123", id="123-123"),
+                        ltype=defs.LinkTypes.LinkedTo,
+                    ),
                 ],
                 name="OWASP Juice Shop",
                 section="Access Log",
