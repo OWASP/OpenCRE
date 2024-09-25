@@ -10,6 +10,11 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
+class CycleDetectedError(Exception):
+    def __init__(self, message):
+        super().__init__(message)
+
+
 class Singleton_Graph_Storage(nx.DiGraph):
     __instance: "Singleton_Graph_Storage" = None
 
@@ -30,10 +35,10 @@ class CRE_Graph:
     def get_raw_graph(self):
         return self.__graph
 
-    def with_graph(cls, graph: nx.Graph, graph_data: List[defs.Document]):
-        cls.__graph = graph
+    def with_graph(self, graph: nx.Graph, graph_data: List[defs.Document]):
+        self.__graph = graph
         if not len(graph.edges):
-            cls.__load_cre_graph(graph_data)
+            self.__load_cre_graph(graph_data)
 
     def introduces_cycle(self, doc_from: defs.Document, link_to: defs.Link):
         try:
@@ -62,7 +67,7 @@ class CRE_Graph:
 
     def has_cycle(self):
         try:
-            ex = nx.find_cycle(self.__graph)
+            ex = nx.find_cycle(self.__graph, orientation="original")
             return ex
         except nx.exception.NetworkXNoCycle:
             return None
@@ -132,30 +137,40 @@ class CRE_Graph:
         except nx.NetworkXNoPath:
             return []
 
-    def add_cre(cls, cre: defs.CRE):
+    def add_cre(self, cre: defs.CRE):
         if not isinstance(cre, defs.CRE):
             raise ValueError(
                 f"inmemory graph add_cre takes only cre objects, instead got {type(cre)}"
             )
         graph_cre = f"{defs.Credoctypes.CRE.value}: {cre.id}"
-        if cre and graph_cre not in cls.__graph.nodes():
-            cls.__graph.add_node(graph_cre, internal_id=cre.id)
+        if cre and graph_cre not in self.__graph.nodes():
+            self.__graph.add_node(graph_cre, internal_id=cre.id)
 
-    def add_dbnode(cls, dbnode: defs.Node):
+    def add_dbnode(self, dbnode: defs.Node):
         graph_node = "Node: " + str(dbnode.id)
-
-        if dbnode and graph_node not in cls.__graph.nodes():
-            cls.__graph.add_node(graph_node, internal_id=dbnode.id)
-        else:
-            logger.error("Called with dbnode being none")
+        if dbnode and graph_node not in self.__graph.nodes():
+            self.__graph.add_node(graph_node, internal_id=dbnode.id)
 
     def add_link(self, doc_from: defs.Document, link_to: defs.Link):
+        logger.debug(
+            f"adding link {doc_from.id}, {link_to.document.id} ltype: {link_to.ltype}"
+        )
+        if (
+            doc_from.doctype == defs.Credoctypes.CRE
+            and link_to.document.doctype == defs.Credoctypes.CRE
+        ):
+            cycle = self.introduces_cycle(doc_from=doc_from, link_to=link_to)
+            if cycle:
+                warn = f"A link between CREs {doc_from.id}-{doc_from.name} and {link_to.document.id}-{link_to.document.name} would introduce cycle {cycle}, skipping"
+                logger.warning(warn)
+                raise CycleDetectedError(warn)
+
         self.__graph = self.__add_graph_edge(
             doc_from=doc_from, link_to=link_to, graph=self.__graph
         )
 
     def __add_graph_edge(
-        cls,
+        self,
         doc_from: defs.Document,
         link_to: defs.Link,
         graph: nx.DiGraph,
@@ -218,15 +233,22 @@ class CRE_Graph:
             )
         return graph
 
-    def __load_cre_graph(cls, documents: List[defs.Document]):
+    def __load_cre_graph(self, documents: List[defs.Document]):
         for doc in documents:
+            if not doc:
+                continue
             if doc.doctype == defs.Credoctypes.CRE:
-                cls.add_cre(cre=doc)
+                self.add_cre(cre=doc)
             else:
-                cls.add_dbnode(dbnode=doc)
+                self.add_dbnode(dbnode=doc)
             for link in doc.links:
+                if not link.document:
+                    logger.error(f"doc {doc}, has a link with a document that's None")
                 if link.document.doctype == defs.Credoctypes.CRE:
-                    cls.add_cre(cre=link.document)
+                    self.add_cre(cre=link.document)
                 else:
-                    cls.add_dbnode(dbnode=link.document)
-                cls.__add_graph_edge(doc_from=doc, link_to=link, graph=cls.__graph)
+                    self.add_dbnode(dbnode=link.document)
+                try:
+                    self.add_link(doc_from=doc, link_to=link)
+                except CycleDetectedError as cde:
+                    pass

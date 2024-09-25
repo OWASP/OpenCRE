@@ -1,3 +1,4 @@
+from sqlalchemy import CheckConstraint
 import networkx as nx
 import uuid
 import neo4j
@@ -129,6 +130,7 @@ class InternalLinks(BaseModel):  # type: ignore
             cre,
             name="uq_pair",
         ),
+        sqla.CheckConstraint("type != 'PartOf'", name="No 'PartOf' links"),
     )
 
 
@@ -683,8 +685,10 @@ class Node_collection:
         graph_singleton = inmemory_graph.Singleton_Graph_Storage.instance()
         self.graph.with_graph(
             graph=graph_singleton,
-            graph_data=self.__get_all_nodes_and_cres(),
+            graph_data=self.__get_all_nodes_and_cres(cres_only=True),
         )
+        logger.info("Successfully loaded CRE graph in memory")
+
         return self
 
     def __get_external_links(self) -> List[Tuple[CRE, Node, str]]:
@@ -734,13 +738,16 @@ class Node_collection:
         )
         return cres
 
-    def __get_all_nodes_and_cres(self) -> List[cre_defs.Document]:
+    def __get_all_nodes_and_cres(
+        self, cres_only: bool = False
+    ) -> List[cre_defs.Document]:
         result = []
         nodes = []
         cres = []
-        node_ids = self.session.query(Node.id).all()
-        for nid in node_ids:
-            result.extend(self.get_nodes(db_id=nid[0]))
+        if not cres_only:
+            node_ids = self.session.query(Node.id).all()
+            for nid in node_ids:
+                result.extend(self.get_nodes(db_id=nid[0]))
 
         cre_ids = self.session.query(CRE.id).all()
         for cid in cre_ids:
@@ -1436,7 +1443,7 @@ class Node_collection:
                 entry.tags = ",".join(cre.tags)
             return entry
         else:
-            logger.info("did not know of %s ,adding" % cre.name)
+            logger.info("did not know of cre %s ,adding" % cre.name)
             entry = CRE(
                 description=cre.description,
                 name=cre.name,
@@ -1452,6 +1459,9 @@ class Node_collection:
     def add_node(
         self, node: cre_defs.Node, comparison_skip_attributes: List = ["link"]
     ) -> Optional[Node]:
+        if not node:
+            raise ValueError(f"Node is None")
+            return None
         dbnode = dbNodeFromNode(node)
         if not dbnode:
             logger.warning(f"{node} could not be transformed to a DB object")
@@ -1472,7 +1482,7 @@ class Node_collection:
             return entry
         else:
             logger.info(
-                f"did not know of {dbnode.name}:{dbnode.section}:{dbnode.section_id} ,adding"
+                f"did not know of node {dbnode.name}:{dbnode.section}:{dbnode.section_id} ,adding"
             )
             self.session.add(dbnode)
             self.session.commit()
@@ -1590,32 +1600,16 @@ class Node_collection:
         higher_cre = CREfromDB(higher)
         lower_cre = CREfromDB(lower)
         link_to = cre_defs.Link(document=lower_cre, ltype=ltype)
-        cycle = self.graph.introduces_cycle(doc_from=higher_cre, link_to=link_to)
-
-        if not cycle:
+        try:
+            self.graph.add_link(doc_from=higher_cre, link_to=link_to)
             self.session.add(
                 InternalLinks(type=ltype.value, cre=lower.id, group=higher.id)
             )
             self.session.commit()
-            if self.graph:
-                self.graph.add_link(doc_from=higher_cre, link_to=link_to)
-        else:
-            for item in cycle:
-                from_id = item[0].replace("CRE: ", "")
-                to_id = item[1].replace("CRE: ", "")
-                from_cre = self.session.query(CRE).filter(lower.id == from_id).first()
-                to_cre = self.session.query(CRE).filter(lower.id == to_id).first()
-                if from_cre and to_cre:
-                    item[0].replace(from_id, from_cre.name)
-                    item[1].replace(to_id, to_cre.name)
-
-            logger.warning(
-                f"A link between CREs {higher.external_id}-{higher.name} and"
-                f" {lower.external_id}-{lower.name} "
-                f"would introduce cycle {cycle}, skipping"
-            )
-            return None
-        return cre_defs.Link(document=lower, ltype=ltype)
+            return cre_defs.Link(document=lower, ltype=ltype)
+        except inmemory_graph.CycleDetectedError as cde:
+            # cycle detected, do nothing
+            pass
 
     def add_link(
         self,
