@@ -643,7 +643,7 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
     if args.start_worker:
         from application.worker import start_worker
 
-        start_worker(args.cache_file)
+        start_worker()
 
     if args.preload_map_analysis_target_url:
         gap_analysis.preload(target_url=args.preload_map_analysis_target_url)
