@@ -18,7 +18,7 @@ class TestCreDefs(unittest.TestCase):
             version="0.0.0",
         )
         standard_output = {
-            "id": "ASVS:SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING:3.1.1",
+            "id": "ASVS:SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING:3.1.1:0.0.0",
             "doctype": "Standard",
             "name": "ASVS",
             "section": "SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING",
@@ -35,14 +35,14 @@ class TestCreDefs(unittest.TestCase):
         )
         cre_output = {
             "description": "CREdesc",
-            "doctype": defs.Credoctypes.CRE,
+            "doctype": defs.Credoctypes.CRE.value,
             "id": "100-100",
             "links": [
                 {
-                    "ltype": defs.LinkTypes.LinkedTo,
+                    "ltype": defs.LinkTypes.LinkedTo.value,
                     "document": {
-                        "id": "ASVS:SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING:3.1.1",
-                        "doctype": defs.Credoctypes.Standard,
+                        "id": "ASVS:SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING:3.1.1:0.0.0",
+                        "doctype": defs.Credoctypes.Standard.value,
                         "name": "ASVS",
                         "section": "SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING",
                         "subsection": "3.1.1",
@@ -75,17 +75,17 @@ class TestCreDefs(unittest.TestCase):
             "id": "500-500",
             "links": [
                 {
-                    "ltype": defs.LinkTypes.Related,
+                    "ltype": defs.LinkTypes.Related.value,
                     "document": {
                         "description": "CREdesc",
-                        "doctype": defs.Credoctypes.CRE,
+                        "doctype": defs.Credoctypes.CRE.value,
                         "id": "100-100",
                         "links": [
                             {
-                                "ltype": defs.LinkTypes.LinkedTo,
+                                "ltype": defs.LinkTypes.LinkedTo.value,
                                 "document": {
-                                    "id": "ASVS:SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING:3.1.1",
-                                    "doctype": defs.Credoctypes.Standard,
+                                    "id": "ASVS:SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING:3.1.1:0.0.0",
+                                    "doctype": defs.Credoctypes.Standard.value,
                                     "name": "ASVS",
                                     "section": (
                                         "SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING"
@@ -100,10 +100,10 @@ class TestCreDefs(unittest.TestCase):
                     },
                 },
                 {
-                    "ltype": defs.LinkTypes.LinkedTo,
+                    "ltype": defs.LinkTypes.LinkedTo.value,
                     "document": {
                         "id": "Standard:StandardSection:3.1.1",
-                        "doctype": defs.Credoctypes.Standard,
+                        "doctype": defs.Credoctypes.Standard.value,
                         "name": "Standard",
                         "section": "StandardSection",
                         "subsection": "3.1.1",
@@ -120,7 +120,7 @@ class TestCreDefs(unittest.TestCase):
         )
         nested_output = {
             "id": "ASVS:SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING:3.1.1",
-            "doctype": defs.Credoctypes.Standard,
+            "doctype": defs.Credoctypes.Standard.value,
             "name": "ASVS",
             "section": "SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING",
             "subsection": "3.1.1",
