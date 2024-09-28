@@ -366,11 +366,11 @@ class Document:
         if not self.links:
             self.links = []
         if not isinstance(link, Link):
-            raise ValueError("add_link only takes Link() types")
+            raise ValueError(f"add_link only takes Link() types, instead it was provided with '{type(link)}', that's an internal bug, please open a ticket")
         if link.document.id == self.id:
-            raise ValueError("Cannot link a document to itself")
+            raise ValueError(f"Cannot link a document to itself, {self.id} is the same as the link")
         if link.document.id in [l.document.id for l in self.links]:
-            raise ValueError("Cannot link the same document twice")
+            raise cre_exceptions.DuplicateLinkException(f"Cannot link the same document twice, document {link.document.id} is already linked to {self.id}")
 
         self.links.append(link)
         return self
@@ -453,6 +453,11 @@ class Standard(Node):
             self.id += f":{self.section}"
         if self.subsection:
             self.id += f":{self.subsection}"
+        if self.hyperlink:
+            self.id += f":{self.hyperlink}"
+        if self.version:
+            self.id += f":{self.version}"
+
         return super().__post_init__()
 
     def todict(self) -> Dict[Any, Any]:
@@ -492,6 +497,12 @@ class Tool(Standard):
             self.id += f":{self.section}"
         if self.subsection:
             self.id += f":{self.subsection}"
+        if self.hyperlink:
+            self.id += f":{self.hyperlink}"
+        if self.version:
+            self.id += f":{self.version}"
+        if self.tooltype != ToolTypes.Unknown:
+            self.id += f":{self.tooltype.value}"
         return super().__post_init__()
 
     def __eq__(self, other: object) -> bool:

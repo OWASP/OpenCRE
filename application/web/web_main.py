@@ -20,7 +20,8 @@ from application.utils import oscal_utils, redis
 from application.database import db
 from application.cmd import cre_main
 from application.defs import cre_defs as defs
-from application.defs import osib_defs as odefs
+from application.defs import cre_exceptions
+
 from application.utils import spreadsheet as sheet_utils
 from application.utils import mdutils, redirectors, gap_analysis
 from application.prompt_client import prompt_client as prompt_client
@@ -733,7 +734,10 @@ def import_from_cre_csv() -> Any:
         abort(400, "No file provided")
     contents = file.read()
     csv_read = csv.DictReader(contents.decode("utf-8").splitlines())
-    documents = spreadsheet_parsers.parse_export_format(list(csv_read))
+    try:
+        documents = spreadsheet_parsers.parse_export_format(list(csv_read))
+    except cre_exceptions.DuplicateLinkException as dle:
+        abort(500,f"error during parsing of the incoming CSV, err:{dle}")
     cres = documents.pop(defs.Credoctypes.CRE.value)
 
     standards = documents
