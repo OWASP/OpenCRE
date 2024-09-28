@@ -367,7 +367,7 @@ class TestMain(unittest.TestCase):
                     "objects",
                     "here",
                     {
-                        1: 2,
+                        "1": 2,
                     },
                 ],
                 scollection=self.collection,
