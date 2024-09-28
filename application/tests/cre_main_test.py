@@ -261,14 +261,14 @@ class TestMain(unittest.TestCase):
         c_higher = self.collection.get_CREs(cre_higher.id)[0]
         c_lower = self.collection.get_CREs(cre_lower.id)[0]
         c_equal = self.collection.get_CREs(cre_equal.id)[0]
-        c = self.collection.get_CREs(cre.id)[0]
+        retrieved_cre = self.collection.get_CREs(cre.id)[0]
 
         self.assertCountEqual(
             c_higher.links,
-            [defs.Link(document=c.shallow_copy(), ltype=defs.LinkTypes.Contains)],
+            [defs.Link(document=retrieved_cre.shallow_copy(), ltype=defs.LinkTypes.Contains)],
         )
         self.assertCountEqual(
-            c.links,
+            retrieved_cre.links,
             [
                 defs.Link(document=standard, ltype=defs.LinkTypes.LinkedTo),
                 defs.Link(document=tool, ltype=defs.LinkTypes.LinkedTo),
@@ -286,15 +286,15 @@ class TestMain(unittest.TestCase):
 
         self.assertCountEqual(
             c_lower.links,
-            [defs.Link(document=c.shallow_copy(), ltype=defs.LinkTypes.PartOf)],
+            [defs.Link(document=retrieved_cre.shallow_copy(), ltype=defs.LinkTypes.PartOf)],
         )
         self.assertCountEqual(
             c_higher.links,
-            [defs.Link(document=c.shallow_copy(), ltype=defs.LinkTypes.Contains)],
+            [defs.Link(document=retrieved_cre.shallow_copy(), ltype=defs.LinkTypes.Contains)],
         )
         self.assertCountEqual(
             c_equal.links,
-            [defs.Link(document=c.shallow_copy(), ltype=defs.LinkTypes.Related)],
+            [defs.Link(document=retrieved_cre.shallow_copy(), ltype=defs.LinkTypes.Related)],
         )
 
     def test_parse_file(self) -> None:
