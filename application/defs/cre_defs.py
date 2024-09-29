@@ -366,11 +366,17 @@ class Document:
         if not self.links:
             self.links = []
         if not isinstance(link, Link):
-            raise ValueError(f"add_link only takes Link() types, instead it was provided with '{type(link)}', that's an internal bug, please open a ticket")
+            raise ValueError(
+                f"add_link only takes Link() types, instead it was provided with '{type(link)}', that's an internal bug, please open a ticket"
+            )
         if link.document.id == self.id:
-            raise ValueError(f"Cannot link a document to itself, {self.id} is the same as the link")
+            raise ValueError(
+                f"Cannot link a document to itself, {self.id} is the same as the link"
+            )
         if link.document.id in [l.document.id for l in self.links]:
-            raise cre_exceptions.DuplicateLinkException(f"Cannot link the same document twice, document {link.document.id} is already linked to {self.id}")
+            raise cre_exceptions.DuplicateLinkException(
+                f"Cannot link the same document twice, document {link.document.id} is already linked to {self.id}"
+            )
 
         self.links.append(link)
         return self

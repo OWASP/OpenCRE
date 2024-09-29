@@ -8,6 +8,7 @@ logger.setLevel(logging.INFO)
 
 listen = ["high", "default", "low"]
 
+
 def start_worker():
     logger.info(f"Worker Starting")
     with Connection(redis.connect()):
