@@ -265,7 +265,11 @@ class TestMain(unittest.TestCase):
 
         self.assertCountEqual(
             c_higher.links,
-            [defs.Link(document=retrieved_cre.shallow_copy(), ltype=defs.LinkTypes.Contains)],
+            [
+                defs.Link(
+                    document=retrieved_cre.shallow_copy(), ltype=defs.LinkTypes.Contains
+                )
+            ],
         )
         self.assertCountEqual(
             retrieved_cre.links,
@@ -286,15 +290,27 @@ class TestMain(unittest.TestCase):
 
         self.assertCountEqual(
             c_lower.links,
-            [defs.Link(document=retrieved_cre.shallow_copy(), ltype=defs.LinkTypes.PartOf)],
+            [
+                defs.Link(
+                    document=retrieved_cre.shallow_copy(), ltype=defs.LinkTypes.PartOf
+                )
+            ],
         )
         self.assertCountEqual(
             c_higher.links,
-            [defs.Link(document=retrieved_cre.shallow_copy(), ltype=defs.LinkTypes.Contains)],
+            [
+                defs.Link(
+                    document=retrieved_cre.shallow_copy(), ltype=defs.LinkTypes.Contains
+                )
+            ],
         )
         self.assertCountEqual(
             c_equal.links,
-            [defs.Link(document=retrieved_cre.shallow_copy(), ltype=defs.LinkTypes.Related)],
+            [
+                defs.Link(
+                    document=retrieved_cre.shallow_copy(), ltype=defs.LinkTypes.Related
+                )
+            ],
         )
 
     def test_parse_file(self) -> None:

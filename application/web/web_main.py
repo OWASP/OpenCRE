@@ -737,7 +737,7 @@ def import_from_cre_csv() -> Any:
     try:
         documents = spreadsheet_parsers.parse_export_format(list(csv_read))
     except cre_exceptions.DuplicateLinkException as dle:
-        abort(500,f"error during parsing of the incoming CSV, err:{dle}")
+        abort(500, f"error during parsing of the incoming CSV, err:{dle}")
     cres = documents.pop(defs.Credoctypes.CRE.value)
 
     standards = documents
