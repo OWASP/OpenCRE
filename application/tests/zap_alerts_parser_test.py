@@ -81,21 +81,21 @@ class TestZAPAlertsParser(unittest.TestCase):
         ]
         cre = self.collection.add_cre(defs.CRE(name="foo", id="000-000"))
         [
-            self.collection.add_link(cre, top10)
+            self.collection.add_link(cre, top10, ltype=defs.LinkTypes.LinkedTo)
             for top10 in top10s
             if top10.subsection == "something"
         ]
 
         cre2 = self.collection.add_cre(defs.CRE(name="bar", id="000-001"))
         [
-            self.collection.add_link(cre2, top10)
+            self.collection.add_link(cre2, top10, ltype=defs.LinkTypes.LinkedTo)
             for top10 in top10s
             if top10.subsection == ""
         ]
 
         cre3 = self.collection.add_cre(defs.CRE(name="foobar", id="000-003"))
         [
-            self.collection.add_link(cre, top10)
+            self.collection.add_link(cre, top10, ltype=defs.LinkTypes.LinkedTo)
             for top10 in top10s
             if top10.subsection == "wrong year"
         ]
@@ -183,8 +183,8 @@ class TestZAPAlertsParser(unittest.TestCase):
         dbcre0 = self.collection.add_cre(defs.CRE(name="foo", id="111-110"))
         dbcre1 = self.collection.add_cre(defs.CRE(name="foo1", id="111-111"))
         dbcwe = self.collection.add_node(defs.Standard(name="CWE", sectionID="1021"))
-        self.collection.add_link(cre=dbcre0, node=dbcwe)
-        self.collection.add_link(cre=dbcre1, node=dbcwe)
+        self.collection.add_link(cre=dbcre0, node=dbcwe, ltype=defs.LinkTypes.LinkedTo)
+        self.collection.add_link(cre=dbcre1, node=dbcwe, ltype=defs.LinkTypes.LinkedTo)
 
         entries = zap_alerts_parser.ZAP().parse(
             cache=self.collection, ph=prompt_client.PromptHandler(self.collection)

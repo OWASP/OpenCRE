@@ -45,13 +45,21 @@ class TestMdutilsParser(unittest.TestCase):
             )
             for s in range(0, 10)
         ]
-        standards[0].add_link(defs.Link(document=cres[2]))
+        standards[0].add_link(
+            defs.Link(document=cres[2], ltype=defs.LinkTypes.LinkedTo)
+        )
         for i in range(0, 10):
-            standards[i].add_link(defs.Link(document=cres[i]))
+            standards[i].add_link(
+                defs.Link(document=cres[i], ltype=defs.LinkTypes.LinkedTo)
+            )
             if not i % 2:
-                standards[i].add_link(defs.Link(document=tools[i]))
+                standards[i].add_link(
+                    defs.Link(document=tools[i], ltype=defs.LinkTypes.LinkedTo)
+                )
             else:
-                standards[i].add_link(defs.Link(document=standards2[i]))
+                standards[i].add_link(
+                    defs.Link(document=standards2[i], ltype=defs.LinkTypes.LinkedTo)
+                )
         self.maxDiff = None
         self.assertEqual(mdutils.cre_to_md(standards), self.result)
 

@@ -30,19 +30,19 @@ class TestCreDefs(unittest.TestCase):
             id="100-100",
             description="CREdesc",
             name="CREname",
-            links=[defs.Link(document=standard)],
+            links=[defs.Link(document=standard, ltype=defs.LinkTypes.LinkedTo)],
             tags=["CREt1", "CREt2"],
         )
         cre_output = {
             "description": "CREdesc",
-            "doctype": "CRE",
+            "doctype": defs.Credoctypes.CRE,
             "id": "100-100",
             "links": [
                 {
-                    "ltype": "SAME",
+                    "ltype": defs.LinkTypes.LinkedTo,
                     "document": {
                         "id": "ASVS:SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING:3.1.1",
-                        "doctype": "Standard",
+                        "doctype": defs.Credoctypes.Standard,
                         "name": "ASVS",
                         "section": "SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING",
                         "subsection": "3.1.1",
@@ -63,7 +63,10 @@ class TestCreDefs(unittest.TestCase):
             id="500-500",
             description="desc",
             name="name",
-            links=[defs.Link(document=cre), defs.Link(document=standard2)],
+            links=[
+                defs.Link(document=cre, ltype=defs.LinkTypes.Related),
+                defs.Link(document=standard2, ltype=defs.LinkTypes.LinkedTo),
+            ],
             tags=["tag1", "t2"],
         )
         group_output = {
@@ -72,17 +75,17 @@ class TestCreDefs(unittest.TestCase):
             "id": "500-500",
             "links": [
                 {
-                    "ltype": "SAME",
+                    "ltype": defs.LinkTypes.Related,
                     "document": {
                         "description": "CREdesc",
-                        "doctype": "CRE",
+                        "doctype": defs.Credoctypes.CRE,
                         "id": "100-100",
                         "links": [
                             {
-                                "ltype": "SAME",
+                                "ltype": defs.LinkTypes.LinkedTo,
                                 "document": {
                                     "id": "ASVS:SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING:3.1.1",
-                                    "doctype": "Standard",
+                                    "doctype": defs.Credoctypes.Standard,
                                     "name": "ASVS",
                                     "section": (
                                         "SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING"
@@ -97,10 +100,10 @@ class TestCreDefs(unittest.TestCase):
                     },
                 },
                 {
-                    "ltype": "SAME",
+                    "ltype": defs.LinkTypes.LinkedTo,
                     "document": {
                         "id": "Standard:StandardSection:3.1.1",
-                        "doctype": "Standard",
+                        "doctype": defs.Credoctypes.Standard,
                         "name": "Standard",
                         "section": "StandardSection",
                         "subsection": "3.1.1",
@@ -117,7 +120,7 @@ class TestCreDefs(unittest.TestCase):
         )
         nested_output = {
             "id": "ASVS:SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING:3.1.1",
-            "doctype": "Standard",
+            "doctype": defs.Credoctypes.Standard,
             "name": "ASVS",
             "section": "SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING",
             "subsection": "3.1.1",
@@ -130,8 +133,6 @@ class TestCreDefs(unittest.TestCase):
 
     def test_linktype_from_str(self) -> None:
         expected = {
-            "SAME": defs.LinkTypes.Same,
-            "SAM": defs.LinkTypes.Same,
             "Linked To": defs.LinkTypes.LinkedTo,
             "Is Part Of": defs.LinkTypes.PartOf,
             "Contains": defs.LinkTypes.Contains,
@@ -173,7 +174,12 @@ class TestCreDefs(unittest.TestCase):
                 vars(code)[v] = [0.001]
                 c.append(code)
             elif v == "links":
-                code.links = [defs.Link(document=defs.CRE(id="123-123", name="asdf"))]
+                code.links = [
+                    defs.Link(
+                        document=defs.CRE(id="123-123", name="asdf"),
+                        ltype=defs.LinkTypes.LinkedTo,
+                    )
+                ]
                 c.append(code)
             elif v == "tags":
                 vars(code)[v] = [tag + "_a" for tag in d1.tags]
@@ -199,7 +205,9 @@ class TestCreDefs(unittest.TestCase):
             hyperlink="https://example.com/s2",
             version="v2",
         )
-        s1_with_link = copy.deepcopy(d1).add_link(defs.Link(document=s2))
+        s1_with_link = copy.deepcopy(d1).add_link(
+            defs.Link(document=s2, ltype=defs.LinkTypes.LinkedTo)
+        )
         self.assertNotEqual(s1_with_link, d1)
 
     def test_standards_equality(self) -> None:
@@ -232,7 +240,12 @@ class TestCreDefs(unittest.TestCase):
                 vars(code)[v] = [0.001]
                 s["embeddings"] = code
             elif v == "links":
-                code.links = [defs.Link(document=defs.CRE(id="123-123", name="asdf"))]
+                code.links = [
+                    defs.Link(
+                        document=defs.CRE(id="123-123", name="asdf"),
+                        ltype=defs.LinkTypes.LinkedTo,
+                    )
+                ]
                 s["links"] = code
             elif v == "tags":
                 vars(code)[v] = [tag + "_a" for tag in s1.tags]
@@ -262,14 +275,18 @@ class TestCreDefs(unittest.TestCase):
             hyperlink="https://example.com/s2",
             version="v2",
         )
-        s1_with_link = copy.deepcopy(s1).add_link(defs.Link(document=s2))
+        s1_with_link = copy.deepcopy(s1).add_link(
+            defs.Link(document=s2, ltype=defs.LinkTypes.LinkedTo)
+        )
         self.assertNotEqual(s1_with_link, s1)
 
     def test_add_link(self) -> None:
         tool = defs.Tool(name="mctoolface")
         tool2 = defs.Tool(name="mctoolface2")
-        lnk = defs.Link(document=tool2, ltype=defs.LinkTypes.Same)
-        actual = copy.deepcopy(tool).add_link(defs.Link(document=tool2))
+        lnk = defs.Link(document=tool2, ltype=defs.LinkTypes.LinkedTo)
+        actual = copy.deepcopy(tool).add_link(
+            defs.Link(document=tool2, ltype=defs.LinkTypes.LinkedTo)
+        )
         tool.links = [lnk]
         self.assertDictEqual(actual.todict(), tool.todict())
 

@@ -49,7 +49,9 @@ class TestDB(unittest.TestCase):
         )
 
         collection.add_internal_link(
-            collection.add_cre(cc), collection.add_cre(cd), type=defs.LinkTypes.Contains
+            collection.add_cre(cc),
+            collection.add_cre(cd),
+            ltype=defs.LinkTypes.Contains,
         )
         result = ExportSheet().prepare_spreadsheet(storage=collection, docs=[cc, cd])
 
@@ -77,17 +79,17 @@ class TestDB(unittest.TestCase):
                         linked_item = collection.add_cre(link.document)
                         if item.doctype == defs.Credoctypes.CRE:
                             collection.add_internal_link(
-                                dbitem, linked_item, type=link.ltype
+                                dbitem, linked_item, ltype=link.ltype
                             )
                         else:
                             collection.add_link(
-                                node=dbitem, cre=linked_item, type=link.ltype
+                                node=dbitem, cre=linked_item, ltype=link.ltype
                             )
                     else:
                         linked_item = collection.add_node(link.document)
                         if item.doctype == defs.Credoctypes.CRE:
                             collection.add_link(
-                                cre=dbitem, node=linked_item, type=link.ltype
+                                cre=dbitem, node=linked_item, ltype=link.ltype
                             )
                         else:
                             collection.add_internal_link(

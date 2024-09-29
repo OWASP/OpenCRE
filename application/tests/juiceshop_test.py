@@ -42,7 +42,7 @@ class TestJuiceshopParser(unittest.TestCase):
         dbnode = self.collection.add_node(
             defs.Standard(name="fakeNode", sectionID="123")
         )
-        self.collection.add_link(dbcre, dbnode)
+        self.collection.add_link(dbcre, dbnode, ltype=defs.LinkTypes.LinkedTo)
 
         mock_requests.return_value = fakeRequest()
         mock_get_text_embeddings.return_value = [0.1, 0.2]
@@ -60,7 +60,10 @@ class TestJuiceshopParser(unittest.TestCase):
                 embeddings_text="XSS",
                 hyperlink="https://demo.owasp-juice.shop//#/score-board?searchQuery=API-only%20XSS",
                 links=[
-                    defs.Link(document=defs.CRE(name="CRE-123", id="123-123")),
+                    defs.Link(
+                        document=defs.CRE(name="CRE-123", id="123-123"),
+                        ltype=defs.LinkTypes.LinkedTo,
+                    ),
                 ],
                 tags=["XSS"],
                 name="OWASP Juice Shop",
@@ -75,7 +78,10 @@ class TestJuiceshopParser(unittest.TestCase):
                 embeddings_text="Sensitive Data Exposure",
                 hyperlink="https://demo.owasp-juice.shop//#/score-board?searchQuery=Access%20Log",
                 links=[
-                    defs.Link(document=defs.CRE(name="CRE-123", id="123-123")),
+                    defs.Link(
+                        document=defs.CRE(name="CRE-123", id="123-123"),
+                        ltype=defs.LinkTypes.LinkedTo,
+                    ),
                 ],
                 name="OWASP Juice Shop",
                 section="Access Log",
