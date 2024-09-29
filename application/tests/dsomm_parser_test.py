@@ -39,8 +39,12 @@ class TestDSOMM(unittest.TestCase):
             cre = defs.CRE(id=f"123-123", name=f"CRE-{item}")
             cres.append(cre)
             dbcre = self.collection.add_cre(cre=cre)
-            self.collection.add_link(cre=dbcre, node=dbsamm)
-            self.collection.add_link(cre=dbcre, node=dbiso)
+            self.collection.add_link(
+                cre=dbcre, node=dbsamm, ltype=defs.LinkTypes.LinkedTo
+            )
+            self.collection.add_link(
+                cre=dbcre, node=dbiso, ltype=defs.LinkTypes.LinkedTo
+            )
         entries = dsomm.DSOMM().parse(
             cache=self.collection,
             ph=prompt_client.PromptHandler(database=self.collection),
@@ -50,7 +54,10 @@ class TestDSOMM(unittest.TestCase):
                 name=dsomm.DSOMM().name,
                 doctype=defs.Credoctypes.Standard,
                 links=[
-                    defs.Link(document=defs.CRE(name="CRE-I-SB-2-A", id="123-123")),
+                    defs.Link(
+                        document=defs.CRE(name="CRE-I-SB-2-A", id="123-123"),
+                        ltype=defs.LinkTypes.LinkedTo,
+                    ),
                 ],
                 description="Description:While building and testing artifacts, third party "
                 "systems, application frameworks\n"
@@ -76,7 +83,10 @@ class TestDSOMM(unittest.TestCase):
                 name=dsomm.DSOMM().name,
                 doctype=defs.Credoctypes.Standard,
                 links=[
-                    defs.Link(document=defs.CRE(name="CRE-5.37", id="537-537")),
+                    defs.Link(
+                        document=defs.CRE(name="CRE-5.37", id="537-537"),
+                        ltype=defs.LinkTypes.LinkedTo,
+                    ),
                 ],
                 description="Description:Sample evidence as an attribute in the yaml: The "
                 "build process is defined in [REPLACE-ME "

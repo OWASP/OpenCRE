@@ -12,6 +12,7 @@ from unittest.mock import patch
 import redis
 import rq
 import os
+import networkx as nx
 
 from application import create_app, sqla  # type: ignore
 from application.tests.utils import data_gen
@@ -43,6 +44,11 @@ class TestMain(unittest.TestCase):
         self.app_context.push()
         os.environ["INSECURE_REQUESTS"] = "True"
         sqla.create_all()
+
+        self.collection = db.Node_collection().with_graph()
+        self.collection.graph.with_graph(
+            graph=nx.DiGraph(), graph_data=[]
+        )  # initialize the graph singleton for the tests to be unique
 
     def test_extend_cre_with_tag_links(self) -> None:
         """
@@ -112,11 +118,11 @@ class TestMain(unittest.TestCase):
             self.assertEqual(res, v)
 
     def test_find_by_id(self) -> None:
-        collection = db.Node_collection().with_graph()
+        collection = self.collection
 
         cres = {
             "ca": defs.CRE(id="111-111", description="CA", name="CA", tags=["ta"]),
-            "cd": defs.CRE(id="222-222", description="CD", name="CD", tags=["td"]),
+            "cd": defs.CRE(id="222-223", description="CD", name="CD", tags=["td"]),
             "cb": defs.CRE(id="333-333", description="CB", name="CB", tags=["tb"]),
         }
         cres["ca"].add_link(
@@ -130,16 +136,18 @@ class TestMain(unittest.TestCase):
         dcd = collection.add_cre(cres["cd"])
 
         collection.add_internal_link(
-            higher=dca, lower=dcd, type=defs.LinkTypes.Contains
+            higher=dca, lower=dcd, ltype=defs.LinkTypes.Contains
         )
         collection.add_internal_link(
-            higher=dcb, lower=dcd, type=defs.LinkTypes.Contains
+            higher=dcb, lower=dcd, ltype=defs.LinkTypes.Contains
         )
         self.maxDiff = None
         with self.app.test_client() as client:
+            # id does not exist case
             response = client.get(f"/rest/v1/id/9999999999")
             self.assertEqual(404, response.status_code)
 
+            # single id case
             expected = {"data": cres["ca"].todict()}
             response = client.get(
                 f"/rest/v1/id/{cres['ca'].id}",
@@ -148,7 +156,8 @@ class TestMain(unittest.TestCase):
             self.assertEqual(json.loads(response.data.decode()), expected)
             self.assertEqual(200, response.status_code)
 
-            md_expected = "<pre>CRE---[222-222CD](https://www.opencre.org/cre/222-222),[111-111CA](https://www.opencre.org/cre/111-111),[333-333CB](https://www.opencre.org/cre/333-333)</pre>"
+            # change the format to markdown
+            md_expected = "<pre>CRE---[222-223CD](https://www.opencre.org/cre/222-223),[111-111CA](https://www.opencre.org/cre/111-111),[333-333CB](https://www.opencre.org/cre/333-333)</pre>"
             md_response = client.get(
                 f"/rest/v1/id/{cres['cd'].id}?format=md",
                 headers={"Content-Type": "application/json"},
@@ -159,7 +168,7 @@ class TestMain(unittest.TestCase):
         collection = db.Node_collection().with_graph()
         cres = {
             "ca": defs.CRE(id="111-111", description="CA", name="CA", tags=["ta"]),
-            "cd": defs.CRE(id="222-222", description="CD", name="CD", tags=["td"]),
+            "cd": defs.CRE(id="222-224", description="CD", name="CD", tags=["td"]),
             "cb": defs.CRE(id="333-333", description="CB", name="CB", tags=["tb"]),
             "cc": defs.CRE(id="444-444", description="CC", name="CC", tags=["tc"]),
         }
@@ -177,13 +186,13 @@ class TestMain(unittest.TestCase):
         dcc = collection.add_cre(cres["cc"])
         dcd = collection.add_cre(cres["cd"])
         collection.add_internal_link(
-            higher=dca, lower=dcd, type=defs.LinkTypes.Contains
+            higher=dca, lower=dcd, ltype=defs.LinkTypes.Contains
         )
         collection.add_internal_link(
-            higher=dcb, lower=dcd, type=defs.LinkTypes.Contains
+            higher=dcb, lower=dcd, ltype=defs.LinkTypes.Contains
         )
         collection.add_internal_link(
-            higher=dcc, lower=dcd, type=defs.LinkTypes.Contains
+            higher=dcc, lower=dcd, ltype=defs.LinkTypes.Contains
         )
 
         self.maxDiff = None
@@ -199,7 +208,7 @@ class TestMain(unittest.TestCase):
             self.assertEqual(200, response.status_code)
             self.assertEqual(json.loads(response.data.decode()), expected)
 
-            md_expected = "<pre>CRE---[222-222CD](https://www.opencre.org/cre/222-222),[111-111CA](https://www.opencre.org/cre/111-111),[333-333CB](https://www.opencre.org/cre/333-333),[444-444CC](https://www.opencre.org/cre/444-444)</pre>"
+            md_expected = "<pre>CRE---[222-224CD](https://www.opencre.org/cre/222-224),[111-111CA](https://www.opencre.org/cre/111-111),[333-333CB](https://www.opencre.org/cre/333-333),[444-444CC](https://www.opencre.org/cre/444-444)</pre>"
             md_response = client.get(
                 f"/rest/v1/name/{cres['cd'].name}?format=md",
                 headers={"Content-Type": "application/json"},
@@ -444,9 +453,9 @@ class TestMain(unittest.TestCase):
             self.assertEqual(404, response.status_code)
 
             cres = {
-                "ca": defs.CRE(id="111-111", description="CA", name="CA", tags=["ta"]),
-                "cd": defs.CRE(id="222-222", description="CD", name="CD", tags=["td"]),
-                "cb": defs.CRE(id="333-333", description="CB", name="CB", tags=["tb"]),
+                "ca": defs.CRE(id="111-115", description="CA", name="CA", tags=["ta"]),
+                "cd": defs.CRE(id="222-225", description="CD", name="CD", tags=["td"]),
+                "cb": defs.CRE(id="333-335", description="CB", name="CB", tags=["tb"]),
             }
             cres["ca"].add_link(
                 defs.Link(
@@ -462,10 +471,10 @@ class TestMain(unittest.TestCase):
             dcb = collection.add_cre(cres["cb"])
             dcd = collection.add_cre(cres["cd"])
             collection.add_internal_link(
-                higher=dca, lower=dcd, type=defs.LinkTypes.Contains
+                higher=dca, lower=dcd, ltype=defs.LinkTypes.Contains
             )
             collection.add_internal_link(
-                higher=dcb, lower=dcd, type=defs.LinkTypes.Contains
+                higher=dcb, lower=dcd, ltype=defs.LinkTypes.Contains
             )
 
             expected = {"data": [cres["ca"].todict(), cres["cb"].todict()]}
@@ -505,8 +514,12 @@ class TestMain(unittest.TestCase):
                     ltype=defs.LinkTypes.Contains, document=cres["cd"].shallow_copy()
                 )
             )
-            cres["cd"].add_link(defs.Link(document=standards["cwe0"]))
-            cres["cb"].add_link(defs.Link(document=standards["ASVS"]))
+            cres["cd"].add_link(
+                defs.Link(document=standards["cwe0"], ltype=defs.LinkTypes.LinkedTo)
+            )
+            cres["cb"].add_link(
+                defs.Link(document=standards["ASVS"], ltype=defs.LinkTypes.LinkedTo)
+            )
 
             dca = collection.add_cre(cres["ca"])
             dcb = collection.add_cre(cres["cb"])
@@ -514,14 +527,14 @@ class TestMain(unittest.TestCase):
             dasvs = collection.add_node(standards["ASVS"])
             dcwe = collection.add_node(standards["cwe0"])
             collection.add_internal_link(
-                higher=dca, lower=dcd, type=defs.LinkTypes.Contains
+                higher=dca, lower=dcd, ltype=defs.LinkTypes.Contains
             )
             collection.add_internal_link(
-                higher=dcb, lower=dcd, type=defs.LinkTypes.Contains
+                higher=dcb, lower=dcd, ltype=defs.LinkTypes.Contains
             )
 
-            collection.add_link(dcb, dasvs)
-            collection.add_link(dcd, dcwe)
+            collection.add_link(dcb, dasvs, ltype=defs.LinkTypes.LinkedTo)
+            collection.add_link(dcd, dcwe, ltype=defs.LinkTypes.LinkedTo)
 
             response = client.get(
                 "/smartlink/standard/CWE/456",
@@ -707,8 +720,12 @@ class TestMain(unittest.TestCase):
                     ltype=defs.LinkTypes.Contains, document=cres["cd"].shallow_copy()
                 )
             )
-            cres["cd"].add_link(defs.Link(document=standards["cwe0"]))
-            cres["cb"].add_link(defs.Link(document=standards["ASVS"]))
+            cres["cd"].add_link(
+                defs.Link(document=standards["cwe0"], ltype=defs.LinkTypes.LinkedTo)
+            )
+            cres["cb"].add_link(
+                defs.Link(document=standards["ASVS"], ltype=defs.LinkTypes.LinkedTo)
+            )
 
             dca = collection.add_cre(cres["ca"])
             dcb = collection.add_cre(cres["cb"])
@@ -716,14 +733,14 @@ class TestMain(unittest.TestCase):
             dasvs = collection.add_node(standards["ASVS"])
             dcwe = collection.add_node(standards["cwe0"])
             collection.add_internal_link(
-                higher=dca, lower=dcd, type=defs.LinkTypes.Contains
+                higher=dca, lower=dcd, ltype=defs.LinkTypes.Contains
             )
             collection.add_internal_link(
-                higher=dcb, lower=dcd, type=defs.LinkTypes.Contains
+                higher=dcb, lower=dcd, ltype=defs.LinkTypes.Contains
             )
 
-            collection.add_link(dcb, dasvs)
-            collection.add_link(dcd, dcwe)
+            collection.add_link(dcb, dasvs, ltype=defs.LinkTypes.LinkedTo)
+            collection.add_link(dcd, dcwe, ltype=defs.LinkTypes.LinkedTo)
 
             response = client.get("/rest/v1/deeplink/CWE?sectionid=456")
             self.assertEqual(404, response.status_code)
@@ -893,7 +910,7 @@ class TestMain(unittest.TestCase):
                 )
                 dbcre = collection.add_cre(c)
                 collection.add_internal_link(
-                    higher=previous_db, lower=dbcre, type=defs.LinkTypes.Contains
+                    higher=previous_db, lower=dbcre, ltype=defs.LinkTypes.Contains
                 )
                 previous_cre.add_link(
                     defs.Link(document=c, ltype=defs.LinkTypes.Contains)

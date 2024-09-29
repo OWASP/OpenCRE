@@ -5,8 +5,6 @@ export const TYPE_LINKED_TO = 'Linked To';
 export const TYPE_LINKED_FROM = 'Linked From';
 export const TYPE_CONTAINS = 'Contains';
 export const TYPE_RELATED = 'Related';
-export const TYPE_SAME = 'SAME';
-export const TYPE_SAM = 'SAM';
 export const TYPE_AUTOLINKED_TO = 'Automatically linked to';
 
 export const DOCUMENT_TYPE_NAMES = {

@@ -47,20 +47,23 @@ class TestMain(unittest.TestCase):
                         doctype=defs.Credoctypes.Standard,
                         name="CWE",
                         sectionID="598",
-                    )
+                    ),
+                    ltype=defs.LinkTypes.LinkedTo,
                 ),
                 defs.Link(
                     document=defs.Code(
                         doctype=defs.Credoctypes.Code,
                         description="print(10)",
                         name="CodemcCodeFace",
-                    )
+                    ),
+                    ltype=defs.LinkTypes.LinkedTo,
                 ),
                 defs.Link(
                     document=defs.Tool(
                         description="awesome hacking tool",
                         name="ToolmcToolFace",
-                    )
+                    ),
+                    ltype=defs.LinkTypes.LinkedTo,
                 ),
             ],
         )
@@ -86,7 +89,7 @@ class TestMain(unittest.TestCase):
             name="CWE",
             sectionID="598",
             links=[
-                defs.Link(document=credoc),
+                defs.Link(document=credoc, ltype=defs.LinkTypes.LinkedTo),
             ],
         )
 
@@ -101,15 +104,17 @@ class TestMain(unittest.TestCase):
                         name="zap",
                         section="Rule - 9",
                         sectionID="9",
-                    )
+                    ),
+                    ltype=defs.LinkTypes.LinkedTo,
                 ),
-                defs.Link(document=credoc),
+                defs.Link(document=credoc, ltype=defs.LinkTypes.LinkedTo),
                 defs.Link(
                     document=defs.Standard(
                         name="CWE",
                         sectionID="598",
                         links=[],
-                    )
+                    ),
+                    ltype=defs.LinkTypes.LinkedTo,
                 ),
             ],
             section="standard_with_cre",
@@ -154,19 +159,21 @@ class TestMain(unittest.TestCase):
             description="",
             name="standard_with",
             links=[
-                defs.Link(document=credoc3),
+                defs.Link(document=credoc3, ltype=defs.LinkTypes.LinkedTo),
                 defs.Link(
                     document=defs.Standard(
                         doctype=defs.Credoctypes.Standard, name="CWE", sectionID="598"
-                    )
+                    ),
+                    ltype=defs.LinkTypes.LinkedTo,
                 ),
-                defs.Link(document=credoc2),
+                defs.Link(document=credoc2, ltype=defs.LinkTypes.LinkedTo),
                 defs.Link(
                     document=defs.Standard(
                         doctype=defs.Credoctypes.Standard,
                         name="ASVS",
                         section="SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING",
-                    )
+                    ),
+                    ltype=defs.LinkTypes.LinkedTo,
                 ),
             ],
             section="Session Management",
@@ -191,6 +198,10 @@ class TestMain(unittest.TestCase):
         )  # 2 cres in the db
 
     def test_register_cre(self) -> None:
+        self.maxDiff = None
+
+        self.collection = self.collection.with_graph()
+
         standard = defs.Standard(
             name="ASVS",
             section="SESSION-MGT-TOKEN-DIRECTIVES-DISCRETE-HANDLING",
@@ -201,13 +212,39 @@ class TestMain(unittest.TestCase):
             id="100-100",
             description="CREdesc",
             name="CREname",
-            links=[defs.Link(document=standard), defs.Link(document=tool)],
+            links=[
+                defs.Link(document=standard, ltype=defs.LinkTypes.LinkedTo),
+                defs.Link(document=tool, ltype=defs.LinkTypes.LinkedTo),
+            ],
             tags=["CREt1", "CREt2"],
             metadata={"tags": ["CREl1", "CREl2"]},
         )
+
+        cre_lower = defs.CRE(
+            id="100-101",
+            description="CREdesc lower",
+            name="CREname lower",
+            links=[defs.Link(document=cre.shallow_copy(), ltype=defs.LinkTypes.PartOf)],
+        )
+
+        cre_higher = defs.CRE(
+            id="100-099",
+            description="CREdesc higher",
+            name="CREname higher",
+            links=[
+                defs.Link(document=cre.shallow_copy(), ltype=defs.LinkTypes.Contains)
+            ],
+        )
+        cre_equal = defs.CRE(
+            id="100-102",
+            description="CREdesc equal",
+            name="CREname equal",
+            links=[
+                defs.Link(document=cre.shallow_copy(), ltype=defs.LinkTypes.Related)
+            ],
+        )
         c, _ = main.register_cre(cre, self.collection)
         self.assertEqual(c.name, cre.name)
-
         self.assertEqual(c.external_id, cre.id)
         self.assertEqual(
             len(self.collection.session.query(db.CRE).all()), 1
@@ -216,25 +253,69 @@ class TestMain(unittest.TestCase):
             len(self.collection.session.query(db.Node).all()), 2
         )  # 2 nodes in the db
 
+        # hierarchy register tests
+        main.register_cre(cre_lower, self.collection)
+        main.register_cre(cre_higher, self.collection)
+        main.register_cre(cre_equal, self.collection)
+
+        c_higher = self.collection.get_CREs(cre_higher.id)[0]
+        c_lower = self.collection.get_CREs(cre_lower.id)[0]
+        c_equal = self.collection.get_CREs(cre_equal.id)[0]
+        c = self.collection.get_CREs(cre.id)[0]
+
+        self.assertCountEqual(
+            c_higher.links,
+            [defs.Link(document=c.shallow_copy(), ltype=defs.LinkTypes.Contains)],
+        )
+        self.assertCountEqual(
+            c.links,
+            [
+                defs.Link(document=standard, ltype=defs.LinkTypes.LinkedTo),
+                defs.Link(document=tool, ltype=defs.LinkTypes.LinkedTo),
+                defs.Link(
+                    document=c_lower.shallow_copy(), ltype=defs.LinkTypes.Contains
+                ),
+                defs.Link(
+                    document=c_higher.shallow_copy(), ltype=defs.LinkTypes.PartOf
+                ),
+                defs.Link(
+                    document=c_equal.shallow_copy(), ltype=defs.LinkTypes.Related
+                ),
+            ],
+        )
+
+        self.assertCountEqual(
+            c_lower.links,
+            [defs.Link(document=c.shallow_copy(), ltype=defs.LinkTypes.PartOf)],
+        )
+        self.assertCountEqual(
+            c_higher.links,
+            [defs.Link(document=c.shallow_copy(), ltype=defs.LinkTypes.Contains)],
+        )
+        self.assertCountEqual(
+            c_equal.links,
+            [defs.Link(document=c.shallow_copy(), ltype=defs.LinkTypes.Related)],
+        )
+
     def test_parse_file(self) -> None:
         file: List[Dict[str, Any]] = [
             {
                 "description": "Verify that approved cryptographic algorithms are used in the generation, seeding, and verification.",
-                "doctype": "CRE",
+                "doctype": defs.Credoctypes.CRE,
                 "id": "157-573",
                 "links": [
                     {
-                        "type": "SAM",
+                        "type": defs.LinkTypes.LinkedTo,
                         "document": {
-                            "doctype": "Standard",
+                            "doctype": defs.Credoctypes.Standard,
                             "name": "TOP10",
                             "section": "https://owasp.org/www-project-top-ten/2017/A5_2017-Broken_Access_Control",
                         },
                     },
                     {
-                        "type": "SAM",
+                        "type": defs.LinkTypes.LinkedTo,
                         "document": {
-                            "doctype": "Standard",
+                            "doctype": defs.Credoctypes.Standard,
                             "name": "ISO 25010",
                             "section": "Secure data storage",
                         },
@@ -244,7 +325,7 @@ class TestMain(unittest.TestCase):
             },
             {
                 "description": "Desc",
-                "doctype": "CRE",
+                "doctype": defs.Credoctypes.CRE,
                 "id": "141-141",
                 "name": "name",
             },
@@ -261,14 +342,16 @@ class TestMain(unittest.TestCase):
                             doctype=defs.Credoctypes.Standard,
                             name="TOP10",
                             section="https://owasp.org/www-project-top-ten/2017/A5_2017-Broken_Access_Control",
-                        )
+                        ),
+                        ltype=defs.LinkTypes.LinkedTo,
                     ),
                     defs.Link(
                         document=defs.Standard(
                             doctype=defs.Credoctypes.Standard,
                             name="ISO 25010",
                             section="Secure data storage",
-                        )
+                        ),
+                        ltype=defs.LinkTypes.LinkedTo,
                     ),
                 ],
             ),

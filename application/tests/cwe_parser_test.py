@@ -65,8 +65,14 @@ class TestCWEParser(unittest.TestCase):
                 name="CWE",
                 doctype=defs.Credoctypes.Standard,
                 links=[
-                    defs.Link(document=defs.CRE(name="CRE-732", id="732-732")),
-                    defs.Link(document=defs.CRE(name="CRE-733", id="733-733")),
+                    defs.Link(
+                        document=defs.CRE(name="CRE-732", id="732-732"),
+                        ltype=defs.LinkTypes.LinkedTo,
+                    ),
+                    defs.Link(
+                        document=defs.CRE(name="CRE-733", id="733-733"),
+                        ltype=defs.LinkTypes.LinkedTo,
+                    ),
                 ],
                 hyperlink="https://CWE.mitre.org/data/definitions/1004.html",
                 sectionID="1004",
@@ -79,8 +85,14 @@ class TestCWEParser(unittest.TestCase):
                 sectionID="1007",
                 section="Another CWE",
                 links=[
-                    defs.Link(document=defs.CRE(name="CRE-451", id="451-451")),
-                    defs.Link(document=defs.CRE(name="CRE-632", id="632-632")),
+                    defs.Link(
+                        document=defs.CRE(name="CRE-451", id="451-451"),
+                        ltype=defs.LinkTypes.LinkedTo,
+                    ),
+                    defs.Link(
+                        document=defs.CRE(name="CRE-632", id="632-632"),
+                        ltype=defs.LinkTypes.LinkedTo,
+                    ),
                 ],
             ),
         ]

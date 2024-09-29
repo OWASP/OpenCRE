@@ -1,4 +1,4 @@
-from pprint import pprint
+import networkx as nx
 from application.utils.gap_analysis import make_resources_key, make_subresources_key
 import string
 import random
@@ -11,7 +11,6 @@ import uuid
 from copy import copy, deepcopy
 from pprint import pprint
 from typing import Any, Dict, List, Union
-import redis
 from flask import json as flask_json
 
 import yaml
@@ -34,6 +33,10 @@ class TestDB(unittest.TestCase):
         sqla.create_all()
 
         self.collection = db.Node_collection().with_graph()
+        self.collection.graph.with_graph(
+            graph=nx.DiGraph(), graph_data=[]
+        )  # initialize the graph singleton for the tests to be unique
+
         collection = self.collection
 
         dbcre = collection.add_cre(
@@ -63,8 +66,10 @@ class TestDB(unittest.TestCase):
         )
 
         collection.session.add(dbcre)
-        collection.add_link(cre=dbcre, node=dbstandard)
-        collection.add_internal_link(lower=dbcre, higher=dbgroup)
+        collection.add_link(cre=dbcre, node=dbstandard, ltype=defs.LinkTypes.LinkedTo)
+        collection.add_internal_link(
+            lower=dbcre, higher=dbgroup, ltype=defs.LinkTypes.Contains
+        )
 
         self.collection = collection
 
@@ -164,7 +169,6 @@ class TestDB(unittest.TestCase):
         loc = tempfile.mkdtemp()
         self.collection = db.Node_collection().with_graph()
         collection = self.collection
-        # collection.graph.graph = db.CRE_Graph.load_cre_graph(sqla.session)
         code0 = defs.Code(name="co0")
         code1 = defs.Code(name="co1")
         tool0 = defs.Tool(name="t0", tooltype=defs.ToolTypes.Unknown)
@@ -188,7 +192,9 @@ class TestDB(unittest.TestCase):
                 hyperlink="https://example.com",
             )
         )
-        self.collection.add_link(self.dbcre, self.collection.add_node(code0))
+        self.collection.add_link(
+            self.dbcre, self.collection.add_node(code0), ltype=defs.LinkTypes.LinkedTo
+        )
         self.collection.add_node(code1)
         self.collection.add_node(tool0)
 
@@ -201,7 +207,8 @@ class TestDB(unittest.TestCase):
                     defs.Link(
                         document=defs.CRE(
                             id="111-000", description="CREdesc", name="CREname"
-                        )
+                        ),
+                        ltype=defs.LinkTypes.Contains,
                     )
                 ],
             ),
@@ -213,7 +220,8 @@ class TestDB(unittest.TestCase):
                     defs.Link(
                         document=defs.CRE(
                             id="112-001", description="Groupdesc", name="GroupName"
-                        )
+                        ),
+                        ltype=defs.LinkTypes.Contains,
                     ),
                     defs.Link(
                         document=defs.Standard(
@@ -223,9 +231,12 @@ class TestDB(unittest.TestCase):
                             subsection="4.5.6",
                             hyperlink="https://example.com",
                             tags=["788-788", "b", "c"],
-                        )
+                        ),
+                        ltype=defs.LinkTypes.LinkedTo,
                     ),
-                    defs.Link(document=defs.Code(name="co0")),
+                    defs.Link(
+                        document=defs.Code(name="co0"), ltype=defs.LinkTypes.LinkedTo
+                    ),
                 ],
             ),
             defs.Standard(
@@ -512,12 +523,26 @@ class TestDB(unittest.TestCase):
             version="gc3.1.2",
         )
 
+        parent_cre = db.CRE(
+            external_id="999-999", description="parent cre", name="pcre"
+        )
+        parent_cre2 = db.CRE(
+            external_id="888-888", description="parent cre2", name="pcre2"
+        )
+        partOf_cre = db.CRE(
+            external_id="777-777", description="part of cre", name="poc"
+        )
+
         collection.session.add(dbc1)
         collection.session.add(dbc2)
         collection.session.add(dbc3)
         collection.session.add(dbs1)
         collection.session.add(dbs2)
         collection.session.add(db_id_only)
+
+        collection.session.add(parent_cre)
+        collection.session.add(parent_cre2)
+        collection.session.add(partOf_cre)
         collection.session.commit()
 
         collection.session.add(
@@ -528,11 +553,65 @@ class TestDB(unittest.TestCase):
         )
         collection.session.add(db.Links(type="Linked To", cre=dbc1.id, node=dbs1.id))
 
+        collection.session.add(
+            db.InternalLinks(
+                type=defs.LinkTypes.Contains.value,
+                group=parent_cre.id,
+                cre=partOf_cre.id,
+            )
+        )
+        collection.session.add(
+            db.InternalLinks(
+                type=defs.LinkTypes.Contains.value,
+                group=parent_cre2.id,
+                cre=partOf_cre.id,
+            )
+        )
         collection.session.commit()
 
-        cd1 = defs.CRE(id="123-123", description="gcCD1", name="gcC1", links=[])
-        cd2 = defs.CRE(description="gcCD2", name="gcC2", id="444-444")
-        cd3 = defs.CRE(description="gcCD3", name="gcC3", id="555-555")
+        # we can retrieve children cres
+        self.assertEqual(
+            [
+                db.CREfromDB(parent_cre).add_link(
+                    defs.Link(
+                        document=db.CREfromDB(partOf_cre), ltype=defs.LinkTypes.Contains
+                    )
+                )
+            ],
+            collection.get_CREs(external_id=parent_cre.external_id),
+        )
+        self.assertEqual(
+            [
+                db.CREfromDB(parent_cre2).add_link(
+                    defs.Link(
+                        document=db.CREfromDB(partOf_cre), ltype=defs.LinkTypes.Contains
+                    )
+                )
+            ],
+            collection.get_CREs(external_id=parent_cre2.external_id),
+        )
+
+        # we can retrieve children cres with inverted multiple (PartOf) links to their parents
+        self.assertEqual(
+            [
+                db.CREfromDB(partOf_cre)
+                .add_link(
+                    defs.Link(
+                        document=db.CREfromDB(parent_cre), ltype=defs.LinkTypes.PartOf
+                    )
+                )
+                .add_link(
+                    defs.Link(
+                        document=db.CREfromDB(parent_cre2), ltype=defs.LinkTypes.PartOf
+                    )
+                )
+            ],
+            collection.get_CREs(external_id=partOf_cre.external_id),
+        )
+
+        cd1 = defs.CRE(id="123-123", description="gcCD1", name="gcC1")
+        cd2 = defs.CRE(id="444-444", description="gcCD2", name="gcC2")
+        cd3 = defs.CRE(id="555-555", description="gcCD3", name="gcC3")
         c_id_only = defs.CRE(
             id="666-666", description="c_get_by_internal_id_only", name="cgbiio"
         )
@@ -564,34 +643,49 @@ class TestDB(unittest.TestCase):
         shallow_cd1.links = []
         cd2.add_link(defs.Link(ltype=defs.LinkTypes.PartOf, document=shallow_cd1))
         cd3.add_link(defs.Link(ltype=defs.LinkTypes.PartOf, document=shallow_cd1))
+
+        # empty returns empty
         self.assertEqual([], collection.get_CREs())
 
+        # getting "group cre 1" by name returns gcC1
         res = collection.get_CREs(name="gcC1")
         self.assertEqual(len(expected), len(res))
-        self.assertDictEqual(expected[0].todict(), res[0].todict())
+        self.assertCountEqual(expected[0].todict(), res[0].todict())
 
+        # getting "group cre 1" by id returns gcC1
         res = collection.get_CREs(external_id="123-123")
         self.assertEqual(len(expected), len(res))
-        self.assertDictEqual(expected[0].todict(), res[0].todict())
+        self.assertCountEqual(expected[0].todict(), res[0].todict())
 
+        # getting "group cre 1" by partial id returns gcC1
         res = collection.get_CREs(external_id="12%", partial=True)
         self.assertEqual(len(expected), len(res))
-        self.assertDictEqual(expected[0].todict(), res[0].todict())
+        self.assertCountEqual(expected[0].todict(), res[0].todict())
 
+        # getting "group cre 1" by partial name returns gcC1, gcC2 and gcC3
         res = collection.get_CREs(name="gcC%", partial=True)
+        self.assertEqual(3, len(res))
+        self.assertCountEqual(
+            [expected[0].todict(), cd2.todict(), cd3.todict()],
+            [r.todict() for r in res],
+        )
 
+        # getting "group cre 1" by partial name and partial id returns gcC1
         res = collection.get_CREs(external_id="1%", name="gcC%", partial=True)
         self.assertEqual(len(expected), len(res))
-        self.assertDictEqual(expected[0].todict(), res[0].todict())
+        self.assertCountEqual(expected[0].todict(), res[0].todict())
 
+        # getting "group cre 1" by description returns gcC1
         res = collection.get_CREs(description="gcCD1")
         self.assertEqual(len(expected), len(res))
-        self.assertDictEqual(expected[0].todict(), res[0].todict())
+        self.assertCountEqual(expected[0].todict(), res[0].todict())
 
+        # getting "group cre 1" by partial id and partial description returns gcC1
         res = collection.get_CREs(external_id="1%", description="gcC%", partial=True)
         self.assertEqual(len(expected), len(res))
-        self.assertDictEqual(expected[0].todict(), res[0].todict())
+        self.assertCountEqual(expected[0].todict(), res[0].todict())
 
+        # getting all the gcC* cres by partial name and partial description returns gcC1, gcC2, gcC3
         res = collection.get_CREs(description="gcC%", name="gcC%", partial=True)
         want = [expected[0], cd2, cd3]
         for el in res:
@@ -605,9 +699,10 @@ class TestDB(unittest.TestCase):
         self.assertEqual([], collection.get_CREs(external_id="1234"))
         self.assertEqual([], collection.get_CREs(name="gcC5"))
 
+        # add a standard to gcC1
         collection.session.add(db.Links(type="Linked To", cre=dbc1.id, node=dbs2.id))
 
-        only_gcS2 = deepcopy(expected)
+        only_gcS2 = deepcopy(expected)  # save a copy of the current expected
         expected[0].add_link(
             defs.Link(
                 ltype=defs.LinkTypes.LinkedTo,
@@ -620,9 +715,11 @@ class TestDB(unittest.TestCase):
                 ),
             )
         )
+        # we can retrieve the cre with the standard
         res = collection.get_CREs(name="gcC1")
         self.assertCountEqual(expected[0].todict(), res[0].todict())
 
+        #  we can retrieve ONLY the standard
         res = collection.get_CREs(name="gcC1", include_only=["gcS2"])
         self.assertDictEqual(only_gcS2[0].todict(), res[0].todict())
 
@@ -640,6 +737,8 @@ class TestDB(unittest.TestCase):
             )
             .add_link(defs.Link(ltype=defs.LinkTypes.Contains, document=ccd3))
         ]
+
+        # if the standard is not linked, we retrieve as normal
         res = collection.get_CREs(name="gcC1", include_only=["gcS0"])
         self.assertEqual(no_standards, res)
 
@@ -727,7 +826,13 @@ class TestDB(unittest.TestCase):
         collection.session.commit()
 
         for cre, standard in links:
-            collection.session.add(db.Links(cre=docs[cre].id, node=docs[standard].id))
+            collection.session.add(
+                db.Links(
+                    cre=docs[cre].id,
+                    node=docs[standard].id,
+                    type=defs.LinkTypes.LinkedTo,
+                )
+            )
         collection.session.commit()
 
         expected = [
@@ -740,13 +845,16 @@ class TestDB(unittest.TestCase):
                 version="4",
                 links=[
                     defs.Link(
-                        document=defs.CRE(name="C1", description="CD1", id="123-123")
+                        document=defs.CRE(name="C1", description="CD1", id="123-123"),
+                        ltype=defs.LinkTypes.LinkedTo,
                     ),
                     defs.Link(
-                        document=defs.CRE(id="222-222", name="C2", description="CD2")
+                        document=defs.CRE(id="222-222", name="C2", description="CD2"),
+                        ltype=defs.LinkTypes.LinkedTo,
                     ),
                     defs.Link(
-                        document=defs.CRE(id="333-333", name="C3", description="CD3")
+                        document=defs.CRE(id="333-333", name="C3", description="CD3"),
+                        ltype=defs.LinkTypes.LinkedTo,
                     ),
                 ],
             )
@@ -765,7 +873,8 @@ class TestDB(unittest.TestCase):
                 version="4",
                 links=[
                     defs.Link(
-                        document=defs.CRE(name="C1", description="CD1", id="123-123")
+                        document=defs.CRE(name="C1", description="CD1", id="123-123"),
+                        ltype=defs.LinkTypes.LinkedTo,
                     )
                 ],
             )
@@ -802,17 +911,7 @@ class TestDB(unittest.TestCase):
 
         # happy path
         self.collection.add_internal_link(
-            higher=cres["dbca"], lower=cres["dbcb"], type=defs.LinkTypes.Same
-        )
-
-        # no cycle, free to insert
-        self.collection.add_internal_link(
-            higher=cres["dbcb"], lower=cres["dbcc"], type=defs.LinkTypes.Same
-        )
-
-        # introdcues a cycle, should not be inserted
-        self.collection.add_internal_link(
-            higher=cres["dbcc"], lower=cres["dbca"], type=defs.LinkTypes.Same
+            higher=cres["dbca"], lower=cres["dbcb"], ltype=defs.LinkTypes.Related
         )
 
         #   "happy path, internal link exists"
@@ -826,6 +925,10 @@ class TestDB(unittest.TestCase):
         )
         self.assertEqual((res.group, res.cre), (cres["dbca"].id, cres["dbcb"].id))
 
+        # no cycle, free to insert
+        self.collection.add_internal_link(
+            higher=cres["dbcb"], lower=cres["dbcc"], ltype=defs.LinkTypes.Related
+        )
         res = (
             self.collection.session.query(db.InternalLinks)
             .filter(
@@ -835,6 +938,11 @@ class TestDB(unittest.TestCase):
             .first()
         )
         self.assertEqual((res.group, res.cre), (cres["dbcb"].id, cres["dbcc"].id))
+
+        # introdcues a cycle, should not be inserted
+        self.collection.add_internal_link(
+            higher=cres["dbcc"], lower=cres["dbca"], ltype=defs.LinkTypes.Related
+        )
 
         # cycles are not inserted branch
         none_res = (
@@ -934,17 +1042,7 @@ class TestDB(unittest.TestCase):
         self.maxDiff = None
         for k, val in expected.items():
             res = self.collection.text_search(k)
-            try:
-                self.assertCountEqual(res, val)
-            except Exception as e:
-                pprint(k)
-                pprint("|" * 99)
-                pprint(res)
-                pprint("|" * 99)
-                pprint(val)
-                pprint("|" * 99)
-                input()
-                raise e
+            self.assertCountEqual(res, val)
 
     def test_dbNodeFromNode(self) -> None:
         data = {
@@ -1076,8 +1174,8 @@ class TestDB(unittest.TestCase):
             * C3 Part Of C1
             * C4 Part Of C2
             * C5 Related to C0
-            * C6 Part Of C1 but registered as C6 being the "group"
-            * C7 Contains C6 but registered as C6 being the "group" <-- Root
+            * C6 Part Of C1
+            * C7 Contains C6 <-- Root
         3 Nodes:
             * N0  Unlinked
             * N1 Linked To C1
@@ -1090,11 +1188,13 @@ class TestDB(unittest.TestCase):
         nodes = []
         dbcres = []
         dbnodes = []
+
+        # clean the db from setup
         sqla.session.remove()
         sqla.drop_all()
         sqla.create_all()
+
         collection = db.Node_collection().with_graph()
-        # collection.graph.graph = db.CRE_Graph.load_cre_graph(sqla.session)
 
         for i in range(0, 8):
             if i == 0 or i == 1:
@@ -1109,14 +1209,11 @@ class TestDB(unittest.TestCase):
                 defs.Link(document=copy(nodes[i]), ltype=defs.LinkTypes.LinkedTo)
             )
             collection.add_link(
-                cre=dbcres[i], node=dbnodes[i], type=defs.LinkTypes.LinkedTo
+                cre=dbcres[i], node=dbnodes[i], ltype=defs.LinkTypes.LinkedTo
             )
 
         cres[0].add_link(
             defs.Link(document=cres[2].shallow_copy(), ltype=defs.LinkTypes.Contains)
-        )
-        cres[0].add_link(
-            defs.Link(document=cres[5].shallow_copy(), ltype=defs.LinkTypes.Related)
         )
         cres[1].add_link(
             defs.Link(document=cres[3].shallow_copy(), ltype=defs.LinkTypes.Contains)
@@ -1128,38 +1225,31 @@ class TestDB(unittest.TestCase):
         cres[3].add_link(
             defs.Link(document=cres[5].shallow_copy(), ltype=defs.LinkTypes.Contains)
         )
-
         cres[6].add_link(
             defs.Link(document=cres[7].shallow_copy(), ltype=defs.LinkTypes.PartOf)
         )
         collection.add_internal_link(
-            higher=dbcres[0], lower=dbcres[2], type=defs.LinkTypes.Contains
+            higher=dbcres[0], lower=dbcres[2], ltype=defs.LinkTypes.Contains
         )
         collection.add_internal_link(
-            higher=dbcres[1], lower=dbcres[3], type=defs.LinkTypes.Contains
+            higher=dbcres[1], lower=dbcres[3], ltype=defs.LinkTypes.Contains
         )
         collection.add_internal_link(
-            higher=dbcres[2], lower=dbcres[4], type=defs.LinkTypes.Contains
+            higher=dbcres[2], lower=dbcres[4], ltype=defs.LinkTypes.Contains
         )
         collection.add_internal_link(
-            higher=dbcres[5], lower=dbcres[0], type=defs.LinkTypes.Related
+            higher=dbcres[3], lower=dbcres[5], ltype=defs.LinkTypes.Contains
         )
         collection.add_internal_link(
-            higher=dbcres[3], lower=dbcres[5], type=defs.LinkTypes.Contains
+            higher=dbcres[7], lower=dbcres[6], ltype=defs.LinkTypes.Contains
         )
-        collection.add_internal_link(
-            higher=dbcres[6], lower=dbcres[7], type=defs.LinkTypes.PartOf
-        )
-
-        collection.session.commit()
-
         cres[7].add_link(
             defs.Link(document=cres[6].shallow_copy(), ltype=defs.LinkTypes.Contains)
         )
 
         root_cres = collection.get_root_cres()
         self.maxDiff = None
-        self.assertEqual(root_cres, [cres[0], cres[1], cres[7]])
+        self.assertCountEqual(root_cres, [cres[0], cres[1], cres[7]])
 
     @patch.object(db.NEO_DB, "gap_analysis")
     def test_gap_analysis_disconnected(self, gap_mock):
@@ -2090,7 +2180,7 @@ class TestDB(unittest.TestCase):
                 defs.Link(document=copy(nodes[i]), ltype=defs.LinkTypes.LinkedTo)
             )
             collection.add_link(
-                cre=dbcres[i], node=dbnodes[i], type=defs.LinkTypes.LinkedTo
+                cre=dbcres[i], node=dbnodes[i], ltype=defs.LinkTypes.LinkedTo
             )
 
         collection.session.commit()
@@ -2128,7 +2218,7 @@ class TestDB(unittest.TestCase):
                 defs.Link(document=copy(nodes[i]), ltype=defs.LinkTypes.LinkedTo)
             )
             collection.add_link(
-                cre=dbcres[i], node=dbnodes[i], type=defs.LinkTypes.LinkedTo
+                cre=dbcres[i], node=dbnodes[i], ltype=defs.LinkTypes.LinkedTo
             )
 
         collection.session.commit()
@@ -2142,7 +2232,13 @@ class TestDB(unittest.TestCase):
         self.assertEqual(total_pages, 4)
 
     def test_get_cre_hierarchy(self) -> None:
-        collection = db.Node_collection().with_graph()
+        # this needs a clean database and a clean graph so reinit everything
+        # sqla.session.remove()
+        # sqla.drop_all()
+        # sqla.create_all()
+        collection = self.collection  # db.Node_collection().with_graph()
+        # collection.graph.with_graph(graph=nx.DiGraph(), graph_data=[])
+
         _, inputDocs = export_format_data()
         importItems = []
         for name, items in inputDocs.items():
@@ -2157,23 +2253,22 @@ class TestDB(unittest.TestCase):
                         linked_item = collection.add_cre(link.document)
                         if item.doctype == defs.Credoctypes.CRE:
                             collection.add_internal_link(
-                                dbitem, linked_item, type=link.ltype
+                                dbitem, linked_item, ltype=link.ltype
                             )
                         else:
                             collection.add_link(
-                                node=dbitem, cre=linked_item, type=link.ltype
+                                node=dbitem, cre=linked_item, ltype=link.ltype
                             )
                     else:
                         linked_item = collection.add_node(link.document)
                         if item.doctype == defs.Credoctypes.CRE:
                             collection.add_link(
-                                cre=dbitem, node=linked_item, type=link.ltype
+                                cre=dbitem, node=linked_item, ltype=link.ltype
                             )
                         else:
                             collection.add_internal_link(
-                                cre=linked_item, node=dbitem, type=link.ltype
+                                cre=linked_item, node=dbitem, ltype=link.ltype
                             )
-
         cres = inputDocs[defs.Credoctypes.CRE]
         c0 = [c for c in cres if c.name == "C0"][0]
         self.assertEqual(collection.get_cre_hierarchy(c0), 0)

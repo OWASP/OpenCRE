@@ -33,7 +33,9 @@ class TestCapecParser(unittest.TestCase):
             dbnode = self.collection.add_node(defs.Standard(name="CWE", sectionID=cwe))
             cre = defs.CRE(id=f"{cwe}-{cwe}", name=f"CRE-{cwe}")
             dbcre = self.collection.add_cre(cre=cre)
-            self.collection.add_link(cre=dbcre, node=dbnode)
+            self.collection.add_link(
+                cre=dbcre, node=dbnode, ltype=defs.LinkTypes.LinkedTo
+            )
         entries = capec_parser.Capec().parse(
             cache=self.collection,
             ph=prompt_client.PromptHandler(database=self.collection),
@@ -43,9 +45,18 @@ class TestCapecParser(unittest.TestCase):
                 name="CAPEC",
                 doctype=defs.Credoctypes.Standard,
                 links=[
-                    defs.Link(document=defs.CRE(name="CRE-276", id="276-276")),
-                    defs.Link(document=defs.CRE(name="CRE-285", id="285-285")),
-                    defs.Link(document=defs.CRE(name="CRE-434", id="434-434")),
+                    defs.Link(
+                        document=defs.CRE(name="CRE-276", id="276-276"),
+                        ltype=defs.LinkTypes.LinkedTo,
+                    ),
+                    defs.Link(
+                        document=defs.CRE(name="CRE-285", id="285-285"),
+                        ltype=defs.LinkTypes.LinkedTo,
+                    ),
+                    defs.Link(
+                        document=defs.CRE(name="CRE-434", id="434-434"),
+                        ltype=defs.LinkTypes.LinkedTo,
+                    ),
                 ],
                 hyperlink="https://capec.mitre.org/data/definitions/1.html",
                 sectionID="1",
