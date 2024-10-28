@@ -341,6 +341,9 @@ def generate_mapping_template_file(
             )
         )
     result = [{f"CRE {offset}": "" for offset in range(0, maxOffset + 1)}]
+    result[0]["standard|name"] = ""
+    result[0]["standard|id"] = ""
+    result[0]["standard|hyperlink"] = ""
     result.extend(csv)
 
     orphaned_documents = [doc for doc in related if doc not in visited_cres]
