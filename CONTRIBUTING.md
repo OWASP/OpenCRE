@@ -1,4 +1,4 @@
-# Contributing to the Common Requirements Enumeration Project
+# Contributing to OpenCRE
 
 :+1::tada: First off, thanks for taking the time to contribute! :tada::+1:
 
@@ -11,6 +11,7 @@ The following is a set of guidelines for contributing. These are mostly guidelin
 * [I don't want to read this whole thing, I just have a question!!!](#i-dont-want-to-read-this-whole-thing-i-just-have-a-question)
 
 * [How Can I Contribute?](#how-can-i-contribute)
+  * [How can I contribute a mapping or change the catalog of CREs?](#how-can-i-contribute-a-mapping-or-change-the-catalog-of-cres)
   * [Reporting Bugs](#reporting-bugs)
   * [Suggesting Enhancements](#suggesting-enhancements)
   * [Your First Code Contribution](#your-first-code-contribution)
@@ -18,10 +19,7 @@ The following is a set of guidelines for contributing. These are mostly guidelin
 
 * [Styleguides](#styleguides)
   * [Git Commit Messages](#git-commit-messages)
-  * [Documentation Styleguide](#documentation-styleguide)
-
-* [Additional Notes](#additional-notes)
-  * [Issue and Pull Request Labels](#issue-and-pull-request-labels)
+  
 
 ## Code of Conduct
 
@@ -37,14 +35,43 @@ The channel name is
 
 <pre> #project-cre</pre>
 
-
 ## How Can I Contribute?
 
-The "Issues" page lists a number of features we would like to implement, we have tagged the ones we believe are easy to pick up with the tag `good first issue` and/or `beginner`. Alternatively you can contribute content by adding a mapping or request features or mappings by opening an Issue.
+The "Issues" page lists a number of features we would like to implement, we have tagged the ones we believe are easy to pick up with the tag `good first issue` and/or `beginner`. Alternatively you can contribute content (see below) or request features or mappings by opening an Issue.
 
-### Adding CREs and Mappings
 
-You can contribute a new CRE or a new Mapping either by submitting a pull request with updated .yaml files in `/cres` or by filling in a GSuite spreadsheet that follows the [template](https://docs.google.com/spreadsheets/d/1f47aZydJ47n-iGb0fkmu880wSaFyYDM-zdkgs6oMV7I/edit?usp=sharing) and opening a new issue requesting us to parse it. (Autoparsing and submit via website features are in the roadmap)
+### How can I contribute a mapping or change the catalog of CREs?
+
+Adding a mapping to OpenCRE for a new standard X means that each section in X is assigned to the corresponding ‘Common Requirement’ (or CRE number) at opencre.org.
+For example, the section 613-Insufficien Session expiration in the CWE standard is mapped to CRE 065-782 Ensure session timeout (soft/hard).
+The result is that when you go to the overview page of that requirement, users will see a link to CWE 613: https://www.opencre.org/cre/065-782
+
+How to:
+1. Get the OpenCRE standard mapping template spreadsheet
+2. For every section in the standard, find the corresponding Common Requirement (CRE number) at OpenCRE and enter in that row the details of that section in the right columns:  name, id, and hyperlink 
+3. In case you identify opportunities to add Common Requirements: add those to the spreadsheet
+4. Send the mapping template to rob.vanderveer@owasp.org. You can also use that mail address for any questions.
+
+ad. 1 
+The spreadsheet can be obtained from the following URL (give it 20 seconds): https://opencre.org/rest/v1/cre_csv
+It is a CSV file (comma-separated text file) that can be opened with for example Microsoft Excel or Google Sheets.
+
+ad.2
+
+The spreadsheet shows the hierarchical organization of Common Requirements.
+You can browse or search through it, to find a good match.
+That same content can also be found in our explorer: https://zeljkoobrenovic.github.io/opencre-explorer/
+From that page you can click on the common requirements to see to what standard sections it has been mapped, to perhaps give you a better idea.
+We do not recommend to use an existing mapping from the standard to another standard that is already in OpenCRE (e.g. CWE). Typically, details get lost that way.
+Note that we are developing an AI module to help create an initial mapping to a new standard, based on the text of that standard.
+
+ad.3
+Sometimes the new standard can have more detail in topics than OpenCRE has. For example, OpenCRE has the Common requirement of Automated Dynamic security testing and the new standard distinguishes applying DAST tools and applying IAST tools, than you may suggest two new Common Requirements as children of Automated Dynamic security testing and link each of them to the corresponding sections in the new standard. For that, you make two new rows below. As code for the requirements you don’t enter an XXX-XXX number, but you enter ‘NEW|Apply DAST tools’ where the | character separates the code from the name of the requirement.
+In general, this will be rare.
+
+ad.4
+OpenCRE has an importing interface in case you run your own myOpenCRE, but for the public opencre.org we first perform some checks before we add a standard to it - hence the request to send the mapping to us in email.
+
 
 ### Reporting Bugs
 
@@ -88,7 +115,7 @@ Unsure where to begin contributing? You can start by looking through these `begi
 * Good first issue - issues which should require more substantial changes but can be done in an afternoon or two.
 * Help wanted issues - issues which should be a bit more involved than `beginner` issues.
 
-### Pull Requests
+#### Pull Requests
 
 Each Pull Request should close a single ticket and only make changes necessary in order for this to be done. Please reference the relevant ticket in the Pull Request.
 After you submit your pull request, verify that all [status checks](https://help.github.com/articles/about-status-checks/) are passing <details><summary>What if the status checks are failing?</summary>If a status check is failing, and you believe that the failure is unrelated to your change, please leave a comment on the pull request explaining why you believe the failure is unrelated. A maintainer will re-run the status check for you. If we conclude that the failure was a false positive, then we will open an issue to track that problem with our status check suite.</details>
