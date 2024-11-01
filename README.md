@@ -12,26 +12,27 @@
 
 [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://github.com/codespaces/new?hide_repo_select=true&ref=main&repo=400297709&machine=standardLinux32gb&devcontainer_path=.devcontainer%2Fdevcontainer.json&location=WestEurope)
 
-# Common Requirements Enumeration Application
+# OpenCRE
 
-See the application working and more explanation at https://www.opencre.org
-CRE is an interactive content linking platform for uniting security standards and guidelines. It offers easy and robust access to relevant information when designing, developing, testing and procuring secure software.
-This python web and cli application handles adding and presenting CREs.
+Go to https://www.opencre.org to see OpenCRE working and more explanation.  
+OpenCRE stands for Open Common Requirement enumeration. It is an interactive content linking platform for uniting security standards and guidelines. It offers easy and robust access to relevant information when designing, developing, testing and procuring secure software.  
 
-# WHY?
+OpenCRE consists of:
+- The application: a python web and cli application to access the data, running publicly at opencre.org
+- The catalog data: a catalog of Common Requirements (CREs)
+- The mapping data: links from each CRE to relevant sections in a range of standards
+- Tools and guidelines to contribute to the data and to run the application locally
 
-Independent software security professionals got together to find a solution for the complexity and fragmentation in today’s landscape of security standards and guidelines. These people are Spyros Gasteratos, Rob van der Veer and friends, in close collaboration with the SKF, OpenSSF and Owasp Top 10 project.
+# Contribute code or mappings
+To see how you can contribute to the application or to the data (catalog or standard mappings), see [Contributing](CONTRIBUTING.md).  
+We really welcome you!
 
-# HOW?
+# Roadmap
+For a roadmap please see the [issues](https://github.com/OWASP/common-requirement-enumeration/issues).
 
-The CRE links each section of a standard to a shared topic (a Common Requirement), causing that section to also link with all other resources that map to the same topic. This 1) enables users to find all combined information from relevant sources, 2) it facilitates a shared and better understanding of cyber security, and 3) it allows standard makers to have links that keep working and offer all the information that readers need, so they don’t have to cover it all themselves. The CRE maintains itself: topic links in the standard text are scanned automatically. Furthermore, topics are linked with related other topics, creating a semantic web for security.
+# Running your own OpenCRE
 
-Example: the session time-out topic will take the user to relevant criteria in several standards, and to testing guides, development tips, more technical detail, threat descriptions, articles etc. From there, the user can navigate to resources about session management in general.
-
-
-Some of the data has been kindly contributed by the SKF and ASVS projects
-
-# Running
+You are free to use the public opencre application at opencre.org. Apart from that, you can run your own if you want to include your own security standards and guidelines for example. We call that myOpenCRE.
 
 ### Locally
 
@@ -84,7 +85,12 @@ enviroment varaibles for app to connect to neo4jDB (default):
 To run the web application for production you need gunicorn and you can run from within the cre_sync dir
 <pre>make prod-run</pre>
 
-# Docker
+
+### Using the OpenCRE API
+See [the myOpenCRE user guide](docs/my-opencre-user-guide.md) on using the OpenCRE API to for example add your own security guidelines and standards.
+
+
+### Docker building and running
 You can build the production or the development docker images with 
 `make docker-prod` and `make docker-dev` respectively
 The environment variables used by OpenCRE are:
@@ -107,18 +113,10 @@ The environment variables used by OpenCRE are:
 ```
 You can run the containers with `make docker-prod-run` and `make-docker-dev-run`
 
-# Developing
+### Developing
 
 You can run backend tests with
 <pre>make test</pre>
 You can run get a coverage report with 
 <pre>make cover</pre>
 Try to keep the coverage above 70%
-
-Contributing
----
-Please see [Contributing](CONTRIBUTING.md) for contributing instructions
-
-Roadmap
----
-For a roadmap of what we would like to be done please see the [issues](https://github.com/OWASP/common-requirement-enumeration/issues).
