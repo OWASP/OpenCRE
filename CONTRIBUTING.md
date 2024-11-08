@@ -40,9 +40,9 @@ The channel name is
 The "Issues" page lists a number of features we would like to implement, we have tagged the ones we believe are easy to pick up with the tag `good first issue` and/or `beginner`. Alternatively you can contribute content (see below) or request features or mappings by opening an Issue.
 
 
-### How can I contribute a mapping or change the catalog of CREs?
+### How can I contribute content (a standard mapping or changes to the CRE catalog)?
 
-Adding a mapping to OpenCRE for a new standard X means that each section in X is assigned to the corresponding ‘Common Requirement’ (or CRE number) at opencre.org.
+Adding a mapping to OpenCRE for a new standard X means that sections in X are each assigned to the corresponding ‘Common Requirement’ (or CRE number) at opencre.org.
 For example, the section 613-Insufficien Session expiration in the CWE standard is mapped to CRE 065-782 Ensure session timeout (soft/hard).
 The result is that when you go to the overview page of that requirement, users will see a link to CWE 613: https://www.opencre.org/cre/065-782
 
@@ -50,7 +50,7 @@ How to:
 1. Get the OpenCRE standard mapping template spreadsheet
 2. For every section in the standard, find the corresponding Common Requirement (CRE number) at OpenCRE and enter in that row the details of that section in the right columns:  name, id, and hyperlink 
 3. In case you identify opportunities to add Common Requirements: add those to the spreadsheet
-4. Send the mapping template to rob.vanderveer@owasp.org. You can also use that mail address for any questions.
+4. Send the mapping template file by creating a new github issue and add the file. That way, the community can see it, and we can use that issue to further communicate. Another option is to send the file to rob.vanderveer@owasp.org. You can also use that mail address for any questions.
 
 ad. 1 
 The spreadsheet can be obtained from the following URL (give it 20 seconds): https://opencre.org/rest/v1/cre_csv
