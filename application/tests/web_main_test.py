@@ -931,6 +931,9 @@ class TestMain(unittest.TestCase):
                     "CRE 2": "",
                     "CRE 3": "",
                     "CRE 4": "",
+                    "standard|name": "",
+                    "standard|id": "",
+                    "standard|hyperlink": "",
                 },
                 {"CRE 0": "123-300|root0"},
                 {"CRE 1": "123-400|CREname0-0"},
@@ -944,6 +947,7 @@ class TestMain(unittest.TestCase):
                 {"CRE 4": "123-413|CREname1-3"},
             ]
             data = spreadsheet.write_csv(expected_out)
+            self.maxDiff = None
             self.assertEqual(
                 data.getvalue(),
                 response.data.decode(),
