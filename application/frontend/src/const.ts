@@ -9,8 +9,6 @@ export const TYPE_AUTOLINKED_TO = 'Automatically linked to';
 
 export const DOCUMENT_TYPE_NAMES = {
   [TYPE_AUTOLINKED_TO]: ' has been automatically mapped to',
-  [TYPE_SAME]: ' has been automatically mapped to',
-  [TYPE_SAM]: ' has been automatically mapped to',
   [TYPE_LINKED_TO]: ' is linked to sources',
   [TYPE_IS_PART_OF]: ' is part of CREs',
   [TYPE_LINKED_FROM]: 'is linked from CREs',
