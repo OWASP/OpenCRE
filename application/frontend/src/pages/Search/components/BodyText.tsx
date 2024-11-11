@@ -87,7 +87,9 @@ export const SearchBody = () => {
           OpenCRE slides from the 2023 Appsec conference in Washington DC{' '}
         </a>
         , follow our
-        <a href="https://www.linkedin.com/company/96695329"> LinkedIn page </a>, click the diagram below, or{' '}
+        <a href="https://www.linkedin.com/company/96695329"> LinkedIn page </a>, 
+        , visit our
+        <a href="https://github.com/OWASP/OpenCRE"> Github repository </a>, click the diagram below, or{' '}
         contact project leaders Rob van der Veer and Spyros Gasteratos via (rob.vanderveer [at] owasp.org) .
       </p>
       <a href="/opencregraphic2.png" target="_blank">
