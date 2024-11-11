@@ -1177,9 +1177,8 @@ class Node_collection:
             linked_cre_query = self.session.query(CRE)
             link_type = cre_defs.LinkTypes.from_str(internal_link.type)
 
-            if (
-                internal_link.cre == cre.id
-            ):  # if we are the lower cre in this relationship, we need to flip the "Contains" linktypes
+            if internal_link.cre == cre.id:
+                 # if we are the lower cre in this relationship, we need to flip the "Contains" linktypes
                 linked_cre = linked_cre_query.filter(
                     CRE.id == internal_link.group
                 ).first()  # get the higher cre so we can add the link
@@ -1196,17 +1195,14 @@ class Node_collection:
                     links.append(
                         cre_defs.Link(ltype=link_type, document=CREfromDB(linked_cre))
                     )
-                else:
-                    raise ValueError(
-                        f"Received an unexpected link type {link_type} in internal link between {linked_cre.name} and {cre.name}"
-                    )
-            else:  # if we are are the higher cre then we don't need to do anything, relationship types are always "higher"->"lower"
-                linked_cre = linked_cre_query.filter(
-                    CRE.id == internal_link.cre
-                ).first()
-                links.append(
-                    cre_defs.Link(ltype=link_type, document=CREfromDB(linked_cre))
-                )
+                
+            # if we are are the higher cre then we don't need to do anything, relationship types are always "higher"->"lower"
+            linked_cre = linked_cre_query.filter(
+                CRE.id == internal_link.cre
+            ).first()
+            links.append(
+                cre_defs.Link(ltype=link_type, document=CREfromDB(linked_cre))
+            )
         return links
 
     def __make_cre_links(
