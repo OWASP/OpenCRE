@@ -568,6 +568,7 @@ class TestDB(unittest.TestCase):
             )
         )
         collection.session.commit()
+        self.maxDiff = None
 
         # we can retrieve children cres
         self.assertEqual(

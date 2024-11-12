@@ -262,7 +262,7 @@ class TestMain(unittest.TestCase):
         c_lower = self.collection.get_CREs(cre_lower.id)[0]
         c_equal = self.collection.get_CREs(cre_equal.id)[0]
         retrieved_cre = self.collection.get_CREs(cre.id)[0]
-
+        self.maxDiff = None
         self.assertCountEqual(
             c_higher.links,
             [
