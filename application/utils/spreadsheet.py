@@ -297,7 +297,6 @@ def generate_mapping_template_file(
 ) -> str:
     maxOffset = 0
     related = set()
-
     def add_offset_cre(
         cre: defs.CRE, database: db.Node_collection, offset: int, visited_cres: Set
     ) -> List[Dict[str, str]]:
@@ -345,11 +344,10 @@ def generate_mapping_template_file(
     result[0]["standard|id"] = ""
     result[0]["standard|hyperlink"] = ""
     result.extend(csv)
-
     orphaned_documents = [doc for doc in related if doc not in visited_cres]
     if len(orphaned_documents):
         raise ValueError(
-            "found CREs with only related links not provided in the root_cre list, unless you are really sure for this use case, this is a bug"
+            f"found CREs '{orphaned_documents}' with only related links not provided in the root_cre list, unless you are really sure for this use case, this is a bug"
         )
 
     return result
