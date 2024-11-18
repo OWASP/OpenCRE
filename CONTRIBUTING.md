@@ -29,11 +29,9 @@ This project and everyone participating in it is governed by the [OWASP Code of 
 
 > **Note:** Please don't file an issue to ask a question.
 
-You can reach us in the [OWASP Slack](https://join.slack.com/share/zt-vygk4j2o-USrIQamoixS55Ep5GIfW~A)
+You can reach us in the [OWASP Slack](https://owasp.org/slack/invite) at channel #project-cre
 
-The channel name is
-
-<pre> #project-cre</pre>
+or send a message to rob.vanderveer@owasp.org
 
 ## How Can I Contribute?
 
@@ -44,7 +42,7 @@ The "Issues" page lists a number of features we would like to implement, we have
 
 Adding a mapping to OpenCRE for a new standard X means that sections in X are each assigned to the corresponding ‘Common Requirement’ (or CRE number) at opencre.org.
 For example, the section 613-Insufficien Session expiration in the CWE standard is mapped to CRE 065-782 Ensure session timeout (soft/hard).
-The result is that when you go to the overview page of that requirement, users will see a link to CWE 613: https://www.opencre.org/cre/065-782
+The result is that when you go to the overview page of that requirement(CRE), users will see a link to CWE 613: https://www.opencre.org/cre/065-782
 
 How to:
 1. Get the OpenCRE standard mapping template spreadsheet
@@ -53,8 +51,8 @@ How to:
 4. Send the mapping template file by creating a new github issue and add the file. That way, the community can see it, and we can use that issue to further communicate. Another option is to send the file to rob.vanderveer@owasp.org. You can also use that mail address for any questions.
 
 ad. 1 
-The spreadsheet can be obtained from the following URL (give it 20 seconds): https://opencre.org/rest/v1/cre_csv
-It is a CSV file (comma-separated text file) that can be opened with for example Microsoft Excel or Google Sheets.
+The mapping spreadsheet (Excel) can be obtained [here](https://github.com/OWASP/OpenCRE/raw/refs/heads/main/docs/CREmappingtemplate.xls).  
+Note, it contains one example, where it links the CRE for development processes to a section in NIST 800-53.
 
 ad.2
 
@@ -95,7 +93,7 @@ Explain the problem and include additional details to help maintainers reproduce
 
 This section guides you through submitting an enhancement suggestion, including completely new features and minor improvements to existing functionality. Following these guidelines helps maintainers and the community understand your suggestion :pencil: and find related suggestions :mag_right:.
 
-When you are creating an enhancement suggestion, please [include as many details as possible](#how-do-i-submit-a-good-enhancement-suggestion). Fill in [the template](https://github.com/common-requirement-enumeration/blob/main/.github/ISSUE_TEMPLATE.md), including the steps that you imagine you would take if the feature you're requesting existed.
+When you are creating an enhancement suggestion, please [include as many details as possible](#how-do-i-submit-a-good-enhancement-suggestion). Fill in [the template](https://github.com/OWASP/OpenCRE/blob/main/docs/ISSUE_TEMPLATE.md), including the steps that you imagine you would take if the feature you're requesting existed.
 
 #### How Do I Submit A (Good) Enhancement Suggestion?
 
