@@ -1,0 +1,1 @@
+For an overview, see this project’s [readme in the main folder](https://github.com/OWASP/OpenCRE/blob/main/README.md).
