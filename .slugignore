@@ -6,7 +6,6 @@ application/frontend/src/test/basic-e2e.test.ts
 .github
 README.md
 LICENSE
-CONTRIBUTING.md
 .gitignore
 .dockerignore
 Dockerfile-dev
