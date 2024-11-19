@@ -1,18 +1,4 @@
-
-
-[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-[![GitHub Super-Linter](https://github.com/OWASP/common-requirement-enumeration/workflows/Lint%20Code%20Base/badge.svg)](https://github.com/marketplace/actions/super-linter)
-[![Main Branch Build](https://github.com/OWASP/common-requirement-enumeration/workflows/Test/badge.svg?branch=main)](https://github.com/OWASP/OWASP/common-requirement-enumeration/workflows/Test)
-
-[![Issues](https://img.shields.io/github/issues/owasp/common-requirement-enumeration)](https://github.com/OWASP/common-requirement-enumeration/issues)  
-[![PR's Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat)](http://makeapullrequest.com)
-![GitHub contributors](https://img.shields.io/github/contributors/owasp/common-requirement-enumeration)
-![GitHub last commit](https://img.shields.io/github/last-commit/owasp/common-requirement-enumeration)
-![GitHub commit activity](https://img.shields.io/github/commit-activity/y/owasp/common-requirement-enumeration)
-
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://github.com/codespaces/new?hide_repo_select=true&ref=main&repo=400297709&machine=standardLinux32gb&devcontainer_path=.devcontainer%2Fdevcontainer.json&location=WestEurope)
-
-# OpenCRE
+# OpenCRE readme
 
 Go to https://www.opencre.org to see OpenCRE working and more explanation.  
 OpenCRE stands for Open Common Requirement enumeration. It is an interactive content linking platform for uniting security standards and guidelines. It offers easy and robust access to relevant information when designing, developing, testing and procuring secure software.  
@@ -24,7 +10,7 @@ OpenCRE consists of:
 - Tools and guidelines to contribute to the data and to run the application locally
 
 # Contribute code or mappings
-To see how you can contribute to the application or to the data (catalog or standard mappings), see [Contributing](CONTRIBUTING.md).  
+To see how you can contribute to the application or to the data (catalog or standard mappings), see [Contributing](docs/CONTRIBUTING.md).  
 We really welcome you!
 
 # Roadmap
@@ -120,3 +106,16 @@ You can run backend tests with
 You can run get a coverage report with 
 <pre>make cover</pre>
 Try to keep the coverage above 70%
+
+
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![GitHub Super-Linter](https://github.com/OWASP/common-requirement-enumeration/workflows/Lint%20Code%20Base/badge.svg)](https://github.com/marketplace/actions/super-linter)
+[![Main Branch Build](https://github.com/OWASP/common-requirement-enumeration/workflows/Test/badge.svg?branch=main)](https://github.com/OWASP/OWASP/common-requirement-enumeration/workflows/Test)
+
+[![Issues](https://img.shields.io/github/issues/owasp/common-requirement-enumeration)](https://github.com/OWASP/common-requirement-enumeration/issues)  
+[![PR's Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat)](http://makeapullrequest.com)
+![GitHub contributors](https://img.shields.io/github/contributors/owasp/common-requirement-enumeration)
+![GitHub last commit](https://img.shields.io/github/last-commit/owasp/common-requirement-enumeration)
+![GitHub commit activity](https://img.shields.io/github/commit-activity/y/owasp/common-requirement-enumeration)
+
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://github.com/codespaces/new?hide_repo_select=true&ref=main&repo=400297709&machine=standardLinux32gb&devcontainer_path=.devcontainer%2Fdevcontainer.json&location=WestEurope)
