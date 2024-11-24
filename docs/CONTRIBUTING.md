@@ -71,6 +71,11 @@ ad.4
 OpenCRE has an importing interface in case you run your own myOpenCRE, but for the public opencre.org we first perform some checks before we add a standard to it - hence the request to send the mapping to us in email.
 
 
+#### Alternative, automated method of linking: 
+NOTE: there is an alternative method of linking a standard to OpenCRE, and it's the preferred way because it is self-maintaining. It requires editing the orginal standard text. What you do is you add to the standard a hyperlink reference to the relevant common requirement (e.g. [Restrict XML parsing](https://www.opencre.org/cre/764-507)) in a section on that topic. And then you specify to us at OpenCRE how we can read your source (e.g. Github) automatically to extract those hyperlinks and to construct links to that section in the document, and parse the name and id. That way, the links between the standard and OpenCRE will stay intact if links move, or change. It's easy and no maintenance required. 
+Again, this only works if you have control over the content of the standard. Contact us if you want to set this up. We'd be happy to help.
+
+
 ### Reporting Bugs
 
 When you are creating a bug report, please [include as many details as possible](#how-do-i-submit-a-good-bug-report). Fill out [the required template](https://github.com/common-requirement-enumeration/.github/blob/main/.github/ISSUE_TEMPLATE.md), the information it asks for helps us resolve issues faster.
