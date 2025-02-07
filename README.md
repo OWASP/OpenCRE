@@ -39,8 +39,11 @@ To install this application you need python3, yarn and virtualenv.
 <pre> make install </pre>
 
 * Download the latest CRE graph from upstream by running
-<pre>python cre.py --upstream_sync</pre>
+<pre>make upstream-sync </pre>
 Keep in mind that until [Issue #534](https://github.com/OWASP/OpenCRE/issues/534) is fixed you won't have access to gap analysis results locally
+
+* To run CRE locally then you can do:
+<pre> make dev-flask </pre>
 
 To run the CLI application, you can run
 <pre>python cre.py --help</pre>
