@@ -28,6 +28,9 @@ start-containers: docker-neo4j docker-redis
 start-worker:
 	. ./venv/bin/activate && FLASK_APP=`pwd`/cre.py python cre.py --start_worker
 
+upstream-sync:
+	. ./venv/bin/activate && python cre.py --upstream_sync
+
 dev-flask:
 	. ./venv/bin/activate && INSECURE_REQUESTS=1 FLASK_APP=`pwd`/cre.py  FLASK_CONFIG=development flask run
 
