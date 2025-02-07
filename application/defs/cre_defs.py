@@ -508,7 +508,7 @@ class Tool(Standard):
         if self.version:
             self.id += f":{self.version}"
         if self.tooltype != ToolTypes.Unknown:
-            self.id += f":{self.tooltype.value}"
+            self.id += f":{self.tooltype}"
         return super().__post_init__()
 
     def __eq__(self, other: object) -> bool:
