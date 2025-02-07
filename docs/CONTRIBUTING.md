@@ -6,19 +6,20 @@ The following is a set of guidelines for contributing. These are mostly guidelin
 
 #### Table Of Contents
 
-* [Code of Conduct](#code-of-conduct)
-
-* [I don't want to read this whole thing, I just have a question!!!](#i-dont-want-to-read-this-whole-thing-i-just-have-a-question)
-
-* [How Can I Contribute?](#how-can-i-contribute)
-  * [How can I contribute a mapping or change the catalog of CREs?](#how-can-i-contribute-a-mapping-or-change-the-catalog-of-cres)
-  * [Reporting Bugs](#reporting-bugs)
-  * [Suggesting Enhancements](#suggesting-enhancements)
-  * [Your First Code Contribution](#your-first-code-contribution)
-  * [Pull Requests](#pull-requests)
-
-* [Styleguides](#styleguides)
-  * [Git Commit Messages](#git-commit-messages)
+- [Contributing to OpenCRE](#contributing-to-opencre)
+      - [Table Of Contents](#table-of-contents)
+  - [Code of Conduct](#code-of-conduct)
+  - [I don't want to read this whole thing I just have a question!!!](#i-dont-want-to-read-this-whole-thing-i-just-have-a-question)
+  - [How Can I Contribute?](#how-can-i-contribute)
+    - [How can I contribute content (a standard mapping or changes to the CRE catalog)?](#how-can-i-contribute-content-a-standard-mapping-or-changes-to-the-cre-catalog)
+    - [Reporting Bugs](#reporting-bugs)
+      - [How Do I Submit A (Good) Bug Report?](#how-do-i-submit-a-good-bug-report)
+    - [Suggesting Enhancements](#suggesting-enhancements)
+      - [How Do I Submit A (Good) Enhancement Suggestion?](#how-do-i-submit-a-good-enhancement-suggestion)
+    - [Your First Code Contribution](#your-first-code-contribution)
+      - [Pull Requests](#pull-requests)
+  - [Styleguides](#styleguides)
+    - [Git Commit Messages](#git-commit-messages)
   
 
 ## Code of Conduct
@@ -129,3 +130,16 @@ We use eslint and black to enforce style. `make lint` should fix most style prob
 * Limit the first line to 72 characters or less
 * Reference issues and pull requests liberally after the first line
 * When only changing documentation, include `[ci skip]` in the commit title.
+
+
+## Working on the frontend
+
+You can start the frontend in a debuggable instance separate from the backend using the following:
+
+After you have installed the application following the README.
+You can start the backend server with:
+<pre>make dev-flask</pre>
+Then in a separate terminal 
+<pre>cd application/frontend</pre>
+and finally start the frontend in a debug session:
+<pre>yarn start</pre>
