@@ -4,8 +4,9 @@ import re
 from copy import copy
 from typing import Any, Dict, List, Optional
 from dataclasses import dataclass
-
+from application.prompt_client import prompt_client
 from application.defs import cre_defs as defs
+from application.database import db
 
 # collection of methods to parse different versions of spreadsheet standards
 # each method returns a list of cre_defs documents
@@ -567,3 +568,61 @@ def parse_standards(
                     )
                 )
     return links
+
+
+def suggest_from_export_format(
+    lfile: List[Dict[str, Any]], database: db.Node_collection
+) -> Dict[str, Any]:
+    output: List[Dict[str, Any]] = []
+    for line in lfile:
+        standard: defs.Node = None
+        if any(
+            [
+                entry.startswith("CRE ")
+                for entry, value in line.items()
+                if not is_empty(value)
+            ]
+        ):  # we found a mapping in the line, no need to do anything, flush to buffer
+            output.append(line)
+            break
+        for entry, value in line.items():
+            if entry.startswith("CRE "):
+                continue  # we established above there are no CRE entries in this line
+
+            if not is_empty(value):
+                standard_name = entry.split("|")[0]
+                standard = defs.Standard(
+                    name=standard_name,
+                    sectionID=line.get(
+                        f"{standard_name}{defs.ExportFormat.separator}{defs.ExportFormat.id}"
+                    ),
+                    section=line.get(
+                        f"{standard_name}{defs.ExportFormat.separator}{defs.ExportFormat.section}"
+                    ),
+                    hyperlink=line.get(
+                        f"{standard_name}{defs.ExportFormat.separator}{defs.ExportFormat.hyperlink}"
+                    ),
+                    description=line.get(
+                        f"{standard_name}{defs.ExportFormat.separator}{defs.ExportFormat.description}"
+                    ),
+                )
+        # find nearest CRE for standards in line
+        ph = prompt_client.PromptHandler(database=database, load_all_embeddings=False)
+
+        most_similar_id, _ = ph.get_id_of_most_similar_cre_paginated(
+            item_embedding=ph.generate_embeddings_for_document(standard)
+        )
+        if not most_similar_id:
+            logger.warning(f"Could not find a CRE for {standard.id}")
+            output.append(line)
+            continue
+
+        cre = database.get_cre_by_db_id(most_similar_id)
+        if not cre:
+            logger.warning(f"Could not find a CRE for {standard.id}")
+            output.append(line)
+            continue
+        line[f"CRE 0"] = f"{cre.id}{defs.ExportFormat.separator}{cre.name}"
+        # add it to the line
+        output.append(line)
+    return output

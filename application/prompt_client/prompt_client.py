@@ -1,6 +1,10 @@
 from application.database import db
-from application.defs import cre_defs
-from application.prompt_client import openai_prompt_client, vertex_prompt_client
+from application.defs import cre_defs as defs
+from application.prompt_client import (
+    openai_prompt_client,
+    vertex_prompt_client,
+    spacy_prompt_client,
+)
 from datetime import datetime
 from multiprocessing import Pool
 from nltk.corpus import stopwords
@@ -25,6 +29,8 @@ SIMILARITY_THRESHOLD = float(os.environ.get("CHATBOT_SIMILARITY_THRESHOLD", "0.7
 
 
 def is_valid_url(url):
+    if not url:
+        return False
     return url.startswith("http://") or url.startswith("https://")
 
 
@@ -103,9 +109,9 @@ class in_memory_embeddings:
         """
         logger.info(f"syncing nodes with embeddings")
         missing_embeddings = []
-        for doc_type in cre_defs.Credoctypes:
+        for doc_type in defs.Credoctypes:
             db_ids = []
-            if doc_type.value == cre_defs.Credoctypes.CRE:
+            if doc_type.value == defs.Credoctypes.CRE:
                 db_ids = [a[0] for a in database.list_cre_ids()]
             else:
                 db_ids = [a[0] for a in database.list_node_ids_by_ntype(doc_type.value)]
@@ -128,10 +134,10 @@ class in_memory_embeddings:
             For example if "ASVS" is passed the method will generate all embeddings for ASVS
         Args:
             database (db.Node_collection): the Node_collection instance to use
-            item_name (str): the item for which to generate embeddings, this can be either `cre_defs.Credoctypes.CRE.value` for generating all CRE embeddings or the name of any Standard or Tool.
+            item_name (str): the item for which to generate embeddings, this can be either `defs.Credoctypes.CRE.value` for generating all CRE embeddings or the name of any Standard or Tool.
         """
         db_ids = []
-        if item_name == cre_defs.Credoctypes.CRE.value:
+        if item_name == defs.Credoctypes.CRE.value:
             db_ids = [a[0] for a in database.list_cre_ids()]
         else:
             db_ids = [a[0] for a in database.list_node_ids_by_name(item_name)]
@@ -144,11 +150,13 @@ class in_memory_embeddings:
     def generate_embeddings(
         self, database: db.Node_collection, missing_embeddings: List[str]
     ):
-        """method generate embeddings accepts a list of Database IDs of object which do not have embeddings and generates embeddings for those objects"""
+        """
+        accepts a list of Database IDs of object which do not have embeddings and generates embeddings for those objects
+        """
         logger.info(f"generating {len(missing_embeddings)} embeddings")
         for id in missing_embeddings:
             cre = database.get_cre_by_db_id(id)
-            node = database.get_nodes(db_id=id)
+            node = database.get_nodes(db_id=id)[0]
             content = ""
             if node:
                 if is_valid_url(node.hyperlink):
@@ -174,9 +182,16 @@ class in_memory_embeddings:
                 if not dbcre:
                     logger.fatal(node, "cannot be converted to database Node")
                 dbcre.id = id
-                database.add_embedding(
-                    dbcre, cre_defs.Credoctypes.CRE, embedding, content
-                )
+                database.add_embedding(dbcre, defs.Credoctypes.CRE, embedding, content)
+
+    def generate_embeddings_for_document(self, node: defs.Node):
+        content = ""
+        if is_valid_url(node.hyperlink):
+            content = self.clean_content(self.get_content(node.hyperlink))
+        else:
+            content = node.__repr__()
+        logger.info(f"making embedding for {node.id}")
+        return self.ai_client.get_text_embeddings(content)
 
 
 class PromptHandler:
@@ -197,8 +212,9 @@ class PromptHandler:
                 os.getenv("OPENAI_API_KEY")
             )
         else:
-            logger.error(
-                "cannot instantiate ai client, neither OPENAI_API_KEY nor SERVICE_ACCOUNT_CREDENTIALS are set "
+            self.ai_client = spacy_prompt_client.SpacyPromptClient()
+            logger.info(
+                "cannot instantiate ai client, neither OPENAI_API_KEY nor SERVICE_ACCOUNT_CREDENTIALS are set, using spacy "
             )
         self.database = database
         self.embeddings_instance = in_memory_embeddings.instance().with_ai_client(
@@ -218,6 +234,12 @@ class PromptHandler:
                 logger.info(
                     f"there are {len(missing_embeddings)} embeddings missing from the dataset, db inclompete"
                 )
+
+    def generate_embeddings_for_document(self, node: defs.Node):
+        self.embeddings_instance.setup_playwright()
+        embeddings = self.embeddings_instance.generate_embeddings_for_document(node)
+        self.embeddings_instance.teardown_playwright()
+        return embeddings
 
     def generate_embeddings_for(self, item_name: str):
         self.embeddings_instance.setup_playwright()
@@ -277,7 +299,7 @@ class PromptHandler:
                 self.existing_cre_embeddings,
                 self.existing_cre_ids,
             ) = self.__load_cre_embeddings(
-                self.database.get_embeddings_by_doc_type(cre_defs.Credoctypes.CRE.value)
+                self.database.get_embeddings_by_doc_type(defs.Credoctypes.CRE.value)
             )
         if not self.existing_cre_embeddings.getnnz() or not len(self.existing_cre_ids):
             raise ValueError(
@@ -316,7 +338,7 @@ class PromptHandler:
                 self.existing_node_ids,
             ) = self.__load_node_embeddings(
                 self.database.get_embeddings_by_doc_type(
-                    cre_defs.Credoctypes.Standard.value
+                    defs.Credoctypes.Standard.value
                 )
             )
         if not self.existing_node_embeddings.getnnz() or not len(
@@ -341,6 +363,7 @@ class PromptHandler:
         self,
         item_embedding: List[float],
         similarity_threshold: float = SIMILARITY_THRESHOLD,
+        refresh_embeddings: bool = False,
     ) -> Optional[Tuple[str, float]]:
         """this method is meant to be used when CRE runs in a web server with limited memory (e.g. firebase/heroku)
             instead of loading all our embeddings in memory we take the slower approach of paginating them
@@ -354,13 +377,12 @@ class PromptHandler:
         embedding_array = sparse.csr_matrix(
             np.array(item_embedding).reshape(1, -1)
         )  # convert embedding into a 1-dimentional numpy array
-
         (
             embeddings,
             total_pages,
             starting_page,
         ) = self.database.get_embeddings_by_doc_type_paginated(
-            cre_defs.Credoctypes.CRE.value
+            defs.Credoctypes.CRE.value
         )
         max_similarity = -1
         most_similar_index = 0
@@ -378,7 +400,7 @@ class PromptHandler:
                 total_pages,
                 _,
             ) = self.database.get_embeddings_by_doc_type_paginated(
-                cre_defs.Credoctypes.CRE.value, page=page
+                defs.Credoctypes.CRE.value, page=page
             )
 
         if max_similarity < similarity_threshold:
@@ -411,7 +433,7 @@ class PromptHandler:
             total_pages,
             starting_page,
         ) = self.database.get_embeddings_by_doc_type_paginated(
-            doc_type=cre_defs.Credoctypes.Standard.value,
+            doc_type=defs.Credoctypes.Standard.value,
             page=1,
         )
 
@@ -429,7 +451,7 @@ class PromptHandler:
                 most_similar_id = existing_standard_ids[most_similar_index]
 
             embeddings, _, _ = self.database.get_embeddings_by_doc_type_paginated(
-                doc_type=cre_defs.Credoctypes.Standard.value, page=page
+                doc_type=defs.Credoctypes.Standard.value, page=page
             )
         if max_similarity < similarity_threshold:
             logger.info(
