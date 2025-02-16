@@ -42,7 +42,6 @@ export const Header = () => {
   const history = useHistory();
 
   const { params, url, showFilter } = useLocationFromOutsideRoute();
-  // console.log(useLocationFromOutsideRoute())
   const links = useMemo(() => getLinks(), [params]);
 
   return (

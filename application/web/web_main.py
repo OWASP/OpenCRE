@@ -95,9 +95,21 @@ def neo4j_not_running_rejection():
     )
 
 
+posthog = None
+if os.environ.get("POSTHOG_API_KEY") and os.environ.get("POSTHOG_HOST"):
+    from posthog import Posthog
+
+    posthog = Posthog(
+        project_api_key=os.environ.get("POSTHOG_API_KEY"),
+        host=os.environ.get("POSTHOG_HOST"),
+    )
+
+
 @app.route("/rest/v1/id/<creid>", methods=["GET"])
 @app.route("/rest/v1/name/<crename>", methods=["GET"])
 def find_cre(creid: str = None, crename: str = None) -> Any:  # refer
+    if posthog:
+        posthog.capture(f"find_cre", f"id:{creid};name{crename}")
     database = db.Node_collection()
     include_only = request.args.getlist("include_only")
     # opt_osib = request.args.get("osib")
@@ -132,7 +144,9 @@ def find_cre(creid: str = None, crename: str = None) -> Any:  # refer
 @app.route("/rest/v1/<ntype>/<name>", methods=["GET"])
 @app.route("/rest/v1/standard/<name>", methods=["GET"])
 def find_node_by_name(name: str, ntype: str = defs.Credoctypes.Standard.value) -> Any:
-    global tracer
+    if posthog:
+        posthog.capture(f"find_node_by_name", f"hame:{name};nodeType{ntype}")
+
     database = db.Node_collection()
     opt_section = request.args.get("section")
     opt_sectionID = request.args.get("sectionID")
@@ -212,8 +226,11 @@ def find_node_by_name(name: str, ntype: str = defs.Credoctypes.Standard.value) -
 # TODO: (spyros) paginate
 @app.route("/rest/v1/tags", methods=["GET"])
 def find_document_by_tag() -> Any:
-    database = db.Node_collection()
     tags = request.args.getlist("tag")
+    if posthog:
+        posthog.capture(f"find_document_by_tag", f"tags:{tags}")
+
+    database = db.Node_collection()
     # opt_osib = request.args.get("osib")
     opt_format = request.args.get("format")
     documents = database.get_by_tags(tags)
@@ -238,6 +255,10 @@ def find_document_by_tag() -> Any:
 
 @app.route("/rest/v1/map_analysis", methods=["GET"])
 def map_analysis() -> Any:
+    standards = request.args.getlist("standard")
+    if posthog:
+        posthog.capture(f"map_analysis", f"standards:{standards}")
+
     database = db.Node_collection()
     standards = request.args.getlist("standard")
     gap_analysis_dict = gap_analysis.schedule(standards, database)
@@ -251,6 +272,9 @@ def map_analysis() -> Any:
 @app.route("/rest/v1/map_analysis_weak_links", methods=["GET"])
 def map_analysis_weak_links() -> Any:
     standards = request.args.getlist("standard")
+    if posthog:
+        posthog.capture(f"map_analysis_weak_links", f"standards:{standards}")
+
     key = request.args.get("key")
     cache_key = gap_analysis.make_subresources_key(standards=standards, key=key)
 
@@ -331,6 +355,9 @@ def fetch_job() -> Any:
 
 @app.route("/rest/v1/standards", methods=["GET"])
 def standards() -> Any:
+    if posthog:
+        posthog.capture(f"standards")
+
     database = db.Node_collection()
     standards = database.standards()
     return standards
@@ -351,6 +378,9 @@ def text_search() -> Any:
     """
     database = db.Node_collection()
     text = request.args.get("text")
+    if posthog:
+        posthog.capture(f"text_search", f"text:{text}")
+
     opt_format = request.args.get("format")
     documents = database.text_search(text)
     if documents:
@@ -376,6 +406,9 @@ def find_root_cres() -> Any:
     Useful for fast browsing the graph from the top
 
     """
+    if posthog:
+        posthog.capture(f"find_root_cres")
+
     database = db.Node_collection()
     # opt_osib = request.args.get("osib")
     opt_format = request.args.get("format")
@@ -421,6 +454,9 @@ def smartlink(
     """if node is found, show node, else redirect"""
     # ATTENTION: DO NOT MESS WITH THIS FUNCTIONALITY WITHOUT A TICKET AND CORE CONTRIBUTORS APPROVAL!
     # CRITICAL FUNCTIONALITY DEPENDS ON THIS!
+    if posthog:
+        posthog.capture(f"smartlink", f"name:{name}")
+
     database = db.Node_collection()
     opt_version = request.args.get("version")
     # match ntype to the credoctypes case-insensitive
@@ -486,6 +522,8 @@ def deeplink(
     opt_sectionid = request.args.get("sectionid")
     opt_version = request.args.get("version")
     opt_subsection = request.args.get("subsection")
+    if posthog:
+        posthog.capture(f"deeplink", f"name:{name}")
 
     if opt_section:
         opt_section = urllib.parse.unquote(opt_section)
@@ -551,6 +589,9 @@ def login_required(f):
 @login_required
 def chat_cre() -> Any:
     message = request.get_json(force=True)
+    if posthog:
+        posthog.capture(f"chat_cre")
+
     database = db.Node_collection()
     prompt = prompt_client.PromptHandler(database)
     response = prompt.generate_text(message.get("prompt"))
@@ -667,6 +708,9 @@ def logout():
 @app.route("/rest/v1/all_cres", methods=["GET"])
 def all_cres() -> Any:
     database = db.Node_collection()
+    if posthog:
+        posthog.capture(f"all_cres")
+
     page = 1
     per_page = ITEMS_PER_PAGE
     if request.args.get("page") is not None and int(request.args.get("page")) > 0:
@@ -690,6 +734,9 @@ def all_cres() -> Any:
 
 @app.route("/rest/v1/cre_csv", methods=["GET"])
 def get_cre_csv() -> Any:
+    if posthog:
+        posthog.capture(f"get_cre_csv")
+
     database = db.Node_collection()
     root_cres = database.get_root_cres()
     if root_cres:
