@@ -14,7 +14,7 @@ To see how you can contribute to the application or to the data (catalog or stan
 We really welcome you!
 
 # Roadmap
-For a roadmap please see the [issues](https://github.com/OWASP/common-requirement-enumeration/issues).
+For a roadmap please see the [issues](https://github.com/OWASP/OpenCRE/issues).
 
 # Running your own OpenCRE
 
@@ -27,6 +27,7 @@ The easiest way to run OpenCRE locally is by running the published docker contai
 You can do so by running:
 `docker run -p 5000:5000  ghcr.io/owasp/opencre/opencre:latest`
 After the container has finished downloading the remote information you can access it in [localhost](http://127.0.0.1:5000)
+If you want to develop on OpenCRE or docker is not available in your environment, you can alternatively run it via CLI
 
 #### Command Line
 
