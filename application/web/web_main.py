@@ -356,7 +356,7 @@ def fetch_job() -> Any:
 @app.route("/rest/v1/standards", methods=["GET"])
 def standards() -> Any:
     if posthog:
-        posthog.capture(f"standards")
+        posthog.capture(f"standards","")
 
     database = db.Node_collection()
     standards = database.standards()
@@ -407,7 +407,7 @@ def find_root_cres() -> Any:
 
     """
     if posthog:
-        posthog.capture(f"find_root_cres")
+        posthog.capture(f"find_root_cres","")
 
     database = db.Node_collection()
     # opt_osib = request.args.get("osib")
@@ -590,7 +590,7 @@ def login_required(f):
 def chat_cre() -> Any:
     message = request.get_json(force=True)
     if posthog:
-        posthog.capture(f"chat_cre")
+        posthog.capture(f"chat_cre","")
 
     database = db.Node_collection()
     prompt = prompt_client.PromptHandler(database)
@@ -709,7 +709,7 @@ def logout():
 def all_cres() -> Any:
     database = db.Node_collection()
     if posthog:
-        posthog.capture(f"all_cres")
+        posthog.capture(f"all_cres","")
 
     page = 1
     per_page = ITEMS_PER_PAGE
@@ -735,7 +735,7 @@ def all_cres() -> Any:
 @app.route("/rest/v1/cre_csv", methods=["GET"])
 def get_cre_csv() -> Any:
     if posthog:
-        posthog.capture(f"get_cre_csv")
+        posthog.capture(f"get_cre_csv","")
 
     database = db.Node_collection()
     root_cres = database.get_root_cres()
