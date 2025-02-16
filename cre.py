@@ -112,12 +112,6 @@ def main() -> None:
         default=None,
         help="define location of local directory to export database in OSIB format to",
     )
-
-    parser.add_argument(
-        "--export",
-        default=None,
-        help="export all data into yaml files under the directory pointed to by this argument",
-    )
     # Start External Project importing
     parser.add_argument(
         "--zap_in",
