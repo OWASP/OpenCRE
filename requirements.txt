@@ -52,6 +52,7 @@ pip-autoremove
 platformdirs
 playwright
 pluggy
+posthog
 prance
 prompt-toolkit
 proto-plus
@@ -112,5 +113,4 @@ vertexai
 xmltodict
 google-cloud-trace
 alive-progress
-posthog
 
