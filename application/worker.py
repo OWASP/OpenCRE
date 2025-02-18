@@ -1,4 +1,4 @@
-from rq import Worker, Queue, Connection
+from rq import Worker, Queue
 import logging
 from application.utils import redis
 
@@ -11,6 +11,5 @@ listen = ["high", "default", "low"]
 
 def start_worker():
     logger.info(f"Worker Starting")
-    with Connection(redis.connect()):
-        worker = Worker(map(Queue, listen))
-        worker.work()
+    worker = Worker(listen, connection=redis.connect())
+    worker.work()
