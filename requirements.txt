@@ -103,7 +103,6 @@ threadpoolctl
 toml
 tomli
 tqdm
-typed-ast
 types-PyYAML
 typing-inspect
 typing_extensions
