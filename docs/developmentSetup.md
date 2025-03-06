@@ -27,7 +27,7 @@ In order to contribute code to opencre you need a system that is setup for pytho
 
 Assuming a Debian based system (e.g. ubuntu) you can install supporting tools with the following:
 ```bash
-sudo apt update && sudo apt install -y curl git python3  build-essential curl libpq-devel python3-dev sqlite3
+sudo apt update && sudo apt install -y curl git python3  build-essential curl libpq-dev python3-dev sqlite3
 ```
 
 ### MacOS
@@ -89,7 +89,7 @@ To edit files it is suggested that a code editor such as Visual Studio Code is u
 * Create a fork of the project following Github's instructions above.
 * Open a terminal
 * Clone your fork locally with ` git clone <the url of your fork starting with git@github.com>`
-* Change into the working directory `cd common-requirement-enumeration`
+
 
 OpenCRE depends on Makefiles to automate the setup and execution of several aspects.
 You can install the project by running `make install`.
@@ -104,7 +104,7 @@ You can run `cp cres/db.sqlite standards_cache.sqlite`
 
 ## Running locally
 
-You can run the backend with `make dev-run`. At the time of writing the backend URL is `http://localhost:5000` by default.
+You can run the backend with `make dev-flask`. At the time of writing the backend URL is `http://localhost:5000` by default.
 
 You can run the frontend with `yarn start`. This should open a browser tab at the application's front page and also automatically reload the page whenever changes are detected. At the time of writing the frontend URL is `http://localhost:9001` by default.
 
