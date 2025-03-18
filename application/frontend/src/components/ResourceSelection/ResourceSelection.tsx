@@ -1,11 +1,24 @@
+import axios from 'axios';
 import Cookies from 'js-cookie';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Button, Checkbox, Form } from 'semantic-ui-react';
 
-const resources = ['ASVS', 'SAMM', 'ISO', 'NIST'];
-
 const ResourceSelection = ({ onSave }: { onSave: (selectedResources: string[]) => void }) => {
+  const [resources, setResources] = useState<string[]>([]);
   const [selectedResources, setSelectedResources] = useState<string[]>([]);
+
+  useEffect(() => {
+    const fetchResources = async () => {
+      try {
+        const response = await axios.get('/api/resources');
+        setResources(response.data);
+      } catch (error) {
+        console.error('Error fetching resources:', error);
+      }
+    };
+
+    fetchResources();
+  }, []);
 
   const handleCheckboxChange = (resource: string) => {
     setSelectedResources((prev) =>

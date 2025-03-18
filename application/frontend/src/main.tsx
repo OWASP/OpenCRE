@@ -9,8 +9,8 @@ import App from './App';
 document.addEventListener('DOMContentLoaded', () => {
   ReactDOM.render(
     <Auth0Provider
-      domain="dev-tvbmfb6izmzi0ml7.us.auth0.com"
-      clientId="GukudojokWwUUKZBscg2HRr6ocR0KaE7"
+      domain={process.env.DOMAIN || ''}
+      clientId={process.env.CLIENT_ID || ''}
       authorizationParams={{
         redirect_uri: 'http://localhost:9001/dashboard',
       }}
