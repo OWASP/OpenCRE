@@ -252,6 +252,7 @@ def find_document_by_tag() -> Any:
         return jsonify(result)
     abort(404, "Tag does not exist")
 
+
 #  , to ensure that ISO numbers are treated as strings when fetched from the database and returned in API responses ,
 @app.route("/api/resources", methods=["GET"])
 def get_resources():
