@@ -678,7 +678,7 @@ class Node_collection:
         if not os.environ.get("NO_LOAD_GRAPH_DB"):
             self.neo_db = NEO_DB.instance()
         self.session = sqla.session
-    
+
     def get_resources(self):
         # Query to fetch distinct resource names from the Node table
         resources = (
@@ -688,7 +688,6 @@ class Node_collection:
             .all()
         )
         return [resource[0] for resource in resources]
-    
 
     def with_graph(self) -> "Node_collection":
         logger.info("Loading CRE graph in memory, memory-heavy operation!")
