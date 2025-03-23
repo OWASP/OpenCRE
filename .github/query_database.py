@@ -1,4 +1,4 @@
-from neo4j_connection import db # type: ignore
+from neo4j_connection import db  # type: ignore
 
 # Optimized query for performance
 query = """
@@ -13,7 +13,7 @@ for record in result:
     print(record)
 
 db.close()
-#modify query fie
+# modify query fie
 query = """
 CALL apoc.cypher.runTimeboxed(
     'MATCH (s:Standard)-[:RELATED_TO]->(f:Framework) RETURN s, f',
