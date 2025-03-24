@@ -116,11 +116,11 @@ class TestDB(unittest.TestCase):
     #     url = self.get_spreadsheet_url()
     #     alias = "Test Spreadsheet"
     #     result = read_spreadsheet(url, alias, validate=False, parse_numbered_only=False)
-        
+
     #     # Assuming the spreadsheet has a column "ISO Number" with values "7.10" and "8.20"
     #     expected = [
     #         {"ISO Number": "7.10", "Name": "Example 1", "Value": 10},
     #         {"ISO Number": "8.20", "Name": "Example 2", "Value": 20}
     #     ]
-        
+
     #     self.assertEqual(result["Sheet1"], expected)
