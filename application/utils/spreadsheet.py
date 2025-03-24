@@ -59,13 +59,19 @@ def read_spreadsheet(
                     " will be processed by convention)" % wsh.title
                 )
                 records = wsh.get_all_records(
-                    head=1, numericise_ignore=["ISO Number"]  # Added numericise_ignore parameter
+                    head=1,
+                    numericise_ignore=[
+                        "ISO Number"
+                    ],  # Added numericise_ignore parameter
                 )  # workaround because of https://github.com/burnash/gspread/issues/1007 # this will break if the column names are in any other line
                 toyaml = yaml.safe_load(yaml.safe_dump(records))
                 result[wsh.title] = toyaml
             elif not parse_numbered_only:
                 records = wsh.get_all_records(
-                    head=1, numericise_ignore=["ISO Number"]  # Added numericise_ignore parameter
+                    head=1,
+                    numericise_ignore=[
+                        "ISO Number"
+                    ],  # Added numericise_ignore parameter
                 )  # workaround because of https://github.com/burnash/gspread/issues/1007 # this will break if the column names are in any other line
                 toyaml = yaml.safe_load(yaml.safe_dump(records))
                 result[wsh.title] = toyaml
@@ -80,6 +86,7 @@ def read_spreadsheet(
         )
 
     return result
+
 
 class ExportSheet:
     processed_ids = []
