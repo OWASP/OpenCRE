@@ -107,3 +107,20 @@ class TestDB(unittest.TestCase):
         result = list(csv.DictReader(out))
 
         self.assertCountEqual(result, expected)
+
+    # def get_spreadsheet_url(self) -> str:
+    #     """Helper function to retrieve the spreadsheet URL from an environment variable."""
+    #     return os.environ.get("TEST_SPREADSHEET_URL", "https://docs.google.com/spreadsheets/d/1IgfpPw5TCKSJ4eDlzfI9oNwVOZgtXQvWxSbC7SHE7Zg")
+
+    # def test_read_spreadsheet_iso_numbers(self) -> None:
+    #     url = self.get_spreadsheet_url()
+    #     alias = "Test Spreadsheet"
+    #     result = read_spreadsheet(url, alias, validate=False, parse_numbered_only=False)
+        
+    #     # Assuming the spreadsheet has a column "ISO Number" with values "7.10" and "8.20"
+    #     expected = [
+    #         {"ISO Number": "7.10", "Name": "Example 1", "Value": 10},
+    #         {"ISO Number": "8.20", "Name": "Example 2", "Value": 20}
+    #     ]
+        
+    #     self.assertEqual(result["Sheet1"], expected)

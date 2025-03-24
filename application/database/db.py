@@ -679,16 +679,6 @@ class Node_collection:
             self.neo_db = NEO_DB.instance()
         self.session = sqla.session
 
-    def get_resources(self):
-        # Query to fetch distinct resource names from the Node table
-        resources = (
-            self.session.query(Node.name)
-            .filter(Node.ntype == cre_defs.Credoctypes.Standard.value)
-            .distinct()
-            .all()
-        )
-        return [resource[0] for resource in resources]
-
     def with_graph(self) -> "Node_collection":
         logger.info("Loading CRE graph in memory, memory-heavy operation!")
         self.graph = inmemory_graph.CRE_Graph()
