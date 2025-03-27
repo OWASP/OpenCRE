@@ -335,12 +335,20 @@ def parse_standards_from_spreadsheeet(
                 register_cre(cre, collection)
                 bar()
 
-        populate_neo4j_db(collection)
+        if not os.environ.get("CRE_NO_NEO4J"):
+            populate_neo4j_db(cache_location)
         if not os.environ.get("CRE_NO_GEN_EMBEDDINGS"):
             prompt_handler.generate_embeddings_for(defs.Credoctypes.CRE.value)
         import_only = []
-        if os.environ.get("CRE_ROOT_CSV_IMPORT_ONLY"):
-            import_only = json.loads(os.environ.get("CRE_ROOT_CSV_IMPORT_ONLY"))
+        if os.environ.get("CRE_ROOT_CSV_IMPORT_ONLY", None):
+            import_list = os.environ.get("CRE_ROOT_CSV_IMPORT_ONLY")
+            import_list_json = json.loads(import_list)
+            if type(import_list_json) == list:
+                import_only.extend(import_list_json)
+            else:
+                logger.warning(
+                    f"CRE_ROOT_CSV_IMPORT_ONLY should be a list of standards to import, received {type(import_list_json)} {import_list}"
+                )
         database = db_connect(cache_location)
         for standard_name, standard_entries in docs.items():
             if os.environ.get("CRE_NO_REIMPORT_IF_EXISTS") and database.get_nodes(
