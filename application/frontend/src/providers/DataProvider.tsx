@@ -1,4 +1,5 @@
 import axios from 'axios';
+import Cookies from 'js-cookie';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useQuery } from 'react-query';
 
@@ -8,14 +9,16 @@ import { Document, TreeDocument } from '../types';
 import { getLocalStorageObject, setLocalStorageObject } from '../utils';
 import { getDocumentDisplayName, getInternalUrl } from '../utils/document';
 
-const DATA_STORE_KEY = 'data-store',
-  DATA_TREE_KEY = 'record-tree';
+const DATA_STORE_KEY = 'data-store';
+const DATA_TREE_KEY = 'record-tree';
 
 type DataContextValues = {
   dataLoading: boolean;
   dataStore: Record<string, TreeDocument>;
   dataTree: TreeDocument[];
-  getStoreKey;
+  getStoreKey: (doc: Document) => string;
+  setSelectedResources: (resources: string[]) => void;
+  selectedResources: string[];
 };
 
 export const DataContext = createContext<DataContextValues | null>(null);
@@ -27,6 +30,9 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
     getLocalStorageObject(DATA_STORE_KEY) || {}
   );
   const [dataTree, setDataTree] = useState<TreeDocument[]>(getLocalStorageObject(DATA_TREE_KEY) || []);
+  const [selectedResources, setSelectedResources] = useState<string[]>(
+    JSON.parse(Cookies.get('selectedResources') || '[]')
+  );
 
   const getStoreKey = (doc: Document): string => {
     if (doc.doctype === 'CRE') return doc.id;
@@ -129,6 +135,18 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
     getTreeQuery.refetch();
   }, [dataStore, setDataStore]);
 
+  useEffect(() => {
+    if (selectedResources.length > 0) {
+      const filteredDataStore = Object.keys(dataStore)
+        .filter((key) => selectedResources.includes(dataStore[key].doctype))
+        .reduce((obj, key) => {
+          obj[key] = dataStore[key];
+          return obj;
+        }, {});
+      setDataStore(filteredDataStore);
+    }
+  }, [selectedResources]);
+
   return (
     <DataContext.Provider
       value={{
@@ -136,6 +154,8 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
         dataStore,
         dataTree,
         getStoreKey,
+        setSelectedResources,
+        selectedResources,
       }}
     >
       {children}

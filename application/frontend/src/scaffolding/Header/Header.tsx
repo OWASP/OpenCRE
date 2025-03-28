@@ -1,12 +1,17 @@
 import './header.scss';
 
-import React, { useMemo } from 'react';
-import { Link, useHistory } from 'react-router-dom';
-import { Button, Menu } from 'semantic-ui-react';
+import { useAuth0 } from '@auth0/auth0-react';
+import Cookies from 'js-cookie';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Link, useHistory, useLocation } from 'react-router-dom';
+import { Button, Menu, Modal } from 'semantic-ui-react';
 
 import { ClearFilterButton } from '../../components/FilterButton/FilterButton';
+import { LoadingAndErrorIndicator } from '../../components/LoadingAndErrorIndicator/LoadingAndErrorIndicator';
+import ResourceSelection from '../../components/ResourceSelection/ResourceSelection';
 import { useLocationFromOutsideRoute } from '../../hooks/useLocationFromOutsideRoute';
 import { SearchBar } from '../../pages/Search/components/SearchBar';
+import { useDataStore } from '../../providers/DataProvider';
 
 const getLinks = (): { to: string; name: string }[] => [
   {
@@ -32,6 +37,8 @@ const getLinks = (): { to: string; name: string }[] => [
 ];
 
 export const Header = () => {
+  const { user, loginWithRedirect, isAuthenticated, logout } = useAuth0();
+  const { setSelectedResources } = useDataStore();
   let currentUrlParams = new URLSearchParams(window.location.search);
 
   const HandleDoFilter = () => {
@@ -40,9 +47,44 @@ export const Header = () => {
   };
 
   const history = useHistory();
+  const location = useLocation();
+  const [showResourceModal, setShowResourceModal] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const { params, url, showFilter } = useLocationFromOutsideRoute();
   const links = useMemo(() => getLinks(), [params]);
+
+  const handleLogin = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      await loginWithRedirect({
+        appState: { targetUrl: '/dashboard' },
+      });
+    } catch (err) {
+      setError('Login failed. Please try again.');
+      setLoading(false);
+    }
+  };
+
+  const handleSaveResources = (resources: string[]) => {
+    setSelectedResources(resources);
+    setShowResourceModal(false);
+  };
+
+  useEffect(() => {
+    if (isAuthenticated && location.pathname === '/dashboard') {
+      const savedResources = Cookies.get('selectedResources')
+        ? JSON.parse(Cookies.get('selectedResources')!)
+        : null;
+      if (savedResources) {
+        setSelectedResources(savedResources);
+      } else {
+        setShowResourceModal(true);
+      }
+    }
+  }, [isAuthenticated, location.pathname]);
 
   return (
     <nav className="header">
@@ -82,7 +124,33 @@ export const Header = () => {
             )}
           </Menu.Item>
         </Menu.Menu>
+        <Menu.Menu position="right">
+          <Menu.Item>
+            {isAuthenticated && location.pathname === '/dashboard' ? (
+              <Button
+                className="auth-button"
+                onClick={() => {
+                  logout();
+                }}
+                content="Logout"
+              ></Button>
+            ) : (
+              !isAuthenticated && (
+                <Button className="auth-button" onClick={handleLogin} content="Login"></Button>
+              )
+            )}
+          </Menu.Item>
+        </Menu.Menu>
       </Menu>
+
+      <LoadingAndErrorIndicator loading={loading} error={error} />
+
+      <Modal open={showResourceModal} onClose={() => setShowResourceModal(false)}>
+        <Modal.Header>Select Resources</Modal.Header>
+        <Modal.Content>
+          <ResourceSelection onSave={handleSaveResources} />
+        </Modal.Content>
+      </Modal>
     </nav>
   );
 };

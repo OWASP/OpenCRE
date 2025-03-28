@@ -15,6 +15,7 @@ import {
 import { CommonRequirementEnumeration, Graph, Search, Standard } from './pages';
 import { BrowseRootCres } from './pages/BrowseRootCres/browseRootCres';
 import { Chatbot } from './pages/chatbot/chatbot';
+import { Dashboard } from './pages/Dashboard/Dashboard';
 import { Explorer } from './pages/Explorer/explorer';
 import { ExplorerCircles } from './pages/Explorer/visuals/circles/circles';
 import { ExplorerForceGraph } from './pages/Explorer/visuals/force-graph/forceGraph';
@@ -98,6 +99,11 @@ export const ROUTES: IRoute[] = [
   {
     path: `${EXPLORER}`,
     component: Explorer,
+    showFilter: false,
+  },
+  {
+    path: '/dashboard',
+    component: Dashboard,
     showFilter: false,
   },
 ];
