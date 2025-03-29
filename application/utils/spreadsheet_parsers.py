@@ -334,7 +334,7 @@ def update_cre_in_links(
 
 
 def parse_hierarchical_export_format(
-    cre_file: List[Dict[str, str]]
+    cre_file: List[Dict[str, str]],
 ) -> Dict[str, List[defs.Document]]:
     """parses the main OpenCRE csv and creates a list of standards in it
 
