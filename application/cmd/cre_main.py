@@ -330,6 +330,7 @@ def parse_standards_from_spreadsheeet(
         total_resources = docs.keys()
         jobs = []
         logger.info(f"Importing {len(docs.get(defs.Credoctypes.CRE.value))} CREs")
+
         with alive_bar(len(docs.get(defs.Credoctypes.CRE.value))) as bar:
             for cre in docs.pop(defs.Credoctypes.CRE.value):
                 register_cre(cre, collection)
@@ -342,7 +343,13 @@ def parse_standards_from_spreadsheeet(
         import_only = []
         if os.environ.get("CRE_ROOT_CSV_IMPORT_ONLY", None):
             import_list = os.environ.get("CRE_ROOT_CSV_IMPORT_ONLY")
-            import_list_json = json.loads(import_list)
+            try:
+                import_list_json = json.loads(import_list)
+            except json.JSONDecodeError as jde:
+                logger.error(
+                    f"value '{os.environ.get("CRE_ROOT_CSV_IMPORT_ONLY")}' is not valid json"
+                )
+                raise jde
             if type(import_list_json) == list:
                 import_only.extend(import_list_json)
             else:
@@ -359,6 +366,7 @@ def parse_standards_from_spreadsheeet(
                 )
                 continue
             if import_only and standard_name not in import_only:
+                logger.info(f"skipping standard {standard_name} as it's not in the list of {import_only}")
                 continue
             jobs.append(
                 q.enqueue_call(
@@ -670,7 +678,7 @@ def db_connect(path: str):
     collection = db.Node_collection()
     app_context = app.app_context()
     app_context.push()
-
+    logger.info(f"successfully connected to the database at {path}")
     return collection
 
 
