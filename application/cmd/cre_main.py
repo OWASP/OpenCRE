@@ -274,7 +274,7 @@ def register_standard(
 
     if calculate_gap_analysis and not os.environ.get("CRE_NO_CALCULATE_GAP_ANALYSIS"):
         # calculate gap analysis
-        populate_neo4j_db(collection)
+        populate_neo4j_db(db_connection_str)
         jobs = []
         pending_stadards = collection.standards()
         for standard_name in pending_stadards:
