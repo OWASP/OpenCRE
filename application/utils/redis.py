@@ -79,6 +79,10 @@ def wait_for_jobs(jobs: List[rq.job.Job], callback: Callable = None):
                 )
                 jobs.pop(jobs.index(job))
                 callback()
+            elif job.is_queued:
+                logger.info(
+                    f"job {job.description} is {job.get_status()}, if your system allows it, try starting a worker to pick it up"
+                )
             elif not job.is_started:
                 logger.info(
                     f"job {job.description} is of unknown status {job.get_status()}"
