@@ -187,13 +187,12 @@ def parse_export_format(lfile: List[Dict[str, Any]]) -> Dict[str, List[defs.Docu
                         )
                     )
                 elif highest_index < i:  # we found a higher hierarchy CRE
-                    if not highest_cre.link_exists(working_cre):
-                        cres[highest_cre.id] = highest_cre.add_link(
-                            defs.Link(
-                                document=working_cre.shallow_copy(),
-                                ltype=defs.LinkTypes.Contains,
-                            )
-                        )
+                    lnk = defs.Link(
+                        document=working_cre.shallow_copy(),
+                        ltype=defs.LinkTypes.Contains,
+                    )
+                    if not highest_cre.has_link(lnk):
+                        cres[highest_cre.id] = highest_cre.add_link(lnk)
                     else:
                         logger.warning(
                             f"Link between {highest_cre.name} and {working_cre.name} already exists"
@@ -442,12 +441,15 @@ def parse_hierarchical_export_format(
                     )
                     new_cre = cre_dict[other_cre.strip()]
                     # we only need a shallow copy here
-                    cre = cre.add_link(
-                        defs.Link(
-                            ltype=defs.LinkTypes.Related,
-                            document=new_cre.shallow_copy(),
-                        )
+                    lnk = defs.Link(
+                        ltype=defs.LinkTypes.Related,
+                        document=new_cre.shallow_copy(),
                     )
+                    if cre.has_link(lnk):
+                        indx = cre.links.index(lnk)
+                        cre.links[indx].document = new_cre.shallow_copy()
+                    else:
+                        cre = cre.add_link(lnk)
 
         for link in parse_standards(mapping):
             doc = link.document
