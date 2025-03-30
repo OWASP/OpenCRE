@@ -211,12 +211,14 @@ class ExportSheet:
                 for link in doc.links:
                     if link.document.doctype == defs.Credoctypes.CRE:
                         newCRE = self.input_cres.get(link.document.id)
+
                         if not newCRE:
                             newCRE = link.document
-                        if not newCRE.link_exists(doc):
-                            newCRE.add_link(
-                                defs.Link(document=doc.shallow_copy(), ltype=link.ltype)
-                            )
+
+                        lnk = defs.Link(document=doc.shallow_copy(), ltype=link.ltype)
+                        if not newCRE.has_link(lnk):
+                            newCRE.add_link(lnk)
+
                         self.input_cres[newCRE.id] = newCRE
                 if not newCRE:
                     non_cre_docs.append(doc)
