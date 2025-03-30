@@ -109,14 +109,22 @@ class TestDB(unittest.TestCase):
         self.assertCountEqual(result, expected)
 
     def test_read_spreadsheet_iso_numbers(self) -> None:
-        url = "https://docs.google.com/spreadsheets/d/1eZOEYgts7d_-Dr-1oAbogPfzBLh6511b58pX3b59kvg"  # CRE spreadsheet url
+        url = "https://docs.google.com/spreadsheets/d/1ugU-FCIRLc5D_xpKOunelo26Wel3PTLnMKFdu7isZ3s"  # Public iso test CRE spreadsheet url
         alias = "Test Spreadsheet"
         result = read_spreadsheet(url, alias, validate=False, parse_numbered_only=False)
-
-        # Assuming the spreadsheet has a column "ISO Number" with values "7.10" and "8.20"
         expected = [
-            {"ISO Number": "7.10", "Name": "Example 1", "Value": 10},
-            {"ISO Number": "8.20", "Name": "Example 2", "Value": 20},
+            {
+                "Standard 27001/2:2022": "Use of cryptography",
+                "Standard 27001/2:2022 Section ID": "1.10",
+            },
+            {
+                "Standard 27001/2:2022": "Privacy and protection of personal identifiable information (PII)",
+                "Standard 27001/2:2022 Section ID": "10.10",
+            },
+            {
+                "Standard 27001/2:2022": "Secure development life cycle",
+                "Standard 27001/2:2022 Section ID": "1.31",
+            },
         ]
 
-        self.assertEqual(result["Sheet1"], expected)
+        self.assertEqual(result["ISO Numericise Test"], expected)
