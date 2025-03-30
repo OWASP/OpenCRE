@@ -148,9 +148,12 @@ class in_memory_embeddings:
         logger.info(f"generating {len(missing_embeddings)} embeddings")
         for id in missing_embeddings:
             cre = database.get_cre_by_db_id(id)
-            node = database.get_nodes(db_id=id)
+            nodes = database.get_nodes(db_id=id)
             content = ""
-            if node:
+            if nodes:
+                node = nodes
+                if type(node) == list:
+                    node = nodes[0]
                 if is_valid_url(node.hyperlink):
                     content = self.clean_content(self.get_content(node.hyperlink))
                 else:
