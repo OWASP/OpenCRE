@@ -78,8 +78,9 @@ def extend_cre_with_tag_links(
     others = list(frozenset(others))
     for o in others:
         o.links = []
-        if not cre.link_exists(o) and o.id != cre.id:
-            cre.add_link(defs.Link(ltype=defs.LinkTypes.Related, document=o))
+        lnk = defs.Link(ltype=defs.LinkTypes.Related, document=o)
+        if not cre.has_link(lnk) and o.id != cre.id:
+            cre.add_link(lnk)
     return cre
 
 
