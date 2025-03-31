@@ -420,7 +420,9 @@ class TestMain(unittest.TestCase):
         mock_db_connect.return_value = self.collection
         # No jobs scheduled when we're registering CREs only
         expected_cre_only_input, _ = data_gen.root_csv_cre_only()
-        main.parse_standards_from_spreadsheeet(expected_cre_only_input, "", prompt_handler)
+        main.parse_standards_from_spreadsheeet(
+            expected_cre_only_input, "", prompt_handler
+        )
         mock_enqueue_call.assert_not_called()
 
         # Jobs scheduled when we're registering Standards only
