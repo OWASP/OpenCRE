@@ -340,15 +340,15 @@ def parse_standards_from_spreadsheeet(
             populate_neo4j_db(cache_location)
         if not os.environ.get("CRE_NO_GEN_EMBEDDINGS"):
             prompt_handler.generate_embeddings_for(defs.Credoctypes.CRE.value)
+
         import_only = []
         if os.environ.get("CRE_ROOT_CSV_IMPORT_ONLY", None):
             import_list = os.environ.get("CRE_ROOT_CSV_IMPORT_ONLY")
             try:
                 import_list_json = json.loads(import_list)
             except json.JSONDecodeError as jde:
-                logger.error(
-                    f"value '{os.environ.get("CRE_ROOT_CSV_IMPORT_ONLY")}' is not valid json"
-                )
+                env_value = os.environ.get("CRE_ROOT_CSV_IMPORT_ONLY")
+                logger.error(f"value '{env_value}' is not valid json")
                 raise jde
             if type(import_list_json) == list:
                 import_only.extend(import_list_json)
@@ -366,7 +366,9 @@ def parse_standards_from_spreadsheeet(
                 )
                 continue
             if import_only and standard_name not in import_only:
-                logger.info(f"skipping standard {standard_name} as it's not in the list of {import_only}")
+                logger.info(
+                    f"skipping standard {standard_name} as it's not in the list of {import_only}"
+                )
                 continue
             jobs.append(
                 q.enqueue_call(
