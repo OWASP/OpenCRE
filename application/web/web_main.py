@@ -485,6 +485,16 @@ def smartlink(
             ntype=doctype,
         )
         found_section_id = True
+
+    # If only one node is connected, redirect directly to its CRE page
+    if nodes and len(nodes) == 1:
+        logger.info(
+            f"Found a single node for type {ntype}, name {name}, and section {section}. Redirecting to CRE page."
+        )
+        return redirect(f"/cre/{nodes[0].id}")
+
+    # If multiple nodes are connected, redirect to the generic node page
+
     if nodes and len(nodes[0].links):
         logger.info(
             f"found node of type {ntype}, name {name} and section {section}, redirecting to opencre"
@@ -492,6 +502,8 @@ def smartlink(
         if found_section_id:
             return redirect(f"/node/{ntype}/{name}/sectionid/{section}")
         return redirect(f"/node/{ntype}/{name}/section/{section}")
+
+    # If no nodes are found, attempt to redirect to an external resource
     elif doctype == defs.Credoctypes.Standard.value and redirectors.redirect(
         name, section
     ):
