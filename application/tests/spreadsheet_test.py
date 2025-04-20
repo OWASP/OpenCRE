@@ -107,3 +107,24 @@ class TestDB(unittest.TestCase):
         result = list(csv.DictReader(out))
 
         self.assertCountEqual(result, expected)
+
+    def test_read_spreadsheet_iso_numbers(self) -> None:
+        url = "https://docs.google.com/spreadsheets/d/1ugU-FCIRLc5D_xpKOunelo26Wel3PTLnMKFdu7isZ3s"  # Public iso test CRE spreadsheet url
+        alias = "Test Spreadsheet"
+        result = read_spreadsheet(url, alias, validate=False, parse_numbered_only=False)
+        expected = [
+            {
+                "Standard 27001/2:2022": "Use of cryptography",
+                "Standard 27001/2:2022 Section ID": "1.10",
+            },
+            {
+                "Standard 27001/2:2022": "Privacy and protection of personal identifiable information (PII)",
+                "Standard 27001/2:2022 Section ID": "10.10",
+            },
+            {
+                "Standard 27001/2:2022": "Secure development life cycle",
+                "Standard 27001/2:2022 Section ID": "1.31",
+            },
+        ]
+
+        self.assertEqual(result["ISO Numericise Test"], expected)
