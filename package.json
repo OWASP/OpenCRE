@@ -53,8 +53,10 @@
   },
   "dependencies": {
     "@artsy/fresnel": "^1.4.0",
+    "@auth0/auth0-react": "^2.3.0",
     "@react-oauth/google": "^0.11.0",
     "@types/d3": "^7.4.2",
+    "@types/js-cookie": "^3.0.6",
     "awesome-typescript-loader": "5.2.1",
     "axios": "^0.21.4",
     "d3": "^7.8.5",
@@ -62,6 +64,7 @@
     "date-fns": "^2.16.1",
     "dompurify": "^3.0.5",
     "elkjs": "^0.7.1",
+    "js-cookie": "^3.0.5",
     "marked": "^9.0.2",
     "marked-react": "^2.0.0",
     "npm": "^7.11.2",
@@ -93,5 +96,6 @@
       "style": "module",
       "parser": "typescript"
     }
-  }
+  },
+  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
 }
