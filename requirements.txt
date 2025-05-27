@@ -11,6 +11,7 @@ Flask_Migrate
 Flask-SQLAlchemy
 setuptools
 gitpython
+google
 google-api-core
 google_auth_oauthlib
 google-cloud-aiplatform

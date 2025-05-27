@@ -82,6 +82,7 @@ class in_memory_embeddings:
         # in case we want to run without connectivity to ai_client or playwright
         self.__playwright = sync_playwright().start()
         nltk.download("punkt")
+        nltk.download("punkt_tab")
         nltk.download("stopwords")
         self.__firefox = self.__playwright.firefox
         self.__browser = self.__firefox.launch()  # headless=False, slow_mo=1000)
@@ -189,9 +190,7 @@ class PromptHandler:
 
     def __init__(self, database: db.Node_collection, load_all_embeddings=False) -> None:
         self.ai_client = None
-        if os.environ.get("GCP_NATIVE") or os.environ.get(
-            "SERVICE_ACCOUNT_CREDENTIALS"
-        ):
+        if os.environ.get("GCP_NATIVE") or os.environ.get("GEMINI_API_KEY"):
             logger.info("using Google Vertex AI engine")
             self.ai_client = vertex_prompt_client.VertexPromptClient()
         elif os.getenv("OPENAI_API_KEY"):
@@ -201,7 +200,7 @@ class PromptHandler:
             )
         else:
             logger.error(
-                "cannot instantiate ai client, neither OPENAI_API_KEY nor SERVICE_ACCOUNT_CREDENTIALS are set "
+                "cannot instantiate ai client, neither OPENAI_API_KEY nor GEMINI_API_KEY are set "
             )
         self.database = database
         self.embeddings_instance = in_memory_embeddings.instance().with_ai_client(
