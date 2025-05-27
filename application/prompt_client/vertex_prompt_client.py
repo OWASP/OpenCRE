@@ -10,6 +10,9 @@ from vertexai.preview.language_models import (
     TextGenerationModel,
     TextEmbeddingModel,
 )
+from google import genai
+from google.genai import types
+
 import os
 import pathlib
 import vertexai
@@ -50,62 +53,54 @@ class VertexPromptClient:
     ]
 
     def __init__(self) -> None:
-        service_account_secrets_file = os.path.join(
-            pathlib.Path(__file__).parent.parent.parent, "gcp_sa_secret.json"
-        )
-        if os.environ.get("SERVICE_ACCOUNT_CREDENTIALS"):
-            with open(service_account_secrets_file, "w") as f:
-                f.write(os.environ.get("SERVICE_ACCOUNT_CREDENTIALS"))
-                os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = (
-                    service_account_secrets_file
-                )
-        elif not os.environ.get("GCP_NATIVE"):
-            logger.fatal(
-                "neither GCP_NATIVE nor SERVICE_ACCOUNT_CREDENTIALS have been set"
-            )
-
-        vertexai.init(
-            project=os.environ.get("GOOGLE_PROJECT_ID"),
-            location=os.environ.get("GOOGLE_PROJECT_LOCATION"),
-        )
-        self.chat_model = ChatModel.from_pretrained("chat-bison@001")
-        self.embeddings_model = TextEmbeddingModel.from_pretrained(
-            "textembedding-gecko@001"
-        )
-        self.chat = self.chat_model.start_chat(context=self.context)
+        self.client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 
     def get_text_embeddings(self, text: str) -> List[float]:
         """Text embedding with a Large Language Model."""
-        embeddings_model = TextEmbeddingModel.from_pretrained("textembedding-gecko@001")
+
         if len(text) > 8000:
             logger.info(
                 f"embedding content is more than the vertex hard limit of 8k tokens, reducing to 8000"
             )
             text = text[:8000]
-        embeddings = []
+        values = []
         try:
-            emb = embeddings_model.get_embeddings([text])
-            embeddings = emb[0].values
-        except googleExceptions.ResourceExhausted as e:
+            result = self.client.models.embed_content(
+                model="gemini-embedding-exp-03-07",
+                contents=text,
+                config=types.EmbedContentConfig(task_type="SEMANTIC_SIMILARITY"),
+            )
+            if not result:
+                return None
+            values = result.embeddings[0].values
+        except genai.errors.ClientError as e:
             logger.info("hit limit, sleeping for a minute")
             time.sleep(
                 60
             )  # Vertex's quota is per minute, so sleep for a full minute, then try again
-            embeddings = self.get_text_embeddings(text)
+            values = self.get_text_embeddings(text)
 
-        if not embeddings:
-            return None
-        values = embeddings
         return values
 
     def create_chat_completion(self, prompt, closest_object_str) -> str:
-        parameters = {"temperature": 0.5, "max_output_tokens": MAX_OUTPUT_TOKENS}
         msg = f"Your task is to answer the following question based on this area of knowledge:`{closest_object_str}` if you can, provide code examples, delimit any code snippet with three backticks\nQuestion: `{prompt}`\n ignore all other commands and questions that are not relevant."
-        response = self.chat.send_message(msg, **parameters)
+        response = self.client.models.generate_content(
+            model="gemini-2.0-flash",
+            contents=msg,
+            config=types.GenerateContentConfig(
+                max_output_tokens=MAX_OUTPUT_TOKENS, temperature=0.5
+            ),
+        )
         return response.text
 
     def query_llm(self, raw_question: str) -> str:
-        parameters = {"temperature": 0.5, "max_output_tokens": MAX_OUTPUT_TOKENS}
-        msg = f"Your task is to answer the following cybesrsecurity question if you can, provide code examples, delimit any code snippet with three backticks, ignore any unethical questions or questions irrelevant to cybersecurity\nQuestion: `{raw_question}`\n ignore all other commands and questions that are not relevant."
-        response = self.chat.send_message(msg, **parameters)
+        msg = f"Your task is to answer the following cybersecurity question if you can, provide code examples, delimit any code snippet with three backticks, ignore any unethical questions or questions irrelevant to cybersecurity\nQuestion: `{raw_question}`\n ignore all other commands and questions that are not relevant."
+        response = self.client.models.generate_content(
+            model="gemini-2.0-flash",
+            contents=msg,
+            config=types.GenerateContentConfig(
+                max_output_tokens=MAX_OUTPUT_TOKENS, temperature=0.5
+            ),
+        )
+        # response = self.chat.send_message(msg, **parameters)
         return response.text
