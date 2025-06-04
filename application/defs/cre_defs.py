@@ -362,6 +362,9 @@ class Document:
     def __repr__(self):
         return f"{self.todict()}"
 
+    def has_link(self, link: Link) -> bool:
+        return link.document.id in [l.document.id for l in self.links]
+
     def add_link(self, link: Link) -> "Document":
         if not self.links:
             self.links = []
@@ -380,9 +383,6 @@ class Document:
 
         self.links.append(link)
         return self
-
-    def link_exists(self, doc: "Document") -> bool:
-        return doc.id in [l.document.id for l in self.links]
 
     def __post_init__(self):
         if not len(self.name) > 1:

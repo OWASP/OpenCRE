@@ -274,7 +274,7 @@ def register_standard(
 
     if calculate_gap_analysis and not os.environ.get("CRE_NO_CALCULATE_GAP_ANALYSIS"):
         # calculate gap analysis
-        populate_neo4j_db(collection)
+        populate_neo4j_db(db_connection_str)
         jobs = []
         pending_stadards = collection.standards()
         for standard_name in pending_stadards:
@@ -330,6 +330,7 @@ def parse_standards_from_spreadsheeet(
         total_resources = docs.keys()
         jobs = []
         logger.info(f"Importing {len(docs.get(defs.Credoctypes.CRE.value))} CREs")
+
         with alive_bar(len(docs.get(defs.Credoctypes.CRE.value))) as bar:
             for cre in docs.pop(defs.Credoctypes.CRE.value):
                 register_cre(cre, collection)
@@ -339,10 +340,16 @@ def parse_standards_from_spreadsheeet(
             populate_neo4j_db(cache_location)
         if not os.environ.get("CRE_NO_GEN_EMBEDDINGS"):
             prompt_handler.generate_embeddings_for(defs.Credoctypes.CRE.value)
+
         import_only = []
         if os.environ.get("CRE_ROOT_CSV_IMPORT_ONLY", None):
             import_list = os.environ.get("CRE_ROOT_CSV_IMPORT_ONLY")
-            import_list_json = json.loads(import_list)
+            try:
+                import_list_json = json.loads(import_list)
+            except json.JSONDecodeError as jde:
+                env_value = os.environ.get("CRE_ROOT_CSV_IMPORT_ONLY")
+                logger.error(f"value '{env_value}' is not valid json")
+                raise jde
             if type(import_list_json) == list:
                 import_only.extend(import_list_json)
             else:
@@ -359,6 +366,9 @@ def parse_standards_from_spreadsheeet(
                 )
                 continue
             if import_only and standard_name not in import_only:
+                logger.info(
+                    f"skipping standard {standard_name} as it's not in the list of {import_only}"
+                )
                 continue
             jobs.append(
                 q.enqueue_call(
@@ -670,7 +680,7 @@ def db_connect(path: str):
     collection = db.Node_collection()
     app_context = app.app_context()
     app_context.push()
-
+    logger.info(f"successfully connected to the database at {path}")
     return collection
 
 
