@@ -9,12 +9,26 @@
     "allowSyntheticDefaultImports": true,
     "allowJs": true,
     "checkJs": false,
-    "lib": ["esnext", "dom"],
+    "lib": [
+      "esnext",
+      "dom"
+    ],
     "outDir": "dist",
     "moduleResolution": "node",
     "keyofStringsOnly": true,
     "skipLibCheck": true
   },
-  "include": ["**/*.ts", "**/*.tsx", "**/*.js", "src/**/*"],
-  "exclude": ["dist", "node_modules", "build", "scripts"]
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    "**/*.js",
+    "src/**/*"
+  ],
+  "exclude": [
+    "venv",
+    "dist",
+    "node_modules",
+    "build",
+    "scripts"
+  ]
 }
