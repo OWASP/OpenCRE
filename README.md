@@ -36,6 +36,10 @@ To install this application you need python3, yarn and virtualenv.
 * Clone the repository:
 <pre>git clone https://github.com/OWASP/common-requirement-enumeration </pre>
 
+* (Recommend) Create and activate a Python virtual environment:
+<pre>python3 -m venv venv 
+source venv/bin/activate </pre>
+
 * Install dependencies
 <pre> make install </pre>
 
