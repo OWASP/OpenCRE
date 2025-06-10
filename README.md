@@ -1,7 +1,7 @@
 # OpenCRE readme
 
-Go to https://www.opencre.org to see OpenCRE working and more explanation.  
-OpenCRE stands for Open Common Requirement enumeration. It is an interactive content linking platform for uniting security standards and guidelines. It offers easy and robust access to relevant information when designing, developing, testing and procuring secure software.  
+Go to https://www.opencre.org to see OpenCRE working and more explanation.
+OpenCRE stands for Open Common Requirement enumeration. It is an interactive content linking platform for uniting security standards and guidelines. It offers easy and robust access to relevant information when designing, developing, testing and procuring secure software.
 
 OpenCRE consists of:
 - The application: a python web and cli application to access the data, running publicly at opencre.org
@@ -10,7 +10,7 @@ OpenCRE consists of:
 - Tools and guidelines to contribute to the data and to run the application locally
 
 # Contribute code or mappings
-To see how you can contribute to the application or to the data (catalog or standard mappings), see [Contributing](docs/CONTRIBUTING.md).  
+To see how you can contribute to the application or to the data (catalog or standard mappings), see [Contributing](docs/CONTRIBUTING.md).
 We really welcome you!
 
 # Roadmap
@@ -36,6 +36,19 @@ To install this application you need python3, yarn and virtualenv.
 * Clone the repository:
 <pre>git clone https://github.com/OWASP/common-requirement-enumeration </pre>
 
+<details> <summary><strong> Setting up with Dev Containers (Recommended for Mac M1/M2 users)</strong></summary>
+If you're using an Apple Silicon Mac and want to contribute using VS Code, you can use Dev Containers.
+
+Steps:
+Install Docker Desktop (with Rosetta for x86 compatibility, if needed).
+
+Install the Dev Containers extension in VS Code.
+
+Reopen the repo in container:
+VS Code will prompt you:
+<code>Reopen in Container</code> → Click it.
+</details>
+
 * Install dependencies
 <pre> make install </pre>
 
@@ -58,7 +71,7 @@ To add a remote spreadsheet to your local database you can run
 To run the web application for development you can run
 <pre>
 $ make start-containers
-$ make start-worker 
+$ make start-worker
 
 # in a seperate shell
 $ make dev-flask
@@ -81,7 +94,7 @@ See [the myOpenCRE user guide](docs/my-opencre-user-guide.md) on using the OpenC
 
 
 ### Docker building and running
-You can build the production or the development docker images with 
+You can build the production or the development docker images with
 `make docker-prod` and `make docker-dev` respectively
 The environment variables used by OpenCRE are:
 ```
@@ -107,7 +120,7 @@ You can run the containers with `make docker-prod-run` and `make-docker-dev-run`
 
 You can run backend tests with
 <pre>make test</pre>
-You can run get a coverage report with 
+You can run get a coverage report with
 <pre>make cover</pre>
 Try to keep the coverage above 70%
 
@@ -116,7 +129,7 @@ Try to keep the coverage above 70%
 [![GitHub Super-Linter](https://github.com/OWASP/common-requirement-enumeration/workflows/Lint%20Code%20Base/badge.svg)](https://github.com/marketplace/actions/super-linter)
 [![Main Branch Build](https://github.com/OWASP/common-requirement-enumeration/workflows/Test/badge.svg?branch=main)](https://github.com/OWASP/OWASP/common-requirement-enumeration/workflows/Test)
 
-[![Issues](https://img.shields.io/github/issues/owasp/common-requirement-enumeration)](https://github.com/OWASP/common-requirement-enumeration/issues)  
+[![Issues](https://img.shields.io/github/issues/owasp/common-requirement-enumeration)](https://github.com/OWASP/common-requirement-enumeration/issues)
 [![PR's Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat)](http://makeapullrequest.com)
 ![GitHub contributors](https://img.shields.io/github/contributors/owasp/common-requirement-enumeration)
 ![GitHub last commit](https://img.shields.io/github/last-commit/owasp/common-requirement-enumeration)
