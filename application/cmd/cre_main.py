@@ -110,6 +110,7 @@ def register_node(node: defs.Node, collection: db.Node_collection) -> db.Node:
 
 
 def register_cre(cre: defs.CRE, collection: db.Node_collection) -> Tuple[db.CRE, bool]:
+    collection = collection.with_graph()
     existing = False
     if collection.get_CREs(name=cre.id):
         existing = True
