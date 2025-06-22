@@ -55,15 +55,15 @@ export const ExplorerForceGraph = () => {
       addNode(link.source);
       addNode(link.target);
     });
-
-    setMaxNodeSize(gData.nodes.map((n) => n.size).reduce((a, b) => Math.max(a, b)));
-    setMaxCount(gData.links.map((l) => l.count).reduce((a, b) => Math.max(a, b)));
+    //Added inital value to reduce array
+    setMaxNodeSize(gData.nodes.map((n) => n.size).reduce((a, b) => Math.max(a, b), 0));
+    setMaxCount(gData.links.map((l) => l.count).reduce((a, b) => Math.max(a, b), 0));
 
     gData.links = gData.links.map((l) => {
       return { source: l.target, target: l.source, count: l.count, type: l.type };
     });
     setGraphData(gData);
-  }, [ignoreTypes]);
+  }, [ignoreTypes, dataTree]);
 
   const getLinkColor = (ltype) => {
     switch (ltype.toLowerCase()) {

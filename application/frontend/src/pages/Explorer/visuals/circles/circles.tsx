@@ -88,6 +88,7 @@ export const ExplorerCircles = () => {
         return d.parent === root ? 'inline' : 'none';
       })
       .text(function (d: any) {
+        if (!d.data.displayName) return '';
         let name =
           d.data.displayName.length > 33 ? d.data.displayName.substr(0, 33) + '...' : d.data.displayName;
         if (d.data.children && d.data.children.length > 0) name += ' (' + d.data.children.length + ')';
