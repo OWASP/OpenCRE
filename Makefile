@@ -31,6 +31,16 @@ start-worker:
 upstream-sync:
 	. ./venv/bin/activate && python cre.py --upstream_sync
 
+generate-synthetic:
+	python3 -m application.scripts.generate_synthetic_graph
+
+populate-neo4j:
+	python cre.py --populate_neo4j_db
+
+sync-and-populate:
+	make upstream-sync
+	make populate-neo4j
+
 dev-flask:
 	. ./venv/bin/activate && INSECURE_REQUESTS=1 FLASK_APP=`pwd`/cre.py  FLASK_CONFIG=development flask run
 
@@ -70,7 +80,7 @@ install-python:
 	. ./venv/bin/activate &&\
 	make install-deps-python &&\
 	playwright install
-	
+
 install-typescript:
 	yarn add webpack && cd application/frontend && yarn build
 
@@ -104,8 +114,8 @@ clean:
 
 migrate-upgrade:
 	[ -d "./venv" ] && . ./venv/bin/activate &&\
-	export FLASK_APP=$(CURDIR)/cre.py 
-	flask db upgrade  
+	export FLASK_APP=$(CURDIR)/cre.py
+	flask db upgrade
 
 migrate-downgrade:
 	[ -d "./venv" ] && . ./venv/bin/activate &&\
