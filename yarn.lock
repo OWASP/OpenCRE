@@ -5551,6 +5551,11 @@ cli-table3@^0.6.0:
   optionalDependencies:
     "@colors/colors" "1.5.0"
 
+click@^0.1.0:
+  version "0.1.0"
+  resolved "https://registry.yarnpkg.com/click/-/click-0.1.0.tgz#5ec462b22f5eaf8abcb988c51c0007c7b38de99a"
+  integrity sha512-dveXPLXKYPqhNpRKZUm9lSj4P1w+OpZOsaCysGklXuX47J4g1WBBHPn+XeVLT9RmUDIig/wDMgJxhr1MRMjt1Q==
+
 cliui@^2.1.0:
   version "2.1.0"
   resolved "https://registry.yarnpkg.com/cliui/-/cliui-2.1.0.tgz#4b475760ff80264c762c3a1719032e91c7fea0d1"
