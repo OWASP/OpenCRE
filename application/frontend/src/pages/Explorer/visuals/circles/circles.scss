@@ -30,3 +30,23 @@
     margin: 0;
     background-color: transparent;
 }
+
+.circle-tooltip {
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    max-width: 300px;
+    word-wrap: break-word;
+}
+
+.breadcrumb-container {
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    padding: 10px;
+    background-color: #f8f8f8;
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    margin-bottom: 15px !important;
+    overflow: auto;
+    max-width: 100%;
+    white-space: nowrap;
+    line-height: 1.4;
+}

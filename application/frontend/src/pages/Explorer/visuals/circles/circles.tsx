@@ -11,6 +11,7 @@ export const ExplorerCircles = () => {
   const { height, width } = useWindowDimensions();
   const [useFullScreen, setUseFullScreen] = useState(false);
   const { dataLoading, dataTree } = useDataStore();
+  const [breadcrumb, setBreadcrumb] = useState<string[]>([]);
 
   useEffect(() => {
     var svg = d3.select('svg');
@@ -60,6 +61,42 @@ export const ExplorerCircles = () => {
       nodes = pack(root).descendants(),
       view;
 
+    // Create tooltip div for hover labels
+    const tooltip = d3
+      .select('body')
+      .append('div')
+      .attr('class', 'circle-tooltip')
+      .style('position', 'absolute')
+      .style('visibility', 'hidden')
+      .style('background-color', 'white')
+      .style('padding', '5px')
+      .style('border-radius', '3px')
+      .style('border', '1px solid #ccc')
+      .style('pointer-events', 'none')
+      .style('z-index', '10');
+
+    // Update breadcrumb when focus changes
+    const updateBreadcrumb = (d: any) => {
+      if (d === root) {
+        setBreadcrumb([]);
+        return;
+      }
+      
+      let path: string[] = [];
+      let current = d;
+      
+      while (current && current !== root) {
+        if (current.data.displayName && current.data.displayName !== 'cluster') {
+          // Remove "CRE: " prefix if it exists
+          const displayName = current.data.displayName.replace(/^CRE: /, '');
+          path.unshift(displayName);
+        }
+        current = current.parent;
+      }
+      
+      setBreadcrumb(path);
+    };
+
     var circle = g
       .selectAll('circle')
       .data(nodes)
@@ -71,8 +108,33 @@ export const ExplorerCircles = () => {
       .style('fill', function (d: any) {
         return d.children ? color(d.depth) : d.data.color ? d.data.color : null;
       })
+      .on('mouseover', function(event, d: any) {
+        if (d.data.displayName) {
+          // Remove "CRE: " prefix if it exists
+          const displayName = d.data.displayName.replace(/^CRE: /, '');
+          
+          // Show full label without truncation
+          tooltip
+            .html(displayName + (d.data.children && d.data.children.length > 0 ? ' (' + d.data.children.length + ')' : ''))
+            .style('visibility', 'visible')
+            .style('top', (event.pageY - 10) + 'px')
+            .style('left', (event.pageX + 10) + 'px');
+        }
+      })
+      .on('mousemove', function(event) {
+        tooltip
+          .style('top', (event.pageY - 10) + 'px')
+          .style('left', (event.pageX + 10) + 'px');
+      })
+      .on('mouseout', function() {
+        tooltip.style('visibility', 'hidden');
+      })
       .on('click', function (event, d: any) {
-        if (focus !== d) zoom(event, d), event.stopPropagation();
+        if (focus !== d) {
+          updateBreadcrumb(d);
+          zoom(event, d);
+          event.stopPropagation();
+        }
       });
 
     var text = g
@@ -82,22 +144,34 @@ export const ExplorerCircles = () => {
       .append('text')
       .attr('class', 'label')
       .style('fill-opacity', function (d: any) {
-        return d.parent === root ? 1 : 0;
+        // Show text at all zoom levels
+        return d.parent === root || (d.parent === focus) ? 1 : 0;
       })
       .style('display', function (d: any) {
-        return d.parent === root ? 'inline' : 'none';
+        // Try to display all labels if there's room
+        return d.parent === root || (d.parent === focus) ? 'inline' : 'none';
       })
       .text(function (d: any) {
         if (!d.data.displayName) return '';
-        let name =
-          d.data.displayName.length > 33 ? d.data.displayName.substr(0, 33) + '...' : d.data.displayName;
-        if (d.data.children && d.data.children.length > 0) name += ' (' + d.data.children.length + ')';
+        
+        // Remove "CRE: " prefix
+        let name = d.data.displayName.replace(/^CRE: /, '');
+        
+        // Truncate if necessary
+        name = name.length > 33 ? name.substr(0, 33) + '...' : name;
+        
+        // Add count of children
+        if (d.data.children && d.data.children.length > 0) {
+          name += ' (' + d.data.children.length + ')';
+        }
+        
         return name;
       });
 
     var node = g.selectAll('circle,text');
 
     svg.style('background', color(-1)).on('click', function (event) {
+      updateBreadcrumb(root);
       zoom(event, root);
     });
 
@@ -121,10 +195,12 @@ export const ExplorerCircles = () => {
         .selectAll('text')
         .filter(function (d: any) {
           const el = this as HTMLElement;
+          // Show text for all nodes that are children of the current focus
           return (d && d.parent === focus) || el.style.display === 'inline';
         })
         .style('fill-opacity', function (d: any) {
-          return d && d.parent === focus ? 1 : 0;
+          // Show text at all zoom levels, including deepest
+          return (d && d.parent === focus) ? 1 : 0;
         })
         .on('start', function (d: any) {
           const el = this as HTMLElement;
@@ -146,17 +222,54 @@ export const ExplorerCircles = () => {
         return d.r * k;
       });
     }
-  }, [useFullScreen]);
+
+    // Clean up tooltip when component unmounts
+    return () => {
+      d3.select('.circle-tooltip').remove();
+    };
+  }, [useFullScreen, dataTree]);
+
   const defaultSize = width > height ? height - 100 : width;
   const size = useFullScreen ? width : defaultSize;
+  
   return (
     <div>
       <LoadingAndErrorIndicator loading={dataLoading} error={null} />
+      
+      {/* Breadcrumb navigation */}
+      {breadcrumb.length > 0 && (
+        <div className="breadcrumb-container" style={{ margin: '10px auto', width: 'fit-content', textAlign: 'center' }}>
+          {breadcrumb.map((item, index) => (
+            <React.Fragment key={index}>
+              {index > 0 && <span> &gt; </span>}
+              <span>{item}</span>
+            </React.Fragment>
+          ))}
+        </div>
+      )}
+      
       <div style={{ display: 'block', margin: 'auto', width: 'fit-content' }}>
         <div style={{ position: 'relative' }}>
-          <Button icon onClick={() => setUseFullScreen(!useFullScreen)} className="screen-size-button">
-            <Icon name={useFullScreen ? 'compress' : 'expand'} />
-          </Button>
+          {/* Zoom control buttons */}
+          <div style={{ position: 'absolute', right: 0, top: 0, display: 'flex', flexDirection: 'column', gap: '5px' }}>
+            <Button icon onClick={() => setUseFullScreen(!useFullScreen)} className="screen-size-button">
+              <Icon name={useFullScreen ? 'compress' : 'expand'} />
+            </Button>
+            
+            {/* Zoom out button */}
+            <Button 
+              icon 
+              className="screen-size-button" 
+              onClick={() => {
+                const svgElement = document.querySelector('svg');
+                if (svgElement) {
+                  svgElement.dispatchEvent(new Event('click'));
+                }
+              }}
+            >
+              <Icon name="minus" />
+            </Button>
+          </div>
         </div>
         <svg
           width={size}
