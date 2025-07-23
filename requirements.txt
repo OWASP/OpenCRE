@@ -22,12 +22,12 @@ gunicorn
 networkx
 nltk
 oauthlib
-openai
+openai>=1.0.0
 playwright
 psycopg2-binary
 pygithub
 python_markdown_maker
-scikit_learn
+scikit-learn>=1.0.2
 scipy
 semver
 setuptools
@@ -113,4 +113,9 @@ vertexai
 xmltodict
 google-cloud-trace
 alive-progress
+
+# Add these AI mapping dependencies
+openai>=1.0.0
+sentence-transformers>=2.2.2
+scikit-learn>=1.0.2
 
