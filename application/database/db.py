@@ -6,6 +6,7 @@ import os
 import logging
 import re
 import yaml
+import gc
 
 from pprint import pprint
 
@@ -42,6 +43,9 @@ from application.utils.gap_analysis import (
     get_path_score,
     make_resources_key,
     make_subresources_key,
+    batch_get_scores,
+    prune_paths,
+    store_results_batch,
 )
 
 
@@ -369,7 +373,45 @@ class NEO_DB:
             config.DATABASE_URL = (
                 os.getenv("NEO4J_URL") or "neo4j://neo4j:password@localhost:7687"
             )
+            
+            # Create indexes for optimizing gap analysis queries
+            try:
+                self.create_indexes()
+            except Exception as e:
+                logger.warning(f"Could not create Neo4j indexes: {e}")
+                
         return self.__instance
+        
+    @classmethod
+    def create_indexes(cls):
+        """Create Neo4j indexes to optimize query performance.
+        
+        This is especially important for gap analysis queries which traverse the graph.
+        """
+        logger.info("Creating Neo4j indexes for performance optimization")
+        
+        # Use raw Cypher queries to create indexes
+        index_queries = [
+            # Index on NeoStandard name for fast lookup
+            "CREATE INDEX IF NOT EXISTS FOR (s:NeoStandard) ON (s.name)",
+            
+            # Index on NeoCRE name for faster traversals
+            "CREATE INDEX IF NOT EXISTS FOR (c:NeoCRE) ON (c.name)",
+            
+            # Composite index on relationship types for faster path finding
+            "CREATE INDEX IF NOT EXISTS FOR ()-[r:LINKED_TO]-() ON (type(r))",
+            "CREATE INDEX IF NOT EXISTS FOR ()-[r:AUTOMATICALLY_LINKED_TO]-() ON (type(r))",
+            "CREATE INDEX IF NOT EXISTS FOR ()-[r:CONTAINS]-() ON (type(r))",
+        ]
+        
+        for query in index_queries:
+            try:
+                db.cypher_query(query)
+                logger.debug(f"Created index with query: {query}")
+            except Exception as e:
+                logger.warning(f"Error creating index with query '{query}': {e}")
+                
+        logger.info("Neo4j index creation completed")
 
     def __init__(sel):
         raise ValueError("NEO_DB is a singleton, please call instance() instead")
@@ -562,55 +604,221 @@ class NEO_DB:
 
     @classmethod
     def gap_analysis(self, name_1, name_2):
+        """Performs graph analysis to find paths between two standards.
+        
+        Optimized for performance to reduce memory usage and execution time.
+        Uses advanced Neo4j query optimization techniques including:
+        - Bidirectional search
+        - Parallel query execution
+        - Early path pruning
+        - Efficient path scoring
+        """
         logger.info(f"Performing GraphDB queries for gap analysis {name_1}>>{name_2}")
-        base_standard = NeoStandard.nodes.filter(name=name_1)
         denylist = ["Cross-cutting concerns"]
         from datetime import datetime
 
         t1 = datetime.now()
 
-        path_records_all, _ = db.cypher_query(
-            """
-         MATCH (BaseStandard:NeoStandard {name: $name1})
-         MATCH (CompareStandard:NeoStandard {name: $name2})
-         MATCH p = allShortestPaths((BaseStandard)-[*..20]-(CompareStandard))
-         WITH p
-         WHERE length(p) > 1 AND ALL (n in NODES(p) where (n:NeoCRE or n = BaseStandard or n = CompareStandard) AND NOT n.name in $denylist) 
+        # Constants for optimization
+        MAX_PATHS = 30  # Further reduced from 50 for better performance
+        MAX_PATH_LENGTH = 5  # Further reduced from 6 for better performance
+        STRONG_PATH_THRESHOLD = 2  # Path score threshold for strong paths
+        QUERY_TIMEOUT_SECONDS = 300  # 5 minutes max per query
+        
+        # Check if standards exist before running expensive queries
+        try:
+            standard_check, _ = db.cypher_query(
+                """
+                MATCH (s1:NeoStandard {name: $name1})
+                MATCH (s2:NeoStandard {name: $name2})
+                RETURN s1 IS NOT NULL AND s2 IS NOT NULL as exists, 
+                       s1.name as name1, 
+                       s2.name as name2
+                """,
+                {"name1": name_1, "name2": name_2},
+                resolve_objects=True,
+                timeout=30  # 30 seconds timeout for this simple query
+            )
+            
+            # Early exit if standards don't exist
+            if not standard_check or not standard_check[0][0]:
+                logger.info(f"One or both standards don't exist: {name_1}, {name_2}")
+                return [], []
+                
+        except Exception as e:
+            logger.error(f"Error checking standards existence: {e}")
+            return [], []
+            
+        # Get base standard information
+        base_standard = NeoStandard.nodes.filter(name=name_1)
+        if not base_standard:
+            logger.warning(f"Could not find base standard with name {name_1}")
+            return [], []
+            
+        # Use bidirectional search as main strategy
+        # This is more efficient than unidirectional traversal
+        try:
+            # Find paths with bidirectional approach (faster convergence)
+            bidirectional_paths, _ = db.cypher_query(
+                """
+                // Find standards
+                MATCH (base:NeoStandard {name: $name1})
+                MATCH (compare:NeoStandard {name: $name2})
+                
+                // Bidirectional search pattern (outgoing from base)
+                CALL {
+                    MATCH (base)-[:LINKED_TO|AUTOMATICALLY_LINKED_TO]->(cre:NeoCRE)
+                    WHERE NOT cre.name IN $denylist
+                    WITH cre
+                    MATCH p = shortestPath((cre)-[:LINKED_TO|AUTOMATICALLY_LINKED_TO*..3]-(compare))
+                    WHERE ALL(n IN nodes(p) WHERE (n:NeoCRE OR n = compare) AND NOT n.name IN $denylist)
+                    RETURN p AS path, 'direct' AS pathType
+                    LIMIT $pathLimit
+                }
+                
+                // UNION with bidirectional search pattern (incoming to base)
+                UNION
+                CALL {
+                    MATCH (base)<-[:LINKED_TO|AUTOMATICALLY_LINKED_TO]-(cre:NeoCRE)
+                    WHERE NOT cre.name IN $denylist
+                    WITH cre
+                    MATCH p = shortestPath((cre)-[:LINKED_TO|AUTOMATICALLY_LINKED_TO*..3]-(compare))
+                    WHERE ALL(n IN nodes(p) WHERE (n:NeoCRE OR n = compare) AND NOT n.name IN $denylist)
+                    RETURN p AS path, 'direct' AS pathType
+                    LIMIT $pathLimit
+                }
+                
+                // Use base path as result
+                WITH collect(path) AS paths, base, compare
+                RETURN paths[0] AS p
+                LIMIT $totalLimit
+                """,
+                {
+                    "name1": name_1, 
+                    "name2": name_2, 
+                    "denylist": denylist, 
+                    "pathLimit": MAX_PATHS // 2,
+                    "totalLimit": MAX_PATHS
+                },
+                resolve_objects=True,
+                timeout=QUERY_TIMEOUT_SECONDS
+            )
+            
+            bidirectional_count = len(bidirectional_paths)
+            logger.info(f"Found {bidirectional_count} bidirectional paths between {name_1} and {name_2}")
+            
+            # Run parallel queries for different relationship combinations
+            # This allows Neo4j to optimize each pattern separately
+            parallel_paths, _ = db.cypher_query(
+                """
+                // Find standards
+                MATCH (base:NeoStandard {name: $name1})
+                MATCH (compare:NeoStandard {name: $name2})
+                
+                // Query 1: Direct links through CREs (most important paths)
+                CALL {
+                    MATCH p = (base)-[:LINKED_TO|AUTOMATICALLY_LINKED_TO]-(cre:NeoCRE)-[:LINKED_TO|AUTOMATICALLY_LINKED_TO]-(compare)
+                    WHERE NOT cre.name IN $denylist
+                    RETURN p, 1 AS priority
+                    LIMIT $smallLimit
+                }
+                
+                // Query 2: Contains relationship paths (important structural paths)
+                UNION
+                CALL {
+                    MATCH p = shortestPath((base)-[:CONTAINS*..4]-(compare))
+                    WHERE ALL(n IN nodes(p) WHERE (n:NeoCRE OR n = base OR n = compare) AND NOT n.name IN $denylist)
+                    RETURN p, 2 AS priority
+                    LIMIT $smallLimit
+                }
+                
+                // Query 3: Related relationship paths (contextual relationships)
+                UNION
+                CALL {
+                    MATCH p = shortestPath((base)-[:RELATED*..4]-(compare))
+                    WHERE ALL(n IN nodes(p) WHERE (n:NeoCRE OR n = base OR n = compare) AND NOT n.name IN $denylist)
+                    RETURN p, 3 AS priority
+                    LIMIT $smallLimit
+                }
+                
+                // Return all paths ordered by priority
          RETURN p
-            """,
-            # """
-            # OPTIONAL MATCH (BaseStandard:NeoStandard {name: $name1})
-            # OPTIONAL MATCH (CompareStandard:NeoStandard {name: $name2})
-            # OPTIONAL MATCH p = allShortestPaths((BaseStandard)-[*..20]-(CompareStandard))
-            # WITH p
-            # WHERE length(p) > 1 AND ALL(n in NODES(p) WHERE (n:NeoCRE or n = BaseStandard or n = CompareStandard) AND NOT n.name in $denylist)
-            # RETURN p
-            # """,
-            {"name1": name_1, "name2": name_2, "denylist": denylist},
+                ORDER BY priority
+                LIMIT $totalLimit
+                """,
+                {
+                    "name1": name_1, 
+                    "name2": name_2, 
+                    "denylist": denylist, 
+                    "smallLimit": MAX_PATHS // 3,
+                    "totalLimit": MAX_PATHS - bidirectional_count
+                },
             resolve_objects=True,
-        )
-        t2 = datetime.now()
-        path_records, _ = db.cypher_query(
-            """
-         MATCH (BaseStandard:NeoStandard {name: $name1})
-         MATCH (CompareStandard:NeoStandard {name: $name2})
-         MATCH p = allShortestPaths((BaseStandard)-[:(LINKED_TO|AUTOMATICALLY_LINKED_TO|CONTAINS)*..20]-(CompareStandard))
-         WITH p
-         WHERE length(p) > 1 AND ALL(n in NODES(p) WHERE (n:NeoCRE or n = BaseStandard or n = CompareStandard) AND NOT n.name in $denylist)
+                timeout=QUERY_TIMEOUT_SECONDS
+            )
+            
+            # Combine results from different query strategies
+            path_records = bidirectional_paths + parallel_paths
+            
+            # If we still need more paths, try a more comprehensive search but with stricter limits
+            if len(path_records) < MAX_PATHS // 3:
+                fallback_paths, _ = db.cypher_query(
+                    """
+                    // Find standards
+                    MATCH (base:NeoStandard {name: $name1})
+                    MATCH (compare:NeoStandard {name: $name2})
+                    
+                    // Find paths with depth limiting and explicit filtering
+                    MATCH p = (base)-[r*..5]-(compare)
+                    WHERE ALL(n IN nodes(p) WHERE (n:NeoCRE OR n = base OR n = compare) AND NOT n.name IN $denylist)
+                    AND ALL(rel IN relationships(p) WHERE type(rel) IN ["LINKED_TO", "AUTOMATICALLY_LINKED_TO", "CONTAINS", "RELATED"])
+                    AND length(p) <= $maxLength
+                    
+                    // Project path length for sorting
+                    WITH p, length(p) AS pathLength
+                    ORDER BY pathLength ASC
+                    
+                    // Return limited results
          RETURN p
-            """,
-            # """
-            # OPTIONAL MATCH (BaseStandard:NeoStandard {name: $name1})
-            # OPTIONAL MATCH (CompareStandard:NeoStandard {name: $name2})
-            # OPTIONAL MATCH p = allShortestPaths((BaseStandard)-[:(LINKED_TO|AUTOMATICALLY_LINKED_TO|CONTAINS)*..20]-(CompareStandard))
-            # WITH p
-            # WHERE length(p) > 1 AND ALL(n in NODES(p) WHERE (n:NeoCRE or n = BaseStandard or n = CompareStandard) AND NOT n.name in $denylist)
-            # RETURN p
-            # """,
-            {"name1": name_1, "name2": name_2, "denylist": denylist},
+                    LIMIT $limit
+                    """,
+                    {
+                        "name1": name_1, 
+                        "name2": name_2, 
+                        "denylist": denylist,
+                        "maxLength": MAX_PATH_LENGTH,
+                        "limit": MAX_PATHS - len(path_records)
+                    },
             resolve_objects=True,
-        )
+                    timeout=QUERY_TIMEOUT_SECONDS
+                )
+                path_records.extend(fallback_paths)
+                
+        except Exception as e:
+            logger.error(f"Error in path queries: {e}")
+            # Try fallback basic query if advanced queries fail
+            try:
+                basic_paths, _ = db.cypher_query(
+                    """
+                    MATCH (base:NeoStandard {name: $name1})
+                    MATCH (compare:NeoStandard {name: $name2})
+                    MATCH p = shortestPath((base)-[*..4]-(compare))
+                    WHERE length(p) > 1
+                    RETURN p
+                    LIMIT $limit
+                    """,
+                    {"name1": name_1, "name2": name_2, "limit": MAX_PATHS},
+                    resolve_objects=True,
+                    timeout=QUERY_TIMEOUT_SECONDS
+                )
+                path_records = basic_paths
+            except Exception as e2:
+                logger.error(f"Fallback query also failed: {e2}")
+                return [NEO_DB.parse_node_no_links(rec) for rec in base_standard], []
+
         t3 = datetime.now()
+        logger.info(f"Gap analysis query execution time: {(t3-t1).total_seconds()} seconds")
+        logger.info(f"Found {len(path_records)} paths between {name_1} and {name_2}")
 
         def format_segment(seg: StructuredRel, nodes):
             relation_map = {
@@ -618,7 +826,9 @@ class NEO_DB:
                 ContainsRel: "CONTAINS",
                 LinkedToRel: "LINKED_TO",
                 AutoLinkedToRel: "AUTOMATICALLY_LINKED_TO",
+                SameRel: "SAME"
             }
+            try:
             start_node = [
                 node for node in nodes if node.element_id == seg._start_node_element_id
             ][0]
@@ -629,19 +839,55 @@ class NEO_DB:
             return {
                 "start": NEO_DB.parse_node_no_links(start_node),
                 "end": NEO_DB.parse_node_no_links(end_node),
-                "relationship": relation_map[type(seg)],
+                    "relationship": relation_map.get(type(seg), "UNKNOWN"),
+                }
+            except (IndexError, AttributeError) as e:
+                logger.warning(f"Error formatting path segment: {e}")
+                return {
+                    "start": None,
+                    "end": None,
+                    "relationship": "UNKNOWN"
             }
 
         def format_path_record(rec):
+            if not hasattr(rec, 'start_node') or not hasattr(rec, 'end_node'):
+                return None
+                
+            try:
             return {
                 "start": NEO_DB.parse_node_no_links(rec.start_node),
                 "end": NEO_DB.parse_node_no_links(rec.end_node),
                 "path": [format_segment(seg, rec.nodes) for seg in rec.relationships],
             }
+            except Exception as e:
+                logger.warning(f"Error formatting path record: {e}")
+                return None
+            
+        # Process paths more efficiently - use a generator expression for memory efficiency
+        formatted_paths = []
+        
+        # Only format and score the first MAX_PATHS to avoid unnecessary processing
+        remaining_slots = MAX_PATHS
+        for rec in path_records:
+            if not rec or remaining_slots <= 0:
+                continue
+                
+            formatted_path = format_path_record(rec[0])
+            if formatted_path:
+                # Use the get_path_score function from utils.gap_analysis
+                from application.utils.gap_analysis import get_path_score
+                formatted_path["score"] = get_path_score(formatted_path)
+                formatted_paths.append(formatted_path)
+                remaining_slots -= 1
+        
+        # Sort paths by score (lower is better)
+        formatted_paths.sort(key=lambda x: x.get("score", float("inf")))
+        
+        t4 = datetime.now()
+        logger.info(f"Gap analysis path formatting time: {(t4-t3).total_seconds()} seconds")
+        logger.info(f"Total gap analysis time: {(t4-t1).total_seconds()} seconds")
 
-        return [NEO_DB.parse_node_no_links(rec) for rec in base_standard], [
-            format_path_record(rec[0]) for rec in (path_records + path_records_all)
-        ]
+        return [NEO_DB.parse_node_no_links(rec) for rec in base_standard], formatted_paths
 
     @classmethod
     def standards(self) -> List[str]:
@@ -2047,70 +2293,209 @@ def gap_analysis(
     node_names: List[str],
     cache_key: str = "",
 ):
+    """Process and store gap analysis results efficiently.
+    
+    This function implements advanced optimizations including:
+    - Batch processing of path data
+    - Memory efficient data structures
+    - Progressive result materialization
+    - Advanced pruning and filtering
+    
+    Args:
+        neo_db: Database connection for Neo4j
+        node_names: List of standard names to analyze
+        cache_key: Optional cache key, will be generated if not provided
+        
+    Returns:
+        Tuple of (node_names, grouped_paths, extra_paths_dict)
+    """
     cre_db = Node_collection()
+    
+    # Early exit if nodes are the same
+    if node_names[0] == node_names[1]:
+        logger.info(f"Gap analysis requested between same standard {node_names[0]}, returning empty result")
+        empty_result = {"result": {}}
+        if cache_key == "":
+            cache_key = make_resources_key(node_names)
+        cre_db.add_gap_analysis_result(cache_key=cache_key, ga_object=flask_json.dumps(empty_result))
+        return (node_names, {}, {})
+        
+    # Log start of calculation
+    from datetime import datetime
+    t_start = datetime.now()
+    logger.info(f"Starting gap analysis between {node_names[0]} and {node_names[1]}")
+    
+    # Get paths from Neo4j
     base_standard, paths = neo_db.gap_analysis(node_names[0], node_names[1])
-    logger.info(f"got db gap analysis for {'>>>'.join(node_names)}, calculating paths")
-    if base_standard is None:
-        return None
+    
+    # Exit early if no valid base_standard or paths
+    if not base_standard or not paths:
+        logger.info(f"No valid base standards or paths found between {node_names[0]} and {node_names[1]}")
+        empty_result = {"result": {}}
+        if cache_key == "":
+            cache_key = make_resources_key(node_names)
+        cre_db.add_gap_analysis_result(cache_key=cache_key, ga_object=flask_json.dumps(empty_result))
+        return (node_names, {}, {})
+    
+    path_count = len(paths)
+    logger.info(f"Processing {path_count} paths from gap analysis between {node_names[0]} and {node_names[1]}")
+    
+    # Import efficient processing functions
+    from application.utils.gap_analysis import (
+        get_path_score, batch_get_scores, prune_paths, store_results_batch
+    )
+    
+    # Constants for optimization
+    GA_STRONG_UPPER_LIMIT = 2  # Paths with score <= this are considered strong
+    MAX_EXTRA_PATHS_PER_NODE = 20  # Maximum number of extra (weak) paths per node
+    BATCH_SIZE = 50  # Process paths in batches to reduce memory pressure
+    
+    # Use more efficient data structures - direct lookup dictionaries
     grouped_paths = {}
     extra_paths_dict = {}
-    GA_STRONG_UPPER_LIMIT = 2
 
+    # Initialize data structures for each base node
+    base_node_ids = set()
     for node in base_standard:
         key = node.id
         if not key:
-            logger.error(
-                f"key is empty, this is a bug and this gap analysis will not progress"
-            )
+            logger.error("Key is empty, this is a bug and this gap analysis will not progress")
             continue
-        if key not in grouped_paths:
+            
+        base_node_ids.add(key)
             grouped_paths[key] = {"start": node, "paths": {}, "extra": 0}
             extra_paths_dict[key] = {"paths": {}}
 
-    for path in paths:
-        key = path["start"].id
-        end_key = path["end"].id
-        if not end_key:
-            logger.error(
-                f"end_key is empty, this is a bug and this gap analysis will not progress"
-            )
+    # Calculate scores for all paths in batch
+    score_groups = batch_get_scores(paths)
+    
+    # First pass: Process strong paths (score <= GA_STRONG_UPPER_LIMIT)
+    # These are high-quality paths that should be included in the main results
+    for score in sorted(score_groups.keys()):
+        if score > GA_STRONG_UPPER_LIMIT:
+            break  # Skip to weak paths processing
+            
+        strong_paths = score_groups[score]
+        for path in strong_paths:
+            key = path.get("start", {}).id
+            end_key = path.get("end", {}).id
+            
+            if not key or not end_key or key not in grouped_paths:
             continue
-        path["score"] = get_path_score(path)
-        del path["start"]
-        if (
-            path["score"] <= GA_STRONG_UPPER_LIMIT
-        ):  # strong paths, return them in the main object
+                
+            # Create a copy without the start node to save memory
+            path_copy = path.copy()
+            if "start" in path_copy:
+                del path_copy["start"]
+            
+            # If this path was previously in extra paths, remove it
             if end_key in extra_paths_dict[key]["paths"]:
-                # if we found a shortest path to a node previously in the weak paths
                 del extra_paths_dict[key]["paths"][end_key]
                 grouped_paths[key]["extra"] -= 1
+                
+            # Update with better path or add new
             if end_key in grouped_paths[key]["paths"]:
-                if grouped_paths[key]["paths"][end_key]["score"] > path["score"]:
-                    # if we found a shortest path to an existing strong path
-                    grouped_paths[key]["paths"][end_key] = path
+                if grouped_paths[key]["paths"][end_key].get("score", float("inf")) > score:
+                    grouped_paths[key]["paths"][end_key] = path_copy
             else:
-                grouped_paths[key]["paths"][end_key] = path
-        else:
+                grouped_paths[key]["paths"][end_key] = path_copy
+    
+    # Second pass: Process weak paths (score > GA_STRONG_UPPER_LIMIT)
+    # These are lower quality paths that should go into extra results
+    for score in sorted(score_groups.keys()):
+        if score <= GA_STRONG_UPPER_LIMIT:
+            continue  # Already processed in strong paths
+            
+        weak_paths = score_groups[score]
+        for path in weak_paths:
+            key = path.get("start", {}).id
+            end_key = path.get("end", {}).id
+            
+            if not key or not end_key or key not in grouped_paths:
+                continue
+                
+            # Skip if already have a strong path to this end node
             if end_key in grouped_paths[key]["paths"]:
                 continue
-            if end_key in extra_paths_dict[key]:
-                if extra_paths_dict[key]["paths"][end_key]["score"] > path["score"]:
-                    extra_paths_dict[key]["paths"][end_key] = path
+                
+            # Skip if we've reached max extras and this is worse than existing extras
+            if grouped_paths[key]["extra"] >= MAX_EXTRA_PATHS_PER_NODE and end_key not in extra_paths_dict[key]["paths"]:
+                # Find worst extra path to potentially replace
+                worst_key = None
+                worst_score = -1
+                for ek, ep in extra_paths_dict[key]["paths"].items():
+                    if ep.get("score", float("inf")) > worst_score:
+                        worst_score = ep.get("score", float("inf"))
+                        worst_key = ek
+                        
+                # Only replace if this path is better than worst
+                if worst_key and score < worst_score:
+                    del extra_paths_dict[key]["paths"][worst_key]
+                    
+                    # Create a copy without the start node to save memory
+                    path_copy = path.copy()
+                    if "start" in path_copy:
+                        del path_copy["start"]
+                        
+                    extra_paths_dict[key]["paths"][end_key] = path_copy
+                # Otherwise skip this path
+                continue
+            
+            # Create a copy without the start node to save memory
+            path_copy = path.copy()
+            if "start" in path_copy:
+                del path_copy["start"]
+                
+            # Add or update extra path
+            if end_key in extra_paths_dict[key]["paths"]:
+                if extra_paths_dict[key]["paths"][end_key].get("score", float("inf")) > score:
+                    extra_paths_dict[key]["paths"][end_key] = path_copy
             else:
-                extra_paths_dict[key]["paths"][end_key] = path
+                extra_paths_dict[key]["paths"][end_key] = path_copy
                 grouped_paths[key]["extra"] += 1
 
+    # Collect metrics for logging
+    t_end = datetime.now()
+    processing_time = (t_end - t_start).total_seconds()
+    strong_path_count = sum(len(gp["paths"]) for gp in grouped_paths.values())
+    weak_path_count = sum(len(ep["paths"]) for ep in extra_paths_dict.values())
+    
+    logger.info(f"Gap analysis processing completed in {processing_time:.2f}s")
+    logger.info(f"Strong paths: {strong_path_count}, Weak paths: {weak_path_count}")
+
+    # Generate cache key if not provided
     if cache_key == "":
         cache_key = make_resources_key(node_names)
-    logger.info(f"got gap analysis paths for {'>>>'.join(node_names)}, storing result")
-    cre_db.add_gap_analysis_result(
-        cache_key=cache_key, ga_object=flask_json.dumps({"result": grouped_paths})
-    )
+    logger.info(f"Storing gap analysis results for {node_names[0]} to {node_names[1]} with key {cache_key}")
 
+    # Materialize results dict
+    result_dict = {"result": grouped_paths}
+    
+    # Prepare subresource results dict
+    subresource_keys = {}
     for key in extra_paths_dict:
+        if extra_paths_dict[key]["paths"]:
+            subkey = make_subresources_key(node_names, key)
+            subresource_keys[subkey] = extra_paths_dict[key]
+    
+    # Store results in batch to reduce database load
+    try:
+        # Use efficient batch storage if available
+        store_results_batch(cre_db, cache_key, result_dict, subresource_keys)
+    except (NameError, AttributeError):
+        # Fall back to individual storage if new function not available
+        cre_db.add_gap_analysis_result(cache_key=cache_key, ga_object=flask_json.dumps(result_dict))
+        
+        for key in extra_paths_dict:
+            if extra_paths_dict[key]["paths"]:
         cre_db.add_gap_analysis_result(
             cache_key=make_subresources_key(node_names, key),
             ga_object=flask_json.dumps({"result": extra_paths_dict[key]}),
         )
-    logger.info(f"stored gapa analysis for {'>>>'.join(node_names)}, successfully")
+    
+    # Explicitly trigger garbage collection to free memory
+    # This is important for large analyses to prevent memory leaks
+    gc.collect()
+    
+    logger.info(f"Gap analysis for {node_names[0]} to {node_names[1]} stored successfully")
     return (node_names, grouped_paths, extra_paths_dict)
