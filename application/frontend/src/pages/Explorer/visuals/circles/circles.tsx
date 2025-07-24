@@ -4,20 +4,21 @@ import { LoadingAndErrorIndicator } from 'application/frontend/src/components/Lo
 import useWindowDimensions from 'application/frontend/src/hooks/useWindowDimensions';
 import { useDataStore } from 'application/frontend/src/providers/DataProvider';
 import * as d3 from 'd3';
-import React, { useEffect, useState } from 'react';
-import { Button, Icon } from 'semantic-ui-react';
+import React, { useEffect, useState, useRef } from 'react';
+import { Button, Icon, Checkbox } from 'semantic-ui-react';
 
 export const ExplorerCircles = () => {
   const { height, width } = useWindowDimensions();
   const [useFullScreen, setUseFullScreen] = useState(false);
+  const [showLabels, setShowLabels] = useState(true);
   const { dataLoading, dataTree } = useDataStore();
   const [breadcrumb, setBreadcrumb] = useState<string[]>([]);
 
-  const rootRef = React.useRef<any>(null);
-  const zoomRef = React.useRef<any>(null);
-  const updateBreadcrumbRef = React.useRef<any>(null);
-  const viewRef = React.useRef<any>(null);
-  const zoomToRef = React.useRef<any>(null);
+  const rootRef = useRef<any>(null);
+  const zoomRef = useRef<any>(null);
+  const updateBreadcrumbRef = useRef<any>(null);
+  const viewRef = useRef<any>(null);
+  const zoomToRef = useRef<any>(null);
   const margin = 20;
 
   useEffect(() => {
@@ -51,7 +52,7 @@ export const ExplorerCircles = () => {
     dataTreeClone.forEach((node) => populateChildren(node));
 
     let root: any = {
-      displayName: 'cluster',
+      displayName: 'OpenCRE',
       children: dataTreeClone,
     };
 
@@ -85,7 +86,7 @@ export const ExplorerCircles = () => {
     // Update breadcrumb when focus changes
     const updateBreadcrumb = (d: any) => {
       if (d === root) {
-        setBreadcrumb(['Cluster']);
+        setBreadcrumb(['OpenCRE']);
         return;
       }
 
@@ -93,14 +94,15 @@ export const ExplorerCircles = () => {
       let current = d;
 
       while (current && current !== root) {
-        if (current.data.displayName && current.data.displayName !== 'cluster') {
+        if (current.data.displayName && current.data.displayName !== 'OpenCRE') {
           // Remove "CRE: " prefix if it exists
           const displayName = current.data.displayName.replace(/^CRE: /, '');
           path.unshift(displayName);
         }
         current = current.parent;
       }
-      path.unshift('Cluster');
+
+      path.unshift('OpenCRE');
       setBreadcrumb(path);
     };
 
@@ -115,7 +117,6 @@ export const ExplorerCircles = () => {
       .style('fill', function (d: any) {
         return d.children ? color(d.depth) : d.data.color ? d.data.color : null;
       })
-      //New mouseover to use id if diaplayName is not present (most likely for white dots )
       .on('mouseover', function (event, d: any) {
         // Prefer displayName, fallback to id
         const label = d.data.displayName
@@ -126,7 +127,7 @@ export const ExplorerCircles = () => {
 
         if (label) {
           tooltip
-            .html(label)
+            .html(label + (d.data.children && d.data.children.length > 0 ? ' (' + d.data.children.length + ')' : ''))
             .style('visibility', 'visible')
             .style('top', event.pageY - 10 + 'px')
             .style('left', event.pageX + 10 + 'px');
@@ -146,21 +147,20 @@ export const ExplorerCircles = () => {
         }
       });
 
-    let showLabels = false; // Global toggle -->toggle this to true to show labels normally and during zoom
-
     var text = g
       .selectAll('text')
       .data(nodes)
       .enter()
       .append('text')
       .attr('class', 'label')
+      .attr('dy', function(d: any) {
+        return -d.r + 10; // Position text at the top of the circle
+      })
       .style('fill-opacity', function (d: any) {
-        if (!showLabels) return 0;
-        return d.parent === root || d.parent === focus ? 1 : 0;
+        return (showLabels && (d.parent === root || d.parent === focus)) ? 1 : 0;
       })
       .style('display', function (d: any) {
-        if (!showLabels) return 'none';
-        return d.parent === root || d.parent === focus ? 'inline' : 'none';
+        return (showLabels && (d.parent === root || d.parent === focus)) ? 'inline' : 'none';
       })
       .text(function (d: any) {
         if (!d.data.displayName) return '';
@@ -187,9 +187,7 @@ export const ExplorerCircles = () => {
     });
 
     zoomTo([root.x, root.y, root.r * 2 + margin]);
-    setBreadcrumb(['Cluster']);
-
-    //Created a new zoom function that allows toggling labels on zoom
+    setBreadcrumb(['OpenCRE']);
 
     function zoom(event: any, d: any) {
       var focus0 = focus;
@@ -199,7 +197,8 @@ export const ExplorerCircles = () => {
         .transition()
         .duration(event.altKey ? 7500 : 750)
         .tween('zoom', function () {
-          var i = d3.interpolateZoom(view, [focus.x, focus.y, focus.r * 2 + margin]);
+          // Increase zoom step size by 3x
+          var i = d3.interpolateZoom(view, [focus.x, focus.y, focus.r * 2 + margin / 3]);
           return function (t) {
             zoomTo(i(t));
           };
@@ -237,6 +236,7 @@ export const ExplorerCircles = () => {
         return d.r * k;
       });
     }
+    
     rootRef.current = root;
     zoomRef.current = zoom;
     updateBreadcrumbRef.current = updateBreadcrumb;
@@ -246,7 +246,7 @@ export const ExplorerCircles = () => {
     return () => {
       d3.select('.circle-tooltip').remove();
     };
-  }, [useFullScreen, dataTree]);
+  }, [useFullScreen, dataTree, width, height, showLabels]);
 
   const defaultSize = width > height ? height - 100 : width;
   const size = useFullScreen ? width : defaultSize;
@@ -312,7 +312,7 @@ export const ExplorerCircles = () => {
         style={{
           position: 'absolute',
           left: '50%',
-          top: 60, // adjust if needed to leave space for breadcrumbs
+          top: 60,
           transform: 'translateX(-50%)',
           width: size,
           height: size,
@@ -337,6 +337,24 @@ export const ExplorerCircles = () => {
             <Icon name={useFullScreen ? 'compress' : 'expand'} />
           </Button>
         </div>
+        
+        {/* Label toggle checkbox */}
+        <div
+          style={{
+            position: 'absolute',
+            left: 10,
+            top: 10,
+            zIndex: 21,
+          }}
+        >
+          <Checkbox 
+            toggle 
+            label="Show Labels" 
+            checked={showLabels} 
+            onChange={() => setShowLabels(!showLabels)} 
+          />
+        </div>
+        
         {/* Bottom right zoom controls */}
         <div
           style={{
@@ -344,7 +362,6 @@ export const ExplorerCircles = () => {
             right: 20,
             bottom: 20,
             display: 'flex',
-
             flexDirection: 'row',
             gap: '10px',
             zIndex: 20,
@@ -403,7 +420,7 @@ export const ExplorerCircles = () => {
             <Icon name="minus" />
           </Button>
         </div>
-        `
+        
         <svg
           width={size}
           height={size}
