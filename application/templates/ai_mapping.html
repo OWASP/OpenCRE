@@ -1,0 +1,315 @@
+{% extends "layouts/base-fullscreen.html" %}
+
+{% block title %} AI-Powered Standard Mapping {% endblock %}
+
+<!-- Specific Page CSS goes HERE  -->
+{% block stylesheets %}
+<style>
+    .progress-container {
+        margin-top: 2rem;
+    }
+    
+    .progress {
+        height: 10px;
+        border-radius: 5px;
+        margin-bottom: 0.5rem;
+    }
+    
+    .progress-details {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.9rem;
+        color: #6B7280;
+    }
+    
+    .processing-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(255, 255, 255, 0.9);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+    }
+    
+    .processing-spinner {
+        width: 60px;
+        height: 60px;
+        border: 6px solid #e0e0e0;
+        border-radius: 50%;
+        border-top-color: #1976d2;
+        animation: spinner 1.5s linear infinite;
+        margin-bottom: 2rem;
+    }
+    
+    @keyframes spinner {
+        to {
+            transform: rotate(360deg);
+        }
+    }
+    
+    .processing-text {
+        font-size: 1.2rem;
+        margin-bottom: 1rem;
+    }
+    
+    .processing-details {
+        text-align: center;
+        margin-top: 1rem;
+    }
+    
+    @media (max-width: 768px) {
+        .card-body {
+            padding: 1rem;
+        }
+        
+        .container {
+            padding-left: 0.5rem;
+            padding-right: 0.5rem;
+        }
+    }
+</style>
+{% endblock stylesheets %}
+
+{% block content %}
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-12 d-flex align-items-center justify-content-center">
+            <div class="bg-white shadow border-0 rounded p-4 p-lg-5 w-100 fmxw-800">
+                <div class="text-center text-md-center mb-4 mt-md-0">
+                    <h1 class="mb-3 h3">AI-Powered Standard Mapping</h1>
+                    <p class="mb-4">
+                        Map compliance standards to CREs automatically using AI technology.
+                        <br>Either select an existing standard or upload a new standard file.
+                    </p>
+                </div>
+
+                <!-- Flash Messages -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category }}">{{ message }}</div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                <form id="mappingForm" action="/myopencre/ai-map/process" method="post" enctype="multipart/form-data" class="mt-4">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <h5 class="mb-3">Option 1: Select Existing Standard</h5>
+                            <div class="form-group mb-4">
+                                <label for="standard">Standard</label>
+                                <select class="form-control" id="standard" name="standard">
+                                    <option value="">-- Select a standard --</option>
+                                    {% for standard in standards %}
+                                    <option value="{{ standard }}">{{ standard }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <h5 class="mb-3">Option 2: Upload Standard File</h5>
+                            <div class="form-group mb-4">
+                                <label for="standard_file">Standard File (CSV, JSON, TXT)</label>
+                                <input type="file" class="form-control" id="standard_file" name="standard_file">
+                                <small class="form-text text-muted">
+                                    Upload a file containing standard controls.
+                                    Supported formats: CSV, JSON, TXT
+                                </small>
+                            </div>
+                            
+                            <div class="form-group mb-4">
+                                <label for="standard_type">Standard Type</label>
+                                <select class="form-control" id="standard_type" name="standard_type">
+                                    <option value="">Auto-detect</option>
+                                    <option value="pci_dss">PCI DSS</option>
+                                    <option value="soc2">SOC 2</option>
+                                    <option value="dora">DORA</option>
+                                    <option value="owasp_ai">OWASP AI/LLM</option>
+                                    <option value="generic">Generic Standard</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-4">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">AI Mapping Settings</h5>
+                                
+                                <div class="form-group mt-3">
+                                    <label for="confidence_threshold">Confidence Threshold <span id="threshold-value">0.75</span></label>
+                                    <input type="range" class="form-control-range" id="confidence_threshold" name="confidence_threshold" min="0.5" max="0.95" step="0.05" value="0.75">
+                                    <div class="d-flex justify-content-between">
+                                        <small>More mappings (0.5)</small>
+                                        <small>Higher precision (0.95)</small>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-check mt-3">
+                                    <input class="form-check-input" type="checkbox" id="use_llm" name="use_llm" value="1" checked>
+                                    <label class="form-check-label" for="use_llm">
+                                        Use LLM for verification (higher quality but slower)
+                                    </label>
+                                </div>
+                                
+                                <div class="form-check mt-2">
+                                    <input class="form-check-input" type="checkbox" id="generate_suggestions" name="generate_suggestions" value="1" checked>
+                                    <label class="form-check-label" for="generate_suggestions">
+                                        Generate suggestions for unmapped controls
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info mt-4">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        This process may take several minutes depending on the size of the standard.
+                        Please be patient while the AI analyzes and maps the controls.
+                    </div>
+
+                    <div class="d-grid mt-4">
+                        <button type="submit" id="submitBtn" class="btn btn-gray-800">
+                            <i class="fas fa-robot mr-2"></i>
+                            Start AI Mapping
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Processing Overlay -->
+<div id="processingOverlay" class="processing-overlay" style="display: none;">
+    <div class="processing-spinner"></div>
+    <div class="processing-text">Processing Your Standard</div>
+    <div id="processingProgress" class="progress-container" style="width: 300px;">
+        <div class="progress">
+            <div id="progressBar" class="progress-bar bg-primary" role="progressbar" style="width: 0%"></div>
+        </div>
+        <div class="progress-details">
+            <span id="progressStatus">Initializing...</span>
+            <span id="progressPercent">0%</span>
+        </div>
+    </div>
+    <div class="processing-details">
+        <p>This process may take several minutes depending on the standard size.</p>
+        <p class="text-muted">Please don't close or refresh this page.</p>
+    </div>
+</div>
+
+{% endblock content %}
+
+<!-- Specific Page JS goes HERE  -->
+{% block javascripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Display the current threshold value
+        const thresholdSlider = document.getElementById('confidence_threshold');
+        const thresholdValue = document.getElementById('threshold-value');
+        const updateThresholdDisplay = () => {
+            thresholdValue.textContent = thresholdSlider.value;
+        };
+        
+        thresholdSlider.addEventListener('input', updateThresholdDisplay);
+        updateThresholdDisplay();
+        
+        // Toggle between the two options
+        const standardSelect = document.getElementById('standard');
+        const fileInput = document.getElementById('standard_file');
+        
+        standardSelect.addEventListener('change', function() {
+            if (this.value) {
+                fileInput.value = '';
+                fileInput.disabled = true;
+                document.getElementById('standard_type').disabled = true;
+            } else {
+                fileInput.disabled = false;
+                document.getElementById('standard_type').disabled = false;
+            }
+        });
+        
+        fileInput.addEventListener('change', function() {
+            if (this.value) {
+                standardSelect.value = '';
+                standardSelect.disabled = true;
+            } else {
+                standardSelect.disabled = false;
+            }
+        });
+        
+        // Handle form submission and show progress
+        const mappingForm = document.getElementById('mappingForm');
+        const processingOverlay = document.getElementById('processingOverlay');
+        const progressBar = document.getElementById('progressBar');
+        const progressStatus = document.getElementById('progressStatus');
+        const progressPercent = document.getElementById('progressPercent');
+        let progressInterval;
+        
+        mappingForm.addEventListener('submit', function(e) {
+            // Check if either a standard or file is selected
+            if (!standardSelect.value && !fileInput.value) {
+                e.preventDefault();
+                alert('Please select a standard or upload a file');
+                return;
+            }
+            
+            // Show processing overlay
+            processingOverlay.style.display = 'flex';
+            
+            // Start progress tracking
+            progressInterval = setInterval(checkProgress, 2000);
+        });
+        
+        function checkProgress() {
+            fetch('/myopencre/ai-map/progress')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'completed') {
+                        // Stop checking progress
+                        clearInterval(progressInterval);
+                        
+                        // Update UI
+                        progressBar.style.width = '100%';
+                        progressStatus.textContent = 'Completed!';
+                        progressPercent.textContent = '100%';
+                        
+                        // Redirect to review page
+                        window.location.href = '/myopencre/ai-map/review';
+                    } else if (data.status === 'error') {
+                        // Stop checking progress
+                        clearInterval(progressInterval);
+                        
+                        // Update UI to show error
+                        progressBar.style.width = '100%';
+                        progressBar.classList.remove('bg-primary');
+                        progressBar.classList.add('bg-danger');
+                        progressStatus.textContent = 'Error';
+                        progressPercent.textContent = '';
+                        
+                        // Will be handled by the server redirect with flash message
+                    } else if (data.total_controls > 0) {
+                        // Calculate progress
+                        const percent = Math.floor((data.processed / data.total_controls) * 100);
+                        
+                        // Update UI
+                        progressBar.style.width = `${percent}%`;
+                        progressStatus.textContent = `Processing ${data.processed} of ${data.total_controls}`;
+                        progressPercent.textContent = `${percent}%`;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error checking progress:', error);
+                });
+        }
+    });
+</script>
+{% endblock javascripts %} 

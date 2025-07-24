@@ -6,8 +6,10 @@ import os
 import logging
 import re
 import yaml
+import asyncio
 
 from pprint import pprint
+from application.ai_mapping.db_extensions import AIMappingDatabaseExtension
 
 from collections import Counter
 from itertools import permutations
@@ -678,6 +680,26 @@ class Node_collection:
         if not os.environ.get("NO_LOAD_GRAPH_DB"):
             self.neo_db = NEO_DB.instance()
         self.session = sqla.session
+        
+        # Initialize AI mapping extensions
+        try:
+            loop = asyncio.get_event_loop()
+        except RuntimeError:
+            # No event loop in this thread, create one
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+        
+        # Initialize extensions asynchronously
+        try:
+            loop.run_until_complete(self.initialize_extensions())
+        except Exception as e:
+            logger.error(f"Error initializing extensions: {e}")
+            
+    async def initialize_extensions(self):
+        """Initialize database extensions."""
+        # Initialize AI mapping extension
+        await AIMappingDatabaseExtension.extend_db_interface(self)
+        return self
 
     def with_graph(self) -> "Node_collection":
         logger.info("Loading CRE graph in memory, memory-heavy operation!")

@@ -43,6 +43,11 @@ from google_auth_oauthlib.flow import Flow
 from application.utils.spreadsheet import write_csv
 import oauthlib
 import google.auth.transport.requests
+from application.ai_mapping.standard_mapper import StandardMapper
+from application.ai_mapping.standard_handlers import StandardSpecificHandler
+import asyncio
+from flask import render_template, flash
+import time
 
 
 ITEMS_PER_PAGE = 20
@@ -829,6 +834,243 @@ def import_from_cre_csv() -> Any:
 #         res = [doc.todict() for doc in documents]
 #         return jsonify({"data": res, "page": page, "total_pages": total_pages})
 #     abort(404)
+
+
+@app.route('/myopencre/ai-map', methods=['GET'])
+def ai_mapping_page():
+    """AI-powered mapping interface for MyOpenCRE."""
+    # Get list of available standards
+    database = db.Node_collection()
+    standards = database.standards()
+    return render_template('ai_mapping.html', standards=standards)
+
+@app.route('/myopencre/ai-map/process', methods=['POST'])
+async def process_ai_mapping():
+    """Process a standard file with AI-powered mapping."""
+    if request.method != 'POST':
+        return redirect('/myopencre/ai-map')
+    
+    # Get standard name and file
+    standard_name = request.form.get('standard')
+    upload_file = request.files.get('standard_file')
+    confidence_threshold = float(request.form.get('confidence_threshold', 0.75))
+    use_llm = request.form.get('use_llm') == '1'
+    generate_suggestions = request.form.get('generate_suggestions') == '1'
+    
+    if not standard_name and not upload_file:
+        flash('Please select a standard or upload a file', 'error')
+        return redirect('/myopencre/ai-map')
+    
+    # Initialize standard controls list
+    standard_controls = []
+    
+    try:
+        if upload_file:
+            # Process custom standard file
+            try:
+                file_content = upload_file.read()
+                standard_type = request.form.get('standard_type') or None
+                standard_controls = StandardSpecificHandler.process_standard_file(file_content, standard_type)
+                
+                # Use filename as standard name if not provided
+                if not standard_name:
+                    standard_name = os.path.splitext(upload_file.filename)[0]
+                    
+                app.logger.info(f"Processed uploaded file with {len(standard_controls)} controls")
+            except Exception as e:
+                app.logger.error(f"Error processing uploaded file: {e}")
+                flash(f"Error processing file: {str(e)}", 'error')
+                return redirect('/myopencre/ai-map')
+        else:
+            # Use built-in standard
+            try:
+                # Get controls for the selected standard
+                database = db.Node_collection()
+                nodes = database.get_nodes(name=standard_name)
+                if not nodes:
+                    flash(f"Standard '{standard_name}' not found", 'error')
+                    return redirect('/myopencre/ai-map')
+                    
+                # Convert nodes to control format
+                for node in nodes:
+                    standard_controls.append({
+                        "id": node.section or node.sectionID or f"CTRL-{len(standard_controls)+1}",
+                        "name": f"{standard_name} {node.section or node.sectionID or ''}",
+                        "description": node.description,
+                        "standard": standard_name,
+                        "section": node.section
+                    })
+                    
+                app.logger.info(f"Loaded {len(standard_controls)} controls from standard '{standard_name}'")
+            except Exception as e:
+                app.logger.error(f"Error getting standard controls: {e}")
+                flash(f"Error retrieving standard controls: {str(e)}", 'error')
+                return redirect('/myopencre/ai-map')
+        
+        if not standard_controls:
+            flash('No controls found in the standard', 'error')
+            return redirect('/myopencre/ai-map')
+        
+        # Store progress in session
+        session['mapping_progress'] = {
+            'status': 'initializing',
+            'total_controls': len(standard_controls),
+            'processed': 0,
+            'start_time': time.time()
+        }
+        
+        # Create mapper and initialize
+        database = db.Node_collection()
+        mapper = StandardMapper(database)
+        
+        # Configure mapper based on user settings
+        if not use_llm:
+            mapper.evaluator.initialized = False  # Disable LLM verification
+            
+        await mapper.initialize()
+        
+        # Process mapping
+        results = await mapper.map_standard(standard_name, standard_controls)
+        
+        # Process results if needed
+        if not generate_suggestions:
+            # Remove suggestions if not requested
+            results['suggested_new_cres'] = []
+        
+        # Update status and add timing information
+        session['mapping_progress'] = {
+            'status': 'completed',
+            'total_controls': len(standard_controls),
+            'processed': len(standard_controls),
+            'end_time': time.time(),
+            'duration': results['summary']['processing_time']
+        }
+        
+        # Store results in session for review
+        session['mapping_results'] = results
+        
+        # Redirect to review page
+        return redirect('/myopencre/ai-map/review')
+    except Exception as e:
+        app.logger.error(f"Error in AI mapping: {e}")
+        
+        # Update status in case of error
+        if 'mapping_progress' in session:
+            session['mapping_progress']['status'] = 'error'
+            session['mapping_progress']['error_message'] = str(e)
+        
+        flash(f"Error during mapping: {str(e)}", 'error')
+        return redirect('/myopencre/ai-map')
+        
+@app.route('/myopencre/ai-map/progress', methods=['GET'])
+def mapping_progress():
+    """Get current progress of AI mapping process."""
+    progress = session.get('mapping_progress', {
+        'status': 'not_started',
+        'processed': 0,
+        'total_controls': 0
+    })
+    
+    return jsonify(progress)
+
+@app.route('/myopencre/ai-map/review', methods=['GET'])
+def review_ai_mapping():
+    """Review AI-generated mappings."""
+    # Get results from session
+    results = session.get('mapping_results')
+    if not results:
+        flash('No mapping results found. Please start a new mapping.', 'error')
+        return redirect('/myopencre/ai-map')
+    
+    return render_template('ai_mapping_review.html', results=results)
+
+@app.route('/myopencre/ai-map/confirm', methods=['POST'])
+async def confirm_ai_mapping():
+    """Confirm and save approved mappings."""
+    if request.method != 'POST':
+        return redirect('/myopencre/ai-map/review')
+    
+    # Get results from session
+    results = session.get('mapping_results')
+    if not results:
+        flash('No mapping results found. Please start a new mapping.', 'error')
+        return redirect('/myopencre/ai-map')
+    
+    # Get approved mappings from form
+    approved_mappings = []
+    for key in request.form:
+        if key.startswith('mapping_'):
+            # Extract index from key (e.g., mapping_3 -> 3)
+            try:
+                idx = int(key.replace('mapping_', ''))
+                if idx < len(results['mapped_controls']):
+                    # Mark as user approved
+                    results['mapped_controls'][idx]['user_approved'] = True
+                    approved_mappings.append(results['mapped_controls'][idx])
+            except (ValueError, IndexError):
+                pass
+    
+    # Get selected new CRE suggestions
+    new_cre_suggestions = []
+    for key in request.form:
+        if key.startswith('suggestion_'):
+            try:
+                idx = int(key.replace('suggestion_', ''))
+                if idx < len(results['suggested_new_cres']):
+                    new_cre_suggestions.append(results['suggested_new_cres'][idx])
+            except (ValueError, IndexError):
+                pass
+    
+    try:
+        # Get current user if authentication is implemented
+        user_id = session.get('user_id') if 'user_id' in session else None
+        
+        # Create database connection and mapper
+        database = db.Node_collection()
+        mapper = StandardMapper(database)
+        
+        # Update results with approved selections
+        results['mapped_controls'] = approved_mappings
+        results['suggested_new_cres'] = new_cre_suggestions
+        
+        # Save to database
+        success = await mapper.save_mapping_results(results, user_id)
+        
+        if success:
+            flash('Mappings saved successfully', 'success')
+        else:
+            flash('Error saving mappings', 'error')
+        
+        # Clear session data
+        session.pop('mapping_results', None)
+        
+        return redirect('/myopencre/ai-map/complete')
+    except Exception as e:
+        app.logger.error(f"Error saving mappings: {e}")
+        flash(f"Error saving mappings: {str(e)}", 'error')
+        return redirect('/myopencre/ai-map/review')
+
+@app.route('/myopencre/ai-map/complete', methods=['GET'])
+def complete_ai_mapping():
+    """Show completion page after mapping."""
+    return render_template('ai_mapping_complete.html')
+
+# Add this API endpoint for standards
+@app.route('/api/standards', methods=['GET'])
+def api_standards():
+    """Return a list of available standards as JSON."""
+    database = db.Node_collection()
+    standards = database.standards()
+    return jsonify(standards)
+
+# Add this API endpoint for review data
+@app.route('/myopencre/ai-map/review-data', methods=['GET'])
+def ai_mapping_review_data():
+    """Return the mapping results for review as JSON."""
+    if 'mapping_results' not in session:
+        return jsonify({"error": "No mapping results found"}), 404
+    
+    return jsonify(session['mapping_results'])
 
 
 if __name__ == "__main__":

@@ -22,6 +22,9 @@ import { GapAnalysis } from './pages/GapAnalysis/GapAnalysis';
 import { MembershipRequired } from './pages/MembershipRequired/MembershipRequired';
 import { SearchName } from './pages/Search/SearchName';
 import { StandardSection } from './pages/Standard/StandardSection';
+import { AIMapping } from './pages/AIMapping/AIMapping';
+import { AIReview } from './pages/AIMapping/AIReview';
+import { AIComplete } from './pages/AIMapping/AIComplete';
 
 export interface IRoute {
   path: string;
@@ -83,6 +86,21 @@ export const ROUTES: IRoute[] = [
   {
     path: `${BROWSEROOT}`,
     component: BrowseRootCres,
+    showFilter: false,
+  },
+  {
+    path: `/myopencre/ai-map/review`,
+    component: AIReview,
+    showFilter: false,
+  },
+  {
+    path: `/myopencre/ai-map/complete`,
+    component: AIComplete,
+    showFilter: false,
+  },
+  {
+    path: `/myopencre/ai-map`,
+    component: AIMapping,
     showFilter: false,
   },
   {
