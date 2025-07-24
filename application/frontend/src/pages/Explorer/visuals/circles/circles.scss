@@ -1,30 +1,30 @@
-
 .node {
-    cursor: pointer;
+  cursor: pointer;
 }
 
 .node:hover {
-    stroke: #000;
-    stroke-width: 1.5px;
+  stroke: #000;
+  stroke-width: 1.5px;
 }
 
 .node--leaf {
-    fill: white;
+  fill: white;
 }
 
 .label {
-    font: 11px "Helvetica Neue", Helvetica, Arial, sans-serif;
-    text-anchor: middle;
-    text-shadow: 0 1px 0 #fff, 1px 0 0 #fff, -1px 0 0 #fff, 0 -1px 0 #fff;
+  font: 11px 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  text-anchor: middle;
+  text-shadow: 0 1px 0 #fff, 1px 0 0 #fff, -1px 0 0 #fff, 0 -1px 0 #fff;
 }
 
 .label,
 .node--root,
-.node--leaf {
-    pointer-events: none;
-}
+// .node--leaf {
+//   pointer-events: none;
+// }
 
 .ui.button.screen-size-button {
+
     position: absolute;
     right: 0;
     margin: 0;
@@ -49,4 +49,40 @@
     max-width: 100%;
     white-space: nowrap;
     line-height: 1.4;
+}
+=======
+  /* position: absolute;  */
+  /* right: 0;            */
+  margin: 0;
+  background-color: transparent;
+}
+
+.circle-tooltip {
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  max-width: 300px;
+  word-wrap: break-word;
+}
+.breadcrumb-item {
+  word-break: break-word; // Break long words in breadcrumb items
+  overflow-wrap: anywhere;
+  display: inline; // Or inline-block if you want padding/margin to apply
+  max-width: 100%; // Prevent overflow
+}
+.breadcrumb-container {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  padding: 10px;
+  background-color: #f8f8f8;
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+
+  overflow: auto;
+  max-width: 100%;
+
+  line-height: 1.4;
+  white-space: normal; // Allow wrapping
+  word-break: break-word; // Break long words if needed
+  overflow-wrap: anywhere;
 }
