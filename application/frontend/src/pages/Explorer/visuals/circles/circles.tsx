@@ -12,7 +12,6 @@ export const ExplorerCircles = () => {
   const [useFullScreen, setUseFullScreen] = useState(false);
   const { dataLoading, dataTree } = useDataStore();
   const [breadcrumb, setBreadcrumb] = useState<string[]>([]);
-  
 
   const rootRef = React.useRef<any>(null);
   const zoomRef = React.useRef<any>(null);
@@ -116,20 +115,6 @@ export const ExplorerCircles = () => {
       .style('fill', function (d: any) {
         return d.children ? color(d.depth) : d.data.color ? d.data.color : null;
       })
-      // .on('mouseover', function (event, d: any) {
-      //   // console.log('Hovered node:', d.data);  // Log the hovered node data -- Parth (for checking)
-      //   if (d.data.displayName) {
-      //     // Remove "CRE: " prefix if it exists
-      //     const displayName = d.data.displayName.replace(/^CRE: /, '');
-
-      //     // Show full label without truncation
-      //     tooltip
-      //       .html(displayName)
-      //       .style('visibility', 'visible')
-      //       .style('top', event.pageY - 10 + 'px')
-      //       .style('left', event.pageX + 10 + 'px');
-      //   }
-      // })
       //New mouseover to use id if diaplayName is not present (most likely for white dots )
       .on('mouseover', function (event, d: any) {
         // Prefer displayName, fallback to id
@@ -160,23 +145,23 @@ export const ExplorerCircles = () => {
           event.stopPropagation();
         }
       });
-// This is will make sure that no labels are shown at the start
+
+    let showLabels = false; // Global toggle -->toggle this to true to show labels normally and during zoom
+
     var text = g
       .selectAll('text')
       .data(nodes)
       .enter()
       .append('text')
       .attr('class', 'label')
-      // .style('fill-opacity', function (d: any) {
-      //   // Show text at all zoom levels
-      //   return d.parent === root || d.parent === focus ? 1 : 0;
-      // })
-      .style('fill-opacity', 0)
-      // .style('display', function (d: any) {
-      //   // Try to display all labels if there's room
-      //   return d.parent === root || d.parent === focus ? 'inline' : 'none';
-      // })
-      .style('display', 'none') // Hide all text initially
+      .style('fill-opacity', function (d: any) {
+        if (!showLabels) return 0;
+        return d.parent === root || d.parent === focus ? 1 : 0;
+      })
+      .style('display', function (d: any) {
+        if (!showLabels) return 'none';
+        return d.parent === root || d.parent === focus ? 'inline' : 'none';
+      })
       .text(function (d: any) {
         if (!d.data.displayName) return '';
 
@@ -204,42 +189,8 @@ export const ExplorerCircles = () => {
     zoomTo([root.x, root.y, root.r * 2 + margin]);
     setBreadcrumb(['Cluster']);
 
-    // function zoom(event: any, d: any) {
-    //   var focus0 = focus;
-    //   focus = d;
+    //Created a new zoom function that allows toggling labels on zoom
 
-    //   var transition = d3
-    //     .transition()
-    //     .duration(event.altKey ? 7500 : 750)
-    //     .tween('zoom', function (d) {
-    //       var i = d3.interpolateZoom(view, [focus.x, focus.y, focus.r * 2 + margin]);
-    //       return function (t) {
-    //         zoomTo(i(t));
-    //       };
-    //     });
-
-    //   transition
-    //     .selectAll('text')
-    //     .filter(function (d: any) {
-    //       const el = this as HTMLElement;
-    //       // Show text for all nodes that are children of the current focus
-    //       return (d && d.parent === focus) || el.style.display === 'inline';
-    //     })
-    //     .style('fill-opacity', function (d: any) {
-    //       // Show text at all zoom levels, including deepest
-    //       return d && d.parent === focus ? 1 : 0;
-    //     })
-    //     .on('start', function (d: any) {
-    //       const el = this as HTMLElement;
-    //       if (d && d.parent === focus) el.style.display = 'inline';
-    //     })
-    //     .on('end', function (d: any) {
-    //       const el = this as HTMLElement;
-    //       if (d && d.parent !== focus) el.style.display = 'none';
-    //     });
-    // }
-
-    //Updated the zoom function so that it does not show text at all zoom levels
     function zoom(event: any, d: any) {
       var focus0 = focus;
       focus = d;
@@ -247,12 +198,32 @@ export const ExplorerCircles = () => {
       var transition = d3
         .transition()
         .duration(event.altKey ? 7500 : 750)
-        .tween('zoom', function (d) {
+        .tween('zoom', function () {
           var i = d3.interpolateZoom(view, [focus.x, focus.y, focus.r * 2 + margin]);
           return function (t) {
             zoomTo(i(t));
           };
         });
+
+      if (showLabels) {
+        transition
+          .selectAll('text')
+          .filter(function (d: any) {
+            const el = this as HTMLElement;
+            return (d && d.parent === focus) || el.style.display === 'inline';
+          })
+          .style('fill-opacity', function (d: any) {
+            return d && d.parent === focus ? 1 : 0;
+          })
+          .on('start', function (d: any) {
+            const el = this as HTMLElement;
+            if (d && d.parent === focus) el.style.display = 'inline';
+          })
+          .on('end', function (d: any) {
+            const el = this as HTMLElement;
+            if (d && d.parent !== focus) el.style.display = 'none';
+          });
+      }
     }
 
     function zoomTo(v) {
@@ -373,7 +344,7 @@ export const ExplorerCircles = () => {
             right: 20,
             bottom: 20,
             display: 'flex',
-            // --- FIX 1: Changed to 'row' to make both buttons visible ---
+
             flexDirection: 'row',
             gap: '10px',
             zIndex: 20,
@@ -389,7 +360,6 @@ export const ExplorerCircles = () => {
                 ? viewRef.current
                 : [rootRef.current.x, rootRef.current.y, rootRef.current.r * 2 + margin];
 
-              // --- FIX 2: SWAPPED LOGIC for ZOOM IN ---
               // To ZOOM IN, we need a LARGER scale factor, which requires a SMALLER view diameter.
               const targetView: [number, number, number] = [
                 currentView[0],
@@ -416,7 +386,6 @@ export const ExplorerCircles = () => {
                 ? viewRef.current
                 : [rootRef.current.x, rootRef.current.y, rootRef.current.r * 2 + margin];
 
-              // --- FIX 2: SWAPPED LOGIC for ZOOM OUT ---
               // To ZOOM OUT, we need a SMALLER scale factor, which requires a LARGER view diameter.
               const targetView: [number, number, number] = [
                 currentView[0],
