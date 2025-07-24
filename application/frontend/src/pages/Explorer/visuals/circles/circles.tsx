@@ -4,13 +4,15 @@ import { LoadingAndErrorIndicator } from 'application/frontend/src/components/Lo
 import useWindowDimensions from 'application/frontend/src/hooks/useWindowDimensions';
 import { useDataStore } from 'application/frontend/src/providers/DataProvider';
 import * as d3 from 'd3';
-import React, { useEffect, useState } from 'react';
-import { Button, Icon } from 'semantic-ui-react';
+import React, { useEffect, useState, useRef } from 'react';
+import { Button, Icon, Checkbox } from 'semantic-ui-react';
 
 export const ExplorerCircles = () => {
   const { height, width } = useWindowDimensions();
   const [useFullScreen, setUseFullScreen] = useState(false);
+  const [showLabels, setShowLabels] = useState(true);
   const { dataLoading, dataTree } = useDataStore();
+  const svgRef = useRef(null);
 
   useEffect(() => {
     var svg = d3.select('svg');
@@ -43,7 +45,7 @@ export const ExplorerCircles = () => {
     dataTreeClone.forEach((node) => populateChildren(node));
 
     let root: any = {
-      displayName: 'cluster',
+      displayName: 'OpenCRE',
       children: dataTreeClone,
     };
 
@@ -82,10 +84,13 @@ export const ExplorerCircles = () => {
       .append('text')
       .attr('class', 'label')
       .style('fill-opacity', function (d: any) {
-        return d.parent === root ? 1 : 0;
+        return (d.parent === root && showLabels) ? 1 : 0;
       })
       .style('display', function (d: any) {
-        return d.parent === root ? 'inline' : 'none';
+        return (d.parent === root && showLabels) ? 'inline' : 'none';
+      })
+      .attr('dy', function(d: any) {
+        return -d.r + 10; // Position text at the top of the circle
       })
       .text(function (d: any) {
         if (!d.data.displayName) return '';
@@ -111,7 +116,8 @@ export const ExplorerCircles = () => {
         .transition()
         .duration(event.altKey ? 7500 : 750)
         .tween('zoom', function (d) {
-          var i = d3.interpolateZoom(view, [focus.x, focus.y, focus.r * 2 + margin]);
+          // Increase zoom step size by 3x
+          var i = d3.interpolateZoom(view, [focus.x, focus.y, focus.r * 2 + margin / 3]);
           return function (t) {
             zoomTo(i(t));
           };
@@ -121,18 +127,18 @@ export const ExplorerCircles = () => {
         .selectAll('text')
         .filter(function (d: any) {
           const el = this as HTMLElement;
-          return (d && d.parent === focus) || el.style.display === 'inline';
+          return (showLabels && d && d.parent === focus) || el.style.display === 'inline';
         })
         .style('fill-opacity', function (d: any) {
-          return d && d.parent === focus ? 1 : 0;
+          return (showLabels && d && d.parent === focus) ? 1 : 0;
         })
         .on('start', function (d: any) {
           const el = this as HTMLElement;
-          if (d && d.parent === focus) el.style.display = 'inline';
+          if (showLabels && d && d.parent === focus) el.style.display = 'inline';
         })
         .on('end', function (d: any) {
           const el = this as HTMLElement;
-          if (d && d.parent !== focus) el.style.display = 'none';
+          if (!showLabels || (d && d.parent !== focus)) el.style.display = 'none';
         });
     }
 
@@ -146,19 +152,27 @@ export const ExplorerCircles = () => {
         return d.r * k;
       });
     }
-  }, [useFullScreen]);
+  }, [useFullScreen, width, height, showLabels, dataTree]); // Add dependencies to recreate visualization on resize or label toggle
+
   const defaultSize = width > height ? height - 100 : width;
   const size = useFullScreen ? width : defaultSize;
   return (
     <div>
       <LoadingAndErrorIndicator loading={dataLoading} error={null} />
       <div style={{ display: 'block', margin: 'auto', width: 'fit-content' }}>
-        <div style={{ position: 'relative' }}>
+        <div style={{ position: 'relative', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+          <Checkbox 
+            toggle 
+            label="Show Labels" 
+            checked={showLabels} 
+            onChange={() => setShowLabels(!showLabels)} 
+          />
           <Button icon onClick={() => setUseFullScreen(!useFullScreen)} className="screen-size-button">
             <Icon name={useFullScreen ? 'compress' : 'expand'} />
           </Button>
         </div>
         <svg
+          ref={svgRef}
           width={size}
           height={size}
           style={{ background: 'rgb(163, 245, 207)', display: 'block', margin: 'auto' }}
