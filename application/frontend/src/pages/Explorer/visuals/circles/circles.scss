@@ -15,19 +15,24 @@
   font: 11px 'Helvetica Neue', Helvetica, Arial, sans-serif;
   text-anchor: middle;
   text-shadow: 0 1px 0 #fff, 1px 0 0 #fff, -1px 0 0 #fff, 0 -1px 0 #fff;
+  pointer-events: none;
 }
 
-.label,
+
 .node--root,
 // .node--leaf {
 //   pointer-events: none;
 // }
 
 .ui.button.screen-size-button {
-  /* position: absolute;  */
-  /* right: 0;            */
-  margin: 0;
-  background-color: transparent;
+    position: absolute;
+    right: 0;
+    margin: 0;
+    background-color: transparent;
+}
+
+.ui.toggle.checkbox {
+    margin-right: 10px;
 }
 
 .circle-tooltip {
@@ -37,10 +42,10 @@
   word-wrap: break-word;
 }
 .breadcrumb-item {
-  word-break: break-word; // Break long words in breadcrumb items
+  word-break: break-word; /* Break long words in breadcrumb items */
   overflow-wrap: anywhere;
-  display: inline; // Or inline-block if you want padding/margin to apply
-  max-width: 100%; // Prevent overflow
+  display: inline; /* Or inline-block if you want padding/margin to apply */
+  max-width: 100%; /* Prevent overflow */
 }
 .breadcrumb-container {
   margin-top: 0 !important;
@@ -55,7 +60,7 @@
   max-width: 100%;
 
   line-height: 1.4;
-  white-space: normal; // Allow wrapping
-  word-break: break-word; // Break long words if needed
+  white-space: normal; /* Allow wrapping */
+  word-break: break-word; /* Break long words if needed */
   overflow-wrap: anywhere;
 }
