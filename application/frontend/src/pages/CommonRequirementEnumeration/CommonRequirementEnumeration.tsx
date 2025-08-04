@@ -14,7 +14,7 @@ import { groupLinksByType } from '../../utils';
 import { getDocumentDisplayName, getDocumentTypeText, orderLinksByType } from '../../utils/document';
 
 export const CommonRequirementEnumeration = () => {
-  const { id } = useParams();
+  const { id } = useParams<{ id: string }>();
   const { apiUrl } = useEnvironment();
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | Object | null>(null);
