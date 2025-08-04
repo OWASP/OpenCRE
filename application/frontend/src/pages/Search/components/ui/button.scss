@@ -1,0 +1,107 @@
+// Base button styles
+.btn {
+  // Flex layout & alignment
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+
+  // Sizing & Spacing
+  height: 2.5rem; // h-10
+  padding: 0.5rem 1rem; // px-4 py-2
+
+  // Typography & Appearance
+  white-space: nowrap;
+  border-radius: var(--radius);
+  font-size: 0.875rem; // text-sm
+  font-weight: 500; // font-medium
+  border: 1px solid transparent;
+  cursor: pointer;
+
+  // Transitions & Focus
+  transition: color 0.2s, background-color 0.2s, border-color 0.2s;
+  &:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+
+  // Disabled state
+  &:disabled {
+    pointer-events: none;
+    opacity: 0.5;
+  }
+
+  // Icon styling within the button
+  svg {
+    pointer-events: none;
+    width: 1rem;
+    height: 1rem;
+    flex-shrink: 0;
+  }
+
+  // Variant Modifiers
+  &--default {
+    background-color: var(--primary);
+    color: var(--primary-foreground);
+    &:hover {
+      background-color: rgba(var(--primary-rgb), 0.9);
+    }
+  }
+
+  &--destructive {
+    background-color: var(--destructive);
+    color: var(--destructive-foreground);
+    &:hover {
+      background-color: rgba(var(--destructive-rgb), 0.9);
+    }
+  }
+
+  &--outline {
+    border-color: var(--input);
+    background-color: var(--background);
+    &:hover {
+      background-color: var(--accent);
+      color: var(--accent-foreground);
+    }
+  }
+
+  &--secondary {
+    background-color: var(--secondary);
+    color: var(--secondary-foreground);
+    &:hover {
+      background-color: rgba(var(--secondary-rgb), 0.8);
+    }
+  }
+
+  &--ghost {
+    background-color: transparent;
+    &:hover {
+      background-color: var(--accent);
+      color: var(--accent-foreground);
+    }
+  }
+
+  &--link {
+    color: var(--primary);
+    text-decoration: underline;
+    text-underline-offset: 4px;
+    background-color: transparent;
+  }
+
+  // Size Modifiers
+  &--sm {
+    height: 2.25rem; // h-9
+    padding: 0 0.75rem; // px-3
+  }
+
+  &--lg {
+    height: 2.75rem; // h-11
+    padding: 0 2rem; // px-8
+  }
+
+  &--icon {
+    height: 2.5rem;
+    width: 2.5rem;
+    padding: 0;
+  }
+}

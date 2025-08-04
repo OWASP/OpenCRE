@@ -20,6 +20,7 @@
     "@babel/preset-typescript": "^7.13.0",
     "@testing-library/react": "^11.2.3",
     "@types/jest": "^26.0.23",
+    "@types/react-router-dom": "^5",
     "@wojtekmaj/enzyme-adapter-react-17": "^0.6.1",
     "babel-loader": "^8.2.2",
     "css-loader": "^5.2.4",
@@ -53,6 +54,7 @@
   },
   "dependencies": {
     "@artsy/fresnel": "^1.4.0",
+    "@radix-ui/react-toast": "^1.2.14",
     "@react-oauth/google": "^0.11.0",
     "@types/d3": "^7.4.2",
     "awesome-typescript-loader": "5.2.1",
@@ -62,6 +64,7 @@
     "date-fns": "^2.16.1",
     "dompurify": "^3.0.5",
     "elkjs": "^0.7.1",
+    "lucide-react": "^0.536.0",
     "marked": "^9.0.2",
     "marked-react": "^2.0.0",
     "npm": "^7.11.2",
