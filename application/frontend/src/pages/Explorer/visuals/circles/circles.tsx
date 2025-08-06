@@ -149,17 +149,21 @@ export const ExplorerCircles = () => {
         }
       });
 
-    let showLabels = true; // Global toggle -->toggle this to true to show labels normally and during zoom
+    let showLabels = true;
 
-    // Instead of just creating text, create a group for the label components.Creted a group element
+    // Filter the nodes to only include those that have children (i.e., are not leaves)
+    const parentNodes = nodes.filter(function (d) {
+      return d.children;
+    });
+
+    // Create a group for the label components using ONLY the parent nodes
     var labelGroup = g
       .selectAll('.label-group')
-      .data(nodes)
+      .data(parentNodes) // Use the filtered data
       .enter()
       .append('g')
       .attr('class', 'label-group')
       .style('opacity', function (d: any) {
-        // Use opacity on the group for a smooth fade of both text and line
         return d.parent === focus ? 1 : 0;
       })
       .style('display', function (d: any) {
@@ -171,14 +175,11 @@ export const ExplorerCircles = () => {
       .append('text')
       .attr('class', 'label')
       .style('text-anchor', 'middle')
-      .style('text-decoration', 'underline') // This adds the underline
+      .style('text-decoration', 'underline')
       .text(function (d: any) {
         if (!d.data.displayName) return '';
         let name = d.data.displayName;
-        // This regex removes the "CRE : ID : " part
         name = name.replace(/^CRE\s*:\s*\d+-\d+\s*:\s*/, '');
-        // Truncate the name
-        // name = name.length > 25 ? name.substr(0, 25) + '...' : name;
         return name;
       });
 
@@ -186,12 +187,12 @@ export const ExplorerCircles = () => {
     labelGroup
       .append('line')
       .attr('class', 'label-tick')
-      .style('stroke', 'black') // The color of the tick
+      .style('stroke', 'black')
       .style('stroke-width', 1)
       .attr('x1', 0)
-      .attr('y1', 2) // Start the line just below the text
+      .attr('y1', 2)
       .attr('x2', 0)
-      .attr('y2', 8); // End the line 6px lower
+      .attr('y2', 8);
 
     svg.style('background', color(-1)).on('click', function (event) {
       updateBreadcrumb(root);
@@ -201,7 +202,6 @@ export const ExplorerCircles = () => {
     zoomTo([root.x, root.y, root.r * 2 + margin]);
     setBreadcrumb(['OpenCRE']);
 
-    //Created a new zoom function that allows toggling labels on zoom
     function zoom(event: any, d: any) {
       var focus0 = focus;
       focus = d;
@@ -217,7 +217,6 @@ export const ExplorerCircles = () => {
         });
 
       if (showLabels) {
-        // This transition now targets the group to fade it in/out
         transition
           .selectAll('.label-group')
           .filter(function (d: any) {
@@ -243,20 +242,16 @@ export const ExplorerCircles = () => {
       view = v;
       viewRef.current = v;
 
-      // Position the circles based on the zoom
       circle.attr('transform', function (d: any) {
         return 'translate(' + (d.x - v[0]) * k + ',' + (d.y - v[1]) * k + ')';
       });
 
-      // Position the label groups (text + tick) based on the zoom
       labelGroup.attr('transform', function (d: any) {
         const xPos = (d.x - v[0]) * k;
-        // Position the group above the circle's edge with a 5px padding
         const yPos = (d.y - v[1]) * k - (d.r * k + 5);
         return 'translate(' + xPos + ',' + yPos + ')';
       });
 
-      // Update the circle radius
       circle.attr('r', function (d: any) {
         return d.r * k;
       });
@@ -267,16 +262,13 @@ export const ExplorerCircles = () => {
     updateBreadcrumbRef.current = updateBreadcrumb;
     zoomToRef.current = zoomTo;
 
-    // Return the cleanup function for the effect
     return () => {
       d3.select('.circle-tooltip').remove();
     };
-  }, [size, dataTree]); // End of useEffect
+  }, [size, dataTree]);
 
-  // This is the main return statement for the component's JSX
   return (
     <div style={{ position: 'relative', width: '100vw', minHeight: size + 80 }}>
-      {/* Breadcrumb navigation: full width, at the top */}
       {breadcrumb.length > 0 && (
         <div
           className="breadcrumb-container"
@@ -330,12 +322,11 @@ export const ExplorerCircles = () => {
         </div>
       )}
 
-      {/* Graph container: absolutely positioned and centered */}
       <div
         style={{
           position: 'absolute',
           left: '50%',
-          top: 60, // adjust if needed to leave space for breadcrumbs
+          top: 60,
           transform: 'translateX(-50%)',
           width: size,
           height: size,
@@ -344,7 +335,6 @@ export const ExplorerCircles = () => {
           zIndex: 1,
         }}
       >
-        {/* Top right fullscreen button */}
         <div
           style={{
             position: 'absolute',
@@ -360,7 +350,6 @@ export const ExplorerCircles = () => {
             <Icon name={useFullScreen ? 'compress' : 'expand'} />
           </Button>
         </div>
-        {/* Bottom right zoom controls */}
         <div
           style={{
             position: 'absolute',
@@ -382,11 +371,10 @@ export const ExplorerCircles = () => {
                 ? viewRef.current
                 : [rootRef.current.x, rootRef.current.y, rootRef.current.r * 2 + margin];
 
-              // To ZOOM IN, we need a LARGER scale factor, which requires a SMALLER view diameter.
               const targetView: [number, number, number] = [
                 currentView[0],
                 currentView[1],
-                currentView[2] / 2.4, //Adjust this to control zoom in speed
+                currentView[2] / 2.4,
               ];
               const i = d3.interpolateZoom(currentView, targetView);
 
@@ -408,11 +396,10 @@ export const ExplorerCircles = () => {
                 ? viewRef.current
                 : [rootRef.current.x, rootRef.current.y, rootRef.current.r * 2 + margin];
 
-              // To ZOOM OUT, we need a SMALLER scale factor, which requires a LARGER view diameter.
               const targetView: [number, number, number] = [
                 currentView[0],
                 currentView[1],
-                currentView[2] * 2.4, //Adjust this to control zoom out speed
+                currentView[2] * 2.4,
               ];
               const i = d3.interpolateZoom(currentView, targetView);
 
