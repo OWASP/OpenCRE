@@ -1,8 +1,8 @@
 import './SearchBar.scss';
 
+import { Search } from 'lucide-react'; // replacing Semantic UI Icon
 import React, { useState } from 'react';
 import { useHistory } from 'react-router-dom';
-import { Button, Form, Icon, Input } from 'semantic-ui-react';
 
 import { SEARCH } from '../../../const';
 
@@ -17,10 +17,11 @@ export const SearchBar = () => {
   const [search, setSearch] = useState<SearchBarState>(DEFAULT_SEARCH_BAR_STATE);
   const history = useHistory();
 
-  const onSubmit = () => {
+  const onSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
     const { term } = search;
 
-    if (Boolean(search.term)) {
+    if (term.trim()) {
       setSearch(DEFAULT_SEARCH_BAR_STATE);
       history.push(`${SEARCH}/${term}`);
     } else {
@@ -32,27 +33,26 @@ export const SearchBar = () => {
   };
 
   return (
-    <Form onSubmit={onSubmit}>
-      <Form.Group>
-        <Form.Field id="SearchBar">
-          <Input
-            error={Boolean(search.error)}
-            value={search.term}
-            onChange={(e) => {
-              setSearch({
-                ...search,
-                term: e.target.value,
-              });
-            }}
-            action={{
-              icon: 'search',
-              content: 'Search',
-              color: 'blue',
-            }}
-            placeholder="Search..."
-          />
-        </Form.Field>
-      </Form.Group>
-    </Form>
+    <div className="navbar__search">
+      <form onSubmit={onSubmit}>
+        {/* Search icon inside input */}
+        <Search className="search-icon" />
+
+        <input
+          type="text"
+          placeholder="Search..."
+          value={search.term}
+          onChange={(e) =>
+            setSearch({
+              ...search,
+              term: e.target.value,
+            })
+          }
+        />
+      </form>
+
+      {/* Error text */}
+      {search.error && <p className="search-error">{search.error}</p>}
+    </div>
   );
 };

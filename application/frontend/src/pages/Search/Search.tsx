@@ -4,17 +4,9 @@ import { ArrowDown, Eye, Link2, MessageSquare, Network, Search } from 'lucide-re
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
-import Navbar from './components/Navbar';
-// We only need the useToast hook now.
 import { useToast } from './hooks/use-toast';
 
-// NOTE: useAuth, useNavigate, and unused component imports have been removed.
-
 export const SearchPage = () => {
-  // Authentication-related state and hooks have been removed.
-  // const { user, signOut, loading } = useAuth();
-  // const navigate = useNavigate();
-
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
   const [isArrowVisible, setIsArrowVisible] = useState(true);
@@ -78,9 +70,6 @@ export const SearchPage = () => {
 
   return (
     <div className="main-container">
-      {/* The Navbar component will now render its own placeholder buttons */}
-      <Navbar />
-
       {isArrowVisible && (
         <div className="bouncing-arrow">
           <button
