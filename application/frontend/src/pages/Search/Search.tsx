@@ -2,14 +2,20 @@ import './search.scss';
 
 import { ArrowDown, Eye, Link2, MessageSquare, Network, Search } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useHistory } from 'react-router-dom';
 
+import { SEARCH } from '../../const';
 import { useToast } from './hooks/use-toast';
 
 export const SearchPage = () => {
   const { toast } = useToast();
-  const [searchQuery, setSearchQuery] = useState('');
+
   const [isArrowVisible, setIsArrowVisible] = useState(true);
+  const [loading, setLoading] = useState(true);
+
+  //Search Functionality
+  const history = useHistory();
+  const [search, setSearch] = useState({ term: '', error: '' });
 
   useEffect(() => {
     const handleScroll = () => {
@@ -34,10 +40,17 @@ export const SearchPage = () => {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    if (searchQuery.trim()) {
+    if (search.term.trim()) {
       toast({
         title: 'Search',
-        description: `Searching for: ${searchQuery}`,
+        description: `Searching for: ${search.term}`,
+      });
+      setSearch({ term: '', error: '' });
+      history.push(`${SEARCH}/${search.term}`);
+    } else {
+      setSearch({
+        ...search,
+        error: 'Search term cannot be blank',
       });
     }
   };
@@ -57,16 +70,25 @@ export const SearchPage = () => {
     }
   };
 
-  // The `loading` state is removed, so this block is no longer needed.
-  /*
+  useEffect(() => {
+    // Simulate data fetching or API call
+    const timer = setTimeout(() => {
+      setLoading(false); // ✅ stop loading after 2s
+    }, 2000);
+
+    return () => clearTimeout(timer); // cleanup
+  }, []);
+
   if (loading) {
     return (
-      <div className="loading-container">
-        ...
+      <div className="loading-screen">
+        <div className="loading-container">
+          <div className="spinner"></div>
+          <p className="loading-text">Loading...</p>
+        </div>
       </div>
     );
   }
-  */
 
   return (
     <div className="main-container">
@@ -83,7 +105,6 @@ export const SearchPage = () => {
         </div>
       )}
 
-      {/* The rest of the page remains the same... */}
       <div id="hero" className="hero-section">
         <div className="hero-section__bg-effects">
           <div className="radial-gradient"></div>
@@ -120,8 +141,8 @@ export const SearchPage = () => {
                     <input
                       type="text"
                       placeholder="Search for security topics ..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
+                      value={search.term}
+                      onChange={(e) => setSearch({ ...search, term: e.target.value })}
                       className="search-bar__input"
                     />
                     <button type="submit" className="search-bar__button">
@@ -189,7 +210,7 @@ export const SearchPage = () => {
                   </strong>
                   ,{' '}
                   <strong>
-                    <a href="/browse">browse</a>
+                    <a href="/root_cres">browse</a>
                   </strong>
                   , or{' '}
                   <strong>
@@ -198,7 +219,8 @@ export const SearchPage = () => {
                   .
                 </p>
                 <p>
-                  Try the <strong>Top10 2021 page</strong> and click around, or search for "Session".
+                  Try the <strong>Top10 2021 page</strong> and click around, or search for{' '}
+                  <strong>Session</strong>.
                 </p>
               </div>
             </div>
@@ -321,7 +343,10 @@ export const SearchPage = () => {
                   </a>
                 </p>
                 <p className="info-item linkedin-text">
-                  Follow our <span>LinkedIn page</span>
+                  Follow our{' '}
+                  <span>
+                    <a href="https://www.linkedin.com/company/opencre/posts/?feedView=all">LinkedIn page</a>
+                  </span>
                 </p>
               </div>
               <div className="contact-card__details">
@@ -364,7 +389,9 @@ export const SearchPage = () => {
                 Join our active Slack workspace to discuss security topics, ask questions, and collaborate
                 with fellow professionals.
               </p>
-              <button className="community-card__button">Join Slack</button>
+              <a href="https://owasp.org/slack/invite">
+                <button className="community-card__button">Join Slack</button>
+              </a>
             </div>
             <div className="community-card community-card--linkedin">
               <div className="community-card__icon-wrapper">
@@ -378,7 +405,9 @@ export const SearchPage = () => {
                 Follow our LinkedIn page for professional updates, industry insights, and networking
                 opportunities.
               </p>
-              <button className="community-card__button">Follow Us</button>
+              <a href="https://www.linkedin.com/company/opencre/posts/?feedView=all">
+                <button className="community-card__button">Follow Us</button>
+              </a>
             </div>
             <div className="community-card community-card--github">
               <div className="community-card__icon-wrapper">
@@ -392,7 +421,9 @@ export const SearchPage = () => {
                 Contribute to the open-source project, report issues, and explore the codebase on our GitHub
                 repository.
               </p>
-              <button className="community-card__button">View Repository</button>
+              <a href="https://github.com/OWASP/OpenCRE">
+                <button className="community-card__button">View Repository</button>
+              </a>
             </div>
           </div>
         </div>
@@ -410,29 +441,33 @@ export const SearchPage = () => {
               <div className="footer__links-column">
                 <h4 className="column-title">Standards</h4>
                 <div className="links-list">
-                  <a href="#">OWASP</a>
-                  <a href="#">NIST</a>
-                  <a href="#">ISO27001</a>
-                  <a href="#">CWE</a>
+                  <a href="https://owasp.org/">OWASP</a>
+                  <a href="https://opencre.org/node/standard/NIST%20800-53%20v5/section/">NIST</a>
+                  <a href="https://opencre.org/node/standard/ISO%2027001/section/">ISO27001</a>
+                  <a href="https://opencre.org/node/standard/CWE/">CWE</a>
                 </div>
               </div>
 
               <div className="footer__links-column">
                 <h4 className="column-title">Resources</h4>
                 <div className="links-list">
-                  <a href="#">Documentation</a>
-                  <a href="#">API</a>
-                  <a href="#">GitHub</a>
-                  <a href="#">Contribute</a>
+                  <a href="https://github.com/OWASP/OpenCRE/blob/main/README.md">Documentation</a>
+                  <a href="https://github.com/OWASP/OpenCRE/blob/main/docs/my-opencre-user-guide.md">API</a>
+                  <a href="https://github.com/OWASP/OpenCRE/">GitHub</a>
+                  <a href="https://github.com/OWASP/OpenCRE/blob/main/docs/CONTRIBUTING.md">Contribute</a>
                 </div>
               </div>
 
               <div className="footer__links-column">
                 <h4 className="column-title">More Details</h4>
                 <div className="links-list">
-                  <a href="#">Demo Video</a>
-                  <a href="#">Slides OWASP DC</a>
-                  <a href="#">OWASP Lisbon talk</a>
+                  <a href="https://www.youtube.com/watch?v=TwNroVARmB0">Demo Video</a>
+                  <a href="https://github.com/OWASP/www-project-integration-standards/raw/master/writeups/opencredcslides.pdf">
+                    Slides OWASP DC
+                  </a>
+                  <a href="https://www.youtube.com/watch?v=Uhg1dtzwSKM&pp=ygUNb3dhc3Agb3BlbmNyZQ%3D%3D">
+                    OWASP Lisbon talk
+                  </a>
                 </div>
               </div>
             </div>

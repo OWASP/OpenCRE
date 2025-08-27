@@ -1,6 +1,6 @@
 import './SearchBar.scss';
 
-import { Search } from 'lucide-react'; // replacing Semantic UI Icon
+import { Search } from 'lucide-react';
 import React, { useState } from 'react';
 import { useHistory } from 'react-router-dom';
 
@@ -35,7 +35,6 @@ export const SearchBar = () => {
   return (
     <div className="navbar__search">
       <form onSubmit={onSubmit}>
-        {/* Search icon inside input */}
         <Search className="search-icon" />
 
         <input

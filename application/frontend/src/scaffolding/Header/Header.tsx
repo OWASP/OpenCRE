@@ -104,7 +104,9 @@ export const Header = () => {
       <div className={`navbar__overlay ${isMobileMenuOpen ? 'is-open' : ''}`} onClick={closeMobileMenu}></div>
 
       <div className={`navbar__mobile-menu ${isMobileMenuOpen ? 'is-open' : ''}`}>
-        <SearchBar />
+        <div className="mobile-search-container">
+          <SearchBar />
+        </div>
         {showFilter && currentUrlParams.has('showButtons') ? (
           <div className="foo">
             <Button

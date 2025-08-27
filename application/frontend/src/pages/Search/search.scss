@@ -59,8 +59,7 @@
 
 body {
   font-family: 'Inter', system-ui, sans-serif;
-  background-color: var(--background);
-  color: var(--foreground);
+
   min-height: 100vh;
 }
 
@@ -130,12 +129,12 @@ body {
       background-color: rgba(59, 130, 246, 0.3);
       transform: scale(1.1);
     }
-
-    &__icon {
-      height: 1.5rem;
-      width: 1.5rem;
-      color: #60a5fa;
-    }
+  }
+  &__icon {
+    height: 1.5rem;
+    width: 1.5rem;
+    // color: #60a5fa;
+    stroke: #60a5fa;
   }
 }
 
@@ -213,12 +212,12 @@ body {
       }
     }
     .logo-subtitle {
-      font-size: 1.25rem;
+      font-size: 1.5rem;
       color: var(--muted-foreground);
       max-width: 48rem;
       margin: 0 auto;
       line-height: 1.625;
-      font-weight: 300;
+      font-weight: 600;
       span {
         color: #60a5fa;
         font-weight: 600;
@@ -242,7 +241,7 @@ body {
       max-width: 48rem;
       margin: 0 auto;
       line-height: 1.625;
-      font-size: 1rem;
+      font-size: 1.125rem;
       @media (min-width: 640px) {
         font-size: 1.125rem;
       }
@@ -407,6 +406,7 @@ body {
   padding: 1.5rem;
   transition: all 0.3s;
   cursor: pointer;
+  font-size: 1.25rem;
 
   &:hover {
     box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
@@ -416,6 +416,7 @@ body {
   &--blue {
     background-image: linear-gradient(to bottom right, rgba(59, 130, 246, 0.2), rgba(37, 99, 235, 0.3));
     border: 1px solid rgba(96, 165, 250, 0.3);
+
     &:hover {
       background-image: linear-gradient(to bottom right, rgba(59, 130, 246, 0.3), rgba(37, 99, 235, 0.4));
       border-color: rgba(96, 165, 250, 0.5);
@@ -462,14 +463,14 @@ body {
   }
 
   &__title {
-    font-size: 1.125rem;
+    font-size: 1.5rem;
     font-weight: 600;
     margin-bottom: 0.75rem;
     transition: color 0.3s;
   }
 
   &__text {
-    font-size: 0.875rem;
+    font-size: 1.125rem;
     color: var(--muted-foreground);
     line-height: 1.625;
     transition: color 0.3s;
@@ -524,7 +525,7 @@ body {
   }
 
   &__title {
-    font-size: 1.25rem;
+    font-size: 1.5rem;
     font-weight: 600;
     margin-bottom: 1rem;
     transition: color 0.3s;
@@ -532,7 +533,7 @@ body {
 
   &__text {
     color: var(--muted-foreground);
-    font-size: 0.875rem;
+    font-size: 1.125rem;
     line-height: 1.625;
     margin-bottom: 1rem;
     transition: color 0.3s;
@@ -663,6 +664,7 @@ body {
   }
   &__text {
     color: var(--muted-foreground);
+    font-size: 1.125rem;
     line-height: 1.625;
     margin-bottom: 1rem;
     transition: color 0.3s;
@@ -711,10 +713,11 @@ body {
 .founders-grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 3rem;
+  gap: 1.5rem;
   align-items: center;
   @media (min-width: 768px) {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: 0.9fr 1.1fr; // make card closer to images
+    gap: 2rem; // reduce spacing between columns
   }
 }
 .founders-images {
@@ -763,6 +766,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  font-size: 1.125rem;
   .text-card {
     backdrop-filter: blur(4px);
     border: 1px solid rgba(156, 163, 175, 0.3);
@@ -823,10 +827,12 @@ body {
 
     &__main-text {
       margin-bottom: 1.5rem;
+      font-size: 1.125rem;
     }
 
     &__info {
       margin-bottom: 2rem;
+      font-size: 1.125rem;
       .info-item {
         font-size: 1.125rem;
         .highlight-link {
@@ -838,11 +844,13 @@ body {
       }
       .info-item + .info-item {
         margin-top: 1rem;
+        font-size: 1.125rem;
       }
       .linkedin-text {
         span {
           color: #93c5fd;
           transition: color 0.3s;
+          font-size: 1.125rem;
         }
       }
     }
@@ -862,7 +870,7 @@ body {
         background-color: rgba(59, 130, 246, 0.3);
       }
       p {
-        font-size: 0.875rem;
+        font-size: 1.125rem;
       }
       a {
         color: #93c5fd;
@@ -923,6 +931,7 @@ body {
   }
   &__text {
     color: var(--muted-foreground);
+    font-size: 1.125rem;
     line-height: 1.625;
     margin-bottom: 1.5rem;
     transition: color 0.3s;
@@ -1077,5 +1086,39 @@ body {
         }
       }
     }
+  }
+}
+
+.loading-screen {
+  min-height: 100vh;
+  background-color: var(--background);
+  color: var(--foreground);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.loading-container {
+  text-align: center;
+}
+
+.spinner {
+  margin: 0 auto 1rem auto;
+  height: 2rem;
+  width: 2rem;
+  border: 2px solid transparent;
+  border-top: 2px solid #3b82f6; // blue-400
+  border-radius: 50%;
+  animation: spin 0.75s linear infinite;
+}
+
+.loading-text {
+  color: var(--muted-foreground);
+  font-size: 1rem;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
   }
 }

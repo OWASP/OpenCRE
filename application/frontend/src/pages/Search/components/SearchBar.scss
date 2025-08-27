@@ -5,6 +5,11 @@
   @media (min-width: 1024px) {
     display: flex;
   }
+  .navbar__mobile-menu &,
+  .mobile-search-container & {
+    display: block !important;
+    width: 100%;
+  }
 
   form {
     position: relative;
@@ -29,12 +34,15 @@
     border-radius: var(--radius);
     color: var(--foreground);
     transition: all 0.2s ease;
+    .navbar__mobile-menu &,
+    .mobile-search-container & {
+      width: 100%;
+    }
 
     &:focus {
       outline: none;
-      border-color: transparent; // remove default
+      border-color: transparent;
       box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px #3b82f6;
-      /* 1st layer white, 2nd layer blue */
     }
   }
 
