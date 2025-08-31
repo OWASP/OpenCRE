@@ -1,0 +1,53 @@
+// Main container for the entire page
+.myopencre-page-container {
+  padding: 2em;
+  min-height: 90vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f7f7f7; // A light grey background for the whole page
+}
+
+// Styling for the main page header
+.page-header {
+  margin-bottom: 1.5em !important; // Add more space below the header
+  color: #333;
+}
+
+// The main "card" or container for the form
+.form-container {
+  background-color: #ffffff !important;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08) !important;
+  text-align: left; // Align text inside the card to the left
+}
+
+// Style for the descriptive paragraph
+.description-text {
+  font-size: 1.1em;
+  color: #555;
+  margin-bottom: 2em;
+  line-height: 1.6;
+}
+
+// Styling for the file input field to make it more prominent
+.file-input {
+  margin-bottom: 1.5em !important;
+  .label {
+    font-size: 1.1em !important;
+  }
+}
+
+// Style for the submit button
+.submit-button {
+  transition: background-color 0.2s ease-in-out !important;
+
+  &:hover {
+    background-color: #1a69c4 !important; // A slightly darker blue on hover
+  }
+}
+
+// Container for the loading/error messages below the form
+.indicator-container {
+  min-height: 50px; // Reserve space so the layout doesn't jump
+  margin-top: 1.5em;
+}

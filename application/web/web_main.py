@@ -41,6 +41,7 @@ from flask import (
 from google.oauth2 import id_token
 from google_auth_oauthlib.flow import Flow
 from application.utils.spreadsheet import write_csv
+from application.utils.spreadsheet_parsers import is_empty
 import oauthlib
 import google.auth.transport.requests
 
@@ -809,6 +810,91 @@ def import_from_cre_csv() -> Any:
             "new_standards": len(standards),
         }
     )
+
+# Adding csv suggest route 
+@app.route("/rest/v1/cre_csv/suggest", methods=["POST"])
+@login_required
+def suggest_from_csv() -> Any:
+   
+    if not os.environ.get("CRE_ALLOW_IMPORT"):
+        abort(
+            403,
+            "Importing is disabled, set the environment variable CRE_ALLOW_IMPORT to allow this functionality",
+        )
+
+    file = request.files.get("cre_csv")
+    if file is None:
+        abort(400, "No file provided")
+
+    contents = file.read().decode("utf-8")
+    csv_reader = csv.DictReader(contents.splitlines())
+
+    database = db.Node_collection()
+    prompt_handler = prompt_client.PromptHandler(database)
+
+    processed_rows = []
+    for row in csv_reader:
+        row['Status'] = '' 
+        
+        if is_empty(row.get("CRE 0")):
+            text_to_analyze = f"{row.get('standard|name', '')} {row.get('standard|id', '')} {row.get('standard|hyperlink', '')}"
+            
+            if not is_empty(text_to_analyze.strip()):
+                embedding = prompt_handler.get_text_embeddings(text_to_analyze)
+                suggested_cre_id, similarity = prompt_handler.get_id_of_most_similar_cre_paginated(embedding)
+                
+                if suggested_cre_id and similarity:
+                    found_cres = database.get_CREs(external_id=suggested_cre_id)
+                    if found_cres:
+                        cre = found_cres[0]
+                        row["Suggested CRE"] = f"{cre.id}|{cre.name}"
+                        row["Suggestion Confidence"] = f"{similarity:.2f}"
+                        row['Status'] = 'Suggestion Found' # SUCCESS STATUS
+                    else:
+                        # This case handles sync issues
+                        row['Status'] = 'Human review required: AI found a match, but CRE does not exist in DB.'
+                else:
+                    # THIS FULFILLS THE STRETCH GOAL
+                    row['Status'] = 'Human review required: No high-confidence match found.'
+            else:
+                row['Status'] = 'Skipped: Row was empty.'
+        else:
+            row['Status'] = 'Complete: CRE already exists.'
+
+        processed_rows.append(row)
+
+    if not processed_rows:
+        abort(400, "Could not process any rows from the provided CSV file.")
+
+   
+    fieldnames = list(processed_rows[0].keys())
+    new_cols = ['Suggested CRE', 'Suggestion Confidence', 'Status']
+    for col in new_cols:
+        if col not in fieldnames:
+            fieldnames.append(col)
+
+    output_buffer = io.StringIO()
+    writer = csv.DictWriter(output_buffer, fieldnames=fieldnames)
+    writer.writeheader()
+    writer.writerows(processed_rows)
+    
+    mem = io.BytesIO()
+    mem.write(output_buffer.getvalue().encode("utf-8"))
+    mem.seek(0)
+    
+    return send_file(
+        mem,
+        as_attachment=True,
+        download_name="cre-suggestions.csv",
+        mimetype="text/csv"
+    )
+
+                                
+    
+
+
+
+
 
 
 # /End Importing Handlers
