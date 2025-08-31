@@ -29,6 +29,10 @@ const getLinks = (): { to: string; name: string }[] => [
     to: `/explorer`,
     name: 'OpenCRE Explorer',
   },
+  {
+    to: '/myopencre',
+    name: 'MyOpenCRE',
+  },
 ];
 
 export const Header = () => {

@@ -61,6 +61,7 @@
     "d3-dag": "^0.6.3",
     "date-fns": "^2.16.1",
     "dompurify": "^3.0.5",
+    "dotenv-webpack": "^8.1.1",
     "elkjs": "^0.7.1",
     "marked": "^9.0.2",
     "marked-react": "^2.0.0",

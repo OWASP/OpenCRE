@@ -9,6 +9,9 @@ import coverage  # type: ignore
 from flask_migrate import Migrate  # type: ignore
 
 from application import create_app, sqla  # type: ignore
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Hacky solutions to make this both a command line application with argparse and a flask application
 

@@ -24,10 +24,6 @@ export const Chatbot = () => {
     term: string;
     error: string;
   }
-  interface ResponseMessagePart {
-    iscode: boolean;
-    message: string;
-  }
   const DEFAULT_CHAT_STATE: ChatState = { term: '', error: '' };
 
   const { apiUrl } = useEnvironment();
@@ -78,6 +74,7 @@ export const Chatbot = () => {
   }
 
   function onSubmit() {
+    if (!chat.term.trim()) return;
     setLoading(true);
     setChatMessages((chatMessages) => [
       ...chatMessages,
@@ -89,6 +86,7 @@ export const Chatbot = () => {
         accurate: true,
       },
     ]);
+    setChat(DEFAULT_CHAT_STATE);
 
     fetch(`${apiUrl}/completion`, {
       method: 'POST',
@@ -131,16 +129,13 @@ export const Chatbot = () => {
     }
     return (
       <p>
-        <p>
-          *Reference: The above answer used as preferred input:
-          <a href={d.hyperlink} target="_blank">
-            {' '}
-            {d.name} section: {d.section ? d.section : d.sectionID};
-          </a>
-        </p>
-        <p>
-          You can find more information about this section of {d.name} <a href={link}> on its OpenCRE page</a>
-        </p>
+        *Reference: The above answer used as preferred input:
+        <a href={d.hyperlink} target="_blank" rel="noopener noreferrer">
+          {' '}
+          {d.name} section: {d.section ? d.section : d.sectionID};
+        </a>
+        <br />
+        You can find more information about this section of {d.name} <a href={link}> on its OpenCRE page</a>.
       </p>
     );
   }
@@ -150,97 +145,75 @@ export const Chatbot = () => {
       {user != '' ? '' : login()}
       <LoadingAndErrorIndicator loading={loading} error={error} />
       <Grid textAlign="center" style={{ height: '100vh' }} verticalAlign="middle">
-        <Grid.Column verticalAlign="middle">
+        <Grid.Column style={{ maxWidth: 800 }}>
           <Header as="h1">OWASP OpenCRE Chat</Header>
-          <Container>
-            <Grid>
-              <GridRow columns={1}>
-                <Grid.Column className="chat-container">
-                  <div id="chat-messages">
-                    {chatMessages.map((m) => (
-                      <div>
-                        <Comment.Group
-                          className={
-                            m.role == 'user'
-                              ? 'right floated six wide column'
-                              : 'left floated six wide column'
-                          }
-                        >
-                          <Comment>
-                            <Comment.Content>
-                              <Comment.Author as="b">{m.role}</Comment.Author>
-                              <Comment.Metadata>
-                                <span className="timestamp">{m.timestamp}</span>
-                              </Comment.Metadata>
-                              <Comment.Text>{processResponse(m.message)}</Comment.Text>
-                              {m.data
-                                ? m.data?.map((m2) => {
-                                    return displayDocument(m2);
-                                  })
-                                : ''}
-                              {m.accurate ? (
-                                ''
-                              ) : (
-                                <i>
-                                  Note: The content of OpenCRE could not be used to answer your question, as
-                                  no matching standard was found. The answer therefore has no reference and
-                                  needs to be regarded as less reliable. Try rephrasing your question, use
-                                  similar topics, or <a href="https://opencre.org">OpenCRE search</a>.
-                                </i>
-                              )}
-                            </Comment.Content>
-                          </Comment>
-                        </Comment.Group>
-                      </div>
-                    ))}
-                  </div>
-                </Grid.Column>
-              </GridRow>
-              <GridRow columns={1}>
-                <Grid.Column>
-                  <Form className="chat-input" size="large" onSubmit={onSubmit}>
-                    <Form.Input
-                      size="large"
-                      fluid
-                      value={chat.term}
-                      onChange={(e) => {
-                        setChat({
-                          ...chat,
-                          term: e.target.value,
-                        });
-                      }}
-                      placeholder="Type your infosec question here..."
-                    />
-                    <Button fluid size="small" primary onSubmit={onSubmit}>
-                      <Icon name="send" />
-                    </Button>
-                  </Form>
-                </Grid.Column>
-              </GridRow>
-              <div className="table-container mt-5 ms-5 d-none">
-                <div className="table-content bg-light shadow p-3" id="table-content"></div>
-              </div>
-              <div className="chatbot">
-                <i>
-                  Answers are generated by a Google PALM2 Large Language Model, which uses the internet as
-                  training data, plus collected key cybersecurity standards from{' '}
-                  <a href="https://opencre.org">OpenCRE</a> as the preferred source. This leads to more
-                  reliable answers and adds references, but note: it is still generative AI which is never
-                  guaranteed correct.
-                  <br />
-                  <br />
-                  Model operation is generously sponsored by{' '}
-                  <a href="https://www.softwareimprovementgroup.com">Software Improvement Group</a>.
-                  <br />
-                  <br />
-                  Privacy & Security: Your question is sent to Heroku, the hosting provider for OpenCRE, and
-                  then to GCP, all via protected connections. Your data isn't stored on OpenCRE servers. The
-                  OpenCRE team employed extensive measures to ensure privacy and security. To review the code:
-                  https://github.com/owasp/OpenCRE
-                </i>
-              </div>
-            </Grid>
+          <Container className="chat-window">
+            <div id="chat-messages">
+              {chatMessages.map((m, index) => (
+                <div key={index} className="message-row">
+                  <Comment.Group
+                    className={`message-bubble ${
+                      m.role === 'user' ? 'user right floated' : 'assistant left floated'
+                    }`}
+                  >
+                    <Comment>
+                      <Comment.Content>
+                        <Comment.Author as="b">{m.role}</Comment.Author>
+                        <Comment.Metadata>
+                          <span className="timestamp">{m.timestamp}</span>
+                        </Comment.Metadata>
+                        <Comment.Text>{processResponse(m.message)}</Comment.Text>
+                        {m.data?.map((m2, i) => (
+                          <div key={i}>{displayDocument(m2)}</div>
+                        ))}
+                        {!m.accurate && (
+                          <i>
+                            Note: The content of OpenCRE could not be used to answer your question, as no
+                            matching standard was found. The answer therefore has no reference and needs to be
+                            regarded as less reliable. Try rephrasing your question, use similar topics, or{' '}
+                            <a href="https://opencre.org">OpenCRE search</a>.
+                          </i>
+                        )}
+                      </Comment.Content>
+                    </Comment>
+                  </Comment.Group>
+                </div>
+              ))}
+            </div>
+            <Form className="chat-input" size="large" onSubmit={onSubmit}>
+              <Form.Group widths="equal" style={{ marginBottom: 0 }}>
+                <Form.Input
+                  fluid
+                  value={chat.term}
+                  onChange={(e) => setChat({ ...chat, term: e.target.value })}
+                  placeholder="Type your infosec question here..."
+                />
+                <Button size="large" primary type="submit">
+                  <Icon name="send" />
+                </Button>
+              </Form.Group>
+            </Form>
           </Container>
+
+          <div className="chatbot-footer">
+            <i>
+              Answers are generated by a Google Gemini Large Language Model, which uses the internet as
+              training data, plus collected key cybersecurity standards from{' '}
+              <a href="https://opencre.org">OpenCRE</a> as the preferred source. This leads to more reliable
+              answers and adds references, but note: it is still generative AI which is never guaranteed
+              correct.
+              <br />
+              <br />
+              Model operation is generously sponsored by{' '}
+              <a href="https://www.softwareimprovementgroup.com">Software Improvement Group</a>.
+              <br />
+              <br />
+              Privacy & Security: Your question is sent to Heroku, the hosting provider for OpenCRE, and then
+              to GCP, all via protected connections. Your data isn't stored on OpenCRE servers. The OpenCRE
+              team employed extensive measures to ensure privacy and security. To review the code:
+              https://github.com/owasp/OpenCRE
+            </i>
+          </div>
         </Grid.Column>
       </Grid>
     </>

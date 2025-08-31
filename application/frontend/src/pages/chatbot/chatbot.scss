@@ -27,7 +27,6 @@
 //   }
 // }
 
-
 // .chat-container {
 //   width: 1000px;
 //   display: flex;
@@ -46,33 +45,74 @@
 //   margin-bottom: 1rem;
 // }
 
-.chat-input {
-  background-color: #c8e6c9;
+// Main container for the chat window
+.chat-window {
+  border: 1px solid #ddd;
   border-radius: 10px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   padding: 1rem;
-  // display: flex;
-  // justify-content: space-between;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  background-color: #ffffff;
 }
 
-
-.message-card {
-  background-color: white;
-  border-radius: 10px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  padding: 1rem;
+// The scrollable area for messages
+#chat-messages {
+  height: 60vh;
+  overflow-y: auto;
+  padding: 10px;
   margin-bottom: 1rem;
-  width: 100%;
-  height: 100%;
+  border-bottom: 1px solid #eee;
 }
 
-.user .message-card {
-  margin-left: auto;
-  background-color: #e3f2fd;
-  height: 100%;
+// Wrapper for each message to ensure proper line breaks between floats
+.message-row {
+  clear: both;
+  padding-bottom: 1rem; // This creates space between messages
 }
 
-.assistant .message-card {
-  margin-right: auto;
-  background-color: #c8e6c9;
+// Input form styling
+.chat-input {
+  padding-top: 1rem;
+}
+
+// Common styles for BOTH user and assistant message bubbles
+.message-bubble {
+  padding: 0.8rem 1.2rem;
+  border-radius: 15px;
+  width: fit-content; // Bubble shrinks to fit the content
+  max-width: 80%; // Prevents bubbles from being too wide on large screens
+  text-align: left;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+
+  // Styling for the text inside the bubble
+  .comment .content {
+    .author {
+      text-transform: capitalize;
+    }
+    .text {
+      color: #333; // Darker text for readability
+      p {
+        margin: 0.5em 0; // Better spacing for paragraphs
+      }
+    }
+  }
+}
+
+// Specific style for the USER's message bubble (right side)
+.message-bubble.user {
+  background-color: #dcf8c6; // A pleasant green
+  border: 1px solid #cde8ba;
+}
+
+// Specific style for the ASSISTANT's message bubble (left side)
+.message-bubble.assistant {
+  background-color: #f1f0f0; // A neutral light grey
+  border: 1px solid #e0e0e0;
+}
+
+// Footer styling
+.chatbot-footer {
+  margin-top: 1rem;
+  font-size: 0.9em;
+  color: #666;
+  text-align: center;
 }
