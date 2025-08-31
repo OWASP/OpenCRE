@@ -17,6 +17,7 @@ import os
 import re
 import requests
 from playwright.sync_api import TimeoutError
+
 logging.basicConfig()
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -47,7 +48,7 @@ class in_memory_embeddings:
             try:
                 page = self.__context.new_page()
                 logger.info(f"loading page {url}")
-                page.goto(url,timeout=120000)
+                page.goto(url, timeout=120000)
                 text = page.locator("body").inner_text()
                 page.close()
                 return text
@@ -382,8 +383,10 @@ class PromptHandler:
             ) = self.database.get_embeddings_by_doc_type_paginated(
                 cre_defs.Credoctypes.CRE.value, page=page
             )
-        
-        logger.info(f"Higest similarity found: {max_similarity:.4f} for cre id {most_similar_id} . (Threshold is {similarity_threshold})")
+
+        logger.info(
+            f"Higest similarity found: {max_similarity:.4f} for cre id {most_similar_id} . (Threshold is {similarity_threshold})"
+        )
 
         if max_similarity < similarity_threshold:
             logger.info(

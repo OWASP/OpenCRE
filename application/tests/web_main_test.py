@@ -953,40 +953,45 @@ class TestMain(unittest.TestCase):
                 data.getvalue(),
                 response.data.decode(),
             )
-    @patch('application.prompt_client.prompt_client.PromptHandler.get_id_of_most_similar_cre_paginated')
 
-    @patch('application.prompt_client.prompt_client.PromptHandler.get_text_embeddings')
-    @patch('application.database.db.Node_collection.get_CREs')
-            
-    def test_suggest_from_csv(self,mock_get_embeddings, mock_get_similar_cre,mock_get_cres)-> None:
+    @patch(
+        "application.prompt_client.prompt_client.PromptHandler.get_id_of_most_similar_cre_paginated"
+    )
+    @patch("application.prompt_client.prompt_client.PromptHandler.get_text_embeddings")
+    @patch("application.database.db.Node_collection.get_CREs")
+    def test_suggest_from_csv(
+        self, mock_get_embeddings, mock_get_similar_cre, mock_get_cres
+    ) -> None:
         os.environ["CRE_ALLOW_IMPORT"] = "True"
         mock_get_embeddings.return_value = [0.1, 0.2, 0.3]  # A fake embedding
-        mock_get_similar_cre.return_value = ("123-456", 0.95) # A fake CRE ID and similarity
-        
+        mock_get_similar_cre.return_value = (
+            "123-456",
+            0.95,
+        )  # A fake CRE ID and similarity
+
         mock_cre = defs.CRE(id="123-456", name="Mocked CRE Name")
         mock_get_cres.return_value = [mock_cre]
-        
+
         csv_content = (
-            'CRE 0,standard|name,standard|id\n'
+            "CRE 0,standard|name,standard|id\n"
             '"555-555|Some CRE","ASVS","1.1"\n'
-            '"","ASVS","1.2"\n' # This row is missing a CRE
+            '"","ASVS","1.2"\n'  # This row is missing a CRE
         )
-        data = {'cre_csv': (io.BytesIO(csv_content.encode('utf-8')), 'test.csv')}
-        with client.session_transaction() as session: #no login bypass
-                session["google_id"] = "test"
-                session["name"] = "test"
+        data = {"cre_csv": (io.BytesIO(csv_content.encode("utf-8")), "test.csv")}
+        with client.session_transaction() as session:  # no login bypass
+            session["google_id"] = "test"
+            session["name"] = "test"
         with self.app.test_client() as client:
             response = client.post(
                 "/rest/v1/cre_csv/suggest",
                 data=data,
-                content_type="multipart/form-data"
+                content_type="multipart/form-data",
             )
         self.assertEqual(200, response.status_code)
-        returned_data = response.data.decode('utf-8')
+        returned_data = response.data.decode("utf-8")
         reader = csv.DictReader(returned_data.splitlines())
         rows = list(reader)
 
-        self.assertEqual(rows[1]['Suggested CRE'], "123-456|Mocked CRE Name")
-        self.assertEqual(rows[1]['Suggestion Confidence'], "0.95")
-        self.assertEqual(rows[0]['Suggested CRE'], '')
-    
+        self.assertEqual(rows[1]["Suggested CRE"], "123-456|Mocked CRE Name")
+        self.assertEqual(rows[1]["Suggestion Confidence"], "0.95")
+        self.assertEqual(rows[0]["Suggested CRE"], "")

@@ -811,11 +811,12 @@ def import_from_cre_csv() -> Any:
         }
     )
 
-# Adding csv suggest route 
+
+# Adding csv suggest route
 @app.route("/rest/v1/cre_csv/suggest", methods=["POST"])
 @login_required
 def suggest_from_csv() -> Any:
-   
+
     if not os.environ.get("CRE_ALLOW_IMPORT"):
         abort(
             403,
@@ -834,41 +835,46 @@ def suggest_from_csv() -> Any:
 
     processed_rows = []
     for row in csv_reader:
-        row['Status'] = '' 
-        
+        row["Status"] = ""
+
         if is_empty(row.get("CRE 0")):
             text_to_analyze = f"{row.get('standard|name', '')} {row.get('standard|id', '')} {row.get('standard|hyperlink', '')}"
-            
+
             if not is_empty(text_to_analyze.strip()):
                 embedding = prompt_handler.get_text_embeddings(text_to_analyze)
-                suggested_cre_id, similarity = prompt_handler.get_id_of_most_similar_cre_paginated(embedding)
-                
+                suggested_cre_id, similarity = (
+                    prompt_handler.get_id_of_most_similar_cre_paginated(embedding)
+                )
+
                 if suggested_cre_id and similarity:
                     found_cres = database.get_CREs(external_id=suggested_cre_id)
                     if found_cres:
                         cre = found_cres[0]
                         row["Suggested CRE"] = f"{cre.id}|{cre.name}"
                         row["Suggestion Confidence"] = f"{similarity:.2f}"
-                        row['Status'] = 'Suggestion Found' # SUCCESS STATUS
+                        row["Status"] = "Suggestion Found"  # SUCCESS STATUS
                     else:
                         # This case handles sync issues
-                        row['Status'] = 'Human review required: AI found a match, but CRE does not exist in DB.'
+                        row["Status"] = (
+                            "Human review required: AI found a match, but CRE does not exist in DB."
+                        )
                 else:
                     # THIS FULFILLS THE STRETCH GOAL
-                    row['Status'] = 'Human review required: No high-confidence match found.'
+                    row["Status"] = (
+                        "Human review required: No high-confidence match found."
+                    )
             else:
-                row['Status'] = 'Skipped: Row was empty.'
+                row["Status"] = "Skipped: Row was empty."
         else:
-            row['Status'] = 'Complete: CRE already exists.'
+            row["Status"] = "Complete: CRE already exists."
 
         processed_rows.append(row)
 
     if not processed_rows:
         abort(400, "Could not process any rows from the provided CSV file.")
 
-   
     fieldnames = list(processed_rows[0].keys())
-    new_cols = ['Suggested CRE', 'Suggestion Confidence', 'Status']
+    new_cols = ["Suggested CRE", "Suggestion Confidence", "Status"]
     for col in new_cols:
         if col not in fieldnames:
             fieldnames.append(col)
@@ -877,24 +883,17 @@ def suggest_from_csv() -> Any:
     writer = csv.DictWriter(output_buffer, fieldnames=fieldnames)
     writer.writeheader()
     writer.writerows(processed_rows)
-    
+
     mem = io.BytesIO()
     mem.write(output_buffer.getvalue().encode("utf-8"))
     mem.seek(0)
-    
+
     return send_file(
         mem,
         as_attachment=True,
         download_name="cre-suggestions.csv",
-        mimetype="text/csv"
+        mimetype="text/csv",
     )
-
-                                
-    
-
-
-
-
 
 
 # /End Importing Handlers
