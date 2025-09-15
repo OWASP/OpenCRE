@@ -12,7 +12,7 @@ export const ExplorerCircles = () => {
   const [useFullScreen, setUseFullScreen] = useState(false);
   const { dataLoading, dataTree } = useDataStore();
   const [breadcrumb, setBreadcrumb] = useState<string[]>([]);
-
+  const svgRef = React.useRef(null);
   const rootRef = React.useRef<any>(null);
   const zoomRef = React.useRef<any>(null);
   const updateBreadcrumbRef = React.useRef<any>(null);
@@ -24,7 +24,10 @@ export const ExplorerCircles = () => {
   const size = useFullScreen ? width : defaultSize;
 
   useEffect(() => {
-    var svg = d3.select('svg');
+    if (!svgRef.current) {
+      return;
+    }
+    var svg = d3.select(svgRef.current);
     svg.selectAll('*').remove();
 
     var diameter = size,
@@ -414,6 +417,7 @@ export const ExplorerCircles = () => {
         </div>
 
         <svg
+          ref={svgRef}
           width={size}
           height={size}
           style={{ background: 'transparent', display: 'block', margin: 'auto' }}
