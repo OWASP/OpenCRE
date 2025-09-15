@@ -60,7 +60,7 @@ module.exports.devServer = {
   historyApiFallback: {
     disableDotRule: true,
   },
-  contentBase: './www',
+  contentBase: path.join(__dirname, 'application/frontend/www'),
   port: 9001,
 };
 

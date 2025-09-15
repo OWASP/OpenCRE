@@ -14,7 +14,7 @@ import { getDocumentDisplayName, groupLinksByType } from '../../utils';
 import { getDocumentTypeText } from '../../utils/document';
 
 export const StandardSection = () => {
-  const { id, section, sectionID } = useParams();
+  const { id, section, sectionID } = useParams<{ id: string; section: string; sectionID: string }>();
   const { apiUrl } = useEnvironment();
   const [page, setPage] = useState<number>(1);
   const [loading, setLoading] = useState<boolean>(false);
