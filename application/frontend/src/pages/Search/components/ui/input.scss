@@ -1,0 +1,46 @@
+/* input.scss */
+
+.input {
+  // Layout & Sizing
+  display: flex;
+  height: 2.5rem; // h-10
+  width: 100%;
+  padding: 0.5rem 0.75rem; // px-3 py-2
+
+  // Appearance
+  border-radius: var(--radius);
+  border: 1px solid var(--input);
+  background-color: var(--background);
+
+  // Typography
+  font-size: 0.875rem; // md:text-sm
+  color: var(--foreground);
+  @media (min-width: 768px) {
+    font-size: 1rem; // text-base
+  }
+
+  // Pseudo-elements
+  &::placeholder {
+    color: var(--muted-foreground);
+  }
+
+  // File input specific pseudo-elements
+  &::file-selector-button {
+    border: 0;
+    background: transparent;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--foreground);
+  }
+
+  // States
+  &:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+}

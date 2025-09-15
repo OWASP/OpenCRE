@@ -12,7 +12,7 @@ import {
   SECTION_ID,
   STANDARD,
 } from './const';
-import { CommonRequirementEnumeration, Graph, Search, Standard } from './pages';
+import { CommonRequirementEnumeration, Graph, SearchPage, Standard } from './pages';
 import { BrowseRootCres } from './pages/BrowseRootCres/browseRootCres';
 import { Chatbot } from './pages/chatbot/chatbot';
 import { Explorer } from './pages/Explorer/explorer';
@@ -32,7 +32,7 @@ export interface IRoute {
 export const ROUTES: IRoute[] = [
   {
     path: INDEX,
-    component: Search,
+    component: SearchPage,
     showFilter: false,
   },
   {
