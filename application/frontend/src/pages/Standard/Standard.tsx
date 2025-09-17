@@ -12,7 +12,7 @@ import { Document, PaginatedResponse } from '../../types';
 import { getDocumentDisplayName } from '../../utils/document';
 
 export const Standard = () => {
-  let { type, id } = useParams();
+  let { type, id } = useParams<{ type: string; id: string }>();
   const { apiUrl } = useEnvironment();
   const [page, setPage] = useState<number>(1);
   const [loading, setLoading] = useState<boolean>(false);

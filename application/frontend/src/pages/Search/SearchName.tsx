@@ -12,7 +12,7 @@ const CRE = 'CRE';
 const NODES = ['Standard', 'Tool', 'Code'];
 
 export const SearchName = () => {
-  const { searchTerm } = useParams();
+  const { searchTerm } = useParams<{ searchTerm: string }>();
   const { apiUrl } = useEnvironment();
   const [loading, setLoading] = useState<boolean>(false);
   const [documents, setDocuments] = useState<Document[]>([]);

@@ -1,88 +1,170 @@
 import './header.scss';
 
-import React, { useMemo } from 'react';
+import { Menu, Search } from 'lucide-react';
+import React, { useState } from 'react';
 import { Link, useHistory } from 'react-router-dom';
-import { Button, Menu } from 'semantic-ui-react';
+import { Button } from 'semantic-ui-react';
 
 import { ClearFilterButton } from '../../components/FilterButton/FilterButton';
 import { useLocationFromOutsideRoute } from '../../hooks/useLocationFromOutsideRoute';
 import { SearchBar } from '../../pages/Search/components/SearchBar';
 
-const getLinks = (): { to: string; name: string }[] => [
-  {
-    to: `/`,
-    name: 'Home',
-  },
-  {
-    to: `/root_cres`,
-    name: 'Browse',
-  },
-  {
-    to: `/chatbot`,
-    name: 'OpenCRE Chat',
-  },
-  {
-    to: `/map_analysis`,
-    name: 'Map Analysis',
-  },
-  {
-    to: `/explorer`,
-    name: 'OpenCRE Explorer',
-  },
-];
-
 export const Header = () => {
   let currentUrlParams = new URLSearchParams(window.location.search);
-
+  const history = useHistory();
   const HandleDoFilter = () => {
     currentUrlParams.set('applyFilters', 'true');
     history.push(window.location.pathname + '?' + currentUrlParams.toString());
   };
+  const { showFilter } = useLocationFromOutsideRoute();
 
-  const history = useHistory();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  const { params, url, showFilter } = useLocationFromOutsideRoute();
-  const links = useMemo(() => getLinks(), [params]);
+  const closeMobileMenu = () => {
+    setIsMobileMenuOpen(false);
+  };
 
   return (
-    <nav className="header">
-      <Menu className="header__nav-bar" secondary>
-        <Link to="/" className="header__nav-bar-logo">
-          <img alt="Open CRE" src="/logo_dark_nobyline.svg" />
-        </Link>
-        <Menu.Menu position="left">
-          {links.map(({ to, name }) => (
-            <Link
-              key={name}
-              className={`header__nav-bar__link ${url === to ? 'header__nav-bar__link--active' : ''}`}
-              to={to}
-            >
-              <Menu.Item as="span" onClick={() => {}}>
-                {name}
-              </Menu.Item>
+    <>
+      <nav className="navbar">
+        <div className="navbar__container">
+          <div className="navbar__content">
+            <Link to="/" className="navbar__logo">
+              <img src="/logo.svg" alt="Logo" />
             </Link>
-          ))}
-        </Menu.Menu>
-        <Menu.Menu position="right">
-          <Menu.Item>
-            <SearchBar />
 
-            {showFilter && currentUrlParams.has('showButtons') ? (
-              <div className="foo">
-                <Button
-                  onClick={() => {
-                    HandleDoFilter();
+            <div className="navbar__desktop-links">
+              <Link to="/" className="nav-link">
+                Home
+              </Link>
+              <a href="/root_cres" className="nav-link">
+                Browse
+              </a>
+              <Link to="/chatbot" className="nav-link">
+                Chat
+              </Link>
+              <a href="/map_analysis" className="nav-link">
+                Map Analysis
+              </a>
+              <a href="/explorer" className="nav-link">
+                Explorer
+              </a>
+            </div>
+
+            <div>
+              <SearchBar />
+              {showFilter && currentUrlParams.has('showButtons') ? (
+                <div className="foo">
+                  <Button
+                    onClick={() => {
+                      HandleDoFilter();
+                    }}
+                    content="Apply Filters"
+                  ></Button>
+                  <ClearFilterButton />
+                </div>
+              ) : (
+                ''
+              )}
+            </div>
+
+            <div className="navbar__actions">
+              {/* Left these divs so that we can add auth functionality directly here. */}
+              {/* <div className="navbar__desktop-auth">
+                <Link
+                  to={{
+                    pathname: '/auth',
+                    state: { mode: 'login' },
                   }}
-                  content="Apply Filters"
-                ></Button>
-                <ClearFilterButton />
-              </div>
-            ) : (
-              ''
-            )}
-          </Menu.Item>
-        </Menu.Menu>
-      </Menu>
-    </nav>
+                  className="btn btn--ghost"
+                >
+                  Log In
+                </Link>
+
+                <Link
+                  to={{
+                    pathname: '/auth',
+                    state: { mode: 'signup' },
+                  }}
+                  className="btn btn--primary"
+                >
+                  Sign Up
+                </Link>
+              </div> */}
+
+              <button className="navbar__mobile-menu-toggle" onClick={() => setIsMobileMenuOpen(true)}>
+                <Menu className="icon" />
+                <span className="sr-only">Toggle menu</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      <div className={`navbar__overlay ${isMobileMenuOpen ? 'is-open' : ''}`} onClick={closeMobileMenu}></div>
+
+      <div className={`navbar__mobile-menu ${isMobileMenuOpen ? 'is-open' : ''}`}>
+        <div className="mobile-search-container">
+          <SearchBar />
+        </div>
+        {showFilter && currentUrlParams.has('showButtons') ? (
+          <div className="foo">
+            <Button
+              onClick={() => {
+                HandleDoFilter();
+              }}
+              content="Apply Filters"
+            ></Button>
+            <ClearFilterButton />
+          </div>
+        ) : (
+          ''
+        )}
+
+        <div className="mobile-nav-links">
+          <Link to="/" className="nav-link" onClick={closeMobileMenu}>
+            Home
+          </Link>
+          <a href="/root_cres" className="nav-link" onClick={closeMobileMenu}>
+            Browse
+          </a>
+          <Link to="/chatbot" className="nav-link" onClick={closeMobileMenu}>
+            Chat
+          </Link>
+          <a href="/map_analysis" className="nav-link" onClick={closeMobileMenu}>
+            Map Analysis
+          </a>
+          <a href="/explorer" className="nav-link" onClick={closeMobileMenu}>
+            Explorer
+          </a>
+        </div>
+
+        <div className="mobile-auth">
+          {/* <div className="auth-buttons">
+            <Link
+              to={{
+                pathname: '/auth',
+                state: { mode: 'login' },
+              }}
+              className="btn btn--ghost"
+              onClick={closeMobileMenu}
+            >
+              Log In
+            </Link>
+
+            <Link
+              to={{
+                pathname: '/auth',
+                state: { mode: 'signup' },
+              }}
+              className="btn btn--primary"
+              onClick={closeMobileMenu}
+            >
+              Sign Up
+            </Link>
+          </div> */}
+        </div>
+      </div>
+    </>
   );
 };

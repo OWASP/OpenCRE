@@ -46,7 +46,7 @@ v/
 
 ### Frontend 
 node_modules/
-www/
+
 .DS_Store
 yarn-error.log
 coverage/
