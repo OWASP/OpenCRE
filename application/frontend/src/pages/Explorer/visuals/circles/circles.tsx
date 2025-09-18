@@ -123,7 +123,14 @@ export const ExplorerCircles = () => {
       .style('fill', function (d: any) {
         return d.children ? color(d.depth) : d.data.color ? d.data.color : null;
       })
-      //New mouseover to use id if diaplayName is not present (most likely for white dots )
+      .style('cursor', function (d) {
+        // Show the pointer cursor only if it's a leaf node AND has a hyperlink property.
+        if (!d.children && (d.data as { hyperlink?: string }).hyperlink) {
+          return 'pointer';
+        }
+        return 'default';
+      })
+
       .on('mouseover', function (event, d: any) {
         // Prefer displayName, fallback to id
         const label = d.data.displayName
@@ -146,14 +153,27 @@ export const ExplorerCircles = () => {
       .on('mouseout', function () {
         tooltip.style('visibility', 'hidden');
       })
+
       .on('click', function (event, d: any) {
-        if (focus !== d) {
+        if (!d.children) {
+          event.stopPropagation();
+
+          // Directly access the hyperlink property from the node's data.
+          const url = d.data.hyperlink;
+
+          // If the url exists, open it in a new tab.
+          if (url) {
+            console.log('URL found:', url);
+            window.open(url, '_blank');
+          } else {
+            console.log('This leaf node does not have a hyperlink.');
+          }
+        } else if (focus !== d) {
           updateBreadcrumb(d);
           zoom(event, d);
           event.stopPropagation();
         }
       });
-
     let showLabels = true;
 
     // Filter the nodes to only include those that have children (i.e., are not leaves)
