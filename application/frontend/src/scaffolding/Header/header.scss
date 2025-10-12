@@ -2,7 +2,8 @@
 
 .navbar {
   // Positioning and background
-  position: sticky;
+  position: fixed;
+  width: 100%;
   top: 0;
   z-index: 50;
   background-color: rgba(var(--background-rgb), 0.8);

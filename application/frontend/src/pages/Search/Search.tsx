@@ -11,7 +11,7 @@ export const SearchPage = () => {
   const { toast } = useToast();
 
   const [isArrowVisible, setIsArrowVisible] = useState(true);
-  const [loading, setLoading] = useState(true);
+  // const [loading, setLoading] = useState(false);
 
   //Search Functionality
   const history = useHistory();
@@ -70,25 +70,25 @@ export const SearchPage = () => {
     }
   };
 
-  useEffect(() => {
-    // Simulate data fetching or API call
-    const timer = setTimeout(() => {
-      setLoading(false); // ✅ stop loading after 2s
-    }, 2000);
+  // useEffect(() => {
+  //   // Simulate data fetching or API call
+  //   const timer = setTimeout(() => {
+  //     setLoading(false); // ✅ stop loading after 2s
+  //   }, 1000);
 
-    return () => clearTimeout(timer); // cleanup
-  }, []);
+  //   return () => clearTimeout(timer); // cleanup
+  // }, []);
 
-  if (loading) {
-    return (
-      <div className="loading-screen">
-        <div className="loading-container">
-          <div className="spinner"></div>
-          <p className="loading-text">Loading...</p>
-        </div>
-      </div>
-    );
-  }
+  // if (loading) {
+  //   return (
+  //     <div className="loading-screen">
+  //       <div className="loading-container">
+  //         <div className="spinner"></div>
+  //         <p className="loading-text">Loading...</p>
+  //       </div>
+  //     </div>
+  //   );
+  // }
 
   return (
     <div className="main-container">
@@ -206,7 +206,9 @@ export const SearchPage = () => {
                 <p>
                   Use the{' '}
                   <strong>
-                    <a href="#search-bar">search bar</a>
+                    {/* Scroll to hero on purpose, the searchbar is covered by the header so we need to scroll to the hero section first */}
+                    <a href="#hero">search bar</a> 
+
                   </strong>
                   ,{' '}
                   <strong>
@@ -262,7 +264,11 @@ export const SearchPage = () => {
               </div>
               <h3 className="feature-block__title">OPENCRE CHAT</h3>
               <p className="feature-block__text">
-                Use <strong>OpenCRE Chat</strong> to ask any security question. In collaboration with{' '}
+                Use <strong>
+                  <a href="https://www.opencre.org/chatbot">
+                    OpenCRE Chat</a>
+                </strong>
+                to ask any security question. In collaboration with{' '}
                 <strong>Google</strong>, we injected all the standards in OpenCRE into an AI model to create
                 the most comprehensive security chatbot. This ensures you get a more{' '}
                 <strong>reliable answer</strong>, and also a reference to a <strong>reputable source</strong>.
@@ -272,7 +278,9 @@ export const SearchPage = () => {
               <div className="feature-block__icon-wrapper">
                 <Network className="icon" />
               </div>
-              <h3 className="feature-block__title">MAP ANALYSIS</h3>
+              <h3 className="feature-block__title">
+                <a href="https://www.opencre.org/map_analysis">
+                  MAP ANALYSIS</a></h3>
               <p className="feature-block__text">
                 Utilize <strong>Map Analysis</strong> as a tool to explore and understand the connections
                 between two standards.
