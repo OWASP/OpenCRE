@@ -1,5 +1,9 @@
 // 1. NAVBAR CONTAINER & LAYOUT
 
+main {
+  padding-top: 4rem;
+}
+
 .navbar {
   // Positioning and background
   position: fixed;
@@ -300,3 +304,4 @@
     display: block;
   }
 }
+
