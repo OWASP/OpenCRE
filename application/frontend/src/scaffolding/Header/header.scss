@@ -1,5 +1,8 @@
 // 1. NAVBAR CONTAINER & LAYOUT
-
+:root {
+    /* Define the header's height once */
+    --header-height: 4.1rem; // 64px
+}
 main {
   padding-top: 4rem;
 }
@@ -9,6 +12,7 @@ main {
   position: fixed;
   width: 100%;
   top: 0;
+  height: var(--header-height);
   z-index: 50;
   background-color: rgba(var(--background-rgb), 0.8);
   backdrop-filter: blur(4px);
