@@ -58,6 +58,9 @@ export const getInternalUrl = (doc: Document): string => {
       } else if (doc.sectionID) {
         standardAPIPath += `sectionid/${encodeURIComponent(doc.sectionID)}`;
       }
+      if (doc.subsection) {
+        standardAPIPath += `/subsection/${encodeURIComponent(doc.subsection)}`;
+      }
     }
     return standardAPIPath;
   }
