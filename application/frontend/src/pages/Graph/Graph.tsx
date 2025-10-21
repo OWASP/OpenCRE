@@ -91,7 +91,7 @@ const onLoad = (reactFlowInstance) => {
 };
 
 export const Graph = () => {
-  const { id } = useParams<{id : string}>();
+  const { id } = useParams<{ id: string }>();
   const { apiUrl } = useEnvironment();
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | Object | null>(null);

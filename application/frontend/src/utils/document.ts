@@ -51,12 +51,12 @@ export const groupBy = <T, K extends keyof any>(list: T[], getKey: (item: T) => 
 
 export const getInternalUrl = (doc: Document): string => {
   if (doc.doctype.toLowerCase() != 'cre') {
-    var standardAPIPath = `/node/${doc.doctype.toLowerCase()}/${doc.name}/`;
+    var standardAPIPath = `/node/${doc.doctype.toLowerCase()}/${doc.name}`;
     if (doc) {
       if (doc.section) {
-        standardAPIPath += `section/${encodeURIComponent(doc.section)}`;
+        standardAPIPath += `/section/${encodeURIComponent(doc.section)}`;
       } else if (doc.sectionID) {
-        standardAPIPath += `sectionid/${encodeURIComponent(doc.sectionID)}`;
+        standardAPIPath += `/sectionid/${encodeURIComponent(doc.sectionID)}`;
       }
       if (doc.subsection) {
         standardAPIPath += `/subsection/${encodeURIComponent(doc.subsection)}`;
@@ -72,9 +72,12 @@ export const getApiEndpoint = (doc: Document, apiUrl: string): string => {
     var standardAPIPath = `${apiUrl}/${doc.doctype.toLowerCase()}/${doc.name}`;
     if (doc) {
       if (doc.section) {
-        standardAPIPath += `section/${encodeURIComponent(doc.section)}`;
+        standardAPIPath += `/section/${encodeURIComponent(doc.section)}`;
       } else if (doc.sectionID) {
-        standardAPIPath += `sectionid/${encodeURIComponent(doc.sectionID)}`;
+        standardAPIPath += `/sectionid/${encodeURIComponent(doc.sectionID)}`;
+      }
+      if (doc.subsection) {
+        standardAPIPath += `/subsection/${encodeURIComponent(doc.subsection)}`;
       }
       return standardAPIPath;
     }
