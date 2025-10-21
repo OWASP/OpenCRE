@@ -281,7 +281,7 @@ export const SearchPage = () => {
                 <a href="https://www.opencre.org/map_analysis">MAP ANALYSIS</a>
               </h3>
               <p className="feature-block__text">
-                Utilize <strong>Map Analysis</strong> as a tool to explore and understand the connections
+                Utilize <strong><a href="/map_analysis">Map Analysis</a></strong> as a tool to explore and understand the connections
                 between two standards.
               </p>
               <p className="feature-block__text">

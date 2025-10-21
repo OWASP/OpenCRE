@@ -61,6 +61,9 @@ export const getInternalUrl = (doc: Document): string => {
       if (doc.subsection) {
         standardAPIPath += `/subsection/${encodeURIComponent(doc.subsection)}`;
       }
+      if (doc.subsection) {
+        standardAPIPath += `/subsection/${encodeURIComponent(doc.subsection)}`;
+      }
     }
     return standardAPIPath;
   }
