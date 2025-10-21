@@ -14,7 +14,12 @@ import { getDocumentDisplayName, groupLinksByType } from '../../utils';
 import { getDocumentTypeText } from '../../utils/document';
 
 export const StandardSection = () => {
-  const { id, section, sectionID } = useParams<{ id: string; section: string; sectionID: string }>();
+  const { id, section, sectionID, subsection } = useParams<{
+    id: string;
+    section: string;
+    sectionID: string;
+    subsection: string;
+  }>();
   const { apiUrl } = useEnvironment();
   const [page, setPage] = useState<number>(1);
   const [loading, setLoading] = useState<boolean>(false);
@@ -28,11 +33,17 @@ export const StandardSection = () => {
     return sectionID ? `&sectionID=${encodeURIComponent(sectionID)}` : '';
   };
 
+  const getSubsectionParameter = (): string => {
+    return subsection ? `&subsection=${encodeURIComponent(subsection)}` : '';
+  };
+
   useEffect(() => {
     window.scrollTo(0, 0);
     setLoading(true);
     axios
-      .get(`${apiUrl}/standard/${id}?page=${page}${getSectionParameter()}${getSectionIDParameter()}`)
+      .get(
+        `${apiUrl}/standard/${id}?page=${page}${getSectionParameter()}${getSectionIDParameter()}${getSubsectionParameter()}`
+      )
       .then(function (response) {
         setError(null);
         setData(response.data);
@@ -47,7 +58,7 @@ export const StandardSection = () => {
       .finally(() => {
         setLoading(false);
       });
-  }, [id, section, sectionID, page]);
+  }, [id, section, sectionID, page, subsection]);
 
   const documents = data?.standards || [];
   const document = documents[0];

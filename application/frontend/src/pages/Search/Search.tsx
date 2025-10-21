@@ -207,8 +207,7 @@ export const SearchPage = () => {
                   Use the{' '}
                   <strong>
                     {/* Scroll to hero on purpose, the searchbar is covered by the header so we need to scroll to the hero section first */}
-                    <a href="#hero">search bar</a> 
-
+                    <a href="#hero">search bar</a>
                   </strong>
                   ,{' '}
                   <strong>
@@ -264,21 +263,23 @@ export const SearchPage = () => {
               </div>
               <h3 className="feature-block__title">OPENCRE CHAT</h3>
               <p className="feature-block__text">
-                Use <strong>
-                  <a href="https://www.opencre.org/chatbot">
-                    OpenCRE Chat</a>
+                Use{' '}
+                <strong>
+                  <a href="https://www.opencre.org/chatbot">OpenCRE Chat</a>
                 </strong>
-                to ask any security question. In collaboration with{' '}
-                <strong>Google</strong>, we injected all the standards in OpenCRE into an AI model to create
-                the most comprehensive security chatbot. This ensures you get a more{' '}
-                <strong>reliable answer</strong>, and also a reference to a <strong>reputable source</strong>.
+                to ask any security question. In collaboration with <strong>Google</strong>, we injected all
+                the standards in OpenCRE into an AI model to create the most comprehensive security chatbot.
+                This ensures you get a more <strong>reliable answer</strong>, and also a reference to a{' '}
+                <strong>reputable source</strong>.
               </p>
             </div>
             <div className="feature-block feature-block--teal">
               <div className="feature-block__icon-wrapper">
                 <Network className="icon" />
               </div>
-              <h3 className="feature-block__title">MAP ANALYSIS</h3>
+              <h3 className="feature-block__title">
+                <a href="https://www.opencre.org/map_analysis">MAP ANALYSIS</a>
+              </h3>
               <p className="feature-block__text">
                 Utilize <strong><a href="/map_analysis">Map Analysis</a></strong> as a tool to explore and understand the connections
                 between two standards.

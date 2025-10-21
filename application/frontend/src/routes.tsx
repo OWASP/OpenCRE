@@ -11,6 +11,7 @@ import {
   SECTION,
   SECTION_ID,
   STANDARD,
+  SUBSECTION,
 } from './const';
 import { CommonRequirementEnumeration, Graph, SearchPage, Standard } from './pages';
 import { BrowseRootCres } from './pages/BrowseRootCres/browseRootCres';
@@ -41,10 +42,21 @@ export const ROUTES: IRoute[] = [
     showFilter: false,
   },
   {
+    path: `/node${STANDARD}/:id${SECTION}/:section${SUBSECTION}/:subsection`,
+    component: StandardSection,
+    showFilter: true,
+  },
+  {
+    path: `/node${STANDARD}/:id${SECTION_ID}/:sectionID${SUBSECTION}/:subsection`,
+    component: StandardSection,
+    showFilter: true,
+  },
+  {
     path: `/node${STANDARD}/:id${SECTION}/:section`,
     component: StandardSection,
     showFilter: true,
   },
+
   {
     path: `/node${STANDARD}/:id${SECTION_ID}/:sectionID`,
     component: StandardSection,

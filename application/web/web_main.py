@@ -144,13 +144,28 @@ def find_cre(creid: str = None, crename: str = None) -> Any:  # refer
 
 @app.route("/rest/v1/<ntype>/<name>", methods=["GET"])
 @app.route("/rest/v1/standard/<name>", methods=["GET"])
-def find_node_by_name(name: str, ntype: str = defs.Credoctypes.Standard.value) -> Any:
+@app.route("/rest/v1/<ntype>/<name>/sectionid/<sectionID>", methods=["GET"])
+@app.route("/rest/v1/<ntype>/<name>/section/<section>", methods=["GET"])
+@app.route(
+    "/rest/v1/<ntype>/<name>/section/<section>/subsection/<subsection>", methods=["GET"]
+)
+@app.route(
+    "/rest/v1/<ntype>/<name>/sectionid/<sectionID>/subsection/<subsection>",
+    methods=["GET"],
+)
+def find_node_by_name(
+    name: str,
+    ntype: str = defs.Credoctypes.Standard.value,
+    section: str = "",
+    subsection: str = "",
+    sectionID: str = "",
+) -> Any:
     if posthog:
-        posthog.capture(f"find_node_by_name", f"hame:{name};nodeType{ntype}")
+        posthog.capture(f"find_node_by_name", f"name:{name};nodeType{ntype}")
 
     database = db.Node_collection()
-    opt_section = request.args.get("section")
-    opt_sectionID = request.args.get("sectionID")
+    opt_section = section or request.args.get("section")
+    opt_sectionID = sectionID or request.args.get("sectionID")
     # opt_osib = request.args.get("osib")
     opt_version = request.args.get("version")
     opt_format = request.args.get("format")
@@ -158,7 +173,7 @@ def find_node_by_name(name: str, ntype: str = defs.Credoctypes.Standard.value) -
         opt_section = urllib.parse.unquote(opt_section)
     if opt_sectionID:
         opt_sectionID = urllib.parse.unquote(opt_sectionID)
-    opt_subsection = request.args.get("subsection")
+    opt_subsection = subsection or request.args.get("subsection")
     opt_hyperlink = request.args.get("hyperlink")
 
     # match ntype to the credoctypes case-insensitive
@@ -218,7 +233,6 @@ def find_node_by_name(name: str, ntype: str = defs.Credoctypes.Standard.value) -
 
         res = [node.todict() for node in nodes]
         result["standards"] = res
-
         return jsonify(result)
     else:
         abort(404, "Node does not exist")

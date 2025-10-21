@@ -45,7 +45,6 @@ export const Standard = () => {
   }, [id, type, page]);
 
   const documents = data?.standards || [];
-
   return (
     <>
       <div className="standard-page">
