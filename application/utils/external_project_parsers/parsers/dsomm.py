@@ -115,7 +115,7 @@ class DSOMM(ParserInterface):
                             section=sname,
                             subsection=aname,
                             sectionID=activity.get("uuid"),
-                            hyperlink=f"https://dsomm.owasp.org/activity-description?action={activity.get('uuid')}",
+                            hyperlink=f"https://dsomm.owasp.org/activity-description?uuid={activity.get('uuid')}",
                             description=f"Description:{activity.get('description')}\n Risk:{activity.get('risk')}\n Measure:{activity.get('measure')}",
                         )
                     else:
