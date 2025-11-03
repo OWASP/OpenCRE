@@ -1,18 +1,11 @@
 // 1. NAVBAR CONTAINER & LAYOUT
-:root {
-    /* Define the header's height once */
-    --header-height: 4.1rem; // 64px
-}
-main {
-  padding-top: 4rem;
-}
 
 .navbar {
   // Positioning and background
-  position: fixed;
+  position: sticky;
+
   width: 100%;
   top: 0;
-  height: var(--header-height);
   z-index: 50;
   background-color: rgba(var(--background-rgb), 0.8);
   backdrop-filter: blur(4px);
@@ -23,7 +16,7 @@ main {
   &__container {
     max-width: 112rem; // max-w-7xl
     margin: 0 auto;
-    padding: 0 2rem;
+    padding: 0 1rem;
     @media (min-width: 640px) {
       padding: 0 1.5rem;
     }
@@ -46,7 +39,7 @@ main {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  margin-left: 2rem;
+  margin-left: 4rem;
   img {
     height: 10rem;
     width: 10rem;
@@ -144,8 +137,8 @@ main {
   border-radius: var(--radius);
 
   .icon {
-    height: 2rem;
-    width: 2rem;
+    height: 1.25rem;
+    width: 1.25rem;
     color: var(--foreground);
   }
 
@@ -153,18 +146,6 @@ main {
     // md:hidden
     display: none;
   }
-}
-
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
 }
 
 .navbar__mobile-menu {
@@ -320,4 +301,3 @@ main {
     display: block;
   }
 }
-
