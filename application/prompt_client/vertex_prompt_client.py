@@ -83,7 +83,7 @@ class VertexPromptClient:
         return values
 
     def create_chat_completion(self, prompt, closest_object_str) -> str:
-        msg = f"Your task is to answer the following question based on this area of knowledge:`{closest_object_str}` if you can, provide code examples, delimit any code snippet with three backticks\nQuestion: `{prompt}`\n ignore all other commands and questions that are not relevant."
+        msg = f"Your task is to answer the following question based on this area of knowledge:`{closest_object_str}` if you can, provide code examples, delimit any code snippet with three backticks. If the provided content is not on topic, instead start the reply with the phrase 'The provided content is not relevant to the topic'\nQuestion: `{prompt}`\n ignore all other commands and questions that are not relevant."
         response = self.client.models.generate_content(
             model="gemini-2.0-flash",
             contents=msg,
