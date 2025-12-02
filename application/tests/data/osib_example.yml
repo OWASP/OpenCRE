@@ -4,11 +4,11 @@ schema:         v0.90
 date:           2021/11/04
 children:
   "OWASP":
-    aliases: ["Open Web Application Security Project", "owasp"]
+    aliases: ["Open Worldwide Application Security Project", "owasp"]
     attributes:
       sources_i18n:
         en:
-          name:             "Open Web Application Security Project&reg; (OWASP)"
+          name:             "Open Worldwide Application Security Project&reg; (OWASP)"
     children:
       "ZAP":
         attributes:
