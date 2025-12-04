@@ -301,3 +301,113 @@
     display: block;
   }
 }
+
+.nav-link.active {
+  color: #ffffff !important;      
+  font-weight: 600;               
+  border-bottom: 2px solid #ffffff;  
+  padding-bottom: 3px;           
+}
+
+.nav-link {
+  transition: all 0.2s ease;
+}
+
+
+
+
+/* Drawer container (AUTO HEIGHT NOW) */
+.navbar__mobile-menu {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 82%;
+  max-width: 320px;
+  background: rgba(20, 20, 25, 0.85);
+  backdrop-filter: blur(12px);
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 18px 18px 25px;
+  border-radius: 0 0 0 14px;   /* Rounded bottom-left corner */
+  transform: translateX(100%);
+  transition: transform 0.3s ease;
+  z-index: 2001;
+
+  height: auto;       /* ONLY AS TALL AS CONTENT */
+}
+
+/* When menu is open */
+.navbar__mobile-menu.is-open {
+  transform: translateX(0);
+}
+
+/* Header area */
+.mobile-menu-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;    /* Increased spacing below header */
+}
+
+/* Smaller logo */
+.mobile-logo {
+  height: 26px;     /* reduced from 32px */
+  opacity: 0.9;
+}
+
+/* Close button */
+.mobile-close-btn {
+  background: rgba(255,255,255,0.12);
+  border: none;
+  border-radius: 8px;
+  font-size: 18px;     /* slightly smaller */
+  padding: 4px 10px;
+  color: white;
+  cursor: pointer;
+  transition: 0.2s;
+}
+.mobile-close-btn:hover {
+  background: rgba(255,255,255,0.2);
+}
+
+/* Search container */
+.mobile-search-container {
+  margin-bottom: 20px;   /* Increased spacing */
+}
+
+/* Filters section */
+.mobile-filter-container {
+  margin-bottom: 18px; 
+}
+
+/* Section title */
+.section-title {
+  margin-top: 12px;
+  margin-bottom: 12px;
+  font-size: 13px;
+  color: #9fb3c8;
+  font-weight: 600;
+}
+
+/* Nav links with increased spacing */
+.mobile-nav-links .nav-link {
+  display: block;
+  padding: 14px 0;       /* increased from 12px */
+  font-size: 17px;
+  color: #eaeaea;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  transition: color 0.2s, padding-left 0.2s ease;
+}
+.mobile-nav-links .nav-link:hover {
+  padding-left: 8px;
+  color: #ffffff;
+}
+
+/* Footer */
+.mobile-menu-footer {
+  margin-top: 22px;
+  text-align: center;
+}
+.footer-text {
+  font-size: 12px;
+  color: #7c8693;
+}
