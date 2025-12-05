@@ -1,12 +1,22 @@
-import './LinkedStandards.scss';
-
 import React, { Fragment } from 'react';
 import { Link } from 'react-router-dom';
-import { Icon, Label, List } from 'semantic-ui-react';
+import { ExternalLink } from 'lucide-react';
 
 import { LinkedTreeDocument } from '../../types';
 
-export const LinkedStandards = ({ creCode, linkedTo, applyHighlight, filter }) => {
+interface LinkedStandardsProps {
+  creCode: string;
+  linkedTo: LinkedTreeDocument[];
+  applyHighlight: (text: string, filter: string) => React.ReactNode;
+  filter: string;
+}
+
+export const LinkedStandards: React.FC<LinkedStandardsProps> = ({
+  creCode,
+  linkedTo,
+  applyHighlight,
+  filter
+}) => {
   /**
    * Get a link to a filtered version of the CRE to show the relevant standards
    */
@@ -48,26 +58,77 @@ export const LinkedStandards = ({ creCode, linkedTo, applyHighlight, filter }) =
   const uniqueLinkedTo = getUniqueByName(linkedTo);
 
   return (
-    <List.Description>
-      <Label.Group size="small" className="tags">
+    <div style={{ marginLeft: '8px' }}>
+      <div
+        className="flex gap-1 h-full justify-center items-center flex-wrap"
+        style={{ display: 'flex', gap: '4px', alignItems: 'center' }}
+      >
         {uniqueLinkedTo.map((x: LinkedTreeDocument) => (
           <Fragment key={x.document.name}>
             {isExternalLink(x, linkedTo) && (
-              <a href={x.document.hyperlink} target="_blank">
-                <Label>
-                  <Icon name="external" />
+              <a
+                href={x.document.hyperlink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-block"
+                style={{ textDecoration: 'none' }}
+              >
+                <span
+                  className="inline-flex items-center gap-1 px-2 py-1 text-sm rounded transition-colors"
+                  style={{
+                    border: '1px solid #2185d0',
+                    color: '#2185d0',
+                    backgroundColor: '#fff',
+                    fontSize: '12px',
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = '#4183c4';
+                    e.currentTarget.style.color = 'white';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = '#fff';
+                    e.currentTarget.style.color = '#2185d0';
+                  }}
+                >
+                  <ExternalLink size={12} />
                   {applyHighlight(x.document.name, filter)}
-                </Label>
+                </span>
               </a>
             )}
             {!isExternalLink(x, linkedTo) && (
-              <Link to={getLinkedToUrl(x, creCode)}>
-                <Label>{applyHighlight(x.document.name, filter)}</Label>
+              <Link
+                to={getLinkedToUrl(x, creCode)}
+                className="inline-block"
+                style={{ textDecoration: 'none' }}
+              >
+                <span
+                  className="inline-block px-2 py-1 text-sm rounded transition-colors"
+                  style={{
+                    border: '1px solid #2185d0',
+                    color: '#2185d0',
+                    backgroundColor: '#fff',
+                    fontSize: '12px',
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = '#4183c4';
+                    e.currentTarget.style.color = 'white';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = '#fff';
+                    e.currentTarget.style.color = '#2185d0';
+                  }}
+                >
+                  {applyHighlight(x.document.name, filter)}
+                </span>
               </Link>
             )}
           </Fragment>
         ))}
-      </Label.Group>
-    </List.Description>
+      </div>
+    </div>
   );
 };

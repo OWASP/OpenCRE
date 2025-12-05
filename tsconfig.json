@@ -4,6 +4,9 @@
     "rootDirs": ["src"],
     "module": "es2015",
     "target": "es6",
+
+    // This is add by me
+    "types": ["minimatch", "jest", "node"],
     "jsx": "react",
     "strictNullChecks": true,
     "allowSyntheticDefaultImports": true,
@@ -16,6 +19,6 @@
     "skipLibCheck": true,
     "esModuleInterop": true
   },
-  "include": ["**/*.ts", "**/*.tsx", "**/*.js", "src/**/*"],
+  "include": ["**/*.ts", "**/*.tsx", "**/*.js", "src/**/*", ".postcss.config.js", ".tailwind.config.js"],
   "exclude": ["venv", "dist", "node_modules", "build", "scripts"]
 }

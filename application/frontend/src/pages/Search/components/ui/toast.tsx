@@ -1,10 +1,7 @@
-import './toast.scss'; // Import the new SCSS file
-
 import * as ToastPrimitives from '@radix-ui/react-toast';
 import { X } from 'lucide-react';
 import React from 'react';
 
-// Re-export the provider from Radix UI
 const ToastProvider = ToastPrimitives.Provider;
 
 const ToastViewport = React.forwardRef<
@@ -13,7 +10,13 @@ const ToastViewport = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <ToastPrimitives.Viewport
     ref={ref}
-    className={['toast-viewport', className].filter(Boolean).join(' ')}
+    className={[
+      'fixed z-[100] flex max-h-screen w-full flex-col-reverse p-4',
+      'top-0',
+      'sm:bottom-0 sm:top-auto sm:right-0 sm:flex-col',
+      'md:max-w-[420px]',
+      className
+    ].filter(Boolean).join(' ')}
     {...props}
   />
 ));
@@ -27,7 +30,14 @@ interface ToastRootProps extends React.ComponentPropsWithoutRef<typeof ToastPrim
 
 const Toast = React.forwardRef<React.ElementRef<typeof ToastPrimitives.Root>, ToastRootProps>(
   ({ className, variant = 'default', ...props }, ref) => {
-    const classNames = ['toast', `toast--${variant}`, className].filter(Boolean).join(' ');
+    const baseClasses = 'group pointer-events-auto relative flex w-full items-center justify-between gap-4 overflow-hidden rounded-lg border p-6 pr-8 shadow-lg transition-all data-[swipe=cancel]:translate-x-0 data-[swipe=end]:translate-x-[var(--radix-toast-swipe-end-x)] data-[swipe=move]:translate-x-[var(--radix-toast-swipe-move-x)] data-[swipe=move]:transition-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[swipe=end]:animate-out data-[state=closed]:fade-out-80 data-[state=closed]:slide-out-to-right-full data-[state=open]:slide-in-from-top-full data-[state=open]:sm:slide-in-from-bottom-full';
+
+    const variantClasses = {
+      default: 'border bg-background text-foreground',
+      destructive: 'destructive group border-destructive bg-destructive text-destructive-foreground'
+    };
+
+    const classNames = [baseClasses, variantClasses[variant], className].filter(Boolean).join(' ');
 
     return <ToastPrimitives.Root ref={ref} className={classNames} {...props} />;
   }
@@ -40,7 +50,11 @@ const ToastAction = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <ToastPrimitives.Action
     ref={ref}
-    className={['toast-action', className].filter(Boolean).join(' ')}
+    className={[
+      'inline-flex h-8 shrink-0 items-center justify-center rounded-md border bg-transparent px-3 text-sm font-medium transition-colors hover:bg-secondary focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none disabled:opacity-50',
+      'group-[.destructive]:border-muted/40 group-[.destructive]:hover:border-destructive/30 group-[.destructive]:hover:bg-destructive group-[.destructive]:hover:text-destructive-foreground group-[.destructive]:focus:ring-destructive',
+      className
+    ].filter(Boolean).join(' ')}
     {...props}
   />
 ));
@@ -52,11 +66,15 @@ const ToastClose = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <ToastPrimitives.Close
     ref={ref}
-    className={['toast-close', className].filter(Boolean).join(' ')}
-    toast-close="" // Radix UI uses this attribute for functionality
+    className={[
+      'absolute right-2 top-2 rounded-md p-1 text-foreground/50 opacity-0 transition-opacity hover:text-foreground focus:opacity-100 focus:outline-none focus:ring-2 group-hover:opacity-100',
+      'group-[.destructive]:text-red-300 group-[.destructive]:hover:text-red-50 group-[.destructive]:focus:ring-red-400 group-[.destructive]:focus:ring-offset-red-600',
+      className
+    ].filter(Boolean).join(' ')}
+    toast-close=""
     {...props}
   >
-    <X />
+    <X className="h-4 w-4" />
   </ToastPrimitives.Close>
 ));
 ToastClose.displayName = ToastPrimitives.Close.displayName;
@@ -67,7 +85,7 @@ const ToastTitle = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <ToastPrimitives.Title
     ref={ref}
-    className={['toast-title', className].filter(Boolean).join(' ')}
+    className={['text-sm font-semibold', className].filter(Boolean).join(' ')}
     {...props}
   />
 ));
@@ -79,7 +97,7 @@ const ToastDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <ToastPrimitives.Description
     ref={ref}
-    className={['toast-description', className].filter(Boolean).join(' ')}
+    className={['text-sm opacity-90', className].filter(Boolean).join(' ')}
     {...props}
   />
 ));
@@ -88,13 +106,6 @@ ToastDescription.displayName = ToastPrimitives.Description.displayName;
 type ToastProps = React.ComponentPropsWithoutRef<typeof Toast>;
 type ToastActionElement = React.ReactElement<typeof ToastAction>;
 
-// --- START OF CORRECTION ---
-
-// First, export the types using a dedicated 'export type' statement.
-// This is the cleanest way to export only types.
 export type { ToastProps, ToastActionElement };
 
-// Second, export the components (values) in a separate statement.
 export { ToastProvider, ToastViewport, Toast, ToastTitle, ToastDescription, ToastClose, ToastAction };
-
-// --- END OF CORRECTION ---

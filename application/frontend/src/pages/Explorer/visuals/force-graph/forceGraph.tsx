@@ -1,5 +1,3 @@
-import './forceGraph.scss';
-
 import { LoadingAndErrorIndicator } from 'application/frontend/src/components/LoadingAndErrorIndicator';
 import { useEnvironment } from 'application/frontend/src/hooks';
 import { useDataStore } from 'application/frontend/src/providers/DataProvider';
@@ -7,7 +5,9 @@ import { LinkedTreeDocument } from 'application/frontend/src/types';
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import ForceGraph3D from 'react-force-graph-3d';
-import { Checkbox, Dropdown, Form } from 'semantic-ui-react';
+
+
+//import { Checkbox, Dropdown, Form } from 'semantic-ui-react';
 
 // For types of dropdown options
 interface DropdownOption {
@@ -24,34 +24,26 @@ export const ExplorerForceGraph = () => {
   const [maxNodeSize, setMaxNodeSize] = useState(0);
   const { dataLoading, dataTree, getStoreKey, dataStore } = useDataStore();
 
-  // ADDING STATE FOR FILTERING LOGIC
   const [filterTypeA, setFilterTypeA] = useState('');
   const [filterTypeB, setFilterTypeB] = useState('');
 
-  // Separated CRE options and combined options with proper typing
   const [creOptions, setCreOptions] = useState<DropdownOption[]>([]);
   const [combinedOptions, setCombinedOptions] = useState<DropdownOption[]>([]);
 
-  // Adding a show all checkbox
   const [showAll, setShowAll] = useState(true);
 
-  // Helper function to get base name from standard ID
   const getBaseName = (standardId: string): string => {
-    // Split by ':' and take the first part
     return standardId.split(':')[0];
   };
 
-  // Helper function to create grouped standard ID
   const getGroupedStandardId = (baseName: string): string => {
     return `grouped_${baseName}`;
   };
 
-  //Added helper function for cleaner code organization
   const getBaseNameFromGrouped = (groupedId: string): string => {
     return groupedId.replace('grouped_', '');
   };
 
-  // Build CRE options separately for better organization and type safety from Data Store
   useEffect(() => {
     const creList: DropdownOption[] = Object.values(dataStore)
       .filter((n) => n.doctype === 'CRE')
@@ -74,16 +66,12 @@ export const ExplorerForceGraph = () => {
       links: [],
     };
 
-    // Get all the nodes and types
     const allNodes = Object.values(dataStore);
 
-    // Function to collect standards from tree structure
     function collectStandards(node: any, standards: any[] = []): any[] {
-      // Added optional chaining for better null safety
       if (node.doctype && node.doctype.toLowerCase() === 'standard') {
         standards.push(node);
       }
-      //Added Array.isArray check for better safety
       if (node.links && Array.isArray(node.links)) {
         node.links.forEach((link: any) => {
           if (link.document) {
@@ -99,7 +87,6 @@ export const ExplorerForceGraph = () => {
       allStandardNodes = allStandardNodes.concat(collectStandards(rootNode));
     });
 
-    // Group standards by base name
     const groupedStandards = new Map<string, any[]>();
     allStandardNodes.forEach((node: any) => {
       const baseName = getBaseName(node.id);
@@ -109,7 +96,6 @@ export const ExplorerForceGraph = () => {
       groupedStandards.get(baseName)!.push(node);
     });
 
-    // Create mapping for original IDs to grouped IDs
     const originalToGroupedMap = new Map<string, string>();
     groupedStandards.forEach((nodes, baseName) => {
       const groupedId = getGroupedStandardId(baseName);
@@ -122,7 +108,6 @@ export const ExplorerForceGraph = () => {
     console.log('Standard IDs from JSON data:', standardNodeIds);
     console.log('Grouped standards:', Array.from(groupedStandards.keys()));
 
-    // Build standard dropdown options with count display for better Ui
     const standardDropdownOptions: DropdownOption[] = Array.from(groupedStandards.entries()).map(
       ([baseName, group]) => ({
         key: getGroupedStandardId(baseName),
@@ -131,14 +116,12 @@ export const ExplorerForceGraph = () => {
       })
     );
 
-    // Helper functions for filtering logic
     const isAll = (val: string) => val && val.startsWith('all_');
     const isGroupedStandard = (val: string) => val && val.startsWith('grouped_');
     const getTypeFromAll = (val: string) => val.replace('all_', '');
 
-    // Improved matchesFilter function with better null safety and type checking
     const matchesFilter = (node: any, filterVal: string): boolean => {
-      if (!filterVal || filterVal === '') return true; // No filter, show all
+      if (!filterVal || filterVal === '') return true;
 
       if (isAll(filterVal)) {
         const type = getTypeFromAll(filterVal);
@@ -153,37 +136,7 @@ export const ExplorerForceGraph = () => {
       return node.id === filterVal;
     };
 
-    // NEW APPROACH: Simplified graph data population - collect all data first, then filter
-    // This is cleaner and easier to debug than filtering during traversal
-    const populateGraphData = (node: any) => {
-      if (node.links && Array.isArray(node.links)) {
-        node.links.forEach((x: LinkedTreeDocument) => {
-          if (x.document && !ignoreTypes.includes(x.ltype.toLowerCase())) {
-            // Use grouped IDs for standard nodes in links
-            const sourceKey =
-              node.doctype?.toLowerCase() === 'standard'
-                ? originalToGroupedMap.get(node.id) || getStoreKey(node)
-                : getStoreKey(node);
-            const targetKey =
-              x.document.doctype?.toLowerCase() === 'standard'
-                ? originalToGroupedMap.get(x.document.id) || getStoreKey(x.document)
-                : getStoreKey(x.document);
 
-            gData.links.push({
-              source: sourceKey,
-              target: targetKey,
-              count: x.ltype === 'Contains' ? 2 : 1,
-              type: x.ltype,
-            });
-
-            populateGraphData(x.document);
-          }
-        });
-      }
-    };
-
-    // Build the complete graph first
-    dataTree.forEach((x) => populateGraphData(x));
 
     // OLD APPROACH: Complex filtering during graph traversal with many nested conditions
     // This made the code hard to understand and debug
@@ -237,14 +190,40 @@ export const ExplorerForceGraph = () => {
     //   });
     // }
 
-    // NEW APPROACH: Apply filtering after building complete graph for better separation of concerns
+
+    const populateGraphData = (node: any) => {
+      if (node.links && Array.isArray(node.links)) {
+        node.links.forEach((x: LinkedTreeDocument) => {
+          if (x.document && !ignoreTypes.includes(x.ltype.toLowerCase())) {
+            const sourceKey =
+              node.doctype?.toLowerCase() === 'standard'
+                ? originalToGroupedMap.get(node.id) || getStoreKey(node)
+                : getStoreKey(node);
+            const targetKey =
+              x.document.doctype?.toLowerCase() === 'standard'
+                ? originalToGroupedMap.get(x.document.id) || getStoreKey(x.document)
+                : getStoreKey(x.document);
+
+            gData.links.push({
+              source: sourceKey,
+              target: targetKey,
+              count: x.ltype === 'Contains' ? 2 : 1,
+              type: x.ltype,
+            });
+
+            populateGraphData(x.document);
+          }
+        });
+      }
+    };
+
+    dataTree.forEach((x) => populateGraphData(x));
+
     if (!showAll && (filterTypeA || filterTypeB)) {
       gData.links = gData.links.filter((link: any) => {
-        // Get source and target nodes with better error handling
         let sourceNode = dataStore[link.source];
         let targetNode = dataStore[link.target];
 
-        // NEW APPROACH: Better handling of grouped standard nodes with all required properties
         if (link.source.startsWith('grouped_')) {
           const baseName = getBaseNameFromGrouped(link.source);
           sourceNode = {
@@ -252,7 +231,7 @@ export const ExplorerForceGraph = () => {
             doctype: 'standard',
             displayName: baseName,
             links: [],
-            url: '', // Add missing properties for type safety
+            url: '',
             name: baseName,
           };
         }
@@ -264,15 +243,13 @@ export const ExplorerForceGraph = () => {
             doctype: 'standard',
             displayName: baseName,
             links: [],
-            url: '', // Add missing properties for type safety
+            url: '',
             name: baseName,
           };
         }
 
         if (!sourceNode || !targetNode) return false;
 
-        // NEW APPROACH: Simplified filtering - show link if any node matches any filter
-        // This is more permissive and user-friendly than the complex logic above
         const sourceMatchesA = matchesFilter(sourceNode, filterTypeA);
         const sourceMatchesB = matchesFilter(sourceNode, filterTypeB);
         const targetMatchesA = matchesFilter(targetNode, filterTypeA);
@@ -282,11 +259,9 @@ export const ExplorerForceGraph = () => {
       });
     }
 
-    // Build nodes from filtered links
     const nodesMap: any = {};
     const addNode = function (name: string) {
       if (!nodesMap[name]) {
-        // Check if this is a grouped standard node
         if (name.startsWith('grouped_')) {
           const baseName = getBaseNameFromGrouped(name);
           const groupedNodes = groupedStandards.get(baseName) || [];
@@ -297,7 +272,7 @@ export const ExplorerForceGraph = () => {
             size: totalSize,
             name: baseName,
             doctype: 'standard',
-            originalNodes: groupedNodes, // Store original nodes for reference
+            originalNodes: groupedNodes,
           };
         } else {
           const storedDoc = dataStore[name];
@@ -319,7 +294,6 @@ export const ExplorerForceGraph = () => {
       addNode(link.target);
     });
 
-    // Clean, organized combined options with clear sections and separators
     const combined: DropdownOption[] = [
       { key: 'none_typeB', text: 'None', value: '' },
       { key: 'all_standard', text: 'ALL Standards', value: 'all_standard' },
@@ -338,17 +312,15 @@ export const ExplorerForceGraph = () => {
 
     setCombinedOptions(combined);
 
-    // Added initial value to reduce array - with better error handling
     setMaxNodeSize(gData.nodes.map((n: any) => n.size).reduce((a: number, b: number) => Math.max(a, b), 0));
     setMaxCount(gData.links.map((l: any) => l.count).reduce((a: number, b: number) => Math.max(a, b), 0));
 
-    // Reverse links for proper display
     gData.links = gData.links.map((l: any) => {
       return { source: l.target, target: l.source, count: l.count, type: l.type };
     });
 
     setGraphData(gData);
-  }, [ignoreTypes, dataTree, filterTypeA, filterTypeB, showAll, dataStore]); // NEW APPROACH: Removed standardOptions dependency
+  }, [ignoreTypes, dataTree, filterTypeA, filterTypeB, showAll, dataStore]);
 
   const getLinkColor = (ltype: string) => {
     switch (ltype.toLowerCase()) {
@@ -366,9 +338,6 @@ export const ExplorerForceGraph = () => {
   const getNodeColor = (doctype: string) => {
     switch (doctype.toLowerCase()) {
       case 'cre':
-        // OLD APPROACH: CRE nodes had no color (empty string) which made them hard to see
-        // return '';
-        // NEW APPROACH: Give CRE nodes a visible color for better UI
         return 'lightblue';
       case 'standard':
         return 'orange';
@@ -394,49 +363,85 @@ export const ExplorerForceGraph = () => {
   };
 
   return (
-    <div>
+    <div style={{ margin: 0 }}>
       <LoadingAndErrorIndicator loading={dataLoading} error={null} />
 
-      <Checkbox
-        label="Contains"
-        checked={!ignoreTypes.includes('contains')}
-        onChange={() => toggleLinks('contains')}
-      />
-      {' | '}
-      <Checkbox
-        label="Related"
-        checked={!ignoreTypes.includes('related')}
-        onChange={() => toggleLinks('related')}
-      />
-      {' | '}
-      <Checkbox
-        label="Linked To"
-        checked={!ignoreTypes.includes('linked to')}
-        onChange={() => toggleLinks('linked to')}
-      />
-      {' | '}
-      <Checkbox label="Same" checked={!ignoreTypes.includes('same')} onChange={() => toggleLinks('same')} />
+      <div style={{ marginBottom: '10px', padding: '10px' }}>
+        <label className="inline-flex items-center mr-4 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={!ignoreTypes.includes('contains')}
+            onChange={() => toggleLinks('contains')}
+            className="mr-2"
+          />
+          <span>Contains</span>
+        </label>
+        <span className="mx-2">|</span>
+        <label className="inline-flex items-center mr-4 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={!ignoreTypes.includes('related')}
+            onChange={() => toggleLinks('related')}
+            className="mr-2"
+          />
+          <span>Related</span>
+        </label>
+        <span className="mx-2">|</span>
+        <label className="inline-flex items-center mr-4 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={!ignoreTypes.includes('linked to')}
+            onChange={() => toggleLinks('linked to')}
+            className="mr-2"
+          />
+          <span>Linked To</span>
+        </label>
+        <span className="mx-2">|</span>
+        <label className="inline-flex items-center mr-4 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={!ignoreTypes.includes('same')}
+            onChange={() => toggleLinks('same')}
+            className="mr-2"
+          />
+          <span>Same</span>
+        </label>
+      </div>
 
       <div style={{ marginBottom: '10px', marginTop: '10px', marginLeft: '10px' }}>
-        <Dropdown
-          placeholder="Select CRE"
-          options={creOptions}
+        <select
           value={filterTypeA}
-          onChange={(e, data) => setFilterTypeA((data.value ?? '') as string)}
+          onChange={(e) => setFilterTypeA(e.target.value)}
+          className="border border-gray-300 rounded px-3 py-2 mr-2"
           style={{ marginRight: '10px' }}
-          selection
-          search
-        />
-        <Dropdown
-          placeholder="Select Standard or CRE"
-          options={combinedOptions}
+        >
+          {creOptions.map((opt) => (
+            <option key={opt.key} value={opt.value} disabled={opt.disabled}>
+              {opt.text}
+            </option>
+          ))}
+        </select>
+        <select
           value={filterTypeB}
-          onChange={(e, data) => setFilterTypeB((data.value ?? '') as string)}
-          selection
-          search
-        />
-        {' | '}
-        <Checkbox label="Show All" checked={showAll} onChange={() => setShowAll(!showAll)} />
+          onChange={(e) => setFilterTypeB(e.target.value)}
+          className="border border-gray-300 rounded px-3 py-2"
+        >
+          {combinedOptions.map((opt) => (
+            <option key={opt.key} value={opt.value} disabled={opt.disabled}>
+              {opt.text}
+            </option>
+          ))}
+        </select>
+        <span className="mx-2">|</span>
+        <label className="inline-flex items-center cursor-pointer">
+          <input
+            type="checkbox"
+            checked={showAll}
+            onChange={() => setShowAll(!showAll)}
+            className="mr-2"
+          />
+          <span>Show All</span>
+        </label>
       </div>
       {showAll || filterTypeA || filterTypeB ? (
         graphData && (
@@ -452,7 +457,7 @@ export const ExplorerForceGraph = () => {
           />
         )
       ) : (
-        <div style={{ marginTop: '20px', color: 'gray' }}>
+        <div style={{ marginTop: '20px', color: 'gray', marginLeft: '10px' }}>
           Please select at least one filter to view the graph or check "Show All".
         </div>
       )}

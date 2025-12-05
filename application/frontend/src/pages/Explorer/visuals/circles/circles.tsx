@@ -1,11 +1,11 @@
-import './circles.scss';
-
 import { LoadingAndErrorIndicator } from 'application/frontend/src/components/LoadingAndErrorIndicator';
 import useWindowDimensions from 'application/frontend/src/hooks/useWindowDimensions';
 import { useDataStore } from 'application/frontend/src/providers/DataProvider';
 import * as d3 from 'd3';
 import React, { useEffect, useState } from 'react';
-import { Button, Icon } from 'semantic-ui-react';
+import { Maximize, Minimize, Plus, Minus } from 'lucide-react';
+
+
 
 export const ExplorerCircles = () => {
   const { height, width } = useWindowDimensions();
@@ -26,7 +26,6 @@ export const ExplorerCircles = () => {
 
   useEffect(() => {
     if (!svgRef.current) {
-      //  guard to ensure the element exists
       return;
     }
     var svg = d3.select(svgRef.current);
@@ -76,7 +75,6 @@ export const ExplorerCircles = () => {
       nodes = pack(root).descendants(),
       view;
 
-    // Create tooltip div for hover labels
     const tooltip = d3
       .select('body')
       .append('div')
@@ -88,9 +86,12 @@ export const ExplorerCircles = () => {
       .style('border-radius', '3px')
       .style('border', '1px solid #ccc')
       .style('pointer-events', 'none')
-      .style('z-index', '10');
+      .style('z-index', '10')
+      .style('box-shadow', '0 2px 5px rgba(0, 0, 0, 0.2)')
+      .style('font-family', "'Helvetica Neue', Helvetica, Arial, sans-serif")
+      .style('max-width', '300px')
+      .style('word-wrap', 'break-word');
 
-    // Update breadcrumb when focus changes
     const updateBreadcrumb = (d: any) => {
       if (d === root) {
         setBreadcrumb(['OpenCRE']);
@@ -102,7 +103,6 @@ export const ExplorerCircles = () => {
 
       while (current && current !== root) {
         if (current.data.displayName && current.data.displayName !== 'OpenCRE') {
-          // Remove "CRE: " prefix if it exists
           const displayName = current.data.displayName.replace(/^CRE: /, '');
           path.unshift(displayName);
         }
@@ -121,23 +121,22 @@ export const ExplorerCircles = () => {
         return d.parent ? (d.children ? 'node' : 'node node--leaf') : 'node node--root';
       })
       .style('fill', function (d: any) {
-        return d.children ? color(d.depth) : d.data.color ? d.data.color : null;
+        return d.children ? color(d.depth) : d.data.color ? d.data.color : 'white';
       })
       .style('cursor', function (d) {
-        // Show the pointer cursor only if it's a leaf node AND has a hyperlink property.
         if (!d.children && (d.data as { hyperlink?: string }).hyperlink) {
           return 'pointer';
         }
-        return 'default';
+        return d.children ? 'pointer' : 'default';
       })
-
       .on('mouseover', function (event, d: any) {
-        // Prefer displayName, fallback to id
+        d3.select(this).style('stroke', '#000').style('stroke-width', '1.5px');
+
         const label = d.data.displayName
           ? d.data.displayName.replace(/^CRE: /, '')
           : d.data.id
-          ? d.data.id
-          : '';
+            ? d.data.id
+            : '';
 
         if (label) {
           tooltip
@@ -151,17 +150,13 @@ export const ExplorerCircles = () => {
         tooltip.style('top', event.pageY - 10 + 'px').style('left', event.pageX + 10 + 'px');
       })
       .on('mouseout', function () {
+        d3.select(this).style('stroke', null).style('stroke-width', null);
         tooltip.style('visibility', 'hidden');
       })
-
       .on('click', function (event, d: any) {
         if (!d.children) {
           event.stopPropagation();
-
-          // Directly access the hyperlink property from the node's data.
           const url = d.data.hyperlink;
-
-          // If the url exists, open it in a new tab.
           if (url) {
             console.log('URL found:', url);
             window.open(url, '_blank');
@@ -174,17 +169,16 @@ export const ExplorerCircles = () => {
           event.stopPropagation();
         }
       });
+
     let showLabels = true;
 
-    // Filter the nodes to only include those that have children (i.e., are not leaves)
     const parentNodes = nodes.filter(function (d) {
       return d.children;
     });
 
-    // Create a group for the label components using ONLY the parent nodes
     var labelGroup = g
       .selectAll('.label-group')
-      .data(parentNodes) // Use the filtered data
+      .data(parentNodes)
       .enter()
       .append('g')
       .attr('class', 'label-group')
@@ -195,12 +189,13 @@ export const ExplorerCircles = () => {
         return d.parent === focus ? 'inline' : 'none';
       });
 
-    // Add the underlined text to the group
     labelGroup
       .append('text')
       .attr('class', 'label')
       .style('text-anchor', 'middle')
       .style('text-decoration', 'underline')
+      .style('font', "11px 'Helvetica Neue', Helvetica, Arial, sans-serif")
+      .style('text-shadow', '0 1px 0 #fff, 1px 0 0 #fff, -1px 0 0 #fff, 0 -1px 0 #fff')
       .text(function (d: any) {
         if (!d.data.displayName) return '';
         let name = d.data.displayName;
@@ -208,7 +203,6 @@ export const ExplorerCircles = () => {
         return name;
       });
 
-    // Add the downward-pointing tick line to the group
     labelGroup
       .append('line')
       .attr('class', 'label-tick')
@@ -300,6 +294,7 @@ export const ExplorerCircles = () => {
           style={{
             margin: 0,
             marginBottom: 0,
+            marginTop: 0,
             textAlign: 'center',
             borderRadius: '8px 8px 0 0',
             width: '100vw',
@@ -308,11 +303,20 @@ export const ExplorerCircles = () => {
             boxSizing: 'border-box',
             position: 'relative',
             zIndex: 10,
+            fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
+            padding: '10px',
+            backgroundColor: '#f8f8f8',
+            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+            overflow: 'auto',
+            lineHeight: '1.4',
+            whiteSpace: 'normal',
+            wordBreak: 'break-word',
+            overflowWrap: 'anywhere'
           }}
         >
           {breadcrumb.map((item, index) => (
             <React.Fragment key={index}>
-              {index > 0 && <span className="separator"> </span>}
+              {index > 0 && <span className="separator"> › </span>}
               <span
                 className="breadcrumb-item"
                 style={{
@@ -320,6 +324,10 @@ export const ExplorerCircles = () => {
                   color: index === breadcrumb.length - 1 ? '#333' : '#2185d0',
                   fontWeight: index === breadcrumb.length - 1 ? 'bold' : 500,
                   textDecoration: index === breadcrumb.length - 1 ? 'none' : 'underline',
+                  wordBreak: 'break-word',
+                  overflowWrap: 'anywhere',
+                  display: 'inline',
+                  maxWidth: '100%'
                 }}
                 onClick={() => {
                   if (index < breadcrumb.length - 1) {
@@ -371,9 +379,20 @@ export const ExplorerCircles = () => {
             zIndex: 21,
           }}
         >
-          <Button icon onClick={() => setUseFullScreen(!useFullScreen)} className="screen-size-button">
-            <Icon name={useFullScreen ? 'compress' : 'expand'} />
-          </Button>
+          <button
+            onClick={() => setUseFullScreen(!useFullScreen)}
+            className="screen-size-button"
+            style={{
+              margin: 0,
+              backgroundColor: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+              padding: '10px',
+              color: '#333'
+            }}
+          >
+            {useFullScreen ? <Minimize size={20} /> : <Maximize size={20} />}
+          </button>
         </div>
         <div
           style={{
@@ -386,9 +405,16 @@ export const ExplorerCircles = () => {
             zIndex: 20,
           }}
         >
-          <Button
-            icon
+          <button
             className="screen-size-button"
+            style={{
+              margin: 0,
+              backgroundColor: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+              padding: '10px',
+              color: '#333'
+            }}
             onClick={() => {
               if (!zoomToRef.current || !rootRef.current) return;
 
@@ -409,11 +435,18 @@ export const ExplorerCircles = () => {
                 .tween('zoom', () => (t) => zoomToRef.current(i(t)));
             }}
           >
-            <Icon name="plus" />
-          </Button>
-          <Button
-            icon
+            <Plus size={20} />
+          </button>
+          <button
             className="screen-size-button"
+            style={{
+              margin: 0,
+              backgroundColor: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+              padding: '10px',
+              color: '#333'
+            }}
             onClick={() => {
               if (!zoomToRef.current || !rootRef.current) return;
 
@@ -434,8 +467,8 @@ export const ExplorerCircles = () => {
                 .tween('zoom', () => (t) => zoomToRef.current(i(t)));
             }}
           >
-            <Icon name="minus" />
-          </Button>
+            <Minus size={20} />
+          </button>
         </div>
 
         <svg
