@@ -32,6 +32,9 @@ upstream-sync:
 	. ./venv/bin/activate && python cre.py --upstream_sync
 
 dev-flask:
+	. ./venv/bin/activate && INSECURE_REQUESTS=1 FLASK_APP=`pwd`/cre.py  FLASK_CONFIG=development flask run
+
+dev-flask-docker:
 	. ./venv/bin/activate && INSECURE_REQUESTS=1 FLASK_APP=`pwd`/cre.py  FLASK_CONFIG=development flask run --host=0.0.0.0
 
 e2e:
@@ -83,7 +86,7 @@ docker-prod:
 	docker build -f Dockerfile -t opencre:$(shell git rev-parse HEAD) .
 
 docker-dev-run:
-	 docker run -it -p 5001:5000 opencre-dev:$(shell git rev-parse HEAD)
+	docker run -it -p 127.0.0.1:5000:5000 opencre-dev:$(shell git rev-parse HEAD)
 
 docker-prod-run:
 	 docker run -it -p 5000:5000 opencre:$(shell git rev-parse HEAD)

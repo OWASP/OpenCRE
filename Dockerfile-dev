@@ -17,4 +17,4 @@ RUN apt update &&\
     make install-deps-python &&\
     make install-python
 
-ENTRYPOINT make dev-flask
+ENTRYPOINT make dev-flask-docker
