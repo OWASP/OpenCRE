@@ -1,129 +1,264 @@
-# OpenCRE readme
+# OpenCRE
 
-Go to https://www.opencre.org to see OpenCRE working and more explanation.  
-OpenCRE stands for Open Common Requirement enumeration. It is an interactive content linking platform for uniting security standards and guidelines. It offers easy and robust access to relevant information when designing, developing, testing and procuring secure software.  
+Go to [https://www.opencre.org](https://www.opencre.org) to see OpenCRE working and more explanation.
+
+OpenCRE stands for **Open Common Requirement Enumeration**. It is an interactive content linking platform for uniting security standards and guidelines. It offers easy and robust access to relevant information when designing, developing, testing and procuring secure software.
+
+---
+
+## What is OpenCRE?
 
 OpenCRE consists of:
-- The application: a python web and cli application to access the data, running publicly at opencre.org
-- The catalog data: a catalog of Common Requirements (CREs)
-- The mapping data: links from each CRE to relevant sections in a range of standards
-- Tools and guidelines to contribute to the data and to run the application locally
 
-# Contribute code or mappings
-To see how you can contribute to the application or to the data (catalog or standard mappings), see [Contributing](docs/CONTRIBUTING.md).  
+* **The application**: a Python web and CLI application to access the data, running publicly at opencre.org
+* **The catalog data**: a catalog of Common Requirements (CREs)
+* **The mapping data**: links from each CRE to relevant sections in a range of standards
+* **Tools and guidelines** to contribute to the data and to run the application locally
+
+---
+
+## Contribute Code or Mappings
+
+To see how you can contribute to the application or to the data (catalog or standard mappings), see **Contributing**.
+
 We really welcome you!
 
-# Roadmap
-For a roadmap please see the [issues](https://github.com/OWASP/OpenCRE/issues).
+---
 
-# Running your own OpenCRE
+## Roadmap
 
-You are free to use the public opencre application at opencre.org. Apart from that, you can run your own if you want to include your own security standards and guidelines for example. We call that myOpenCRE.
+For a roadmap please see the **Issues**.
 
-### Locally
+---
 
-#### Docker
-The easiest way to run OpenCRE locally is by running the published docker container.
-You can do so by running:
-`docker run -p 5000:5000  ghcr.io/owasp/opencre/opencre:latest`
-After the container has finished downloading the remote information you can access it in [localhost](http://127.0.0.1:5000)
-If you want to develop on OpenCRE or docker is not available in your environment, you can alternatively run it via CLI
+## Running Your Own OpenCRE
 
-#### Command Line
+You are free to use the public OpenCRE application at [https://www.opencre.org](https://www.opencre.org).
+You can also run your own instance if you want to include your own security standards and guidelines. We call that **myOpenCRE**.
 
-To run outside of Docker you need to install OpenCRE.
-To install this application you need python3, yarn and virtualenv.
-* Clone the repository:
-<pre>git clone https://github.com/OWASP/common-requirement-enumeration </pre>
+---
 
-* (Recommend) Create and activate a Python virtual environment:
-<pre>python3 -m venv venv 
-source venv/bin/activate </pre>
+## Running OpenCRE Locally
 
-* Install dependencies
-<pre> make install </pre>
+### Docker (Recommended)
 
-* Download the latest CRE graph from upstream by running
-<pre>make upstream-sync </pre>
-Keep in mind that until [Issue #534](https://github.com/OWASP/OpenCRE/issues/534) is fixed you won't have access to gap analysis results locally
+The easiest way to run OpenCRE locally is by using Docker:
 
-* To run CRE locally then you can do:
-<pre> make dev-flask </pre>
-
-To run the CLI application, you can run
-<pre>python cre.py --help</pre>
-
-To download a remote cre spreadsheet locally you can run
-<pre>python cre.py --review --from_spreadsheet < google sheets url></pre>
-
-To add a remote spreadsheet to your local database you can run
-<pre>python cre.py --add --from_spreadsheet < google sheets url></pre>
-
-To run the web application for development you can run
-<pre>
-$ make start-containers
-$ make start-worker 
-
-# in a seperate shell
-$ make dev-flask
-</pre>
-
-Alternatively, you can use the dockerfile with
-<pre>make docker && make docker-run</pre>
-
-Some features like Gap Analysis require a neo4j DB running, you can start this with
-<pre>make docker-neo4j</pre>
-enviroment varaibles for app to connect to neo4jDB (default):
-- NEO4J_URL (neo4j//neo4j:password@localhost:7687)
-
-To run the web application for production you need gunicorn and you can run from within the cre_sync dir
-<pre>make prod-run</pre>
-
-
-### Using the OpenCRE API
-See [the myOpenCRE user guide](docs/my-opencre-user-guide.md) on using the OpenCRE API to for example add your own security guidelines and standards.
-
-
-### Docker building and running
-You can build the production or the development docker images with 
-`make docker-prod` and `make docker-dev` respectively
-The environment variables used by OpenCRE are:
+```bash
+docker run -p 5000:5000 ghcr.io/owasp/opencre/opencre:latest
 ```
-        - name: NEO4J_URL
-        - name: NO_GEN_EMBEDDINGS
-        - name: FLASK_CONFIG
-        - name: DEV_DATABASE_URL
-        - name: INSECURE_REQUESTS # development or TLS terminated environments only
-        - name: REDIS_HOST
-        - name: REDIS_PORT
-        - name: REDIS_NO_SSL
-        - name: REDIS_URL # in case REDIS_HOST and REDIS_PORT are unavailable
-        - name: GCP_NATIVE # if there are ambient GCP credentials, only useful for VERTEX chatbot
-        - name: GOOGLE_SECRET_JSON # if not running on GCP
-        - name: GOOGLE_CLIENT_ID # useful for login only
-        - name: GOOGLE_CLIENT_SECRET # useful for login only
-        - name: LOGIN_ALLOWED_DOMAINS # useful for login only
-        - name: OpenCRE_gspread_Auth # useful only when importing data, possible values 'oauth' or 'service_account'
+
+After the container has finished downloading the remote information, you can access the application at:
+
 ```
-You can run the containers with `make docker-prod-run` and `make-docker-dev-run`
+http://localhost:5000
+```
 
-### Developing
+If you want to develop OpenCRE or Docker is not available in your environment, you can run it via the command line.
 
-You can run backend tests with
-<pre>make test</pre>
-You can run get a coverage report with 
-<pre>make cover</pre>
-Try to keep the coverage above 70%
+---
 
+## Command Line Setup
 
-[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-[![GitHub Super-Linter](https://github.com/OWASP/common-requirement-enumeration/workflows/Lint%20Code%20Base/badge.svg)](https://github.com/marketplace/actions/super-linter)
-[![Main Branch Build](https://github.com/OWASP/common-requirement-enumeration/workflows/Test/badge.svg?branch=main)](https://github.com/OWASP/OWASP/common-requirement-enumeration/workflows/Test)
+To run OpenCRE outside Docker you need:
 
-[![Issues](https://img.shields.io/github/issues/owasp/common-requirement-enumeration)](https://github.com/OWASP/common-requirement-enumeration/issues)  
-[![PR's Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat)](http://makeapullrequest.com)
-![GitHub contributors](https://img.shields.io/github/contributors/owasp/common-requirement-enumeration)
-![GitHub last commit](https://img.shields.io/github/last-commit/owasp/common-requirement-enumeration)
-![GitHub commit activity](https://img.shields.io/github/commit-activity/y/owasp/common-requirement-enumeration)
+* Python 3
+* Yarn
+* virtualenv
 
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://github.com/codespaces/new?hide_repo_select=true&ref=main&repo=400297709&machine=standardLinux32gb&devcontainer_path=.devcontainer%2Fdevcontainer.json&location=WestEurope)
+Clone the repository:
+
+```bash
+git clone https://github.com/OWASP/OpenCRE.git
+cd OpenCRE
+```
+
+(Recommended) Create and activate a Python virtual environment:
+
+```bash
+python3 -m venv venv
+source venv/bin/activate
+```
+
+Install dependencies:
+
+```bash
+make install
+```
+
+Download the latest CRE graph from upstream:
+
+```bash
+make upstream-sync
+```
+
+> ⚠️ Until Issue #534 is fixed, Gap Analysis results may not be available locally.
+
+Run OpenCRE locally:
+
+```bash
+make dev-flask
+```
+
+---
+
+## macOS Local Development Setup
+
+This section documents common issues and solutions when setting up OpenCRE locally on **macOS**, based on contributor experience.
+
+### Tested Environment
+
+* macOS (Intel & Apple Silicon)
+* Python 3.10 – 3.13
+* Node.js 18+
+* Yarn 1.x
+
+---
+
+### 1. Virtual Environment Setup
+
+We recommend using Python’s built-in `venv`:
+
+```bash
+python3 -m venv venv
+source venv/bin/activate
+```
+
+> **Important Note**
+> The Makefile currently invokes `virtualenv` internally.
+> On macOS, this can cause setup failures even when `venv` is used.
+>
+> To avoid this, install `virtualenv` inside the active virtual environment:
+
+```bash
+pip install virtualenv
+```
+
+---
+
+### 2. Installing Dependencies
+
+```bash
+make install
+```
+
+If you encounter the error:
+
+```text
+make: virtualenv: No such file or directory
+```
+
+Ensure that:
+
+* the virtual environment is activated
+* `virtualenv` is installed inside the environment
+
+---
+
+### 3. Syncing Upstream Data (Known Limitation)
+
+```bash
+make upstream-sync
+```
+
+> **Known Issue**
+> On macOS, this command may fail with:
+>
+> ```text
+> sqlite3.OperationalError: no such table: cre
+> ```
+>
+> This is a known upstream limitation (see Issue #534).
+> The application can still be run locally for development even if this step fails.
+
+---
+
+### 4. Running the Development Server
+
+```bash
+make dev-flask
+```
+
+Then open:
+
+```
+http://127.0.0.1:5000
+```
+
+---
+
+### Notes
+
+* Webpack and Yarn peer-dependency warnings during installation are expected and can be safely ignored.
+* Some features (such as Gap Analysis) require Neo4j and may not function fully in local development environments.
+
+---
+
+## CLI Usage
+
+```bash
+python cre.py --help
+```
+
+```bash
+python cre.py --review --from_spreadsheet <google_sheets_url>
+```
+
+```bash
+python cre.py --add --from_spreadsheet <google_sheets_url>
+```
+
+---
+
+## Running the Web Application for Development
+
+```bash
+make start-containers
+make start-worker
+
+# in a separate shell
+make dev-flask
+```
+
+Alternatively:
+
+```bash
+make docker
+make docker-run
+```
+
+---
+
+## Neo4j (Optional)
+
+```bash
+make docker-neo4j
+```
+
+```
+NEO4J_URL=neo4j://neo4j:password@localhost:7687
+```
+
+---
+
+## Developing
+
+```bash
+make test
+```
+
+```bash
+make cover
+```
+
+Try to keep coverage above **70%**.
+
+Code style is enforced using **Black** and **GitHub Super-Linter**.
+
+---
+
+## License
+
+This project is licensed under **CC0-1.0**.
+
+PRs welcome ❤️
