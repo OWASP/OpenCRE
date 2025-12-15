@@ -1,170 +1,142 @@
-import './header.scss';
-
-import { Menu, Search } from 'lucide-react';
+import { Menu, Search, X } from 'lucide-react';
 import React, { useState } from 'react';
 import { Link, useHistory } from 'react-router-dom';
-import { Button } from 'semantic-ui-react';
-
 import { ClearFilterButton } from '../../components/FilterButton/FilterButton';
 import { useLocationFromOutsideRoute } from '../../hooks/useLocationFromOutsideRoute';
 import { SearchBar } from '../../pages/Search/components/SearchBar';
 
 export const Header = () => {
-  let currentUrlParams = new URLSearchParams(window.location.search);
   const history = useHistory();
-  const HandleDoFilter = () => {
+  const { showFilter } = useLocationFromOutsideRoute();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  const toggleMobileMenu = () => setIsMobileMenuOpen(v => !v);
+  const closeMobileMenu = () => setIsMobileMenuOpen(false);
+
+  // read current url params (note: using window is fine here in client)
+  let currentUrlParams = new URLSearchParams(window.location.search);
+  const handleDoFilter = () => {
     currentUrlParams.set('applyFilters', 'true');
     history.push(window.location.pathname + '?' + currentUrlParams.toString());
   };
-  const { showFilter } = useLocationFromOutsideRoute();
 
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
-  const closeMobileMenu = () => {
-    setIsMobileMenuOpen(false);
-  };
+  const navLinkClass = 'text-muted-foreground hover:text-foreground transition-colors text-lg font-medium';
+  const btnPrimary = 'px-4 py-2 rounded-md border-none cursor-pointer transition-all bg-white text-black hover:bg-gray-200 shadow-lg';
 
   return (
     <>
-      <nav className="navbar">
-        <div className="navbar__container">
-          <div className="navbar__content">
-            <Link to="/" className="navbar__logo">
-              <img src="/logo.svg" alt="Logo" />
+      <nav
+        className="sticky top-0 z-50 w-full border-b border-white/20 text-foreground shadow-xl"
+        style={{
+          backgroundColor: 'rgb(2, 8, 23)',
+          color: 'rgb(222, 222, 227)',
+          backdropFilter: 'blur(8px)',
+        }}
+        aria-label="Main navigation"
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+
+            <Link to="/" className="flex items-center gap-2">
+              <img
+                src="/logo.svg"
+                alt="Logo"
+                className="h-10 w-auto object-contain"
+              />
             </Link>
 
-            <div className="navbar__desktop-links">
-              <Link to="/" className="nav-link">
-                Home
-              </Link>
-              <a href="/root_cres" className="nav-link">
-                Browse
-              </a>
-              <Link to="/chatbot" className="nav-link">
-                Chat
-              </Link>
-              <a href="/map_analysis" className="nav-link">
-                Map Analysis
-              </a>
-              <a href="/explorer" className="nav-link">
-                Explorer
-              </a>
+            <div className="hidden lg:flex items-center gap-4 xl:gap-8 mx-auto">
+              <Link to="/" className={navLinkClass}>Home</Link>
+              <a href="/root_cres" className={navLinkClass}>Browse</a>
+              <Link to="/chatbot" className={navLinkClass}>Chat</Link>
+              <a href="/map_analysis" className={navLinkClass}>Map Analysis</a>
+              <a href="/explorer" className={navLinkClass}>Explorer</a>
             </div>
 
-            <div>
-              <SearchBar />
-              {showFilter && currentUrlParams.has('showButtons') ? (
-                <div className="foo">
-                  <Button
-                    onClick={() => {
-                      HandleDoFilter();
-                    }}
-                    content="Apply Filters"
-                  ></Button>
-                  <ClearFilterButton />
-                </div>
-              ) : (
-                ''
-              )}
-            </div>
+            <div className="flex items-center gap-4">
 
-            <div className="navbar__actions">
-              {/* Left these divs so that we can add auth functionality directly here. */}
-              {/* <div className="navbar__desktop-auth">
-                <Link
-                  to={{
-                    pathname: '/auth',
-                    state: { mode: 'login' },
-                  }}
-                  className="btn btn--ghost"
-                >
-                  Log In
-                </Link>
+              {/* Desktop / Laptop search: visible on md and up */}
+              <div className="hidden md:block min-w-[320px]">
+                {/* ensure SearchBar itself uses width: w-full internally; this wrapper gives it space */}
+                <SearchBar />
+                {showFilter && currentUrlParams.has('showButtons') && (
+                  <div className="flex gap-2 mt-2">
+                    <button onClick={handleDoFilter} className={btnPrimary}>Apply Filters</button>
+                    <ClearFilterButton />
+                  </div>
+                )}
+              </div>
 
-                <Link
-                  to={{
-                    pathname: '/auth',
-                    state: { mode: 'signup' },
-                  }}
-                  className="btn btn--primary"
-                >
-                  Sign Up
-                </Link>
-              </div> */}
-
-              <button className="navbar__mobile-menu-toggle" onClick={() => setIsMobileMenuOpen(true)}>
-                <Menu className="icon" />
-                <span className="sr-only">Toggle menu</span>
+              {/* Mobile menu button (visible on small screens) */}
+              <button
+                className="md:hidden bg-transparent p-2 rounded-md hover:bg-white/10 transition"
+                onClick={toggleMobileMenu}
+                aria-expanded={isMobileMenuOpen}
+                aria-label="Open menu"
+              >
+                <Menu className="h-6 w-6 text-foreground" />
               </button>
             </div>
+
           </div>
         </div>
       </nav>
 
-      <div className={`navbar__overlay ${isMobileMenuOpen ? 'is-open' : ''}`} onClick={closeMobileMenu}></div>
+      {/* overlay */}
+      <div
+        className={`fixed inset-0 z-40 bg-black/50 transition-opacity duration-300 ${isMobileMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
+        onClick={closeMobileMenu}
+        aria-hidden={!isMobileMenuOpen}
+      />
 
-      <div className={`navbar__mobile-menu ${isMobileMenuOpen ? 'is-open' : ''}`}>
-        <div className="mobile-search-container">
+      {/* mobile slide-over */}
+      <aside
+        className={`fixed top-0 right-0 h-full z-50 transform transition-transform duration-300 ease-in-out
+                    w-72 sm:w-[400px] bg-[#020817] border-l border-gray-700 p-4 flex flex-col gap-4
+                    ${isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'}`}
+        role="dialog"
+        aria-modal="true"
+        style={{ color: 'rgb(222, 222, 227)' }}
+      >
+
+        <div className="flex justify-end mb-2">
+          <button onClick={closeMobileMenu} className="p-2 rounded-md hover:bg-white/10" aria-label="Close menu">
+            <X className="h-6 w-6 text-foreground" />
+          </button>
+        </div>
+
+        {/* Mobile search (visible inside slide-over) */}
+        <div className="w-full mb-2">
           <SearchBar />
-        </div>
-        {showFilter && currentUrlParams.has('showButtons') ? (
-          <div className="foo">
-            <Button
-              onClick={() => {
-                HandleDoFilter();
-              }}
-              content="Apply Filters"
-            ></Button>
-            <ClearFilterButton />
-          </div>
-        ) : (
-          ''
-        )}
-
-        <div className="mobile-nav-links">
-          <Link to="/" className="nav-link" onClick={closeMobileMenu}>
-            Home
-          </Link>
-          <a href="/root_cres" className="nav-link" onClick={closeMobileMenu}>
-            Browse
-          </a>
-          <Link to="/chatbot" className="nav-link" onClick={closeMobileMenu}>
-            Chat
-          </Link>
-          <a href="/map_analysis" className="nav-link" onClick={closeMobileMenu}>
-            Map Analysis
-          </a>
-          <a href="/explorer" className="nav-link" onClick={closeMobileMenu}>
-            Explorer
-          </a>
+          {showFilter && currentUrlParams.has('showButtons') && (
+            <div className="flex flex-col gap-2 mt-2">
+              <button
+                onClick={() => {
+                  handleDoFilter();
+                  closeMobileMenu();
+                }}
+                className={`${btnPrimary} w-full text-left justify-start`}
+              >
+                Apply Filters
+              </button>
+              <ClearFilterButton />
+            </div>
+          )}
         </div>
 
-        <div className="mobile-auth">
-          {/* <div className="auth-buttons">
-            <Link
-              to={{
-                pathname: '/auth',
-                state: { mode: 'login' },
-              }}
-              className="btn btn--ghost"
-              onClick={closeMobileMenu}
-            >
-              Log In
-            </Link>
+        <nav className="flex flex-col gap-2">
+          <Link to="/" className={`${navLinkClass} p-2 rounded-md hover:bg-white/5 text-lg`} onClick={closeMobileMenu}>Home</Link>
+          <a href="/root_cres" className={`${navLinkClass} p-2 rounded-md hover:bg-white/5 text-lg`} onClick={closeMobileMenu}>Browse</a>
+          <Link to="/chatbot" className={`${navLinkClass} p-2 rounded-md hover:bg-white/5 text-lg`} onClick={closeMobileMenu}>Chat</Link>
+          <a href="/map_analysis" className={`${navLinkClass} p-2 rounded-md hover:bg-white/5 text-lg`} onClick={closeMobileMenu}>Map Analysis</a>
+          <a href="/explorer" className={`${navLinkClass} p-2 rounded-md hover:bg-white/5 text-lg`} onClick={closeMobileMenu}>Explorer</a>
+        </nav>
 
-            <Link
-              to={{
-                pathname: '/auth',
-                state: { mode: 'signup' },
-              }}
-              className="btn btn--primary"
-              onClick={closeMobileMenu}
-            >
-              Sign Up
-            </Link>
-          </div> */}
+        <div className="mt-auto border-t border-gray-700 pt-4 flex flex-col gap-3">
+          {/* footer actions / links can go here */}
         </div>
-      </div>
+
+      </aside>
     </>
   );
 };

@@ -23,6 +23,8 @@ const App = () => (
         </DataProvider>
       </QueryClientProvider>
     </filterContext.Provider>
+
+
   </div>
 );
 

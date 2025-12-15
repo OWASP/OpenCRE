@@ -24,10 +24,18 @@ import { MembershipRequired } from './pages/MembershipRequired/MembershipRequire
 import { SearchName } from './pages/Search/SearchName';
 import { StandardSection } from './pages/Standard/StandardSection';
 
+// export interface IRoute {
+//   path: string;
+//   component: ReactNode | ReactNode[];
+//   showFilter: boolean;
+// }
+
+
+
 export interface IRoute {
-  path: string;
-  component: ReactNode | ReactNode[];
-  showFilter: boolean;
+  path: string;
+  component: React.ComponentType | any; //  Use ComponentType or any to fix the error
+  showFilter: boolean;
 }
 
 export const ROUTES: IRoute[] = [

@@ -1,10 +1,6 @@
-import './documentNode.scss';
-
 import axios from 'axios';
 import React, { FunctionComponent, useContext, useEffect, useMemo, useState } from 'react';
 import { Link, useHistory } from 'react-router-dom';
-import { Icon } from 'semantic-ui-react';
-
 import { TYPE_AUTOLINKED_TO, TYPE_CONTAINS, TYPE_IS_PART_OF, TYPE_RELATED } from '../../const';
 import { useEnvironment } from '../../hooks';
 import { applyFilters } from '../../hooks/applyFilters';
@@ -13,6 +9,10 @@ import { getDocumentDisplayName, groupLinksByType } from '../../utils';
 import { getApiEndpoint, getDocumentTypeText, getInternalUrl } from '../../utils/document';
 import { FilterButton } from '../FilterButton/FilterButton';
 import { LoadingAndErrorIndicator } from '../LoadingAndErrorIndicator';
+import { ChevronDown, Circle, ExternalLink, ChevronRight } from 'lucide-react';
+
+
+
 
 export interface DocumentNode {
   node: Document;
@@ -89,7 +89,7 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({
     return (
       <>
         <span>Reference:</span>
-        <a href={hyperlink.hyperlink} target="_blank">
+        <a href={hyperlink.hyperlink} target="_blank" rel="noopener noreferrer">
           {' '}
           {hyperlink.hyperlink}
         </a>
@@ -103,22 +103,68 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({
     }
 
     return (
-      <a href={hyperlink.hyperlink} target="_blank">
-        <Icon name="external" />
+      <a
+        href={hyperlink.hyperlink}
+        target="_blank"
+        rel="noopener noreferrer"
+        style={{
+          color: '#2185d0',
+          fontSize: '0.9em',
+          paddingLeft: '0.5em',
+          display: 'inline-flex',
+          alignItems: 'center',
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.color = '#115c96';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.color = '#2185d0';
+        }}
+      >
+        <ExternalLink size={14} />
       </a>
     );
   };
+
   const SimpleView = () => {
+    const [isHovered, setIsHovered] = useState(false);
+
     return (
       <>
-        <div className={`title external-link document-node f2`}>
-          <Link to={getInternalUrl(usedNode)}>
-            <i aria-hidden="true" className="circle icon"></i>
-            {getDocumentDisplayName(usedNode)}
+        <div
+          className="title external-link document-node"
+          style={{
+            paddingTop: 0,
+            paddingBottom: '0.25em',
+          }}
+        >
+          <Link
+            to={getInternalUrl(usedNode)}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              textDecoration: 'none',
+              color: isHovered ? 'rgba(0, 0, 0, 0.87)' : 'rgba(0, 0, 0, 0.4)',
+            }}
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+          >
+            <Circle
+              size={8}
+              fill="currentColor"
+              style={{
+                fontSize: '0.5em',
+                position: 'relative',
+                marginRight: '0.6rem',
+                marginLeft: '0.3rem',
+                flexShrink: 0,
+              }}
+            />
+            <span>{getDocumentDisplayName(usedNode)}</span>
           </Link>
-          <HyperlinkIcon hyperlink={usedNode.hyperlink} />
+          {hasExternalLink && <HyperlinkIcon hyperlink={usedNode.hyperlink} />}
         </div>
-        <div className={`content`}></div>
+        <div className="content"></div>
       </>
     );
   };
@@ -127,9 +173,44 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({
     return (
       <>
         <LoadingAndErrorIndicator loading={loading} error={error} />
-        <div className={`title ${active} document-node`} onClick={() => setExpanded(!expanded)}>
-          <i aria-hidden="true" className="dropdown icon"></i>
-          <Link to={getInternalUrl(usedNode)}>{getDocumentDisplayName(usedNode)}</Link>
+        <div
+          className={`title ${active} document-node`}
+          style={{
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            paddingTop: 0,
+            paddingBottom: '0.25em',
+          }}
+        >
+          <div
+            onClick={() => setExpanded(!expanded)}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              flex: 1,
+            }}
+          >
+            <ChevronRight
+              size={16}
+              style={{
+                marginRight: '8px',
+                transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)',
+                transition: 'transform 0.2s ease',
+                flexShrink: 0,
+                color: '#4183c4',
+              }}
+            />
+            <Link
+              to={getInternalUrl(usedNode)}
+              style={{
+                color: '#4183c4',
+                textDecoration: 'none',
+              }}
+            >
+              {getDocumentDisplayName(usedNode)}
+            </Link>
+          </div>
         </div>
         <div className={`content${active} document-node`}>
           <Hyperlink hyperlink={usedNode.hyperlink} />
@@ -140,14 +221,23 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({
               );
               let lastDocumentName = sortedResults[0].document.name;
               return (
-                <div className="document-node__link-type-container" key={type}>
-                  {idx > 0 && <hr style={{ borderColor: 'transparent', margin: '20px 0' }} />}
+                <div
+                  className="document-node__link-type-container"
+                  key={type}
+                >
+                  {idx > 0 && (
+                    <hr
+                      style={{
+                        borderColor: 'transparent',
+                        margin: '15px 0'
+                      }}
+                    />
+                  )}
                   <div>
                     <b>Which {getDocumentTypeText(type, links[0].document.doctype, node.doctype)}</b>:
-                    {/* Risk here of mixed doctype in here causing odd output */}
                   </div>
                   <div>
-                    <div className="accordion ui fluid styled f0">
+                    <div className="accordion-content">
                       {sortedResults.map((link, i) => {
                         const temp = (
                           <div key={Math.random()}>
@@ -169,7 +259,6 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({
                 </div>
               );
             })}
-          {/* <FilterButton/> */}
         </div>
       </>
     );

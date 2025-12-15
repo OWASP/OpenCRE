@@ -1,8 +1,5 @@
-import './browseRootCres.scss';
-
 import axios from 'axios';
 import React, { useContext, useEffect, useMemo, useState } from 'react';
-
 import { DocumentNode } from '../../components/DocumentNode';
 import { ClearFilterButton, FilterButton } from '../../components/FilterButton/FilterButton';
 import { LoadingAndErrorIndicator } from '../../components/LoadingAndErrorIndicator';
@@ -11,6 +8,8 @@ import { applyFilters, filterContext } from '../../hooks/applyFilters';
 import { Document } from '../../types';
 import { groupLinksByType } from '../../utils';
 import { SearchResults } from '../Search/components/SearchResults';
+
+
 
 export const BrowseRootCres = () => {
   const { apiUrl } = useEnvironment();
@@ -39,13 +38,30 @@ export const BrowseRootCres = () => {
         setLoading(false);
       });
   }, []);
+
   return (
-    <div className="cre-page">
-      <h1 className="standard-page__heading">Root CREs</h1>
+    <div
+      className="cre-page"
+      style={{
+        padding: '30px',
+        marginTop: 'var(--header-height)',
+        marginBottom: 0,
+      }}
+    >
+      <h1
+        className="standard-page-heading"
+        style={{
+          fontSize: '2rem',
+          marginBottom: '20px',
+          fontWeight: 600,
+        }}
+      >
+        Root CREs
+      </h1>
       <LoadingAndErrorIndicator loading={loading} error={error} />
       {!loading && !error && (
-        <div className="ui grid">
-          <div className="wide column">{display && <SearchResults results={display} />}</div>
+        <div className="w-full">
+          {display && <SearchResults results={display} />}
         </div>
       )}
     </div>
