@@ -263,7 +263,7 @@
 #             attributes=Node_attributes(
 #                 sources_i18n={
 #                     Lang("en"): _Source(
-#                         name="Open Web Application Security Project",
+#                         name="Open Worldwide Application Security Project",
 #                         source="https://owasp.org",
 #                     )
 #                 }
@@ -326,7 +326,7 @@
 #             attributes=defs.Node_attributes(
 #                 sources_i18n={
 #                     defs.Lang("en"): defs._Source(
-#                         name="Open Web Application Security Project",
+#                         name="Open Worldwide Application Security Project",
 #                         source="https://owasp.org",
 #                     )
 #                 }
