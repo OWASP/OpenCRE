@@ -2,7 +2,7 @@ import './header.scss';
 
 import { Menu, Search } from 'lucide-react';
 import React, { useState } from 'react';
-import { Link, useHistory } from 'react-router-dom';
+import { Link, useHistory, useLocation } from 'react-router-dom';
 import { Button } from 'semantic-ui-react';
 
 import { ClearFilterButton } from '../../components/FilterButton/FilterButton';
@@ -24,6 +24,14 @@ export const Header = () => {
     setIsMobileMenuOpen(false);
   };
 
+
+
+  const location = useLocation();
+  const currentPath = location.pathname;
+  const isActive = (path: string) => currentPath === path;
+
+
+
   return (
     <>
       <nav className="navbar">
@@ -34,22 +42,42 @@ export const Header = () => {
             </Link>
 
             <div className="navbar__desktop-links">
-              <Link to="/" className="nav-link">
-                Home
-              </Link>
-              <a href="/root_cres" className="nav-link">
-                Browse
-              </a>
-              <Link to="/chatbot" className="nav-link">
-                Chat
-              </Link>
-              <a href="/map_analysis" className="nav-link">
-                Map Analysis
-              </a>
-              <a href="/explorer" className="nav-link">
-                Explorer
-              </a>
-            </div>
+  <Link 
+    to="/" 
+    className={`nav-link ${isActive('/') ? 'active' : ''}`}
+  >
+    Home
+  </Link>
+
+  <a 
+    href="/root_cres" 
+    className={`nav-link ${isActive('/root_cres') ? 'active' : ''}`}
+  >
+    Browse
+  </a>
+
+  <Link 
+    to="/chatbot" 
+    className={`nav-link ${isActive('/chatbot') ? 'active' : ''}`}
+  >
+    Chat
+  </Link>
+
+  <a 
+    href="/map_analysis" 
+    className={`nav-link ${isActive('/map_analysis') ? 'active' : ''}`}
+  >
+    Map Analysis
+  </a>
+
+  <a 
+    href="/explorer" 
+    className={`nav-link ${isActive('/explorer') ? 'active' : ''}`}
+  >
+    Explorer
+  </a>
+</div>
+
 
             <div>
               <SearchBar />

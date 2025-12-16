@@ -301,3 +301,14 @@
     display: block;
   }
 }
+
+.nav-link.active {
+  color: #ffffff !important;      
+  font-weight: 600;               
+  border-bottom: 2px solid #ffffff;  
+  padding-bottom: 3px;           
+}
+
+.nav-link {
+  transition: all 0.2s ease;
+}
