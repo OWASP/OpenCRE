@@ -71,7 +71,8 @@ export const Header = () => {
               </a>
               <Link to="/myopencre" className="nav-link">
                 MyOpenCRE
-              </Link>
+              </NavLink>
+              
             </div>
 
             <div>
