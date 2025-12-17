@@ -5,24 +5,40 @@ import { useEnvironment } from '../../hooks';
 
 export const MyOpenCRE = () => {
   const { apiUrl } = useEnvironment();
+  // console.log('API URL:', apiUrl);
 
-  const downloadTemplate = () => {
-    const headers = ['standard_name', 'standard_section', 'cre_id', 'notes'];
+  const downloadCreCsv = async () => {
+    try {
+      const baseUrl = apiUrl || window.location.origin;
 
-    const csvContent = headers.join(',') + '\n';
+      const backendUrl = baseUrl.includes('localhost') ? 'http://127.0.0.1:5000' : baseUrl;
 
-    const blob = new Blob([csvContent], {
-      type: 'text/csv;charset=utf-8;',
-    });
+      const response = await fetch(`${backendUrl}/cre_csv`, {
+        method: 'GET',
+        headers: {
+          Accept: 'text/csv',
+        },
+      });
 
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
+      if (!response.ok) {
+        throw new Error(`HTTP error ${response.status}`);
+      }
 
-    link.href = url;
-    link.setAttribute('download', 'myopencre_mapping_template.csv');
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'opencre-cre-mapping.csv';
+      document.body.appendChild(link);
+      link.click();
+
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('CSV download failed:', err);
+      alert('Failed to download CRE CSV');
+    }
   };
 
   return (
@@ -39,8 +55,10 @@ export const MyOpenCRE = () => {
         to CRE IDs.
       </p>
 
-      <Button primary onClick={downloadTemplate}>
-        Download Mapping Template (CSV)
+
+      <Button primary onClick={downloadCreCsv}>
+        Download CRE Catalogue (CSV)
+
       </Button>
     </Container>
   );
