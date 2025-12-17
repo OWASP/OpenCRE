@@ -25,6 +25,31 @@ export const MyOpenCRE = () => {
     document.body.removeChild(link);
   };
 
+  /* ------------------ ERROR RENDERING ------------------ */
+
+  const renderErrorMessage = () => {
+    if (!error) return null;
+
+    if (error.errors && error.errors.length > 0) {
+      return (
+        <Message negative>
+          <strong>Import failed due to validation errors</strong>
+          <ul>
+            {error.errors.map((e, idx) => (
+              <li key={idx}>
+                <strong>Row {e.row}:</strong> {e.message}
+              </li>
+            ))}
+          </ul>
+        </Message>
+      );
+    }
+
+    return <Message negative>{error.message || 'Import failed'}</Message>;
+  };
+
+  /* ------------------ UI ------------------ */
+
   return (
     <Container className="myopencre-container">
       <Header as="h1">MyOpenCRE</Header>
