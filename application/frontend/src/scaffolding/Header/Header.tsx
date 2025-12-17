@@ -71,11 +71,7 @@ export const Header = () => {
               </a>
               <Link to="/myopencre" className="nav-link">
                 MyOpenCRE
-              </NavLink>
-
-              <NavLink to="/myopencre" className="nav-link" activeClassName="nav-link--active">
-                MyOpenCRE
-              </NavLink>
+              </Link>
             </div>
 
             <div>
@@ -193,16 +189,10 @@ export const Header = () => {
             onClick={closeMobileMenu}
           >
             Explorer
-          </NavLink>
-
-          <NavLink
-            to="/myopencre"
-            className="nav-link"
-            activeClassName="nav-link--active"
-            onClick={closeMobileMenu}
-          >
+          </a>
+          <a href="/myopencre" className="nav-link" onClick={MyOpenCRE}>
             MyOpenCRE
-          </NavLink>
+          </a>
         </div>
 
         <div className="mobile-auth">
