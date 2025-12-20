@@ -80,6 +80,8 @@ export const Chatbot = () => {
   function onSubmit() {
     if (!chat.term.trim()) return;
 
+    const currentTerm = chat.term;
+    setChat({ ...chat, term: '' });
     setLoading(true);
 
     setChatMessages((prev) => [
@@ -87,7 +89,7 @@ export const Chatbot = () => {
       {
         timestamp: new Date().toLocaleTimeString(),
         role: 'user',
-        message: chat.term,
+        message: currentTerm,
         data: [],
         accurate: true,
       },
@@ -96,7 +98,7 @@ export const Chatbot = () => {
     fetch(`${apiUrl}/completion`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt: chat.term }),
+      body: JSON.stringify({ prompt: currentTerm }), // ✅ use captured term
     })
       .then((response) => response.json())
       .then((data) => {
@@ -140,9 +142,9 @@ export const Chatbot = () => {
 
   return (
     <>
-      {user !== '' ? null : login()}
+      {/* {user !== '' ? null : login()} */}
 
-      <LoadingAndErrorIndicator loading={loading} error={error} />
+      {/* <LoadingAndErrorIndicator loading={loading} error={error} /> */}
 
       <Grid textAlign="center" style={{ height: '100vh' }} verticalAlign="middle">
         <Grid.Column>
@@ -150,6 +152,11 @@ export const Chatbot = () => {
 
           <Container>
             <div className="chat-container">
+              {error && (
+                <div className="ui negative message">
+                  <div className="header">Document could not be loaded</div>
+                </div>
+              )}
               <div className="chat-messages">
                 {chatMessages.map((m, idx) => (
                   <div key={idx} className={`chat-message ${m.role}`}>
@@ -179,6 +186,15 @@ export const Chatbot = () => {
                     </div>
                   </div>
                 ))}
+                {loading && (
+                  <div className="chat-message assistant">
+                    <div className="message-card typing-indicator">
+                      <span className="dot" />
+                      <span className="dot" />
+                      <span className="dot" />
+                    </div>
+                  </div>
+                )}
               </div>
 
               <Form className="chat-input" size="large" onSubmit={onSubmit}>

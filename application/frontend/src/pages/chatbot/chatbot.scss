@@ -1,4 +1,5 @@
 .chat-container {
+  margin-top: 1.25rem;
   max-width: 960px;
   margin: 3rem auto;
 }
@@ -8,7 +9,9 @@
   flex-direction: column;
   gap: 1.25rem;
 }
-
+h1.ui.header {
+  margin-bottom: 1rem !important;
+}
 .chat-message {
   display: flex;
 }
@@ -22,12 +25,13 @@
 }
 
 .message-card {
-  max-width: 60%;
+  max-width: 65%;
   background: #ffffff;
-  border-radius: 14px;
+  border-radius: 16px;
   padding: 1rem 1.25rem;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
   line-height: 1.6;
+  animation: fadeInUp 0.25s ease-out;
 }
 
 .chat-message.user .message-card {
@@ -114,18 +118,76 @@
 
 .chat-input {
   margin-top: 1.5rem;
-  background-color: #c8e6c9;
+  background-color: #d3ead4;
   padding: 1rem;
   border-radius: 12px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
 }
-
+.chat-input .ui.input input {
+  border-radius: 10px !important;
+}
 .chatbot-disclaimer {
   margin-top: 2.5rem;
-  font-size: 0.9rem;
+  font-size: 1.01rem;
   color: #333;
   max-width: 900px;
   margin-left: auto;
   margin-right: auto;
   line-height: 1.6;
+}
+
+/* AI typing indicator bubble */
+.typing-indicator {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  min-height: 32px;
+  padding: 0.75rem 1rem;
+}
+.typing-indicator .dot {
+  width: 8px;
+  height: 8px;
+  background-color: #21ba45;
+  border-radius: 50%;
+  animation: typingBounce 1.4s infinite ease-in-out both;
+}
+
+.typing-indicator .dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.typing-indicator .dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+.chat-message.user .message-card {
+  background: #eaf4ff;
+  border-left: 4px solid #2185d0;
+}
+
+.chat-message.assistant .message-card {
+  background: #f9fafb;
+  border-left: 4px solid #21ba45;
+}
+@keyframes typingBounce {
+  0%,
+  80%,
+  100% {
+    transform: scale(0);
+    opacity: 0.3;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
