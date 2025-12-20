@@ -142,7 +142,7 @@ export const Chatbot = () => {
 
   return (
     <>
-      {/* {user !== '' ? null : login()} */}
+      {user !== '' ? null : login()}
 
       {/* <LoadingAndErrorIndicator loading={loading} error={error} /> */}
 
