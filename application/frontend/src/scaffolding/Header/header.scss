@@ -66,6 +66,21 @@
       color: var(--foreground);
     }
   }
+  .nav-link--active {
+    color: var(--foreground);
+    position: relative;
+  }
+
+  .nav-link--active::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -0.5rem;
+    height: 2px;
+    background-color: #60a5fa; // same sky-blue theme
+    border-radius: 2px;
+  }
 }
 
 .navbar__actions {
@@ -253,6 +268,11 @@
         color: var(--foreground);
         background-color: var(--muted);
       }
+    }
+    .nav-link--active {
+      background-color: rgba(96, 165, 250, 0.18);
+      color: var(--foreground);
+      font-weight: 500;
     }
   }
 

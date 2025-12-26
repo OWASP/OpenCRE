@@ -1,8 +1,9 @@
 import './header.scss';
 
 import { Menu, Search } from 'lucide-react';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useHistory } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import { Button } from 'semantic-ui-react';
 
 import { ClearFilterButton } from '../../components/FilterButton/FilterButton';
@@ -20,7 +21,21 @@ export const Header = () => {
   const { showFilter } = useLocationFromOutsideRoute();
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(min-width: 768px)');
 
+    const handleBreakpointChange = (e: MediaQueryListEvent) => {
+      if (e.matches) {
+        setIsMobileMenuOpen(false);
+      }
+    };
+
+    mediaQuery.addEventListener('change', handleBreakpointChange);
+
+    return () => {
+      mediaQuery.removeEventListener('change', handleBreakpointChange);
+    };
+  }, []);
   const closeMobileMenu = () => {
     setIsMobileMenuOpen(false);
   };
@@ -35,24 +50,29 @@ export const Header = () => {
             </Link>
 
             <div className="navbar__desktop-links">
-              <Link to="/" className="nav-link">
+              <NavLink to="/" exact className="nav-link" activeClassName="nav-link--active">
                 Home
-              </Link>
-              <a href="/root_cres" className="nav-link">
+              </NavLink>
+
+              <NavLink to="/root_cres" className="nav-link" activeClassName="nav-link--active">
                 Browse
-              </a>
-              <Link to="/chatbot" className="nav-link">
+              </NavLink>
+
+              <NavLink to="/chatbot" className="nav-link" activeClassName="nav-link--active">
                 Chat
-              </Link>
-              <a href="/map_analysis" className="nav-link">
+              </NavLink>
+
+              <NavLink to="/map_analysis" className="nav-link" activeClassName="nav-link--active">
                 Map Analysis
-              </a>
-              <a href="/explorer" className="nav-link">
-                Explorer
-              </a>
-              <Link to="/myopencre" className="nav-link">
-                MyOpenCRE
-              </Link>
+              </NavLink>
+
+              <NavLink to="/explorer" className="nav-link" activeClassName="nav-link--active">
+  Explorer
+</NavLink>
+
+<NavLink to="/myopencre" className="nav-link" activeClassName="nav-link--active">
+  MyOpenCRE
+</NavLink>
             </div>
 
             <div>
@@ -126,24 +146,60 @@ export const Header = () => {
         )}
 
         <div className="mobile-nav-links">
-          <Link to="/" className="nav-link" onClick={closeMobileMenu}>
+          <NavLink
+            to="/"
+            exact
+            className="nav-link"
+            activeClassName="nav-link--active"
+            onClick={closeMobileMenu}
+          >
             Home
-          </Link>
-          <a href="/root_cres" className="nav-link" onClick={closeMobileMenu}>
+          </NavLink>
+
+          <NavLink
+            to="/root_cres"
+            className="nav-link"
+            activeClassName="nav-link--active"
+            onClick={closeMobileMenu}
+          >
             Browse
-          </a>
-          <Link to="/chatbot" className="nav-link" onClick={closeMobileMenu}>
+          </NavLink>
+
+          <NavLink
+            to="/chatbot"
+            className="nav-link"
+            activeClassName="nav-link--active"
+            onClick={closeMobileMenu}
+          >
             Chat
-          </Link>
-          <a href="/map_analysis" className="nav-link" onClick={closeMobileMenu}>
+          </NavLink>
+
+          <NavLink
+            to="/map_analysis"
+            className="nav-link"
+            activeClassName="nav-link--active"
+            onClick={closeMobileMenu}
+          >
             Map Analysis
-          </a>
-          <a href="/explorer" className="nav-link" onClick={closeMobileMenu}>
-            Explorer
-          </a>
-          <a href="/myopencre" className="nav-link" onClick={MyOpenCRE}>
-            MyOpenCRE
-          </a>
+          </NavLink>
+
+          <NavLink
+  to="/explorer"
+  className="nav-link"
+  activeClassName="nav-link--active"
+  onClick={closeMobileMenu}
+>
+  Explorer
+</NavLink>
+
+<NavLink
+  to="/myopencre"
+  className="nav-link"
+  activeClassName="nav-link--active"
+  onClick={closeMobileMenu}
+>
+  MyOpenCRE
+</NavLink>
         </div>
 
         <div className="mobile-auth">
