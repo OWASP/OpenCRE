@@ -347,7 +347,7 @@ def paths_to_osib(
         attributes=Node_attributes(
             sources_i18n={
                 Lang("en"): _Source(
-                    name="Open Worldwide Application Security Project",
+                    name="Open Web Application Security Project",
                     source="https://owasp.org",
                 )
             }
