@@ -1,18 +1,20 @@
-FROM node:lts as build
+FROM node:lts AS build
 
 WORKDIR /code
 COPY . /code
 
+RUN apt-get update && apt-get install -y chromium
 RUN make install-deps-typescript && make install-typescript && make frontend
 
-FROM python:3.11.0 as run
+FROM python:3.11.0 AS run
 
 COPY --from=build /code /code
 WORKDIR /code
 RUN apt update &&\
     apt install -y python3-numpy &&\
     pip install virtualenv &&\
+    python3 -m venv venv && \
     make install-deps-python &&\
     make install-python
 
-ENTRYPOINT make dev-flask
+ENTRYPOINT make dev-flask-docker
