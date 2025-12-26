@@ -1,7 +1,7 @@
 import './header.scss';
 
 import { Menu, Search } from 'lucide-react';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useHistory } from 'react-router-dom';
 import { Button } from 'semantic-ui-react';
 
@@ -19,7 +19,21 @@ export const Header = () => {
   const { showFilter } = useLocationFromOutsideRoute();
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(min-width: 768px)');
 
+    const handleBreakpointChange = (e: MediaQueryListEvent) => {
+      if (e.matches) {
+        setIsMobileMenuOpen(false);
+      }
+    };
+
+    mediaQuery.addEventListener('change', handleBreakpointChange);
+
+    return () => {
+      mediaQuery.removeEventListener('change', handleBreakpointChange);
+    };
+  }, []);
   const closeMobileMenu = () => {
     setIsMobileMenuOpen(false);
   };
