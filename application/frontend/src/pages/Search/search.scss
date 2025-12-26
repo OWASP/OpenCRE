@@ -1122,3 +1122,33 @@ body {
     transform: rotate(360deg);
   }
 }
+
+@media (max-width: 396px) {
+  .search-bar {
+    .search-bar__group {
+      .search-bar__wrapper {
+        .search-bar__flex {
+          .search-bar__icon {
+            left: 1rem;
+            height: 1.1rem;
+            width: 1.1rem;
+          }
+
+          .search-bar__input {
+            font-size: 0.9rem;
+            padding-top: 0.9rem;
+            padding-bottom: 0.9rem;
+            padding-left: 3rem;
+            padding-right: 6.5rem;
+          }
+
+          .search-bar__button {
+            padding: 0.45rem 1.2rem;
+            font-size: 0.85rem;
+            border-radius: 0.6rem;
+          }
+        }
+      }
+    }
+  }
+}
