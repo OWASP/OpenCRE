@@ -13,6 +13,13 @@
 
   form {
     position: relative;
+    display: flex;
+    align-items: center;
+    border: 1px solid rgba(var(--border-rgb), 0.5);
+    border-radius: var(--radius);
+    background-color: rgba(var(--card-rgb), 0.5);
+    backdrop-filter: blur(4px);
+    transition: all 0.2s ease;
   }
 
   .search-icon {
@@ -21,10 +28,9 @@
     top: 50%;
     transform: translateY(-50%);
     color: var(--muted-foreground);
-    height: 1rem;
-    width: 1rem;
-    pointer-events: none;
-    z-index: 1;
+    height: 1.20rem;    //bigger for sharpness
+    width: 1.20rem;
+    vector-effect:non-scaling-stroke; // keep strokes crisp
   }
 
   input {
