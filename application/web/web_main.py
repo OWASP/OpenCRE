@@ -784,7 +784,9 @@ def import_from_cre_csv() -> Any:
 
     # TODO: (spyros) add optional gap analysis and embeddings calculation
     database = db.Node_collection().with_graph()
+
     file = request.files.get("cre_csv")
+
     calculate_embeddings = (
         False if not request.args.get("calculate_embeddings") else True
     )
@@ -792,17 +794,204 @@ def import_from_cre_csv() -> Any:
         False if not request.args.get("calculate_gap_analysis") else True
     )
 
+    # ------------------------
+    # File-level validation
+    # ------------------------
+
     if file is None:
-        abort(400, "No file provided")
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "type": "FILE_ERROR",
+                    "message": "No file provided",
+                }
+            ),
+            400,
+        )
+
+    if not file.filename.lower().endswith(".csv"):
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "type": "FILE_ERROR",
+                    "message": "Only .csv files are supported",
+                }
+            ),
+            400,
+        )
+
     contents = file.read()
-    csv_read = csv.DictReader(contents.decode("utf-8").splitlines())
+
+    if not contents or contents.strip() == b"":
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "type": "FILE_ERROR",
+                    "message": "Uploaded CSV file is empty",
+                }
+            ),
+            400,
+        )
+
     try:
-        documents = spreadsheet_parsers.parse_export_format(list(csv_read))
+        decoded_contents = contents.decode("utf-8")
+    except UnicodeDecodeError:
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "type": "FILE_ERROR",
+                    "message": "CSV file must be UTF-8 encoded",
+                }
+            ),
+            400,
+        )
+
+    csv_read = csv.DictReader(decoded_contents.splitlines())
+
+    # ------------------------
+    # Schema / header validation
+    # ------------------------
+
+    headers = [h.strip() for h in csv_read.fieldnames]
+
+    if not headers:
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "type": "SCHEMA_ERROR",
+                    "message": "CSV header row is missing",
+                }
+            ),
+            400,
+        )
+
+    has_cre_column = any(h.startswith("CRE") for h in headers)
+    if not has_cre_column:
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "type": "SCHEMA_ERROR",
+                    "message": "At least one CRE column is required",
+                }
+            ),
+            400,
+        )
+
+    required_columns = ["standard|name", "standard|id"]
+    for col in required_columns:
+        if col not in headers:
+            return (
+                jsonify(
+                    {
+                        "success": False,
+                        "type": "SCHEMA_ERROR",
+                        "message": f"Missing required column: {col}",
+                    }
+                ),
+                400,
+            )
+
+    # ------------------------
+    # Row-level validation (export-compatible)
+    # ------------------------
+
+    rows = list(csv_read)
+    errors = []
+
+    # 🚨 NEW: guard against misaligned rows (extra columns)
+    for row_index, row in enumerate(rows, start=2):
+        if None in row:
+            return (
+                jsonify(
+                    {
+                        "success": False,
+                        "type": "SCHEMA_ERROR",
+                        "message": (
+                            f"Row {row_index} has more columns than header. "
+                            "Please ensure the CSV matches the exported template."
+                        ),
+                    }
+                ),
+                400,
+            )
+
+    for row_index, row in enumerate(rows, start=2):  # header is row 1
+        normalized_row = {
+            k: (v.strip() if isinstance(v, str) else v) for k, v in row.items()
+        }
+
+        # Skip completely empty rows (exported templates contain them)
+        if all(not v for v in normalized_row.values()):
+            continue
+
+        cre_values = [normalized_row.get(h) for h in headers if h.startswith("CRE")]
+        cre_values = [v for v in cre_values if v]
+
+        # Rows without CRE are allowed by export format → skip
+        if not cre_values:
+            continue
+
+        # Validate CRE format
+        for cre in cre_values:
+            if "|" not in cre:
+                errors.append(
+                    {
+                        "row": row_index,
+                        "code": "INVALID_CRE_FORMAT",
+                        "message": (
+                            f"Invalid CRE entry '{cre}', expected '<CRE-ID>|<Name>'"
+                        ),
+                    }
+                )
+
+    if errors:
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "type": "ROW_VALIDATION_ERROR",
+                    "errors": errors,
+                }
+            ),
+            400,
+        )
+
+    # ------------------------
+    # No-op import guard (IMPORTANT)
+    # ------------------------
+
+    importable_rows = []
+    for row in rows:
+        if any(v for v in row.values()):
+            importable_rows.append(row)
+
+    if not importable_rows:
+        return jsonify(
+            {
+                "status": "success",
+                "new_cres": [],
+                "new_standards": 0,
+            }
+        )
+
+    # ------------------------
+    # Import execution
+    # ------------------------
+
+    try:
+        documents = spreadsheet_parsers.parse_export_format(importable_rows)
     except cre_exceptions.DuplicateLinkException as dle:
         abort(500, f"error during parsing of the incoming CSV, err:{dle}")
-    cres = documents.pop(defs.Credoctypes.CRE.value)
 
+    cres = documents.pop(defs.Credoctypes.CRE.value)
     standards = documents
+
     new_cres = []
     for cre in cres:
         new_cre, exists = cre_main.register_cre(cre, database)
@@ -816,6 +1005,7 @@ def import_from_cre_csv() -> Any:
             generate_embeddings=calculate_embeddings,
             calculate_gap_analysis=calculate_gap_analysis,
         )
+
     return jsonify(
         {
             "status": "success",
