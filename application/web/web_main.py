@@ -794,6 +794,10 @@ def import_from_cre_csv() -> Any:
         False if not request.args.get("calculate_gap_analysis") else True
     )
 
+    # ------------------------
+    # File-level validation
+    # ------------------------
+
     if file is None:
         return (
             jsonify(
@@ -806,7 +810,6 @@ def import_from_cre_csv() -> Any:
             400,
         )
 
-    # 🔹 File extension validation
     if not file.filename.lower().endswith(".csv"):
         return (
             jsonify(
@@ -821,7 +824,6 @@ def import_from_cre_csv() -> Any:
 
     contents = file.read()
 
-    # 🔹 Empty file validation
     if not contents or contents.strip() == b"":
         return (
             jsonify(
@@ -834,7 +836,6 @@ def import_from_cre_csv() -> Any:
             400,
         )
 
-    # 🔹 UTF-8 decoding validation
     try:
         decoded_contents = contents.decode("utf-8")
     except UnicodeDecodeError:
@@ -851,7 +852,10 @@ def import_from_cre_csv() -> Any:
 
     csv_read = csv.DictReader(decoded_contents.splitlines())
 
-    # 🔹 Schema / header validation
+    # ------------------------
+    # Schema / header validation
+    # ------------------------
+
     headers = csv_read.fieldnames
 
     if not headers:
@@ -866,7 +870,6 @@ def import_from_cre_csv() -> Any:
             400,
         )
 
-    # At least one CRE column is required (CRE 0, CRE 1, ...)
     has_cre_column = any(h.startswith("CRE") for h in headers)
     if not has_cre_column:
         return (
@@ -880,7 +883,6 @@ def import_from_cre_csv() -> Any:
             400,
         )
 
-    # Required standard columns
     required_columns = ["standard|name", "standard|id"]
     for col in required_columns:
         if col not in headers:
@@ -895,8 +897,81 @@ def import_from_cre_csv() -> Any:
                 400,
             )
 
+    # ------------------------
+    # Row-level validation (export-compatible)
+    # ------------------------
+
+    rows = list(csv_read)
+    errors = []
+
+    for row_index, row in enumerate(rows, start=2):  # header is row 1
+        normalized_row = {
+            k: (v.strip() if isinstance(v, str) else v) for k, v in row.items()
+        }
+
+        # Skip completely empty rows (exported templates contain them)
+        if all(not v for v in normalized_row.values()):
+            continue
+
+        cre_values = [normalized_row.get(h) for h in headers if h.startswith("CRE")]
+        cre_values = [v for v in cre_values if v]
+
+        # Rows without CRE are allowed by export format → skip
+        if not cre_values:
+            continue
+
+        # Validate CRE format
+        for cre in cre_values:
+            if "|" not in cre:
+                errors.append(
+                    {
+                        "row": row_index,
+                        "code": "INVALID_CRE_FORMAT",
+                        "message": (
+                            f"Invalid CRE entry '{cre}', " "expected '<CRE-ID>|<Name>'"
+                        ),
+                    }
+                )
+
+        # Validate standard metadata only when CRE exists
+        if not normalized_row.get("standard|name"):
+            errors.append(
+                {
+                    "row": row_index,
+                    "column": "standard|name",
+                    "code": "MISSING_STANDARD_NAME",
+                    "message": "Standard name must not be empty",
+                }
+            )
+
+        if not normalized_row.get("standard|id"):
+            errors.append(
+                {
+                    "row": row_index,
+                    "column": "standard|id",
+                    "code": "MISSING_STANDARD_ID",
+                    "message": "Standard ID must not be empty",
+                }
+            )
+
+    if errors:
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "type": "ROW_VALIDATION_ERROR",
+                    "errors": errors,
+                }
+            ),
+            400,
+        )
+
+    # ------------------------
+    # Import execution (unchanged)
+    # ------------------------
+
     try:
-        documents = spreadsheet_parsers.parse_export_format(list(csv_read))
+        documents = spreadsheet_parsers.parse_export_format(rows)
     except cre_exceptions.DuplicateLinkException as dle:
         abort(500, f"error during parsing of the incoming CSV, err:{dle}")
 
