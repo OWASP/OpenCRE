@@ -5,15 +5,28 @@ import { Button, Container, Form, Header, Message } from 'semantic-ui-react';
 
 import { useEnvironment } from '../../hooks';
 
+type RowValidationError = {
+  row: number;
+  code: string;
+  message: string;
+  column?: string;
+};
+
+type ImportErrorResponse = {
+  success: false;
+  type: string;
+  message?: string;
+  errors?: RowValidationError[];
+};
+
 export const MyOpenCRE = () => {
   const { apiUrl } = useEnvironment();
 
-  // Upload enabled only for local/dev
   const isUploadEnabled = apiUrl !== '/rest/v1';
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<ImportErrorResponse | null>(null);
   const [success, setSuccess] = useState<any | null>(null);
 
   /* ------------------ CSV DOWNLOAD ------------------ */
@@ -57,7 +70,11 @@ export const MyOpenCRE = () => {
     const file = e.target.files[0];
 
     if (!file.name.toLowerCase().endsWith('.csv')) {
-      setError('Please upload a valid CSV file.');
+      setError({
+        success: false,
+        type: 'FILE_ERROR',
+        message: 'Please upload a valid CSV file.',
+      });
       e.target.value = '';
       setSelectedFile(null);
       return;
@@ -90,19 +107,47 @@ export const MyOpenCRE = () => {
         );
       }
 
+      const payload = await response.json();
+
       if (!response.ok) {
-        const text = await response.text();
-        throw new Error(text || 'CSV import failed');
+        setError(payload);
+        return;
       }
 
-      const result = await response.json();
-      setSuccess(result);
+      setSuccess(payload);
       setSelectedFile(null);
     } catch (err: any) {
-      setError(err.message || 'Unexpected error during import');
+      setError({
+        success: false,
+        type: 'CLIENT_ERROR',
+        message: err.message || 'Unexpected error during import',
+      });
     } finally {
       setLoading(false);
     }
+  };
+
+  /* ------------------ ERROR RENDERING ------------------ */
+
+  const renderErrorMessage = () => {
+    if (!error) return null;
+
+    if (error.errors && error.errors.length > 0) {
+      return (
+        <Message negative>
+          <strong>Import failed due to validation errors</strong>
+          <ul>
+            {error.errors.map((e, idx) => (
+              <li key={idx}>
+                <strong>Row {e.row}:</strong> {e.message}
+              </li>
+            ))}
+          </ul>
+        </Message>
+      );
+    }
+
+    return <Message negative>{error.message || 'Import failed'}</Message>;
   };
 
   /* ------------------ UI ------------------ */
@@ -140,7 +185,7 @@ export const MyOpenCRE = () => {
           </Message>
         )}
 
-        {error && <Message negative>{error}</Message>}
+        {renderErrorMessage()}
 
         {success && (
           <Message positive>
