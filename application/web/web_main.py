@@ -797,7 +797,11 @@ def import_from_cre_csv() -> Any:
     if file is None:
         return (
             jsonify(
-                {"success": False, "type": "FILE_ERROR", "message": "No file provided"}
+                {
+                    "success": False,
+                    "type": "FILE_ERROR",
+                    "message": "No file provided",
+                }
             ),
             400,
         )
@@ -846,6 +850,50 @@ def import_from_cre_csv() -> Any:
         )
 
     csv_read = csv.DictReader(decoded_contents.splitlines())
+
+    # 🔹 Schema / header validation
+    headers = csv_read.fieldnames
+
+    if not headers:
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "type": "SCHEMA_ERROR",
+                    "message": "CSV header row is missing",
+                }
+            ),
+            400,
+        )
+
+    # At least one CRE column is required (CRE 0, CRE 1, ...)
+    has_cre_column = any(h.startswith("CRE") for h in headers)
+    if not has_cre_column:
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "type": "SCHEMA_ERROR",
+                    "message": "At least one CRE column is required",
+                }
+            ),
+            400,
+        )
+
+    # Required standard columns
+    required_columns = ["standard|name", "standard|id"]
+    for col in required_columns:
+        if col not in headers:
+            return (
+                jsonify(
+                    {
+                        "success": False,
+                        "type": "SCHEMA_ERROR",
+                        "message": f"Missing required column: {col}",
+                    }
+                ),
+                400,
+            )
 
     try:
         documents = spreadsheet_parsers.parse_export_format(list(csv_read))
