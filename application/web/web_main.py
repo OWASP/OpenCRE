@@ -784,7 +784,9 @@ def import_from_cre_csv() -> Any:
 
     # TODO: (spyros) add optional gap analysis and embeddings calculation
     database = db.Node_collection().with_graph()
+
     file = request.files.get("cre_csv")
+
     calculate_embeddings = (
         False if not request.args.get("calculate_embeddings") else True
     )
@@ -793,16 +795,66 @@ def import_from_cre_csv() -> Any:
     )
 
     if file is None:
-        abort(400, "No file provided")
+        return (
+            jsonify(
+                {"success": False, "type": "FILE_ERROR", "message": "No file provided"}
+            ),
+            400,
+        )
+
+    # 🔹 File extension validation
+    if not file.filename.lower().endswith(".csv"):
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "type": "FILE_ERROR",
+                    "message": "Only .csv files are supported",
+                }
+            ),
+            400,
+        )
+
     contents = file.read()
-    csv_read = csv.DictReader(contents.decode("utf-8").splitlines())
+
+    # 🔹 Empty file validation
+    if not contents or contents.strip() == b"":
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "type": "FILE_ERROR",
+                    "message": "Uploaded CSV file is empty",
+                }
+            ),
+            400,
+        )
+
+    # 🔹 UTF-8 decoding validation
+    try:
+        decoded_contents = contents.decode("utf-8")
+    except UnicodeDecodeError:
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "type": "FILE_ERROR",
+                    "message": "CSV file must be UTF-8 encoded",
+                }
+            ),
+            400,
+        )
+
+    csv_read = csv.DictReader(decoded_contents.splitlines())
+
     try:
         documents = spreadsheet_parsers.parse_export_format(list(csv_read))
     except cre_exceptions.DuplicateLinkException as dle:
         abort(500, f"error during parsing of the incoming CSV, err:{dle}")
-    cres = documents.pop(defs.Credoctypes.CRE.value)
 
+    cres = documents.pop(defs.Credoctypes.CRE.value)
     standards = documents
+
     new_cres = []
     for cre in cres:
         new_cre, exists = cre_main.register_cre(cre, database)
@@ -816,6 +868,7 @@ def import_from_cre_csv() -> Any:
             generate_embeddings=calculate_embeddings,
             calculate_gap_analysis=calculate_gap_analysis,
         )
+
     return jsonify(
         {
             "status": "success",
