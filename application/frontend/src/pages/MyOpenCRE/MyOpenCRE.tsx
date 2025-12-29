@@ -29,6 +29,9 @@ export const MyOpenCRE = () => {
   const [error, setError] = useState<ImportErrorResponse | null>(null);
   const [success, setSuccess] = useState<any | null>(null);
 
+  // informational (no-op / empty) messages
+  const [info, setInfo] = useState<string | null>(null);
+
   /* ------------------ CSV DOWNLOAD ------------------ */
 
   const downloadCreCsv = async () => {
@@ -64,6 +67,7 @@ export const MyOpenCRE = () => {
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setError(null);
     setSuccess(null);
+    setInfo(null); // lear stale info messages
 
     if (!e.target.files || e.target.files.length === 0) return;
 
@@ -91,6 +95,7 @@ export const MyOpenCRE = () => {
     setLoading(true);
     setError(null);
     setSuccess(null);
+    setInfo(null); // reset info on upload
 
     const formData = new FormData();
     formData.append('cre_csv', selectedFile);
@@ -114,7 +119,17 @@ export const MyOpenCRE = () => {
         return;
       }
 
-      setSuccess(payload);
+      // handle backend import_type semantics
+      if (payload.import_type === 'noop') {
+        setInfo(
+          'Import completed successfully, but no new CREs or standards were added because all mappings already exist.'
+        );
+      } else if (payload.import_type === 'empty') {
+        setInfo('The uploaded CSV did not contain any importable rows. No changes were made.');
+      } else {
+        setSuccess(payload);
+      }
+
       setSelectedFile(null);
     } catch (err: any) {
       setError({
@@ -186,6 +201,9 @@ export const MyOpenCRE = () => {
         )}
 
         {renderErrorMessage()}
+
+        {/* informational messages for noop / empty */}
+        {info && <Message info>{info}</Message>}
 
         {success && (
           <Message positive>

@@ -977,6 +977,7 @@ def import_from_cre_csv() -> Any:
                 "status": "success",
                 "new_cres": [],
                 "new_standards": 0,
+                "import_type": "empty",
             }
         )
 
@@ -1006,11 +1007,16 @@ def import_from_cre_csv() -> Any:
             calculate_gap_analysis=calculate_gap_analysis,
         )
 
+    import_type = "created"
+    if not new_cres and not standards:
+        import_type = "noop"
+
     return jsonify(
         {
             "status": "success",
             "new_cres": [c.external_id for c in new_cres],
             "new_standards": len(standards),
+            "import_type": import_type,
         }
     )
 
