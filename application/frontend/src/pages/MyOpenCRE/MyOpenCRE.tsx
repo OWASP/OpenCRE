@@ -168,7 +168,7 @@ export const MyOpenCRE = () => {
   /* ------------------ UI ------------------ */
 
   return (
-    <Container style={{ marginTop: '3rem' }}>
+    <Container className="myopencre-container">
       <Header as="h1">MyOpenCRE</Header>
 
       <p>
