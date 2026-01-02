@@ -210,6 +210,15 @@ export const MyOpenCRE = () => {
     <Container className="myopencre-container">
       <Header as="h1">MyOpenCRE</Header>
 
+      <p className="myopencre-intro">
+        MyOpenCRE allows you to map your own security standard (e.g. SOC2) to OpenCRE Common Requirements
+        using a CSV spreadsheet.
+      </p>
+
+      <p className="myopencre-intro">
+        Start by downloading the CRE catalogue below, then map your standard’s controls or sections to CRE IDs
+        in the spreadsheet.
+      </p>
       <div className="myopencre-section">
         <Button primary onClick={downloadCreCsv}>
           Download CRE Catalogue (CSV)
@@ -218,7 +227,29 @@ export const MyOpenCRE = () => {
 
       <div className="myopencre-section myopencre-upload">
         <Header as="h3">Upload Mapping CSV</Header>
+        <Message info className="cursor-pointer">
+          <details>
+            <summary>
+              <strong>How to prepare your CSV</strong>
+            </summary>
 
+            <ul>
+              <li>Start from the downloaded CRE Catalogue CSV.</li>
+              <li>
+                Fill <code>standard|name</code> and <code>standard|id</code> for your standard.
+              </li>
+              <li>
+                Map your controls using CRE columns (<code>CRE 0</code>, <code>CRE 1</code>, …).
+              </li>
+
+              <li>
+                CRE values must be in the format <code>&lt;CRE-ID&gt;|&lt;Name&gt;</code>
+                <br />
+                <em>Example:</em> <code>616-305|Development processes for security</code>
+              </li>
+            </ul>
+          </details>
+        </Message>
         {renderErrorMessage()}
         {info && <Message info>{info}</Message>}
         {success && (
