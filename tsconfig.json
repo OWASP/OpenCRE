@@ -12,7 +12,6 @@
     "lib": ["esnext", "dom"],
     "outDir": "dist",
     "moduleResolution": "node",
-    "keyofStringsOnly": true,
     "skipLibCheck": true,
     "esModuleInterop": true
   },
