@@ -231,8 +231,8 @@ export const SearchPage = () => {
               </div>
               <h3 className="htu-card__title">Link from your document / tool</h3>
               <p className="htu-card__text">
-                Llink with the CRE ID: <a href="https://opencre.org/cre/764-507">opencre.org/cre/764-507</a>{' '}
-                or use a familiar standard such as CWE:{' '}
+                Link with the CRE ID: <a href="https://opencre.org/cre/764-507">opencre.org/cre/764-507</a> or
+                use a familiar standard such as CWE:{' '}
                 <a href="https://opencre.org/smartlink/standard/CWE/611">
                   opencre.org/smartlink/standard/CWE/611
                 </a>
@@ -281,8 +281,11 @@ export const SearchPage = () => {
                 <a href="https://www.opencre.org/map_analysis">MAP ANALYSIS</a>
               </h3>
               <p className="feature-block__text">
-                Utilize <strong><a href="/map_analysis">Map Analysis</a></strong> as a tool to explore and understand the connections
-                between two standards.
+                Utilize{' '}
+                <strong>
+                  <a href="/map_analysis">Map Analysis</a>
+                </strong>{' '}
+                as a tool to explore and understand the connections between two standards.
               </p>
               <p className="feature-block__text">
                 See how <strong>any two standards connect</strong> with each other, providing valuable
