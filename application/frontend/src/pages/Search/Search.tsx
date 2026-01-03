@@ -257,7 +257,7 @@ export const SearchPage = () => {
 
         <div id="features" className="section">
           <div className="features-grid">
-            <div className="feature-block feature-block--rose">
+            {/* <div className="feature-block feature-block--rose">
               <div className="feature-block__icon-wrapper">
                 <MessageSquare className="icon" />
               </div>
@@ -272,6 +272,29 @@ export const SearchPage = () => {
                 This ensures you get a more <strong>reliable answer</strong>, and also a reference to a{' '}
                 <strong>reputable source</strong>.
               </p>
+            </div> */}
+            <div className="feature-block feature-block--rose">
+              <div className="feature-block__icon-wrapper">
+                <MessageSquare className="icon" />
+              </div>
+              <h3 className="feature-block__title">OPENCRE CHAT</h3>
+
+              <div className="feature-block__text space-y-2">
+                <p>
+                  Use{' '}
+                  <strong>
+                    <a href="https://www.opencre.org/chatbot">OpenCRE Chat</a>
+                  </strong>{' '}
+                  to ask any security question.
+                </p>
+
+                <p>
+                  In collaboration with <strong>Google</strong>, we injected all the standards in OpenCRE into
+                  an AI model to create the most comprehensive security chatbot. This ensures you get a more{' '}
+                  <strong>reliable answer</strong>, and also a reference to a{' '}
+                  <strong>reputable source</strong>.
+                </p>
+              </div>
             </div>
             <div className="feature-block feature-block--teal">
               <div className="feature-block__icon-wrapper">
