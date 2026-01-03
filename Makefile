@@ -40,7 +40,7 @@ dev-flask-docker:
 e2e:
 	yarn build
 	[ -d "./venv" ] && . ./venv/bin/activate &&\
-	export FLASK_APP=$(CURDIR)/cre.py &&\
+	export FLASK_APP="$(CURDIR)/cre.py" &&\
 	export FLASK_CONFIG=development &&\
 	export INSECURE_REQUESTS=1 &&\
 	flask run &
@@ -52,7 +52,7 @@ e2e:
 
 test:
 	[ -d "./venv" ] && . ./venv/bin/activate &&\
-	export FLASK_APP=$(CURDIR)/cre.py &&\
+	export FLASK_APP="$(CURDIR)/cre.py" &&\
 	flask routes && flask test
 
 cover:
@@ -107,12 +107,12 @@ clean:
 
 migrate-upgrade:
 	[ -d "./venv" ] && . ./venv/bin/activate &&\
-	export FLASK_APP=$(CURDIR)/cre.py 
+	export FLASK_APP="$(CURDIR)/cre.py" 
 	flask db upgrade  
 
 migrate-downgrade:
 	[ -d "./venv" ] && . ./venv/bin/activate &&\
-	export FLASK_APP=$(CURDIR)/cre.py
+	export FLASK_APP="$(CURDIR)/cre.py"
 	flask db downgrade
 
 import-projects:
@@ -123,7 +123,7 @@ import-all:
 
 import-neo4j:
 	[ -d "./venv" ] && . ./venv/bin/activate &&\
-	export FLASK_APP=$(CURDIR)/cre.py && python cre.py --populate_neo4j_db
+	export FLASK_APP="$(CURDIR)/cre.py" && python cre.py --populate_neo4j_db
 
 preload-map-analysis:
 	$(shell RUN_COUNT=5 bash ./scripts/preload_gap_analysis.sh)
