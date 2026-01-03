@@ -10,6 +10,7 @@ type RowValidationError = {
   code: string;
   message: string;
   column?: string;
+  example?: string;
 };
 
 type ImportErrorResponse = {
@@ -171,6 +172,11 @@ export const MyOpenCRE = () => {
             {error.errors.map((e, idx) => (
               <li key={idx}>
                 <strong>Row {e.row}:</strong> {e.message}
+                {e.example && (
+                  <div style={{ marginTop: '4px', opacity: 0.8 }}>
+                    <em>Example:</em> <code>{e.example}</code>
+                  </div>
+                )}
               </li>
             ))}
           </ul>
