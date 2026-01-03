@@ -34,7 +34,7 @@ export const Chatbot = () => {
   const [error, setError] = useState<string>('');
   const [chat, setChat] = useState<ChatState>(DEFAULT_CHAT_STATE);
   const [user, setUser] = useState('');
-
+  const hasMessages = chatMessages.length > 0;
   function login() {
     fetch(`${apiUrl}/user`, { method: 'GET' })
       .then((response) => {
@@ -144,14 +144,14 @@ export const Chatbot = () => {
     <>
       {user !== '' ? null : login()}
 
-      {/* <LoadingAndErrorIndicator loading={loading} error={error} /> */}
 
-      <Grid textAlign="center" style={{ height: '100vh' }} verticalAlign="middle">
+      <Grid textAlign="center" verticalAlign="middle" className="chatbot-layout">
         <Grid.Column>
           <Header as="h1">OWASP OpenCRE Chat</Header>
 
           <Container>
-            <div className="chat-container">
+            <div className={`chat-container ${hasMessages ? 'chat-active' : 'chat-landing'}`}>
+              {' '}
               {error && (
                 <div className="ui negative message">
                   <div className="header">Document could not be loaded</div>
@@ -196,7 +196,6 @@ export const Chatbot = () => {
                   </div>
                 )}
               </div>
-
               <Form className="chat-input" size="large" onSubmit={onSubmit}>
                 <Form.Input
                   fluid
