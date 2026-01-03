@@ -898,13 +898,13 @@ def import_from_cre_csv() -> Any:
             )
 
     # ------------------------
-    # Row-level validation (export-compatible)
+    # Row-level validation
     # ------------------------
 
     rows = list(csv_read)
     errors = []
 
-    # 🚨 NEW: guard against misaligned rows (extra columns)
+    # Guard against misaligned rows
     for row_index, row in enumerate(rows, start=2):
         if None in row:
             return (
@@ -921,32 +921,31 @@ def import_from_cre_csv() -> Any:
                 400,
             )
 
-    for row_index, row in enumerate(rows, start=2):  # header is row 1
+    for row_index, row in enumerate(rows, start=2):
         normalized_row = {
             k: (v.strip() if isinstance(v, str) else v) for k, v in row.items()
         }
 
-        # Skip completely empty rows (exported templates contain them)
+        # Skip completely empty rows
         if all(not v for v in normalized_row.values()):
             continue
 
-        cre_values = [normalized_row.get(h) for h in headers if h.startswith("CRE")]
-        cre_values = [v for v in cre_values if v]
+        for header in headers:
+            if not header.startswith("CRE"):
+                continue
 
-        # Rows without CRE are allowed by export format → skip
-        if not cre_values:
-            continue
+            cre_value = normalized_row.get(header)
+            if not cre_value:
+                continue
 
-        # Validate CRE format
-        for cre in cre_values:
-            if "|" not in cre:
+            if "|" not in cre_value:
                 errors.append(
                     {
                         "row": row_index,
+                        "column": header,
                         "code": "INVALID_CRE_FORMAT",
-                        "message": (
-                            f"Invalid CRE entry '{cre}', expected '<CRE-ID>|<Name>'"
-                        ),
+                        "message": "Invalid CRE entry format",
+                        "example": "616-305|Development processes for security",
                     }
                 )
 
@@ -963,13 +962,10 @@ def import_from_cre_csv() -> Any:
         )
 
     # ------------------------
-    # No-op import guard (IMPORTANT)
+    # No-op import guard
     # ------------------------
 
-    importable_rows = []
-    for row in rows:
-        if any(v for v in row.values()):
-            importable_rows.append(row)
+    importable_rows = [row for row in rows if any(v for v in row.values())]
 
     if not importable_rows:
         return jsonify(
@@ -987,8 +983,45 @@ def import_from_cre_csv() -> Any:
 
     try:
         documents = spreadsheet_parsers.parse_export_format(importable_rows)
+
+    except cre_exceptions.InvalidCREIDException as ice:
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "type": "ROW_VALIDATION_ERROR",
+                    "errors": [
+                        {
+                            "row": None,
+                            "column": None,
+                            "code": "INVALID_CRE_ID",
+                            "message": str(ice),
+                            "example": "616-305|Development processes for security",
+                        }
+                    ],
+                }
+            ),
+            400,
+        )
+
     except cre_exceptions.DuplicateLinkException as dle:
-        abort(500, f"error during parsing of the incoming CSV, err:{dle}")
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "type": "ROW_VALIDATION_ERROR",
+                    "errors": [
+                        {
+                            "row": None,
+                            "column": None,
+                            "code": "DUPLICATE_LINK",
+                            "message": str(dle),
+                        }
+                    ],
+                }
+            ),
+            400,
+        )
 
     cres = documents.pop(defs.Credoctypes.CRE.value)
     standards = documents
