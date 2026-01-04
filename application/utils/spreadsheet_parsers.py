@@ -138,7 +138,7 @@ def is_empty(value: Optional[str]) -> bool:
 def validate_import_csv_rows(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """
     Entry point for parsing imported CSV files.
-    
+
     CSV validation is handled at the parser level.
     Structural and row-level validation rules are implemented in
     "validate_import_csv_rows", which is invoked internally
