@@ -8,6 +8,7 @@ import { Button } from 'semantic-ui-react';
 
 import { ClearFilterButton } from '../../components/FilterButton/FilterButton';
 import { useLocationFromOutsideRoute } from '../../hooks/useLocationFromOutsideRoute';
+import { MyOpenCRE } from '../../pages/MyOpenCRE/MyOpenCRE';
 import { SearchBar } from '../../pages/Search/components/SearchBar';
 
 export const Header = () => {
@@ -68,6 +69,11 @@ export const Header = () => {
               <NavLink to="/explorer" className="nav-link" activeClassName="nav-link--active">
                 Explorer
               </NavLink>
+
+              <NavLink to="/myopencre" className="nav-link" activeClassName="nav-link--active">
+                MyOpenCRE
+              </NavLink>
+              
             </div>
 
             <div>
@@ -185,6 +191,15 @@ export const Header = () => {
             onClick={closeMobileMenu}
           >
             Explorer
+          </NavLink>
+
+          <NavLink
+            to="/myopencre"
+            className="nav-link"
+            activeClassName="nav-link--active"
+            onClick={closeMobileMenu}
+          >
+            MyOpenCRE
           </NavLink>
         </div>
 
