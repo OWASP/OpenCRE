@@ -135,22 +135,14 @@ def is_empty(value: Optional[str]) -> bool:
     )
 
 
-def validate_import_csv_rows(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    """
-    Entry point for parsing imported CSV files.
-
-    CSV validation is handled at the parser level.
-    Structural and row-level validation rules are implemented in
-    "validate_import_csv_rows", which is invoked internally
-    before parsing proceeds.
-    """
+def validate_export_csv_rows(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     if not rows:
         raise ValueError("Invalid CSV format or missing data rows")
 
     headers = list(rows[0].keys())
 
-    if not headers:
-        raise ValueError("CSV header row is missing")
+    if not headers or len(headers) < 2:
+        raise ValueError("Invalid CSV format or missing header row")
 
     if not any(h.startswith("CRE") for h in headers):
         raise ValueError("At least one CRE column is required")
