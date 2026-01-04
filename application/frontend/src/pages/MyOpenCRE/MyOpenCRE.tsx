@@ -26,7 +26,7 @@ export const MyOpenCRE = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<ImportErrorResponse | null>(null);
   const [success, setSuccess] = useState<any | null>(null);
-
+  const [info, setInfo] = useState<string | null>(null);
   /* ------------------ CSV DOWNLOAD ------------------ */
 
   const downloadTemplate = () => {
@@ -53,7 +53,7 @@ export const MyOpenCRE = () => {
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setError(null);
     setSuccess(null);
-
+    setInfo(null);
     if (!e.target.files || e.target.files.length === 0) return;
 
     const file = e.target.files[0];
@@ -80,6 +80,7 @@ export const MyOpenCRE = () => {
     setLoading(true);
     setError(null);
     setSuccess(null);
+    setInfo(null);
 
     const formData = new FormData();
     formData.append('cre_csv', selectedFile);
@@ -103,7 +104,13 @@ export const MyOpenCRE = () => {
         return;
       }
 
-      setSuccess(payload);
+      if (payload.import_type === 'noop') {
+        setInfo(
+          'Import completed successfully, but no new CREs or standards were added because all mappings already exist.'
+        );
+      } else {
+        setSuccess(payload);
+      }
       setSelectedFile(null);
     } catch (err: any) {
       setError({
@@ -175,7 +182,7 @@ export const MyOpenCRE = () => {
         )}
 
         {renderErrorMessage()}
-
+        {info && <Message info>{info}</Message>}
         {success && (
           <Message positive>
             <strong>Import successful</strong>
