@@ -135,7 +135,15 @@ def is_empty(value: Optional[str]) -> bool:
     )
 
 
-def validate_export_csv_rows(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+def validate_import_csv_rows(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """
+    Entry point for parsing imported CSV files.
+    
+    CSV validation is handled at the parser level.
+    Structural and row-level validation rules are implemented in
+    "validate_import_csv_rows", which is invoked internally
+    before parsing proceeds.
+    """
     if not rows:
         raise ValueError("Invalid CSV format or missing data rows")
 
@@ -199,7 +207,7 @@ def parse_export_format(lfile: List[Dict[str, Any]]) -> Dict[str, List[defs.Docu
     Given: a spreadsheet written by prepare_spreadsheet()
     return a list of CRE docs
     """
-    validated_rows = validate_export_csv_rows(lfile)
+    validated_rows = validate_import_csv_rows(lfile)
     cres: Dict[str, defs.CRE] = {}
     standards: Dict[str, Dict[str, defs.Standard]] = {}
     documents: Dict[str, List[defs.Document]] = {}
