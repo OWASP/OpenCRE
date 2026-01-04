@@ -226,29 +226,7 @@ export const MyOpenCRE = () => {
 
       <div className="myopencre-section myopencre-upload">
         <Header as="h3">Upload Mapping CSV</Header>
-        <Message info className="cursor-pointer">
-          <details>
-            <summary>
-              <strong>How to prepare your CSV</strong>
-            </summary>
 
-            <ul>
-              <li>Start from the downloaded CRE Catalogue CSV.</li>
-              <li>
-                Fill <code>standard|name</code> and <code>standard|id</code> for your standard.
-              </li>
-              <li>
-                Map your controls using CRE columns (<code>CRE 0</code>, <code>CRE 1</code>, …).
-              </li>
-
-              <li>
-                CRE values must be in the format <code>&lt;CRE-ID&gt;|&lt;Name&gt;</code>
-                <br />
-                <em>Example:</em> <code>616-305|Development processes for security</code>
-              </li>
-            </ul>
-          </details>
-        </Message>
         {renderErrorMessage()}
 
         {success && (
