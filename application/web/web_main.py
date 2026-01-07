@@ -41,6 +41,7 @@ from flask import (
 from google.oauth2 import id_token
 from google_auth_oauthlib.flow import Flow
 from application.utils.spreadsheet import write_csv
+from application.config import ENABLE_MYOPENCRE
 import oauthlib
 import google.auth.transport.requests
 
@@ -104,6 +105,11 @@ if os.environ.get("POSTHOG_API_KEY") and os.environ.get("POSTHOG_HOST"):
         project_api_key=os.environ.get("POSTHOG_API_KEY"),
         host=os.environ.get("POSTHOG_HOST"),
     )
+
+
+@app.route("/api/capabilities")
+def capabilities():
+    return jsonify({"myopencre": ENABLE_MYOPENCRE})
 
 
 @app.route("/rest/v1/id/<creid>", methods=["GET"])
@@ -764,9 +770,10 @@ def all_cres() -> Any:
 
 @app.route("/rest/v1/cre_csv", methods=["GET"])
 def get_cre_csv() -> Any:
+    if not ENABLE_MYOPENCRE:
+        abort(404)
     if posthog:
         posthog.capture(f"get_cre_csv", "")
-
     database = db.Node_collection()
     root_cres = database.get_root_cres()
     if root_cres:
@@ -774,12 +781,10 @@ def get_cre_csv() -> Any:
             database=database, docs=root_cres
         )
         csvVal = write_csv(docs=docs).getvalue().encode("utf-8")
-
         # Creating the byteIO object from the StringIO Object
         mem = io.BytesIO()
         mem.write(csvVal)
         mem.seek(0)
-
         return send_file(
             mem,
             as_attachment=True,
@@ -791,6 +796,9 @@ def get_cre_csv() -> Any:
 
 @app.route("/rest/v1/cre_csv_import", methods=["POST"])
 def import_from_cre_csv() -> Any:
+    if not ENABLE_MYOPENCRE:
+        abort(404)
+
     if not os.environ.get("CRE_ALLOW_IMPORT"):
         abort(
             403,
