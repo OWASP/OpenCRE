@@ -10,6 +10,11 @@ class OpenAIPromptClient:
     def __init__(self, openai_key) -> None:
         self.api_key = openai_key
         openai.api_key = self.api_key
+        self.model_name = "gpt-3.5-turbo"
+    
+    def get_model_name(self) -> str:
+        """Return the model name being used."""
+        return self.model_name
 
     def get_text_embeddings(self, text: str, model: str = "text-embedding-ada-002"):
         if len(text) > 8000:
