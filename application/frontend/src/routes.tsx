@@ -30,13 +30,19 @@ export interface IRoute {
   component: ReactNode | ReactNode[];
   showFilter: boolean;
 }
-
-export const ROUTES: IRoute[] = [
-  {
-    path: '/myopencre',
-    component: MyOpenCRE,
-    showFilter: false,
-  },
+export interface Capabilities {
+  myopencre: boolean;
+}
+export const ROUTES = (capabilities: Capabilities): IRoute[] => [
+  ...(capabilities.myopencre
+    ? [
+        {
+          path: '/myopencre',
+          component: MyOpenCRE,
+          showFilter: false,
+        },
+      ]
+    : []),
 
   {
     path: INDEX,

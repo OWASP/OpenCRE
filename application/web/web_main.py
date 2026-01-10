@@ -107,6 +107,17 @@ if os.environ.get("POSTHOG_API_KEY") and os.environ.get("POSTHOG_HOST"):
     )
 
 
+# Deployment-level capability flags.
+#
+# ENABLE_MYOPENCRE controls whether the MyOpenCRE feature exists at all
+# in this deployment (e.g. disabled on opencre.org, enabled for self-hosted).
+#
+# CRE_ALLOW_IMPORT is a separate safety flag that controls whether
+# write-heavy operations (CSV imports / graph mutations) are permitted
+# once MyOpenCRE is enabled.
+#
+# The two flags serve different purposes and are intentionally layered.
+
 @app.route("/api/capabilities")
 def capabilities():
     return jsonify({"myopencre": ENABLE_MYOPENCRE})
