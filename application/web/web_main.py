@@ -118,6 +118,7 @@ if os.environ.get("POSTHOG_API_KEY") and os.environ.get("POSTHOG_HOST"):
 #
 # The two flags serve different purposes and are intentionally layered.
 
+
 @app.route("/api/capabilities")
 def capabilities():
     return jsonify({"myopencre": ENABLE_MYOPENCRE})
