@@ -21,6 +21,7 @@ import { ExplorerCircles } from './pages/Explorer/visuals/circles/circles';
 import { ExplorerForceGraph } from './pages/Explorer/visuals/force-graph/forceGraph';
 import { GapAnalysis } from './pages/GapAnalysis/GapAnalysis';
 import { MembershipRequired } from './pages/MembershipRequired/MembershipRequired';
+import { MyOpenCRE } from './pages/MyOpenCRE/MyOpenCRE';
 import { SearchName } from './pages/Search/SearchName';
 import { StandardSection } from './pages/Standard/StandardSection';
 
@@ -29,8 +30,20 @@ export interface IRoute {
   component: ReactNode | ReactNode[];
   showFilter: boolean;
 }
+export interface Capabilities {
+  myopencre: boolean;
+}
+export const ROUTES = (capabilities: Capabilities): IRoute[] => [
+  ...(capabilities.myopencre
+    ? [
+        {
+          path: '/myopencre',
+          component: MyOpenCRE,
+          showFilter: false,
+        },
+      ]
+    : []),
 
-export const ROUTES: IRoute[] = [
   {
     path: INDEX,
     component: SearchPage,
