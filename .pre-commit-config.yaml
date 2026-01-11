@@ -14,15 +14,3 @@ repos:
       - id: black
         language_version: python3
 
-  # Ruff in CHECK-ONLY mode (NO autofix)
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.3.7
-    hooks:
-      - id: ruff
-        args: ['--no-fix', '--exit-zero']
-
-  # Lightweight hygiene only (safe)
-  - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.5.0
-    hooks:
-      - id: check-yaml

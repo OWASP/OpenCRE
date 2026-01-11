@@ -160,8 +160,6 @@ This is done to prevent recurring CI failures (for example, `PYTHON_BLACK` error
 ### What this means for contributors
 
 - Python formatting is enforced using **Black**
-- Import ordering is handled by **isort**
-- Basic linting is handled by **Ruff**
 - These checks run both **locally (recommended)** and **in CI**
 
 If formatting or linting rules are violated, CI will fail until the issue is fixed.
