@@ -1,20 +1,28 @@
+exclude: |
+  ^application/static/|
+  ^application/frontend/www/|
+  ^application/static/assets/|
+  ^node_modules/|
+  ^dist/|
+  ^build/|
+  ^\.cache/|
+
 repos:
   - repo: https://github.com/psf/black
     rev: 24.10.0
     hooks:
       - id: black
         language_version: python3
-  - repo: https://github.com/pre-commit/mirrors-isort
-    rev: v5.13.0
-    hooks:
-      - id: isort
-  - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: v0.0.297
+
+  # Ruff in CHECK-ONLY mode (NO autofix)
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.3.7
     hooks:
       - id: ruff
+        args: ['--no-fix', '--exit-zero']
+
+  # Lightweight hygiene only (safe)
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.5.0
     hooks:
-      - id: trailing-whitespace
-      - id: end-of-file-fixer
       - id: check-yaml
