@@ -1,0 +1,229 @@
+openapi: 3.0.1
+
+info:
+  title: OpenCRE REST API
+  description: >
+    Public REST API for OpenCRE (Open Common Requirement Enumeration).
+    This specification documents the currently exposed, read-only API
+    endpoints implemented by the OpenCRE backend.
+  version: 1.0.0
+
+paths:
+  /rest/v1/id/{creid}:
+    get:
+      summary: Get a CRE by ID
+      description: Retrieve a Common Requirement Enumeration (CRE) by its external ID.
+      parameters:
+        - name: creid
+          in: path
+          required: true
+          description: External CRE identifier
+          schema:
+            type: string
+        - name: format
+          in: query
+          required: false
+          description: Optional response format
+          schema:
+            type: string
+            enum: [json, md, csv, oscal]
+        - name: include_only
+          in: query
+          required: false
+          description: Filter returned fields
+          schema:
+            type: array
+            items:
+              type: string
+      responses:
+        '200':
+          description: CRE found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+        '404':
+          description: CRE not found
+
+  /rest/v1/name/{crename}:
+    get:
+      summary: Get a CRE by name
+      description: Retrieve a Common Requirement Enumeration (CRE) by its name.
+      parameters:
+        - name: crename
+          in: path
+          required: true
+          description: CRE name
+          schema:
+            type: string
+        - name: format
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [json, md, csv, oscal]
+      responses:
+        '200':
+          description: CRE found
+          content:
+            application/json:
+              schema:
+                type: object
+        '404':
+          description: CRE not found
+
+  /rest/v1/{ntype}/{name}:
+    get:
+      summary: Get nodes by type and name
+      description: >
+        Retrieve standards, tools, or other node types by name.
+        Supports pagination and filtering.
+      parameters:
+        - name: ntype
+          in: path
+          required: true
+          description: Node type (e.g. standard)
+          schema:
+            type: string
+        - name: name
+          in: path
+          required: true
+          description: Node name
+          schema:
+            type: string
+        - name: section
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: subsection
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: sectionID
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: items_per_page
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: format
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [json, md, csv, oscal]
+      responses:
+        '200':
+          description: Nodes retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+        '404':
+          description: Node not found
+
+  /rest/v1/tags:
+    get:
+      summary: Get documents by tag
+      description: Retrieve documents associated with one or more tags.
+      parameters:
+        - name: tag
+          in: query
+          required: true
+          description: Tag name(s)
+          schema:
+            type: array
+            items:
+              type: string
+        - name: format
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [json, md, csv, oscal]
+      responses:
+        '200':
+          description: Documents retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+        '404':
+          description: Tag not found
+
+  /rest/v1/root_cres:
+    get:
+      summary: Get root CREs
+      description: Retrieve top-level CREs for browsing.
+      parameters:
+        - name: format
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [json, md, csv, oscal]
+      responses:
+        '200':
+          description: Root CREs retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+        '404':
+          description: No root CREs found
+
+  /rest/v1/standards:
+    get:
+      summary: List standards
+      description: Retrieve all known standards.
+      responses:
+        '200':
+          description: Standards retrieved
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+
+  /rest/v1/text_search:
+    get:
+      summary: Text search
+      description: Perform a free-text search across CREs and standards.
+      parameters:
+        - name: text
+          in: query
+          required: true
+          description: Search query
+          schema:
+            type: string
+        - name: format
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [json, md, csv, oscal]
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+        '404':
+          description: No results found
