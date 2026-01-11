@@ -9,7 +9,7 @@ info:
   version: 1.0.0
 
 paths:
-  /rest/v1/id/{creid}:
+  /rest/v1/id/{creid}: 
     get:
       summary: Get a CRE by ID
       description: Retrieve a Common Requirement Enumeration (CRE) by its external ID.
