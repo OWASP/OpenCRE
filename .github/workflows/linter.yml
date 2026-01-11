@@ -14,6 +14,7 @@ jobs:
       - name: Lint Code Base
         uses: github/super-linter@v6
         env:
-          VALIDATE_PYTHON_BLACK: true
+          # Let pre-commit/Black handle python formatting (avoid duplicate Black failures)
+          VALIDATE_PYTHON_BLACK: false
           VALIDATE_ALL_CODEBASE: false
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

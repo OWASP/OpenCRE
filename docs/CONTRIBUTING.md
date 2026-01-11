@@ -6,8 +6,7 @@ The following is a set of guidelines for contributing. These are mostly guidelin
 
 #### Table Of Contents
 
-- [Contributing to OpenCRE](#contributing-to-opencre)
-      - [Table Of Contents](#table-of-contents)
+- [Contributing to OpenCRE](#contributing-to-opencre) - [Table Of Contents](#table-of-contents)
   - [Code of Conduct](#code-of-conduct)
   - [I don't want to read this whole thing I just have a question!!!](#i-dont-want-to-read-this-whole-thing-i-just-have-a-question)
   - [How Can I Contribute?](#how-can-i-contribute)
@@ -20,7 +19,6 @@ The following is a set of guidelines for contributing. These are mostly guidelin
       - [Pull Requests](#pull-requests)
   - [Styleguides](#styleguides)
     - [Git Commit Messages](#git-commit-messages)
-  
 
 ## Code of Conduct
 
@@ -38,7 +36,6 @@ or send a message to rob.vanderveer@owasp.org
 
 The "Issues" page lists a number of features we would like to implement, we have tagged the ones we believe are easy to pick up with the tag `good first issue` and/or `beginner`. Alternatively you can contribute content (see below) or request features or mappings by opening an Issue.
 
-
 ### How can I contribute content (a standard mapping or changes to the CRE catalog)?
 
 Adding a mapping to OpenCRE for a new standard X means that sections in X are each assigned to the corresponding ‘Common Requirement’ (or CRE number) at opencre.org.
@@ -46,12 +43,13 @@ For example, the section 613-Insufficien Session expiration in the CWE standard 
 The result is that when you go to the overview page of that requirement(CRE), users will see a link to CWE 613: https://www.opencre.org/cre/065-782
 
 How to:
+
 1. Get the OpenCRE standard mapping template spreadsheet
-2. For every section in the standard, find the corresponding Common Requirement (CRE number) at OpenCRE and enter in that row the details of that section in the right columns:  name, id, and hyperlink 
+2. For every section in the standard, find the corresponding Common Requirement (CRE number) at OpenCRE and enter in that row the details of that section in the right columns: name, id, and hyperlink
 3. In case you identify opportunities to add Common Requirements: add those to the spreadsheet
 4. Send the mapping template file by creating a new github issue and add the file. That way, the community can see it, and we can use that issue to further communicate. Another option is to send the file to rob.vanderveer@owasp.org. You can also use that mail address for any questions.
 
-ad. 1 
+ad. 1
 The mapping spreadsheet (Excel) can be obtained [here](https://github.com/OWASP/OpenCRE/raw/refs/heads/main/docs/CREmappingtemplate.xls).  
 Note, it contains one example, where it links the CRE for development processes to a section in NIST 800-53.
 
@@ -71,11 +69,10 @@ In general, this will be rare.
 ad.4
 OpenCRE has an importing interface in case you run your own myOpenCRE, but for the public opencre.org we first perform some checks before we add a standard to it - hence the request to send the mapping to us in email.
 
+#### Alternative, automated method of linking:
 
-#### Alternative, automated method of linking: 
-NOTE: there is an alternative method of linking a standard to OpenCRE, and it's the preferred way because it is self-maintaining. It requires editing the orginal standard text. What you do is you add to the standard a hyperlink reference to the relevant common requirement (e.g. [Restrict XML parsing](https://www.opencre.org/cre/764-507)) in a section on that topic. And then you specify to us at OpenCRE how we can read your source (e.g. Github) automatically to extract those hyperlinks and to construct links to that section in the document, and parse the name and id. That way, the links between the standard and OpenCRE will stay intact if links move, or change. It's easy and no maintenance required. 
+NOTE: there is an alternative method of linking a standard to OpenCRE, and it's the preferred way because it is self-maintaining. It requires editing the orginal standard text. What you do is you add to the standard a hyperlink reference to the relevant common requirement (e.g. [Restrict XML parsing](https://www.opencre.org/cre/764-507)) in a section on that topic. And then you specify to us at OpenCRE how we can read your source (e.g. Github) automatically to extract those hyperlinks and to construct links to that section in the document, and parse the name and id. That way, the links between the standard and OpenCRE will stay intact if links move, or change. It's easy and no maintenance required.
 Again, this only works if you have control over the content of the standard. Contact us if you want to set this up. We'd be happy to help.
-
 
 ### Reporting Bugs
 
@@ -89,11 +86,11 @@ Bugs are tracked as [GitHub issues](https://guides.github.com/features/issues/).
 
 Explain the problem and include additional details to help maintainers reproduce the problem:
 
-* **Use a clear and descriptive title** for the issue to identify the problem.
-* **Describe the exact steps which reproduce the problem** in as many details as possible.
-* **Provide specific examples to demonstrate the steps**. Include links to files or GitHub projects, or copy/pasteable snippets, which you use in those examples. If you're providing snippets in the issue, use [Markdown code blocks](https://help.github.com/articles/markdown-basics/#multiple-lines).
-* **Describe the behavior you observed after following the steps** and point out what exactly is the problem with that behavior.
-* **Explain which behavior you expected to see instead and why.**
+- **Use a clear and descriptive title** for the issue to identify the problem.
+- **Describe the exact steps which reproduce the problem** in as many details as possible.
+- **Provide specific examples to demonstrate the steps**. Include links to files or GitHub projects, or copy/pasteable snippets, which you use in those examples. If you're providing snippets in the issue, use [Markdown code blocks](https://help.github.com/articles/markdown-basics/#multiple-lines).
+- **Describe the behavior you observed after following the steps** and point out what exactly is the problem with that behavior.
+- **Explain which behavior you expected to see instead and why.**
 
 ### Suggesting Enhancements
 
@@ -105,19 +102,19 @@ When you are creating an enhancement suggestion, please [include as many details
 
 Enhancement suggestions are tracked as [GitHub issues](https://guides.github.com/features/issues/). Create an issue on that repository and provide the following information:
 
-* **Use a clear and descriptive title** for the issue to identify the suggestion.
-* **Provide a step-by-step description of the suggested enhancement** in as many details as possible.
-* **Provide specific examples to demonstrate the steps**. Include copy/pasteable snippets which you use in those examples, as [Markdown code blocks](https://help.github.com/articles/markdown-basics/#multiple-lines).
-* **Describe the current behavior** and **explain which behavior you expected to see instead** and why.
-* **Explain why this enhancement would be useful**.
+- **Use a clear and descriptive title** for the issue to identify the suggestion.
+- **Provide a step-by-step description of the suggested enhancement** in as many details as possible.
+- **Provide specific examples to demonstrate the steps**. Include copy/pasteable snippets which you use in those examples, as [Markdown code blocks](https://help.github.com/articles/markdown-basics/#multiple-lines).
+- **Describe the current behavior** and **explain which behavior you expected to see instead** and why.
+- **Explain why this enhancement would be useful**.
 
 ### Your First Code Contribution
 
 Unsure where to begin contributing? You can start by looking through these `beginner`, `good first issue` and `help-wanted` issues:
 
-* Beginner issues - issues which should only require a few lines of code, and a test or two.
-* Good first issue - issues which should require more substantial changes but can be done in an afternoon or two.
-* Help wanted issues - issues which should be a bit more involved than `beginner` issues.
+- Beginner issues - issues which should only require a few lines of code, and a test or two.
+- Good first issue - issues which should require more substantial changes but can be done in an afternoon or two.
+- Help wanted issues - issues which should be a bit more involved than `beginner` issues.
 
 #### Pull Requests
 
@@ -130,12 +127,11 @@ We use eslint and black to enforce style. `make lint` should fix most style prob
 
 ### Git Commit Messages
 
-* Use the present tense ("Add feature" not "Added feature")
-* Use the imperative mood ("Move cursor to..." not "Moves cursor to...")
-* Limit the first line to 72 characters or less
-* Reference issues and pull requests liberally after the first line
-* When only changing documentation, include `[ci skip]` in the commit title.
-
+- Use the present tense ("Add feature" not "Added feature")
+- Use the imperative mood ("Move cursor to..." not "Moves cursor to...")
+- Limit the first line to 72 characters or less
+- Reference issues and pull requests liberally after the first line
+- When only changing documentation, include `[ci skip]` in the commit title.
 
 ## Working on the frontend
 
@@ -143,8 +139,64 @@ You can start the frontend in a debuggable instance separate from the backend us
 
 After you have installed the application following the README.
 You can start the backend server with:
+
 <pre>make dev-flask</pre>
-Then in a separate terminal 
+
+Then in a separate terminal
+
 <pre>cd application/frontend</pre>
+
 and finally start the frontend in a debug session:
+
 <pre>yarn start</pre>
+
+---
+
+## Code Formatting & CI Consistency
+
+OpenCRE enforces consistent formatting and basic linting using **pre-commit**.\
+This is done to prevent recurring CI failures (for example, `PYTHON_BLACK` errors) and to ensure a smooth review process for **all contributors**, including fork-based pull requests.
+
+### What this means for contributors
+
+- Python formatting is enforced using **Black**
+- Import ordering is handled by **isort**
+- Basic linting is handled by **Ruff**
+- These checks run both **locally (recommended)** and **in CI**
+
+If formatting or linting rules are violated, CI will fail until the issue is fixed.
+
+### Running checks locally (strongly recommended)
+
+Installing and running pre-commit locally helps you catch issues **before pushing**.
+
+```
+pip install pre-commit
+pre-commit install
+pre-commit run --all-files
+
+```
+
+### **CI behavior**
+
+- All pull requests (including forks) run pre-commit checks in CI
+
+- Python formatting is handled by **pre-commit**, not Super-Linter
+
+- Super-Linter continues to run for non-Python checks
+
+### **Auto-formatting**
+
+Some pull requests may receive **automatic formatting commits** via GitHub Actions when possible:
+
+- PRs from the main repository
+
+- Forked PRs with **"Allow edits from maintainers"** enabled
+
+If automatic fixes cannot be pushed, CI logs will explain how to fix issues locally.
+
+### **Forks & maintainer edits**
+
+Contributors using forks are encouraged to enable **"Allow edits from maintainers"** when opening a PR.
+
+This allows maintainers to quickly apply formatting fixes and reduce review friction.
