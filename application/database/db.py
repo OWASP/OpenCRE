@@ -680,6 +680,10 @@ class Node_collection:
         self.session = sqla.session
 
     def with_graph(self) -> "Node_collection":
+        if self.graph is not None:
+            logger.debug("CRE graph already loaded, skipping reload")
+            return self
+
         logger.info("Loading CRE graph in memory, memory-heavy operation!")
         self.graph = inmemory_graph.CRE_Graph()
         graph_singleton = inmemory_graph.Singleton_Graph_Storage.instance()
