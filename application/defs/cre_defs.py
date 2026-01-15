@@ -528,6 +528,7 @@ class Tool(Standard):
 class Code(Node):
     doctype: Credoctypes = Credoctypes.Code
 
+
 @dataclass(eq=False)
 class Attack(Node):
     doctype: Credoctypes = Credoctypes.Attack
