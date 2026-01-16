@@ -5,8 +5,8 @@ import { useEnvironment } from 'application/frontend/src/hooks';
 import { useDataStore } from 'application/frontend/src/providers/DataProvider';
 import { LinkedTreeDocument } from 'application/frontend/src/types';
 import axios from 'axios';
-import React, { useEffect, useState } from 'react';
-import ForceGraph3D from 'react-force-graph-3d';
+import React, { useEffect, useRef, useState } from 'react';
+import ForceGraph3D, { ForceGraphMethods } from 'react-force-graph-3d';
 import { Checkbox, Dropdown, Form } from 'semantic-ui-react';
 
 // For types of dropdown options
@@ -23,7 +23,7 @@ export const ExplorerForceGraph = () => {
   const [maxCount, setMaxCount] = useState(0);
   const [maxNodeSize, setMaxNodeSize] = useState(0);
   const { dataLoading, dataTree, getStoreKey, dataStore } = useDataStore();
-
+  const fgRef = useRef<ForceGraphMethods>();
   // ADDING STATE FOR FILTERING LOGIC
   const [filterTypeA, setFilterTypeA] = useState('');
   const [filterTypeB, setFilterTypeB] = useState('');
@@ -392,7 +392,43 @@ export const ExplorerForceGraph = () => {
       setIgnoreTypes(ignoreTypesClone);
     }
   };
+  useEffect(() => {
+    if (!graphData || !fgRef.current) return;
 
+    // Start tight
+    fgRef.current.d3Force('charge')?.strength(-55);
+
+    // Expand
+    setTimeout(() => {
+      fgRef.current?.d3Force('charge')?.strength(-75);
+      fgRef.current?.d3ReheatSimulation();
+    }, 200);
+
+    // Settle
+    setTimeout(() => {
+      fgRef.current?.d3Force('charge')?.strength(-95);
+    }, 600);
+  }, [graphData]);
+
+  useEffect(() => {
+    if (!fgRef.current || !graphData) return;
+
+    setTimeout(() => {
+      fgRef.current?.cameraPosition(
+        {
+          x: 1100,
+          y: 0,
+          z: 800, // distance
+        },
+        {
+          x: -50,
+          y: -100,
+          z: -200,
+        },
+        800
+      );
+    }, 1200);
+  }, [graphData]);
   return (
     <div>
       <LoadingAndErrorIndicator loading={dataLoading} error={null} />
@@ -441,14 +477,18 @@ export const ExplorerForceGraph = () => {
       {showAll || filterTypeA || filterTypeB ? (
         graphData && (
           <ForceGraph3D
+            ref={fgRef}
             graphData={graphData}
-            nodeRelSize={8}
-            nodeVal={(n: any) => Math.max((20 * n.size) / maxNodeSize, 0.001)}
-            nodeLabel={(n: any) => n.name + ' (' + n.size + ')'}
-            nodeColor={(n: any) => getNodeColor(n.doctype)}
-            linkOpacity={0.5}
-            linkColor={(l: any) => getLinkColor(l.type)}
-            linkWidth={() => 4}
+            backgroundColor="#06080f"
+            nodeRelSize={6.32}
+            nodeVal={(n) => Math.max((14 * n.size) / maxNodeSize, 0.8)}
+            nodeLabel={(n) => `${n.name} (${n.size})`}
+            nodeColor={(n) => getNodeColor(n.doctype)}
+            linkOpacity={0.25}
+            linkWidth={() => 5}
+            linkColor={(l) => getLinkColor(l.type)}
+            warmupTicks={0}
+            cooldownTicks={120}
           />
         )
       ) : (
