@@ -108,7 +108,6 @@ const GetResultLine = (path, gapAnalysis, key) => {
     </div>
   );
 };
-
 export const GapAnalysis = () => {
   const standardOptionsDefault = [{ key: '', text: '', value: undefined }];
   const searchParams = useQuery();
