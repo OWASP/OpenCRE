@@ -799,7 +799,9 @@ def import_from_cre_csv() -> Any:
 
     # TODO: (spyros) add optional gap analysis and embeddings calculation
     database = db.Node_collection().with_graph()
+
     file = request.files.get("cre_csv")
+
     calculate_embeddings = (
         False if not request.args.get("calculate_embeddings") else True
     )
@@ -807,17 +809,68 @@ def import_from_cre_csv() -> Any:
         False if not request.args.get("calculate_gap_analysis") else True
     )
 
+    # ------------------------
+    # Request-level checks only
+    # ------------------------
+
     if file is None:
-        abort(400, "No file provided")
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "type": "FILE_ERROR",
+                    "message": "No file provided",
+                }
+            ),
+            400,
+        )
+
     contents = file.read()
-    csv_read = csv.DictReader(contents.decode("utf-8").splitlines())
+
     try:
-        documents = spreadsheet_parsers.parse_export_format(list(csv_read))
+        decoded_contents = contents.decode("utf-8")
+    except UnicodeDecodeError:
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "type": "FILE_ERROR",
+                    "message": "CSV file must be UTF-8 encoded",
+                }
+            ),
+            400,
+        )
+
+    rows = list(csv.DictReader(decoded_contents.splitlines()))
+
+    # ------------------------
+    # Delegate validation + parsing
+    # ------------------------
+
+    try:
+        documents = spreadsheet_parsers.parse_export_format(rows)
+    except ValueError as ve:
+        # CSV validation errors raised by spreadsheet parser
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "type": "VALIDATION_ERROR",
+                    "message": str(ve),
+                }
+            ),
+            400,
+        )
     except cre_exceptions.DuplicateLinkException as dle:
         abort(500, f"error during parsing of the incoming CSV, err:{dle}")
-    cres = documents.pop(defs.Credoctypes.CRE.value)
 
+    # ------------------------
+    # Import execution (unchanged)
+    # ------------------------
+
+    cres = documents.pop(defs.Credoctypes.CRE.value, [])
     standards = documents
+
     new_cres = []
     for cre in cres:
         new_cre, exists = cre_main.register_cre(cre, database)
@@ -831,11 +884,17 @@ def import_from_cre_csv() -> Any:
             generate_embeddings=calculate_embeddings,
             calculate_gap_analysis=calculate_gap_analysis,
         )
+
+    import_type = "created"
+    if not new_cres and not standards:
+        import_type = "noop"
+
     return jsonify(
         {
             "status": "success",
             "new_cres": [c.external_id for c in new_cres],
             "new_standards": len(standards),
+            "import_type": import_type,
         }
     )
 
