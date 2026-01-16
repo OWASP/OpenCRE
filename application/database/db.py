@@ -1631,7 +1631,7 @@ class Node_collection:
         )
         if entry:
             logger.debug(
-                f"knew of link {node.name}:{node.section}"
+                f"knew of link {node.name}:{getattr(node, 'section', 'None')}"
                 f"=={cre.name} of type {entry.type},"
                 f"updating type to {ltype.value}"
             )
@@ -1641,7 +1641,7 @@ class Node_collection:
         else:
             logger.debug(
                 f"did not know of link {node.id})"
-                f"{node.name}:{node.section}=={cre.id}){cre.name}"
+                f"{node.name}:{getattr(node, 'section', 'None')}=={cre.id}){cre.name}"
                 " ,adding"
             )
             self.session.add(Links(type=ltype.value, cre=cre.id, node=node.id))
