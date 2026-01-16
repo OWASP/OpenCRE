@@ -61,6 +61,7 @@ def register_node(node: defs.Node, collection: db.Node_collection) -> db.Node:
             defs.Standard.__name__,
             defs.Code.__name__,
             defs.Tool.__name__,
+            defs.Attack.__name__,
         ]:
             # if a node links another node it is likely that a writer wants to reference something
             # in that case, find which of the two nodes has at least one CRE attached to it and link both to the parent CRE
@@ -183,6 +184,7 @@ def parse_file(
             defs.Credoctypes.Standard.value,
             defs.Credoctypes.Code.value,
             defs.Credoctypes.Tool.value,
+            defs.Credoctypes.Attack.value,
         ):
             # document = defs.Standard(**contents)
             doctype = contents.get("doctype")
@@ -192,7 +194,11 @@ def parse_file(
                 else (
                     defs.Code
                     if doctype == defs.Credoctypes.Code.value
-                    else defs.Tool if doctype == defs.Credoctypes.Tool.value else None
+                    else (
+                        defs.Tool
+                        if doctype == defs.Credoctypes.Tool.value
+                        else defs.Attack
+                    )
                 )
             )
             document = from_dict(
