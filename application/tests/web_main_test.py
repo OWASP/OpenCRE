@@ -400,7 +400,11 @@ class TestMain(unittest.TestCase):
             response = client.get(f"/rest/v1/tags?tag=CW")
             self.assertEqual(404, response.status_code)
 
-            expected = {"data": [cres["ca"].todict(), cres["cb"].todict()]}
+            expected = {
+                "data": [cres["ca"].todict(), cres["cb"].todict()],
+                "total_pages": 1,
+                "page": 1,
+            }
 
             response = client.get(f"/rest/v1/tags?tag=ta")
             self.assertEqual(200, response.status_code)
