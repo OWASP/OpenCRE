@@ -884,6 +884,34 @@ class Node_collection:
                 )
         return documents
 
+    def get_by_tags_with_pagination(
+        self, tags: List[str], page: int = 1, items_per_page: int = 20
+    ) -> Tuple[Optional[int], List[cre_defs.Document]]:
+
+        if not tags:
+            return 0, []
+
+        # Get all documents matching tags (reuse existing logic)
+        all_documents = self.get_by_tags(tags)
+
+        # Apply manual pagination since we have mixed types
+        total_items = len(all_documents)
+        total_pages = (
+            total_items + items_per_page - 1
+        ) // items_per_page  # Ceiling division
+
+        if total_pages == 0:
+            return 0, []
+
+        # Calculate slice indices
+        start_idx = (page - 1) * items_per_page
+        end_idx = start_idx + items_per_page
+
+        # Return paginated slice
+        paginated_documents = all_documents[start_idx:end_idx]
+
+        return total_pages, paginated_documents
+
     def get_nodes_with_pagination(
         self,
         name: str,
