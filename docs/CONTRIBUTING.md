@@ -152,49 +152,20 @@ and finally start the frontend in a debug session:
 
 ---
 
-## Code Formatting & CI Consistency
 
-OpenCRE enforces consistent formatting and basic linting using **pre-commit**.\
-This is done to prevent recurring CI failures (for example, `PYTHON_BLACK` errors) and to ensure a smooth review process for **all contributors**, including fork-based pull requests.
+## Code Formatting
 
-### What this means for contributors
+OpenCRE encourages consistent formatting to keep the codebase clean and readable.
+We provide a **pre-commit** configuration to help you format your code locally before submitting a Pull Request.
 
-- Python formatting is enforced using **Black**
-- These checks run both **locally (recommended)** and **in CI**
+### Running checks locally (Recommended)
 
-If formatting or linting rules are violated, CI will fail until the issue is fixed.
+Running these checks locally helps you catch formatting issues early and prevents unrelated linting failures in CI.
 
-### Running checks locally (strongly recommended)
-
-Installing and running pre-commit locally helps you catch issues **before pushing**.
-
-```
+```bash
 pip install pre-commit
 pre-commit install
 pre-commit run --all-files
-
 ```
 
-### **CI behavior**
-
-- All pull requests (including forks) run pre-commit checks in CI
-
-- Python formatting is handled by **pre-commit**, not Super-Linter
-
-- Super-Linter continues to run for non-Python checks
-
-### **Auto-formatting**
-
-Some pull requests may receive **automatic formatting commits** via GitHub Actions when possible:
-
-- PRs from the main repository
-
-- Forked PRs with **"Allow edits from maintainers"** enabled
-
-If automatic fixes cannot be pushed, CI logs will explain how to fix issues locally.
-
-### **Forks & maintainer edits**
-
-Contributors using forks are encouraged to enable **"Allow edits from maintainers"** when opening a PR.
-
-This allows maintainers to quickly apply formatting fixes and reduce review friction.
+This will automatically format your Python code using **Black** and run other standard checks.
