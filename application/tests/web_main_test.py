@@ -489,12 +489,46 @@ class TestMain(unittest.TestCase):
         self.maxDiff = None
         collection = db.Node_collection().with_graph()
         with self.app.test_client() as client:
+            # Case 1: No CREs connected
             response = client.get(
                 "/smartlink/standard/foo/611",
                 headers={"Content-Type": "application/json"},
             )
             self.assertEqual(404, response.status_code)
+    
+            # Case 2: Single CRE connected
+            # For testting , creating a new CRE and standard
+            cres = {
+                "cp": defs.CRE(id="111-545", description="CA", name="CP",tags=["tp"]),
+            }
+            standards={
+                "cwe1": defs.Standard(name="CWE1", sectionID="450"),
+            }
+            cres["cp"].add_link(
+                defs.Link(
+                    ltype=defs.LinkTypes.LinkedTo, document=standards["cwe1"]
+                )
+            )
+            dcp=collection.add_cre(cres["cp"])
+            dcwe1=collection.add_node(standards["cwe1"])
+            collection.add_link(dcp, dcwe1, ltype=defs.LinkTypes.LinkedTo)
+            
 
+            # Test the /smartlink route for single CRE connected
+            response = client.get(
+                "/smartlink/standard/CWE1/450",
+                headers={"Content-Type": "application/json"},
+            )
+            location = ""
+            for head in response.headers:
+                if head[0] == "Location":
+                    location = head[1]
+
+            # Assert the redirection to the linked CRE
+            self.assertEqual(location, "/cre/111-545")
+            self.assertEqual(302, response.status_code)
+
+            # Case 3: Multi CRE connected
             cres = {
                 "ca": defs.CRE(id="111-111", description="CA", name="CA", tags=["ta"]),
                 "cd": defs.CRE(id="222-222", description="CD", name="CD", tags=["td"]),
@@ -559,6 +593,7 @@ class TestMain(unittest.TestCase):
             self.assertEqual(302, response.status_code)
 
             # negative test, this cwe does not exist, therefore we redirect to Mitre!
+            # Case 4: Redirect to external resource
             response = client.get(
                 "/smartlink/standard/CWE/999",
                 headers={"Content-Type": "application/json"},
