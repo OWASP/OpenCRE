@@ -216,9 +216,16 @@ export const GapAnalysis = () => {
         `${apiUrl}/map_analysis_weak_links?standard=${BaseStandard}&standard=${CompareStandard}&key=${key}`
       );
       if (result.data.result) {
-        gapAnalysis[key].weakLinks = result.data.result.paths;
-        setGapAnalysis(undefined); //THIS HAS TO BE THE WRONG WAY OF DOING THIS
-        setGapAnalysis(gapAnalysis);
+        setGapAnalysis((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            [key]: {
+              ...prev[key],
+              weakLinks: result.data.result.paths,
+            },
+          };
+        });
       }
     },
     [gapAnalysis, setGapAnalysis]
