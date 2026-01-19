@@ -378,6 +378,21 @@ def standards() -> Any:
     return standards
 
 
+@app.route("/rest/v1/openapi.yaml", methods=["GET"])
+def openapi_spec() -> Any:
+    """
+    Serve the OpenAPI specification for the OpenCRE REST API.
+    """
+    return send_from_directory(
+        directory=os.path.join(
+            os.path.dirname(os.path.realpath(__file__)),
+            "../../docs/api",
+        ),
+        path="openapi.yaml",
+        mimetype="application/yaml",
+    )
+
+
 @app.route("/rest/v1/text_search", methods=["GET"])
 def text_search() -> Any:
     """
