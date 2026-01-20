@@ -134,11 +134,8 @@ export const GapAnalysis = () => {
       // Map backend standards to dropdown options
       const backendStandards = result.data.sort().map((x) => ({ key: x, text: x, value: x }));
       
-      // Add OpenCRE as a selectable option for map analysis
-      const openCREOption = { key: 'OpenCRE', text: 'OpenCRE', value: 'OpenCRE' };
-      
-      // Combine: empty default + OpenCRE + other standards (alphabetically sorted)
-      const allOptions = [...standardOptionsDefault, openCREOption, ...backendStandards];
+      // Combine: empty default + backend standards (already includes OpenCRE when CREs exist)
+      const allOptions = [...standardOptionsDefault, ...backendStandards];
       
       setStandardOptions(allOptions);
     };
