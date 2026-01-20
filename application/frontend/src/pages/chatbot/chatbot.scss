@@ -71,7 +71,7 @@ h1.ui.header.chatbot-title {
 /* Tablet & below */
 @media (max-width: 768px) {
   h1.ui.header.chatbot-title {
-    margin-top: 2.75rem; 
+    margin-top: 2.75rem;
     margin-bottom: 0.75rem !important;
     font-size: clamp(1.35rem, 4vw, 1.8rem);
   }
@@ -178,6 +178,11 @@ h1.ui.header.chatbot-title {
   font-size: 0.95rem;
   text-align: left;
 
+  /* NEW: prevent horizontal overflow */
+  word-wrap: break-word;
+  overflow-wrap: anywhere;
+  max-width: 100%;
+
   p {
     margin: 0.5rem 0;
   }
@@ -186,11 +191,26 @@ h1.ui.header.chatbot-title {
     padding-left: 1.25rem;
   }
 
+  /* NEW: inline + block code safety */
   code {
     background: #f4f4f4;
     padding: 0.2rem 0.4rem;
     border-radius: 4px;
     font-size: 0.85rem;
+
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  /* NEW: prevent long URLs from breaking layout */
+  a {
+    word-break: break-all;
+  }
+
+  /* NEW: keep code blocks from overflowing */
+  pre {
+    max-width: 100%;
+    overflow-x: auto;
   }
 }
 
