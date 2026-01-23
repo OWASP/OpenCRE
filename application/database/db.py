@@ -564,12 +564,12 @@ class NEO_DB:
     def gap_analysis(self, name_1, name_2):
         """
         Gap analysis with feature toggle support.
-        
+
         Toggle between original exhaustive traversal (default) and
         optimized tiered pruning (opt-in via GAP_ANALYSIS_OPTIMIZED env var).
         """
         from application.config import Config
-        
+
         if Config.GAP_ANALYSIS_OPTIMIZED:
             logger.info(
                 f"Gap Analysis: Using OPTIMIZED tiered pruning for {name_1}>>{name_2}"
@@ -585,12 +585,14 @@ class NEO_DB:
     def _gap_analysis_optimized(self, name_1, name_2):
         """
         OPTIMIZED: Tiered Pruning Strategy with Early Exit
-        
+
         Tier 1: Strong links only (LINKED_TO, SAME, AUTOMATICALLY_LINKED_TO)
         Tier 2: Add hierarchical (CONTAINS) if Tier 1 empty
         Tier 3: Fallback to wildcard if both tiers empty
         """
-        logger.info(f"Performing OPTIMIZED GraphDB queries for gap analysis {name_1}>>{name_2}")
+        logger.info(
+            f"Performing OPTIMIZED GraphDB queries for gap analysis {name_1}>>{name_2}"
+        )
         base_standard = NeoStandard.nodes.filter(name=name_1)
         denylist = ["Cross-cutting concerns"]
 
@@ -658,10 +660,12 @@ class NEO_DB:
     def _gap_analysis_original(self, name_1, name_2):
         """
         ORIGINAL: Exhaustive traversal (always runs both queries)
-        
+
         This is the safe default - maintains backward compatibility.
         """
-        logger.info(f"Performing ORIGINAL GraphDB queries for gap analysis {name_1}>>{name_2}")
+        logger.info(
+            f"Performing ORIGINAL GraphDB queries for gap analysis {name_1}>>{name_2}"
+        )
         base_standard = NeoStandard.nodes.filter(name=name_1)
         denylist = ["Cross-cutting concerns"]
         from datetime import datetime
@@ -725,8 +729,6 @@ class NEO_DB:
         return [NEO_DB.parse_node_no_links(rec) for rec in base_standard], [
             format_path_record(rec[0]) for rec in (path_records + path_records_all)
         ]
-
-
 
     def gap_analysis(self, name_1, name_2):
         logger.info(f"Performing GraphDB queries for gap analysis {name_1}>>{name_2}")
