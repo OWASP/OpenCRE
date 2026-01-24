@@ -1,19 +1,79 @@
+/* =========================
+   Chat container & layout
+   ========================= */
+
 .chat-container {
-  margin-top: 1.25rem;
-  max-width: 960px;
   margin: 3rem auto;
+  max-width: 960px;
+  display: flex;
+  flex-direction: column;
 }
+.chat-container.chat-active {
+  height: calc(100vh - 179px);
+  overflow: hidden;
+}
+@media (max-width: 768px) {
+  .chat-container {
+    padding: 0 1rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .chat-container {
+    padding: 0 0.75rem;
+  }
+}
+
+/* =========================
+   Chat messages wrapper
+   ========================= */
 
 .chat-messages {
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
+  flex: 1;
+  overflow-y: auto;
+  padding-bottom: 1rem;
+  scroll-behavior: smooth;
+
+  overscroll-behavior: contain;
 }
+
+@media (max-width: 768px) {
+  .chat-messages {
+    gap: 0.75rem;
+  }
+}
+
+/* =========================
+   Header
+   ========================= */
+
 h1.ui.header {
   margin-bottom: 1rem !important;
+  margin-top: 2rem;
 }
+
+@media (max-width: 768px) {
+  h1.ui.header {
+    margin-top: 1.5rem;
+  }
+}
+
+/* =========================
+   Message rows
+   ========================= */
+
 .chat-message {
   display: flex;
+  gap: 1.25rem;
+}
+
+@media (max-width: 768px) {
+  .chat-message {
+    gap: 0.75rem;
+  }
 }
 
 .chat-message.user {
@@ -24,23 +84,55 @@ h1.ui.header {
   justify-content: flex-start;
 }
 
+/* =========================
+   Message cards
+   ========================= */
+
 .message-card {
   max-width: 65%;
   background: #ffffff;
   border-radius: 16px;
   padding: 1rem 1.25rem;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
-  line-height: 1.6;
+  text-align: left;
+  line-height: 1.6 consideration;
   animation: fadeInUp 0.25s ease-out;
 }
 
+/* Tablets */
+@media (max-width: 1024px) {
+  .message-card {
+    max-width: 75%;
+  }
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .message-card {
+    max-width: 88%;
+  }
+}
+
+/* Very small devices */
+@media (max-width: 360px) {
+  .message-card {
+    max-width: 92%;
+  }
+}
+
 .chat-message.user .message-card {
-  background: #e3f2fd;
+  background: #eaf4ff;
+  border-left: 4px solid #2185d0;
 }
 
 .chat-message.assistant .message-card {
-  background: #f1f8e9;
+  background: #f9fafb;
+  border-left: 4px solid #21ba45;
 }
+
+/* =========================
+   Message header & body
+   ========================= */
 
 .message-header {
   display: flex;
@@ -61,6 +153,7 @@ h1.ui.header {
 
 .message-body {
   font-size: 0.95rem;
+  text-align: left;
 
   p {
     margin: 0.5rem 0;
@@ -77,6 +170,10 @@ h1.ui.header {
     font-size: 0.85rem;
   }
 }
+
+/* =========================
+   References & warnings
+   ========================= */
 
 .references {
   margin-top: 0.75rem;
@@ -116,16 +213,30 @@ h1.ui.header {
   color: #b71c1c;
 }
 
+/* =========================
+   Chat input
+   ========================= */
+
 .chat-input {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+
   margin-top: 1.5rem;
   background-color: #d3ead4;
   padding: 1rem;
   border-radius: 12px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
 }
+
 .chat-input .ui.input input {
   border-radius: 10px !important;
 }
+
+/* =========================
+   Disclaimer
+   ========================= */
+
 .chatbot-disclaimer {
   margin-top: 2.5rem;
   font-size: 1.01rem;
@@ -136,7 +247,10 @@ h1.ui.header {
   line-height: 1.6;
 }
 
-/* AI typing indicator bubble */
+/* =========================
+   Typing indicator
+   ========================= */
+
 .typing-indicator {
   display: flex;
   gap: 0.4rem;
@@ -144,6 +258,7 @@ h1.ui.header {
   min-height: 32px;
   padding: 0.75rem 1rem;
 }
+
 .typing-indicator .dot {
   width: 8px;
   height: 8px;
@@ -159,15 +274,11 @@ h1.ui.header {
 .typing-indicator .dot:nth-child(3) {
   animation-delay: 0.4s;
 }
-.chat-message.user .message-card {
-  background: #eaf4ff;
-  border-left: 4px solid #2185d0;
-}
 
-.chat-message.assistant .message-card {
-  background: #f9fafb;
-  border-left: 4px solid #21ba45;
-}
+/* =========================
+   Animations
+   ========================= */
+
 @keyframes typingBounce {
   0%,
   80%,
@@ -189,5 +300,26 @@ h1.ui.header {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+/* =========================
+   Page layout overrides
+   ========================= */
+
+.chatbot-layout {
+  min-height: 100vh;
+}
+
+@media (max-width: 768px) {
+  .chatbot-layout {
+    min-height: auto;
+    padding-top: 2rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .chatbot-layout.ui.grid {
+    align-items: flex-start !important;
   }
 }
