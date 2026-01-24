@@ -65,6 +65,7 @@ const GetResultLine = (path, gapAnalysis, key) => {
           size="large"
           style={{ textAlign: 'center' }}
           hoverable
+          position="right center"
           trigger={<span>{getDocumentDisplayName(path.end, true)} </span>}
         >
           <Popup.Content>
@@ -81,6 +82,7 @@ const GetResultLine = (path, gapAnalysis, key) => {
           size="large"
           style={{ textAlign: 'center' }}
           hoverable
+          position="right center"
           trigger={
             <b style={{ color: GetStrengthColor(path.score) }}>
               ({GetStrength(path.score)}:{path.score})
