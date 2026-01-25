@@ -4,9 +4,11 @@
 
 .chat-container {
   margin: 3rem auto;
+  margin-top: 1.5rem;
   max-width: 960px;
   display: flex;
   flex-direction: column;
+  position: relative;
 }
 .chat-container.chat-active {
   height: calc(100vh - 179px);
@@ -50,14 +52,35 @@
    Header
    ========================= */
 
-h1.ui.header {
-  margin-bottom: 1rem !important;
+/* =========================
+   Chatbot title
+   ========================= */
+
+h1.ui.header.chatbot-title {
+  font-weight: 600;
+  line-height: 1.25;
+
+  /* Fluid scaling */
+  font-size: clamp(1.4rem, 3vw, 2.2rem);
+
+  /* Desktop spacing */
   margin-top: 2rem;
+  margin-bottom: 1rem !important;
 }
 
+/* Tablet & below */
 @media (max-width: 768px) {
-  h1.ui.header {
-    margin-top: 1.5rem;
+  h1.ui.header.chatbot-title {
+    margin-top: 2.75rem; 
+    margin-bottom: 0.75rem !important;
+    font-size: clamp(1.35rem, 4vw, 1.8rem);
+  }
+}
+
+/* Very small phones */
+@media (max-width: 360px) {
+  h1.ui.header.chatbot-title {
+    margin-top: 3rem; /* extra breathing room */
   }
 }
 
@@ -222,14 +245,18 @@ h1.ui.header {
   bottom: 0;
   z-index: 5;
 
-  margin-top: 1.5rem;
-  background-color: #d3ead4;
-  padding: 1rem;
+  margin-top: 1rem;
+  background-color: #daebdb;
+  // background: transparent;
+  border: 1px solid rgb(190, 214, 232);
+  padding: 0.75rem;
   border-radius: 12px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
 }
 
 .chat-input .ui.input input {
+  height: 40px;
+  line-height: 40px;
   border-radius: 10px !important;
 }
 
@@ -276,6 +303,104 @@ h1.ui.header {
 }
 
 /* =========================
+   Page layout overrides
+   ========================= */
+
+.chatbot-layout {
+  min-height: 100vh;
+}
+
+@media (max-width: 768px) {
+  .chatbot-layout {
+    min-height: auto;
+    padding-top: 2rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .chatbot-layout.ui.grid {
+    align-items: flex-start !important;
+  }
+}
+
+/* =========================
+   Scroll to bottom button
+   ========================= */
+
+.scroll-to-bottom {
+  position: absolute;
+  bottom: 160px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: none;
+  background: rgb(47, 128, 189);
+  color: #c5f0c9;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border: #1976d2;
+  opacity: 1;
+  backdrop-filter: none;
+  transition: transform 0.2s ease;
+  animation: fadeIn 0.15s ease-out;
+}
+
+.scroll-to-bottom:hover {
+  opacity: 1;
+  transform: translateX(-50%) translateY(-2px);
+}
+.scroll-icon {
+  margin: 0 !important;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (max-width: 768px) {
+  .scroll-to-bottom {
+    bottom: 160px;
+  }
+}
+.chat-surface {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+
+  background: #fcfcfa; // same palette as input
+  backdrop-filter: blur(6px);
+
+  border-radius: 18px;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+
+  padding: 1.25rem;
+}
+.chat-landing-state {
+  text-align: center;
+  margin: auto;
+  padding: 3rem 1rem;
+
+  h2 {
+    font-size: 1.6rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+  }
+
+  p {
+    font-size: 0.95rem;
+    color: #555;
+    max-width: 480px;
+    margin: 0 auto;
+  }
+}
+/* =========================
    Animations
    ========================= */
 
@@ -302,24 +427,13 @@ h1.ui.header {
     transform: translateY(0);
   }
 }
-
-/* =========================
-   Page layout overrides
-   ========================= */
-
-.chatbot-layout {
-  min-height: 100vh;
-}
-
-@media (max-width: 768px) {
-  .chatbot-layout {
-    min-height: auto;
-    padding-top: 2rem;
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(6px);
   }
-}
-
-@media (max-width: 768px) {
-  .chatbot-layout.ui.grid {
-    align-items: flex-start !important;
+  to {
+    opacity: 0.85;
+    transform: translateX(-50%) translateY(0);
   }
 }
