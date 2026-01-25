@@ -8,6 +8,7 @@ import { Button } from 'semantic-ui-react';
 
 import { ClearFilterButton } from '../../components/FilterButton/FilterButton';
 import { useLocationFromOutsideRoute } from '../../hooks/useLocationFromOutsideRoute';
+import { MyOpenCRE } from '../../pages/MyOpenCRE/MyOpenCRE';
 import { SearchBar } from '../../pages/Search/components/SearchBar';
 
 export const Header = () => {
@@ -67,7 +68,14 @@ export const Header = () => {
 
               <NavLink to="/explorer" className="nav-link" activeClassName="nav-link--active">
                 Explorer
+<<<<<<< HEAD
               </NavLink>
+=======
+              </a>
+              <Link to="/myopencre" className="nav-link">
+                MyOpenCRE
+              </Link>
+>>>>>>> 9aa61b9 (feat(myopencre): add initial MyOpenCRE page and CSV template download)
             </div>
 
             <div>
@@ -185,7 +193,14 @@ export const Header = () => {
             onClick={closeMobileMenu}
           >
             Explorer
+<<<<<<< HEAD
           </NavLink>
+=======
+          </a>
+          <a href="/myopencre" className="nav-link" onClick={MyOpenCRE}>
+            MyOpenCRE
+          </a>
+>>>>>>> 9aa61b9 (feat(myopencre): add initial MyOpenCRE page and CSV template download)
         </div>
 
         <div className="mobile-auth">
