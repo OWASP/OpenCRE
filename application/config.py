@@ -8,6 +8,10 @@ class Config:
     SQLALCHEMY_RECORD_QUERIES = False
     ITEMS_PER_PAGE = 20
     SLOW_DB_QUERY_TIME = 0.5
+    # Feature toggle for gap analysis optimization (default: False for safety)
+    GAP_ANALYSIS_OPTIMIZED = (
+        os.environ.get("GAP_ANALYSIS_OPTIMIZED", "False").lower() == "true"
+    )
 
 
 class DevelopmentConfig(Config):
