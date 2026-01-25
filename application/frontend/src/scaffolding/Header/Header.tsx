@@ -68,14 +68,11 @@ export const Header = () => {
 
               <NavLink to="/explorer" className="nav-link" activeClassName="nav-link--active">
                 Explorer
-<<<<<<< HEAD
               </NavLink>
-=======
-              </a>
-              <Link to="/myopencre" className="nav-link">
+
+              <NavLink to="/myopencre" className="nav-link" activeClassName="nav-link--active">
                 MyOpenCRE
-              </Link>
->>>>>>> 9aa61b9 (feat(myopencre): add initial MyOpenCRE page and CSV template download)
+              </NavLink>
             </div>
 
             <div>
@@ -193,14 +190,16 @@ export const Header = () => {
             onClick={closeMobileMenu}
           >
             Explorer
-<<<<<<< HEAD
           </NavLink>
-=======
-          </a>
-          <a href="/myopencre" className="nav-link" onClick={MyOpenCRE}>
+
+          <NavLink
+            to="/myopencre"
+            className="nav-link"
+            activeClassName="nav-link--active"
+            onClick={closeMobileMenu}
+          >
             MyOpenCRE
-          </a>
->>>>>>> 9aa61b9 (feat(myopencre): add initial MyOpenCRE page and CSV template download)
+          </NavLink>
         </div>
 
         <div className="mobile-auth">
