@@ -175,7 +175,7 @@ export const Chatbot = () => {
 
   return (
     <>
-      {/* {user !== '' ? null : login()} */}
+      {user !== '' ? null : login()}
 
       <Grid textAlign="center" verticalAlign="middle" className="chatbot-layout">
         <Grid.Column>
