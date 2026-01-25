@@ -46,7 +46,7 @@ To install this application you need python3, yarn and virtualenv.
 Clone the repository:
 
 ```bash
-git clone https://github.com/OWASP/OpenCRE.git
+git clone https://github.com/OWASP/common-requirement-enumeration
 ```
 
 (Recommended) Create and activate a Python virtual environment:
