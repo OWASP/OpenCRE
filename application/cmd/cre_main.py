@@ -467,7 +467,7 @@ def review_from_spreadsheet(cache: str, spreadsheet_url: str, share_with: str) -
     # logger.info("A spreadsheet view is at %s" % sheet_url)
 
 
-def donwload_graph_from_upstream(cache: str) -> None:
+def download_graph_from_upstream(cache: str) -> None:
     imported_cres = {}
     collection = db_connect(path=cache).with_graph()
 
@@ -673,7 +673,7 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
     if args.preload_map_analysis_target_url:
         gap_analysis.preload(target_url=args.preload_map_analysis_target_url)
     if args.upstream_sync:
-        donwload_graph_from_upstream(args.cache_file)
+        download_graph_from_upstream(args.cache_file)
 
 
 def ai_client_init(database: db.Node_collection):
