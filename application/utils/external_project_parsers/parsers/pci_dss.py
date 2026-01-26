@@ -57,6 +57,13 @@ class PciDss(ParserInterface):
                 ).strip(),
                 version=version,
             )
+            # Fix for Issue #328: Remove ID from Section Name if duplicated
+            if pci_control.section.startswith(pci_control.sectionID):
+                # Remove the ID and any leading whitespace/punctuation left over
+                pci_control.section = pci_control.section[
+                    len(pci_control.sectionID) :
+                ].strip()
+
             existing = cache.get_nodes(
                 name=pci_control.name,
                 section=pci_control.section,
