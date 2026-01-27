@@ -55,7 +55,7 @@ class VertexPromptClient:
     def __init__(self) -> None:
         self.client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
         self.model_name = "gemini-2.0-flash"
-    
+
     def get_model_name(self) -> str:
         """Return the model name being used."""
         return self.model_name
