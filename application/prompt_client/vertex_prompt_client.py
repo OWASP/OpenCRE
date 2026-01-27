@@ -115,7 +115,6 @@ class VertexPromptClient:
             f"OUTPUT\n"
             f"- Provide only the answer to the QUESTION.\n"
             f"- Do not include explanations about sources, retrieval, or prompt behavior.\n\n"
-    
         )
         response = self.client.models.generate_content(
             model="gemini-2.0-flash",
