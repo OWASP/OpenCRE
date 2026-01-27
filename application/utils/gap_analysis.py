@@ -4,7 +4,6 @@ import logging
 from rq import Queue, job, exceptions
 from typing import List, Dict
 from application.utils import redis
-from application.database import db
 from flask import json as flask_json
 import json
 from application.defs import cre_defs as defs
@@ -62,6 +61,8 @@ def get_next_id(step, previous_id):
 
 # database is of type Node_collection, cannot annotate due to circular import
 def schedule(standards: List[str], database):
+    from application.database import db
+
     standards_hash = make_resources_key(standards)
     if database.gap_analysis_exists(
         standards_hash
