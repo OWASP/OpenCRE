@@ -498,4 +498,10 @@ class PromptHandler:
         logger.debug(f"retrieved completion for {prompt}")
         table = [closest_object]
         result = f"Answer: {answer}"
-        return {"response": result, "table": table, "accurate": accurate}
+        model_name = self.ai_client.get_model_name() if self.ai_client else "unknown"
+        return {
+            "response": result,
+            "table": table,
+            "accurate": accurate,
+            "model_name": model_name,
+        }
