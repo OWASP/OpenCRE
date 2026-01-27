@@ -179,6 +179,7 @@ class Credoctypes(str, Enum, metaclass=EnumMetaWithContains):
     Standard = "Standard"
     Tool = "Tool"
     Code = "Code"
+    Attack = "Attack"
 
     @staticmethod
     def from_str(typ: str) -> "Credoctypes":
@@ -526,3 +527,8 @@ class Tool(Standard):
 @dataclass(eq=False)
 class Code(Node):
     doctype: Credoctypes = Credoctypes.Code
+
+
+@dataclass(eq=False)
+class Attack(Node):
+    doctype: Credoctypes = Credoctypes.Attack
