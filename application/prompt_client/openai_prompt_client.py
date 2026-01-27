@@ -11,7 +11,7 @@ class OpenAIPromptClient:
         self.api_key = openai_key
         openai.api_key = self.api_key
         self.model_name = "gpt-3.5-turbo"
-    
+
     def get_model_name(self) -> str:
         """Return the model name being used."""
         return self.model_name
