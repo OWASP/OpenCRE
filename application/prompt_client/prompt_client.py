@@ -499,4 +499,9 @@ class PromptHandler:
         table = [closest_object]
         result = f"Answer: {answer}"
         model_name = self.ai_client.get_model_name() if self.ai_client else "unknown"
-        return {"response": result, "table": table, "accurate": accurate, "model_name": model_name}
+        return {
+            "response": result,
+            "table": table,
+            "accurate": accurate,
+            "model_name": model_name,
+        }
