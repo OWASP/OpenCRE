@@ -110,7 +110,6 @@ const GetResultLine = (path, gapAnalysis, key) => {
     </div>
   );
 };
-
 export const GapAnalysis = () => {
   const standardOptionsDefault = [{ key: '', text: '', value: undefined }];
   const searchParams = useQuery();
@@ -133,9 +132,14 @@ export const GapAnalysis = () => {
     const fetchData = async () => {
       const result = await axios.get(`${apiUrl}/standards`);
       setLoadingStandards(false);
-      setStandardOptions(
-        standardOptionsDefault.concat(result.data.sort().map((x) => ({ key: x, text: x, value: x })))
-      );
+      
+      // Map backend standards to dropdown options
+      const backendStandards = result.data.sort().map((x) => ({ key: x, text: x, value: x }));
+      
+      // Combine: empty default + backend standards (already includes OpenCRE when CREs exist)
+      const allOptions = [...standardOptionsDefault, ...backendStandards];
+      
+      setStandardOptions(allOptions);
     };
 
     setLoadingStandards(true);
