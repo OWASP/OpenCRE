@@ -41,16 +41,28 @@ dev-flask-docker:
 
 e2e:
 	yarn build
-	[ -d "./venv" ] && . ./venv/bin/activate &&\
+	[-d "./venv" ] && . ./venv/bin/activate &&\
 	export FLASK_APP="$(CURDIR)/cre.py" &&\
 	export FLASK_CONFIG=development &&\
 	export INSECURE_REQUESTS=1 &&\
 	flask run &
 	sleep 5
-	yarn test:e2e
-	sleep 20
-	killall yarn
-	killall flask
+	yarn cypress run 
+	killall flask || true
+	killall yarn || true
+
+.PHONY: cypress cypress-open cypress-run install cypress 
+
+cypress-open:
+yarn cypress open
+
+cypress-run:
+	yarn cypress run
+
+cypress: cypress-run 
+
+install-cypress:
+ yarn cypress install 
 
 test:
 	[ -d "./venv" ] && . ./venv/bin/activate &&\
@@ -74,7 +86,7 @@ install-python:
 	virtualenv -p python3  venv
 	. ./venv/bin/activate &&\
 	make install-deps-python &&\
-	playwright install
+	yarn  install
 	
 install-typescript:
 	yarn add webpack && cd application/frontend && yarn build
