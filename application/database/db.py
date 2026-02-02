@@ -1494,7 +1494,11 @@ class Node_collection:
             logger.info(
                 f"knew of node {entry.name}:{entry.section_id}:{entry.section}:{entry.link} ,updating"
             )
-            if node.section and node.section != entry.section:
+            if (
+                hasattr(node, "section")
+                and node.section
+                and node.section != entry.section
+            ):
                 entry.section = node.section
             entry.link = node.hyperlink
             self.session.commit()
@@ -1653,7 +1657,7 @@ class Node_collection:
         )
         if entry:
             logger.debug(
-                f"knew of link {node.name}:{node.section}"
+                f"knew of link {node.name}:{getattr(node, 'section', 'None')}"
                 f"=={cre.name} of type {entry.type},"
                 f"updating type to {ltype.value}"
             )
@@ -1663,7 +1667,7 @@ class Node_collection:
         else:
             logger.debug(
                 f"did not know of link {node.id})"
-                f"{node.name}:{node.section}=={cre.id}){cre.name}"
+                f"{node.name}:{getattr(node, 'section', 'None')}=={cre.id}){cre.name}"
                 " ,adding"
             )
             self.session.add(Links(type=ltype.value, cre=cre.id, node=node.id))
@@ -1950,6 +1954,8 @@ def dbNodeFromNode(doc: cre_defs.Node) -> Optional[Node]:
         return dbNodeFromCode(doc)
     elif doc.doctype == cre_defs.Credoctypes.Tool:
         return dbNodeFromTool(doc)
+    elif doc.doctype == cre_defs.Credoctypes.Attack:
+        return dbNodeFromAttack(doc)
     else:
         return None
 
@@ -2036,6 +2042,13 @@ def nodeFromDB(dbnode: Node) -> cre_defs.Node:
         )
     elif dbnode.ntype == cre_defs.Code.__name__:
         return cre_defs.Code(
+            name=dbnode.name,
+            hyperlink=dbnode.link,
+            tags=tags,
+            description=dbnode.description,
+        )
+    elif dbnode.ntype == cre_defs.Attack.__name__:
+        return cre_defs.Attack(
             name=dbnode.name,
             hyperlink=dbnode.link,
             tags=tags,
@@ -2140,3 +2153,17 @@ def gap_analysis(
         )
     logger.info(f"stored gapa analysis for {'>>>'.join(node_names)}, successfully")
     return (node_names, grouped_paths, extra_paths_dict)
+
+
+def dbNodeFromAttack(attack: cre_defs.Node) -> Node:
+    attack = cast(cre_defs.Attack, attack)
+    tags = ""
+    if attack.tags:
+        tags = ",".join(attack.tags)
+    return Node(
+        name=attack.name,
+        ntype=attack.doctype.value,
+        tags=tags,
+        description=attack.description,
+        link=attack.hyperlink,
+    )
