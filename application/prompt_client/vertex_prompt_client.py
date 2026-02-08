@@ -71,7 +71,7 @@ class VertexPromptClient:
         values = []
         try:
             result = self.client.models.embed_content(
-                model="gemini-embedding-exp-03-07",
+                model="models/gemini-embedding-001",
                 contents=text,
                 config=types.EmbedContentConfig(task_type="SEMANTIC_SIMILARITY"),
             )
