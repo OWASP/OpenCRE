@@ -71,7 +71,7 @@ class VertexPromptClient:
         values = []
         try:
             result = self.client.models.embed_content(
-                model="gemini-embedding-exp-03-07",
+                model="models/gemini-embedding-001",
                 contents=text,
                 config=types.EmbedContentConfig(task_type="SEMANTIC_SIMILARITY"),
             )
@@ -79,7 +79,7 @@ class VertexPromptClient:
                 return None
             values = result.embeddings[0].values
         except genai.errors.ClientError as e:
-            logger.info("hit limit, sleeping for a minute")
+            logger.info(f"hit limit, sleeping for a minute, error was: {repr(e)}")
             time.sleep(
                 60
             )  # Vertex's quota is per minute, so sleep for a full minute, then try again
