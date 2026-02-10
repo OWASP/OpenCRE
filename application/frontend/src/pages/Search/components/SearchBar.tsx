@@ -59,7 +59,7 @@ export const SearchBar = () => {
           }
         />
       </form>
-
+      {/* Error text */}
       {search.error && (
         <p
           id={errorId}
