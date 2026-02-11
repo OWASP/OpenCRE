@@ -91,7 +91,11 @@ class VertexPromptClient:
             except genai.errors.ClientError as e:
                 error_str = str(e)
                 # Check if this is a quota/rate limit error (429)
-                is_quota_error = "429" in error_str or "RESOURCE_EXHAUSTED" in error_str or "quota" in error_str.lower()
+                is_quota_error = (
+                    "429" in error_str
+                    or "RESOURCE_EXHAUSTED" in error_str
+                    or "quota" in error_str.lower()
+                )
 
                 if not is_quota_error:
                     # Non-quota errors should not be retried
