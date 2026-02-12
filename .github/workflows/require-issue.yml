@@ -1,0 +1,33 @@
+name: Auto Close PR Without Linked Issue
+
+on:
+  pull_request:
+    types: [opened, edited]
+
+jobs:
+  check-issue:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check PR description for linked issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const body = context.payload.pull_request.body || "";
+
+            // Regex checks for: Closes #123 / Fixes #123 / Resolves #123
+            const issuePattern = /(Closes|Fixes|Resolves)\s+#\d+/i;
+
+            if (!issuePattern.test(body)) {
+              await github.rest.issues.createComment({
+                ...context.repo,
+                issue_number: context.issue.number,
+                body: "❌ This PR has been automatically closed because it does not reference an issue. Please link an issue using `Closes #issue_number`."
+              });
+
+              await github.rest.pulls.update({
+                ...context.repo,
+                pull_number: context.issue.number,
+                state: "closed"
+              });
+            }
