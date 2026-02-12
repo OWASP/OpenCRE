@@ -60,32 +60,65 @@ class VertexPromptClient:
         """Return the model name being used."""
         return self.model_name
 
-    def get_text_embeddings(self, text: str) -> List[float]:
-        """Text embedding with a Large Language Model."""
+    def get_text_embeddings(self, text: str, max_retries: int = 3) -> List[float]:
+        """Text embedding with a Large Language Model.
 
+        Args:
+            text: Text to generate embeddings for
+            max_retries: Maximum number of retry attempts for transient errors
+
+        Returns:
+            List of embedding values, or None if embedding generation failed
+        """
         if len(text) > 8000:
             logger.info(
                 f"embedding content is more than the vertex hard limit of 8k tokens, reducing to 8000"
             )
             text = text[:8000]
-        values = []
-        try:
-            result = self.client.models.embed_content(
-                model="models/gemini-embedding-001",
-                contents=text,
-                config=types.EmbedContentConfig(task_type="SEMANTIC_SIMILARITY"),
-            )
-            if not result:
-                return None
-            values = result.embeddings[0].values
-        except genai.errors.ClientError as e:
-            logger.info(f"hit limit, sleeping for a minute, error was: {repr(e)}")
-            time.sleep(
-                60
-            )  # Vertex's quota is per minute, so sleep for a full minute, then try again
-            values = self.get_text_embeddings(text)
 
-        return values
+        for attempt in range(max_retries):
+            try:
+                result = self.client.models.embed_content(
+                    model="models/gemini-embedding-001",
+                    contents=text,
+                    config=types.EmbedContentConfig(task_type="SEMANTIC_SIMILARITY"),
+                )
+                if not result:
+                    logger.warning("Embedding API returned empty result")
+                    return None
+                return result.embeddings[0].values
+
+            except genai.errors.ClientError as e:
+                error_str = str(e)
+                # Check if this is a quota/rate limit error (429)
+                is_quota_error = (
+                    "429" in error_str
+                    or "RESOURCE_EXHAUSTED" in error_str
+                    or "quota" in error_str.lower()
+                )
+
+                if not is_quota_error:
+                    # Non-quota errors should not be retried
+                    logger.error(f"Non-retryable error from embedding API: {repr(e)}")
+                    return None
+
+                if attempt < max_retries - 1:
+                    # Exponential backoff: 60s, 120s, 180s
+                    backoff_seconds = 60 * (attempt + 1)
+                    logger.warning(
+                        f"Quota/rate limit hit (attempt {attempt + 1}/{max_retries}), "
+                        f"sleeping {backoff_seconds}s before retry. Error: {repr(e)}"
+                    )
+                    time.sleep(backoff_seconds)
+                else:
+                    # Final attempt failed
+                    logger.error(
+                        f"Embedding API quota exhausted after {max_retries} attempts. "
+                        f"Last error: {repr(e)}. Please check your API quota/billing in AI Studio."
+                    )
+                    return None
+
+        return None
 
     def create_chat_completion(self, prompt, closest_object_str) -> str:
         msg = (

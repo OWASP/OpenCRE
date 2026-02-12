@@ -276,6 +276,44 @@ def map_analysis() -> Any:
 
     database = db.Node_collection()
     standards = request.args.getlist("standard")
+    standards_hash = gap_analysis.make_resources_key(standards)
+
+    # First, check if we have cached results in the database
+    if database.gap_analysis_exists(standards_hash):
+        gap_analysis_result = database.get_gap_analysis_result(standards_hash)
+        if gap_analysis_result:
+            return jsonify(flask_json.loads(gap_analysis_result))
+
+    # On Heroku (read-only), check if standards exist before attempting Redis/queue operations
+    is_heroku = os.environ.get("DYNO") is not None
+    if is_heroku:
+        # Check if all requested standards exist
+        try:
+            existing_standards = database.standards()
+            if isinstance(existing_standards, (list, tuple, set)):
+                existing_lower = {str(s).lower() for s in existing_standards}
+                missing = [s for s in standards if str(s).lower() not in existing_lower]
+                if missing:
+                    logger.info(
+                        f"On Heroku: gap analysis request {standards_hash} references "
+                        f"standards that do not exist: {', '.join(missing)}, returning 404"
+                    )
+                    abort(
+                        404, f"One or more standards do not exist: {', '.join(missing)}"
+                    )
+        except Exception as exc:
+            # If we can't verify standards, log but don't fail (defensive)
+            logger.warning(f"Could not verify standards existence on Heroku: {exc}")
+
+    # If calculations are disabled, return 404
+    if os.environ.get("CRE_NO_CALCULATE_GAP_ANALYSIS"):
+        logger.info(
+            f"Gap analysis calculations are disabled by CRE_NO_CALCULATE_GAP_ANALYSIS; "
+            f"refusing to schedule new job for {standards_hash}"
+        )
+        abort(404, "Gap analysis calculations are disabled")
+
+    # Now call schedule() which will handle Redis/queue operations
     gap_analysis_dict = gap_analysis.schedule(standards, database)
     if gap_analysis_dict.get("result"):
         return jsonify(gap_analysis_dict)
