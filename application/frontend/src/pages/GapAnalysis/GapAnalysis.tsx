@@ -59,7 +59,7 @@ const GetResultLine = (path, gapAnalysis, key) => {
   let segmentID = gapAnalysis[key].start.id;
   return (
     <div key={path.end.id} style={{ marginBottom: '.25em', fontWeight: 'bold' }}>
-      <a href={getInternalUrl(path.end)} target="_blank">
+      <a href={getInternalUrl(path.end)} target="_blank" rel="noopener noreferrer">
         <Popup
           wide="very"
           size="large"
@@ -293,7 +293,7 @@ export const GapAnalysis = () => {
                 .map((key) => (
                   <Table.Row key={key}>
                     <Table.Cell textAlign="left" verticalAlign="top" selectable>
-                      <a href={getInternalUrl(gapAnalysis[key].start)} target="_blank">
+                      <a href={getInternalUrl(gapAnalysis[key].start)} target="_blank" rel="noopener noreferrer">
                         <p>
                           <b>{getDocumentDisplayName(gapAnalysis[key].start, true)}</b>
                         </p>
