@@ -7,19 +7,24 @@ import { NavLink } from 'react-router-dom';
 import { Button } from 'semantic-ui-react';
 
 import { ClearFilterButton } from '../../components/FilterButton/FilterButton';
+import { Capabilities } from '../../hooks/useCapabilities';
 import { useLocationFromOutsideRoute } from '../../hooks/useLocationFromOutsideRoute';
-import { MyOpenCRE } from '../../pages/MyOpenCRE/MyOpenCRE';
 import { SearchBar } from '../../pages/Search/components/SearchBar';
+import { ROUTES } from '../../routes';
 
-export const Header = () => {
+interface HeaderProps {
+  capabilities: Capabilities;
+}
+export const Header = ({ capabilities }: HeaderProps) => {
+  const routes = ROUTES(capabilities);
+
   let currentUrlParams = new URLSearchParams(window.location.search);
   const history = useHistory();
   const HandleDoFilter = () => {
     currentUrlParams.set('applyFilters', 'true');
     history.push(window.location.pathname + '?' + currentUrlParams.toString());
   };
-  const { showFilter } = useLocationFromOutsideRoute();
-
+  const { showFilter } = useLocationFromOutsideRoute(routes);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   useEffect(() => {
     const mediaQuery = window.matchMedia('(min-width: 768px)');
@@ -70,9 +75,11 @@ export const Header = () => {
                 Explorer
               </NavLink>
 
-              <NavLink to="/myopencre" className="nav-link" activeClassName="nav-link--active">
-                MyOpenCRE
-              </NavLink>
+              {capabilities.myopencre && (
+                <NavLink to="/myopencre" className="nav-link" activeClassName="nav-link--active">
+                  MyOpenCRE
+                </NavLink>
+              )}
             </div>
 
             <div>
@@ -192,14 +199,16 @@ export const Header = () => {
             Explorer
           </NavLink>
 
-          <NavLink
-            to="/myopencre"
-            className="nav-link"
-            activeClassName="nav-link--active"
-            onClick={closeMobileMenu}
-          >
-            MyOpenCRE
-          </NavLink>
+          {capabilities.myopencre && (
+            <NavLink
+              to="/myopencre"
+              className="nav-link"
+              activeClassName="nav-link--active"
+              onClick={closeMobileMenu}
+            >
+              MyOpenCRE
+            </NavLink>
+          )}
         </div>
 
         <div className="mobile-auth">
