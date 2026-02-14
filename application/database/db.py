@@ -563,6 +563,12 @@ class NEO_DB:
     @classmethod
     def gap_analysis(self, name_1, name_2):
         logger.info(f"Performing GraphDB queries for gap analysis {name_1}>>{name_2}")
+        
+        # Handle OpenCRE special cases
+        if name_1 == "OpenCRE" or name_2 == "OpenCRE":
+            return self._gap_analysis_with_opencre(name_1, name_2)
+        
+        # Original logic for standard-to-standard analysis
         base_standard = NeoStandard.nodes.filter(name=name_1)
         denylist = ["Cross-cutting concerns"]
         from datetime import datetime
@@ -661,6 +667,200 @@ class NEO_DB:
                 "path": [format_segment(seg, rec.nodes) for seg in rec.relationships],
             }
 
+        return [NEO_DB.parse_node_no_links(rec) for rec in base_standard], [
+            format_path_record(rec[0]) for rec in path_records
+        ]
+
+    @classmethod
+    def _gap_analysis_with_opencre(self, name_1, name_2):
+        """Handle gap analysis when OpenCRE is selected on either side"""
+        logger.info(f"Performing OpenCRE gap analysis for {name_1}>>{name_2}")
+        denylist = ["Cross-cutting concerns"]
+        
+        if name_1 == "OpenCRE" and name_2 == "OpenCRE":
+            # Both sides are OpenCRE - return all CREs and their relationships
+            return self._gap_analysis_opencre_to_opencre()
+        elif name_1 == "OpenCRE":
+            # OpenCRE on left, standard on right - find all CREs connected to the standard
+            return self._gap_analysis_opencre_to_standard(name_2)
+        else:
+            # Standard on left, OpenCRE on right - find all connections from standard to CREs
+            return self._gap_analysis_standard_to_opencre(name_1)
+
+    @classmethod
+    def _gap_analysis_opencre_to_opencre(self):
+        """Return all CREs and their internal relationships"""
+        denylist = ["Cross-cutting concerns"]
+        
+        # Get all CREs as base nodes
+        cre_records, _ = db.cypher_query(
+            """
+            MATCH (cre:NeoCRE)
+            WHERE NOT cre.name in $denylist
+            RETURN cre
+            """,
+            {"denylist": denylist},
+            resolve_objects=True,
+        )
+        
+        # Get paths between CREs (internal relationships)
+        path_records, _ = db.cypher_query(
+            """
+            MATCH (cre1:NeoCRE), (cre2:NeoCRE)
+            WHERE cre1 <> cre2 AND NOT cre1.name in $denylist AND NOT cre2.name in $denylist
+            MATCH p = allShortestPaths((cre1)-[:(LINKED_TO|AUTOMATICALLY_LINKED_TO|CONTAINS)*..10]-(cre2))
+            WITH p
+            WHERE length(p) > 0
+            RETURN p
+            """,
+            {"denylist": denylist},
+            resolve_objects=True,
+        )
+        
+        def format_segment(seg: StructuredRel, nodes):
+            relation_map = {
+                RelatedRel: "RELATED",
+                ContainsRel: "CONTAINS",
+                LinkedToRel: "LINKED_TO",
+                AutoLinkedToRel: "AUTOMATICALLY_LINKED_TO",
+            }
+            start_node = [
+                node for node in nodes if node.element_id == seg._start_node_element_id
+            ][0]
+            end_node = [
+                node for node in nodes if node.element_id == seg._end_node_element_id
+            ][0]
+
+            return {
+                "start": NEO_DB.parse_node_no_links(start_node),
+                "end": NEO_DB.parse_node_no_links(end_node),
+                "relationship": relation_map[type(seg)],
+            }
+
+        def format_path_record(rec):
+            return {
+                "start": NEO_DB.parse_node_no_links(rec.start_node),
+                "end": NEO_DB.parse_node_no_links(rec.end_node),
+                "path": [format_segment(seg, rec.nodes) for seg in rec.relationships],
+            }
+        
+        return [NEO_DB.parse_node_no_links(rec[0]) for rec in cre_records], [
+            format_path_record(rec[0]) for rec in path_records
+        ]
+
+    @classmethod
+    def _gap_analysis_opencre_to_standard(self, standard_name):
+        """OpenCRE on left, standard on right - find CREs connected to the standard"""
+        denylist = ["Cross-cutting concerns"]
+        
+        # Get all CREs that connect to the target standard
+        cre_records, _ = db.cypher_query(
+            """
+            MATCH (cre:NeoCRE), (standard:NeoStandard {name: $standard_name})
+            WHERE NOT cre.name in $denylist
+            MATCH p = allShortestPaths((cre)-[*..20]-(standard))
+            WITH cre, p
+            WHERE length(p) > 0 AND ALL(n in NODES(p) WHERE (n:NeoCRE or n = standard) AND NOT n.name in $denylist)
+            RETURN DISTINCT cre
+            """,
+            {"standard_name": standard_name, "denylist": denylist},
+            resolve_objects=True,
+        )
+        
+        # Get paths from CREs to the standard
+        path_records, _ = db.cypher_query(
+            """
+            MATCH (cre:NeoCRE), (standard:NeoStandard {name: $standard_name})
+            WHERE NOT cre.name in $denylist
+            MATCH p = allShortestPaths((cre)-[*..20]-(standard))
+            WITH p
+            WHERE length(p) > 0 AND ALL(n in NODES(p) WHERE (n:NeoCRE or n = standard) AND NOT n.name in $denylist)
+            RETURN p
+            """,
+            {"standard_name": standard_name, "denylist": denylist},
+            resolve_objects=True,
+        )
+        
+        def format_segment(seg: StructuredRel, nodes):
+            relation_map = {
+                RelatedRel: "RELATED",
+                ContainsRel: "CONTAINS",
+                LinkedToRel: "LINKED_TO",
+                AutoLinkedToRel: "AUTOMATICALLY_LINKED_TO",
+            }
+            start_node = [
+                node for node in nodes if node.element_id == seg._start_node_element_id
+            ][0]
+            end_node = [
+                node for node in nodes if node.element_id == seg._end_node_element_id
+            ][0]
+
+            return {
+                "start": NEO_DB.parse_node_no_links(start_node),
+                "end": NEO_DB.parse_node_no_links(end_node),
+                "relationship": relation_map[type(seg)],
+            }
+
+        def format_path_record(rec):
+            return {
+                "start": NEO_DB.parse_node_no_links(rec.start_node),
+                "end": NEO_DB.parse_node_no_links(rec.end_node),
+                "path": [format_segment(seg, rec.nodes) for seg in rec.relationships],
+            }
+        
+        return [NEO_DB.parse_node_no_links(rec[0]) for rec in cre_records], [
+            format_path_record(rec[0]) for rec in path_records
+        ]
+
+    @classmethod
+    def _gap_analysis_standard_to_opencre(self, standard_name):
+        """Standard on left, OpenCRE on right - find connections from standard to CREs"""
+        denylist = ["Cross-cutting concerns"]
+        
+        # Get the base standard
+        base_standard = NeoStandard.nodes.filter(name=standard_name)
+        
+        # Get paths from the standard to all CREs
+        path_records, _ = db.cypher_query(
+            """
+            MATCH (standard:NeoStandard {name: $standard_name}), (cre:NeoCRE)
+            WHERE NOT cre.name in $denylist
+            MATCH p = allShortestPaths((standard)-[*..20]-(cre))
+            WITH p
+            WHERE length(p) > 0 AND ALL(n in NODES(p) WHERE (n:NeoCRE or n = standard) AND NOT n.name in $denylist)
+            RETURN p
+            """,
+            {"standard_name": standard_name, "denylist": denylist},
+            resolve_objects=True,
+        )
+        
+        def format_segment(seg: StructuredRel, nodes):
+            relation_map = {
+                RelatedRel: "RELATED",
+                ContainsRel: "CONTAINS",
+                LinkedToRel: "LINKED_TO",
+                AutoLinkedToRel: "AUTOMATICALLY_LINKED_TO",
+            }
+            start_node = [
+                node for node in nodes if node.element_id == seg._start_node_element_id
+            ][0]
+            end_node = [
+                node for node in nodes if node.element_id == seg._end_node_element_id
+            ][0]
+
+            return {
+                "start": NEO_DB.parse_node_no_links(start_node),
+                "end": NEO_DB.parse_node_no_links(end_node),
+                "relationship": relation_map[type(seg)],
+            }
+
+        def format_path_record(rec):
+            return {
+                "start": NEO_DB.parse_node_no_links(rec.start_node),
+                "end": NEO_DB.parse_node_no_links(rec.end_node),
+                "path": [format_segment(seg, rec.nodes) for seg in rec.relationships],
+            }
+        
         return [NEO_DB.parse_node_no_links(rec) for rec in base_standard], [
             format_path_record(rec[0]) for rec in path_records
         ]
@@ -1694,7 +1894,12 @@ class Node_collection:
             .filter(Node.ntype == cre_defs.Credoctypes.Standard)
             .distinct()
         )
-        return list(set([s[0] for s in standards]))
+        standard_names = list(set([s[0] for s in standards]))
+        
+        # Add OpenCRE as a special option for map analysis
+        standard_names.append("OpenCRE")
+        
+        return sorted(standard_names)
 
     def text_search(self, text: str) -> List[Optional[cre_defs.Document]]:
         """Given a piece of text, tries to find the best match
