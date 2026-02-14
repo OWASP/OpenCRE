@@ -135,18 +135,78 @@ def is_empty(value: Optional[str]) -> bool:
     )
 
 
+def validate_export_csv_rows(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    if not rows:
+        raise ValueError("Invalid CSV format or missing data rows")
+
+    headers = list(rows[0].keys())
+
+    if not headers:
+        raise ValueError("CSV header row is missing")
+
+    if not any(h.startswith("CRE") for h in headers):
+        raise ValueError("At least one CRE column is required")
+
+    required_columns = ["standard|name", "standard|id"]
+    for col in required_columns:
+        if col not in headers:
+            raise ValueError(f"Missing required column: {col}")
+
+    validated_rows = []
+    errors = []
+
+    for row_index, row in enumerate(rows, start=2):
+        # misaligned rows (extra columns)
+        if None in row:
+            raise ValueError(
+                f"Row {row_index} has more columns than header. "
+                "Please ensure the CSV matches the exported template."
+            )
+
+        normalized = {
+            k: (v.strip() if isinstance(v, str) else v) for k, v in row.items()
+        }
+
+        # skip completely empty rows
+        if all(not v for v in normalized.values()):
+            continue
+
+        cre_values = [v for k, v in normalized.items() if k.startswith("CRE") and v]
+
+        # rows without CRE mappings are allowed → skip
+        if not cre_values:
+            continue
+
+        for cre in cre_values:
+            if "|" not in cre:
+                errors.append(
+                    {
+                        "row": row_index,
+                        "message": f"Invalid CRE entry '{cre}', expected '<CRE-ID>|<Name>'",
+                    }
+                )
+
+        validated_rows.append(normalized)
+
+    if errors:
+        raise ValueError(f"Row validation errors: {errors}")
+
+    return validated_rows
+
+
 def parse_export_format(lfile: List[Dict[str, Any]]) -> Dict[str, List[defs.Document]]:
     """
     Given: a spreadsheet written by prepare_spreadsheet()
     return a list of CRE docs
     """
+    validated_rows = validate_export_csv_rows(lfile)
     cres: Dict[str, defs.CRE] = {}
     standards: Dict[str, Dict[str, defs.Standard]] = {}
     documents: Dict[str, List[defs.Document]] = {}
 
     if not lfile:
         return documents
-
+    lfile = validated_rows
     max_internal_cre_links = len(
         set([k for k in lfile[0].keys() if k.startswith("CRE")])
     )

@@ -41,6 +41,7 @@ from flask import (
 from google.oauth2 import id_token
 from google_auth_oauthlib.flow import Flow
 from application.utils.spreadsheet import write_csv
+from application.config import ENABLE_MYOPENCRE
 import oauthlib
 import google.auth.transport.requests
 
@@ -104,6 +105,11 @@ if os.environ.get("POSTHOG_API_KEY") and os.environ.get("POSTHOG_HOST"):
         project_api_key=os.environ.get("POSTHOG_API_KEY"),
         host=os.environ.get("POSTHOG_HOST"),
     )
+
+
+@app.route("/api/capabilities")
+def capabilities():
+    return jsonify({"myopencre": ENABLE_MYOPENCRE})
 
 
 @app.route("/rest/v1/id/<creid>", methods=["GET"])
@@ -764,9 +770,10 @@ def all_cres() -> Any:
 
 @app.route("/rest/v1/cre_csv", methods=["GET"])
 def get_cre_csv() -> Any:
+    if not ENABLE_MYOPENCRE:
+        abort(404)
     if posthog:
         posthog.capture(f"get_cre_csv", "")
-
     database = db.Node_collection()
     root_cres = database.get_root_cres()
     if root_cres:
@@ -774,12 +781,10 @@ def get_cre_csv() -> Any:
             database=database, docs=root_cres
         )
         csvVal = write_csv(docs=docs).getvalue().encode("utf-8")
-
         # Creating the byteIO object from the StringIO Object
         mem = io.BytesIO()
         mem.write(csvVal)
         mem.seek(0)
-
         return send_file(
             mem,
             as_attachment=True,
@@ -791,6 +796,9 @@ def get_cre_csv() -> Any:
 
 @app.route("/rest/v1/cre_csv_import", methods=["POST"])
 def import_from_cre_csv() -> Any:
+    if not ENABLE_MYOPENCRE:
+        abort(404)
+
     if not os.environ.get("CRE_ALLOW_IMPORT"):
         abort(
             403,
@@ -799,7 +807,9 @@ def import_from_cre_csv() -> Any:
 
     # TODO: (spyros) add optional gap analysis and embeddings calculation
     database = db.Node_collection().with_graph()
+
     file = request.files.get("cre_csv")
+
     calculate_embeddings = (
         False if not request.args.get("calculate_embeddings") else True
     )
@@ -807,17 +817,197 @@ def import_from_cre_csv() -> Any:
         False if not request.args.get("calculate_gap_analysis") else True
     )
 
+    # ------------------------
+    # Request-level checks only
+    # ------------------------
+
     if file is None:
-        abort(400, "No file provided")
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "type": "FILE_ERROR",
+                    "message": "No file provided",
+                }
+            ),
+            400,
+        )
+
     contents = file.read()
-    csv_read = csv.DictReader(contents.decode("utf-8").splitlines())
+
     try:
-        documents = spreadsheet_parsers.parse_export_format(list(csv_read))
+        decoded_contents = contents.decode("utf-8")
+    except UnicodeDecodeError:
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "type": "FILE_ERROR",
+                    "message": "CSV file must be UTF-8 encoded",
+                }
+            ),
+            400,
+        )
+
+    rows = list(csv.DictReader(decoded_contents.splitlines()))
+
+    # ------------------------
+    # Schema / header validation
+    # ------------------------
+
+    headers = [h.strip() for h in csv_read.fieldnames]
+
+    if not headers:
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "type": "SCHEMA_ERROR",
+                    "message": "CSV header row is missing",
+                }
+            ),
+            400,
+        )
+
+    has_cre_column = any(h.startswith("CRE") for h in headers)
+    if not has_cre_column:
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "type": "SCHEMA_ERROR",
+                    "message": "At least one CRE column is required",
+                }
+            ),
+            400,
+        )
+
+    required_columns = ["standard|name", "standard|id"]
+    for col in required_columns:
+        if col not in headers:
+            return (
+                jsonify(
+                    {
+                        "success": False,
+                        "type": "SCHEMA_ERROR",
+                        "message": f"Missing required column: {col}",
+                    }
+                ),
+                400,
+            )
+
+    # ------------------------
+    # Row-level validation (export-compatible)
+    # ------------------------
+
+    rows = list(csv_read)
+    errors = []
+
+    # 🚨 NEW: guard against misaligned rows (extra columns)
+    for row_index, row in enumerate(rows, start=2):
+        if None in row:
+            return (
+                jsonify(
+                    {
+                        "success": False,
+                        "type": "SCHEMA_ERROR",
+                        "message": (
+                            f"Row {row_index} has more columns than header. "
+                            "Please ensure the CSV matches the exported template."
+                        ),
+                    }
+                ),
+                400,
+            )
+
+    for row_index, row in enumerate(rows, start=2):  # header is row 1
+        normalized_row = {
+            k: (v.strip() if isinstance(v, str) else v) for k, v in row.items()
+        }
+
+        # Skip completely empty rows (exported templates contain them)
+        if all(not v for v in normalized_row.values()):
+            continue
+
+        cre_values = [normalized_row.get(h) for h in headers if h.startswith("CRE")]
+        cre_values = [v for v in cre_values if v]
+
+        # Rows without CRE are allowed by export format → skip
+        if not cre_values:
+            continue
+
+        # Validate CRE format
+        for cre in cre_values:
+            if "|" not in cre:
+                errors.append(
+                    {
+                        "row": row_index,
+                        "code": "INVALID_CRE_FORMAT",
+                        "message": (
+                            f"Invalid CRE entry '{cre}', expected '<CRE-ID>|<Name>'"
+                        ),
+                    }
+                )
+
+    if errors:
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "type": "ROW_VALIDATION_ERROR",
+                    "errors": errors,
+                }
+            ),
+            400,
+        )
+
+    # ------------------------
+    # No-op import guard (IMPORTANT)
+    # ------------------------
+
+    importable_rows = []
+    for row in rows:
+        if any(v for v in row.values()):
+            importable_rows.append(row)
+
+    if not importable_rows:
+        return jsonify(
+            {
+                "status": "success",
+                "new_cres": [],
+                "new_standards": 0,
+                "import_type": "empty",
+            }
+        )
+
+    # ------------------------
+    # Import execution
+    # ------------------------
+
+    try:
+        documents = spreadsheet_parsers.parse_export_format(rows)
+    except ValueError as ve:
+        # CSV validation errors raised by spreadsheet parser
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "type": "VALIDATION_ERROR",
+                    "message": str(ve),
+                }
+            ),
+            400,
+        )
     except cre_exceptions.DuplicateLinkException as dle:
         abort(500, f"error during parsing of the incoming CSV, err:{dle}")
-    cres = documents.pop(defs.Credoctypes.CRE.value)
 
+    # ------------------------
+    # Import execution (unchanged)
+    # ------------------------
+
+    cres = documents.pop(defs.Credoctypes.CRE.value, [])
     standards = documents
+
     new_cres = []
     for cre in cres:
         new_cre, exists = cre_main.register_cre(cre, database)
@@ -831,11 +1021,17 @@ def import_from_cre_csv() -> Any:
             generate_embeddings=calculate_embeddings,
             calculate_gap_analysis=calculate_gap_analysis,
         )
+
+    import_type = "created"
+    if not new_cres and not standards:
+        import_type = "noop"
+
     return jsonify(
         {
             "status": "success",
             "new_cres": [c.external_id for c in new_cres],
             "new_standards": len(standards),
+            "import_type": import_type,
         }
     )
 
