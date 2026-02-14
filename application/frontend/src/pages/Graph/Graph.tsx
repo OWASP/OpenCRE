@@ -39,7 +39,7 @@ const documentToReactFlowNode = (cDoc: Document | any): CREGraph => {
     position: { x: 0, y: 0 },
     data: {
       label: (
-        <a target="_blank" href={cDoc.hyperlink}>
+        <a target="_blank" rel="noopener noreferrer" href={cDoc.hyperlink}>
           {' '}
           {cDoc.id} - {cDoc.name}
         </a>
@@ -60,7 +60,7 @@ const documentToReactFlowNode = (cDoc: Document | any): CREGraph => {
         position: { x: 0, y: 0 },
         data: {
           label: (
-            <a target="_blank" href={hyperlink}>
+            <a target="_blank" rel="noopener noreferrer" href={hyperlink}>
               {' '}
               {node_label}
             </a>
