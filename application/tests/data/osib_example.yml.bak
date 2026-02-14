@@ -1,0 +1,352 @@
+
+---
+doctype:        OSIB
+schema:         v0.90
+date:           2021/11/04
+children:
+  2:
+    alias:      "owasp"
+    attributes:
+      sources_i18n:
+        en:
+          name:             "Open Web Application Security Project&reg; (OWASP)"
+    children:
+      1:
+        alias:              "asvs"
+        attributes:
+          sources_i18n:
+            en:
+              name:         "OWASP Application Security Verification Standard (ASVS)"
+              source:       "https://owasp.org/www-project-application-security-verification-standard/"
+        children:
+            402:
+                attributes:
+                  source_id: "V4.0.2"
+                  sources_i18n:
+                    en:
+                      name:     "OWASP Application Security Verification Standard (ASVS)-V.4.0.2"
+                      source:   "https://github.com/OWASP/ASVS/tree/v4.0.2/4.0"
+                children:
+                  1: 
+                    attributes:
+                      source_id: "V1"
+                      sources_i18n:
+                        en:
+                          name:     "V1-Architecture, Design and Threat Modeling Requirements"
+                          source:   "https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x10-V1-Architecture.md"
+                      links:
+                      - link: "osib.owasp.asvs.402"
+                        type: "parent"
+                      - link: "osib.owasp.asvs.402.1.1"
+                        type: "child"
+                      - link: "osib.owasp.asvs.402.1.2"
+                        type: "child"
+                      - link: "osib.owasp.asvs.402.1.4"
+                        type: "child"
+                      - link: "osib.owasp.asvs.402.1.5"
+                        type: "child"
+                      - link: "osib.owasp.asvs.402.1.6"
+                        type: "child"
+                      - link: "osib.owasp.asvs.402.1.7"
+                        type: "child"
+                      - link: "osib.owasp.asvs.402.1.8"
+                        type: "child"
+                      - link: "osib.owasp.asvs.402.1.9"
+                        type: "child"
+                      - link: "osib.owasp.asvs.402.1.10"
+                        type: "child"
+                      - link: "osib.owasp.asvs.402.1.11"
+                        type: "child"
+                      - link: "osib.owasp.asvs.402.1.12"
+                        type: "child"
+                      - link: "osib.owasp.asvs.402.1.14"
+                        type: "child"
+                    children:
+                      1: # 1.1
+                        attributes:
+                          source_id: "V1.1"
+                          sources_i18n:
+                            en:
+                              name:   "V1.1-Secure Software Development Lifecycle Requirements"
+                              source: "https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x10-V1-Architecture.md#v11-secure-software-development-lifecycle-requirements"
+                        links:
+                        - link: "osib.owasp.asvs.402.1"
+                          type: "parent"
+                        - link: "osib.owasp.asvs.402.1.1.1"
+                          type: "child"
+                        - link: "osib.owasp.asvs.402.1.1.2"
+                          type: "child"
+                        - link: "osib.owasp.asvs.402.1.1.3"
+                          type: "child"
+                        - link: "osib.owasp.asvs.402.1.1.4"
+                          type: "child"
+                        - link: "osib.owasp.asvs.402.1.1.5"
+                          type: "child"
+                        - link: "osib.owasp.asvs.402.1.1.6"
+                          type: "child"
+                        - link: "osib.owasp.asvs.402.1.1.7"
+                          type: "child"
+                        children:
+                          1: # 1.1.1
+                            attributes:
+                              source_id: "V1.1.1"
+                              sources_i18n:
+                                en:
+                                  name: "V1.1.1-Secure Software Development Lifecycle Requirements-1"
+                                  source: "https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x10-V1-Architecture.md#v11-secure-software-development-lifecycle-requirements"
+                            links:
+                            - link: "osib.owasp.asvs.402.1.1"
+                              type: "parent"
+                          2: # 1.1.2
+                            attributes:
+                              source_id: "V1.1.2"
+                              sources_i18n:
+                                en:
+                                  name: "V.1.1.2-Secure Software Development Lifecycle Requirements-2"
+                                  source: "https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x10-V1-Architecture.md#v11-secure-software-development-lifecycle-requirements"
+                            links:
+                            - link: "osib.owasp.asvs.402.1.1"
+                              type: "parent"
+                  4: # 4
+                    attributes:
+                      source_id: "V4"
+                      sources_i18n:
+                        en:
+                          name: "V4-Access Control Verification Requirements"
+                          source: "https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x12-V4-Access-Control.md"
+                    links:
+                    - link: "osib.owasp.asvs.402"
+                      type: "parent"
+                    - link: "osib.owasp.asvs.402.4.1"
+                      type: "child"
+                    - link: "osib.owasp.asvs.402.4.2"
+                      type: "child"
+                    - link: "osib.owasp.asvs.402.4.3"
+                      type: "child"
+                    children:
+                      1: # 4.1
+                        attributes:
+                        source_id: "V4.1"
+                        sources_i18n:
+                          en:
+                            name: "V4-General Access Control Design"
+                            source: "https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x12-V4-Access-Control.md#v41-general-access-control-design"
+                        links:
+                        - link: "osib.owasp.asvs.402.4"
+                          type: "parent"
+                        - link: "osib.owasp.asvs.402.4.1.1"
+                          type: "child"
+                        - link: "osib.owasp.asvs.402.4.1.2"
+                          type: "child"
+                        - link: "osib.owasp.asvs.402.4.1.3"
+                          type: "child"
+                        - link: "osib.owasp.asvs.402.4.1.4"
+                          type: "child"
+                        - link: "osib.owasp.asvs.402.4.1.5"
+                          type: "child"
+                        children:
+                          1: # 4.1.1
+                            attributes:
+                            source_id: "V4.1.1"
+                            sources_i18n:
+                              en:
+                                name: "V4.1.1-General Access Control Design-1"
+                                source: "https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x12-V4-Access-Control.md#v41-general-access-control-design"
+                            links:
+                            - link: "osib.owasp.asvs.402.4.1"
+                              type: "parent"
+                          2: # 4.1.2
+                            attributes:
+                            source_id: "V4.1.2"
+                            sources_i18n:
+                              en:
+                                name: "V4.1.2-General Access Control Design-2"
+                                source: "https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x12-V4-Access-Control.md#v41-general-access-control-design"
+                            links:
+                            - link: "osib.owasp.asvs.402.4.1"
+                              type: "parent"
+                  14:
+                    attributes:
+                    source_id: "V14"
+                    sources_i18n:
+                      en:
+                        name:   "V14-Configuration Verification Requirements"
+                        source: "https://github.com/OWASP/ASVS/blob/v4.0.2/4.0/en/0x22-V14-Config.md"
+                    links:
+                    - link:   "osib.owasp.asvs.402"
+                      type:   "parent"
+                    - link:   "osib.owasp.asvs.402.14.1"
+                      type:   "child"
+                    - link:   "osib.owasp.asvs.402.14.2"
+                      type:   "child"
+                    - link:   "osib.owasp.asvs.402.14.3"
+                      type:   "child"
+                    - link:   "osib.owasp.asvs.402.14.4"
+                      type:   "child"
+                    - link:   "osib.owasp.asvs.402.14.5"
+                      type:   "child"
+      "top10":        
+        attributes:
+          sources_i18n:
+            en:
+              name:         "OWASP Top10 - The Ten Most Critical Web Application Security Risks"
+              source:       "https://owasp.org/www-project-top-ten/"
+        children:
+          202110:
+            attributes:
+              sources_i18n:
+                en:
+                  name:     "OWASP Top10:2021, Version 1.0 (en)"
+                  source:   "https://owasp.org/Top10/"
+              links:
+              - link:       "osib.owasp.top10.202110.1"
+                type:       "child"
+              - link:       "osib.owasp.top10.202110.2"
+                type:       "child"
+              - link:       "osib.owasp.top10.202110.3"
+                type:       "child"
+              - link:       "osib.owasp.top10.202110.4"
+                type:       "child"
+              - link:       "osib.owasp.top10.202110.5"
+                type:       "child"
+              - link:       "osib.owasp.top10.202110.6"
+                type:       "child"
+              - link:       "osib.owasp.top10.202110.7"
+                type:       "child"
+              - link:       "osib.owasp.top10.202110.8"
+                type:       "child"
+              - link:       "osib.owasp.top10.202110.9"
+                type:       "child"
+              - link:       "osib.owasp.top10.202110.10"
+                type:       "child"
+              - link:       "osib.owasp.top10.202110.11"
+                type:       "child"
+            children:
+              1:
+                attributes:
+                  source_id:      "A01:2021"
+                  sources_i18n:
+                    en:
+                      name:       "A01:2021-Broken Access Control"
+                      source:     "https://owasp.org/Top10/A01_2021-Broken_Access_Control"
+                links:
+                - link:         "osib.owasp.top10.202110"
+                  type:         "parent"
+              2:
+                attributes:
+                  source_id:      "A02:2021"
+                  sources_i18n:
+                      en:
+                        name:       "A02:2021-Cryptographic Failures"
+                        source:     "https://owasp.org/Top10/A02_2021-Cryptographic_Failures"
+                  links:
+                  - link:         "osib.owasp.top10.202110"
+                    type:         "parent"
+              3:
+                attributes:
+                source_id:      "A03:2021"
+                sources_i18n:
+                    en:
+                      name:       "A03:2021-Injection"
+                      source:     "https://owasp.org/Top10/A03_2021-Injection"
+                links:
+                - link:         "osib.owasp.top10.202110"
+                  type:         "parent"
+              4:
+                attributes:
+                source_id:      "A04:2021"
+                sources_i18n:
+                    en:
+                      name:       "A04:2021-Insecure Design"
+                      source:     "https://owasp.org/Top10/A04_2021-Insecure_Design"
+                links:
+                - link:         "osib.owasp.top10.202110"
+                  type:         "parent"
+              5:
+                attributes:
+                source_id:       "A05:2021"
+                sources_i18n:
+                    en:
+                      name:       "A05:2021-Security Misconfiguratuion"
+                      source:     "https://owasp.org/Top10/A05_2021-Security_Misconfiguration"
+                links:
+                - link:         "osib.owasp.top10.202110"
+                  type:         "parent"
+              6:
+                attributes:
+                source_id:       "A06:2021"
+                sources_i18n:
+                    en:
+                      name:       "A06:2021-Vulnerable and Outdated Components"
+                      source:     "https://owasp.org/Top10/A06_2021-Vulnerable_and_Outdated_Components"
+                links:
+                - link:         "osib.owasp.top10.202110"
+                  type:         "parent"
+              7:
+                attributes:
+                source_id:       "A07:2021"
+                sources_i18n:
+                    en:
+                      name:       "A07:2021-Identification and Authentication Failures"
+                      source:     "https://owasp.org/Top10/A07_2021-Identification_and_Authentication_Failures"
+                links:
+                - link:         "osib.owasp.top10.202110"
+                  type:         "parent"
+              8:
+                attributes:
+                source_id:      "A08:2021"
+                sources_i18n:
+                    en:
+                      name:       "A08:2021-Software and Data Integrity Failures"
+                      source:     "https://owasp.org/Top10/A08_2021-Software_and_Data_Integrity_Failures"
+                links:
+                - link:         "osib.owasp.top10.202110"
+                  type:         "parent"
+              9:
+                attributes:
+                source_id:      "A09:2021"
+                sources_i18n:
+                    en:
+                      name:       "A09:2021-Security Logging and Monitoring Failures"
+                      source:     "https://owasp.org/Top10/A09_2021-Security_Logging_and_Monitoring_Failures"
+                links:
+                - link:         "osib.owasp.top10.202110"
+                  type:         "parent"
+              10:
+                attributes:
+                source_id:      "A10:2021"
+                sources_i18n:
+                    en:
+                      name:       "A10:2021-Server Side Request Forgery (SSRF)"
+                      source:     "https://owasp.org/Top10/A10_2021-Server-Side_Request_Forgery_%28SSRF%29"
+                links:
+                - link:         "osib.owasp.top10.202110"
+                  type:         "parent"
+              11:
+                attributes:
+                source_id:      "A11:2021"
+                sources_i18n:
+                    en:
+                      name:       "A11:2021-Next Steps"
+                      source:     "https://owasp.org/Top10/A11_2021-Next_Steps"
+                links:
+                - link:         "osib.owasp.top10.202110"
+                  type:         "parent"
+              "references":
+                attributes:
+                  source_id:      "List of other References"
+                  sources_i18n:
+                    en:
+                      name:       "External references"
+                children:
+                    portswigger:
+                        attributes:
+                          source_id:  "Portswigger"
+                          sources_i18n:
+                              en:
+                                name:   "Portswigger"
+                        children:
+                          1:
+                            attributes:
+                              sources_i18n:
+                                  en:
