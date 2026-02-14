@@ -53,7 +53,7 @@ export const LinkedStandards = ({ creCode, linkedTo, applyHighlight, filter }) =
         {uniqueLinkedTo.map((x: LinkedTreeDocument) => (
           <Fragment key={x.document.name}>
             {isExternalLink(x, linkedTo) && (
-              <a href={x.document.hyperlink} target="_blank">
+              <a href={x.document.hyperlink} target="_blank" rel="noopener noreferrer">
                 <Label>
                   <Icon name="external" />
                   {applyHighlight(x.document.name, filter)}

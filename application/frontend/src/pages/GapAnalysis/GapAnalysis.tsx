@@ -44,14 +44,14 @@ function useQuery() {
 const GetStrength = (score) => {
   if (score == 0) return 'Direct';
   if (score <= GA_STRONG_UPPER_LIMIT) return 'Strong';
-  if (score >= 20) return 'Weak';
+  if (score >= 7) return 'Weak';
   return 'Average';
 };
 
 const GetStrengthColor = (score) => {
   if (score === 0) return 'darkgreen';
   if (score <= GA_STRONG_UPPER_LIMIT) return '#93C54B';
-  if (score >= 20) return 'Red';
+  if (score >= 7) return 'Red';
   return 'Orange';
 };
 
@@ -59,7 +59,7 @@ const GetResultLine = (path, gapAnalysis, key) => {
   let segmentID = gapAnalysis[key].start.id;
   return (
     <div key={path.end.id} style={{ marginBottom: '.25em', fontWeight: 'bold' }}>
-      <a href={getInternalUrl(path.end)} target="_blank">
+      <a href={getInternalUrl(path.end)} target="_blank" rel="noopener noreferrer">
         <Popup
           wide="very"
           size="large"
@@ -102,7 +102,7 @@ const GetResultLine = (path, gapAnalysis, key) => {
             <b style={{ color: GetStrengthColor(6) }}>{GetStrength(6)}</b>: Connected likely to have partial
             overlap
             <br />
-            <b style={{ color: GetStrengthColor(22) }}>{GetStrength(22)}</b>: Weakly connected likely to have
+            <b style={{ color: GetStrengthColor(7) }}>{GetStrength(7)}</b>: Weakly connected likely to have
             small or no overlap
           </Popup.Content>
         </Popup>
@@ -293,7 +293,7 @@ export const GapAnalysis = () => {
                 .map((key) => (
                   <Table.Row key={key}>
                     <Table.Cell textAlign="left" verticalAlign="top" selectable>
-                      <a href={getInternalUrl(gapAnalysis[key].start)} target="_blank">
+                      <a href={getInternalUrl(gapAnalysis[key].start)} target="_blank" rel="noopener noreferrer">
                         <p>
                           <b>{getDocumentDisplayName(gapAnalysis[key].start, true)}</b>
                         </p>

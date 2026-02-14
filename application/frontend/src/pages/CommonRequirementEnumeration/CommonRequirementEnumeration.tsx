@@ -63,7 +63,7 @@ export const CommonRequirementEnumeration = () => {
           {display && display.hyperlink && (
             <>
               <span>Reference: </span>
-              <a href={display?.hyperlink} target="_blank">
+              <a href={display?.hyperlink} target="_blank" rel="noopener noreferrer">
                 {' '}
                 {display.hyperlink}
               </a>
