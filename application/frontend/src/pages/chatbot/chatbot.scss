@@ -10,10 +10,12 @@
   flex-direction: column;
   position: relative;
 }
+
 .chat-container.chat-active {
   height: calc(100vh - 179px);
   overflow: hidden;
 }
+
 @media (max-width: 768px) {
   .chat-container {
     padding: 0 1rem;
@@ -80,7 +82,8 @@ h1.ui.header.chatbot-title {
 /* Very small phones */
 @media (max-width: 360px) {
   h1.ui.header.chatbot-title {
-    margin-top: 3rem; /* extra breathing room */
+    margin-top: 3rem;
+    /* extra breathing room */
   }
 }
 
@@ -375,6 +378,7 @@ h1.ui.header.chatbot-title {
   opacity: 1;
   transform: translateX(-50%) translateY(-2px);
 }
+
 .scroll-icon {
   margin: 0 !important;
   display: flex !important;
@@ -387,6 +391,7 @@ h1.ui.header.chatbot-title {
     bottom: 160px;
   }
 }
+
 .chat-surface {
   display: flex;
   flex-direction: column;
@@ -402,6 +407,7 @@ h1.ui.header.chatbot-title {
 
   padding: 1.25rem;
 }
+
 .chat-landing-state {
   text-align: center;
   margin: auto;
@@ -420,17 +426,20 @@ h1.ui.header.chatbot-title {
     margin: 0 auto;
   }
 }
+
 /* =========================
    Animations
    ========================= */
 
 @keyframes typingBounce {
+
   0%,
   80%,
   100% {
     transform: scale(0);
     opacity: 0.3;
   }
+
   40% {
     transform: scale(1);
     opacity: 1;
@@ -442,16 +451,19 @@ h1.ui.header.chatbot-title {
     opacity: 0;
     transform: translateY(6px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
   }
 }
+
 @keyframes fadeIn {
   from {
     opacity: 0;
     transform: translateX(-50%) translateY(6px);
   }
+
   to {
     opacity: 0.85;
     transform: translateX(-50%) translateY(0);
