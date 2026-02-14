@@ -79,7 +79,7 @@ install-python:
 install-typescript:
 	yarn add webpack && cd application/frontend && yarn build
 
-install: install-typescript install-python
+install: install-typescript install-python migrate-upgrade
 
 docker-dev:
 	docker build -f Dockerfile-dev -t opencre-dev:$(shell git rev-parse HEAD) .
