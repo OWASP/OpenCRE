@@ -46,7 +46,6 @@ v/
 
 ### Frontend 
 node_modules/
-frontend/www/bundle.js
 
 .DS_Store
 yarn-error.log
