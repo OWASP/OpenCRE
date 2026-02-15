@@ -32,15 +32,25 @@ export const SearchBar = () => {
     }
   };
 
+  const inputId = 'navbar-search-input';
+  const errorId = 'navbar-search-error';
   return (
     <div className="navbar__search">
       <form onSubmit={onSubmit}>
-        <Search className="search-icon" />
+        <label htmlFor={inputId} className="visually-hidden">
+          Search OpenCRE
+        </label>
+
+        <Search className="search-icon" aria-hidden="true" />
 
         <input
+          id={inputId}
           type="text"
           placeholder="Search..."
           value={search.term}
+          aria-label="Search OpenCRE"
+          aria-invalid={Boolean(search.error)}
+          aria-describedby={search.error ? errorId : undefined}
           onChange={(e) =>
             setSearch({
               ...search,
@@ -49,9 +59,16 @@ export const SearchBar = () => {
           }
         />
       </form>
-
       {/* Error text */}
-      {search.error && <p className="search-error">{search.error}</p>}
+      {search.error && (
+        <p
+          id={errorId}
+          className="search-error"
+          role="alert"
+        >
+          {search.error}
+        </p>
+      )}
     </div>
   );
 };
