@@ -118,7 +118,7 @@ h1.ui.header.chatbot-title {
   padding: 1rem 1.25rem;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
   text-align: left;
-  line-height: 1.6 consideration;
+  line-height: 1.6;
   animation: fadeInUp 0.25s ease-out;
 }
 
@@ -304,6 +304,7 @@ h1.ui.header.chatbot-title {
   align-items: center;
   min-height: 32px;
   padding: 0.75rem 1rem;
+  margin-top: 0.5rem;
 }
 
 .typing-indicator .dot {
@@ -328,6 +329,7 @@ h1.ui.header.chatbot-title {
 
 .chatbot-layout {
   min-height: 100vh;
+  padding-top: 1rem;
 }
 
 @media (max-width: 768px) {
