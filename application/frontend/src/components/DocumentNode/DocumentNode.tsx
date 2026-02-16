@@ -89,7 +89,7 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({
     return (
       <>
         <span>Reference:</span>
-        <a href={hyperlink.hyperlink} target="_blank">
+        <a href={hyperlink.hyperlink} target="_blank" rel="noopener noreferrer">
           {' '}
           {hyperlink.hyperlink}
         </a>
@@ -103,7 +103,7 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({
     }
 
     return (
-      <a href={hyperlink.hyperlink} target="_blank">
+      <a href={hyperlink.hyperlink} target="_blank" rel="noopener noreferrer">
         <Icon name="external" />
       </a>
     );
