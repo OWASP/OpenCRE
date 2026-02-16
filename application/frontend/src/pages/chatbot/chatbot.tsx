@@ -8,7 +8,7 @@ import { oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { Button, Container, Form, GridRow, Header, Icon } from 'semantic-ui-react';
 import { Grid } from 'semantic-ui-react';
 
-import { LoadingAndErrorIndicator } from '../../components/LoadingAndErrorIndicator';
+
 import { useEnvironment } from '../../hooks';
 import { Document } from '../../types';
 
@@ -93,10 +93,16 @@ export const Chatbot = () => {
       })
       .catch((error) => {
         console.error('Error checking if user is logged in:', error);
-        setError(error);
+        setError(error instanceof Error ? error.message : 'Network error checking login status');
         setLoading(false);
       });
   }
+
+  useEffect(() => {
+    if (user === '') {
+      login();
+    }
+  }, []);
 
   function processResponse(response: string) {
     const responses = response.split('```');
@@ -148,7 +154,22 @@ export const Chatbot = () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ prompt: currentTerm }),
     })
-      .then((response) => response.json())
+      .then(async (response) => {
+        if (!response.ok) {
+          const text = await response.text();
+          let errorMessage = response.statusText;
+          try {
+            const json = JSON.parse(text);
+            if (json.error) errorMessage = json.error;
+            else if (json.message) errorMessage = json.message;
+          } catch (e) {
+            // not json, use text if available
+            if (text) errorMessage = text;
+          }
+          throw new Error(errorMessage || `Error ${response.status}`);
+        }
+        return response.json();
+      })
       .then((data) => {
         setLoading(false);
         setError('');
@@ -168,7 +189,7 @@ export const Chatbot = () => {
       })
       .catch((error) => {
         console.error('Error fetching answer:', error);
-        setError(error);
+        setError(error instanceof Error ? error.message : 'An unexpected network error occurred');
         setLoading(false);
       });
   }
@@ -193,7 +214,7 @@ export const Chatbot = () => {
 
   return (
     <>
-      {user !== '' ? null : login()}
+      {/* user login check moved to useEffect */}
 
       <Grid textAlign="center" verticalAlign="middle" className="chatbot-layout">
         <Grid.Column>
@@ -207,7 +228,8 @@ export const Chatbot = () => {
                 {' '}
                 {error && (
                   <div className="ui negative message">
-                    <div className="header">Document could not be loaded</div>
+                    <div className="header">Error</div>
+                    <p>{error}</p>
                   </div>
                 )}
                 <div className="chat-messages" ref={messagesContainerRef}>
