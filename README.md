@@ -216,23 +216,28 @@ make docker-dev
 
 The environment variables used by OpenCRE are:
 
+## Environment Configuration
+
+Copy the example configuration file:
+
+```bash
+cp .env.example .env
 ```
-- NEO4J_URL
-- NO_GEN_EMBEDDINGS
-- FLASK_CONFIG
-- DEV_DATABASE_URL
-- INSECURE_REQUESTS
-- REDIS_HOST
-- REDIS_PORT
-- REDIS_NO_SSL
-- REDIS_URL
-- GCP_NATIVE
-- GOOGLE_SECRET_JSON
-- GOOGLE_CLIENT_ID
-- GOOGLE_CLIENT_SECRET
-- LOGIN_ALLOWED_DOMAINS
-- OpenCRE_gspread_Auth
-```
+
+Then edit `.env` and provide values appropriate for your environment.
+
+### Variables
+
+* Database: `DEV_DATABASE_URL`
+* Neo4j: `NEO4J_URL`
+* Redis: `REDIS_HOST`, `REDIS_PORT`, `REDIS_URL`, `REDIS_NO_SSL`
+* Flask: `FLASK_CONFIG`, `INSECURE_REQUESTS`
+* Embeddings: `NO_GEN_EMBEDDINGS`
+* Google Auth: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_SECRET_JSON`, `LOGIN_ALLOWED_DOMAINS`
+* GCP: `GCP_NATIVE`
+* Spreadsheet Auth: `OpenCRE_gspread_Auth`
+
+See `.env.example` for full list and defaults.
 
 You can run the containers with:
 
