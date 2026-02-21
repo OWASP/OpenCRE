@@ -242,16 +242,26 @@ def find_node_by_name(
 @app.route("/rest/v1/tags", methods=["GET"])
 def find_document_by_tag() -> Any:
     tags = request.args.getlist("tag")
+    opt_format = request.args.get("format")
+
+    page = 1
+    if request.args.get("page") is not None and int(request.args.get("page")) > 0:
+        page = int(request.args.get("page"))
+
+    items_per_page = int(request.args.get("items_per_page") or ITEMS_PER_PAGE)
+
     if posthog:
-        posthog.capture(f"find_document_by_tag", f"tags:{tags}")
+        posthog.capture(f"find_document_by_tag", f"tags:{tags};page:{page}")
 
     database = db.Node_collection()
-    # opt_osib = request.args.get("osib")
-    opt_format = request.args.get("format")
-    documents = database.get_by_tags(tags)
+    total_pages, documents = database.get_by_tags_with_pagination(
+        tags, page=page, items_per_page=items_per_page
+    )
+
     if documents:
         res = [doc.todict() for doc in documents]
-        result = {"data": res}
+        result = {"data": res, "total_pages": total_pages, "page": page}
+
         # if opt_osib:
         #     result["osib"] = odefs.cre2osib(documents).todict()
         if opt_format == SupportedFormats.Markdown.value:
