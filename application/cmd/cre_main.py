@@ -25,6 +25,7 @@ from application.utils import spreadsheet_parsers
 from alive_progress import alive_bar
 from application.prompt_client import prompt_client as prompt_client
 from application.utils import gap_analysis
+from application.prompt_client.prompt_client import SIMILARITY_THRESHOLD
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
@@ -313,6 +314,58 @@ def register_standard(
                     pending_stadards.append(standard_name)
         redis.wait_for_jobs(jobs)
         conn.set(standard_hash, value="")
+
+
+def suggest_cre_mappings(
+    standard_entries: List[defs.Standard],
+    collection: db.Node_collection,
+    confidence_threshold: float = SIMILARITY_THRESHOLD,
+) -> Dict[str, Any]:
+    """
+    Given a list of Standard entries, suggest CRE mappings using
+    cosine similarity on existing embeddings.
+
+    Returns high-confidence matches and flags low-confidence ones
+    for human review.
+
+    Args:
+        standard_entries: list of Standard nodes to map
+        collection: database connection
+        confidence_threshold: minimum similarity score to auto-map
+
+    Returns:
+        Dict with 'mapped' (high confidence) and 'needs_review' (low confidence) lists
+    """
+    if not standard_entries:
+        logger.warning("suggest_cre_mappings() called with no standard_entries")
+        return {"mapped": [], "needs_review": []}
+
+    ph = prompt_client.PromptHandler(database=collection)
+    results: Dict[str, Any] = {"mapped": [], "needs_review": []}
+
+    for node in standard_entries:
+        text = " ".join(filter(None, [node.name, node.section, node.description]))
+        if not text.strip():
+            continue
+        embedding = ph.get_text_embeddings(text)
+        cre_id, similarity = ph.get_id_of_most_similar_cre_paginated(
+            embedding, similarity_threshold=confidence_threshold
+        )
+        entry = {
+            "standard": node.todict(),
+            "suggested_cre_id": cre_id,
+            "confidence": round(float(similarity), 4) if similarity else None,
+        }
+        if cre_id and similarity and similarity >= confidence_threshold:
+            results["mapped"].append(entry)
+        else:
+            results["needs_review"].append(entry)
+
+    logger.info(
+        f"suggest_cre_mappings: {len(results['mapped'])} mapped, "
+        f"{len(results['needs_review'])} need review"
+    )
+    return results
 
 
 def parse_standards_from_spreadsheeet(
