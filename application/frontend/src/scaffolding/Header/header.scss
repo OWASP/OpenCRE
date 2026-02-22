@@ -345,3 +345,22 @@
   border: 0;
 }
 
+.navbar__mobile-menu-close {
+  display: flex;
+  margin-left: auto;
+  margin-bottom: 1rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem;
+
+  .mobile-close-icon {
+    color: #ffffff;
+    width: 28px;
+    height: 28px;
+  }
+
+  &:hover {
+    opacity: 0.7;
+  }
+}
