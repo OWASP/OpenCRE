@@ -29,7 +29,8 @@
 
   input {
     padding: 0.5rem 1rem 0.5rem 2.5rem;
-    width: 16rem;
+    width: 100%;
+    max-width: 16rem;
 
     background-color: rgba(var(--card-rgb), 0.5); /* tiny bump */
     border: 1px solid rgba(102, 157, 246, 0.267); /* slightly brighter sky blue */
@@ -58,6 +59,6 @@
   .search-error {
     margin-top: 0.25rem;
     font-size: 0.75rem;
-    color: #f87171; // red-400
+    color: #f87171; /* red-400 */
   }
 }
