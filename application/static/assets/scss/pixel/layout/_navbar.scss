@@ -444,3 +444,28 @@
         animation: hide-navbar-collapse .2s ease forwards;
     }
 }
+/* Fix Navbar Logo Overflow & Mobile Padding (Issue #691) */
+@media (max-width: 767px) {
+    .navbar-brand {
+        img {
+            height: 2.5rem;           /* Shrink from ~10rem equivalent / 40px base */
+            width: auto;
+            max-width: 8rem;          /* Prevent overflow on small screens */
+        }
+        margin-left: 1rem !important; /* Reduce left margin from 4rem */
+        margin-right: 1rem;           /* Balance spacing */
+    }
+
+    .navbar-main {
+        padding: 0.5rem 1rem;     /* Add mobile padding to main navbar to avoid edge-touching */
+    }
+
+    .nav-item {
+        margin-left: 0.5rem;      /* Reduce item spacing on mobile for better fit */
+        margin-right: 0.5rem;
+    }
+
+    .navbar-toggler {
+        margin-right: 0.5rem;     /* Better touch target & spacing */
+    }
+}
