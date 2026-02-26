@@ -72,3 +72,21 @@
   }
 
 }
+
+@media (max-width: 768px) {
+  .cre-page {
+    padding: 1rem; /* Reduce from 30px to prevent content touching edges */
+
+    &__description {
+      width: 100%; /* Expand from 50% - too narrow on small screens */
+    }
+
+    &__heading {
+      font-size: 1.5rem; /* Reduce from 2rem - oversized on mobile */
+    }
+
+    &__sub-heading {
+      font-size: 1rem; /* Reduce from 1.2rem - proportional for mobile */
+    }
+  }
+}
