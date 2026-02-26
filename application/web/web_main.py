@@ -2,6 +2,7 @@
 
 # silence mypy for the routes file
 import csv
+from datetime import datetime, timezone
 from functools import wraps
 import json
 import logging
@@ -9,6 +10,7 @@ import os
 import io
 import pathlib
 import urllib.parse
+import uuid
 from alive_progress import alive_bar
 from typing import Any
 from application.utils import oscal_utils, redis
@@ -66,6 +68,78 @@ class SupportedFormats(Enum):
     JSON = "json"
     YAML = "yaml"
     OSCAL = "oscal"
+    CycloneDX = "cyclonedx"
+
+
+def _validate_requested_format(opt_format: Any) -> None:
+    if opt_format is None:
+        return
+    if opt_format not in [fmt.value for fmt in SupportedFormats]:
+        abort(400, f"Unsupported format '{opt_format}'")
+
+
+def _document_attestation_url(document: defs.Document) -> str:
+    if document.doctype == defs.Credoctypes.CRE and getattr(document, "id", ""):
+        return f"https://www.opencre.org/cre/{document.id}"
+    if getattr(document, "hyperlink", ""):
+        return document.hyperlink
+    identifier = getattr(document, "id", "") or document.name
+    return (
+        "https://www.opencre.org/node/"
+        f"{document.doctype.value.lower()}/{urllib.parse.quote(str(identifier), safe='')}"
+    )
+
+
+def _document_to_cyclonedx_component(document: defs.Document) -> dict[str, Any]:
+    identifier = str(getattr(document, "id", "") or document.name)
+    properties = [{"name": "opencre:doctype", "value": document.doctype.value}]
+    if identifier:
+        properties.append({"name": "opencre:id", "value": identifier})
+    tags = [tag for tag in document.tags if tag]
+    if tags:
+        properties.append({"name": "opencre:tags", "value": ",".join(tags)})
+
+    component = {
+        "type": "data",
+        "name": document.name,
+        "bom-ref": f"{document.doctype.value}:{identifier}",
+        "properties": properties,
+        "externalReferences": [
+            {
+                "type": "attestation",
+                "url": _document_attestation_url(document),
+                "comment": "OpenCRE source attestation",
+            }
+        ],
+    }
+    if document.description:
+        component["description"] = document.description
+    return component
+
+
+def _documents_to_cyclonedx(documents: list[defs.Document]) -> dict[str, Any]:
+    return {
+        "bomFormat": "CycloneDX",
+        "specVersion": "1.6",
+        "serialNumber": f"urn:uuid:{uuid.uuid4()}",
+        "version": 1,
+        "metadata": {
+            "timestamp": datetime.now(timezone.utc)
+            .replace(microsecond=0)
+            .isoformat()
+            .replace("+00:00", "Z"),
+            "component": {
+                "type": "application",
+                "name": "OpenCRE",
+                "externalReferences": [
+                    {"type": "website", "url": "https://www.opencre.org/"}
+                ],
+            },
+        },
+        "components": [
+            _document_to_cyclonedx_component(document) for document in documents
+        ],
+    }
 
 
 def extend_cre_with_tag_links(
@@ -115,6 +189,7 @@ def find_cre(creid: str = None, crename: str = None) -> Any:  # refer
     include_only = request.args.getlist("include_only")
     # opt_osib = request.args.get("osib")
     opt_format = request.args.get("format")
+    _validate_requested_format(opt_format)
     cres = database.get_CREs(external_id=creid, name=crename, include_only=include_only)
     if cres:
         if len(cres) > 1:
@@ -137,6 +212,8 @@ def find_cre(creid: str = None, crename: str = None) -> Any:  # refer
 
         elif opt_format == SupportedFormats.OSCAL.value:
             result = {"data": json.loads(oscal_utils.document_to_oscal(cre))}
+        elif opt_format == SupportedFormats.CycloneDX.value:
+            result = _documents_to_cyclonedx([cre])
 
         return jsonify(result)
     abort(404, "CRE does not exist")
@@ -169,6 +246,7 @@ def find_node_by_name(
     # opt_osib = request.args.get("osib")
     opt_version = request.args.get("version")
     opt_format = request.args.get("format")
+    _validate_requested_format(opt_format)
     if opt_section:
         opt_section = urllib.parse.unquote(opt_section)
     if opt_sectionID:
@@ -227,6 +305,8 @@ def find_node_by_name(
 
         elif opt_format == SupportedFormats.OSCAL.value:
             return jsonify(json.loads(oscal_utils.list_to_oscal(nodes)))
+        elif opt_format == SupportedFormats.CycloneDX.value:
+            return jsonify(_documents_to_cyclonedx(nodes))
 
         # if opt_osib:
         #     result["osib"] = odefs.cre2osib(nodes).todict()
@@ -248,6 +328,7 @@ def find_document_by_tag() -> Any:
     database = db.Node_collection()
     # opt_osib = request.args.get("osib")
     opt_format = request.args.get("format")
+    _validate_requested_format(opt_format)
     documents = database.get_by_tags(tags)
     if documents:
         res = [doc.todict() for doc in documents]
@@ -263,6 +344,8 @@ def find_document_by_tag() -> Any:
             return write_csv(docs=docs).getvalue().encode("utf-8")
         elif opt_format == SupportedFormats.OSCAL.value:
             return jsonify(json.loads(oscal_utils.list_to_oscal(documents)))
+        elif opt_format == SupportedFormats.CycloneDX.value:
+            return jsonify(_documents_to_cyclonedx(documents))
 
         return jsonify(result)
     abort(404, "Tag does not exist")
@@ -412,6 +495,7 @@ def text_search() -> Any:
         posthog.capture(f"text_search", f"text:{text}")
 
     opt_format = request.args.get("format")
+    _validate_requested_format(opt_format)
     documents = database.text_search(text)
     if documents:
         if opt_format == SupportedFormats.Markdown.value:
@@ -423,6 +507,8 @@ def text_search() -> Any:
             return write_csv(docs=docs).getvalue().encode("utf-8")
         elif opt_format == SupportedFormats.OSCAL.value:
             return jsonify(json.loads(oscal_utils.list_to_oscal(documents)))
+        elif opt_format == SupportedFormats.CycloneDX.value:
+            return jsonify(_documents_to_cyclonedx(documents))
 
         res = [doc.todict() for doc in documents]
         return jsonify(res)
@@ -442,6 +528,7 @@ def find_root_cres() -> Any:
     database = db.Node_collection()
     # opt_osib = request.args.get("osib")
     opt_format = request.args.get("format")
+    _validate_requested_format(opt_format)
     documents = database.get_root_cres()
     if documents:
         res = [doc.todict() for doc in documents]
@@ -457,6 +544,8 @@ def find_root_cres() -> Any:
             return write_csv(docs=docs).getvalue().encode("utf-8")
         elif opt_format == SupportedFormats.OSCAL.value:
             return jsonify(json.loads(oscal_utils.list_to_oscal(documents)))
+        elif opt_format == SupportedFormats.CycloneDX.value:
+            return jsonify(_documents_to_cyclonedx(documents))
 
         return jsonify(result)
     abort(404, "No root CREs")

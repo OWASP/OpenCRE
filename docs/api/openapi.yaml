@@ -26,7 +26,7 @@ paths:
           description: Optional response format
           schema:
             type: string
-            enum: [json, md, csv, oscal]
+            enum: [json, md, csv, oscal, cyclonedx]
         - name: include_only
           in: query
           required: false
@@ -64,7 +64,7 @@ paths:
           required: false
           schema:
             type: string
-            enum: [json, md, csv, oscal]
+            enum: [json, md, csv, oscal, cyclonedx]
       responses:
         '200':
           description: CRE found
@@ -124,7 +124,7 @@ paths:
           required: false
           schema:
             type: string
-            enum: [json, md, csv, oscal]
+            enum: [json, md, csv, oscal, cyclonedx]
       responses:
         '200':
           description: Nodes retrieved
@@ -153,7 +153,7 @@ paths:
           required: false
           schema:
             type: string
-            enum: [json, md, csv, oscal]
+            enum: [json, md, csv, oscal, cyclonedx]
       responses:
         '200':
           description: Documents retrieved
@@ -174,7 +174,7 @@ paths:
           required: false
           schema:
             type: string
-            enum: [json, md, csv, oscal]
+            enum: [json, md, csv, oscal, cyclonedx]
       responses:
         '200':
           description: Root CREs retrieved
@@ -215,7 +215,7 @@ paths:
           required: false
           schema:
             type: string
-            enum: [json, md, csv, oscal]
+            enum: [json, md, csv, oscal, cyclonedx]
       responses:
         '200':
           description: Search results
