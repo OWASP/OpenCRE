@@ -443,6 +443,12 @@ class TestMain(unittest.TestCase):
             self.assertEqual(200, response.status_code)
             self.assertCountEqual(json.loads(response.data.decode()), expected)
 
+            cdx_response = client.get("/rest/v1/tags?tag=ta&format=cyclonedx")
+            cdx_payload = json.loads(cdx_response.data.decode())
+            self.assertEqual(200, cdx_response.status_code)
+            self.assertEqual("CycloneDX", cdx_payload["bomFormat"])
+            self.assertEqual(2, len(cdx_payload["components"]))
+
     def test_test_search(self) -> None:
         collection = db.Node_collection()
         docs = {
@@ -478,6 +484,12 @@ class TestMain(unittest.TestCase):
                 resp = client.get(r)
                 self.assertEqual(200, resp.status_code)
                 self.assertDictEqual(resp.json[0], expected[0])
+
+            cdx_response = client.get("/rest/v1/text_search?text=SB&format=cyclonedx")
+            cdx_payload = json.loads(cdx_response.data.decode())
+            self.assertEqual(200, cdx_response.status_code)
+            self.assertEqual("CycloneDX", cdx_payload["bomFormat"])
+            self.assertEqual(1, len(cdx_payload["components"]))
 
     def test_find_root_cres(self) -> None:
         self.maxDiff = None
@@ -521,6 +533,12 @@ class TestMain(unittest.TestCase):
             )
             self.assertEqual(json.loads(response.data.decode()), expected)
             self.assertEqual(200, response.status_code)
+
+            cdx_response = client.get("/rest/v1/root_cres?format=cyclonedx")
+            cdx_payload = json.loads(cdx_response.data.decode())
+            self.assertEqual(200, cdx_response.status_code)
+            self.assertEqual("CycloneDX", cdx_payload["bomFormat"])
+            self.assertEqual(2, len(cdx_payload["components"]))
 
     def test_smartlink(self) -> None:
         self.maxDiff = None

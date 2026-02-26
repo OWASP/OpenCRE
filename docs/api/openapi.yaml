@@ -41,10 +41,24 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  data:
-                    type: object
+                oneOf:
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                  - type: object
+                    properties:
+                      bomFormat:
+                        type: string
+                        enum: [CycloneDX]
+                      specVersion:
+                        type: string
+                      version:
+                        type: integer
+                      components:
+                        type: array
+                        items:
+                          type: object
         '404':
           description: CRE not found
 
@@ -71,7 +85,21 @@ paths:
           content:
             application/json:
               schema:
-                type: object
+                oneOf:
+                  - type: object
+                  - type: object
+                    properties:
+                      bomFormat:
+                        type: string
+                        enum: [CycloneDX]
+                      specVersion:
+                        type: string
+                      version:
+                        type: integer
+                      components:
+                        type: array
+                        items:
+                          type: object
         '404':
           description: CRE not found
 
@@ -131,7 +159,21 @@ paths:
           content:
             application/json:
               schema:
-                type: object
+                oneOf:
+                  - type: object
+                  - type: object
+                    properties:
+                      bomFormat:
+                        type: string
+                        enum: [CycloneDX]
+                      specVersion:
+                        type: string
+                      version:
+                        type: integer
+                      components:
+                        type: array
+                        items:
+                          type: object
         '404':
           description: Node not found
 
@@ -160,7 +202,21 @@ paths:
           content:
             application/json:
               schema:
-                type: object
+                oneOf:
+                  - type: object
+                  - type: object
+                    properties:
+                      bomFormat:
+                        type: string
+                        enum: [CycloneDX]
+                      specVersion:
+                        type: string
+                      version:
+                        type: integer
+                      components:
+                        type: array
+                        items:
+                          type: object
         '404':
           description: Tag not found
 
@@ -181,7 +237,21 @@ paths:
           content:
             application/json:
               schema:
-                type: object
+                oneOf:
+                  - type: object
+                  - type: object
+                    properties:
+                      bomFormat:
+                        type: string
+                        enum: [CycloneDX]
+                      specVersion:
+                        type: string
+                      version:
+                        type: integer
+                      components:
+                        type: array
+                        items:
+                          type: object
         '404':
           description: No root CREs found
 
@@ -222,8 +292,22 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  type: object
+                oneOf:
+                  - type: array
+                    items:
+                      type: object
+                  - type: object
+                    properties:
+                      bomFormat:
+                        type: string
+                        enum: [CycloneDX]
+                      specVersion:
+                        type: string
+                      version:
+                        type: integer
+                      components:
+                        type: array
+                        items:
+                          type: object
         '404':
           description: No results found
