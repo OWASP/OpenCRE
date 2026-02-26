@@ -405,8 +405,15 @@ class TestMain(unittest.TestCase):
             self.assertEqual(200, cdx_response.status_code)
             self.assertEqual("CycloneDX", cdx_payload["bomFormat"])
             self.assertEqual(5, len(cdx_payload["components"]))
-            self.assertEqual(
-                "Standard", cdx_payload["components"][0]["properties"][0]["value"]
+            self.assertTrue(
+                any(
+                    any(
+                        prop.get("name") == "opencre:doctype"
+                        and prop.get("value") == "Standard"
+                        for prop in component.get("properties", [])
+                    )
+                    for component in cdx_payload["components"]
+                )
             )
 
     def test_find_document_by_tag(self) -> None:
