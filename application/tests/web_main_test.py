@@ -400,7 +400,11 @@ class TestMain(unittest.TestCase):
             response = client.get(f"/rest/v1/tags?tag=CW")
             self.assertEqual(404, response.status_code)
 
-            expected = {"data": [cres["ca"].todict(), cres["cb"].todict()]}
+            expected = {
+                "data": [cres["ca"].todict(), cres["cb"].todict()],
+                "page": 1,
+                "total_pages": 1,
+            }
 
             response = client.get(f"/rest/v1/tags?tag=ta")
             self.assertEqual(200, response.status_code)
@@ -441,6 +445,89 @@ class TestMain(unittest.TestCase):
                 resp = client.get(r)
                 self.assertEqual(200, resp.status_code)
                 self.assertDictEqual(resp.json[0], expected[0])
+
+    @patch.object(db, "Node_collection")
+    def test_tags_pagination_and_format_parity(self, db_mock) -> None:
+        docs = [
+            defs.CRE(id="111-111", description="A", name="A", tags=["ta"]),
+            defs.CRE(id="222-222", description="B", name="B", tags=["ta"]),
+            defs.CRE(id="333-333", description="C", name="C", tags=["ta"]),
+        ]
+        db_mock.return_value.get_by_tags.return_value = docs
+
+        with self.app.test_client() as client:
+            json_response = client.get("/rest/v1/tags?tag=ta&page=2&items_per_page=1")
+            payload = json.loads(json_response.data.decode())
+            self.assertEqual(200, json_response.status_code)
+            self.assertEqual(2, payload["page"])
+            self.assertEqual(3, payload["total_pages"])
+            self.assertEqual("222-222", payload["data"][0]["id"])
+
+            md_response = client.get(
+                "/rest/v1/tags?tag=ta&page=2&items_per_page=1&format=md"
+            )
+            self.assertEqual(200, md_response.status_code)
+            self.assertIn("222-222", md_response.data.decode())
+
+            csv_response = client.get(
+                "/rest/v1/tags?tag=ta&page=2&items_per_page=1&format=csv"
+            )
+            self.assertEqual(200, csv_response.status_code)
+            self.assertGreater(len(csv_response.data), 0)
+
+            oscal_response = client.get(
+                "/rest/v1/tags?tag=ta&page=2&items_per_page=1&format=oscal"
+            )
+            oscal_payload = json.loads(oscal_response.data.decode())
+            self.assertEqual(200, oscal_response.status_code)
+            self.assertIn("metadata", oscal_payload)
+
+            out_of_range_response = client.get(
+                "/rest/v1/tags?tag=ta&page=99&items_per_page=1"
+            )
+            self.assertEqual(404, out_of_range_response.status_code)
+
+    @patch.object(db, "Node_collection")
+    def test_text_search_pagination_and_format_parity(self, db_mock) -> None:
+        docs = [
+            defs.Standard(name="SB", section="s1", subsection="a"),
+            defs.Standard(name="SB", section="s2", subsection="b"),
+            defs.Standard(name="SB", section="s3", subsection="c"),
+        ]
+        db_mock.return_value.text_search.return_value = docs
+
+        with self.app.test_client() as client:
+            json_response = client.get(
+                "/rest/v1/text_search?text=SB&page=2&items_per_page=1"
+            )
+            payload = json.loads(json_response.data.decode())
+            self.assertEqual(200, json_response.status_code)
+            self.assertEqual(1, len(payload))
+            self.assertEqual("s2", payload[0]["section"])
+
+            md_response = client.get(
+                "/rest/v1/text_search?text=SB&page=2&items_per_page=1&format=md"
+            )
+            self.assertEqual(200, md_response.status_code)
+            self.assertIn("s2", md_response.data.decode())
+
+            csv_response = client.get(
+                "/rest/v1/text_search?text=SB&page=2&items_per_page=1&format=csv"
+            )
+            self.assertEqual(200, csv_response.status_code)
+            self.assertGreater(len(csv_response.data), 0)
+
+            oscal_response = client.get(
+                "/rest/v1/text_search?text=SB&page=2&items_per_page=1&format=oscal"
+            )
+            oscal_payload = json.loads(oscal_response.data.decode())
+            self.assertEqual(200, oscal_response.status_code)
+            self.assertEqual(1, len(oscal_payload["controls"]))
+
+            out_of_range_response = client.get(
+                "/rest/v1/text_search?text=SB&page=99&items_per_page=1"
+            )
+            self.assertEqual(404, out_of_range_response.status_code)
 
     def test_find_root_cres(self) -> None:
         self.maxDiff = None
