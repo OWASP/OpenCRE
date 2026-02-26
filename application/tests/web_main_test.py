@@ -164,6 +164,25 @@ class TestMain(unittest.TestCase):
             )
             self.assertEqual(re.sub("\s", "", md_response.data.decode()), md_expected)
 
+            cdx_response = client.get(
+                f"/rest/v1/id/{cres['cd'].id}?format=cyclonedx",
+                headers={"Content-Type": "application/json"},
+            )
+            cdx_payload = json.loads(cdx_response.data.decode())
+            self.assertEqual(200, cdx_response.status_code)
+            self.assertEqual("CycloneDX", cdx_payload["bomFormat"])
+            self.assertTrue(len(cdx_payload["components"]) == 1)
+            components = cdx_payload["components"]
+            component_cd = next(
+                (c for c in components if c.get("name") == "CD"),
+                None,
+            )
+            self.assertIsNotNone(component_cd)
+            external_references = component_cd.get("externalReferences", [])
+            self.assertTrue(
+                any(ref.get("type") == "attestation" for ref in external_references)
+            )
+
     def test_find_by_name(self) -> None:
         collection = db.Node_collection().with_graph()
         cres = {
@@ -384,6 +403,24 @@ class TestMain(unittest.TestCase):
             ]
             self.assertCountEqual(expected, actual)
 
+            cdx_response = client.get(
+                f"/rest/v1/standard/{nodes['sa'].name}?format=cyclonedx"
+            )
+            cdx_payload = json.loads(cdx_response.data.decode())
+            self.assertEqual(200, cdx_response.status_code)
+            self.assertEqual("CycloneDX", cdx_payload["bomFormat"])
+            self.assertEqual(5, len(cdx_payload["components"]))
+            self.assertTrue(
+                any(
+                    any(
+                        prop.get("name") == "opencre:doctype"
+                        and prop.get("value") == "Standard"
+                        for prop in component.get("properties", [])
+                    )
+                    for component in cdx_payload["components"]
+                )
+            )
+
     def test_find_document_by_tag(self) -> None:
         collection = db.Node_collection()
         cres = {
@@ -405,6 +442,12 @@ class TestMain(unittest.TestCase):
             response = client.get(f"/rest/v1/tags?tag=ta")
             self.assertEqual(200, response.status_code)
             self.assertCountEqual(json.loads(response.data.decode()), expected)
+
+            cdx_response = client.get("/rest/v1/tags?tag=ta&format=cyclonedx")
+            cdx_payload = json.loads(cdx_response.data.decode())
+            self.assertEqual(200, cdx_response.status_code)
+            self.assertEqual("CycloneDX", cdx_payload["bomFormat"])
+            self.assertEqual(2, len(cdx_payload["components"]))
 
     def test_test_search(self) -> None:
         collection = db.Node_collection()
@@ -441,6 +484,12 @@ class TestMain(unittest.TestCase):
                 resp = client.get(r)
                 self.assertEqual(200, resp.status_code)
                 self.assertDictEqual(resp.json[0], expected[0])
+
+            cdx_response = client.get("/rest/v1/text_search?text=SB&format=cyclonedx")
+            cdx_payload = json.loads(cdx_response.data.decode())
+            self.assertEqual(200, cdx_response.status_code)
+            self.assertEqual("CycloneDX", cdx_payload["bomFormat"])
+            self.assertEqual(1, len(cdx_payload["components"]))
 
     def test_find_root_cres(self) -> None:
         self.maxDiff = None
@@ -484,6 +533,12 @@ class TestMain(unittest.TestCase):
             )
             self.assertEqual(json.loads(response.data.decode()), expected)
             self.assertEqual(200, response.status_code)
+
+            cdx_response = client.get("/rest/v1/root_cres?format=cyclonedx")
+            cdx_payload = json.loads(cdx_response.data.decode())
+            self.assertEqual(200, cdx_response.status_code)
+            self.assertEqual("CycloneDX", cdx_payload["bomFormat"])
+            self.assertEqual(2, len(cdx_payload["components"]))
 
     def test_smartlink(self) -> None:
         self.maxDiff = None
