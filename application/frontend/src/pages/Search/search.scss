@@ -1023,9 +1023,17 @@ body {
   position: relative;
   z-index: 10;
   width: 100%;
-  border-top: 1px solid rgba(var(--border-rgb), 0.5);
   padding: 3rem 0;
-  backdrop-filter: blur(4px);
+
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.06),
+    rgba(255, 255, 255, 0.02)
+  );
+
+  backdrop-filter: blur(12px) saturate(160%);
+  -webkit-backdrop-filter: blur(12px) saturate(160%);
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
 
   &__container {
     max-width: 112rem;
@@ -1040,49 +1048,91 @@ body {
   }
 
   &__grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 2rem;
-    @media (min-width: 768px) {
-      grid-template-columns: repeat(4, 1fr);
-    }
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2.5rem;
+
+  @media (min-width: 768px) {
+    grid-template-columns: repeat(4, 1fr);
+  }
   }
 
   &__about {
+  padding: 1rem;
+  border-radius: 1rem;
+
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+
+  border: 1px solid rgba(255, 255, 255, 0.08);
+
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.25),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+  }
+
+  .logo-link {
     display: flex;
-    flex-direction: column;
-    gap: 1rem;
-    .logo-link {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      img {
-        height: 10rem;
-        width: 10rem;
-      }
-    }
-    p {
-      color: var(--muted-foreground);
+    align-items: center;
+    gap: 0.5rem;
+
+    img {
+      height: 2.5rem;
+      width: auto;
+      filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.15));
     }
   }
 
+  p {
+    margin-top: 0.25rem;
+    max-width: 280px;
+    font-size: 0.875rem;
+    line-height: 1.4;
+    color: rgba(255, 255, 255, 0.65);
+  }
+}
+
   &__links-column {
+    padding: 1rem;
+    border-radius: 1rem;
+
+    background: rgba(255, 255, 255, 0.04);
+    backdrop-filter: blur(6px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    transition: background-color 0.3s ease, box-shadow 0.3s ease;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.07);
+      transform: translateY(-2px);
+    }
     .column-title {
-      color: white;
+      color: #ffffff;
       font-weight: 500;
       margin-bottom: 1rem;
+      font-size: 0.95rem;
     }
     .links-list {
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
+      color: #ffffff;
+      font-weight: 500;
+      margin-bottom: 1rem;
+       font-size: 0.95rem;
       a {
         display: block;
         color: var(--muted-foreground);
         transition: color 0.3s;
         text-decoration: none;
         &:hover {
-          color: var(--foreground);
+          color: rgba(var(--muted-foreground-rgb), 0.9);
+
         }
       }
     }
