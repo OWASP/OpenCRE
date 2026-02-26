@@ -203,6 +203,8 @@ def find_cre(creid: str = None, crename: str = None) -> Any:  # refer
             result = {"data": json.loads(oscal_utils.document_to_oscal(cre))}
         elif opt_format == SupportedFormats.CycloneDX.value:
             result = _documents_to_cyclonedx([cre])
+        elif opt_format is not None:
+            abort(400, "Unsupported format")
 
         return jsonify(result)
     abort(404, "CRE does not exist")
