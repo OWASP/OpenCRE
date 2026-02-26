@@ -100,7 +100,10 @@ def _document_to_cyclonedx_component(document: defs.Document) -> dict[str, Any]:
         component["description"] = document.description
     if document.tags:
         component["properties"].append(
-            {"name": "opencre:tags", "value": ",".join(document.tags)}
+            {
+                "name": "opencre:tags",
+                "value": ",".join(tag for tag in document.tags if tag),
+            }
         )
     return component
 
