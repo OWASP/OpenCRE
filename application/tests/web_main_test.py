@@ -172,10 +172,15 @@ class TestMain(unittest.TestCase):
             self.assertEqual(200, cdx_response.status_code)
             self.assertEqual("CycloneDX", cdx_payload["bomFormat"])
             self.assertTrue(len(cdx_payload["components"]) == 1)
-            self.assertEqual("CD", cdx_payload["components"][0]["name"])
-            self.assertEqual(
-                "attestation",
-                cdx_payload["components"][0]["externalReferences"][0]["type"],
+            components = cdx_payload["components"]
+            component_cd = next(
+                (c for c in components if c.get("name") == "CD"),
+                None,
+            )
+            self.assertIsNotNone(component_cd)
+            external_references = component_cd.get("externalReferences", [])
+            self.assertTrue(
+                any(ref.get("type") == "attestation" for ref in external_references)
             )
 
     def test_find_by_name(self) -> None:
