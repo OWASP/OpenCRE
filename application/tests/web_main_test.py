@@ -164,6 +164,20 @@ class TestMain(unittest.TestCase):
             )
             self.assertEqual(re.sub("\s", "", md_response.data.decode()), md_expected)
 
+            cdx_response = client.get(
+                f"/rest/v1/id/{cres['cd'].id}?format=cyclonedx",
+                headers={"Content-Type": "application/json"},
+            )
+            cdx_payload = json.loads(cdx_response.data.decode())
+            self.assertEqual(200, cdx_response.status_code)
+            self.assertEqual("CycloneDX", cdx_payload["bomFormat"])
+            self.assertTrue(len(cdx_payload["components"]) == 1)
+            self.assertEqual("CD", cdx_payload["components"][0]["name"])
+            self.assertEqual(
+                "attestation",
+                cdx_payload["components"][0]["externalReferences"][0]["type"],
+            )
+
     def test_find_by_name(self) -> None:
         collection = db.Node_collection().with_graph()
         cres = {
@@ -383,6 +397,17 @@ class TestMain(unittest.TestCase):
                 for row in csv.DictReader(str(csv_response.data).splitlines())
             ]
             self.assertCountEqual(expected, actual)
+
+            cdx_response = client.get(
+                f"/rest/v1/standard/{nodes['sa'].name}?format=cyclonedx"
+            )
+            cdx_payload = json.loads(cdx_response.data.decode())
+            self.assertEqual(200, cdx_response.status_code)
+            self.assertEqual("CycloneDX", cdx_payload["bomFormat"])
+            self.assertEqual(5, len(cdx_payload["components"]))
+            self.assertEqual(
+                "Standard", cdx_payload["components"][0]["properties"][0]["value"]
+            )
 
     def test_find_document_by_tag(self) -> None:
         collection = db.Node_collection()
