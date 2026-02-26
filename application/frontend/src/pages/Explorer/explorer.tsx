@@ -137,7 +137,7 @@ export const Explorer = () => {
         <h1>Open CRE Explorer</h1>
         <p>
           A visual explorer of Open Common Requirement Enumerations (CREs). Originally created by:{' '}
-          <a target="_blank" href="https://zeljkoobrenovic.github.io/opencre-explorer/">
+          <a target="_blank" rel="noopener noreferrer" href="https://zeljkoobrenovic.github.io/opencre-explorer/">
             Zeljko Obrenovic
           </a>
           .
@@ -158,13 +158,13 @@ export const Explorer = () => {
                 <a href="/explorer/circles">Zoomable circles</a>
               </li>
             </ul>
-            {/* <a target="_blank" href="visuals/force-graph-3d-contains.html">
+            {/* <a target="_blank" rel="noopener noreferrer" href="visuals/force-graph-3d-contains.html">
               hierarchy only
             </a>
-            <a target="_blank" href="visuals/force-graph-3d-related.html">
+            <a target="_blank" rel="noopener noreferrer" href="visuals/force-graph-3d-related.html">
               related only
             </a>
-            <a target="_blank" href="visuals/force-graph-3d-linked.html">
+            <a target="_blank" rel="noopener noreferrer" href="visuals/force-graph-3d-linked.html">
               links to external standards
             </a>*/}
           </div>

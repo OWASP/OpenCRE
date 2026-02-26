@@ -164,6 +164,39 @@ class TestMain(unittest.TestCase):
             )
             self.assertEqual(re.sub("\s", "", md_response.data.decode()), md_expected)
 
+    @patch("application.web.web_main.posthog")
+    def test_find_by_id_tracks_normalized_source(self, posthog_mock) -> None:
+        collection = self.collection
+        cre = defs.CRE(id="123-123", description="CA", name="CA", tags=["ta"])
+        collection.add_cre(cre)
+
+        with self.app.test_client() as client:
+            response = client.get(
+                f"/rest/v1/id/{cre.id}?source=WSTG%20v4.2%2Bdraft%2Fmain"
+            )
+            self.assertEqual(200, response.status_code)
+            self.assertEqual({"data": cre.todict()}, json.loads(response.data.decode()))
+
+        posthog_mock.capture.assert_called_once_with(
+            "find_cre",
+            f"id:{cre.id};nameNone;source:wstg-v4.2-draft-main",
+        )
+
+    @patch("application.web.web_main.posthog")
+    def test_find_by_id_ignores_empty_source(self, posthog_mock) -> None:
+        collection = self.collection
+        cre = defs.CRE(id="123-124", description="CB", name="CB", tags=["tb"])
+        collection.add_cre(cre)
+
+        with self.app.test_client() as client:
+            response = client.get(f"/rest/v1/id/{cre.id}?source=%20%20")
+            self.assertEqual(200, response.status_code)
+
+        posthog_mock.capture.assert_called_once_with(
+            "find_cre",
+            f"id:{cre.id};nameNone",
+        )
+
     def test_find_by_name(self) -> None:
         collection = db.Node_collection().with_graph()
         cres = {
