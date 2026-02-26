@@ -76,7 +76,8 @@ def _document_attestation_url(document: defs.Document) -> str:
         return f"https://www.opencre.org/cre/{document.id}"
     if getattr(document, "hyperlink", ""):
         return document.hyperlink
-    return f"https://www.opencre.org/node/{document.doctype.value.lower()}/{urllib.parse.quote(document.name)}"
+    identifier = str(document.id) if getattr(document, "id", None) else document.name
+    return f"https://www.opencre.org/node/{document.doctype.value.lower()}/{urllib.parse.quote(identifier)}"
 
 
 def _document_to_cyclonedx_component(document: defs.Document) -> dict[str, Any]:
