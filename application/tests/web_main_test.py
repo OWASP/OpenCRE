@@ -21,6 +21,8 @@ from application.utils import spreadsheet
 from application.defs import cre_defs as defs
 from application.web import web_main
 from application.utils.gap_analysis import GAP_ANALYSIS_TIMEOUT
+from application.cmd import cre_main
+from application.utils import spreadsheet_parsers
 
 
 class MockJob:
@@ -973,3 +975,43 @@ class TestMain(unittest.TestCase):
                 data.getvalue(),
                 response.data.decode(),
             )
+
+    @patch.object(cre_main, "suggest_cre_mappings")
+    @patch("application.utils.spreadsheet_parsers.parse_export_format")
+    def test_suggest_cre_mappings_endpoint(
+        self,
+        mock_parse,
+        mock_suggest,
+    ) -> None:
+        mock_parse.return_value = {
+            defs.Credoctypes.Standard.value: [
+                defs.Standard(name="PCI-DSS", section="Use strong cryptography")
+            ]
+        }
+        mock_suggest.return_value = {
+            "mapped": [
+                {
+                    "standard": {"name": "PCI-DSS", "section": "Use strong cryptography"},
+                    "suggested_cre_id": "cre-db-id-123",
+                    "confidence": 0.85,
+                }
+            ],
+            "needs_review": [],
+        }
+
+        # Create a fake CSV file
+        csv_content = b"Standard,section,description\nPCI-DSS,Use strong cryptography,Encrypt all data"
+        data = {"cre_csv": (io.BytesIO(csv_content), "test.csv")}
+
+        with self.app.test_client() as client:
+            response = client.post(
+                "/rest/v1/suggest_cre_mappings",
+                data=data,
+                content_type="multipart/form-data",
+            )
+        self.assertEqual(response.status_code, 200)
+        result = json.loads(response.data)
+        self.assertIn("mapped", result)
+        self.assertIn("needs_review", result)
+        self.assertEqual(len(result["mapped"]), 1)
+        self.assertEqual(result["mapped"][0]["suggested_cre_id"], "cre-db-id-123")

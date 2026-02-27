@@ -956,6 +956,40 @@ def import_from_cre_csv() -> Any:
         }
     )
 
+@app.route("/rest/v1/suggest_cre_mappings", methods=["POST"])
+def suggest_cre_mappings() -> Any:
+    """Given a CSV of standard entries, suggest matching CREs using embeddings.
+
+    Accepts a multipart form upload with a 'cre_csv' file.
+    Returns high-confidence mappings and low-confidence ones flagged for review.
+    """
+    database = db.Node_collection()
+    file = request.files.get("cre_csv")
+
+    if file is None:
+        abort(400, "No file provided")
+
+    contents = file.read()
+    csv_read = csv.DictReader(contents.decode("utf-8").splitlines())
+    try:
+        documents = spreadsheet_parsers.parse_export_format(list(csv_read))
+    except cre_exceptions.DuplicateLinkException as dle:
+        abort(500, f"error during parsing of the incoming CSV, err:{dle}")
+
+    standards = []
+    for _, entries in documents.items():
+        if _ != defs.Credoctypes.CRE.value:
+            standards.extend(list(entries))
+
+    if not standards:
+        abort(400, "No standard entries found in CSV")
+
+    result = cre_main.suggest_cre_mappings(
+        standard_entries=standards,
+        collection=database,
+    )
+    return jsonify(result)
+
 
 # /End Importing Handlers
 
