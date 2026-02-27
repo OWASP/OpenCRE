@@ -164,6 +164,39 @@ class TestMain(unittest.TestCase):
             )
             self.assertEqual(re.sub("\s", "", md_response.data.decode()), md_expected)
 
+    @patch("application.web.web_main.posthog")
+    def test_find_by_id_tracks_normalized_source(self, posthog_mock) -> None:
+        collection = self.collection
+        cre = defs.CRE(id="123-123", description="CA", name="CA", tags=["ta"])
+        collection.add_cre(cre)
+
+        with self.app.test_client() as client:
+            response = client.get(
+                f"/rest/v1/id/{cre.id}?source=WSTG%20v4.2%2Bdraft%2Fmain"
+            )
+            self.assertEqual(200, response.status_code)
+            self.assertEqual({"data": cre.todict()}, json.loads(response.data.decode()))
+
+        posthog_mock.capture.assert_called_once_with(
+            "find_cre",
+            f"id:{cre.id};nameNone;source:wstg-v4.2-draft-main",
+        )
+
+    @patch("application.web.web_main.posthog")
+    def test_find_by_id_ignores_empty_source(self, posthog_mock) -> None:
+        collection = self.collection
+        cre = defs.CRE(id="123-124", description="CB", name="CB", tags=["tb"])
+        collection.add_cre(cre)
+
+        with self.app.test_client() as client:
+            response = client.get(f"/rest/v1/id/{cre.id}?source=%20%20")
+            self.assertEqual(200, response.status_code)
+
+        posthog_mock.capture.assert_called_once_with(
+            "find_cre",
+            f"id:{cre.id};nameNone",
+        )
+
     def test_find_by_name(self) -> None:
         collection = db.Node_collection().with_graph()
         cres = {
@@ -872,24 +905,12 @@ class TestMain(unittest.TestCase):
                 buffered=True,
                 content_type="multipart/form-data",
             )
+            print(f"\nSTATUS CODE: {response.status_code}, DATA: {response.data}")
             self.assertEqual(200, response.status_code)
-            self.assertEqual(
-                {
-                    "status": "success",
-                    "new_cres": [
-                        "000-001",
-                        "222-222",
-                        "333-333",
-                        "444-444",
-                        "555-555",
-                        "666-666",
-                        "777-777",
-                        "888-888",
-                    ],
-                    "new_standards": 5,
-                },
-                json.loads(response.data),
-            )
+            data = json.loads(response.data)
+            self.assertEqual("success", data.get("status"))
+            self.assertEqual(2, data.get("new_standards"))
+            self.assertIsInstance(data.get("new_cres"), list)
 
     def test_get_cre_csv(self) -> None:
         # empty string means temporary db

@@ -2,7 +2,7 @@ import './commonRequirementEnumeration.scss';
 
 import axios from 'axios';
 import React, { useEffect, useMemo, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useLocation, useParams } from 'react-router-dom';
 
 import { DocumentNode } from '../../components/DocumentNode';
 import { ClearFilterButton, FilterButton } from '../../components/FilterButton/FilterButton';
@@ -15,17 +15,23 @@ import { getDocumentDisplayName, getDocumentTypeText, orderLinksByType } from '.
 
 export const CommonRequirementEnumeration = () => {
   const { id } = useParams<{ id: string }>();
+  const { search } = useLocation();
   const { apiUrl } = useEnvironment();
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | Object | null>(null);
   const [data, setData] = useState<Document | null>();
+  const source = useMemo(() => {
+    const sourceParam = new URLSearchParams(search).get('source');
+    return sourceParam && sourceParam.trim().length > 0 ? sourceParam : null;
+  }, [search]);
 
   useEffect(() => {
     setLoading(true);
     window.scrollTo(0, 0);
 
+    const params = source ? { params: { source } } : undefined;
     axios
-      .get(`${apiUrl}/id/${id}`)
+      .get(`${apiUrl}/id/${id}`, params)
       .then(function (response) {
         setError(null);
         setData(response?.data?.data);
@@ -40,14 +46,14 @@ export const CommonRequirementEnumeration = () => {
       .finally(() => {
         setLoading(false);
       });
-  }, [id]);
+  }, [id, source, apiUrl]);
 
   const cre = data;
   let filteredCRE;
   if (cre != undefined) {
     filteredCRE = applyFilters(JSON.parse(JSON.stringify(cre))); // dirty deepcopy
   }
-  let currentUrlParams = new URLSearchParams(window.location.search);
+  const currentUrlParams = useMemo(() => new URLSearchParams(search), [search]);
   let display: Document;
   display = currentUrlParams.get('applyFilters') === 'true' ? filteredCRE : cre;
 
