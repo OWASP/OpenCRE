@@ -27,6 +27,12 @@ paths:
           schema:
             type: string
             enum: [json, md, csv, oscal]
+        - name: source
+          in: query
+          required: false
+          description: Optional integration source identifier (for metrics), e.g. wstg
+          schema:
+            type: string
         - name: include_only
           in: query
           required: false
@@ -65,6 +71,12 @@ paths:
           schema:
             type: string
             enum: [json, md, csv, oscal]
+        - name: source
+          in: query
+          required: false
+          description: Optional integration source identifier (for metrics), e.g. wstg
+          schema:
+            type: string
       responses:
         '200':
           description: CRE found
