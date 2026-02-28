@@ -110,3 +110,18 @@ main#explorer-content {
     flex-direction: column;
   }
 }
+@media (max-width: 768px) {
+  main#explorer-content {
+    padding: 1rem; /* Reduce from 30px to prevent content touching edges */
+
+    .search-field {
+      input {
+        width: 100%; /* Expand from fixed 320px - overflows on small screens */
+      }
+    }
+
+    .item {
+      margin: 4px 4px 4px 1rem; /* Reduce from 40px left margin on mobile */
+    }
+  }
+}

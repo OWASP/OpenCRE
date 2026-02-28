@@ -22,7 +22,7 @@ migrate = Migrate(app, sqla, render_as_batch=True)
     "--cover/--no-cover", default=False, help="Run tests under code coverage."
 )  # type: ignore
 @click.argument("test_names", nargs=-1)  # type: ignore
-def test(cover: coverage.Coverage, test_names: List[str]) -> None:
+def test(cover: bool, test_names: List[str]) -> None:
     COV = None
     if cover or os.environ.get("FLASK_COVERAGE"):
         COV = coverage.coverage(

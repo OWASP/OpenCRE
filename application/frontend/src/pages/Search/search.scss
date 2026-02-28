@@ -1024,13 +1024,11 @@ body {
   z-index: 10;
   width: 100%;
   padding: 3rem 0;
-
   background: linear-gradient(
     180deg,
     rgba(255, 255, 255, 0.06),
     rgba(255, 255, 255, 0.02)
   );
-
   backdrop-filter: blur(12px) saturate(160%);
   -webkit-backdrop-filter: blur(12px) saturate(160%);
   border-top: 1px solid rgba(255, 255, 255, 0.12);
@@ -1039,9 +1037,11 @@ body {
     max-width: 112rem;
     margin: 0 auto;
     padding: 0 1rem;
+
     @media (min-width: 640px) {
       padding: 0 1.5rem;
     }
+
     @media (min-width: 1024px) {
       padding: 0 2rem;
     }
@@ -1120,16 +1120,20 @@ body {
       margin-bottom: 1rem;
       font-size: 0.95rem;
     }
+
     .links-list {
       color: #ffffff;
       font-weight: 500;
       margin-bottom: 1rem;
-       font-size: 0.95rem;
+      font-size: 0.95rem;
+
       a {
         display: block;
         color: var(--muted-foreground);
-        transition: color 0.3s;
+        font-size: 0.9rem;
+        transition: color 0.25s ease;
         text-decoration: none;
+
         &:hover {
           color: rgba(var(--muted-foreground-rgb), 0.9);
 
@@ -1138,7 +1142,6 @@ body {
     }
   }
 }
-
 .loading-screen {
   min-height: 100vh;
   background-color: var(--background);
@@ -1170,5 +1173,35 @@ body {
 @keyframes spin {
   to {
     transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 396px) {
+  .search-bar {
+    .search-bar__group {
+      .search-bar__wrapper {
+        .search-bar__flex {
+          .search-bar__icon {
+            left: 1rem;
+            height: 1.1rem;
+            width: 1.1rem;
+          }
+
+          .search-bar__input {
+            font-size: 0.9rem;
+            padding-top: 0.9rem;
+            padding-bottom: 0.9rem;
+            padding-left: 3rem;
+            padding-right: 6.5rem;
+          }
+
+          .search-bar__button {
+            padding: 0.45rem 1.2rem;
+            font-size: 0.85rem;
+            border-radius: 0.6rem;
+          }
+        }
+      }
+    }
   }
 }

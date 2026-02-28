@@ -231,8 +231,8 @@ export const SearchPage = () => {
               </div>
               <h3 className="htu-card__title">Link from your document / tool</h3>
               <p className="htu-card__text">
-                Llink with the CRE ID: <a href="https://opencre.org/cre/764-507">opencre.org/cre/764-507</a>{' '}
-                or use a familiar standard such as CWE:{' '}
+                Link with the CRE ID: <a href="https://opencre.org/cre/764-507">opencre.org/cre/764-507</a> or
+                use a familiar standard such as CWE:{' '}
                 <a href="https://opencre.org/smartlink/standard/CWE/611">
                   opencre.org/smartlink/standard/CWE/611
                 </a>
@@ -257,7 +257,7 @@ export const SearchPage = () => {
 
         <div id="features" className="section">
           <div className="features-grid">
-            <div className="feature-block feature-block--rose">
+            {/* <div className="feature-block feature-block--rose">
               <div className="feature-block__icon-wrapper">
                 <MessageSquare className="icon" />
               </div>
@@ -272,6 +272,29 @@ export const SearchPage = () => {
                 This ensures you get a more <strong>reliable answer</strong>, and also a reference to a{' '}
                 <strong>reputable source</strong>.
               </p>
+            </div> */}
+            <div className="feature-block feature-block--rose">
+              <div className="feature-block__icon-wrapper">
+                <MessageSquare className="icon" />
+              </div>
+              <h3 className="feature-block__title">OPENCRE CHAT</h3>
+
+              <div className="feature-block__text space-y-2">
+                <p>
+                  Use{' '}
+                  <strong>
+                    <a href="https://www.opencre.org/chatbot">OpenCRE Chat</a>
+                  </strong>{' '}
+                  to ask any security question.
+                </p>
+
+                <p>
+                  In collaboration with <strong>Google</strong>, we injected all the standards in OpenCRE into
+                  an AI model to create the most comprehensive security chatbot. This ensures you get a more{' '}
+                  <strong>reliable answer</strong>, and also a reference to a{' '}
+                  <strong>reputable source</strong>.
+                </p>
+              </div>
             </div>
             <div className="feature-block feature-block--teal">
               <div className="feature-block__icon-wrapper">
@@ -281,8 +304,11 @@ export const SearchPage = () => {
                 <a href="https://www.opencre.org/map_analysis">MAP ANALYSIS</a>
               </h3>
               <p className="feature-block__text">
-                Utilize <strong><a href="/map_analysis">Map Analysis</a></strong> as a tool to explore and understand the connections
-                between two standards.
+                Utilize{' '}
+                <strong>
+                  <a href="/map_analysis">Map Analysis</a>
+                </strong>{' '}
+                as a tool to explore and understand the connections between two standards.
               </p>
               <p className="feature-block__text">
                 See how <strong>any two standards connect</strong> with each other, providing valuable
