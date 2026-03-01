@@ -10,9 +10,7 @@ from application.utils.spreadsheet_parsers import (
 
 
 class TestParsers(unittest.TestCase):
-
     def test_parse_export_format(self) -> None:
-
         input_data, expected = data_gen.export_format_data()
         documents = parse_export_format(input_data)
         actual_cres = documents.pop(defs.Credoctypes.CRE.value)

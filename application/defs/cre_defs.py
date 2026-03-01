@@ -3,7 +3,7 @@ import json
 from copy import copy
 from dataclasses import asdict, dataclass, field
 from enum import Enum, EnumMeta
-from typing import Any, Dict, List, Optional, Set, Union
+from typing import Any, Dict, List, Optional, Set, Union, Iterable
 from application.defs import cre_exceptions
 
 
@@ -170,8 +170,10 @@ class ExportFormat:  # TODO: this can likely be replaced with a method that iter
 
 
 class EnumMetaWithContains(EnumMeta):
-    def __contains__(cls: Enum, item: Any) -> bool:
-        return item in [v.value for v in cls.__members__.values()]
+    def __contains__(cls, item: Any) -> bool:
+        # give explicit type for members to help mypy
+        members: Iterable[Enum] = cls.__members__.values()  # type: ignore[name-defined]
+        return item in [v.value for v in members]
 
 
 class Credoctypes(str, Enum, metaclass=EnumMetaWithContains):
@@ -181,12 +183,12 @@ class Credoctypes(str, Enum, metaclass=EnumMetaWithContains):
     Code = "Code"
 
     @staticmethod
-    def from_str(typ: str) -> "Credoctypes":
-        typ = [t for t in Credoctypes if t in typ]
-        if not typ:
+    def from_str(typ: str) -> Optional["Credoctypes"]:
+        matching: list[Credoctypes] = [t for t in Credoctypes if t in typ]
+        if not matching:
             return None
         else:
-            return typ[0]
+            return matching[0]
 
 
 class LinkTypes(str, Enum, metaclass=EnumMetaWithContains):
@@ -203,7 +205,7 @@ class LinkTypes(str, Enum, metaclass=EnumMetaWithContains):
     Tests = "Tests"
 
     @staticmethod
-    def from_str(name: str) -> Any:  # it returns LinkTypes but then it won't run
+    def from_str(name: str) -> "LinkTypes":
         res = [x for x in LinkTypes if x.value == name]
         if not res:
             raise KeyError(
@@ -293,6 +295,13 @@ class Link:
 class Document:
     name: str
     doctype: Credoctypes
+    id: Optional[str] = ""
+    hyperlink: Optional[str] = ""
+    section: Optional[str] = ""
+    sectionID: Optional[str] = ""
+    subsection: Optional[str] = ""
+    version: Optional[str] = ""
+    tooltype: Optional["ToolTypes"] = None
     description: Optional[str] = ""
     links: List[Link] = field(default_factory=list)
     embeddings: List[float] = field(default_factory=list)
@@ -389,8 +398,8 @@ class Document:
             raise cre_exceptions.InvalidDocumentNameException(self)
 
     @classmethod
-    def from_dict(self, input_doc: Dict):
-        document = None
+    def from_dict(cls, input_doc: Dict) -> Optional["Document"]:
+        document: Document | None = None
         if input_doc.get("doctype") == Credoctypes.CRE:
             document = CRE(**input_doc)
             document.doctype = Credoctypes.CRE
@@ -401,13 +410,23 @@ class Document:
         elif input_doc.get("doctype") == Credoctypes.Tool:
             document = Tool(**input_doc)
             document.doctype = Credoctypes.Tool
-            document.tooltype = ToolTypes.from_str(document.tooltype)
-        links = document.links
+            tt = ToolTypes.from_str(document.tooltype)
+            document.tooltype = tt or ToolTypes.Unknown
+        if not document:
+            return None
+        links: List[Any] = document.links
         document.links = []
         for link in links:
-            doc = Document.from_dict(link["document"])
-            l = Link(document=doc, ltype=LinkTypes.from_str(link["ltype"]))
-            document.add_link(l)
+            if isinstance(link, dict):
+                doc = Document.from_dict(link["document"])
+                if doc is not None:
+                    l = Link(document=doc, ltype=LinkTypes.from_str(link["ltype"]))
+                    document.add_link(l)
+            elif isinstance(link, Link):
+                document.add_link(link)
+            else:
+                # unexpected format, ignore
+                continue
         return document
 
 
@@ -481,6 +500,8 @@ class Standard(Node):
         return hash(json.dumps(self.todict()))
 
     def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Standard):
+            return False
         return (
             super().__eq__(other)
             and self.section == other.section
@@ -512,6 +533,8 @@ class Tool(Standard):
         return super().__post_init__()
 
     def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Tool):
+            return False
         return super().__eq__(other) and self.tooltype == other.tooltype
 
     def todict(self) -> Dict[str, Any]:

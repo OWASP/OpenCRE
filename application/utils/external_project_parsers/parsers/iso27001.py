@@ -12,7 +12,7 @@ from application.utils.external_project_parsers.base_parser_defs import (
     ParserInterface,
     ParseResult,
 )
-from typing import List
+from typing import List, Optional
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
@@ -77,7 +77,11 @@ class ISO27001(ParserInterface):
     #             )
     #     return nist_table
 
-    def parse(self, cache: db.Node_collection, ph: prompt_client.PromptHandler):
+    def parse(
+        self,
+        cache: db.Node_collection,
+        ph: Optional[prompt_client.PromptHandler],
+    ) -> ParseResult:
         return ParseResult(
             results={self.name: []}
         )  # the doc above does not have names we get the names from the spreadsheet for now, disable

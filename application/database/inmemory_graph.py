@@ -1,7 +1,7 @@
 import sys
 import logging
 import networkx as nx
-from typing import List, Tuple
+from typing import Any, List, Optional
 from application.defs import cre_defs as defs
 
 
@@ -16,31 +16,36 @@ class CycleDetectedError(Exception):
 
 
 class Singleton_Graph_Storage(nx.DiGraph):
-    __instance: "Singleton_Graph_Storage" = None
+    __instance: Optional["Singleton_Graph_Storage"] = None
 
     @classmethod
     def instance(cls) -> "Singleton_Graph_Storage":
         if cls.__instance is None:
-            cls.__instance = nx.DiGraph()
+            cls.__instance = cls()
         return cls.__instance
 
-    def __init__():
-        raise ValueError("CRE_Graph is a singleton, please call instance() instead")
+    def __init__(self) -> None:
+        super().__init__()
+        if Singleton_Graph_Storage.__instance is not None:
+            raise ValueError("CRE_Graph is a singleton, please call instance() instead")
 
 
 class CRE_Graph:
-    __graph: nx.Graph = None
-    __parent_child_subgraph = None
+    def __init__(self) -> None:
+        self.__graph: nx.DiGraph = Singleton_Graph_Storage.instance()
+        self.__parent_child_subgraph: Optional[nx.Graph] = None
 
-    def get_raw_graph(self):
+    def get_raw_graph(self) -> nx.DiGraph:
         return self.__graph
 
-    def with_graph(self, graph: nx.Graph, graph_data: List[defs.Document]):
+    def with_graph(self, graph: nx.DiGraph, graph_data: List[defs.Document]) -> None:
         self.__graph = graph
         if not len(graph.edges):
             self.__load_cre_graph(graph_data)
 
-    def introduces_cycle(self, doc_from: defs.Document, link_to: defs.Link):
+    def introduces_cycle(
+        self, doc_from: defs.Document, link_to: defs.Link
+    ) -> Optional[Any]:
         try:
             ex = self.has_cycle()
             if ex:
@@ -54,7 +59,9 @@ class CRE_Graph:
 
         # TODO: when this becomes too slow (e.g. when we are importing 1000s of CREs at once)
         # we can instead add the edge find the cycle and then remove the edge
-        new_graph = self.__graph.copy()
+        # Avoid NetworkX creating a new instance of our singleton subclass on copy().
+        # Copy into a plain DiGraph for speculative cycle checks.
+        new_graph = nx.DiGraph(self.__graph)
 
         # this needs our special add_edge but with the copied graph
         new_graph = self.__add_graph_edge(
@@ -65,15 +72,14 @@ class CRE_Graph:
         except nx.exception.NetworkXNoCycle:
             return None
 
-    def has_cycle(self):
+    def has_cycle(self) -> Optional[Any]:
         try:
             ex = nx.find_cycle(self.__graph, orientation="original")
             return ex
         except nx.exception.NetworkXNoCycle:
             return None
 
-    def get_hierarchy(self, rootIDs: List[str], creID: str):
-
+    def get_hierarchy(self, rootIDs: List[str], creID: str) -> int:
         if len(self.__graph.edges) == 0:
             logger.error("graph is empty")
             return -1
@@ -87,12 +93,14 @@ class CRE_Graph:
             include_cres = []
             for el in self.__graph.edges:
                 edge_data = self.__graph.get_edge_data(*el)
+                if edge_data is None:
+                    continue
                 if (
                     el[0].startswith("CRE")
                     and el[1].startswith("CRE")
                     and (
-                        edge_data["ltype"] == defs.LinkTypes.Contains
-                        or edge_data["ltype"] == defs.LinkTypes.PartOf
+                        edge_data["ltype"] == defs.LinkTypes.Contains.value
+                        or edge_data["ltype"] == defs.LinkTypes.PartOf.value
                     )
                 ):
                     include_cres.append(el[0])
@@ -106,6 +114,9 @@ class CRE_Graph:
             self.__parent_child_subgraph = self.__graph.subgraph(set(include_cres))
 
         shortest_path = sys.maxsize
+        if self.__parent_child_subgraph is None:
+            return shortest_path
+
         for root in rootIDs:
             try:
                 shortest_path = min(
@@ -131,13 +142,13 @@ class CRE_Graph:
                 continue
         return shortest_path
 
-    def get_path(self, start: str, end: str) -> List[Tuple[str, str]]:
+    def get_path(self, start: str, end: str) -> List[str]:
         try:
             return nx.shortest_path(self.__graph, start, end)
         except nx.NetworkXNoPath:
             return []
 
-    def add_cre(self, cre: defs.CRE):
+    def add_cre(self, cre: defs.CRE) -> None:
         if not isinstance(cre, defs.CRE):
             raise ValueError(
                 f"inmemory graph add_cre takes only cre objects, instead got {type(cre)}"
@@ -146,12 +157,12 @@ class CRE_Graph:
         if cre and graph_cre not in self.__graph.nodes():
             self.__graph.add_node(graph_cre, internal_id=cre.id)
 
-    def add_dbnode(self, dbnode: defs.Node):
+    def add_dbnode(self, dbnode: defs.Node) -> None:
         graph_node = "Node: " + str(dbnode.id)
         if dbnode and graph_node not in self.__graph.nodes():
             self.__graph.add_node(graph_node, internal_id=dbnode.id)
 
-    def add_link(self, doc_from: defs.Document, link_to: defs.Link):
+    def add_link(self, doc_from: defs.Document, link_to: defs.Link) -> None:
         logger.debug(
             f"adding link {doc_from.id}, {link_to.document.id} ltype: {link_to.ltype}"
         )
@@ -174,7 +185,7 @@ class CRE_Graph:
         doc_from: defs.Document,
         link_to: defs.Link,
         graph: nx.DiGraph,
-    ) -> nx.digraph:
+    ) -> nx.DiGraph:
         """
         Adds a directed edge to the graph provided
         called by both graph population and speculative cycle finding methods
@@ -185,7 +196,7 @@ class CRE_Graph:
                 f"cannot add an edge from a document to itself, from: {doc_from}, to: {link_to.document}"
             )
         to_doctype = defs.Credoctypes.CRE.value
-        if link_to.document.doctype != defs.Credoctypes.CRE.value:
+        if link_to.document.doctype != defs.Credoctypes.CRE:
             to_doctype = "Node"
 
         if doc_from.doctype == defs.Credoctypes.CRE:
@@ -233,21 +244,26 @@ class CRE_Graph:
             )
         return graph
 
-    def __load_cre_graph(self, documents: List[defs.Document]):
+    def __load_cre_graph(self, documents: List[defs.Document]) -> None:
         for doc in documents:
             if not doc:
                 continue
             if doc.doctype == defs.Credoctypes.CRE:
-                self.add_cre(cre=doc)
+                if isinstance(doc, defs.CRE):
+                    self.add_cre(cre=doc)
             else:
-                self.add_dbnode(dbnode=doc)
+                if isinstance(doc, defs.Node):
+                    self.add_dbnode(dbnode=doc)
             for link in doc.links:
                 if not link.document:
                     logger.error(f"doc {doc}, has a link with a document that's None")
+                    continue
                 if link.document.doctype == defs.Credoctypes.CRE:
-                    self.add_cre(cre=link.document)
+                    if isinstance(link.document, defs.CRE):
+                        self.add_cre(cre=link.document)
                 else:
-                    self.add_dbnode(dbnode=link.document)
+                    if isinstance(link.document, defs.Node):
+                        self.add_dbnode(dbnode=link.document)
                 try:
                     self.add_link(doc_from=doc, link_to=link)
                 except CycleDetectedError as cde:

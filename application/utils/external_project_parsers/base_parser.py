@@ -8,6 +8,8 @@ from alive_progress import alive_bar
 from application.utils.external_project_parsers.parsers import *
 from application.utils import gap_analysis
 import os, json
+from typing import Type
+from application.defs import cre_defs as defs
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
@@ -18,7 +20,7 @@ class BaseParser:
     @classmethod
     def register_resource(
         self,
-        sclass: base_parser_defs.ParserInterface,
+        sclass: Type[base_parser_defs.ParserInterface],
         db_connection_str: str,
     ):
         from application.cmd import cre_main
@@ -37,10 +39,19 @@ class BaseParser:
             return
 
         resultObj = sclass_instance.parse(db, ph)
+        if resultObj.results is None:
+            return
         try:
             for _, documents in resultObj.results.items():
+                standard_documents = [
+                    document
+                    for document in documents
+                    if isinstance(document, defs.Standard)
+                ]
+                if not standard_documents:
+                    continue
                 cre_main.register_standard(
-                    standard_entries=documents,
+                    standard_entries=standard_documents,
                     db_connection_str=db_connection_str,
                     calculate_gap_analysis=resultObj.calculate_gap_analysis,
                     generate_embeddings=resultObj.calculate_embeddings,
@@ -61,7 +72,9 @@ class BaseParser:
         q = Queue(connection=conn)
         import_only = {}
         if os.environ.get("CRE_IMPORTERS_IMPORT_ONLY"):
-            import_only = json.loads(os.environ.get("CRE_IMPORTERS_IMPORT_ONLY"))
+            import_only_env = os.environ.get("CRE_IMPORTERS_IMPORT_ONLY")
+            if import_only_env:
+                import_only = json.loads(import_only_env)
 
         for subclass in base_parser_defs.ParserInterface.__subclasses__():
             if import_only and subclass.name not in import_only:
