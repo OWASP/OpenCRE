@@ -1,6 +1,7 @@
 import os
 
 basedir = os.path.abspath(os.path.dirname(__file__))
+ENABLE_MYOPENCRE = os.getenv("ENABLE_MYOPENCRE", "false").lower() == "true"
 
 
 class Config:
