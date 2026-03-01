@@ -26,7 +26,7 @@ repos:
 
 
     - id: coverage-check
-      name: Coverage >= 80%
+      name: Coverage >= 70%
       entry: bash -c "FLASK_APP=cre.py FLASK_CONFIG=test flask test --cover"
       language: system
       pass_filenames: false
