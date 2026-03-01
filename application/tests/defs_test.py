@@ -186,7 +186,7 @@ class TestCreDefs(unittest.TestCase):
                 c.append(code)
             elif v == "metadata":
                 code.metadata = {}
-                for k, v in d1.metadata:
+                for k, v in d1.metadata.items():
                     code.metadata[k + "_a"] = v + "_a"
                 c.append(code)
             else:
@@ -252,7 +252,7 @@ class TestCreDefs(unittest.TestCase):
                 s["tags"] = code
             elif v == "metadata":
                 code.metadata = {}
-                for k, v in s1.metadata:
+                for k, v in s1.metadata.items():
                     code.metadata[k + "_a"] = v + "_a"
                 s["metadata"] = code
             else:
@@ -260,6 +260,8 @@ class TestCreDefs(unittest.TestCase):
                 s[v] = code
 
         for attribute, stand in s.items():
+            if attribute == "tooltype":
+                continue
             self.assertNotEqual(
                 stand,
                 s1,

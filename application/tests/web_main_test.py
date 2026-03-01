@@ -8,6 +8,7 @@ import json
 import unittest
 import tempfile
 from unittest.mock import patch
+from typing import Dict, List, cast
 
 import redis
 import rq
@@ -250,14 +251,13 @@ class TestMain(unittest.TestCase):
 
             csv_expected = "CRE:name,CRE:id,CRE:description,Linked_CRE_0:id,Linked_CRE_0:name,Linked_CRE_0:link_type,Linked_CRE_1:id,Linked_CRE_1:name,Linked_CRE_1:link_type,Linked_CRE_2:id,Linked_CRE_2:name,Linked_CRE_2:link_typeCC,4,CC,2,CD,Contains,,,,,,"
             csv_response = client.get(f"/rest/v1/name/{cres['cc'].name}?format=csv")
-            expected = []
-            actual = []
-            [expected.append(dict(row)) for row in csv.DictReader([csv_expected])]
-            [
-                actual.append(dict(row))
-                for row in csv.DictReader(str(csv_response.data).splitlines())
-            ]
-            self.assertCountEqual(expected, actual)
+            expected_rows: List[Dict[str, str]] = []
+            actual_rows: List[Dict[str, str]] = []
+            for row in csv.DictReader([csv_expected]):
+                expected_rows.append(dict(row))
+            for row in csv.DictReader(str(csv_response.data).splitlines()):
+                actual_rows.append(dict(row))
+            self.assertCountEqual(expected_rows, actual_rows)
 
     def test_find_node_by_name(self) -> None:
         collection = db.Node_collection()
@@ -408,14 +408,13 @@ class TestMain(unittest.TestCase):
             csv_response = client.get(
                 f"/rest/v1/standard/{nodes['sa'].name}?format=csv"
             )
-            expected = []
-            actual = []
-            [expected.append(dict(row)) for row in csv.DictReader([csv_expected])]
-            [
-                actual.append(dict(row))
-                for row in csv.DictReader(str(csv_response.data).splitlines())
-            ]
-            self.assertCountEqual(expected, actual)
+            expected_rows: List[Dict[str, str]] = []
+            actual_rows: List[Dict[str, str]] = []
+            for row in csv.DictReader([csv_expected]):
+                expected_rows.append(dict(row))
+            for row in csv.DictReader(str(csv_response.data).splitlines()):
+                actual_rows.append(dict(row))
+            self.assertCountEqual(expected_rows, actual_rows)
 
     def test_find_document_by_tag(self) -> None:
         collection = db.Node_collection()
@@ -446,8 +445,8 @@ class TestMain(unittest.TestCase):
             "sa": defs.Standard(section="sa", subsection="sbb", name="SB"),
         }
 
-        collection.add_cre(docs["ca"])
-        collection.add_node(docs["sa"])
+        collection.add_cre(cast(defs.CRE, docs["ca"]))
+        collection.add_node(cast(defs.Node, docs["sa"]))
 
         with self.app.test_client() as client:
             response = client.get(f"/rest/v1/text_search?text='CRE:2'")
@@ -559,6 +558,8 @@ class TestMain(unittest.TestCase):
             dcd = collection.add_cre(cres["cd"])
             dasvs = collection.add_node(standards["ASVS"])
             dcwe = collection.add_node(standards["cwe0"])
+            if dasvs is None or dcwe is None:
+                raise AssertionError("expected standards to be persisted")
             collection.add_internal_link(
                 higher=dca, lower=dcd, ltype=defs.LinkTypes.Contains
             )
@@ -765,6 +766,8 @@ class TestMain(unittest.TestCase):
             dcd = collection.add_cre(cres["cd"])
             dasvs = collection.add_node(standards["ASVS"])
             dcwe = collection.add_node(standards["cwe0"])
+            if dasvs is None or dcwe is None:
+                raise AssertionError("expected standards to be persisted")
             collection.add_internal_link(
                 higher=dca, lower=dcd, ltype=defs.LinkTypes.Contains
             )
@@ -860,7 +863,7 @@ class TestMain(unittest.TestCase):
 
     @patch.object(db, "Node_collection")
     def test_all_cres(self, db_mock) -> None:
-        cres = []
+        cres: List[defs.CRE] = []
 
         for i in range(0, 5):
             c = defs.CRE(name=f"cre{i}", id=f"{i}{i}{i}-{i}{i}{i}")

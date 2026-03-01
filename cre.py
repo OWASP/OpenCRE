@@ -53,7 +53,11 @@ def test(cover: bool, test_names: List[str]) -> None:
         COV.stop()
         COV.save()
         print("Coverage Summary:")
-        COV.report()
+        total = COV.report()
+        if total < 70:
+            raise RuntimeError(
+                f"Coverage check failed: total coverage {total:.2f}% is below 70%"
+            )
         basedir = os.path.abspath(os.path.dirname(__file__))
         covdir = os.path.join(basedir, "tmp/coverage")
         COV.html_report(directory=covdir)

@@ -2,6 +2,8 @@ import logging
 import os
 import shutil
 import tempfile
+
+# mypy: disable-error-code="list-item,arg-type"
 import unittest
 from typing import Any, Dict, List
 from unittest import mock

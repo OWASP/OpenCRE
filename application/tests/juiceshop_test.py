@@ -1,3 +1,4 @@
+# mypy: disable-error-code="arg-type,union-attr"
 from pathlib import Path
 from application.defs import cre_defs as defs
 import unittest

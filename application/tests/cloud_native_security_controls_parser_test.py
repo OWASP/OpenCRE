@@ -1,3 +1,4 @@
+# mypy: disable-error-code="arg-type,union-attr"
 from pathlib import Path
 from tempfile import mkdtemp, mkstemp
 import zipfile

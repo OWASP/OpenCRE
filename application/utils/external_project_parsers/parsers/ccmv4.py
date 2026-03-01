@@ -1,5 +1,5 @@
 import logging
-from typing import Dict, Any
+from typing import Optional
 from application.database import db
 from application.defs import cre_defs as defs
 
@@ -41,8 +41,12 @@ class CloudControlsMatrix(ParserInterface):
     #         url="https://docs.google.com/spreadsheets/d/1QDzQy0wt1blGjehyXS3uaHh7k5OOR12AWgAA1DeACyc",
     #     )
 
-    def parse(self, cache: db.Node_collection, ph: prompt_client.PromptHandler):
-        return {self.name: []}  # disabled
+    def parse(
+        self,
+        cache: db.Node_collection,
+        ph: Optional[prompt_client.PromptHandler],
+    ) -> ParseResult:
+        return ParseResult(results={self.name: []})  # disabled
         # ccmFile: Dict[str, Any] = self.get_ccm_file()
         # nist_map = self.make_nist_map(cache)
         # re_nist = re.compile("(\w+-\d+)")

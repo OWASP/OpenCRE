@@ -3,18 +3,17 @@ import logging
 import os
 import re
 import urllib
-from typing import List, NamedTuple
+from typing import List, Optional
 from xmlrpc.client import boolean
 
 from application.database import db
 from application.defs import cre_defs as defs
-from application.utils import git
 from application.prompt_client import prompt_client as prompt_client
+from application.utils import git
 from application.utils.external_project_parsers.base_parser_defs import (
     ParserInterface,
     ParseResult,
 )
-import requests
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
@@ -29,10 +28,16 @@ class MiscTools(ParserInterface):
 
     # TODO (spyros): need to decouple git ops from parsing in order to make this testable
     # although i could just mock the git ops :$
-    def parse(self, cache: db.Node_collection, ph: prompt_client.PromptHandler):
-        tools = {}
+    def parse(
+        self,
+        cache: db.Node_collection,
+        ph: Optional["prompt_client.PromptHandler"],
+    ) -> ParseResult:
+        tools: dict[str, List[defs.Tool]] = {}
         for url in self.tool_urls:
             tool_entries = self.parse_tool(cache=cache, tool_repo=url)
+            if not tool_entries:
+                continue
             tools[tool_entries[0].name] = tool_entries
         return ParseResult(results=tools)
 
@@ -61,18 +66,18 @@ class MiscTools(ParserInterface):
                 tool_name = title.group("title").strip()
                 cre_id = cre.group("cre").strip()
                 register = True if "register" in values else False
-                type = (
-                    values.get("type")[0] or "Tool"
-                )  # this parser matches tools so this is really optional
-                tool_type = values.get("tool_type")[0] or "Unknown"
-                description = values.get("description")[0] or ""
-                tags = values.get("tags")[0].split(",") if "tags" in values else []
+                tool_type = values.get("tool_type", ["Unknown"])[0]
+                description = values.get("description", [""])[0]
+                tags = values["tags"][0].split(",") if "tags" in values else []
                 if cre_id and register:
                     cres = cache.get_CREs(external_id=cre_id)
                     hyperlink = f"{tool_repo.replace('.git','')}"
+                    resolved_tool_type = defs.ToolTypes.from_str(tool_type)
+                    if resolved_tool_type is None:
+                        resolved_tool_type = defs.ToolTypes.Unknown
                     cs = defs.Tool(
                         name=tool_name,
-                        tooltype=defs.ToolTypes.from_str(tool_type),
+                        tooltype=resolved_tool_type,
                         tags=tags,
                         hyperlink=hyperlink,
                         description=description,

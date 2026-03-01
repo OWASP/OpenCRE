@@ -17,7 +17,7 @@ logging.basicConfig()
 
 
 # the supported resources from the main CSV
-supported_resource_mapping = {
+supported_resource_mapping: Dict[str, Any] = {
     "CRE": {
         "id": "CRE ID",
         "name": "CRE hierarchy",
@@ -203,7 +203,7 @@ def parse_export_format(lfile: List[Dict[str, Any]]) -> Dict[str, List[defs.Docu
     Given: a spreadsheet written by prepare_spreadsheet()
     return a list of CRE docs
     """
-    validated_rows = validate_export_csv_rows(lfile)
+    validated_rows = validate_import_csv_rows(lfile)
     cres: Dict[str, defs.CRE] = {}
     standards: Dict[str, Dict[str, defs.Standard]] = {}
     documents: Dict[str, List[defs.Document]] = {}
@@ -230,34 +230,41 @@ def parse_export_format(lfile: List[Dict[str, Any]]) -> Dict[str, List[defs.Docu
         working_standard = None
         # get highest numbered CRE entry (lowest in hierarchy)
         for i in range(max_internal_cre_links - 1, -1, -1):
-            if not is_empty(mapping_line.get(f"CRE {i}")):
-                entry = mapping_line.get(f"CRE {i}").split(defs.ExportFormat.separator)
+            val = mapping_line.get(f"CRE {i}")
+            if not is_empty(val):
+                entry = str(val).split(defs.ExportFormat.separator)
                 if not entry or len(entry) < 2:
-                    line = mapping_line.get(f"CRE {i}")
+                    line = val
                     raise ValueError(
                         f"mapping line contents: {line}, key: CRE {i} is not formatted correctly, missing separator {defs.ExportFormat.separator}"
                     )
                 working_cre = defs.CRE(name=entry[1], id=entry[0])
-                if cres.get(working_cre.id):
-                    working_cre = cres[working_cre.id]
+                working_cre_id = working_cre.id or ""
+                if working_cre_id in cres:
+                    working_cre = cres[working_cre_id]
 
                 if previous_index < i:  # we found a higher hierarchy CRE
                     previous_index = i
                     highest_cre = previous_cre
-                    cres[highest_cre.id] = highest_cre.add_link(
-                        defs.Link(
-                            document=working_cre.shallow_copy(),
-                            ltype=defs.LinkTypes.Contains,
+                    if highest_cre:
+                        updated_highest_cre = highest_cre.add_link(
+                            defs.Link(
+                                document=working_cre.shallow_copy(),
+                                ltype=defs.LinkTypes.Contains,
+                            )
                         )
-                    )
+                        if isinstance(updated_highest_cre, defs.CRE):
+                            cres[str(highest_cre.id)] = updated_highest_cre
                 elif highest_index < i:  # we found a higher hierarchy CRE
                     lnk = defs.Link(
                         document=working_cre.shallow_copy(),
                         ltype=defs.LinkTypes.Contains,
                     )
-                    if not highest_cre.has_link(lnk):
-                        cres[highest_cre.id] = highest_cre.add_link(lnk)
-                    else:
+                    if highest_cre and not highest_cre.has_link(lnk):
+                        updated_highest_cre = highest_cre.add_link(lnk)
+                        if isinstance(updated_highest_cre, defs.CRE):
+                            cres[str(highest_cre.id)] = updated_highest_cre
+                    elif highest_cre:
                         logger.warning(
                             f"Link between {highest_cre.name} and {working_cre.name} already exists"
                         )
@@ -273,21 +280,27 @@ def parse_export_format(lfile: List[Dict[str, Any]]) -> Dict[str, List[defs.Docu
             if not is_empty(mapping_line.get(f"{s}{defs.ExportFormat.separator}name")):
                 working_standard = defs.Standard(
                     name=s,
-                    sectionID=mapping_line.get(f"{s}{defs.ExportFormat.separator}id"),
-                    section=mapping_line.get(f"{s}{defs.ExportFormat.separator}name"),
-                    hyperlink=mapping_line.get(
-                        f"{s}{defs.ExportFormat.separator}hyperlink", ""
-                    ),
-                    description=mapping_line.get(
-                        f"{s}{defs.ExportFormat.separator}description", ""
-                    ),
+                    sectionID=str(
+                        mapping_line.get(f"{s}{defs.ExportFormat.separator}id", "")
+                    ).strip(),
+                    section=str(
+                        mapping_line.get(f"{s}{defs.ExportFormat.separator}name", "")
+                    ).strip(),
+                    hyperlink=str(
+                        mapping_line.get(
+                            f"{s}{defs.ExportFormat.separator}hyperlink", ""
+                        )
+                    ).strip(),
+                    description=str(
+                        mapping_line.get(
+                            f"{s}{defs.ExportFormat.separator}description", ""
+                        )
+                    ).strip(),
                 )
-                if standards.get(working_standard.name) and standards.get(
-                    working_standard.name
-                ).get(working_standard.id):
-                    working_standard = standards[working_standard.name][
-                        working_standard.id
-                    ]
+                existing_standards = standards.get(working_standard.name, {})
+                standard_id = working_standard.id or ""
+                if standard_id in existing_standards:
+                    working_standard = existing_standards[standard_id]
 
                 if working_cre:
                     working_cre.add_link(
@@ -306,10 +319,10 @@ def parse_export_format(lfile: List[Dict[str, Any]]) -> Dict[str, List[defs.Docu
                 if working_standard.name not in standards:
                     standards[working_standard.name] = {}
 
-                standards[working_standard.name][working_standard.id] = working_standard
+                standards[working_standard.name][standard_id] = working_standard
 
         if working_cre:
-            cres[working_cre.id] = working_cre
+            cres[working_cre.id or ""] = working_cre
     documents[defs.Credoctypes.CRE] = list(cres.values())
 
     for standard_name, standard_entries in standards.items():
@@ -326,12 +339,15 @@ class UninitializedMapping:
 
 
 def get_supported_resources_from_main_csv() -> List[str]:
-    return supported_resource_mapping["Standards"].keys()
+    standards = supported_resource_mapping.get("Standards", {})
+    if isinstance(standards, dict):
+        return list(standards.keys())
+    return []
 
 
 def add_standard_to_documents_array(
     standard: defs.Standard, documents: Dict[str, List[defs.Document]]
-) -> Dict[defs.Credoctypes, Dict[str, List[defs.Document]]]:
+) -> Dict[str, List[defs.Document]]:
     if standard.name not in documents.keys():
         documents[standard.name] = []
     found = False
@@ -368,27 +384,30 @@ def reconcile_uninitializedMappings(
                 f"CRE named: '{mapping.other_cre_name}' does not have an id in the sheet"
             )
         cre = cres[mapping.complete_cre.name]
-        cres[cre.name] = cre.add_link(
+        updated_cre = cre.add_link(
             defs.Link(ltype=mapping.relationship, document=other_cre.shallow_copy())
         )
+        if isinstance(updated_cre, defs.CRE):
+            cres[cre.name] = updated_cre
     return cres
 
 
 def get_highest_cre_name(
     mapping: Dict[str, str], highest_hierarchy: int = 5
-) -> tuple[int, str]:
+) -> tuple[int, Optional[str]]:
     """
-    given a line of the root CSV, returns the highest hierarchy CRE and a number from 1 to 5 based on where in the hierarchy it found the CRE
+    given a line of the root CSV, returns the highest hierarchy CRE index and the CRE name (or None)
     """
     for i in range(highest_hierarchy, 0, -1):
-        if not is_empty(mapping.get(f"CRE hierarchy {i}")):
-            return i, mapping.get(f"CRE hierarchy {i}").strip()
+        val = mapping.get(f"CRE hierarchy {i}")
+        if not is_empty(val):
+            return i, str(val).strip()
     return -1, None
 
 
 def update_cre_in_links(
     documents: Dict[str, defs.CRE], cre: defs.CRE
-) -> List[defs.CRE]:
+) -> Dict[str, defs.CRE]:
     for c in documents.values():
         for link in c.links:
             if link.document.name == cre.name:
@@ -419,15 +438,17 @@ def parse_hierarchical_export_format(
 
     logger.info("Spreadsheet is hierarchical export format")
     documents: Dict[str, List[defs.Document]] = {defs.Credoctypes.CRE.value: []}
-    cre_dict = {}
-    uninitialized_cre_mappings: List[UninitializedMapping] = (
+    cre_dict: Dict[str, defs.CRE] = {}
+    uninitialized_cre_mappings: List[
+        UninitializedMapping
+    ] = (
         []
     )  # the csv has a column "Link to Other CRE", this column linksa complete CRE entry to another CRE by name.
     # The other CRE might not have been initialized yet at the time of linking so it cannot be part of our main document collection yet
     max_hierarchy = len([key for key in cre_file[0].keys() if "CRE hierarchy" in key])
     for mapping in cre_file:
         cre: defs.CRE
-        name: str = ""
+        name: Optional[str] = None
         current_hierarchy: int = 0
         higher_cre: int = 0
 
@@ -472,9 +493,9 @@ def parse_hierarchical_export_format(
         if cre:
             cre_dict = update_cre_in_links(cre_dict, cre)
 
-        mapping["Link to other CRE"] = (
-            f'{mapping["Link to other CRE"]},{",".join(cre.tags)}'
-        )
+        mapping[
+            "Link to other CRE"
+        ] = f'{mapping["Link to other CRE"]},{",".join(cre.tags)}'
 
         if not is_empty(str(mapping.get("Link to other CRE")).strip()):
             other_cres = list(
@@ -513,14 +534,20 @@ def parse_hierarchical_export_format(
                         indx = cre.links.index(lnk)
                         cre.links[indx].document = new_cre.shallow_copy()
                     else:
-                        cre = cre.add_link(lnk)
+                        updated_cre = cre.add_link(lnk)
+                        if isinstance(updated_cre, defs.CRE):
+                            cre = updated_cre
 
         for link in parse_standards(mapping):
             doc = link.document
-            doc = doc.add_link(
-                defs.Link(document=cre.shallow_copy(), ltype=defs.LinkTypes.LinkedTo)
-            )
-            documents = add_standard_to_documents_array(doc, documents)
+            if isinstance(doc, defs.Standard):
+                updated_doc = doc.add_link(
+                    defs.Link(
+                        document=cre.shallow_copy(), ltype=defs.LinkTypes.LinkedTo
+                    )
+                )
+                if isinstance(updated_doc, defs.Standard):
+                    documents = add_standard_to_documents_array(updated_doc, documents)
 
         # link CRE to a higher level one
         if higher_cre and not is_empty(
@@ -551,11 +578,13 @@ def parse_hierarchical_export_format(
                         # ugliest way ever to write "update the object in that pointer"
                     ].document = cre.shallow_copy()
                 else:
-                    cre_hi = cre_hi.add_link(
+                    updated_cre_hi = cre_hi.add_link(
                         defs.Link(
                             ltype=defs.LinkTypes.Contains, document=cre.shallow_copy()
                         )
                     )
+                    if isinstance(updated_cre_hi, defs.CRE):
+                        cre_hi = updated_cre_hi
                 cre_dict[cre_hi.name] = cre_hi
         else:
             pass  # add the cre to documents and make the connection
@@ -568,19 +597,23 @@ def parse_hierarchical_export_format(
 
 
 def parse_standards(
-    mapping: Dict[str, str], standards_mapping: Dict[str, Dict[str, Any]] = None
+    mapping: Dict[str, str],
+    standards_mapping: Optional[Dict[str, Any]] = None,
 ) -> List[defs.Link]:
     if not standards_mapping:
         standards_mapping = supported_resource_mapping
+    standards = standards_mapping.get("Standards", {})
+    if not isinstance(standards, dict):
+        return []
 
     links: List[defs.Link] = []
-    for name, struct in standards_mapping.get("Standards", {}).items():
+    for name, struct in standards.items():
         if not is_empty(mapping.get(struct["section"])) or not is_empty(
             mapping.get(struct["sectionID"])
         ):
             if "separator" in struct:
                 separator = struct["separator"]
-                sections = str(mapping.pop(struct["section"])).split(separator)
+                sections = str(mapping.pop(struct["section"], "")).split(separator)
                 subsections = str(mapping.get(struct["subsection"], "")).split(
                     separator
                 )
@@ -593,7 +626,9 @@ def parse_standards(
 
                 sectionIDs = [""] * len(sections)
                 if struct["sectionID"] in mapping:
-                    sectionIDs = str(mapping.pop(struct["sectionID"])).split(separator)
+                    sectionIDs = str(mapping.pop(struct["sectionID"], "")).split(
+                        separator
+                    )
 
                 if len(sections) == 0:
                     sections = [""] * len(sectionIDs)

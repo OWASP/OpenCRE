@@ -1,6 +1,7 @@
 import json
 from typing import Any, Dict, List, Tuple
 import unittest
+from datetime import datetime
 
 from application.defs import cre_defs as defs
 
@@ -26,6 +27,8 @@ def remove_empty_elements(d):
 
 
 class TestOSCALUtils(unittest.TestCase):
+    _LM = datetime.fromisoformat("2023-02-03T16:17:31.695+00:00")
+
     def test_cre_document_to_oscal(self) -> None:
         cre = defs.CRE(name="cre-1", id="001-001", description="cre-desc")
         for i in range(0, 5):
@@ -114,7 +117,7 @@ class TestOSCALUtils(unittest.TestCase):
             oscal_utils.document_to_oscal(
                 cre,
                 "46c335c9-b9b7-4043-a722-2e5fdc3ccf67",
-                "2023-02-03T16:17:31.695+00:00",
+                self._LM,
             )
         )
 
@@ -205,7 +208,7 @@ class TestOSCALUtils(unittest.TestCase):
             oscal_utils.document_to_oscal(
                 standard,
                 "46c335c9-b9b7-4043-a722-2e5fdc3ccf67",
-                "2023-02-03T16:17:31.695+00:00",
+                self._LM,
             )
         )
 
@@ -221,7 +224,10 @@ class TestOSCALUtils(unittest.TestCase):
         )
         for i in range(0, 5):
             tool.add_link(
-                defs.Link(document=defs.CRE(name=f"cre-{i}", id=f"{i}{i}{i}-{i}{i}{i}"))
+                defs.Link(
+                    document=defs.CRE(name=f"cre-{i}", id=f"{i}{i}{i}-{i}{i}{i}"),
+                    ltype=defs.LinkTypes.LinkedTo,
+                )
             )
 
         expected = {
@@ -290,7 +296,7 @@ class TestOSCALUtils(unittest.TestCase):
             oscal_utils.document_to_oscal(
                 tool,
                 "46c335c9-b9b7-4043-a722-2e5fdc3ccf67",
-                "2023-02-03T16:17:31.695+00:00",
+                self._LM,
             )
         )
 
@@ -357,12 +363,12 @@ class TestOSCALUtils(unittest.TestCase):
             oscal_utils.document_to_oscal(
                 standard,
                 "46c335c9-b9b7-4043-a722-2e5fdc3ccf67",
-                "2023-02-03T16:17:31.695+00:00",
+                self._LM,
             )
         )
         self.assertDictEqual(remove_empty_elements(result), expected)
 
-    def test_tool_document_to_oscal(self) -> None:
+    def test_tool_document_to_oscal_duplicate(self) -> None:
         tool = defs.Tool(
             name="t-1",
             id="-1",
@@ -447,7 +453,7 @@ class TestOSCALUtils(unittest.TestCase):
             oscal_utils.document_to_oscal(
                 tool,
                 "46c335c9-b9b7-4043-a722-2e5fdc3ccf67",
-                "2023-02-03T16:17:31.695+00:00",
+                self._LM,
             )
         )
         self.assertDictEqual(remove_empty_elements(result), expected)
