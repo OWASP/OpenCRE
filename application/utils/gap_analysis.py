@@ -129,6 +129,9 @@ def schedule(standards: List[str], database):
     logger.info(f"Gap analysis result for {standards_hash} does not exist")
 
     conn = redis.connect()
+    if conn is None:
+        logger.error("Redis is not available. Please run 'make start-containers' first.")
+        return {"error": "Redis is not available. Please run 'make start-containers' first."}
     gap_analysis_results = conn.get(standards_hash)
     if (
         gap_analysis_results
