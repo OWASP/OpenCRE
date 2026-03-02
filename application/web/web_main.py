@@ -22,6 +22,7 @@ from application.database import db
 from application.cmd import cre_main
 from application.defs import cre_defs as defs
 from application.defs import cre_exceptions
+from application.config import ENABLE_MYOPENCRE
 
 from application.utils import spreadsheet as sheet_utils
 from application.utils import mdutils, redirectors, gap_analysis
@@ -825,8 +826,15 @@ def all_cres() -> Any:
 # Importing Handlers
 
 
+@app.route("/api/capabilities")
+def capabilities():
+    return jsonify({"myopencre": ENABLE_MYOPENCRE})
+
+
 @app.route("/rest/v1/cre_csv", methods=["GET"])
 def get_cre_csv() -> Any:
+    if not ENABLE_MYOPENCRE:
+        abort(404)
     if posthog:
         posthog.capture(f"get_cre_csv", "")
 
@@ -854,6 +862,9 @@ def get_cre_csv() -> Any:
 
 @app.route("/rest/v1/cre_csv_import", methods=["POST"])
 def import_from_cre_csv() -> Any:
+    if not ENABLE_MYOPENCRE:
+        abort(404)
+
     if not os.environ.get("CRE_ALLOW_IMPORT"):
         abort(
             403,
@@ -948,11 +959,16 @@ def import_from_cre_csv() -> Any:
             calculate_gap_analysis=calculate_gap_analysis,
         )
 
+    import_type = "created"
+    if not new_cres and not standards:
+        import_type = "noop"
+
     return jsonify(
         {
             "status": "success",
             "new_cres": [c.external_id for c in new_cres],
             "new_standards": len(standards),
+            "import_type": import_type,
         }
     )
 
