@@ -1,7 +1,7 @@
 import { matchPath } from 'react-router';
 import { useLocation } from 'react-router-dom';
 
-import { ROUTES } from '../routes';
+import { IRoute } from '../routes';
 
 interface UseLocationFromOutsideRouteReturn {
   params: Record<string, string>;
@@ -9,14 +9,28 @@ interface UseLocationFromOutsideRouteReturn {
   showFilter: boolean;
 }
 
-export const useLocationFromOutsideRoute = (): UseLocationFromOutsideRouteReturn => {
-  // The current URL
+/**
+ * Determines route metadata (params, url, showFilter)
+ * based on the currently active route.
+ *
+ * NOTE:
+ * - This hook no longer imports ROUTES directly
+ * - Routes must be passed in (already capability-resolved)
+ */
+export const useLocationFromOutsideRoute = (routes: IRoute[]): UseLocationFromOutsideRouteReturn => {
   const { pathname } = useLocation();
-  // The current ROUTE, from our URL
-  const currentRoute = ROUTES.map(({ path, showFilter }) => ({
-    ...matchPath(pathname, path),
-    showFilter,
-  })).find((matchedPath) => matchedPath?.isExact);
+
+  const currentRoute = routes
+    .map(({ path, showFilter }) => ({
+      ...matchPath(pathname, {
+        path,
+        exact: true,
+        strict: false,
+      }),
+      showFilter,
+    }))
+    .find((matchedPath) => matchedPath?.isExact);
+
   return {
     params: currentRoute?.params || {},
     url: currentRoute?.url || '',
