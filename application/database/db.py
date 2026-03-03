@@ -2151,7 +2151,9 @@ def dbNodeFromStandard(standard: cre_defs.Node) -> Node:
         section=standard.section,
         subsection=standard.subsection,
         version=standard.version,
-        section_id=standard.sectionID,
+        # str() guard: sectionID must reach the DB column as a string.
+        # Protects against any float that slipped through upstream coercion.
+        section_id=str(standard.sectionID) if standard.sectionID is not None else "",
     )
 
 

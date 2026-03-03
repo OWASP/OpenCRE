@@ -209,7 +209,12 @@ def parse_export_format(lfile: List[Dict[str, Any]]) -> Dict[str, List[defs.Docu
             if not is_empty(mapping_line.get(f"{s}{defs.ExportFormat.separator}name")):
                 working_standard = defs.Standard(
                     name=s,
-                    sectionID=mapping_line.get(f"{s}{defs.ExportFormat.separator}id"),
+                    # Explicit str() cast: YAML/gspread can deliver a numeric
+                    # type (e.g. float 7.1 instead of str "7.10"). Casting here
+                    # ensures Standard always receives a string.
+                    sectionID=str(
+                        mapping_line.get(f"{s}{defs.ExportFormat.separator}id") or ""
+                    ),
                     section=mapping_line.get(f"{s}{defs.ExportFormat.separator}name"),
                     hyperlink=mapping_line.get(
                         f"{s}{defs.ExportFormat.separator}hyperlink", ""

@@ -452,6 +452,11 @@ class Standard(Node):
     subsection: Optional[str] = ""
 
     def __post_init__(self):
+        # Coerce sectionID to str before building self.id.
+        # YAML or gspread can deliver numeric types (e.g. float 7.1 instead of
+        # str "7.10" when the numericise_ignore range was off-by-one).
+        # None is normalised to "" so the field type is always str.
+        self.sectionID = str(self.sectionID) if self.sectionID is not None else ""
         self.id = f"{self.name}"
         if self.sectionID:
             self.id += f":{self.sectionID}"
@@ -496,6 +501,9 @@ class Tool(Standard):
     doctype: Credoctypes = Credoctypes.Tool
 
     def __post_init__(self):
+        # Tool builds self.id before calling super().__post_init__(), so the
+        # same sectionID str-coercion guard from Standard must be repeated here.
+        self.sectionID = str(self.sectionID) if self.sectionID is not None else ""
         self.id = f"{self.name}"
         if self.sectionID:
             self.id += f":{self.sectionID}"
