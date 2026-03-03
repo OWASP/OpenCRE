@@ -1,41 +1,45 @@
 #wayfinder-content {
-  --wf-bg: #f4f6f3;
-  --wf-card: #ffffff;
-  --wf-border: #d4dfd8;
-  --wf-text: #13362f;
-  --wf-muted: #4f6a5f;
-  --wf-accent: #e7721b;
-  --wf-accent-soft: #fff1e4;
-  --wf-lane: linear-gradient(120deg, #ecf7f4 0%, #ffffff 100%);
+  --wf-bg-0: #040a1a;
+  --wf-bg-1: #071327;
+  --wf-bg-2: #0b1f3d;
+  --wf-panel: #0f2142;
+  --wf-panel-soft: #132b53;
+  --wf-card: #11284d;
+  --wf-border: rgba(96, 165, 250, 0.35);
+  --wf-border-strong: rgba(96, 165, 250, 0.6);
+  --wf-text: #e8f2ff;
+  --wf-muted: #afc6e6;
+  --wf-accent: #60a5fa;
+  --wf-accent-2: #1d4ed8;
+  --wf-ok: #38bdf8;
 
-  background: radial-gradient(circle at 15% 5%, #f5fff8 0%, var(--wf-bg) 45%, #edf2ef 100%);
-  min-height: calc(100vh - 72px);
-  padding: 2rem clamp(1rem, 2vw, 2.5rem) 3rem;
+  min-height: calc(100vh - 64px);
+  padding: 1.5rem clamp(1rem, 2vw, 2.25rem) 2.5rem;
   color: var(--wf-text);
+  background: #f6f8fc;
 }
 
 .wayfinder-intro {
   border: 1px solid var(--wf-border);
-  background: linear-gradient(130deg, #fdf7f1 0%, #f5fffa 100%);
-  border-radius: 14px;
-  padding: 1.2rem;
-  margin-bottom: 1rem;
-  box-shadow: 0 8px 24px rgba(9, 43, 32, 0.08);
+  border-radius: 12px;
+  background: linear-gradient(160deg, rgba(18, 46, 92, 0.92) 0%, rgba(14, 33, 66, 0.92) 100%);
+  padding: 1.1rem 1rem 0.95rem;
+  box-shadow: 0 12px 30px rgba(2, 8, 22, 0.4);
 }
 
 .wayfinder-intro h1 {
   margin: 0;
-  font-size: clamp(1.6rem, 2.5vw, 2.2rem);
-  letter-spacing: 0.02em;
+  font-size: clamp(1.5rem, 2.4vw, 2rem);
+  letter-spacing: 0.01em;
 }
 
 .wayfinder-intro p {
-  margin-top: 0.5rem;
+  margin: 0.45rem 0 0;
   color: var(--wf-muted);
 }
 
 .wayfinder-stats {
-  margin-top: 1rem;
+  margin-top: 0.85rem;
   display: grid;
   gap: 0.65rem;
   grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
@@ -44,47 +48,137 @@
 .wayfinder-stats > div {
   border: 1px solid var(--wf-border);
   border-radius: 10px;
-  background: var(--wf-card);
-  padding: 0.6rem 0.75rem;
+  background: linear-gradient(160deg, rgba(14, 34, 68, 0.92) 0%, rgba(10, 25, 49, 0.92) 100%);
+  padding: 0.55rem 0.75rem;
 }
 
 .wayfinder-stats span {
   color: var(--wf-muted);
-  font-size: 0.82rem;
+  font-size: 0.8rem;
+  letter-spacing: 0.01em;
 }
 
 .wayfinder-stats strong {
   display: block;
-  margin-top: 0.25rem;
-  font-size: 1.25rem;
+  margin-top: 0.2rem;
+  font-size: 1.45rem;
+  color: #f7fbff;
 }
 
 .wayfinder-filters {
+  margin-top: 0.9rem;
   border: 1px solid var(--wf-border);
-  border-radius: 14px;
-  background: var(--wf-card);
-  padding: 1rem;
-  margin-bottom: 1rem;
+  border-radius: 12px;
+  background: linear-gradient(170deg, rgba(13, 31, 62, 0.92) 0%, rgba(9, 24, 48, 0.9) 100%);
+  padding: 0.8rem;
 }
 
 .wayfinder-filter-grid {
-  margin-top: 0.75rem;
+  margin-top: 0.7rem;
   display: grid;
-  gap: 0.75rem;
+  gap: 0.65rem;
   grid-template-columns: repeat(4, minmax(170px, 1fr));
 }
 
+.wayfinder-filters .ui.input > input,
+.wayfinder-filters .ui.selection.dropdown {
+  background: rgba(9, 23, 44, 0.9);
+  border: 1px solid var(--wf-border);
+  color: var(--wf-text);
+}
+
+.wayfinder-filters .ui.input > input::placeholder {
+  color: rgba(175, 198, 230, 0.8);
+}
+
+.wayfinder-filters .ui.selection.dropdown .text,
+.wayfinder-filters .ui.selection.dropdown .default.text,
+.wayfinder-filters .ui.selection.dropdown .dropdown.icon {
+  color: var(--wf-text) !important;
+  opacity: 0.95;
+}
+
+.wayfinder-filters .ui.selection.dropdown .menu {
+  background: #0d254a;
+  border: 1px solid var(--wf-border-strong);
+}
+
+.wayfinder-filters .ui.selection.dropdown .menu > .item {
+  color: var(--wf-text);
+}
+
+.wayfinder-filters .ui.selection.dropdown .menu > .item:hover {
+  background: rgba(59, 130, 246, 0.2);
+}
+
+.wayfinder-filters .ui.label {
+  background: rgba(37, 99, 235, 0.32);
+  color: #eff7ff;
+  border: 1px solid rgba(147, 197, 253, 0.45);
+  text-shadow: none !important;
+  filter: none !important;
+  font-family: inherit;
+  font-weight: 600;
+}
+
+.wayfinder-filters .ui.multiple.dropdown > .label,
+.wayfinder-filters .ui.multiple.dropdown > .label > .text,
+.wayfinder-filters .ui.multiple.dropdown > .label > .delete.icon {
+  text-shadow: none !important;
+  filter: none !important;
+  opacity: 1 !important;
+  color: #eff7ff !important;
+  -webkit-font-smoothing: antialiased;
+}
+
+.wayfinder-filters .ui.multiple.dropdown > .label > .delete.icon {
+  margin-left: 0.35rem;
+}
+
+.wayfinder-filters .ui.basic.button {
+  margin-top: 0.65rem;
+  border: 1px solid rgba(147, 197, 253, 0.7) !important;
+  color: #e8f2ff !important;
+  background: rgba(30, 64, 175, 0.32) !important;
+  font-weight: 600;
+}
+
+.wayfinder-filters .ui.basic.button:hover,
+.wayfinder-filters .ui.basic.button:focus {
+  border-color: rgba(147, 197, 253, 0.95) !important;
+  color: #f8fbff !important;
+  background: rgba(37, 99, 235, 0.45) !important;
+}
+
+.wayfinder-empty {
+  margin-top: 0.95rem;
+  border: 1px solid rgba(125, 211, 252, 0.45);
+  background: linear-gradient(160deg, rgba(12, 40, 72, 0.9), rgba(9, 26, 53, 0.9));
+  border-radius: 12px;
+  padding: 1rem;
+}
+
+.wayfinder-empty h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.wayfinder-empty p {
+  margin: 0.45rem 0 0;
+  color: var(--wf-muted);
+}
+
 .wayfinder-lanes {
+  margin-top: 0.95rem;
   display: grid;
-  gap: 1rem;
+  gap: 0.95rem;
 }
 
 .wayfinder-lane {
   border: 1px solid var(--wf-border);
-  border-radius: 14px;
-  background: var(--wf-lane);
-  padding: 0.9rem;
-  box-shadow: 0 4px 18px rgba(15, 42, 31, 0.06);
+  border-radius: 12px;
+  background: linear-gradient(155deg, rgba(17, 40, 77, 0.86) 0%, rgba(13, 31, 62, 0.86) 100%);
+  padding: 0.8rem;
 }
 
 .wayfinder-lane__header {
@@ -96,82 +190,93 @@
 
 .wayfinder-lane__header h2 {
   margin: 0;
-  font-size: 1.1rem;
+  font-size: 1.06rem;
+  color: #f5faff;
 }
 
 .wayfinder-lane__header span {
   color: var(--wf-muted);
-  font-size: 0.82rem;
+  font-size: 0.8rem;
 }
 
 .wayfinder-lane__cards {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 0.75rem;
+  gap: 0.7rem;
+  grid-template-columns: repeat(auto-fill, minmax(235px, 1fr));
 }
 
 .wayfinder-card {
   border: 1px solid var(--wf-border);
-  border-left: 4px solid var(--wf-accent);
-  border-radius: 12px;
-  background: var(--wf-card);
-  padding: 0.75rem;
+  border-left: 4px solid var(--wf-ok);
+  border-radius: 10px;
+  background: linear-gradient(160deg, rgba(15, 39, 75, 0.94) 0%, rgba(10, 29, 58, 0.94) 100%);
+  padding: 0.68rem;
   display: flex;
   flex-direction: column;
-  gap: 0.65rem;
-  animation: wayfinder-entry 0.28s ease-out;
+  gap: 0.62rem;
+  box-shadow: 0 8px 18px rgba(3, 12, 31, 0.35);
 }
 
 .wayfinder-card__header {
   display: flex;
-  align-items: flex-start;
   justify-content: space-between;
   gap: 0.5rem;
+  align-items: flex-start;
 }
 
 .wayfinder-card__header h3 {
   margin: 0;
   font-size: 1rem;
-  line-height: 1.25;
+  line-height: 1.24;
+  color: #f4f9ff;
+}
+
+.wayfinder-card__doctype {
+  border-radius: 999px;
+  background: linear-gradient(180deg, #3b82f6 0%, #1e40af 100%);
+  border: 1px solid rgba(147, 197, 253, 0.45);
+  color: #ecf5ff;
+  font-size: 0.72rem;
+  line-height: 1;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  padding: 0.35rem 0.55rem;
+  white-space: nowrap;
+  text-shadow: none;
 }
 
 .wayfinder-card__meta {
-  background: var(--wf-accent-soft);
+  background: rgba(8, 25, 49, 0.58);
+  border: 1px solid rgba(125, 211, 252, 0.22);
   border-radius: 8px;
-  padding: 0.45rem 0.55rem;
-  font-size: 0.84rem;
-  color: var(--wf-muted);
+  padding: 0.5rem 0.55rem;
   display: grid;
-  gap: 0.35rem;
+  gap: 0.38rem;
+  font-size: 0.84rem;
+  color: #dceafe;
 }
 
 .wayfinder-card__footer {
   display: flex;
   justify-content: space-between;
-  gap: 0.5rem;
   align-items: center;
-  font-size: 0.84rem;
+  gap: 0.5rem;
+  font-size: 0.83rem;
+  color: var(--wf-muted);
 }
 
 .wayfinder-card__footer a {
-  color: #005b70;
-  font-weight: 600;
+  color: #7dd3fc;
+  font-weight: 700;
+}
+
+.wayfinder-card__footer a:hover {
+  color: #bae6fd;
 }
 
 .wayfinder-card__muted,
 .wayfinder-lane__empty {
   color: var(--wf-muted);
-}
-
-@keyframes wayfinder-entry {
-  from {
-    opacity: 0;
-    transform: translateY(4px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
 }
 
 @media (max-width: 1024px) {
@@ -182,7 +287,7 @@
 
 @media (max-width: 640px) {
   #wayfinder-content {
-    padding: 1rem 0.75rem 2rem;
+    padding: 0.95rem 0.75rem 1.6rem;
   }
 
   .wayfinder-filter-grid {

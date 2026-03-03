@@ -1812,20 +1812,49 @@ class Node_collection:
             .all()
         )
 
-        resources: List[Dict[str, Any]] = []
+        aggregated: Dict[Tuple[str, str], Dict[str, Any]] = {}
         for row in rows:
             name, ntype, entry_count, sample_hyperlink = row
-            metadata = wayfinder_metadata.get_wayfinder_metadata(
+            canonical_name = wayfinder_metadata.canonical_resource_name(
                 name=str(name), ntype=str(ntype)
             )
-            resource_id = f"{str(ntype).lower()}:{str(name)}"
+            if not canonical_name:
+                continue
+
+            key = (str(ntype), canonical_name)
+            if key not in aggregated:
+                aggregated[key] = {
+                    "doctype": str(ntype),
+                    "name": canonical_name,
+                    "entry_count": 0,
+                    "hyperlink": "",
+                    "aliases": set(),
+                }
+
+            entry = aggregated[key]
+            entry["entry_count"] += int(entry_count or 0)
+            entry["aliases"].add(str(name))
+            if sample_hyperlink and not entry["hyperlink"]:
+                entry["hyperlink"] = str(sample_hyperlink)
+
+        resources: List[Dict[str, Any]] = []
+        for (ntype, canonical_name), entry in sorted(
+            aggregated.items(), key=lambda x: (x[0][0].lower(), x[0][1].lower())
+        ):
+            metadata = wayfinder_metadata.get_wayfinder_metadata(
+                name=canonical_name, ntype=ntype
+            )
+            resource_id = f"{ntype.lower()}:{canonical_name}"
+            aliases = sorted(list(entry["aliases"]), key=lambda x: x.lower())
+
             resources.append(
                 {
                     "id": resource_id,
-                    "name": name,
+                    "name": canonical_name,
                     "doctype": ntype,
-                    "entry_count": int(entry_count or 0),
-                    "hyperlink": sample_hyperlink or "",
+                    "entry_count": int(entry["entry_count"]),
+                    "hyperlink": entry["hyperlink"],
+                    "aliases": aliases,
                     "metadata": metadata,
                 }
             )

@@ -1,3 +1,4 @@
+import re
 from typing import Any, Dict, List
 
 # Stable lane ordering for the Wayfinder UI.
@@ -64,6 +65,59 @@ _ALIASES = {
     "pci dss": "pci dss v4.0",
     "devsecops maturity model (dsom)": "devsecops maturity model (dsomm)",
 }
+
+_GENERIC_PLACEHOLDER_NAMES = {
+    "standard",
+    "tool",
+    "code",
+    "node",
+    "resource",
+    "document",
+}
+
+
+def is_noise_resource(name: str, ntype: str) -> bool:
+    normalized_name = _normalize_name(name)
+    normalized_type = _normalize_name(ntype)
+
+    if not normalized_name:
+        return True
+    if normalized_name in _GENERIC_PLACEHOLDER_NAMES:
+        return True
+    if normalized_name == normalized_type:
+        return True
+    return False
+
+
+def canonical_resource_name(name: str, ntype: str) -> str:
+    """
+    Normalize noisy resource names so the Wayfinder groups related entries.
+    """
+    normalized_name = _normalize_name(name)
+    canonical_name = _ALIASES.get(normalized_name, normalized_name)
+
+    if is_noise_resource(canonical_name, ntype):
+        return ""
+
+    if re.match(r"^cwe-\d+$", canonical_name):
+        return "CWE"
+    if re.match(r"^capec-\d+$", canonical_name):
+        return "CAPEC"
+    if re.match(r"^zap rule$", canonical_name):
+        return "ZAP Rule"
+    if re.match(r"^owasp top 10( 2021)?$", canonical_name):
+        return "OWASP Top 10 2021"
+    if canonical_name == "owasp web security testing guide (wstg)":
+        return "OWASP Web Security Testing Guide (WSTG)"
+    if canonical_name == "devsecops maturity model (dsomm)":
+        return "DevSecOps Maturity Model (DSOMM)"
+    if canonical_name == "cloud controls matrix":
+        return "Cloud Controls Matrix"
+    if canonical_name == "nist ssdf":
+        return "NIST SSDF"
+
+    cleaned_original = " ".join(str(name or "").split()).strip()
+    return cleaned_original or name
 
 
 _STATIC_METADATA_BY_NAME: Dict[str, Dict[str, Any]] = {

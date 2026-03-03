@@ -2,7 +2,7 @@ import './wayfinder.scss';
 
 import axios from 'axios';
 import React, { useEffect, useMemo, useState } from 'react';
-import { Button, Dropdown, Input, Label } from 'semantic-ui-react';
+import { Button, Dropdown, Input } from 'semantic-ui-react';
 
 import { LoadingAndErrorIndicator } from '../../components/LoadingAndErrorIndicator';
 import { useEnvironment } from '../../hooks';
@@ -53,14 +53,17 @@ export const Wayfinder = () => {
       setLoading(true);
       setError(null);
       try {
-        const params: Record<string, string | string[]> = {};
-        if (debouncedQuery) params.q = debouncedQuery;
-        if (selectedSdlc.length) params.sdlc = selectedSdlc;
-        if (selectedOrgs.length) params.supporting_org = selectedOrgs;
-        if (selectedLicenses.length) params.license = selectedLicenses;
-        if (selectedDoctypes.length) params.doctype = selectedDoctypes;
+        // Use URLSearchParams so Flask receives repeated keys (sdlc=x&sdlc=y), not sdlc[]=x.
+        const params = new URLSearchParams();
+        if (debouncedQuery) params.append('q', debouncedQuery);
+        selectedSdlc.forEach((value) => params.append('sdlc', value));
+        selectedOrgs.forEach((value) => params.append('supporting_org', value));
+        selectedLicenses.forEach((value) => params.append('license', value));
+        selectedDoctypes.forEach((value) => params.append('doctype', value));
 
-        const res = await axios.get<WayfinderResponse>(`${apiUrl}/wayfinder`, { params });
+        const res = await axios.get<WayfinderResponse>(`${apiUrl}/wayfinder`, {
+          params,
+        });
         setResponse(res.data);
       } catch (err) {
         console.error(err);
@@ -75,6 +78,9 @@ export const Wayfinder = () => {
 
   const stats = response?.stats;
   const groups = response?.grouped_by_sdlc || [];
+  const hasNoData = !loading && !error && (stats?.total_resources || 0) === 0;
+  const hasNoMatches = !loading && !error && !hasNoData && (stats?.filtered_resources || 0) === 0;
+  const visibleGroups = useMemo(() => groups.filter((group) => group.resources.length > 0), [groups]);
 
   const sdlcOptions = useMemo(() => asOptions(response?.facets?.sdlc), [response?.facets?.sdlc]);
   const orgOptions = useMemo(
@@ -102,9 +108,7 @@ export const Wayfinder = () => {
     <article className="wayfinder-card" key={`${resource.id}-${resource.name}`}>
       <div className="wayfinder-card__header">
         <h3>{resource.name}</h3>
-        <Label size="tiny" color="blue">
-          {resource.doctype}
-        </Label>
+        <span className="wayfinder-card__doctype">{resource.doctype}</span>
       </div>
 
       <div className="wayfinder-card__meta">
@@ -209,9 +213,26 @@ export const Wayfinder = () => {
 
       <LoadingAndErrorIndicator loading={loading} error={error} />
 
-      {!loading && !error && (
+      {hasNoData && (
+        <section className="wayfinder-empty">
+          <h2>No resources available yet</h2>
+          <p>
+            Wayfinder is active, but your local dataset has no imported non-CRE resources. Import/sync data and
+            refresh this page to populate lanes and facets.
+          </p>
+        </section>
+      )}
+
+      {hasNoMatches && (
+        <section className="wayfinder-empty">
+          <h2>No resources match the current filters</h2>
+          <p>Try clearing one or more filters to broaden the Wayfinder results.</p>
+        </section>
+      )}
+
+      {!loading && !error && !hasNoData && !hasNoMatches && (
         <section className="wayfinder-lanes">
-          {groups.map((group) => (
+          {visibleGroups.map((group) => (
             <section className="wayfinder-lane" key={group.phase}>
               <div className="wayfinder-lane__header">
                 <h2>{group.phase}</h2>
