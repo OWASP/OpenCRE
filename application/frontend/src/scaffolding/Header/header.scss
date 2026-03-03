@@ -45,6 +45,15 @@
     width: 10rem;
     display: block;
   }
+
+  @media (max-width: 767px) {
+    margin-left: 1rem;
+    img {
+      width: auto;
+      max-width: 7rem;
+      height: 3rem;
+    }
+  }
 }
 
 .navbar__desktop-links {
@@ -335,3 +344,4 @@
   white-space: nowrap;
   border: 0;
 }
+
