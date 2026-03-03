@@ -38,6 +38,7 @@ from application.database import inmemory_graph
 from application.utils import redis
 from application.defs import cre_defs
 from application.utils import file
+from application.utils import wayfinder_metadata
 from application.utils.gap_analysis import (
     get_path_score,
     make_resources_key,
@@ -1797,6 +1798,38 @@ class Node_collection:
             .distinct()
         )
         return list(set([s[0] for s in standards]))
+
+    def wayfinder_resources(self) -> List[Dict[str, Any]]:
+        rows = (
+            self.session.query(
+                Node.name,
+                Node.ntype,
+                func.count(Node.id).label("entry_count"),
+                func.min(Node.link).label("sample_hyperlink"),
+            )
+            .group_by(Node.name, Node.ntype)
+            .order_by(func.lower(Node.ntype), func.lower(Node.name))
+            .all()
+        )
+
+        resources: List[Dict[str, Any]] = []
+        for row in rows:
+            name, ntype, entry_count, sample_hyperlink = row
+            metadata = wayfinder_metadata.get_wayfinder_metadata(
+                name=str(name), ntype=str(ntype)
+            )
+            resource_id = f"{str(ntype).lower()}:{str(name)}"
+            resources.append(
+                {
+                    "id": resource_id,
+                    "name": name,
+                    "doctype": ntype,
+                    "entry_count": int(entry_count or 0),
+                    "hyperlink": sample_hyperlink or "",
+                    "metadata": metadata,
+                }
+            )
+        return resources
 
     def text_search(self, text: str) -> List[Optional[cre_defs.Document]]:
         """Given a piece of text, tries to find the best match

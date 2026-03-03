@@ -211,6 +211,73 @@ paths:
                 items:
                   type: string
 
+  /rest/v1/wayfinder:
+    get:
+      summary: Product Security Wayfinder data
+      description: >
+        Retrieve non-CRE resources enriched with metadata (for example SDLC
+        phase, supporting organization, and license), grouped for Wayfinder
+        visualization.
+      parameters:
+        - name: sdlc
+          in: query
+          required: false
+          description: Filter by one or more SDLC phases (repeatable)
+          schema:
+            type: array
+            items:
+              type: string
+        - name: supporting_org
+          in: query
+          required: false
+          description: Filter by one or more supporting organizations (repeatable)
+          schema:
+            type: array
+            items:
+              type: string
+        - name: license
+          in: query
+          required: false
+          description: Filter by one or more license values (repeatable)
+          schema:
+            type: array
+            items:
+              type: string
+        - name: doctype
+          in: query
+          required: false
+          description: Filter by one or more document types (repeatable)
+          schema:
+            type: array
+            items:
+              type: string
+        - name: q
+          in: query
+          required: false
+          description: Free-text filter against resource names and metadata keywords
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Wayfinder payload
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                  grouped_by_sdlc:
+                    type: array
+                    items:
+                      type: object
+                  facets:
+                    type: object
+                  stats:
+                    type: object
+
   /rest/v1/text_search:
     get:
       summary: Text search

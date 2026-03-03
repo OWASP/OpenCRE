@@ -75,6 +75,9 @@ export const Header = ({ capabilities }: HeaderProps) => {
               <NavLink to="/explorer" className="nav-link" activeClassName="nav-link--active">
                 Explorer
               </NavLink>
+              <NavLink to="/wayfinder" className="nav-link" activeClassName="nav-link--active">
+                Wayfinder
+              </NavLink>
               {capabilities.myopencre && (
                 <NavLink to="/myopencre" className="nav-link" activeClassName="nav-link--active">
                   MyOpenCRE
@@ -197,6 +200,14 @@ export const Header = ({ capabilities }: HeaderProps) => {
             onClick={closeMobileMenu}
           >
             Explorer
+          </NavLink>
+          <NavLink
+            to="/wayfinder"
+            className="nav-link"
+            activeClassName="nav-link--active"
+            onClick={closeMobileMenu}
+          >
+            Wayfinder
           </NavLink>
           {capabilities.myopencre && (
             <NavLink
