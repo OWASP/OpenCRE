@@ -525,14 +525,19 @@ def wayfinder() -> Any:
             grouped[phase].append(resource)
 
     extra_phases = sorted(
-        [phase for phase in grouped.keys() if phase not in wayfinder_metadata.SDLC_PHASE_ORDER]
+        [
+            phase
+            for phase in grouped.keys()
+            if phase not in wayfinder_metadata.SDLC_PHASE_ORDER
+        ]
     )
     phase_order = [*wayfinder_metadata.SDLC_PHASE_ORDER, *extra_phases]
     grouped_by_sdlc = [
         {
             "phase": phase,
             "resources": sorted(
-                grouped[phase], key=lambda resource: str(resource.get("name", "")).lower()
+                grouped[phase],
+                key=lambda resource: str(resource.get("name", "")).lower(),
             ),
         }
         for phase in phase_order
@@ -540,7 +545,8 @@ def wayfinder() -> Any:
 
     payload = {
         "data": sorted(
-            filtered_resources, key=lambda resource: str(resource.get("name", "")).lower()
+            filtered_resources,
+            key=lambda resource: str(resource.get("name", "")).lower(),
         ),
         "grouped_by_sdlc": grouped_by_sdlc,
         "facets": {
@@ -553,7 +559,9 @@ def wayfinder() -> Any:
         "stats": {
             "total_resources": len(resources),
             "filtered_resources": len(filtered_resources),
-            "total_entries": sum(int(resource.get("entry_count", 0)) for resource in resources),
+            "total_entries": sum(
+                int(resource.get("entry_count", 0)) for resource in resources
+            ),
             "filtered_entries": sum(
                 int(resource.get("entry_count", 0)) for resource in filtered_resources
             ),
