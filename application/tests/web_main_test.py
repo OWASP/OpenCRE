@@ -690,6 +690,117 @@ class TestMain(unittest.TestCase):
             self.assertEqual(200, response.status_code)
             self.assertEqual(expected, json.loads(response.data))
 
+    @patch.object(db, "Node_collection")
+    def test_wayfinder_payload_shape(self, node_mock) -> None:
+        node_mock.return_value.wayfinder_resources.return_value = [
+            {
+                "id": "standard:ASVS",
+                "name": "ASVS",
+                "doctype": "Standard",
+                "entry_count": 10,
+                "hyperlink": "https://example.com/asvs",
+                "metadata": {
+                    "sdlc": ["Requirements", "Verification"],
+                    "supporting_orgs": ["OWASP"],
+                    "licenses": ["CC BY-SA"],
+                    "keywords": ["standard"],
+                    "source": "static_map",
+                },
+            },
+            {
+                "id": "standard:CWE",
+                "name": "CWE",
+                "doctype": "Standard",
+                "entry_count": 15,
+                "hyperlink": "https://example.com/cwe",
+                "metadata": {
+                    "sdlc": ["Design", "Verification"],
+                    "supporting_orgs": ["MITRE"],
+                    "licenses": ["Copyright MITRE"],
+                    "keywords": ["weakness"],
+                    "source": "static_map",
+                },
+            },
+            {
+                "id": "tool:OWASP Juice Shop",
+                "name": "OWASP Juice Shop",
+                "doctype": "Tool",
+                "entry_count": 5,
+                "hyperlink": "https://example.com/juice-shop",
+                "metadata": {
+                    "sdlc": ["Training", "Verification"],
+                    "supporting_orgs": ["OWASP"],
+                    "licenses": ["MIT"],
+                    "keywords": ["training"],
+                    "source": "static_map",
+                },
+            },
+        ]
+
+        with self.app.test_client() as client:
+            response = client.get(
+                "/rest/v1/wayfinder",
+                headers={"Content-Type": "application/json"},
+            )
+            payload = json.loads(response.data)
+
+            self.assertEqual(200, response.status_code)
+            self.assertEqual(3, payload["stats"]["total_resources"])
+            self.assertEqual(3, payload["stats"]["filtered_resources"])
+            self.assertEqual(30, payload["stats"]["total_entries"])
+            self.assertEqual(3, len(payload["data"]))
+            self.assertIn("grouped_by_sdlc", payload)
+            self.assertIn("facets", payload)
+            self.assertIn("sdlc", payload["facets"])
+            self.assertIn("supporting_orgs", payload["facets"])
+            self.assertIn("licenses", payload["facets"])
+            self.assertIn("doctypes", payload["facets"])
+
+    @patch.object(db, "Node_collection")
+    def test_wayfinder_filters(self, node_mock) -> None:
+        node_mock.return_value.wayfinder_resources.return_value = [
+            {
+                "id": "standard:ASVS",
+                "name": "ASVS",
+                "doctype": "Standard",
+                "entry_count": 10,
+                "hyperlink": "https://example.com/asvs",
+                "metadata": {
+                    "sdlc": ["Requirements", "Verification"],
+                    "supporting_orgs": ["OWASP"],
+                    "licenses": ["CC BY-SA"],
+                    "keywords": ["verification"],
+                    "source": "static_map",
+                },
+            },
+            {
+                "id": "tool:OWASP Juice Shop",
+                "name": "OWASP Juice Shop",
+                "doctype": "Tool",
+                "entry_count": 5,
+                "hyperlink": "https://example.com/juice-shop",
+                "metadata": {
+                    "sdlc": ["Training", "Verification"],
+                    "supporting_orgs": ["OWASP"],
+                    "licenses": ["MIT"],
+                    "keywords": ["training"],
+                    "source": "static_map",
+                },
+            },
+        ]
+
+        with self.app.test_client() as client:
+            response = client.get(
+                "/rest/v1/wayfinder?sdlc=Verification&supporting_org=OWASP&doctype=Tool",
+                headers={"Content-Type": "application/json"},
+            )
+            payload = json.loads(response.data)
+
+            self.assertEqual(200, response.status_code)
+            self.assertEqual(1, payload["stats"]["filtered_resources"])
+            self.assertEqual(1, len(payload["data"]))
+            self.assertEqual("OWASP Juice Shop", payload["data"][0]["name"])
+
     def test_gap_analysis_weak_links_no_cache(self) -> None:
         with self.app.test_client() as client:
             response = client.get(

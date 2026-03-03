@@ -2,6 +2,7 @@
 
 # silence mypy for the routes file
 import csv
+from collections import Counter
 from functools import wraps
 import json
 import logging
@@ -25,7 +26,7 @@ from application.defs import cre_exceptions
 from application.config import ENABLE_MYOPENCRE
 
 from application.utils import spreadsheet as sheet_utils
-from application.utils import mdutils, redirectors, gap_analysis
+from application.utils import mdutils, redirectors, gap_analysis, wayfinder_metadata
 from application.prompt_client import prompt_client as prompt_client
 from enum import Enum
 from flask import json as flask_json
@@ -88,6 +89,35 @@ def _normalize_source_name(source: Any) -> str | None:
         return None
 
     return normalized_source[:64]
+
+
+def _normalize_filter_values(raw_values: list[str]) -> set[str]:
+    normalized = set()
+    for raw in raw_values or []:
+        for part in str(raw).split(","):
+            cleaned = part.strip().lower()
+            if cleaned:
+                normalized.add(cleaned)
+    return normalized
+
+
+def _facet_counts(resources: list[dict[str, Any]], key: str) -> list[dict[str, Any]]:
+    counter: Counter[str] = Counter()
+    for resource in resources:
+        values = []
+        if key == "doctype":
+            values = [resource.get("doctype")]
+        else:
+            values = resource.get("metadata", {}).get(key, [])
+        for value in values:
+            cleaned = str(value).strip()
+            if cleaned:
+                counter[cleaned] += 1
+
+    return [
+        {"value": value, "count": counter[value]}
+        for value in sorted(counter.keys(), key=lambda x: x.lower())
+    ]
 
 
 def extend_cre_with_tag_links(
@@ -440,6 +470,96 @@ def standards() -> Any:
     database = db.Node_collection()
     standards = database.standards()
     return standards
+
+
+@app.route("/rest/v1/wayfinder", methods=["GET"])
+def wayfinder() -> Any:
+    """
+    Return non-CRE resources enriched with Wayfinder metadata and grouped by SDLC lane.
+    Query parameters (repeatable): sdlc, supporting_org, license, doctype
+    Query parameter: q (case-insensitive free text)
+    """
+    database = db.Node_collection()
+    resources = database.wayfinder_resources()
+
+    sdlc_filters = _normalize_filter_values(request.args.getlist("sdlc"))
+    org_filters = _normalize_filter_values(request.args.getlist("supporting_org"))
+    license_filters = _normalize_filter_values(request.args.getlist("license"))
+    doctype_filters = _normalize_filter_values(request.args.getlist("doctype"))
+    search_query = str(request.args.get("q", "")).strip().lower()
+
+    def _matches(resource: dict[str, Any]) -> bool:
+        metadata = resource.get("metadata", {})
+        resource_name = str(resource.get("name", ""))
+        doctype = str(resource.get("doctype", "")).lower()
+
+        resource_sdlc = {str(x).lower() for x in metadata.get("sdlc", [])}
+        resource_orgs = {str(x).lower() for x in metadata.get("supporting_orgs", [])}
+        resource_licenses = {str(x).lower() for x in metadata.get("licenses", [])}
+        resource_keywords = " ".join(
+            [str(x).lower() for x in metadata.get("keywords", [])]
+        )
+
+        if sdlc_filters and not sdlc_filters.intersection(resource_sdlc):
+            return False
+        if org_filters and not org_filters.intersection(resource_orgs):
+            return False
+        if license_filters and not license_filters.intersection(resource_licenses):
+            return False
+        if doctype_filters and doctype not in doctype_filters:
+            return False
+        if search_query:
+            searchable_text = f"{resource_name.lower()} {resource_keywords}"
+            if search_query not in searchable_text:
+                return False
+        return True
+
+    filtered_resources = [resource for resource in resources if _matches(resource)]
+
+    grouped = {phase: [] for phase in wayfinder_metadata.SDLC_PHASE_ORDER}
+    for resource in filtered_resources:
+        phases = resource.get("metadata", {}).get("sdlc", []) or ["Uncategorized"]
+        for phase in phases:
+            if phase not in grouped:
+                grouped[phase] = []
+            grouped[phase].append(resource)
+
+    extra_phases = sorted(
+        [phase for phase in grouped.keys() if phase not in wayfinder_metadata.SDLC_PHASE_ORDER]
+    )
+    phase_order = [*wayfinder_metadata.SDLC_PHASE_ORDER, *extra_phases]
+    grouped_by_sdlc = [
+        {
+            "phase": phase,
+            "resources": sorted(
+                grouped[phase], key=lambda resource: str(resource.get("name", "")).lower()
+            ),
+        }
+        for phase in phase_order
+    ]
+
+    payload = {
+        "data": sorted(
+            filtered_resources, key=lambda resource: str(resource.get("name", "")).lower()
+        ),
+        "grouped_by_sdlc": grouped_by_sdlc,
+        "facets": {
+            "sdlc": _facet_counts(resources, "sdlc"),
+            "supporting_orgs": _facet_counts(resources, "supporting_orgs"),
+            "licenses": _facet_counts(resources, "licenses"),
+            "doctypes": _facet_counts(resources, "doctype"),
+        },
+        "sdlc_order": phase_order,
+        "stats": {
+            "total_resources": len(resources),
+            "filtered_resources": len(filtered_resources),
+            "total_entries": sum(int(resource.get("entry_count", 0)) for resource in resources),
+            "filtered_entries": sum(
+                int(resource.get("entry_count", 0)) for resource in filtered_resources
+            ),
+        },
+    }
+    return jsonify(payload)
 
 
 @app.route("/rest/v1/openapi.yaml", methods=["GET"])
