@@ -69,7 +69,6 @@ export const Header = () => {
               <NavLink to="/explorer" className="nav-link" activeClassName="nav-link--active">
                 Explorer
               </NavLink>
-
               <NavLink to="/myopencre" className="nav-link" activeClassName="nav-link--active">
                 MyOpenCRE
               </NavLink>
@@ -191,7 +190,6 @@ export const Header = () => {
           >
             Explorer
           </NavLink>
-
           <NavLink
             to="/myopencre"
             className="nav-link"
