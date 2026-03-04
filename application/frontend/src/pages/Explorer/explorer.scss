@@ -110,6 +110,9 @@ main#explorer-content {
     flex-direction: column;
   }
 }
+#debug-toggle {
+  margin-top: 10px;
+  margin-bottom: 4px;
 @media (max-width: 768px) {
   main#explorer-content {
     padding: 1rem; /* Reduce from 30px to prevent content touching edges */
