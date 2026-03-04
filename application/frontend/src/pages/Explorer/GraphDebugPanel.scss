@@ -1,0 +1,38 @@
+.graph-debug-panel {
+  margin-top: 16px;
+  padding: 12px;
+  border: 1px solid #d4d4d4;
+  border-radius: 4px;
+  background: #fafafa;
+
+  &__header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    font-size: 14px;
+  }
+
+  &__summary {
+    color: #666;
+    font-size: 12px;
+    margin-left: 4px;
+  }
+
+  &__legend {
+    font-size: 12px;
+    color: #555;
+    margin-bottom: 10px;
+  }
+
+  &__table-wrap {
+    overflow-x: auto;
+    max-height: 400px;
+    overflow-y: auto;
+  }
+
+  &__node-name {
+    font-family: monospace;
+    font-size: 12px;
+  }
+}
