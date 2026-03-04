@@ -465,7 +465,7 @@ def text_search() -> Any:
         * 'CRE:<name>' will search for the <name> in cre names
         * 'Standard:<name>[:<section>:subsection]' will search for
               all entries of <name> and optionally, section/subsection
-        * '\d\d\d-\d\d\d' (two sets of 3 digits) will first try to match
+        * '\\d\\d\\d-\\d\\d\\d' (two sets of 3 digits) will first try to match
                            CRE ids before it performs a free text search
         Anything else will be a case insensitive LIKE query in the database
     """
