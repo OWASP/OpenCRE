@@ -1,9 +1,30 @@
 import './MyOpenCRE.scss';
 
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Button, Container, Form, Header, Message } from 'semantic-ui-react';
 
 import { useEnvironment } from '../../hooks';
+
+type RowValidationError = {
+  row: number;
+  code: string;
+  message: string;
+  column?: string;
+};
+
+type ImportErrorResponse = {
+  success: false;
+  type: string;
+  message?: string;
+  errors?: RowValidationError[];
+};
+
+type CsvPreview = {
+  rows: number;
+  creMappings: number;
+  uniqueSections: number;
+  creColumns: string[];
+};
 
 export const MyOpenCRE = () => {
   const { apiUrl } = useEnvironment();
@@ -13,14 +34,22 @@ export const MyOpenCRE = () => {
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<ImportErrorResponse | null>(null);
   const [success, setSuccess] = useState<any | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
+  const [preview, setPreview] = useState<CsvPreview | null>(null);
+  const [confirmedImport, setConfirmedImport] = useState(false);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   /* ------------------ CSV DOWNLOAD ------------------ */
 
   const downloadCreCsv = async () => {
     try {
-      const response = await fetch(`${apiUrl}/cre_csv`, {
+      const baseUrl = apiUrl || window.location.origin;
+      const backendUrl = baseUrl.includes('localhost') ? 'http://127.0.0.1:5000' : baseUrl;
+
+      const response = await fetch(`${backendUrl}/cre_csv`, {
         method: 'GET',
         headers: { Accept: 'text/csv' },
       });
@@ -46,23 +75,50 @@ export const MyOpenCRE = () => {
     }
   };
 
-  const downloadTemplate = () => {
-    const headers = ['standard_name', 'standard_section', 'cre_id', 'notes'];
+  /* ------------------ CSV PREVIEW ------------------ */
 
-    const csvContent = headers.join(',') + '\n';
+  const generateCsvPreview = async (file: File) => {
+    const text = await file.text();
+    const lines = text.split('\n').filter(Boolean);
 
-    const blob = new Blob([csvContent], {
-      type: 'text/csv;charset=utf-8;',
+    if (lines.length < 2) {
+      setPreview(null);
+      return;
+    }
+
+    const headers = lines[0].split(',').map((h) => h.trim());
+    const rows = lines.slice(1);
+
+    const creColumns = headers.filter((h) => h.startsWith('CRE'));
+    let creMappings = 0;
+    const sectionSet = new Set<string>();
+
+    rows.forEach((line) => {
+      const values = line.split(',');
+      const rowObj: Record<string, string> = {};
+
+      headers.forEach((h, i) => {
+        rowObj[h] = (values[i] || '').trim();
+      });
+
+      const name = (rowObj['standard|name'] || '').trim();
+      const id = (rowObj['standard|id'] || '').trim();
+
+      if (name || id) {
+        sectionSet.add(`${name}|${id}`);
+      }
+
+      creColumns.forEach((col) => {
+        if (rowObj[col]) creMappings += 1;
+      });
     });
 
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-
-    link.href = url;
-    link.setAttribute('download', 'myopencre_mapping_template.csv');
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    setPreview({
+      rows: rows.length,
+      creMappings,
+      uniqueSections: sectionSet.size,
+      creColumns,
+    });
   };
 
   /* ------------------ FILE SELECTION ------------------ */
@@ -70,29 +126,38 @@ export const MyOpenCRE = () => {
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setError(null);
     setSuccess(null);
+    setInfo(null);
+    setPreview(null);
+    setConfirmedImport(false);
 
     if (!e.target.files || e.target.files.length === 0) return;
 
     const file = e.target.files[0];
 
     if (!file.name.toLowerCase().endsWith('.csv')) {
-      setError('Please upload a valid CSV file.');
+      setError({
+        success: false,
+        type: 'FILE_ERROR',
+        message: 'Please upload a valid CSV file.',
+      });
       e.target.value = '';
       setSelectedFile(null);
       return;
     }
 
     setSelectedFile(file);
+    generateCsvPreview(file);
   };
 
   /* ------------------ CSV UPLOAD ------------------ */
 
   const uploadCsv = async () => {
-    if (!selectedFile) return;
+    if (!selectedFile || !confirmedImport) return;
 
     setLoading(true);
     setError(null);
     setSuccess(null);
+    setInfo(null);
 
     const formData = new FormData();
     formData.append('cre_csv', selectedFile);
@@ -109,25 +174,68 @@ export const MyOpenCRE = () => {
         );
       }
 
+      const payload = await response.json();
+
       if (!response.ok) {
-        const text = await response.text();
-        throw new Error(text || 'CSV import failed');
+        setError(payload);
+        return;
       }
 
-      const result = await response.json();
-      setSuccess(result);
-      setSelectedFile(null);
+      if (payload.import_type === 'noop') {
+        setInfo(
+          'Import completed successfully, but no new CREs or standards were added because all mappings already exist.'
+        );
+      } else if (payload.import_type === 'empty') {
+        setInfo('The uploaded CSV did not contain any importable rows. No changes were made.');
+      } else {
+        setSuccess(payload);
+      }
+
+      setConfirmedImport(false);
+      setPreview(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     } catch (err: any) {
-      setError(err.message || 'Unexpected error during import');
+      setError({
+        success: false,
+        type: 'CLIENT_ERROR',
+        message: err.message || 'Unexpected error during import',
+      });
+      setPreview(null);
+      setConfirmedImport(false);
     } finally {
       setLoading(false);
     }
   };
 
+  /* ------------------ ERROR RENDERING ------------------ */
+
+  const renderErrorMessage = () => {
+    if (!error) return null;
+
+    if (error.errors && error.errors.length > 0) {
+      return (
+        <Message negative>
+          <strong>Import failed due to validation errors</strong>
+          <ul>
+            {error.errors.map((e, idx) => (
+              <li key={idx}>
+                <strong>Row {e.row}:</strong> {e.message}
+              </li>
+            ))}
+          </ul>
+        </Message>
+      );
+    }
+
+    return <Message negative>{error.message || 'Import failed'}</Message>;
+  };
+
   /* ------------------ UI ------------------ */
 
   return (
-    <Container style={{ marginTop: '3rem' }}>
+    <Container className="myopencre-container">
       <Header as="h1">MyOpenCRE</Header>
 
       <p>
@@ -136,7 +244,7 @@ export const MyOpenCRE = () => {
       </p>
 
       <p>
-        Start by downloading the CRE catalogue below, then map your standard’s controls or sections to CRE IDs
+        Start by downloading the CRE catalogue below, then map your standard's controls or sections to CRE IDs
         in the spreadsheet.
       </p>
 
@@ -144,15 +252,33 @@ export const MyOpenCRE = () => {
         <Button primary onClick={downloadCreCsv}>
           Download CRE Catalogue (CSV)
         </Button>
-        <Button secondary onClick={downloadTemplate} style={{ marginLeft: '1rem' }}>
-          Download Mapping Template (CSV)
-        </Button>
       </div>
 
       <div className="myopencre-section myopencre-upload">
         <Header as="h3">Upload Mapping CSV</Header>
+        <Message info className="cursor-pointer">
+          <details>
+            <summary>
+              <strong>How to prepare your CSV</strong>
+            </summary>
 
-        <p>Upload your completed mapping spreadsheet to import your standard into OpenCRE.</p>
+            <ul>
+              <li>Start from the downloaded CRE Catalogue CSV.</li>
+              <li>
+                Fill <code>standard|name</code> and <code>standard|id</code> for your standard.
+              </li>
+              <li>
+                Map your controls using CRE columns (<code>CRE 0</code>, <code>CRE 1</code>, …).
+              </li>
+
+              <li>
+                CRE values must be in the format <code>&lt;CRE-ID&gt;|&lt;Name&gt;</code>
+                <br />
+                <em>Example:</em> <code>616-305|Development processes for security</code>
+              </li>
+            </ul>
+          </details>
+        </Message>
 
         {!isUploadEnabled && (
           <Message info className="myopencre-disabled">
@@ -162,7 +288,8 @@ export const MyOpenCRE = () => {
           </Message>
         )}
 
-        {error && <Message negative>{error}</Message>}
+        {renderErrorMessage()}
+        {info && <Message info>{info}</Message>}
 
         {success && (
           <Message positive>
@@ -174,15 +301,62 @@ export const MyOpenCRE = () => {
           </Message>
         )}
 
+        {confirmedImport && !loading && !success && !error && (
+          <Message positive>
+            CSV validated successfully. Click <strong>Upload CSV</strong> to start importing.
+          </Message>
+        )}
+
+        {preview && (
+          <Message info className="myopencre-preview">
+            <strong>Import Preview</strong>
+            <ul>
+              <li>Rows detected: {preview.rows}</li>
+              <li>CRE mappings found: {preview.creMappings}</li>
+              <li>Unique standard sections: {preview.uniqueSections}</li>
+              <li>CRE columns detected: {preview.creColumns.join(', ')}</li>
+            </ul>
+
+            <Button
+              primary
+              size="small"
+              onClick={() => {
+                setPreview(null);
+                setConfirmedImport(true);
+              }}
+            >
+              Confirm Import
+            </Button>
+
+            <Button
+              size="small"
+              onClick={() => {
+                setPreview(null);
+                setConfirmedImport(false);
+                setSelectedFile(null);
+                if (fileInputRef.current) fileInputRef.current.value = '';
+              }}
+            >
+              Cancel
+            </Button>
+          </Message>
+        )}
+
         <Form>
           <Form.Field>
-            <input type="file" accept=".csv" disabled={!isUploadEnabled || loading} onChange={onFileChange} />
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".csv"
+              disabled={!isUploadEnabled || loading || !!preview}
+              onChange={onFileChange}
+            />
           </Form.Field>
 
           <Button
             primary
             loading={loading}
-            disabled={!isUploadEnabled || !selectedFile || loading}
+            disabled={!isUploadEnabled || !selectedFile || !confirmedImport || loading}
             onClick={uploadCsv}
           >
             Upload CSV

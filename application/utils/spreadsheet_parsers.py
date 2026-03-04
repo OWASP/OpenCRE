@@ -203,7 +203,7 @@ def parse_export_format(lfile: List[Dict[str, Any]]) -> Dict[str, List[defs.Docu
     Given: a spreadsheet written by prepare_spreadsheet()
     return a list of CRE docs
     """
-    validated_rows = validate_import_csv_rows(lfile)
+    validated_rows = validate_export_csv_rows(lfile)
     cres: Dict[str, defs.CRE] = {}
     standards: Dict[str, Dict[str, defs.Standard]] = {}
     documents: Dict[str, List[defs.Document]] = {}
