@@ -113,6 +113,10 @@ You can run `make migrate-upgrade` first and then `make upstream-sync`
 
 ## Running locally
 
+First, start the required services (Redis and Neo4j) with:
+
+`make start-containers`
+
 You can run the backend with `make dev-flask`. At the time of writing the backend URL is `http://localhost:5000` by default.
 
 You can run the frontend with `yarn start`. This should open a browser tab at the application's front page and also automatically reload the page whenever changes are detected. At the time of writing the frontend URL is `http://localhost:9001` by default.

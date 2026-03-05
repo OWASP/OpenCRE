@@ -9,7 +9,7 @@ children:
     attributes:
       sources_i18n:
         en:
-          name:             "Open Worldwide Application Security Project&reg; (OWASP)"
+          name:             "Open Web Application Security Project&reg; (OWASP)"
     children:
       1:
         alias:              "asvs"

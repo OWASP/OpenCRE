@@ -22,6 +22,7 @@ from application.database import db
 from application.cmd import cre_main
 from application.defs import cre_defs as defs
 from application.defs import cre_exceptions
+from application.config import ENABLE_MYOPENCRE
 
 from application.utils import spreadsheet as sheet_utils
 from application.utils import mdutils, redirectors, gap_analysis
@@ -825,8 +826,15 @@ def all_cres() -> Any:
 # Importing Handlers
 
 
+@app.route("/api/capabilities")
+def capabilities():
+    return jsonify({"myopencre": ENABLE_MYOPENCRE})
+
+
 @app.route("/rest/v1/cre_csv", methods=["GET"])
 def get_cre_csv() -> Any:
+    if not ENABLE_MYOPENCRE:
+        abort(404)
     if posthog:
         posthog.capture(f"get_cre_csv", "")
 
@@ -854,6 +862,9 @@ def get_cre_csv() -> Any:
 
 @app.route("/rest/v1/cre_csv_import", methods=["POST"])
 def import_from_cre_csv() -> Any:
+    if not ENABLE_MYOPENCRE:
+        abort(404)
+
     if not os.environ.get("CRE_ALLOW_IMPORT"):
         abort(
             403,
@@ -862,7 +873,9 @@ def import_from_cre_csv() -> Any:
 
     # TODO: (spyros) add optional gap analysis and embeddings calculation
     database = db.Node_collection().with_graph()
+
     file = request.files.get("cre_csv")
+
     calculate_embeddings = (
         False if not request.args.get("calculate_embeddings") else True
     )
@@ -870,17 +883,68 @@ def import_from_cre_csv() -> Any:
         False if not request.args.get("calculate_gap_analysis") else True
     )
 
+    # ------------------------
+    # Request-level checks only
+    # ------------------------
+
     if file is None:
-        abort(400, "No file provided")
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "type": "FILE_ERROR",
+                    "message": "No file provided",
+                }
+            ),
+            400,
+        )
+
     contents = file.read()
-    csv_read = csv.DictReader(contents.decode("utf-8").splitlines())
+
     try:
-        documents = spreadsheet_parsers.parse_export_format(list(csv_read))
+        decoded_contents = contents.decode("utf-8")
+    except UnicodeDecodeError:
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "type": "FILE_ERROR",
+                    "message": "CSV file must be UTF-8 encoded",
+                }
+            ),
+            400,
+        )
+
+    rows = list(csv.DictReader(decoded_contents.splitlines()))
+
+    # ------------------------
+    # Delegate validation + parsing
+    # ------------------------
+
+    try:
+        documents = spreadsheet_parsers.parse_export_format(rows)
+    except ValueError as ve:
+        # CSV validation errors raised by spreadsheet parser
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "type": "VALIDATION_ERROR",
+                    "message": str(ve),
+                }
+            ),
+            400,
+        )
     except cre_exceptions.DuplicateLinkException as dle:
         abort(500, f"error during parsing of the incoming CSV, err:{dle}")
-    cres = documents.pop(defs.Credoctypes.CRE.value)
 
+    # ------------------------
+    # Import execution (unchanged)
+    # ------------------------
+
+    cres = documents.pop(defs.Credoctypes.CRE.value, [])
     standards = documents
+
     new_cres = []
     for cre in cres:
         new_cre, exists = cre_main.register_cre(cre, database)
@@ -894,11 +958,17 @@ def import_from_cre_csv() -> Any:
             generate_embeddings=calculate_embeddings,
             calculate_gap_analysis=calculate_gap_analysis,
         )
+
+    import_type = "created"
+    if not new_cres and not standards:
+        import_type = "noop"
+
     return jsonify(
         {
             "status": "success",
             "new_cres": [c.external_id for c in new_cres],
             "new_standards": len(standards),
+            "import_type": import_type,
         }
     )
 

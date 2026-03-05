@@ -18,6 +18,18 @@ export const SearchPage = () => {
   const [search, setSearch] = useState({ term: '', error: '' });
 
   useEffect(() => {
+    const mobileMenu = document.querySelector('.navbar__mobile-menu');
+    const observer = new MutationObserver(() => {
+      if (mobileMenu?.classList.contains('is-open')){
+        setIsArrowVisible(false);
+      }else{
+        setIsArrowVisible(true);
+      }
+    });
+    if (mobileMenu){
+      observer.observe(mobileMenu, {attributes: true, attributeFilter: ['class']})
+    }
+
     const handleScroll = () => {
       const footer = document.getElementById('page-footer');
       if (footer) {
@@ -33,6 +45,7 @@ export const SearchPage = () => {
     window.addEventListener('scroll', handleScroll);
     return () => {
       window.removeEventListener('scroll', handleScroll);
+      observer.disconnect();
     };
   }, []);
 
