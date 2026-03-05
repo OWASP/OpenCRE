@@ -102,6 +102,51 @@ class TestCWEParser(unittest.TestCase):
             self.assertCountEqual(nodes[0].todict(), expected[0].todict())
             self.assertCountEqual(nodes[1].todict(), expected[1].todict())
 
+    def test_parse_related_weakness_handles_list(self) -> None:
+        parser = cwe.CWE()
+        cwe_node = defs.Standard(name="CWE", sectionID="1004", section="Test CWE")
+
+        with patch.object(
+            parser,
+            "link_to_related_cwe",
+            side_effect=lambda cwe, cache, related_id: cwe,
+        ) as mocked_link:
+            result = parser.parse_related_weakness(
+                cache=self.collection,
+                rw={
+                    "Related_Weakness": [
+                        {"@CWE_ID": "732"},
+                        {"@CWE_ID": "733"},
+                    ]
+                },
+                cwe=cwe_node,
+            )
+
+        self.assertIs(result, cwe_node)
+        self.assertEqual(mocked_link.call_count, 2)
+        mocked_link.assert_any_call(
+            cwe=cwe_node,
+            cache=self.collection,
+            related_id="732",
+        )
+        mocked_link.assert_any_call(
+            cwe=cwe_node,
+            cache=self.collection,
+            related_id="733",
+        )
+
+    def test_parse_related_weakness_returns_original_on_empty_input(self) -> None:
+        parser = cwe.CWE()
+        cwe_node = defs.Standard(name="CWE", sectionID="1004", section="Test CWE")
+
+        result = parser.parse_related_weakness(
+            cache=self.collection,
+            rw={},
+            cwe=cwe_node,
+        )
+
+        self.assertIs(result, cwe_node)
+
     CWE_xml = """<?xml version="1.0" encoding="UTF-8"?>
 <Weakness_Catalog Name="CWE" Version="4.10" Date="2023-01-31" xmlns="http://cwe.mitre.org/cwe-6"
    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"

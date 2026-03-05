@@ -2,7 +2,7 @@ import logging
 import os
 import tempfile
 import requests
-from typing import Dict
+from typing import Any, Dict
 from application.database import db
 from application.defs import cre_defs as defs
 import shutil
@@ -161,9 +161,19 @@ class CWE(ParserInterface):
         return entries
 
     def parse_related_weakness(
-        self, cache: db.Node_collection, rw: Dict[str, Dict], cwe: defs.Standard
+        self, cache: db.Node_collection, rw: Dict[str, Any], cwe: defs.Standard
     ) -> defs.Standard:
-        cwe_entry = rw.get("Related_Weakness")
-        if isinstance(cwe_entry, Dict):
-            id = cwe_entry["@CWE_ID"]
-            return self.link_to_related_cwe(cwe=cwe, cache=cache, related_id=id)
+        cwe_entries = rw.get("Related_Weakness")
+        if isinstance(cwe_entries, Dict):
+            cwe_entries = [cwe_entries]
+
+        if isinstance(cwe_entries, list):
+            for cwe_entry in cwe_entries:
+                if isinstance(cwe_entry, Dict):
+                    related_id = cwe_entry.get("@CWE_ID")
+                    if related_id:
+                        cwe = self.link_to_related_cwe(
+                            cwe=cwe, cache=cache, related_id=related_id
+                        )
+
+        return cwe
