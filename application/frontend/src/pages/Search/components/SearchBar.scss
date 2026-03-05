@@ -16,8 +16,8 @@
   }
 
   .search-icon {
-    position: absolute;
-    left: 0.75rem;
+    position: relative;
+    left: 1rem;
     top: 50%;
     transform: translateY(-50%);
     color: var(--muted-foreground);
