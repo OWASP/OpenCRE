@@ -783,6 +783,67 @@ class TestMain(unittest.TestCase):
     #     main.export_to_osib(file_loc=f"{dir}/osib.yaml", cache=cache)
     #     mocked_db_connect.assert_called_with(path=cache)
     #     mocked_cre2osib.assert_called_with([defs.CRE(id="000-000", name="c0")])
+    
+    @patch.object(prompt_client.PromptHandler, "get_text_embeddings")
+    @patch.object(prompt_client.PromptHandler, "get_id_of_most_similar_cre_paginated")
+    def test_suggest_cre_mappings(
+        self,
+        mock_get_similar_cre,
+        mock_get_embeddings,
+    ) -> None:
+        # Arrange
+        standard_entries = [
+            defs.Standard(
+                name="PCI-DSS",
+                section="Use strong cryptography to protect data in transit",
+                description="All transmissions of cardholder data must be encrypted.",
+            ),
+            defs.Standard(
+                name="PCI-DSS",
+                section="Some vague control with no good match",
+                description="",
+            ),
+        ]
+
+        fake_embedding = [0.1] * 768
+        mock_get_embeddings.return_value = fake_embedding
+
+        # First standard maps well, second does not
+        mock_get_similar_cre.side_effect = [
+            ("cre-db-id-123", 0.85),  # high confidence
+            (None, None),             # low confidence / no match
+        ]
+
+        # Act
+        result = main.suggest_cre_mappings(
+            standard_entries=standard_entries,
+            collection=self.collection,
+        )
+
+        # Assert
+        self.assertEqual(len(result["mapped"]), 1)
+        self.assertEqual(len(result["needs_review"]), 1)
+
+        mapped = result["mapped"][0]
+        self.assertEqual(mapped["suggested_cre_id"], "cre-db-id-123")
+        self.assertEqual(mapped["confidence"], 0.85)
+        self.assertEqual(mapped["standard"]["name"], "PCI-DSS")
+
+        review = result["needs_review"][0]
+        self.assertIsNone(review["suggested_cre_id"])
+        self.assertIsNone(review["confidence"])
+
+        # Assert embeddings were called for each standard
+        self.assertEqual(mock_get_embeddings.call_count, 2)
+
+    @patch.object(prompt_client.PromptHandler, "get_text_embeddings")
+    def test_suggest_cre_mappings_empty_input(self, mock_get_embeddings) -> None:
+        result = main.suggest_cre_mappings(
+            standard_entries=[],
+            collection=self.collection,
+        )
+        self.assertEqual(result, {"mapped": [], "needs_review": []})
+        mock_get_embeddings.assert_not_called()
 
 
 if __name__ == "__main__":
