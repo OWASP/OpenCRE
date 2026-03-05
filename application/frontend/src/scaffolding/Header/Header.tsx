@@ -1,6 +1,6 @@
 import './header.scss';
 
-import { Menu, Search } from 'lucide-react';
+import { Menu, Search, X } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { Link, useHistory } from 'react-router-dom';
 import { NavLink } from 'react-router-dom';
@@ -135,6 +135,13 @@ export const Header = ({ capabilities }: HeaderProps) => {
       <div className={`navbar__overlay ${isMobileMenuOpen ? 'is-open' : ''}`} onClick={closeMobileMenu}></div>
 
       <div className={`navbar__mobile-menu ${isMobileMenuOpen ? 'is-open' : ''}`}>
+        <button 
+     className="navbar__mobile-menu-close" 
+     onClick={closeMobileMenu}
+     aria-label="Close mobile menu"
+    >
+     <X className="mobile-close-icon" />
+   </button>
         <div className="mobile-search-container">
           <SearchBar />
         </div>
