@@ -1811,7 +1811,9 @@ class Node_collection:
 
         return {
             ntype: sorted(list(names), key=lambda value: value.lower())
-            for ntype, names in sorted(documents_by_type.items(), key=lambda item: item[0].lower())
+            for ntype, names in sorted(
+                documents_by_type.items(), key=lambda item: item[0].lower()
+            )
         }
 
     def text_search(self, text: str) -> List[Optional[cre_defs.Document]]:
