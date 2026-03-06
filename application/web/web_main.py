@@ -32,6 +32,7 @@ from flask import json as flask_json
 from flask import (
     Blueprint,
     abort,
+    current_app,
     jsonify,
     redirect,
     request,
@@ -68,6 +69,10 @@ class SupportedFormats(Enum):
     JSON = "json"
     YAML = "yaml"
     OSCAL = "oscal"
+
+
+def _is_myopencre_enabled() -> bool:
+    return bool(current_app.config.get("ENABLE_MYOPENCRE", ENABLE_MYOPENCRE))
 
 
 def _normalize_source_name(source: Any) -> str | None:
@@ -828,12 +833,12 @@ def all_cres() -> Any:
 
 @app.route("/api/capabilities")
 def capabilities():
-    return jsonify({"myopencre": ENABLE_MYOPENCRE})
+    return jsonify({"myopencre": _is_myopencre_enabled()})
 
 
 @app.route("/rest/v1/cre_csv", methods=["GET"])
 def get_cre_csv() -> Any:
-    if not ENABLE_MYOPENCRE:
+    if not _is_myopencre_enabled():
         abort(404)
     if posthog:
         posthog.capture(f"get_cre_csv", "")
@@ -862,7 +867,7 @@ def get_cre_csv() -> Any:
 
 @app.route("/rest/v1/cre_csv_import", methods=["POST"])
 def import_from_cre_csv() -> Any:
-    if not ENABLE_MYOPENCRE:
+    if not _is_myopencre_enabled():
         abort(404)
 
     if not os.environ.get("CRE_ALLOW_IMPORT"):

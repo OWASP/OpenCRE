@@ -6,7 +6,10 @@ from copy import deepcopy
 from typing import Any, Dict, List, Optional, Set
 import os
 import gspread
+from gspread.exceptions import GSpreadException
 import yaml
+from yaml import YAMLError
+from google.auth.exceptions import DefaultCredentialsError
 from application.database import db
 from application.defs import cre_defs as defs
 from enum import Enum
@@ -39,42 +42,16 @@ def read_spreadsheet(
     result = {}
 
     try:
-        try:
-            if (
-                os.environ.get("OpenCRE_gspread_Auth")
-                and os.environ.get("OpenCRE_gspread_Auth")
-                == GspreadAuth.ServiceAccount.value
-            ):
-                logger.info("Gspread configured to use a Service Account")
-                gc = gspread.service_account()
-
-            else:
-                logger.info("Gspread configured to use OAuth")
-                gc = gspread.oauth()
-
-        except Exception as auth_error:
-            logger.warning("Skipping spreadsheet auth during tests: %s", auth_error)
-
-            # ---- TEST MODE FIX ----
-            if "docs.google.com" in url:
-                return {
-                    "ISO Numericise Test": [
-                        {
-                            "Standard 27001/2:2022": "Use of cryptography",
-                            "Standard 27001/2:2022 Section ID": "1.10",
-                        },
-                        {
-                            "Standard 27001/2:2022": "Privacy and protection of personal identifiable information (PII)",
-                            "Standard 27001/2:2022 Section ID": "10.10",
-                        },
-                        {
-                            "Standard 27001/2:2022": "Secure development life cycle",
-                            "Standard 27001/2:2022 Section ID": "1.31",
-                        },
-                    ]
-                }
-
-            return {}
+        if (
+            os.environ.get("OpenCRE_gspread_Auth")
+            and os.environ.get("OpenCRE_gspread_Auth")
+            == GspreadAuth.ServiceAccount.value
+        ):
+            logger.info("Gspread configured to use a Service Account")
+            gc = gspread.service_account()
+        else:
+            logger.info("Gspread configured to use OAuth")
+            gc = gspread.oauth()
 
         sh = gc.open_by_url(url)
 
@@ -107,7 +84,7 @@ def read_spreadsheet(
 
                 result[wsh.title] = toyaml
 
-    except Exception as e:
+    except (GSpreadException, DefaultCredentialsError, OSError, YAMLError) as e:
         logger.warning(
             'Spreadsheet read skipped "%s" : "%s"',
             alias,
@@ -156,6 +133,80 @@ class ExportSheet:
             ] = node.description
 
         return standardEntry
+
+    @staticmethod
+    def _row_key(row: Dict[str, str]) -> tuple:
+        return tuple(sorted(row.items()))
+
+    def process_cre(
+        self,
+        cre: defs.CRE,
+        depth: int,
+        rows: List[Dict[str, str]],
+        seen_rows: Set[tuple],
+        processed_standards: Set[int],
+    ) -> None:
+        """Emit CSV rows for one CRE.
+
+        Behavior matches previous export semantics:
+        - emit one row per linked non-CRE document
+        - emit CRE-only row when no linked standards/tools/codes exist
+        """
+        std_links = [
+            l
+            for l in getattr(cre, "links", [])
+            if getattr(l.document, "doctype", None) != defs.Credoctypes.CRE
+        ]
+        if std_links:
+            for l in std_links:
+                row = self.write_cre_entry(cre, depth)
+                row.update(self.write_standard_entry(l.document))
+                key = self._row_key(row)
+                if key not in seen_rows:
+                    rows.append(row)
+                    seen_rows.add(key)
+                processed_standards.add(id(l.document))
+            return
+
+        row = self.write_cre_entry(cre, depth)
+        key = self._row_key(row)
+        if key not in seen_rows:
+            rows.append(row)
+            seen_rows.add(key)
+
+    def process_standard(
+        self,
+        doc: defs.Document,
+        cre_depth: Any,
+        rows: List[Dict[str, str]],
+        seen_rows: Set[tuple],
+        processed_standards: Set[int],
+    ) -> None:
+        """Emit CSV rows for one non-CRE document."""
+        cre_links = [
+            l
+            for l in getattr(doc, "links", [])
+            if getattr(l.document, "doctype", None) == defs.Credoctypes.CRE
+        ]
+        if cre_links:
+            if id(doc) in processed_standards:
+                return
+            for l in cre_links:
+                cre = l.document
+                depth = cre_depth(cre)
+                row = self.write_cre_entry(cre, depth)
+                row.update(self.write_standard_entry(doc))
+                key = self._row_key(row)
+                if key not in seen_rows:
+                    rows.append(row)
+                    seen_rows.add(key)
+            return
+
+        row = self.write_standard_entry(doc)
+        key = self._row_key(row)
+        if key not in seen_rows:
+            rows.append(row)
+            seen_rows.add(key)
 
     def prepare_spreadsheet(self, docs=None, storage=None):
         """
@@ -213,68 +264,19 @@ class ExportSheet:
                     current = parent_by_child[current]
                 return depth
 
-            try:
-                if storage:
-                    return storage.get_cre_hierarchy(cre_obj)
-            except Exception:
-                pass
+            if storage:
+                return storage.get_cre_hierarchy(cre_obj)
             return 0
 
         # first pass: iterate through the original docs order
         for doc in docs:
             if getattr(doc, "doctype", None) == defs.Credoctypes.CRE:
                 depth = cre_depth(doc)
-                # if the CRE has non-CRE links, emit one row per link
-                std_links = [
-                    l
-                    for l in getattr(doc, "links", [])
-                    if getattr(l.document, "doctype", None) != defs.Credoctypes.CRE
-                ]
-                if std_links:
-                    for l in std_links:
-                        row = self.write_cre_entry(doc, depth)
-                        row.update(self.write_standard_entry(l.document))
-                        # only append if unique
-                        key = tuple(sorted(row.items()))
-                        if key not in seen_rows:
-                            rows.append(row)
-                            seen_rows.add(key)
-                        processed_standards.add(id(l.document))
-                else:
-                    # no standards attached, just emit the CRE alone
-                    row = self.write_cre_entry(doc, depth)
-                    key = tuple(sorted(row.items()))
-                    if key not in seen_rows:
-                        rows.append(row)
-                        seen_rows.add(key)
+                self.process_cre(doc, depth, rows, seen_rows, processed_standards)
             else:
-                # standard or other doc
-                cre_links = [
-                    l
-                    for l in getattr(doc, "links", [])
-                    if getattr(l.document, "doctype", None) == defs.Credoctypes.CRE
-                ]
-                if cre_links:
-                    # skip if we already handled this standard when
-                    # iterating over its parent CRE
-                    if id(doc) in processed_standards:
-                        continue
-                    for l in cre_links:
-                        cre = l.document
-                        depth = cre_depth(cre)
-                        row = self.write_cre_entry(cre, depth)
-                        row.update(self.write_standard_entry(doc))
-                        key = tuple(sorted(row.items()))
-                        if key not in seen_rows:
-                            rows.append(row)
-                            seen_rows.add(key)
-                else:
-                    # standalone standard
-                    row = self.write_standard_entry(doc)
-                    key = tuple(sorted(row.items()))
-                    if key not in seen_rows:
-                        rows.append(row)
-                        seen_rows.add(key)
+                self.process_standard(
+                    doc, cre_depth, rows, seen_rows, processed_standards
+                )
 
         return rows
 
@@ -320,40 +322,27 @@ def generate_mapping_template_file(
     CRE rows traversed depth-first starting from the provided roots.
     """
 
-    rows: List[Dict[str, str]] = []
-
-    # Header/template row matching tests expectations
-    header = {
-        "CRE 0": "",
-        "CRE 1": "",
-        "CRE 2": "",
-        "CRE 3": "",
-        "CRE 4": "",
-        "standard|name": "",
-        "standard|id": "",
-        "standard|hyperlink": "",
-    }
-
-    rows.append(header)
-
     processed: Set[str] = set()
+    cre_rows: List[Dict[str, str]] = []
+    max_depth = 0
+    linked_standard_names: Set[str] = set()
 
     def resolve_cre(cre_obj: defs.CRE) -> defs.CRE:
-        try:
-            full = database.get_CREs(external_id=cre_obj.id)
-            if full and isinstance(full[0], defs.CRE):
-                return full[0]
-        except Exception:
-            pass
+        full = database.get_CREs(external_id=cre_obj.id)
+        if full and isinstance(full[0], defs.CRE):
+            return full[0]
         return cre_obj
 
     def visit(cre_obj: defs.CRE, depth: int) -> None:
+        nonlocal max_depth
         if not cre_obj.id or cre_obj.id in processed:
             return
 
         row = {f"CRE {depth}": f"{cre_obj.id}|{cre_obj.name}"}
-        rows.append(row)
+        cre_rows.append(row)
         processed.add(cre_obj.id)
+        if depth > max_depth:
+            max_depth = depth
 
         full = resolve_cre(cre_obj)
         child_cres: List[defs.CRE] = []
@@ -364,11 +353,31 @@ def generate_mapping_template_file(
                 and isinstance(link.document, defs.CRE)
             ):
                 child_cres.append(link.document)
+            elif getattr(link.document, "doctype", None) != defs.Credoctypes.CRE:
+                if getattr(link.document, "name", None):
+                    linked_standard_names.add(link.document.name)
 
         for child in sorted(child_cres, key=lambda cre: (cre.id or "", cre.name or "")):
             visit(child, depth + 1)
 
     for root in docs:
         visit(root, 0)
+
+    header: Dict[str, str] = {f"CRE {i}": "" for i in range(max_depth + 1)}
+    # Build template columns dynamically so output adapts to available mappings.
+    # Keep generic standard columns as the baseline import template.
+    template_name = "standard"
+    header[defs.ExportFormat.section_key(template_name)] = ""
+    header[defs.ExportFormat.sectionID_key(template_name)] = ""
+    header[defs.ExportFormat.hyperlink_key(template_name)] = ""
+
+    for standard_name in sorted(linked_standard_names):
+        header[defs.ExportFormat.section_key(standard_name)] = ""
+        header[defs.ExportFormat.sectionID_key(standard_name)] = ""
+        header[defs.ExportFormat.hyperlink_key(standard_name)] = ""
+
+    rows: List[Dict[str, str]] = []
+    rows.append(header)
+    rows.extend(cre_rows)
 
     return rows

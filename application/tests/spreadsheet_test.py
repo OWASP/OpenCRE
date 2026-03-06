@@ -3,6 +3,7 @@ import io
 import csv
 from pprint import pprint
 from typing import Any, Dict, List
+from unittest.mock import patch
 
 from application import create_app, sqla  # type: ignore
 from application.database import db
@@ -110,7 +111,42 @@ class TestDB(unittest.TestCase):
     def test_read_spreadsheet_iso_numbers(self) -> None:
         url = "https://docs.google.com/spreadsheets/d/1ugU-FCIRLc5D_xpKOunelo26Wel3PTLnMKFdu7isZ3s"  # Public iso test CRE spreadsheet url
         alias = "Test Spreadsheet"
-        result = read_spreadsheet(url, alias, validate=False, parse_numbered_only=False)
+
+        class FakeWorksheet:
+            title = "ISO Numericise Test"
+            col_count = 2
+
+            def get_all_records(self, head=1, numericise_ignore=None):
+                return [
+                    {
+                        "Standard 27001/2:2022": "Use of cryptography",
+                        "Standard 27001/2:2022 Section ID": "1.10",
+                    },
+                    {
+                        "Standard 27001/2:2022": "Privacy and protection of personal identifiable information (PII)",
+                        "Standard 27001/2:2022 Section ID": "10.10",
+                    },
+                    {
+                        "Standard 27001/2:2022": "Secure development life cycle",
+                        "Standard 27001/2:2022 Section ID": "1.31",
+                    },
+                ]
+
+        class FakeSpreadsheet:
+            def worksheets(self):
+                return [FakeWorksheet()]
+
+        class FakeClient:
+            def open_by_url(self, _url):
+                return FakeSpreadsheet()
+
+        with patch(
+            "application.utils.spreadsheet.gspread.oauth",
+            return_value=FakeClient(),
+        ):
+            result = read_spreadsheet(
+                url, alias, validate=False, parse_numbered_only=False
+            )
         expected = [
             {
                 "Standard 27001/2:2022": "Use of cryptography",

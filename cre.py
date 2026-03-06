@@ -16,6 +16,18 @@ import click  # type: ignore
 import coverage  # type: ignore
 from flask_migrate import Migrate  # type: ignore
 
+# Start coverage as early as possible when requested, so imports done while
+# loading the Flask app are included.
+COV = None
+if os.environ.get("FLASK_COVERAGE"):
+    COV = coverage.coverage(
+        branch=True,
+        include="application/*",
+        check_preimported=True,
+        config_file="application/tests/.coveragerc",
+    )
+    COV.start()
+
 from application import create_app, sqla  # type: ignore
 
 # Hacky solutions to make this both a command line application with argparse and a flask application
@@ -31,8 +43,8 @@ migrate = Migrate(app, sqla, render_as_batch=True)
 )  # type: ignore
 @click.argument("test_names", nargs=-1)  # type: ignore
 def test(cover: bool, test_names: List[str]) -> None:
-    COV = None
-    if cover or os.environ.get("FLASK_COVERAGE"):
+    global COV
+    if COV is None and (cover or os.environ.get("FLASK_COVERAGE")):
         COV = coverage.coverage(
             branch=True,
             include="application/*",

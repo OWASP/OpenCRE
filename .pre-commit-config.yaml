@@ -20,13 +20,13 @@ repos:
 
     - id: flask-tests
       name: Run Flask tests
-      entry: bash -c "FLASK_APP=cre.py FLASK_CONFIG=test flask test"
+      entry: make test
       language: system
       pass_filenames: false
 
 
     - id: coverage-check
       name: Coverage >= 70%
-      entry: bash -c "FLASK_APP=cre.py FLASK_CONFIG=test flask test --cover"
+      entry: make cover
       language: system
       pass_filenames: false
