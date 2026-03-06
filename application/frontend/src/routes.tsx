@@ -12,6 +12,7 @@ import {
   SECTION_ID,
   STANDARD,
   SUBSECTION,
+  WAYFINDER,
 } from './const';
 import { CommonRequirementEnumeration, Graph, SearchPage, Standard } from './pages';
 import { BrowseRootCres } from './pages/BrowseRootCres/browseRootCres';
@@ -24,6 +25,7 @@ import { MembershipRequired } from './pages/MembershipRequired/MembershipRequire
 import { MyOpenCRE } from './pages/MyOpenCRE/MyOpenCRE';
 import { SearchName } from './pages/Search/SearchName';
 import { StandardSection } from './pages/Standard/StandardSection';
+import { Wayfinder } from './pages/Wayfinder/Wayfinder';
 
 export interface IRoute {
   path: string;
@@ -123,6 +125,11 @@ export const ROUTES = (capabilities: Capabilities): IRoute[] => [
   {
     path: `${EXPLORER}`,
     component: Explorer,
+    showFilter: false,
+  },
+  {
+    path: `${WAYFINDER}`,
+    component: Wayfinder,
     showFilter: false,
   },
 ];
