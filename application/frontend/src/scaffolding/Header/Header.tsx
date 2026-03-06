@@ -72,6 +72,10 @@ export const Header = ({ capabilities }: HeaderProps) => {
                 Map Analysis
               </NavLink>
 
+              <NavLink to="/supported_documents" className="nav-link" activeClassName="nav-link--active">
+                Sources
+              </NavLink>
+
               <NavLink to="/explorer" className="nav-link" activeClassName="nav-link--active">
                 Explorer
               </NavLink>
@@ -188,6 +192,15 @@ export const Header = ({ capabilities }: HeaderProps) => {
             onClick={closeMobileMenu}
           >
             Map Analysis
+          </NavLink>
+
+          <NavLink
+            to="/supported_documents"
+            className="nav-link"
+            activeClassName="nav-link--active"
+            onClick={closeMobileMenu}
+          >
+            Sources
           </NavLink>
 
           <NavLink

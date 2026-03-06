@@ -211,6 +211,24 @@ paths:
                 items:
                   type: string
 
+  /rest/v1/supported_documents:
+    get:
+      summary: List supported standards and documents
+      description: >
+        Retrieve unique node names grouped by document type (for example
+        Standard, Tool, or Code).
+      responses:
+        '200':
+          description: Supported document names grouped by type
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: array
+                  items:
+                    type: string
+
   /rest/v1/text_search:
     get:
       summary: Text search

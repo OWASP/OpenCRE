@@ -1,0 +1,46 @@
+main#supported-documents {
+  padding: 30px;
+  margin: var(--header-height) 0;
+  color: #111111;
+
+  .supported-documents__summary {
+    max-width: 800px;
+    margin-bottom: 1.5rem;
+  }
+
+  .supported-documents__grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  }
+
+  .supported-documents__card {
+    border: 1px solid #d4d4d4;
+    border-radius: 8px;
+    background: #fafafa;
+    padding: 1rem;
+
+    h2 {
+      margin: 0 0 0.75rem 0;
+      font-size: 1.1rem;
+    }
+
+    ul {
+      margin: 0;
+      padding-left: 1.1rem;
+    }
+
+    a {
+      color: #0b5cab;
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    li + li {
+      margin-top: 0.4rem;
+    }
+  }
+}
