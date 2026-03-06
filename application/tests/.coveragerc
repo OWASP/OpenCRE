@@ -1,23 +1,6 @@
 [run]
 branch=True
 omit = */tests/*
-       application/cmd/*
-       application/web/*
-       application/__init__.py
-       application/prompt_client/*
-       application/database/db.py
-       application/database/inmemory_graph.py
-       application/defs/cre_defs.py
-       application/utils/oscal_utils.py
-       application/utils/redirectors.py
-       application/utils/redis.py
-       application/utils/spreadsheet.py
-       application/utils/gap_analysis.py
-       application/utils/git.py
-       application/utils/external_project_parsers/parsers/cloud_native_security_controls.py
-       application/utils/external_project_parsers/parsers/cwe.py
-       application/utils/external_project_parsers/parsers/dsomm.py
-       application/utils/external_project_parsers/parsers/juiceshop.py
 
 [report]
 exclude_lines =

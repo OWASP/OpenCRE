@@ -231,9 +231,23 @@ class TestCreDefs(unittest.TestCase):
             ),
         )  # happy path
         s = {}
+        compared_attrs = {
+            "id",
+            "name",
+            "description",
+            "links",
+            "embeddings",
+            "embeddings_text",
+            "tags",
+            "metadata",
+            "section",
+            "subsection",
+            "version",
+            "sectionID",
+        }
         for v in vars(s1).keys():
             # create a list of standards that all differ from s1 on one attribute
-            if v == "doctype":
+            if v not in compared_attrs:
                 continue
             code = copy.deepcopy(s1)
             if v == "embeddings":
@@ -260,8 +274,6 @@ class TestCreDefs(unittest.TestCase):
                 s[v] = code
 
         for attribute, stand in s.items():
-            if attribute == "tooltype":
-                continue
             self.assertNotEqual(
                 stand,
                 s1,

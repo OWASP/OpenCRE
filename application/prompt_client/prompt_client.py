@@ -147,6 +147,9 @@ class in_memory_embeddings:
     ):
         """method generate embeddings accepts a list of Database IDs of object which do not have embeddings and generates embeddings for those objects"""
         logger.info(f"generating {len(missing_embeddings)} embeddings")
+        ai = self.ai_client
+        if not ai:
+            raise RuntimeError("AI client not configured; cannot generate embeddings")
         for id in missing_embeddings:
             cre = database.get_cre_by_db_id(id)
             nodes = database.get_nodes(db_id=id)
@@ -164,10 +167,6 @@ class in_memory_embeddings:
                     f"making embedding for {getattr(node_item, 'hyperlink', content)}"
                 )
 
-                ai = self.ai_client
-                if not ai:
-                    logger.error("AI client not configured; skipping embedding")
-                    continue
                 embedding = ai.get_text_embeddings(content)
                 dbnode = db.dbNodeFromNode(node_item)
                 if not dbnode:
@@ -178,10 +177,6 @@ class in_memory_embeddings:
             elif cre:
                 content = f"{cre.doctype}\n name:{cre.name}\n description:{cre.description}\n id:{cre.id}\n "
                 logger.info(f"making embedding for {content}")
-                ai = self.ai_client
-                if not ai:
-                    logger.error("AI client not configured; skipping embedding")
-                    continue
                 embedding = ai.get_text_embeddings(content)
                 dbcre = db.dbCREfromCRE(cre)
                 if not dbcre:

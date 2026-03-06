@@ -1186,7 +1186,12 @@ class TestDB(unittest.TestCase):
             collection.object_select(db.Node(name="fooTool")), [dbnode1, dbnode2]
         )
 
-        self.assertEqual(collection.object_select(db.Node(name="none")), [])
+        self.assertEqual(
+            collection.object_select(
+                db.Node(name="fooTool", description="no-such-description")
+            ),
+            [],
+        )
 
     def test_get_root_cres(self):
         """Given:

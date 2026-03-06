@@ -795,30 +795,15 @@ class Node_collection:
         self.graph = inmemory_graph.CRE_Graph()
 
     def with_graph(self) -> "Node_collection":
-        # always reload graph to avoid stale state (tests and long-running
-        # processes may mutate the singleton).  Clearing the singleton ensures
-        # cycles or edges from previous loads don't linger and confuse
-        # hierarchy calculations.
-        logger.info("Loading CRE graph in memory, memory-heavy operation!")
-
-        # reset both our instance pointer and the underlying singleton storage
-        self.graph = inmemory_graph.CRE_Graph()
-        graph_singleton = inmemory_graph.Singleton_Graph_Storage.instance()
-        # clear any residual nodes/edges so that `with_graph` will populate
-        # from fresh data
-        try:
-            graph_singleton.clear()
-        except Exception:
-            # networkx DiGraph has clear() method; in case of custom impl
-            # we ignore failures
-            pass
-
-        self.graph.with_graph(
-            graph=graph_singleton,
-            graph_data=self.__get_all_nodes_and_cres(cres_only=True),
-        )
-        logger.info("Successfully loaded CRE graph in memory")
-
+        if len(self.graph.get_raw_graph().edges) == 0:
+            logger.info("Loading CRE graph in memory, memory-heavy operation!")
+            self.graph.with_graph(
+                graph=inmemory_graph.Singleton_Graph_Storage.instance(),
+                graph_data=self.__get_all_nodes_and_cres(cres_only=True),
+            )
+            logger.info("Successfully loaded CRE graph in memory")
+        else:
+            logger.debug("CRE graph already loaded, skipping reload")
         return self
 
     def __get_external_links(self) -> List[Tuple[CRE, Node, str]]:
@@ -1434,18 +1419,21 @@ class Node_collection:
                         .replace("'", "")
                         + ".yaml"
                     )
-                else:
-                    fallback_name = (
-                        (doc.name or "document")
-                        .replace("/", "-")
+                elif isinstance(doc, cre_defs.Code):
+                    title = (
+                        doc.name.replace("/", "-")
                         .replace(" ", "_")
                         .replace('"', "")
                         .replace("'", "")
+                        + ".yaml"
                     )
-                    title = f"{fallback_name}.yaml"
-                    logger.warning(
-                        "doc does not have sectionID or id, using fallback filename %s",
-                        title,
+                else:
+                    logger.error(
+                        "doc does not have sectionID or id, this is a bug: %s",
+                        doc.__dict__,
+                    )
+                    raise ValueError(
+                        "Document missing required identifier (sectionID or id)"
                     )
                 file.writeToDisk(
                     file_title=title,
@@ -1494,7 +1482,9 @@ class Node_collection:
         roots = self.get_root_cres()
 
         root_cre_ids = [r.id for r in roots]
-        return self.graph.get_hierarchy(rootIDs=root_cre_ids, creID=cre.id or "")
+        if not cre.id:
+            raise ValueError("CRE is missing required id; data is corrupted")
+        return self.graph.get_hierarchy(rootIDs=root_cre_ids, creID=cre.id)
 
     # def all_nodes_with_pagination(
     #     self, page: int = 1, per_page: int = 10

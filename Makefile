@@ -58,7 +58,7 @@ test:
 	flask routes && flask test
 
 cover:
-	. ./venv/bin/activate && FLASK_APP=cre.py FLASK_CONFIG=testing flask test --cover
+	. ./venv/bin/activate && FLASK_APP=cre.py FLASK_CONFIG=testing FLASK_COVERAGE=1 flask test --cover
 
 install-deps-python:
 	[ -d "./venv" ] && . ./venv/bin/activate &&\
