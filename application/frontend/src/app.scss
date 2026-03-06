@@ -29,14 +29,14 @@ body {
   overflow-x: hidden;
   overscroll-behavior-y: none;
 
-  scrollbar-color: #999999 white;
+  scrollbar-color: #999999 transparent;
 
   &::-webkit-scrollbar {
     width: 6px;
   }
 
   &::-webkit-scrollbar-track {
-    background: white;
+    background: transparent;
   }
 
   &::-webkit-scrollbar-thumb {
