@@ -54,3 +54,48 @@ export interface PaginatedResponse {
   standards: Document[];
   total_pages: number;
 }
+
+export interface WayfinderFacet {
+  value: string;
+  count: number;
+}
+
+export interface WayfinderMetadata {
+  sdlc: string[];
+  supporting_orgs: string[];
+  licenses: string[];
+  keywords?: string[];
+  source: string;
+}
+
+export interface WayfinderResource {
+  id: string;
+  name: string;
+  doctype: string;
+  entry_count: number;
+  hyperlink?: string;
+  metadata: WayfinderMetadata;
+}
+
+export interface WayfinderSdlcGroup {
+  phase: string;
+  resources: WayfinderResource[];
+}
+
+export interface WayfinderResponse {
+  data: WayfinderResource[];
+  grouped_by_sdlc: WayfinderSdlcGroup[];
+  facets: {
+    sdlc: WayfinderFacet[];
+    supporting_orgs: WayfinderFacet[];
+    licenses: WayfinderFacet[];
+    doctypes: WayfinderFacet[];
+  };
+  sdlc_order: string[];
+  stats: {
+    total_resources: number;
+    filtered_resources: number;
+    total_entries: number;
+    filtered_entries: number;
+  };
+}
