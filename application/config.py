@@ -13,6 +13,7 @@ class Config:
     GAP_ANALYSIS_OPTIMIZED = (
         os.environ.get("GAP_ANALYSIS_OPTIMIZED", "False").lower() == "true"
     )
+    ENABLE_MYOPENCRE = ENABLE_MYOPENCRE
 
 
 class DevelopmentConfig(Config):
@@ -30,6 +31,7 @@ class TestingConfig(Config):
     CACHE_TYPE = "SimpleCache"
     TESTING = True
     SQLALCHEMY_DATABASE_URI = os.environ.get("TEST_DATABASE_URL") or "sqlite://"
+    ENABLE_MYOPENCRE = True
 
 
 class ProductionConfig(Config):

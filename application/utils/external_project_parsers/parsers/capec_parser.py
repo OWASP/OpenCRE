@@ -1,6 +1,4 @@
 import logging
-import os
-import tempfile
 import requests
 from typing import Dict
 from application.database import db
@@ -16,13 +14,18 @@ from application.utils.external_project_parsers.base_parser_defs import (
     ParseResult,
 )
 from application.prompt_client import prompt_client as prompt_client
+from typing import Optional
 
 
 class Capec(ParserInterface):
     name = "CAPEC"
     capec_xml = "https://capec.mitre.org/data/xml/capec_latest.xml"
 
-    def parse(self, cache: db.Node_collection, ph: prompt_client.PromptHandler):
+    def parse(
+        self,
+        cache: db.Node_collection,
+        ph: Optional[prompt_client.PromptHandler],
+    ) -> ParseResult:
         xml = requests.get(self.capec_xml)
         if xml.status_code == 200:
             return ParseResult(
@@ -32,6 +35,7 @@ class Capec(ParserInterface):
             )
         else:
             logger.fatal(f"Could not get CAPEC's XML data, error was {xml.text}")
+            return ParseResult(results={self.name: []})
 
     def make_hyperlink(self, capec_id: int):
         return f"https://capec.mitre.org/data/definitions/{capec_id}.html"
@@ -49,7 +53,7 @@ class Capec(ParserInterface):
                 logger.debug(
                     f"linked CAPEC with id {capec.section} to CRE with ID {cre.id}"
                 )
-                capec = capec.add_link(
+                capec.add_link(
                     defs.Link(document=cre, ltype=defs.LinkTypes.AutomaticallyLinkedTo)
                 )
         return capec

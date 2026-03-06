@@ -178,44 +178,61 @@ def _parse_node(
         if english_attrs:
             if node_type == defs.Credoctypes.Standard:
                 res = defs.Standard(
-                    name=name,
-                    section=current_path.replace(f"{root}.{orgname}.", ""),
-                    hyperlink=english_attrs.source if english_attrs.source else "",
+                    name=str(name) if name else "",
+                    section=str(current_path.replace(f"{root}.{orgname}.", "")),
+                    hyperlink=str(english_attrs.source) if english_attrs.source else "",
                 )
             elif node_type == defs.Credoctypes.Code:
                 res = defs.Code(
-                    name=name,
-                    description=english_attrs.description,
-                    hyperlink=english_attrs.source if english_attrs.source else "",
+                    name=str(name) if name else "",
+                    description=str(english_attrs.description)
+                    if english_attrs.description
+                    else "",
+                    hyperlink=str(english_attrs.source) if english_attrs.source else "",
                 )
             elif node_type == defs.Credoctypes.Tool:
                 ttype = [
                     t
                     for t in defs.ToolTypes
-                    if "categories" in vars(osib.attributes)
+                    if osib.attributes
                     and osib.attributes.categories
-                    and t in osib.attributes.categories
+                    and t.value in osib.attributes.categories
                 ]
+                tooltype_value = None
                 if ttype:
-                    ttype = ttype[0]
-                    osib.attributes.categories.remove(ttype)
-                    osib.attributes.categories.remove(node_type)
+                    tooltype_value = ttype[0]
+                    if osib.attributes and osib.attributes.categories:
+                        try:
+                            osib.attributes.categories.remove(tooltype_value.value)
+                        except ValueError:
+                            pass
+                        try:
+                            if node_type:
+                                osib.attributes.categories.remove(node_type.value)
+                        except Exception:
+                            pass
                 res = defs.Tool(
-                    name=name,
-                    description=english_attrs.description,
-                    hyperlink=english_attrs.source if english_attrs.source else "",
-                    tooltype=ttype if ttype else defs.ToolTypes.Unknown,
-                    section=english_attrs.section if english_attrs.section else "",
+                    name=str(name) if name else "",
+                    description=str(english_attrs.description)
+                    if english_attrs.description
+                    else "",
+                    hyperlink=str(english_attrs.source) if english_attrs.source else "",
+                    tooltype=tooltype_value
+                    if tooltype_value
+                    else defs.ToolTypes.Unknown,
+                    section=str(english_attrs.section) if english_attrs.section else "",
                     sectionID=(
-                        english_attrs.sectionID if english_attrs.sectionID else ""
+                        str(english_attrs.sectionID) if english_attrs.sectionID else ""
                     ),
                 )
 
             elif node_type == defs.Credoctypes.CRE:
                 res = defs.CRE(
-                    name=name,
-                    description=english_attrs.description,
-                    hyperlink=english_attrs.source if english_attrs.source else "",
+                    name=str(name) if name else "",
+                    description=str(english_attrs.description)
+                    if english_attrs.description
+                    else "",
+                    hyperlink=str(english_attrs.source) if english_attrs.source else "",
                 )
             else:
                 raise ValueError("OSIB node type unknown")
@@ -232,7 +249,7 @@ def _parse_node(
 
             for olink in osib.attributes.links:
                 linked_doc = find_doc(olink)
-                if olink.type:
+                if linked_doc and olink.type:
                     if olink.type.lower() == "parent":
                         res.add_link(
                             link=defs.Link(
@@ -310,18 +327,14 @@ def osib2cre(tree: Osib_tree) -> Tuple[List[defs.CRE], List[defs.Standard]]:
                         )
                     )
                 else:
-                    cres.extend(
-                        [
-                            defs.CRE(d)
-                            for d in _parse_node(
-                                root=root,
-                                orgname=str(orgname),
-                                osib=project,
-                                node_type=defs.Credoctypes.CRE,
-                                current_path=f"{root}.{orgname}",
-                            )
-                        ]
+                    parsed_cres = _parse_node(
+                        root=root,
+                        orgname=str(orgname),
+                        osib=project,
+                        node_type=defs.Credoctypes.CRE,
+                        current_path=f"{root}.{orgname}",
                     )
+                    cres.extend([d for d in parsed_cres if isinstance(d, defs.CRE)])
     return (cres, standards)
 
 
@@ -392,7 +405,11 @@ def paths_to_osib(
             path = f"OSIB.OWASP.CRE.{r[0]}"
             result[r[0]] = osibs[r[0]]
 
-        osibs[r[0]].attributes.links.append(_Link(link=path, type="Related"))
+        attrs0 = osibs[r[0]].attributes
+        if attrs0 is None:
+            attrs0 = Node_attributes()
+            osibs[r[0]].attributes = attrs0
+        attrs0.links.append(_Link(link=path, type="Related"))
 
         path = ""
         if l1:
@@ -400,15 +417,23 @@ def paths_to_osib(
         else:
             path = f"OSIB.OWASP.CRE.{r[1]}"
             result[r[1]] = osibs[r[1]]
-        osibs[r[1]].attributes.links.append(_Link(link=path, type="Related"))
+        attrs1 = osibs[r[1]].attributes
+        if attrs1 is None:
+            attrs1 = Node_attributes()
+            osibs[r[1]].attributes = attrs1
+        attrs1.links.append(_Link(link=path, type="Related"))
 
     # build the child-tree structure
     for osib_path in sorted(osib_paths, key=len):
         pwo = None
         for oid in osib_path.split("."):
             if pwo is not None:
-                if oid not in pwo.children:
-                    pwo.children[oid] = osibs[oid]
+                children = pwo.children
+                if children is None:
+                    children = {}
+                    pwo.children = children
+                if oid not in children:
+                    children[oid] = osibs[oid]
             else:
                 result[oid] = osibs[oid]
             pwo = osibs[oid]
@@ -419,7 +444,6 @@ def paths_to_osib(
 
 def cre2osib(docs: List[defs.Document]) -> Osib_tree:
     # TODO: This only works with a link depth of 1, this is the general assumption for CREs but would be nice to make it work recursively
-    osib_paths: List[str] = []
     related_nodes: List[Tuple[str, str]] = []
     cres = {}
     root = "OSIB"
@@ -430,30 +454,36 @@ def cre2osib(docs: List[defs.Document]) -> Osib_tree:
 
     # TODO: get this to update paths attaching the TYPE of document that is in this path somehow, maybe as part of node attrs(?)
     for doc in docs:
-        cres[doc.id] = doc
+        if doc.id:
+            cres[doc.id] = doc
         for link in doc.links:
-            cres[link.document.id] = link.document
+            if link.document.id:
+                cres[link.document.id] = link.document
             if link.ltype == defs.LinkTypes.PartOf:
-                osib_paths = update_paths(
+                osib_graph = update_paths(
                     paths=osib_graph,
-                    pid=link.document.id,
-                    cid=doc.id,
+                    pid=link.document.id or "",
+                    cid=doc.id or "",
                     rel_type=link.ltype,
                 )
             elif link.ltype == defs.LinkTypes.Contains:
-                osib_paths = update_paths(
+                osib_graph = update_paths(
                     paths=osib_graph,
-                    pid=doc.id,
-                    cid=link.document.id,
+                    pid=doc.id or "",
+                    cid=link.document.id or "",
                     rel_type=link.ltype,
                 )
             elif link.ltype == defs.LinkTypes.Related:
-                related_nodes.append((doc.id, link.document.id))
+                if doc.id and link.document.id:
+                    related_nodes.append((doc.id, link.document.id))
             elif link.ltype == defs.LinkTypes.LinkedTo:
-                related_nodes.append((doc.id, link.document.id))
+                if doc.id and link.document.id:
+                    related_nodes.append((doc.id, link.document.id))
 
+    # Extract paths from the graph
+    osib_paths = [list(p) for p in osib_graph.nodes()]
     return paths_to_osib(
-        osib_paths=[".".join(p) for p in osib_paths],
+        osib_paths=[str(p) for p in osib_paths],
         cres=cres,
         related_nodes=related_nodes,
     )

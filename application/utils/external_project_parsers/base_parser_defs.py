@@ -1,5 +1,5 @@
-from typing import List, Dict, Optional
-from dataclasses import dataclass
+from typing import List, Dict, Optional, Sequence, Mapping
+from dataclasses import dataclass, field
 from application.defs import cre_defs as defs
 from application.prompt_client import prompt_client as prompt_client
 from application.database import db
@@ -9,7 +9,7 @@ from application.database import db
 
 @dataclass
 class ParseResult(object):
-    results: Dict[str, List[defs.Document]] = None
+    results: Mapping[str, Sequence[defs.Document]] = field(default_factory=dict)
     calculate_gap_analysis: bool = True
     calculate_embeddings: bool = True
 
@@ -19,6 +19,7 @@ class ParserInterface(object):
     name: str
 
     def parse(
+        self,
         database: db.Node_collection,
         prompt_client: Optional[prompt_client.PromptHandler],
     ) -> ParseResult:
