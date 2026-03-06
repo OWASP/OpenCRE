@@ -130,6 +130,23 @@ class TestDB(unittest.TestCase):
         expected = [("Standard", "BarStand"), ("Standard", "Unlinked")]
         self.assertEqual(expected, result)
 
+    def test_supported_documents(self) -> None:
+        self.collection.session.add_all(
+            [
+                db.Node(ntype=defs.Credoctypes.Tool.value, name="OWASP ZAP"),
+                db.Node(ntype=defs.Credoctypes.Tool.value, name="OWASP ZAP"),
+                db.Node(ntype=defs.Credoctypes.Code.value, name="NodeGoat"),
+            ]
+        )
+        self.collection.session.commit()
+
+        expected = {
+            defs.Credoctypes.Code.value: ["NodeGoat"],
+            defs.Credoctypes.Standard.value: ["BarStand", "Unlinked"],
+            defs.Credoctypes.Tool.value: ["OWASP ZAP"],
+        }
+        self.assertEqual(expected, self.collection.supported_documents())
+
     def test_get_max_internal_connections(self) -> None:
         self.assertEqual(self.collection.get_max_internal_connections(), 1)
 

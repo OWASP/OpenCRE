@@ -442,6 +442,15 @@ def standards() -> Any:
     return standards
 
 
+@app.route("/rest/v1/supported_documents", methods=["GET"])
+def supported_documents() -> Any:
+    if posthog:
+        posthog.capture(f"supported_documents", "")
+
+    database = db.Node_collection()
+    return database.supported_documents()
+
+
 @app.route("/rest/v1/openapi.yaml", methods=["GET"])
 def openapi_spec() -> Any:
     """
