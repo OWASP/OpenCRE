@@ -1,15 +1,12 @@
 import './forceGraph.scss';
 
 import { LoadingAndErrorIndicator } from 'application/frontend/src/components/LoadingAndErrorIndicator';
-import { useEnvironment } from 'application/frontend/src/hooks';
 import { useDataStore } from 'application/frontend/src/providers/DataProvider';
 import { LinkedTreeDocument } from 'application/frontend/src/types';
-import axios from 'axios';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import ForceGraph3D, { ForceGraphMethods } from 'react-force-graph-3d';
-import { Checkbox, Dropdown, Form } from 'semantic-ui-react';
+import { Checkbox, Dropdown } from 'semantic-ui-react';
 
-// For types of dropdown options
 interface DropdownOption {
   key: string;
   text: string;
@@ -17,41 +14,355 @@ interface DropdownOption {
   disabled?: boolean;
 }
 
+interface GraphNode {
+  id: string;
+  size: number;
+  name: string;
+  doctype: string;
+  originalNodes?: any[];
+  x?: number;
+  y?: number;
+  z?: number;
+}
+
+interface GraphLink {
+  source: string | GraphNode;
+  target: string | GraphNode;
+  count: number;
+  type: string;
+}
+
+interface GraphPayload {
+  nodes: GraphNode[];
+  links: GraphLink[];
+}
+
+const relationColors: Record<string, string> = {
+  contains: 'rgba(45, 212, 191, 0.55)',
+  related: 'rgba(96, 165, 250, 0.55)',
+  'linked to': 'rgba(196, 181, 253, 0.55)',
+  same: 'rgba(251, 113, 133, 0.55)',
+};
+
+const getNodeId = (node: string | GraphNode): string =>
+  typeof node === 'object' && node !== null ? node.id : String(node);
+
+const createLinkId = (source: string | GraphNode, target: string | GraphNode, ltype: string): string => {
+  const sourceId = getNodeId(source);
+  const targetId = getNodeId(target);
+  return `${sourceId}::${targetId}::${(ltype || '').toLowerCase()}`;
+};
+
+const getTrimmedExtent = (values: number[]): [number, number] => {
+  if (!values.length) return [0, 0];
+
+  const sorted = [...values].sort((a, b) => a - b);
+  if (sorted.length < 12) {
+    return [sorted[0], sorted[sorted.length - 1]];
+  }
+
+  const lowerIndex = Math.floor((sorted.length - 1) * 0.1);
+  const upperIndex = Math.ceil((sorted.length - 1) * 0.9);
+  return [sorted[lowerIndex], sorted[upperIndex]];
+};
+
+const getMainConnectedComponentIds = (data: GraphPayload): Set<string> => {
+  const neighbors = new Map<string, Set<string>>();
+  data.nodes.forEach((node) => neighbors.set(node.id, new Set()));
+
+  data.links.forEach((link) => {
+    const sourceId = getNodeId(link.source);
+    const targetId = getNodeId(link.target);
+
+    if (!neighbors.has(sourceId)) {
+      neighbors.set(sourceId, new Set());
+    }
+    if (!neighbors.has(targetId)) {
+      neighbors.set(targetId, new Set());
+    }
+
+    neighbors.get(sourceId)?.add(targetId);
+    neighbors.get(targetId)?.add(sourceId);
+  });
+
+  let largest = new Set<string>();
+  const visited = new Set<string>();
+
+  neighbors.forEach((_, startId) => {
+    if (visited.has(startId)) return;
+
+    const queue = [startId];
+    const current = new Set<string>();
+    visited.add(startId);
+
+    while (queue.length) {
+      const nodeId = queue.pop() as string;
+      current.add(nodeId);
+      neighbors.get(nodeId)?.forEach((nextId) => {
+        if (!visited.has(nextId)) {
+          visited.add(nextId);
+          queue.push(nextId);
+        }
+      });
+    }
+
+    if (current.size > largest.size) {
+      largest = current;
+    }
+  });
+
+  return largest;
+};
+
+const getStableCameraFrame = (data: GraphPayload) => {
+  const primaryIds = getMainConnectedComponentIds(data);
+
+  const validPos = (node: GraphNode) =>
+    Number.isFinite(node.x) && Number.isFinite(node.y) && Number.isFinite(node.z);
+
+  const positionedMainNodes = data.nodes.filter((node) => primaryIds.has(node.id) && validPos(node));
+  const positionedAllNodes = data.nodes.filter(validPos);
+  const frameNodes = positionedMainNodes.length >= 8 ? positionedMainNodes : positionedAllNodes;
+
+  if (!frameNodes.length) {
+    return null;
+  }
+
+  const xs = frameNodes.map((node) => node.x as number);
+  const ys = frameNodes.map((node) => node.y as number);
+  const zs = frameNodes.map((node) => node.z as number);
+
+  const [minX, maxX] = getTrimmedExtent(xs);
+  const [minY, maxY] = getTrimmedExtent(ys);
+  const [minZ, maxZ] = getTrimmedExtent(zs);
+
+  const spanX = Math.max(maxX - minX, 1);
+  const spanY = Math.max(maxY - minY, 1);
+  const spanZ = Math.max(maxZ - minZ, 1);
+  const rawSpanX = Math.max(Math.max(...xs) - Math.min(...xs), 1);
+  const rawSpanY = Math.max(Math.max(...ys) - Math.min(...ys), 1);
+  const rawSpanZ = Math.max(Math.max(...zs) - Math.min(...zs), 1);
+
+  return {
+    centerX: (minX + maxX) / 2,
+    centerY: (minY + maxY) / 2,
+    centerZ: (minZ + maxZ) / 2,
+    maxSpan: Math.max(spanX, spanY, spanZ, 1),
+    rawSpanX,
+    rawSpanY,
+    rawSpanZ,
+    rawMaxSpan: Math.max(rawSpanX, rawSpanY, rawSpanZ, 1),
+  };
+};
+
+const getCameraFitDistance = (graph: ForceGraphMethods | undefined, spanX: number, spanY: number) => {
+  const camera: any = graph?.camera?.();
+  const renderer: any = graph?.renderer?.();
+  const width = renderer?.domElement?.clientWidth || 1920;
+  const height = renderer?.domElement?.clientHeight || 1080;
+  const aspect = Math.max(width / Math.max(height, 1), 0.0001);
+  const fov = (((camera?.fov as number) || 40) * Math.PI) / 180;
+  const halfFovTan = Math.tan(fov / 2);
+
+  const distanceForHeight = (Math.max(spanY, 1) * 0.5) / Math.max(halfFovTan, 0.0001);
+  const distanceForWidth = (Math.max(spanX, 1) * 0.5) / Math.max(halfFovTan * aspect, 0.0001);
+
+  return Math.max(distanceForHeight, distanceForWidth, 1);
+};
+
+const alignGraphForFinalPose = (data: GraphPayload) => {
+  const primaryIds = getMainConnectedComponentIds(data);
+  const positionedPrimaryNodes = data.nodes.filter(
+    (node) =>
+      primaryIds.has(node.id) && Number.isFinite(node.x) && Number.isFinite(node.y) && Number.isFinite(node.z)
+  );
+
+  if (positionedPrimaryNodes.length < 3) {
+    return;
+  }
+
+  const centerX = positionedPrimaryNodes.reduce((sum, node) => sum + (node.x as number), 0) / positionedPrimaryNodes.length;
+  const centerY = positionedPrimaryNodes.reduce((sum, node) => sum + (node.y as number), 0) / positionedPrimaryNodes.length;
+
+  let sxx = 0;
+  let syy = 0;
+  let sxy = 0;
+  positionedPrimaryNodes.forEach((node) => {
+    const dx = (node.x as number) - centerX;
+    const dy = (node.y as number) - centerY;
+    sxx += dx * dx;
+    syy += dy * dy;
+    sxy += dx * dy;
+  });
+
+  const majorAxisAngle = 0.5 * Math.atan2(2 * sxy, sxx - syy);
+  const rotateBy = -majorAxisAngle;
+  const cosTheta = Math.cos(rotateBy);
+  const sinTheta = Math.sin(rotateBy);
+
+  data.nodes.forEach((node) => {
+    if (!Number.isFinite(node.x) || !Number.isFinite(node.y)) return;
+
+    const dx = (node.x as number) - centerX;
+    const dy = (node.y as number) - centerY;
+    node.x = centerX + dx * cosTheta - dy * sinTheta;
+    node.y = centerY + dx * sinTheta + dy * cosTheta;
+  });
+
+  let leftCount = 0;
+  let rightCount = 0;
+  positionedPrimaryNodes.forEach((node) => {
+    if ((node.x as number) < centerX) {
+      leftCount += 1;
+    } else {
+      rightCount += 1;
+    }
+  });
+
+  if (rightCount < leftCount) {
+    data.nodes.forEach((node) => {
+      if (!Number.isFinite(node.x) || !Number.isFinite(node.y)) return;
+      node.x = centerX - ((node.x as number) - centerX);
+      node.y = centerY - ((node.y as number) - centerY);
+    });
+  }
+};
+
 export const ExplorerForceGraph = () => {
-  const [graphData, setGraphData] = useState();
-  const [ignoreTypes, setIgnoreTypes] = useState(['same']);
-  const [maxCount, setMaxCount] = useState(0);
-  const [maxNodeSize, setMaxNodeSize] = useState(0);
+  const [graphData, setGraphData] = useState<GraphPayload | null>(null);
+  const [ignoreTypes, setIgnoreTypes] = useState<string[]>(['same']);
+  const [maxNodeSize, setMaxNodeSize] = useState(1);
   const { dataLoading, dataTree, getStoreKey, dataStore } = useDataStore();
   const fgRef = useRef<ForceGraphMethods>();
-  // ADDING STATE FOR FILTERING LOGIC
+  const hoverDelayTimerRef = useRef<number | null>(null);
+  const didFinalCenterRef = useRef(false);
+
   const [filterTypeA, setFilterTypeA] = useState('');
   const [filterTypeB, setFilterTypeB] = useState('');
-
-  // Separated CRE options and combined options with proper typing
-  const [creOptions, setCreOptions] = useState<DropdownOption[]>([]);
-  const [combinedOptions, setCombinedOptions] = useState<DropdownOption[]>([]);
-
-  // Adding a show all checkbox
   const [showAll, setShowAll] = useState(true);
 
-  // Helper function to get base name from standard ID
-  const getBaseName = (standardId: string): string => {
-    // Split by ':' and take the first part
-    return standardId.split(':')[0];
+  const [creOptions, setCreOptions] = useState<DropdownOption[]>([]);
+  const [combinedOptions, setCombinedOptions] = useState<DropdownOption[]>([]);
+  const [focusedNodeId, setFocusedNodeId] = useState<string | null>(null);
+  const [focusedNodeIds, setFocusedNodeIds] = useState<Set<string>>(new Set());
+  const [focusedLinkIds, setFocusedLinkIds] = useState<Set<string>>(new Set());
+
+  const getBaseName = (standardId: string): string => standardId.split(':')[0];
+  const getGroupedStandardId = (baseName: string): string => `grouped_${baseName}`;
+  const getBaseNameFromGrouped = (groupedId: string): string => groupedId.replace('grouped_', '');
+
+  const getLinkBaseColor = (ltype: string) => relationColors[ltype.toLowerCase()] || 'rgba(148, 163, 184, 0.45)';
+
+  const getNodeBaseColor = (doctype: string) => {
+    switch ((doctype || '').toLowerCase()) {
+      case 'cre':
+        return '#93c5fd';
+      case 'standard':
+        return '#f59e0b';
+      case 'tool':
+        return '#86efac';
+      default:
+        return '#c4b5fd';
+    }
   };
 
-  // Helper function to create grouped standard ID
-  const getGroupedStandardId = (baseName: string): string => {
-    return `grouped_${baseName}`;
+  const adjacency = useMemo(() => {
+    const neighborNodes = new Map<string, Set<string>>();
+    const incidentLinks = new Map<string, Set<string>>();
+
+    if (!graphData) {
+      return { neighborNodes, incidentLinks };
+    }
+
+    graphData.links.forEach((link) => {
+      const sourceId = getNodeId(link.source);
+      const targetId = getNodeId(link.target);
+      const linkId = createLinkId(sourceId, targetId, link.type);
+
+      if (!neighborNodes.has(sourceId)) {
+        neighborNodes.set(sourceId, new Set());
+      }
+      if (!neighborNodes.has(targetId)) {
+        neighborNodes.set(targetId, new Set());
+      }
+      neighborNodes.get(sourceId)?.add(targetId);
+      neighborNodes.get(targetId)?.add(sourceId);
+
+      if (!incidentLinks.has(sourceId)) {
+        incidentLinks.set(sourceId, new Set());
+      }
+      if (!incidentLinks.has(targetId)) {
+        incidentLinks.set(targetId, new Set());
+      }
+      incidentLinks.get(sourceId)?.add(linkId);
+      incidentLinks.get(targetId)?.add(linkId);
+    });
+
+    return { neighborNodes, incidentLinks };
+  }, [graphData]);
+
+  const clearDelayedFocus = () => {
+    if (hoverDelayTimerRef.current) {
+      window.clearTimeout(hoverDelayTimerRef.current);
+      hoverDelayTimerRef.current = null;
+    }
+    setFocusedNodeId(null);
+    setFocusedNodeIds(new Set());
+    setFocusedLinkIds(new Set());
   };
 
-  //Added helper function for cleaner code organization
-  const getBaseNameFromGrouped = (groupedId: string): string => {
-    return groupedId.replace('grouped_', '');
+  const handleNodeHover = (node: GraphNode | null) => {
+    if (hoverDelayTimerRef.current) {
+      window.clearTimeout(hoverDelayTimerRef.current);
+      hoverDelayTimerRef.current = null;
+    }
+
+    if (!node) {
+      clearDelayedFocus();
+      return;
+    }
+
+    setFocusedNodeId(null);
+    setFocusedNodeIds(new Set());
+    setFocusedLinkIds(new Set());
+
+    const hoveredId = node.id;
+    hoverDelayTimerRef.current = window.setTimeout(() => {
+      const neighbors = adjacency.neighborNodes.get(hoveredId) || new Set<string>();
+      const links = adjacency.incidentLinks.get(hoveredId) || new Set<string>();
+      const nextFocusedNodes = new Set<string>([hoveredId, ...neighbors]);
+      const nextFocusedLinks = new Set<string>(links);
+
+      setFocusedNodeId(hoveredId);
+      setFocusedNodeIds(nextFocusedNodes);
+      setFocusedLinkIds(nextFocusedLinks);
+      hoverDelayTimerRef.current = null;
+    }, 1000);
   };
 
-  // Build CRE options separately for better organization and type safety from Data Store
+  const getRenderedNodeColor = (node: GraphNode) => {
+    const baseColor = getNodeBaseColor(node.doctype);
+    if (!focusedNodeId) return baseColor;
+    if (!focusedNodeIds.has(node.id)) return 'rgba(148, 163, 184, 0.16)';
+    if (node.id === focusedNodeId) return '#ffffff';
+    return baseColor;
+  };
+
+  const isFocusedLink = (link: GraphLink) => {
+    const linkId = createLinkId(link.source, link.target, link.type);
+    return focusedLinkIds.has(linkId);
+  };
+
+  const getRenderedLinkColor = (link: GraphLink) => {
+    if (!focusedNodeId) return getLinkBaseColor(link.type);
+    return isFocusedLink(link) ? getLinkBaseColor(link.type) : 'rgba(148, 163, 184, 0.05)';
+  };
+
+  const getRenderedLinkWidth = (link: GraphLink) => {
+    if (!focusedNodeId) return 5;
+    return isFocusedLink(link) ? 5 : 1;
+  };
+
   useEffect(() => {
     const creList: DropdownOption[] = Object.values(dataStore)
       .filter((n) => n.doctype === 'CRE')
@@ -69,21 +380,21 @@ export const ExplorerForceGraph = () => {
   }, [dataStore]);
 
   useEffect(() => {
-    const gData: any = {
+    const gData: GraphPayload = {
       nodes: [],
       links: [],
     };
 
-    // Get all the nodes and types
     const allNodes = Object.values(dataStore);
+    if (!allNodes.length) {
+      setGraphData(null);
+      return;
+    }
 
-    // Function to collect standards from tree structure
     function collectStandards(node: any, standards: any[] = []): any[] {
-      // Added optional chaining for better null safety
       if (node.doctype && node.doctype.toLowerCase() === 'standard') {
         standards.push(node);
       }
-      //Added Array.isArray check for better safety
       if (node.links && Array.isArray(node.links)) {
         node.links.forEach((link: any) => {
           if (link.document) {
@@ -99,17 +410,15 @@ export const ExplorerForceGraph = () => {
       allStandardNodes = allStandardNodes.concat(collectStandards(rootNode));
     });
 
-    // Group standards by base name
     const groupedStandards = new Map<string, any[]>();
     allStandardNodes.forEach((node: any) => {
       const baseName = getBaseName(node.id);
       if (!groupedStandards.has(baseName)) {
         groupedStandards.set(baseName, []);
       }
-      groupedStandards.get(baseName)!.push(node);
+      groupedStandards.get(baseName)?.push(node);
     });
 
-    // Create mapping for original IDs to grouped IDs
     const originalToGroupedMap = new Map<string, string>();
     groupedStandards.forEach((nodes, baseName) => {
       const groupedId = getGroupedStandardId(baseName);
@@ -118,11 +427,6 @@ export const ExplorerForceGraph = () => {
       });
     });
 
-    const standardNodeIds = allStandardNodes.map((node: any) => node.id);
-    console.log('Standard IDs from JSON data:', standardNodeIds);
-    console.log('Grouped standards:', Array.from(groupedStandards.keys()));
-
-    // Build standard dropdown options with count display for better Ui
     const standardDropdownOptions: DropdownOption[] = Array.from(groupedStandards.entries()).map(
       ([baseName, group]) => ({
         key: getGroupedStandardId(baseName),
@@ -131,50 +435,58 @@ export const ExplorerForceGraph = () => {
       })
     );
 
-    // Helper functions for filtering logic
     const isAll = (val: string) => val && val.startsWith('all_');
     const isGroupedStandard = (val: string) => val && val.startsWith('grouped_');
     const getTypeFromAll = (val: string) => val.replace('all_', '');
 
-    // Improved matchesFilter function with better null safety and type checking
     const matchesFilter = (node: any, filterVal: string): boolean => {
-      if (!filterVal || filterVal === '') return true; // No filter, show all
+      if (!filterVal || filterVal === '') return true;
 
       if (isAll(filterVal)) {
         const type = getTypeFromAll(filterVal);
-        return node.doctype?.toLowerCase() === type.toLowerCase();
+        return (node.doctype || '').toLowerCase() === type.toLowerCase();
       }
 
       if (isGroupedStandard(filterVal)) {
         const baseName = getBaseNameFromGrouped(filterVal);
-        return node.doctype?.toLowerCase() === 'standard' && getBaseName(node.id) === baseName;
+        return (node.doctype || '').toLowerCase() === 'standard' && getBaseName(node.id) === baseName;
       }
 
       return node.id === filterVal;
     };
 
-    // NEW APPROACH: Simplified graph data population - collect all data first, then filter
-    // This is cleaner and easier to debug than filtering during traversal
+    const traversalSeen = new Set<string>();
+    const linkSeen = new Set<string>();
+
     const populateGraphData = (node: any) => {
+      const traversalKey = getStoreKey(node);
+      if (traversalSeen.has(traversalKey)) {
+        return;
+      }
+      traversalSeen.add(traversalKey);
+
       if (node.links && Array.isArray(node.links)) {
         node.links.forEach((x: LinkedTreeDocument) => {
           if (x.document && !ignoreTypes.includes(x.ltype.toLowerCase())) {
-            // Use grouped IDs for standard nodes in links
             const sourceKey =
-              node.doctype?.toLowerCase() === 'standard'
+              (node.doctype || '').toLowerCase() === 'standard'
                 ? originalToGroupedMap.get(node.id) || getStoreKey(node)
                 : getStoreKey(node);
             const targetKey =
-              x.document.doctype?.toLowerCase() === 'standard'
+              (x.document.doctype || '').toLowerCase() === 'standard'
                 ? originalToGroupedMap.get(x.document.id) || getStoreKey(x.document)
                 : getStoreKey(x.document);
 
-            gData.links.push({
-              source: sourceKey,
-              target: targetKey,
-              count: x.ltype === 'Contains' ? 2 : 1,
-              type: x.ltype,
-            });
+            const linkId = createLinkId(sourceKey, targetKey, x.ltype);
+            if (!linkSeen.has(linkId)) {
+              linkSeen.add(linkId);
+              gData.links.push({
+                source: sourceKey,
+                target: targetKey,
+                count: x.ltype === 'Contains' ? 2 : 1,
+                type: x.ltype,
+              });
+            }
 
             populateGraphData(x.document);
           }
@@ -182,97 +494,39 @@ export const ExplorerForceGraph = () => {
       }
     };
 
-    // Build the complete graph first
     dataTree.forEach((x) => populateGraphData(x));
 
-    // OLD APPROACH: Complex filtering during graph traversal with many nested conditions
-    // This made the code hard to understand and debug
-    // let filteredLinks = [];
-    // if (node.links) {
-    //   filteredLinks = node.links.filter((x) => {
-    //     if (!x.document || ignoreTypes.includes(x.ltype.toLowerCase())) return false;
-    //     if (!filterTypeA && !filterTypeB) return true; // No filter, show all
-
-    //     const sourceNode = node;
-    //     const targetNode = x.document;
-
-    //     if (filterTypeA && filterTypeB) {
-    //       // Check if we have a specific CRE selected (not "all_cre")
-    //       const isSpecificCRE = filterTypeA && !filterTypeA.startsWith('all_');
-    //       // Check if we have a specific Standard selected (not "all_standard")
-    //       const isSpecificStandard = filterTypeB && !filterTypeB.startsWith('all_');
-
-    //       if (isSpecificCRE && isSpecificStandard) {
-    //         // Handle grouped standards in filtering
-    //         if (isGroupedStandard(filterTypeA) || isGroupedStandard(filterTypeB)) {
-    //           return (
-    //             (matchesFilter(sourceNode, filterTypeA) && matchesFilter(targetNode, filterTypeB)) ||
-    //             (matchesFilter(sourceNode, filterTypeB) && matchesFilter(targetNode, filterTypeA))
-    //           );
-    //         }
-    //         // Show only direct relationships between the specific CRE and specific Standard
-    //         return (
-    //           (sourceNode.id === filterTypeA && targetNode.id === filterTypeB) ||
-    //           (sourceNode.id === filterTypeB && targetNode.id === filterTypeA)
-    //         );
-    //       }
-
-    //       // If either filter is "ALL" type, use the original logic
-    //       return (
-    //         (matchesFilter(sourceNode, filterTypeA) && matchesFilter(targetNode, filterTypeB)) ||
-    //         (matchesFilter(sourceNode, filterTypeB) && matchesFilter(targetNode, filterTypeA))
-    //       );
-    //     }
-
-    //     // Single filter logic remains the same
-    //     if (filterTypeA && !filterTypeB) {
-    //       return matchesFilter(sourceNode, filterTypeA) || matchesFilter(targetNode, filterTypeA);
-    //     }
-
-    //     if (!filterTypeA && filterTypeB) {
-    //       return matchesFilter(sourceNode, filterTypeB) || matchesFilter(targetNode, filterTypeB);
-    //     }
-
-    //     return true;
-    //   });
-    // }
-
-    // NEW APPROACH: Apply filtering after building complete graph for better separation of concerns
     if (!showAll && (filterTypeA || filterTypeB)) {
-      gData.links = gData.links.filter((link: any) => {
-        // Get source and target nodes with better error handling
-        let sourceNode = dataStore[link.source];
-        let targetNode = dataStore[link.target];
+      gData.links = gData.links.filter((link: GraphLink) => {
+        let sourceNode = dataStore[getNodeId(link.source)];
+        let targetNode = dataStore[getNodeId(link.target)];
 
-        // NEW APPROACH: Better handling of grouped standard nodes with all required properties
-        if (link.source.startsWith('grouped_')) {
-          const baseName = getBaseNameFromGrouped(link.source);
+        if (getNodeId(link.source).startsWith('grouped_')) {
+          const baseName = getBaseNameFromGrouped(getNodeId(link.source));
           sourceNode = {
-            id: link.source,
+            id: getNodeId(link.source),
             doctype: 'standard',
             displayName: baseName,
             links: [],
-            url: '', // Add missing properties for type safety
+            url: '',
             name: baseName,
           };
         }
 
-        if (link.target.startsWith('grouped_')) {
-          const baseName = getBaseNameFromGrouped(link.target);
+        if (getNodeId(link.target).startsWith('grouped_')) {
+          const baseName = getBaseNameFromGrouped(getNodeId(link.target));
           targetNode = {
-            id: link.target,
+            id: getNodeId(link.target),
             doctype: 'standard',
             displayName: baseName,
             links: [],
-            url: '', // Add missing properties for type safety
+            url: '',
             name: baseName,
           };
         }
 
         if (!sourceNode || !targetNode) return false;
 
-        // NEW APPROACH: Simplified filtering - show link if any node matches any filter
-        // This is more permissive and user-friendly than the complex logic above
         const sourceMatchesA = matchesFilter(sourceNode, filterTypeA);
         const sourceMatchesB = matchesFilter(sourceNode, filterTypeB);
         const targetMatchesA = matchesFilter(targetNode, filterTypeA);
@@ -282,22 +536,19 @@ export const ExplorerForceGraph = () => {
       });
     }
 
-    // Build nodes from filtered links
-    const nodesMap: any = {};
-    const addNode = function (name: string) {
+    const nodesMap: Record<string, GraphNode> = {};
+    const addNode = (name: string) => {
       if (!nodesMap[name]) {
-        // Check if this is a grouped standard node
         if (name.startsWith('grouped_')) {
           const baseName = getBaseNameFromGrouped(name);
           const groupedNodes = groupedStandards.get(baseName) || [];
-          const totalSize = groupedNodes.length;
 
           nodesMap[name] = {
             id: name,
-            size: totalSize,
+            size: groupedNodes.length || 1,
             name: baseName,
             doctype: 'standard',
-            originalNodes: groupedNodes, // Store original nodes for reference
+            originalNodes: groupedNodes,
           };
         } else {
           const storedDoc = dataStore[name];
@@ -314,12 +565,11 @@ export const ExplorerForceGraph = () => {
       }
     };
 
-    gData.links.forEach((link: any) => {
-      addNode(link.source);
-      addNode(link.target);
+    gData.links.forEach((link) => {
+      addNode(getNodeId(link.source));
+      addNode(getNodeId(link.target));
     });
 
-    // Clean, organized combined options with clear sections and separators
     const combined: DropdownOption[] = [
       { key: 'none_typeB', text: 'None', value: '' },
       { key: 'all_standard', text: 'ALL Standards', value: 'all_standard' },
@@ -338,48 +588,18 @@ export const ExplorerForceGraph = () => {
 
     setCombinedOptions(combined);
 
-    // Added initial value to reduce array - with better error handling
-    setMaxNodeSize(gData.nodes.map((n: any) => n.size).reduce((a: number, b: number) => Math.max(a, b), 0));
-    setMaxCount(gData.links.map((l: any) => l.count).reduce((a: number, b: number) => Math.max(a, b), 0));
+    const peakNodeSize = gData.nodes.reduce((acc, node) => Math.max(acc, node.size), 1);
+    setMaxNodeSize(peakNodeSize);
 
-    // Reverse links for proper display
-    gData.links = gData.links.map((l: any) => {
-      return { source: l.target, target: l.source, count: l.count, type: l.type };
-    });
+    const reversedLinks = gData.links.map((l) => ({
+      source: l.target,
+      target: l.source,
+      count: l.count,
+      type: l.type,
+    }));
 
-    setGraphData(gData);
-  }, [ignoreTypes, dataTree, filterTypeA, filterTypeB, showAll, dataStore]); // NEW APPROACH: Removed standardOptions dependency
-
-  const getLinkColor = (ltype: string) => {
-    switch (ltype.toLowerCase()) {
-      case 'related':
-        return 'skyblue';
-      case 'linked to':
-        return 'gray';
-      case 'same':
-        return 'red';
-      default:
-        return 'white';
-    }
-  };
-
-  const getNodeColor = (doctype: string) => {
-    switch (doctype.toLowerCase()) {
-      case 'cre':
-        // OLD APPROACH: CRE nodes had no color (empty string) which made them hard to see
-        // return '';
-        // NEW APPROACH: Give CRE nodes a visible color for better UI
-        return 'lightblue';
-      case 'standard':
-        return 'orange';
-      case 'tool':
-        return 'lightgreen';
-      case 'linked to':
-        return 'red';
-      default:
-        return 'purple';
-    }
-  };
+    setGraphData({ nodes: gData.nodes, links: reversedLinks });
+  }, [ignoreTypes, dataTree, filterTypeA, filterTypeB, showAll, dataStore, getStoreKey]);
 
   const toggleLinks = (name: string) => {
     const ignoreTypesClone = structuredClone(ignoreTypes);
@@ -392,110 +612,212 @@ export const ExplorerForceGraph = () => {
       setIgnoreTypes(ignoreTypesClone);
     }
   };
+
   useEffect(() => {
     if (!graphData || !fgRef.current) return;
+    didFinalCenterRef.current = false;
+
+    const controls: any = fgRef.current.controls?.();
+    if (controls) {
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.12;
+      controls.enablePan = false;
+      controls.enableRotate = true;
+      controls.enableZoom = true;
+      controls.rotateSpeed = 0.85;
+      controls.zoomSpeed = 1;
+      controls.minDistance = 90;
+      controls.maxDistance = 5200;
+    }
 
     // Start tight
     fgRef.current.d3Force('charge')?.strength(-55);
 
     // Expand
-    setTimeout(() => {
+    const expandTimer = window.setTimeout(() => {
       fgRef.current?.d3Force('charge')?.strength(-75);
       fgRef.current?.d3ReheatSimulation();
     }, 200);
 
     // Settle
-    setTimeout(() => {
+    const settleTimer = window.setTimeout(() => {
       fgRef.current?.d3Force('charge')?.strength(-95);
-    }, 600);
+      fgRef.current?.d3ReheatSimulation();
+    }, 620);
+
+    return () => {
+      window.clearTimeout(expandTimer);
+      window.clearTimeout(settleTimer);
+    };
   }, [graphData]);
 
   useEffect(() => {
-    if (!fgRef.current || !graphData) return;
+    return () => {
+      if (hoverDelayTimerRef.current) {
+        window.clearTimeout(hoverDelayTimerRef.current);
+      }
+    };
+  }, []);
 
-    setTimeout(() => {
-      fgRef.current?.cameraPosition(
-        {
-          x: 1100,
-          y: 0,
-          z: 800, // distance
-        },
-        {
-          x: -50,
-          y: -100,
-          z: -200,
-        },
-        800
-      );
-    }, 1200);
-  }, [graphData]);
   return (
-    <div>
+    <main className="explorer-force-graph-page">
       <LoadingAndErrorIndicator loading={dataLoading} error={null} />
 
-      <Checkbox
-        label="Contains"
-        checked={!ignoreTypes.includes('contains')}
-        onChange={() => toggleLinks('contains')}
-      />
-      {' | '}
-      <Checkbox
-        label="Related"
-        checked={!ignoreTypes.includes('related')}
-        onChange={() => toggleLinks('related')}
-      />
-      {' | '}
-      <Checkbox
-        label="Linked To"
-        checked={!ignoreTypes.includes('linked to')}
-        onChange={() => toggleLinks('linked to')}
-      />
-      {' | '}
-      <Checkbox label="Same" checked={!ignoreTypes.includes('same')} onChange={() => toggleLinks('same')} />
-
-      <div style={{ marginBottom: '10px', marginTop: '10px', marginLeft: '10px' }}>
-        <Dropdown
-          placeholder="Select CRE"
-          options={creOptions}
-          value={filterTypeA}
-          onChange={(e, data) => setFilterTypeA((data.value ?? '') as string)}
-          style={{ marginRight: '10px' }}
-          selection
-          search
-        />
-        <Dropdown
-          placeholder="Select Standard or CRE"
-          options={combinedOptions}
-          value={filterTypeB}
-          onChange={(e, data) => setFilterTypeB((data.value ?? '') as string)}
-          selection
-          search
-        />
-        {' | '}
-        <Checkbox label="Show All" checked={showAll} onChange={() => setShowAll(!showAll)} />
-      </div>
-      {showAll || filterTypeA || filterTypeB ? (
-        graphData && (
-          <ForceGraph3D
-            ref={fgRef}
-            graphData={graphData}
-            backgroundColor="#06080f"
-            nodeRelSize={6.32}
-            nodeVal={(n) => Math.max((14 * n.size) / maxNodeSize, 0.8)}
-            nodeLabel={(n) => `${n.name} (${n.size})`}
-            nodeColor={(n) => getNodeColor(n.doctype)}
-            linkOpacity={0.25}
-            linkWidth={() => 5}
-            linkColor={(l) => getLinkColor(l.type)}
-            warmupTicks={0}
-            cooldownTicks={120}
+      <section className="explorer-force-graph-controls">
+        <div className="explorer-force-graph-controls__toggles">
+          <Checkbox
+            className="graph-chip graph-chip--contains"
+            label="Contains"
+            checked={!ignoreTypes.includes('contains')}
+            onChange={() => toggleLinks('contains')}
           />
-        )
-      ) : (
-        <div style={{ marginTop: '20px', color: 'gray' }}>
-          Please select at least one filter to view the graph or check "Show All".
+          <Checkbox
+            className="graph-chip graph-chip--related"
+            label="Related"
+            checked={!ignoreTypes.includes('related')}
+            onChange={() => toggleLinks('related')}
+          />
+          <Checkbox
+            className="graph-chip graph-chip--linked"
+            label="Linked To"
+            checked={!ignoreTypes.includes('linked to')}
+            onChange={() => toggleLinks('linked to')}
+          />
+          <Checkbox
+            className="graph-chip graph-chip--same"
+            label="Same"
+            checked={!ignoreTypes.includes('same')}
+            onChange={() => toggleLinks('same')}
+          />
         </div>
-      )}
-    </div>
+
+        <div className="explorer-force-graph-controls__filters">
+          <Dropdown
+            className="graph-select"
+            placeholder="Select CRE"
+            options={creOptions}
+            value={filterTypeA}
+            onChange={(e, data) => setFilterTypeA((data.value ?? '') as string)}
+            selection
+            search
+          />
+          <Dropdown
+            className="graph-select graph-select--wide"
+            placeholder="Select Standard or CRE"
+            options={combinedOptions}
+            value={filterTypeB}
+            onChange={(e, data) => setFilterTypeB((data.value ?? '') as string)}
+            selection
+            search
+          />
+          <Checkbox
+            className="graph-chip graph-chip--all"
+            label="Show All"
+            checked={showAll}
+            onChange={() => setShowAll(!showAll)}
+          />
+        </div>
+
+        <div className="explorer-force-graph-controls__meta">
+          <span>
+            <strong>{graphData?.nodes.length || 0}</strong> nodes
+          </span>
+          <span>
+            <strong>{graphData?.links.length || 0}</strong> connections
+          </span>
+          <span>{focusedNodeId ? 'Focused neighborhood' : 'Hover 1s on a node to spotlight neighbors'}</span>
+        </div>
+      </section>
+
+      <section className="explorer-force-graph-canvas">
+        {showAll || filterTypeA || filterTypeB ? (
+          graphData && (
+            <ForceGraph3D
+              ref={fgRef}
+              graphData={graphData}
+              controlType="orbit"
+              enableNodeDrag={false}
+              backgroundColor="#02050d"
+              nodeRelSize={6.32}
+              nodeVal={(n: any) => Math.max((14 * (n.size || 1)) / maxNodeSize, 0.8)}
+              nodeLabel={(n: any) => `${n.name} (${n.size})`}
+              nodeColor={(n: any) => getRenderedNodeColor(n)}
+              linkColor={(l: any) => getRenderedLinkColor(l)}
+              linkWidth={(l: any) => getRenderedLinkWidth(l)}
+              linkOpacity={focusedNodeId ? 1 : 0.25}
+              warmupTicks={0}
+              cooldownTicks={100}
+              d3VelocityDecay={0.32}
+              d3AlphaDecay={0.032}
+              onNodeHover={(node: any) => handleNodeHover(node)}
+              onBackgroundClick={clearDelayedFocus}
+              onEngineStop={() => {
+                if (didFinalCenterRef.current || !fgRef.current) return;
+                if (graphData) {
+                  alignGraphForFinalPose(graphData);
+                  (fgRef.current as any).refresh?.();
+                }
+                const stableFrame = graphData ? getStableCameraFrame(graphData) : null;
+
+                if (stableFrame) {
+                  const { centerX, centerY, centerZ, rawSpanX, rawSpanY } = stableFrame;
+                  const lookAtX = centerX + rawSpanX * 0.02;
+                  const lookAtY = centerY - rawSpanY * 0.035;
+                  const baseDistance = getCameraFitDistance(fgRef.current, rawSpanX, rawSpanY);
+                  const settleDistance = Math.min(Math.max(baseDistance * 1.66, 1200), 2550);
+                  const cameraY = lookAtY + rawSpanY * 0.017;
+
+                  fgRef.current.cameraPosition(
+                    {
+                      x: lookAtX,
+                      y: cameraY,
+                      z: centerZ + settleDistance,
+                    },
+                    {
+                      x: lookAtX,
+                      y: lookAtY,
+                      z: centerZ,
+                    },
+                    900
+                  );
+
+                  const orbitControls: any = fgRef.current.controls?.();
+                  orbitControls.minDistance = Math.min(Math.max(settleDistance * 0.36, 150), 420);
+                  orbitControls.maxDistance = Math.max(settleDistance * 6.8, 3600);
+                  orbitControls?.target?.set?.(lookAtX, lookAtY, centerZ);
+                  orbitControls?.update?.();
+                } else {
+                  fgRef.current.zoomToFit(850, 80);
+                }
+                didFinalCenterRef.current = true;
+              }}
+            />
+          )
+        ) : (
+          <div className="explorer-force-graph-empty">
+            Please select at least one filter to view the graph or enable "Show All".
+          </div>
+        )}
+
+        <aside className="explorer-force-graph-legend" aria-hidden="true">
+          <div className="legend-row">
+            <span className="legend-swatch legend-swatch--contains"></span>
+            <span>Contains</span>
+          </div>
+          <div className="legend-row">
+            <span className="legend-swatch legend-swatch--related"></span>
+            <span>Related</span>
+          </div>
+          <div className="legend-row">
+            <span className="legend-swatch legend-swatch--linked"></span>
+            <span>Linked To</span>
+          </div>
+          <div className="legend-row">
+            <span className="legend-swatch legend-swatch--same"></span>
+            <span>Same</span>
+          </div>
+        </aside>
+      </section>
+    </main>
   );
 };
