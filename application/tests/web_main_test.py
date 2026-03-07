@@ -50,6 +50,32 @@ class TestMain(unittest.TestCase):
             graph=nx.DiGraph(), graph_data=[]
         )  # initialize the graph singleton for the tests to be unique
 
+    @patch("application.web.web_main.prompt_client.PromptHandler")
+    def test_completion_passes_instructions_separately(self, mock_prompt_handler):
+        mock_handler = mock_prompt_handler.return_value
+        mock_handler.generate_text.return_value = {
+            "response": "Answer: ok",
+            "table": [],
+            "accurate": True,
+            "model_name": "test-model",
+        }
+
+        with patch.dict(os.environ, {"NO_LOGIN": "True"}):
+            with self.app.test_client() as client:
+                response = client.post(
+                    "/rest/v1/completion",
+                    json={
+                        "prompt": "How should I prevent command injection?",
+                        "instructions": "Answer in Chinese",
+                    },
+                )
+
+        self.assertEqual(200, response.status_code)
+        mock_handler.generate_text.assert_called_once_with(
+            "How should I prevent command injection?",
+            instructions="Answer in Chinese",
+        )
+
     def test_extend_cre_with_tag_links(self) -> None:
         """
         Given:

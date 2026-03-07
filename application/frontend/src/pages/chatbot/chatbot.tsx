@@ -23,10 +23,12 @@ export const Chatbot = () => {
 
   interface ChatState {
     term: string;
+    instructions: string;
     error: string;
   }
 
-  const DEFAULT_CHAT_STATE: ChatState = { term: '', error: '' };
+  const DEFAULT_CHAT_INSTRUCTIONS = 'Answer in English';
+  const DEFAULT_CHAT_STATE: ChatState = { term: '', instructions: DEFAULT_CHAT_INSTRUCTIONS, error: '' };
 
   const { apiUrl } = useEnvironment();
   const [loading, setLoading] = useState<boolean>(false);
@@ -135,7 +137,8 @@ export const Chatbot = () => {
     shouldForceScrollRef.current = true;
 
     const currentTerm = chat.term;
-    setChat({ ...chat, term: '' });
+    const currentInstructions = chat.instructions.trim() || DEFAULT_CHAT_INSTRUCTIONS;
+    setChat({ ...chat, term: '', instructions: currentInstructions });
     setLoading(true);
 
     setChatMessages((prev) => [
@@ -152,7 +155,7 @@ export const Chatbot = () => {
     fetch(`${apiUrl}/completion`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt: currentTerm }),
+      body: JSON.stringify({ prompt: currentTerm, instructions: currentInstructions }),
     })
       .then(async (response) => {
         if (!response.ok) {
@@ -289,12 +292,22 @@ export const Chatbot = () => {
                   </button>
                 )}
                 <Form className="chat-input" size="large" onSubmit={onSubmit}>
-                  <Form.Input
-                    fluid
-                    value={chat.term}
-                    onChange={(e) => setChat({ ...chat, term: e.target.value })}
-                    placeholder="Type your infosec question here…"
-                  />
+                  <Form.Group widths="equal">
+                    <Form.Input
+                      fluid
+                      label="Question"
+                      value={chat.term}
+                      onChange={(e) => setChat({ ...chat, term: e.target.value })}
+                      placeholder="Type your infosec question here..."
+                    />
+                    <Form.Input
+                      fluid
+                      label="Instructions"
+                      value={chat.instructions}
+                      onChange={(e) => setChat({ ...chat, instructions: e.target.value })}
+                      placeholder={DEFAULT_CHAT_INSTRUCTIONS}
+                    />
+                  </Form.Group>
                   <Button primary fluid size="small">
                     <Icon name="send" /> Ask
                   </Button>
