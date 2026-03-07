@@ -1,19 +1,17 @@
 import './chatbot.scss';
 
-import DOMPurify, { sanitize } from 'dompurify';
+import { sanitize } from 'dompurify';
 import { marked } from 'marked';
 import React, { useEffect, useRef, useState } from 'react';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import { Button, Container, Form, GridRow, Header, Icon } from 'semantic-ui-react';
-import { Grid } from 'semantic-ui-react';
-
+import { Button, Container, Form, Grid, Header, Icon } from 'semantic-ui-react';
 
 import { useEnvironment } from '../../hooks';
 import { Document } from '../../types';
 
 export const Chatbot = () => {
-  type chatMessage = {
+  type ChatMessage = {
     timestamp: string;
     role: string;
     message: string;
@@ -28,27 +26,44 @@ export const Chatbot = () => {
   }
 
   const DEFAULT_CHAT_INSTRUCTIONS = 'Answer in English';
-  const DEFAULT_CHAT_STATE: ChatState = { term: '', instructions: DEFAULT_CHAT_INSTRUCTIONS, error: '' };
+  const INSTRUCTION_PRESETS = [
+    'Answer in English',
+    'Answer in Chinese',
+    'Answer in concise bullet points',
+    'Answer in executive summary format',
+  ];
+  const STARTER_PROMPTS = [
+    'How should I prevent command injection in modern web applications?',
+    'Give me a practical checklist to prevent SSRF in cloud-native systems.',
+    'What controls from OWASP ASVS help prevent broken access control?',
+    'Explain secure session management mistakes and mitigations with examples.',
+  ];
+
+  const DEFAULT_CHAT_STATE: ChatState = {
+    term: '',
+    instructions: DEFAULT_CHAT_INSTRUCTIONS,
+    error: '',
+  };
 
   const { apiUrl } = useEnvironment();
   const [loading, setLoading] = useState<boolean>(false);
-  const [chatMessages, setChatMessages] = useState<chatMessage[]>([]);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [error, setError] = useState<string>('');
   const [chat, setChat] = useState<ChatState>(DEFAULT_CHAT_STATE);
   const [user, setUser] = useState('');
   const [modelName, setModelName] = useState<string>('');
 
-  function getModelDisplayName(modelName: string): string {
-    if (!modelName) {
+  function getModelDisplayName(name: string): string {
+    if (!name) {
       return 'a Large Language Model';
     }
-    // Format model names for display
-    if (modelName.startsWith('gemini')) {
-      return `Google ${modelName.replace('gemini-', 'Gemini ').replace(/-/g, ' ')}`;
-    } else if (modelName.startsWith('gpt')) {
-      return `OpenAI ${modelName.toUpperCase()}`;
+    if (name.startsWith('gemini')) {
+      return `Google ${name.replace('gemini-', 'Gemini ').replace(/-/g, ' ')}`;
     }
-    return modelName;
+    if (name.startsWith('gpt')) {
+      return `OpenAI ${name.toUpperCase()}`;
+    }
+    return name;
   }
 
   const hasMessages = chatMessages.length > 0;
@@ -56,14 +71,14 @@ export const Chatbot = () => {
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
   const [showScrollToBottom, setShowScrollToBottom] = useState(false);
   const shouldForceScrollRef = useRef(false);
+
   useEffect(() => {
     const container = messagesContainerRef.current;
     if (!container) return;
 
     const handleScroll = () => {
-      const threshold = 64; // px from bottom
+      const threshold = 64;
       const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < threshold;
-
       setShowScrollToBottom(!isNearBottom);
     };
 
@@ -80,7 +95,7 @@ export const Chatbot = () => {
 
     if (shouldForceScrollRef.current || isNearBottom) {
       container.scrollTop = container.scrollHeight;
-      shouldForceScrollRef.current = false; // reset after use
+      shouldForceScrollRef.current = false;
     }
   }, [chatMessages]);
 
@@ -88,14 +103,14 @@ export const Chatbot = () => {
     fetch(`${apiUrl}/user`, { method: 'GET' })
       .then((response) => {
         if (response.status === 200) {
-          response.text().then((user) => setUser(user));
+          response.text().then((loggedInUser) => setUser(loggedInUser));
         } else {
           window.location.href = `${apiUrl}/login`;
         }
       })
-      .catch((error) => {
-        console.error('Error checking if user is logged in:', error);
-        setError(error instanceof Error ? error.message : 'Network error checking login status');
+      .catch((fetchError) => {
+        console.error('Error checking if user is logged in:', fetchError);
+        setError(fetchError instanceof Error ? fetchError.message : 'Network error checking login status');
         setLoading(false);
       });
   }
@@ -108,11 +123,11 @@ export const Chatbot = () => {
 
   function processResponse(response: string) {
     const responses = response.split('```');
-    const res: JSX.Element[] = [];
+    const resultBlocks: JSX.Element[] = [];
 
     responses.forEach((txt, i) => {
       if (i % 2 === 0) {
-        res.push(
+        resultBlocks.push(
           <p
             key={i}
             dangerouslySetInnerHTML={{
@@ -121,7 +136,7 @@ export const Chatbot = () => {
           />
         );
       } else {
-        res.push(
+        resultBlocks.push(
           <SyntaxHighlighter key={i} style={oneLight}>
             {txt}
           </SyntaxHighlighter>
@@ -129,7 +144,7 @@ export const Chatbot = () => {
       }
     });
 
-    return res;
+    return resultBlocks;
   }
 
   async function onSubmit() {
@@ -160,14 +175,21 @@ export const Chatbot = () => {
       .then(async (response) => {
         if (!response.ok) {
           const text = await response.text();
+          const contentType = response.headers.get('content-type') || '';
           let errorMessage = response.statusText;
           try {
             const json = JSON.parse(text);
             if (json.error) errorMessage = json.error;
             else if (json.message) errorMessage = json.message;
-          } catch (e) {
-            // not json, use text if available
-            if (text) errorMessage = text;
+          } catch (parseError) {
+            const trimmed = text.trim();
+            const looksLikeHtml =
+              contentType.includes('text/html') || /^<!doctype html>/i.test(trimmed) || /<html[\s>]/i.test(trimmed);
+            if (looksLikeHtml) {
+              errorMessage = `Server error (${response.status}). Please check backend logs.`;
+            } else if (trimmed) {
+              errorMessage = trimmed;
+            }
           }
           throw new Error(errorMessage || `Error ${response.status}`);
         }
@@ -190,9 +212,9 @@ export const Chatbot = () => {
           },
         ]);
       })
-      .catch((error) => {
-        console.error('Error fetching answer:', error);
-        setError(error instanceof Error ? error.message : 'An unexpected network error occurred');
+      .catch((fetchError) => {
+        console.error('Error fetching answer:', fetchError);
+        setError(fetchError instanceof Error ? fetchError.message : 'An unexpected network error occurred');
         setLoading(false);
       });
   }
@@ -206,7 +228,7 @@ export const Chatbot = () => {
     return (
       <div className="reference-card">
         <a href={d.hyperlink} target="_blank" rel="noopener noreferrer">
-          <strong>{d.name}</strong> — section {d.section ?? d.sectionID}
+          <strong>{d.name}</strong> - section {d.section ?? d.sectionID}
         </a>
         <div className="reference-link">
           <a href={link}>View in OpenCRE</a>
@@ -215,67 +237,105 @@ export const Chatbot = () => {
     );
   }
 
+  function applyStarterPrompt(prompt: string) {
+    setChat((prev) => ({ ...prev, term: prompt }));
+  }
+
+  function applyInstructionPreset(instruction: string) {
+    setChat((prev) => ({ ...prev, instructions: instruction }));
+  }
+
+  const normalizedInstructions = chat.instructions.trim() || DEFAULT_CHAT_INSTRUCTIONS;
+
   return (
-    <>
-      {/* user login check moved to useEffect */}
+    <Grid textAlign="center" verticalAlign="middle" className="chatbot-layout">
+      <Grid.Column>
+        <Container className={`chatbot-shell ${hasMessages ? 'has-conversation' : ''}`}>
+          <section className="chatbot-hero">
+            <div className="hero-kicker">OpenCRE Agent Chat</div>
+            <Header as="h1" className="chatbot-title">
+              Ask Better Security Questions
+            </Header>
+            <p className="hero-subtitle">
+              Get cybersecurity guidance grounded in OpenCRE-linked standards, with references you can verify.
+            </p>
+            <div className="hero-meta">
+              <span className="meta-pill">Model: {getModelDisplayName(modelName)}</span>
+              <span className="meta-pill">Sources: OpenCRE standards and linked documents</span>
+            </div>
+          </section>
 
-      <Grid textAlign="center" verticalAlign="middle" className="chatbot-layout">
-        <Grid.Column>
-          <Header as="h1" className="chatbot-title">
-            OWASP OpenCRE Chat
-          </Header>
+          <div className={`chat-container ${hasMessages ? 'chat-active' : 'chat-landing'}`}>
+            <div className="chat-surface">
+              {error && (
+                <div className="ui negative message">
+                  <div className="header">Error</div>
+                  <p>{error}</p>
+                </div>
+              )}
 
-          <Container>
-            <div className={`chat-container ${hasMessages ? 'chat-active' : 'chat-landing'}`}>
-              <div className="chat-surface">
-                {' '}
-                {error && (
-                  <div className="ui negative message">
-                    <div className="header">Error</div>
-                    <p>{error}</p>
+              {!hasMessages && (
+                <section className="starter-panel">
+                  <div className="starter-title">Try one of these prompts</div>
+                  <div className="starter-grid">
+                    {STARTER_PROMPTS.map((prompt) => (
+                      <button
+                        key={prompt}
+                        type="button"
+                        className="starter-chip"
+                        onClick={() => applyStarterPrompt(prompt)}
+                      >
+                        {prompt}
+                      </button>
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              <div className="chat-messages" ref={messagesContainerRef}>
+                {chatMessages.map((m, idx) => (
+                  <div key={idx} className={`chat-message ${m.role}`}>
+                    <div className={`message-avatar ${m.role}`}>{m.role === 'assistant' ? 'OC' : 'You'}</div>
+                    <div className="message-card">
+                      <div className="message-header">
+                        <span className="message-role">{m.role}</span>
+                        <span className="message-timestamp">{m.timestamp}</span>
+                      </div>
+
+                      <div className="message-body">{processResponse(m.message)}</div>
+
+                      {m.data && m.data.length > 0 && (
+                        <div className="references">
+                          <div className="references-title">References</div>
+                          {m.data.map((d, i) => (
+                            <React.Fragment key={i}>{displayDocument(d)}</React.Fragment>
+                          ))}
+                        </div>
+                      )}
+
+                      {!m.accurate && (
+                        <div className="accuracy-warning">
+                          This answer could not be fully verified against OpenCRE sources. Please validate independently.
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                {loading && (
+                  <div className="chat-message assistant">
+                    <div className="message-avatar assistant">OC</div>
+                    <div className="message-card typing-indicator">
+                      <span className="dot" />
+                      <span className="dot" />
+                      <span className="dot" />
+                    </div>
                   </div>
                 )}
-                <div className="chat-messages" ref={messagesContainerRef}>
-                  {chatMessages.map((m, idx) => (
-                    <div key={idx} className={`chat-message ${m.role}`}>
-                      <div className="message-card">
-                        <div className="message-header">
-                          <span className="message-role">{m.role}</span>
-                          <span className="message-timestamp">{m.timestamp}</span>
-                        </div>
+                <div ref={messagesEndRef} />
+              </div>
 
-                        <div className="message-body">{processResponse(m.message)}</div>
-
-                        {m.data && m.data.length > 0 && (
-                          <div className="references">
-                            <div className="references-title">References</div>
-                            {m.data.map((d, i) => (
-                              <React.Fragment key={i}>{displayDocument(d)}</React.Fragment>
-                            ))}
-                          </div>
-                        )}
-
-                        {!m.accurate && (
-                          <div className="accuracy-warning">
-                            This answer could not be fully verified against OpenCRE sources. Please validate
-                            independently.
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                  {loading && (
-                    <div className="chat-message assistant">
-                      <div className="message-card typing-indicator">
-                        <span className="dot" />
-                        <span className="dot" />
-                        <span className="dot" />
-                      </div>
-                    </div>
-                  )}
-                  <div ref={messagesEndRef} />
-                </div>
-                {showScrollToBottom && (
+              {showScrollToBottom && (
+                <div className="scroll-to-bottom-wrap">
                   <button
                     className="scroll-to-bottom"
                     onClick={() => {
@@ -290,53 +350,76 @@ export const Chatbot = () => {
                   >
                     <Icon name="arrow down" className="scroll-icon" />
                   </button>
-                )}
-                <Form className="chat-input" size="large" onSubmit={onSubmit}>
-                  <Form.Group widths="equal">
+                </div>
+              )}
+
+              <Form className="chat-input" size="large" onSubmit={onSubmit}>
+                <div className="chat-input-toolbar">
+                  <span className="toolbar-label">Instruction presets</span>
+                  <div className="instruction-chips">
+                    {INSTRUCTION_PRESETS.map((preset) => (
+                      <button
+                        key={preset}
+                        type="button"
+                        className={`instruction-chip ${normalizedInstructions === preset ? 'active' : ''}`}
+                        onClick={() => applyInstructionPreset(preset)}
+                      >
+                        {preset}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="chat-field-grid">
+                  <Form.Field>
+                    <label>Question</label>
                     <Form.Input
                       fluid
-                      label="Question"
                       value={chat.term}
                       onChange={(e) => setChat({ ...chat, term: e.target.value })}
-                      placeholder="Type your infosec question here..."
+                      placeholder="Ask a cybersecurity question mapped to OpenCRE..."
                     />
+                  </Form.Field>
+                  <Form.Field>
+                    <label>Instructions</label>
                     <Form.Input
                       fluid
-                      label="Instructions"
                       value={chat.instructions}
                       onChange={(e) => setChat({ ...chat, instructions: e.target.value })}
                       placeholder={DEFAULT_CHAT_INSTRUCTIONS}
                     />
-                  </Form.Group>
-                  <Button primary fluid size="small">
-                    <Icon name="send" /> Ask
-                  </Button>
-                </Form>
-              </div>
-            </div>
+                  </Form.Field>
+                </div>
 
-            <div className="chatbot-disclaimer">
-              <i>
-                Answers are generated by {getModelDisplayName(modelName)} Large Language Model, which uses the
-                internet as training data, plus collected key cybersecurity standards from{' '}
-                <a href="https://opencre.org">OpenCRE</a> as the preferred source. This leads to more reliable
-                answers and adds references, but note: it is still generative AI which is never guaranteed
-                correct.
-                <br />
-                <br />
-                Model operation is generously sponsored by{' '}
-                <a href="https://www.softwareimprovementgroup.com">Software Improvement Group</a>.
-                <br />
-                <br />
-                Privacy & Security: Your question is sent to Heroku, the hosting provider for OpenCRE, and
-                then to GCP, all via protected connections. Your data isn't stored on OpenCRE servers. The
-                OpenCRE team employed extensive measures to ensure privacy and security. To review the code:
-                https://github.com/owasp/OpenCRE
-              </i>
+                <Button primary fluid size="small" disabled={loading || !chat.term.trim()}>
+                  <Icon name="send" /> Ask OpenCRE
+                </Button>
+              </Form>
             </div>
-          </Container>
-        </Grid.Column>
-      </Grid>
-    </>
+          </div>
+
+          <div className="chatbot-disclaimer">
+            <div className="disclaimer-kicker">Privacy & Reliability Notice</div>
+            <i>
+              Answers are generated by {getModelDisplayName(modelName)} Large Language Model, which uses the
+              internet as training data, plus collected key cybersecurity standards from{' '}
+              <a href="https://opencre.org">OpenCRE</a> as the preferred source. This leads to more reliable
+              answers and adds references, but note: it is still generative AI which is never guaranteed
+              correct.
+              <br />
+              <br />
+              Model operation is generously sponsored by{' '}
+              <a href="https://www.softwareimprovementgroup.com">Software Improvement Group</a>.
+              <br />
+              <br />
+              Privacy & Security: Your question is sent to Heroku, the hosting provider for OpenCRE, and
+              then to GCP, all via protected connections. Your data isn't stored on OpenCRE servers. The
+              OpenCRE team employed extensive measures to ensure privacy and security. To review the code:
+              https://github.com/owasp/OpenCRE
+            </i>
+          </div>
+        </Container>
+      </Grid.Column>
+    </Grid>
   );
 };
