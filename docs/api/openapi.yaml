@@ -71,12 +71,20 @@ paths:
           schema:
             type: string
             enum: [json, md, csv, oscal]
-        - name: source
+        - name: page
           in: query
           required: false
-          description: Optional integration source identifier (for metrics), e.g. wstg
+          description: 1-based page number for paginated results.
           schema:
-            type: string
+            type: integer
+            minimum: 1
+        - name: items_per_page
+          in: query
+          required: false
+          description: Number of items per page.
+          schema:
+            type: integer
+            minimum: 1
       responses:
         '200':
           description: CRE found
@@ -137,6 +145,20 @@ paths:
           schema:
             type: string
             enum: [json, md, csv, oscal]
+        - name: page
+          in: query
+          required: false
+          description: 1-based page number for paginated results.
+          schema:
+            type: integer
+            minimum: 1
+        - name: items_per_page
+          in: query
+          required: false
+          description: Number of items per page.
+          schema:
+            type: integer
+            minimum: 1
       responses:
         '200':
           description: Nodes retrieved
