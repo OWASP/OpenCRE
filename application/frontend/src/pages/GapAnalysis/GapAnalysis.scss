@@ -15,3 +15,8 @@ main#gap-analysis {
     }
   }
 }
+@media (max-width: 768px) {
+  main#gap-analysis {
+    padding: 1rem; /* Reduce from 30px to prevent content touching edges */
+  }
+}
