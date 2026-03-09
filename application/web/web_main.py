@@ -580,6 +580,13 @@ def smartlink(
         )
         found_section_id = True
     if nodes and len(nodes[0].links):
+        if len(nodes[0].links) == 1:
+            cre_doc = nodes[0].links[0].document
+            logger.info(
+                f"found node of type {ntype}, name {name} and section {section}, "
+                f"single CRE linked, redirecting directly to CRE {cre_doc.id}"
+            )
+            return redirect(f"/cre/{cre_doc.id}")
         logger.info(
             f"found node of type {ntype}, name {name} and section {section}, redirecting to opencre"
         )
