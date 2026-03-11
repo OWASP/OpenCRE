@@ -58,21 +58,15 @@ def read_spreadsheet(
                     "(remember, only numbered worksheets"
                     " will be processed by convention)" % wsh.title
                 )
-                records = wsh.get_all_records(
-                    head=1,
-                    numericise_ignore=list(
-                        range(1, wsh.col_count)
-                    ),  # Added numericise_ignore parameter
-                )  # workaround because of https://github.com/burnash/gspread/issues/1007 # this will break if the column names are in any other line
+                rows = wsh.get_all_values()
+                headers = rows[0]
+                records = [dict(zip(headers, row)) for row in rows[1:]]
                 toyaml = yaml.safe_load(yaml.safe_dump(records))
                 result[wsh.title] = toyaml
             elif not parse_numbered_only:
-                records = wsh.get_all_records(
-                    head=1,
-                    numericise_ignore=list(
-                        range(1, wsh.col_count)
-                    ),  # Added numericise_ignore parameter -- DO NOT make this 'all', gspread has a bug
-                )  # workaround because of https://github.com/burnash/gspread/issues/1007 # this will break if the column names are in any other line
+                rows = wsh.get_all_values()
+                headers = rows[0]
+                records = [dict(zip(headers, row)) for row in rows[1:]]
                 toyaml = yaml.safe_load(yaml.safe_dump(records))
                 result[wsh.title] = toyaml
     except gspread.exceptions.APIError as ae:
