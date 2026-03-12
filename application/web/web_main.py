@@ -5,6 +5,7 @@ import csv
 from functools import wraps
 import json
 import logging
+import math
 import os
 import io
 import pathlib
@@ -70,6 +71,33 @@ class SupportedFormats(Enum):
     OSCAL = "oscal"
 
 
+def _parse_positive_int(value: str | None, default: int) -> int:
+    if value is None:
+        return default
+    try:
+        parsed = int(value)
+        if parsed > 0:
+            return parsed
+    except ValueError:
+        pass
+    return default
+
+
+def _paginate_documents(
+    documents: list[defs.Document],
+) -> tuple[int, int, list[defs.Document]]:
+    page = _parse_positive_int(request.args.get("page"), 1)
+    items_per_page = _parse_positive_int(
+        request.args.get("items_per_page"), ITEMS_PER_PAGE
+    )
+
+    total_pages = max(1, math.ceil(len(documents) / items_per_page))
+    if page > total_pages:
+        abort(404, "Page does not exist")
+
+    start = (page - 1) * items_per_page
+    end = start + items_per_page
+    return page, total_pages, documents[start:end]
 def _normalize_source_name(source: Any) -> str | None:
     """
     Normalize integration source names so analytics aggregation stays stable.
@@ -276,19 +304,20 @@ def find_document_by_tag() -> Any:
     opt_format = request.args.get("format")
     documents = database.get_by_tags(tags)
     if documents:
-        res = [doc.todict() for doc in documents]
-        result = {"data": res}
+        page, total_pages, paged_documents = _paginate_documents(documents)
+        res = [doc.todict() for doc in paged_documents]
+        result = {"data": res, "page": page, "total_pages": total_pages}
         # if opt_osib:
         #     result["osib"] = odefs.cre2osib(documents).todict()
         if opt_format == SupportedFormats.Markdown.value:
-            return f"<pre>{mdutils.cre_to_md(documents)}</pre>"
+            return f"<pre>{mdutils.cre_to_md(paged_documents)}</pre>"
         elif opt_format == SupportedFormats.CSV.value:
             docs = sheet_utils.ExportSheet().prepare_spreadsheet(
-                docs=documents, storage=database
+                docs=paged_documents, storage=database
             )
             return write_csv(docs=docs).getvalue().encode("utf-8")
         elif opt_format == SupportedFormats.OSCAL.value:
-            return jsonify(json.loads(oscal_utils.list_to_oscal(documents)))
+            return jsonify(json.loads(oscal_utils.list_to_oscal(paged_documents)))
 
         return jsonify(result)
     abort(404, "Tag does not exist")
@@ -478,17 +507,18 @@ def text_search() -> Any:
     opt_format = request.args.get("format")
     documents = database.text_search(text)
     if documents:
+        _, _, paged_documents = _paginate_documents(documents)
         if opt_format == SupportedFormats.Markdown.value:
-            return f"<pre>{mdutils.cre_to_md(documents)}</pre>"
+            return f"<pre>{mdutils.cre_to_md(paged_documents)}</pre>"
         elif opt_format == SupportedFormats.CSV.value:
             docs = sheet_utils.ExportSheet().prepare_spreadsheet(
-                docs=documents, storage=database
+                docs=paged_documents, storage=database
             )
             return write_csv(docs=docs).getvalue().encode("utf-8")
         elif opt_format == SupportedFormats.OSCAL.value:
-            return jsonify(json.loads(oscal_utils.list_to_oscal(documents)))
+            return jsonify(json.loads(oscal_utils.list_to_oscal(paged_documents)))
 
-        res = [doc.todict() for doc in documents]
+        res = [doc.todict() for doc in paged_documents]
         return jsonify(res)
     else:
         abort(404, "No object matches the given search terms")
