@@ -35,11 +35,10 @@ class TestGapAnalysisPruning(unittest.TestCase):
 
         self.mock_cypher.side_effect = cypher_side_effect
 
-        # Call the function with tiered pruning enabled
-        with patch(
-            "application.config.Config.GAP_ANALYSIS_OPTIMIZED", True, create=True
-        ):
-            db.NEO_DB.gap_analysis("StandardA", "StandardB")
+        # Enable optimized mode explicitly for this pruning assertion.
+        with patch("application.config.Config.GAP_ANALYSIS_OPTIMIZED", True):
+            # Call the function using the singleton instance
+            db.NEO_DB.instance().gap_analysis("StandardA", "StandardB")
 
         # ASSERTION:
         # We expect cypher_query to be called.
