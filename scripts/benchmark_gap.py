@@ -34,24 +34,26 @@ def run_benchmark(name_1, name_2, db_type, runs=3):
     # Force re-initialization of GraphDB if needed (Factory usually handles this)
     collection = db.Node_collection()
     graph_db = collection.graph_db
-    
+
     print(f"▶  Benchmarking {db_type.upper()} gap analysis: '{name_1}' ↔ '{name_2}'")
-    
+
     times, mems, paths = [], [], 0
     for i in range(runs):
         tracemalloc.start()
         t0 = time.perf_counter()
         # db.gap_analysis returns (node_names, grouped_paths, extra_paths_dict)
         _, res_paths, _ = db.gap_analysis(graph_db, [name_1, name_2])
-        
+
         elapsed = time.perf_counter() - t0
         _, peak = tracemalloc.get_traced_memory()
         tracemalloc.stop()
-        
+
         times.append(elapsed)
         mems.append(peak / 1024 / 1024)
         # res_paths is a dict of paths, we count all paths in all groups
-        total_p = sum(len(group["paths"]) + group["extra"] for group in res_paths.values())
+        total_p = sum(
+            len(group["paths"]) + group["extra"] for group in res_paths.values()
+        )
         paths = total_p
         print(f"   Run {i+1}: {elapsed:.3f}s  |  peak mem {mems[-1]:.2f} MB")
 
@@ -99,8 +101,9 @@ if __name__ == "__main__":
     args = p.parse_args()
 
     from application import create_app
+
     app = create_app(mode=os.getenv("FLASK_CONFIG", "development"))
-    
+
     with app.app_context():
         if args.list_standards:
             list_available_standards()

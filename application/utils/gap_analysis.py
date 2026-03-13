@@ -2,6 +2,7 @@ import requests
 import time
 import logging
 import os
+
 try:
     from rq import Queue, job, exceptions
 except (ValueError, ImportError):
@@ -146,7 +147,9 @@ def schedule(standards: List[str], database):
                 gap_analysis_dict = json.loads(gap_analysis_results)
                 if gap_analysis_dict.get("job_id"):
                     try:
-                        res = job.Job.fetch(id=gap_analysis_dict.get("job_id"), connection=conn)
+                        res = job.Job.fetch(
+                            id=gap_analysis_dict.get("job_id"), connection=conn
+                        )
                     except exceptions.NoSuchJobError as nje:
                         logger.error(
                             f"Could not find job id for gap analysis {standards}, this is a bug"
@@ -172,10 +175,15 @@ def schedule(standards: List[str], database):
                     },
                     timeout=GAP_ANALYSIS_TIMEOUT,
                 )
-                conn.set(standards_hash, json.dumps({"job_id": gap_analysis_job.id, "result": ""}))
+                conn.set(
+                    standards_hash,
+                    json.dumps({"job_id": gap_analysis_job.id, "result": ""}),
+                )
                 return {"job_id": gap_analysis_job.id}
     except Exception as e:
-        logger.warning(f"Redis operation failed or timed out: {e}. Falling back to sync.")
+        logger.warning(
+            f"Redis operation failed or timed out: {e}. Falling back to sync."
+        )
 
     logger.info("RQ is not available, running gap analysis synchronously")
     res = db.gap_analysis(
@@ -188,7 +196,9 @@ def schedule(standards: List[str], database):
         return {"result": grouped_paths}
     else:
         logger.error(f"Gap analysis failed to return results for {standards}")
-        return {"error": "Gap analysis failed to return results. Please ensure standard names are correct and the graph is populated."}
+        return {
+            "error": "Gap analysis failed to return results. Please ensure standard names are correct and the graph is populated."
+        }
 
 
 def preload(target_url: str):

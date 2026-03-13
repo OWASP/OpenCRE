@@ -806,7 +806,6 @@ class AGEDB:
     _is_connecting: bool = False
     _lock = threading.Lock()
 
-
     @classmethod
     def instance(cls):
         """Singleton instance for Apache AGE database connection."""
@@ -815,6 +814,7 @@ class AGEDB:
                 if cls.__instance is None:
                     cls.__instance = cls.__new__(cls)
                     from application.config import Config
+
                     cls.graph_name = Config.AGE_GRAPH or "opencre"
                     cls.conn = None
                     cls.connected = False
@@ -838,18 +838,21 @@ class AGEDB:
                     thread = threading.Thread(target=cls._connect_background)
                     thread.daemon = True
                     thread.start()
-        
+
         return cls.__instance
 
     @classmethod
     def _connect_background(cls):
         """Background thread to handle the potentially hanging connection."""
         from application.config import Config
+
         try:
-            logger.info(f"Background: Attempting to connect to Apache AGE at {Config.AGE_URL}...")
+            logger.info(
+                f"Background: Attempting to connect to Apache AGE at {Config.AGE_URL}..."
+            )
             cls.conn = psycopg2.connect(Config.AGE_URL, connect_timeout=10)
             cls.conn.autocommit = True
-            
+
             with cls.conn.cursor() as cursor:
                 cursor.execute("SET statement_timeout = 10000;")
                 cursor.execute("CREATE EXTENSION IF NOT EXISTS age;")
@@ -875,12 +878,16 @@ class AGEDB:
             cls.connected = True
             logger.info("Background: Successfully connected to Apache AGE.")
         except Exception as e:
-            logger.error(f"Background: Apache AGE connection failed: {e}. disabling AGE for this session.")
+            logger.error(
+                f"Background: Apache AGE connection failed: {e}. disabling AGE for this session."
+            )
             cls._disabled_permanently = True
             cls.connected = False
             if cls.conn:
-                try: cls.conn.close()
-                except: pass
+                try:
+                    cls.conn.close()
+                except:
+                    pass
             cls.conn = None
         finally:
             cls._is_connecting = False
@@ -890,6 +897,7 @@ class AGEDB:
     def instance_blocking(cls, timeout: int = 30):
         """Synchronous version of instance() - blocks until connection is ready or timeout."""
         import time
+
         cls.instance()  # Start background thread
         waited = 0
         while cls._is_connecting and waited < timeout:
@@ -947,9 +955,10 @@ class AGEDB:
         if isinstance(agtype_val, str):
             import json
             import re
-            # AGE appends ::vertex, ::edge, ::path at the end of the string. 
+
+            # AGE appends ::vertex, ::edge, ::path at the end of the string.
             # We strip them carefully avoiding :: inside values.
-            json_str = re.sub(r'::(vertex|edge|path)$', '', agtype_val)
+            json_str = re.sub(r"::(vertex|edge|path)$", "", agtype_val)
             try:
                 data = json.loads(json_str)
             except json.JSONDecodeError:
@@ -973,7 +982,7 @@ class AGEDB:
                 self.version = props.get("version")
                 self.description = props.get("description")
                 self.sql_id = str(props.get("sql_id", ""))
-                
+
                 # Map label to doctype for frontend compatibility
                 self.doctype = "Standard"
                 if self.label == "NeoCRE":
@@ -982,30 +991,38 @@ class AGEDB:
                     self.doctype = "Tool"
 
                 # Store in dict for JSON serialization to frontend
-                super().__init__({
-                    "id": self.id,
-                    "name": self.name,
-                    "section": self.section,
-                    "sectionID": self.section_id,
-                    "subsection": self.subsection,
-                    "version": self.version,
-                    "external_id": self.external_id,
-                    "description": self.description,
-                    "doctype": self.doctype,
-                    "sql_id": self.sql_id
-                })
+                super().__init__(
+                    {
+                        "id": self.id,
+                        "name": self.name,
+                        "section": self.section,
+                        "sectionID": self.section_id,
+                        "subsection": self.subsection,
+                        "version": self.version,
+                        "external_id": self.external_id,
+                        "description": self.description,
+                        "doctype": self.doctype,
+                        "sql_id": self.sql_id,
+                    }
+                )
 
             def to_cre_def(self, *args, **kwargs):
                 from application.defs import cre_defs
+
                 if self.doctype == "CRE":
-                    return cre_defs.CRE(name=self.name, id=self.external_id, description=self.description)
+                    return cre_defs.CRE(
+                        name=self.name,
+                        id=self.external_id,
+                        description=self.description,
+                    )
                 return cre_defs.Standard(
-                    name=self.name, 
-                    section=self.section, 
-                    subsection=self.subsection, 
+                    name=self.name,
+                    section=self.section,
+                    subsection=self.subsection,
                     version=self.version,
-                    sectionID=self.section_id
+                    sectionID=self.section_id,
                 )
+
         return MockNode(data)
 
     @classmethod
@@ -1013,6 +1030,7 @@ class AGEDB:
         """Translate AGE path to Neo4j-like path record."""
         if isinstance(agpath_val, str):
             import json
+
             # AGE sometimes appends ::path to the JSON string
             json_str = agpath_val.split("::")[0]
             try:
@@ -1022,30 +1040,30 @@ class AGEDB:
                 return {"start": {"id": "stub"}, "end": {"id": "stub"}, "path": []}
         else:
             data = agpath_val
-            
+
         # AGE path is a list: [v1, e1, v2, e2, v3, ...]
-        # Note: Depending on AGE version and driver, structure might vary. 
+        # Note: Depending on AGE version and driver, structure might vary.
         # Usually it's a dict with 'vertices' and 'edges' or a flat list.
         # This implementation assumes flat list.
         if not isinstance(data, list):
-             return {"start": {"id": "stub"}, "end": {"id": "stub"}, "path": []}
+            return {"start": {"id": "stub"}, "end": {"id": "stub"}, "path": []}
 
         vertices = [v for i, v in enumerate(data) if i % 2 == 0]
         edges = [e for i, e in enumerate(data) if i % 2 != 0]
-        
+
         path_steps = []
         for i in range(len(edges)):
             step = {
                 "start": cls._parse_agtype(vertices[i]),
-                "end": cls._parse_agtype(vertices[i+1]),
-                "relationship": edges[i].get("label")
+                "end": cls._parse_agtype(vertices[i + 1]),
+                "relationship": edges[i].get("label"),
             }
             path_steps.append(step)
-            
+
         return {
             "start": cls._parse_agtype(vertices[0]),
             "end": cls._parse_agtype(vertices[-1]),
-            "path": path_steps
+            "path": path_steps,
         }
 
     @classmethod
@@ -1059,7 +1077,9 @@ class AGEDB:
 
         with cls.conn.cursor() as cursor:
             # Clear existing data
-            cursor.execute(f"SELECT * FROM cypher('{cls.graph_name}', $AGE$ MATCH (n) DETACH DELETE n $AGE$) as (a agtype);")
+            cursor.execute(
+                f"SELECT * FROM cypher('{cls.graph_name}', $AGE$ MATCH (n) DETACH DELETE n $AGE$) as (a agtype);"
+            )
 
             # Migration of Standards
             nodes = session.query(Node).all()
@@ -1073,7 +1093,9 @@ class AGEDB:
                     version = (node.version or "").replace('"', '\\"')
                     link = (node.link or "").replace('"', '\\"')
                     sid = str(node.id)
-                    cursor.execute(f"SELECT * FROM cypher('{cls.graph_name}', $AGE$ CREATE (n:NeoStandard {{name: \"{name}\", section: \"{section}\", section_id: \"{section_id}\", subsection: \"{subsection}\", version: \"{version}\", link: \"{link}\", sql_id: \"{sid}\"}}) $AGE$) as (a agtype);")
+                    cursor.execute(
+                        f'SELECT * FROM cypher(\'{cls.graph_name}\', $AGE$ CREATE (n:NeoStandard {{name: "{name}", section: "{section}", section_id: "{section_id}", subsection: "{subsection}", version: "{version}", link: "{link}", sql_id: "{sid}"}}) $AGE$) as (a agtype);'
+                    )
                 except Exception as e:
                     logger.error(f"Failed to migrate Standard {node.id}: {e}")
 
@@ -1086,7 +1108,9 @@ class AGEDB:
                     desc = (cre.description or "").replace('"', '\\"')
                     eid = (cre.external_id or "").replace('"', '\\"')
                     sid = str(cre.id)
-                    cursor.execute(f"SELECT * FROM cypher('{cls.graph_name}', $AGE$ CREATE (n:NeoCRE {{name: \"{name}\", description: \"{desc}\", external_id: \"{eid}\", sql_id: \"{sid}\"}}) $AGE$) as (a agtype);")
+                    cursor.execute(
+                        f'SELECT * FROM cypher(\'{cls.graph_name}\', $AGE$ CREATE (n:NeoCRE {{name: "{name}", description: "{desc}", external_id: "{eid}", sql_id: "{sid}"}}) $AGE$) as (a agtype);'
+                    )
                 except Exception as e:
                     logger.error(f"Failed to migrate CRE {cre.id}: {e}")
 
@@ -1095,10 +1119,12 @@ class AGEDB:
             logger.info(f"Migrating {len(internal_links)} CRE-CRE links to AGE")
             for link in internal_links:
                 try:
-                    rel_type = re.sub(r'[^a-zA-Z0-9_]', '', link.type.upper())
+                    rel_type = re.sub(r"[^a-zA-Z0-9_]", "", link.type.upper())
                     gid = str(link.group)
                     cid = str(link.cre)
-                    cursor.execute(f"SELECT * FROM cypher('{cls.graph_name}', $AGE$ MATCH (a:NeoCRE {{sql_id: \"{gid}\"}}), (b:NeoCRE {{sql_id: \"{cid}\"}}) CREATE (a)-[:{rel_type}]->(b) $AGE$) as (a agtype);")
+                    cursor.execute(
+                        f'SELECT * FROM cypher(\'{cls.graph_name}\', $AGE$ MATCH (a:NeoCRE {{sql_id: "{gid}"}}), (b:NeoCRE {{sql_id: "{cid}"}}) CREATE (a)-[:{rel_type}]->(b) $AGE$) as (a agtype);'
+                    )
                 except Exception as e:
                     # logger.debug(f"Failed to migrate CRE-CRE link {link.id}: {e}")
                     pass
@@ -1108,15 +1134,19 @@ class AGEDB:
             logger.info(f"Migrating {len(links)} CRE-Standard links to AGE")
             for link in links:
                 try:
-                    rel_type = re.sub(r'[^a-zA-Z0-9_]', '', link.type.upper())
+                    rel_type = re.sub(r"[^a-zA-Z0-9_]", "", link.type.upper())
                     cid = str(link.cre)
                     nid = str(link.node)
-                    cursor.execute(f"SELECT * FROM cypher('{cls.graph_name}', $AGE$ MATCH (a:NeoCRE {{sql_id: \"{cid}\"}}), (b:NeoStandard {{sql_id: \"{nid}\"}}) CREATE (a)-[:{rel_type}]->(b) $AGE$) as (a agtype);")
+                    cursor.execute(
+                        f'SELECT * FROM cypher(\'{cls.graph_name}\', $AGE$ MATCH (a:NeoCRE {{sql_id: "{cid}"}}), (b:NeoStandard {{sql_id: "{nid}"}}) CREATE (a)-[:{rel_type}]->(b) $AGE$) as (a agtype);'
+                    )
                 except Exception as e:
                     # logger.debug(f"Failed to migrate CRE-Standard link {link.id}: {e}")
                     pass
 
-            logger.info(f"Populated {len(nodes)} standards, {len(cres)} CREs, and synchronized all links into AGE graph '{cls.graph_name}'")
+            logger.info(
+                f"Populated {len(nodes)} standards, {len(cres)} CREs, and synchronized all links into AGE graph '{cls.graph_name}'"
+            )
 
 
 class GraphDB:

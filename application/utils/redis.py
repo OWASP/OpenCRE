@@ -3,6 +3,7 @@ import os
 from urllib.parse import urlparse
 import logging
 from typing import Callable, List
+
 try:
     import rq
 except (ValueError, ImportError):
