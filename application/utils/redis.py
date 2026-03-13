@@ -3,7 +3,13 @@ import os
 from urllib.parse import urlparse
 import logging
 from typing import Callable, List
-import rq
+
+try:
+    import rq
+except (ValueError, ImportError):
+    # rq (specifically rq-scheduler) may fail on Windows due to 'fork' context requirement
+    rq = None
+
 import time
 
 logging.basicConfig()
@@ -31,13 +37,14 @@ def connect():
             password=os.getenv("REDIS_PASSWORD", None),
             ssl=False if redis_no_ssl else True,
             ssl_cert_reqs=None,
+            socket_timeout=5,
         )
     elif redis_url:
         logger.debug(
             f"Attempting to connect to Redis instance using a URL at {redis_url}"
         )
         if redis_url == "redis://localhost:6379":
-            return redis.from_url(redis_url)
+            return redis.from_url(redis_url, socket_timeout=5)
         else:
             url = urlparse(redis_url)
             return redis.Redis(
@@ -46,12 +53,17 @@ def connect():
                 password=url.password,
                 ssl=False if redis_no_ssl else True,
                 ssl_cert_reqs=None,
+                socket_timeout=5,
             )
     else:
         logger.warning("Starting without Redis, functionality may be limited!")
 
 
-def wait_for_jobs(jobs: List[rq.job.Job], callback: Callable = None):
+def wait_for_jobs(jobs: List, callback: Callable = None):
+    if not rq:
+        logger.warning("RQ is not available on this system. Cannot wait for jobs.")
+        return
+
     def do_nothing():
         pass
 

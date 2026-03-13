@@ -9,7 +9,12 @@ import tempfile
 import requests
 
 from typing import Any, Callable, Dict, Generator, List, Optional, Tuple
-from rq import Queue, job, exceptions
+
+try:
+    from rq import Queue, job, exceptions
+except (ValueError, ImportError):
+    Queue, job, exceptions = None, None, None
+
 from dacite import from_dict
 from dacite.config import Config
 
@@ -275,7 +280,7 @@ def register_standard(
 
     if calculate_gap_analysis and not os.environ.get("CRE_NO_CALCULATE_GAP_ANALYSIS"):
         # calculate gap analysis
-        populate_neo4j_db(db_connection_str)
+        populate_graph_db(db_connection_str)
         jobs = []
         pending_stadards = collection.standards()
         for standard_name in pending_stadards:
@@ -338,7 +343,7 @@ def parse_standards_from_spreadsheeet(
                 bar()
 
         if not os.environ.get("CRE_NO_NEO4J"):
-            populate_neo4j_db(cache_location)
+            populate_graph_db(cache_location)
         if not os.environ.get("CRE_NO_GEN_EMBEDDINGS"):
             prompt_handler.generate_embeddings_for(defs.Credoctypes.CRE.value)
 
@@ -657,8 +662,8 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
 
     if args.generate_embeddings:
         generate_embeddings(args.cache_file)
-    if args.populate_neo4j_db:
-        populate_neo4j_db(args.cache_file)
+    if args.populate_graph_db:
+        populate_graph_db(args.cache_file)
     if args.start_worker:
         from application.worker import start_worker
 
@@ -714,9 +719,9 @@ def generate_embeddings(db_url: str) -> None:
     prompt_client.PromptHandler(database, load_all_embeddings=True)
 
 
-def populate_neo4j_db(cache: str):
-    logger.info(f"Populating neo4j DB: Connecting to SQL DB")
+def populate_graph_db(cache: str):
+    logger.info(f"Populating graph DB: Connecting to SQL DB")
     database = db_connect(path=cache)
-    logger.info(f"Populating neo4j DB: Populating")
-    database.neo_db.populate_DB(database.session)
-    logger.info(f"Populating neo4j DB: Complete")
+    logger.info(f"Populating graph DB: Populating")
+    database.graph_db.populate_DB(database.session)
+    logger.info(f"Populating graph DB: Complete")

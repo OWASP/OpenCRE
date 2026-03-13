@@ -13,6 +13,12 @@ class Config:
     GAP_ANALYSIS_OPTIMIZED = (
         os.environ.get("GAP_ANALYSIS_OPTIMIZED", "False").lower() == "true"
     )
+    GRAPH_DB_TYPE = os.environ.get("GRAPH_DB_TYPE", "neo4j").lower()
+    AGE_URL = (
+        os.environ.get("AGE_URL")
+        or "postgresql://postgres:password@localhost:5433/postgres"
+    )
+    AGE_GRAPH = os.environ.get("AGE_GRAPH") or "opencre"
 
 
 class DevelopmentConfig(Config):

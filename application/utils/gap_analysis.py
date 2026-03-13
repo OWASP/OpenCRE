@@ -2,7 +2,12 @@ import requests
 import time
 import logging
 import os
-from rq import Queue, job, exceptions
+
+try:
+    from rq import Queue, job, exceptions
+except (ValueError, ImportError):
+    Queue, job, exceptions = None, None, None
+
 from typing import List, Dict
 from application.utils import redis
 from flask import json as flask_json
@@ -30,7 +35,7 @@ def make_resources_key(array: List[str]):
 
 
 def make_subresources_key(standards: List[str], key: str) -> str:
-    return str(make_resources_key(standards)) + "->" + key
+    return f"{str(make_resources_key(standards))}->{str(key)}"
 
 
 def get_path_score(path):
@@ -128,48 +133,72 @@ def schedule(standards: List[str], database):
 
     logger.info(f"Gap analysis result for {standards_hash} does not exist")
 
-    conn = redis.connect()
-    if conn is None:
-        logger.error(
-            "Redis is not available. Please run 'make start-containers' first."
-        )
-        return {
-            "error": "Redis is not available. Please run 'make start-containers' first."
-        }
-    gap_analysis_results = conn.get(standards_hash)
-    if (
-        gap_analysis_results
-    ):  # perhaps its calculated but not cached yet, get it from redis
-        gap_analysis_dict = json.loads(gap_analysis_results)
-        if gap_analysis_dict.get("job_id"):
-            try:
-                res = job.Job.fetch(id=gap_analysis_dict.get("job_id"), connection=conn)
-            except exceptions.NoSuchJobError as nje:
-                logger.error(
-                    f"Could not find job id for gap analysis {standards}, this is a bug"
-                )
-                return {"error": 404}
+    try:
+        conn = redis.connect()
+        if conn is None:
+            logger.error(
+                "Redis is not available. Please run 'make start-containers' first."
+            )
+        else:
+            gap_analysis_results = conn.get(standards_hash)
             if (
-                res.get_status() != job.JobStatus.FAILED
-                and res.get_status() != job.JobStatus.STOPPED
-                and res.get_status() != job.JobStatus.CANCELED
-            ):
-                logger.info(
-                    f'gap analysis job id  {gap_analysis_dict.get("job_id")}, for standards: {standards[0]}>>{standards[1]} already exists, returning early'
+                gap_analysis_results
+            ):  # perhaps its calculated but not cached yet, get it from redis
+                gap_analysis_dict = json.loads(gap_analysis_results)
+                if gap_analysis_dict.get("job_id"):
+                    try:
+                        res = job.Job.fetch(
+                            id=gap_analysis_dict.get("job_id"), connection=conn
+                        )
+                    except exceptions.NoSuchJobError as nje:
+                        logger.error(
+                            f"Could not find job id for gap analysis {standards}, this is a bug"
+                        )
+                        return {"error": 404}
+                    if (
+                        res.get_status() != job.JobStatus.FAILED
+                        and res.get_status() != job.JobStatus.STOPPED
+                        and res.get_status() != job.JobStatus.CANCELED
+                    ):
+                        logger.info(
+                            f'gap analysis job id  {gap_analysis_dict.get("job_id")}, for standards: {standards[0]}>>{standards[1]} already exists, returning early'
+                        )
+                        return {"job_id": gap_analysis_dict.get("job_id")}
+            if Queue:
+                q = Queue(connection=conn)
+                gap_analysis_job = q.enqueue_call(
+                    db.gap_analysis,
+                    kwargs={
+                        "graph_db": database.graph_db,
+                        "node_names": standards,
+                        "cache_key": standards_hash,
+                    },
+                    timeout=GAP_ANALYSIS_TIMEOUT,
                 )
-                return {"job_id": gap_analysis_dict.get("job_id")}
-    q = Queue(connection=conn)
-    gap_analysis_job = q.enqueue_call(
-        db.gap_analysis,
-        kwargs={
-            "neo_db": database.neo_db,
-            "node_names": standards,
-            "cache_key": standards_hash,
-        },
-        timeout=GAP_ANALYSIS_TIMEOUT,
+                conn.set(
+                    standards_hash,
+                    json.dumps({"job_id": gap_analysis_job.id, "result": ""}),
+                )
+                return {"job_id": gap_analysis_job.id}
+    except Exception as e:
+        logger.warning(
+            f"Redis operation failed or timed out: {e}. Falling back to sync."
+        )
+
+    logger.info("RQ is not available, running gap analysis synchronously")
+    res = db.gap_analysis(
+        graph_db=database.graph_db,
+        node_names=standards,
+        cache_key=standards_hash,
     )
-    conn.set(standards_hash, json.dumps({"job_id": gap_analysis_job.id, "result": ""}))
-    return {"job_id": gap_analysis_job.id}
+    if res:
+        _, grouped_paths, _ = res
+        return {"result": grouped_paths}
+    else:
+        logger.error(f"Gap analysis failed to return results for {standards}")
+        return {
+            "error": "Gap analysis failed to return results. Please ensure standard names are correct and the graph is populated."
+        }
 
 
 def preload(target_url: str):

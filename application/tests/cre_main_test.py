@@ -6,7 +6,12 @@ import unittest
 from typing import Any, Dict, List
 from unittest import mock
 from unittest.mock import Mock, patch
-from rq import Queue
+
+try:
+    from rq import Queue
+except (ValueError, ImportError):
+    Queue = None
+
 from application.utils import redis
 from application.prompt_client import prompt_client as prompt_client
 from application.tests.utils import data_gen
