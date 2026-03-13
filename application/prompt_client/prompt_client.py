@@ -22,6 +22,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 SIMILARITY_THRESHOLD = float(os.environ.get("CHATBOT_SIMILARITY_THRESHOLD", "0.7"))
+DEFAULT_CHAT_INSTRUCTIONS = "Answer in English"
 
 
 def is_valid_url(url):
@@ -440,7 +441,9 @@ class PromptHandler:
             return None, None
         return most_similar_id, max_similarity
 
-    def generate_text(self, prompt: str) -> Dict[str, str]:
+    def generate_text(
+        self, prompt: str, instructions: Optional[str] = None
+    ) -> Dict[str, str]:
         """
         Generate text is a frontend method used for the chatbot
         It matches the prompt/user question to an embedding from our database and then sends both the
@@ -448,6 +451,8 @@ class PromptHandler:
 
         Args:
             prompt (str): user question
+            instructions (Optional[str]): trusted formatting/language instructions from
+                dedicated UI input. This must not affect embedding retrieval.
 
         Returns:
             Dict[str,str]: a dictionary with the response and the closest object
@@ -455,6 +460,11 @@ class PromptHandler:
         timestamp = datetime.now().strftime("%I:%M:%S %p")
         if not prompt:
             return {"response": "", "table": "", "timestamp": timestamp}
+        normalized_instructions = (
+            instructions.strip()
+            if instructions and instructions.strip()
+            else DEFAULT_CHAT_INSTRUCTIONS
+        )
         logger.debug(f"getting embeddings for {prompt}")
         question_embedding = self.ai_client.get_text_embeddings(prompt)
         logger.debug(f"retrieved embeddings for {prompt}")
@@ -490,10 +500,13 @@ class PromptHandler:
             answer = self.ai_client.create_chat_completion(
                 prompt=prompt,
                 closest_object_str=closest_object_str,
+                instructions=normalized_instructions,
             )
             accurate = True
         else:
-            answer = self.ai_client.query_llm(prompt)
+            answer = self.ai_client.query_llm(
+                prompt, instructions=normalized_instructions
+            )
 
         logger.debug(f"retrieved completion for {prompt}")
         table = [closest_object]
