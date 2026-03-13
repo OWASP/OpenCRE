@@ -10,10 +10,10 @@ export const TYPE_AUTOLINKED_TO = 'Automatically linked to';
 export const DOCUMENT_TYPE_NAMES = {
   [TYPE_AUTOLINKED_TO]: ' has been automatically mapped to',
   [TYPE_LINKED_TO]: ' is linked to sources',
-  [TYPE_IS_PART_OF]: ' is part of CREs',
-  [TYPE_LINKED_FROM]: 'is linked from CREs',
-  [TYPE_CONTAINS]: ' contains CREs',
-  [TYPE_RELATED]: ' is related to CREs',
+  [TYPE_IS_PART_OF]: ' is part of Requirements',
+  [TYPE_LINKED_FROM]: 'is linked from Requirements',
+  [TYPE_CONTAINS]: ' contains Requirements',
+  [TYPE_RELATED]: ' is related to Requirements',
 };
 
 export const DOCUMENT_TYPES = {
