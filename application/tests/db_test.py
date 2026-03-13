@@ -1399,7 +1399,9 @@ class TestDB(unittest.TestCase):
             },
         )
         self.maxDiff = None
-        self.assertEqual(db.gap_analysis(collection.graph_db, ["788-788", "b"]), expected)
+        self.assertEqual(
+            db.gap_analysis(collection.graph_db, ["788-788", "b"]), expected
+        )
 
     @patch.object(db.graph_db, "gap_analysis")
     def test_gap_analysis_duplicate_link_path_existing_lower(self, gap_mock):
@@ -1461,7 +1463,9 @@ class TestDB(unittest.TestCase):
             },
             {"111-111": {"paths": {}}},
         )
-        self.assertEqual(db.gap_analysis(collection.graph_db, ["788-788", "b"]), expected)
+        self.assertEqual(
+            db.gap_analysis(collection.graph_db, ["788-788", "b"]), expected
+        )
 
     @patch.object(db.graph_db, "gap_analysis")
     def test_gap_analysis_duplicate_link_path_existing_lower_new_in_extras(
@@ -1530,7 +1534,9 @@ class TestDB(unittest.TestCase):
             },
             {"111-111": {"paths": {}}},
         )
-        self.assertEqual(db.gap_analysis(collection.graph_db, ["788-788", "b"]), expected)
+        self.assertEqual(
+            db.gap_analysis(collection.graph_db, ["788-788", "b"]), expected
+        )
 
     @patch.object(db.graph_db, "gap_analysis")
     def test_gap_analysis_duplicate_link_path_existing_higher(self, gap_mock):
@@ -1592,7 +1598,9 @@ class TestDB(unittest.TestCase):
             },
             {"111-111": {"paths": {}}},
         )
-        self.assertEqual(db.gap_analysis(collection.graph_db, ["788-788", "b"]), expected)
+        self.assertEqual(
+            db.gap_analysis(collection.graph_db, ["788-788", "b"]), expected
+        )
 
     @patch.object(db.graph_db, "gap_analysis")
     def test_gap_analysis_duplicate_link_path_existing_higher_and_in_extras(
@@ -1661,7 +1669,9 @@ class TestDB(unittest.TestCase):
             },
             {"111-111": {"paths": {}}},
         )
-        self.assertEqual(db.gap_analysis(collection.graph_db, ["788-788", "b"]), expected)
+        self.assertEqual(
+            db.gap_analysis(collection.graph_db, ["788-788", "b"]), expected
+        )
 
     @patch.object(db.graph_db, "gap_analysis")
     def test_gap_analysis_dump_to_cache(self, gap_mock):

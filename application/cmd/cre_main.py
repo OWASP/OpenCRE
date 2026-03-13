@@ -9,6 +9,7 @@ import tempfile
 import requests
 
 from typing import Any, Callable, Dict, Generator, List, Optional, Tuple
+
 try:
     from rq import Queue, job, exceptions
 except (ValueError, ImportError):

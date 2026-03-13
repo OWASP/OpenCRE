@@ -15,7 +15,8 @@ class Config:
     )
     GRAPH_DB_TYPE = os.environ.get("GRAPH_DB_TYPE", "neo4j").lower()
     AGE_URL = (
-        os.environ.get("AGE_URL") or "postgresql://postgres:password@localhost:5433/postgres"
+        os.environ.get("AGE_URL")
+        or "postgresql://postgres:password@localhost:5433/postgres"
     )
     AGE_GRAPH = os.environ.get("AGE_GRAPH") or "opencre"
 

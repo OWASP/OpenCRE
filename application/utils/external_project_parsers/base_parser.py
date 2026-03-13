@@ -1,4 +1,5 @@
 from application.utils.external_project_parsers import base_parser_defs
+
 try:
     from rq import Queue
 except (ValueError, ImportError):

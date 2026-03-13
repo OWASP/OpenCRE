@@ -6,6 +6,7 @@ import unittest
 from typing import Any, Dict, List
 from unittest import mock
 from unittest.mock import Mock, patch
+
 try:
     from rq import Queue
 except (ValueError, ImportError):

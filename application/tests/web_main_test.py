@@ -10,6 +10,7 @@ import tempfile
 from unittest.mock import patch
 
 import redis
+
 try:
     import rq
 except (ValueError, ImportError):
@@ -34,7 +35,6 @@ class MockJob:
 
     def get_status(self):
         return rq.job.JobStatus.STARTED if rq else "started"
-
 
 
 class TestMain(unittest.TestCase):
