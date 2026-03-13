@@ -10,7 +10,11 @@ import tempfile
 from unittest.mock import patch
 
 import redis
-import rq
+try:
+    import rq
+except (ValueError, ImportError):
+    rq = None
+
 import os
 import networkx as nx
 
@@ -29,7 +33,8 @@ class MockJob:
         return "ABC"
 
     def get_status(self):
-        return rq.job.JobStatus.STARTED
+        return rq.job.JobStatus.STARTED if rq else "started"
+
 
 
 class TestMain(unittest.TestCase):

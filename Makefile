@@ -15,6 +15,13 @@ docker-neo4j-rm:
 docker-neo4j:
 	docker start cre-neo4j 2>/dev/null   || docker run -d --name cre-neo4j --env NEO4J_PLUGINS='["apoc"]'  --env NEO4J_AUTH=neo4j/password --volume=`pwd`/.neo4j/data:/data --volume=`pwd`/.neo4j/logs:/logs --workdir=/var/lib/neo4j -p 7474:7474 -p 7687:7687 neo4j
 
+docker-age-rm:
+	docker stop cre-age
+	docker rm -f cre-age
+
+docker-age:
+	docker start cre-age 2>/dev/null || docker run -d --name cre-age -p 5433:5432 -e POSTGRES_PASSWORD=password apache/age:latest
+
 docker-redis-rm:
 	docker stop cre-redis-stack
 	docker rm -f cre-redis-stack
@@ -123,9 +130,11 @@ import-projects:
 import-all:
 	$(shell bash ./scripts/import-all.sh)
 
-import-neo4j:
+import-graph:
 	[ -d "./venv" ] && . ./venv/bin/activate &&\
-	export FLASK_APP="$(CURDIR)/cre.py" && python cre.py --populate_neo4j_db
+	export FLASK_APP="$(CURDIR)/cre.py" && python cre.py --populate_graph_db
+
+import-neo4j: import-graph
 
 preload-map-analysis:
 	$(shell RUN_COUNT=5 bash ./scripts/preload_gap_analysis.sh)

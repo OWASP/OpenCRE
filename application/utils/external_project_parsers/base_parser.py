@@ -1,5 +1,9 @@
 from application.utils.external_project_parsers import base_parser_defs
-from rq import Queue
+try:
+    from rq import Queue
+except (ValueError, ImportError):
+    Queue = None
+
 from application.utils import redis
 from application.prompt_client import prompt_client as prompt_client
 import logging
