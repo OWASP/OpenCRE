@@ -2,7 +2,7 @@ import './explorer.scss';
 
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Checkbox, List } from 'semantic-ui-react';
+import { Checkbox, List, Popup } from 'semantic-ui-react';
 
 import { LoadingAndErrorIndicator } from '../../components/LoadingAndErrorIndicator';
 import { TYPE_CONTAINS, TYPE_LINKED_TO } from '../../const';
@@ -160,12 +160,20 @@ export const Explorer = () => {
               </li>
             </ul>
           </div>
-          <div id="debug-toggle">
+          <div id="debug-toggle" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Checkbox
               toggle
               label="Debug mode"
               checked={debugMode}
               onChange={() => setDebugMode(!debugMode)}
+            />
+            <Popup
+               content="Debug mode shows graph connectivity stats and link type details for each CRE node."
+            trigger={
+               <span style={{ cursor: 'help', color: '#666', fontSize: '14px', border: '1px solid #666', borderRadius: '50%', padding: '0 4px', fontWeight: 'bold' }}>
+                ?
+               </span>
+              }
             />
           </div>
         </div>
