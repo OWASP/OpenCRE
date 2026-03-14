@@ -101,6 +101,9 @@ class in_memory_embeddings:
 
         Returns:
             List[str]: a list of db ids which do not have embeddings
+
+        PERFORMANCE NOTE: This method iterates over all document types and performs lookups.
+        Ensure Neo4j indexes on name and external_id are active to speed up node resolution.
         """
         logger.info(f"syncing nodes with embeddings")
         missing_embeddings = []
