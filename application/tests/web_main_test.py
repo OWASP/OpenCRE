@@ -475,6 +475,14 @@ class TestMain(unittest.TestCase):
                 self.assertEqual(200, resp.status_code)
                 self.assertDictEqual(resp.json[0], expected[0])
 
+    def test_text_search_missing_param(self) -> None:
+        with self.app.test_client() as client:
+            response = client.get("/rest/v1/text_search")
+            self.assertEqual(400, response.status_code)
+
+            response = client.get("/rest/v1/text_search?text=")
+            self.assertEqual(400, response.status_code)
+
     def test_find_root_cres(self) -> None:
         self.maxDiff = None
         collection = db.Node_collection().with_graph()
