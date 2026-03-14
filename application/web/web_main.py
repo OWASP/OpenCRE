@@ -472,6 +472,8 @@ def text_search() -> Any:
     """
     database = db.Node_collection()
     text = request.args.get("text")
+    if not text:
+        abort(400, "text parameter is required")
     if posthog:
         posthog.capture(f"text_search", f"text:{text}")
 
