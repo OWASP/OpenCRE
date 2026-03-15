@@ -192,6 +192,11 @@ def main() -> None:
         action="store_true",
         help="import cloud native security controls from their repo (https://raw.githubusercontent.com/cloud-native-security-controls/controls-catalog/main/controls/controls_catalog.csv)",
     )
+    parser.add_argument(
+        "--skf_in",
+        action="store_true",
+        help="import OWASP Security Knowledge Framework knowledge base, code examples, and labs",
+    )
     # End External Project importing
 
     parser.add_argument(
