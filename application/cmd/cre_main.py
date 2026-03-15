@@ -650,6 +650,12 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
             cloud_native_security_controls.CloudNativeSecurityControls,
             db_connection_str=args.cache_file,
         )
+    if args.skf_in:
+        from application.utils.external_project_parsers.parsers import skf_parser
+
+        BaseParser().register_resource(
+            skf_parser.SKF, db_connection_str=args.cache_file
+        )
     # /end individual resource importing
 
     if args.import_external_projects:
