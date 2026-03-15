@@ -83,6 +83,19 @@ When you are creating a bug report, please [include as many details as possible]
 
 > **Note:** If you find a **Closed** issue that seems like it is the same thing that you're experiencing, open a new issue and include a link to the original issue in the body of your new one.
 
+#### Avoid Reporting Trivial UI Issues : 
+
+Please avoid opening GitHub issues for extremely small frontend or cosmetic bugs such as:
+
+- Minor spacing inconsistencies
+- Small UI alignment issues
+- Text capitalization fixes
+- One-line styling adjustments
+
+If the issue can be fixed quickly (for example within ~30 minutes), please submit a single pull request instead of opening a separate issue.
+
+
+
 #### How Do I Submit A (Good) Bug Report?
 
 Bugs are tracked as [GitHub issues](https://guides.github.com/features/issues/). Create an issue and provide the following information by filling in [the template](https://github.com/common-requirement-enumeration/.github/blob/main/.github/ISSUE_TEMPLATE.md).
@@ -119,10 +132,79 @@ Unsure where to begin contributing? You can start by looking through these `begi
 * Good first issue - issues which should require more substantial changes but can be done in an afternoon or two.
 * Help wanted issues - issues which should be a bit more involved than `beginner` issues.
 
+#### Contribution Quality Expectations
+
+High quality contributions are preferred over quantity.
+
+Before submitting a pull request:
+
+- Check if a similar PR already exists
+- Verify that the issue is not already solved
+- Ensure the change provides meaningful value
+- Run tests and lint checks locally
+
+Repeated low-effort pull requests may be closed by maintainers.
+
 #### Pull Requests
 
 Each Pull Request should close a single ticket and only make changes necessary in order for this to be done. Please reference the relevant ticket in the Pull Request.
 After you submit your pull request, verify that all [status checks](https://help.github.com/articles/about-status-checks/) are passing <details><summary>What if the status checks are failing?</summary>If a status check is failing, and you believe that the failure is unrelated to your change, please leave a comment on the pull request explaining why you believe the failure is unrelated. A maintainer will re-run the status check for you. If we conclude that the failure was a false positive, then we will open an issue to track that problem with our status check suite.</details>
+
+#### Avoid Reporting Trivial UI Issues
+
+Please avoid opening GitHub issues for extremely small frontend or cosmetic bugs such as:
+
+- Minor spacing inconsistencies
+- Small UI alignment issues
+- Text capitalization fixes
+- One-line styling adjustments
+
+If the issue can be fixed quickly (for example within ~30 minutes), please submit a single pull request instead of opening a separate issue.
+
+Opening tickets for trivial issues increases maintenance overhead and slows down triage for real bugs.
+
+#### LLM-generated Contributions
+
+While AI tools such as Cursor, Claude, or ChatGPT can help contributors, pull requests generated entirely by LLMs without proper validation are discouraged.
+
+Before submitting a PR:
+
+- Ensure you fully understand the change.
+- Verify that the solution was tested locally.
+- Confirm that the change actually improves the project.
+
+Submitting many low-effort AI-generated pull requests that do not meaningfully improve the project may result in the PR being closed without review.
+
+#### One Pull Request Per Problem
+
+Please avoid opening multiple pull requests for similar or closely related issues.
+
+Examples of discouraged behavior:
+
+- Opening several PRs fixing similar UI problems separately
+- Submitting many small fixes that could be grouped together
+- Creating PRs for issues that could be solved in the same patch
+
+If you find several related issues, combine them into **one well-structured pull request**.
+
+#### Check Existing Issues Before Opening New Ones
+
+Before opening a new issue or pull request:
+
+1. Search existing issues
+2. Check open pull requests
+3. Confirm that the problem has not already been reported
+
+
+#### Important points to ponder-
+
+- **Before starting work on an issue**, please wait for a maintainer to acknowledge or assign the ticket.
+
+- **Maintainers reserve the right to close low-effort or duplicate contributions without review.**
+ 
+This helps prevent duplicate work and ensures that the proposed change aligns with the project's roadmap.
+
+Pull requests submitted for issues that have not been acknowledged may be closed.
 
 ## Styleguides
 
