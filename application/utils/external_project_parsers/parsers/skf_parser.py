@@ -147,9 +147,7 @@ class SKF(ParserInterface):
                 hyperlink = self._make_repo_link(
                     repo_base=repo_base, branch=branch, repo_path=repo_path, path=fpath
                 )
-                tags = self._merge_tags(
-                    ["code-example"] + self._path_tags(rel_dir), []
-                )
+                tags = self._merge_tags(["code-example"] + self._path_tags(rel_dir), [])
                 default_meta = {
                     "name": "OWASP Security Knowledge Framework Code Examples",
                     "section": title,
