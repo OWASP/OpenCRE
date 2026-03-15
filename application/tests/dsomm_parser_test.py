@@ -1,3 +1,4 @@
+# mypy: disable-error-code="arg-type,var-annotated,assignment"
 from application.defs import cre_defs as defs
 import unittest
 from application import create_app, sqla  # type: ignore

@@ -1,6 +1,6 @@
 from python_markdown_maker import Table, links
 from application.defs import cre_defs as defs
-from typing import List
+from typing import List, Sequence
 
 
 def make_header(documents: List[defs.Document]) -> List[str]:
@@ -24,7 +24,7 @@ def make_header(documents: List[defs.Document]) -> List[str]:
     return header
 
 
-def make_node_entry(doc: defs.Node) -> str:
+def make_node_entry(doc: defs.Document) -> str:
     if doc.doctype == defs.Credoctypes.Standard:
         return f"{doc.name} {doc.section}"
     elif doc.doctype == defs.Credoctypes.Tool:
@@ -35,7 +35,9 @@ def make_node_entry(doc: defs.Node) -> str:
         return f"{doc.name}"
 
 
-def add_entry(doc: defs.Document, header: List[str], item: List[str]) -> List[str]:
+def add_entry(
+    doc: defs.Document, header: List[str], item: List[List[str]]
+) -> List[List[str]]:
     if doc.doctype == defs.Credoctypes.CRE:
         item[header.index("CRE")].append(
             links(f"https://www.opencre.org/cre/{doc.id}", f"{doc.id} {doc.name}")
@@ -45,10 +47,10 @@ def add_entry(doc: defs.Document, header: List[str], item: List[str]) -> List[st
     return item
 
 
-def cre_to_md(documents: List[defs.Document]) -> str:
-    header = make_header(documents)
+def cre_to_md(documents: Sequence[defs.Document]) -> str:
+    header = make_header(list(documents))
     result = Table(header)
-    entries = {}
+    entries: dict[str, dict[str, List[List[str]]]] = {}
     for doc in documents:
         name = ""
         if doc.doctype == defs.Credoctypes.CRE:
@@ -58,7 +60,7 @@ def cre_to_md(documents: List[defs.Document]) -> str:
         if name not in header:
             header.append(doc.name)
 
-        item = [[] for x in range(0, len(header))]
+        item: List[List[str]] = [[] for x in range(0, len(header))]
         item = add_entry(doc=doc, header=header, item=item)
         entries[make_node_entry(doc)] = {}
         for (

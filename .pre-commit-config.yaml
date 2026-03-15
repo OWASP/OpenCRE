@@ -1,0 +1,32 @@
+repos:
+
+- repo: https://github.com/psf/black
+  rev: 23.7.0
+  hooks:
+    - id: black
+      name: Run black formatter
+      language_version: python3
+
+
+- repo: local
+  hooks:
+
+    - id: mypy
+      name: Run mypy
+      entry: mypy application --ignore-missing-imports --follow-imports=skip
+      language: system
+      pass_filenames: false
+
+
+    - id: flask-tests
+      name: Run Flask tests
+      entry: make test
+      language: system
+      pass_filenames: false
+
+
+    - id: coverage-check
+      name: Coverage >= 70%
+      entry: make cover
+      language: system
+      pass_filenames: false

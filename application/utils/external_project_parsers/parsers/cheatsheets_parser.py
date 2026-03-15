@@ -1,5 +1,5 @@
 # script to parse cheatsheet md files find the links to opencre.org and add the cheatsheets to CRE
-from typing import List
+from typing import List, Optional
 from application.database import db
 from application.utils import git
 from application.defs import cre_defs as defs
@@ -25,7 +25,11 @@ class Cheatsheets(ParserInterface):
             hyperlink=hyperlink,
         )
 
-    def parse(self, cache: db.Node_collection, ph: prompt_client.PromptHandler):
+    def parse(
+        self,
+        cache: db.Node_collection,
+        ph: Optional[prompt_client.PromptHandler],
+    ) -> ParseResult:
         c_repo = "https://github.com/OWASP/CheatSheetSeries.git"
         cheatsheets_path = "cheatsheets/"
         repo = git.clone(c_repo)
@@ -57,10 +61,11 @@ class Cheatsheets(ParserInterface):
                     cres = cache.get_CREs(external_id=cre_id)
                     hyperlink = f"{repo_path.replace('.git','')}/tree/master/{cheatsheets_path}{mdfile}"
                     cs = self.cheatsheet(section=name, hyperlink=hyperlink, tags=[])
-                    for cre in cres:
+                    for cre_doc in cres:
                         cs.add_link(
                             defs.Link(
-                                document=cre, ltype=defs.LinkTypes.AutomaticallyLinkedTo
+                                document=cre_doc,
+                                ltype=defs.LinkTypes.AutomaticallyLinkedTo,
                             )
                         )
                     standard_entries.append(cs)

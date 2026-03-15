@@ -9,7 +9,7 @@ from playwright.sync_api import sync_playwright
 import playwright
 from scipy import sparse
 from sklearn.metrics.pairwise import cosine_similarity
-from typing import Dict, List, Any, Tuple, Optional
+from typing import Dict, List, Any, Tuple, Optional, cast
 import logging
 import nltk
 import numpy as np
@@ -147,36 +147,41 @@ class in_memory_embeddings:
     ):
         """method generate embeddings accepts a list of Database IDs of object which do not have embeddings and generates embeddings for those objects"""
         logger.info(f"generating {len(missing_embeddings)} embeddings")
+        ai = self.ai_client
+        if not ai:
+            raise RuntimeError("AI client not configured; cannot generate embeddings")
         for id in missing_embeddings:
             cre = database.get_cre_by_db_id(id)
             nodes = database.get_nodes(db_id=id)
             content = ""
             if nodes:
-                node = nodes
-                if type(node) == list:
-                    node = nodes[0]
-                if is_valid_url(node.hyperlink):
-                    content = self.clean_content(self.get_content(node.hyperlink))
+                if isinstance(nodes, list):
+                    node_item = nodes[0]
                 else:
-                    content = node.__repr__()
+                    node_item = nodes
+                if is_valid_url(getattr(node_item, "hyperlink", "") or ""):
+                    content = self.clean_content(self.get_content(node_item.hyperlink))
+                else:
+                    content = node_item.__repr__()
                 logger.info(
-                    f"making embedding for {node.hyperlink if node.hyperlink else content}"
+                    f"making embedding for {getattr(node_item, 'hyperlink', content)}"
                 )
 
-                embedding = self.ai_client.get_text_embeddings(content)
-                dbnode = db.dbNodeFromNode(node)
+                embedding = ai.get_text_embeddings(content)
+                dbnode = db.dbNodeFromNode(node_item)
                 if not dbnode:
-                    logger.fatal(node, "cannot be converted to database Node")
+                    logger.fatal(node_item, "cannot be converted to database Node")
                     continue
                 dbnode.id = id
-                database.add_embedding(dbnode, node.doctype, embedding, content)
+                database.add_embedding(dbnode, node_item.doctype, embedding, content)
             elif cre:
                 content = f"{cre.doctype}\n name:{cre.name}\n description:{cre.description}\n id:{cre.id}\n "
                 logger.info(f"making embedding for {content}")
-                embedding = self.ai_client.get_text_embeddings(content)
+                embedding = ai.get_text_embeddings(content)
                 dbcre = db.dbCREfromCRE(cre)
                 if not dbcre:
-                    logger.fatal(node, "cannot be converted to database Node")
+                    logger.fatal(cre, "cannot be converted to database Node")
+                    continue
                 dbcre.id = id
                 database.add_embedding(
                     dbcre, cre_defs.Credoctypes.CRE, embedding, content
@@ -184,9 +189,9 @@ class in_memory_embeddings:
 
 
 class PromptHandler:
-    ai_client = None  # a client instance for a support Chat model
-    database: db.Node_collection = None  # instance of our primary db
-    embeddings_instance = None  # instance of our in_memory_embeddings singletton
+    ai_client: Optional[Any] = None  # a client instance for a support Chat model
+    database: db.Node_collection  # instance of our primary db
+    embeddings_instance: in_memory_embeddings  # singleton instance
 
     def __init__(self, database: db.Node_collection, load_all_embeddings=False) -> None:
         self.ai_client = None
@@ -207,28 +212,31 @@ class PromptHandler:
             ai_client=self.ai_client
         )
         if not os.environ.get("NO_GEN_EMBEDDINGS") and load_all_embeddings:
-            missing_embeddings = self.embeddings_instance.find_missing_embeddings(
-                database
-            )
-            if missing_embeddings:
-                self.embeddings_instance.setup_playwright()
-                self.embeddings_instance.generate_embeddings(
-                    database, missing_embeddings
+            if self.embeddings_instance:
+                missing_embeddings = self.embeddings_instance.find_missing_embeddings(
+                    database
                 )
-                self.embeddings_instance.teardown_playwright()
-            else:
-                logger.info(
-                    f"there are {len(missing_embeddings)} embeddings missing from the dataset, db inclompete"
-                )
+                if missing_embeddings:
+                    self.embeddings_instance.setup_playwright()
+                    self.embeddings_instance.generate_embeddings(
+                        database, missing_embeddings
+                    )
+                    self.embeddings_instance.teardown_playwright()
+                else:
+                    logger.info(
+                        f"there are {len(missing_embeddings)} embeddings missing from the dataset, db inclompete"
+                    )
 
     def generate_embeddings_for(self, item_name: str):
+        if self.embeddings_instance is None:
+            return
         self.embeddings_instance.setup_playwright()
         self.embeddings_instance.generate_embeddings_for(self.database, item_name)
         self.embeddings_instance.teardown_playwright()
 
     def __load_cre_embeddings(
         self, db_embeddings: Dict[str, List[float]]
-    ) -> Tuple[List[List[float]], List[str]]:
+    ) -> Tuple[sparse.csr_matrix, List[str]]:
         existing_cre_embeddings = []
         existing_cre_ids = []
         for id, e in db_embeddings.items():
@@ -241,7 +249,7 @@ class PromptHandler:
 
     def __load_node_embeddings(
         self, db_node_embeddings: Dict[str, List[float]]
-    ) -> Tuple[List[List[float]], List[str]]:
+    ) -> Tuple[sparse.csr_matrix, List[str]]:
         """
             given a Dict of [node_id,[embeddings]] returns two lists,
             one with the keys and one with the values, both in order so we can match values to keys
@@ -337,13 +345,15 @@ class PromptHandler:
         return id
 
     def get_text_embeddings(self, text):
+        if not self.ai_client:
+            raise ValueError("AI client not configured")
         return self.ai_client.get_text_embeddings(text)
 
     def get_id_of_most_similar_cre_paginated(
         self,
         item_embedding: List[float],
         similarity_threshold: float = SIMILARITY_THRESHOLD,
-    ) -> Optional[Tuple[str, float]]:
+    ) -> Tuple[Optional[str], Optional[float]]:
         """this method is meant to be used when CRE runs in a web server with limited memory (e.g. firebase/heroku)
             instead of loading all our embeddings in memory we take the slower approach of paginating them
 
@@ -373,7 +383,7 @@ class PromptHandler:
             similarities = cosine_similarity(embedding_array, existing_cres)
             if np.max(similarities) > max_similarity:
                 max_similarity = np.max(similarities)
-                most_similar_index = np.argmax(similarities)
+                most_similar_index = int(np.argmax(similarities))
                 most_similar_id = existing_cre_ids[most_similar_index]
             (
                 embeddings,
@@ -394,7 +404,7 @@ class PromptHandler:
         self,
         question_embedding: List[float],
         similarity_threshold: float = SIMILARITY_THRESHOLD,
-    ) -> Optional[Tuple[str, float]]:
+    ) -> Tuple[Optional[str], Optional[float]]:
         """
             this method performs cosine similarity against all nodes found in our database and returns the DB ID of the most similar node
             this method is meant to be used when CRE runs in a web server with limited memory (e.g. firebase/heroku)
@@ -440,7 +450,7 @@ class PromptHandler:
             return None, None
         return most_similar_id, max_similarity
 
-    def generate_text(self, prompt: str) -> Dict[str, str]:
+    def generate_text(self, prompt: str) -> Dict[str, Any]:
         """
         Generate text is a frontend method used for the chatbot
         It matches the prompt/user question to an embedding from our database and then sends both the
@@ -456,6 +466,8 @@ class PromptHandler:
         if not prompt:
             return {"response": "", "table": "", "timestamp": timestamp}
         logger.debug(f"getting embeddings for {prompt}")
+        if not self.ai_client:
+            return {"response": "", "table": [], "timestamp": timestamp}
         question_embedding = self.ai_client.get_text_embeddings(prompt)
         logger.debug(f"retrieved embeddings for {prompt}")
 
@@ -464,11 +476,11 @@ class PromptHandler:
             question_embedding,
             similarity_threshold=SIMILARITY_THRESHOLD,
         )
-        closest_object = None
+        closest_object: Optional[cre_defs.Document] = None
         if closest_id:
-            closest_object = self.database.get_nodes(db_id=closest_id)
-            if len(closest_object) > 0:
-                closest_object = closest_object[0]
+            closest_nodes = self.database.get_nodes(db_id=closest_id)
+            if len(closest_nodes) > 0:
+                closest_object = closest_nodes[0]
             logger.info(
                 f"The prompt {prompt}, was most similar to object \n{closest_object}\n, with similarity:{similarity}"
             )
@@ -477,7 +489,7 @@ class PromptHandler:
         closest_content = ""
         accurate = False
         if closest_object:
-            if closest_object.hyperlink:
+            if closest_object.hyperlink and closest_id:
                 emb = self.database.get_embedding(closest_id)
                 if emb:
                     closest_content = emb[0].embeddings_content

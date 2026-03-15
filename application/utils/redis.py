@@ -2,7 +2,7 @@ import redis
 import os
 from urllib.parse import urlparse
 import logging
-from typing import Callable, List
+from typing import Callable, List, Optional
 import rq
 import time
 
@@ -51,11 +51,11 @@ def connect():
         logger.warning("Starting without Redis, functionality may be limited!")
 
 
-def wait_for_jobs(jobs: List[rq.job.Job], callback: Callable = None):
+def wait_for_jobs(jobs: List[rq.job.Job], callback: Optional[Callable] = None) -> None:
     def do_nothing():
         pass
 
-    if not callback:
+    if callback is None:
         callback = do_nothing
     while jobs:
         for job in jobs:

@@ -7,8 +7,11 @@ from uuid import uuid4
 from typing import List, Optional, Union
 
 
+from datetime import datetime as _dt
+
+
 def document_to_oscal(
-    document: defs.Document, uuid: Optional[str], last_modified: Optional[str]
+    document: defs.Document, uuid: Optional[str], last_modified: Optional[_dt]
 ) -> str:
     """
     document_to_oscal takes a single document
@@ -20,7 +23,7 @@ def document_to_oscal(
         document.doctype == defs.Credoctypes.Standard
         or document.doctype == defs.Credoctypes.Tool
     ):
-        hyperlink = document.hyperlink
+        hyperlink = document.hyperlink or ""
         if document.version:
             version = document.version
 
