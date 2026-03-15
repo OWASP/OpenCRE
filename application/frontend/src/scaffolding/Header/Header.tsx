@@ -2,8 +2,7 @@ import './header.scss';
 
 import { Menu, Search } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
-import { Link, useHistory } from 'react-router-dom';
-import { NavLink } from 'react-router-dom';
+import { Link, NavLink, useHistory, useLocation } from 'react-router-dom';
 import { Button } from 'semantic-ui-react';
 
 import { ClearFilterButton } from '../../components/FilterButton/FilterButton';
@@ -20,9 +19,17 @@ export const Header = ({ capabilities }: HeaderProps) => {
 
   let currentUrlParams = new URLSearchParams(window.location.search);
   const history = useHistory();
+  const location = useLocation();
   const HandleDoFilter = () => {
     currentUrlParams.set('applyFilters', 'true');
     history.push(window.location.pathname + '?' + currentUrlParams.toString());
+  };
+
+  const isActive = (path: string, exact: boolean = false) => {
+    if (exact) {
+      return location.pathname === path;
+    }
+    return location.pathname.startsWith(path);
   };
   const { showFilter } = useLocationFromOutsideRoute(routes);
 
@@ -56,27 +63,58 @@ export const Header = ({ capabilities }: HeaderProps) => {
             </Link>
 
             <div className="navbar__desktop-links">
-              <NavLink to="/" exact className="nav-link" activeClassName="nav-link--active">
+              <NavLink
+                to="/"
+                exact
+                className="nav-link"
+                activeClassName="nav-link--active"
+                isActive={() => isActive('/', true)}
+              >
                 Home
               </NavLink>
 
-              <NavLink to="/root_cres" className="nav-link" activeClassName="nav-link--active">
+              <NavLink
+                to="/root_cres"
+                className="nav-link"
+                activeClassName="nav-link--active"
+                isActive={() => isActive('/root_cres') || isActive('/node')}
+              >
                 Browse
               </NavLink>
 
-              <NavLink to="/chatbot" className="nav-link" activeClassName="nav-link--active">
+              <NavLink
+                to="/chatbot"
+                className="nav-link"
+                activeClassName="nav-link--active"
+                isActive={() => isActive('/chatbot')}
+              >
                 Chat
               </NavLink>
 
-              <NavLink to="/map_analysis" className="nav-link" activeClassName="nav-link--active">
+              <NavLink
+                to="/map_analysis"
+                className="nav-link"
+                activeClassName="nav-link--active"
+                isActive={() => isActive('/map_analysis')}
+              >
                 Map Analysis
               </NavLink>
 
-              <NavLink to="/explorer" className="nav-link" activeClassName="nav-link--active">
+              <NavLink
+                to="/explorer"
+                className="nav-link"
+                activeClassName="nav-link--active"
+                isActive={() => isActive('/explorer')}
+              >
                 Explorer
               </NavLink>
               {capabilities.myopencre && (
-                <NavLink to="/myopencre" className="nav-link" activeClassName="nav-link--active">
+                <NavLink
+                  to="/myopencre"
+                  className="nav-link"
+                  activeClassName="nav-link--active"
+                  isActive={() => isActive('/myopencre')}
+                >
                   MyOpenCRE
                 </NavLink>
               )}
@@ -158,6 +196,7 @@ export const Header = ({ capabilities }: HeaderProps) => {
             exact
             className="nav-link"
             activeClassName="nav-link--active"
+            isActive={() => isActive('/', true)}
             onClick={closeMobileMenu}
           >
             Home
@@ -167,6 +206,7 @@ export const Header = ({ capabilities }: HeaderProps) => {
             to="/root_cres"
             className="nav-link"
             activeClassName="nav-link--active"
+            isActive={() => isActive('/root_cres') || isActive('/node')}
             onClick={closeMobileMenu}
           >
             Browse
@@ -176,6 +216,7 @@ export const Header = ({ capabilities }: HeaderProps) => {
             to="/chatbot"
             className="nav-link"
             activeClassName="nav-link--active"
+            isActive={() => isActive('/chatbot')}
             onClick={closeMobileMenu}
           >
             Chat
@@ -185,6 +226,7 @@ export const Header = ({ capabilities }: HeaderProps) => {
             to="/map_analysis"
             className="nav-link"
             activeClassName="nav-link--active"
+            isActive={() => isActive('/map_analysis')}
             onClick={closeMobileMenu}
           >
             Map Analysis
@@ -194,6 +236,7 @@ export const Header = ({ capabilities }: HeaderProps) => {
             to="/explorer"
             className="nav-link"
             activeClassName="nav-link--active"
+            isActive={() => isActive('/explorer')}
             onClick={closeMobileMenu}
           >
             Explorer
@@ -203,6 +246,7 @@ export const Header = ({ capabilities }: HeaderProps) => {
               to="/myopencre"
               className="nav-link"
               activeClassName="nav-link--active"
+              isActive={() => isActive('/myopencre')}
               onClick={closeMobileMenu}
             >
               MyOpenCRE
