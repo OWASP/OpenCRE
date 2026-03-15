@@ -196,7 +196,8 @@ class SKF(ParserInterface):
             if not cre_links:
                 continue
             tags = self._merge_tags(
-                [label, image_tag, f"level-{level}"], [],
+                [label, image_tag, f"level-{level}"],
+                [],
             )
             default_meta = {
                 "name": "OWASP Security Knowledge Framework Labs",
@@ -319,9 +320,10 @@ class SKF(ParserInterface):
             return entries[key]
 
         if doctype == "tool":
-            tool_type_enum = defs.ToolTypes.from_str(
-                tool_type or defs.ToolTypes.Unknown.value
-            ) or defs.ToolTypes.Unknown
+            tool_type_enum = (
+                defs.ToolTypes.from_str(tool_type or defs.ToolTypes.Unknown.value)
+                or defs.ToolTypes.Unknown
+            )
             doc = defs.Tool(
                 name=name,
                 section=section,
