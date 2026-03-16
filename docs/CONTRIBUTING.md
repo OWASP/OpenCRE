@@ -28,16 +28,15 @@ This project and everyone participating in it is governed by the [OWASP Code of 
 
 ## I don't want to read this whole thing I just have a question!!!
 
-> **Note:** Please don't file an issue to ask a question.
+> **Note:** Please don't file an issue to ask a question. Issues need to be meaningful.
 
 You can reach us in the [OWASP Slack](https://owasp.org/slack/invite) at channel #project-cre
-
-or send a message to rob.vanderveer@owasp.org
 
 ## How Can I Contribute?
 
 The "Issues" page lists a number of features we would like to implement, we have tagged the ones we believe are easy to pick up with the tag `good first issue` and/or `beginner`. Alternatively you can contribute content (see below) or request features or mappings by opening an Issue.
 
+> **Note:** Due to a wave of low effort, poorly tested and often destructive AI-powered issues often created only for the sake of opening a pull request, we will be aggressively closing both issues and pull requests that link to issues not acknowledged by the maintainers.
 
 ### How can I contribute content (a standard mapping or changes to the CRE catalog)?
 
@@ -83,18 +82,15 @@ When you are creating a bug report, please [include as many details as possible]
 
 > **Note:** If you find a **Closed** issue that seems like it is the same thing that you're experiencing, open a new issue and include a link to the original issue in the body of your new one.
 
-#### Avoid Reporting Trivial UI Issues : 
+#### Avoid Reporting Trivial UI Issues: 
 
-Please avoid opening GitHub issues for extremely small frontend or cosmetic bugs such as:
+Please avoid opening GitHub issues for small frontend or cosmetic bugs such as:
 
 - Minor spacing inconsistencies
 - Small UI alignment issues
 - Text capitalization fixes
 - One-line styling adjustments
-
-If the issue can be fixed quickly (for example within ~30 minutes), please submit a single pull request instead of opening a separate issue.
-
-
+- Specific page looks a bit off on screens of size X.
 
 #### How Do I Submit A (Good) Bug Report?
 
@@ -102,6 +98,7 @@ Bugs are tracked as [GitHub issues](https://guides.github.com/features/issues/).
 
 Explain the problem and include additional details to help maintainers reproduce the problem:
 
+* **Ensure the issue doesn't already exist**
 * **Use a clear and descriptive title** for the issue to identify the problem.
 * **Describe the exact steps which reproduce the problem** in as many details as possible.
 * **Provide specific examples to demonstrate the steps**. Include links to files or GitHub projects, or copy/pasteable snippets, which you use in those examples. If you're providing snippets in the issue, use [Markdown code blocks](https://help.github.com/articles/markdown-basics/#multiple-lines).
@@ -128,8 +125,8 @@ Enhancement suggestions are tracked as [GitHub issues](https://guides.github.com
 
 Unsure where to begin contributing? You can start by looking through these `beginner`, `good first issue` and `help-wanted` issues:
 
-* Beginner issues - issues which should only require a few lines of code, and a test or two.
-* Good first issue - issues which should require more substantial changes but can be done in an afternoon or two.
+* Beginner issues - issues of low complexity, they usually can be implemented without changing a lot of existing functionality, are easy to describe and only require a test or two.
+* Good first issue - issues which should require more substantial changes but can be done in a few days.
 * Help wanted issues - issues which should be a bit more involved than `beginner` issues.
 
 #### Contribution Quality Expectations
@@ -138,19 +135,21 @@ High quality contributions are preferred over quantity.
 
 Before submitting a pull request:
 
-- Check if a similar PR already exists
-- Verify that the issue is not already solved
-- Ensure the change provides meaningful value
-- Run tests and lint checks locally
+- Check if a similar PR already exists, we will be closing duplicate PRs.
+- Verify that the issue is not already solved and it exists in the latest deployed branch.
+- Ensure the change provides meaningful value, "part of the website looks flat", "single typo fixes" and similar single prompt or 30 minute with vibe-coding type of contributions that take longer to review and test than to write are unwelcome. The maintainer team also has access to the same tools.
+- Run tests and lint checks locally, also run the application locally and check visually.
 
 Repeated low-effort pull requests may be closed by maintainers.
 
 #### Pull Requests
 
-Each Pull Request should close a single ticket and only make changes necessary in order for this to be done. Please reference the relevant ticket in the Pull Request.
+Each Pull Request should close a single ticket and only make the minimum amount of changes necessary in order for this to be done. Please reference the relevant ticket in the Pull Request.
 After you submit your pull request, verify that all [status checks](https://help.github.com/articles/about-status-checks/) are passing <details><summary>What if the status checks are failing?</summary>If a status check is failing, and you believe that the failure is unrelated to your change, please leave a comment on the pull request explaining why you believe the failure is unrelated. A maintainer will re-run the status check for you. If we conclude that the failure was a false positive, then we will open an issue to track that problem with our status check suite.</details>
 
-#### Avoid Reporting Trivial UI Issues
+If a pull request addresses multiple issues, each commit should address a single issue. Commits should also be atomic, that means we can merge single commits if we want to.
+
+#### Avoid Reporting Trivial UI Fixes
 
 Please avoid opening GitHub issues for extremely small frontend or cosmetic bugs such as:
 
@@ -159,21 +158,20 @@ Please avoid opening GitHub issues for extremely small frontend or cosmetic bugs
 - Text capitalization fixes
 - One-line styling adjustments
 
-If the issue can be fixed quickly (for example within ~30 minutes), please submit a single pull request instead of opening a separate issue.
-
+If the issue can be fixed quickly (for example within ~30 minutes), please submit a pull request instead of opening a separate issue.
 Opening tickets for trivial issues increases maintenance overhead and slows down triage for real bugs.
 
 #### LLM-generated Contributions
 
 While AI tools such as Cursor, Claude, or ChatGPT can help contributors, pull requests generated entirely by LLMs without proper validation are discouraged.
+We will be closing low effort-low value PRs.
 
 Before submitting a PR:
 
 - Ensure you fully understand the change.
-- Verify that the solution was tested locally.
+- Verify that the solution was tested locally and doesn't break other functionality.
 - Confirm that the change actually improves the project.
-
-Submitting many low-effort AI-generated pull requests that do not meaningfully improve the project may result in the PR being closed without review.
+- Confirm that the change is a needed change by the maintaining team.
 
 #### One Pull Request Per Problem
 
@@ -185,7 +183,7 @@ Examples of discouraged behavior:
 - Submitting many small fixes that could be grouped together
 - Creating PRs for issues that could be solved in the same patch
 
-If you find several related issues, combine them into **one well-structured pull request**.
+If you find several related issues, combine them into **one well-structured pull request** with separate commits addressing each one.
 
 #### Check Existing Issues Before Opening New Ones
 
@@ -199,11 +197,9 @@ Before opening a new issue or pull request:
 #### Important points to ponder-
 
 - **Before starting work on an issue**, please wait for a maintainer to acknowledge or assign the ticket.
-
 - **Maintainers reserve the right to close low-effort or duplicate contributions without review.**
  
 This helps prevent duplicate work and ensures that the proposed change aligns with the project's roadmap.
-
 Pull requests submitted for issues that have not been acknowledged may be closed.
 
 ## Styleguides
