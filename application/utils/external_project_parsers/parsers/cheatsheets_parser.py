@@ -5,6 +5,7 @@ from application.utils import git
 from application.defs import cre_defs as defs
 import os
 import re
+from application.utils.external_project_parsers import base_parser_defs
 from application.utils.external_project_parsers.base_parser_defs import (
     ParserInterface,
     ParseResult,
@@ -21,7 +22,14 @@ class Cheatsheets(ParserInterface):
         return defs.Standard(
             name=self.name,
             section=section,
-            tags=tags,
+            tags=base_parser_defs.build_tags(
+                family=base_parser_defs.Family.GUIDANCE,
+                subtype=base_parser_defs.Subtype.CHEATSHEET,
+                audience=base_parser_defs.Audience.DEVELOPER,
+                maturity=base_parser_defs.Maturity.STABLE,
+                source="owasp_cheatsheets",
+                extra=tags,
+            ),
             hyperlink=hyperlink,
         )
 
@@ -32,7 +40,9 @@ class Cheatsheets(ParserInterface):
         cheatsheets = self.register_cheatsheets(
             repo=repo, cache=cache, cheatsheets_path=cheatsheets_path, repo_path=c_repo
         )
-        return ParseResult(results={self.name: cheatsheets})
+        results = {self.name: cheatsheets}
+        base_parser_defs.validate_classification_tags(results)
+        return ParseResult(results=results)
 
     def register_cheatsheets(
         self, cache: db.Node_collection, repo, cheatsheets_path, repo_path
