@@ -10,6 +10,7 @@ from application.database import db
 from application.defs import cre_defs as defs
 from application.utils import git
 from application.prompt_client import prompt_client as prompt_client
+from application.utils.external_project_parsers import base_parser_defs
 from application.utils.external_project_parsers.base_parser_defs import (
     ParserInterface,
     ParseResult,
@@ -33,7 +34,11 @@ class MiscTools(ParserInterface):
         tools = {}
         for url in self.tool_urls:
             tool_entries = self.parse_tool(cache=cache, tool_repo=url)
+            if not tool_entries:
+                continue
             tools[tool_entries[0].name] = tool_entries
+        if tools:
+            base_parser_defs.validate_classification_tags(tools)
         return ParseResult(results=tools)
 
     def parse_tool(
@@ -66,14 +71,23 @@ class MiscTools(ParserInterface):
                 )  # this parser matches tools so this is really optional
                 tool_type = values.get("tool_type")[0] or "Unknown"
                 description = values.get("description")[0] or ""
-                tags = values.get("tags")[0].split(",") if "tags" in values else []
+                extra_tags = (
+                    values.get("tags")[0].split(",") if "tags" in values else []
+                )
                 if cre_id and register:
                     cres = cache.get_CREs(external_id=cre_id)
                     hyperlink = f"{tool_repo.replace('.git','')}"
                     cs = defs.Tool(
                         name=tool_name,
                         tooltype=defs.ToolTypes.from_str(tool_type),
-                        tags=tags,
+                        tags=base_parser_defs.build_tags(
+                            family=base_parser_defs.Family.GUIDANCE,
+                            subtype=base_parser_defs.Subtype.BLOG,
+                            audience=base_parser_defs.Audience.DEVELOPER,
+                            maturity=base_parser_defs.Maturity.STABLE,
+                            source="misc_tools",
+                            extra=extra_tags,
+                        ),
                         hyperlink=hyperlink,
                         description=description,
                         sectionID="",  # we don't support sectionID and section when linking to a whole tool

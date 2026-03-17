@@ -5,6 +5,7 @@ from application.database import db
 from application.defs import cre_defs as defs
 from application.prompt_client import prompt_client as prompt_client
 import requests
+from application.utils.external_project_parsers import base_parser_defs
 from application.utils.external_project_parsers.base_parser_defs import (
     ParserInterface,
     ParseResult,
@@ -117,6 +118,14 @@ class DSOMM(ParserInterface):
                             sectionID=activity.get("uuid"),
                             hyperlink=f"https://dsomm.owasp.org/activity-description?uuid={activity.get('uuid')}",
                             description=f"Description:{activity.get('description')}\n Risk:{activity.get('risk')}\n Measure:{activity.get('measure')}",
+                            tags=base_parser_defs.build_tags(
+                                family=base_parser_defs.Family.STANDARD,
+                                subtype=base_parser_defs.Subtype.MATURITY_MODEL,
+                                audience=base_parser_defs.Audience.DEVELOPER,
+                                maturity=base_parser_defs.Maturity.STABLE,
+                                source="owasp_dsomm",
+                                extra=[],
+                            ),
                         )
                     else:
                         logger.error(f"Activity {aname} does not have uuid")
@@ -153,4 +162,6 @@ class DSOMM(ParserInterface):
                         # use iso as glue
                         standard = self.link_to_iso(aname, activity, cache, standard)
                         standard_entries.append(standard)
-        return ParseResult(results={self.name: standard_entries})
+        results = {self.name: standard_entries}
+        base_parser_defs.validate_classification_tags(results)
+        return ParseResult(results=results)
