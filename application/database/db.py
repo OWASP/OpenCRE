@@ -83,6 +83,10 @@ class Node(BaseModel):  # type: ignore
     # some external link to where this is, usually a URL with an anchor
     link = sqla.Column(sqla.String, default="")
 
+    # arbitrary metadata for this node (JSON)
+    # stored in column "document_metadata" to avoid clashing with SQLAlchemy's reserved "metadata" name
+    metadata_json = sqla.Column("document_metadata", sqla.JSON, nullable=True)
+
     __table_args__ = (
         sqla.UniqueConstraint(
             name,
@@ -103,6 +107,10 @@ class CRE(BaseModel):  # type: ignore
     description = sqla.Column(sqla.String, default="")
     name = sqla.Column(sqla.String)
     tags = sqla.Column(sqla.String, default="")  # coma separated tags
+
+    # arbitrary metadata for this CRE (JSON)
+    # stored in column "document_metadata" to avoid clashing with SQLAlchemy's reserved "metadata" name
+    metadata_json = sqla.Column("document_metadata", sqla.JSON, nullable=True)
 
     __table_args__ = (
         sqla.UniqueConstraint(name, external_id, name="unique_cre_fields"),
@@ -1965,6 +1973,7 @@ def dbNodeFromCode(code: cre_defs.Node) -> Node:
         tags=tags,
         description=code.description,
         link=code.hyperlink,
+        metadata_json=code.metadata or {},
     )
 
 
@@ -1983,6 +1992,7 @@ def dbNodeFromStandard(standard: cre_defs.Node) -> Node:
         subsection=standard.subsection,
         version=standard.version,
         section_id=standard.sectionID,
+        metadata_json=standard.metadata or {},
     )
 
 
@@ -2000,6 +2010,7 @@ def dbNodeFromTool(tool: cre_defs.Node) -> Node:
         link=tool.hyperlink,
         section=tool.section,
         section_id=tool.sectionID,
+        metadata_json=tool.metadata or {},
     )
 
 
@@ -2009,6 +2020,7 @@ def nodeFromDB(dbnode: Node) -> cre_defs.Node:
     tags = []
     if dbnode.tags:
         tags = list(set(dbnode.tags.split(",")))
+    metadata = dbnode.metadata_json or {}
     if dbnode.ntype == cre_defs.Standard.__name__:
         return cre_defs.Standard(
             name=dbnode.name,
@@ -2018,6 +2030,7 @@ def nodeFromDB(dbnode: Node) -> cre_defs.Node:
             tags=tags,
             version=dbnode.version,
             sectionID=dbnode.section_id,
+            metadata=metadata,
         )
     elif dbnode.ntype == cre_defs.Tool.__name__:
         ttype = cre_defs.ToolTypes.Unknown
@@ -2033,6 +2046,7 @@ def nodeFromDB(dbnode: Node) -> cre_defs.Node:
             tooltype=ttype,
             section=dbnode.section,
             sectionID=dbnode.section_id,
+            metadata=metadata,
         )
     elif dbnode.ntype == cre_defs.Code.__name__:
         return cre_defs.Code(
@@ -2040,6 +2054,7 @@ def nodeFromDB(dbnode: Node) -> cre_defs.Node:
             hyperlink=dbnode.link,
             tags=tags,
             description=dbnode.description,
+            metadata=metadata,
         )
     else:
         raise ValueError(
@@ -2054,7 +2069,11 @@ def CREfromDB(dbcre: CRE) -> cre_defs.CRE:
     if dbcre.tags:
         tags = list(set(dbcre.tags.split(",")))
     return cre_defs.CRE(
-        name=dbcre.name, description=dbcre.description, id=dbcre.external_id, tags=tags
+        name=dbcre.name,
+        description=dbcre.description,
+        id=dbcre.external_id,
+        tags=tags,
+        metadata=dbcre.metadata_json or {},
     )
 
 
@@ -2065,6 +2084,7 @@ def dbCREfromCRE(cre: cre_defs.CRE) -> CRE:
         description=cre.description,
         external_id=cre.id,
         tags=",".join(tags),
+        metadata_json=cre.metadata or {},
     )
 
 

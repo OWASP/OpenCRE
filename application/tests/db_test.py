@@ -1052,15 +1052,21 @@ class TestDB(unittest.TestCase):
                 description="lorem ipsum tsSection+tsC",
                 tooltype=defs.ToolTypes.Defensive,
                 tags=["111-111", "222-222", "333-333"],
+                metadata={"source": "tool_test"},
             ),
             "standard": defs.Standard(
-                name="stand", section="s1", subsection="s2", version="s3"
+                name="stand",
+                section="s1",
+                subsection="s2",
+                version="s3",
+                metadata={"source": "standard_test"},
             ),
             "code": defs.Code(
                 name="ccc",
                 description="c2",
                 hyperlink="https://example.com/code/hyperlink",
                 tags=["111-111", "222-222"],
+                metadata={"source": "code_test"},
             ),
         }
         expected = {
@@ -1071,6 +1077,7 @@ class TestDB(unittest.TestCase):
                     [defs.ToolTypes.Defensive.value, "111-111", "222-222", "333-333"]
                 ),
                 ntype=defs.Credoctypes.Tool.value,
+                metadata_json={"source": "tool_test"},
             ),
             "standard": db.Node(
                 name="stand",
@@ -1078,6 +1085,7 @@ class TestDB(unittest.TestCase):
                 subsection="s2",
                 version="s3",
                 ntype=defs.Credoctypes.Standard.value,
+                metadata_json={"source": "standard_test"},
             ),
             "code": db.Node(
                 name="ccc",
@@ -1085,6 +1093,7 @@ class TestDB(unittest.TestCase):
                 link="https://example.com/code/hyperlink",
                 tags="1,2",
                 ntype=defs.Credoctypes.Code.value,
+                metadata_json={"source": "code_test"},
             ),
         }
         for k, v in data.items():
@@ -1100,15 +1109,21 @@ class TestDB(unittest.TestCase):
                 description="lorem ipsum tsSection+tsC",
                 tooltype=defs.ToolTypes.Defensive,
                 tags=["111-111", "222-222", "333-333"],
+                metadata={"source": "tool_test"},
             ),
             "standard": defs.Standard(
-                name="stand", section="s1", subsection="s2", version="s3"
+                name="stand",
+                section="s1",
+                subsection="s2",
+                version="s3",
+                metadata={"source": "standard_test"},
             ),
             "code": defs.Code(
                 name="ccc",
                 description="c2",
                 hyperlink="https://example.com/code/hyperlink",
                 tags=["111-111", "222-222"],
+                metadata={"source": "code_test"},
             ),
         }
         data = {
@@ -1119,6 +1134,7 @@ class TestDB(unittest.TestCase):
                     [defs.ToolTypes.Defensive.value, "111-111", "222-222", "333-333"]
                 ),
                 ntype=defs.Credoctypes.Tool.value,
+                metadata_json={"source": "tool_test"},
             ),
             "standard": db.Node(
                 name="stand",
@@ -1126,6 +1142,7 @@ class TestDB(unittest.TestCase):
                 subsection="s2",
                 version="s3",
                 ntype=defs.Credoctypes.Standard.value,
+                metadata_json={"source": "standard_test"},
             ),
             "code": db.Node(
                 name="ccc",
@@ -1133,6 +1150,7 @@ class TestDB(unittest.TestCase):
                 link="https://example.com/code/hyperlink",
                 tags="111-111,222-222",
                 ntype=defs.Credoctypes.Code.value,
+                metadata_json={"source": "code_test"},
             ),
         }
         for k, v in data.items():
