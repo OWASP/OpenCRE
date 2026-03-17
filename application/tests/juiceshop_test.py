@@ -54,6 +54,8 @@ class TestJuiceshopParser(unittest.TestCase):
             ph=prompt_client.PromptHandler(database=self.collection),
         )
 
+        # NOTE: tags are asserted as literal strings on purpose so tests
+        # verify the external tagging convention, not just enum wiring.
         expected = [
             defs.Tool(
                 embeddings=[0.1, 0.2],
@@ -65,7 +67,14 @@ class TestJuiceshopParser(unittest.TestCase):
                         ltype=defs.LinkTypes.LinkedTo,
                     ),
                 ],
-                tags=["XSS"],
+                tags=[
+                    "family:guidance",
+                    "subtype:training_app",
+                    "source:owasp_juice_shop",
+                    "audience:developer",
+                    "maturity:stable",
+                    "XSS",
+                ],
                 name="OWASP Juice Shop",
                 section="API-only XSS",
                 sectionID="restfulXssChallenge",
@@ -86,7 +95,14 @@ class TestJuiceshopParser(unittest.TestCase):
                 name="OWASP Juice Shop",
                 section="Access Log",
                 sectionID="accessLogDisclosureChallenge",
-                tags=["Sensitive Data Exposure"],
+                tags=[
+                    "family:guidance",
+                    "subtype:training_app",
+                    "source:owasp_juice_shop",
+                    "audience:developer",
+                    "maturity:stable",
+                    "Sensitive Data Exposure",
+                ],
                 tooltype=defs.ToolTypes.Training,
             ),
         ]
@@ -121,3 +137,4 @@ class TestJuiceshopParser(unittest.TestCase):
   mitigationUrl: 'https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html'
   key: accessLogDisclosureChallenge
 """
+
