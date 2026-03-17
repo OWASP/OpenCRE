@@ -111,7 +111,9 @@ class TestDB(unittest.TestCase):
 
     @mock.patch("application.utils.spreadsheet.gspread.service_account")
     @mock.patch("application.utils.spreadsheet.gspread.oauth")
-    def test_read_spreadsheet_iso_numbers(self, mock_oauth, mock_service_account) -> None:
+    def test_read_spreadsheet_iso_numbers(
+        self, mock_oauth, mock_service_account
+    ) -> None:
         """
         Integration-style test for read_spreadsheet's numericise behavior, but
         using a mocked gspread client instead of real Google APIs.
