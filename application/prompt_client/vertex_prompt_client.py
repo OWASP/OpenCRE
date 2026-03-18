@@ -60,65 +60,102 @@ class VertexPromptClient:
         """Return the model name being used."""
         return self.model_name
 
-    def get_text_embeddings(self, text: str, max_retries: int = 3) -> List[float]:
+    def get_max_batch_size(self) -> int:
+        """
+        Maximum number of input texts we will send in a single embeddings call.
+
+        Default is based on Vertex embedding API guidance for common Gemini embedding
+        endpoints. Override via `VERTEX_EMBED_MAX_BATCH_SIZE` if your runtime/provider
+        has different limits.
+        """
+        # Vertex's BatchEmbedContentsRequest is limited to <= 100 requests per call
+        # (the error message we hit states: "at most 100 requests can be in one batch").
+        return int(os.environ.get("VERTEX_EMBED_MAX_BATCH_SIZE", "100"))
+
+    def get_text_embeddings(self, text: str | List[str]) -> List[float] | List[List[float]]:
         """Text embedding with a Large Language Model.
 
-        Args:
-            text: Text to generate embeddings for
-            max_retries: Maximum number of retry attempts for transient errors
-
-        Returns:
-            List of embedding values, or None if embedding generation failed
+        Supports batching when `text` is a list of strings.
         """
-        if len(text) > 8000:
-            logger.info(
-                f"embedding content is more than the vertex hard limit of 8k tokens, reducing to 8000"
-            )
-            text = text[:8000]
 
-        for attempt in range(max_retries):
+        def _truncate_one(t: str) -> str:
+            if len(t) > 8000:
+                logger.info(
+                    "embedding content exceeds vertex hard limit; truncating to 8000 chars"
+                )
+                return t[:8000]
+            return t
+
+        is_batch = isinstance(text, list)
+        texts: List[str] = text if is_batch else [_truncate_one(text)]  # type: ignore[arg-type]
+        texts = [_truncate_one(t) for t in texts]
+
+        def _is_rate_limit_error(err: Exception) -> bool:
+            # We deliberately treat only rate-limit/quota-related failures as retryable.
+            # Everything else should bubble up so callers can fail fast.
+            msg = str(err).lower()
+
+            # Common textual signals.
+            if "rate limit" in msg or "too many requests" in msg:
+                return True
+            if "resource exhausted" in msg or "quota" in msg or "exceeded quota" in msg:
+                return True
+            if "429" in msg:
+                return True
+
+            # Common structured signals (best-effort; provider may expose different fields).
+            status_code = getattr(err, "status_code", None)
+            if status_code == 429:
+                return True
+
+            code = getattr(err, "code", None)
+            if code == 429:
+                return True
+
+            # Some google.api_core exceptions may also be used upstream.
+            candidate_types = []
+            for name in ("TooManyRequests", "ResourceExhausted"):
+                exc_t = getattr(googleExceptions, name, None)
+                if exc_t is not None:
+                    candidate_types.append(exc_t)
+            if candidate_types and isinstance(err, tuple(candidate_types)):
+                return True
+
+            return False
+
+        max_retries = int(os.environ.get("VERTEX_EMBED_MAX_RETRIES", "3"))
+        retry_sleep_seconds = int(
+            os.environ.get("VERTEX_EMBED_RETRY_SLEEP_SECONDS", "60")
+        )
+
+        for attempt in range(max_retries + 1):
             try:
                 result = self.client.models.embed_content(
-                    model="models/gemini-embedding-001",
-                    contents=text,
+                    # Use a stable embeddings model that is supported for `embedContent`
+                    # across API versions.
+                    model=os.environ.get(
+                        "VERTEX_EMBED_CONTENT_MODEL", "gemini-embedding-001"
+                    ),
+                    contents=texts if is_batch else texts[0],
                     config=types.EmbedContentConfig(task_type="SEMANTIC_SIMILARITY"),
                 )
                 if not result:
-                    logger.warning("Embedding API returned empty result")
-                    return None
+                    return [] if is_batch else None
+
+                if is_batch:
+                    return [emb.values for emb in result.embeddings]
                 return result.embeddings[0].values
-
             except genai.errors.ClientError as e:
-                error_str = str(e)
-                # Check if this is a quota/rate limit error (429)
-                is_quota_error = (
-                    "429" in error_str
-                    or "RESOURCE_EXHAUSTED" in error_str
-                    or "quota" in error_str.lower()
+                if not _is_rate_limit_error(e) or attempt >= max_retries:
+                    raise
+                logger.info(
+                    "rate/quota limited during embedding; sleeping and retrying "
+                    f"(attempt {attempt + 1}/{max_retries + 1})"
                 )
+                time.sleep(retry_sleep_seconds)
 
-                if not is_quota_error:
-                    # Non-quota errors should not be retried
-                    logger.error(f"Non-retryable error from embedding API: {repr(e)}")
-                    return None
-
-                if attempt < max_retries - 1:
-                    # Exponential backoff: 60s, 120s, 180s
-                    backoff_seconds = 60 * (attempt + 1)
-                    logger.warning(
-                        f"Quota/rate limit hit (attempt {attempt + 1}/{max_retries}), "
-                        f"sleeping {backoff_seconds}s before retry. Error: {repr(e)}"
-                    )
-                    time.sleep(backoff_seconds)
-                else:
-                    # Final attempt failed
-                    logger.error(
-                        f"Embedding API quota exhausted after {max_retries} attempts. "
-                        f"Last error: {repr(e)}. Please check your API quota/billing in AI Studio."
-                    )
-                    return None
-
-        return None
+        # Should be unreachable because we either return or raise inside loop.
+        raise RuntimeError("unreachable: embedding retry loop exited unexpectedly")
 
     def create_chat_completion(self, prompt, closest_object_str) -> str:
         msg = (
