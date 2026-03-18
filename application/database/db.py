@@ -796,8 +796,16 @@ class Node_collection:
 
         for vk, v in vars(node).items():
             if vk not in skip_attributes and hasattr(Node, vk):
-                if v:
-                    attr = getattr(Node, vk)
+                # Treat identity-like empty strings as real values (do not use
+                # truthiness). If v is None, skip it.
+                if v is None:
+                    continue
+
+                attr = getattr(Node, vk)
+                if isinstance(v, str):
+                    # Treat NULL and "" as the same for stable identity matching.
+                    qu = qu.filter(func.coalesce(attr, "") == v)
+                else:
                     qu = qu.filter(attr == v)
             else:
                 logger.debug(f"{vk} not in Node")
@@ -1062,13 +1070,19 @@ class Node_collection:
         return self.get_CREs(external_id=external_id[0])[0]
 
     def list_node_ids_by_ntype(self, ntype: str) -> List[str]:
-        return self.session.query(Node.id).filter(Node.ntype == ntype).all()
+        # Always return plain strings (never SQLAlchemy row tuples).
+        rows = self.session.query(Node.id).filter(Node.ntype == ntype).all()
+        return [r[0] for r in rows]
 
     def list_node_ids_by_name(self, name: str) -> List[str]:
-        return self.session.query(Node.id).filter(Node.name == name).all()
+        # Always return plain strings (never SQLAlchemy row tuples).
+        rows = self.session.query(Node.id).filter(Node.name == name).all()
+        return [r[0] for r in rows]
 
     def list_cre_ids(self) -> List[str]:
-        return self.session.query(CRE.id).all()
+        # Always return plain strings (never SQLAlchemy row tuples).
+        rows = self.session.query(CRE.id).all()
+        return [r[0] for r in rows]
 
     def __get_nodes_query__(
         self,
@@ -1487,34 +1501,78 @@ class Node_collection:
         self, node: cre_defs.Node, comparison_skip_attributes: List = ["link"]
     ) -> Optional[Node]:
         if not node:
-            raise ValueError(f"Node is None")
-            return None
+            raise ValueError("Node is None")
+
         dbnode = dbNodeFromNode(node)
         if not dbnode:
             logger.warning(f"{node} could not be transformed to a DB object")
             return None
-        if not dbnode.ntype:
-            logger.warning(f"{node} has no registered type, cannot add, skipping")
-            return None
-        entries = self.object_select(dbnode, skip_attributes=comparison_skip_attributes)
+
+        # Upsert by the SQL UNIQUE constraint identity:
+        # (name, section, subsection, version, section_id).
+        # Use object_select() as the single identity matching mechanism.
+        #
+        # We intentionally skip non-identity fields that can differ across
+        # import stages (tags/description/type/link/metadata).
+        skip = set(comparison_skip_attributes or [])
+        skip.update(
+            {
+                "tags",
+                "description",
+                "ntype",
+                "link",
+                "metadata_json",
+                "id",
+            }
+        )
+
+        entries = self.object_select(dbnode, skip_attributes=list(skip))
         if entries:
             entry = entries[0]
             logger.info(
-                f"knew of node {entry.name}:{entry.section_id}:{entry.section}:{entry.link} ,updating"
+                f"upsert node {entry.name}:{entry.section_id}:{entry.section}:{entry.version} "
+                f"(section={entry.section}, subsection={entry.subsection})"
             )
-            if node.section and node.section != entry.section:
-                entry.section = node.section
-            entry.link = node.hyperlink
+
+            # Overwrite identity fields when the incoming document has values.
+            if dbnode.section is not None and dbnode.section != entry.section:
+                entry.section = dbnode.section
+            if (
+                getattr(dbnode, "subsection", None) is not None
+                and dbnode.subsection != entry.subsection
+            ):
+                entry.subsection = dbnode.subsection
+            if dbnode.version is not None and dbnode.version != entry.version:
+                entry.version = dbnode.version
+
+            if dbnode.section_id is not None and dbnode.section_id != entry.section_id:
+                entry.section_id = dbnode.section_id
+
+            # Only overwrite fields with meaningful values to avoid clobbering
+            # existing classification tags.
+            if dbnode.tags:
+                entry.tags = dbnode.tags
+            if dbnode.description:
+                entry.description = dbnode.description
+            if dbnode.link:
+                entry.link = dbnode.link
+            if dbnode.metadata_json:
+                entry.metadata_json = dbnode.metadata_json
+
             self.session.commit()
             return entry
-        else:
-            logger.info(
-                f"did not know of node {dbnode.name}:{dbnode.section}:{dbnode.section_id} ,adding"
-            )
-            self.session.add(dbnode)
-            self.session.commit()
-            if self.graph:
-                self.graph.add_dbnode(dbnode=node)
+
+        if not dbnode.ntype:
+            logger.warning(f"{node} has no registered type, cannot add, skipping")
+            return None
+
+        logger.info(
+            f"insert node {dbnode.name}:{dbnode.section}:{dbnode.section_id}"
+        )
+        self.session.add(dbnode)
+        self.session.commit()
+        if self.graph:
+            self.graph.add_dbnode(dbnode=node)
         return dbnode
 
     def add_internal_link(
