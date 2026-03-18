@@ -44,7 +44,9 @@ class CWE(ParserInterface):
                     base_parser_defs.validate_classification_tags(results)
                     return ParseResult(
                         results=results,
-                        calculate_gap_analysis=False,
+                        # For now, GA runs for any non-tool/non-code resource.
+                        # Later we will refine GA "gap semantics" based on family/subtype tags.
+                        calculate_gap_analysis=True,
                     )
         raise RuntimeError("there is no file named cwe.xml in the target zip")
 
@@ -110,6 +112,18 @@ class CWE(ParserInterface):
                         cwe = cwes[0]
                         cwe.section = weakness["@Name"]
                         cwe.hyperlink = self.make_hyperlink(weakness["@ID"])
+                        # If the core spreadsheet created placeholder CWE nodes
+                        # without classification tags, `validate_classification_tags`
+                        # will fail for this parser. Ensure tags exist.
+                        if not cwe.tags:
+                            cwe.tags = base_parser_defs.build_tags(
+                                family=base_parser_defs.Family.TAXONOMY,
+                                subtype=base_parser_defs.Subtype.RISK_LIST,
+                                audience=base_parser_defs.Audience.DEVELOPER,
+                                maturity=base_parser_defs.Maturity.STABLE,
+                                source="cwe",
+                                extra=[],
+                            )
                         cache.add_node(
                             cwe,
                             comparison_skip_attributes=[
@@ -167,7 +181,8 @@ class CWE(ParserInterface):
                             cwe = self.parse_related_weakness(
                                 cache, weakness.get("Related_Weaknesses"), cwe
                             )
-                    entries.append(cwe)
+                    if cwe is not None:
+                        entries.append(cwe)
         return entries
 
     def parse_related_weakness(

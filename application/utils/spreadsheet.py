@@ -36,6 +36,40 @@ def read_spreadsheet(
     """given remote google spreadsheet url,
     reads each workbook into a collection of documents"""
     result = {}
+    def _dedup_headers(headers: List[str]) -> List[str]:
+        # gspread cannot infer a unique header row if column names duplicate.
+        # We preserve order and suffix duplicates with _<n> to make them unique.
+        counts: Dict[str, int] = {}
+        out: List[str] = []
+        for h in headers:
+            h = h if h is not None else ""
+            idx = counts.get(h, 0)
+            if idx == 0:
+                out.append(h)
+            else:
+                out.append(f"{h}_{idx}")
+            counts[h] = idx + 1
+        return out
+
+    def _records_from_values_with_deduped_headers(wsh: Any) -> List[Dict[str, Any]]:
+        # Fallback when gspread refuses due to duplicate/blank headers.
+        # We load raw values and build records ourselves.
+        values = wsh.get_all_values()
+        if not values:
+            return []
+        header = values[0][: wsh.col_count]
+        header = header + [""] * max(0, wsh.col_count - len(header))
+        deduped_headers = _dedup_headers(header)
+
+        records: List[Dict[str, Any]] = []
+        for row in values[1:]:
+            row = row[: wsh.col_count] + [""] * max(0, wsh.col_count - len(row))
+            # Skip fully-empty rows.
+            if not any(cell != "" for cell in row):
+                continue
+            records.append({deduped_headers[i]: row[i] for i in range(len(deduped_headers))})
+        return records
+
     try:
         if (
             os.environ.get("OpenCRE_gspread_Auth")
@@ -58,21 +92,32 @@ def read_spreadsheet(
                     "(remember, only numbered worksheets"
                     " will be processed by convention)" % wsh.title
                 )
-                records = wsh.get_all_records(
-                    head=1,
-                    numericise_ignore=list(
-                        range(1, wsh.col_count)
-                    ),  # Added numericise_ignore parameter
-                )  # workaround because of https://github.com/burnash/gspread/issues/1007 # this will break if the column names are in any other line
+                try:
+                    records = wsh.get_all_records(
+                        head=1,
+                        numericise_ignore=list(range(1, wsh.col_count)),
+                    )  # workaround because of https://github.com/burnash/gspread/issues/1007
+                except gspread.exceptions.GSpreadException as gse:
+                    # Retry if the header row contains duplicates (gspread fails fast).
+                    msg = str(gse).lower()
+                    if "header row" in msg and "duplicates" in msg:
+                        records = _records_from_values_with_deduped_headers(wsh)
+                    else:
+                        raise
                 toyaml = yaml.safe_load(yaml.safe_dump(records))
                 result[wsh.title] = toyaml
             elif not parse_numbered_only:
-                records = wsh.get_all_records(
-                    head=1,
-                    numericise_ignore=list(
-                        range(1, wsh.col_count)
-                    ),  # Added numericise_ignore parameter -- DO NOT make this 'all', gspread has a bug
-                )  # workaround because of https://github.com/burnash/gspread/issues/1007 # this will break if the column names are in any other line
+                try:
+                    records = wsh.get_all_records(
+                        head=1,
+                        numericise_ignore=list(range(1, wsh.col_count)),
+                    )
+                except gspread.exceptions.GSpreadException as gse:
+                    msg = str(gse).lower()
+                    if "header row" in msg and "duplicates" in msg:
+                        records = _records_from_values_with_deduped_headers(wsh)
+                    else:
+                        raise
                 toyaml = yaml.safe_load(yaml.safe_dump(records))
                 result[wsh.title] = toyaml
     except gspread.exceptions.APIError as ae:
@@ -80,9 +125,18 @@ def read_spreadsheet(
         logger.error(ae)
         exit(1)
     except gspread.exceptions.GSpreadException as gse:
+        # Fallback catch-all for gspread exceptions not handled per-worksheet above.
+        # We keep any successfully-loaded worksheets in `result` and only log details.
+        try:
+            duplicates = findDups(wsh.row_values(1))  # type: ignore[name-defined]
+        except Exception:
+            duplicates = set()
         logger.error(
-            "If this exception says you have a duplicate cell name, the duplicate is",
-            findDups(wsh.row_values(1)),
+            "gspread error while reading spreadsheet %s (%s): %s; duplicates=%s",
+            alias,
+            url,
+            str(gse),
+            duplicates,
         )
 
     return result

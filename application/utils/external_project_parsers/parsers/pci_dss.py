@@ -116,9 +116,6 @@ class PciDss(ParserInterface):
                 pci_control.add_link(
                     defs.Link(document=cre, ltype=defs.LinkTypes.AutomaticallyLinkedTo)
                 )
-                pci_control.add_link(
-                    defs.Link(ltype=defs.LinkTypes.AutomaticallyLinkedTo, document=cre)
-                )
                 logger.info(f"successfully stored {pci_control.__repr__()}")
             else:
                 logger.info(

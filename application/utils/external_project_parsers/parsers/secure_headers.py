@@ -51,11 +51,15 @@ class SecureHeaders(ParserInterface):
         entries = []
         for path, _, files in os.walk(repo.working_dir):
             for mdfile in files:
+                # The upstream repo contains non-markdown assets (images, etc).
+                # We only parse markdown text files to avoid UnicodeDecodeError.
+                if not mdfile.lower().endswith((".md", ".markdown")):
+                    continue
                 pth = os.path.join(path, mdfile)
 
                 if not os.path.isfile(pth):
                     continue
-                with open(pth) as mdf:
+                with open(pth, "r", encoding="utf-8", errors="replace") as mdf:
                     mdtext = mdf.read()
 
                     if "opencre.org" not in mdtext:

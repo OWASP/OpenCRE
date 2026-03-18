@@ -25,6 +25,7 @@ from application.defs import cre_exceptions
 from application.utils import spreadsheet as sheet_utils
 from application.utils import mdutils, redirectors, gap_analysis
 from application.prompt_client import prompt_client as prompt_client
+from application.utils.external_project_parsers.parsers import myopencre_parser
 from enum import Enum
 from flask import json as flask_json
 from flask import (
@@ -812,11 +813,17 @@ def import_from_cre_csv() -> Any:
     contents = file.read()
     csv_read = csv.DictReader(contents.decode("utf-8").splitlines())
     try:
-        documents = spreadsheet_parsers.parse_export_format(list(csv_read))
+        parse_result = myopencre_parser.parse_rows_to_documents(list(csv_read))
     except cre_exceptions.DuplicateLinkException as dle:
         abort(500, f"error during parsing of the incoming CSV, err:{dle}")
-    cres = documents.pop(defs.Credoctypes.CRE.value)
+    except ValueError as ve:
+        abort(400, f"invalid CSV contents: {ve}")
 
+    if not parse_result or not parse_result.results:
+        abort(400, "No documents parsed from CSV")
+
+    documents = parse_result.results
+    cres = documents.pop(defs.Credoctypes.CRE.value, [])
     standards = documents
     new_cres = []
     for cre in cres:

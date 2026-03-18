@@ -355,6 +355,10 @@ def parse_hierarchical_export_format(
 
     logger.info("Spreadsheet is hierarchical export format")
     documents: Dict[str, List[defs.Document]] = {defs.Credoctypes.CRE.value: []}
+    # Allow empty inputs (used by unit tests and for defensive parsing).
+    # Downstream callers can decide whether they want an empty CRE list or no results key at all.
+    if not cre_file:
+        return documents
     cre_dict = {}
     uninitialized_cre_mappings: List[UninitializedMapping] = (
         []
@@ -408,16 +412,20 @@ def parse_hierarchical_export_format(
         if cre:
             cre_dict = update_cre_in_links(cre_dict, cre)
 
-        mapping["Link to other CRE"] = (
-            f'{mapping["Link to other CRE"]},{",".join(cre.tags)}'
-        )
+        # `Link to other CRE` is optional in minimal inputs (unit tests).
+        # Only append tags when there is an explicit link value to extend.
+        link_key = "Link to other CRE"
+        if link_key in mapping:
+            raw_link_val = mapping.get(link_key, "")
+            if not is_empty(str(raw_link_val).strip()):
+                mapping[link_key] = f"{raw_link_val},{','.join(cre.tags)}"
 
-        if not is_empty(str(mapping.get("Link to other CRE")).strip()):
+        if not is_empty(str(mapping.get(link_key, "")).strip()):
             other_cres = list(
                 set(
                     [
                         x.strip()
-                        for x in str(mapping.pop("Link to other CRE")).split(",")
+                        for x in str(mapping.pop(link_key, "")).split(",")
                         if not is_empty(x.strip())
                     ]
                 )

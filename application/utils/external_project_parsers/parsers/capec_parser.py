@@ -40,18 +40,33 @@ class Capec(ParserInterface):
         self, cache: db.Node_collection, capec: defs.Standard, cwe_id: str
     ) -> defs.Standard:
         cwes = cache.get_nodes(name="CWE", sectionID=cwe_id)
-        if cwes:
-            for cre in [
-                c.document
-                for c in cwes[0].links
-                if c.document.doctype == defs.Credoctypes.CRE
-            ]:
-                logger.debug(
-                    f"linked CAPEC with id {capec.section} to CRE with ID {cre.id}"
-                )
-                capec = capec.add_link(
-                    defs.Link(document=cre, ltype=defs.LinkTypes.AutomaticallyLinkedTo)
-                )
+        if not cwes:
+            return capec
+
+        # The CAPEC XML can contain repeated related-weakness entries that map
+        # back to the same CWE/CRE. `Document.add_link()` is strict and raises
+        # on duplicates, so we de-duplicate before adding.
+        linked_cre_ids = {l.document.id for l in capec.links}
+        unique_cres = []
+        seen_cre_ids = set()
+        for c in cwes[0].links:
+            if c.document.doctype != defs.Credoctypes.CRE:
+                continue
+            if not c.document.id or c.document.id in seen_cre_ids:
+                continue
+            seen_cre_ids.add(c.document.id)
+            unique_cres.append(c.document)
+
+        for cre in unique_cres:
+            if cre.id in linked_cre_ids:
+                continue
+            logger.debug(
+                f"linked CAPEC with id {capec.section} to CRE with ID {cre.id}"
+            )
+            capec = capec.add_link(
+                defs.Link(document=cre, ltype=defs.LinkTypes.AutomaticallyLinkedTo)
+            )
+            linked_cre_ids.add(cre.id)
         return capec
 
     def register_capec(self, cache: db.Node_collection, xml_contents: str):
