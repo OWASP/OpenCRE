@@ -42,7 +42,7 @@ class in_memory_embeddings:
         )
 
     # Function to get text content from a URL
-    def get_content(self, url):
+    def get_content(self, url) -> Optional[str]:
         for attempts in range(1, 10):
             try:
                 page = self.__context.new_page()
@@ -52,12 +52,18 @@ class in_memory_embeddings:
                 page.close()
                 return text
             except requests.exceptions.RequestException as e:
-                logger.error(f"Error fetching content for URL: {url} - {str(e)}")
-                return ""
+                logger.error(
+                    f"Error fetching content for URL: {url} - {str(e)} (attempt {attempts}/9)"
+                )
+                # Retry rather than silently embedding empty content.
+                continue
             except playwright._impl._api_types.TimeoutError as te:
                 logger.error(
-                    f"Page: {url}, took too long to load, playwright timedout, trying again - {str(te)}, attempt num {attempts}"
+                    f"Page: {url}, took too long to load, playwright timeout (attempt {attempts}/9) - {str(te)}"
                 )
+                continue
+
+        return None
 
     def clean_content(self, content):
         content = re.sub("\s+", " ", content.strip())
@@ -107,9 +113,9 @@ class in_memory_embeddings:
         for doc_type in cre_defs.Credoctypes:
             db_ids = []
             if doc_type.value == cre_defs.Credoctypes.CRE:
-                db_ids = [a[0] for a in database.list_cre_ids()]
+                db_ids = database.list_cre_ids()
             else:
-                db_ids = [a[0] for a in database.list_node_ids_by_ntype(doc_type.value)]
+                db_ids = database.list_node_ids_by_ntype(doc_type.value)
 
             embeddings = database.get_embeddings_by_doc_type(doc_type.value)
             a = [
@@ -133,9 +139,9 @@ class in_memory_embeddings:
         """
         db_ids = []
         if item_name == cre_defs.Credoctypes.CRE.value:
-            db_ids = [a[0] for a in database.list_cre_ids()]
+            db_ids = database.list_cre_ids()
         else:
-            db_ids = [a[0] for a in database.list_node_ids_by_name(item_name)]
+            db_ids = database.list_node_ids_by_name(item_name)
         missing_embedding_ids = []
         for dbID in db_ids:
             if not database.get_embedding(dbID):
@@ -145,42 +151,105 @@ class in_memory_embeddings:
     def generate_embeddings(
         self, database: db.Node_collection, missing_embeddings: List[str]
     ):
-        """method generate embeddings accepts a list of Database IDs of object which do not have embeddings and generates embeddings for those objects"""
-        logger.info(f"generating {len(missing_embeddings)} embeddings")
-        for id in missing_embeddings:
-            cre = database.get_cre_by_db_id(id)
-            nodes = database.get_nodes(db_id=id)
-            content = ""
-            if nodes:
-                node = nodes
-                if type(node) == list:
-                    node = nodes[0]
-                if is_valid_url(node.hyperlink):
-                    content = self.clean_content(self.get_content(node.hyperlink))
-                else:
-                    content = node.__repr__()
-                logger.info(
-                    f"making embedding for {node.hyperlink if node.hyperlink else content}"
-                )
+        """
+        Generate embeddings for DB ids that are missing them.
 
-                embedding = self.ai_client.get_text_embeddings(content)
-                dbnode = db.dbNodeFromNode(node)
-                if not dbnode:
-                    logger.fatal(node, "cannot be converted to database Node")
+        Bonus requirement: batch Playwright-fetched page text (content for embeddings)
+        so we send up to the provider's supported `max_batch_size` per embeddings call.
+        """
+        logger.info(f"generating {len(missing_embeddings)} embeddings")
+
+        def get_provider_batch_size() -> int:
+            # Prefer provider-reported max batch size.
+            if hasattr(self.ai_client, "get_max_batch_size"):
+                return int(self.ai_client.get_max_batch_size())  # type: ignore[attr-defined]
+            return int(os.environ.get("CRE_EMBED_BATCH_SIZE", "50"))
+
+        batch_size = max(1, get_provider_batch_size())
+
+        for i in range(0, len(missing_embeddings), batch_size):
+            batch_ids = missing_embeddings[i : i + batch_size]
+            batch_contents: List[str] = []
+            batch_records: List[Tuple[Any, Any, str]] = []
+
+            # Collect all batch content first, so embeddings are batched in one provider call.
+            for db_id in batch_ids:
+                cre = database.get_cre_by_db_id(db_id)
+                nodes = database.get_nodes(db_id=db_id)
+
+                if nodes:
+                    node = nodes[0] if isinstance(nodes, list) else nodes
+                    if is_valid_url(node.hyperlink):
+                        raw_content = self.get_content(node.hyperlink)
+                        if not raw_content:
+                            logger.warning(
+                                f"Skipping embedding for {node.hyperlink}: unable to fetch non-empty content"
+                            )
+                            continue
+                        content = self.clean_content(raw_content)
+                        if not content:
+                            logger.warning(
+                                f"Skipping embedding for {node.hyperlink}: content cleaned to empty"
+                            )
+                            continue
+                    else:
+                        content = node.__repr__()
+
+                    dbnode = db.dbNodeFromNode(node)
+                    if not dbnode:
+                        logger.fatal(node, "cannot be converted to database Node")
+                        continue
+
+                    dbnode.id = db_id
+                    logger.info(
+                        f"making embedding for {node.hyperlink if node.hyperlink else content}"
+                    )
+
+                    batch_contents.append(content)
+                    batch_records.append((dbnode, node.doctype, content))
                     continue
-                dbnode.id = id
-                database.add_embedding(dbnode, node.doctype, embedding, content)
-            elif cre:
-                content = f"{cre.doctype}\n name:{cre.name}\n description:{cre.description}\n id:{cre.id}\n "
-                logger.info(f"making embedding for {content}")
-                embedding = self.ai_client.get_text_embeddings(content)
-                dbcre = db.dbCREfromCRE(cre)
-                if not dbcre:
-                    logger.fatal(node, "cannot be converted to database Node")
-                dbcre.id = id
-                database.add_embedding(
-                    dbcre, cre_defs.Credoctypes.CRE, embedding, content
+
+                if cre:
+                    content = (
+                        f"{cre.doctype}\n name:{cre.name}\n description:{cre.description}\n id:{cre.id}\n "
+                    )
+                    logger.info(f"making embedding for {content}")
+                    dbcre = db.dbCREfromCRE(cre)
+                    if not dbcre:
+                        logger.fatal(cre, "cannot be converted to database CRE")
+                        continue
+                    dbcre.id = db_id
+
+                    batch_contents.append(content)
+                    batch_records.append((dbcre, cre_defs.Credoctypes.CRE, content))
+                    continue
+
+                logger.warning(f"missing embeddings id={db_id} not found in CRE or Node")
+
+            if not batch_contents:
+                continue
+
+            embeddings = self.ai_client.get_text_embeddings(batch_contents)  # type: ignore[arg-type]
+
+            # Normalize shape: some providers may return a single vector even for list input.
+            if embeddings and isinstance(embeddings[0], (int, float)):  # type: ignore[index]
+                logger.warning(
+                    "provider returned unexpected embedding shape for batch; falling back to per-item calls"
                 )
+                embeddings = [self.ai_client.get_text_embeddings(t) for t in batch_contents]  # type: ignore[arg-type]
+
+            if len(embeddings) != len(batch_records):  # type: ignore[arg-type]
+                logger.warning(
+                    "provider returned embeddings length mismatch; falling back to per-item calls"
+                )
+                embeddings = [
+                    self.ai_client.get_text_embeddings(t)  # type: ignore[arg-type]
+                    for t in batch_contents
+                ]
+
+            for rec, emb in zip(batch_records, embeddings):
+                db_obj, doc_type, embedding_text = rec
+                database.add_embedding(db_obj, doc_type, emb, embedding_text)
 
 
 class PromptHandler:
@@ -222,6 +291,71 @@ class PromptHandler:
                 )
 
     def generate_embeddings_for(self, item_name: str):
+        # CRE embeddings are generated from the CRE's textual fields only
+        # (name/description/id). That path does not require fetching remote
+        # content via Playwright, so we can skip browser launch entirely and
+        # batch requests to avoid provider rate limits.
+        if item_name == cre_defs.Credoctypes.CRE.value:
+            # list_cre_ids() returns plain CRE database ids (strings).
+            cre_ids = self.database.list_cre_ids()
+            missing: List[str] = []
+            cre_by_id: Dict[str, cre_defs.CRE] = {}
+
+            for cid in cre_ids:
+                if not self.database.get_embedding(cid):
+                    cre = self.database.get_cre_by_db_id(cid)
+                    if cre:
+                        missing.append(cid)
+                        cre_by_id[cid] = cre
+
+            if not missing:
+                return
+
+            # Batch size is adjustable via env var to tune for quota/limits.
+            if hasattr(self.ai_client, "get_max_batch_size"):
+                batch_size = int(self.ai_client.get_max_batch_size())  # type: ignore[attr-defined]
+            else:
+                batch_size = int(os.environ.get("CRE_EMBED_BATCH_SIZE", "50"))
+            batch_size = max(1, batch_size)
+            for i in range(0, len(missing), batch_size):
+                batch_ids = missing[i : i + batch_size]
+
+                contents: List[str] = []
+                for cid in batch_ids:
+                    cre = cre_by_id[cid]
+                    contents.append(
+                        f"{cre.doctype}\n name:{cre.name}\n description:{cre.description}\n id:{cre.id}\n "
+                    )
+
+                embeddings = self.ai_client.get_text_embeddings(contents)  # type: ignore[arg-type]
+                if not embeddings:
+                    raise RuntimeError(
+                        "Embedding provider returned no embeddings for CRE batch"
+                    )
+
+                # Some providers might return a single vector if given a single item.
+                if isinstance(embeddings[0], (int, float)):  # type: ignore[index]
+                    embeddings = [embeddings]  # type: ignore[assignment]
+
+                if len(embeddings) != len(batch_ids):
+                    # Shape mismatch; fall back to per-item calls.
+                    fixed: List[List[float]] = []
+                    for ctext in contents:
+                        fixed.append(self.ai_client.get_text_embeddings(ctext))  # type: ignore[arg-type]
+                    embeddings = fixed
+
+                for cid, emb, embedding_text in zip(batch_ids, embeddings, contents):
+                    dbcre = db.dbCREfromCRE(cre_by_id[cid])
+                    dbcre.id = cid
+                    self.database.add_embedding(
+                        dbcre,
+                        cre_defs.Credoctypes.CRE,
+                        emb,  # type: ignore[arg-type]
+                        embedding_text,
+                    )
+
+            return
+
         self.embeddings_instance.setup_playwright()
         self.embeddings_instance.generate_embeddings_for(self.database, item_name)
         self.embeddings_instance.teardown_playwright()
