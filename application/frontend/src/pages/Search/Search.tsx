@@ -6,12 +6,16 @@ import { Link, useHistory } from 'react-router-dom';
 
 import { SEARCH } from '../../const';
 import { useToast } from './hooks/use-toast';
+import useIsVisible from './hooks/use-is-visible';
 
 export const SearchPage = () => {
   const { toast } = useToast();
 
   const [isArrowVisible, setIsArrowVisible] = useState(true);
   // const [loading, setLoading] = useState(false);
+
+   const { ref: footerRef, isIntersecting: isFooterVisible } = useIsVisible();
+
 
   //Search Functionality
   const history = useHistory();
@@ -30,24 +34,13 @@ export const SearchPage = () => {
       observer.observe(mobileMenu, {attributes: true, attributeFilter: ['class']})
     }
 
-    const handleScroll = () => {
-      const footer = document.getElementById('page-footer');
-      if (footer) {
-        const footerTop = footer.getBoundingClientRect().top;
-        const windowHeight = window.innerHeight;
-        if (footerTop < windowHeight) {
-          setIsArrowVisible(false);
-        } else {
-          setIsArrowVisible(true);
-        }
-      }
-    };
-    window.addEventListener('scroll', handleScroll);
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-      observer.disconnect();
-    };
-  }, []);
+    if(isFooterVisible){
+      setIsArrowVisible(false);
+    }else{
+      setIsArrowVisible(true);
+    }
+
+  }, [isFooterVisible]);
 
   // The handleSignOut function is no longer needed.
 
@@ -474,7 +467,7 @@ export const SearchPage = () => {
           </div>
         </div>
 
-        <footer id="page-footer" className="footer">
+        <footer ref={footerRef} id="page-footer" className="footer">
           <div className="footer__container">
             <div className="footer__grid">
               <div className="footer__about">
