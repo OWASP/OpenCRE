@@ -5,6 +5,7 @@ import neo4j
 import os
 import logging
 import re
+import time
 import yaml
 
 from pprint import pprint
@@ -21,6 +22,7 @@ from flask import json as flask_json
 from sqlalchemy.orm import aliased
 from flask_sqlalchemy.model import DefaultMeta
 from sqlalchemy import func, delete
+from sqlalchemy.exc import OperationalError
 
 from neomodel import (
     config,
@@ -638,6 +640,16 @@ class NEO_DB:
 
     @classmethod
     def _format_gap_analysis_response(self, base_standard, path_records):
+        def safe_parse_node_no_links(node):
+            try:
+                return NEO_DB.parse_node_no_links(node)
+            except Exception as e:
+                logger.warning(
+                    "Skipping malformed Neo4j node while formatting gap analysis response: %s",
+                    e,
+                )
+                return None
+
         def format_segment(seg: StructuredRel, nodes):
             relation_map = {
                 RelatedRel: "RELATED",
@@ -656,22 +668,48 @@ class NEO_DB:
             # Default to RELATED if relation unknown (though mostly governed by class type)
             rtype = relation_map.get(type(seg), "RELATED")
 
+            parsed_start = safe_parse_node_no_links(start_node)
+            parsed_end = safe_parse_node_no_links(end_node)
+            if parsed_start is None or parsed_end is None:
+                return None
+
             return {
-                "start": NEO_DB.parse_node_no_links(start_node),
-                "end": NEO_DB.parse_node_no_links(end_node),
+                "start": parsed_start,
+                "end": parsed_end,
                 "relationship": rtype,
             }
 
         def format_path_record(rec):
+            parsed_start = safe_parse_node_no_links(rec.start_node)
+            parsed_end = safe_parse_node_no_links(rec.end_node)
+            if parsed_start is None or parsed_end is None:
+                return None
+            parsed_segments = []
+            for seg in rec.relationships:
+                segment = format_segment(seg, rec.nodes)
+                if segment is None:
+                    # Skip malformed segment; keep valid rest of path.
+                    continue
+                parsed_segments.append(segment)
             return {
-                "start": NEO_DB.parse_node_no_links(rec.start_node),
-                "end": NEO_DB.parse_node_no_links(rec.end_node),
-                "path": [format_segment(seg, rec.nodes) for seg in rec.relationships],
+                "start": parsed_start,
+                "end": parsed_end,
+                "path": parsed_segments,
             }
 
-        return [NEO_DB.parse_node_no_links(rec) for rec in base_standard], [
-            format_path_record(rec[0]) for rec in path_records
-        ]
+        parsed_base = []
+        for rec in base_standard:
+            parsed = safe_parse_node_no_links(rec)
+            if parsed is not None:
+                parsed_base.append(parsed)
+
+        parsed_paths = []
+        for rec in path_records:
+            parsed = format_path_record(rec[0])
+            if parsed is not None:
+                parsed_paths.append(parsed)
+
+        return parsed_base, parsed_paths
 
     @classmethod
     def standards(self) -> List[str]:
@@ -1951,6 +1989,20 @@ class Node_collection:
         embeddings: List[float],
         embedding_text: str,
     ):
+        def _commit_with_retry() -> None:
+            max_retries = int(os.environ.get("SQLITE_COMMIT_MAX_RETRIES", "8"))
+            base_sleep_s = float(os.environ.get("SQLITE_COMMIT_RETRY_BASE_SECONDS", "0.15"))
+            for attempt in range(max_retries + 1):
+                try:
+                    self.session.commit()
+                    return
+                except OperationalError as exc:
+                    if "database is locked" not in str(exc).lower() or attempt >= max_retries:
+                        raise
+                    self.session.rollback()
+                    # Exponential backoff helps transient sqlite writer contention.
+                    time.sleep(base_sleep_s * (2**attempt))
+
         existing = self.get_embedding(db_object.id)
         embeddings_str = ",".join([str(e) for e in embeddings])
 
@@ -1972,14 +2024,14 @@ class Node_collection:
                     embeddings_url=db_object.link,
                 )
             self.session.add(emb)
-            self.session.commit()
+            _commit_with_retry()
             return emb
         else:
             logger.debug(f"knew of embedding for object {db_object.id} ,updating")
-            self.session.commit()
+            _commit_with_retry()
             existing[0].embeddings = embeddings_str
             existing[0].embeddings_content = embedding_text
-            self.session.commit()
+            _commit_with_retry()
 
             return existing
 
