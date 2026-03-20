@@ -6,7 +6,7 @@ import unittest
 from typing import Any, Dict, List
 from unittest import mock
 from unittest.mock import Mock, patch
-from rq import Queue
+from rq import Queue, job
 from application.utils import redis
 from application.prompt_client import prompt_client as prompt_client
 from application.tests.utils import data_gen
@@ -33,6 +33,75 @@ class TestMain(unittest.TestCase):
         self.app_context.push()
         sqla.create_all()
         self.collection = db.Node_collection()
+
+    @patch.object(main, "populate_neo4j_db")
+    @patch.object(main.gap_analysis, "schedule")
+    @patch.object(redis, "connect")
+    @patch.object(main, "register_node")
+    def test_register_standard_skips_ga_for_tool_entries(
+        self, register_node_mock, redis_connect_mock, schedule_mock, populate_neo4j_mock
+    ) -> None:
+        """
+        Step 3 rule: GA should not run for Tool/Code resources.
+        """
+        redis_connect_mock.return_value = Mock(get=Mock(return_value=None), set=Mock())
+        tool_entry = defs.Tool(
+            name="Tool Resource",
+            description="test tool",
+            tooltype=defs.ToolTypes.Defensive,
+        )
+
+        main.register_standard(
+            standard_entries=[tool_entry],  # type: ignore[list-item]
+            collection=self.collection,
+            calculate_gap_analysis=True,
+            generate_embeddings=False,
+        )
+
+        populate_neo4j_mock.assert_not_called()
+        schedule_mock.assert_not_called()
+
+    @patch.object(main, "populate_neo4j_db")
+    @patch.object(main.gap_analysis, "schedule")
+    @patch.object(redis, "wait_for_jobs")
+    @patch.object(redis, "connect")
+    @patch.object(job.Job, "fetch")
+    @patch.object(main, "register_node")
+    def test_register_standard_runs_ga_for_taxonomy_standard(
+        self,
+        register_node_mock,
+        job_fetch_mock,
+        redis_connect_mock,
+        wait_for_jobs_mock,
+        schedule_mock,
+        populate_neo4j_mock,
+    ) -> None:
+        """
+        Step 3 minimal behavior: GA runs for non-tool/non-code resources
+        (including taxonomy-like Standard entries).
+        """
+        redis_connect_mock.return_value = Mock(get=Mock(return_value=None), set=Mock())
+        schedule_mock.return_value = {"job_id": "ga-job-1"}
+        job_fetch_mock.return_value = Mock()
+        # Ensure there is another standard to compare against.
+        self.collection.standards = Mock(return_value=["CWE", "ASVS"])  # type: ignore[method-assign]
+
+        taxonomy_standard = defs.Standard(
+            name="CWE",
+            section="Some CWE",
+            sectionID="123",
+            tags=["family:taxonomy", "subtype:risk_list"],
+        )
+
+        main.register_standard(
+            standard_entries=[taxonomy_standard],
+            collection=self.collection,
+            calculate_gap_analysis=True,
+            generate_embeddings=False,
+        )
+
+        populate_neo4j_mock.assert_called_once()
+        self.assertTrue(schedule_mock.called)
 
     def test_register_node_with_links(self) -> None:
         standard_with_links = defs.Standard(
