@@ -246,11 +246,30 @@ def register_standard(
     if collection is None:
         collection = db_connect(path=db_connection_str)
 
+    def _doctype_value(doc: defs.Document) -> str:
+        doctype = getattr(doc, "doctype", None)
+        if hasattr(doctype, "value"):
+            return doctype.value
+        return str(doctype)
+
+    def _ga_eligible(doc: defs.Document) -> bool:
+        doctype = _doctype_value(doc)
+        return doctype not in (defs.Credoctypes.Tool.value, defs.Credoctypes.Code.value)
+
     conn = redis.connect()
     ph = prompt_client.PromptHandler(database=collection)
     importing_name = standard_entries[0].name
+    effective_calculate_gap_analysis = calculate_gap_analysis and _ga_eligible(
+        standard_entries[0]
+    )
+    if calculate_gap_analysis and not effective_calculate_gap_analysis:
+        logger.info(
+            "Skipping gap analysis for %s because doctype %s is not GA-eligible",
+            importing_name,
+            _doctype_value(standard_entries[0]),
+        )
     standard_hash = gap_analysis.make_resources_key([importing_name])
-    if calculate_gap_analysis and conn.get(standard_hash):
+    if effective_calculate_gap_analysis and conn.get(standard_hash):
         logger.info(
             f"Standard importing job with info-hash {standard_hash} has already returned, skipping"
         )
@@ -273,7 +292,7 @@ def register_standard(
     if generate_embeddings and importing_name:
         ph.generate_embeddings_for(importing_name)
 
-    if calculate_gap_analysis and not os.environ.get("CRE_NO_CALCULATE_GAP_ANALYSIS"):
+    if effective_calculate_gap_analysis and not os.environ.get("CRE_NO_CALCULATE_GAP_ANALYSIS"):
         # calculate gap analysis
         populate_neo4j_db(db_connection_str)
         jobs = []
