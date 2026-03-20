@@ -5,7 +5,7 @@ from datetime import datetime
 from multiprocessing import Pool
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
-from playwright.sync_api import sync_playwright
+from playwright.sync_api import TimeoutError as PlaywrightTimeoutError, sync_playwright
 import playwright
 from scipy import sparse
 from sklearn.metrics.pairwise import cosine_similarity
@@ -26,6 +26,13 @@ SIMILARITY_THRESHOLD = float(os.environ.get("CHATBOT_SIMILARITY_THRESHOLD", "0.7
 
 def is_valid_url(url):
     return url.startswith("http://") or url.startswith("https://")
+
+
+def normalize_embeddings_content(text: Optional[str]) -> str:
+    if not text:
+        return ""
+    # Normalize whitespace so cache comparisons are stable across import/export and crawling.
+    return re.sub(r"\s+", " ", text).strip()
 
 
 class in_memory_embeddings:
@@ -57,7 +64,7 @@ class in_memory_embeddings:
                 )
                 # Retry rather than silently embedding empty content.
                 continue
-            except playwright._impl._api_types.TimeoutError as te:
+            except PlaywrightTimeoutError as te:
                 logger.error(
                     f"Page: {url}, took too long to load, playwright timeout (attempt {attempts}/9) - {str(te)}"
                 )
@@ -131,8 +138,9 @@ class in_memory_embeddings:
         return missing_embeddings
 
     def generate_embeddings_for(self, database: db.Node_collection, item_name: str):
-        """Iterates over all database documents related to the item identified by item_name and generates embeddings for it if the embeddings do not already exist
-            For example if "ASVS" is passed the method will generate all embeddings for ASVS
+        """Iterates over all database documents related to the item identified by item_name
+        and (re)generates embeddings when needed.
+            For example if "ASVS" is passed the method will process embeddings for ASVS.
         Args:
             database (db.Node_collection): the Node_collection instance to use
             item_name (str): the item for which to generate embeddings, this can be either `cre_defs.Credoctypes.CRE.value` for generating all CRE embeddings or the name of any Standard or Tool.
@@ -142,11 +150,10 @@ class in_memory_embeddings:
             db_ids = database.list_cre_ids()
         else:
             db_ids = database.list_node_ids_by_name(item_name)
-        missing_embedding_ids = []
-        for dbID in db_ids:
-            if not database.get_embedding(dbID):
-                missing_embedding_ids.append(dbID)
-        self.generate_embeddings(database, missing_embedding_ids)
+        # Step 4 (incremental embeddings): pass all candidate IDs and let
+        # generate_embeddings() skip unchanged content by comparing stored
+        # embeddings_content against current extracted/serialized content.
+        self.generate_embeddings(database, db_ids)
 
     def generate_embeddings(
         self, database: db.Node_collection, missing_embeddings: List[str]
@@ -174,7 +181,6 @@ class in_memory_embeddings:
 
             # Collect all batch content first, so embeddings are batched in one provider call.
             for db_id in batch_ids:
-                cre = database.get_cre_by_db_id(db_id)
                 nodes = database.get_nodes(db_id=db_id)
 
                 if nodes:
@@ -186,14 +192,14 @@ class in_memory_embeddings:
                                 f"Skipping embedding for {node.hyperlink}: unable to fetch non-empty content"
                             )
                             continue
-                        content = self.clean_content(raw_content)
+                        content = normalize_embeddings_content(self.clean_content(raw_content))
                         if not content:
                             logger.warning(
                                 f"Skipping embedding for {node.hyperlink}: content cleaned to empty"
                             )
                             continue
                     else:
-                        content = node.__repr__()
+                        content = normalize_embeddings_content(node.__repr__())
 
                     dbnode = db.dbNodeFromNode(node)
                     if not dbnode:
@@ -205,12 +211,29 @@ class in_memory_embeddings:
                         f"making embedding for {node.hyperlink if node.hyperlink else content}"
                     )
 
+                    existing = database.get_embedding(db_id)
+                    if (
+                        existing
+                        and normalize_embeddings_content(
+                            getattr(existing[0], "embeddings_content", None)
+                        )
+                        == content
+                    ):
+                        logger.debug(
+                            f"Skipping embedding for {node.name} ({db_id}): content unchanged"
+                        )
+                        continue
+
                     batch_contents.append(content)
                     batch_records.append((dbnode, node.doctype, content))
                     continue
 
+                # Only check CRE after ruling out node ids. During standard embeddings
+                # regeneration, most ids are Node ids and probing CRE first produces
+                # misleading "CRE <id> does not exist" error logs.
+                cre = database.get_cre_by_db_id(db_id)
                 if cre:
-                    content = (
+                    content = normalize_embeddings_content(
                         f"{cre.doctype}\n name:{cre.name}\n description:{cre.description}\n id:{cre.id}\n "
                     )
                     logger.info(f"making embedding for {content}")
@@ -219,6 +242,19 @@ class in_memory_embeddings:
                         logger.fatal(cre, "cannot be converted to database CRE")
                         continue
                     dbcre.id = db_id
+
+                    existing = database.get_embedding(db_id)
+                    if (
+                        existing
+                        and normalize_embeddings_content(
+                            getattr(existing[0], "embeddings_content", None)
+                        )
+                        == content
+                    ):
+                        logger.debug(
+                            f"Skipping embedding for CRE {cre.id} ({db_id}): content unchanged"
+                        )
+                        continue
 
                     batch_contents.append(content)
                     batch_records.append((dbcre, cre_defs.Credoctypes.CRE, content))
@@ -298,17 +334,26 @@ class PromptHandler:
         if item_name == cre_defs.Credoctypes.CRE.value:
             # list_cre_ids() returns plain CRE database ids (strings).
             cre_ids = self.database.list_cre_ids()
-            missing: List[str] = []
+            pending: List[str] = []
             cre_by_id: Dict[str, cre_defs.CRE] = {}
 
             for cid in cre_ids:
-                if not self.database.get_embedding(cid):
-                    cre = self.database.get_cre_by_db_id(cid)
-                    if cre:
-                        missing.append(cid)
-                        cre_by_id[cid] = cre
+                cre = self.database.get_cre_by_db_id(cid)
+                if not cre:
+                    continue
+                embedding_text = (
+                    f"{cre.doctype}\n name:{cre.name}\n description:{cre.description}\n id:{cre.id}\n "
+                )
+                embedding_text = normalize_embeddings_content(embedding_text)
+                existing = self.database.get_embedding(cid)
+                if existing and normalize_embeddings_content(
+                    getattr(existing[0], "embeddings_content", None)
+                ) == embedding_text:
+                    continue
+                pending.append(cid)
+                cre_by_id[cid] = cre
 
-            if not missing:
+            if not pending:
                 return
 
             # Batch size is adjustable via env var to tune for quota/limits.
@@ -317,8 +362,8 @@ class PromptHandler:
             else:
                 batch_size = int(os.environ.get("CRE_EMBED_BATCH_SIZE", "50"))
             batch_size = max(1, batch_size)
-            for i in range(0, len(missing), batch_size):
-                batch_ids = missing[i : i + batch_size]
+            for i in range(0, len(pending), batch_size):
+                batch_ids = pending[i : i + batch_size]
 
                 contents: List[str] = []
                 for cid in batch_ids:
@@ -326,6 +371,7 @@ class PromptHandler:
                     contents.append(
                         f"{cre.doctype}\n name:{cre.name}\n description:{cre.description}\n id:{cre.id}\n "
                     )
+                contents = [normalize_embeddings_content(c) for c in contents]
 
                 embeddings = self.ai_client.get_text_embeddings(contents)  # type: ignore[arg-type]
                 if not embeddings:
