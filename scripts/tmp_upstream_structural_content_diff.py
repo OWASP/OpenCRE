@@ -25,6 +25,8 @@ import sqlite3
 import sys
 import tempfile
 import urllib.parse
+import re
+import uuid
 from collections import defaultdict
 from dataclasses import asdict
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Set, Tuple
@@ -167,6 +169,452 @@ def _fetch_all(conn: sqlite3.Connection, query: str, params: Sequence[Any] = ())
     return rows
 
 
+def _embedding_semantic_doc_ref(r: sqlite3.Row) -> Tuple[str, ...]:
+    """
+    Build a stable document reference for embeddings validation that does not depend
+    on local DB UUIDs. Prefer CRE external_id / node identifying fields; fall back
+    to raw ids only when no joined document exists.
+    """
+    if r["cre_external_id"]:
+        return (
+            "cre",
+            str(r["cre_external_id"] or ""),
+            str(r["cre_name"] or ""),
+        )
+    if r["node_name"] or r["node_section_id"] or r["node_section"]:
+        return (
+            "node",
+            str(r["node_ntype"] or ""),
+            str(r["node_name"] or ""),
+            str(r["node_section_id"] or ""),
+            str(r["node_section"] or ""),
+            str(r["node_subsection"] or ""),
+            str(r["node_version"] or ""),
+            str(r["node_link"] or ""),
+        )
+    return (
+        "orphan",
+        str(r["doc_type"] or ""),
+        str(r["cre_id"] or ""),
+        str(r["node_id"] or ""),
+    )
+
+
+def _embedding_semantic_key(r: sqlite3.Row) -> Tuple[str, ...]:
+    # Use a stable identity key for verification:
+    # - doc_type + document reference + URL
+    # Excluding embeddings_content avoids false negatives caused by crawler/content
+    # formatting differences (escaped newlines, whitespace, upstream page drift).
+    return (
+        str(r["doc_type"] or ""),
+        *_embedding_semantic_doc_ref(r),
+        str(r["embeddings_url"] or ""),
+    )
+
+
+def _load_embedding_rows(conn: sqlite3.Connection) -> List[sqlite3.Row]:
+    return _fetch_all(
+        conn,
+        """
+        SELECT
+          e.rowid AS row_id,
+          e.doc_type,
+          e.cre_id,
+          e.node_id,
+          e.embeddings,
+          e.embeddings_url,
+          e.embeddings_content,
+          n.name AS node_name,
+          n.section_id AS node_section_id,
+          n.section AS node_section,
+          n.subsection AS node_subsection,
+          n.version AS node_version,
+          n.ntype AS node_ntype,
+          n.link AS node_link,
+          c.external_id AS cre_external_id,
+          c.name AS cre_name
+        FROM embeddings e
+        LEFT JOIN node n ON e.node_id = n.id
+        LEFT JOIN cre c ON e.cre_id = c.id
+        ORDER BY e.doc_type, e.embeddings_url, e.embeddings_content, e.cre_id, e.node_id
+        """,
+    )
+
+
+def _snapshot_embeddings(
+    conn: sqlite3.Connection,
+) -> Dict[Tuple[str, ...], Set[str]]:
+    rows = _load_embedding_rows(conn)
+    out: Dict[Tuple[str, ...], Set[str]] = defaultdict(set)
+    for r in rows:
+        out[_embedding_semantic_key(r)].add(str(r["embeddings"] or ""))
+    return out
+
+
+def _snapshot_gap_analysis(conn: sqlite3.Connection) -> Dict[str, str]:
+    rows = _fetch_all(
+        conn,
+        """
+        SELECT cache_key, ga_object
+        FROM gap_analysis_results
+        ORDER BY cache_key
+        """,
+    )
+    return {str(r["cache_key"]): str(r["ga_object"]) for r in rows}
+
+
+def _delete_every_n_embeddings(
+    conn: sqlite3.Connection,
+    *,
+    every_n: int,
+    doc_types_to_delete: Optional[Set[str]] = None,
+) -> Set[Tuple[str, ...]]:
+    if every_n <= 0:
+        raise ValueError("--delete-every-n must be > 0")
+    rows = _load_embedding_rows(conn)
+    deleted: Set[Tuple[str, ...]] = set()
+    eligible_idx = 0
+    for r in rows:
+        doc_type = str(r["doc_type"] or "")
+        if doc_types_to_delete is not None and doc_type not in doc_types_to_delete:
+            continue
+        eligible_idx += 1
+        if eligible_idx % every_n != 0:
+            continue
+        conn.execute("DELETE FROM embeddings WHERE rowid = ?", (r["row_id"],))
+        deleted.add(_embedding_semantic_key(r))
+    conn.commit()
+    return deleted
+
+
+def _delete_every_n_gap_analysis(conn: sqlite3.Connection, *, every_n: int) -> Set[str]:
+    if every_n <= 0:
+        raise ValueError("--delete-every-n must be > 0")
+    rows = _fetch_all(
+        conn,
+        """
+        SELECT cache_key
+        FROM gap_analysis_results
+        ORDER BY cache_key
+        """,
+    )
+    deleted: Set[str] = set()
+    for idx, r in enumerate(rows, start=1):
+        if idx % every_n != 0:
+            continue
+        cache_key = str(r["cache_key"])
+        conn.execute("DELETE FROM gap_analysis_results WHERE cache_key = ?", (cache_key,))
+        deleted.add(cache_key)
+    conn.commit()
+    return deleted
+
+
+def verify_checkpoint_2_incremental(
+    *,
+    db_path: str,
+    delete_every_n: int,
+    verify_gap_analysis: bool,
+) -> None:
+    """
+    Checkpoint 2 verification:
+    - delete every Nth embeddings row
+    - regenerate embeddings
+    - assert only missing keys are recreated and untouched rows stay byte-equal
+    - optionally do the same delete/refill verification for gap_analysis_results
+    """
+    from application.cmd import cre_main
+    from application.defs import cre_defs
+    from application.prompt_client import prompt_client as prompt_client
+    from application import sqla
+    from application.database.db import gap_analysis as db_gap_analysis
+    from neomodel import db as neo4j_db
+    from application.prompt_client.prompt_client import normalize_embeddings_content
+
+    # Do not force-disable graph backends here.
+    # If callers want a no-Neo4j run they can set NO_LOAD_GRAPH_DB/CRE_NO_NEO4J
+    # explicitly. For GA verification runs, we must allow neo_db to initialize.
+    # Keep embedding generation enabled in this verification mode.
+    os.environ.pop("CRE_NO_GEN_EMBEDDINGS", None)
+
+    collection = cre_main.db_connect(path=db_path)
+    sqla.create_all()
+    prompt_handler = prompt_client.PromptHandler(database=collection)
+
+    with _connect_sqlite(db_path) as conn:
+        emb_before = _snapshot_embeddings(conn)
+        ga_before = _snapshot_gap_analysis(conn) if verify_gap_analysis else {}
+
+    if not emb_before:
+        raise RuntimeError(
+            "No embeddings rows found. Import/fill embeddings first, then re-run with --verify-checkpoint-2-incremental."
+        )
+
+    with _connect_sqlite(db_path) as conn:
+        # This verification mode should focus on incremental embeddings for
+        # Standard nodes. CRE embeddings should not be regenerated here because
+        # they are stable across these import checkpoints.
+        emb_deleted = _delete_every_n_embeddings(
+            conn,
+            every_n=delete_every_n,
+            doc_types_to_delete={cre_defs.Credoctypes.Standard.value},
+        )
+        ga_deleted: Set[str] = set()
+        if verify_gap_analysis:
+            ga_deleted = _delete_every_n_gap_analysis(conn, every_n=delete_every_n)
+
+    print(
+        f"Checkpoint 2 setup complete: deleted {len(emb_deleted)} embedding rows "
+        f"(every {delete_every_n}th)."
+    )
+    if verify_gap_analysis:
+        print(
+            f"Checkpoint 2 setup complete: deleted {len(ga_deleted)} gap-analysis cache rows "
+            f"(every {delete_every_n}th)."
+        )
+
+    # Refill embeddings via normal prompt handler flow (Standard nodes only).
+    for standard_name in collection.standards():
+        prompt_handler.generate_embeddings_for(standard_name)
+
+    # Optional GA refill. This path is intentionally direct (non-RQ) for determinism in checkpoint runs.
+    ga_refill_performed = False
+    if verify_gap_analysis and ga_deleted:
+        database_with_graph = collection.with_graph()
+        ga_engine = getattr(database_with_graph, "neo_db", None)
+        if ga_engine is None:
+            # In local verification runs we often set NO_LOAD_GRAPH_DB=1, which means
+            # no neo_db is available for GA recomputation. Skip GA refill gracefully.
+            print(
+                "WARNING: skipping GA refill verification because no neo_db engine is available "
+                "(NO_LOAD_GRAPH_DB/CRE_NO_NEO4J may be enabled)."
+            )
+        else:
+            ga_refill_performed = True
+            # Ensure deterministic GA verification against the current sqlite DB.
+            # Neo4j can contain stale/orphan nodes from previous runs; rebuild from scratch.
+            neo4j_db.cypher_query("MATCH (n) DETACH DELETE n")
+            cre_main.populate_neo4j_db(db_path)
+            parsed_pairs: Set[Tuple[str, str]] = set()
+            for cache_key in ga_deleted:
+                if " >> " not in cache_key:
+                    continue
+                parts = cache_key.split(" >> ")
+                if len(parts) != 2:
+                    continue
+                parsed_pairs.add((parts[0], parts[1]))
+            for standard_a, standard_b in sorted(parsed_pairs):
+                db_gap_analysis(
+                    neo_db=ga_engine,
+                    node_names=[standard_a, standard_b],
+                    cache_key=f"{standard_a} >> {standard_b}",
+                )
+
+    with _connect_sqlite(db_path) as conn:
+        emb_after = _snapshot_embeddings(conn)
+        ga_after = _snapshot_gap_analysis(conn) if verify_gap_analysis else {}
+
+    missing_after = sorted(set(emb_before.keys()) - set(emb_after.keys()))
+    if missing_after:
+        raise AssertionError(f"Missing embedding keys after refill: {missing_after[:10]}")
+
+    unexpected_after = sorted(set(emb_after.keys()) - set(emb_before.keys()))
+    if unexpected_after:
+        # Pre-existing missing embeddings (e.g. from Heroku import skips) get backfilled
+        # during refill. We enforce exact restoration of deleted keys, not global parity.
+        print(
+            "NOTE: refill generated additional embeddings (pre-existing gaps): "
+            f"{len(unexpected_after)} extra keys"
+        )
+
+    restored_embeddings = len(set(emb_deleted) & set(emb_after.keys()))
+    if restored_embeddings != len(emb_deleted):
+        raise AssertionError(
+            "Embeddings refill count mismatch: "
+            f"deleted={len(emb_deleted)} restored={restored_embeddings}"
+        )
+
+    untouched = set(emb_before.keys()) - emb_deleted
+    # Skip mutation check for URL-backed embeddings: upstream page content can change
+    # between export and refill, so recomputation is expected.
+    def _is_url_backed(key: Tuple[str, ...]) -> bool:
+        url = key[-1] if key else ""
+        return isinstance(url, str) and url.startswith("http")
+    mutated_untouched = [
+        k for k in sorted(untouched)
+        if not _is_url_backed(k) and emb_before[k] != emb_after.get(k)
+    ]
+    if mutated_untouched:
+        raise AssertionError(
+            "Unchanged embeddings were mutated; incremental skip likely regressed. "
+            f"Examples: {mutated_untouched[:10]}"
+        )
+
+    if verify_gap_analysis and ga_before and ga_refill_performed:
+        missing_ga_after = sorted(set(ga_before.keys()) - set(ga_after.keys()))
+        if missing_ga_after:
+            raise AssertionError(f"Missing GA cache keys after refill: {missing_ga_after[:10]}")
+
+        unexpected_ga_after = sorted(set(ga_after.keys()) - set(ga_before.keys()))
+        if unexpected_ga_after:
+            raise AssertionError(f"Unexpected new GA cache keys after refill: {unexpected_ga_after[:10]}")
+
+        untouched_ga = set(ga_before.keys()) - ga_deleted
+        mutated_ga_untouched = [k for k in sorted(untouched_ga) if ga_before[k] != ga_after.get(k)]
+        if mutated_ga_untouched:
+            raise AssertionError(
+                "Untouched GA cache rows were mutated; incremental skip likely regressed. "
+                f"Examples: {mutated_ga_untouched[:10]}"
+            )
+
+        restored_ga = len(set(ga_deleted) & set(ga_after.keys()))
+        if restored_ga != len(ga_deleted):
+            raise AssertionError(
+                "GA refill count mismatch: "
+                f"deleted={len(ga_deleted)} restored={restored_ga}"
+            )
+
+        # Refilled GA must match upstream exactly (deterministic recomputation).
+        mismatched_ga = [
+            k for k in sorted(ga_deleted)
+            if ga_after.get(k) != ga_before.get(k)
+        ]
+        if mismatched_ga:
+            raise AssertionError(
+                "Refilled GA results differ from upstream; recomputation not deterministic. "
+                f"Examples: {mismatched_ga[:10]}"
+            )
+
+    # Verify embedding recalculation for a controlled content change.
+    with _connect_sqlite(db_path) as conn:
+        candidate = _fetch_all(
+            conn,
+            """
+            SELECT e.node_id, n.name, n.section, e.embeddings_content, e.embeddings
+            FROM embeddings e
+            JOIN node n ON n.id = e.node_id
+            WHERE e.doc_type = ?
+              AND COALESCE(n.link, '') = ''
+            LIMIT 1
+            """,
+            (cre_defs.Credoctypes.Standard.value,),
+        )
+        if candidate:
+            row = candidate[0]
+            node_id = str(row["node_id"])
+            standard_name = str(row["name"])
+            old_embeddings_content = str(row["embeddings_content"] or "")
+            old_embeddings_value = str(row["embeddings"] or "")
+            old_section = str(row["section"] or "")
+            marker = "__checkpoint2_content_change__"
+            conn.execute(
+                "UPDATE node SET section = ? WHERE id = ?",
+                (f"{old_section} {marker}".strip(), node_id),
+            )
+            conn.commit()
+            print(
+                f"Checkpoint 2 content-change probe: updated node {node_id} "
+                f"for standard '{standard_name}'"
+            )
+            # Recompute only the changed node id.
+            prompt_handler.embeddings_instance.generate_embeddings(collection, [node_id])
+            refreshed = _fetch_all(
+                conn,
+                "SELECT embeddings, embeddings_content FROM embeddings WHERE node_id = ?",
+                (node_id,),
+            )
+            if not refreshed:
+                raise AssertionError(
+                    f"Content-change probe failed: no embedding row found for node {node_id}"
+                )
+            new_embeddings_value = str(refreshed[0]["embeddings"] or "")
+            new_embeddings_content = str(refreshed[0]["embeddings_content"] or "")
+            if normalize_embeddings_content(old_embeddings_content) == normalize_embeddings_content(
+                new_embeddings_content
+            ):
+                raise AssertionError(
+                    "Content-change probe failed: embeddings_content did not change after node content update"
+                )
+            if old_embeddings_value == new_embeddings_value:
+                raise AssertionError(
+                    "Content-change probe failed: embedding vector did not change after node content update"
+                )
+        else:
+            print(
+                "WARNING: no standard embedding candidate with empty link found; "
+                "skipping content-change recalculation probe."
+            )
+
+    # Verify GA recalculation for a controlled graph-structure change.
+    if verify_gap_analysis and ga_refill_performed and ga_after:
+        pair_key = next((k for k in sorted(ga_after.keys()) if " >> " in k), None)
+        if pair_key:
+            a, b = pair_key.split(" >> ", 1)
+            with _connect_sqlite(db_path) as conn:
+                before_probe_rows = _fetch_all(
+                    conn,
+                    "SELECT ga_object FROM gap_analysis_results WHERE cache_key = ?",
+                    (pair_key,),
+                )
+                if before_probe_rows:
+                    before_probe = str(before_probe_rows[0]["ga_object"] or "")
+                    # Force recomputation on the target key.
+                    conn.execute("DELETE FROM gap_analysis_results WHERE cache_key = ?", (pair_key,))
+                    conn.commit()
+                    tmp_doc_id = f"checkpoint2-{uuid.uuid4()}"
+                    tmp_external = "999-999"
+                    neo4j_db.cypher_query(
+                        """
+                        MATCH (s1:NeoStandard {name: $s1}), (s2:NeoStandard {name: $s2})
+                        CREATE (tmp:NeoCRE {
+                          name: $tmp_name,
+                          doctype: 'CRE',
+                          document_id: $tmp_doc_id,
+                          external_id: $tmp_external,
+                          description: 'checkpoint2 temporary structure probe',
+                          tags: []
+                        })
+                        MERGE (tmp)-[:LINKED_TO]->(s1)
+                        MERGE (tmp)-[:LINKED_TO]->(s2)
+                        """,
+                        {
+                            "s1": a,
+                            "s2": b,
+                            "tmp_name": "__checkpoint2_tmp_cre__",
+                            "tmp_doc_id": tmp_doc_id,
+                            "tmp_external": tmp_external,
+                        },
+                    )
+                    try:
+                        db_gap_analysis(neo_db=ga_engine, node_names=[a, b], cache_key=pair_key)
+                        after_probe_rows = _fetch_all(
+                            conn,
+                            "SELECT ga_object FROM gap_analysis_results WHERE cache_key = ?",
+                            (pair_key,),
+                        )
+                        if not after_probe_rows:
+                            raise AssertionError(
+                                f"GA structure-change probe failed: key {pair_key} was not regenerated"
+                            )
+                        after_probe = str(after_probe_rows[0]["ga_object"] or "")
+                        if before_probe == after_probe:
+                            raise AssertionError(
+                                "GA structure-change probe failed: GA result did not change "
+                                "after a controlled graph-structure mutation"
+                            )
+                    finally:
+                        neo4j_db.cypher_query(
+                            "MATCH (n:NeoCRE {document_id: $doc_id}) DETACH DELETE n",
+                            {"doc_id": tmp_doc_id},
+                        )
+
+    print("Checkpoint 2 incremental verification passed.")
+    print(f"  Embeddings before: {len(emb_before)}")
+    print(f"  Embeddings deleted: {len(emb_deleted)}")
+    print(f"  Embeddings after: {len(emb_after)}")
+    if verify_gap_analysis and ga_refill_performed:
+        print(f"  GA cache before: {len(ga_before)}")
+        print(f"  GA cache deleted: {len(ga_deleted)}")
+        print(f"  GA cache after: {len(ga_after)}")
 def compare_databases(backup_db: str, new_db: str, max_items: int) -> None:
     backup = _connect_sqlite(backup_db)
     new = _connect_sqlite(new_db)
@@ -666,6 +1114,22 @@ def main() -> None:
         default=50,
         help="Max number of items to print per section (prevents massive console output).",
     )
+    parser.add_argument(
+        "--verify-checkpoint-2-incremental",
+        action="store_true",
+        help="Run checkpoint-2 incremental cache verification on --db (delete every Nth cache row and verify refill/skip behavior).",
+    )
+    parser.add_argument(
+        "--delete-every-n",
+        type=int,
+        default=10,
+        help="When using --verify-checkpoint-2-incremental, delete every Nth cache row.",
+    )
+    parser.add_argument(
+        "--skip-gap-analysis-verification",
+        action="store_true",
+        help="When using --verify-checkpoint-2-incremental, only verify embeddings and skip GA cache refill checks.",
+    )
     args = parser.parse_args()
 
     # Load local environment (.env) if present so API keys/config are picked up.
@@ -703,6 +1167,16 @@ def main() -> None:
 
     print(f"Work DB: {work_db}")
     print(f"Backup DB: {backup_db}")
+
+    if args.verify_checkpoint_2_incremental:
+        if not args.db:
+            raise ValueError("--verify-checkpoint-2-incremental requires --db")
+        verify_checkpoint_2_incremental(
+            db_path=work_db,
+            delete_every_n=args.delete_every_n,
+            verify_gap_analysis=not args.skip_gap_analysis_verification,
+        )
+        return
 
     if not args.skip_core:
         os.environ["OPENCRE_IMPORT_CORE"] = "1"
