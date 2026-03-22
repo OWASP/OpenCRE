@@ -32,14 +32,17 @@ class MiscTools(ParserInterface):
         tools = {}
         for url in self.tool_urls:
             tool_entries = self.parse_tool(cache=cache, tool_repo=url)
-            tools[tool_entries[0].name] = tool_entries
+            if tool_entries:
+                tools[tool_entries[0].name] = tool_entries
         return ParseResult(results=tools)
 
     def parse_tool(
         self, tool_repo: str, cache: db.Node_collection, dry_run: bool = False
     ) -> List[defs.Tool]:
-        if not dry_run:
-            repo = git.clone(tool_repo)
+        if dry_run:
+            logger.info("dry run, skipping clone and parsing for %s", tool_repo)
+            return []
+        repo = git.clone(tool_repo)
         readme = os.path.join(repo.working_dir, "README.md")
         title_regexp = r"# (?P<title>(\w+ ?)+)"
         cre_link = r".*\[.*\]\((?P<url>(https\:\/\/www\.)?opencre\.org\/cre\/(?P<cre>\d+-\d+).*)"
@@ -48,7 +51,11 @@ class MiscTools(ParserInterface):
             mdtext = rdf.read()
 
             if "opencre.org" not in mdtext:
-                logger.error("didn't find a link, bye")
+                logger.error(
+                    "no opencre.org link found in %s for repo %s, skipping",
+                    readme,
+                    tool_repo,
+                )
                 return []
             title = re.search(title_regexp, mdtext)
             cre = re.search(cre_link, mdtext, flags=re.IGNORECASE)
