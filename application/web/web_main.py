@@ -15,7 +15,6 @@ from application.utils import oscal_utils, redis
 
 from rq import job, exceptions
 
-from application.utils import spreadsheet_parsers
 from application.utils import oscal_utils, redis
 from application.database import db
 from application.cmd import cre_main
@@ -825,10 +824,16 @@ def import_from_cre_csv() -> Any:
     documents = parse_result.results
     cres = documents.pop(defs.Credoctypes.CRE.value, [])
     standards = documents
+    # Track initial CRE presence before registration. register_cre() recursively
+    # imports linked CREs, which can make later siblings appear as "existing"
+    # even though they were not present when this import started.
+    cre_existed_before = {
+        cre.id: bool(database.get_CREs(external_id=cre.id)) for cre in cres if cre.id
+    }
     new_cres = []
     for cre in cres:
         new_cre, exists = cre_main.register_cre(cre, database)
-        if not exists:
+        if not cre_existed_before.get(cre.id, False):
             new_cres.append(new_cre)
 
     for _, entries in standards.items():

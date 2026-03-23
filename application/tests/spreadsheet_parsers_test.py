@@ -3,8 +3,10 @@ from pprint import pprint
 import unittest
 from application.tests.utils import data_gen
 from application.defs import cre_defs as defs
-from application.utils.spreadsheet_parsers import (
+from application.utils.external_project_parsers.parsers.export_format_parser import (
     parse_export_format,
+)
+from application.utils.external_project_parsers.parsers.master_spreadsheet_parser import (
     parse_hierarchical_export_format,
     parse_standards,
     supported_resource_mapping,
