@@ -202,6 +202,40 @@ class GapAnalysisResults(BaseModel):
     __table_args__ = (sqla.UniqueConstraint(cache_key, name="unique_cache_key_field"),)
 
 
+class ImportRun(BaseModel):  # type: ignore
+    """Tracks import runs for Module C diff/staging. Step 6."""
+    __tablename__ = "import_run"
+    id = sqla.Column(sqla.String, primary_key=True, default=generate_uuid)
+    source = sqla.Column(sqla.String, nullable=False)
+    version = sqla.Column(sqla.String, nullable=True)
+    created_at = sqla.Column(sqla.DateTime, nullable=False)
+
+
+def create_import_run(source: str, version: Optional[str] = None) -> ImportRun:
+    """Create and persist an import run record. Returns the new ImportRun."""
+    from datetime import datetime, timezone
+
+    run = ImportRun(
+        id=generate_uuid(),
+        source=source,
+        version=version,
+        created_at=datetime.now(timezone.utc),
+    )
+    sqla.session.add(run)
+    sqla.session.commit()
+    return run
+
+
+def get_latest_import_run(source: str) -> Optional[ImportRun]:
+    """Get the most recent import run for a source."""
+    return (
+        sqla.session.query(ImportRun)
+        .filter(ImportRun.source == source)
+        .order_by(ImportRun.created_at.desc(), ImportRun.id.desc())
+        .first()
+    )
+
+
 class RelatedRel(StructuredRel):
     pass
 
