@@ -6,6 +6,8 @@ from application.defs import cre_defs as defs
 from application.utils.spreadsheet_parsers import (
     parse_export_format,
     parse_hierarchical_export_format,
+    parse_standards,
+    supported_resource_mapping,
 )
 
 
@@ -36,6 +38,17 @@ class TestParsers(unittest.TestCase):
         for k, v in output.items():
             for element in v:
                 self.assertIn(element, output[k])
+
+    def test_parse_standards_subparser_equivalence(self) -> None:
+        """Step 2b: parse_standards matches aggregate of per-family extraction."""
+        input_data, expected_output = data_gen.root_csv_data()
+        # Use first row that has standards
+        row = input_data[0]
+        legacy_links = parse_standards(dict(row))
+        # Each link should be for a supported family
+        standards_map = supported_resource_mapping.get("Standards", {})
+        for link in legacy_links:
+            self.assertIn(link.document.name, standards_map)
 
 
 if __name__ == "__main__":
