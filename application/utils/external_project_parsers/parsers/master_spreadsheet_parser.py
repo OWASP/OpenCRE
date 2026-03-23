@@ -1,21 +1,23 @@
-from pprint import pprint
 import logging
-import re
 from copy import copy
-from typing import Any, Dict, List, Optional, Tuple
 from dataclasses import dataclass
+from typing import Any, Dict, List, Optional, Tuple
 
+from application.database import db
 from application.defs import cre_defs as defs
+from application.prompt_client import prompt_client as prompt_client
+from application.utils.external_project_parsers import base_parser_defs
+from application.utils.external_project_parsers.base_parser_defs import (
+    ParserInterface,
+    ParseResult,
+)
 
-# collection of methods to parse different versions of spreadsheet standards
-# each method returns a list of cre_defs documents
 
+logging.basicConfig()
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
-logging.basicConfig()
 
 
-# the supported resources from the main CSV
 supported_resource_mapping = {
     "CRE": {
         "id": "CRE ID",
@@ -103,7 +105,6 @@ supported_resource_mapping = {
             "sectionID": "Standard SAMM v2 ID",
             "subsection": "",
             "hyperlink": "Standard SAMM v2 hyperlink",
-            # "version":"v2",
             "separator": "\n",
         },
         "NIST SSDF": {
@@ -111,7 +112,6 @@ supported_resource_mapping = {
             "sectionID": "Standard NIST SSDF ID",
             "subsection": "",
             "hyperlink": "",
-            # "version":"v2",
             "separator": "\n",
         },
     },
@@ -134,194 +134,94 @@ def is_empty(value: Optional[str]) -> bool:
     )
 
 
-def validate_import_csv_rows(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+class MasterSpreadsheetParser(ParserInterface):
     """
-    Entry point for parsing imported CSV files.
+    Parser for the master mapping spreadsheet (hierarchical CRE structure).
 
-    CSV validation is handled at the parser level.
-    Structural and row-level validation rules are implemented in
-    "validate_import_csv_rows", which is invoked internally
-    before parsing proceeds.
+    This parser is intended to:
+    - Parse CRE hierarchy and inter-CRE links from the main CSV.
+    - Delegate standard content to dedicated external parsers (ASVS, CWE, etc).
+
+    The high-level flow is:
+    1. Parse the hierarchical OpenCRE sheet to obtain
+       CREs plus placeholder links to standards.
+    2. Persist/merge the CREs.
+    3. Let other external parsers populate the actual Standard documents.
     """
-    if not rows:
-        raise ValueError("Invalid CSV format or missing data rows")
 
-    headers = list(rows[0].keys())
+    name = "Master Mapping Spreadsheet"
 
-    if not headers or len(headers) < 2:
-        raise ValueError("Invalid CSV format or missing header row")
+    def parse(
+        self, database: db.Node_collection, ph: prompt_client.PromptHandler
+    ) -> ParseResult:
+        raise NotImplementedError(
+            "MasterSpreadsheetParser.parse is not wired to a concrete source yet."
+        )
 
-    if not any(h.startswith("CRE") for h in headers):
-        raise ValueError("At least one CRE column is required")
+    @staticmethod
+    def parse_rows(rows: List[Dict[str, Any]]) -> ParseResult:
+        """
+        Parse master spreadsheet rows into CRE + standards document groups.
 
-    has_standard_name = any(h.endswith("|name") for h in headers)
-    has_standard_id = any(h.endswith("|id") for h in headers)
-    if not has_standard_name or not has_standard_id:
-        raise ValueError("Missing required standard|name or standard|id columns")
-
-    validated_rows = []
-    errors = []
-
-    for row_index, row in enumerate(rows, start=2):
-        # misaligned rows (extra columns)
-        if None in row:
-            raise ValueError(
-                f"Row {row_index} has more columns than header. "
-                "Please ensure the CSV matches the exported template."
-            )
-
-        normalized = {
-            k: (v.strip() if isinstance(v, str) else v) for k, v in row.items()
-        }
-
-        # skip completely empty rows
-        if all(not v for v in normalized.values()):
-            continue
-
-        cre_values = [v for k, v in normalized.items() if k.startswith("CRE") and v]
-
-        for cre in cre_values:
-            if "|" not in cre:
-                errors.append(
-                    {
-                        "row": row_index,
-                        "message": f"Invalid CRE entry '{cre}', expected '<CRE-ID>|<Name>'",
-                    }
-                )
-
-        validated_rows.append(normalized)
-
-    if errors:
-        raise ValueError(f"Row validation errors: {errors}")
-
-    return validated_rows
+        This is the entrypoint used by `cre_main` for spreadsheet imports.
+        """
+        documents = parse_hierarchical_export_format(rows)
+        return ParseResult(
+            results=documents,
+            calculate_gap_analysis=True,
+            calculate_embeddings=True,
+        )
 
 
-def parse_export_format(lfile: List[Dict[str, Any]]) -> Dict[str, List[defs.Document]]:
+def parse_cre_hierarchy_from_rows(
+    rows: List[Dict[str, Any]],
+) -> ParseResult:
     """
-    Given: a spreadsheet written by prepare_spreadsheet()
-    return a list of CRE docs
-    """
-    validated_rows = validate_export_csv_rows(lfile)
-    cres: Dict[str, defs.CRE] = {}
-    standards: Dict[str, Dict[str, defs.Standard]] = {}
-    documents: Dict[str, List[defs.Document]] = {}
+    Parse only the CRE structure from the master hierarchical CSV.
 
-    if not lfile:
-        return documents
-    lfile = validated_rows
-    max_internal_cre_links = len(
-        set([k for k in lfile[0].keys() if k.startswith("CRE")])
+    This uses parse_hierarchical_export_format to get a
+    dict that includes CREs and any standard links, but we only return the
+    CRE collection here. Standards are expected to be handled by their
+    own external parsers.
+    """
+    documents = parse_hierarchical_export_format(rows)
+
+    cre_key = defs.Credoctypes.CRE.value
+    cres: List[defs.CRE] = documents.get(cre_key, [])
+
+    # For empty inputs, unit tests expect `result.results` to be falsey ({}),
+    # not `{ "CRE": [] }`.
+    if not cres:
+        return ParseResult(
+            results={},
+            calculate_gap_analysis=True,
+            calculate_embeddings=True,
+        )
+
+    for cre in cres:
+        cre.tags = base_parser_defs.build_tags(
+            family=base_parser_defs.Family.STANDARD,
+            subtype=base_parser_defs.Subtype.REQUIREMENTS_STANDARD,
+            audience=base_parser_defs.Audience.ARCHITECT,
+            maturity=base_parser_defs.Maturity.STABLE,
+            source="opencre_master_sheet",
+            extra=cre.tags,
+        )
+
+    all_docs: Dict[str, List[defs.Document]] = {cre_key: cres}
+    base_parser_defs.validate_classification_tags(all_docs)
+    return ParseResult(
+        results=all_docs,
+        calculate_gap_analysis=True,
+        calculate_embeddings=True,
     )
-    standard_names = set(
-        [k.split("|")[0] for k in lfile[0].keys() if not k.startswith("CRE")]
-    )
-    logger.info(f"Found standards with names: {standard_names}")
-
-    highest_cre = None
-    highest_index = max_internal_cre_links + 1
-
-    previous_cre = None
-    previous_index = max_internal_cre_links + 1
-
-    for mapping_line in lfile:
-        working_cre = None
-        working_standard = None
-        # get highest numbered CRE entry (lowest in hierarchy)
-        for i in range(max_internal_cre_links - 1, -1, -1):
-            if not is_empty(mapping_line.get(f"CRE {i}")):
-                entry = mapping_line.get(f"CRE {i}").split(defs.ExportFormat.separator)
-                if not entry or len(entry) < 2:
-                    line = mapping_line.get(f"CRE {i}")
-                    raise ValueError(
-                        f"mapping line contents: {line}, key: CRE {i} is not formatted correctly, missing separator {defs.ExportFormat.separator}"
-                    )
-                working_cre = defs.CRE(name=entry[1], id=entry[0])
-                if cres.get(working_cre.id):
-                    working_cre = cres[working_cre.id]
-
-                if previous_index < i:  # we found a higher hierarchy CRE
-                    previous_index = i
-                    highest_cre = previous_cre
-                    cres[highest_cre.id] = highest_cre.add_link(
-                        defs.Link(
-                            document=working_cre.shallow_copy(),
-                            ltype=defs.LinkTypes.Contains,
-                        )
-                    )
-                elif highest_index < i:  # we found a higher hierarchy CRE
-                    lnk = defs.Link(
-                        document=working_cre.shallow_copy(),
-                        ltype=defs.LinkTypes.Contains,
-                    )
-                    if not highest_cre.has_link(lnk):
-                        cres[highest_cre.id] = highest_cre.add_link(lnk)
-                    else:
-                        logger.warning(
-                            f"Link between {highest_cre.name} and {working_cre.name} already exists"
-                        )
-                elif highest_cre == None:
-                    highest_cre = working_cre
-                    highest_index = i
-
-                previous_index = i
-                previous_cre = working_cre
-                break
-
-        for s in standard_names:
-            if not is_empty(mapping_line.get(f"{s}{defs.ExportFormat.separator}name")):
-                working_standard = defs.Standard(
-                    name=s,
-                    sectionID=mapping_line.get(f"{s}{defs.ExportFormat.separator}id"),
-                    section=mapping_line.get(f"{s}{defs.ExportFormat.separator}name"),
-                    hyperlink=mapping_line.get(
-                        f"{s}{defs.ExportFormat.separator}hyperlink", ""
-                    ),
-                    description=mapping_line.get(
-                        f"{s}{defs.ExportFormat.separator}description", ""
-                    ),
-                )
-                if standards.get(working_standard.name) and standards.get(
-                    working_standard.name
-                ).get(working_standard.id):
-                    working_standard = standards[working_standard.name][
-                        working_standard.id
-                    ]
-
-                if working_cre:
-                    working_cre.add_link(
-                        defs.Link(
-                            document=working_standard.shallow_copy(),
-                            ltype=defs.LinkTypes.LinkedTo,
-                        )
-                    )
-                    working_standard.add_link(
-                        defs.Link(
-                            document=working_cre.shallow_copy(),
-                            ltype=defs.LinkTypes.LinkedTo,
-                        )
-                    )
-
-                if working_standard.name not in standards:
-                    standards[working_standard.name] = {}
-
-                standards[working_standard.name][working_standard.id] = working_standard
-
-        if working_cre:
-            cres[working_cre.id] = working_cre
-    documents[defs.Credoctypes.CRE] = list(cres.values())
-
-    for standard_name, standard_entries in standards.items():
-        logger.info(f"Adding {len(standard_entries)} entries for {standard_name}")
-        documents[standard_name] = list(standard_entries.values())
-    return documents
 
 
 @dataclass
 class UninitializedMapping:
     complete_cre: defs.CRE
     other_cre_name: str
-    relationship: defs.LinkTypes  # Relationship is complete_cre->other_cre_name
+    relationship: defs.LinkTypes
 
 
 def get_supported_resources_from_main_csv() -> List[str]:
@@ -380,9 +280,6 @@ def reconcile_uninitializedMappings(
 def get_highest_cre_name(
     mapping: Dict[str, str], highest_hierarchy: int = 5
 ) -> tuple[int, str]:
-    """
-    given a line of the root CSV, returns the highest hierarchy CRE and a number from 1 to 5 based on where in the hierarchy it found the CRE
-    """
     for i in range(highest_hierarchy, 0, -1):
         if not is_empty(mapping.get(f"CRE hierarchy {i}")):
             return i, mapping.get(f"CRE hierarchy {i}").strip()
@@ -393,7 +290,6 @@ def _build_cre_name_to_id_map(
     cre_file: List[Dict[str, str]],
     max_hierarchy: int,
 ) -> Dict[str, str]:
-    """Scan all rows before any CRE objects exist. Row CRE ID applies to the leaf CRE only."""
     name_to_id: Dict[str, str] = {}
     for mapping in cre_file:
         ch, name = get_highest_cre_name(mapping=mapping, highest_hierarchy=max_hierarchy)
@@ -425,39 +321,17 @@ def update_cre_in_links(
 def parse_hierarchical_export_format(
     cre_file: List[Dict[str, str]],
 ) -> Dict[str, List[defs.Document]]:
-    """parses the main OpenCRE csv and creates a list of standards in it
-
-    Args:
-        cre_file (List[Dict[str, str]]): the Dict representation of the spreadsheet, entries in the dict are {<Header-Entry>:<Value-Entry>}
-
-    Returns:
-        Dict[str,List[defs.Document]]] a dictionary of
-        {
-            <Name of resource>:[<resource documents>]
-            }
-
-        for example:
-        {
-            "CRE":[<list of cre docs>],
-            "ASVS":[<list of ASVS docs>]
-        }
-    """
-
     logger.info("Spreadsheet is hierarchical export format")
     documents: Dict[str, List[defs.Document]] = {defs.Credoctypes.CRE.value: []}
-    # Allow empty inputs (used by unit tests and for defensive parsing).
-    # Downstream callers can decide whether they want an empty CRE list or no results key at all.
     if not cre_file:
         return documents
     max_hierarchy = len([key for key in cre_file[0].keys() if "CRE hierarchy" in key])
 
     cre_name_to_id = _build_cre_name_to_id_map(cre_file, max_hierarchy)
+
     cre_dict = {}
     rows_with_cre: List[Tuple[Dict[str, str], defs.CRE]] = []
-    uninitialized_cre_mappings: List[UninitializedMapping] = (
-        []
-    )  # the csv has a column "Link to Other CRE", this column linksa complete CRE entry to another CRE by name.
-    # The other CRE might not have been initialized yet at the time of linking so it cannot be part of our main document collection yet
+    uninitialized_cre_mappings: List[UninitializedMapping] = []
     for mapping in cre_file:
         cre: defs.CRE
         name: str = ""
@@ -467,10 +341,10 @@ def parse_hierarchical_export_format(
         current_hierarchy, name = get_highest_cre_name(
             mapping=mapping, highest_hierarchy=max_hierarchy
         )
-        if name == None:  # skip empty lines
+        if name is None:
             continue
 
-        if current_hierarchy > 0:  # find the previous higher CRE so we can link
+        if current_hierarchy > 0:
             higher_cre = 0
             for i in range(current_hierarchy - 1, 0, -1):
                 if not is_empty(mapping.get(f"CRE hierarchy {str(i)}")):
@@ -500,9 +374,7 @@ def parse_hierarchical_export_format(
                 mapping.pop("CRE ID")
             cre = defs.CRE(name=name, id=resolved_id)
         else:
-            logger.warning(
-                f"empty Id for {name}, skipping row (CRE not registered)"
-            )
+            logger.warning(f"empty Id for {name}, skipping row (CRE not registered)")
             continue
 
         if not is_empty(str(mapping.get("CRE Tags")).strip()):
@@ -513,16 +385,18 @@ def parse_hierarchical_export_format(
         if cre:
             cre_dict = update_cre_in_links(cre_dict, cre)
 
-        mapping["Link to other CRE"] = (
-            f'{mapping["Link to other CRE"]},{",".join(cre.tags)}'
-        )
+        link_key = "Link to other CRE"
+        if link_key in mapping:
+            raw_link_val = mapping.get(link_key, "")
+            if not is_empty(str(raw_link_val).strip()):
+                mapping[link_key] = f"{raw_link_val},{','.join(cre.tags)}"
 
-        if not is_empty(str(mapping.get("Link to other CRE")).strip()):
+        if not is_empty(str(mapping.get(link_key, "")).strip()):
             other_cres = list(
                 set(
                     [
                         x.strip()
-                        for x in str(mapping.pop("Link to other CRE")).split(",")
+                        for x in str(mapping.pop(link_key, "")).split(",")
                         if not is_empty(x.strip())
                     ]
                 )
@@ -545,7 +419,6 @@ def parse_hierarchical_export_format(
                         f"{cre.id}: We knew yet 'other cre' {other_cre}, adding regular link"
                     )
                     new_cre = cre_dict[other_cre.strip()]
-                    # we only need a shallow copy here
                     lnk = defs.Link(
                         ltype=defs.LinkTypes.Related,
                         document=new_cre.shallow_copy(),
@@ -556,10 +429,8 @@ def parse_hierarchical_export_format(
                     else:
                         cre = cre.add_link(lnk)
 
-        # Collect (row, cre) for standard subparser dispatch (Step 2b: whole-doc per family)
         rows_with_cre.append((dict(mapping), cre))
 
-        # link CRE to a higher level one
         if higher_cre and not is_empty(
             str(mapping.get(f"CRE hierarchy {str(higher_cre)}")).strip()
         ):
@@ -580,13 +451,10 @@ def parse_hierarchical_export_format(
                     if c.document.doctype == defs.Credoctypes.CRE
                     and c.document.name == cre.name
                 ]
-                # there is no need to capture the entirety of the cre tree, we just need to register this shallow relation
-                # the "documents" dict should contain the rest of the info
                 if existing_link:
-                    cre_hi.links[
-                        cre_hi.links.index(existing_link[0])
-                        # ugliest way ever to write "update the object in that pointer"
-                    ].document = cre.shallow_copy()
+                    cre_hi.links[cre_hi.links.index(existing_link[0])].document = (
+                        cre.shallow_copy()
+                    )
                 else:
                     cre_hi = cre_hi.add_link(
                         defs.Link(
@@ -594,15 +462,12 @@ def parse_hierarchical_export_format(
                         )
                     )
                 cre_dict[cre_hi.name] = cre_hi
-        else:
-            pass  # add the cre to documents and make the connection
         if cre:
             cre_dict[cre.name] = cre
 
     cre_dict = reconcile_uninitializedMappings(cre_dict, uninitialized_cre_mappings)
     documents[defs.Credoctypes.CRE.value] = list(cre_dict.values())
 
-    # dispatch to standard-family subparsers (whole-doc, once per family)
     standards_from_subparsers = _dispatch_standard_subparsers(rows_with_cre)
     for std_list in standards_from_subparsers.values():
         for std in std_list:
@@ -616,7 +481,6 @@ def _parse_standards_for_family(
     name: str,
     struct: Dict[str, Any],
 ) -> List[defs.Link]:
-    """Extract standard links for a single family from one row. Used by standard subparsers."""
     links: List[defs.Link] = []
     if not is_empty(mapping.get(struct["section"])) or not is_empty(
         mapping.get(struct["sectionID"])
@@ -624,9 +488,7 @@ def _parse_standards_for_family(
         if "separator" in struct:
             separator = struct["separator"]
             sections = str(mapping.pop(struct["section"])).split(separator)
-            subsections = str(mapping.get(struct["subsection"], "")).split(
-                separator
-            )
+            subsections = str(mapping.get(struct["subsection"], "")).split(separator)
 
             hyperlinks = str(mapping.get(struct["hyperlink"], "")).split(separator)
             if len(sections) > len(subsections):
@@ -681,35 +543,45 @@ def _parse_standards_for_family(
 def _dispatch_standard_subparsers(
     rows_with_cre: List[Tuple[Dict[str, str], defs.CRE]],
 ) -> Dict[str, List[defs.Document]]:
-    """
-    Dispatch to standard-family subparsers. Each subparser receives the full rows
-    and extracts only its family's content. Called once per family (whole-doc).
-    """
     standards_docs: Dict[str, List[defs.Document]] = {}
     standards_map = supported_resource_mapping.get("Standards", {})
 
     for family_name, struct in standards_map.items():
-        family_standards: List[defs.Standard] = []
-        for mapping, cre in rows_with_cre:
-            row_copy = copy(mapping)
-            links = _parse_standards_for_family(row_copy, family_name, struct)
-            for link in links:
-                doc = link.document.add_link(
-                    defs.Link(
-                        document=cre.shallow_copy(),
-                        ltype=defs.LinkTypes.LinkedTo,
-                    )
-                )
-                family_standards.append(doc)
+        parser = _SpreadsheetStandardFamilyParser(family_name=family_name, struct=struct)
+        family_standards = parser.parse_rows(rows_with_cre)
         for std in family_standards:
             standards_docs = add_standard_to_documents_array(std, standards_docs)
     return standards_docs
 
 
+@dataclass
+class _SpreadsheetStandardFamilyParser:
+    family_name: str
+    struct: Dict[str, Any]
+
+    def parse_rows(
+        self, rows_with_cre: List[Tuple[Dict[str, str], defs.CRE]]
+    ) -> List[defs.Standard]:
+        docs: List[defs.Standard] = []
+        for mapping, cre in rows_with_cre:
+            docs.extend(self.parse_row(mapping, cre))
+        return docs
+
+    def parse_row(self, mapping: Dict[str, str], cre: defs.CRE) -> List[defs.Standard]:
+        row_copy = copy(mapping)
+        links = _parse_standards_for_family(row_copy, self.family_name, self.struct)
+        family_docs: List[defs.Standard] = []
+        for link in links:
+            doc = link.document.add_link(
+                defs.Link(document=cre.shallow_copy(), ltype=defs.LinkTypes.LinkedTo)
+            )
+            family_docs.append(doc)
+        return family_docs
+
+
 def parse_standards(
     mapping: Dict[str, str], standards_mapping: Dict[str, Dict[str, Any]] = None
 ) -> List[defs.Link]:
-    """Legacy: parse all standard families from one row. Prefer subparser dispatch."""
     if not standards_mapping:
         standards_mapping = supported_resource_mapping
 
@@ -717,3 +589,5 @@ def parse_standards(
     for name, struct in standards_mapping.get("Standards", {}).items():
         links.extend(_parse_standards_for_family(mapping, name, struct))
     return links
+
+
