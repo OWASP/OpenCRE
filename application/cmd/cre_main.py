@@ -1,3 +1,4 @@
+import re
 import time
 import argparse
 import json
@@ -18,6 +19,7 @@ from application import create_app  # type: ignore
 from application.config import CMDConfig
 from application.database import db
 from application.defs import cre_defs as defs
+from application.defs import cre_exceptions
 from application.defs import osib_defs as odefs
 from application.utils import spreadsheet as sheet_utils
 from application.utils import redis
@@ -110,9 +112,11 @@ def register_node(node: defs.Node, collection: db.Node_collection) -> db.Node:
 
 
 def register_cre(cre: defs.CRE, collection: db.Node_collection) -> Tuple[db.CRE, bool]:
+    if not cre.id or not re.match(r"\d\d\d-\d\d\d", cre.id):
+        raise cre_exceptions.InvalidCREIDException(cre)
     collection = collection.with_graph()
     existing = False
-    if collection.get_CREs(name=cre.id):
+    if collection.get_CREs(external_id=cre.id):
         existing = True
 
     dbcre: db.CRE = collection.add_cre(cre)
@@ -339,9 +343,13 @@ def parse_standards_from_spreadsheeet(
     cache_location: str,
     prompt_handler: prompt_client.PromptHandler,
 ) -> None:
-    """given a yaml with standards, build a list of standards in the db"""
+    """given a csv with standards, build a list of standards in the db"""
     collection = db_connect(cache_location)
     if any(key.startswith("CRE hierarchy") for key in cre_file[0].keys()):
+        try:
+            db.create_import_run(source="master_spreadsheet", version=None)
+        except Exception as e:
+            logger.debug("Import run tracking skipped: %s", e)
         conn = redis.connect()
         collection = collection.with_graph()
         redis.empty_queues(conn)

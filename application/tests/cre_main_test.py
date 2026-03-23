@@ -14,6 +14,7 @@ from application import create_app, sqla  # type: ignore
 from application.cmd import cre_main as main
 from application.database import db
 from application.defs import cre_defs as defs
+from application.defs import cre_exceptions
 from application.defs import osib_defs as odefs
 from application.defs.osib_defs import Osib_id, Osib_tree
 
@@ -321,6 +322,15 @@ class TestMain(unittest.TestCase):
         self.assertEqual(
             len(self.collection.session.query(db.Node).all()), 2
         )  # 2 nodes in the db
+
+        with self.assertRaises(cre_exceptions.InvalidCREIDException):
+            invalid_cre = defs.CRE(id="100-100", name="x", description="y")
+            invalid_cre.id = ""
+            main.register_cre(invalid_cre, self.collection)
+        with self.assertRaises(cre_exceptions.InvalidCREIDException):
+            bad_cre = defs.CRE(id="100-100", name="x", description="y")
+            bad_cre.id = "invalid"
+            main.register_cre(bad_cre, self.collection)
 
         # hierarchy register tests
         main.register_cre(cre_lower, self.collection)
