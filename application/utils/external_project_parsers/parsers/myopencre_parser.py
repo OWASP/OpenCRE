@@ -2,7 +2,7 @@ import logging
 from typing import Dict, List, Any
 
 from application.defs import cre_defs as defs
-from application.utils import spreadsheet_parsers
+from application.utils.external_project_parsers.parsers import export_format_parser
 from application.utils.external_project_parsers import base_parser_defs
 from application.utils.external_project_parsers.base_parser_defs import ParseResult
 
@@ -18,10 +18,10 @@ def parse_rows_to_documents(rows: List[Dict[str, Any]]) -> ParseResult:
 
     This mirrors the legacy logic from web_main.import_from_cre_csv, but
     additionally applies classification tags using the shared tagging
-    conventions. It reuses spreadsheet_parsers.parse_export_format to
+    conventions. It reuses export_format_parser.parse_export_format to
     understand the CSV structure.
     """
-    documents = spreadsheet_parsers.parse_export_format(rows)
+    documents = export_format_parser.parse_export_format(rows)
 
     # CREs are under the Credoctypes.CRE value key
     cre_key = defs.Credoctypes.CRE.value

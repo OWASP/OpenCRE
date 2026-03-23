@@ -1022,7 +1022,9 @@ def run_import_core_sequential(*, db_path: str, core_spreadsheet_url: str) -> No
     self-contained.
     """
     from application.utils import spreadsheet as sheet_utils
-    from application.utils import spreadsheet_parsers
+    from application.utils.external_project_parsers.parsers import (
+        master_spreadsheet_parser,
+    )
     from application.defs import cre_defs
     from application.cmd import cre_main
 
@@ -1054,7 +1056,7 @@ def run_import_core_sequential(*, db_path: str, core_spreadsheet_url: str) -> No
             "Could not find a worksheet in the spreadsheet with 'CRE hierarchy' columns."
         )
 
-    documents = spreadsheet_parsers.parse_hierarchical_export_format(core_rows)
+    documents = master_spreadsheet_parser.parse_hierarchical_export_format(core_rows)
 
     # Ensure schema exists (run_import_only may have already created it).
     collection = cre_main.db_connect(path=db_path)

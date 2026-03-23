@@ -15,6 +15,7 @@ from dacite import from_dict
 from dacite.config import Config
 
 from application.utils.external_project_parsers.base_parser import BaseParser
+from application.utils.external_project_parsers.parsers import master_spreadsheet_parser
 from application import create_app  # type: ignore
 from application.config import CMDConfig
 from application.database import db
@@ -23,7 +24,6 @@ from application.defs import cre_exceptions
 from application.defs import osib_defs as odefs
 from application.utils import spreadsheet as sheet_utils
 from application.utils import redis
-from application.utils import spreadsheet_parsers
 from alive_progress import alive_bar
 from application.prompt_client import prompt_client as prompt_client
 from application.utils import gap_analysis
@@ -354,7 +354,9 @@ def parse_standards_from_spreadsheeet(
         collection = collection.with_graph()
         redis.empty_queues(conn)
         q = Queue(connection=conn)
-        docs = spreadsheet_parsers.parse_hierarchical_export_format(cre_file)
+        docs = master_spreadsheet_parser.MasterSpreadsheetParser.parse_rows(
+            cre_file
+        ).results
         total_resources = docs.keys()
         jobs = []
         logger.info(f"Importing {len(docs.get(defs.Credoctypes.CRE.value))} CREs")
