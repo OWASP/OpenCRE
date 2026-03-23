@@ -1,8 +1,10 @@
 import logging
 import os
 import tempfile
+import json
+from pathlib import Path
 import requests
-from typing import Dict
+from typing import Dict, List
 from application.database import db
 from application.defs import cre_defs as defs
 import shutil
@@ -22,6 +24,22 @@ logger.setLevel(logging.INFO)
 class CWE(ParserInterface):
     name = "CWE"
     cwe_zip = "https://cwe.mitre.org/data/xml/cwec_latest.xml.zip"
+    fallback_mapping_path = (
+        Path(__file__).resolve().parent.parent / "data" / "cwe_fallback_mappings.json"
+    )
+
+    def __init__(self) -> None:
+        self.fallback_cre_by_match = self.load_fallback_cre_mappings()
+
+    def load_fallback_cre_mappings(self) -> List[tuple[tuple[str, ...], str]]:
+        with self.fallback_mapping_path.open("r", encoding="utf-8") as mapping_file:
+            raw_mappings = json.load(mapping_file)
+
+        mappings = []
+        for entry in raw_mappings:
+            keywords = tuple(keyword.lower() for keyword in entry["keywords"])
+            mappings.append((keywords, entry["cre_id"]))
+        return mappings
 
     def parse(self, cache: db.Node_collection, ph: prompt_client.PromptHandler):
         response = requests.get(self.cwe_zip, stream=True)
@@ -74,17 +92,74 @@ class CWE(ParserInterface):
     ) -> defs.Standard:
         related_cwes = cache.get_nodes(name="CWE", sectionID=related_id)
         if related_cwes:
-            for cre in [
-                c.document
-                for c in related_cwes[0].links
-                if c.document.doctype == defs.Credoctypes.CRE
-            ]:
-                logger.debug(
-                    f"linked CWE with id {cwe.sectionID} to CRE with ID {cre.id}"
-                )
-                cwe.add_link(
-                    defs.Link(document=cre, ltype=defs.LinkTypes.AutomaticallyLinkedTo)
-                )
+            return self.link_to_related_cwe_entry(cwe, related_cwes[0])
+        return cwe
+
+    def link_to_related_cwe_entry(
+        self, cwe: defs.Standard, related_cwe: defs.Standard
+    ) -> defs.Standard:
+        for cre in [
+            link.document
+            for link in related_cwe.links
+            if link.document.doctype == defs.Credoctypes.CRE
+        ]:
+            logger.debug(f"linked CWE with id {cwe.sectionID} to CRE with ID {cre.id}")
+            autolink = defs.Link(
+                document=cre, ltype=defs.LinkTypes.AutomaticallyLinkedTo
+            )
+            if not cwe.has_link(autolink):
+                cwe.add_link(autolink)
+        return cwe
+
+    def collect_related_weakness_ids(self, weakness: Dict) -> List[str]:
+        related_ids = []
+        related_weaknesses = weakness.get("Related_Weaknesses")
+        if not related_weaknesses:
+            return related_ids
+
+        containers = (
+            related_weaknesses
+            if isinstance(related_weaknesses, list)
+            else [related_weaknesses]
+        )
+        for container in containers:
+            if not isinstance(container, Dict):
+                continue
+            related_entries = container.get("Related_Weakness")
+            if not related_entries:
+                continue
+            related_entries = (
+                related_entries
+                if isinstance(related_entries, list)
+                else [related_entries]
+            )
+            for entry in related_entries:
+                if isinstance(entry, Dict) and entry.get("@CWE_ID"):
+                    related_ids.append(str(entry["@CWE_ID"]))
+        return related_ids
+
+    def apply_fallback_cre_mapping(
+        self, cwe: defs.Standard, cache: db.Node_collection
+    ) -> defs.Standard:
+        if any(link.document.doctype == defs.Credoctypes.CRE for link in cwe.links):
+            return cwe
+
+        section_text = (cwe.section or "").lower()
+        for keywords, cre_id in self.fallback_cre_by_match:
+            if not any(keyword in section_text for keyword in keywords):
+                continue
+
+            matching_cres = cache.get_CREs(external_id=cre_id)
+            if not matching_cres:
+                continue
+
+            fallback_link = defs.Link(
+                document=matching_cres[0], ltype=defs.LinkTypes.AutomaticallyLinkedTo
+            )
+            if not cwe.has_link(fallback_link):
+                cwe.add_link(fallback_link)
+            return cwe
+
         return cwe
 
     # cwe is a special case because it already partially exists in our spreadsheet
@@ -93,6 +168,8 @@ class CWE(ParserInterface):
     def register_cwe(self, cache: db.Node_collection, xml_file: str):
         statuses = {}
         entries = []
+        entries_by_id = {}
+        related_ids_by_cwe = {}
         with open(xml_file, "r") as xml:
             weakness_catalog = xmltodict.parse(xml.read()).get("Weakness_Catalog")
         for _, weaknesses in weakness_catalog.get("Weaknesses").items():
@@ -157,23 +234,31 @@ class CWE(ParserInterface):
                         logger.info(
                             f"CWE '{cwe.sectionID}-{cwe.section}' does not have any related CAPEC attack patterns, skipping automated linking"
                         )
-                    if weakness.get("Related_Weaknesses"):
-                        if isinstance(weakness.get("Related_Weaknesses"), list):
-                            for related_weakness in weakness.get("Related_Weaknesses"):
-                                cwe = self.parse_related_weakness(
-                                    cache, related_weakness, cwe
-                                )
-                        else:
-                            cwe = self.parse_related_weakness(
-                                cache, weakness.get("Related_Weaknesses"), cwe
-                            )
                     entries.append(cwe)
-        return entries
+                    entries_by_id[cwe.sectionID] = cwe
+                    related_ids_by_cwe[cwe.sectionID] = (
+                        self.collect_related_weakness_ids(weakness)
+                    )
 
-    def parse_related_weakness(
-        self, cache: db.Node_collection, rw: Dict[str, Dict], cwe: defs.Standard
-    ) -> defs.Standard:
-        cwe_entry = rw.get("Related_Weakness")
-        if isinstance(cwe_entry, Dict):
-            id = cwe_entry["@CWE_ID"]
-            return self.link_to_related_cwe(cwe=cwe, cache=cache, related_id=id)
+        changed = True
+        while changed:
+            changed = False
+            for cwe_id, related_ids in related_ids_by_cwe.items():
+                cwe = entries_by_id[cwe_id]
+                before_count = len(cwe.links)
+                for related_id in related_ids:
+                    related_cwe = entries_by_id.get(related_id)
+                    if related_cwe:
+                        cwe = self.link_to_related_cwe_entry(cwe, related_cwe)
+                    else:
+                        cwe = self.link_to_related_cwe(
+                            cwe=cwe, cache=cache, related_id=related_id
+                        )
+                entries_by_id[cwe_id] = cwe
+                if len(cwe.links) != before_count:
+                    changed = True
+
+        for cwe_id, cwe in entries_by_id.items():
+            entries_by_id[cwe_id] = self.apply_fallback_cre_mapping(cwe, cache)
+
+        return entries
