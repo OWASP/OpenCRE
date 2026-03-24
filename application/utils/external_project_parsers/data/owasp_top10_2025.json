@@ -1,0 +1,62 @@
+[
+  {
+    "section_id": "A01",
+    "section": "Broken Access Control",
+    "hyperlink": "https://owasp.org/Top10/2025/A01_2025-Broken_Access_Control/",
+    "cre_ids": ["117-371", "177-260", "724-770"]
+  },
+  {
+    "section_id": "A02",
+    "section": "Security Misconfiguration",
+    "hyperlink": "https://owasp.org/Top10/2025/A02_2025-Security_Misconfiguration/",
+    "cre_ids": ["486-813"]
+  },
+  {
+    "section_id": "A03",
+    "section": "Software Supply Chain Failures",
+    "hyperlink": "https://owasp.org/Top10/2025/A03_2025-Software_Supply_Chain_Failures/",
+    "cre_ids": ["613-286", "613-287", "715-223", "863-521"]
+  },
+  {
+    "section_id": "A04",
+    "section": "Cryptographic Failures",
+    "hyperlink": "https://owasp.org/Top10/2025/A04_2025-Cryptographic_Failures/",
+    "cre_ids": ["170-772", "227-045"]
+  },
+  {
+    "section_id": "A05",
+    "section": "Injection",
+    "hyperlink": "https://owasp.org/Top10/2025/A05_2025-Injection/",
+    "cre_ids": ["031-447", "064-808", "760-764"]
+  },
+  {
+    "section_id": "A06",
+    "section": "Insecure Design",
+    "hyperlink": "https://owasp.org/Top10/2025/A06_2025-Insecure_Design/",
+    "cre_ids": ["126-668", "155-155"]
+  },
+  {
+    "section_id": "A07",
+    "section": "Authentication Failures",
+    "hyperlink": "https://owasp.org/Top10/2025/A07_2025-Authentication_Failures/",
+    "cre_ids": ["002-630", "177-260", "586-842", "633-428"]
+  },
+  {
+    "section_id": "A08",
+    "section": "Software or Data Integrity Failures",
+    "hyperlink": "https://owasp.org/Top10/2025/A08_2025-Software_or_Data_Integrity_Failures/",
+    "cre_ids": ["613-287", "836-068"]
+  },
+  {
+    "section_id": "A09",
+    "section": "Security Logging and Alerting Failures",
+    "hyperlink": "https://owasp.org/Top10/2025/A09_2025-Security_Logging_and_Alerting_Failures/",
+    "cre_ids": ["067-050", "148-420", "402-706", "843-841"]
+  },
+  {
+    "section_id": "A10",
+    "section": "Mishandling of Exceptional Conditions",
+    "hyperlink": "https://owasp.org/Top10/2025/A10_2025-Mishandling_of_Exceptional_Conditions/",
+    "cre_ids": ["513-183"]
+  }
+]
