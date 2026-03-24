@@ -69,8 +69,37 @@ class TestCheatsheetsParser(unittest.TestCase):
         self.maxDiff = None
         for name, nodes in entries.results.items():
             self.assertEqual(name, parser.name)
-            self.assertEqual(len(nodes), 1)
-            self.assertEqual(expected.todict(), nodes[0].todict())
+            sections = {node.section for node in nodes}
+            self.assertIn("Secrets Management Cheat Sheet", sections)
+            secret_entry = [
+                node
+                for node in nodes
+                if node.section == "Secrets Management Cheat Sheet"
+            ][0]
+            self.assertEqual(expected.todict(), secret_entry.todict())
+
+    def test_register_supplemental_cheatsheets(self) -> None:
+        for cre_id, name in [
+            ("118-110", "API/web services"),
+            ("724-770", "Technical application access control"),
+            ("623-550", "Denial Of Service protection"),
+        ]:
+            self.collection.add_cre(defs.CRE(name=name, id=cre_id))
+
+        entries = cheatsheets_parser.Cheatsheets().register_supplemental_cheatsheets(
+            cache=self.collection
+        )
+        rest = [
+            entry for entry in entries if entry.section == "REST Security Cheat Sheet"
+        ][0]
+        self.assertEqual(
+            "https://cheatsheetseries.owasp.org/cheatsheets/REST_Security_Cheat_Sheet.html",
+            rest.hyperlink,
+        )
+        self.assertEqual(
+            ["118-110", "724-770", "623-550"],
+            [link.document.id for link in rest.links],
+        )
 
     cheatsheets_md = """ # Secrets Management Cheat Sheet
 
