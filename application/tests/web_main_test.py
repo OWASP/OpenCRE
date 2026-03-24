@@ -7,6 +7,7 @@ import re
 import json
 import unittest
 import tempfile
+from types import SimpleNamespace
 from unittest.mock import patch
 
 import redis
@@ -688,7 +689,48 @@ class TestMain(unittest.TestCase):
                 headers={"Content-Type": "application/json"},
             )
             self.assertEqual(200, response.status_code)
-            self.assertEqual(expected, json.loads(response.data))
+            self.assertEqual(expected + ["OpenCRE"], json.loads(response.data))
+
+    @patch.object(web_main.gap_analysis, "schedule")
+    @patch.object(db, "Node_collection")
+    def test_gap_analysis_supports_opencre_as_standard(
+        self, db_mock, schedule_mock
+    ) -> None:
+        shared_cre = defs.CRE(id="170-772", name="Cryptography", description="")
+        compare = defs.Standard(
+            name="OWASP Web Security Testing Guide (WSTG)",
+            section="WSTG-CRYP-04",
+        )
+        compare.add_link(
+            defs.Link(ltype=defs.LinkTypes.LinkedTo, document=shared_cre.shallow_copy())
+        )
+        opencre = defs.CRE(id="170-772", name="Cryptography", description="")
+        opencre.add_link(
+            defs.Link(ltype=defs.LinkTypes.LinkedTo, document=compare.shallow_copy())
+        )
+
+        db_mock.return_value.get_gap_analysis_result.return_value = None
+        db_mock.return_value.gap_analysis_exists.return_value = False
+        db_mock.return_value.get_nodes.side_effect = lambda name=None, **kwargs: (
+            [compare] if name == "OWASP Web Security Testing Guide (WSTG)" else []
+        )
+        db_mock.return_value.session.query.return_value.all.return_value = [
+            SimpleNamespace(id="cre-internal-1")
+        ]
+        db_mock.return_value.get_CREs.return_value = [opencre]
+
+        with self.app.test_client() as client:
+            response = client.get(
+                "/rest/v1/map_analysis?standard=OpenCRE&standard=OWASP%20Web%20Security%20Testing%20Guide%20(WSTG)",
+                headers={"Content-Type": "application/json"},
+            )
+
+        payload = json.loads(response.data)
+        self.assertEqual(200, response.status_code)
+        self.assertIn("result", payload)
+        self.assertIn(opencre.id, payload["result"])
+        self.assertIn(compare.id, payload["result"][opencre.id]["paths"])
+        schedule_mock.assert_not_called()
 
     def test_gap_analysis_weak_links_no_cache(self) -> None:
         with self.app.test_client() as client:

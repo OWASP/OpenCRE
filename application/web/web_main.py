@@ -48,6 +48,14 @@ import google.auth.transport.requests
 
 
 ITEMS_PER_PAGE = 20
+OWASP_TOP10_2025_DATA_FILE = (
+    pathlib.Path(__file__).resolve().parent.parent
+    / "utils"
+    / "external_project_parsers"
+    / "data"
+    / "owasp_top10_2025.json"
+)
+OPENCRE_STANDARD_NAME = "OpenCRE"
 
 app = Blueprint(
     "web",
@@ -294,6 +302,129 @@ def find_document_by_tag() -> Any:
     abort(404, "Tag does not exist")
 
 
+def _get_opencre_documents(collection: db.Node_collection) -> list[defs.CRE]:
+    return [
+        collection.get_CREs(internal_id=cre.id)[0]
+        for cre in collection.session.query(db.CRE).all()
+    ]
+
+
+def _get_map_analysis_documents(
+    standard: str, collection: db.Node_collection
+) -> list[defs.Document]:
+    if standard == OPENCRE_STANDARD_NAME:
+        return _get_opencre_documents(collection)
+    return collection.get_nodes(name=standard)
+
+
+def _get_document_cre_ids(document: defs.Document) -> list[str]:
+    if document.doctype == defs.Credoctypes.CRE:
+        return [document.id]
+    return [
+        link.document.id
+        for link in document.links
+        if link.document.doctype == defs.Credoctypes.CRE
+    ]
+
+
+def _build_direct_overlap_path(
+    base_document: defs.Document, cre_id: str, compare_document: defs.Document
+) -> dict[str, Any] | None:
+    if base_document.doctype == defs.Credoctypes.CRE:
+        if compare_document.doctype == defs.Credoctypes.CRE:
+            return None
+        return {
+            "end": compare_document.shallow_copy(),
+            "path": [
+                {
+                    "start": base_document.shallow_copy(),
+                    "end": compare_document.shallow_copy(),
+                    "relationship": "LINKED_TO",
+                    "score": 0,
+                }
+            ],
+            "score": 0,
+        }
+
+    if compare_document.doctype == defs.Credoctypes.CRE:
+        return {
+            "end": compare_document.shallow_copy(),
+            "path": [
+                {
+                    "start": base_document.shallow_copy(),
+                    "end": compare_document.shallow_copy(),
+                    "relationship": "LINKED_TO",
+                    "score": 0,
+                }
+            ],
+            "score": 0,
+        }
+
+    return {
+        "end": compare_document.shallow_copy(),
+        "path": [
+            {
+                "start": base_document.shallow_copy(),
+                "end": defs.CRE(id=cre_id).shallow_copy(),
+                "relationship": "LINKED_TO",
+                "score": 0,
+            },
+            {
+                "start": defs.CRE(id=cre_id).shallow_copy(),
+                "end": compare_document.shallow_copy(),
+                "relationship": "LINKED_TO",
+                "score": 0,
+            },
+        ],
+        "score": 0,
+    }
+
+
+def _build_direct_cre_overlap_map_analysis(
+    standards: list[str],
+    standards_hash: str,
+    collection: db.Node_collection,
+) -> dict[str, Any] | None:
+    if len(standards) < 2:
+        return None
+
+    base_nodes = _get_map_analysis_documents(standards[0], collection)
+    compare_nodes = _get_map_analysis_documents(standards[1], collection)
+    if not base_nodes or not compare_nodes:
+        return None
+
+    compare_nodes_by_cre: dict[str, list[defs.Document]] = {}
+    for compare_node in compare_nodes:
+        for cre_id in _get_document_cre_ids(compare_node):
+            compare_nodes_by_cre.setdefault(cre_id, []).append(compare_node)
+
+    grouped_paths: dict[str, dict[str, Any]] = {}
+    for base_node in base_nodes:
+        shared_paths: dict[str, Any] = {}
+        for cre_id in _get_document_cre_ids(base_node):
+            for compare_node in compare_nodes_by_cre.get(cre_id, []):
+                path = _build_direct_overlap_path(base_node, cre_id, compare_node)
+                if not path:
+                    continue
+                shared_paths.setdefault(compare_node.id, path)
+
+        if shared_paths:
+            grouped_paths[base_node.id] = {
+                "start": base_node.shallow_copy(),
+                "paths": shared_paths,
+                "extra": 0,
+            }
+
+    if not grouped_paths:
+        return None
+
+    result = {"result": grouped_paths}
+    collection.add_gap_analysis_result(
+        cache_key=standards_hash, ga_object=flask_json.dumps(result)
+    )
+    return result
+
+
 @app.route("/rest/v1/map_analysis", methods=["GET"])
 def map_analysis() -> Any:
     standards = request.args.getlist("standard")
@@ -303,6 +434,14 @@ def map_analysis() -> Any:
     database = db.Node_collection()
     standards = request.args.getlist("standard")
     standards_hash = gap_analysis.make_resources_key(standards)
+
+    if OPENCRE_STANDARD_NAME in standards:
+        direct_gap_analysis = _build_direct_cre_overlap_map_analysis(
+            standards, standards_hash, database
+        )
+        if direct_gap_analysis:
+            return jsonify(direct_gap_analysis)
+        abort(404, "No direct overlap found for requested standards")
 
     # First, check if we have cached results in the database
     if database.gap_analysis_exists(standards_hash):
@@ -438,7 +577,9 @@ def standards() -> Any:
         posthog.capture(f"standards", "")
 
     database = db.Node_collection()
-    standards = database.standards()
+    standards = list(database.standards())
+    if OPENCRE_STANDARD_NAME not in standards:
+        standards.append(OPENCRE_STANDARD_NAME)
     return standards
 
 
