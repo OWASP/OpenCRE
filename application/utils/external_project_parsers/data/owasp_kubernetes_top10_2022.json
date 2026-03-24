@@ -1,0 +1,62 @@
+[
+  {
+    "section_id": "K01",
+    "section": "Insecure Workload Configurations",
+    "hyperlink": "https://owasp.org/www-project-kubernetes-top-ten/2022/en/src/K01-insecure-workload-configurations",
+    "cre_ids": ["233-748", "486-813"]
+  },
+  {
+    "section_id": "K02",
+    "section": "Supply Chain Vulnerabilities",
+    "hyperlink": "https://owasp.org/www-project-kubernetes-top-ten/2022/en/src/K02-supply-chain-vulnerabilities",
+    "cre_ids": ["613-285", "613-287"]
+  },
+  {
+    "section_id": "K03",
+    "section": "Overly Permissive RBAC Configurations",
+    "hyperlink": "https://owasp.org/www-project-kubernetes-top-ten/2022/en/src/K03-overly-permissive-rbac-configurations",
+    "cre_ids": ["128-128", "724-770"]
+  },
+  {
+    "section_id": "K04",
+    "section": "Lack of Centralized Policy Enforcement",
+    "hyperlink": "https://owasp.org/www-project-kubernetes-top-ten/2022/en/src/K04-lack-of-centralized-policy-enforcement",
+    "cre_ids": ["117-371"]
+  },
+  {
+    "section_id": "K05",
+    "section": "Inadequate Logging and Monitoring",
+    "hyperlink": "https://owasp.org/www-project-kubernetes-top-ten/2022/en/src/K05-inadequate-logging-and-monitoring",
+    "cre_ids": ["058-083", "148-420", "402-706", "843-841"]
+  },
+  {
+    "section_id": "K06",
+    "section": "Broken Authentication Mechanisms",
+    "hyperlink": "https://owasp.org/www-project-kubernetes-top-ten/2022/en/src/K06-broken-authentication-mechanisms",
+    "cre_ids": ["177-260", "586-842", "633-428"]
+  },
+  {
+    "section_id": "K07",
+    "section": "Missing Network Segmentation Controls",
+    "hyperlink": "https://owasp.org/www-project-kubernetes-top-ten/2022/en/src/K07-missing-network-segmentation-controls",
+    "cre_ids": ["132-146", "467-784", "515-021"]
+  },
+  {
+    "section_id": "K08",
+    "section": "Secrets Management Failures",
+    "hyperlink": "https://owasp.org/www-project-kubernetes-top-ten/2022/en/src/K08-secrets-management-failures",
+    "cre_ids": ["340-375", "774-888", "813-610"]
+  },
+  {
+    "section_id": "K09",
+    "section": "Misconfigured Cluster Components",
+    "hyperlink": "https://owasp.org/www-project-kubernetes-top-ten/2022/en/src/K09-misconfigured-cluster-components",
+    "cre_ids": ["233-748", "486-813"]
+  },
+  {
+    "section_id": "K10",
+    "section": "Outdated and Vulnerable Kubernetes Components",
+    "hyperlink": "https://owasp.org/www-project-kubernetes-top-ten/2022/en/src/K10-outdated-and-vulnerable-kubernetes-components",
+    "cre_ids": ["053-751", "715-334", "863-521"]
+  }
+]
