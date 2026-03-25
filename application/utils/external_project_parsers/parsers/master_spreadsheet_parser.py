@@ -446,7 +446,20 @@ def _parse_cre_graph_and_rows(
             cre_dict[cre.name] = cre
 
     cre_dict = reconcile_uninitializedMappings(cre_dict, uninitialized_cre_mappings)
-    documents[defs.Credoctypes.CRE.value] = list(cre_dict.values())
+    cres = list(cre_dict.values())
+    # Ensure CREs coming from the master spreadsheet are classification-tagged.
+    # (The central import pipeline validates tags for all documents.)
+    for cre in cres:
+        cre.tags = base_parser_defs.build_tags(
+            family=base_parser_defs.Family.STANDARD,
+            subtype=base_parser_defs.Subtype.REQUIREMENTS_STANDARD,
+            audience=base_parser_defs.Audience.ARCHITECT,
+            maturity=base_parser_defs.Maturity.STABLE,
+            source="opencre_master_sheet",
+            extra=cre.tags,
+        )
+
+    documents[defs.Credoctypes.CRE.value] = cres
     return documents, rows_with_cre
 
 

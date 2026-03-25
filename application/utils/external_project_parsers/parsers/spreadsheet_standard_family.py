@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple
 
 from application.defs import cre_defs as defs
+from application.utils.external_project_parsers import base_parser_defs
 
 
 def is_empty(value: Optional[str]) -> bool:
@@ -92,6 +93,36 @@ class SpreadsheetStandardFamilyParser:
     family_name: str
     struct: Dict[str, Any]
 
+    def _tagged(self, std: defs.Standard) -> defs.Standard:
+        # Spreadsheet-derived standards are requirements-level mappings.
+        # Source tag is derived from the family name.
+        source = (
+            str(self.family_name)
+            .lower()
+            .replace("owasp ", "owasp_")
+            .replace(" ", "_")
+            .replace("-", "_")
+            .replace("(", "")
+            .replace(")", "")
+            .replace("/", "_")
+        )
+        if source == "asvs":
+            source = "owasp_asvs"
+        elif source == "cwe":
+            source = "cwe"
+        elif source == "iso_27001":
+            source = "iso27001"
+
+        std.tags = base_parser_defs.build_tags(
+            family=base_parser_defs.Family.STANDARD,
+            subtype=base_parser_defs.Subtype.REQUIREMENTS_STANDARD,
+            audience=base_parser_defs.Audience.DEVELOPER,
+            maturity=base_parser_defs.Maturity.STABLE,
+            source=source,
+            extra=std.tags,
+        )
+        return std
+
     def parse_rows(
         self, rows_with_cre: List[Tuple[Dict[str, str], defs.CRE]]
     ) -> List[defs.Standard]:
@@ -105,7 +136,7 @@ class SpreadsheetStandardFamilyParser:
         links = parse_standards_for_family(row_copy, self.family_name, self.struct)
         family_docs: List[defs.Standard] = []
         for link in links:
-            doc = link.document.add_link(
+            doc = self._tagged(link.document).add_link(
                 defs.Link(document=cre.shallow_copy(), ltype=defs.LinkTypes.LinkedTo)
             )
             family_docs.append(doc)

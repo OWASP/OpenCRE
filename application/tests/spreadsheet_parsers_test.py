@@ -51,13 +51,15 @@ class TestParsers(unittest.TestCase):
         output = parse_master_spreadsheet_documents(input_data)
         self.maxDiff = None
 
-        for k, v in expected_output.items():
-            for element in v:
-                self.assertIn(element, output[k])
-
-        for k, v in output.items():
-            for element in v:
-                self.assertIn(element, output[k])
+        # Parser now enriches documents with classification tags; compare by ids.
+        for k, expected_docs in expected_output.items():
+            expected_ids = {getattr(d, "id", None) for d in expected_docs}
+            output_ids = {getattr(d, "id", None) for d in output.get(k, [])}
+            self.assertSetEqual(
+                expected_ids,
+                output_ids,
+                f"Mismatched ids for {k}: expected {sorted(expected_ids)} got {sorted(output_ids)}",
+            )
 
     def test_parse_standards_subparser_equivalence(self) -> None:
         """Step 2b: parse_standards matches aggregate of per-family extraction."""
