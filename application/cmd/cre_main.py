@@ -258,7 +258,25 @@ def register_standard(
 
     def _ga_eligible(doc: defs.Document) -> bool:
         doctype = _doctype_value(doc)
-        return doctype not in (defs.Credoctypes.Tool.value, defs.Credoctypes.Code.value)
+        # Step 3a: doctype exclusion
+        if doctype in (defs.Credoctypes.Tool.value, defs.Credoctypes.Code.value):
+            return False
+
+        # Step 3b: tag gate for GA eligibility.
+        # For any non-Tool/non-Code Standard-like resource, schedule GA only when tags
+        # include both required literals.
+        required = {"family:standard", "subtype:requirements_standard"}
+        tags = getattr(doc, "tags", None) or []
+        missing = sorted([t for t in required if t not in set(tags)])
+        if missing:
+            logger.info(
+                "Skipping gap analysis for %s because tags missing %s",
+                getattr(doc, "name", "<unknown>"),
+                ",".join(missing),
+            )
+            return False
+
+        return True
 
     conn = redis.connect()
     ph = prompt_client.PromptHandler(database=collection)
@@ -267,11 +285,8 @@ def register_standard(
         standard_entries[0]
     )
     if calculate_gap_analysis and not effective_calculate_gap_analysis:
-        logger.info(
-            "Skipping gap analysis for %s because doctype %s is not GA-eligible",
-            importing_name,
-            _doctype_value(standard_entries[0]),
-        )
+        # _ga_eligible already logs the precise reason (doctype or missing tags).
+        logger.info("Skipping gap analysis for %s because resource is not GA-eligible", importing_name)
     standard_hash = gap_analysis.make_resources_key([importing_name])
     if effective_calculate_gap_analysis and conn.get(standard_hash):
         logger.info(
@@ -310,7 +325,14 @@ def register_standard(
                 fw_job = gap_analysis.schedule(
                     standards=[importing_name, standard_name], database=collection
                 )
-                forward_job_id = fw_job.get("job_id")
+                forward_job_id = fw_job.get("job_id") if isinstance(fw_job, dict) else None
+                if not forward_job_id:
+                    logger.error(
+                        "Could not schedule gap analysis for %s and %s; skipping pair",
+                        importing_name,
+                        standard_name,
+                    )
+                    continue
                 try:
                     forward_job = job.Job.fetch(id=forward_job_id, connection=conn)
                     jobs.append(forward_job)
@@ -325,7 +347,14 @@ def register_standard(
                 bw_job = gap_analysis.schedule(
                     standards=[standard_name, importing_name], database=collection
                 )
-                backward_job_id = bw_job.get("job_id")
+                backward_job_id = bw_job.get("job_id") if isinstance(bw_job, dict) else None
+                if not backward_job_id:
+                    logger.error(
+                        "Could not schedule gap analysis for %s and %s; skipping pair",
+                        standard_name,
+                        importing_name,
+                    )
+                    continue
                 try:
                     backward_job = job.Job.fetch(id=backward_job_id, connection=conn)
                     jobs.append(backward_job)

@@ -68,7 +68,7 @@ class TestMain(unittest.TestCase):
     @patch.object(redis, "connect")
     @patch.object(job.Job, "fetch")
     @patch.object(main, "register_node")
-    def test_register_standard_runs_ga_for_taxonomy_standard(
+    def test_register_standard_skips_ga_for_taxonomy_standard(
         self,
         register_node_mock,
         job_fetch_mock,
@@ -78,12 +78,10 @@ class TestMain(unittest.TestCase):
         populate_neo4j_mock,
     ) -> None:
         """
-        Step 3 minimal behavior: GA runs for non-tool/non-code resources
-        (including taxonomy-like Standard entries).
+        Step 3 minimal behavior: GA is skipped for taxonomy-like Standard entries
+        because required GA tags are missing.
         """
         redis_connect_mock.return_value = Mock(get=Mock(return_value=None), set=Mock())
-        schedule_mock.return_value = {"job_id": "ga-job-1"}
-        job_fetch_mock.return_value = Mock()
         # Ensure there is another standard to compare against.
         self.collection.standards = Mock(return_value=["CWE", "ASVS"])  # type: ignore[method-assign]
 
@@ -101,8 +99,91 @@ class TestMain(unittest.TestCase):
             generate_embeddings=False,
         )
 
+        populate_neo4j_mock.assert_not_called()
+        schedule_mock.assert_not_called()
+        job_fetch_mock.assert_not_called()
+
+    @patch.object(main, "populate_neo4j_db")
+    @patch.object(main.gap_analysis, "schedule")
+    @patch.object(redis, "wait_for_jobs")
+    @patch.object(redis, "connect")
+    @patch.object(job.Job, "fetch")
+    @patch.object(main, "register_node")
+    def test_register_standard_skips_missing_ga_job_id_without_crashing(
+        self,
+        register_node_mock,
+        job_fetch_mock,
+        redis_connect_mock,
+        wait_for_jobs_mock,
+        schedule_mock,
+        populate_neo4j_mock,
+    ) -> None:
+        redis_connect_mock.return_value = Mock(get=Mock(return_value=None), set=Mock())
+        # Simulate intermittent scheduler failure returning no job_id.
+        schedule_mock.return_value = {"error": 404}
+        self.collection.standards = Mock(return_value=["CWE", "ASVS"])  # type: ignore[method-assign]
+
+        # Make it GA-eligible by providing both required tags.
+        eligible_standard = defs.Standard(
+            name="CWE",
+            section="Some CWE",
+            sectionID="123",
+            tags=["family:standard", "subtype:requirements_standard"],
+        )
+
+        main.register_standard(
+            standard_entries=[eligible_standard],
+            collection=self.collection,
+            calculate_gap_analysis=True,
+            generate_embeddings=False,
+        )
+
         populate_neo4j_mock.assert_called_once()
         self.assertTrue(schedule_mock.called)
+        job_fetch_mock.assert_not_called()
+
+    @patch.object(main, "populate_neo4j_db")
+    @patch.object(main.gap_analysis, "schedule")
+    @patch.object(redis, "wait_for_jobs")
+    @patch.object(redis, "connect")
+    @patch.object(job.Job, "fetch")
+    @patch.object(main, "register_node")
+    def test_register_standard_runs_ga_for_requirements_standard(
+        self,
+        register_node_mock,
+        job_fetch_mock,
+        redis_connect_mock,
+        wait_for_jobs_mock,
+        schedule_mock,
+        populate_neo4j_mock,
+    ) -> None:
+        """
+        Step 3b minimal behavior: GA runs for GA-eligible Standard entries
+        (family:standard + subtype:requirements_standard).
+        """
+        redis_connect_mock.return_value = Mock(get=Mock(return_value=None), set=Mock())
+        schedule_mock.return_value = {"job_id": "ga-job-1"}
+        job_fetch_mock.return_value = Mock()
+
+        self.collection.standards = Mock(return_value=["CWE", "ASVS"])  # type: ignore[method-assign]
+
+        requirements_standard = defs.Standard(
+            name="CWE",
+            section="Some CWE",
+            sectionID="123",
+            tags=["family:standard", "subtype:requirements_standard"],
+        )
+
+        main.register_standard(
+            standard_entries=[requirements_standard],
+            collection=self.collection,
+            calculate_gap_analysis=True,
+            generate_embeddings=False,
+        )
+
+        populate_neo4j_mock.assert_called_once()
+        self.assertTrue(schedule_mock.called)
+        self.assertTrue(job_fetch_mock.called)
 
     def test_register_node_with_links(self) -> None:
         standard_with_links = defs.Standard(
