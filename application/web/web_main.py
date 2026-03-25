@@ -703,6 +703,33 @@ def admin_import_run_changeset(run_id: str) -> Any:
     )
 
 
+@app.route("/admin/imports/runs/<run_id>/apply", methods=["POST"])
+@login_required
+@admin_imports_enabled_required
+def admin_import_run_apply(run_id: str) -> Any:
+    from application.utils import import_apply
+
+    raw = request.args.get("dry_run") or ""
+    dry_run = str(raw).lower() in ("1", "true", "yes", "on")
+    try:
+        res = import_apply.apply_changeset(run_id=run_id, dry_run=dry_run)
+        return jsonify(
+            {
+                "run_id": res.run_id,
+                "dry_run": res.dry_run,
+                "staging_status": res.staging_status,
+                "touched_keys": [list(k) for k in res.touched_keys],
+                "applied_ops": res.applied_ops,
+                "skipped_ops": res.skipped_ops,
+                "already_applied": res.already_applied,
+            }
+        )
+    except import_apply.ApplyConflict as ae:
+        abort(409, description=str(ae))
+    except import_apply.ApplyError as ae:
+        abort(400, description=str(ae))
+
+
 @app.route("/rest/v1/completion", methods=["POST"])
 @login_required
 def chat_cre() -> Any:
