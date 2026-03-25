@@ -36,7 +36,7 @@ class Cheatsheets(ParserInterface):
     def parse(self, cache: db.Node_collection, ph: prompt_client.PromptHandler):
         c_repo = "https://github.com/OWASP/CheatSheetSeries.git"
         cheatsheets_path = "cheatsheets/"
-        repo = git.clone(c_repo)
+        repo = git.clone(c_repo, sparse_paths=["cheatsheets"], sparse_cone=True)
         cheatsheets = self.register_cheatsheets(
             repo=repo, cache=cache, cheatsheets_path=cheatsheets_path, repo_path=c_repo
         )
