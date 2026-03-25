@@ -679,6 +679,94 @@ def login_required(f):
     return login_r
 
 
+def admin_imports_enabled_required(f):
+    @wraps(f)
+    def enabled_r(*args, **kwargs):
+        if not os.environ.get("ADMIN_IMPORTS_ENABLED"):
+            abort(404, description="Admin imports API is disabled")
+        return f(*args, **kwargs)
+
+    return enabled_r
+
+
+@app.route("/admin/imports/runs", methods=["GET"])
+@login_required
+@admin_imports_enabled_required
+def admin_import_runs() -> Any:
+    source = request.args.get("source")
+    limit = int(request.args.get("limit") or 50)
+    offset = int(request.args.get("offset") or 0)
+    runs = db.list_import_runs(source=source, limit=limit, offset=offset)
+    out = []
+    for r in runs:
+        cs = db.get_staged_change_set(run_id=r.id)
+        out.append(
+            {
+                "id": r.id,
+                "source": r.source,
+                "version": r.version,
+                "created_at": r.created_at.isoformat() if r.created_at else None,
+                "has_conflicts": bool(cs.has_conflicts) if cs else False,
+                "staging_status": cs.staging_status if cs else None,
+            }
+        )
+    return jsonify({"runs": out})
+
+
+@app.route("/admin/imports/runs/<run_id>", methods=["GET"])
+@login_required
+@admin_imports_enabled_required
+def admin_import_run(run_id: str) -> Any:
+    r = db.get_import_run(run_id=run_id)
+    if not r:
+        abort(404, description="Import run not found")
+    cs = db.get_staged_change_set(run_id=r.id)
+    return jsonify(
+        {
+            "id": r.id,
+            "source": r.source,
+            "version": r.version,
+            "created_at": r.created_at.isoformat() if r.created_at else None,
+            "change_set": {
+                "has_conflicts": bool(cs.has_conflicts) if cs else False,
+                "staging_status": cs.staging_status if cs else None,
+            },
+        }
+    )
+
+
+@app.route("/admin/imports/runs/<run_id>/changeset", methods=["GET"])
+@login_required
+@admin_imports_enabled_required
+def admin_import_run_changeset(run_id: str) -> Any:
+    r = db.get_import_run(run_id=run_id)
+    if not r:
+        abort(404, description="Import run not found")
+    cs = db.get_staged_change_set(run_id=r.id)
+    if not cs:
+        return jsonify({"run_id": run_id, "changeset": []})
+    from application.utils import import_diff
+
+    ops = import_diff.change_set_from_json(cs.changeset_json)
+    def _op_to_dict(op: import_diff.ChangeSetOp) -> dict:
+        d = import_diff.asdict(op) if hasattr(import_diff, "asdict") else None
+        if d is None:
+            from dataclasses import asdict as _asdict
+
+            d = _asdict(op)
+        if isinstance(d.get("key"), tuple):
+            d["key"] = list(d["key"])
+        return d
+    return jsonify(
+        {
+            "run_id": run_id,
+            "has_conflicts": bool(cs.has_conflicts),
+            "staging_status": cs.staging_status,
+            "changeset": [_op_to_dict(op) for op in ops],
+        }
+    )
+
+
 @app.route("/rest/v1/completion", methods=["POST"])
 @login_required
 def chat_cre() -> Any:
