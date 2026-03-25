@@ -100,8 +100,99 @@ class TestMain(unittest.TestCase):
             generate_embeddings=False,
         )
 
+        populate_neo4j_mock.assert_not_called()
+        schedule_mock.assert_not_called()
+        job_fetch_mock.assert_not_called()
+
+    @patch.object(main, "populate_neo4j_db")
+    @patch.object(main.gap_analysis, "schedule")
+    @patch.object(redis, "wait_for_jobs")
+    @patch.object(redis, "connect")
+    @patch.object(job.Job, "fetch")
+    @patch.object(main, "register_node")
+    def test_register_standard_skips_missing_ga_job_id_without_crashing(
+        self,
+        register_node_mock,
+        job_fetch_mock,
+        redis_connect_mock,
+        wait_for_jobs_mock,
+        schedule_mock,
+        populate_neo4j_mock,
+    ) -> None:
+        redis_connect_mock.return_value = Mock(get=Mock(return_value=None), set=Mock())
+        # Simulate intermittent scheduler failure returning no job_id.
+        schedule_mock.return_value = {"error": 404}
+        self.collection.standards = Mock(return_value=["CWE", "ASVS"])  # type: ignore[method-assign]
+        # Ensure DB structure changes so incremental-GA doesn't short-circuit.
+        register_node_mock.side_effect = (
+            lambda node, collection: collection.add_node(node)  # type: ignore[no-any-return]
+        )
+
+        # Make it GA-eligible by providing both required tags.
+        eligible_standard = defs.Standard(
+            name="CWE",
+            section="Some CWE",
+            sectionID="123",
+            tags=["family:standard", "subtype:requirements_standard"],
+        )
+
+        main.register_standard(
+            standard_entries=[eligible_standard],
+            collection=self.collection,
+            calculate_gap_analysis=True,
+            generate_embeddings=False,
+        )
+
         populate_neo4j_mock.assert_called_once()
         self.assertTrue(schedule_mock.called)
+        job_fetch_mock.assert_not_called()
+
+    @patch.object(main, "populate_neo4j_db")
+    @patch.object(main.gap_analysis, "schedule")
+    @patch.object(redis, "wait_for_jobs")
+    @patch.object(redis, "connect")
+    @patch.object(job.Job, "fetch")
+    @patch.object(main, "register_node")
+    def test_register_standard_runs_ga_for_requirements_standard(
+        self,
+        register_node_mock,
+        job_fetch_mock,
+        redis_connect_mock,
+        wait_for_jobs_mock,
+        schedule_mock,
+        populate_neo4j_mock,
+    ) -> None:
+        """
+        Step 3b minimal behavior: GA runs for GA-eligible Standard entries
+        (family:standard + subtype:requirements_standard).
+        """
+        redis_connect_mock.return_value = Mock(get=Mock(return_value=None), set=Mock())
+        schedule_mock.return_value = {"job_id": "ga-job-1"}
+        job_fetch_mock.return_value = Mock()
+
+        self.collection.standards = Mock(return_value=["CWE", "ASVS"])  # type: ignore[method-assign]
+        # Ensure DB structure changes so incremental-GA doesn't short-circuit.
+        register_node_mock.side_effect = (
+            lambda node, collection: collection.add_node(node)  # type: ignore[no-any-return]
+        )
+
+        requirements_standard = defs.Standard(
+            name="CWE",
+            section="Some CWE",
+            sectionID="123",
+            tags=["family:standard", "subtype:requirements_standard"],
+        )
+
+        main.register_standard(
+            standard_entries=[requirements_standard],
+            collection=self.collection,
+            calculate_gap_analysis=True,
+            generate_embeddings=False,
+        )
+
+        populate_neo4j_mock.assert_called_once()
+        self.assertTrue(schedule_mock.called)
+        self.assertTrue(job_fetch_mock.called)
 
     def test_register_node_with_links(self) -> None:
         standard_with_links = defs.Standard(
@@ -473,6 +564,8 @@ class TestMain(unittest.TestCase):
 
     @patch.object(main, "db_connect")
     @patch.object(Queue, "enqueue_call")
+    @patch.object(redis, "wait_for_jobs")
+    @patch.object(redis, "empty_queues")
     @patch.object(redis, "connect")
     @patch.object(prompt_client.PromptHandler, "generate_embeddings_for")
     @patch.object(main, "populate_neo4j_db")
@@ -481,6 +574,8 @@ class TestMain(unittest.TestCase):
         mock_populate_neo4j_db,
         mock_generate_embeddings_for,
         mock_redis_connect,
+        mock_empty_queues,
+        mock_wait_for_jobs,
         mock_enqueue_call,
         mock_db_connect,
     ) -> None:
@@ -500,6 +595,9 @@ class TestMain(unittest.TestCase):
         mock_enqueue_call.assert_called()
         expected_output.pop(defs.Credoctypes.CRE.value)
         expected_names = list(expected_output.keys())
+        expected_ids_by_name = {
+            k: {getattr(e, "id", None) for e in v} for k, v in expected_output.items()
+        }
         # This is a roundabout way of doing mock_enqueue_call.assert_has_calls([calls])
         # the reason is: in its current implementation assert_has_calls()
         # serialises kwargs to str, this ends up serialising a defs.Document
@@ -510,12 +608,14 @@ class TestMain(unittest.TestCase):
                 continue
             standard_name = call.kwargs.get("kwargs").get("standard_entries")[0].name
             for entry in call.kwargs.get("kwargs").get("standard_entries"):
-                self.assertIn(entry, expected_output[standard_name])
-                expected_output[standard_name].pop(
-                    expected_output[standard_name].index(entry)
+                self.assertIn(
+                    entry.id,
+                    expected_ids_by_name[standard_name],
+                    f"Unexpected {standard_name} entry id {entry.id}",
                 )
+                expected_ids_by_name[standard_name].remove(entry.id)
             self.assertEqual(
-                expected_output[standard_name], []
+                expected_ids_by_name[standard_name], set()
             )  # assert ALL elements of the call exist in expected
             self.assertEqual(None, call.kwargs["kwargs"]["collection"])
             self.assertEqual("", call.kwargs["kwargs"]["db_connection_str"])
