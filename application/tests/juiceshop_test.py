@@ -111,6 +111,39 @@ class TestJuiceshopParser(unittest.TestCase):
             self.assertEqual(len(nodes), 2)
             self.assertCountEqual(nodes[0].todict(), expected[0].todict())
             self.assertCountEqual(nodes[1].todict(), expected[1].todict())
+        self.assertGreater(mock_get_text_embeddings.call_count, 0)
+
+    @patch.dict(os.environ, {"CRE_NO_GEN_EMBEDDINGS": "1"})
+    @patch.object(prompt_client.PromptHandler, "get_text_embeddings")
+    @patch.object(prompt_client.PromptHandler, "get_id_of_most_similar_cre")
+    @patch.object(prompt_client.PromptHandler, "get_id_of_most_similar_node")
+    @patch.object(requests, "get")
+    def test_parse_no_embeddings_mode(
+        self,
+        mock_requests,
+        mock_get_id_of_most_similar_node,
+        mock_get_id_of_most_similar_cre,
+        mock_get_text_embeddings,
+    ) -> None:
+        class fakeRequest:
+            status_code = 200
+            text = self.csv
+
+        mock_requests.return_value = fakeRequest()
+
+        entries = juiceshop.JuiceShop().parse(
+            cache=self.collection,
+            ph=prompt_client.PromptHandler(database=self.collection),
+        )
+
+        self.assertIn(juiceshop.JuiceShop().name, entries.results)
+        self.assertEqual(len(entries.results[juiceshop.JuiceShop().name]), 2)
+        self.assertEqual(mock_get_text_embeddings.call_count, 0)
+        self.assertEqual(mock_get_id_of_most_similar_cre.call_count, 0)
+        self.assertEqual(mock_get_id_of_most_similar_node.call_count, 0)
+        for node in entries.results[juiceshop.JuiceShop().name]:
+            self.assertFalse(node.embeddings)
+            self.assertFalse(node.links)
 
     csv = """-
   name: 'API-only XSS'

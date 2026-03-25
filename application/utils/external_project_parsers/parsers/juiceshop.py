@@ -26,6 +26,7 @@ class JuiceShop(ParserInterface):
     def parse(
         self, cache: db.Node_collection = None, ph: prompt_client.PromptHandler = None
     ):
+        no_embeddings = bool(os.environ.get("CRE_NO_GEN_EMBEDDINGS"))
         if not cache:
             raise ValueError(
                 "Juiceshop importer parse method called with Null db(cache) argument"
@@ -73,28 +74,31 @@ class JuiceShop(ParserInterface):
                         f"Node {chal.todict()} already exists and has embeddings, skipping"
                     )
                     continue
-            challenge_embeddings = ph.get_text_embeddings(",".join(chal.tags))
-            chal.embeddings = challenge_embeddings
-            chal.embeddings_text = ",".join(chal.tags)
-            if not challenge_embeddings:
-                logger.fatal(f"Cannot get embeddings for challenge {chal.section}")
-                return
+            cre = None
+            if not no_embeddings:
+                challenge_embeddings = ph.get_text_embeddings(",".join(chal.tags))
+                chal.embeddings = challenge_embeddings
+                chal.embeddings_text = ",".join(chal.tags)
+                if not challenge_embeddings:
+                    logger.fatal(f"Cannot get embeddings for challenge {chal.section}")
+                    return
 
-            cre_id = ph.get_id_of_most_similar_cre(challenge_embeddings)
-            if not cre_id:
-                logger.info(
-                    f"could not find an appropriate CRE for Juiceshop challenge {chal.section}, findings similarities with standards instead"
-                )
-                standard_id = ph.get_id_of_most_similar_node(challenge_embeddings)
-                dbstandard = cache.get_nodes(db_id=standard_id)
-                logger.info(
-                    f"found an appropriate standard for Juiceshop challenge {chal.section}, it is: {dbstandard.section}"
-                )
-                cres = cache.find_cres_of_node(dbstandard)
-                if cres:
-                    cre_id = cres[0].id
+                cre_id = ph.get_id_of_most_similar_cre(challenge_embeddings)
+                if not cre_id:
+                    logger.info(
+                        f"could not find an appropriate CRE for Juiceshop challenge {chal.section}, findings similarities with standards instead"
+                    )
+                    standard_id = ph.get_id_of_most_similar_node(challenge_embeddings)
+                    if standard_id:
+                        dbstandard = cache.get_nodes(db_id=standard_id)
+                        logger.info(
+                            f"found an appropriate standard for Juiceshop challenge {chal.section}, it is: {dbstandard.section}"
+                        )
+                        cres = cache.find_cres_of_node(dbstandard)
+                        if cres:
+                            cre_id = cres[0].id
 
-            cre = cache.get_cre_by_db_id(cre_id)
+                cre = cache.get_cre_by_db_id(cre_id)
             if cre:
                 chal.add_link(
                     defs.Link(document=cre, ltype=defs.LinkTypes.AutomaticallyLinkedTo)

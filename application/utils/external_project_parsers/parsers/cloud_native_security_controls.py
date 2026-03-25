@@ -1,6 +1,7 @@
 from io import StringIO
 import csv
 import logging
+import os
 from application.database import db
 from application.defs import cre_defs as defs
 from application.prompt_client import prompt_client as prompt_client
@@ -20,6 +21,7 @@ class CloudNativeSecurityControls(ParserInterface):
     name = "Cloud Native Security Controls"
 
     def parse(self, cache: db.Node_collection, ph: prompt_client.PromptHandler):
+        no_embeddings = bool(os.environ.get("CRE_NO_GEN_EMBEDDINGS"))
         resp = requests.get(
             "https://raw.githubusercontent.com/cloud-native-security-controls/controls-catalog/main/controls/controls_catalog.csv"
         )
@@ -63,24 +65,26 @@ class CloudNativeSecurityControls(ParserInterface):
                         f"Node {cnsc.todict()} already exists and has embeddings, skipping"
                     )
                     continue
-            cnsc_embeddings = ph.get_text_embeddings(cnsc.subsection)
-            cnsc.embeddings = cnsc_embeddings
-            cnsc.embeddings_text = cnsc.subsection
-            cre_id = ph.get_id_of_most_similar_cre(cnsc_embeddings)
-            if not cre_id:
-                logger.info(
-                    f"could not find an appropriate CRE for Clound Native Security Control {cnsc.section}, findings similarities with standards instead"
-                )
-                standard_id = ph.get_id_of_most_similar_node(cnsc_embeddings)
-                if standard_id:
-                    dbstandard = cache.get_nodes(db_id=standard_id)
+            cre_id = None
+            if not no_embeddings:
+                cnsc_embeddings = ph.get_text_embeddings(cnsc.subsection)
+                cnsc.embeddings = cnsc_embeddings
+                cnsc.embeddings_text = cnsc.subsection
+                cre_id = ph.get_id_of_most_similar_cre(cnsc_embeddings)
+                if not cre_id:
                     logger.info(
-                        f"found an appropriate standard for Cloud Native Security Control {cnsc.section}:{cnsc.subsection}, it is: {dbstandard.name}:{dbstandard.section}"
+                        f"could not find an appropriate CRE for Clound Native Security Control {cnsc.section}, findings similarities with standards instead"
                     )
-                    cres = cache.find_cres_of_node(dbstandard)
-                    if cres:
-                        cre_id = cres[0].id
-            cre = cache.get_cre_by_db_id(cre_id)
+                    standard_id = ph.get_id_of_most_similar_node(cnsc_embeddings)
+                    if standard_id:
+                        dbstandard = cache.get_nodes(db_id=standard_id)
+                        logger.info(
+                            f"found an appropriate standard for Cloud Native Security Control {cnsc.section}:{cnsc.subsection}, it is: {dbstandard.name}:{dbstandard.section}"
+                        )
+                        cres = cache.find_cres_of_node(dbstandard)
+                        if cres:
+                            cre_id = cres[0].id
+            cre = cache.get_cre_by_db_id(cre_id) if cre_id else None
             if cre:
                 cnsc.add_link(
                     defs.Link(document=cre, ltype=defs.LinkTypes.AutomaticallyLinkedTo)
