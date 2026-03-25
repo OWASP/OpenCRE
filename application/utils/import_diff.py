@@ -44,6 +44,13 @@ def _standard_content_hash(std: defs.Standard) -> str:
     )
 
 
+def standard_snapshot_map(
+    standards: List[defs.Standard],
+) -> Dict[Tuple[str, str, str], str]:
+    """Stable snapshot map of standard identity -> content hash."""
+    return {_standard_key(s): _standard_content_hash(s) for s in standards}
+
+
 def diff_standards(
     previous: List[defs.Standard],
     new: List[defs.Standard],
@@ -172,10 +179,30 @@ def change_set_from_json(data: str) -> List[ChangeSetOp]:
                     after=item.get("after", {}),
                 )
             )
+        else:
+            # Ignore unknown ops for forward-compatibility.
+            continue
     return result
 
 
 # Step 8: Conflict detection
+
+def detect_manual_edit_keys(
+    baseline: List[defs.Standard],
+    current_main_graph: List[defs.Standard],
+) -> Set[Tuple[str, str, str]]:
+    """
+    Detect standards that were edited manually in the main graph.
+
+    We mark a key as manually edited when:
+    - it exists in both baseline and current snapshots, and
+    - content hash differs.
+    """
+    baseline_map = standard_snapshot_map(baseline)
+    current_map = standard_snapshot_map(current_main_graph)
+    shared_keys = set(baseline_map.keys()) & set(current_map.keys())
+    return {k for k in shared_keys if baseline_map[k] != current_map[k]}
+
 
 def detect_conflicts(
     ops: List[ChangeSetOp],

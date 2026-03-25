@@ -8,8 +8,10 @@ from application.utils.import_diff import (
     diff_to_change_set,
     change_set_to_json,
     change_set_from_json,
+    detect_manual_edit_keys,
     detect_conflicts,
     has_conflicts,
+    AddControl,
     ModifyControl,
     RemoveControl,
 )
@@ -99,3 +101,51 @@ class TestImportDiff(unittest.TestCase):
         conflicts = detect_conflicts(ops, edited)
         self.assertEqual(len(conflicts), 1)
         self.assertEqual(conflicts[0].key, ("ASVS", "1.1", "1.1"))
+
+    def test_conflict_detection_remove_conflict(self) -> None:
+        edited = {("ASVS", "2.1", "2.1")}
+        ops = [
+            RemoveControl(
+                key=("ASVS", "2.1", "2.1"),
+                document={"name": "ASVS", "section": "2.1", "sectionID": "2.1"},
+            )
+        ]
+        self.assertTrue(has_conflicts(ops, edited))
+        conflicts = detect_conflicts(ops, edited)
+        self.assertEqual(len(conflicts), 1)
+        self.assertEqual(conflicts[0].op, "remove_control")
+
+    def test_conflict_detection_ignores_adds(self) -> None:
+        edited = {("ASVS", "3.1", "3.1")}
+        ops = [
+            AddControl(
+                key=("ASVS", "3.1", "3.1"),
+                document={"name": "ASVS", "section": "3.1", "sectionID": "3.1"},
+            )
+        ]
+        self.assertFalse(has_conflicts(ops, edited))
+        self.assertEqual(detect_conflicts(ops, edited), [])
+
+    def test_change_set_from_json_ignores_unknown_ops(self) -> None:
+        payload = """
+        [
+          {"op": "future_op", "key": ["A", "B", "C"]},
+          {"op": "add_control", "key": ["ASVS", "1.1", "1.1"], "document": {"name":"ASVS"}}
+        ]
+        """
+        loaded = change_set_from_json(payload)
+        self.assertEqual(len(loaded), 1)
+        self.assertEqual(loaded[0].op, "add_control")
+
+    def test_detect_manual_edit_keys(self) -> None:
+        baseline = [
+            defs.Standard(name="ASVS", section="1.1", sectionID="1.1", description="old"),
+            defs.Standard(name="ASVS", section="1.2", sectionID="1.2", description="same"),
+        ]
+        current = [
+            defs.Standard(name="ASVS", section="1.1", sectionID="1.1", description="new"),
+            defs.Standard(name="ASVS", section="1.2", sectionID="1.2", description="same"),
+            defs.Standard(name="ASVS", section="1.3", sectionID="1.3", description="added"),
+        ]
+        edited = detect_manual_edit_keys(baseline, current)
+        self.assertEqual(edited, {("ASVS", "1.1", "1.1")})
