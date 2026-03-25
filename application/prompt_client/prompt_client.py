@@ -14,6 +14,7 @@ import logging
 import nltk
 import numpy as np
 import os
+import json
 import re
 import requests
 
@@ -33,6 +34,18 @@ def normalize_embeddings_content(text: Optional[str]) -> str:
         return ""
     # Normalize whitespace so cache comparisons are stable across import/export and crawling.
     return re.sub(r"\s+", " ", text).strip()
+
+
+def stable_json(v: Any) -> str:
+    """
+    Canonical JSON encoding for embedding cache comparisons.
+    """
+    if v is None:
+        v = {}
+    try:
+        return json.dumps(v, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    except TypeError:
+        return json.dumps(str(v), sort_keys=True, separators=(",", ":"), ensure_ascii=False)
 
 
 class in_memory_embeddings:
@@ -192,7 +205,18 @@ class in_memory_embeddings:
                                 f"Skipping embedding for {node.hyperlink}: unable to fetch non-empty content"
                             )
                             continue
-                        content = normalize_embeddings_content(self.clean_content(raw_content))
+                        base_content = normalize_embeddings_content(
+                            self.clean_content(raw_content)
+                        )
+                        # Step 4b: metadata must affect embedding meaning/caching.
+                        # When embeddings are derived from fetched URL content,
+                        # node.__repr__ (and thus node.metadata) is not included.
+                        if getattr(node, "metadata", None):
+                            metadata_json = stable_json(getattr(node, "metadata", None))
+                            base_content = normalize_embeddings_content(
+                                f"{base_content}\nmetadata:{metadata_json}"
+                            )
+                        content = base_content
                         if not content:
                             logger.warning(
                                 f"Skipping embedding for {node.hyperlink}: content cleaned to empty"
@@ -236,6 +260,11 @@ class in_memory_embeddings:
                     content = normalize_embeddings_content(
                         f"{cre.doctype}\n name:{cre.name}\n description:{cre.description}\n id:{cre.id}\n "
                     )
+                    if getattr(cre, "metadata", None):
+                        metadata_json = stable_json(getattr(cre, "metadata", None))
+                        content = normalize_embeddings_content(
+                            f"{content}\nmetadata:{metadata_json}"
+                        )
                     logger.info(f"making embedding for {content}")
                     dbcre = db.dbCREfromCRE(cre)
                     if not dbcre:
@@ -344,6 +373,9 @@ class PromptHandler:
                 embedding_text = (
                     f"{cre.doctype}\n name:{cre.name}\n description:{cre.description}\n id:{cre.id}\n "
                 )
+                if getattr(cre, "metadata", None):
+                    metadata_json = stable_json(getattr(cre, "metadata", None))
+                    embedding_text = f"{embedding_text}\nmetadata:{metadata_json}"
                 embedding_text = normalize_embeddings_content(embedding_text)
                 existing = self.database.get_embedding(cid)
                 if existing and normalize_embeddings_content(
@@ -462,9 +494,11 @@ class PromptHandler:
                 self.database.get_embeddings_by_doc_type(cre_defs.Credoctypes.CRE.value)
             )
         if not self.existing_cre_embeddings.getnnz() or not len(self.existing_cre_ids):
-            raise ValueError(
-                "cre embeddings or cre_ids empty, have ANY embeddings been generated?"
+            logger.warning(
+                "CRE embeddings empty in DB (e.g. CRE_NO_GEN_EMBEDDINGS=1 checkpoint run); "
+                "cannot match by similarity — skipping CRE link suggestions"
             )
+            return None
         embedding_array = sparse.csr_matrix(
             np.array(item_embedding).reshape(1, -1)
         )  # convert embedding into a 1-dimentional numpy array
@@ -479,7 +513,9 @@ class PromptHandler:
         logger.info(f"found match with similarity {np.max(similarities)}, id {id}")
         return id
 
-    def get_id_of_most_similar_node(self, standard_text_embedding: List[float]) -> str:
+    def get_id_of_most_similar_node(
+        self, standard_text_embedding: List[float]
+    ) -> Optional[str]:
         """
         Backend method, used for importing standards, this matches the embedding of the text of a standard section
         to the closest embedding from existing standards using cosine similarity.
@@ -504,9 +540,11 @@ class PromptHandler:
         if not self.existing_node_embeddings.getnnz() or not len(
             self.existing_node_ids
         ):
-            raise ValueError(
-                "node embeddings or node_ids empty, have ANY embeddings been generated?"
+            logger.warning(
+                "Standard node embeddings empty in DB (e.g. CRE_NO_GEN_EMBEDDINGS=1 "
+                "checkpoint run); cannot match by similarity — skipping standard link suggestions"
             )
+            return None
 
         embedding_array = sparse.csr_matrix(
             np.array(standard_text_embedding).reshape(1, -1)

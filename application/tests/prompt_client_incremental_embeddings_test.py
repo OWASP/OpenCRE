@@ -31,6 +31,72 @@ class _FakeDB:
 
 
 class TestIncrementalEmbeddings(unittest.TestCase):
+    def test_generate_embeddings_includes_metadata_for_url_cache(self):
+        """
+        Step 4b regression:
+        When embedding content is derived from fetched URL text, embedding cache key
+        must still include document metadata so metadata changes trigger re-embed.
+        """
+        fake_db = _FakeDB()
+
+        base_node = cre_defs.Standard(
+            name="ISO 27001",
+            section="Policies",
+            sectionID="5.10",
+            subsection="",
+            hyperlink="https://example.com/policies",
+            version="",
+            metadata={"key": "v1"},
+        )
+
+        fake_db._nodes_by_id = {"node-1": base_node}
+
+        emb = prompt_client.in_memory_embeddings.__new__(prompt_client.in_memory_embeddings)
+        emb.ai_client = Mock()
+        emb.ai_client.get_max_batch_size.return_value = 16
+        emb.ai_client.get_text_embeddings.return_value = [[0.1, 0.2]]
+
+        # Avoid browser/NLTK; URL fetch and cleaning are irrelevant for caching semantics.
+        emb.get_content = Mock(return_value="Page content")
+        emb.clean_content = Mock(side_effect=lambda c: c)
+
+        def _add_embedding_side_effect(db_obj, _doc_type, _emb, embedding_text):
+            fake_db._emb_by_id[db_obj.id] = SimpleNamespace(
+                embeddings_content=embedding_text
+            )
+
+        fake_db.add_embedding.side_effect = _add_embedding_side_effect
+
+        emb.generate_embeddings(fake_db, ["node-1"])
+        self.assertEqual(emb.ai_client.get_text_embeddings.call_count, 1)
+        self.assertEqual(fake_db.add_embedding.call_count, 1)
+
+        # Metadata unchanged should be a cache-hit.
+        emb.generate_embeddings(fake_db, ["node-1"])
+        self.assertEqual(emb.ai_client.get_text_embeddings.call_count, 1)
+        self.assertEqual(fake_db.add_embedding.call_count, 1)
+
+        # Metadata change should trigger provider call.
+        updated_node = cre_defs.Standard(
+            name="ISO 27001",
+            section="Policies",
+            sectionID="5.10",
+            subsection="",
+            hyperlink="https://example.com/policies",
+            version="",
+            metadata={"key": "v2"},
+        )
+        fake_db._nodes_by_id["node-1"] = updated_node
+
+        emb.generate_embeddings(fake_db, ["node-1"])
+        self.assertEqual(emb.ai_client.get_text_embeddings.call_count, 2)
+        self.assertEqual(fake_db.add_embedding.call_count, 2)
+
+        # Metadata unchanged (v2) should be a cache-hit.
+        emb.generate_embeddings(fake_db, ["node-1"])
+        self.assertEqual(emb.ai_client.get_text_embeddings.call_count, 2)
+        self.assertEqual(fake_db.add_embedding.call_count, 2)
+
     def test_generate_embeddings_skips_unchanged_cre_content(self):
         fake_db = _FakeDB()
         cre1 = cre_defs.CRE(id="111-111", name="CRE-1", description="desc-1")
