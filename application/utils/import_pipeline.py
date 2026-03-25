@@ -25,6 +25,8 @@ def apply_parse_result(
     collection: db_mod.Node_collection,
     prompt_handler: Optional[prompt_client.PromptHandler] = None,
     db_connection_str: str = "",
+    import_run_id: Optional[str] = None,
+    import_source: Optional[str] = None,
 ) -> None:
     """
     Apply a ParseResult to the DB.
@@ -34,12 +36,61 @@ def apply_parse_result(
     """
     from application.cmd import cre_main
     from application.defs import cre_defs as defs
+    from application.database import db as db_api
+    from application.utils import import_diff
 
     if not parse_result or not parse_result.results:
         return
 
     # Fail fast if classification tags are missing.
     base_parser_defs.validate_classification_tags(parse_result.results)
+
+    # Phase 2 (Steps 1 & 2): persist snapshots + staged change set for this run.
+    if import_run_id and import_source:
+        change_ops: list[import_diff.ChangeSetOp] = []
+        prev_run = db_api.get_previous_import_run(import_source, import_run_id)
+        for standard_name, docs in parse_result.results.items():
+            if standard_name == defs.Credoctypes.CRE.value:
+                continue
+            if not docs:
+                continue
+            first = docs[0]
+            if getattr(getattr(first, "doctype", None), "value", None) != defs.Credoctypes.Standard.value:
+                continue
+
+            # Canonical snapshot JSON (stable ordering by id).
+            snap_docs = sorted(docs, key=lambda d: getattr(d, "id", "") or "")
+            snapshot_json = import_diff.stable_json([d.todict() for d in snap_docs])
+            content_hash = import_diff.sha256_hex(snapshot_json)
+            db_api.persist_standard_snapshot(
+                run_id=import_run_id,
+                standard_name=standard_name,
+                snapshot_json=snapshot_json,
+                content_hash=content_hash,
+            )
+
+            if prev_run:
+                prev_snap = db_api.get_standard_snapshot(
+                    run_id=prev_run.id, standard_name=standard_name
+                )
+                if prev_snap:
+                    prev_docs = [
+                        defs.Document.from_dict(d)
+                        for d in import_diff.json_loads(prev_snap.snapshot_json)
+                    ]
+                    new_docs = [defs.Document.from_dict(d) for d in import_diff.json_loads(snapshot_json)]
+                    diff = import_diff.diff_standards(
+                        previous=prev_docs,  # type: ignore[arg-type]
+                        new=new_docs,  # type: ignore[arg-type]
+                    )
+                    change_ops.extend(import_diff.diff_to_change_set(diff))
+
+        db_api.persist_staged_change_set(
+            run_id=import_run_id,
+            changeset_json=import_diff.change_set_to_json(change_ops),
+            has_conflicts=False,
+            staging_status="pending_review",
+        )
 
     if prompt_handler is None:
         prompt_handler = prompt_client.PromptHandler(database=collection)
@@ -71,6 +122,8 @@ def apply_parse_result_with_rq(
     cache_location: str,
     collection: db_mod.Node_collection,
     prompt_handler: Optional[prompt_client.PromptHandler] = None,
+    import_run_id: Optional[str] = None,
+    import_source: Optional[str] = None,
 ) -> None:
     """
     Apply ParseResult using the legacy RQ-parallel standard registration pattern.
@@ -88,11 +141,62 @@ def apply_parse_result_with_rq(
     from application.cmd import cre_main
     from application.defs import cre_defs as defs
     from application.utils import gap_analysis, redis
+    from application.database import db as db_api
+    from application.utils import import_diff
 
     if not parse_result or not parse_result.results:
         return
 
     base_parser_defs.validate_classification_tags(parse_result.results)
+
+    # Phase 2 (Steps 1 & 2): persist snapshots + staged change set for this run.
+    if import_run_id and import_source:
+        change_ops: list[import_diff.ChangeSetOp] = []
+        prev_run = db_api.get_previous_import_run(import_source, import_run_id)
+        for standard_name, docs_for_std in parse_result.results.items():
+            if standard_name == defs.Credoctypes.CRE.value:
+                continue
+            if not docs_for_std:
+                continue
+            first = docs_for_std[0]
+            if getattr(getattr(first, "doctype", None), "value", None) != defs.Credoctypes.Standard.value:
+                continue
+
+            snap_docs = sorted(docs_for_std, key=lambda d: getattr(d, "id", "") or "")
+            snapshot_json = import_diff.stable_json([d.todict() for d in snap_docs])
+            content_hash = import_diff.sha256_hex(snapshot_json)
+            db_api.persist_standard_snapshot(
+                run_id=import_run_id,
+                standard_name=standard_name,
+                snapshot_json=snapshot_json,
+                content_hash=content_hash,
+            )
+
+            if prev_run:
+                prev_snap = db_api.get_standard_snapshot(
+                    run_id=prev_run.id, standard_name=standard_name
+                )
+                if prev_snap:
+                    prev_docs = [
+                        defs.Document.from_dict(d)
+                        for d in import_diff.json_loads(prev_snap.snapshot_json)
+                    ]
+                    new_docs = [
+                        defs.Document.from_dict(d)
+                        for d in import_diff.json_loads(snapshot_json)
+                    ]
+                    diff = import_diff.diff_standards(
+                        previous=prev_docs,  # type: ignore[arg-type]
+                        new=new_docs,  # type: ignore[arg-type]
+                    )
+                    change_ops.extend(import_diff.diff_to_change_set(diff))
+
+        db_api.persist_staged_change_set(
+            run_id=import_run_id,
+            changeset_json=import_diff.change_set_to_json(change_ops),
+            has_conflicts=False,
+            staging_status="pending_review",
+        )
 
     if prompt_handler is None:
         prompt_handler = prompt_client.PromptHandler(database=collection)

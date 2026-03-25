@@ -6,11 +6,24 @@ Provides helpers to compare two standard snapshots and produce a structured diff
 plus a change-set vocabulary for add/remove/modify operations.
 """
 
+import hashlib
 import json
 from dataclasses import asdict, dataclass, field
 from typing import Any, Dict, List, Set, Tuple
 
 from application.defs import cre_defs as defs
+
+
+def stable_json(v: Any) -> str:
+    return json.dumps(v, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+
+
+def json_loads(data: str) -> Any:
+    return json.loads(data)
+
+
+def sha256_hex(s: str) -> str:
+    return hashlib.sha256(s.encode("utf-8")).hexdigest()
 
 
 @dataclass

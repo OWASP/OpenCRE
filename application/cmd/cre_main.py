@@ -435,9 +435,10 @@ def parse_standards_from_spreadsheeet(
     """given a csv with standards, build a list of standards in the db"""
     if any(key.startswith("CRE hierarchy") for key in cre_file[0].keys()):
         try:
-            db.create_import_run(source="master_spreadsheet", version=None)
+            run = db.create_import_run(source="master_spreadsheet", version=None)
         except Exception as e:
             logger.debug("Import run tracking skipped: %s", e)
+            run = None
         from application.utils import import_pipeline
 
         collection = db_connect(cache_location)
@@ -449,6 +450,8 @@ def parse_standards_from_spreadsheeet(
             cache_location=cache_location,
             collection=collection,
             prompt_handler=prompt_handler,
+            import_run_id=run.id if run else None,
+            import_source=run.source if run else None,
         )
         return parse_result.results.keys()
     else:

@@ -211,6 +211,49 @@ class ImportRun(BaseModel):  # type: ignore
     created_at = sqla.Column(sqla.DateTime, nullable=False)
 
 
+class StandardSnapshot(BaseModel):  # type: ignore
+    """Canonical standard snapshot persisted per import run (Phase 2 Step 1)."""
+
+    __tablename__ = "standard_snapshot"
+    id = sqla.Column(sqla.String, primary_key=True, default=generate_uuid)
+    run_id = sqla.Column(
+        sqla.String,
+        sqla.ForeignKey("import_run.id", onupdate="CASCADE", ondelete="CASCADE"),
+        nullable=False,
+    )
+    standard_name = sqla.Column(sqla.String, nullable=False)
+    snapshot_json = sqla.Column(sqla.Text, nullable=False)
+    content_hash = sqla.Column(sqla.String, nullable=False)
+    created_at = sqla.Column(sqla.DateTime, nullable=False)
+
+    __table_args__ = (
+        sqla.UniqueConstraint(
+            run_id,
+            standard_name,
+            name="uq_standard_snapshot_run_standard",
+        ),
+    )
+
+
+class StagedChangeSet(BaseModel):  # type: ignore
+    """Structured change set persisted per import run (Phase 2 Step 2)."""
+
+    __tablename__ = "staged_change_set"
+    id = sqla.Column(sqla.String, primary_key=True, default=generate_uuid)
+    run_id = sqla.Column(
+        sqla.String,
+        sqla.ForeignKey("import_run.id", onupdate="CASCADE", ondelete="CASCADE"),
+        nullable=False,
+        unique=True,
+    )
+    changeset_json = sqla.Column(sqla.Text, nullable=False, default="[]")
+    has_conflicts = sqla.Column(sqla.Boolean, nullable=False, default=False)
+    staging_status = sqla.Column(
+        sqla.String, nullable=False, default="pending_review"
+    )  # pending_review|accepted|applied|discarded
+    created_at = sqla.Column(sqla.DateTime, nullable=False)
+
+
 def create_import_run(source: str, version: Optional[str] = None) -> ImportRun:
     """Create and persist an import run record. Returns the new ImportRun."""
     from datetime import datetime, timezone
@@ -233,6 +276,103 @@ def get_latest_import_run(source: str) -> Optional[ImportRun]:
         .filter(ImportRun.source == source)
         .order_by(ImportRun.created_at.desc(), ImportRun.id.desc())
         .first()
+    )
+
+
+def get_previous_import_run(source: str, current_run_id: str) -> Optional[ImportRun]:
+    """Get the import run immediately before `current_run_id` for `source`."""
+    current = sqla.session.query(ImportRun).filter(ImportRun.id == current_run_id).first()
+    if not current:
+        return None
+    return (
+        sqla.session.query(ImportRun)
+        .filter(ImportRun.source == source)
+        .filter(
+            (ImportRun.created_at < current.created_at)
+            | ((ImportRun.created_at == current.created_at) & (ImportRun.id < current.id))
+        )
+        .order_by(ImportRun.created_at.desc(), ImportRun.id.desc())
+        .first()
+    )
+
+
+def persist_standard_snapshot(
+    *,
+    run_id: str,
+    standard_name: str,
+    snapshot_json: str,
+    content_hash: str,
+) -> StandardSnapshot:
+    from datetime import datetime, timezone
+
+    snap = StandardSnapshot(
+        id=generate_uuid(),
+        run_id=run_id,
+        standard_name=standard_name,
+        snapshot_json=snapshot_json,
+        content_hash=content_hash,
+        created_at=datetime.now(timezone.utc),
+    )
+    sqla.session.add(snap)
+    sqla.session.commit()
+    return snap
+
+
+def get_standard_snapshot(
+    *, run_id: str, standard_name: str
+) -> Optional[StandardSnapshot]:
+    return (
+        sqla.session.query(StandardSnapshot)
+        .filter(StandardSnapshot.run_id == run_id)
+        .filter(StandardSnapshot.standard_name == standard_name)
+        .first()
+    )
+
+
+def persist_staged_change_set(
+    *,
+    run_id: str,
+    changeset_json: str,
+    has_conflicts: bool = False,
+    staging_status: str = "pending_review",
+) -> StagedChangeSet:
+    from datetime import datetime, timezone
+
+    cs = StagedChangeSet(
+        id=generate_uuid(),
+        run_id=run_id,
+        changeset_json=changeset_json,
+        has_conflicts=has_conflicts,
+        staging_status=staging_status,
+        created_at=datetime.now(timezone.utc),
+    )
+    sqla.session.add(cs)
+    sqla.session.commit()
+    return cs
+
+
+def get_staged_change_set(*, run_id: str) -> Optional[StagedChangeSet]:
+    return sqla.session.query(StagedChangeSet).filter(StagedChangeSet.run_id == run_id).first()
+
+
+def get_import_run(*, run_id: str) -> Optional[ImportRun]:
+    return sqla.session.query(ImportRun).filter(ImportRun.id == run_id).first()
+
+
+def list_import_runs(
+    *,
+    source: Optional[str] = None,
+    limit: int = 50,
+    offset: int = 0,
+) -> List[ImportRun]:
+    q = sqla.session.query(ImportRun)
+    if source:
+        q = q.filter(ImportRun.source == source)
+    return (
+        q.order_by(ImportRun.created_at.desc(), ImportRun.id.desc())
+        .offset(offset)
+        .limit(limit)
+        .all()
     )
 
 

@@ -23,6 +23,7 @@ class BaseParser:
     ):
         from application.utils import import_pipeline
         from application.cmd import cre_main
+        from application.database import db as db_api
 
         db = cre_main.db_connect(db_connection_str)
 
@@ -38,12 +39,19 @@ class BaseParser:
             return
 
         resultObj = sclass_instance.parse(db, ph)
+        run = None
+        try:
+            run = db_api.create_import_run(source=sclass_instance.name, version=None)
+        except Exception:
+            run = None
         try:
             import_pipeline.apply_parse_result(
                 parse_result=resultObj,
                 collection=db,
                 prompt_handler=ph,
                 db_connection_str=db_connection_str,
+                import_run_id=run.id if run else None,
+                import_source=run.source if run else None,
             )
         except ValueError as ve:
             err_str = f"error importing {sclass.name}, err: {ve}"
