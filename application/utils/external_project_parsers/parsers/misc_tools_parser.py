@@ -46,7 +46,11 @@ class MiscTools(ParserInterface):
         if dry_run:
             logger.info("dry run, skipping clone and parsing for %s", tool_repo)
             return []
-        repo = git.clone(tool_repo)
+        repo = git.clone(
+            tool_repo,
+            sparse_paths=["/README.md"],
+            sparse_cone=False,
+        )
         readme = os.path.join(repo.working_dir, "README.md")
         title_regexp = r"# (?P<title>(\w+ ?)+)"
         cre_link = r".*\[.*\]\((?P<url>(https\:\/\/www\.)?opencre\.org\/cre\/(?P<cre>\d+-\d+).*)"
