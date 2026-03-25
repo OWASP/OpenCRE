@@ -122,6 +122,10 @@ class TestMain(unittest.TestCase):
         # Simulate intermittent scheduler failure returning no job_id.
         schedule_mock.return_value = {"error": 404}
         self.collection.standards = Mock(return_value=["CWE", "ASVS"])  # type: ignore[method-assign]
+        # Ensure DB structure changes so incremental-GA doesn't short-circuit.
+        register_node_mock.side_effect = (
+            lambda node, collection: collection.add_node(node)  # type: ignore[no-any-return]
+        )
 
         # Make it GA-eligible by providing both required tags.
         eligible_standard = defs.Standard(
@@ -166,6 +170,10 @@ class TestMain(unittest.TestCase):
         job_fetch_mock.return_value = Mock()
 
         self.collection.standards = Mock(return_value=["CWE", "ASVS"])  # type: ignore[method-assign]
+        # Ensure DB structure changes so incremental-GA doesn't short-circuit.
+        register_node_mock.side_effect = (
+            lambda node, collection: collection.add_node(node)  # type: ignore[no-any-return]
+        )
 
         requirements_standard = defs.Standard(
             name="CWE",
@@ -564,6 +572,8 @@ class TestMain(unittest.TestCase):
 
     @patch.object(main, "db_connect")
     @patch.object(Queue, "enqueue_call")
+    @patch.object(redis, "wait_for_jobs")
+    @patch.object(redis, "empty_queues")
     @patch.object(redis, "connect")
     @patch.object(prompt_client.PromptHandler, "generate_embeddings_for")
     @patch.object(main, "populate_neo4j_db")
@@ -572,6 +582,8 @@ class TestMain(unittest.TestCase):
         mock_populate_neo4j_db,
         mock_generate_embeddings_for,
         mock_redis_connect,
+        mock_empty_queues,
+        mock_wait_for_jobs,
         mock_enqueue_call,
         mock_db_connect,
     ) -> None:
@@ -591,6 +603,9 @@ class TestMain(unittest.TestCase):
         mock_enqueue_call.assert_called()
         expected_output.pop(defs.Credoctypes.CRE.value)
         expected_names = list(expected_output.keys())
+        expected_ids_by_name = {
+            k: {getattr(e, "id", None) for e in v} for k, v in expected_output.items()
+        }
         # This is a roundabout way of doing mock_enqueue_call.assert_has_calls([calls])
         # the reason is: in its current implementation assert_has_calls()
         # serialises kwargs to str, this ends up serialising a defs.Document
@@ -601,12 +616,14 @@ class TestMain(unittest.TestCase):
                 continue
             standard_name = call.kwargs.get("kwargs").get("standard_entries")[0].name
             for entry in call.kwargs.get("kwargs").get("standard_entries"):
-                self.assertIn(entry, expected_output[standard_name])
-                expected_output[standard_name].pop(
-                    expected_output[standard_name].index(entry)
+                self.assertIn(
+                    entry.id,
+                    expected_ids_by_name[standard_name],
+                    f"Unexpected {standard_name} entry id {entry.id}",
                 )
+                expected_ids_by_name[standard_name].remove(entry.id)
             self.assertEqual(
-                expected_output[standard_name], []
+                expected_ids_by_name[standard_name], set()
             )  # assert ALL elements of the call exist in expected
             self.assertEqual(None, call.kwargs["kwargs"]["collection"])
             self.assertEqual("", call.kwargs["kwargs"]["db_connection_str"])
