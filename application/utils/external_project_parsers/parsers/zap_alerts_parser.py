@@ -57,7 +57,11 @@ class ZAP(ParserInterface):
         self, cache: db.Node_collection, ph: prompt_client.PromptHandler
     ) -> List[defs.Tool]:
         zaproxy_website = "https://github.com/zaproxy/zaproxy-website.git"
-        repo = git.clone(zaproxy_website)
+        repo = git.clone(
+            zaproxy_website,
+            sparse_paths=["site/content/docs/alerts"],
+            sparse_cone=False,
+        )
         alerts = self.__register_alerts(repo=repo, cache=cache)
         results = {self.name: alerts}
         base_parser_defs.validate_classification_tags(results)
@@ -156,7 +160,7 @@ class ZAP(ParserInterface):
             )
         return alert
 
-    def __register_alerts(self, cache: db.Node_collection, repo: git.git):
+    def __register_alerts(self, cache: db.Node_collection, repo):
         alerts = []
         for mdfile in os.listdir(os.path.join(repo.working_dir, self.alerts_path)):
             pth = os.path.join(repo.working_dir, self.alerts_path, mdfile)

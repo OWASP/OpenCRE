@@ -38,7 +38,12 @@ class SecureHeaders(ParserInterface):
     def parse(self, cache: db.Node_collection, ph: prompt_client.PromptHandler):
         sh_repo = "https://github.com/owasp/www-project-secure-headers.git"
         file_path = "./"
-        repo = git.clone(sh_repo)
+        # Large OWASP site repo: only fetch markdown files (walk is *.md-only anyway).
+        repo = git.clone(
+            sh_repo,
+            sparse_paths=["/**/*.md"],
+            sparse_cone=False,
+        )
         entries = self.register_headers(
             repo=repo, cache=cache, file_path=file_path, repo_path=sh_repo
         )
