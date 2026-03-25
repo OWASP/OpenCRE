@@ -1056,7 +1056,7 @@ def run_import_core_sequential(*, db_path: str, core_spreadsheet_url: str) -> No
             "Could not find a worksheet in the spreadsheet with 'CRE hierarchy' columns."
         )
 
-    documents = master_spreadsheet_parser.parse_hierarchical_export_format(core_rows)
+    documents = master_spreadsheet_parser.parse_master_spreadsheet_documents(core_rows)
 
     # Ensure schema exists (run_import_only may have already created it).
     collection = cre_main.db_connect(path=db_path)

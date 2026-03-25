@@ -1,7 +1,6 @@
 import logging
-from copy import copy
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Tuple
 
 from application.database import db
 from application.defs import cre_defs as defs
@@ -10,6 +9,10 @@ from application.utils.external_project_parsers import base_parser_defs
 from application.utils.external_project_parsers.base_parser_defs import (
     ParserInterface,
     ParseResult,
+)
+from application.utils.external_project_parsers.parsers.spreadsheet_standard_family import (
+    is_empty,
+    parse_standards_for_family,
 )
 
 
@@ -118,35 +121,13 @@ supported_resource_mapping = {
 }
 
 
-def is_empty(value: Optional[str]) -> bool:
-    value = str(value).strip()
-    return (
-        value is None
-        or value == "None"
-        or value == ""
-        or "n/a" in value.lower()
-        or value == "nan"
-        or value.lower() == "no"
-        or value.lower() == "tbd"
-        or value.lower() == "see higher level topic"
-        or value.lower() == "tbd"
-        or value.lower() == "0"
-    )
-
-
 class MasterSpreadsheetParser(ParserInterface):
     """
     Parser for the master mapping spreadsheet (hierarchical CRE structure).
 
-    This parser is intended to:
-    - Parse CRE hierarchy and inter-CRE links from the main CSV.
-    - Delegate standard content to dedicated external parsers (ASVS, CWE, etc).
-
-    The high-level flow is:
-    1. Parse the hierarchical OpenCRE sheet to obtain
-       CREs plus placeholder links to standards.
-    2. Persist/merge the CREs.
-    3. Let other external parsers populate the actual Standard documents.
+    CRE rows and inter-CRE links are parsed here; each spreadsheet-backed
+    standard family has its own module under ``spreadsheet_*.py``, dispatched
+    via ``spreadsheet_standards_dispatch``.
     """
 
     name = "Master Mapping Spreadsheet"
@@ -161,11 +142,11 @@ class MasterSpreadsheetParser(ParserInterface):
     @staticmethod
     def parse_rows(rows: List[Dict[str, Any]]) -> ParseResult:
         """
-        Parse master spreadsheet rows into CRE + standards document groups.
+        Parse master spreadsheet rows into CRE + per-family standard documents.
 
         This is the entrypoint used by `cre_main` for spreadsheet imports.
         """
-        documents = parse_hierarchical_export_format(rows)
+        documents = parse_master_spreadsheet_documents(rows)
         return ParseResult(
             results=documents,
             calculate_gap_analysis=True,
@@ -179,10 +160,9 @@ def parse_cre_hierarchy_from_rows(
     """
     Parse only the CRE structure from the master hierarchical CSV.
 
-    This uses parse_hierarchical_export_format to get a
-    dict that includes CREs and any standard links, but we only return the
-    CRE collection here. Standards are expected to be handled by their
-    own external parsers.
+    Uses CRE-only ``parse_hierarchical_export_format`` (no spreadsheet columns
+    for ASVS, CWE, etc.). Full import merges those via
+    ``parse_master_spreadsheet_documents``.
     """
     documents = parse_hierarchical_export_format(rows)
 
@@ -318,19 +298,19 @@ def update_cre_in_links(
     return documents
 
 
-def parse_hierarchical_export_format(
+def _parse_cre_graph_and_rows(
     cre_file: List[Dict[str, str]],
-) -> Dict[str, List[defs.Document]]:
+) -> Tuple[Dict[str, List[defs.Document]], List[Tuple[Dict[str, str], defs.CRE]]]:
     logger.info("Spreadsheet is hierarchical export format")
     documents: Dict[str, List[defs.Document]] = {defs.Credoctypes.CRE.value: []}
+    rows_with_cre: List[Tuple[Dict[str, str], defs.CRE]] = []
     if not cre_file:
-        return documents
+        return documents, rows_with_cre
     max_hierarchy = len([key for key in cre_file[0].keys() if "CRE hierarchy" in key])
 
     cre_name_to_id = _build_cre_name_to_id_map(cre_file, max_hierarchy)
 
     cre_dict = {}
-    rows_with_cre: List[Tuple[Dict[str, str], defs.CRE]] = []
     uninitialized_cre_mappings: List[UninitializedMapping] = []
     for mapping in cre_file:
         cre: defs.CRE
@@ -467,116 +447,29 @@ def parse_hierarchical_export_format(
 
     cre_dict = reconcile_uninitializedMappings(cre_dict, uninitialized_cre_mappings)
     documents[defs.Credoctypes.CRE.value] = list(cre_dict.values())
+    return documents, rows_with_cre
 
-    standards_from_subparsers = _dispatch_standard_subparsers(rows_with_cre)
-    for std_list in standards_from_subparsers.values():
-        for std in std_list:
-            documents = add_standard_to_documents_array(std, documents)
 
+def parse_hierarchical_export_format(
+    cre_file: List[Dict[str, str]],
+) -> Dict[str, List[defs.Document]]:
+    """CRE hierarchy only (no spreadsheet standard columns)."""
+    documents, _ = _parse_cre_graph_and_rows(cre_file)
     return documents
 
 
-def _parse_standards_for_family(
-    mapping: Dict[str, str],
-    name: str,
-    struct: Dict[str, Any],
-) -> List[defs.Link]:
-    links: List[defs.Link] = []
-    if not is_empty(mapping.get(struct["section"])) or not is_empty(
-        mapping.get(struct["sectionID"])
-    ):
-        if "separator" in struct:
-            separator = struct["separator"]
-            sections = str(mapping.pop(struct["section"])).split(separator)
-            subsections = str(mapping.get(struct["subsection"], "")).split(separator)
-
-            hyperlinks = str(mapping.get(struct["hyperlink"], "")).split(separator)
-            if len(sections) > len(subsections):
-                subsections.extend([""] * (len(sections) - len(subsections)))
-            if len(sections) > len(hyperlinks):
-                hyperlinks.extend([""] * (len(sections) - len(hyperlinks)))
-
-            sectionIDs = [""] * len(sections)
-            if struct["sectionID"] in mapping:
-                sectionIDs = str(mapping.pop(struct["sectionID"])).split(separator)
-
-            if len(sections) == 0:
-                sections = [""] * len(sectionIDs)
-
-            for section, subsection, link, sectionID in zip(
-                sections, subsections, hyperlinks, sectionIDs
-            ):
-                if not is_empty(section):
-                    links.append(
-                        defs.Link(
-                            ltype=defs.LinkTypes.LinkedTo,
-                            document=defs.Standard(
-                                name=name,
-                                section=section.strip(),
-                                hyperlink=link.strip(),
-                                subsection=subsection.strip(),
-                                sectionID=sectionID.strip(),
-                            ),
-                        )
-                    )
-        else:
-            section = str(mapping.get(struct["section"], ""))
-            subsection = str(mapping.get(struct["subsection"], ""))
-            hyperlink = str(mapping.get(struct["hyperlink"], ""))
-            sectionID = str(mapping.get(struct["sectionID"], ""))
-
-            links.append(
-                defs.Link(
-                    ltype=defs.LinkTypes.LinkedTo,
-                    document=defs.Standard(
-                        name=name,
-                        section=section.strip(),
-                        sectionID=sectionID.strip(),
-                        subsection=subsection.strip(),
-                        hyperlink=hyperlink.strip(),
-                    ),
-                )
-            )
-    return links
-
-
-def _dispatch_standard_subparsers(
-    rows_with_cre: List[Tuple[Dict[str, str], defs.CRE]],
+def parse_master_spreadsheet_documents(
+    cre_file: List[Dict[str, str]],
 ) -> Dict[str, List[defs.Document]]:
-    standards_docs: Dict[str, List[defs.Document]] = {}
-    standards_map = supported_resource_mapping.get("Standards", {})
+    """Full master sheet: CREs plus all families handled in ``spreadsheet_*.py``."""
+    from application.utils.external_project_parsers.parsers.spreadsheet_standards_dispatch import (
+        all_standards_from_rows,
+    )
 
-    for family_name, struct in standards_map.items():
-        parser = _SpreadsheetStandardFamilyParser(family_name=family_name, struct=struct)
-        family_standards = parser.parse_rows(rows_with_cre)
-        for std in family_standards:
-            standards_docs = add_standard_to_documents_array(std, standards_docs)
-    return standards_docs
-
-
-@dataclass
-class _SpreadsheetStandardFamilyParser:
-    family_name: str
-    struct: Dict[str, Any]
-
-    def parse_rows(
-        self, rows_with_cre: List[Tuple[Dict[str, str], defs.CRE]]
-    ) -> List[defs.Standard]:
-        docs: List[defs.Standard] = []
-        for mapping, cre in rows_with_cre:
-            docs.extend(self.parse_row(mapping, cre))
-        return docs
-
-    def parse_row(self, mapping: Dict[str, str], cre: defs.CRE) -> List[defs.Standard]:
-        row_copy = copy(mapping)
-        links = _parse_standards_for_family(row_copy, self.family_name, self.struct)
-        family_docs: List[defs.Standard] = []
-        for link in links:
-            doc = link.document.add_link(
-                defs.Link(document=cre.shallow_copy(), ltype=defs.LinkTypes.LinkedTo)
-            )
-            family_docs.append(doc)
-        return family_docs
+    documents, rows_with_cre = _parse_cre_graph_and_rows(cre_file)
+    merged: Dict[str, List[defs.Document]] = dict(documents)
+    merged.update(all_standards_from_rows(rows_with_cre))
+    return merged
 
 
 def parse_standards(
@@ -587,7 +480,7 @@ def parse_standards(
 
     links: List[defs.Link] = []
     for name, struct in standards_mapping.get("Standards", {}).items():
-        links.extend(_parse_standards_for_family(mapping, name, struct))
+        links.extend(parse_standards_for_family(mapping, name, struct))
     return links
 
 

@@ -1,3 +1,4 @@
+import copy
 import json
 from pprint import pprint
 import unittest
@@ -8,6 +9,7 @@ from application.utils.external_project_parsers.parsers.export_format_parser imp
 )
 from application.utils.external_project_parsers.parsers.master_spreadsheet_parser import (
     parse_hierarchical_export_format,
+    parse_master_spreadsheet_documents,
     parse_standards,
     supported_resource_mapping,
 )
@@ -27,10 +29,28 @@ class TestParsers(unittest.TestCase):
         self.assertListEqual(list(actual_cres), list(expected_cres))
         self.assertDictEqual(expected, standards)
 
-    def test_parse_hierarchical_export_format(self) -> None:
+    def test_parse_hierarchical_export_format_cre_only(self) -> None:
+        input_data, _expected = data_gen.root_csv_data()
+        output = parse_hierarchical_export_format(input_data)
+        self.assertEqual(list(output.keys()), [defs.Credoctypes.CRE.value])
+
+    def test_parse_master_after_cre_only_on_same_row_objects_drops_standards(self) -> None:
+        """Regression: _parse_cre_graph_and_rows mutates row dicts; a second full parse
+        on the same list must not run after parse_hierarchical_export_format or ASVS etc.
+        are lost (checkpoint import used to do this).
+        """
+        input_data, _ = data_gen.root_csv_data()
+        fresh = copy.deepcopy(input_data)
+        parse_hierarchical_export_format(input_data)
+        after_mutation = parse_master_spreadsheet_documents(input_data)
+        from_clean = parse_master_spreadsheet_documents(fresh)
+        self.assertGreater(len(from_clean.get("ASVS", [])), 0)
+        self.assertLess(len(after_mutation.get("ASVS", [])), len(from_clean.get("ASVS", [])))
+
+    def test_parse_master_spreadsheet_documents(self) -> None:
         #  TODO(northdpole): add a tags linking test
         input_data, expected_output = data_gen.root_csv_data()
-        output = parse_hierarchical_export_format(input_data)
+        output = parse_master_spreadsheet_documents(input_data)
         self.maxDiff = None
 
         for k, v in expected_output.items():
