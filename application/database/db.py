@@ -251,6 +251,7 @@ class StagedChangeSet(BaseModel):  # type: ignore
     staging_status = sqla.Column(
         sqla.String, nullable=False, default="pending_review"
     )  # pending_review|accepted|applied|discarded
+    apply_error = sqla.Column(sqla.Text, nullable=True)
     created_at = sqla.Column(sqla.DateTime, nullable=False)
 
 
@@ -353,6 +354,27 @@ def persist_staged_change_set(
 
 def get_staged_change_set(*, run_id: str) -> Optional[StagedChangeSet]:
     return sqla.session.query(StagedChangeSet).filter(StagedChangeSet.run_id == run_id).first()
+
+
+def update_staged_change_set(
+    *,
+    run_id: str,
+    staging_status: Optional[str] = None,
+    has_conflicts: Optional[bool] = None,
+    apply_error: Optional[str] = None,
+) -> Optional[StagedChangeSet]:
+    cs = get_staged_change_set(run_id=run_id)
+    if not cs:
+        return None
+    if staging_status is not None:
+        cs.staging_status = staging_status
+    if has_conflicts is not None:
+        cs.has_conflicts = has_conflicts
+    if apply_error is not None:
+        cs.apply_error = apply_error
+    sqla.session.add(cs)
+    sqla.session.commit()
+    return cs
 
 
 def get_import_run(*, run_id: str) -> Optional[ImportRun]:
