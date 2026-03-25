@@ -10,6 +10,8 @@ import tempfile
 import requests
 
 from typing import Any, Callable, Dict, Generator, List, Optional, Tuple
+import hashlib
+import json as _json
 from rq import Queue, job, exceptions
 from dacite import from_dict
 from dacite.config import Config
@@ -250,6 +252,51 @@ def register_standard(
     if collection is None:
         collection = db_connect(path=db_connection_str)
 
+    def _standard_structure_fingerprint(resource_name: str) -> str:
+        """
+        Fingerprint the structure of a resource in the DB.
+
+        Used for Step 10 incremental GA: if structure is unchanged after reimport,
+        skip GA scheduling entirely for that resource.
+        """
+        rows: List[tuple] = []
+        try:
+            nodes = collection.get_nodes(name=resource_name) or []
+        except Exception:
+            nodes = []
+        for n in nodes:
+            # Include identity-like fields and a stable view of CRE links.
+            links = []
+            for l in getattr(n, "links", []) or []:
+                doc = getattr(l, "document", None)
+                if not doc:
+                    continue
+                # Focus on CRE links for GA topology. Ignore embedding-only fields.
+                doctype = getattr(doc, "doctype", None)
+                doctype_val = doctype.value if hasattr(doctype, "value") else str(doctype)
+                links.append(
+                    (
+                        getattr(l, "ltype", None).value
+                        if hasattr(getattr(l, "ltype", None), "value")
+                        else str(getattr(l, "ltype", "")),
+                        doctype_val,
+                        getattr(doc, "id", "") or "",
+                        getattr(doc, "name", "") or "",
+                    )
+                )
+            rows.append(
+                (
+                    getattr(n, "name", "") or "",
+                    getattr(n, "sectionID", "") or "",
+                    getattr(n, "section", "") or "",
+                    getattr(n, "subsection", "") or "",
+                    getattr(n, "version", "") or "",
+                    tuple(sorted(links)),
+                )
+            )
+        payload = _json.dumps(sorted(rows), sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+        return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
     def _doctype_value(doc: defs.Document) -> str:
         doctype = getattr(doc, "doctype", None)
         if hasattr(doctype, "value"):
@@ -293,6 +340,10 @@ def register_standard(
             f"Standard importing job with info-hash {standard_hash} has already returned, skipping"
         )
         return
+
+    before_fp: Optional[str] = None
+    if effective_calculate_gap_analysis and not os.environ.get("CRE_NO_CALCULATE_GAP_ANALYSIS"):
+        before_fp = _standard_structure_fingerprint(importing_name)
     logger.info(
         f"Registering resource {importing_name} of length {len(standard_entries)}"
     )
@@ -312,6 +363,15 @@ def register_standard(
         ph.generate_embeddings_for(importing_name)
 
     if effective_calculate_gap_analysis and not os.environ.get("CRE_NO_CALCULATE_GAP_ANALYSIS"):
+        after_fp = _standard_structure_fingerprint(importing_name)
+        if before_fp is not None and before_fp == after_fp:
+            logger.info(
+                "Skipping GA for %s because structure fingerprint unchanged",
+                importing_name,
+            )
+            conn.set(standard_hash, value="")
+            return
+
         # calculate gap analysis
         populate_neo4j_db(db_connection_str)
         jobs = []
@@ -373,83 +433,24 @@ def parse_standards_from_spreadsheeet(
     prompt_handler: prompt_client.PromptHandler,
 ) -> None:
     """given a csv with standards, build a list of standards in the db"""
-    collection = db_connect(cache_location)
     if any(key.startswith("CRE hierarchy") for key in cre_file[0].keys()):
         try:
             db.create_import_run(source="master_spreadsheet", version=None)
         except Exception as e:
             logger.debug("Import run tracking skipped: %s", e)
-        conn = redis.connect()
-        collection = collection.with_graph()
-        redis.empty_queues(conn)
-        q = Queue(connection=conn)
-        docs = master_spreadsheet_parser.MasterSpreadsheetParser.parse_rows(
+        from application.utils import import_pipeline
+
+        collection = db_connect(cache_location)
+        parse_result = master_spreadsheet_parser.MasterSpreadsheetParser.parse_rows(
             cre_file
-        ).results
-        total_resources = docs.keys()
-        jobs = []
-        logger.info(f"Importing {len(docs.get(defs.Credoctypes.CRE.value))} CREs")
-
-        with alive_bar(len(docs.get(defs.Credoctypes.CRE.value))) as bar:
-            for cre in docs.pop(defs.Credoctypes.CRE.value):
-                register_cre(cre, collection)
-                bar()
-
-        if not os.environ.get("CRE_NO_NEO4J"):
-            populate_neo4j_db(cache_location)
-        if not os.environ.get("CRE_NO_GEN_EMBEDDINGS"):
-            prompt_handler.generate_embeddings_for(defs.Credoctypes.CRE.value)
-
-        import_only = []
-        if os.environ.get("CRE_ROOT_CSV_IMPORT_ONLY", None):
-            import_list = os.environ.get("CRE_ROOT_CSV_IMPORT_ONLY")
-            try:
-                import_list_json = json.loads(import_list)
-            except json.JSONDecodeError as jde:
-                env_value = os.environ.get("CRE_ROOT_CSV_IMPORT_ONLY")
-                logger.error(f"value '{env_value}' is not valid json")
-                raise jde
-            if type(import_list_json) == list:
-                import_only.extend(import_list_json)
-            else:
-                logger.warning(
-                    f"CRE_ROOT_CSV_IMPORT_ONLY should be a list of standards to import, received {type(import_list_json)} {import_list}"
-                )
-        database = db_connect(cache_location)
-        for standard_name, standard_entries in docs.items():
-            if os.environ.get("CRE_NO_REIMPORT_IF_EXISTS") and database.get_nodes(
-                name=standard_name
-            ):
-                logger.info(
-                    f"Already know of {standard_name} and CRE_NO_REIMPORT_IF_EXISTS is set, skipping"
-                )
-                continue
-            if import_only and standard_name not in import_only:
-                logger.info(
-                    f"skipping standard {standard_name} as it's not in the list of {import_only}"
-                )
-                continue
-            jobs.append(
-                q.enqueue_call(
-                    description=standard_name,
-                    func=register_standard,
-                    kwargs={
-                        "standard_entries": standard_entries,
-                        "collection": None,
-                        "db_connection_str": cache_location,
-                    },
-                    timeout=gap_analysis.GAP_ANALYSIS_TIMEOUT,
-                )
-            )
-        t0 = time.perf_counter()
-        total_standards = len(jobs)
-        logger.info(f"Importing {total_standards} Standards")
-        with alive_bar(theme="classic", total=total_standards) as bar:
-            redis.wait_for_jobs(jobs, bar)
-        logger.info(
-            f"imported {total_standards} standards in {time.perf_counter()-t0} seconds"
         )
-        return total_resources
+        import_pipeline.apply_parse_result_with_rq(
+            parse_result=parse_result,
+            cache_location=cache_location,
+            collection=collection,
+            prompt_handler=prompt_handler,
+        )
+        return parse_result.results.keys()
     else:
         logger.fatal(f"could not find any useful keys { cre_file[0].keys()}")
 

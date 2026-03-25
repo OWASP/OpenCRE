@@ -21,6 +21,7 @@ class BaseParser:
         sclass: base_parser_defs.ParserInterface,
         db_connection_str: str,
     ):
+        from application.utils import import_pipeline
         from application.cmd import cre_main
 
         db = cre_main.db_connect(db_connection_str)
@@ -38,14 +39,12 @@ class BaseParser:
 
         resultObj = sclass_instance.parse(db, ph)
         try:
-            for _, documents in resultObj.results.items():
-                cre_main.register_standard(
-                    standard_entries=documents,
-                    db_connection_str=db_connection_str,
-                    calculate_gap_analysis=resultObj.calculate_gap_analysis,
-                    generate_embeddings=resultObj.calculate_embeddings,
-                    collection=db,
-                )
+            import_pipeline.apply_parse_result(
+                parse_result=resultObj,
+                collection=db,
+                prompt_handler=ph,
+                db_connection_str=db_connection_str,
+            )
         except ValueError as ve:
             err_str = f"error importing {sclass.name}, err: {ve}"
             raise ValueError(err_str)
