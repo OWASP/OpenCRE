@@ -729,7 +729,70 @@ class TestMain(unittest.TestCase):
         self.assertEqual(200, response.status_code)
         self.assertIn("result", payload)
         self.assertIn(opencre.id, payload["result"])
-        self.assertIn(compare.id, payload["result"][opencre.id]["paths"])
+        self.assertEqual(1, len(payload["result"][opencre.id]["paths"]))
+        path = next(iter(payload["result"][opencre.id]["paths"].values()))
+        self.assertEqual(compare.id, path["end"]["id"])
+        schedule_mock.assert_not_called()
+
+    @patch.object(web_main.gap_analysis, "schedule")
+    @patch.object(db, "Node_collection")
+    def test_gap_analysis_preserves_multiple_opencre_overlaps(
+        self, db_mock, schedule_mock
+    ) -> None:
+        compare = defs.Standard(
+            name="CWE",
+            sectionID="1004",
+            section="Sensitive Cookie Without 'HttpOnly' Flag",
+        )
+        opencre_documents = []
+        internal_ids = []
+
+        for i in range(8):
+            cre = defs.CRE(
+                id=f"170-77{i}",
+                name=f"Cryptography {i}",
+                description="",
+            )
+            compare.add_link(
+                defs.Link(ltype=defs.LinkTypes.LinkedTo, document=cre.shallow_copy())
+            )
+            opencre_documents.append(cre)
+            internal_ids.append(SimpleNamespace(id=f"cre-internal-{i}"))
+
+        db_mock.return_value.get_gap_analysis_result.return_value = None
+        db_mock.return_value.gap_analysis_exists.return_value = False
+        db_mock.return_value.get_nodes.side_effect = lambda name=None, **kwargs: (
+            [compare] if name == "CWE" else []
+        )
+        db_mock.return_value.session.query.return_value.all.return_value = internal_ids
+        db_mock.return_value.get_CREs.side_effect = lambda internal_id=None, **kwargs: [
+            next(
+                cre
+                for index, cre in enumerate(opencre_documents)
+                if internal_id == f"cre-internal-{index}"
+            )
+        ]
+
+        with self.app.test_client() as client:
+            response = client.get(
+                "/rest/v1/map_analysis?standard=CWE&standard=OpenCRE",
+                headers={"Content-Type": "application/json"},
+            )
+
+        payload = json.loads(response.data)
+        self.assertEqual(200, response.status_code)
+        self.assertIn("result", payload)
+        self.assertIn(compare.id, payload["result"])
+        self.assertEqual(8, len(payload["result"][compare.id]["paths"]))
+        self.assertEqual(
+            8,
+            len(
+                {
+                    path["end"]["id"]
+                    for path in payload["result"][compare.id]["paths"].values()
+                }
+            ),
+        )
         schedule_mock.assert_not_called()
 
     def test_gap_analysis_weak_links_no_cache(self) -> None:

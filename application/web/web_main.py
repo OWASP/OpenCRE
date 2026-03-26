@@ -380,6 +380,10 @@ def _build_direct_overlap_path(
     }
 
 
+def _make_direct_overlap_path_key(compare_document: defs.Document, cre_id: str) -> str:
+    return f"{compare_document.id}::{cre_id}"
+
+
 def _build_direct_cre_overlap_map_analysis(
     standards: list[str],
     standards_hash: str,
@@ -406,7 +410,9 @@ def _build_direct_cre_overlap_map_analysis(
                 path = _build_direct_overlap_path(base_node, cre_id, compare_node)
                 if not path:
                     continue
-                shared_paths.setdefault(compare_node.id, path)
+                shared_paths.setdefault(
+                    _make_direct_overlap_path_key(compare_node, cre_id), path
+                )
 
         if shared_paths:
             grouped_paths[base_node.id] = {
