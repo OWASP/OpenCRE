@@ -48,13 +48,6 @@ import google.auth.transport.requests
 
 
 ITEMS_PER_PAGE = 20
-OWASP_TOP10_2025_DATA_FILE = (
-    pathlib.Path(__file__).resolve().parent.parent
-    / "utils"
-    / "external_project_parsers"
-    / "data"
-    / "owasp_top10_2025.json"
-)
 OPENCRE_STANDARD_NAME = "OpenCRE"
 
 app = Blueprint(
