@@ -1,7 +1,7 @@
 # OpenCRE
 
-Go to [https://www.opencre.org](https://www.opencre.org) to see OpenCRE working and more explanation.
-OpenCRE stands for Open Common Requirement enumeration. It is an interactive content linking platform for uniting security standards and guidelines. It offers easy and robust access to relevant information when designing, developing, testing and procuring secure software.
+Visit [https://www.opencre.org](https://www.opencre.org) to explore OpenCRE and learn more about how it works.
+OpenCRE stands for Open Common Requirement enumeration. It is an interactive content linking platform for uniting security standards and guidelines. It provides easy and reliable access to relevant information for designing, developing, testing, and procuring secure software.
 
 OpenCRE consists of:
 
@@ -10,10 +10,10 @@ OpenCRE consists of:
 * The mapping data: links from each CRE to relevant sections in a range of standards
 * Tools and guidelines to contribute to the data and to run the application locally
 
-# Contribute code or mappings
+## Contributing
 
 To see how you can contribute to the application or to the data (catalog or standard mappings), see [Contributing](docs/CONTRIBUTING.md).
-We really welcome you!
+We warmly welcome contributions from the community!
 
 # Roadmap
 
