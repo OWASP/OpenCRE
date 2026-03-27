@@ -313,11 +313,17 @@ def _get_map_analysis_documents(
 def _build_direct_link_path(
     start_document: defs.Document, end_document: defs.Document
 ) -> dict[str, Any]:
+    segment_start = start_document.shallow_copy()
+    # The current gap-analysis popup mutates non-CRE row ids during display
+    # before it resolves the one-step direct path. Keep this direct-link fast
+    # path compatible by mirroring that display-only shape in the segment start.
+    if segment_start.doctype != defs.Credoctypes.CRE.value:
+        segment_start.id = ""
     return {
         "end": end_document.shallow_copy(),
         "path": [
             {
-                "start": start_document.shallow_copy(),
+                "start": segment_start,
                 "end": end_document.shallow_copy(),
                 "relationship": "LINKED_TO",
                 "score": 0,
