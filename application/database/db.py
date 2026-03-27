@@ -1531,10 +1531,16 @@ class Node_collection:
             .filter(GapAnalysisResults.cache_key.like(f"%{node_name}%"))
             .all()
         )
+        deleted_count = 0
         for r in res:
-            result = self.session.delete(r)
-            if result:
-                logger.info(f"deleted {result.rowcount} objects")
+            self.session.delete(r)
+            deleted_count += 1
+        if deleted_count:
+            logger.info(
+                "deleted %s gap analysis result objects for node %s",
+                deleted_count,
+                node_name,
+            )
         self.session.commit()
         self.session.flush()
         return res
