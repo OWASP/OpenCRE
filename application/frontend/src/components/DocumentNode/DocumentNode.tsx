@@ -149,7 +149,6 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({
               const sortedResults = [...links].sort((a, b) =>
                 getDocumentDisplayName(a.document).localeCompare(getDocumentDisplayName(b.document))
               );
-              let lastDocumentName = sortedResults[0].document.name;
               return (
                 <div className="document-node__link-type-container" key={`${type}-${idx}`}>
                   {idx > 0 && <hr style={{ borderColor: 'transparent', margin: '20px 0' }} />}
@@ -159,22 +158,17 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({
                   </div>
                   <div>
                     <div className="accordion ui fluid styled f0">
-                      {sortedResults.slice(0, showAll[idx] ? sortedResults.length : MAX_LENGTH_FOR_AUTO_EXPAND).map((link, i) => {
-                        const temp = (
-                          <div key={`document-node-container-${type}-${idx}-${i}`}>
-                            {lastDocumentName !== link.document.name && <span style={{ margin: '5px' }} />}
-                            <DocumentNode
-                              node={link.document}
-                              linkType={type}
-                              hasLinktypeRelatedParent={isNestedInRelated as boolean}
-                              key={`document-sub-node-${type}-${idx}-${i}`}
-                            />
-                            <FilterButton document={link.document} />
-                          </div>
-                        );
-                        lastDocumentName = link.document.name;
-                        return temp;
-                      })}
+                      {sortedResults.slice(0, showAll[idx] ? sortedResults.length : MAX_LENGTH_FOR_AUTO_EXPAND).map((link, i) => (
+                        <div key={`document-node-container-${type}-${idx}-${i}`} style={{ marginBottom: '4px' }}>
+                          <DocumentNode
+                            node={link.document}
+                            linkType={type}
+                            hasLinktypeRelatedParent={isNestedInRelated as boolean}
+                            key={`document-sub-node-${type}-${idx}-${i}`}
+                          />
+                          <FilterButton document={link.document} />
+                        </div>
+                      ))}
                     </div>
                     {sortedResults.length > MAX_LENGTH_FOR_AUTO_EXPAND && (
                       <button
