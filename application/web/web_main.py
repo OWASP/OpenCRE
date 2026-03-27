@@ -320,71 +320,44 @@ def _get_map_analysis_documents(
     return collection.get_nodes(name=standard)
 
 
-def _get_document_cre_ids(document: defs.Document) -> list[str]:
-    if document.doctype == defs.Credoctypes.CRE:
-        return [document.id]
-    return [
-        link.document.id
-        for link in document.links
-        if link.document.doctype == defs.Credoctypes.CRE
-    ]
-
-
-def _build_direct_overlap_path(
-    base_document: defs.Document, cre_id: str, compare_document: defs.Document
-) -> dict[str, Any] | None:
-    if base_document.doctype == defs.Credoctypes.CRE:
-        if compare_document.doctype == defs.Credoctypes.CRE:
-            return None
-        return {
-            "end": compare_document.shallow_copy(),
-            "path": [
-                {
-                    "start": base_document.shallow_copy(),
-                    "end": compare_document.shallow_copy(),
-                    "relationship": "LINKED_TO",
-                    "score": 0,
-                }
-            ],
-            "score": 0,
-        }
-
-    if compare_document.doctype == defs.Credoctypes.CRE:
-        return {
-            "end": compare_document.shallow_copy(),
-            "path": [
-                {
-                    "start": base_document.shallow_copy(),
-                    "end": compare_document.shallow_copy(),
-                    "relationship": "LINKED_TO",
-                    "score": 0,
-                }
-            ],
-            "score": 0,
-        }
-
+def _build_direct_link_path(
+    start_document: defs.Document, end_document: defs.Document
+) -> dict[str, Any]:
     return {
-        "end": compare_document.shallow_copy(),
+        "end": end_document.shallow_copy(),
         "path": [
             {
-                "start": base_document.shallow_copy(),
-                "end": defs.CRE(id=cre_id).shallow_copy(),
+                "start": start_document.shallow_copy(),
+                "end": end_document.shallow_copy(),
                 "relationship": "LINKED_TO",
                 "score": 0,
-            },
-            {
-                "start": defs.CRE(id=cre_id).shallow_copy(),
-                "end": compare_document.shallow_copy(),
-                "relationship": "LINKED_TO",
-                "score": 0,
-            },
+            }
         ],
         "score": 0,
     }
 
 
-def _make_direct_overlap_path_key(compare_document: defs.Document, cre_id: str) -> str:
-    return f"{compare_document.id}::{cre_id}"
+def _make_direct_link_path_key(end_document: defs.Document) -> str:
+    return end_document.id
+
+
+def _add_direct_link_result(
+    grouped_paths: dict[str, dict[str, Any]],
+    start_document: defs.Document,
+    end_document: defs.Document,
+) -> None:
+    shared_paths = grouped_paths.setdefault(
+        start_document.id,
+        {
+            "start": start_document.shallow_copy(),
+            "paths": {},
+            "extra": 0,
+        },
+    )["paths"]
+    shared_paths.setdefault(
+        _make_direct_link_path_key(end_document),
+        _build_direct_link_path(start_document, end_document),
+    )
 
 
 def _build_direct_cre_overlap_map_analysis(
@@ -395,34 +368,36 @@ def _build_direct_cre_overlap_map_analysis(
     if len(standards) < 2:
         return None
 
-    base_nodes = _get_map_analysis_documents(standards[0], collection)
-    compare_nodes = _get_map_analysis_documents(standards[1], collection)
+    base_standard = standards[0]
+    compare_standard = standards[1]
+    base_nodes = _get_map_analysis_documents(base_standard, collection)
+    compare_nodes = _get_map_analysis_documents(compare_standard, collection)
     if not base_nodes or not compare_nodes:
         return None
 
-    compare_nodes_by_cre: dict[str, list[defs.Document]] = {}
-    for compare_node in compare_nodes:
-        for cre_id in _get_document_cre_ids(compare_node):
-            compare_nodes_by_cre.setdefault(cre_id, []).append(compare_node)
+    base_is_opencre = base_standard == OPENCRE_STANDARD_NAME
+    opencre_nodes = base_nodes if base_is_opencre else compare_nodes
+    standard_nodes = compare_nodes if base_is_opencre else base_nodes
+
+    standard_nodes_by_id = {
+        standard_node.id: standard_node for standard_node in standard_nodes
+    }
+    direct_pairs: list[tuple[defs.CRE, defs.Document]] = []
+    for opencre_node in opencre_nodes:
+        for link in opencre_node.links:
+            if link.ltype != defs.LinkTypes.LinkedTo:
+                continue
+            standard_node = standard_nodes_by_id.get(link.document.id)
+            if not standard_node:
+                continue
+            direct_pairs.append((opencre_node, standard_node))
 
     grouped_paths: dict[str, dict[str, Any]] = {}
-    for base_node in base_nodes:
-        shared_paths: dict[str, Any] = {}
-        for cre_id in _get_document_cre_ids(base_node):
-            for compare_node in compare_nodes_by_cre.get(cre_id, []):
-                path = _build_direct_overlap_path(base_node, cre_id, compare_node)
-                if not path:
-                    continue
-                shared_paths.setdefault(
-                    _make_direct_overlap_path_key(compare_node, cre_id), path
-                )
-
-        if shared_paths:
-            grouped_paths[base_node.id] = {
-                "start": base_node.shallow_copy(),
-                "paths": shared_paths,
-                "extra": 0,
-            }
+    for opencre_node, standard_node in direct_pairs:
+        if base_is_opencre:
+            _add_direct_link_result(grouped_paths, opencre_node, standard_node)
+        else:
+            _add_direct_link_result(grouped_paths, standard_node, opencre_node)
 
     if not grouped_paths:
         return None
@@ -441,7 +416,6 @@ def map_analysis() -> Any:
         posthog.capture(f"map_analysis", f"standards:{standards}")
 
     database = db.Node_collection()
-    standards = request.args.getlist("standard")
     standards_hash = gap_analysis.make_resources_key(standards)
 
     if OPENCRE_STANDARD_NAME in standards:
