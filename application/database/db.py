@@ -2066,7 +2066,7 @@ def dbNodeFromCode(code: cre_defs.Node) -> Node:
     code = cast(cre_defs.Code, code)
     tags = ""
     if code.tags:
-        tags = ",".join(tags)
+        tags = ",".join(code.tags)
     return Node(
         name=code.name,
         ntype=code.doctype.value,
