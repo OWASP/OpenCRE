@@ -173,6 +173,13 @@
   }
 }
 
+.navbar__mobile-menu-close-positioning {
+  position: absolute;
+  top: 1rem;
+  right: 1.8rem;
+  z-index: 60; // Above the mobile menu
+}
+
 .navbar__mobile-menu {
   position: fixed;
   top: 0;
