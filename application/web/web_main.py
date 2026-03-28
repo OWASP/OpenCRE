@@ -48,6 +48,7 @@ import google.auth.transport.requests
 
 
 ITEMS_PER_PAGE = 20
+OPENCRE_STANDARD_NAME = "OpenCRE"
 
 app = Blueprint(
     "web",
@@ -297,6 +298,116 @@ def find_document_by_tag() -> Any:
     abort(404, "Tag does not exist")
 
 
+def _get_opencre_documents(collection: db.Node_collection) -> list[defs.CRE]:
+    return [
+        collection.get_CREs(internal_id=cre.id)[0]
+        for cre in collection.session.query(db.CRE).all()
+    ]
+
+
+def _get_map_analysis_documents(
+    standard: str, collection: db.Node_collection
+) -> list[defs.Document]:
+    if standard == OPENCRE_STANDARD_NAME:
+        return _get_opencre_documents(collection)
+    return collection.get_nodes(name=standard)
+
+
+def _build_direct_link_path(
+    start_document: defs.Document, end_document: defs.Document
+) -> dict[str, Any]:
+    segment_start = start_document.shallow_copy()
+    # The current gap-analysis popup mutates non-CRE row ids during display
+    # before it resolves the one-step direct path. Keep this direct-link fast
+    # path compatible by mirroring that display-only shape in the segment start.
+    if segment_start.doctype != defs.Credoctypes.CRE.value:
+        segment_start.id = ""
+    return {
+        "end": end_document.shallow_copy(),
+        "path": [
+            {
+                "start": segment_start,
+                "end": end_document.shallow_copy(),
+                "relationship": "LINKED_TO",
+                "score": 0,
+            }
+        ],
+        "score": 0,
+    }
+
+
+def _make_direct_link_path_key(end_document: defs.Document) -> str:
+    return end_document.id
+
+
+def _add_direct_link_result(
+    grouped_paths: dict[str, dict[str, Any]],
+    start_document: defs.Document,
+    end_document: defs.Document,
+) -> None:
+    shared_paths = grouped_paths.setdefault(
+        start_document.id,
+        {
+            "start": start_document.shallow_copy(),
+            "paths": {},
+            "extra": 0,
+        },
+    )["paths"]
+    shared_paths.setdefault(
+        _make_direct_link_path_key(end_document),
+        _build_direct_link_path(start_document, end_document),
+    )
+
+
+def _build_direct_cre_overlap_map_analysis(
+    standards: list[str],
+    standards_hash: str,
+    collection: db.Node_collection,
+) -> dict[str, Any] | None:
+    if len(standards) < 2:
+        return None
+
+    base_standard = standards[0]
+    compare_standard = standards[1]
+    base_nodes = _get_map_analysis_documents(base_standard, collection)
+    compare_nodes = _get_map_analysis_documents(compare_standard, collection)
+    if not base_nodes or not compare_nodes:
+        return None
+
+    base_is_opencre = base_standard == OPENCRE_STANDARD_NAME
+    opencre_nodes = base_nodes if base_is_opencre else compare_nodes
+    standard_nodes = compare_nodes if base_is_opencre else base_nodes
+
+    standard_nodes_by_id = {
+        standard_node.id: standard_node for standard_node in standard_nodes
+    }
+    direct_pairs: list[tuple[defs.CRE, defs.Document]] = []
+    for opencre_node in opencre_nodes:
+        for link in opencre_node.links:
+            if link.ltype != defs.LinkTypes.LinkedTo:
+                continue
+            standard_node = standard_nodes_by_id.get(link.document.id)
+            if not standard_node:
+                continue
+            direct_pairs.append((opencre_node, standard_node))
+
+    grouped_paths: dict[str, dict[str, Any]] = {}
+    for opencre_node, standard_node in direct_pairs:
+        if base_is_opencre:
+            _add_direct_link_result(grouped_paths, opencre_node, standard_node)
+        else:
+            _add_direct_link_result(grouped_paths, standard_node, opencre_node)
+
+    if not grouped_paths:
+        return None
+
+    result = {"result": grouped_paths}
+    collection.add_gap_analysis_result(
+        cache_key=standards_hash, ga_object=flask_json.dumps(result)
+    )
+    return result
+
+
 @app.route("/rest/v1/map_analysis", methods=["GET"])
 def map_analysis() -> Any:
     standards = request.args.getlist("standard")
@@ -304,69 +415,58 @@ def map_analysis() -> Any:
         posthog.capture(f"map_analysis", f"standards:{standards}")
 
     database = db.Node_collection()
-    if len(standards) < 2:
-        abort(400, "Please provide two standards")
-    standards = standards[:2]
-    cache_key = gap_analysis.make_resources_key(standards)
-    if database.gap_analysis_exists(cache_key):
-        cached = database.get_gap_analysis_result(cache_key=cache_key)
-        if cached:
-            parsed = json.loads(cached)
-            if "result" in parsed:
-                return jsonify({"result": parsed.get("result")})
-    if os.environ.get("HEROKU"):
-        abort(404, "No such Cache")
+    standards_hash = gap_analysis.make_resources_key(standards)
 
-    db_url = os.environ.get("CRE_CACHE_FILE") or os.environ.get("PROD_DATABASE_URL")
-    if not db_url:
-        # Derive from current SQLAlchemy bind when not explicitly set.
-        db_url = str(getattr(getattr(database.session, "bind", None), "url", ""))
-    try:
-        conn = redis.connect()
-        ga_queue_name = os.environ.get("CRE_GA_QUEUE_NAME", "ga")
-        q = Queue(name=ga_queue_name, connection=conn)
-        inflight_key = f"ga:inflight:{cache_key}"
-        inflight_job_id_raw = conn.get(inflight_key)
-        inflight_job_id = (
-            inflight_job_id_raw.decode("utf-8")
-            if isinstance(inflight_job_id_raw, bytes)
-            else str(inflight_job_id_raw) if inflight_job_id_raw else ""
+    if OPENCRE_STANDARD_NAME in standards:
+        direct_gap_analysis = _build_direct_cre_overlap_map_analysis(
+            standards, standards_hash, database
         )
-        if inflight_job_id:
-            try:
-                inflight_job = job.Job.fetch(id=inflight_job_id, connection=conn)
-                if inflight_job.get_status() in (
-                    job.JobStatus.QUEUED,
-                    job.JobStatus.STARTED,
-                ):
-                    return jsonify({"job_id": inflight_job_id})
-            except exceptions.NoSuchJobError:
-                conn.delete(inflight_key)
+        if direct_gap_analysis:
+            return jsonify(direct_gap_analysis)
+        abort(404, "No direct overlap found for requested standards")
 
-        j = q.enqueue_call(
-            description=f"{standards[0]}->{standards[1]}",
-            func=cre_main.run_gap_pair_job,
-            kwargs={
-                "importing_name": standards[0],
-                "peer_name": standards[1],
-                "db_connection_str": db_url,
-            },
-            timeout=gap_analysis.GAP_ANALYSIS_TIMEOUT,
-        )
-        conn.set(inflight_key, str(j.id))
-        conn.expire(inflight_key, _ga_timeout_seconds())
-        return jsonify({"job_id": str(j.id)})
-    except Exception as exc:
-        logger.warning(
-            "Redis/RQ unavailable in map_analysis for %s; using synchronous fallback: %s",
-            cache_key,
-            exc,
-        )
+    # First, check if we have cached results in the database
+    if database.gap_analysis_exists(standards_hash):
+        gap_analysis_result = database.get_gap_analysis_result(standards_hash)
+        if gap_analysis_result:
+            return jsonify(flask_json.loads(gap_analysis_result))
+
+    # On Heroku (read-only), check if standards exist before attempting Redis/queue operations
+    is_heroku = os.environ.get("DYNO") is not None
+    if is_heroku:
+        # Check if all requested standards exist
         try:
-            return jsonify(_compute_ga_without_redis(database, standards))
-        except Exception as fallback_exc:
-            logger.exception("Synchronous GA fallback failed for %s", cache_key)
-            abort(503, f"Gap analysis unavailable: {fallback_exc}")
+            existing_standards = database.standards()
+            if isinstance(existing_standards, (list, tuple, set)):
+                existing_lower = {str(s).lower() for s in existing_standards}
+                missing = [s for s in standards if str(s).lower() not in existing_lower]
+                if missing:
+                    logger.info(
+                        f"On Heroku: gap analysis request {standards_hash} references "
+                        f"standards that do not exist: {', '.join(missing)}, returning 404"
+                    )
+                    abort(
+                        404, f"One or more standards do not exist: {', '.join(missing)}"
+                    )
+        except Exception as exc:
+            # If we can't verify standards, log but don't fail (defensive)
+            logger.warning(f"Could not verify standards existence on Heroku: {exc}")
+
+    # If calculations are disabled, return 404
+    if os.environ.get("CRE_NO_CALCULATE_GAP_ANALYSIS"):
+        logger.info(
+            f"Gap analysis calculations are disabled by CRE_NO_CALCULATE_GAP_ANALYSIS; "
+            f"refusing to schedule new job for {standards_hash}"
+        )
+        abort(404, "Gap analysis calculations are disabled")
+
+    # Now call schedule() which will handle Redis/queue operations
+    gap_analysis_dict = gap_analysis.schedule(standards, database)
+    if "result" in gap_analysis_dict:
+        return jsonify(gap_analysis_dict)
+    if gap_analysis_dict.get("error"):
+        abort(404)
+    return jsonify({"job_id": gap_analysis_dict.get("job_id")})
 
 
 @app.route("/rest/v1/map_analysis_weak_links", methods=["GET"])
@@ -462,7 +562,9 @@ def standards() -> Any:
         posthog.capture(f"standards", "")
 
     database = db.Node_collection()
-    standards = database.standards()
+    standards = list(database.standards())
+    if OPENCRE_STANDARD_NAME not in standards:
+        standards.append(OPENCRE_STANDARD_NAME)
     return standards
 
 
