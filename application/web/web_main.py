@@ -10,8 +10,9 @@ import io
 import pathlib
 import re
 import urllib.parse
+from datetime import datetime
 from alive_progress import alive_bar
-from typing import Any
+from typing import Any, Optional
 from application.utils import oscal_utils, redis
 
 from rq import job, exceptions
@@ -70,7 +71,7 @@ class SupportedFormats(Enum):
     OSCAL = "oscal"
 
 
-def _normalize_source_name(source: Any) -> str | None:
+def _normalize_source_name(source: Any) -> Optional[str]:
     """
     Normalize integration source names so analytics aggregation stays stable.
     """
@@ -166,6 +167,114 @@ def find_cre(creid: str = None, crename: str = None) -> Any:  # refer
 
         return jsonify(result)
     abort(404, "CRE does not exist")
+
+
+def _is_noise_path(path: str) -> bool:
+    noise_ext = [".css", ".scss", ".less", "package-lock.json", "yarn.lock", ".png", ".jpg", ".jpeg", ".gif", "readme", "license"]
+    if not path:
+        return False
+    path_lower = path.lower()
+    return any(ext in path_lower for ext in noise_ext)
+
+
+def _is_relevant_text(text: str) -> bool:
+    if not text:
+        return False
+    keywords = [
+        "vulnerability",
+        "authentication",
+        "authorization",
+        "input validation",
+        "xss",
+        "sql injection",
+        "encryption",
+        "hash",
+        "access control",
+        "security",
+    ]
+    t = text.lower()
+    return any(k in t for k in keywords)
+
+
+@app.route("/rest/v1/filter_changes", methods=["POST"])
+def filter_changes() -> Any:
+    payload = request.get_json(silent=True)
+    if not payload or "changes" not in payload:
+        return jsonify({"success": False, "message": "Provide 'changes' list"}), 400
+
+    changes = payload.get("changes")
+    if not isinstance(changes, list):
+        return jsonify({"success": False, "message": "'changes' must be a list"}), 400
+
+    out_items = []
+    for idx, item in enumerate(changes):
+        path = item.get("path", "")
+        contents = item.get("text", "")
+        noise = _is_noise_path(path)
+        relevant = False
+        if not noise:
+            relevant = _is_relevant_text(contents)
+
+        out_items.append(
+            {
+                "id": item.get("id", idx),
+                "path": path,
+                "is_noise": noise,
+                "is_relevant": relevant,
+            }
+        )
+
+    return jsonify({"success": True, "items": out_items})
+
+
+@app.route("/rest/v1/review/action", methods=["POST"])
+def review_action() -> Any:
+    body = request.get_json(silent=True)
+    if not body:
+        return jsonify({"success": False, "message": "JSON body required"}), 400
+
+    review_id = body.get("id")
+    action = body.get("action")
+    comments = body.get("comments", "")
+
+    if not review_id or action not in ["approve", "reject"]:
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "message": "Payload must include id and action=['approve','reject']",
+                }
+            ),
+            400,
+        )
+
+    log_path = os.environ.get("OPENCRE_REVIEW_LOG", "/tmp/opencre_review_log.jsonl")
+    os.makedirs(os.path.dirname(log_path), exist_ok=True)
+
+    record = {
+        "id": review_id,
+        "action": action,
+        "comments": comments,
+        "user": session.get("user", "anonymous"),
+        "timestamp": str(datetime.utcnow()),
+    }
+
+    with open(log_path, "a", encoding="utf-8") as f:
+        f.write(json.dumps(record) + "\n")
+
+    return jsonify({"success": True, "record": record})
+
+
+@app.route("/rest/v1/review/queue", methods=["GET"])
+def review_queue() -> Any:
+    log_path = os.environ.get("OPENCRE_REVIEW_LOG", "/tmp/opencre_review_log.jsonl")
+    if not os.path.exists(log_path):
+        return jsonify({"success": True, "queue": []})
+
+    with open(log_path, "r", encoding="utf-8") as f:
+        lines = f.read().strip().splitlines()
+    items = [json.loads(l) for l in lines if l.strip()]
+    return jsonify({"success": True, "queue": items})
 
 
 @app.route("/rest/v1/<ntype>/<name>", methods=["GET"])

@@ -416,7 +416,7 @@ class CRE(Document):
     doctype: Credoctypes = Credoctypes.CRE
     id: Optional[str] = ""
 
-    def todict(self) -> Dict[str, Dict[str, str] | List[Any] | Set[str] | str]:
+    def todict(self) -> Dict[str, Union[Dict[str, str], List[Any], Set[str], str]]:
         return super().todict()
 
     def __post_init__(self):

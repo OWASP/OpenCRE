@@ -11,7 +11,7 @@ from pprint import pprint
 
 from collections import Counter
 from itertools import permutations
-from typing import Any, Dict, List, Optional, Tuple, cast
+from typing import Any, Dict, List, Optional, Tuple, Union, cast
 from neomodel.exceptions import (
     DoesNotExist,
     FeatureNotSupported,
@@ -1946,7 +1946,7 @@ class Node_collection:
                     res[entry.node_id] = [float(e) for e in entry.embeddings.split(",")]
         return res, total_pages, page
 
-    def get_embeddings_for_doc(self, doc: cre_defs.Node | cre_defs.CRE) -> Embeddings:
+    def get_embeddings_for_doc(self, doc: Union[cre_defs.Node, cre_defs.CRE]) -> Embeddings:
         if doc.doctype == cre_defs.Credoctypes.CRE:
             obj = self.session.query(CRE).filter(CRE.external_id == doc.id).first()
             return (
@@ -1982,7 +1982,7 @@ class Node_collection:
 
     def add_embedding(
         self,
-        db_object: CRE | Node,
+        db_object: Union[CRE, Node],
         doctype: cre_defs.Credoctypes,
         embeddings: List[float],
         embedding_text: str,

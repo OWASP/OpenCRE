@@ -77,7 +77,7 @@ def document_to_oscal(
     return c.json()
 
 
-def list_to_oscal(documents: List[defs.Standard | defs.Tool]) -> str:
+def list_to_oscal(documents: List[Union[defs.Standard, defs.Tool]]) -> str:
     """
     list_to_oscal takes a list of standards or tooling rules
     (they all need to be the same type and the same name)

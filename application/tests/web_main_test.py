@@ -973,3 +973,51 @@ class TestMain(unittest.TestCase):
                 data.getvalue(),
                 response.data.decode(),
             )
+
+    def test_filter_changes_endpoint(self) -> None:
+        payload = {
+            "changes": [
+                {"id": 1, "path": "README.md", "text": "Updated docs and grammar"},
+                {"id": 2, "path": "src/auth.py", "text": "Fix authentication bypass in token check"},
+            ]
+        }
+        with self.app.test_client() as client:
+            response = client.post(
+                "/rest/v1/filter_changes",
+                json=payload,
+                headers={"Content-Type": "application/json"},
+            )
+            self.assertEqual(200, response.status_code)
+            result = response.get_json()
+            self.assertTrue(result.get("success"))
+            self.assertEqual(len(result.get("items", [])), 2)
+            self.assertTrue(result["items"][0]["is_noise"])
+            self.assertFalse(result["items"][0]["is_relevant"])
+            self.assertFalse(result["items"][1]["is_noise"])
+            self.assertTrue(result["items"][1]["is_relevant"])
+
+    def test_review_action_and_queue(self) -> None:
+        log_file = tempfile.NamedTemporaryFile(delete=False)
+        log_file_path = log_file.name
+        log_file.close()
+
+        os.environ["OPENCRE_REVIEW_LOG"] = log_file_path
+        with self.app.test_client() as client:
+            response = client.post(
+                "/rest/v1/review/action",
+                json={"id": "abc-123", "action": "approve", "comments": "Looks good"},
+                headers={"Content-Type": "application/json"},
+            )
+            self.assertEqual(200, response.status_code)
+            result = response.get_json()
+            self.assertTrue(result.get("success"))
+
+            response = client.get("/rest/v1/review/queue")
+            self.assertEqual(200, response.status_code)
+            queue = response.get_json().get("queue", [])
+            self.assertEqual(len(queue), 1)
+            self.assertEqual(queue[0]["id"], "abc-123")
+            self.assertEqual(queue[0]["action"], "approve")
+
+        os.remove(log_file_path)
+
