@@ -17,7 +17,6 @@ from application.utils import oscal_utils, redis
 from rq import job, exceptions
 
 from application.utils import spreadsheet_parsers
-from application.utils import oscal_utils, redis
 from application.database import db
 from application.cmd import cre_main
 from application.defs import cre_defs as defs
