@@ -899,7 +899,32 @@ def import_from_cre_csv() -> Any:
             400,
         )
 
+    # Input validation
+    if not file.filename or not file.filename.lower().endswith('.csv'):
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "type": "FILE_ERROR",
+                    "message": "File must be a CSV file",
+                }
+            ),
+            400,
+        )
+
     contents = file.read()
+
+    if len(contents) > 10 * 1024 * 1024:  # 10MB limit
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "type": "FILE_ERROR",
+                    "message": "File too large (max 10MB)",
+                }
+            ),
+            400,
+        )
 
     try:
         decoded_contents = contents.decode("utf-8")
