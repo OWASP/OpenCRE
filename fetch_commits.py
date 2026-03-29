@@ -34,7 +34,7 @@ for repo in repos:
                     break
         if len(commits) >= 100:
             break
-    except:
+    except Exception:
         pass
 
 # Save to file
