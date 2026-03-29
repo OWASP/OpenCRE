@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import requests
 import json
-import random
 
 # List of OWASP repos
 repos = [
@@ -14,18 +13,11 @@ repos = [
     "OWASP/owasp-api-security",
     "OWASP/owasp-testing-guide-v4",
     "OWASP/owasp-testing-guide-v5",
-    "OWASP/owasp-zap",
-    "OWASP/owasp-mstg",
-    "OWASP/owasp-api-security",
-    "OWASP/owasp-testing-guide-v4",
-    "OWASP/owasp-testing-guide-v5",
-    "OWASP/owasp-zap",
-    "OWASP/owasp-mstg",
-    "OWASP/owasp-api-security",
-    "OWASP/owasp-testing-guide-v4",
-    "OWASP/owasp-testing-guide-v5",
     "OWASP/owasp-zap"
 ]
+
+# Preserve order while preventing accidental duplicates.
+repos = list(dict.fromkeys(repos))
 
 commits = []
 
