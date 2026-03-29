@@ -995,7 +995,7 @@ class Node_collection:
                 documents.extend(resolved)
             else:
                 logger.fatal(
-                    "db.get_node returned None for "
+                    "get_nodes() returned no documents for "
                     "Node %s:%s:%s that exists, BUG!"
                     % (db_node.name, db_node.section, db_node.section_id)
                 )
