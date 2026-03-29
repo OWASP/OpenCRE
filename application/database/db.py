@@ -1582,7 +1582,6 @@ class Node_collection:
     ) -> Optional[Node]:
         if not node:
             raise ValueError(f"Node is None")
-            return None
         dbnode = dbNodeFromNode(node)
         if not dbnode:
             logger.warning(f"{node} could not be transformed to a DB object")
