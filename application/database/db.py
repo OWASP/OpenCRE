@@ -981,23 +981,23 @@ class Node_collection:
             cre_where_clause.append(sqla.and_(CRE.tags.like("%{}%".format(tag))))
 
         nodes = Node.query.filter(*nodes_where_clause).all() or []
-        for node in nodes:
-            node = self.get_nodes(
-                name=node.name,
-                section=node.section,
-                subsection=node.subsection,
-                version=node.version,
-                link=node.link,
-                ntype=node.ntype,
-                sectionID=node.section_id,
+        for db_node in nodes:
+            resolved = self.get_nodes(
+                name=db_node.name,
+                section=db_node.section,
+                subsection=db_node.subsection,
+                version=db_node.version,
+                link=db_node.link,
+                ntype=db_node.ntype,
+                sectionID=db_node.section_id,
             )
-            if node:
-                documents.extend(node)
+            if resolved:
+                documents.extend(resolved)
             else:
                 logger.fatal(
-                    "db.get_node returned None for"
+                    "db.get_node returned None for "
                     "Node %s:%s:%s that exists, BUG!"
-                    % (node.name, node.section, node.section_id)
+                    % (db_node.name, db_node.section, db_node.section_id)
                 )
 
         cres = CRE.query.filter(*cre_where_clause).all() or []
