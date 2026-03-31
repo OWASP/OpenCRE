@@ -5,6 +5,7 @@ import re
 import urllib
 from typing import List, Optional
 from xmlrpc.client import boolean
+from typing import List
 
 from application.database import db
 from application.defs import cre_defs as defs
@@ -21,7 +22,7 @@ logger.setLevel(logging.INFO)
 
 
 class MiscTools(ParserInterface):
-    name = "miscelaneous tools"
+    name = "miscellaneous tools"
     tool_urls = [
         "https://github.com/commjoen/wrongsecrets.git",
     ]
@@ -39,22 +40,30 @@ class MiscTools(ParserInterface):
             if not tool_entries:
                 continue
             tools[tool_entries[0].name] = tool_entries
+            if tool_entries:
+                tools[tool_entries[0].name] = tool_entries
         return ParseResult(results=tools)
 
     def parse_tool(
-        self, tool_repo: str, cache: db.Node_collection, dry_run: boolean = False
-    ):
-        if not dry_run:
-            repo = git.clone(tool_repo)
+        self, tool_repo: str, cache: db.Node_collection, dry_run: bool = False
+    ) -> List[defs.Tool]:
+        if dry_run:
+            logger.info("dry run, skipping clone and parsing for %s", tool_repo)
+            return []
+        repo = git.clone(tool_repo)
         readme = os.path.join(repo.working_dir, "README.md")
         title_regexp = r"# (?P<title>(\w+ ?)+)"
         cre_link = r".*\[.*\]\((?P<url>(https\:\/\/www\.)?opencre\.org\/cre\/(?P<cre>\d+-\d+).*)"
-        tool_entries = []
+        tool_entries: List[defs.Tool] = []
         with open(readme) as rdf:
             mdtext = rdf.read()
 
             if "opencre.org" not in mdtext:
-                logging.error("didn't find a link, bye")
+                logger.error(
+                    "no opencre.org link found in %s for repo %s, skipping",
+                    readme,
+                    tool_repo,
+                )
                 return []
             title = re.search(title_regexp, mdtext)
             cre = re.search(cre_link, mdtext, flags=re.IGNORECASE)
@@ -91,7 +100,7 @@ class MiscTools(ParserInterface):
                                 document=dbcre,
                             )
                         )
-                        print(
+                        logger.info(
                             f"Registered new Document of type:Tool, toolType: {tool_type}, name:{tool_name} and hyperlink:{hyperlink},"
                             f"linked to cre:{dbcre.id}"
                         )
