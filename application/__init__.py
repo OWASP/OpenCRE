@@ -37,6 +37,12 @@ def create_app(mode: str = "production", conf: any = None) -> Any:
         letters = string.ascii_lowercase
         app.secret_key = "".join(random.choice(letters) for i in range(20))
 
+    # conf is only provided by CLI db_connect(); skip web validation in that path.
+    if conf is None:
+        from application.validate_config import validate_web_config
+
+        validate_web_config(mode)
+
     # config[mode].init_app(app)
     sqla.init_app(app=app)
     from application.web.web_main import app as app_blueprint
