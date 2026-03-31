@@ -510,13 +510,47 @@ class TestMain(unittest.TestCase):
                 higher=dcb, lower=dcd, ltype=defs.LinkTypes.Contains
             )
 
-            expected = {"data": [cres["ca"].todict(), cres["cb"].todict()]}
+            expected = {
+                "data": [cres["ca"].todict(), cres["cb"].todict()],
+                "page": 1,
+                "total_pages": 1,
+            }
             response = client.get(
                 "/rest/v1/root_cres",
                 headers={"Content-Type": "application/json"},
             )
             self.assertEqual(json.loads(response.data.decode()), expected)
             self.assertEqual(200, response.status_code)
+
+    @patch.object(db, "Node_collection")
+    def test_root_cres_per_page_cap(self, db_mock) -> None:
+        """per_page above MAX_PER_PAGE should be silently capped"""
+        cres = [defs.CRE(name=f"cre{i}", id=f"{i}{i}{i}-{i}{i}{i}") for i in range(3)]
+        db_mock.return_value.get_root_cres_with_pagination.return_value = (cres, 1, 1)
+
+        with self.app.test_client() as client:
+            client.get(
+                "/rest/v1/root_cres?per_page=99999",
+                headers={"Content-Type": "application/json"},
+            )
+            call_args = db_mock.return_value.get_root_cres_with_pagination.call_args
+            _, called_per_page = call_args[0]
+            self.assertLessEqual(called_per_page, web_main.MAX_PER_PAGE)
+
+    @patch.object(db, "Node_collection")
+    def test_all_cres_per_page_cap(self, db_mock) -> None:
+        """per_page above MAX_PER_PAGE should be silently capped"""
+        cres = [defs.CRE(name=f"cre{i}", id=f"{i}{i}{i}-{i}{i}{i}") for i in range(3)]
+        db_mock.return_value.all_cres_with_pagination.return_value = (cres, 1, 1)
+
+        with self.app.test_client() as client:
+            client.get(
+                "/rest/v1/all_cres?per_page=99999",
+                headers={"Content-Type": "application/json"},
+            )
+            call_args = db_mock.return_value.all_cres_with_pagination.call_args
+            _, called_per_page = call_args[0]
+            self.assertLessEqual(called_per_page, web_main.MAX_PER_PAGE)
 
     def test_smartlink(self) -> None:
         self.maxDiff = None

@@ -1915,6 +1915,34 @@ class Node_collection:
             result.extend(self.get_CREs(external_id=c.external_id))
         return result
 
+    def get_root_cres_with_pagination(
+        self, page: int = 1, per_page: int = 20
+    ) -> tuple:
+        """Returns paginated root CREs (those that only have "Contains" links)"""
+        cres_page = (
+            self.session.query(CRE)
+            .filter(
+                ~CRE.id.in_(
+                    self.session.query(InternalLinks.cre).filter(
+                        InternalLinks.type == cre_defs.LinkTypes.Contains,
+                    )
+                )
+            )
+            .filter(
+                ~CRE.id.in_(
+                    self.session.query(InternalLinks.group).filter(
+                        InternalLinks.type == cre_defs.LinkTypes.PartOf,
+                    )
+                )
+            )
+            .paginate(page=page, per_page=per_page, error_out=False)
+        )
+        total_pages = cres_page.pages
+        result = []
+        for c in cres_page.items:
+            result.extend(self.get_CREs(external_id=c.external_id))
+        return result, page, total_pages
+
     def get_embeddings_by_doc_type(self, doc_type: str) -> Dict[str, List[float]]:
         res = {}
         embeddings = (

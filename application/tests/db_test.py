@@ -1252,6 +1252,43 @@ class TestDB(unittest.TestCase):
         self.maxDiff = None
         self.assertCountEqual(root_cres, [cres[0], cres[1], cres[7]])
 
+    def test_get_root_cres_with_pagination(self):
+        """get_root_cres_with_pagination should return paginated root CREs
+        with correct page and total_pages metadata"""
+        sqla.session.remove()
+        sqla.drop_all()
+        sqla.create_all()
+
+        collection = db.Node_collection()
+        cres = []
+        dbcres = []
+
+        # Create 4 root CREs (no internal links between them)
+        for i in range(0, 4):
+            cres.append(defs.CRE(name=f"Root C{i}", id=f"{i}{i}{i}-{i}{i}{i}"))
+            dbcres.append(collection.add_cre(cres[i]))
+
+        collection.session.commit()
+
+        # Page 1 with per_page=2 should return first 2 root CREs, total_pages=2
+        result, page, total_pages = collection.get_root_cres_with_pagination(
+            page=1, per_page=2
+        )
+        self.maxDiff = None
+        self.assertEqual(page, 1)
+        self.assertEqual(total_pages, 2)
+        self.assertEqual(len(result), 2)
+        self.assertCountEqual(result, [cres[0], cres[1]])
+
+        # Page 2 with per_page=2 should return remaining 2 root CREs
+        result, page, total_pages = collection.get_root_cres_with_pagination(
+            page=2, per_page=2
+        )
+        self.assertEqual(page, 2)
+        self.assertEqual(total_pages, 2)
+        self.assertEqual(len(result), 2)
+        self.assertCountEqual(result, [cres[2], cres[3]])
+
     @patch.object(db.NEO_DB, "gap_analysis")
     def test_gap_analysis_disconnected(self, gap_mock):
         collection = db.Node_collection()
