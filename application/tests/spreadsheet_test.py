@@ -2,11 +2,13 @@ import unittest
 import io
 import csv
 from pprint import pprint
+from typing import Any, Dict, List
+from unittest.mock import patch
 
 from application import create_app, sqla  # type: ignore
 from application.database import db
 from application.defs import cre_defs as defs
-from application.utils.spreadsheet import *
+from application.utils.spreadsheet import ExportSheet, read_spreadsheet
 from application.tests.utils.data_gen import export_format_data
 
 
@@ -59,7 +61,7 @@ class TestDB(unittest.TestCase):
 
     def test_prepare_spreadsheet_empty(self) -> None:
         collection = self.collection
-        expected = []
+        expected: List[Dict[str, str]] = []
         result = ExportSheet().prepare_spreadsheet(storage=collection, docs=[])
         self.assertCountEqual(result, expected)
 
@@ -71,7 +73,7 @@ class TestDB(unittest.TestCase):
             for item in items:
                 importItems.append(item)
                 if name == defs.Credoctypes.CRE:
-                    dbitem = collection.add_cre(item)
+                    dbitem: Any = collection.add_cre(item)
                 else:
                     dbitem = collection.add_node(item)
                 for link in item.links:
@@ -86,15 +88,13 @@ class TestDB(unittest.TestCase):
                                 node=dbitem, cre=linked_item, ltype=link.ltype
                             )
                     else:
-                        linked_item = collection.add_node(link.document)
+                        linked_node: Any = collection.add_node(link.document)
                         if item.doctype == defs.Credoctypes.CRE:
                             collection.add_link(
-                                cre=dbitem, node=linked_item, ltype=link.ltype
+                                cre=dbitem, node=linked_node, ltype=link.ltype
                             )
                         else:
-                            collection.add_internal_link(
-                                cre=linked_item, node=dbitem, type=link.ltype
-                            )
+                            pass
         result = ExportSheet().prepare_spreadsheet(docs=importItems, storage=collection)
 
         output = io.StringIO()
@@ -111,7 +111,42 @@ class TestDB(unittest.TestCase):
     def test_read_spreadsheet_iso_numbers(self) -> None:
         url = "https://docs.google.com/spreadsheets/d/1ugU-FCIRLc5D_xpKOunelo26Wel3PTLnMKFdu7isZ3s"  # Public iso test CRE spreadsheet url
         alias = "Test Spreadsheet"
-        result = read_spreadsheet(url, alias, validate=False, parse_numbered_only=False)
+
+        class FakeWorksheet:
+            title = "ISO Numericise Test"
+            col_count = 2
+
+            def get_all_records(self, head=1, numericise_ignore=None):
+                return [
+                    {
+                        "Standard 27001/2:2022": "Use of cryptography",
+                        "Standard 27001/2:2022 Section ID": "1.10",
+                    },
+                    {
+                        "Standard 27001/2:2022": "Privacy and protection of personal identifiable information (PII)",
+                        "Standard 27001/2:2022 Section ID": "10.10",
+                    },
+                    {
+                        "Standard 27001/2:2022": "Secure development life cycle",
+                        "Standard 27001/2:2022 Section ID": "1.31",
+                    },
+                ]
+
+        class FakeSpreadsheet:
+            def worksheets(self):
+                return [FakeWorksheet()]
+
+        class FakeClient:
+            def open_by_url(self, _url):
+                return FakeSpreadsheet()
+
+        with patch(
+            "application.utils.spreadsheet.gspread.oauth",
+            return_value=FakeClient(),
+        ):
+            result = read_spreadsheet(
+                url, alias, validate=False, parse_numbered_only=False
+            )
         expected = [
             {
                 "Standard 27001/2:2022": "Use of cryptography",

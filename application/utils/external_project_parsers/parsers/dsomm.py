@@ -5,6 +5,7 @@ from application.database import db
 from application.defs import cre_defs as defs
 from application.prompt_client import prompt_client as prompt_client
 import requests
+from typing import Optional
 from application.utils.external_project_parsers.base_parser_defs import (
     ParserInterface,
     ParseResult,
@@ -94,8 +95,8 @@ class DSOMM(ParserInterface):
     def parse(
         self,
         cache: db.Node_collection,
-        ph: prompt_client.PromptHandler,
-    ):
+        ph: Optional[prompt_client.PromptHandler],
+    ) -> ParseResult:
         resp = requests.get(
             "https://raw.githubusercontent.com/devsecopsmaturitymodel/DevSecOps-MaturityModel-data/main/src/assets/YAML/generated/generated.yaml"
         )

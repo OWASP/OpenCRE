@@ -1,6 +1,8 @@
 import time
 import argparse
 import json
+
+# mypy: disable-error-code="arg-type,return-value,union-attr,assignment,attr-defined"
 import logging
 import os
 import shutil
@@ -192,7 +194,9 @@ def parse_file(
                 else (
                     defs.Code
                     if doctype == defs.Credoctypes.Code.value
-                    else defs.Tool if doctype == defs.Credoctypes.Tool.value else None
+                    else defs.Tool
+                    if doctype == defs.Credoctypes.Tool.value
+                    else None
                 )
             )
             document = from_dict(

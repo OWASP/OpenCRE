@@ -1,6 +1,5 @@
 # script to parse secure headers md files find the links to opencre.org and add the page to CRE
-from pprint import pprint
-from typing import List
+from typing import List, Optional
 from application.database import db
 from application.utils import git
 from application.defs import cre_defs as defs
@@ -27,7 +26,11 @@ class SecureHeaders(ParserInterface):
             hyperlink=hyperlink,
         )
 
-    def parse(self, cache: db.Node_collection, ph: prompt_client.PromptHandler):
+    def parse(
+        self,
+        cache: db.Node_collection,
+        ph: Optional[prompt_client.PromptHandler],
+    ) -> ParseResult:
         sh_repo = "https://github.com/owasp/www-project-secure-headers.git"
         file_path = "./"
         repo = git.clone(sh_repo)
@@ -72,5 +75,5 @@ class SecureHeaders(ParserInterface):
                                         ltype=defs.LinkTypes.AutomaticallyLinkedTo,
                                     )
                                 )
-                    entries.append(cs)
+                            entries.append(cs)
         return entries

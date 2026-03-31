@@ -402,7 +402,7 @@ class NEO_DB:
             self.link_CRE_to_Node(lnk.cre, lnk.node, lnk.type)
 
     @classmethod
-    def add_cre(self, dbcre: CRE):
+    def add_cre(cls, dbcre: CRE):
         document = NeoCRE.nodes.first_or_none(document_id=dbcre.id)
         if not document:
             return NeoCRE(
@@ -424,6 +424,7 @@ class NEO_DB:
         document.external_id = dbcre.external_id or ""
         return document.save()
 
+    @staticmethod
     def __create_dbnode(dbnode: Node):
         if dbnode.ntype == "Standard":
             return NeoStandard(
@@ -452,9 +453,10 @@ class NEO_DB:
                 version=dbnode.version or "",
             ).save()
         elif dbnode.ntype == "Tool":
-            ttype = [tag for tag in dbnode.tags if tag in cre_defs.ToolTypes]
-            if ttype:
-                ttype = ttype[0]
+            ttype_list = [tag for tag in dbnode.tags if tag in cre_defs.ToolTypes]
+            ttype: cre_defs.ToolTypes
+            if ttype_list:
+                ttype = ttype_list[0]
             else:
                 ttype = cre_defs.ToolTypes.Unknown
             return NeoTool(
@@ -470,6 +472,7 @@ class NEO_DB:
                 version=dbnode.version or "",
             ).save()
 
+    @staticmethod
     def __update_dbnode(dbnode: Node):
         existing = NeoNode.nodes.first_or_none(document_id=dbnode.id)
         if dbnode.ntype == "Standard":
@@ -509,9 +512,10 @@ class NEO_DB:
             existing.tags = (
                 [dbnode.tags] if isinstance(dbnode.tags, str) else dbnode.tags
             )
-            ttype = [tag for tag in dbnode.tags if tag in cre_defs.ToolTypes]
-            if ttype:
-                ttype = ttype[0]
+            ttype_list = [tag for tag in dbnode.tags if tag in cre_defs.ToolTypes]
+            ttype: cre_defs.ToolTypes
+            if ttype_list:
+                ttype = ttype_list[0]
             else:
                 ttype = cre_defs.ToolTypes.Unknown
             existing.tooltype = ttype
@@ -563,23 +567,12 @@ class NEO_DB:
     @classmethod
     def gap_analysis(self, name_1, name_2):
         """
-        Gap analysis with feature toggle support.
-
-        Toggle between original exhaustive traversal (default) and
-        optimized tiered pruning (opt-in via GAP_ANALYSIS_OPTIMIZED env var).
+        Gap analysis with optimized tiered pruning.
         """
-        from application.config import Config
-
-        if Config.GAP_ANALYSIS_OPTIMIZED:
-            logger.info(
-                f"Gap Analysis: Using OPTIMIZED tiered pruning for {name_1}>>{name_2}"
-            )
-            return self._gap_analysis_optimized(name_1, name_2)
-        else:
-            logger.info(
-                f"Gap Analysis: Using ORIGINAL exhaustive traversal for {name_1}>>{name_2}"
-            )
-            return self._gap_analysis_original(name_1, name_2)
+        logger.info(
+            f"Gap Analysis: Using OPTIMIZED tiered pruning for {name_1}>>{name_2}"
+        )
+        return self._gap_analysis_optimized(name_1, name_2)
 
     @classmethod
     def _gap_analysis_optimized(self, name_1, name_2):
@@ -597,7 +590,8 @@ class NEO_DB:
         denylist = ["Cross-cutting concerns"]
 
         # Tier 1: Strong Links (LINKED_TO, SAME, AUTOMATICALLY_LINKED_TO)
-        path_records, _ = db.cypher_query(
+        # Tier 1: Strong Links (LINKED_TO, AUTOMATICALLY_LINKED_TO, SAME)
+        strong_paths, _ = db.cypher_query(
             """
          MATCH (BaseStandard:NeoStandard {name: $name1})
          MATCH (CompareStandard:NeoStandard {name: $name2})
@@ -610,15 +604,12 @@ class NEO_DB:
             resolve_objects=True,
         )
 
-        # If strict strong links found, return early (Pruning)
-        if path_records and len(path_records) > 0:
-            logger.info(
-                f"Gap Analysis: Tier 1 (Strong) found {len(path_records)} paths. Pruning remainder."
-            )
-            return self._format_gap_analysis_response(base_standard, path_records)
+        if strong_paths:
+            # return raw records for Tier 1
+            return strong_paths
 
         # Tier 2: Medium Links (Add CONTAINS to the mix)
-        path_records, _ = db.cypher_query(
+        medium_paths, _ = db.cypher_query(
             """
          MATCH (BaseStandard:NeoStandard {name: $name1})
          MATCH (CompareStandard:NeoStandard {name: $name2})
@@ -631,17 +622,15 @@ class NEO_DB:
             resolve_objects=True,
         )
 
-        if path_records and len(path_records) > 0:
-            logger.info(
-                f"Gap Analysis: Tier 2 (Medium) found {len(path_records)} paths. Pruning remainder."
-            )
-            return self._format_gap_analysis_response(base_standard, path_records)
+        if medium_paths:
+            # return raw records for Tier 2
+            return medium_paths
 
         # Tier 3: Weak/All Links (Wildcard - The original expensive query)
         logger.info(
             "Gap Analysis: Tiers 1 & 2 empty. Executing Tier 3 (Wildcard search)."
         )
-        path_records_all, _ = db.cypher_query(
+        broad_paths, _ = db.cypher_query(
             """
          MATCH (BaseStandard:NeoStandard {name: $name1})
          MATCH (CompareStandard:NeoStandard {name: $name2})
@@ -654,7 +643,8 @@ class NEO_DB:
             resolve_objects=True,
         )
 
-        return self._format_gap_analysis_response(base_standard, path_records_all)
+        # final fallback, return whatever Tier 3 produced (possibly empty)
+        return broad_paths
 
     @classmethod
     def _gap_analysis_original(self, name_1, name_2):
@@ -777,12 +767,12 @@ class NEO_DB:
         return list(set(results))
 
     @classmethod
-    def everything(self) -> List[str]:
+    def everything(self) -> List[cre_defs.Document]:
         try:
             return [NEO_DB.parse_node(rec) for rec in NeoDocument.nodes.all()]
         except neo4j.exceptions.ServiceUnavailable:
             logger.error("Neo4j DB offline")
-            return None
+            return []
 
     @staticmethod
     def parse_node(node: NeoDocument) -> cre_defs.Document:
@@ -794,29 +784,26 @@ class NEO_DB:
 
 
 class Node_collection:
-    graph: inmemory_graph.CRE_Graph = None
-    neo_db: NEO_DB = None
+    graph: inmemory_graph.CRE_Graph
+    neo_db: NEO_DB | None = None
     session = sqla.session
 
     def __init__(self) -> None:
         if not os.environ.get("NO_LOAD_GRAPH_DB"):
             self.neo_db = NEO_DB.instance()
         self.session = sqla.session
+        self.graph = inmemory_graph.CRE_Graph()
 
     def with_graph(self) -> "Node_collection":
-        if self.graph is not None:
+        if len(self.graph.get_raw_graph().edges) == 0:
+            logger.info("Loading CRE graph in memory, memory-heavy operation!")
+            self.graph.with_graph(
+                graph=inmemory_graph.Singleton_Graph_Storage.instance(),
+                graph_data=self.__get_all_nodes_and_cres(cres_only=True),
+            )
+            logger.info("Successfully loaded CRE graph in memory")
+        else:
             logger.debug("CRE graph already loaded, skipping reload")
-            return self
-
-        logger.info("Loading CRE graph in memory, memory-heavy operation!")
-        self.graph = inmemory_graph.CRE_Graph()
-        graph_singleton = inmemory_graph.Singleton_Graph_Storage.instance()
-        self.graph.with_graph(
-            graph=graph_singleton,
-            graph_data=self.__get_all_nodes_and_cres(cres_only=True),
-        )
-        logger.info("Successfully loaded CRE graph in memory")
-
         return self
 
     def __get_external_links(self) -> List[Tuple[CRE, Node, str]]:
@@ -869,9 +856,9 @@ class Node_collection:
     def __get_all_nodes_and_cres(
         self, cres_only: bool = False
     ) -> List[cre_defs.Document]:
-        result = []
-        nodes = []
-        cres = []
+        result: List[cre_defs.Document] = []
+        nodes: List[Node] = []
+        cres: List[CRE] = []
         if not cres_only:
             node_ids = self.session.query(Node.id).all()
             for nid in node_ids:
@@ -879,7 +866,9 @@ class Node_collection:
 
         cre_ids = self.session.query(CRE.id).all()
         for cid in cre_ids:
-            result.append(self.get_cre_by_db_id(cid[0]))
+            cre = self.get_cre_by_db_id(cid[0])
+            if cre:
+                result.append(cre)
         return result
 
     @classmethod
@@ -981,23 +970,23 @@ class Node_collection:
             cre_where_clause.append(sqla.and_(CRE.tags.like("%{}%".format(tag))))
 
         nodes = Node.query.filter(*nodes_where_clause).all() or []
-        for node in nodes:
-            node = self.get_nodes(
-                name=node.name,
-                section=node.section,
-                subsection=node.subsection,
-                version=node.version,
-                link=node.link,
-                ntype=node.ntype,
-                sectionID=node.section_id,
+        for query_node in nodes:
+            found_nodes = self.get_nodes(
+                name=query_node.name,
+                section=query_node.section,
+                subsection=query_node.subsection,
+                version=query_node.version,
+                link=query_node.link,
+                ntype=query_node.ntype,
+                sectionID=query_node.section_id,
             )
-            if node:
-                documents.extend(node)
+            if found_nodes:
+                documents.extend(found_nodes)
             else:
                 logger.fatal(
                     "db.get_node returned None for"
                     "Node %s:%s:%s that exists, BUG!"
-                    % (node.name, node.section, node.section_id)
+                    % (query_node.name, query_node.section, query_node.section_id)
                 )
 
         cres = CRE.query.filter(*cre_where_clause).all() or []
@@ -1026,13 +1015,13 @@ class Node_collection:
         ntype: str = cre_defs.Standard.__name__,
         description: Optional[str] = None,
         sectionID: Optional[str] = None,
-    ) -> Tuple[Optional[int], Optional[List[cre_defs.Standard]], Optional[List[Node]]]:
+    ) -> Tuple[Optional[int], Optional[List[cre_defs.Document]], Optional[Any]]:
         """
         Returns the relevant node entries of a singular ntype (or ntype irrelevant if ntype==None) and their linked CREs
         include_only: If set, only the CRE ids in the list provided will be returned
         If a standard entry is not linked to by a CRE in the list the Standard entry will be returned empty.
         """
-        nodes = []
+        nodes: List[cre_defs.Document] = []
 
         dbnodes = self.__get_nodes_query__(
             name=name,
@@ -1049,6 +1038,8 @@ class Node_collection:
         if dbnodes.items:
             for dbnode in dbnodes.items:
                 node = nodeFromDB(dbnode=dbnode)
+                if node is None:
+                    continue
                 linked_cres = Links.query.filter(Links.node == dbnode.id).all()
                 for dbcre_link in linked_cres:
                     dbcre = CRE.query.filter(CRE.id == dbcre_link.cre).first()
@@ -1087,8 +1078,8 @@ class Node_collection:
         ntype: str = cre_defs.Standard.__name__,
         sectionID: Optional[str] = None,
         db_id: Optional[str] = None,
-    ) -> Optional[List[cre_defs.Node]]:
-        nodes = []
+    ) -> List[cre_defs.Document]:
+        nodes: List[cre_defs.Document] = []
         nodes_query = None
         if db_id:
             nodes_query = self.session.query(Node).filter(Node.id == db_id)
@@ -1108,6 +1099,8 @@ class Node_collection:
         if dbnodes:
             for dbnode in dbnodes:
                 node = nodeFromDB(dbnode=dbnode)
+                if node is None:
+                    continue
                 linked_cres = Links.query.filter(Links.node == dbnode.id).all()
                 for dbcre_link in linked_cres:
                     dbcre = CRE.query.filter(CRE.id == dbcre_link.cre).first()
@@ -1140,7 +1133,7 @@ class Node_collection:
 
             return []
 
-    def get_cre_by_db_id(self, id: str) -> cre_defs.CRE:
+    def get_cre_by_db_id(self, id: str) -> Optional[cre_defs.CRE]:
         """internal method, returns a shallow cre (no links) by its database id
 
         Args:
@@ -1302,7 +1295,6 @@ class Node_collection:
             )
 
         for internal_link in internal_links:
-
             linked_cre_query = self.session.query(CRE)
             link_type = cre_defs.LinkTypes.from_str(internal_link.type)
 
@@ -1331,7 +1323,7 @@ class Node_collection:
         return links
 
     def __make_cre_links(
-        self, cre: CRE, include_only_nodes: List[str]
+        self, cre: CRE, include_only_nodes: List[str] | None
     ) -> List[cre_defs.Link]:
         links = []
         for link in self.session.query(Links).filter(Links.cre == cre.id).all():
@@ -1345,7 +1337,9 @@ class Node_collection:
                 )
         return links
 
-    def export(self, dir: str = None, dry_run: bool = False) -> List[cre_defs.Document]:
+    def export(
+        self, dir: str | None = None, dry_run: bool = False
+    ) -> List[cre_defs.Document]:
         """Exports the database to a CRE file collection on disk"""
         docs: Dict[str, cre_defs.Document] = {}
         cre, standard = None, None
@@ -1407,7 +1401,7 @@ class Node_collection:
         if not dry_run:
             for _, doc in docs.items():
                 title = ""
-                if hasattr(doc, "id"):
+                if hasattr(doc, "id") and doc.id:
                     title = (
                         doc.id.replace("/", "-")
                         .replace(" ", "_")
@@ -1415,7 +1409,7 @@ class Node_collection:
                         .replace("'", "")
                         + ".yaml"
                     )
-                elif hasattr(doc, "sectionID"):
+                elif hasattr(doc, "sectionID") and doc.sectionID:
                     title = (
                         doc.name
                         + "_"
@@ -1425,21 +1419,33 @@ class Node_collection:
                         .replace("'", "")
                         + ".yaml"
                     )
+                elif isinstance(doc, cre_defs.Code):
+                    title = (
+                        doc.name.replace("/", "-")
+                        .replace(" ", "_")
+                        .replace('"', "")
+                        .replace("'", "")
+                        + ".yaml"
+                    )
                 else:
-                    logger.fatal(
-                        f"doc does not have neither sectionID nor id, this is a bug! {doc.__dict__}"
+                    logger.error(
+                        "doc does not have sectionID or id, this is a bug: %s",
+                        doc.__dict__,
+                    )
+                    raise ValueError(
+                        "Document missing required identifier (sectionID or id)"
                     )
                 file.writeToDisk(
                     file_title=title,
                     file_content=yaml.safe_dump(doc.todict()),
-                    cres_loc=dir,
+                    cres_loc=dir or "",
                 )
 
         return list(docs.values())
 
     def all_cres_with_pagination(
         self, page: int = 1, per_page: int = 10
-    ) -> List[cre_defs.CRE]:
+    ) -> Tuple[List[cre_defs.CRE], int, int]:
         result: List[cre_defs.CRE] = []
         cres = self.session.query(CRE).paginate(
             page=int(page), per_page=per_page, error_out=False
@@ -1450,9 +1456,6 @@ class Node_collection:
         return result, page, total_pages
 
     def get_cre_path(self, fromID: str, toID: str) -> List[cre_defs.Document]:
-        if not self.graph:
-            self.with_graph()
-
         fromDbID = (
             self.session.query(CRE.id).filter(CRE.external_id == fromID).first()[0]
         )
@@ -1460,8 +1463,8 @@ class Node_collection:
 
         forwardPath = self.graph.get_path(f"CRE: {fromDbID}", f"CRE: {toDbID}")
         backwardsPath = self.graph.get_path(f"CRE: {toDbID}", f"CRE: {fromDbID}")
-        cres = []
-        path = []
+        cres: List[cre_defs.Document] = []
+        path: List[str] = []
         if forwardPath:  # our graph is directed, so we need to check both paths
             path = forwardPath
         else:
@@ -1476,11 +1479,11 @@ class Node_collection:
         return cres
 
     def get_cre_hierarchy(self, cre: cre_defs.CRE) -> int:
-        if not self.graph:
-            self.with_graph()
         roots = self.get_root_cres()
 
         root_cre_ids = [r.id for r in roots]
+        if not cre.id:
+            raise ValueError("CRE is missing required id; data is corrupted")
         return self.graph.get_hierarchy(rootIDs=root_cre_ids, creID=cre.id)
 
     # def all_nodes_with_pagination(
@@ -1540,13 +1543,13 @@ class Node_collection:
         return res
 
     def add_cre(self, cre: cre_defs.CRE) -> CRE:
-        entry: CRE = None
+        entry: Optional[CRE] = None
         query = self.session.query(CRE).filter(func.lower(CRE.name) == cre.name.lower())
         if cre.id:
             entry = query.filter(CRE.external_id == cre.id).first()
         else:
             entry = query.filter(
-                func.lower(CRE.description) == cre.description.lower()
+                func.lower(CRE.description) == (cre.description or "").lower()
             ).first()
 
         if entry is not None:
@@ -1616,7 +1619,7 @@ class Node_collection:
         higher: CRE,
         lower: CRE,
         ltype: cre_defs.LinkTypes,
-    ) -> cre_defs.Link:
+    ) -> Optional[cre_defs.Link]:
         """
         adds a link between two CREs in the database,
         Args:
@@ -1730,7 +1733,7 @@ class Node_collection:
             return cre_defs.Link(document=lower, ltype=ltype)
         except inmemory_graph.CycleDetectedError as cde:
             # cycle detected, do nothing
-            pass
+            return None
 
     def add_link(
         self,
@@ -1772,7 +1775,7 @@ class Node_collection:
             if self.graph:
                 self.graph.add_link(
                     doc_from=CREfromDB(cre),
-                    link_to=cre_defs.Link(document=nodeFromDB(node), ltype=ltype.value),
+                    link_to=cre_defs.Link(document=nodeFromDB(node), ltype=ltype),
                 )
 
         self.session.commit()
@@ -1783,7 +1786,7 @@ class Node_collection:
         """One line method to return paths in a graph,
         this starts getting complicated when we have more linktypes"""
         res: bool = nx.has_path(
-            self.graph.graph.to_undirected(),
+            self.graph.get_raw_graph().to_undirected(),
             "Node: " + str(node_source_id),
             "Node: " + str(node_destination_id),
         )
@@ -1798,7 +1801,7 @@ class Node_collection:
         )
         return list(set([s[0] for s in standards]))
 
-    def text_search(self, text: str) -> List[Optional[cre_defs.Document]]:
+    def text_search(self, text: str) -> List[cre_defs.Document]:
         """Given a piece of text, tries to find the best match
         for the text in the database.
         Shortcuts:
@@ -1822,22 +1825,22 @@ class Node_collection:
         )
         match = re.search(cre_id_search, text, re.IGNORECASE)
         if match:
-            return self.get_CREs(external_id=match.group("id"))
+            return [cre for cre in self.get_CREs(external_id=match.group("id"))]
 
         match = re.search(cre_naked_id_search, text, re.IGNORECASE)
         if match:
-            return self.get_CREs(external_id=match.group())
+            return [cre for cre in self.get_CREs(external_id=match.group())]
 
         match = re.search(cre_name_search, text, re.IGNORECASE)
         if match:
-            return self.get_CREs(name=match.group("name"))
+            return [cre for cre in self.get_CREs(name=match.group("name"))]
 
         match = re.search(node_search, text, re.IGNORECASE)
         if match:
             link = match.group("link")
             ntype = match.group("ntype")
             txt = match.group("val")
-            results: List[cre_defs.Document] = []
+            node_results: List[cre_defs.Document] = []
             if txt:
                 args = txt.split(":") if ":" in txt else txt.split(" ")
                 if len(args) < 4:
@@ -1853,40 +1856,43 @@ class Node_collection:
                         sectionID=combo[3],
                     )
                     if nodes:
-                        results.extend(nodes)
+                        node_results.extend(nodes)
             elif link or ntype:
                 nodes = self.get_nodes(link=link, ntype=ntype)
                 if nodes:
-                    results.extend(nodes)
-            if results:
-                return list(set(results))
+                    node_results.extend(nodes)
+            if node_results:
+                return list(set(node_results))
         # fuzzy matches second
         args = [f"%{text}%", "", "", "", "", ""]
-        results = {}
-        s = set([p for p in permutations(args, 6)])
-        for combo in s:
+        results: Dict[str, cre_defs.Document] = {}
+        s6 = set([p for p in permutations(args, 6)])
+        for combo6 in s6:
             nodes = self.get_nodes(
-                name=combo[0],
-                section=combo[1],
-                subsection=combo[2],
-                link=combo[3],
-                description=combo[4],
+                name=combo6[0],
+                section=combo6[1],
+                subsection=combo6[2],
+                link=combo6[3],
+                description=combo6[4],
                 partial=True,
                 ntype=None,  # type: ignore
-                sectionID=combo[5],
+                sectionID=combo6[5],
             )
             if nodes:
                 for node in nodes:
                     node_key = f"{node.name}:{node.version}:{node.section}:{node.sectionID}:{node.subsection}:"
                     results[node_key] = node
         args = [f"%{text}%", None, None]
-        for combo in permutations(args, 3):
+        for combo3 in permutations(args, 3):
             cres = self.get_CREs(
-                name=combo[0], external_id=combo[1], description=combo[2], partial=True
+                name=combo3[0],
+                external_id=combo3[1],
+                description=combo3[2],
+                partial=True,
             )
             if cres:
                 for cre in cres:
-                    results[cre.id] = cre
+                    results[cre.id or ""] = cre
         return list(results.values())
 
     def get_root_cres(self):
@@ -1897,14 +1903,14 @@ class Node_collection:
             .filter(
                 ~CRE.id.in_(
                     self.session.query(InternalLinks.cre).filter(
-                        InternalLinks.type == cre_defs.LinkTypes.Contains,
+                        InternalLinks.type == cre_defs.LinkTypes.Contains.value,
                     )
                 )
             )
             .filter(
                 ~CRE.id.in_(
                     self.session.query(InternalLinks.group).filter(
-                        InternalLinks.type == cre_defs.LinkTypes.PartOf,
+                        InternalLinks.type == cre_defs.LinkTypes.PartOf.value,
                     )
                 )
             )
@@ -1946,7 +1952,9 @@ class Node_collection:
                     res[entry.node_id] = [float(e) for e in entry.embeddings.split(",")]
         return res, total_pages, page
 
-    def get_embeddings_for_doc(self, doc: cre_defs.Node | cre_defs.CRE) -> Embeddings:
+    def get_embeddings_for_doc(
+        self, doc: cre_defs.Node | cre_defs.CRE
+    ) -> Optional[Embeddings]:
         if doc.doctype == cre_defs.Credoctypes.CRE:
             obj = self.session.query(CRE).filter(CRE.external_id == doc.id).first()
             return (
@@ -1955,7 +1963,7 @@ class Node_collection:
                 .first()
             )
         else:
-            node = dbNodeFromNode(doc)
+            node = dbNodeFromNode(cast(cre_defs.Node, doc))
             if not node:
                 logger.warning(
                     f"cannot get embeddings for doc {doc.todict()} it's not translatable to a database document"
@@ -1968,8 +1976,9 @@ class Node_collection:
                     .filter(Embeddings.node_id == obj[0].id)
                     .first()
                 )
+            return None
 
-    def get_embedding(self, object_id: str) -> Optional[Embeddings]:
+    def get_embedding(self, object_id: str) -> List[Embeddings]:
         return (
             self.session.query(Embeddings)
             .filter(
@@ -2025,7 +2034,7 @@ class Node_collection:
         )
         return self.session.query(q.exists()).scalar()
 
-    def get_gap_analysis_result(self, cache_key) -> str:
+    def get_gap_analysis_result(self, cache_key) -> Optional[str]:
         logger.info(f"looking for gap analysis with cache key: {cache_key}")
         res = (
             self.session.query(GapAnalysisResults)
@@ -2036,6 +2045,7 @@ class Node_collection:
             logger.info(f"found gap analysis with cache key: {cache_key}")
             return res.ga_object
         logger.info(f"did not find gap analysis with cache key: {cache_key}")
+        return None
 
     def add_gap_analysis_result(self, cache_key: str, ga_object: str):
         if not self.gap_analysis_exists(cache_key):
@@ -2107,7 +2117,7 @@ def dbNodeFromTool(tool: cre_defs.Node) -> Node:
 
 def nodeFromDB(dbnode: Node) -> cre_defs.Node:
     if not dbnode:
-        return None
+        raise ValueError("dbnode cannot be None")
     tags = []
     if dbnode.tags:
         tags = list(set(dbnode.tags.split(",")))
@@ -2151,7 +2161,7 @@ def nodeFromDB(dbnode: Node) -> cre_defs.Node:
 
 def CREfromDB(dbcre: CRE) -> cre_defs.CRE:
     if not dbcre:
-        return None
+        raise ValueError("dbcre cannot be None")
     tags = []
     if dbcre.tags:
         tags = list(set(dbcre.tags.split(",")))
@@ -2181,7 +2191,7 @@ def gap_analysis(
     if base_standard is None:
         return None
     grouped_paths = {}
-    extra_paths_dict = {}
+    extra_paths_dict: Dict[str, Dict[str, Dict[str, Any]]] = {}
     GA_STRONG_UPPER_LIMIT = 2
 
     for node in base_standard:

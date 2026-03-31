@@ -3,7 +3,7 @@
 import logging
 import os
 import re
-from typing import List
+from typing import List, Optional, Iterator
 
 from application.database import db
 from application.defs import cre_defs as defs
@@ -46,21 +46,26 @@ class ZAP(ParserInterface):
         )
 
     def parse(
-        self, cache: db.Node_collection, ph: prompt_client.PromptHandler
-    ) -> List[defs.Tool]:
+        self,
+        cache: db.Node_collection,
+        ph: Optional[prompt_client.PromptHandler],
+    ) -> ParseResult:
         zaproxy_website = "https://github.com/zaproxy/zaproxy-website.git"
         repo = git.clone(zaproxy_website)
         alerts = self.__register_alerts(repo=repo, cache=cache)
         return ParseResult(results={self.name: alerts})
 
     def __link_to_top10(
-        self, alert: defs.Tool, top10: re.Match[str] | None, cache: db.Node_collection
+        self,
+        alert: defs.Tool,
+        top10: Iterator[re.Match[str]],
+        cache: db.Node_collection,
     ):
         for match in top10:
             year = match.group("year")
             num = match.group("num")
             entries = cache.get_nodes(name=f"Top10 {year}", ntype="Standard")
-            entry = [e for e in entries if str(int(num)) in e.section]
+            entry = [e for e in entries if str(int(num)) in (e.section or "")]
             if entry:
                 logger.info(
                     f"Found zap alert {alert.name} linking to {entry[0].name}{entry[0].section}"
@@ -85,6 +90,8 @@ class ZAP(ParserInterface):
     def __link_to_cwe(
         self, alert: defs.Tool, cwe: re.Match[str] | None, cache: db.Node_collection
     ):
+        if cwe is None:
+            return alert
         cweId = cwe.group("cweId")
         logger.info(f"Found zap alert {alert.name} linking to CWE {cweId}")
         cwe_nodes = cache.get_nodes(name="CWE", sectionID=cweId)
@@ -103,7 +110,9 @@ class ZAP(ParserInterface):
             )
         return alert
 
-    def __parse_md_file(self, mdtext: str, cache: db.Node_collection):
+    def __parse_md_file(
+        self, mdtext: str, cache: db.Node_collection
+    ) -> Optional[defs.Tool]:
         title = re.search(self.zap_md_title_regexp, mdtext)
         name = title.group("title") if title else None
 
@@ -123,8 +132,11 @@ class ZAP(ParserInterface):
             logger.error(
                 f"Alert id: {externalId} titled {name} could not be parsed, missing link to code"
             )
-            return
+            return None
         cwe = re.search(self.zap_md_cwe_regexp, mdtext)
+        if name is None or externalId is None or tag is None:
+            return None
+
         alert = self.__zap_alert(
             name=name.replace('"', ""),
             alert_id=externalId,
@@ -146,8 +158,10 @@ class ZAP(ParserInterface):
             )
         return alert
 
-    def __register_alerts(self, cache: db.Node_collection, repo: git.git):
-        alerts = []
+    def __register_alerts(
+        self, cache: db.Node_collection, repo: git.git
+    ) -> List[defs.Tool]:
+        alerts: List[defs.Tool] = []
         for mdfile in os.listdir(os.path.join(repo.working_dir, self.alerts_path)):
             pth = os.path.join(repo.working_dir, self.alerts_path, mdfile)
             with open(pth) as mdf:

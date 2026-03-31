@@ -1,11 +1,9 @@
 import yaml
 import urllib
 import logging
-import os
-from typing import Dict, Any
+from typing import Optional
 from application.database import db
 from application.defs import cre_defs as defs
-import re
 from application.prompt_client import prompt_client as prompt_client
 from application.utils.external_project_parsers.base_parser_defs import (
     ParserInterface,
@@ -23,8 +21,10 @@ class JuiceShop(ParserInterface):
     url = "https://raw.githubusercontent.com/juice-shop/juice-shop/master/data/static/challenges.yml"
 
     def parse(
-        self, cache: db.Node_collection = None, ph: prompt_client.PromptHandler = None
-    ):
+        self,
+        cache: db.Node_collection,
+        ph: Optional[prompt_client.PromptHandler],
+    ) -> ParseResult:
         if not cache:
             raise ValueError(
                 "Juiceshop importer parse method called with Null db(cache) argument"
@@ -42,7 +42,7 @@ class JuiceShop(ParserInterface):
             logger.fatal(err_str)
             raise RuntimeError(err_str)
         challenges = yaml.safe_load(resp.text)
-        chals = []
+        chals: list[defs.Tool] = []
         for challenge in challenges:
             chal = defs.Tool(
                 description=challenge["description"],
@@ -59,34 +59,39 @@ class JuiceShop(ParserInterface):
                 name=chal.name, section=chal.section, sectionID=chal.sectionID
             )
             if existing:
-                embeddings = cache.get_embeddings_for_doc(existing[0])
-                if embeddings:
-                    logger.info(
-                        f"Node {chal.todict()} already exists and has embeddings, skipping"
-                    )
-                    continue
+                existing_node = existing[0]
+                if isinstance(existing_node, (defs.Node, defs.CRE)):
+                    embeddings = cache.get_embeddings_for_doc(existing_node)
+                    if embeddings:
+                        logger.info(
+                            f"Node {chal.todict()} already exists and has embeddings, skipping"
+                        )
+                        continue
             challenge_embeddings = ph.get_text_embeddings(",".join(chal.tags))
             chal.embeddings = challenge_embeddings
             chal.embeddings_text = ",".join(chal.tags)
             if not challenge_embeddings:
                 logger.fatal(f"Cannot get embeddings for challenge {chal.section}")
-                return
+                return ParseResult(results={self.name: chals})
 
-            cre_id = ph.get_id_of_most_similar_cre(challenge_embeddings)
+            cre_id: Optional[str] = ph.get_id_of_most_similar_cre(challenge_embeddings)
             if not cre_id:
                 logger.info(
                     f"could not find an appropriate CRE for Juiceshop challenge {chal.section}, findings similarities with standards instead"
                 )
                 standard_id = ph.get_id_of_most_similar_node(challenge_embeddings)
-                dbstandard = cache.get_nodes(db_id=standard_id)
-                logger.info(
-                    f"found an appropriate standard for Juiceshop challenge {chal.section}, it is: {dbstandard.section}"
-                )
-                cres = cache.find_cres_of_node(dbstandard)
-                if cres:
-                    cre_id = cres[0].id
+                standards = cache.get_nodes(db_id=standard_id)
+                if standards:
+                    dbstandard = standards[0]
+                    if isinstance(dbstandard, defs.Node):
+                        logger.info(
+                            f"found an appropriate standard for Juiceshop challenge {chal.section}, it is: {dbstandard.section}"
+                        )
+                        cres = cache.find_cres_of_node(dbstandard)
+                        if cres:
+                            cre_id = cres[0].id
 
-            cre = cache.get_cre_by_db_id(cre_id)
+            cre = cache.get_cre_by_db_id(cre_id) if cre_id else None
             if cre:
                 chal.add_link(
                     defs.Link(document=cre, ltype=defs.LinkTypes.AutomaticallyLinkedTo)

@@ -1,5 +1,5 @@
 import google.api_core.exceptions as googleExceptions
-from typing import List
+from typing import List, Optional
 from vertexai.preview.language_models import TextEmbeddingModel
 from google.cloud import aiplatform
 from vertexai.preview.language_models import ChatModel
@@ -60,7 +60,9 @@ class VertexPromptClient:
         """Return the model name being used."""
         return self.model_name
 
-    def get_text_embeddings(self, text: str, max_retries: int = 3) -> List[float]:
+    def get_text_embeddings(
+        self, text: str, max_retries: int = 3
+    ) -> Optional[List[float]]:
         """Text embedding with a Large Language Model.
 
         Args:

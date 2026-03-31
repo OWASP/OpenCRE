@@ -2,7 +2,7 @@ import logging
 import os
 import tempfile
 import requests
-from typing import Dict
+from typing import Dict, Optional, Any
 from application.database import db
 from application.defs import cre_defs as defs
 import shutil
@@ -22,7 +22,11 @@ class CWE(ParserInterface):
     name = "CWE"
     cwe_zip = "https://cwe.mitre.org/data/xml/cwec_latest.xml.zip"
 
-    def parse(self, cache: db.Node_collection, ph: prompt_client.PromptHandler):
+    def parse(
+        self,
+        cache: db.Node_collection,
+        ph: Optional[prompt_client.PromptHandler],
+    ) -> ParseResult:
         response = requests.get(self.cwe_zip, stream=True)
         tmp_dir = tempfile.mkdtemp()
         handle, fname = tempfile.mkstemp(suffix=".zip", dir=tmp_dir)
@@ -105,20 +109,12 @@ class CWE(ParserInterface):
                 ]:
                     cwes = cache.get_nodes(self.name, sectionID=weakness["@ID"])
                     if cwes:  # update the CWE in the database
+                        if not isinstance(cwes[0], defs.Standard):
+                            continue
                         cwe = cwes[0]
                         cwe.section = weakness["@Name"]
                         cwe.hyperlink = self.make_hyperlink(weakness["@ID"])
-                        cache.add_node(
-                            cwe,
-                            comparison_skip_attributes=[
-                                "link",
-                                "section",
-                                "version",
-                                "subsection",
-                                "tags",
-                                "description",
-                            ],
-                        )
+                        # Existing CWE node will be persisted by the caller via register_standard.
                     else:  # we found something new
                         cwe = defs.Standard(
                             name="CWE",
@@ -161,9 +157,10 @@ class CWE(ParserInterface):
         return entries
 
     def parse_related_weakness(
-        self, cache: db.Node_collection, rw: Dict[str, Dict], cwe: defs.Standard
+        self, cache: db.Node_collection, rw: Dict[str, Any], cwe: defs.Standard
     ) -> defs.Standard:
         cwe_entry = rw.get("Related_Weakness")
         if isinstance(cwe_entry, Dict):
             id = cwe_entry["@CWE_ID"]
             return self.link_to_related_cwe(cwe=cwe, cache=cache, related_id=id)
+        return cwe

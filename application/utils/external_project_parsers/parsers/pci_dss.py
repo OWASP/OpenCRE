@@ -1,7 +1,7 @@
 from pprint import pprint
 import logging
 import os
-from typing import Dict, Any
+from typing import Dict, Any, Optional, List
 from application.database import db
 from application.defs import cre_defs as defs
 import re
@@ -20,7 +20,11 @@ logger.setLevel(logging.INFO)
 class PciDss(ParserInterface):
     name = "PCI DSS"
 
-    def parse(self, cache: db.Node_collection, ph: prompt_client.PromptHandler):
+    def parse(
+        self,
+        cache: db.Node_collection,
+        ph: Optional[prompt_client.PromptHandler],
+    ) -> ParseResult:
         entries = self.parse_4(
             pci_file=sheet_utils.read_spreadsheet(
                 alias="",
@@ -38,10 +42,10 @@ class PciDss(ParserInterface):
         version: str,
         pci_file_tab: str,
         standard_to_spreadsheet_mappings: Dict[str, str],
-    ):
+    ) -> List[defs.Standard]:
         prompt = prompt_client.PromptHandler(cache)
         standard_entries = []
-        for row in pci_file.get(pci_file_tab):
+        for row in pci_file.get(pci_file_tab, []):
             pci_control = defs.Standard(
                 name=self.name,
                 section=re.sub(
@@ -70,29 +74,37 @@ class PciDss(ParserInterface):
                 sectionID=pci_control.sectionID,
             )
             if existing:
-                embeddings = cache.get_embeddings_for_doc(existing[0])
-                if embeddings:
-                    logger.info(
-                        f"Node {pci_control.todict()} already exists and has embeddings, skipping"
-                    )
+                existing_node = existing[0]
+                if isinstance(existing_node, (defs.Node, defs.CRE)):
+                    embeddings = cache.get_embeddings_for_doc(existing_node)
+                    if embeddings:
+                        logger.info(
+                            f"Node {pci_control.todict()} already exists and has embeddings, skipping"
+                        )
 
             control_embeddings = prompt.get_text_embeddings(pci_control.__repr__())
             pci_control.embeddings = control_embeddings
             pci_control.embeddings_text = pci_control.__repr__()
             # these embeddings are different to the ones generated from --generate embeddings, this is because we want these embedding to include the optional "description" field, it is not a big difference and cosine similarity works reasonably accurately without it but good to have
-            cre_id = prompt.get_id_of_most_similar_cre(control_embeddings)
+            cre_id: Optional[str] = prompt.get_id_of_most_similar_cre(
+                control_embeddings
+            )
+            cre = None
             if not cre_id:
                 logger.info(
                     f"could not find an appropriate CRE for pci {pci_control.section}, findings similarities with standards instead"
                 )
                 standard_id = prompt.get_id_of_most_similar_node(control_embeddings)
-                dbstandard = cache.get_nodes(db_id=standard_id)
-                logger.info(
-                    f"found an appropriate standard for pci {pci_control.section}, it is: {dbstandard.section}"
-                )
-                cres = cache.find_cres_of_node(dbstandard)
-                if cres:
-                    cre_id = cres[0].id
+                standards = cache.get_nodes(db_id=standard_id)
+                if standards:
+                    dbstandard = standards[0]
+                    if isinstance(dbstandard, defs.Node):
+                        logger.info(
+                            f"found an appropriate standard for pci {pci_control.section}, it is: {dbstandard.section}"
+                        )
+                        cres = cache.find_cres_of_node(dbstandard)
+                        if cres:
+                            cre_id = cres[0].id
             if cre_id:
                 cre = cache.get_cre_by_db_id(cre_id)
             ctrl_copy = pci_control.shallow_copy()
