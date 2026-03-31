@@ -47,9 +47,7 @@ from application.utils.gap_analysis import (
 
 from .. import sqla  # type: ignore
 
-logging.basicConfig()
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 
 BaseModel: DefaultMeta = sqla.Model

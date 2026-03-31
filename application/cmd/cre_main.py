@@ -25,10 +25,10 @@ from application.utils import spreadsheet_parsers
 from alive_progress import alive_bar
 from application.prompt_client import prompt_client as prompt_client
 from application.utils import gap_analysis
+from application.utils.logging_config import configure_logging
 
-logging.basicConfig()
+configure_logging()
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 app = None
 

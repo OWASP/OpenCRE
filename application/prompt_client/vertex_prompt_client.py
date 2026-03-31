@@ -21,9 +21,7 @@ import grpc
 import grpc_status
 import time
 
-logging.basicConfig()
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 MAX_OUTPUT_TOKENS = 1024
 

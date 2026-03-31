@@ -10,8 +10,6 @@ from git.repo.base import Repo
 from github import Github
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-logging.basicConfig()
 
 commit_msg_base = "cre_sync_%s" % (datetime.now().isoformat().replace(":", "."))
 

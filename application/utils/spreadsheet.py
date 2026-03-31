@@ -12,8 +12,6 @@ from application.defs import cre_defs as defs
 from enum import Enum
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-logging.basicConfig()
 
 
 class GspreadAuth(Enum):

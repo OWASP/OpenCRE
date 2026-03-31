@@ -22,9 +22,7 @@ from dacite import (
     from_dict,
 )
 
-logging.basicConfig()
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 
 # used for serialising and deserialising yaml OSIB documents

@@ -12,9 +12,7 @@ from application.utils.external_project_parsers.base_parser_defs import (
     ParseResult,
 )
 
-logging.basicConfig()
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 
 class PciDss(ParserInterface):

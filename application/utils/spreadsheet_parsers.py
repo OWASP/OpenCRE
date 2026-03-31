@@ -12,8 +12,6 @@ from application.defs import cre_defs as defs
 
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-logging.basicConfig()
 
 
 # the supported resources from the main CSV

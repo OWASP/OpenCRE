@@ -5,9 +5,7 @@ from application.defs import cre_defs as defs
 
 import re
 
-logging.basicConfig()
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 from application.utils.external_project_parsers.base_parser_defs import (
     ParserInterface,

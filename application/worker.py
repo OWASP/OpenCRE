@@ -1,10 +1,10 @@
 from rq import Worker, Queue
 import logging
 from application.utils import redis
+from application.utils.logging_config import configure_logging
 
-logging.basicConfig()
+configure_logging()
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 listen = ["high", "default", "low"]
 

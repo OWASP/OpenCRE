@@ -9,9 +9,7 @@ from application.utils.external_project_parsers.parsers import *
 from application.utils import gap_analysis
 import os, json
 
-logging.basicConfig()
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 
 class BaseParser:
