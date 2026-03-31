@@ -48,6 +48,7 @@ import google.auth.transport.requests
 
 
 ITEMS_PER_PAGE = 20
+MAX_PER_PAGE = 100
 
 app = Blueprint(
     "web",
@@ -506,12 +507,11 @@ def find_root_cres() -> Any:
     database = db.Node_collection()
     # opt_osib = request.args.get("osib")
     opt_format = request.args.get("format")
-    documents = database.get_root_cres()
-    if documents:
-        res = [doc.todict() for doc in documents]
-        result = {"data": res}
-        # if opt_osib:
-        #     result["osib"] = odefs.cre2osib(documents).todict()
+
+    if opt_format:
+        documents = database.get_root_cres()
+        if not documents:
+            abort(404, "No root CREs")
         if opt_format == SupportedFormats.Markdown.value:
             return f"<pre>{mdutils.cre_to_md(documents)}</pre>"
         elif opt_format == SupportedFormats.CSV.value:
@@ -522,7 +522,22 @@ def find_root_cres() -> Any:
         elif opt_format == SupportedFormats.OSCAL.value:
             return jsonify(json.loads(oscal_utils.list_to_oscal(documents)))
 
-        return jsonify(result)
+    page = 1
+    per_page = ITEMS_PER_PAGE
+    if request.args.get("page") is not None and int(request.args.get("page")) > 0:
+        page = int(request.args.get("page"))
+    if (
+        request.args.get("per_page") is not None
+        and int(request.args.get("per_page")) > 0
+    ):
+        per_page = min(int(request.args.get("per_page")), MAX_PER_PAGE)
+
+    documents, page, total_pages = database.get_root_cres_with_pagination(
+        page, per_page
+    )
+    if documents:
+        res = [doc.todict() for doc in documents]
+        return jsonify({"data": res, "page": page, "total_pages": total_pages})
     abort(404, "No root CREs")
 
 
@@ -814,7 +829,7 @@ def all_cres() -> Any:
         request.args.get("per_page") is not None
         and int(request.args.get("per_page")) > 0
     ):
-        per_page = int(request.args.get("per_page"))
+        per_page = min(int(request.args.get("per_page")), MAX_PER_PAGE)
 
     documents, page, total_pages = database.all_cres_with_pagination(page, per_page)
     if documents:
