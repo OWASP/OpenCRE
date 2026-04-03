@@ -3,6 +3,7 @@ import './commonRequirementEnumeration.scss';
 import axios from 'axios';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
+import { Icon } from 'semantic-ui-react';
 
 import { DocumentNode } from '../../components/DocumentNode';
 import { ClearFilterButton, FilterButton } from '../../components/FilterButton/FilterButton';
@@ -68,7 +69,7 @@ export const CommonRequirementEnumeration = () => {
       {!loading && !error && display && (
         <>
           <h4 className="cre-page__heading">{display.name}</h4>
-          <h5 className="cre-page__sub-heading">CRE: {display.id}</h5>
+          <h5 className="cre-page__sub-heading">ID: {display.id}</h5>
           <div className="cre-page__description">{display.description}</div>
           {display && display.hyperlink && (
             <>
@@ -76,6 +77,9 @@ export const CommonRequirementEnumeration = () => {
               <a href={display?.hyperlink} target="_blank" rel="noopener noreferrer">
                 {' '}
                 {display.hyperlink}
+              </a>
+              <a href={display?.hyperlink} target="_blank" rel="noopener noreferrer" aria-label="Open reference in new tab">
+                <Icon name="external" />
               </a>
             </>
           )}
