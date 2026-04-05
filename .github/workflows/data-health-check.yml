@@ -1,0 +1,97 @@
+name: Data Health Check
+
+on:
+  schedule:
+    - cron: "30 1 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  data-health-check:
+    environment: Heroku-DB-Backup
+    runs-on: ubuntu-latest
+    env:
+      HEROKU_APP_NAME: opencreorg
+      PGPASSWORD: postgres
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: postgres
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+          python -m pip install --upgrade pip psycopg2-binary
+
+      - name: Install Heroku CLI
+        run: curl https://cli-assets.heroku.com/install-ubuntu.sh | sh
+
+      - name: Download known-good backup artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p known-good
+          run_id="$(gh run list --repo OWASP/OpenCRE --workflow backup.yml --branch main --status success --limit 1 --json databaseId --jq '.[0].databaseId')"
+          if [ -z "${run_id}" ] || [ "${run_id}" = "null" ]; then
+            echo "Could not find successful backup workflow runs on main."
+            exit 1
+          fi
+
+          gh run download "${run_id}" --repo OWASP/OpenCRE --name opencreorg_db_backup --dir known-good
+          known_good_dump="$(find known-good -maxdepth 1 -name '*.dump' | head -n 1)"
+          if [ -z "${known_good_dump}" ]; then
+            echo "No .dump file found in opencreorg_db_backup artifact."
+            exit 1
+          fi
+          echo "KNOWN_GOOD_DUMP=${known_good_dump}" >> "${GITHUB_ENV}"
+
+      - name: Download current Heroku backup
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+        run: |
+          set -euo pipefail
+          heroku pg:backups:capture -a "${HEROKU_APP_NAME}"
+          heroku pg:backups:download -a "${HEROKU_APP_NAME}" --output=current.dump
+          echo "CURRENT_DUMP=${PWD}/current.dump" >> "${GITHUB_ENV}"
+
+      - name: Restore dumps to local postgres
+        run: |
+          set -euo pipefail
+          psql -h localhost -U postgres -d postgres -c "DROP DATABASE IF EXISTS opencre_known_good;"
+          psql -h localhost -U postgres -d postgres -c "DROP DATABASE IF EXISTS opencre_current;"
+          psql -h localhost -U postgres -d postgres -c "CREATE DATABASE opencre_known_good;"
+          psql -h localhost -U postgres -d postgres -c "CREATE DATABASE opencre_current;"
+
+          pg_restore --clean --if-exists --no-owner --no-privileges -h localhost -U postgres -d opencre_known_good "${KNOWN_GOOD_DUMP}"
+          pg_restore --clean --if-exists --no-owner --no-privileges -h localhost -U postgres -d opencre_current "${CURRENT_DUMP}"
+
+      - name: Compare datasets
+        run: |
+          python scripts/check_data_health.py \
+            --db1-url "postgresql://postgres:postgres@localhost:5432/opencre_known_good" \
+            --db2-url "postgresql://postgres:postgres@localhost:5432/opencre_current" \
+            --db1-label "known-good" \
+            --db2-label "heroku-current"
