@@ -138,7 +138,7 @@ class InternalLinks(BaseModel):  # type: ignore
         sqla.UniqueConstraint(
             group,
             cre,
-            name="uq_pair",
+            name="uq_cre_link_pair",
         ),
         sqla.CheckConstraint("type != 'PartOf'", name="No 'PartOf' links"),
     )
@@ -161,7 +161,7 @@ class Links(BaseModel):  # type: ignore
         sqla.UniqueConstraint(
             cre,
             node,
-            name="uq_pair",
+            name="uq_cre_node_link_pair",
         ),
     )
 
@@ -939,7 +939,7 @@ class Node_collection:
     session = sqla.session
 
     def __init__(self) -> None:
-        if not os.environ.get("NO_LOAD_GRAPH_DB"):
+        if os.environ.get("NO_LOAD_GRAPH_DB") != "1":
             self.neo_db = NEO_DB.instance()
         self.session = sqla.session
 
@@ -2185,20 +2185,6 @@ class Node_collection:
         embeddings: List[float],
         embedding_text: str,
     ):
-        def _commit_with_retry() -> None:
-            max_retries = int(os.environ.get("SQLITE_COMMIT_MAX_RETRIES", "8"))
-            base_sleep_s = float(os.environ.get("SQLITE_COMMIT_RETRY_BASE_SECONDS", "0.15"))
-            for attempt in range(max_retries + 1):
-                try:
-                    self.session.commit()
-                    return
-                except OperationalError as exc:
-                    if "database is locked" not in str(exc).lower() or attempt >= max_retries:
-                        raise
-                    self.session.rollback()
-                    # Exponential backoff helps transient sqlite writer contention.
-                    time.sleep(base_sleep_s * (2**attempt))
-
         existing = self.get_embedding(db_object.id)
         embeddings_str = ",".join([str(e) for e in embeddings])
 
@@ -2220,14 +2206,13 @@ class Node_collection:
                     embeddings_url=db_object.link,
                 )
             self.session.add(emb)
-            _commit_with_retry()
+            self.session.commit()
             return emb
         else:
             logger.debug(f"knew of embedding for object {db_object.id} ,updating")
-            _commit_with_retry()
             existing[0].embeddings = embeddings_str
             existing[0].embeddings_content = embedding_text
-            _commit_with_retry()
+            self.session.commit()
 
             return existing
 
@@ -2399,6 +2384,8 @@ def gap_analysis(
     node_names: List[str],
     cache_key: str = "",
 ):
+    if neo_db is None:
+        neo_db = NEO_DB.instance()
     cre_db = Node_collection()
     base_standard, paths = neo_db.gap_analysis(node_names[0], node_names[1])
     logger.info(f"got db gap analysis for {'>>>'.join(node_names)}, calculating paths")
