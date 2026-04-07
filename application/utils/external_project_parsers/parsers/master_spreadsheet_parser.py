@@ -366,10 +366,13 @@ def _parse_cre_graph_and_rows(
             cre_dict = update_cre_in_links(cre_dict, cre)
 
         link_key = "Link to other CRE"
-        if link_key in mapping:
-            raw_link_val = mapping.get(link_key, "")
-            if not is_empty(str(raw_link_val).strip()):
-                mapping[link_key] = f"{raw_link_val},{','.join(cre.tags)}"
+        # CRE Tags double as Related-link references to topic CREs
+        # (e.g. tag "Cryptography" means this CRE is Related to the Cryptography CRE).
+        # Always append tags so rows with an empty "Link to other CRE" column still
+        # get their tag-derived Related links registered.
+        mapping[link_key] = (
+            f'{mapping.get(link_key, "")},{",".join(cre.tags)}'
+        )
 
         if not is_empty(str(mapping.get(link_key, "")).strip()):
             other_cres = list(
