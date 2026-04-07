@@ -23,7 +23,15 @@ docker-redis:
 	docker start cre-redis-stack 2>/dev/null ||\
 	docker run -d --name cre-redis-stack -p 6379:6379 -p 8001:8001 redis/redis-stack:latest
 
-start-containers: docker-neo4j docker-redis
+docker-postgres-rm:
+	docker stop cre-postgres
+	docker rm -f cre-postgres
+
+docker-postgres:
+	docker start cre-postgres 2>/dev/null ||\
+	docker run -d --name cre-postgres -e POSTGRES_PASSWORD=password -e POSTGRES_USER=cre -e POSTGRES_DB=cre -p 5432:5432 postgres
+
+start-containers: docker-neo4j docker-redis docker-postgres
 
 start-worker:
 	. ./venv/bin/activate && FLASK_APP=`pwd`/cre.py python cre.py --start_worker
@@ -118,16 +126,16 @@ migrate-downgrade:
 	flask db downgrade
 
 import-projects:
-	$(shell CRE_SKIP_IMPORT_CORE=1 bash  ./scripts/import-all.sh)
+	CRE_SKIP_IMPORT_CORE=1 bash ./scripts/import-all.sh
 
 import-all:
-	$(shell bash ./scripts/import-all.sh)
+	bash ./scripts/import-all.sh
 
 import-neo4j:
 	[ -d "./venv" ] && . ./venv/bin/activate &&\
 	export FLASK_APP="$(CURDIR)/cre.py" && python cre.py --populate_neo4j_db
 
 preload-map-analysis:
-	$(shell RUN_COUNT=5 bash ./scripts/preload_gap_analysis.sh)
+	RUN_COUNT=5 bash ./scripts/preload_gap_analysis.sh
 
 all: clean lint test dev dev-run

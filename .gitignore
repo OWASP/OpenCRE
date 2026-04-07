@@ -57,6 +57,14 @@ coverage/
 ### Docs
 *.md
 
+# OpenCRE — local importing roadmaps / checkpoints (keep out of git; do not `git add -f`)
+docs/importing-next-steps.md
+docs/importing-next-steps-v2.md
+docs/importing-next-steps-v3.md
+docs/importing-next-steps-v4.md
+docs/importing-next-steps-v5.md
+docs/importing-implementation-ladder.md
+
 ### Dev DBDumps
 *.sql
 *.dump

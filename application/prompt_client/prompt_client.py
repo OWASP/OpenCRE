@@ -340,22 +340,31 @@ class PromptHandler:
         self.embeddings_instance = in_memory_embeddings.instance().with_ai_client(
             ai_client=self.ai_client
         )
-        if not os.environ.get("NO_GEN_EMBEDDINGS") and load_all_embeddings:
+        if os.environ.get("NO_GEN_EMBEDDINGS") != "1" and load_all_embeddings:
             missing_embeddings = self.embeddings_instance.find_missing_embeddings(
                 database
             )
-            if missing_embeddings:
+            if missing_embeddings and self.ai_client:
                 self.embeddings_instance.setup_playwright()
                 self.embeddings_instance.generate_embeddings(
                     database, missing_embeddings
                 )
                 self.embeddings_instance.teardown_playwright()
+            elif missing_embeddings and not self.ai_client:
+                logger.warning(
+                    f"there are {len(missing_embeddings)} embeddings missing from the dataset, but no AI client is configured. Skipping embedding generation"
+                )
             else:
                 logger.info(
                     f"there are {len(missing_embeddings)} embeddings missing from the dataset, db inclompete"
                 )
 
     def generate_embeddings_for(self, item_name: str):
+        if not self.ai_client:
+            logger.warning(
+                f"Skipping embedding generation for {item_name} as no AI client is configured"
+            )
+            return
         # CRE embeddings are generated from the CRE's textual fields only
         # (name/description/id). That path does not require fetching remote
         # content via Playwright, so we can skip browser launch entirely and

@@ -30,7 +30,7 @@ class BaseParser:
         ph = prompt_client.PromptHandler(database=db)
         sclass_instance = sclass()
 
-        if os.environ.get("CRE_NO_REIMPORT_IF_EXISTS") and db.get_nodes(
+        if os.environ.get("CRE_NO_REIMPORT_IF_EXISTS") == "1" and db.get_nodes(
             name=sclass_instance.name
         ):
             logger.info(
