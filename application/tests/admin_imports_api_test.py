@@ -5,7 +5,7 @@ from unittest.mock import patch
 from application import create_app, sqla
 from application.database import db
 from application.defs import cre_defs as defs
-from application.utils import import_pipeline
+from application.utils import import_diff, import_pipeline
 from application.utils.external_project_parsers import base_parser_defs
 
 
@@ -52,7 +52,7 @@ class TestAdminImportsApi(unittest.TestCase):
         )
         return run.id
 
-    @patch.dict(os.environ, {"NO_LOGIN": "1", "ADMIN_IMPORTS_ENABLED": "1"})
+    @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
     def test_admin_imports_endpoints_happy_path(self) -> None:
         run1 = self._import_run_with_std(source="admin_api_test", version="run1", desc="one")
         run2 = self._import_run_with_std(source="admin_api_test", version="run2", desc="one")
@@ -87,10 +87,179 @@ class TestAdminImportsApi(unittest.TestCase):
             self.assertEqual(r.status_code, 404)
 
     @patch.dict(
-        os.environ, {"ADMIN_IMPORTS_ENABLED": "1", "INSECURE_REQUESTS": "1"}, clear=True
+        os.environ, {"CRE_ALLOW_IMPORT": "1", "INSECURE_REQUESTS": "1"}, clear=True
     )
     def test_admin_imports_requires_login(self) -> None:
         with self.app.test_client() as c:
             r = c.get("/admin/imports/runs")
             self.assertEqual(r.status_code, 401)
+
+    @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
+    def test_admin_apply_dry_run_and_apply(self) -> None:
+        # Seed current graph and staged changeset.
+        self.collection.add_node(
+            defs.Standard(
+                name="ASVS",
+                section="1.1",
+                sectionID="V1.1.1",
+                description="old",
+            )
+        )
+        run = db.create_import_run(source="admin_apply_test", version="run1")
+        ops = [
+            import_diff.ModifyControl(
+                key=("ASVS", "1.1", "V1.1.1"),
+                before={
+                    "name": "ASVS",
+                    "section": "1.1",
+                    "subsection": "",
+                    "sectionID": "V1.1.1",
+                    "description": "old",
+                },
+                after={
+                    "name": "ASVS",
+                    "section": "1.1",
+                    "subsection": "",
+                    "sectionID": "V1.1.1",
+                    "description": "new",
+                },
+            )
+        ]
+        db.persist_staged_change_set(
+            run_id=run.id,
+            changeset_json=import_diff.change_set_to_json(ops),
+            has_conflicts=False,
+            staging_status="accepted",
+        )
+
+        with self.app.test_client() as c:
+            r = c.post(f"/admin/imports/runs/{run.id}/apply?dry_run=1")
+            self.assertEqual(r.status_code, 200)
+            payload = r.get_json()
+            self.assertTrue(payload["dry_run"])
+            # no mutation on dry-run
+            row = (
+                sqla.session.query(db.Node)
+                .filter(db.Node.name == "ASVS")
+                .filter(db.Node.section == "1.1")
+                .filter(db.Node.section_id == "V1.1.1")
+                .first()
+            )
+            self.assertEqual(row.description, "old")
+
+            r = c.post(f"/admin/imports/runs/{run.id}/apply")
+            self.assertEqual(r.status_code, 200)
+            payload = r.get_json()
+            self.assertEqual(payload["staging_status"], "applied")
+            row = (
+                sqla.session.query(db.Node)
+                .filter(db.Node.name == "ASVS")
+                .filter(db.Node.section == "1.1")
+                .filter(db.Node.section_id == "V1.1.1")
+                .first()
+            )
+            self.assertEqual(row.description, "new")
+
+    @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
+    def test_admin_apply_requires_accepted_status(self) -> None:
+        run = db.create_import_run(source="admin_apply_test", version="run2")
+        db.persist_staged_change_set(
+            run_id=run.id,
+            changeset_json="[]",
+            has_conflicts=False,
+            staging_status="pending_review",
+        )
+        with self.app.test_client() as c:
+            r = c.post(f"/admin/imports/runs/{run.id}/apply")
+            self.assertEqual(r.status_code, 400)
+
+    @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
+    def test_admin_accept_then_apply(self) -> None:
+        self.collection.add_node(
+            defs.Standard(
+                name="ASVS",
+                section="1.1",
+                sectionID="V1.1.1",
+                description="old",
+            )
+        )
+        run = db.create_import_run(source="accept_flow", version="r1")
+        ops = [
+            import_diff.ModifyControl(
+                key=("ASVS", "1.1", "V1.1.1"),
+                before={
+                    "name": "ASVS",
+                    "section": "1.1",
+                    "subsection": "",
+                    "sectionID": "V1.1.1",
+                    "description": "old",
+                },
+                after={
+                    "name": "ASVS",
+                    "section": "1.1",
+                    "subsection": "",
+                    "sectionID": "V1.1.1",
+                    "description": "new",
+                },
+            )
+        ]
+        db.persist_staged_change_set(
+            run_id=run.id,
+            changeset_json=import_diff.change_set_to_json(ops),
+            has_conflicts=False,
+            staging_status="pending_review",
+        )
+        with self.app.test_client() as c:
+            r = c.post(f"/admin/imports/runs/{run.id}/accept")
+            self.assertEqual(r.status_code, 200)
+            r = c.post(
+                f"/admin/imports/runs/{run.id}/apply?skip_post_apply=1",
+            )
+            self.assertEqual(r.status_code, 200)
+
+    @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
+    def test_admin_discard_blocks_apply(self) -> None:
+        run = db.create_import_run(source="discard_flow", version="r1")
+        db.persist_staged_change_set(
+            run_id=run.id,
+            changeset_json="[]",
+            has_conflicts=False,
+            staging_status="pending_review",
+        )
+        with self.app.test_client() as c:
+            self.assertEqual(c.post(f"/admin/imports/runs/{run.id}/discard").status_code, 200)
+            r = c.post(
+                f"/admin/imports/runs/{run.id}/accept",
+            )
+            self.assertEqual(r.status_code, 400)
+            r = c.post(f"/admin/imports/runs/{run.id}/apply")
+            self.assertEqual(r.status_code, 400)
+
+    @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
+    def test_admin_impact_endpoint(self) -> None:
+        run = db.create_import_run(source="impact", version="r1")
+        db.persist_staged_change_set(
+            run_id=run.id,
+            changeset_json=import_diff.change_set_to_json(
+                [
+                    import_diff.AddControl(
+                        key=("X", "s", "id1"),
+                        document={
+                            "name": "X",
+                            "section": "s",
+                            "subsection": "",
+                            "sectionID": "id1",
+                            "description": "d",
+                        },
+                    )
+                ]
+            ),
+            has_conflicts=False,
+        )
+        with self.app.test_client() as c:
+            r = c.get(f"/admin/imports/runs/{run.id}/impact")
+            self.assertEqual(r.status_code, 200)
+            j = r.get_json()
+            self.assertIn("impacted_standard_names", j)
+            self.assertEqual(j["impacted_standard_names"], ["X"])
 
