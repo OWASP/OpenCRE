@@ -56,10 +56,19 @@ def _get_node_for_key(key: Tuple[str, str, str]) -> db.Node | None:
     return q.first()
 
 
-def apply_changeset(*, run_id: str, dry_run: bool = False) -> ApplyResult:
+def apply_changeset(
+    *,
+    run_id: str,
+    dry_run: bool = False,
+    db_connection_str: str = "",
+    run_post_apply_effects: bool = False,
+) -> ApplyResult:
     cs = db.get_staged_change_set(run_id=run_id)
     if not cs:
         raise ApplyError(f"No staged change set for run_id={run_id}")
+
+    if cs.staging_status == "discarded":
+        raise ApplyError(f"Run {run_id} was discarded and cannot be applied")
 
     if cs.has_conflicts:
         raise ApplyConflict(f"Run {run_id} has conflicts and cannot be applied")
@@ -159,6 +168,13 @@ def apply_changeset(*, run_id: str, dry_run: bool = False) -> ApplyResult:
         cs.apply_error = None
         sqla.session.add(cs)
         sqla.session.commit()
+        if run_post_apply_effects and db_connection_str and touched:
+            from application.utils import import_post_apply
+
+            import_post_apply.run_post_apply(
+                db_connection_str=db_connection_str,
+                touched_standard_names=[k[0] for k in touched],
+            )
         return ApplyResult(
             run_id=run_id,
             dry_run=False,
