@@ -31,6 +31,8 @@ def create_app(mode: str = "production", conf: any = None) -> Any:
         app.config.from_object(config[mode])
     else:
         app.config.from_object(conf)
+    if os.environ.get("SQLALCHEMY_DATABASE_URI"):
+        app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("SQLALCHEMY_DATABASE_URI")
     GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET")
     app.secret_key = GOOGLE_CLIENT_SECRET
     if os.environ.get("NO_LOGIN"):

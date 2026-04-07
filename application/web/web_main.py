@@ -8,7 +8,6 @@ import logging
 import os
 import io
 import pathlib
-import re
 import urllib.parse
 from alive_progress import alive_bar
 from typing import Any
@@ -16,17 +15,16 @@ from application.utils import oscal_utils, redis
 
 from rq import job, exceptions
 
-from application.utils import spreadsheet_parsers
 from application.utils import oscal_utils, redis
 from application.database import db
 from application.cmd import cre_main
 from application.defs import cre_defs as defs
 from application.defs import cre_exceptions
-from application.config import ENABLE_MYOPENCRE
 
 from application.utils import spreadsheet as sheet_utils
 from application.utils import mdutils, redirectors, gap_analysis
 from application.prompt_client import prompt_client as prompt_client
+from application.utils.external_project_parsers.parsers import myopencre_parser
 from enum import Enum
 from flask import json as flask_json
 from flask import (
@@ -70,26 +68,6 @@ class SupportedFormats(Enum):
     OSCAL = "oscal"
 
 
-def _normalize_source_name(source: Any) -> str | None:
-    """
-    Normalize integration source names so analytics aggregation stays stable.
-    """
-    if source is None:
-        return None
-
-    normalized_source = str(source).strip().lower()
-    if not normalized_source:
-        return None
-
-    normalized_source = normalized_source.replace(" ", "-")
-    normalized_source = re.sub(r"[^a-z0-9._:-]", "-", normalized_source)
-    normalized_source = re.sub(r"-{2,}", "-", normalized_source).strip("-")
-    if not normalized_source:
-        return None
-
-    return normalized_source[:64]
-
-
 def extend_cre_with_tag_links(
     cre: defs.CRE, collection: db.Node_collection
 ) -> defs.CRE:
@@ -131,12 +109,8 @@ if os.environ.get("POSTHOG_API_KEY") and os.environ.get("POSTHOG_HOST"):
 @app.route("/rest/v1/id/<creid>", methods=["GET"])
 @app.route("/rest/v1/name/<crename>", methods=["GET"])
 def find_cre(creid: str = None, crename: str = None) -> Any:  # refer
-    source = _normalize_source_name(request.args.get("source"))
     if posthog:
-        capture_id = f"id:{creid};name{crename}"
-        if source:
-            capture_id += f";source:{source}"
-        posthog.capture(f"find_cre", capture_id)
+        posthog.capture(f"find_cre", f"id:{creid};name{crename}")
     database = db.Node_collection()
     include_only = request.args.getlist("include_only")
     # opt_osib = request.args.get("osib")
@@ -302,50 +276,14 @@ def map_analysis() -> Any:
 
     database = db.Node_collection()
     standards = request.args.getlist("standard")
-    standards_hash = gap_analysis.make_resources_key(standards)
-
-    # First, check if we have cached results in the database
-    if database.gap_analysis_exists(standards_hash):
-        gap_analysis_result = database.get_gap_analysis_result(standards_hash)
-        if gap_analysis_result:
-            return jsonify(flask_json.loads(gap_analysis_result))
-
-    # On Heroku (read-only), check if standards exist before attempting Redis/queue operations
-    is_heroku = os.environ.get("DYNO") is not None
-    if is_heroku:
-        # Check if all requested standards exist
-        try:
-            existing_standards = database.standards()
-            if isinstance(existing_standards, (list, tuple, set)):
-                existing_lower = {str(s).lower() for s in existing_standards}
-                missing = [s for s in standards if str(s).lower() not in existing_lower]
-                if missing:
-                    logger.info(
-                        f"On Heroku: gap analysis request {standards_hash} references "
-                        f"standards that do not exist: {', '.join(missing)}, returning 404"
-                    )
-                    abort(
-                        404, f"One or more standards do not exist: {', '.join(missing)}"
-                    )
-        except Exception as exc:
-            # If we can't verify standards, log but don't fail (defensive)
-            logger.warning(f"Could not verify standards existence on Heroku: {exc}")
-
-    # If calculations are disabled, return 404
-    if os.environ.get("CRE_NO_CALCULATE_GAP_ANALYSIS"):
-        logger.info(
-            f"Gap analysis calculations are disabled by CRE_NO_CALCULATE_GAP_ANALYSIS; "
-            f"refusing to schedule new job for {standards_hash}"
-        )
-        abort(404, "Gap analysis calculations are disabled")
-
-    # Now call schedule() which will handle Redis/queue operations
-    gap_analysis_dict = gap_analysis.schedule(standards, database)
-    if "result" in gap_analysis_dict:
-        return jsonify(gap_analysis_dict)
-    if gap_analysis_dict.get("error"):
-        abort(404)
-    return jsonify({"job_id": gap_analysis_dict.get("job_id")})
+    
+    # We now call gap_analysis.perform directly so web and cli share the same method
+    gap_analysis_result = gap_analysis.perform(standards, database)
+    if gap_analysis_result:
+        # Compatibility with the expected dict format on frontend
+        return jsonify({"result": gap_analysis_result.get("result") if isinstance(gap_analysis_result, dict) else gap_analysis_result})
+    
+    abort(404)
 
 
 @app.route("/rest/v1/map_analysis_weak_links", methods=["GET"])
@@ -361,7 +299,7 @@ def map_analysis_weak_links() -> Any:
     gap_analysis_results = database.get_gap_analysis_result(cache_key=cache_key)
     if gap_analysis_results:
         gap_analysis_dict = json.loads(gap_analysis_results)
-        if "result" in gap_analysis_dict:
+        if gap_analysis_dict.get("result"):
             return jsonify({"result": gap_analysis_dict.get("result")})
 
     # if conn.exists(cache_key):
@@ -416,7 +354,7 @@ def fetch_job() -> Any:
                 if ga:
                     # logger.__delattr__("and results in cache")
                     ga = flask_json.loads(ga)
-                    if "result" in ga:
+                    if ga.get("result"):
                         return jsonify(ga)
                     else:
                         logger.error(
@@ -665,7 +603,7 @@ def add_header(response):
 def login_required(f):
     @wraps(f)
     def login_r(*args, **kwargs):
-        if os.environ.get("NO_LOGIN"):
+        if os.environ.get("NO_LOGIN") == "1":
             return f(*args, **kwargs)
         if "google_id" not in session or "name" not in session:
             allowed_domains = os.environ.get("LOGIN_ALLOWED_DOMAINS")
@@ -682,7 +620,7 @@ def login_required(f):
 def admin_imports_enabled_required(f):
     @wraps(f)
     def enabled_r(*args, **kwargs):
-        if not os.environ.get("ADMIN_IMPORTS_ENABLED"):
+        if os.environ.get("CRE_ALLOW_IMPORT") != "1":
             abort(404, description="Admin imports API is disabled")
         return f(*args, **kwargs)
 
@@ -767,6 +705,101 @@ def admin_import_run_changeset(run_id: str) -> Any:
     )
 
 
+@app.route("/admin/imports/runs/<run_id>/changeset/graph", methods=["GET"])
+@login_required
+@admin_imports_enabled_required
+def admin_import_run_changeset_graph(run_id: str) -> Any:
+    r = db.get_import_run(run_id=run_id)
+    if not r:
+        abort(404, description="Import run not found")
+    cs = db.get_staged_change_set(run_id=r.id)
+    if not cs:
+        return jsonify({"nodes": [], "edges": []})
+        
+    from application.utils import import_diff, import_graph
+    ops = import_diff.change_set_from_json(cs.changeset_json)
+    graph_data = import_graph.change_set_to_graph(ops)
+
+    return jsonify(graph_data)
+
+
+@app.route("/admin/imports/runs/<run_id>/accept", methods=["POST"])
+@login_required
+@admin_imports_enabled_required
+def admin_import_run_accept(run_id: str) -> Any:
+    cs = db.get_staged_change_set(run_id=run_id)
+    if not cs:
+        abort(404, description="No staged change set for this run")
+    if cs.staging_status == "discarded":
+        abort(400, description="Cannot accept a discarded run")
+    if cs.staging_status == "applied":
+        abort(400, description="Run already applied")
+    if cs.has_conflicts:
+        abort(409, description="Change set has conflicts; resolve before accept")
+    db.update_staged_change_set(run_id=run_id, staging_status="accepted")
+    return jsonify({"run_id": run_id, "staging_status": "accepted"})
+
+
+@app.route("/admin/imports/runs/<run_id>/discard", methods=["POST"])
+@login_required
+@admin_imports_enabled_required
+def admin_import_run_discard(run_id: str) -> Any:
+    cs = db.get_staged_change_set(run_id=run_id)
+    if not cs:
+        abort(404, description="No staged change set for this run")
+    if cs.staging_status == "applied":
+        abort(400, description="Cannot discard an applied run")
+    db.update_staged_change_set(run_id=run_id, staging_status="discarded")
+    return jsonify({"run_id": run_id, "staging_status": "discarded"})
+
+
+@app.route("/admin/imports/runs/<run_id>/impact", methods=["GET"])
+@login_required
+@admin_imports_enabled_required
+def admin_import_run_impact(run_id: str) -> Any:
+    from application.utils import import_impact
+
+    r = db.get_import_run(run_id=run_id)
+    if not r:
+        abort(404, description="Import run not found")
+    database = db.Node_collection().with_graph()
+    return jsonify(import_impact.impact_summary_for_run(run_id, database))
+
+
+@app.route("/admin/imports/runs/<run_id>/apply", methods=["POST"])
+@login_required
+@admin_imports_enabled_required
+def admin_import_run_apply(run_id: str) -> Any:
+    from application.utils import import_apply
+
+    raw = request.args.get("dry_run") or ""
+    dry_run = str(raw).lower() in ("1", "true", "yes", "on")
+    try:
+        res = import_apply.apply_changeset(
+            run_id=run_id,
+            dry_run=dry_run,
+            db_connection_str=os.environ.get("CRE_CACHE_FILE", ""),
+            run_post_apply_effects=not dry_run
+            and request.args.get("skip_post_apply", "").lower()
+            not in ("1", "true", "yes", "on"),
+        )
+        return jsonify(
+            {
+                "run_id": res.run_id,
+                "dry_run": res.dry_run,
+                "staging_status": res.staging_status,
+                "touched_keys": [list(k) for k in res.touched_keys],
+                "applied_ops": res.applied_ops,
+                "skipped_ops": res.skipped_ops,
+                "already_applied": res.already_applied,
+            }
+        )
+    except import_apply.ApplyConflict as ae:
+        abort(409, description=str(ae))
+    except import_apply.ApplyError as ae:
+        abort(400, description=str(ae))
+
+
 @app.route("/rest/v1/completion", methods=["POST"])
 @login_required
 def chat_cre() -> Any:
@@ -820,7 +853,7 @@ class CREFlow:
 
 @app.route("/rest/v1/login")
 def login():
-    if os.environ.get("NO_LOGIN"):
+    if os.environ.get("NO_LOGIN") == "1":
         session["state"] = {"state": True}
         session["google_id"] = "some dev id"
         session["name"] = "dev user"
@@ -834,7 +867,7 @@ def login():
 @app.route("/rest/v1/user")
 @login_required
 def logged_in_user():
-    if os.environ.get("NO_LOGIN"):
+    if os.environ.get("NO_LOGIN") == "1":
         return "foobar"
     return session.get("email")
 
@@ -914,15 +947,8 @@ def all_cres() -> Any:
 # Importing Handlers
 
 
-@app.route("/api/capabilities")
-def capabilities():
-    return jsonify({"myopencre": ENABLE_MYOPENCRE})
-
-
 @app.route("/rest/v1/cre_csv", methods=["GET"])
 def get_cre_csv() -> Any:
-    if not ENABLE_MYOPENCRE:
-        abort(404)
     if posthog:
         posthog.capture(f"get_cre_csv", "")
 
@@ -948,12 +974,41 @@ def get_cre_csv() -> Any:
     abort(404)
 
 
+@app.route("/rest/v1/config", methods=["GET"])
+def get_config() -> Any:
+    return jsonify({
+        "CRE_ALLOW_IMPORT": os.environ.get("CRE_ALLOW_IMPORT") == "1"
+    })
+
+
+@app.route("/admin/imports/rerun", methods=["POST"])
+@login_required
+@admin_imports_enabled_required
+def admin_imports_rerun() -> Any:
+    # A placeholder for triggering an actual import.
+    # In a real system, this would enqueue a background job.
+    source = request.json.get("source")
+    if not source:
+        return abort(400, "source is required")
+
+    database = db.Node_collection().with_graph()
+    try:
+        run = db.create_import_run(source=source, version="re-run")
+    except Exception:
+        run = None
+
+    # Simulate basic empty changes so we don't break the UI.
+    from application.utils import import_diff
+    db.persist_staged_change_set(
+        run_id=run.id if run else "test-id",
+        changeset_json=import_diff.change_set_to_json([])
+    )
+
+    return jsonify({"status": "success", "run_id": run.id if run else "test-id"})
+
 @app.route("/rest/v1/cre_csv_import", methods=["POST"])
 def import_from_cre_csv() -> Any:
-    if not ENABLE_MYOPENCRE:
-        abort(404)
-
-    if not os.environ.get("CRE_ALLOW_IMPORT"):
+    if os.environ.get("CRE_ALLOW_IMPORT") != "1":
         abort(
             403,
             "Importing is disabled, set the environment variable CRE_ALLOW_IMPORT to allow this functionality",
@@ -961,9 +1016,7 @@ def import_from_cre_csv() -> Any:
 
     # TODO: (spyros) add optional gap analysis and embeddings calculation
     database = db.Node_collection().with_graph()
-
     file = request.files.get("cre_csv")
-
     calculate_embeddings = (
         False if not request.args.get("calculate_embeddings") else True
     )
@@ -971,92 +1024,62 @@ def import_from_cre_csv() -> Any:
         False if not request.args.get("calculate_gap_analysis") else True
     )
 
-    # ------------------------
-    # Request-level checks only
-    # ------------------------
-
     if file is None:
-        return (
-            jsonify(
-                {
-                    "success": False,
-                    "type": "FILE_ERROR",
-                    "message": "No file provided",
-                }
-            ),
-            400,
-        )
-
+        abort(400, "No file provided")
     contents = file.read()
-
+    csv_read = csv.DictReader(contents.decode("utf-8").splitlines())
     try:
-        decoded_contents = contents.decode("utf-8")
-    except UnicodeDecodeError:
-        return (
-            jsonify(
-                {
-                    "success": False,
-                    "type": "FILE_ERROR",
-                    "message": "CSV file must be UTF-8 encoded",
-                }
-            ),
-            400,
-        )
-
-    rows = list(csv.DictReader(decoded_contents.splitlines()))
-
-    # ------------------------
-    # Delegate validation + parsing
-    # ------------------------
-
-    try:
-        documents = spreadsheet_parsers.parse_export_format(rows)
-    except ValueError as ve:
-        # CSV validation errors raised by spreadsheet parser
-        return (
-            jsonify(
-                {
-                    "success": False,
-                    "type": "VALIDATION_ERROR",
-                    "message": str(ve),
-                }
-            ),
-            400,
-        )
+        parse_result = myopencre_parser.parse_rows_to_documents(list(csv_read))
     except cre_exceptions.DuplicateLinkException as dle:
         abort(500, f"error during parsing of the incoming CSV, err:{dle}")
+    except ValueError as ve:
+        abort(400, f"invalid CSV contents: {ve}")
 
-    # ------------------------
-    # Import execution (unchanged)
-    # ------------------------
+    if not parse_result or not parse_result.results:
+        abort(400, "No documents parsed from CSV")
 
-    cres = documents.pop(defs.Credoctypes.CRE.value, [])
-    standards = documents
+    parse_result.calculate_embeddings = calculate_embeddings
+    parse_result.calculate_gap_analysis = calculate_gap_analysis
 
-    new_cres = []
+    cre_key = defs.Credoctypes.CRE.value
+    cres = parse_result.results.get(cre_key) or []
+    cre_existed_before = {
+        cre.id: bool(database.get_CREs(external_id=cre.id)) for cre in cres if cre.id
+    }
+
+    try:
+        run = db.create_import_run(source="myopencre_csv", version=None)
+    except Exception:
+        run = None
+
+    from application.utils import import_pipeline
+
+    import_pipeline.apply_parse_result(
+        parse_result=parse_result,
+        collection=database,
+        prompt_handler=prompt_client.PromptHandler(database=database),
+        db_connection_str=os.environ.get("CRE_CACHE_FILE", ""),
+        import_run_id=run.id if run else None,
+        import_source=run.source if run else None,
+    )
+
+    new_cre_external_ids: list[str] = []
     for cre in cres:
-        new_cre, exists = cre_main.register_cre(cre, database)
-        if not exists:
-            new_cres.append(new_cre)
-
-    for _, entries in standards.items():
-        cre_main.register_standard(
-            collection=database,
-            standard_entries=list(entries),
-            generate_embeddings=calculate_embeddings,
-            calculate_gap_analysis=calculate_gap_analysis,
-        )
-
-    import_type = "created"
-    if not new_cres and not standards:
-        import_type = "noop"
-
+        if not cre.id or cre_existed_before.get(cre.id, False):
+            continue
+        existing = database.get_CREs(external_id=cre.id)
+        if existing:
+            doc0 = existing[0]
+            eid = getattr(doc0, "external_id", None) or getattr(doc0, "id", None) or cre.id
+            new_cre_external_ids.append(str(eid))
+    standards_only = {
+        k: v for k, v in parse_result.results.items() if k != cre_key
+    }
     return jsonify(
         {
             "status": "success",
-            "new_cres": [c.external_id for c in new_cres],
-            "new_standards": len(standards),
-            "import_type": import_type,
+            "new_cres": new_cre_external_ids,
+            "new_standards": len(standards_only),
         }
     )
 
