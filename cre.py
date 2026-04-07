@@ -4,6 +4,14 @@ import sys
 import unittest
 from typing import List
 
+# NEW: load .env automatically for local development
+try:
+    from dotenv import load_dotenv  # type: ignore
+
+    load_dotenv()
+except ImportError:
+    pass
+
 import click  # type: ignore
 import coverage  # type: ignore
 from flask_migrate import Migrate  # type: ignore

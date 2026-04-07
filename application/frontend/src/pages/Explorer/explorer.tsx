@@ -2,7 +2,7 @@ import './explorer.scss';
 
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { List } from 'semantic-ui-react';
+import { Checkbox, List, Popup } from 'semantic-ui-react';
 
 import { LoadingAndErrorIndicator } from '../../components/LoadingAndErrorIndicator';
 import { TYPE_CONTAINS, TYPE_LINKED_TO } from '../../const';
@@ -10,13 +10,16 @@ import { useDataStore } from '../../providers/DataProvider';
 import { LinkedTreeDocument, TreeDocument } from '../../types';
 import { getDocumentDisplayName } from '../../utils';
 import { getInternalUrl } from '../../utils/document';
+import { GraphDebugPanel } from './GraphDebugPanel';
 import { LinkedStandards } from './LinkedStandards';
 
 export const Explorer = () => {
-  const { dataLoading, dataTree } = useDataStore();
+  const { dataLoading, dataTree, dataStore } = useDataStore();
   const [loading, setLoading] = useState<boolean>(false);
   const [filter, setFilter] = useState('');
   const [filteredTree, setFilteredTree] = useState<TreeDocument[]>();
+  const [debugMode, setDebugMode] = useState<boolean>(false);
+
   const applyHighlight = (text, term) => {
     if (!term) return text;
     let index = text.toLowerCase().indexOf(term);
@@ -48,12 +51,11 @@ export const Explorer = () => {
     }
 
     if (filterFunc(doc, term) || doc.links?.length) {
-      return doc; // Return the document if it or any of its children (links or standards) matches the term
+      return doc;
     }
-    return null; // Return null if the document and its descendants do not match the term
+    return null;
   };
 
-  //accordion
   const [collapsedItems, setCollapsedItems] = useState<string[]>([]);
   const isCollapsed = (id: string) => collapsedItems.includes(id);
   const toggleItem = (id: string) => {
@@ -93,7 +95,6 @@ export const Explorer = () => {
 
     const contains = item.links.filter((x) => x.ltype === TYPE_CONTAINS);
     const linkedTo = item.links.filter((x) => x.ltype === TYPE_LINKED_TO);
-
     const creCode = item.id;
     const creName = item.displayName.split(' : ').pop();
     return (
@@ -158,17 +159,27 @@ export const Explorer = () => {
                 <a href="/explorer/circles">Zoomable circles</a>
               </li>
             </ul>
-            {/* <a target="_blank" rel="noopener noreferrer" href="visuals/force-graph-3d-contains.html">
-              hierarchy only
-            </a>
-            <a target="_blank" rel="noopener noreferrer" href="visuals/force-graph-3d-related.html">
-              related only
-            </a>
-            <a target="_blank" rel="noopener noreferrer" href="visuals/force-graph-3d-linked.html">
-              links to external standards
-            </a>*/}
+          </div>
+          <div id="debug-toggle" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Checkbox
+              toggle
+              label="Debug mode"
+              checked={debugMode}
+              onChange={() => setDebugMode(!debugMode)}
+            />
+            <Popup
+               content="Debug mode shows graph connectivity stats and link type details for each CRE node."
+            trigger={
+               <span style={{ cursor: 'help', color: '#666', fontSize: '14px', border: '1px solid #666', borderRadius: '50%', padding: '0 4px', fontWeight: 'bold' }}>
+                ?
+               </span>
+              }
+            />
           </div>
         </div>
+
+        {debugMode && <GraphDebugPanel dataStore={dataStore} />}
+
         <LoadingAndErrorIndicator loading={loading} error={null} />
         <List>
           {filteredTree?.map((item) => {

@@ -1,6 +1,25 @@
 main#explorer-content {
   padding: 30px;
   margin: var(--header-height) 0;
+  color: #f7fafc;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  p,
+  label,
+  .menu-title {
+    color: #1a202c;
+  }
+
+  a {
+    color: #0056b3;
+  }
 
   .search-field {
     input {
@@ -11,15 +30,19 @@ main#explorer-content {
       border-radius: 3px;
       border: 1px solid #858585;
       padding: 0 5px;
+      color: #333333;
+      background-color: #ffffff;
     }
   }
 
   #graphs-menu {
     display: flex;
     margin-bottom: 20px;
+
     .menu-title {
       margin: 0 10px 0 0;
     }
+
     ul {
       list-style: none;
       padding: 0;
@@ -27,11 +50,14 @@ main#explorer-content {
       display: flex;
       font-size: 15px;
     }
+
     li {
       padding: 0 8px;
-      + li {
+
+      +li {
         border-left: 1px solid #b1b0b0;
       }
+
       &:first-child {
         padding-left: 0;
       }
@@ -47,11 +73,13 @@ main#explorer-content {
     .icon {
       transform: rotate(-90deg);
     }
+
     &.active {
       .icon {
         transform: rotate(0);
       }
     }
+
     &:hover {
       cursor: pointer;
     }
@@ -77,7 +105,7 @@ main#explorer-content {
       align-items: center;
       vertical-align: middle;
 
-      > a {
+      >a {
         font-size: 120%;
         line-height: 30px;
         font-weight: bold;
@@ -98,9 +126,10 @@ main#explorer-content {
 
   .highlight {
     background-color: yellow;
+    color: #000000;
   }
 
-  > .list > .item {
+  >.list>.item {
     margin-left: 0;
   }
 }
@@ -110,18 +139,27 @@ main#explorer-content {
     flex-direction: column;
   }
 }
+
+#debug-toggle {
+  margin-top: 10px;
+  margin-bottom: 4px;
+}
+
 @media (max-width: 768px) {
   main#explorer-content {
-    padding: 1rem; /* Reduce from 30px to prevent content touching edges */
+    padding: 1rem;
+    /* Reduce from 30px to prevent content touching edges */
 
     .search-field {
       input {
-        width: 100%; /* Expand from fixed 320px - overflows on small screens */
+        width: 100%;
+        /* Expand from fixed 320px - overflows on small screens */
       }
     }
 
     .item {
-      margin: 4px 4px 4px 1rem; /* Reduce from 40px left margin on mobile */
+      margin: 4px 4px 4px 1rem;
+      /* Reduce from 40px left margin on mobile */
     }
   }
 }
