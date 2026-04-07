@@ -118,3 +118,44 @@ class TestImportStaging(unittest.TestCase):
         self.assertEqual(len(ops), 1)
         self.assertEqual(ops[0].op, "modify_control")
 
+    def test_manual_edit_sets_has_conflicts(self) -> None:
+        run1 = db.create_import_run(source="test_phase2", version="m1")
+        pr1 = base_parser_defs.ParseResult(
+            results={"ASVS": [self._std("synced")]},
+            calculate_gap_analysis=False,
+            calculate_embeddings=False,
+        )
+        import_pipeline.apply_parse_result(
+            parse_result=pr1,
+            collection=self.collection,
+            import_run_id=run1.id,
+            import_source=run1.source,
+        )
+        row = (
+            sqla.session.query(db.Node)
+            .filter(db.Node.name == "ASVS")
+            .filter(db.Node.section == "1.1")
+            .filter(db.Node.section_id == "V1.1.1")
+            .first()
+        )
+        self.assertIsNotNone(row)
+        row.description = "edited_out_of_band"
+        sqla.session.add(row)
+        sqla.session.commit()
+
+        run2 = db.create_import_run(source="test_phase2", version="m2")
+        pr2 = base_parser_defs.ParseResult(
+            results={"ASVS": [self._std("from_upstream")]},
+            calculate_gap_analysis=False,
+            calculate_embeddings=False,
+        )
+        import_pipeline.apply_parse_result(
+            parse_result=pr2,
+            collection=self.collection,
+            import_run_id=run2.id,
+            import_source=run2.source,
+        )
+        cs = db.get_staged_change_set(run_id=run2.id)
+        self.assertIsNotNone(cs)
+        self.assertTrue(cs.has_conflicts)
+

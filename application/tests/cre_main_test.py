@@ -36,16 +36,17 @@ class TestMain(unittest.TestCase):
         self.collection = db.Node_collection()
 
     @patch.object(main, "populate_neo4j_db")
-    @patch.object(main.gap_analysis, "schedule")
+    @patch.object(main.gap_analysis, "perform")
     @patch.object(redis, "connect")
     @patch.object(main, "register_node")
     def test_register_standard_skips_ga_for_tool_entries(
-        self, register_node_mock, redis_connect_mock, schedule_mock, populate_neo4j_mock
+        self, register_node_mock, redis_connect_mock, ga_mock, populate_neo4j_mock
     ) -> None:
         """
         Step 3 rule: GA should not run for Tool/Code resources.
+        Regression test: Ensure that gap analysis is centralized and not delegated downwards.
         """
-        redis_connect_mock.return_value = Mock(get=Mock(return_value=None), set=Mock())
+        redis_connect_mock.return_value = None
         tool_entry = defs.Tool(
             name="Tool Resource",
             description="test tool",
@@ -60,28 +61,25 @@ class TestMain(unittest.TestCase):
         )
 
         populate_neo4j_mock.assert_not_called()
-        schedule_mock.assert_not_called()
+        ga_mock.assert_not_called()
 
     @patch.object(main, "populate_neo4j_db")
-    @patch.object(main.gap_analysis, "schedule")
-    @patch.object(redis, "wait_for_jobs")
+    @patch.object(main.gap_analysis, "perform")
     @patch.object(redis, "connect")
-    @patch.object(job.Job, "fetch")
     @patch.object(main, "register_node")
     def test_register_standard_skips_ga_for_taxonomy_standard(
         self,
         register_node_mock,
-        job_fetch_mock,
         redis_connect_mock,
-        wait_for_jobs_mock,
-        schedule_mock,
+        ga_mock,
         populate_neo4j_mock,
     ) -> None:
         """
         Step 3 minimal behavior: GA is skipped for taxonomy-like Standard entries
         because required GA tags are missing.
+        Regression test: Ensure that gap analysis is centralized and not delegated downwards.
         """
-        redis_connect_mock.return_value = Mock(get=Mock(return_value=None), set=Mock())
+        redis_connect_mock.return_value = None
         # Ensure there is another standard to compare against.
         self.collection.standards = Mock(return_value=["CWE", "ASVS"])  # type: ignore[method-assign]
 
@@ -100,28 +98,27 @@ class TestMain(unittest.TestCase):
         )
 
         populate_neo4j_mock.assert_not_called()
-        schedule_mock.assert_not_called()
-        job_fetch_mock.assert_not_called()
+        ga_mock.assert_not_called()
 
     @patch.object(main, "populate_neo4j_db")
-    @patch.object(main.gap_analysis, "schedule")
-    @patch.object(redis, "wait_for_jobs")
+    @patch.object(main.gap_analysis, "perform")
     @patch.object(redis, "connect")
-    @patch.object(job.Job, "fetch")
     @patch.object(main, "register_node")
     def test_register_standard_skips_missing_ga_job_id_without_crashing(
         self,
         register_node_mock,
-        job_fetch_mock,
         redis_connect_mock,
-        wait_for_jobs_mock,
-        schedule_mock,
+        ga_mock,
         populate_neo4j_mock,
     ) -> None:
+        """
+        Regression test: Ensure that gap analysis is centralized and not delegated downwards.
+        Since we no longer delegate jobs to RQ for GA during importing, skipping missing job IDs is irrelevant.
+        Instead, we just test that ga_mock is called and doesn't crash on mocked errors if any.
+        """
         redis_connect_mock.return_value = Mock(get=Mock(return_value=None), set=Mock())
-        # Simulate intermittent scheduler failure returning no job_id.
-        schedule_mock.return_value = {"error": 404}
         self.collection.standards = Mock(return_value=["CWE", "ASVS"])  # type: ignore[method-assign]
+        self.collection.gap_analysis_exists = Mock(return_value=False)
         # Ensure DB structure changes so incremental-GA doesn't short-circuit.
         register_node_mock.side_effect = (
             lambda node, collection: collection.add_node(node)  # type: ignore[no-any-return]
@@ -143,33 +140,27 @@ class TestMain(unittest.TestCase):
         )
 
         populate_neo4j_mock.assert_called_once()
-        self.assertTrue(schedule_mock.called)
-        job_fetch_mock.assert_not_called()
+        self.assertTrue(ga_mock.called)
 
     @patch.object(main, "populate_neo4j_db")
-    @patch.object(main.gap_analysis, "schedule")
-    @patch.object(redis, "wait_for_jobs")
+    @patch.object(main.gap_analysis, "perform")
     @patch.object(redis, "connect")
-    @patch.object(job.Job, "fetch")
     @patch.object(main, "register_node")
     def test_register_standard_runs_ga_for_requirements_standard(
         self,
         register_node_mock,
-        job_fetch_mock,
         redis_connect_mock,
-        wait_for_jobs_mock,
-        schedule_mock,
+        ga_mock,
         populate_neo4j_mock,
     ) -> None:
         """
         Step 3b minimal behavior: GA runs for GA-eligible Standard entries
         (family:standard + subtype:requirements_standard).
+        Regression test: Ensure that gap analysis is centralized and not delegated downwards.
         """
         redis_connect_mock.return_value = Mock(get=Mock(return_value=None), set=Mock())
-        schedule_mock.return_value = {"job_id": "ga-job-1"}
-        job_fetch_mock.return_value = Mock()
-
         self.collection.standards = Mock(return_value=["CWE", "ASVS"])  # type: ignore[method-assign]
+        self.collection.gap_analysis_exists = Mock(return_value=False)
         # Ensure DB structure changes so incremental-GA doesn't short-circuit.
         register_node_mock.side_effect = (
             lambda node, collection: collection.add_node(node)  # type: ignore[no-any-return]
@@ -190,8 +181,9 @@ class TestMain(unittest.TestCase):
         )
 
         populate_neo4j_mock.assert_called_once()
-        self.assertTrue(schedule_mock.called)
-        self.assertTrue(job_fetch_mock.called)
+        self.assertTrue(ga_mock.called)
+        # It should run GA for CWE vs ASVS and ASVS vs CWE
+        self.assertEqual(ga_mock.call_count, 2)
 
     def test_register_node_with_links(self) -> None:
         standard_with_links = defs.Standard(
@@ -729,7 +721,7 @@ class TestMain(unittest.TestCase):
         mocked_prepare_for_review.assert_called_with(cache)
         mocked_db_connect.assert_called_with(path=cache)
         mocked_parse_standards_from_spreadsheeet.assert_called_with(
-            [{"cre": "cre"}], self.collection, mocked_ai_client_init.return_value
+            [{"cre": "cre"}], cache, mocked_ai_client_init.return_value
         )
         # mocked_export.assert_called_with(loc) #we don't export anymore
 
@@ -813,7 +805,12 @@ class TestMain(unittest.TestCase):
 
         mocked_db_connect.assert_called_with(path=cache)
         mocked_parse_file.assert_called_with(
-            filename=yml, yamldocs=[], scollection=self.collection
+            filename=yml,
+            yamldocs=[],
+            scollection=self.collection,
+            db_connection_str=cache,
+            calculate_embeddings=True,
+            calculate_gap_analysis=True,
         )
         # mocked_export.assert_called_with(dir) # we don't export anymore
 
