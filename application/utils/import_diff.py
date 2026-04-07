@@ -154,13 +154,24 @@ def diff_to_change_set(diff: StandardDiff) -> List[ChangeSetOp]:
 
 def _standard_to_dict(std: defs.Standard) -> Dict[str, Any]:
     """Serialize Standard to JSON-suitable dict."""
-    return {
+    d = {
         "name": std.name,
         "section": getattr(std, "section", ""),
         "subsection": getattr(std, "subsection", ""),
         "sectionID": getattr(std, "sectionID", ""),
         "description": getattr(std, "description", ""),
     }
+    linked_cres = []
+    for link in getattr(std, "links", []):
+        doc = getattr(link, "document", None)
+        if doc and getattr(doc, "doctype", None) == defs.Credoctypes.CRE:
+            linked_cres.append({
+                "id": getattr(doc, "id", ""),
+                "name": getattr(doc, "name", ""),
+            })
+    if linked_cres:
+        d["linked_cres"] = linked_cres
+    return d
 
 
 def change_set_to_json(ops: List[ChangeSetOp]) -> str:
@@ -237,3 +248,36 @@ def detect_conflicts(
 def has_conflicts(ops: List[ChangeSetOp], manually_edited_keys: Set[Tuple[str, str, str]]) -> bool:
     """True if any op would conflict with manual edits."""
     return len(detect_conflicts(ops, manually_edited_keys)) > 0
+
+
+def live_standard_defs_for_resource(collection: Any, standard_name: str) -> List[defs.Standard]:
+    """Load current main-graph Standard defs for one resource name (for staging conflicts)."""
+    rows = collection.get_nodes(name=standard_name) or []
+    out: List[defs.Standard] = []
+    for n in rows:
+        if isinstance(n, defs.Standard):
+            out.append(n)
+    return out
+
+
+def impacted_standard_names_from_ops(ops: List[ChangeSetOp]) -> Set[str]:
+    return {str(op.key[0]) for op in ops if op.key and len(op.key) > 0}
+
+
+def impacted_cre_external_ids_for_standards(collection: Any, standard_names: Set[str]) -> Set[str]:
+    """CRE external ids linked to any node under the given standard names."""
+    ids: Set[str] = set()
+    for name in standard_names:
+        for node in collection.get_nodes(name=name) or []:
+            for link in getattr(node, "links", None) or []:
+                doc = getattr(link, "document", None)
+                if doc is None:
+                    continue
+                dt = getattr(doc, "doctype", None)
+                val = dt.value if hasattr(dt, "value") else str(dt)
+                if val != defs.Credoctypes.CRE.value:
+                    continue
+                eid = getattr(doc, "id", None) or ""
+                if eid:
+                    ids.add(eid)
+    return ids

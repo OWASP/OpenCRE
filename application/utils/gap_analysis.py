@@ -1,7 +1,6 @@
 import requests
 import time
 import logging
-from rq import Queue, job, exceptions
 from typing import List, Dict
 from application.utils import redis
 from flask import json as flask_json
@@ -59,53 +58,42 @@ def get_next_id(step, previous_id):
     return step["start"].id
 
 
-# database is of type Node_collection, cannot annotate due to circular import
-def schedule(standards: List[str], database):
+def perform(standards: List[str], database):
     from application.database import db
 
     standards_hash = make_resources_key(standards)
-    if database.gap_analysis_exists(
-        standards_hash
-    ):  # easiest, it's been calculated and cached, get it from the db
-        return flask_json.loads(database.get_gap_analysis_result(standards_hash))
-
-    logger.info(f"Gap analysis result for {standards_hash} does not exist")
-
+    
     conn = redis.connect()
-    gap_analysis_results = conn.get(standards_hash)
-    if (
-        gap_analysis_results
-    ):  # perhaps its calculated but not cached yet, get it from redis
-        gap_analysis_dict = json.loads(gap_analysis_results)
-        if gap_analysis_dict.get("job_id"):
+    lock_key = f"lock:ga:{standards_hash}"
+
+    while True:
+        if database.gap_analysis_exists(standards_hash):
+            res = database.get_gap_analysis_result(standards_hash)
+            return json.loads(res) if isinstance(res, str) else res
+
+        acquired = conn.setnx(lock_key, "1")
+        if acquired:
+            conn.expire(lock_key, 129600)
             try:
-                res = job.Job.fetch(id=gap_analysis_dict.get("job_id"), connection=conn)
-            except exceptions.NoSuchJobError as nje:
-                logger.error(
-                    f"Could not find job id for gap analysis {standards}, this is a bug"
+                logger.info(f"Calculating gap analysis for {standards_hash}")
+                db.gap_analysis(
+                    neo_db=database.neo_db,
+                    node_names=standards,
+                    cache_key=standards_hash
                 )
-                return {"error": 404}
-            if (
-                res.get_status() != job.JobStatus.FAILED
-                and res.get_status() != job.JobStatus.STOPPED
-                and res.get_status() != job.JobStatus.CANCELED
-            ):
-                logger.info(
-                    f'gap analysis job id  {gap_analysis_dict.get("job_id")}, for standards: {standards[0]}>>{standards[1]} already exists, returning early'
-                )
-                return {"job_id": gap_analysis_dict.get("job_id")}
-    q = Queue(connection=conn)
-    gap_analysis_job = q.enqueue_call(
-        db.gap_analysis,
-        kwargs={
-            "neo_db": database.neo_db,
-            "node_names": standards,
-            "cache_key": standards_hash,
-        },
-        timeout=GAP_ANALYSIS_TIMEOUT,
-    )
-    conn.set(standards_hash, json.dumps({"job_id": gap_analysis_job.id, "result": ""}))
-    return {"job_id": gap_analysis_job.id}
+                res = database.get_gap_analysis_result(standards_hash)
+                return json.loads(res) if isinstance(res, str) else res
+            finally:
+                conn.delete(lock_key)
+        else:
+            logger.info(f"Gap analysis for {standards_hash} is being calculated by another worker. Waiting...")
+            time.sleep(10)
+
+
+def schedule(standards: List[str], database):
+    res = perform(standards, database)
+    # the api endpoint returns json.dumps({"result": ...}) or similar. Let's make it compatible.
+    return {"result": res.get("result") if isinstance(res, dict) else res}
 
 
 def preload(target_url: str):
