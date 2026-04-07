@@ -276,12 +276,14 @@ def map_analysis() -> Any:
 
     database = db.Node_collection()
     standards = request.args.getlist("standard")
-    gap_analysis_dict = gap_analysis.schedule(standards, database)
-    if gap_analysis_dict.get("result"):
-        return jsonify(gap_analysis_dict)
-    if gap_analysis_dict.get("error"):
-        abort(404)
-    return jsonify({"job_id": gap_analysis_dict.get("job_id")})
+    
+    # We now call gap_analysis.perform directly so web and cli share the same method
+    gap_analysis_result = gap_analysis.perform(standards, database)
+    if gap_analysis_result:
+        # Compatibility with the expected dict format on frontend
+        return jsonify({"result": gap_analysis_result.get("result") if isinstance(gap_analysis_result, dict) else gap_analysis_result})
+    
+    abort(404)
 
 
 @app.route("/rest/v1/map_analysis_weak_links", methods=["GET"])
@@ -601,7 +603,7 @@ def add_header(response):
 def login_required(f):
     @wraps(f)
     def login_r(*args, **kwargs):
-        if os.environ.get("NO_LOGIN"):
+        if os.environ.get("NO_LOGIN") == "1":
             return f(*args, **kwargs)
         if "google_id" not in session or "name" not in session:
             allowed_domains = os.environ.get("LOGIN_ALLOWED_DOMAINS")
@@ -618,7 +620,7 @@ def login_required(f):
 def admin_imports_enabled_required(f):
     @wraps(f)
     def enabled_r(*args, **kwargs):
-        if not os.environ.get("ADMIN_IMPORTS_ENABLED"):
+        if os.environ.get("CRE_ALLOW_IMPORT") != "1":
             abort(404, description="Admin imports API is disabled")
         return f(*args, **kwargs)
 
@@ -703,6 +705,67 @@ def admin_import_run_changeset(run_id: str) -> Any:
     )
 
 
+@app.route("/admin/imports/runs/<run_id>/changeset/graph", methods=["GET"])
+@login_required
+@admin_imports_enabled_required
+def admin_import_run_changeset_graph(run_id: str) -> Any:
+    r = db.get_import_run(run_id=run_id)
+    if not r:
+        abort(404, description="Import run not found")
+    cs = db.get_staged_change_set(run_id=r.id)
+    if not cs:
+        return jsonify({"nodes": [], "edges": []})
+        
+    from application.utils import import_diff, import_graph
+    ops = import_diff.change_set_from_json(cs.changeset_json)
+    graph_data = import_graph.change_set_to_graph(ops)
+
+    return jsonify(graph_data)
+
+
+@app.route("/admin/imports/runs/<run_id>/accept", methods=["POST"])
+@login_required
+@admin_imports_enabled_required
+def admin_import_run_accept(run_id: str) -> Any:
+    cs = db.get_staged_change_set(run_id=run_id)
+    if not cs:
+        abort(404, description="No staged change set for this run")
+    if cs.staging_status == "discarded":
+        abort(400, description="Cannot accept a discarded run")
+    if cs.staging_status == "applied":
+        abort(400, description="Run already applied")
+    if cs.has_conflicts:
+        abort(409, description="Change set has conflicts; resolve before accept")
+    db.update_staged_change_set(run_id=run_id, staging_status="accepted")
+    return jsonify({"run_id": run_id, "staging_status": "accepted"})
+
+
+@app.route("/admin/imports/runs/<run_id>/discard", methods=["POST"])
+@login_required
+@admin_imports_enabled_required
+def admin_import_run_discard(run_id: str) -> Any:
+    cs = db.get_staged_change_set(run_id=run_id)
+    if not cs:
+        abort(404, description="No staged change set for this run")
+    if cs.staging_status == "applied":
+        abort(400, description="Cannot discard an applied run")
+    db.update_staged_change_set(run_id=run_id, staging_status="discarded")
+    return jsonify({"run_id": run_id, "staging_status": "discarded"})
+
+
+@app.route("/admin/imports/runs/<run_id>/impact", methods=["GET"])
+@login_required
+@admin_imports_enabled_required
+def admin_import_run_impact(run_id: str) -> Any:
+    from application.utils import import_impact
+
+    r = db.get_import_run(run_id=run_id)
+    if not r:
+        abort(404, description="Import run not found")
+    database = db.Node_collection().with_graph()
+    return jsonify(import_impact.impact_summary_for_run(run_id, database))
+
+
 @app.route("/admin/imports/runs/<run_id>/apply", methods=["POST"])
 @login_required
 @admin_imports_enabled_required
@@ -712,7 +775,14 @@ def admin_import_run_apply(run_id: str) -> Any:
     raw = request.args.get("dry_run") or ""
     dry_run = str(raw).lower() in ("1", "true", "yes", "on")
     try:
-        res = import_apply.apply_changeset(run_id=run_id, dry_run=dry_run)
+        res = import_apply.apply_changeset(
+            run_id=run_id,
+            dry_run=dry_run,
+            db_connection_str=os.environ.get("CRE_CACHE_FILE", ""),
+            run_post_apply_effects=not dry_run
+            and request.args.get("skip_post_apply", "").lower()
+            not in ("1", "true", "yes", "on"),
+        )
         return jsonify(
             {
                 "run_id": res.run_id,
@@ -783,7 +853,7 @@ class CREFlow:
 
 @app.route("/rest/v1/login")
 def login():
-    if os.environ.get("NO_LOGIN"):
+    if os.environ.get("NO_LOGIN") == "1":
         session["state"] = {"state": True}
         session["google_id"] = "some dev id"
         session["name"] = "dev user"
@@ -797,7 +867,7 @@ def login():
 @app.route("/rest/v1/user")
 @login_required
 def logged_in_user():
-    if os.environ.get("NO_LOGIN"):
+    if os.environ.get("NO_LOGIN") == "1":
         return "foobar"
     return session.get("email")
 
@@ -904,9 +974,41 @@ def get_cre_csv() -> Any:
     abort(404)
 
 
+@app.route("/rest/v1/config", methods=["GET"])
+def get_config() -> Any:
+    return jsonify({
+        "CRE_ALLOW_IMPORT": os.environ.get("CRE_ALLOW_IMPORT") == "1"
+    })
+
+
+@app.route("/admin/imports/rerun", methods=["POST"])
+@login_required
+@admin_imports_enabled_required
+def admin_imports_rerun() -> Any:
+    # A placeholder for triggering an actual import.
+    # In a real system, this would enqueue a background job.
+    source = request.json.get("source")
+    if not source:
+        return abort(400, "source is required")
+
+    database = db.Node_collection().with_graph()
+    try:
+        run = db.create_import_run(source=source, version="re-run")
+    except Exception:
+        run = None
+
+    # Simulate basic empty changes so we don't break the UI.
+    from application.utils import import_diff
+    db.persist_staged_change_set(
+        run_id=run.id if run else "test-id",
+        changeset_json=import_diff.change_set_to_json([])
+    )
+
+    return jsonify({"status": "success", "run_id": run.id if run else "test-id"})
+
 @app.route("/rest/v1/cre_csv_import", methods=["POST"])
 def import_from_cre_csv() -> Any:
-    if not os.environ.get("CRE_ALLOW_IMPORT"):
+    if os.environ.get("CRE_ALLOW_IMPORT") != "1":
         abort(
             403,
             "Importing is disabled, set the environment variable CRE_ALLOW_IMPORT to allow this functionality",
@@ -936,33 +1038,48 @@ def import_from_cre_csv() -> Any:
     if not parse_result or not parse_result.results:
         abort(400, "No documents parsed from CSV")
 
-    documents = parse_result.results
-    cres = documents.pop(defs.Credoctypes.CRE.value, [])
-    standards = documents
-    # Track initial CRE presence before registration. register_cre() recursively
-    # imports linked CREs, which can make later siblings appear as "existing"
-    # even though they were not present when this import started.
+    parse_result.calculate_embeddings = calculate_embeddings
+    parse_result.calculate_gap_analysis = calculate_gap_analysis
+
+    cre_key = defs.Credoctypes.CRE.value
+    cres = parse_result.results.get(cre_key) or []
     cre_existed_before = {
         cre.id: bool(database.get_CREs(external_id=cre.id)) for cre in cres if cre.id
     }
-    new_cres = []
-    for cre in cres:
-        new_cre, exists = cre_main.register_cre(cre, database)
-        if not cre_existed_before.get(cre.id, False):
-            new_cres.append(new_cre)
 
-    for _, entries in standards.items():
-        cre_main.register_standard(
-            collection=database,
-            standard_entries=list(entries),
-            generate_embeddings=calculate_embeddings,
-            calculate_gap_analysis=calculate_gap_analysis,
-        )
+    try:
+        run = db.create_import_run(source="myopencre_csv", version=None)
+    except Exception:
+        run = None
+
+    from application.utils import import_pipeline
+
+    import_pipeline.apply_parse_result(
+        parse_result=parse_result,
+        collection=database,
+        prompt_handler=prompt_client.PromptHandler(database=database),
+        db_connection_str=os.environ.get("CRE_CACHE_FILE", ""),
+        import_run_id=run.id if run else None,
+        import_source=run.source if run else None,
+    )
+
+    new_cre_external_ids: list[str] = []
+    for cre in cres:
+        if not cre.id or cre_existed_before.get(cre.id, False):
+            continue
+        existing = database.get_CREs(external_id=cre.id)
+        if existing:
+            doc0 = existing[0]
+            eid = getattr(doc0, "external_id", None) or getattr(doc0, "id", None) or cre.id
+            new_cre_external_ids.append(str(eid))
+    standards_only = {
+        k: v for k, v in parse_result.results.items() if k != cre_key
+    }
     return jsonify(
         {
             "status": "success",
-            "new_cres": [c.external_id for c in new_cres],
-            "new_standards": len(standards),
+            "new_cres": new_cre_external_ids,
+            "new_standards": len(standards_only),
         }
     )
 

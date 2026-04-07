@@ -41,7 +41,10 @@ class CMDConfig(Config):
     ENVIRONMENT = "CLI"
 
     def __init__(self, db_uri: str):
-        self.SQLALCHEMY_DATABASE_URI = f"sqlite:///{db_uri}"
+        if "://" in db_uri:
+            self.SQLALCHEMY_DATABASE_URI = db_uri
+        else:
+            self.SQLALCHEMY_DATABASE_URI = f"sqlite:///{db_uri}"
 
 
 config = {
