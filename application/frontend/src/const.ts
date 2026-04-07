@@ -37,5 +37,6 @@ export const GRAPH = '/graph';
 export const BROWSEROOT = '/root_cres';
 export const GAP_ANALYSIS = '/map_analysis';
 export const EXPLORER = '/explorer';
+export const MYOPENCRE = '/myopencre';
 
 export const GA_STRONG_UPPER_LIMIT = 2; // remember to change this in the Python code too

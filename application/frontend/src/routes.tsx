@@ -7,13 +7,14 @@ import {
   GAP_ANALYSIS,
   GRAPH,
   INDEX,
+  MYOPENCRE,
   SEARCH,
   SECTION,
   SECTION_ID,
   STANDARD,
   SUBSECTION,
 } from './const';
-import { CommonRequirementEnumeration, Graph, SearchPage, Standard } from './pages';
+import { CommonRequirementEnumeration, Graph, MyOpenCRE, SearchPage, Standard } from './pages';
 import { BrowseRootCres } from './pages/BrowseRootCres/browseRootCres';
 import { Chatbot } from './pages/chatbot/chatbot';
 import { Explorer } from './pages/Explorer/explorer';
@@ -110,6 +111,11 @@ export const ROUTES: IRoute[] = [
   {
     path: `${EXPLORER}`,
     component: Explorer,
+    showFilter: false,
+  },
+  {
+    path: MYOPENCRE,
+    component: MyOpenCRE,
     showFilter: false,
   },
 ];

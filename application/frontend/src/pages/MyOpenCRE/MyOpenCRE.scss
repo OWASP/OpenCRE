@@ -1,0 +1,24 @@
+.myopencre-container {
+  padding: 2rem 0;
+
+  .log-viewer {
+    max-height: 200px;
+    overflow-y: auto;
+    font-family: monospace;
+    font-size: 0.9rem;
+    padding: 1rem;
+    background: #1b1c1d;
+    color: #fff;
+    margin-top: 1rem;
+  }
+
+  .changeset-pre, .impact-pre {
+    max-height: 300px;
+    overflow-y: auto;
+    background: #f8f8f9;
+    padding: 1rem;
+    border: 1px solid #d4d4d5;
+    border-radius: 4px;
+    font-size: 0.9rem;
+  }
+}
