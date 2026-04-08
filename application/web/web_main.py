@@ -14,7 +14,11 @@ from alive_progress import alive_bar
 from typing import Any
 from application.utils import oscal_utils, redis
 
-from rq import job, exceptions
+try:
+    from rq import job, exceptions
+except (ValueError, ImportError):
+    job, exceptions = None, None
+
 
 from application.utils import spreadsheet_parsers
 from application.utils import oscal_utils, redis
@@ -738,6 +742,8 @@ def login():
         session["name"] = "dev user"
         return redirect("/chatbot")
     flow_instance = CREFlow.instance()
+    if not flow_instance or not flow_instance.flow:
+        return "Login not configured. Please set up Google OAuth in .env.", 501
     authorization_url, state = flow_instance.flow.authorization_url()
     session["state"] = state
     return redirect(authorization_url)

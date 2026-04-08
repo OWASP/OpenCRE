@@ -1252,34 +1252,34 @@ class TestDB(unittest.TestCase):
         self.maxDiff = None
         self.assertCountEqual(root_cres, [cres[0], cres[1], cres[7]])
 
-    @patch.object(db.NEO_DB, "gap_analysis")
+    @patch.object(db.graph_db, "gap_analysis")
     def test_gap_analysis_disconnected(self, gap_mock):
         collection = db.Node_collection()
-        collection.neo_db.connected = False
+        collection.graph_db.connected = False
         gap_mock.return_value = (None, None)
 
-        self.assertEqual(db.gap_analysis(collection.neo_db, ["788-788", "b"]), None)
+        self.assertEqual(db.gap_analysis(collection.graph_db, ["788-788", "b"]), None)
 
-    @patch.object(db.NEO_DB, "gap_analysis")
+    @patch.object(db.graph_db, "gap_analysis")
     def test_gap_analysis_no_nodes(self, gap_mock):
         collection = db.Node_collection()
-        collection.neo_db.connected = True
+        collection.graph_db.connected = True
 
         gap_mock.return_value = ([], [])
         self.assertEqual(
-            db.gap_analysis(collection.neo_db, ["788-788", "b"]),
+            db.gap_analysis(collection.graph_db, ["788-788", "b"]),
             (["788-788", "b"], {}, {}),
         )
 
-    @patch.object(db.NEO_DB, "gap_analysis")
+    @patch.object(db.graph_db, "gap_analysis")
     def test_gap_analysis_no_links(self, gap_mock):
         collection = db.Node_collection()
-        collection.neo_db.connected = True
+        collection.graph_db.connected = True
 
         gap_mock.return_value = ([defs.CRE(name="bob", id="111-111")], [])
         self.maxDiff = None
         self.assertEqual(
-            db.gap_analysis(collection.neo_db, ["788-788", "b"]),
+            db.gap_analysis(collection.graph_db, ["788-788", "b"]),
             (
                 ["788-788", "b"],
                 {
@@ -1293,10 +1293,10 @@ class TestDB(unittest.TestCase):
             ),
         )
 
-    @patch.object(db.NEO_DB, "gap_analysis")
+    @patch.object(db.graph_db, "gap_analysis")
     def test_gap_analysis_one_link(self, gap_mock):
         collection = db.Node_collection()
-        collection.neo_db.connected = True
+        collection.graph_db.connected = True
         path = [
             {
                 "end": defs.CRE(name="bob", id="111-111"),
@@ -1338,13 +1338,13 @@ class TestDB(unittest.TestCase):
         )
         self.maxDiff = None
         self.assertEqual(
-            db.gap_analysis(collection.neo_db, ["788-788", "788-789"]), expected
+            db.gap_analysis(collection.graph_db, ["788-788", "788-789"]), expected
         )
 
-    @patch.object(db.NEO_DB, "gap_analysis")
+    @patch.object(db.graph_db, "gap_analysis")
     def test_gap_analysis_one_weak_link(self, gap_mock):
         collection = db.Node_collection()
-        collection.neo_db.connected = True
+        collection.graph_db.connected = True
         path = [
             {
                 "end": defs.CRE(name="bob", id="111-111"),
@@ -1399,12 +1399,14 @@ class TestDB(unittest.TestCase):
             },
         )
         self.maxDiff = None
-        self.assertEqual(db.gap_analysis(collection.neo_db, ["788-788", "b"]), expected)
+        self.assertEqual(
+            db.gap_analysis(collection.graph_db, ["788-788", "b"]), expected
+        )
 
-    @patch.object(db.NEO_DB, "gap_analysis")
+    @patch.object(db.graph_db, "gap_analysis")
     def test_gap_analysis_duplicate_link_path_existing_lower(self, gap_mock):
         collection = db.Node_collection()
-        collection.neo_db.connected = True
+        collection.graph_db.connected = True
         path = [
             {
                 "end": defs.CRE(name="bob", id="111-111"),
@@ -1461,14 +1463,16 @@ class TestDB(unittest.TestCase):
             },
             {"111-111": {"paths": {}}},
         )
-        self.assertEqual(db.gap_analysis(collection.neo_db, ["788-788", "b"]), expected)
+        self.assertEqual(
+            db.gap_analysis(collection.graph_db, ["788-788", "b"]), expected
+        )
 
-    @patch.object(db.NEO_DB, "gap_analysis")
+    @patch.object(db.graph_db, "gap_analysis")
     def test_gap_analysis_duplicate_link_path_existing_lower_new_in_extras(
         self, gap_mock
     ):
         collection = db.Node_collection()
-        collection.neo_db.connected = True
+        collection.graph_db.connected = True
         path = [
             {
                 "end": defs.CRE(name="bob", id="111-111"),
@@ -1530,12 +1534,14 @@ class TestDB(unittest.TestCase):
             },
             {"111-111": {"paths": {}}},
         )
-        self.assertEqual(db.gap_analysis(collection.neo_db, ["788-788", "b"]), expected)
+        self.assertEqual(
+            db.gap_analysis(collection.graph_db, ["788-788", "b"]), expected
+        )
 
-    @patch.object(db.NEO_DB, "gap_analysis")
+    @patch.object(db.graph_db, "gap_analysis")
     def test_gap_analysis_duplicate_link_path_existing_higher(self, gap_mock):
         collection = db.Node_collection()
-        collection.neo_db.connected = True
+        collection.graph_db.connected = True
         path = [
             {
                 "end": defs.CRE(name="bob", id="111-111"),
@@ -1592,14 +1598,16 @@ class TestDB(unittest.TestCase):
             },
             {"111-111": {"paths": {}}},
         )
-        self.assertEqual(db.gap_analysis(collection.neo_db, ["788-788", "b"]), expected)
+        self.assertEqual(
+            db.gap_analysis(collection.graph_db, ["788-788", "b"]), expected
+        )
 
-    @patch.object(db.NEO_DB, "gap_analysis")
+    @patch.object(db.graph_db, "gap_analysis")
     def test_gap_analysis_duplicate_link_path_existing_higher_and_in_extras(
         self, gap_mock
     ):
         collection = db.Node_collection()
-        collection.neo_db.connected = True
+        collection.graph_db.connected = True
         path = [
             {
                 "end": defs.CRE(name="bob", id="111-111"),
@@ -1661,12 +1669,14 @@ class TestDB(unittest.TestCase):
             },
             {"111-111": {"paths": {}}},
         )
-        self.assertEqual(db.gap_analysis(collection.neo_db, ["788-788", "b"]), expected)
+        self.assertEqual(
+            db.gap_analysis(collection.graph_db, ["788-788", "b"]), expected
+        )
 
-    @patch.object(db.NEO_DB, "gap_analysis")
+    @patch.object(db.graph_db, "gap_analysis")
     def test_gap_analysis_dump_to_cache(self, gap_mock):
         collection = db.Node_collection()
-        collection.neo_db.connected = True
+        collection.graph_db.connected = True
         path = [
             {
                 "end": defs.CRE(name="bob1", id="111-111"),
@@ -1725,7 +1735,7 @@ class TestDB(unittest.TestCase):
                 }
             },
         )
-        response = db.gap_analysis(collection.neo_db, ["788-788", "222-222"])
+        response = db.gap_analysis(collection.graph_db, ["788-788", "222-222"])
 
         self.maxDiff = None
         self.assertEqual(
@@ -1777,7 +1787,7 @@ class TestDB(unittest.TestCase):
             ],
         )
 
-        self.assertEqual(db.NEO_DB.parse_node(graph_node).todict(), expected.todict())
+        self.assertEqual(db.graph_db.parse_node(graph_node).todict(), expected.todict())
 
     def test_neo_db_parse_node_standard(self):
         name = "name"
@@ -1816,7 +1826,7 @@ class TestDB(unittest.TestCase):
                 db.NeoCRE(external_id="123-123", description="gcCD2", name="gcC2"),
             ],
         )
-        self.assertEqual(db.NEO_DB.parse_node(graph_node).todict(), expected.todict())
+        self.assertEqual(db.graph_db.parse_node(graph_node).todict(), expected.todict())
 
     def test_neo_db_parse_node_tool(self):
         name = "name"
@@ -1858,7 +1868,7 @@ class TestDB(unittest.TestCase):
                 db.NeoCRE(external_id="123-123", description="gcCD2", name="gcC2"),
             ],
         )
-        self.assertEqual(db.NEO_DB.parse_node(graph_node).todict(), expected.todict())
+        self.assertEqual(db.graph_db.parse_node(graph_node).todict(), expected.todict())
 
     def test_neo_db_parse_node_cre(self):
         name = "name"
@@ -1913,7 +1923,7 @@ class TestDB(unittest.TestCase):
             auto_linked_to=[],
         )
 
-        parsed = db.NEO_DB.parse_node(graph_node)
+        parsed = db.graph_db.parse_node(graph_node)
         self.maxDiff = None
         self.assertEqual(parsed.todict(), expected.todict())
 
@@ -1948,7 +1958,7 @@ class TestDB(unittest.TestCase):
             related=[],
         )
 
-        parsed = db.NEO_DB.parse_node_no_links(graph_node)
+        parsed = db.graph_db.parse_node_no_links(graph_node)
         self.maxDiff = None
         self.assertEqual(parsed.todict(), expected.todict())
 
@@ -1964,7 +1974,7 @@ class TestDB(unittest.TestCase):
             tags=tags,
         )
         with self.assertRaises(Exception) as cm:
-            db.NEO_DB.parse_node(graph_node)
+            db.graph_db.parse_node(graph_node)
 
         self.assertEqual(str(cm.exception), "Shouldn't be parsing a NeoDocument")
 
@@ -1980,7 +1990,7 @@ class TestDB(unittest.TestCase):
             tags=tags,
         )
         with self.assertRaises(Exception) as cm:
-            db.NEO_DB.parse_node(graph_node)
+            db.graph_db.parse_node(graph_node)
 
         self.assertEqual(str(cm.exception), "Shouldn't be parsing a NeoNode")
 

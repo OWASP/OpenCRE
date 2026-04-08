@@ -2,10 +2,13 @@ from sqlalchemy import CheckConstraint
 import networkx as nx
 import uuid
 import neo4j
+import psycopg2
+from psycopg2.extras import RealDictCursor
 import os
 import logging
 import re
 import yaml
+import threading
 
 from pprint import pprint
 
@@ -601,7 +604,7 @@ class NEO_DB:
             """
          MATCH (BaseStandard:NeoStandard {name: $name1})
          MATCH (CompareStandard:NeoStandard {name: $name2})
-         MATCH p = allShortestPaths((BaseStandard)-[:(LINKED_TO|AUTOMATICALLY_LINKED_TO|SAME)*..20]-(CompareStandard))
+         MATCH p = (BaseStandard)-[:(LINKED_TO|AUTOMATICALLY_LINKED_TO|SAME)*..20]-(CompareStandard)
          WITH p
          WHERE length(p) > 1 AND ALL(n in NODES(p) WHERE (n:NeoCRE or n = BaseStandard or n = CompareStandard) AND NOT n.name in $denylist)
          RETURN p
@@ -622,7 +625,7 @@ class NEO_DB:
             """
          MATCH (BaseStandard:NeoStandard {name: $name1})
          MATCH (CompareStandard:NeoStandard {name: $name2})
-         MATCH p = allShortestPaths((BaseStandard)-[:(LINKED_TO|AUTOMATICALLY_LINKED_TO|SAME|CONTAINS)*..20]-(CompareStandard))
+         MATCH p = (BaseStandard)-[:(LINKED_TO|AUTOMATICALLY_LINKED_TO|SAME|CONTAINS)*..20]-(CompareStandard)
          WITH p
          WHERE length(p) > 1 AND ALL(n in NODES(p) WHERE (n:NeoCRE or n = BaseStandard or n = CompareStandard) AND NOT n.name in $denylist)
          RETURN p
@@ -645,7 +648,7 @@ class NEO_DB:
             """
          MATCH (BaseStandard:NeoStandard {name: $name1})
          MATCH (CompareStandard:NeoStandard {name: $name2})
-         MATCH p = allShortestPaths((BaseStandard)-[*..20]-(CompareStandard))
+         MATCH p = (BaseStandard)-[*..20]-(CompareStandard)
          WITH p
          WHERE length(p) > 1 AND ALL (n in NODES(p) where (n:NeoCRE or n = BaseStandard or n = CompareStandard) AND NOT n.name in $denylist) 
          RETURN p
@@ -675,7 +678,7 @@ class NEO_DB:
             """
          MATCH (BaseStandard:NeoStandard {name: $name1})
          MATCH (CompareStandard:NeoStandard {name: $name2})
-         MATCH p = allShortestPaths((BaseStandard)-[*..20]-(CompareStandard))
+         MATCH p = (BaseStandard)-[*..20]-(CompareStandard)
          WITH p
          WHERE length(p) > 1 AND ALL (n in NODES(p) where (n:NeoCRE or n = BaseStandard or n = CompareStandard) AND NOT n.name in $denylist) 
          RETURN p
@@ -689,7 +692,7 @@ class NEO_DB:
             """
          MATCH (BaseStandard:NeoStandard {name: $name1})
          MATCH (CompareStandard:NeoStandard {name: $name2})
-         MATCH p = allShortestPaths((BaseStandard)-[:(LINKED_TO|AUTOMATICALLY_LINKED_TO|CONTAINS)*..20]-(CompareStandard))
+         MATCH p = (BaseStandard)-[:(LINKED_TO|AUTOMATICALLY_LINKED_TO|CONTAINS)*..20]-(CompareStandard)
          WITH p
          WHERE length(p) > 1 AND ALL(n in NODES(p) WHERE (n:NeoCRE or n = BaseStandard or n = CompareStandard) AND NOT n.name in $denylist)
          RETURN p
@@ -793,14 +796,377 @@ class NEO_DB:
         return node.to_cre_def(node, parse_links=False)
 
 
+class AGEDB:
+    __instance = None
+    conn: Optional[psycopg2.extensions.connection] = None
+    graph_name: str = "opencre"
+    connected: bool = False
+    _connection_attempted: bool = False
+    _disabled_permanently: bool = False
+    _is_connecting: bool = False
+    _lock = threading.Lock()
+
+    @classmethod
+    def instance(cls):
+        """Singleton instance for Apache AGE database connection."""
+        if cls.__instance is None:
+            with cls._lock:
+                if cls.__instance is None:
+                    cls.__instance = cls.__new__(cls)
+                    from application.config import Config
+
+                    cls.graph_name = Config.AGE_GRAPH or "opencre"
+                    cls.conn = None
+                    cls.connected = False
+                    cls._connection_attempted = False
+                    cls._disabled_permanently = False
+                    cls._is_connecting = False
+
+        # If already connected, return
+        if cls.connected:
+            return cls.__instance
+
+        # CIRCUIT BREAKER: If disabled or already tried and failed, don't try again
+        if cls._disabled_permanently:
+            return cls.__instance
+
+        # Start background connection if not already in progress
+        if not cls._is_connecting:
+            with cls._lock:
+                if not cls._is_connecting and not cls.connected:
+                    cls._is_connecting = True
+                    thread = threading.Thread(target=cls._connect_background)
+                    thread.daemon = True
+                    thread.start()
+
+        return cls.__instance
+
+    @classmethod
+    def _connect_background(cls):
+        """Background thread to handle the potentially hanging connection."""
+        from application.config import Config
+
+        try:
+            logger.info(
+                f"Background: Attempting to connect to Apache AGE at {Config.AGE_URL}..."
+            )
+            cls.conn = psycopg2.connect(Config.AGE_URL, connect_timeout=10)
+            cls.conn.autocommit = True
+
+            with cls.conn.cursor() as cursor:
+                cursor.execute("SET statement_timeout = 10000;")
+                cursor.execute("CREATE EXTENSION IF NOT EXISTS age;")
+                cursor.execute("LOAD 'age';")
+                cursor.execute('SET search_path = ag_catalog, "$user", public;')
+                # Create graph only if it doesn't exist — ignore 'already exists' error
+                try:
+                    cursor.execute(f"SELECT create_graph('{cls.graph_name}');")
+                except Exception:
+                    # Graph already exists, that's fine — reset connection state
+                    cls.conn.rollback()
+                # Create indexes (ignore errors if already exist)
+                for idx_query in [
+                    f"SELECT * FROM cypher('{cls.graph_name}', $$ CREATE INDEX ON :NeoStandard(name) $$) as (a agtype);",
+                    f"SELECT * FROM cypher('{cls.graph_name}', $$ CREATE INDEX ON :NeoCRE(name) $$) as (a agtype);",
+                ]:
+                    try:
+                        cursor.execute(idx_query)
+                    except Exception:
+                        cls.conn.rollback()
+                cursor.execute("SET statement_timeout = 30000;")
+
+            cls.connected = True
+            logger.info("Background: Successfully connected to Apache AGE.")
+        except Exception as e:
+            logger.error(
+                f"Background: Apache AGE connection failed: {e}. disabling AGE for this session."
+            )
+            cls._disabled_permanently = True
+            cls.connected = False
+            if cls.conn:
+                try:
+                    cls.conn.close()
+                except:
+                    pass
+            cls.conn = None
+        finally:
+            cls._is_connecting = False
+            cls._connection_attempted = True
+
+    @classmethod
+    def instance_blocking(cls, timeout: int = 30):
+        """Synchronous version of instance() - blocks until connection is ready or timeout."""
+        import time
+
+        cls.instance()  # Start background thread
+        waited = 0
+        while cls._is_connecting and waited < timeout:
+            time.sleep(0.5)
+            waited += 0.5
+        if not cls.connected:
+            logger.warning(f"AGE connection not available after {timeout}s.")
+        return cls.__instance
+
+    @classmethod
+    def gap_analysis(cls, name_1, name_2):
+        from application.config import Config
+
+        logger.info(f"AGE Gap Analysis for {name_1} >> {name_2}")
+        if not cls.conn:
+            cls.instance()
+        if not cls.conn:
+            return [], []
+
+        # Find base standard nodes
+        n1 = name_1.replace('"', '\\"')
+        base_query = f"SELECT * FROM cypher('{cls.graph_name}', $AGE$ MATCH (n:NeoStandard {{name: \"{n1}\"}}) RETURN n $AGE$) as (n agtype);"
+        with cls.conn.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(base_query)
+            base_recs = cursor.fetchall()
+            base_standards = [cls._parse_agtype(r["n"]) for r in base_recs]
+
+        # Find paths
+        # Note: Apache AGE does not have allShortestPaths, so we use a limited depth search.
+        # Depth 6 is usually enough for most OpenCRE relationships.
+        n2 = name_2.replace('"', '\\"')
+        path_query = f"""
+            SELECT * FROM cypher('{cls.graph_name}', $AGE$
+                MATCH (BaseStandard:NeoStandard {{name: \"{n1}\"}})
+                MATCH (CompareStandard:NeoStandard {{name: \"{n2}\"}})
+                MATCH p = (BaseStandard)-[*..6]-(CompareStandard)
+                RETURN p
+                LIMIT 50
+            $AGE$) as (p agtype);
+        """
+        with cls.conn.cursor(cursor_factory=RealDictCursor) as cursor:
+            try:
+                cursor.execute(path_query)
+                path_recs = cursor.fetchall()
+                paths = [cls._parse_agpath(r["p"]) for r in path_recs]
+            except Exception as e:
+                logger.error(f"AGE Path Query failed: {e}")
+                paths = []
+
+        return base_standards, paths
+
+    @classmethod
+    def _parse_agtype(cls, agtype_val):
+        """Convert AGE's agtype (usually JSON string or dict) to a format compatible with the app."""
+        if isinstance(agtype_val, str):
+            import json
+            import re
+
+            # AGE appends ::vertex, ::edge, ::path at the end of the string.
+            # We strip them carefully avoiding :: inside values.
+            json_str = re.sub(r"::(vertex|edge|path)$", "", agtype_val)
+            try:
+                data = json.loads(json_str)
+            except json.JSONDecodeError:
+                # Fallback: if it's still failing, it might not be JSON at all
+                logger.error(f"Failed to parse agtype string: {agtype_val}")
+                data = {}
+        else:
+            data = agtype_val
+
+        # Return a mock object that behaves like the NeoDocument models
+        class MockNode(dict):
+            def __init__(self, d):
+                self.id = str(d.get("id"))
+                self.label = d.get("label", "")
+                props = d.get("properties", {})
+                self.name = props.get("name")
+                self.section = props.get("section")
+                self.subsection = props.get("subsection")
+                self.external_id = props.get("external_id")
+                self.section_id = props.get("section_id")
+                self.version = props.get("version")
+                self.description = props.get("description")
+                self.sql_id = str(props.get("sql_id", ""))
+
+                # Map label to doctype for frontend compatibility
+                self.doctype = "Standard"
+                if self.label == "NeoCRE":
+                    self.doctype = "CRE"
+                elif self.label == "NeoTool":
+                    self.doctype = "Tool"
+
+                # Store in dict for JSON serialization to frontend
+                super().__init__(
+                    {
+                        "id": self.id,
+                        "name": self.name,
+                        "section": self.section,
+                        "sectionID": self.section_id,
+                        "subsection": self.subsection,
+                        "version": self.version,
+                        "external_id": self.external_id,
+                        "description": self.description,
+                        "doctype": self.doctype,
+                        "sql_id": self.sql_id,
+                    }
+                )
+
+            def to_cre_def(self, *args, **kwargs):
+                from application.defs import cre_defs
+
+                if self.doctype == "CRE":
+                    return cre_defs.CRE(
+                        name=self.name,
+                        id=self.external_id,
+                        description=self.description,
+                    )
+                return cre_defs.Standard(
+                    name=self.name,
+                    section=self.section,
+                    subsection=self.subsection,
+                    version=self.version,
+                    sectionID=self.section_id,
+                )
+
+        return MockNode(data)
+
+    @classmethod
+    def _parse_agpath(cls, agpath_val):
+        """Translate AGE path to Neo4j-like path record."""
+        if isinstance(agpath_val, str):
+            import json
+
+            # AGE sometimes appends ::path to the JSON string
+            json_str = agpath_val.split("::")[0]
+            try:
+                data = json.loads(json_str)
+            except json.JSONDecodeError:
+                logger.error(f"Failed to parse agpath string: {agpath_val}")
+                return {"start": {"id": "stub"}, "end": {"id": "stub"}, "path": []}
+        else:
+            data = agpath_val
+
+        # AGE path is a list: [v1, e1, v2, e2, v3, ...]
+        # Note: Depending on AGE version and driver, structure might vary.
+        # Usually it's a dict with 'vertices' and 'edges' or a flat list.
+        # This implementation assumes flat list.
+        if not isinstance(data, list):
+            return {"start": {"id": "stub"}, "end": {"id": "stub"}, "path": []}
+
+        vertices = [v for i, v in enumerate(data) if i % 2 == 0]
+        edges = [e for i, e in enumerate(data) if i % 2 != 0]
+
+        path_steps = []
+        for i in range(len(edges)):
+            step = {
+                "start": cls._parse_agtype(vertices[i]),
+                "end": cls._parse_agtype(vertices[i + 1]),
+                "relationship": edges[i].get("label"),
+            }
+            path_steps.append(step)
+
+        return {
+            "start": cls._parse_agtype(vertices[0]),
+            "end": cls._parse_agtype(vertices[-1]),
+            "path": path_steps,
+        }
+
+    @classmethod
+    def populate_DB(cls, session):
+        logger.info("Populating Apache AGE DB from Postgres")
+        if not cls.conn:
+            cls.instance_blocking(timeout=30)
+        if not cls.conn:
+            logger.error("No AGE connection, skipping population")
+            return
+
+        with cls.conn.cursor() as cursor:
+            # Clear existing data
+            cursor.execute(
+                f"SELECT * FROM cypher('{cls.graph_name}', $AGE$ MATCH (n) DETACH DELETE n $AGE$) as (a agtype);"
+            )
+
+            # Migration of Standards
+            nodes = session.query(Node).all()
+            logger.info(f"Migrating {len(nodes)} Standards to AGE")
+            for node in nodes:
+                try:
+                    name = (node.name or "").replace('"', '\\"')
+                    section = (node.section or "").replace('"', '\\"')
+                    section_id = (node.section_id or "").replace('"', '\\"')
+                    subsection = (node.subsection or "").replace('"', '\\"')
+                    version = (node.version or "").replace('"', '\\"')
+                    link = (node.link or "").replace('"', '\\"')
+                    sid = str(node.id)
+                    cursor.execute(
+                        f'SELECT * FROM cypher(\'{cls.graph_name}\', $AGE$ CREATE (n:NeoStandard {{name: "{name}", section: "{section}", section_id: "{section_id}", subsection: "{subsection}", version: "{version}", link: "{link}", sql_id: "{sid}"}}) $AGE$) as (a agtype);'
+                    )
+                except Exception as e:
+                    logger.error(f"Failed to migrate Standard {node.id}: {e}")
+
+            # Migration of CREs
+            cres = session.query(CRE).all()
+            logger.info(f"Migrating {len(cres)} CREs to AGE")
+            for cre in cres:
+                try:
+                    name = (cre.name or "").replace('"', '\\"')
+                    desc = (cre.description or "").replace('"', '\\"')
+                    eid = (cre.external_id or "").replace('"', '\\"')
+                    sid = str(cre.id)
+                    cursor.execute(
+                        f'SELECT * FROM cypher(\'{cls.graph_name}\', $AGE$ CREATE (n:NeoCRE {{name: "{name}", description: "{desc}", external_id: "{eid}", sql_id: "{sid}"}}) $AGE$) as (a agtype);'
+                    )
+                except Exception as e:
+                    logger.error(f"Failed to migrate CRE {cre.id}: {e}")
+
+            # Migration of CRE-CRE Links (InternalLinks)
+            internal_links = session.query(InternalLinks).all()
+            logger.info(f"Migrating {len(internal_links)} CRE-CRE links to AGE")
+            for link in internal_links:
+                try:
+                    rel_type = re.sub(r"[^a-zA-Z0-9_]", "", link.type.upper())
+                    gid = str(link.group)
+                    cid = str(link.cre)
+                    cursor.execute(
+                        f'SELECT * FROM cypher(\'{cls.graph_name}\', $AGE$ MATCH (a:NeoCRE {{sql_id: "{gid}"}}), (b:NeoCRE {{sql_id: "{cid}"}}) CREATE (a)-[:{rel_type}]->(b) $AGE$) as (a agtype);'
+                    )
+                except Exception as e:
+                    # logger.debug(f"Failed to migrate CRE-CRE link {link.id}: {e}")
+                    pass
+
+            # Migration of CRE-Standard Links (Links)
+            links = session.query(Links).all()
+            logger.info(f"Migrating {len(links)} CRE-Standard links to AGE")
+            for link in links:
+                try:
+                    rel_type = re.sub(r"[^a-zA-Z0-9_]", "", link.type.upper())
+                    cid = str(link.cre)
+                    nid = str(link.node)
+                    cursor.execute(
+                        f'SELECT * FROM cypher(\'{cls.graph_name}\', $AGE$ MATCH (a:NeoCRE {{sql_id: "{cid}"}}), (b:NeoStandard {{sql_id: "{nid}"}}) CREATE (a)-[:{rel_type}]->(b) $AGE$) as (a agtype);'
+                    )
+                except Exception as e:
+                    # logger.debug(f"Failed to migrate CRE-Standard link {link.id}: {e}")
+                    pass
+
+            logger.info(
+                f"Populated {len(nodes)} standards, {len(cres)} CREs, and synchronized all links into AGE graph '{cls.graph_name}'"
+            )
+
+
+class GraphDB:
+    @staticmethod
+    def instance():
+        from application.config import Config
+
+        if Config.GRAPH_DB_TYPE == "age":
+            return AGEDB.instance()
+        return NEO_DB.instance()
+
+
 class Node_collection:
     graph: inmemory_graph.CRE_Graph = None
-    neo_db: NEO_DB = None
+    graph_db: Any = None
     session = sqla.session
 
     def __init__(self) -> None:
         if not os.environ.get("NO_LOAD_GRAPH_DB"):
-            self.neo_db = NEO_DB.instance()
+            self.graph_db = GraphDB.instance()
         self.session = sqla.session
 
     def with_graph(self) -> "Node_collection":
@@ -1799,7 +2165,7 @@ class Node_collection:
         return list(set([s[0] for s in standards]))
 
     def text_search(self, text: str) -> List[Optional[cre_defs.Document]]:
-        """Given a piece of text, tries to find the best match
+        r"""Given a piece of text, tries to find the best match
         for the text in the database.
         Shortcuts:
            'CRE:<id>' will search for the <id> in cre external ids
@@ -1818,7 +2184,7 @@ class Node_collection:
         node_search = (
             r"(Node|(?P<ntype>"
             + types
-            + "))?((:| )?(?P<link>https?://\S+))?((:| )(?P<val>.+$))?"
+            + r"))?((:| )?(?P<link>https?://\S+))?((:| )(?P<val>.+$))?"
         )
         match = re.search(cre_id_search, text, re.IGNORECASE)
         if match:
@@ -2171,12 +2537,12 @@ def dbCREfromCRE(cre: cre_defs.CRE) -> CRE:
 
 
 def gap_analysis(
-    neo_db: NEO_DB,
+    graph_db: Any,
     node_names: List[str],
     cache_key: str = "",
 ):
     cre_db = Node_collection()
-    base_standard, paths = neo_db.gap_analysis(node_names[0], node_names[1])
+    base_standard, paths = graph_db.gap_analysis(node_names[0], node_names[1])
     logger.info(f"got db gap analysis for {'>>>'.join(node_names)}, calculating paths")
     if base_standard is None:
         return None
@@ -2196,8 +2562,8 @@ def gap_analysis(
             extra_paths_dict[key] = {"paths": {}}
 
     for path in paths:
-        key = path["start"].id
-        end_key = path["end"].id
+        key = getattr(path["start"], "id", None) or path["start"].get("id")
+        end_key = getattr(path["end"], "id", None) or path["end"].get("id")
         if not end_key:
             logger.error(
                 f"end_key is empty, this is a bug and this gap analysis will not progress"
@@ -2237,8 +2603,8 @@ def gap_analysis(
 
     for key in extra_paths_dict:
         cre_db.add_gap_analysis_result(
-            cache_key=make_subresources_key(node_names, key),
+            cache_key=make_subresources_key(node_names, str(key)),
             ga_object=flask_json.dumps({"result": extra_paths_dict[key]}),
         )
-    logger.info(f"stored gapa analysis for {'>>>'.join(node_names)}, successfully")
+    logger.info(f"stored gap analysis for {'>>>'.join(node_names)}, successfully")
     return (node_names, grouped_paths, extra_paths_dict)

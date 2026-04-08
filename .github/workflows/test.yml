@@ -24,5 +24,26 @@ jobs:
           pip install --upgrade pip
           pip install --upgrade setuptools
           make install-python
-      - name: Test
-        run: make test
+      - name: Start services
+        run: |
+          make start-containers
+          make docker-age
+          
+      - name: Test (Neo4j Backend)
+        env:
+          GRAPH_DB_TYPE: neo4j
+        run: |
+          make test
+          
+      - name: Test (Apache AGE Backend)
+        env:
+          GRAPH_DB_TYPE: age
+        run: |
+          make test
+          
+      - name: Stop services
+        if: always()
+        run: |
+          make docker-neo4j-rm
+          make docker-redis-rm
+          make docker-age-rm
