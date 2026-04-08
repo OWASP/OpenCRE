@@ -1,0 +1,14 @@
+[
+    {
+        "message": "gh-144833: Fix use-after-free in SSL module when SSL_new() fails (GH-144843)",
+        "label": "Relevant",
+        "score": 10,
+        "reason": "memory vulnerability, ssl/tls context, critical failure, high confidence"
+    },
+    {
+        "message": "gh-140795: Remove 'exc' field in SSLObject (gh-143491)",
+        "label": "Noise",
+        "score": 2,
+        "reason": "ssl/tls context, llm rejected"
+    }
+]
