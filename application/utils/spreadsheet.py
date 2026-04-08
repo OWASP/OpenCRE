@@ -60,8 +60,11 @@ def read_spreadsheet(
                 )
                 records = wsh.get_all_records(
                     head=1,
+                    # +1 fixes off-by-one: range(1, col_count) excluded the last
+                    # column, leaving it numericized by gspread and converting
+                    # section IDs like "7.10" silently to float 7.1.
                     numericise_ignore=list(
-                        range(1, wsh.col_count)
+                        range(1, wsh.col_count + 1)
                     ),  # Added numericise_ignore parameter
                 )  # workaround because of https://github.com/burnash/gspread/issues/1007 # this will break if the column names are in any other line
                 toyaml = yaml.safe_load(yaml.safe_dump(records))
@@ -69,9 +72,11 @@ def read_spreadsheet(
             elif not parse_numbered_only:
                 records = wsh.get_all_records(
                     head=1,
+                    # +1 fixes off-by-one: range(1, col_count) excluded the last column.
+                    # DO NOT make this 'all', gspread has a bug
                     numericise_ignore=list(
-                        range(1, wsh.col_count)
-                    ),  # Added numericise_ignore parameter -- DO NOT make this 'all', gspread has a bug
+                        range(1, wsh.col_count + 1)
+                    ),  # Added numericise_ignore parameter
                 )  # workaround because of https://github.com/burnash/gspread/issues/1007 # this will break if the column names are in any other line
                 toyaml = yaml.safe_load(yaml.safe_dump(records))
                 result[wsh.title] = toyaml
