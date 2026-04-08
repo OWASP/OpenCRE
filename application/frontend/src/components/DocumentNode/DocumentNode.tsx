@@ -5,12 +5,19 @@ import React, { FunctionComponent, useContext, useEffect, useMemo, useState } fr
 import { Link, useHistory, useLocation } from 'react-router-dom';
 import { Icon } from 'semantic-ui-react';
 
-import { CRE, TYPE_AUTOLINKED_TO, TYPE_CONTAINS, TYPE_IS_PART_OF, TYPE_RELATED } from '../../const';
+import {
+  CRE,
+  TYPE_AUTOLINKED_TO,
+  TYPE_CONTAINS,
+  TYPE_IS_PART_OF,
+  TYPE_LINKED_TO,
+  TYPE_RELATED,
+} from '../../const';
 import { useEnvironment } from '../../hooks';
 import { applyFilters } from '../../hooks/applyFilters';
 import { Document } from '../../types';
-import { getDocumentDisplayName, groupLinksByType } from '../../utils';
-import { getApiEndpoint, getDocumentTypeText, getInternalUrl } from '../../utils/document';
+import { groupLinksByType } from '../../utils';
+import { getApiEndpoint, getDocumentTypeText, getInternalUrl, getTopicDisplayName } from '../../utils/document';
 import { FilterButton } from '../FilterButton/FilterButton';
 import { LoadingAndErrorIndicator } from '../LoadingAndErrorIndicator';
 
@@ -24,6 +31,7 @@ export interface DocumentNode {
 const linkTypesToNest = [TYPE_IS_PART_OF, TYPE_RELATED, TYPE_AUTOLINKED_TO];
 const linkTypesExcludedInNesting = [TYPE_CONTAINS];
 const linkTypesExcludedWhenNestingRelatedTo = [TYPE_RELATED, TYPE_IS_PART_OF, TYPE_CONTAINS];
+const linkDisplayOrder = [TYPE_LINKED_TO, TYPE_AUTOLINKED_TO, TYPE_CONTAINS, TYPE_IS_PART_OF, TYPE_RELATED];
 
 export const DocumentNode: FunctionComponent<DocumentNode> = ({
   node,
@@ -50,7 +58,9 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({
   const isNestedInRelated = hasLinktypeRelatedParent || linkType === TYPE_RELATED;
 
   const getTopicsToDisplayOrderdByLinkType = () => {
-    return Object.entries(linksByType)
+    return linkDisplayOrder
+      .map((type) => [type, linksByType[type]] as [string, any])
+      .filter(([_, links]) => Array.isArray(links) && links.length > 0)
       .filter(([type, _]) => !linkTypesExcludedInNesting.includes(type))
       .filter(([type, _]) =>
         isNestedInRelated ? !linkTypesExcludedWhenNestingRelatedTo.includes(type) : true
@@ -63,8 +73,9 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({
     const isAllowedToAutoExpandByLength =
       topicsToDisplay.map(([, links]) => links).reduce((prev, cur) => prev.concat(cur), []).length <=
       MAX_LENGTH_FOR_AUTO_EXPAND;
-    setExpanded(isCrePath ? isAllowedToAutoExpandByLength : false);
-  }, [topicsToDisplay, isCrePath]);
+    const shouldCollapseRelatedByDefault = linkType === TYPE_RELATED;
+    setExpanded(isCrePath && !shouldCollapseRelatedByDefault ? isAllowedToAutoExpandByLength : false);
+  }, [topicsToDisplay, isCrePath, linkType]);
 
   useEffect(() => {
     if (!isStandard && linkTypesToNest.includes(linkType)) {
@@ -74,7 +85,7 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({
         .then(function (response) {
           setLoading(false);
           setNestedNode(response.data.data);
-          setExpanded(true);
+          setExpanded(linkType !== TYPE_RELATED);
           setError('');
         })
         .catch(function (axiosError) {
@@ -82,7 +93,7 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({
           setError(axiosError);
         });
     }
-  }, [id]);
+  }, [id, linkType]);
 
   const fetchedNodeHasLinks = () => {
     return usedNode.links && usedNode.links.length > 0;
@@ -103,6 +114,9 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({
         <a href={hyperlink.hyperlink} target="_blank" rel="noopener noreferrer">
           {' '}
           {hyperlink.hyperlink}
+        </a>
+        <a href={hyperlink.hyperlink} target="_blank" rel="noopener noreferrer" aria-label="Open reference in new tab">
+          <Icon name="external" />
         </a>
       </>
     );
@@ -125,7 +139,7 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({
         <div className={`title external-link document-node f2`}>
           <Link to={getInternalUrl(usedNode)}>
             <i aria-hidden="true" className="circle icon"></i>
-            {getDocumentDisplayName(usedNode)}
+            {getTopicDisplayName(usedNode)}
           </Link>
           <HyperlinkIcon hyperlink={usedNode.hyperlink} />
         </div>
@@ -140,14 +154,14 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({
         <LoadingAndErrorIndicator loading={loading} error={error} />
         <div className={`title ${active} document-node`} onClick={() => setExpanded(!expanded)}>
           <i aria-hidden="true" className="dropdown icon"></i>
-          <Link to={getInternalUrl(usedNode)}>{getDocumentDisplayName(usedNode)}</Link>
+          <Link to={getInternalUrl(usedNode)}>{getTopicDisplayName(usedNode)}</Link>
         </div>
         <div className={`content${active} document-node`}>
           <Hyperlink hyperlink={usedNode.hyperlink} />
           {expanded &&
             topicsToDisplay.map(([type, links], idx) => {
               const sortedResults = [...links].sort((a, b) =>
-                getDocumentDisplayName(a.document).localeCompare(getDocumentDisplayName(b.document))
+                getTopicDisplayName(a.document).localeCompare(getTopicDisplayName(b.document))
               );
               return (
                 <div className="document-node__link-type-container" key={`${type}-${idx}`}>
