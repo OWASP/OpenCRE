@@ -277,8 +277,8 @@ def register_standard(
         # calculate gap analysis
         populate_neo4j_db(db_connection_str)
         jobs = []
-        pending_stadards = collection.standards()
-        for standard_name in pending_stadards:
+        pending_standards = collection.standards()
+        for standard_name in pending_standards:
             if standard_name == importing_name:
                 continue
 
@@ -293,9 +293,9 @@ def register_standard(
                     jobs.append(forward_job)
                 except exceptions.NoSuchJobError as nje:
                     logger.error(
-                        f"Could not find gap analysis job for for {importing_name} and {standard_name} putting {standard_name} back in the queue"
+                        f"Could not find gap analysis job for {importing_name} and {standard_name} putting {standard_name} back in the queue"
                     )
-                    pending_stadards.append(standard_name)
+                    pending_standards.append(standard_name)
 
             bw_key = gap_analysis.make_resources_key([standard_name, importing_name])
             if not collection.gap_analysis_exists(bw_key):
@@ -308,9 +308,9 @@ def register_standard(
                     jobs.append(backward_job)
                 except exceptions.NoSuchJobError as nje:
                     logger.error(
-                        f"Could not find gap analysis job for for {importing_name} and {standard_name} putting {standard_name} back in the queue"
+                        f"Could not find gap analysis job for {importing_name} and {standard_name} putting {standard_name} back in the queue"
                     )
-                    pending_stadards.append(standard_name)
+                    pending_standards.append(standard_name)
         redis.wait_for_jobs(jobs)
         conn.set(standard_hash, value="")
 
