@@ -61,12 +61,13 @@ def createPullRequest(
     apiToken: str, repo: str, title: str, srcBranch: str, targetBranch: str = "master"
 ) -> None:
     logger.info(
-        "Issuing pull request from %s to master for repo %s" % (srcBranch, repo)
+        "Issuing pull request from %s to %s for repo %s"
+        % (srcBranch, targetBranch, repo)
     )
     github = Github(apiToken)
     body = "CRE Sync %s" % title
-    pr = github.get_repo(repo).create_pull(
-        title=title, body=body, head=srcBranch, base="master"
+    github.get_repo(repo).create_pull(
+        title=title, body=body, head=srcBranch, base=targetBranch
     )
 
 
