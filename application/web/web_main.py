@@ -688,7 +688,9 @@ def chat_cre() -> Any:
 
     database = db.Node_collection()
     prompt = prompt_client.PromptHandler(database)
-    response = prompt.generate_text(message.get("prompt"))
+    response = prompt.generate_text(
+        message.get("prompt"), instructions=message.get("instructions")
+    )
     return jsonify(response)
 
 
