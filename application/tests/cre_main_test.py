@@ -26,10 +26,38 @@ class StubResponse:
         self._payload = payload
 
     def json(self) -> Any:
+        if isinstance(self._payload, Exception):
+            raise self._payload
         return self._payload
 
 
 class TestMain(unittest.TestCase):
+    def _make_gap_sync_collection(self) -> tuple[Mock, Dict[str, str]]:
+        collection = mock.Mock()
+        collection.with_graph.return_value = collection
+        cache_entries: Dict[str, str] = {}
+        collection.gap_analysis_exists.side_effect = lambda key: key in cache_entries
+        collection.add_gap_analysis_result.side_effect = (
+            lambda cache_key, ga_object: cache_entries.__setitem__(cache_key, ga_object)
+        )
+        return collection, cache_entries
+
+    def _root_cres_response(self) -> StubResponse:
+        return StubResponse(
+            200,
+            {
+                "data": [
+                    {
+                        "doctype": "CRE",
+                        "id": "111-111",
+                        "name": "Root CRE",
+                        "description": "",
+                        "links": [],
+                    }
+                ]
+            },
+        )
+
     def tearDown(self) -> None:
         for tmpdir in self.tmpdirs:
             shutil.rmtree(tmpdir)
@@ -489,31 +517,12 @@ class TestMain(unittest.TestCase):
         mocked_register_cre: Mock,
         mocked_db_connect: Mock,
     ) -> None:
-        collection = mock.Mock()
-        collection.with_graph.return_value = collection
-        cache_entries: Dict[str, str] = {}
-        collection.gap_analysis_exists.side_effect = lambda key: key in cache_entries
-        collection.add_gap_analysis_result.side_effect = (
-            lambda cache_key, ga_object: cache_entries.__setitem__(cache_key, ga_object)
-        )
+        collection, cache_entries = self._make_gap_sync_collection()
         mocked_db_connect.return_value = collection
 
         def fake_get(url: str, **kwargs) -> StubResponse:
             if url.endswith("/root_cres"):
-                return StubResponse(
-                    200,
-                    {
-                        "data": [
-                            {
-                                "doctype": "CRE",
-                                "id": "111-111",
-                                "name": "Root CRE",
-                                "description": "",
-                                "links": [],
-                            }
-                        ]
-                    },
-                )
+                return self._root_cres_response()
             if url.endswith("/standards"):
                 return StubResponse(200, ["ASVS", "Top10"])
             if url.endswith("/map_analysis"):
@@ -585,8 +594,7 @@ class TestMain(unittest.TestCase):
             cached_key: json.dumps({"result": {"cached": 1}})
         }
 
-        collection = mock.Mock()
-        collection.with_graph.return_value = collection
+        collection, _ = self._make_gap_sync_collection()
         collection.gap_analysis_exists.side_effect = lambda key: key in cache_entries
         collection.add_gap_analysis_result.side_effect = (
             lambda cache_key, ga_object: cache_entries.__setitem__(cache_key, ga_object)
@@ -595,20 +603,7 @@ class TestMain(unittest.TestCase):
 
         def fake_get(url: str, **kwargs) -> StubResponse:
             if url.endswith("/root_cres"):
-                return StubResponse(
-                    200,
-                    {
-                        "data": [
-                            {
-                                "doctype": "CRE",
-                                "id": "111-111",
-                                "name": "Root CRE",
-                                "description": "",
-                                "links": [],
-                            }
-                        ]
-                    },
-                )
+                return self._root_cres_response()
             if url.endswith("/standards"):
                 return StubResponse(200, ["ASVS", "Top10"])
             if url.endswith("/map_analysis"):
@@ -661,31 +656,12 @@ class TestMain(unittest.TestCase):
         mocked_register_cre: Mock,
         mocked_db_connect: Mock,
     ) -> None:
-        cache_entries: Dict[str, str] = {}
-        collection = mock.Mock()
-        collection.with_graph.return_value = collection
-        collection.gap_analysis_exists.side_effect = lambda key: key in cache_entries
-        collection.add_gap_analysis_result.side_effect = (
-            lambda cache_key, ga_object: cache_entries.__setitem__(cache_key, ga_object)
-        )
+        collection, cache_entries = self._make_gap_sync_collection()
         mocked_db_connect.return_value = collection
 
         def fake_get(url: str, **kwargs) -> StubResponse:
             if url.endswith("/root_cres"):
-                return StubResponse(
-                    200,
-                    {
-                        "data": [
-                            {
-                                "doctype": "CRE",
-                                "id": "111-111",
-                                "name": "Root CRE",
-                                "description": "",
-                                "links": [],
-                            }
-                        ]
-                    },
-                )
+                return self._root_cres_response()
             if url.endswith("/standards"):
                 return StubResponse(200, ["ASVS", "Top10"])
             if url.endswith("/map_analysis"):
@@ -775,31 +751,12 @@ class TestMain(unittest.TestCase):
         mocked_register_cre: Mock,
         mocked_db_connect: Mock,
     ) -> None:
-        cache_entries: Dict[str, str] = {}
-        collection = mock.Mock()
-        collection.with_graph.return_value = collection
-        collection.gap_analysis_exists.side_effect = lambda key: key in cache_entries
-        collection.add_gap_analysis_result.side_effect = (
-            lambda cache_key, ga_object: cache_entries.__setitem__(cache_key, ga_object)
-        )
+        collection, cache_entries = self._make_gap_sync_collection()
         mocked_db_connect.return_value = collection
 
         def fake_get(url: str, **kwargs) -> StubResponse:
             if url.endswith("/root_cres"):
-                return StubResponse(
-                    200,
-                    {
-                        "data": [
-                            {
-                                "doctype": "CRE",
-                                "id": "111-111",
-                                "name": "Root CRE",
-                                "description": "",
-                                "links": [],
-                            }
-                        ]
-                    },
-                )
+                return self._root_cres_response()
             if url.endswith("/standards"):
                 return StubResponse(200, ["ASVS", "Top10", "NIST"])
             if url.endswith("/map_analysis"):
@@ -844,6 +801,370 @@ class TestMain(unittest.TestCase):
         ]
         self.assertEqual(len(map_analysis_calls), 1)
 
+        mocked_register_cre.assert_called_once()
+        mocked_populate_neo4j_db.assert_called_once_with("/tmp/cache.sqlite")
+
+    @patch("application.cmd.cre_main.db_connect")
+    @patch("application.cmd.cre_main.register_cre")
+    @patch("application.cmd.cre_main.populate_neo4j_db")
+    @patch("application.cmd.cre_main.requests.get")
+    def test_download_graph_from_upstream_uses_attempt_limit_for_unsynced_pairs(
+        self,
+        mocked_requests_get: Mock,
+        mocked_populate_neo4j_db: Mock,
+        mocked_register_cre: Mock,
+        mocked_db_connect: Mock,
+    ) -> None:
+        collection, cache_entries = self._make_gap_sync_collection()
+        mocked_db_connect.return_value = collection
+
+        def fake_get(url: str, **kwargs) -> StubResponse:
+            if url.endswith("/root_cres"):
+                return self._root_cres_response()
+            if url.endswith("/standards"):
+                return StubResponse(200, ["ASVS", "Top10", "NIST"])
+            if url.endswith("/map_analysis"):
+                return StubResponse(200, {"job_id": "job-1"})
+            self.fail(f"Unexpected upstream URL: {url}")
+
+        mocked_requests_get.side_effect = fake_get
+
+        with patch.dict(
+            os.environ,
+            {
+                main.UPSTREAM_SYNC_MAP_ANALYSIS_MAX_PAIRS_ENV: "1",
+                "CRE_NO_NEO4J": "",
+            },
+            clear=False,
+        ):
+            main.download_graph_from_upstream("/tmp/cache.sqlite")
+
+        self.assertEqual(cache_entries, {})
+        map_analysis_calls = [
+            call
+            for call in mocked_requests_get.call_args_list
+            if call.args and call.args[0].endswith("/map_analysis")
+        ]
+        self.assertEqual(len(map_analysis_calls), 1)
+        mocked_register_cre.assert_called_once()
+        mocked_populate_neo4j_db.assert_called_once_with("/tmp/cache.sqlite")
+
+    @patch("application.cmd.cre_main.db_connect")
+    @patch("application.cmd.cre_main.register_cre")
+    @patch("application.cmd.cre_main.populate_neo4j_db")
+    @patch("application.cmd.cre_main.requests.get")
+    def test_download_graph_from_upstream_uses_default_attempt_limit(
+        self,
+        mocked_requests_get: Mock,
+        mocked_populate_neo4j_db: Mock,
+        mocked_register_cre: Mock,
+        mocked_db_connect: Mock,
+    ) -> None:
+        collection, cache_entries = self._make_gap_sync_collection()
+        mocked_db_connect.return_value = collection
+
+        def fake_get(url: str, **kwargs) -> StubResponse:
+            if url.endswith("/root_cres"):
+                return self._root_cres_response()
+            if url.endswith("/standards"):
+                return StubResponse(
+                    200,
+                    ["A", "B", "C", "D", "E", "F"],
+                )
+            if url.endswith("/map_analysis"):
+                return StubResponse(200, {"job_id": "job-1"})
+            self.fail(f"Unexpected upstream URL: {url}")
+
+        mocked_requests_get.side_effect = fake_get
+
+        with patch.dict(os.environ, {"CRE_NO_NEO4J": ""}, clear=False):
+            os.environ.pop(main.UPSTREAM_SYNC_MAP_ANALYSIS_MAX_PAIRS_ENV, None)
+            main.download_graph_from_upstream("/tmp/cache.sqlite")
+
+        self.assertEqual(cache_entries, {})
+        map_analysis_calls = [
+            call
+            for call in mocked_requests_get.call_args_list
+            if call.args and call.args[0].endswith("/map_analysis")
+        ]
+        self.assertEqual(
+            len(map_analysis_calls),
+            main.DEFAULT_UPSTREAM_SYNC_MAP_ANALYSIS_MAX_PAIRS,
+        )
+        mocked_register_cre.assert_called_once()
+        mocked_populate_neo4j_db.assert_called_once_with("/tmp/cache.sqlite")
+
+    @patch("application.cmd.cre_main.db_connect")
+    @patch("application.cmd.cre_main.register_cre")
+    @patch("application.cmd.cre_main.populate_neo4j_db")
+    @patch("application.cmd.cre_main.requests.get")
+    def test_download_graph_from_upstream_uses_default_limit_when_env_invalid(
+        self,
+        mocked_requests_get: Mock,
+        mocked_populate_neo4j_db: Mock,
+        mocked_register_cre: Mock,
+        mocked_db_connect: Mock,
+    ) -> None:
+        collection, cache_entries = self._make_gap_sync_collection()
+        mocked_db_connect.return_value = collection
+
+        def fake_get(url: str, **kwargs) -> StubResponse:
+            if url.endswith("/root_cres"):
+                return self._root_cres_response()
+            if url.endswith("/standards"):
+                return StubResponse(
+                    200,
+                    ["A", "B", "C", "D", "E", "F"],
+                )
+            if url.endswith("/map_analysis"):
+                return StubResponse(200, {"job_id": "job-1"})
+            self.fail(f"Unexpected upstream URL: {url}")
+
+        mocked_requests_get.side_effect = fake_get
+
+        with patch.dict(
+            os.environ,
+            {
+                main.UPSTREAM_SYNC_MAP_ANALYSIS_MAX_PAIRS_ENV: "not-a-number",
+                "CRE_NO_NEO4J": "",
+            },
+            clear=False,
+        ):
+            main.download_graph_from_upstream("/tmp/cache.sqlite")
+
+        self.assertEqual(cache_entries, {})
+        map_analysis_calls = [
+            call
+            for call in mocked_requests_get.call_args_list
+            if call.args and call.args[0].endswith("/map_analysis")
+        ]
+        self.assertEqual(
+            len(map_analysis_calls),
+            main.DEFAULT_UPSTREAM_SYNC_MAP_ANALYSIS_MAX_PAIRS,
+        )
+        mocked_register_cre.assert_called_once()
+        mocked_populate_neo4j_db.assert_called_once_with("/tmp/cache.sqlite")
+
+    @patch("application.cmd.cre_main.db_connect")
+    @patch("application.cmd.cre_main.register_cre")
+    @patch("application.cmd.cre_main.populate_neo4j_db")
+    @patch("application.cmd.cre_main.requests.get")
+    def test_download_graph_from_upstream_skips_gap_sync_when_standards_non_200(
+        self,
+        mocked_requests_get: Mock,
+        mocked_populate_neo4j_db: Mock,
+        mocked_register_cre: Mock,
+        mocked_db_connect: Mock,
+    ) -> None:
+        collection, cache_entries = self._make_gap_sync_collection()
+        mocked_db_connect.return_value = collection
+
+        def fake_get(url: str, **kwargs) -> StubResponse:
+            if url.endswith("/root_cres"):
+                return self._root_cres_response()
+            if url.endswith("/standards"):
+                return StubResponse(503, {"message": "unavailable"})
+            self.fail(f"Unexpected upstream URL: {url}")
+
+        mocked_requests_get.side_effect = fake_get
+
+        with patch.dict(os.environ, {"CRE_NO_NEO4J": ""}, clear=False):
+            main.download_graph_from_upstream("/tmp/cache.sqlite")
+
+        self.assertEqual(cache_entries, {})
+        map_analysis_calls = [
+            call
+            for call in mocked_requests_get.call_args_list
+            if call.args and call.args[0].endswith("/map_analysis")
+        ]
+        self.assertEqual(len(map_analysis_calls), 0)
+        mocked_register_cre.assert_called_once()
+        mocked_populate_neo4j_db.assert_called_once_with("/tmp/cache.sqlite")
+
+    @patch("application.cmd.cre_main.db_connect")
+    @patch("application.cmd.cre_main.register_cre")
+    @patch("application.cmd.cre_main.populate_neo4j_db")
+    @patch("application.cmd.cre_main.requests.get")
+    def test_download_graph_from_upstream_skips_gap_sync_when_standards_json_invalid(
+        self,
+        mocked_requests_get: Mock,
+        mocked_populate_neo4j_db: Mock,
+        mocked_register_cre: Mock,
+        mocked_db_connect: Mock,
+    ) -> None:
+        collection, cache_entries = self._make_gap_sync_collection()
+        mocked_db_connect.return_value = collection
+
+        def fake_get(url: str, **kwargs) -> StubResponse:
+            if url.endswith("/root_cres"):
+                return self._root_cres_response()
+            if url.endswith("/standards"):
+                return StubResponse(200, ValueError("invalid json"))
+            self.fail(f"Unexpected upstream URL: {url}")
+
+        mocked_requests_get.side_effect = fake_get
+
+        with patch.dict(os.environ, {"CRE_NO_NEO4J": ""}, clear=False):
+            main.download_graph_from_upstream("/tmp/cache.sqlite")
+
+        self.assertEqual(cache_entries, {})
+        map_analysis_calls = [
+            call
+            for call in mocked_requests_get.call_args_list
+            if call.args and call.args[0].endswith("/map_analysis")
+        ]
+        self.assertEqual(len(map_analysis_calls), 0)
+        mocked_register_cre.assert_called_once()
+        mocked_populate_neo4j_db.assert_called_once_with("/tmp/cache.sqlite")
+
+    @patch("application.cmd.cre_main.db_connect")
+    @patch("application.cmd.cre_main.register_cre")
+    @patch("application.cmd.cre_main.populate_neo4j_db")
+    @patch("application.cmd.cre_main.requests.get")
+    def test_download_graph_from_upstream_skips_invalid_map_analysis_payload(
+        self,
+        mocked_requests_get: Mock,
+        mocked_populate_neo4j_db: Mock,
+        mocked_register_cre: Mock,
+        mocked_db_connect: Mock,
+    ) -> None:
+        collection, cache_entries = self._make_gap_sync_collection()
+        mocked_db_connect.return_value = collection
+
+        def fake_get(url: str, **kwargs) -> StubResponse:
+            if url.endswith("/root_cres"):
+                return self._root_cres_response()
+            if url.endswith("/standards"):
+                return StubResponse(200, ["ASVS", "Top10"])
+            if url.endswith("/map_analysis"):
+                return StubResponse(200, ValueError("invalid json"))
+            self.fail(f"Unexpected upstream URL: {url}")
+
+        mocked_requests_get.side_effect = fake_get
+
+        with patch.dict(
+            os.environ,
+            {
+                main.UPSTREAM_SYNC_MAP_ANALYSIS_MAX_PAIRS_ENV: "1",
+                "CRE_NO_NEO4J": "",
+            },
+            clear=False,
+        ):
+            main.download_graph_from_upstream("/tmp/cache.sqlite")
+
+        self.assertEqual(cache_entries, {})
+        mocked_register_cre.assert_called_once()
+        mocked_populate_neo4j_db.assert_called_once_with("/tmp/cache.sqlite")
+
+    @patch("application.cmd.cre_main.db_connect")
+    @patch("application.cmd.cre_main.register_cre")
+    @patch("application.cmd.cre_main.populate_neo4j_db")
+    @patch("application.cmd.cre_main.requests.get")
+    def test_download_graph_from_upstream_skips_weak_links_non_200(
+        self,
+        mocked_requests_get: Mock,
+        mocked_populate_neo4j_db: Mock,
+        mocked_register_cre: Mock,
+        mocked_db_connect: Mock,
+    ) -> None:
+        collection, cache_entries = self._make_gap_sync_collection()
+        mocked_db_connect.return_value = collection
+
+        def fake_get(url: str, **kwargs) -> StubResponse:
+            if url.endswith("/root_cres"):
+                return self._root_cres_response()
+            if url.endswith("/standards"):
+                return StubResponse(200, ["ASVS", "Top10"])
+            if url.endswith("/map_analysis"):
+                return StubResponse(
+                    200,
+                    {
+                        "result": {
+                            "ASVS:1": {
+                                "start": {"id": "ASVS:1"},
+                                "paths": {},
+                                "extra": 1,
+                            }
+                        }
+                    },
+                )
+            if url.endswith("/map_analysis_weak_links"):
+                return StubResponse(503, {"message": "unavailable"})
+            self.fail(f"Unexpected upstream URL: {url}")
+
+        mocked_requests_get.side_effect = fake_get
+
+        with patch.dict(
+            os.environ,
+            {
+                main.UPSTREAM_SYNC_MAP_ANALYSIS_MAX_PAIRS_ENV: "1",
+                "CRE_NO_NEO4J": "",
+            },
+            clear=False,
+        ):
+            main.download_graph_from_upstream("/tmp/cache.sqlite")
+
+        self.assertIn(gap_analysis.make_resources_key(["ASVS", "Top10"]), cache_entries)
+        self.assertNotIn(
+            gap_analysis.make_subresources_key(["ASVS", "Top10"], "ASVS:1"),
+            cache_entries,
+        )
+        mocked_register_cre.assert_called_once()
+        mocked_populate_neo4j_db.assert_called_once_with("/tmp/cache.sqlite")
+
+    @patch("application.cmd.cre_main.db_connect")
+    @patch("application.cmd.cre_main.register_cre")
+    @patch("application.cmd.cre_main.populate_neo4j_db")
+    @patch("application.cmd.cre_main.requests.get")
+    def test_download_graph_from_upstream_skips_weak_links_invalid_json(
+        self,
+        mocked_requests_get: Mock,
+        mocked_populate_neo4j_db: Mock,
+        mocked_register_cre: Mock,
+        mocked_db_connect: Mock,
+    ) -> None:
+        collection, cache_entries = self._make_gap_sync_collection()
+        mocked_db_connect.return_value = collection
+
+        def fake_get(url: str, **kwargs) -> StubResponse:
+            if url.endswith("/root_cres"):
+                return self._root_cres_response()
+            if url.endswith("/standards"):
+                return StubResponse(200, ["ASVS", "Top10"])
+            if url.endswith("/map_analysis"):
+                return StubResponse(
+                    200,
+                    {
+                        "result": {
+                            "ASVS:1": {
+                                "start": {"id": "ASVS:1"},
+                                "paths": {},
+                                "extra": 1,
+                            }
+                        }
+                    },
+                )
+            if url.endswith("/map_analysis_weak_links"):
+                return StubResponse(200, ValueError("invalid json"))
+            self.fail(f"Unexpected upstream URL: {url}")
+
+        mocked_requests_get.side_effect = fake_get
+
+        with patch.dict(
+            os.environ,
+            {
+                main.UPSTREAM_SYNC_MAP_ANALYSIS_MAX_PAIRS_ENV: "1",
+                "CRE_NO_NEO4J": "",
+            },
+            clear=False,
+        ):
+            main.download_graph_from_upstream("/tmp/cache.sqlite")
+
+        self.assertIn(gap_analysis.make_resources_key(["ASVS", "Top10"]), cache_entries)
+        self.assertNotIn(
+            gap_analysis.make_subresources_key(["ASVS", "Top10"], "ASVS:1"),
+            cache_entries,
+        )
         mocked_register_cre.assert_called_once()
         mocked_populate_neo4j_db.assert_called_once_with("/tmp/cache.sqlite")
 

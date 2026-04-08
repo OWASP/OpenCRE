@@ -34,6 +34,7 @@ app = None
 DEFAULT_UPSTREAM_API_URL = "https://opencre.org/rest/v1"
 UPSTREAM_SYNC_REQUEST_TIMEOUT_SECONDS = 30
 UPSTREAM_SYNC_MAP_ANALYSIS_MAX_PAIRS_ENV = "CRE_UPSTREAM_SYNC_MAX_MAP_ANALYSIS_PAIRS"
+DEFAULT_UPSTREAM_SYNC_MAP_ANALYSIS_MAX_PAIRS = 25
 
 
 def register_node(node: defs.Node, collection: db.Node_collection) -> db.Node:
@@ -468,6 +469,49 @@ def _upstream_api_url() -> str:
     return os.environ.get("CRE_UPSTREAM_API_URL", DEFAULT_UPSTREAM_API_URL).rstrip("/")
 
 
+def _fetch_upstream_json(
+    url: str,
+    *,
+    context: str,
+    params: List[Tuple[str, str]] | None = None,
+    expected_type: type | None = None,
+) -> Any | None:
+    try:
+        response = requests.get(
+            url,
+            params=params,
+            timeout=UPSTREAM_SYNC_REQUEST_TIMEOUT_SECONDS,
+        )
+    except requests.RequestException as exc:
+        logger.warning("Could not fetch %s from upstream: %s", context, exc)
+        return None
+
+    if response.status_code != 200:
+        logger.info(
+            "Skipping %s from upstream (status=%s)",
+            context,
+            response.status_code,
+        )
+        return None
+
+    try:
+        payload = response.json()
+    except ValueError:
+        logger.warning("Skipping %s due to invalid JSON payload", context)
+        return None
+
+    if expected_type is not None and not isinstance(payload, expected_type):
+        logger.warning(
+            "Skipping %s because upstream returned %s instead of %s",
+            context,
+            type(payload).__name__,
+            expected_type.__name__,
+        )
+        return None
+
+    return payload
+
+
 def _progressively_sync_weak_links_for_pair(
     collection: db.Node_collection,
     upstream_api_url: str,
@@ -497,46 +541,17 @@ def _progressively_sync_weak_links_for_pair(
             continue
 
         weak_attempted += 1
-        try:
-            weak_response = requests.get(
-                f"{upstream_api_url}/map_analysis_weak_links",
-                params=[
-                    ("standard", base_standard),
-                    ("standard", compare_standard),
-                    ("key", key),
-                ],
-                timeout=UPSTREAM_SYNC_REQUEST_TIMEOUT_SECONDS,
-            )
-        except requests.RequestException as exc:
-            logger.warning(
-                "Could not sync weak links for %s >> %s (key=%s): %s",
-                base_standard,
-                compare_standard,
-                key,
-                exc,
-            )
-            continue
-        if weak_response.status_code != 200:
-            logger.info(
-                "Skipping weak links for %s >> %s (key=%s) from upstream (status=%s)",
-                base_standard,
-                compare_standard,
-                key,
-                weak_response.status_code,
-            )
-            continue
-
-        try:
-            weak_payload = weak_response.json()
-        except ValueError:
-            logger.warning(
-                "Skipping weak links for %s >> %s (key=%s) due to invalid JSON payload",
-                base_standard,
-                compare_standard,
-                key,
-            )
-            continue
-        if not isinstance(weak_payload, dict) or weak_payload.get("result") is None:
+        weak_payload = _fetch_upstream_json(
+            f"{upstream_api_url}/map_analysis_weak_links",
+            context=f"weak links for {base_standard} >> {compare_standard} (key={key})",
+            params=[
+                ("standard", base_standard),
+                ("standard", compare_standard),
+                ("key", key),
+            ],
+            expected_type=dict,
+        )
+        if weak_payload is None or weak_payload.get("result") is None:
             continue
 
         collection.add_gap_analysis_result(
@@ -551,43 +566,35 @@ def _progressively_sync_weak_links_for_pair(
 def _progressively_sync_gap_analysis_from_upstream(
     collection: db.Node_collection, upstream_api_url: str
 ) -> None:
-    max_pairs_raw = os.environ.get(UPSTREAM_SYNC_MAP_ANALYSIS_MAX_PAIRS_ENV, "0")
+    max_pairs_raw = os.environ.get(
+        UPSTREAM_SYNC_MAP_ANALYSIS_MAX_PAIRS_ENV,
+        str(DEFAULT_UPSTREAM_SYNC_MAP_ANALYSIS_MAX_PAIRS),
+    )
     try:
         max_pairs = int(max_pairs_raw)
     except ValueError:
         logger.warning(
-            "%s should be an integer, got '%s'. Falling back to full sync.",
+            "%s should be an integer, got '%s'. Falling back to default limit %s.",
             UPSTREAM_SYNC_MAP_ANALYSIS_MAX_PAIRS_ENV,
             max_pairs_raw,
+            DEFAULT_UPSTREAM_SYNC_MAP_ANALYSIS_MAX_PAIRS,
         )
-        max_pairs = 0
+        max_pairs = DEFAULT_UPSTREAM_SYNC_MAP_ANALYSIS_MAX_PAIRS
     if max_pairs < 0:
-        max_pairs = 0
-
-    try:
-        standards_response = requests.get(
-            f"{upstream_api_url}/standards",
-            timeout=UPSTREAM_SYNC_REQUEST_TIMEOUT_SECONDS,
-        )
-    except requests.RequestException as exc:
         logger.warning(
-            "Failed to fetch standards from upstream map analysis API: %s", exc
+            "%s should not be negative, got '%s'. Falling back to default limit %s.",
+            UPSTREAM_SYNC_MAP_ANALYSIS_MAX_PAIRS_ENV,
+            max_pairs_raw,
+            DEFAULT_UPSTREAM_SYNC_MAP_ANALYSIS_MAX_PAIRS,
         )
-        return
-    if standards_response.status_code != 200:
-        logger.warning(
-            "Could not fetch standards from upstream (status=%s), skipping map analysis sync",
-            standards_response.status_code,
-        )
-        return
+        max_pairs = DEFAULT_UPSTREAM_SYNC_MAP_ANALYSIS_MAX_PAIRS
 
-    try:
-        standards = standards_response.json()
-    except ValueError:
-        logger.warning("Upstream /standards response is not valid JSON, skipping")
-        return
-    if not isinstance(standards, list):
-        logger.warning("Upstream /standards response is not a list, skipping")
+    standards = _fetch_upstream_json(
+        f"{upstream_api_url}/standards",
+        context="standards list for progressive map analysis sync",
+        expected_type=list,
+    )
+    if standards is None:
         return
     standards = [standard for standard in standards if isinstance(standard, str)]
     standards = list(dict.fromkeys(standards))
@@ -598,7 +605,7 @@ def _progressively_sync_gap_analysis_from_upstream(
         return
 
     logger.info(
-        "Starting progressive map analysis sync for up to %s pair(s) out of %s total",
+        "Starting progressive map analysis sync for up to %s missing pair attempt(s) out of %s total",
         max_pairs if max_pairs else "all",
         total_pairs,
     )
@@ -617,49 +624,23 @@ def _progressively_sync_gap_analysis_from_upstream(
             if collection.gap_analysis_exists(cache_key):
                 continue
 
-            if max_pairs and synced_pairs >= max_pairs:
+            if max_pairs and attempted_pairs >= max_pairs:
                 logger.info(
-                    "Reached %s=%s after syncing %s pair(s), stopping early",
+                    "Reached %s=%s after attempting %s missing pair(s), stopping early",
                     UPSTREAM_SYNC_MAP_ANALYSIS_MAX_PAIRS_ENV,
                     max_pairs,
-                    synced_pairs,
+                    attempted_pairs,
                 )
                 return
 
             attempted_pairs += 1
-            try:
-                response = requests.get(
-                    f"{upstream_api_url}/map_analysis",
-                    params=[("standard", standard_a), ("standard", standard_b)],
-                    timeout=UPSTREAM_SYNC_REQUEST_TIMEOUT_SECONDS,
-                )
-            except requests.RequestException as exc:
-                logger.warning(
-                    "Could not sync map analysis for %s >> %s: %s",
-                    standard_a,
-                    standard_b,
-                    exc,
-                )
-                continue
-            if response.status_code != 200:
-                logger.info(
-                    "Skipping map analysis %s >> %s from upstream (status=%s)",
-                    standard_a,
-                    standard_b,
-                    response.status_code,
-                )
-                continue
-
-            try:
-                payload = response.json()
-            except ValueError:
-                logger.warning(
-                    "Skipping map analysis %s >> %s due to invalid JSON payload",
-                    standard_a,
-                    standard_b,
-                )
-                continue
-            if not isinstance(payload, dict) or payload.get("result") is None:
+            payload = _fetch_upstream_json(
+                f"{upstream_api_url}/map_analysis",
+                context=f"map analysis for {standard_a} >> {standard_b}",
+                params=[("standard", standard_a), ("standard", standard_b)],
+                expected_type=dict,
+            )
+            if payload is None or payload.get("result") is None:
                 continue
 
             collection.add_gap_analysis_result(
