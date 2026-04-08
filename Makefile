@@ -1,6 +1,6 @@
 .ONESHELL:
 
-.PHONY: run test covers install-deps dev docker lint frontend clean all
+.PHONY: run test covers install-deps update-deps dev docker lint frontend clean all
 
 prod-run:
 	gunicorn cre:app --log-file=-
@@ -59,6 +59,9 @@ test:
 
 cover:
 	. ./venv/bin/activate && FLASK_APP=cre.py FLASK_CONFIG=testing flask test --cover
+
+update-deps:
+	pip install pip-tools && pip-compile requirements.in --output-file requirements.txt --strip-extras
 
 install-deps-python:
 	[ -d "./venv" ] && . ./venv/bin/activate &&\
