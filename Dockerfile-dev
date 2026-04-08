@@ -1,9 +1,12 @@
 FROM node:lts AS build
 
 WORKDIR /code
-COPY . /code
-
 RUN apt-get update && apt-get install -y chromium
+COPY package.json yarn.lock ./
+RUN yarn install
+
+COPY . .
+
 RUN make install-deps-typescript && make install-typescript && make frontend
 
 FROM python:3.11.0 AS run

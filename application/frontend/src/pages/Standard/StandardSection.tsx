@@ -72,7 +72,7 @@ export const StandardSection = () => {
         {document && document.hyperlink && (
           <>
             <span>Reference: </span>
-            <a href={document?.hyperlink} target="_blank">
+            <a href={document?.hyperlink} target="_blank" rel="noopener noreferrer">
               {' '}
               {document.hyperlink}
             </a>

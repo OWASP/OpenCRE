@@ -41,8 +41,18 @@
   gap: 0.5rem;
   margin-left: 4rem;
   img {
-    height: 10rem;
+    height: 4rem;
     width: 10rem;
+    display: block;
+  }
+
+  @media (max-width: 767px) {
+    margin-left: 1rem;
+    img {
+      width: auto;
+      max-width: 7rem;
+      height: 3rem;
+    }
   }
 }
 
@@ -334,3 +344,4 @@
   white-space: nowrap;
   border: 0;
 }
+

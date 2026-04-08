@@ -562,13 +562,85 @@ class NEO_DB:
 
     @classmethod
     def gap_analysis(self, name_1, name_2):
-        logger.info(f"Performing GraphDB queries for gap analysis {name_1}>>{name_2}")
+        """
+        Gap analysis with feature toggle support.
+
+        Toggle between original exhaustive traversal (default) and
+        optimized tiered pruning (opt-in via GAP_ANALYSIS_OPTIMIZED env var).
+        """
+        from application.config import Config
+
+        if Config.GAP_ANALYSIS_OPTIMIZED:
+            logger.info(
+                f"Gap Analysis: Using OPTIMIZED tiered pruning for {name_1}>>{name_2}"
+            )
+            return self._gap_analysis_optimized(name_1, name_2)
+        else:
+            logger.info(
+                f"Gap Analysis: Using ORIGINAL exhaustive traversal for {name_1}>>{name_2}"
+            )
+            return self._gap_analysis_original(name_1, name_2)
+
+    @classmethod
+    def _gap_analysis_optimized(self, name_1, name_2):
+        """
+        OPTIMIZED: Tiered Pruning Strategy with Early Exit
+
+        Tier 1: Strong links only (LINKED_TO, SAME, AUTOMATICALLY_LINKED_TO)
+        Tier 2: Add hierarchical (CONTAINS) if Tier 1 empty
+        Tier 3: Fallback to wildcard if both tiers empty
+        """
+        logger.info(
+            f"Performing OPTIMIZED GraphDB queries for gap analysis {name_1}>>{name_2}"
+        )
         base_standard = NeoStandard.nodes.filter(name=name_1)
         denylist = ["Cross-cutting concerns"]
-        from datetime import datetime
 
-        t1 = datetime.now()
+        # Tier 1: Strong Links (LINKED_TO, SAME, AUTOMATICALLY_LINKED_TO)
+        path_records, _ = db.cypher_query(
+            """
+         MATCH (BaseStandard:NeoStandard {name: $name1})
+         MATCH (CompareStandard:NeoStandard {name: $name2})
+         MATCH p = allShortestPaths((BaseStandard)-[:(LINKED_TO|AUTOMATICALLY_LINKED_TO|SAME)*..20]-(CompareStandard))
+         WITH p
+         WHERE length(p) > 1 AND ALL(n in NODES(p) WHERE (n:NeoCRE or n = BaseStandard or n = CompareStandard) AND NOT n.name in $denylist)
+         RETURN p
+            """,
+            {"name1": name_1, "name2": name_2, "denylist": denylist},
+            resolve_objects=True,
+        )
 
+        # If strict strong links found, return early (Pruning)
+        if path_records and len(path_records) > 0:
+            logger.info(
+                f"Gap Analysis: Tier 1 (Strong) found {len(path_records)} paths. Pruning remainder."
+            )
+            return self._format_gap_analysis_response(base_standard, path_records)
+
+        # Tier 2: Medium Links (Add CONTAINS to the mix)
+        path_records, _ = db.cypher_query(
+            """
+         MATCH (BaseStandard:NeoStandard {name: $name1})
+         MATCH (CompareStandard:NeoStandard {name: $name2})
+         MATCH p = allShortestPaths((BaseStandard)-[:(LINKED_TO|AUTOMATICALLY_LINKED_TO|SAME|CONTAINS)*..20]-(CompareStandard))
+         WITH p
+         WHERE length(p) > 1 AND ALL(n in NODES(p) WHERE (n:NeoCRE or n = BaseStandard or n = CompareStandard) AND NOT n.name in $denylist)
+         RETURN p
+            """,
+            {"name1": name_1, "name2": name_2, "denylist": denylist},
+            resolve_objects=True,
+        )
+
+        if path_records and len(path_records) > 0:
+            logger.info(
+                f"Gap Analysis: Tier 2 (Medium) found {len(path_records)} paths. Pruning remainder."
+            )
+            return self._format_gap_analysis_response(base_standard, path_records)
+
+        # Tier 3: Weak/All Links (Wildcard - The original expensive query)
+        logger.info(
+            "Gap Analysis: Tiers 1 & 2 empty. Executing Tier 3 (Wildcard search)."
+        )
         path_records_all, _ = db.cypher_query(
             """
          MATCH (BaseStandard:NeoStandard {name: $name1})
@@ -578,18 +650,41 @@ class NEO_DB:
          WHERE length(p) > 1 AND ALL (n in NODES(p) where (n:NeoCRE or n = BaseStandard or n = CompareStandard) AND NOT n.name in $denylist) 
          RETURN p
             """,
-            # """
-            # OPTIONAL MATCH (BaseStandard:NeoStandard {name: $name1})
-            # OPTIONAL MATCH (CompareStandard:NeoStandard {name: $name2})
-            # OPTIONAL MATCH p = allShortestPaths((BaseStandard)-[*..20]-(CompareStandard))
-            # WITH p
-            # WHERE length(p) > 1 AND ALL(n in NODES(p) WHERE (n:NeoCRE or n = BaseStandard or n = CompareStandard) AND NOT n.name in $denylist)
-            # RETURN p
-            # """,
             {"name1": name_1, "name2": name_2, "denylist": denylist},
             resolve_objects=True,
         )
-        t2 = datetime.now()
+
+        return self._format_gap_analysis_response(base_standard, path_records_all)
+
+    @classmethod
+    def _gap_analysis_original(self, name_1, name_2):
+        """
+        ORIGINAL: Exhaustive traversal (always runs both queries)
+
+        This is the safe default - maintains backward compatibility.
+        """
+        logger.info(
+            f"Performing ORIGINAL GraphDB queries for gap analysis {name_1}>>{name_2}"
+        )
+        base_standard = NeoStandard.nodes.filter(name=name_1)
+        denylist = ["Cross-cutting concerns"]
+        from datetime import datetime
+
+        # Query 1: Wildcard (all relationships)
+        path_records_all, _ = db.cypher_query(
+            """
+         MATCH (BaseStandard:NeoStandard {name: $name1})
+         MATCH (CompareStandard:NeoStandard {name: $name2})
+         MATCH p = allShortestPaths((BaseStandard)-[*..20]-(CompareStandard))
+         WITH p
+         WHERE length(p) > 1 AND ALL (n in NODES(p) where (n:NeoCRE or n = BaseStandard or n = CompareStandard) AND NOT n.name in $denylist) 
+         RETURN p
+            """,
+            {"name1": name_1, "name2": name_2, "denylist": denylist},
+            resolve_objects=True,
+        )
+
+        # Query 2: Filtered (LINKED_TO, AUTOMATICALLY_LINKED_TO, CONTAINS)
         path_records, _ = db.cypher_query(
             """
          MATCH (BaseStandard:NeoStandard {name: $name1})
@@ -599,19 +694,11 @@ class NEO_DB:
          WHERE length(p) > 1 AND ALL(n in NODES(p) WHERE (n:NeoCRE or n = BaseStandard or n = CompareStandard) AND NOT n.name in $denylist)
          RETURN p
             """,
-            # """
-            # OPTIONAL MATCH (BaseStandard:NeoStandard {name: $name1})
-            # OPTIONAL MATCH (CompareStandard:NeoStandard {name: $name2})
-            # OPTIONAL MATCH p = allShortestPaths((BaseStandard)-[:(LINKED_TO|AUTOMATICALLY_LINKED_TO|CONTAINS)*..20]-(CompareStandard))
-            # WITH p
-            # WHERE length(p) > 1 AND ALL(n in NODES(p) WHERE (n:NeoCRE or n = BaseStandard or n = CompareStandard) AND NOT n.name in $denylist)
-            # RETURN p
-            # """,
             {"name1": name_1, "name2": name_2, "denylist": denylist},
             resolve_objects=True,
         )
-        t3 = datetime.now()
 
+        # Combine results (original behavior)
         def format_segment(seg: StructuredRel, nodes):
             relation_map = {
                 RelatedRel: "RELATED",
@@ -641,6 +728,43 @@ class NEO_DB:
 
         return [NEO_DB.parse_node_no_links(rec) for rec in base_standard], [
             format_path_record(rec[0]) for rec in (path_records + path_records_all)
+        ]
+
+    @classmethod
+    def _format_gap_analysis_response(self, base_standard, path_records):
+        def format_segment(seg: StructuredRel, nodes):
+            relation_map = {
+                RelatedRel: "RELATED",
+                ContainsRel: "CONTAINS",
+                LinkedToRel: "LINKED_TO",
+                AutoLinkedToRel: "AUTOMATICALLY_LINKED_TO",
+                SameRel: "SAME",
+            }
+            start_node = [
+                node for node in nodes if node.element_id == seg._start_node_element_id
+            ][0]
+            end_node = [
+                node for node in nodes if node.element_id == seg._end_node_element_id
+            ][0]
+
+            # Default to RELATED if relation unknown (though mostly governed by class type)
+            rtype = relation_map.get(type(seg), "RELATED")
+
+            return {
+                "start": NEO_DB.parse_node_no_links(start_node),
+                "end": NEO_DB.parse_node_no_links(end_node),
+                "relationship": rtype,
+            }
+
+        def format_path_record(rec):
+            return {
+                "start": NEO_DB.parse_node_no_links(rec.start_node),
+                "end": NEO_DB.parse_node_no_links(rec.end_node),
+                "path": [format_segment(seg, rec.nodes) for seg in rec.relationships],
+            }
+
+        return [NEO_DB.parse_node_no_links(rec) for rec in base_standard], [
+            format_path_record(rec[0]) for rec in path_records
         ]
 
     @classmethod
@@ -680,6 +804,10 @@ class Node_collection:
         self.session = sqla.session
 
     def with_graph(self) -> "Node_collection":
+        if self.graph is not None:
+            logger.debug("CRE graph already loaded, skipping reload")
+            return self
+
         logger.info("Loading CRE graph in memory, memory-heavy operation!")
         self.graph = inmemory_graph.CRE_Graph()
         graph_singleton = inmemory_graph.Singleton_Graph_Storage.instance()
@@ -1932,7 +2060,7 @@ def dbNodeFromCode(code: cre_defs.Node) -> Node:
     code = cast(cre_defs.Code, code)
     tags = ""
     if code.tags:
-        tags = ",".join(tags)
+        tags = ",".join(code.tags)
     return Node(
         name=code.name,
         ntype=code.doctype.value,
