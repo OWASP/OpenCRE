@@ -211,7 +211,7 @@ class TestOSCALUtils(unittest.TestCase):
 
         self.assertDictEqual(remove_empty_elements(result), expected)
 
-    def test_tool_document_to_oscal(self) -> None:
+    def test_tool_document_to_oscal_with_hyphenated_tool_id(self) -> None:
         tool = defs.Tool(
             name="t-1",
             id="111-111",
@@ -362,7 +362,7 @@ class TestOSCALUtils(unittest.TestCase):
         )
         self.assertDictEqual(remove_empty_elements(result), expected)
 
-    def test_tool_document_to_oscal(self) -> None:
+    def test_tool_document_to_oscal_with_negative_tool_id(self) -> None:
         tool = defs.Tool(
             name="t-1",
             id="-1",

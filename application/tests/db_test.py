@@ -2158,7 +2158,7 @@ class TestDB(unittest.TestCase):
             self.collection.standards(),
         )
 
-    def test_all_cres_with_pagination(self):
+    def test_all_cres_with_pagination_with_single_digit_cre_ids(self):
         """"""
         cres = []
         nodes = []
@@ -2196,7 +2196,7 @@ class TestDB(unittest.TestCase):
         self.assertEqual(page, 1)
         self.assertEqual(total_pages, 4)
 
-    def test_all_cres_with_pagination(self):
+    def test_all_cres_with_pagination_with_standard_cre_ids(self):
         """"""
         cres = []
         nodes = []
