@@ -21,8 +21,9 @@ from neomodel.exceptions import (
 from flask import json as flask_json
 from sqlalchemy.orm import aliased
 from flask_sqlalchemy.model import DefaultMeta
-from sqlalchemy import func, delete
-from sqlalchemy.exc import OperationalError
+from sqlalchemy import func, delete, cast as sql_cast, literal
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.exc import OperationalError, IntegrityError
 
 from neomodel import (
     config,
@@ -85,6 +86,10 @@ class Node(BaseModel):  # type: ignore
     # some external link to where this is, usually a URL with an anchor
     link = sqla.Column(sqla.String, default="")
 
+    # arbitrary metadata for this node (JSON)
+    # stored in column "document_metadata" to avoid clashing with SQLAlchemy's reserved "metadata" name
+    metadata_json = sqla.Column("document_metadata", sqla.JSON, nullable=True)
+
     __table_args__ = (
         sqla.UniqueConstraint(
             name,
@@ -105,6 +110,10 @@ class CRE(BaseModel):  # type: ignore
     description = sqla.Column(sqla.String, default="")
     name = sqla.Column(sqla.String)
     tags = sqla.Column(sqla.String, default="")  # coma separated tags
+
+    # arbitrary metadata for this CRE (JSON)
+    # stored in column "document_metadata" to avoid clashing with SQLAlchemy's reserved "metadata" name
+    metadata_json = sqla.Column("document_metadata", sqla.JSON, nullable=True)
 
     __table_args__ = (
         sqla.UniqueConstraint(name, external_id, name="unique_cre_fields"),
@@ -130,7 +139,7 @@ class InternalLinks(BaseModel):  # type: ignore
         sqla.UniqueConstraint(
             group,
             cre,
-            name="uq_pair",
+            name="uq_cre_link_pair",
         ),
         sqla.CheckConstraint("type != 'PartOf'", name="No 'PartOf' links"),
     )
@@ -153,7 +162,7 @@ class Links(BaseModel):  # type: ignore
         sqla.UniqueConstraint(
             cre,
             node,
-            name="uq_pair",
+            name="uq_cre_node_link_pair",
         ),
     )
 
@@ -245,6 +254,8 @@ class StagedChangeSet(BaseModel):  # type: ignore
     )  # pending_review|accepted|applied|discarded
     apply_error = sqla.Column(sqla.Text, nullable=True)
     created_at = sqla.Column(sqla.DateTime, nullable=False)
+
+
 def create_import_run(source: str, version: Optional[str] = None) -> ImportRun:
     """Create and persist an import run record. Returns the new ImportRun."""
     from datetime import datetime, timezone
@@ -386,6 +397,8 @@ def list_import_runs(
         .limit(limit)
         .all()
     )
+
+
 class RelatedRel(StructuredRel):
     pass
 
@@ -561,7 +574,7 @@ class NEO_DB:
             self.__instance = self.__new__(self)
 
             config.DATABASE_URL = (
-                os.getenv("NEO4J_URL") or "neo4j://neo4j:password@localhost:7687"
+                os.getenv("NEO4J_URL") or "bolt://neo4j:password@localhost:7687"
             )
         return self.__instance
 
@@ -756,39 +769,10 @@ class NEO_DB:
 
     @classmethod
     def gap_analysis(self, name_1, name_2):
-        """
-        Gap analysis with feature toggle support.
-
-        Toggle between original exhaustive traversal (default) and
-        optimized tiered pruning (opt-in via GAP_ANALYSIS_OPTIMIZED env var).
-        """
-        from application.config import Config
-
-        if Config.GAP_ANALYSIS_OPTIMIZED:
-            logger.info(
-                f"Gap Analysis: Using OPTIMIZED tiered pruning for {name_1}>>{name_2}"
-            )
-            return self._gap_analysis_optimized(name_1, name_2)
-        else:
-            logger.info(
-                f"Gap Analysis: Using ORIGINAL exhaustive traversal for {name_1}>>{name_2}"
-            )
-            return self._gap_analysis_original(name_1, name_2)
-
-    @classmethod
-    def _gap_analysis_optimized(self, name_1, name_2):
-        """
-        OPTIMIZED: Tiered Pruning Strategy with Early Exit
-
-        Tier 1: Strong links only (LINKED_TO, SAME, AUTOMATICALLY_LINKED_TO)
-        Tier 2: Add hierarchical (CONTAINS) if Tier 1 empty
-        Tier 3: Fallback to wildcard if both tiers empty
-        """
-        logger.info(
-            f"Performing OPTIMIZED GraphDB queries for gap analysis {name_1}>>{name_2}"
-        )
+        logger.info(f"Performing GraphDB queries for gap analysis {name_1}>>{name_2}")
         base_standard = NeoStandard.nodes.filter(name=name_1)
         denylist = ["Cross-cutting concerns"]
+        from datetime import datetime
 
         # Tier 1: Strong Links (LINKED_TO, SAME, AUTOMATICALLY_LINKED_TO)
         path_records, _ = db.cypher_query(
@@ -809,6 +793,7 @@ class NEO_DB:
             logger.info(
                 f"Gap Analysis: Tier 1 (Strong) found {len(path_records)} paths. Pruning remainder."
             )
+            # Helper to format and return
             return self._format_gap_analysis_response(base_standard, path_records)
 
         # Tier 2: Medium Links (Add CONTAINS to the mix)
@@ -849,80 +834,6 @@ class NEO_DB:
         )
 
         return self._format_gap_analysis_response(base_standard, path_records_all)
-
-    @classmethod
-    def _gap_analysis_original(self, name_1, name_2):
-        """
-        ORIGINAL: Exhaustive traversal (always runs both queries)
-
-        This is the safe default - maintains backward compatibility.
-        """
-        logger.info(
-            f"Performing ORIGINAL GraphDB queries for gap analysis {name_1}>>{name_2}"
-        )
-        base_standard = NeoStandard.nodes.filter(name=name_1)
-        denylist = ["Cross-cutting concerns"]
-        from datetime import datetime
-
-        # Query 1: Wildcard (all relationships)
-        path_records_all, _ = db.cypher_query(
-            """
-         MATCH (BaseStandard:NeoStandard {name: $name1})
-         MATCH (CompareStandard:NeoStandard {name: $name2})
-         MATCH p = allShortestPaths((BaseStandard)-[*..20]-(CompareStandard))
-         WITH p
-         WHERE length(p) > 1 AND ALL (n in NODES(p) where (n:NeoCRE or n = BaseStandard or n = CompareStandard) AND NOT n.name in $denylist) 
-         RETURN p
-            """,
-            {"name1": name_1, "name2": name_2, "denylist": denylist},
-            resolve_objects=True,
-        )
-
-        # Query 2: Filtered (LINKED_TO, AUTOMATICALLY_LINKED_TO, CONTAINS)
-        path_records, _ = db.cypher_query(
-            """
-         MATCH (BaseStandard:NeoStandard {name: $name1})
-         MATCH (CompareStandard:NeoStandard {name: $name2})
-         MATCH p = allShortestPaths((BaseStandard)-[:(LINKED_TO|AUTOMATICALLY_LINKED_TO|CONTAINS)*..20]-(CompareStandard))
-         WITH p
-         WHERE length(p) > 1 AND ALL(n in NODES(p) WHERE (n:NeoCRE or n = BaseStandard or n = CompareStandard) AND NOT n.name in $denylist)
-         RETURN p
-            """,
-            {"name1": name_1, "name2": name_2, "denylist": denylist},
-            resolve_objects=True,
-        )
-
-        # Combine results (original behavior)
-        def format_segment(seg: StructuredRel, nodes):
-            relation_map = {
-                RelatedRel: "RELATED",
-                ContainsRel: "CONTAINS",
-                LinkedToRel: "LINKED_TO",
-                AutoLinkedToRel: "AUTOMATICALLY_LINKED_TO",
-            }
-            start_node = [
-                node for node in nodes if node.element_id == seg._start_node_element_id
-            ][0]
-            end_node = [
-                node for node in nodes if node.element_id == seg._end_node_element_id
-            ][0]
-
-            return {
-                "start": NEO_DB.parse_node_no_links(start_node),
-                "end": NEO_DB.parse_node_no_links(end_node),
-                "relationship": relation_map[type(seg)],
-            }
-
-        def format_path_record(rec):
-            return {
-                "start": NEO_DB.parse_node_no_links(rec.start_node),
-                "end": NEO_DB.parse_node_no_links(rec.end_node),
-                "path": [format_segment(seg, rec.nodes) for seg in rec.relationships],
-            }
-
-        return [NEO_DB.parse_node_no_links(rec) for rec in base_standard], [
-            format_path_record(rec[0]) for rec in (path_records + path_records_all)
-        ]
 
     @classmethod
     def _format_gap_analysis_response(self, base_standard, path_records):
@@ -1029,7 +940,7 @@ class Node_collection:
     session = sqla.session
 
     def __init__(self) -> None:
-        if not os.environ.get("NO_LOAD_GRAPH_DB"):
+        if os.environ.get("NO_LOAD_GRAPH_DB") != "1":
             self.neo_db = NEO_DB.instance()
         self.session = sqla.session
 
@@ -1120,8 +1031,26 @@ class Node_collection:
 
         for vk, v in vars(node).items():
             if vk not in skip_attributes and hasattr(Node, vk):
-                if v:
-                    attr = getattr(Node, vk)
+                # Treat identity-like empty strings as real values (do not use
+                # truthiness). If v is None, skip it.
+                if v is None:
+                    continue
+
+                attr = getattr(Node, vk)
+                if isinstance(v, str):
+                    # Treat NULL and "" as the same for stable identity matching.
+                    qu = qu.filter(func.coalesce(attr, "") == v)
+                elif isinstance(v, (dict, list)):
+                    # PostgreSQL has no `json = json` operator; compare as jsonb.
+                    bind = sqla.session.get_bind()
+                    if bind is not None and bind.dialect.name == "postgresql":
+                        qu = qu.filter(
+                            sql_cast(attr, JSONB)
+                            == sql_cast(literal(v, type_=sqla.JSON), JSONB)
+                        )
+                    else:
+                        qu = qu.filter(attr == v)
+                else:
                     qu = qu.filter(attr == v)
             else:
                 logger.debug(f"{vk} not in Node")
@@ -1386,13 +1315,19 @@ class Node_collection:
         return self.get_CREs(external_id=external_id[0])[0]
 
     def list_node_ids_by_ntype(self, ntype: str) -> List[str]:
-        return self.session.query(Node.id).filter(Node.ntype == ntype).all()
+        # Always return plain strings (never SQLAlchemy row tuples).
+        rows = self.session.query(Node.id).filter(Node.ntype == ntype).all()
+        return [r[0] for r in rows]
 
     def list_node_ids_by_name(self, name: str) -> List[str]:
-        return self.session.query(Node.id).filter(Node.name == name).all()
+        # Always return plain strings (never SQLAlchemy row tuples).
+        rows = self.session.query(Node.id).filter(Node.name == name).all()
+        return [r[0] for r in rows]
 
     def list_cre_ids(self) -> List[str]:
-        return self.session.query(CRE.id).all()
+        # Always return plain strings (never SQLAlchemy row tuples).
+        rows = self.session.query(CRE.id).all()
+        return [r[0] for r in rows]
 
     def __get_nodes_query__(
         self,
@@ -1811,34 +1746,121 @@ class Node_collection:
         self, node: cre_defs.Node, comparison_skip_attributes: List = ["link"]
     ) -> Optional[Node]:
         if not node:
-            raise ValueError(f"Node is None")
-            return None
+            raise ValueError("Node is None")
+
         dbnode = dbNodeFromNode(node)
         if not dbnode:
             logger.warning(f"{node} could not be transformed to a DB object")
             return None
-        if not dbnode.ntype:
-            logger.warning(f"{node} has no registered type, cannot add, skipping")
-            return None
-        entries = self.object_select(dbnode, skip_attributes=comparison_skip_attributes)
+
+        # Upsert by the SQL UNIQUE constraint identity:
+        # (name, section, subsection, version, section_id).
+        # Use object_select() as the single identity matching mechanism.
+        #
+        # We intentionally skip non-identity fields that can differ across
+        # import stages (tags/description/type/link/metadata).
+        skip = set(comparison_skip_attributes or [])
+        skip.update(
+            {
+                "tags",
+                "description",
+                "ntype",
+                "link",
+                "metadata_json",
+                "id",
+            }
+        )
+
+        def _node_by_unique_identity(n: Node) -> Optional[Node]:
+            return (
+                self.session.query(Node)
+                .filter(
+                    sqla.and_(
+                        Node.name == n.name,
+                        Node.section == n.section,
+                        Node.subsection == n.subsection,
+                        Node.version == n.version,
+                        Node.section_id == n.section_id,
+                    )
+                )
+                .first()
+            )
+
+        entries = self.object_select(dbnode, skip_attributes=list(skip))
         if entries:
             entry = entries[0]
             logger.info(
-                f"knew of node {entry.name}:{entry.section_id}:{entry.section}:{entry.link} ,updating"
+                f"upsert node {entry.name}:{entry.section_id}:{entry.section}:{entry.version} "
+                f"(section={entry.section}, subsection={entry.subsection})"
             )
-            if node.section and node.section != entry.section:
-                entry.section = node.section
-            entry.link = node.hyperlink
-            self.session.commit()
+
+            # Overwrite identity fields when the incoming document has values.
+            if dbnode.section is not None and dbnode.section != entry.section:
+                entry.section = dbnode.section
+            if (
+                getattr(dbnode, "subsection", None) is not None
+                and dbnode.subsection != entry.subsection
+            ):
+                entry.subsection = dbnode.subsection
+            if dbnode.version is not None and dbnode.version != entry.version:
+                entry.version = dbnode.version
+
+            if dbnode.section_id is not None and dbnode.section_id != entry.section_id:
+                entry.section_id = dbnode.section_id
+
+            # Only overwrite fields with meaningful values to avoid clobbering
+            # existing classification tags.
+            if dbnode.tags:
+                entry.tags = dbnode.tags
+            if dbnode.description:
+                entry.description = dbnode.description
+            if dbnode.link:
+                entry.link = dbnode.link
+            if dbnode.metadata_json:
+                entry.metadata_json = dbnode.metadata_json
+
+            try:
+                self.session.commit()
+            except IntegrityError as exc:
+                self.session.rollback()
+                # Upsert update can collide with an existing row on uq_node if
+                # identity fields are normalized/filled from multiple sources.
+                if "uq_node" in str(exc).lower():
+                    existing = _node_by_unique_identity(dbnode)
+                    if existing is not None:
+                        logger.info(
+                            "Recovered from uq_node collision during node upsert for %s:%s",
+                            dbnode.name,
+                            dbnode.section_id,
+                        )
+                        return existing
+                raise
             return entry
-        else:
-            logger.info(
-                f"did not know of node {dbnode.name}:{dbnode.section}:{dbnode.section_id} ,adding"
-            )
-            self.session.add(dbnode)
+
+        if not dbnode.ntype:
+            logger.warning(f"{node} has no registered type, cannot add, skipping")
+            return None
+
+        logger.info(
+            f"insert node {dbnode.name}:{dbnode.section}:{dbnode.section_id}"
+        )
+        self.session.add(dbnode)
+        try:
             self.session.commit()
-            if self.graph:
-                self.graph.add_dbnode(dbnode=node)
+        except IntegrityError as exc:
+            self.session.rollback()
+            if "uq_node" in str(exc).lower():
+                existing = _node_by_unique_identity(dbnode)
+                if existing is not None:
+                    logger.info(
+                        "Recovered from uq_node collision during node insert for %s:%s",
+                        dbnode.name,
+                        dbnode.section_id,
+                    )
+                    return existing
+            raise
+        if self.graph:
+            self.graph.add_dbnode(dbnode=node)
         return dbnode
 
     def add_internal_link(
@@ -2023,7 +2045,7 @@ class Node_collection:
     def standards(self) -> List[str]:
         standards = (
             self.session.query(Node.name)
-            .filter(Node.ntype == cre_defs.Credoctypes.Standard)
+            .filter(Node.ntype == cre_defs.Credoctypes.Standard.value)
             .distinct()
         )
         return list(set([s[0] for s in standards]))
@@ -2217,20 +2239,6 @@ class Node_collection:
         embeddings: List[float],
         embedding_text: str,
     ):
-        def _commit_with_retry() -> None:
-            max_retries = int(os.environ.get("SQLITE_COMMIT_MAX_RETRIES", "8"))
-            base_sleep_s = float(os.environ.get("SQLITE_COMMIT_RETRY_BASE_SECONDS", "0.15"))
-            for attempt in range(max_retries + 1):
-                try:
-                    self.session.commit()
-                    return
-                except OperationalError as exc:
-                    if "database is locked" not in str(exc).lower() or attempt >= max_retries:
-                        raise
-                    self.session.rollback()
-                    # Exponential backoff helps transient sqlite writer contention.
-                    time.sleep(base_sleep_s * (2**attempt))
-
         existing = self.get_embedding(db_object.id)
         embeddings_str = ",".join([str(e) for e in embeddings])
 
@@ -2252,14 +2260,13 @@ class Node_collection:
                     embeddings_url=db_object.link,
                 )
             self.session.add(emb)
-            _commit_with_retry()
+            self.session.commit()
             return emb
         else:
             logger.debug(f"knew of embedding for object {db_object.id} ,updating")
-            _commit_with_retry()
             existing[0].embeddings = embeddings_str
             existing[0].embeddings_content = embedding_text
-            _commit_with_retry()
+            self.session.commit()
 
             return existing
 
@@ -2304,13 +2311,14 @@ def dbNodeFromCode(code: cre_defs.Node) -> Node:
     code = cast(cre_defs.Code, code)
     tags = ""
     if code.tags:
-        tags = ",".join(code.tags)
+        tags = ",".join(tags)
     return Node(
         name=code.name,
         ntype=code.doctype.value,
         tags=tags,
         description=code.description,
         link=code.hyperlink,
+        metadata_json=code.metadata or {},
     )
 
 
@@ -2329,6 +2337,7 @@ def dbNodeFromStandard(standard: cre_defs.Node) -> Node:
         subsection=standard.subsection,
         version=standard.version,
         section_id=standard.sectionID,
+        metadata_json=standard.metadata or {},
     )
 
 
@@ -2346,6 +2355,7 @@ def dbNodeFromTool(tool: cre_defs.Node) -> Node:
         link=tool.hyperlink,
         section=tool.section,
         section_id=tool.sectionID,
+        metadata_json=tool.metadata or {},
     )
 
 
@@ -2355,6 +2365,7 @@ def nodeFromDB(dbnode: Node) -> cre_defs.Node:
     tags = []
     if dbnode.tags:
         tags = list(set(dbnode.tags.split(",")))
+    metadata = dbnode.metadata_json or {}
     if dbnode.ntype == cre_defs.Standard.__name__:
         return cre_defs.Standard(
             name=dbnode.name,
@@ -2364,6 +2375,8 @@ def nodeFromDB(dbnode: Node) -> cre_defs.Node:
             tags=tags,
             version=dbnode.version,
             sectionID=dbnode.section_id,
+            description=dbnode.description or "",
+            metadata=metadata,
         )
     elif dbnode.ntype == cre_defs.Tool.__name__:
         ttype = cre_defs.ToolTypes.Unknown
@@ -2379,6 +2392,7 @@ def nodeFromDB(dbnode: Node) -> cre_defs.Node:
             tooltype=ttype,
             section=dbnode.section,
             sectionID=dbnode.section_id,
+            metadata=metadata,
         )
     elif dbnode.ntype == cre_defs.Code.__name__:
         return cre_defs.Code(
@@ -2386,6 +2400,7 @@ def nodeFromDB(dbnode: Node) -> cre_defs.Node:
             hyperlink=dbnode.link,
             tags=tags,
             description=dbnode.description,
+            metadata=metadata,
         )
     else:
         raise ValueError(
@@ -2400,7 +2415,11 @@ def CREfromDB(dbcre: CRE) -> cre_defs.CRE:
     if dbcre.tags:
         tags = list(set(dbcre.tags.split(",")))
     return cre_defs.CRE(
-        name=dbcre.name, description=dbcre.description, id=dbcre.external_id, tags=tags
+        name=dbcre.name,
+        description=dbcre.description,
+        id=dbcre.external_id,
+        tags=tags,
+        metadata=dbcre.metadata_json or {},
     )
 
 
@@ -2411,6 +2430,7 @@ def dbCREfromCRE(cre: cre_defs.CRE) -> CRE:
         description=cre.description,
         external_id=cre.id,
         tags=",".join(tags),
+        metadata_json=cre.metadata or {},
     )
 
 
@@ -2419,6 +2439,8 @@ def gap_analysis(
     node_names: List[str],
     cache_key: str = "",
 ):
+    if neo_db is None:
+        neo_db = NEO_DB.instance()
     cre_db = Node_collection()
     base_standard, paths = neo_db.gap_analysis(node_names[0], node_names[1])
     logger.info(f"got db gap analysis for {'>>>'.join(node_names)}, calculating paths")
