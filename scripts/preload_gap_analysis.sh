@@ -1,7 +1,7 @@
 #! /bin/bash
 
 set -ex
-export NEO4J_URL='neo4j://neo4j:password@127.0.0.1:7687'
+export NEO4J_URL='bolt://neo4j:password@127.0.0.1:7687'
 export FLASK_APP=$(pwd)/cre.py
 
 make docker-redis
