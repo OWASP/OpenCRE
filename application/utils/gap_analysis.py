@@ -1,7 +1,8 @@
+import os
 import requests
 import time
 import logging
-from typing import List, Dict
+from typing import List, Dict, Any
 from application.utils import redis
 from flask import json as flask_json
 import json
@@ -59,14 +60,71 @@ def get_next_id(step, previous_id):
 
 
 def perform(standards: List[str], database):
+    return run_gap_pair(standards[0], standards[1], database)
+
+
+def _backend_name_from_database(database: Any) -> str:
+    try:
+        bind = getattr(getattr(database, "session", None), "bind", None)
+        if bind is None:
+            return "unknown"
+        url = getattr(bind, "url", None)
+        if url is None:
+            return "unknown"
+        if hasattr(url, "get_backend_name"):
+            return str(url.get_backend_name())
+        return str(url).split("://", 1)[0].lower()
+    except Exception:
+        return "unknown"
+
+
+def run_gap_pair(
+    importing_name: str,
+    peer_name: str,
+    database: Any,
+    *,
+    require_postgres: bool = False,
+    sleep_seconds: int = 10,
+    max_compute_retries: int = 2,
+):
+    """Compute/fetch one directed GA pair with cache + Redis lock coordination."""
     from application.database import db
 
+    backend_name = _backend_name_from_database(database)
+    if require_postgres and backend_name not in ("postgresql", "postgres"):
+        raise RuntimeError(
+            f"Pair GA scheduling requires Postgres backend, got {backend_name or 'unknown'}"
+        )
+
+    standards = [importing_name, peer_name]
     standards_hash = make_resources_key(standards)
-    
+
+    # Fast path: cached in SQL, no Redis/lock needed.
+    if database.gap_analysis_exists(standards_hash):
+        res = database.get_gap_analysis_result(standards_hash)
+        return json.loads(res) if isinstance(res, str) else res
+
     conn = redis.connect()
     lock_key = f"lock:ga:{standards_hash}"
+    attempts = 0
+
+    def _is_transient_error(exc: Exception) -> bool:
+        msg = str(exc).lower()
+        transient_markers = (
+            "deadlock detected",
+            "could not serialize access",
+            "connection reset",
+            "temporarily unavailable",
+            "service unavailable",
+            "timeout",
+        )
+        if any(m in msg for m in transient_markers):
+            return True
+        mod = exc.__class__.__module__.lower()
+        return "neo4j" in mod or "redis" in mod
 
     while True:
+        # Another process may have populated cache while we were waiting for lock.
         if database.gap_analysis_exists(standards_hash):
             res = database.get_gap_analysis_result(standards_hash)
             return json.loads(res) if isinstance(res, str) else res
@@ -77,17 +135,31 @@ def perform(standards: List[str], database):
             try:
                 logger.info(f"Calculating gap analysis for {standards_hash}")
                 db.gap_analysis(
-                    neo_db=database.neo_db,
-                    node_names=standards,
-                    cache_key=standards_hash
+                    neo_db=database.neo_db, node_names=standards, cache_key=standards_hash
                 )
                 res = database.get_gap_analysis_result(standards_hash)
                 return json.loads(res) if isinstance(res, str) else res
+            except Exception as exc:
+                attempts += 1
+                if _is_transient_error(exc) and attempts <= max_compute_retries:
+                    wait_s = int(os.environ.get("CRE_GA_RETRY_BACKOFF_SECONDS", "2"))
+                    logger.warning(
+                        "Transient GA error for %s (attempt %s/%s): %s",
+                        standards_hash,
+                        attempts,
+                        max_compute_retries,
+                        exc,
+                    )
+                    time.sleep(wait_s)
+                    continue
+                raise
             finally:
                 conn.delete(lock_key)
         else:
-            logger.info(f"Gap analysis for {standards_hash} is being calculated by another worker. Waiting...")
-            time.sleep(10)
+            logger.info(
+                f"Gap analysis for {standards_hash} is being calculated by another worker. Waiting..."
+            )
+            time.sleep(sleep_seconds)
 
 
 def schedule(standards: List[str], database):

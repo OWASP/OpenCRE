@@ -168,9 +168,14 @@ def apply_parse_result(
     - CREs first (so standard links can resolve)
     - Then each resource group via cre_main.register_standard
     """
+    import os
     import time
     from application.cmd import cre_main
     from application.defs import cre_defs as defs
+    from alive_progress import alive_bar
+    from rq import Queue
+    from application.utils import db_backend
+    from application.utils import gap_analysis, redis
     from application.utils import telemetry
 
     start_time = time.time()
@@ -207,9 +212,84 @@ def apply_parse_result(
                 standard_entries=docs,  # type: ignore[arg-type]
                 collection=collection,
                 generate_embeddings=parse_result.calculate_embeddings,
-                calculate_gap_analysis=parse_result.calculate_gap_analysis,
+                calculate_gap_analysis=False,
                 db_connection_str=db_connection_str,
             )
+
+        if parse_result.calculate_gap_analysis and os.environ.get("CRE_NO_CALCULATE_GAP_ANALYSIS") != "1":
+            caps = db_backend.detect_backend(db_connection_str)
+            if not caps.is_postgres:
+                raise RuntimeError(
+                    f"Pair-level GA scheduling requires Postgres; detected backend={caps.backend}"
+                )
+            imported_standard_names = [
+                k for k in parse_result.results.keys() if k != cre_key
+            ]
+            if imported_standard_names:
+                cre_main.populate_neo4j_db(db_connection_str)
+            conn = redis.connect()
+            ga_jobs = []
+            for importing_name in imported_standard_names:
+                peers = cre_main.resolve_ga_peer_standard_names(collection, importing_name)
+                ga_jobs.extend(
+                    cre_main.schedule_gap_analysis_pairs_with_rq(
+                        collection=collection,
+                        importing_name=importing_name,
+                        db_connection_str=db_connection_str,
+                        peer_names=peers,
+                        skip_neo_populate=True,
+                    )
+                )
+            if ga_jobs:
+                ga_retry_attempts = int(os.environ.get("CRE_GA_PAIR_JOB_RETRY_ATTEMPTS", "4"))
+                attempt = 0
+                pending = list(ga_jobs)
+                while pending:
+                    with alive_bar(theme="classic", total=len(pending)) as bar:
+                        redis.wait_for_jobs(list(pending), bar)
+                    failed_jobs = []
+                    for j in pending:
+                        try:
+                            if getattr(j, "is_failed", False) is True:
+                                failed_jobs.append(j)
+                        except Exception as exc:
+                            if exc.__class__.__name__ == "InvalidJobOperation":
+                                logger.info(
+                                    "Skipping expired GA job status during retry sweep: %s",
+                                    getattr(j, "id", "<unknown>"),
+                                )
+                                continue
+                            raise
+                    if not failed_jobs:
+                        break
+                    attempt += 1
+                    if attempt > ga_retry_attempts:
+                        failed_labels = [str(getattr(j, "description", "")) for j in failed_jobs]
+                        raise RuntimeError(
+                            f"GA pair jobs failed after retries: {','.join(failed_labels)}"
+                        )
+                    ga_q_name = os.environ.get("CRE_GA_QUEUE_NAME", "ga")
+                    ga_q = Queue(name=ga_q_name, connection=conn)
+                    retried = []
+                    for job in failed_jobs:
+                        kwargs = getattr(job, "kwargs", {}) or {}
+                        importing_name = kwargs.get("importing_name")
+                        peer_name = kwargs.get("peer_name")
+                        if not importing_name or not peer_name:
+                            continue
+                        retried.append(
+                            ga_q.enqueue_call(
+                                description=f"{importing_name}->{peer_name}",
+                                func=cre_main.run_gap_pair_job,
+                                kwargs={
+                                    "importing_name": importing_name,
+                                    "peer_name": peer_name,
+                                    "db_connection_str": db_connection_str,
+                                },
+                                timeout=gap_analysis.GAP_ANALYSIS_TIMEOUT,
+                            )
+                        )
+                    pending = retried
     except Exception as e:
         status = "failure"
         error_msg = str(e)
@@ -238,11 +318,11 @@ def apply_parse_result_with_rq(
     validate_classification_tags: bool = True,
 ) -> None:
     """
-    Apply ParseResult using the legacy RQ-parallel standard registration pattern.
+    Apply ParseResult via RQ with pair-level GA scheduling.
 
-    - CREs are registered synchronously first
-    - Standards/Tools/Code groups are enqueued as separate jobs (register_standard)
-    - GA/embeddings behavior remains governed by register_standard and env flags
+    - CREs are registered synchronously first.
+    - Standards/Tools/Code groups are enqueued as separate register jobs.
+    - When GA is enabled, pair-level GA scheduling is mandatory and Postgres-only.
     """
     import json
     import os
@@ -252,15 +332,31 @@ def apply_parse_result_with_rq(
 
     from application.cmd import cre_main
     from application.defs import cre_defs as defs
+    from application.utils import db_backend
     from application.utils import gap_analysis, redis, telemetry
     
     start_time = time.time()
     status = "success"
     error_msg = None
+    op_counts = {
+        "ga_pairs_planned": 0,
+        "ga_pairs_enqueued": 0,
+        "ga_pairs_retried": 0,
+        "ga_pairs_failed": 0,
+        "ga_pairs_completed": 0,
+    }
 
     try:
         if not parse_result or not parse_result.results:
             return
+
+        caps = db_backend.detect_backend(cache_location)
+        logger.info(
+            "CP0 backend capability: backend=%s pair_ga_capable=%s reason=%s",
+            caps.backend,
+            caps.supports_pair_ga_scheduler,
+            caps.reason,
+        )
 
         if validate_classification_tags:
             base_parser_defs.validate_classification_tags(parse_result.results)
@@ -312,6 +408,13 @@ def apply_parse_result_with_rq(
 
         database = cre_main.db_connect(cache_location)
         jobs = []
+        imported_standard_names: list[str] = []
+        if parse_result.calculate_gap_analysis and not caps.is_postgres:
+            raise RuntimeError(
+                f"Pair-level GA scheduling requires Postgres; detected backend={caps.backend}"
+            )
+        use_pair_ga_scheduler = parse_result.calculate_gap_analysis
+        planned_pair_count = 0
         for standard_name, standard_entries in docs.items():
             if os.environ.get("CRE_NO_REIMPORT_IF_EXISTS") == "1" and database.get_nodes(
                 name=standard_name
@@ -328,20 +431,49 @@ def apply_parse_result_with_rq(
                     import_only,
                 )
                 continue
+
+            job_desc = f"import:{standard_name}"
+            if use_pair_ga_scheduler:
+                try:
+                    peers = cre_main.resolve_ga_peer_standard_names(
+                        collection, standard_name
+                    )
+                except Exception:
+                    peers = []
+                peers = [p for p in peers if p != standard_name]
+                if peers:
+                    planned_pair_count += len(peers) * 2
+                    logger.info(
+                        "CP0 pair estimate for %s: peers=%s directed_pairs=%s",
+                        standard_name,
+                        len(peers),
+                        len(peers) * 2,
+                    )
+                    preview = ",".join(peers[:3])
+                    if len(peers) > 3:
+                        preview = f"{preview},+{len(peers) - 3} more"
+                    logger.info(
+                        "Import job %s will schedule GA peers [%s] after import phase",
+                        standard_name,
+                        preview,
+                    )
+
             jobs.append(
                 q.enqueue_call(
-                    description=standard_name,
+                    description=job_desc,
                     func=cre_main.register_standard,
                     kwargs={
                         "standard_entries": standard_entries,
                         "collection": None,
                         "db_connection_str": cache_location,
-                        "calculate_gap_analysis": parse_result.calculate_gap_analysis,
+                        # Pair-level GA is scheduled separately; register jobs never inline GA.
+                        "calculate_gap_analysis": False,
                         "generate_embeddings": parse_result.calculate_embeddings,
                     },
                     timeout=gap_analysis.GAP_ANALYSIS_TIMEOUT,
                 )
             )
+            imported_standard_names.append(standard_name)
 
         t0 = time.perf_counter()
         total = len(jobs)
@@ -349,6 +481,107 @@ def apply_parse_result_with_rq(
         with alive_bar(theme="classic", total=total) as bar:
             redis.wait_for_jobs(jobs, bar)
         logger.info("Imported %s groups in %.2fs", total, time.perf_counter() - t0)
+
+        if use_pair_ga_scheduler and imported_standard_names:
+            logger.info(
+                "Scheduling GA pair jobs in dedicated queue for %s imported standards (planned_pairs=%s)",
+                len(imported_standard_names),
+                planned_pair_count,
+            )
+            ga_jobs = []
+            for importing_name in imported_standard_names:
+                try:
+                    peers = cre_main.resolve_ga_peer_standard_names(collection, importing_name)
+                except Exception:
+                    peers = []
+                ga_jobs.extend(
+                    cre_main.schedule_gap_analysis_pairs_with_rq(
+                        collection=collection,
+                        importing_name=importing_name,
+                        db_connection_str=cache_location,
+                        peer_names=peers,
+                        skip_neo_populate=True,
+                    )
+                )
+            if ga_jobs:
+                logger.info("GA scheduler enqueued %s pair jobs", len(ga_jobs))
+                op_counts["ga_pairs_planned"] = planned_pair_count
+                op_counts["ga_pairs_enqueued"] = len(ga_jobs)
+                ga_retry_attempts = int(os.environ.get("CRE_GA_PAIR_JOB_RETRY_ATTEMPTS", "4"))
+                attempt = 0
+                pending = list(ga_jobs)
+                retried_total = 0
+                while pending:
+                    logger.info(
+                        "Waiting for %s GA pair jobs (attempt %s)",
+                        len(pending),
+                        attempt + 1,
+                    )
+                    wait_list = list(pending)
+                    with alive_bar(theme="classic", total=len(wait_list)) as bar:
+                        redis.wait_for_jobs(wait_list, bar)
+
+                    failed_jobs = []
+                    for j in pending:
+                        try:
+                            if getattr(j, "is_failed", False) is True:
+                                failed_jobs.append(j)
+                        except Exception as exc:
+                            # RQ may evict completed job metadata (result_ttl) before this
+                            # post-wait status sweep on very long GA runs.
+                            if exc.__class__.__name__ == "InvalidJobOperation":
+                                logger.info(
+                                    "Skipping expired GA job status during retry sweep: %s",
+                                    getattr(j, "id", "<unknown>"),
+                                )
+                                continue
+                            raise
+                    if not failed_jobs:
+                        break
+                    attempt += 1
+                    if attempt > ga_retry_attempts:
+                        failed_labels = [str(getattr(j, "description", "")) for j in failed_jobs]
+                        op_counts["ga_pairs_failed"] = len(failed_jobs)
+                        raise RuntimeError(
+                            f"GA pair jobs failed after retries: {','.join(failed_labels)}"
+                        )
+                    logger.warning(
+                        "Retrying %s failed GA pair jobs (attempt %s/%s)",
+                        len(failed_jobs),
+                        attempt,
+                        ga_retry_attempts,
+                    )
+                    ga_q_name = os.environ.get("CRE_GA_QUEUE_NAME", "ga")
+                    ga_q = Queue(name=ga_q_name, connection=conn)
+                    retried = []
+                    for job in failed_jobs:
+                        kwargs = getattr(job, "kwargs", {}) or {}
+                        importing_name = kwargs.get("importing_name")
+                        peer_name = kwargs.get("peer_name")
+                        if not importing_name or not peer_name:
+                            continue
+                        retried.append(
+                            ga_q.enqueue_call(
+                                description=f"{importing_name}->{peer_name}",
+                                func=cre_main.run_gap_pair_job,
+                                kwargs={
+                                    "importing_name": importing_name,
+                                    "peer_name": peer_name,
+                                    "db_connection_str": cache_location,
+                                },
+                                timeout=gap_analysis.GAP_ANALYSIS_TIMEOUT,
+                            )
+                        )
+                    retried_total += len(retried)
+                    op_counts["ga_pairs_retried"] = retried_total
+                    pending = retried
+                op_counts["ga_pairs_completed"] = len(ga_jobs)
+                logger.info(
+                    "GA pair jobs completed successfully (retried_jobs=%s completed=%s failed=%s)",
+                    retried_total,
+                    op_counts["ga_pairs_completed"],
+                    op_counts["ga_pairs_failed"],
+                )
     except Exception as e:
         status = "failure"
         error_msg = str(e)
@@ -362,5 +595,6 @@ def apply_parse_result_with_rq(
                 status=status,
                 start_time=start_time,
                 end_time=time.time(),
-                error_message=error_msg
+                error_message=error_msg,
+                op_counts=op_counts,
             )
