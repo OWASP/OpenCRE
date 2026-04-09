@@ -27,6 +27,7 @@ from application.defs import cre_exceptions
 from application.defs import osib_defs as odefs
 from application.utils import spreadsheet as sheet_utils
 from application.utils import redis
+from application.utils import db_backend
 from alive_progress import alive_bar
 from application.prompt_client import prompt_client as prompt_client
 from application.utils import gap_analysis
@@ -299,6 +300,82 @@ def schedule_gap_analysis_importing_vs_peers(
         )
 
 
+def run_gap_pair_job(importing_name: str, peer_name: str, db_connection_str: str):
+    """RQ job wrapper for one directed GA pair."""
+    caps = db_backend.detect_backend(db_connection_str)
+    if not caps.is_postgres:
+        raise RuntimeError(
+            f"Pair GA scheduling requires Postgres backend, got {caps.backend}"
+        )
+    collection = db_connect(path=db_connection_str)
+    return gap_analysis.run_gap_pair(
+        importing_name=importing_name,
+        peer_name=peer_name,
+        database=collection,
+        # Backend is validated from explicit connection string above.
+        require_postgres=False,
+    )
+
+
+def schedule_gap_analysis_pairs_with_rq(
+    *,
+    collection: db.Node_collection,
+    importing_name: str,
+    db_connection_str: str,
+    peer_names: Optional[List[str]] = None,
+    skip_neo_populate: bool = False,
+):
+    """
+    Rung 1 primitive: enqueue directed GA pair jobs in RQ.
+
+    This function only schedules work. It does NOT wait for completion.
+    """
+    if os.environ.get("CRE_NO_CALCULATE_GAP_ANALYSIS") == "1":
+        return []
+    if peer_names is None:
+        peer_names = resolve_ga_peer_standard_names(collection, importing_name)
+    if not skip_neo_populate:
+        populate_neo4j_db(db_connection_str)
+
+    caps = db_backend.detect_backend(db_connection_str)
+    if not caps.is_postgres:
+        raise RuntimeError(
+            f"Pair GA scheduling requires Postgres backend, got {caps.backend}"
+        )
+
+    conn = redis.connect()
+    ga_queue_name = os.environ.get("CRE_GA_QUEUE_NAME", "ga")
+    q = Queue(name=ga_queue_name, connection=conn)
+    jobs = []
+    max_pairs = int(os.environ.get("CRE_GA_MAX_ENQUEUED_PAIRS", "0"))
+    enqueued = 0
+    for standard_name in peer_names:
+        if standard_name == importing_name:
+            continue
+        for a, b in ((importing_name, standard_name), (standard_name, importing_name)):
+            if max_pairs > 0 and enqueued >= max_pairs:
+                logger.info(
+                    "Reached CRE_GA_MAX_ENQUEUED_PAIRS=%s for %s; deferring remaining pairs",
+                    max_pairs,
+                    importing_name,
+                )
+                return jobs
+            jobs.append(
+                q.enqueue_call(
+                    description=f"{a}->{b}",
+                    func=run_gap_pair_job,
+                    kwargs={
+                        "importing_name": a,
+                        "peer_name": b,
+                        "db_connection_str": db_connection_str,
+                    },
+                    timeout=gap_analysis.GAP_ANALYSIS_TIMEOUT,
+                )
+            )
+            enqueued += 1
+    return jobs
+
+
 def register_standard(
     standard_entries: List[defs.Standard],
     collection: db.Node_collection = None,
@@ -411,6 +488,7 @@ def register_standard(
     logger.info(
         f"Registering resource {importing_name} of length {len(standard_entries)}"
     )
+    import_phase_t0 = time.perf_counter()
     for node in standard_entries:
         if not node:
             logger.info(
@@ -425,25 +503,28 @@ def register_standard(
             generate_embeddings = False
     if generate_embeddings and importing_name:
         ph.generate_embeddings_for(importing_name)
+    import_phase_elapsed = time.perf_counter() - import_phase_t0
+    logger.info(
+        "CP0 timing for %s: import_phase_s=%.2f",
+        importing_name,
+        import_phase_elapsed,
+    )
 
     if effective_calculate_gap_analysis and os.environ.get("CRE_NO_CALCULATE_GAP_ANALYSIS") != "1":
+        # GA orchestration is centralized in import_pipeline (pair-level model).
+        # register_standard only performs writes/import-phase work.
         after_fp = _standard_structure_fingerprint(importing_name)
         if before_fp is not None and before_fp == after_fp:
             logger.info(
-                "Skipping GA for %s because structure fingerprint unchanged",
+                "Skipping GA intent for %s because structure fingerprint unchanged",
                 importing_name,
             )
             conn.set(standard_hash, value="")
             return
-
-        peer_names = resolve_ga_peer_standard_names(collection, importing_name)
-        schedule_gap_analysis_importing_vs_peers(
-            collection=collection,
-            importing_name=importing_name,
-            db_connection_str=db_connection_str,
-            peer_names=peer_names,
+        logger.info(
+            "Deferring GA scheduling for %s to import pipeline pair coordinator",
+            importing_name,
         )
-        conn.set(standard_hash, value="")
 
 
 def parse_standards_from_spreadsheeet(
