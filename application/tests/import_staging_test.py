@@ -5,7 +5,7 @@ import unittest
 from application import create_app, sqla
 from application.database import db
 from application.defs import cre_defs as defs
-from application.utils import import_diff, import_pipeline
+from application.utils import import_apply, import_diff, import_pipeline
 from application.utils.external_project_parsers import base_parser_defs
 
 
@@ -158,4 +158,84 @@ class TestImportStaging(unittest.TestCase):
         cs = db.get_staged_change_set(run_id=run2.id)
         self.assertIsNotNone(cs)
         self.assertTrue(cs.has_conflicts)
+
+    def test_e2e_previous_import_then_staged_second_import_accept_apply_idempotent(
+        self,
+    ) -> None:
+        """
+        Full pipeline diff is persisted for run 2, but DB stays on run 1 until apply.
+
+        (``apply_parse_result`` for run 2 would commit immediately and make apply's
+        optimistic ``before`` check fail; ``stage_parse_result_only`` matches
+        review-then-apply semantics.)
+        """
+        source = "e2e_staging_apply"
+
+        run1 = db.create_import_run(source=source, version="v1")
+        pr1 = base_parser_defs.ParseResult(
+            results={"ASVS": [self._std("from_run_one")]},
+            calculate_gap_analysis=False,
+            calculate_embeddings=False,
+        )
+        import_pipeline.apply_parse_result(
+            parse_result=pr1,
+            collection=self.collection,
+            import_run_id=run1.id,
+            import_source=source,
+        )
+
+        run2 = db.create_import_run(source=source, version="v2")
+        pr2 = base_parser_defs.ParseResult(
+            results={"ASVS": [self._std("from_run_two")]},
+            calculate_gap_analysis=False,
+            calculate_embeddings=False,
+        )
+        import_pipeline.stage_parse_result_only(
+            parse_result=pr2,
+            collection=self.collection,
+            import_run_id=run2.id,
+            import_source=source,
+        )
+
+        row = (
+            sqla.session.query(db.Node)
+            .filter(db.Node.name == "ASVS")
+            .filter(db.Node.section == "1.1")
+            .filter(db.Node.section_id == "V1.1.1")
+            .first()
+        )
+        self.assertIsNotNone(row)
+        self.assertEqual(row.description, "from_run_one")
+
+        cs = db.get_staged_change_set(run_id=run2.id)
+        self.assertIsNotNone(cs)
+        self.assertEqual(cs.staging_status, "pending_review")
+        self.assertFalse(cs.has_conflicts)
+        ops = import_diff.change_set_from_json(cs.changeset_json or "[]")
+        self.assertEqual(len(ops), 1)
+        self.assertEqual(ops[0].op, "modify_control")
+        mod = ops[0]
+        self.assertEqual(mod.before.get("description"), "from_run_one")
+        self.assertEqual(mod.after.get("description"), "from_run_two")
+
+        db.update_staged_change_set(run_id=run2.id, staging_status="accepted")
+        res = import_apply.apply_changeset(
+            run_id=run2.id,
+            dry_run=False,
+            db_connection_str="",
+            run_post_apply_effects=False,
+        )
+        self.assertEqual(res.staging_status, "applied")
+        self.assertFalse(res.already_applied)
+
+        sqla.session.refresh(row)
+        self.assertEqual(row.description, "from_run_two")
+
+        res2 = import_apply.apply_changeset(
+            run_id=run2.id,
+            dry_run=False,
+            db_connection_str="",
+            run_post_apply_effects=False,
+        )
+        self.assertTrue(res2.already_applied)
 

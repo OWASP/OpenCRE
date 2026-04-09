@@ -21,8 +21,9 @@ from neomodel.exceptions import (
 from flask import json as flask_json
 from sqlalchemy.orm import aliased
 from flask_sqlalchemy.model import DefaultMeta
-from sqlalchemy import func, delete
-from sqlalchemy.exc import OperationalError
+from sqlalchemy import func, delete, cast as sql_cast, literal
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.exc import OperationalError, IntegrityError
 
 from neomodel import (
     config,
@@ -573,7 +574,7 @@ class NEO_DB:
             self.__instance = self.__new__(self)
 
             config.DATABASE_URL = (
-                os.getenv("NEO4J_URL") or "neo4j://neo4j:password@localhost:7687"
+                os.getenv("NEO4J_URL") or "bolt://neo4j:password@localhost:7687"
             )
         return self.__instance
 
@@ -1039,6 +1040,16 @@ class Node_collection:
                 if isinstance(v, str):
                     # Treat NULL and "" as the same for stable identity matching.
                     qu = qu.filter(func.coalesce(attr, "") == v)
+                elif isinstance(v, (dict, list)):
+                    # PostgreSQL has no `json = json` operator; compare as jsonb.
+                    bind = sqla.session.get_bind()
+                    if bind is not None and bind.dialect.name == "postgresql":
+                        qu = qu.filter(
+                            sql_cast(attr, JSONB)
+                            == sql_cast(literal(v, type_=sqla.JSON), JSONB)
+                        )
+                    else:
+                        qu = qu.filter(attr == v)
                 else:
                     qu = qu.filter(attr == v)
             else:
@@ -1760,6 +1771,21 @@ class Node_collection:
             }
         )
 
+        def _node_by_unique_identity(n: Node) -> Optional[Node]:
+            return (
+                self.session.query(Node)
+                .filter(
+                    sqla.and_(
+                        Node.name == n.name,
+                        Node.section == n.section,
+                        Node.subsection == n.subsection,
+                        Node.version == n.version,
+                        Node.section_id == n.section_id,
+                    )
+                )
+                .first()
+            )
+
         entries = self.object_select(dbnode, skip_attributes=list(skip))
         if entries:
             entry = entries[0]
@@ -1793,7 +1819,22 @@ class Node_collection:
             if dbnode.metadata_json:
                 entry.metadata_json = dbnode.metadata_json
 
-            self.session.commit()
+            try:
+                self.session.commit()
+            except IntegrityError as exc:
+                self.session.rollback()
+                # Upsert update can collide with an existing row on uq_node if
+                # identity fields are normalized/filled from multiple sources.
+                if "uq_node" in str(exc).lower():
+                    existing = _node_by_unique_identity(dbnode)
+                    if existing is not None:
+                        logger.info(
+                            "Recovered from uq_node collision during node upsert for %s:%s",
+                            dbnode.name,
+                            dbnode.section_id,
+                        )
+                        return existing
+                raise
             return entry
 
         if not dbnode.ntype:
@@ -1804,7 +1845,20 @@ class Node_collection:
             f"insert node {dbnode.name}:{dbnode.section}:{dbnode.section_id}"
         )
         self.session.add(dbnode)
-        self.session.commit()
+        try:
+            self.session.commit()
+        except IntegrityError as exc:
+            self.session.rollback()
+            if "uq_node" in str(exc).lower():
+                existing = _node_by_unique_identity(dbnode)
+                if existing is not None:
+                    logger.info(
+                        "Recovered from uq_node collision during node insert for %s:%s",
+                        dbnode.name,
+                        dbnode.section_id,
+                    )
+                    return existing
+            raise
         if self.graph:
             self.graph.add_dbnode(dbnode=node)
         return dbnode
@@ -1991,7 +2045,7 @@ class Node_collection:
     def standards(self) -> List[str]:
         standards = (
             self.session.query(Node.name)
-            .filter(Node.ntype == cre_defs.Credoctypes.Standard)
+            .filter(Node.ntype == cre_defs.Credoctypes.Standard.value)
             .distinct()
         )
         return list(set([s[0] for s in standards]))
@@ -2321,6 +2375,7 @@ def nodeFromDB(dbnode: Node) -> cre_defs.Node:
             tags=tags,
             version=dbnode.version,
             sectionID=dbnode.section_id,
+            description=dbnode.description or "",
             metadata=metadata,
         )
     elif dbnode.ntype == cre_defs.Tool.__name__:

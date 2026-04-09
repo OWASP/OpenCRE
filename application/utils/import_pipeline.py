@@ -127,6 +127,31 @@ def _phase2_snapshots_and_staging(
     )
 
 
+def stage_parse_result_only(
+    *,
+    parse_result: base_parser_defs.ParseResult,
+    collection: db_mod.Node_collection,
+    import_run_id: str,
+    import_source: str,
+    validate_classification_tags: bool = True,
+) -> None:
+    """
+    Persist standard snapshots + staged change set for this run **without** writing
+    CREs/standards to the database.
+
+    ``apply_parse_result`` always registers parsed documents after staging; use this
+    when the main graph should stay at the prior import until ``apply_changeset``
+    runs (review-then-apply). Tests and future deferred-apply flows use this entrypoint.
+    """
+    if not parse_result or not parse_result.results:
+        return
+    if validate_classification_tags:
+        base_parser_defs.validate_classification_tags(parse_result.results)
+    _phase2_snapshots_and_staging(
+        collection, parse_result, import_run_id, import_source
+    )
+
+
 def apply_parse_result(
     *,
     parse_result: base_parser_defs.ParseResult,
