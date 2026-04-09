@@ -14,6 +14,7 @@ from typing import Any
 from application.utils import oscal_utils, redis
 
 from rq import job, exceptions
+from rq import Queue
 
 from application.utils import oscal_utils, redis
 from application.database import db
@@ -274,15 +275,34 @@ def map_analysis() -> Any:
         posthog.capture(f"map_analysis", f"standards:{standards}")
 
     database = db.Node_collection()
-    standards = request.args.getlist("standard")
-    
-    # We now call gap_analysis.perform directly so web and cli share the same method
-    gap_analysis_result = gap_analysis.perform(standards, database)
-    if gap_analysis_result:
-        # Compatibility with the expected dict format on frontend
-        return jsonify({"result": gap_analysis_result.get("result") if isinstance(gap_analysis_result, dict) else gap_analysis_result})
-    
-    abort(404)
+    if len(standards) < 2:
+        abort(400, "Please provide two standards")
+    standards = standards[:2]
+    cache_key = gap_analysis.make_resources_key(standards)
+    cached = database.get_gap_analysis_result(cache_key=cache_key)
+    if cached:
+        parsed = json.loads(cached)
+        if parsed.get("result"):
+            return jsonify({"result": parsed.get("result")})
+
+    conn = redis.connect()
+    ga_queue_name = os.environ.get("CRE_GA_QUEUE_NAME", "ga")
+    q = Queue(name=ga_queue_name, connection=conn)
+    db_url = os.environ.get("CRE_CACHE_FILE") or os.environ.get("PROD_DATABASE_URL")
+    if not db_url:
+        # Derive from current SQLAlchemy bind when not explicitly set.
+        db_url = str(getattr(getattr(database.session, "bind", None), "url", ""))
+    j = q.enqueue_call(
+        description=f"{standards[0]}->{standards[1]}",
+        func=cre_main.run_gap_pair_job,
+        kwargs={
+            "importing_name": standards[0],
+            "peer_name": standards[1],
+            "db_connection_str": db_url,
+        },
+        timeout=gap_analysis.GAP_ANALYSIS_TIMEOUT,
+    )
+    return jsonify({"job_id": str(j.id)})
 
 
 @app.route("/rest/v1/map_analysis_weak_links", methods=["GET"])

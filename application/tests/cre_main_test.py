@@ -139,8 +139,8 @@ class TestMain(unittest.TestCase):
             generate_embeddings=False,
         )
 
-        populate_neo4j_mock.assert_called_once()
-        self.assertTrue(ga_mock.called)
+        populate_neo4j_mock.assert_not_called()
+        ga_mock.assert_not_called()
 
     @patch.object(main, "populate_neo4j_db")
     @patch.object(main.gap_analysis, "perform")
@@ -180,10 +180,8 @@ class TestMain(unittest.TestCase):
             generate_embeddings=False,
         )
 
-        populate_neo4j_mock.assert_called_once()
-        self.assertTrue(ga_mock.called)
-        # It should run GA for CWE vs ASVS and ASVS vs CWE
-        self.assertEqual(ga_mock.call_count, 2)
+        populate_neo4j_mock.assert_not_called()
+        ga_mock.assert_not_called()
 
     def test_register_node_with_links(self) -> None:
         standard_with_links = defs.Standard(
@@ -567,12 +565,14 @@ class TestMain(unittest.TestCase):
     @patch.object(redis, "wait_for_jobs")
     @patch.object(redis, "empty_queues")
     @patch.object(redis, "connect")
+    @patch("application.utils.db_backend.detect_backend")
     @patch.object(prompt_client.PromptHandler, "generate_embeddings_for")
     @patch.object(main, "populate_neo4j_db")
     def test_parse_standards_from_spreadsheeet(
         self,
         mock_populate_neo4j_db,
         mock_generate_embeddings_for,
+        mock_detect_backend,
         mock_redis_connect,
         mock_empty_queues,
         mock_wait_for_jobs,
@@ -582,6 +582,12 @@ class TestMain(unittest.TestCase):
         self.maxDiff = None
         prompt_handler = prompt_client.PromptHandler(database=self.collection)
         mock_db_connect.return_value = self.collection
+        mock_detect_backend.return_value = Mock(
+            is_postgres=True,
+            backend="postgres",
+            supports_pair_ga_scheduler=True,
+            reason="test",
+        )
         # No jobs scheduled when we're registering CREs only
         expected_cre_only_input, _ = data_gen.root_csv_cre_only()
         main.parse_standards_from_spreadsheeet(
@@ -635,6 +641,61 @@ class TestMain(unittest.TestCase):
             os.write(ymldesc, bytes(str(cre), "utf-8"))
             ymls.append(location)
         self.assertCountEqual(ymls, [x for x in main.get_cre_files_from_disk(loc)])
+
+    @patch.object(main.redis, "connect")
+    @patch.object(main.Queue, "enqueue_call")
+    @patch.object(main, "populate_neo4j_db")
+    @patch.object(main.db_backend, "detect_backend")
+    def test_schedule_gap_analysis_pairs_with_rq_enqueues_directed_pairs(
+        self,
+        detect_backend_mock,
+        populate_neo4j_mock,
+        enqueue_call_mock,
+        redis_connect_mock,
+    ) -> None:
+        detect_backend_mock.return_value = main.db_backend.BackendCapabilities(
+            backend="postgres",
+            is_postgres=True,
+            supports_pair_ga_scheduler=True,
+            reason="test",
+        )
+        redis_connect_mock.return_value = Mock()
+        enqueue_call_mock.return_value = Mock()
+
+        jobs = main.schedule_gap_analysis_pairs_with_rq(
+            collection=self.collection,
+            importing_name="CWE",
+            db_connection_str="postgresql://cre:password@127.0.0.1:5432/cre",
+            peer_names=["ASVS"],
+            skip_neo_populate=True,
+        )
+
+        self.assertEqual(2, len(jobs))
+        self.assertEqual(2, enqueue_call_mock.call_count)
+        descs = [c.kwargs.get("description") for c in enqueue_call_mock.call_args_list]
+        self.assertIn("CWE->ASVS", descs)
+        self.assertIn("ASVS->CWE", descs)
+        populate_neo4j_mock.assert_not_called()
+
+    @patch.object(main.db_backend, "detect_backend")
+    def test_schedule_gap_analysis_pairs_with_rq_rejects_sqlite(
+        self, detect_backend_mock
+    ) -> None:
+        detect_backend_mock.return_value = main.db_backend.BackendCapabilities(
+            backend="sqlite",
+            is_postgres=False,
+            supports_pair_ga_scheduler=False,
+            reason="test",
+        )
+
+        with self.assertRaises(RuntimeError):
+            main.schedule_gap_analysis_pairs_with_rq(
+                collection=self.collection,
+                importing_name="CWE",
+                db_connection_str="sqlite:///tmp.db",
+                peer_names=["ASVS"],
+                skip_neo_populate=True,
+            )
 
     @patch("application.cmd.cre_main.ai_client_init")
     @patch("application.cmd.cre_main.db_connect")
