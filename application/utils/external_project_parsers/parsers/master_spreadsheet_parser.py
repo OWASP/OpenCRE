@@ -117,6 +117,20 @@ supported_resource_mapping = {
             "hyperlink": "",
             "separator": "\n",
         },
+        "MITRE ATLAS": {
+            "section": "Standard MITRE ATLAS",
+            "sectionID": "Standard MITRE ATLAS ID",
+            "subsection": "",
+            "hyperlink": "Standard MITRE ATLAS hyperlink",
+            "separator": ";",
+        },
+        "OWASP AI Exchange": {
+            "section": "Standard OWASP AI Exchange",
+            "sectionID": "Standard OWASP AI Exchange ID",
+            "subsection": "",
+            "hyperlink": "Standard OWASP AI Exchange hyperlink",
+            "separator": ";",
+        },
     },
 }
 

@@ -11,9 +11,11 @@ from application.utils.external_project_parsers.parsers import (
     spreadsheet_cloud_controls_matrix,
     spreadsheet_cwe,
     spreadsheet_iso27001,
+    spreadsheet_mitre_atlas,
     spreadsheet_nist_800_53_v5,
     spreadsheet_nist_800_63,
     spreadsheet_nist_ssdf,
+    spreadsheet_owasp_ai_exchange,
     spreadsheet_owasp_cheat_sheets,
     spreadsheet_owasp_proactive_controls,
     spreadsheet_owasp_top10_2017,
@@ -37,6 +39,8 @@ _SPREADSHEET_STANDARD_PARSERS = (
     spreadsheet_iso27001,
     spreadsheet_samm,
     spreadsheet_nist_ssdf,
+    spreadsheet_mitre_atlas,
+    spreadsheet_owasp_ai_exchange,
 )
 
 _expected = tuple(
