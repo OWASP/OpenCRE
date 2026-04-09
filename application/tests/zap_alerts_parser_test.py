@@ -59,24 +59,26 @@ class TestZAPAlertsParser(unittest.TestCase):
         top10s = [
             self.collection.add_node(
                 defs.Standard(
-                    name="Top10 2015", section="A9_Wrong Year", subsection="wrong year"
+                    name="OWASP Top 10 2015",
+                    section="A9_Wrong Year",
+                    subsection="wrong year",
                 )
             ),
             self.collection.add_node(
                 defs.Standard(
-                    name="Top10 2021",
+                    name="OWASP Top 10 2021",
                     section="A6_Security_Misconfiguration",
                     subsection="something",
                 )
             ),
             self.collection.add_node(
                 defs.Standard(
-                    name="Top10 2017",
+                    name="OWASP Top 10 2017",
                     section="A9 Using Components With Known Vulnerabilities",
                 )
             ),
             self.collection.add_node(
-                defs.Standard(name="Top10 2021", section="A0 Something Irrelevant")
+                defs.Standard(name="OWASP Top 10 2021", section="A0 Something Irrelevant")
             ),
         ]
         cre = self.collection.add_cre(defs.CRE(name="foo", id="000-000"))
@@ -127,13 +129,12 @@ class TestZAPAlertsParser(unittest.TestCase):
                 tooltype=defs.ToolTypes.Offensive,
                 links=[
                     defs.Link(
-                        document=db.CREfromDB(cre), ltype=defs.LinkTypes.LinkedTo
+                        document=db.CREfromDB(cre),
+                        ltype=defs.LinkTypes.AutomaticallyLinkedTo,
                     ),
                     defs.Link(
-                        document=db.CREfromDB(cre2), ltype=defs.LinkTypes.LinkedTo
-                    ),
-                    defs.Link(
-                        document=db.CREfromDB(cre3), ltype=defs.LinkTypes.LinkedTo
+                        document=db.CREfromDB(cre2),
+                        ltype=defs.LinkTypes.AutomaticallyLinkedTo,
                     ),
                 ],
             )
@@ -216,8 +217,14 @@ class TestZAPAlertsParser(unittest.TestCase):
             hyperlink="https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/AntiClickjackingScanRule.java",
             tooltype=defs.ToolTypes.Offensive,
             links=[
-                defs.Link(document=db.CREfromDB(dbcre0), ltype=defs.LinkTypes.LinkedTo),
-                defs.Link(document=db.CREfromDB(dbcre1), ltype=defs.LinkTypes.LinkedTo),
+                defs.Link(
+                    document=db.CREfromDB(dbcre0),
+                    ltype=defs.LinkTypes.AutomaticallyLinkedTo,
+                ),
+                defs.Link(
+                    document=db.CREfromDB(dbcre1),
+                    ltype=defs.LinkTypes.AutomaticallyLinkedTo,
+                ),
             ],
         )
         self.maxDiff = None

@@ -53,6 +53,15 @@ class CWE(ParserInterface):
     def make_hyperlink(self, cwe_id: int):
         return f"https://cwe.mitre.org/data/definitions/{cwe_id}.html"
 
+    def _link_cwe_to_cre_if_absent(self, cwe: defs.Standard, cre: defs.Document) -> None:
+        """Avoid DuplicateLinkException when MITRE lists the same edge twice or peers share a CRE."""
+        lnk = defs.Link(
+            document=cre, ltype=defs.LinkTypes.AutomaticallyLinkedTo
+        )
+        if cwe.has_link(lnk):
+            return
+        cwe.add_link(lnk)
+
     def link_cwe_to_capec_cre(
         self, cwe: defs.Standard, cache: db.Node_collection, capec_id: str
     ) -> defs.Standard:
@@ -66,9 +75,7 @@ class CWE(ParserInterface):
                 logger.debug(
                     f"linked CWE with id {cwe.sectionID} to CRE with ID {cre.id}"
                 )
-                cwe.add_link(
-                    defs.Link(document=cre, ltype=defs.LinkTypes.AutomaticallyLinkedTo)
-                )
+                self._link_cwe_to_cre_if_absent(cwe, cre)
         return cwe
 
     def link_to_related_cwe(
@@ -84,9 +91,7 @@ class CWE(ParserInterface):
                 logger.debug(
                     f"linked CWE with id {cwe.sectionID} to CRE with ID {cre.id}"
                 )
-                cwe.add_link(
-                    defs.Link(document=cre, ltype=defs.LinkTypes.AutomaticallyLinkedTo)
-                )
+                self._link_cwe_to_cre_if_absent(cwe, cre)
         return cwe
 
     # cwe is a special case because it already partially exists in our spreadsheet

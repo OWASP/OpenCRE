@@ -67,14 +67,37 @@ class ZAP(ParserInterface):
         base_parser_defs.validate_classification_tags(results)
         return ParseResult(results=results)
 
+    def _link_tool_to_cre_if_absent(
+        self, alert: defs.Tool, cre_doc: defs.Document
+    ) -> None:
+        """MITRE/ZAP graphs can point at the same CRE more than once (e.g. multiple CWE links)."""
+        lnk = defs.Link(
+            ltype=defs.LinkTypes.AutomaticallyLinkedTo,
+            document=cre_doc,
+        )
+        if alert.has_link(lnk):
+            return
+        alert.add_link(lnk)
+
+    def _top10_standard_name(self, year: str) -> str:
+        return f"OWASP Top 10 {year}"
+
     def __link_to_top10(
         self, alert: defs.Tool, top10: re.Match[str] | None, cache: db.Node_collection
     ):
         for match in top10:
             year = match.group("year")
             num = match.group("num")
-            entries = cache.get_nodes(name=f"Top10 {year}", ntype="Standard")
-            entry = [e for e in entries if str(int(num)) in e.section]
+            if year == "2025":
+                logger.info(
+                    "Skipping OWASP Top 10 2025 tag for %s (not loaded in OpenCRE yet)",
+                    alert.section,
+                )
+                continue
+            entries = cache.get_nodes(
+                name=self._top10_standard_name(year), ntype="Standard"
+            )
+            entry = [e for e in entries if str(int(num)) in (e.section or "")]
             if entry:
                 logger.info(
                     f"Found zap alert {alert.name} linking to {entry[0].name}{entry[0].section}"
@@ -84,12 +107,7 @@ class ZAP(ParserInterface):
                     for nl in entry[0].links
                     if nl.document.doctype == defs.Credoctypes.CRE
                 ]:
-                    alert.add_link(
-                        defs.Link(
-                            ltype=defs.LinkTypes.AutomaticallyLinkedTo,
-                            document=cre.document,
-                        )
-                    )
+                    self._link_tool_to_cre_if_absent(alert, cre.document)
             else:
                 logger.error(
                     f"Zap Alert {alert.name} links to OWASP top 10 {year}:{num} but CRE doesn't know about it, incomplete data?"
@@ -105,12 +123,7 @@ class ZAP(ParserInterface):
         for node in cwe_nodes:
             for link in node.links:
                 if link.document.doctype == defs.Credoctypes.CRE:
-                    alert.add_link(
-                        defs.Link(
-                            ltype=defs.LinkTypes.AutomaticallyLinkedTo,
-                            document=link.document,
-                        )
-                    )
+                    self._link_tool_to_cre_if_absent(alert, link.document)
         if not cwe_nodes:
             logger.error(
                 f"opencre.org does not know of CWE {cweId}, it is linked to by zap alert: {alert.name}"
