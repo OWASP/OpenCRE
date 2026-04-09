@@ -8,6 +8,8 @@ prod-run:
 docker-neo4j-rm:
 	docker stop cre-neo4j
 	docker rm -f cre-neo4j
+	docker volume inspect cre_neo4j_data >/dev/null 2>&1 || docker volume create cre_neo4j_data
+	docker volume inspect cre_neo4j_logs >/dev/null 2>&1 || docker volume create cre_neo4j_logs
 	docker volume rm cre_neo4j_data
 	docker volume rm cre_neo4j_logs
 	# rm -rf .neo4j
