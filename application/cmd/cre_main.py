@@ -452,9 +452,24 @@ def parse_standards_from_spreadsheeet(
     prompt_handler: prompt_client.PromptHandler,
 ) -> None:
     """given a csv with standards, build a list of standards in the db"""
+    if not cre_file:
+        logger.fatal("empty spreadsheet")
+        return None
+
+    import_source_label = "master_spreadsheet"
+    from application.utils.external_project_parsers.parsers.ai_exchange import (
+        IMPORT_SOURCE_CSV,
+        is_ai_exchange_spreadsheet,
+        normalize_rows_for_master_import,
+    )
+
+    if is_ai_exchange_spreadsheet(cre_file[0]):
+        cre_file = normalize_rows_for_master_import(cre_file)
+        import_source_label = IMPORT_SOURCE_CSV
+
     if any(key.startswith("CRE hierarchy") for key in cre_file[0].keys()):
         try:
-            run = db.create_import_run(source="master_spreadsheet", version=None)
+            run = db.create_import_run(source=import_source_label, version=None)
         except Exception as e:
             logger.debug("Import run tracking skipped: %s", e)
             run = None
@@ -482,6 +497,23 @@ def get_cre_files_from_disk(cre_loc: str) -> Generator[str, None, None]:
         for name in cre_docs:
             if name.endswith(".yaml") or name.endswith(".yml"):
                 yield os.path.join(root, name)
+
+
+def add_from_ai_exchange_csv(csv_path: str, cache_loc: str, cre_loc: str) -> None:
+    """Import CRE graph + MITRE ATLAS + OWASP AI Exchange links from a local CSV export."""
+    import csv
+
+    database = db_connect(path=cache_loc)
+    prompt_handler = ai_client_init(database=database)
+    with open(csv_path, newline="", encoding="utf-8-sig") as f:
+        rows = list(csv.DictReader(f))
+    parse_standards_from_spreadsheeet(rows, cache_loc, prompt_handler)
+    logger.info(
+        "Updated database at %s from AI exchange CSV %s (cre_loc=%s)",
+        cache_loc,
+        csv_path,
+        cre_loc,
+    )
 
 
 def add_from_spreadsheet(spreadsheet_url: str, cache_loc: str, cre_loc: str) -> None:
@@ -624,13 +656,21 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
     script_path = os.path.dirname(os.path.realpath(__file__))
     os.path.join(script_path, "../cres")
 
-    if args.add and args.from_spreadsheet:
+    if args.add and getattr(args, "from_ai_exchange_csv", None):
+        add_from_ai_exchange_csv(
+            csv_path=args.from_ai_exchange_csv,
+            cache_loc=args.cache_file,
+            cre_loc=args.cre_loc,
+        )
+    elif args.add and args.from_spreadsheet:
         add_from_spreadsheet(
             spreadsheet_url=args.from_spreadsheet,
             cache_loc=args.cache_file,
             cre_loc=args.cre_loc,
         )
-    elif args.add and args.cre_loc and not args.from_spreadsheet:
+    elif args.add and args.cre_loc and not args.from_spreadsheet and not getattr(
+        args, "from_ai_exchange_csv", None
+    ):
         add_from_disk(cache_loc=args.cache_file, cre_loc=args.cre_loc)
 
     if args.delete_map_analysis_for:

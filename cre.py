@@ -92,6 +92,11 @@ def main() -> None:
         "--from_spreadsheet", help="import from a spreadsheet to yaml and then database"
     )
     parser.add_argument(
+        "--from_ai_exchange_csv",
+        default=None,
+        help="import from OpenCRE AI exchange CSV (CRE tree + MITRE ATLAS + OWASP AI Exchange)",
+    )
+    parser.add_argument(
         "--print_graph",
         help="will show the graph of the relationships between standards",
     )
