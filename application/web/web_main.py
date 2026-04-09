@@ -23,7 +23,6 @@ from application.defs import cre_exceptions
 
 from application.utils import spreadsheet as sheet_utils
 from application.utils import mdutils, redirectors, gap_analysis
-from application.prompt_client import prompt_client as prompt_client
 from application.utils.external_project_parsers.parsers import myopencre_parser
 from enum import Enum
 from flask import json as flask_json
@@ -808,6 +807,9 @@ def chat_cre() -> Any:
         posthog.capture(f"chat_cre", "")
 
     database = db.Node_collection()
+    # Lazy import to avoid loading heavy prompt/ML dependencies at web boot.
+    from application.prompt_client import prompt_client
+
     prompt = prompt_client.PromptHandler(database)
     response = prompt.generate_text(message.get("prompt"))
     return jsonify(response)
@@ -1053,6 +1055,7 @@ def import_from_cre_csv() -> Any:
         run = None
 
     from application.utils import import_pipeline
+    from application.prompt_client import prompt_client
 
     import_pipeline.apply_parse_result(
         parse_result=parse_result,
