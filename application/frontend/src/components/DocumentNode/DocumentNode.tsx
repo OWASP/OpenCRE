@@ -2,18 +2,26 @@ import './documentNode.scss';
 
 import axios from 'axios';
 import React, { FunctionComponent, useContext, useEffect, useMemo, useState } from 'react';
-import { Link, useHistory } from 'react-router-dom';
+import { Link, useHistory, useLocation } from 'react-router-dom';
 import { Icon } from 'semantic-ui-react';
 
-import { TYPE_AUTOLINKED_TO, TYPE_CONTAINS, TYPE_IS_PART_OF, TYPE_RELATED } from '../../const';
+import {
+  CRE,
+  TYPE_AUTOLINKED_TO,
+  TYPE_CONTAINS,
+  TYPE_IS_PART_OF,
+  TYPE_LINKED_TO,
+  TYPE_RELATED,
+} from '../../const';
 import { useEnvironment } from '../../hooks';
 import { applyFilters } from '../../hooks/applyFilters';
 import { Document } from '../../types';
-import { getDocumentDisplayName, groupLinksByType } from '../../utils';
-import { getApiEndpoint, getDocumentTypeText, getInternalUrl } from '../../utils/document';
+import { groupLinksByType } from '../../utils';
+import { getApiEndpoint, getDocumentTypeText, getInternalUrl, getTopicDisplayName } from '../../utils/document';
 import { FilterButton } from '../FilterButton/FilterButton';
 import { LoadingAndErrorIndicator } from '../LoadingAndErrorIndicator';
 
+const MAX_LENGTH_FOR_AUTO_EXPAND = 5;
 export interface DocumentNode {
   node: Document;
   linkType: string;
@@ -23,6 +31,7 @@ export interface DocumentNode {
 const linkTypesToNest = [TYPE_IS_PART_OF, TYPE_RELATED, TYPE_AUTOLINKED_TO];
 const linkTypesExcludedInNesting = [TYPE_CONTAINS];
 const linkTypesExcludedWhenNestingRelatedTo = [TYPE_RELATED, TYPE_IS_PART_OF, TYPE_CONTAINS];
+const linkDisplayOrder = [TYPE_LINKED_TO, TYPE_AUTOLINKED_TO, TYPE_CONTAINS, TYPE_IS_PART_OF, TYPE_RELATED];
 
 export const DocumentNode: FunctionComponent<DocumentNode> = ({
   node,
@@ -30,6 +39,7 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({
   hasLinktypeRelatedParent,
 }) => {
   const [expanded, setExpanded] = useState<boolean>(false);
+  const [showAll, setShowAll] = useState<Record<number, boolean>>({});
   const isStandard = node.doctype in ['Tool', 'Code', 'Standard'];
   const { apiUrl } = useEnvironment();
   const [nestedNode, setNestedNode] = useState<Document>();
@@ -42,6 +52,30 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({
   const hasExternalLink = Boolean(usedNode.hyperlink);
   const linksByType = useMemo(() => groupLinksByType(usedNode), [usedNode]);
   let currentUrlParams = new URLSearchParams(window.location.search);
+  const { pathname } = useLocation();
+  const isCrePath = useMemo(() => pathname.includes(CRE), [pathname]);
+
+  const isNestedInRelated = hasLinktypeRelatedParent || linkType === TYPE_RELATED;
+
+  const getTopicsToDisplayOrderdByLinkType = () => {
+    return linkDisplayOrder
+      .map((type) => [type, linksByType[type]] as [string, any])
+      .filter(([_, links]) => Array.isArray(links) && links.length > 0)
+      .filter(([type, _]) => !linkTypesExcludedInNesting.includes(type))
+      .filter(([type, _]) =>
+        isNestedInRelated ? !linkTypesExcludedWhenNestingRelatedTo.includes(type) : true
+      );
+  };
+
+  const topicsToDisplay = useMemo(() => getTopicsToDisplayOrderdByLinkType(), [linksByType, isNestedInRelated]);
+
+  useEffect(() => {
+    const isAllowedToAutoExpandByLength =
+      topicsToDisplay.map(([, links]) => links).reduce((prev, cur) => prev.concat(cur), []).length <=
+      MAX_LENGTH_FOR_AUTO_EXPAND;
+    const shouldCollapseRelatedByDefault = linkType === TYPE_RELATED;
+    setExpanded(isCrePath && !shouldCollapseRelatedByDefault ? isAllowedToAutoExpandByLength : false);
+  }, [topicsToDisplay, isCrePath, linkType]);
 
   useEffect(() => {
     if (!isStandard && linkTypesToNest.includes(linkType)) {
@@ -51,7 +85,7 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({
         .then(function (response) {
           setLoading(false);
           setNestedNode(response.data.data);
-          setExpanded(true);
+          setExpanded(linkType !== TYPE_RELATED);
           setError('');
         })
         .catch(function (axiosError) {
@@ -59,26 +93,14 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({
           setError(axiosError);
         });
     }
-  }, [id]);
+  }, [id, linkType]);
 
   const fetchedNodeHasLinks = () => {
     return usedNode.links && usedNode.links.length > 0;
   };
 
   const hasActiveLinks = () => {
-    return getTopicsToDisplayOrderdByLinkType().length > 0;
-  };
-
-  const isNestedInRelated = (): Boolean => {
-    return hasLinktypeRelatedParent || linkType === TYPE_RELATED;
-  };
-
-  const getTopicsToDisplayOrderdByLinkType = () => {
-    return Object.entries(linksByType)
-      .filter(([type, _]) => !linkTypesExcludedInNesting.includes(type))
-      .filter(([type, _]) =>
-        isNestedInRelated() ? !linkTypesExcludedWhenNestingRelatedTo.includes(type) : true
-      );
+    return topicsToDisplay.length > 0;
   };
 
   const Hyperlink = (hyperlink) => {
@@ -92,6 +114,9 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({
         <a href={hyperlink.hyperlink} target="_blank" rel="noopener noreferrer">
           {' '}
           {hyperlink.hyperlink}
+        </a>
+        <a href={hyperlink.hyperlink} target="_blank" rel="noopener noreferrer" aria-label="Open reference in new tab">
+          <Icon name="external" />
         </a>
       </>
     );
@@ -114,7 +139,7 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({
         <div className={`title external-link document-node f2`}>
           <Link to={getInternalUrl(usedNode)}>
             <i aria-hidden="true" className="circle icon"></i>
-            {getDocumentDisplayName(usedNode)}
+            {getTopicDisplayName(usedNode)}
           </Link>
           <HyperlinkIcon hyperlink={usedNode.hyperlink} />
         </div>
@@ -129,18 +154,17 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({
         <LoadingAndErrorIndicator loading={loading} error={error} />
         <div className={`title ${active} document-node`} onClick={() => setExpanded(!expanded)}>
           <i aria-hidden="true" className="dropdown icon"></i>
-          <Link to={getInternalUrl(usedNode)}>{getDocumentDisplayName(usedNode)}</Link>
+          <Link to={getInternalUrl(usedNode)}>{getTopicDisplayName(usedNode)}</Link>
         </div>
         <div className={`content${active} document-node`}>
           <Hyperlink hyperlink={usedNode.hyperlink} />
           {expanded &&
-            getTopicsToDisplayOrderdByLinkType().map(([type, links], idx) => {
-              const sortedResults = links.sort((a, b) =>
-                getDocumentDisplayName(a.document).localeCompare(getDocumentDisplayName(b.document))
+            topicsToDisplay.map(([type, links], idx) => {
+              const sortedResults = [...links].sort((a, b) =>
+                getTopicDisplayName(a.document).localeCompare(getTopicDisplayName(b.document))
               );
-              let lastDocumentName = sortedResults[0].document.name;
               return (
-                <div className="document-node__link-type-container" key={type}>
+                <div className="document-node__link-type-container" key={`${type}-${idx}`}>
                   {idx > 0 && <hr style={{ borderColor: 'transparent', margin: '20px 0' }} />}
                   <div>
                     <b>Which {getDocumentTypeText(type, links[0].document.doctype, node.doctype)}</b>:
@@ -148,23 +172,26 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({
                   </div>
                   <div>
                     <div className="accordion ui fluid styled f0">
-                      {sortedResults.map((link, i) => {
-                        const temp = (
-                          <div key={Math.random()}>
-                            {lastDocumentName !== link.document.name && <span style={{ margin: '5px' }} />}
-                            <DocumentNode
-                              node={link.document}
-                              linkType={type}
-                              hasLinktypeRelatedParent={isNestedInRelated()}
-                              key={Math.random()}
-                            />
-                            <FilterButton document={link.document} />
-                          </div>
-                        );
-                        lastDocumentName = link.document.name;
-                        return temp;
-                      })}
+                      {sortedResults.slice(0, showAll[idx] ? sortedResults.length : MAX_LENGTH_FOR_AUTO_EXPAND).map((link, i) => (
+                        <div key={`document-node-container-${type}-${idx}-${i}`} style={{ marginBottom: '4px' }}>
+                          <DocumentNode
+                            node={link.document}
+                            linkType={type}
+                            hasLinktypeRelatedParent={isNestedInRelated as boolean}
+                            key={`document-sub-node-${type}-${idx}-${i}`}
+                          />
+                          <FilterButton document={link.document} />
+                        </div>
+                      ))}
                     </div>
+                    {sortedResults.length > MAX_LENGTH_FOR_AUTO_EXPAND && (
+                      <button
+                        onClick={() => setShowAll(prev => ({ ...prev, [idx]: !prev[idx] }))}
+                        style={{ marginTop: '8px', cursor: 'pointer' }}
+                      >
+                        {showAll[idx] ? 'Show less ▲' : 'Show more ▼'}
+                      </button>
+                    )}
                   </div>
                 </div>
               );

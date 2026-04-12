@@ -2,14 +2,13 @@ import './explorer.scss';
 
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Checkbox, List } from 'semantic-ui-react';
+import { Checkbox, List, Popup } from 'semantic-ui-react';
 
 import { LoadingAndErrorIndicator } from '../../components/LoadingAndErrorIndicator';
 import { TYPE_CONTAINS, TYPE_LINKED_TO } from '../../const';
 import { useDataStore } from '../../providers/DataProvider';
 import { LinkedTreeDocument, TreeDocument } from '../../types';
-import { getDocumentDisplayName } from '../../utils';
-import { getInternalUrl } from '../../utils/document';
+import { getInternalUrl, getTopicDisplayName } from '../../utils/document';
 import { GraphDebugPanel } from './GraphDebugPanel';
 import { LinkedStandards } from './LinkedStandards';
 
@@ -89,14 +88,14 @@ export const Explorer = () => {
     if (!item) {
       return <></>;
     }
-    item.displayName = item.displayName ?? getDocumentDisplayName(item);
+    item.displayName = item.displayName ?? getTopicDisplayName(item);
     item.url = item.url ?? getInternalUrl(item);
     item.links = item.links ?? [];
 
     const contains = item.links.filter((x) => x.ltype === TYPE_CONTAINS);
     const linkedTo = item.links.filter((x) => x.ltype === TYPE_LINKED_TO);
     const creCode = item.id;
-    const creName = item.displayName.split(' : ').pop();
+    const creName = getTopicDisplayName(item);
     return (
       <List.Item key={Math.random()}>
         <List.Content>
@@ -110,7 +109,6 @@ export const Explorer = () => {
               </div>
             )}
             <Link to={item.url}>
-              <span className="cre-code">{applyHighlight(creCode, filter)}:</span>
               <span className="cre-name">{applyHighlight(creName, filter)}</span>
             </Link>
           </List.Header>
@@ -160,12 +158,20 @@ export const Explorer = () => {
               </li>
             </ul>
           </div>
-          <div id="debug-toggle">
+          <div id="debug-toggle" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Checkbox
               toggle
               label="Debug mode"
               checked={debugMode}
               onChange={() => setDebugMode(!debugMode)}
+            />
+            <Popup
+               content="Debug mode shows graph connectivity stats and link type details for each CRE node."
+            trigger={
+               <span style={{ cursor: 'help', color: '#666', fontSize: '14px', border: '1px solid #666', borderRadius: '50%', padding: '0 4px', fontWeight: 'bold' }}>
+                ?
+               </span>
+              }
             />
           </div>
         </div>
