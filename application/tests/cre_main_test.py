@@ -471,107 +471,22 @@ class TestMain(unittest.TestCase):
             ],
         )
 
-    def test_parse_file(self) -> None:
-        file: List[Dict[str, Any]] = [
-            {
-                "description": "Verify that approved cryptographic algorithms are used in the generation, seeding, and verification.",
-                "doctype": defs.Credoctypes.CRE,
-                "id": "157-573",
-                "links": [
-                    {
-                        "type": defs.LinkTypes.LinkedTo,
-                        "document": {
-                            "doctype": defs.Credoctypes.Standard,
-                            "name": "TOP10",
-                            "section": "https://owasp.org/www-project-top-ten/2017/A5_2017-Broken_Access_Control",
-                        },
-                    },
-                    {
-                        "type": defs.LinkTypes.LinkedTo,
-                        "document": {
-                            "doctype": defs.Credoctypes.Standard,
-                            "name": "ISO 25010",
-                            "section": "Secure data storage",
-                        },
-                    },
-                ],
-                "name": "CREDENTIALS_MANAGEMENT_CRYPTOGRAPHIC_DIRECTIVES",
-            },
-            {
-                "description": "Desc",
-                "doctype": defs.Credoctypes.CRE,
-                "id": "141-141",
-                "name": "name",
-            },
-        ]
-        expected = [
-            defs.CRE(
-                doctype=defs.Credoctypes.CRE,
-                id="157-573",
-                description="Verify that approved cryptographic algorithms are used in the generation, seeding, and verification.",
-                name="CREDENTIALS_MANAGEMENT_CRYPTOGRAPHIC_DIRECTIVES",
-                links=[
-                    defs.Link(
-                        document=defs.Standard(
-                            doctype=defs.Credoctypes.Standard,
-                            name="TOP10",
-                            section="https://owasp.org/www-project-top-ten/2017/A5_2017-Broken_Access_Control",
-                        ),
-                        ltype=defs.LinkTypes.LinkedTo,
-                    ),
-                    defs.Link(
-                        document=defs.Standard(
-                            doctype=defs.Credoctypes.Standard,
-                            name="ISO 25010",
-                            section="Secure data storage",
-                        ),
-                        ltype=defs.LinkTypes.LinkedTo,
-                    ),
-                ],
-            ),
-            defs.CRE(id="141-141", description="Desc", name="name"),
-        ]
-        with self.assertLogs("application.cmd.cre_main", level=logging.FATAL) as logs:
-            # negative test first parse_file accepts a list of objects
-            result = main.parse_file(
-                filename="tests",
-                yamldocs=[
-                    "no",
-                    "valid",
-                    "objects",
-                    "here",
-                    {
-                        "1": 2,
-                    },
-                ],
-                scollection=self.collection,
-            )
-
-            self.assertEqual(result, None)
-            self.assertIn(
-                "CRITICAL:application.cmd.cre_main:Malformed file tests, skipping",
-                logs.output,
-            )
-
-        self.maxDiff = None
-
-        res = main.parse_file(
-            filename="tests", yamldocs=file, scollection=self.collection
-        )
-        self.assertCountEqual(res, expected)
-
     @patch.object(main, "db_connect")
     @patch.object(Queue, "enqueue_call")
     @patch.object(redis, "wait_for_jobs")
     @patch.object(redis, "empty_queues")
     @patch.object(redis, "connect")
     @patch("application.utils.db_backend.detect_backend")
+    @patch(
+        "application.utils.external_project_parsers.parsers.master_spreadsheet_parser._load_existing_cre_identity_maps"
+    )
     @patch.object(prompt_client.PromptHandler, "generate_embeddings_for")
     @patch.object(main, "populate_neo4j_db")
     def test_parse_standards_from_spreadsheeet(
         self,
         mock_populate_neo4j_db,
         mock_generate_embeddings_for,
+        mock_load_existing_identity_maps,
         mock_detect_backend,
         mock_redis_connect,
         mock_empty_queues,
@@ -582,6 +497,7 @@ class TestMain(unittest.TestCase):
         self.maxDiff = None
         prompt_handler = prompt_client.PromptHandler(database=self.collection)
         mock_db_connect.return_value = self.collection
+        mock_load_existing_identity_maps.return_value = ({}, {})
         mock_detect_backend.return_value = Mock(
             is_postgres=True,
             backend="postgres",
@@ -631,16 +547,6 @@ class TestMain(unittest.TestCase):
             [],
             f"method parse_standards_from_spreadsheeet failed to process standards {','.join(expected_names)}",
         )
-
-    def test_get_standards_files_from_disk(self) -> None:
-        loc = tempfile.mkdtemp()
-        ymls = []
-        cre = defs.CRE(id="333-333", name="ccc", description="cd")
-        for _ in range(1, 5):
-            ymldesc, location = tempfile.mkstemp(dir=loc, suffix=".yaml", text=True)
-            os.write(ymldesc, bytes(str(cre), "utf-8"))
-            ymls.append(location)
-        self.assertCountEqual(ymls, [x for x in main.get_cre_files_from_disk(loc)])
 
     @patch.object(main.redis, "connect")
     @patch.object(main.Queue, "enqueue_call")
@@ -725,7 +631,7 @@ class TestMain(unittest.TestCase):
         mocked_readSpreadsheet.return_value = {"worksheet0": [{"cre": "cre"}]}
 
         main.add_from_spreadsheet(
-            spreadsheet_url="https://example.com/sheeet", cache_loc=cache, cre_loc=dir
+            spreadsheet_url="https://example.com/sheeet", cache_loc=cache
         )
 
         mocked_db_connect.assert_called_with(path=cache)
@@ -834,46 +740,6 @@ class TestMain(unittest.TestCase):
     #         title="cre_review",
     #         share_with=["foo@example.com"],
     #     )
-
-    @patch("application.cmd.cre_main.db_connect")
-    @patch("application.cmd.cre_main.get_cre_files_from_disk")
-    @patch("application.cmd.cre_main.parse_file")
-    @patch("application.database.db.Node_collection.export")
-    def test_add_from_disk(
-        self,
-        mocked_export: Mock,
-        mocked_parse_file: Mock,
-        mocked_get_standards_files_from_disk: Mock,
-        mocked_db_connect: Mock,
-    ) -> None:
-        dir = tempfile.mkdtemp()
-        self.tmpdirs.append(dir)
-        yml = tempfile.mkstemp(dir=dir, suffix=".yaml")[1]
-        loc = tempfile.mkstemp(dir=dir)[1]
-        cache = tempfile.mkstemp(dir=dir, suffix=".sqlite")[1]
-        mocked_db_connect.return_value = self.collection
-        mocked_get_standards_files_from_disk.return_value = [yml for i in range(0, 3)]
-        mocked_export.return_value = [
-            defs.CRE(id="000-000", name="c0"),
-            defs.Standard(name="s0", section="s1"),
-            defs.Code(name="code0", description="code1"),
-            defs.Tool(
-                name="t0", tooltype=defs.ToolTypes.Offensive, description="tool0"
-            ),
-        ]
-
-        main.add_from_disk(cache_loc=cache, cre_loc=dir)
-
-        mocked_db_connect.assert_called_with(path=cache)
-        mocked_parse_file.assert_called_with(
-            filename=yml,
-            yamldocs=[],
-            scollection=self.collection,
-            db_connection_str=cache,
-            calculate_embeddings=True,
-            calculate_gap_analysis=True,
-        )
-        # mocked_export.assert_called_with(dir) # we don't export anymore
 
     # @patch("application.cmd.cre_main.prepare_for_review")
     # @patch("application.cmd.cre_main.db_connect")

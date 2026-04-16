@@ -5,17 +5,14 @@ import json
 import logging
 import os
 import shutil
-import yaml
 import tempfile
 import requests
 
 from collections import deque
-from typing import Any, Callable, Dict, Generator, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple
 import hashlib
 import json as _json
 from rq import Queue, job, exceptions
-from dacite import from_dict
-from dacite.config import Config
 
 from application.utils.external_project_parsers.base_parser import BaseParser
 from application.utils.external_project_parsers.parsers import master_spreadsheet_parser
@@ -158,107 +155,6 @@ def register_cre(cre: defs.CRE, collection: db.Node_collection) -> Tuple[db.CRE,
     return dbcre, existing
 
 
-def parse_file_collect_only(
-    filename: str, yamldocs: List[Dict[str, Any]]
-) -> Optional[List[defs.Document]]:
-    """Parse YAML export docs into defs trees without writing to the DB (Step 9 pipeline)."""
-    resulting_objects: List[defs.Document] = []
-    for contents in yamldocs:
-        links = []
-
-        document: Optional[defs.Document] = None
-
-        if not isinstance(contents, dict):
-            logger.fatal("Malformed file %s, skipping" % filename)
-            return None
-
-        if contents.get("links"):
-            links = contents.pop("links")
-
-        if contents.get("doctype") == defs.Credoctypes.CRE.value:
-            document = from_dict(
-                data_class=defs.CRE,
-                data=contents,
-                config=Config(cast=[defs.Credoctypes]),
-            )
-        elif contents.get("doctype") in (
-            defs.Credoctypes.Standard.value,
-            defs.Credoctypes.Code.value,
-            defs.Credoctypes.Tool.value,
-        ):
-            doctype = contents.get("doctype")
-            data_class = (
-                defs.Standard
-                if doctype == defs.Credoctypes.Standard.value
-                else (
-                    defs.Code
-                    if doctype == defs.Credoctypes.Code.value
-                    else defs.Tool if doctype == defs.Credoctypes.Tool.value else None
-                )
-            )
-            document = from_dict(
-                data_class=data_class,
-                data=contents,
-                config=Config(cast=[defs.Credoctypes]),
-            )
-
-        for link in links:
-            doclink = parse_file_collect_only(
-                filename=filename,
-                yamldocs=[link.get("document")],
-            )
-
-            if doclink:
-                if len(doclink) > 1:
-                    logger.fatal(
-                        "Parsing single document returned 2 results this is a bug"
-                    )
-                document.add_link(
-                    defs.Link(
-                        document=doclink[0],
-                        ltype=link.get("type"),
-                        tags=link.get("tags"),
-                    )
-                )
-        if document is None:
-            logger.warning("Document is None, likely missing data")
-        resulting_objects.append(document)
-    return resulting_objects
-
-
-def parse_file(
-    filename: str,
-    yamldocs: List[Dict[str, Any]],
-    scollection: db.Node_collection,
-    db_connection_str: str = "",
-    calculate_embeddings: bool = False,
-    calculate_gap_analysis: bool = False,
-) -> Optional[List[defs.Document]]:
-    """Parse YAML export format and apply via central import pipeline (Step 9)."""
-    from application.utils import import_pipeline
-
-    collected = parse_file_collect_only(filename, yamldocs)
-    if collected is None:
-        return None
-    collected = [d for d in collected if d is not None]
-    if not collected:
-        return collected
-    pr = import_pipeline.parse_result_from_yaml_document_forest(
-        collected,
-        calculate_gap_analysis=calculate_gap_analysis,
-        calculate_embeddings=calculate_embeddings,
-    )
-    import_pipeline.apply_parse_result(
-        parse_result=pr,
-        collection=scollection,
-        db_connection_str=db_connection_str,
-        import_run_id=None,
-        import_source=None,
-        validate_classification_tags=False,
-    )
-    return collected
-
-
 def resolve_ga_peer_standard_names(
     collection: db.Node_collection, importing_name: str
 ) -> List[str]:
@@ -267,6 +163,70 @@ def resolve_ga_peer_standard_names(
     if shared:
         return shared
     return [s for s in collection.standards() if s != importing_name]
+
+
+def _document_doctype_value(doc: defs.Document) -> str:
+    doctype = getattr(doc, "doctype", None)
+    if hasattr(doctype, "value"):
+        return doctype.value
+    return str(doctype)
+
+
+def document_is_ga_eligible(doc: defs.Document, *, log_skips: bool = True) -> bool:
+    """
+    Whether a resource group should participate in gap analysis.
+
+    Must stay in sync with register_standard: Tools/Code are excluded; other
+    documents require classification tags (family:standard +
+    subtype:requirements_standard).
+    """
+    doctype = _document_doctype_value(doc)
+    if doctype in (defs.Credoctypes.Tool.value, defs.Credoctypes.Code.value):
+        return False
+
+    required = {"family:standard", "subtype:requirements_standard"}
+    raw_tags = getattr(doc, "tags", None)
+    if isinstance(raw_tags, (list, tuple, set)):
+        tags = list(raw_tags)
+    else:
+        tags = []
+    missing = sorted([t for t in required if t not in set(tags)])
+    if missing:
+        if log_skips:
+            logger.info(
+                "Skipping gap analysis for %s because tags missing %s",
+                getattr(doc, "name", "<unknown>"),
+                ",".join(missing),
+            )
+        return False
+
+    return True
+
+
+def resource_name_ga_eligible_in_db(
+    collection: db.Node_collection, resource_name: str
+) -> bool:
+    """
+    Post-import GA eligibility using SQL node rows (for post_apply paths that
+    only have resource names, not defs.Document lists).
+    """
+    from sqlalchemy import func
+
+    row = (
+        collection.session.query(db.Node)
+        .filter(func.lower(db.Node.name) == resource_name.lower())
+        .first()
+    )
+    if not row:
+        return False
+    if row.ntype in (defs.Credoctypes.Tool.value, defs.Credoctypes.Code.value):
+        return False
+    if row.ntype != defs.Credoctypes.Standard.value:
+        return False
+    raw_tags = row.tags or ""
+    tag_set = {t.strip() for t in str(raw_tags).split(",") if t.strip()}
+    required = {"family:standard", "subtype:requirements_standard"}
+    return required.issubset(tag_set)
 
 
 def schedule_gap_analysis_importing_vs_peers(
@@ -438,42 +398,14 @@ def register_standard(
         payload = _json.dumps(sorted(rows), sort_keys=True, separators=(",", ":"), ensure_ascii=False)
         return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
-    def _doctype_value(doc: defs.Document) -> str:
-        doctype = getattr(doc, "doctype", None)
-        if hasattr(doctype, "value"):
-            return doctype.value
-        return str(doctype)
-
-    def _ga_eligible(doc: defs.Document) -> bool:
-        doctype = _doctype_value(doc)
-        # Step 3a: doctype exclusion
-        if doctype in (defs.Credoctypes.Tool.value, defs.Credoctypes.Code.value):
-            return False
-
-        # Step 3b: tag gate for GA eligibility.
-        # For any non-Tool/non-Code Standard-like resource, schedule GA only when tags
-        # include both required literals.
-        required = {"family:standard", "subtype:requirements_standard"}
-        tags = getattr(doc, "tags", None) or []
-        missing = sorted([t for t in required if t not in set(tags)])
-        if missing:
-            logger.info(
-                "Skipping gap analysis for %s because tags missing %s",
-                getattr(doc, "name", "<unknown>"),
-                ",".join(missing),
-            )
-            return False
-
-        return True
-
     conn = redis.connect()
     ph = prompt_client.PromptHandler(database=collection)
     importing_name = standard_entries[0].name
-    effective_calculate_gap_analysis = calculate_gap_analysis and _ga_eligible(
+    effective_calculate_gap_analysis = calculate_gap_analysis and document_is_ga_eligible(
         standard_entries[0]
     )
     if calculate_gap_analysis and not effective_calculate_gap_analysis:
-        # _ga_eligible already logs the precise reason (doctype or missing tags).
+        # document_is_ga_eligible already logs the precise reason when log_skips default applies.
         logger.info("Skipping gap analysis for %s because resource is not GA-eligible", importing_name)
     standard_hash = gap_analysis.make_resources_key([importing_name])
     if effective_calculate_gap_analysis and conn.get(standard_hash):
@@ -573,14 +505,7 @@ def parse_standards_from_spreadsheeet(
         logger.fatal(f"could not find any useful keys { cre_file[0].keys()}")
 
 
-def get_cre_files_from_disk(cre_loc: str) -> Generator[str, None, None]:
-    for root, _, cre_docs in os.walk(cre_loc):
-        for name in cre_docs:
-            if name.endswith(".yaml") or name.endswith(".yml"):
-                yield os.path.join(root, name)
-
-
-def add_from_ai_exchange_csv(csv_path: str, cache_loc: str, cre_loc: str) -> None:
+def add_from_ai_exchange_csv(csv_path: str, cache_loc: str) -> None:
     """Import CRE graph + MITRE ATLAS + OWASP AI Exchange links from a local CSV export."""
     import csv
 
@@ -590,14 +515,13 @@ def add_from_ai_exchange_csv(csv_path: str, cache_loc: str, cre_loc: str) -> Non
         rows = list(csv.DictReader(f))
     parse_standards_from_spreadsheeet(rows, cache_loc, prompt_handler)
     logger.info(
-        "Updated database at %s from AI exchange CSV %s (cre_loc=%s)",
+        "Updated database at %s from AI exchange CSV %s",
         cache_loc,
         csv_path,
-        cre_loc,
     )
 
 
-def add_from_spreadsheet(spreadsheet_url: str, cache_loc: str, cre_loc: str) -> None:
+def add_from_spreadsheet(spreadsheet_url: str, cache_loc: str) -> None:
     """--add --from_spreadsheet <url>
     use the cre db in this repo
     import new mappings from <url>
@@ -611,28 +535,7 @@ def add_from_spreadsheet(spreadsheet_url: str, cache_loc: str, cre_loc: str) -> 
     for _, contents in spreadsheet.items():
         parse_standards_from_spreadsheeet(contents, cache_loc, prompt_handler)
 
-    logger.info(
-        "Db located at %s got updated, files extracted at %s" % (cache_loc, cre_loc)
-    )
-
-
-def add_from_disk(cache_loc: str, cre_loc: str) -> None:
-    """--add --cre_loc <path>
-    use the cre db in this repo
-    import new mappings from <path>
-    export db to ../../cres/
-    """
-    database = db_connect(path=cache_loc)
-    for file in get_cre_files_from_disk(cre_loc):
-        with open(file, "rb") as standard:
-            parse_file(
-                filename=file,
-                yamldocs=list(yaml.safe_load_all(standard)),
-                scollection=database,
-                db_connection_str=cache_loc,
-                calculate_embeddings=True,
-                calculate_gap_analysis=True,
-            )
+    logger.info("Db located at %s got updated", cache_loc)
 
 
 def review_from_spreadsheet(cache: str, spreadsheet_url: str, share_with: str) -> None:
@@ -741,18 +644,12 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
         add_from_ai_exchange_csv(
             csv_path=args.from_ai_exchange_csv,
             cache_loc=args.cache_file,
-            cre_loc=args.cre_loc,
         )
     elif args.add and args.from_spreadsheet:
         add_from_spreadsheet(
             spreadsheet_url=args.from_spreadsheet,
             cache_loc=args.cache_file,
-            cre_loc=args.cre_loc,
         )
-    elif args.add and args.cre_loc and not args.from_spreadsheet and not getattr(
-        args, "from_ai_exchange_csv", None
-    ):
-        add_from_disk(cache_loc=args.cache_file, cre_loc=args.cre_loc)
 
     if args.delete_map_analysis_for:
         cache = db_connect(args.cache_file)
