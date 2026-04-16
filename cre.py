@@ -98,11 +98,6 @@ def main() -> None:
         default=os.path.join(script_path, "standards_cache.sqlite"),
     )
     parser.add_argument(
-        "--cre_loc",
-        default=os.path.join(os.path.dirname(os.path.realpath(__file__)), "./cres/"),
-        help="define location of local cre files for review/add",
-    )
-    parser.add_argument(
         "--owasp_proj_meta",
         default=None,
         help="define location of owasp project metadata",
