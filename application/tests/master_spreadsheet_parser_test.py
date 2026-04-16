@@ -1,6 +1,7 @@
 import csv
 import io
 import unittest
+from unittest import mock
 
 from application.defs import cre_defs as defs
 from application.utils.external_project_parsers.parsers import master_spreadsheet_parser
@@ -48,4 +49,68 @@ class TestMasterSpreadsheetParser(unittest.TestCase):
         # No documents, but a well-formed ParseResult
         self.assertIsNotNone(result)
         self.assertFalse(result.results)
+
+    def test_hydrates_missing_id_from_db_by_name(self) -> None:
+        rows = [
+            {
+                "CRE hierarchy 1": "Known CRE",
+                "CRE ID": "",
+                "CRE Tags": "",
+            }
+        ]
+        with mock.patch(
+            "application.utils.external_project_parsers.parsers.master_spreadsheet_parser._load_existing_cre_identity_maps",
+            return_value=({"123-456": "Known CRE"}, {"known cre": "123-456"}),
+        ):
+            result = master_spreadsheet_parser.parse_cre_hierarchy_from_rows(rows)
+        cre = result.results[defs.Credoctypes.CRE.value][0]
+        self.assertEqual(cre.name, "Known CRE")
+        self.assertEqual(cre.id, "123-456")
+
+    def test_hydrates_id_only_row_name_from_db(self) -> None:
+        rows = [
+            {
+                "CRE hierarchy 1": "123-456",
+                "CRE ID": "",
+                "CRE Tags": "",
+            }
+        ]
+        with mock.patch(
+            "application.utils.external_project_parsers.parsers.master_spreadsheet_parser._load_existing_cre_identity_maps",
+            return_value=({"123-456": "Hydrated Name"}, {"hydrated name": "123-456"}),
+        ):
+            result = master_spreadsheet_parser.parse_cre_hierarchy_from_rows(rows)
+        cre = result.results[defs.Credoctypes.CRE.value][0]
+        self.assertEqual(cre.name, "Hydrated Name")
+        self.assertEqual(cre.id, "123-456")
+
+    def test_raises_on_same_id_different_name_conflict(self) -> None:
+        rows = [
+            {
+                "CRE hierarchy 1": "Sheet Name",
+                "CRE ID": "123-456",
+                "CRE Tags": "",
+            }
+        ]
+        with mock.patch(
+            "application.utils.external_project_parsers.parsers.master_spreadsheet_parser._load_existing_cre_identity_maps",
+            return_value=({"123-456": "DB Name"}, {"db name": "123-456"}),
+        ):
+            with self.assertRaises(ValueError):
+                master_spreadsheet_parser.parse_cre_hierarchy_from_rows(rows)
+
+    def test_raises_on_same_name_different_id_conflict(self) -> None:
+        rows = [
+            {
+                "CRE hierarchy 1": "Same Name",
+                "CRE ID": "111-111",
+                "CRE Tags": "",
+            }
+        ]
+        with mock.patch(
+            "application.utils.external_project_parsers.parsers.master_spreadsheet_parser._load_existing_cre_identity_maps",
+            return_value=({"222-222": "Same Name"}, {"same name": "222-222"}),
+        ):
+            with self.assertRaises(ValueError):
+                master_spreadsheet_parser.parse_cre_hierarchy_from_rows(rows)
 
