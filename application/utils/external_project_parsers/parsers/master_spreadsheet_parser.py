@@ -1,4 +1,5 @@
 import logging
+import re
 from dataclasses import dataclass
 from typing import Any, Dict, List, Tuple
 
@@ -19,6 +20,8 @@ from application.utils.external_project_parsers.parsers.spreadsheet_standard_fam
 logging.basicConfig()
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
+
+_CRE_ID_TOKEN = re.compile(r"^\d{3}-\d{3}$")
 
 
 supported_resource_mapping = {
@@ -129,6 +132,48 @@ supported_resource_mapping = {
             "sectionID": "Standard OWASP AI Exchange ID",
             "subsection": "",
             "hyperlink": "Standard OWASP AI Exchange hyperlink",
+            "separator": ";",
+        },
+        "OWASP Top10 for LLM": {
+            "section": "Standard OWASP Top10 for LLM",
+            "sectionID": "Standard OWASP Top10 for LLM ID",
+            "subsection": "Standard OWASP Top10 for LLM notes",
+            "hyperlink": "Standard OWASP Top10 for LLM hyperlink",
+            "separator": ";",
+        },
+        "OWASP Top10 for ML": {
+            "section": "Standard OWASP Top10 for ML",
+            "sectionID": "Standard OWASP Top10 for ML ID",
+            "subsection": "",
+            "hyperlink": "Standard OWASP Top10 for ML hyperlink",
+            "separator": ";",
+        },
+        "BIML": {
+            "section": "Standard BIML",
+            "sectionID": "Standard BIML ID",
+            "subsection": "",
+            "hyperlink": "Standard BIML hyperlink",
+            "separator": ";",
+        },
+        "ETSI": {
+            "section": "Standard ETSI",
+            "sectionID": "Standard ETSI ID",
+            "subsection": "",
+            "hyperlink": "Standard ETSI hyperlink",
+            "separator": ";",
+        },
+        "ENISA": {
+            "section": "Standard ENISA",
+            "sectionID": "Standard ENISA ID",
+            "subsection": "",
+            "hyperlink": "Standard ENISA hyperlink",
+            "separator": ";",
+        },
+        "NIST AI 100-2": {
+            "section": "Standard NIST AI 100-2",
+            "sectionID": "Standard NIST AI 100-2 ID",
+            "subsection": "",
+            "hyperlink": "Standard NIST AI 100-2 hyperlink",
             "separator": ";",
         },
     },
@@ -302,6 +347,75 @@ def _build_cre_name_to_id_map(
     return name_to_id
 
 
+def _load_existing_cre_identity_maps() -> Tuple[Dict[str, str], Dict[str, str]]:
+    """
+    Best-effort CRE identity map from DB:
+    - id_to_name: external_id -> name
+    - name_to_id: lower(name) -> external_id
+    """
+    try:
+        rows = db.CRE.query.with_entities(db.CRE.external_id, db.CRE.name).all()
+    except Exception:
+        return {}, {}
+    id_to_name: Dict[str, str] = {}
+    name_to_id: Dict[str, str] = {}
+    for external_id, name in rows:
+        cre_id = str(external_id or "").strip()
+        cre_name = str(name or "").strip()
+        if not cre_id or not cre_name or not _CRE_ID_TOKEN.match(cre_id):
+            continue
+        id_to_name[cre_id] = cre_name
+        name_to_id[cre_name.lower()] = cre_id
+    return id_to_name, name_to_id
+
+
+def _hydrate_and_validate_cre_identity(
+    *,
+    name: str,
+    resolved_id: str,
+    db_id_to_name: Dict[str, str],
+    db_name_to_id: Dict[str, str],
+) -> Tuple[str, str]:
+    """
+    Hydrate incomplete identities from DB and fail fast on corruption:
+    - same ID with different name
+    - same name with different ID
+    """
+    hydrated_name = name
+    hydrated_id = resolved_id
+
+    if not hydrated_id:
+        known_id = db_name_to_id.get(hydrated_name.lower(), "")
+        if known_id:
+            hydrated_id = known_id
+
+    if not hydrated_id and _CRE_ID_TOKEN.match(hydrated_name):
+        hydrated_id = hydrated_name
+
+    if hydrated_id and not _CRE_ID_TOKEN.match(hydrated_id):
+        raise ValueError(f"Invalid CRE ID format '{hydrated_id}' for '{hydrated_name}'")
+
+    db_name_for_id = db_id_to_name.get(hydrated_id) if hydrated_id else None
+    if db_name_for_id:
+        if _CRE_ID_TOKEN.match(hydrated_name):
+            # ID-only row; hydrate the display name from DB.
+            hydrated_name = db_name_for_id
+        elif hydrated_name != db_name_for_id:
+            raise ValueError(
+                "Data corruption: CRE ID conflict for "
+                f"{hydrated_id}: sheet name '{hydrated_name}' != db name '{db_name_for_id}'"
+            )
+
+    db_id_for_name = db_name_to_id.get(hydrated_name.lower())
+    if db_id_for_name and hydrated_id and db_id_for_name != hydrated_id:
+        raise ValueError(
+            "Data corruption: CRE name conflict for "
+            f"{hydrated_name}: sheet ID '{hydrated_id}' != db id '{db_id_for_name}'"
+        )
+
+    return hydrated_name, hydrated_id
+
+
 def update_cre_in_links(
     documents: Dict[str, defs.CRE], cre: defs.CRE
 ) -> List[defs.CRE]:
@@ -324,6 +438,7 @@ def _parse_cre_graph_and_rows(
 
     cre_name_to_id = _build_cre_name_to_id_map(cre_file, max_hierarchy)
 
+    db_id_to_name, db_name_to_id = _load_existing_cre_identity_maps()
     cre_dict = {}
     uninitialized_cre_mappings: List[UninitializedMapping] = []
     for mapping in cre_file:
@@ -352,9 +467,15 @@ def _parse_cre_graph_and_rows(
 
         row_id = str(mapping.get("CRE ID", "")).strip()
         resolved_id = row_id if not is_empty(row_id) else cre_name_to_id.get(name, "")
+        name, resolved_id = _hydrate_and_validate_cre_identity(
+            name=name,
+            resolved_id=resolved_id,
+            db_id_to_name=db_id_to_name,
+            db_name_to_id=db_name_to_id,
+        )
 
         if name in cre_dict.keys():
-            curr_id = row_id
+            curr_id = resolved_id
             if (
                 cre_dict[name].id != curr_id
                 and cre_dict[name].id != ""
@@ -368,8 +489,9 @@ def _parse_cre_graph_and_rows(
                 mapping.pop("CRE ID")
             cre = defs.CRE(name=name, id=resolved_id)
         else:
-            logger.warning(f"empty Id for {name}, skipping row (CRE not registered)")
-            continue
+            raise ValueError(
+                f"Missing CRE ID for '{name}' and could not hydrate from DB or sheet context"
+            )
 
         if not is_empty(str(mapping.get("CRE Tags")).strip()):
             ts = set()
