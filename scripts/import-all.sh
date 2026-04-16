@@ -12,6 +12,176 @@ run_cre_import() {
     python cre.py --cache_file "${IMPORT_CACHE_FILE}" "$@"
 }
 
+verify_import_outcome() {
+    local verify_db="standards_cache.sqlite"
+    if [[ ! -f "${verify_db}" ]]; then
+        log "WARNING: verification skipped; sqlite file not found at ${verify_db}"
+        return 0
+    fi
+    log "Verifying imported standards against requested scope"
+    python - <<'PY' "${verify_db}"
+import json
+import os
+import re
+import sqlite3
+import sys
+from pathlib import Path
+
+db_path = sys.argv[1]
+conn = sqlite3.connect(db_path)
+cur = conn.cursor()
+
+def has_exact_standard(name: str) -> bool:
+    row = cur.execute(
+        "SELECT 1 FROM node WHERE ntype='Standard' AND lower(name)=lower(?) LIMIT 1",
+        (name,),
+    ).fetchone()
+    return row is not None
+
+def has_exact_node(name: str, ntype: str) -> bool:
+    row = cur.execute(
+        "SELECT 1 FROM node WHERE ntype=? AND lower(name)=lower(?) LIMIT 1",
+        (ntype, name),
+    ).fetchone()
+    return row is not None
+
+def has_like_standard(term: str) -> bool:
+    row = cur.execute(
+        "SELECT 1 FROM node WHERE ntype='Standard' AND lower(name) LIKE lower(?) LIMIT 1",
+        (f"%{term}%",),
+    ).fetchone()
+    return row is not None
+
+standards_total = cur.execute(
+    "SELECT COUNT(DISTINCT name) FROM node WHERE ntype='Standard' AND trim(coalesce(name,''))<>''"
+).fetchone()[0]
+cre_total = cur.execute("SELECT COUNT(*) FROM cre").fetchone()[0]
+
+core_enabled = os.environ.get("CRE_SKIP_IMPORT_CORE", "") == ""
+projects_enabled = os.environ.get("CRE_SKIP_IMPORT_PROJECTS", "") == ""
+ai_exchange_enabled = projects_enabled and bool(os.environ.get("CRE_AI_EXCHANGE_CSV_PATH"))
+
+import_only_raw = os.environ.get("CRE_ROOT_CSV_IMPORT_ONLY", "")
+import_only = None
+if import_only_raw:
+    try:
+        parsed = json.loads(import_only_raw)
+        if isinstance(parsed, list):
+            import_only = {str(x).strip().lower() for x in parsed if str(x).strip()}
+    except json.JSONDecodeError:
+        # Import path already warns/fails for invalid JSON; verification stays conservative.
+        import_only = None
+
+expected_exact = []
+if projects_enabled:
+    expected_exact.extend(
+        [
+            "CWE",
+            "CAPEC",
+            "Secure Headers",
+            "PCI DSS",
+            "DevSecOps Maturity Model (DSOMM)",
+            "OWASP Cheat Sheets",
+        ]
+    )
+expected_tools = []
+if projects_enabled:
+    expected_tools.extend(
+        [
+            "OWASP Juice Shop",
+            "ZAP Rule",
+        ]
+    )
+
+def expected_by_import_only(name: str) -> bool:
+    if import_only is None:
+        return True
+    return name.strip().lower() in import_only
+
+enforced_exact = [name for name in expected_exact if expected_by_import_only(name)]
+intentional_skips = [name for name in expected_exact if not expected_by_import_only(name)]
+enforced_tools = [name for name in expected_tools if expected_by_import_only(name)]
+intentional_skips_tools = [name for name in expected_tools if not expected_by_import_only(name)]
+
+missing_exact = [name for name in enforced_exact if not has_exact_standard(name)]
+missing_tools = [name for name in enforced_tools if not has_exact_node(name, "Tool")]
+
+missing_like = []
+if ai_exchange_enabled:
+    # CSV import can create one or both families depending on source content.
+    ai_like_terms = ["ai exchange", "atlas"]
+    if import_only is not None:
+        ai_like_terms = [t for t in ai_like_terms if any(t in x for x in import_only)]
+    for term in ai_like_terms:
+        if not has_like_standard(term):
+            missing_like.append(term)
+
+worker_skips = []
+worker_errors = []
+for p in sorted(Path(".").glob("worker-*.log")):
+    text = p.read_text(encoding="utf-8", errors="ignore")
+    worker_skips.extend(
+        f"{p.name}: {m.group(0)}"
+        for m in re.finditer(r"Skipping standard .*?not in .*", text)
+    )
+    worker_errors.extend(
+        f"{p.name}: {line.strip()}"
+        for line in text.splitlines()
+        if (" exception raised " in line.lower() or "traceback (most recent call last)" in line.lower())
+    )
+
+problems = []
+if core_enabled and (standards_total == 0 or cre_total == 0):
+    problems.append(
+        "Core import appears incomplete (expected non-zero standards and CRE rows)."
+    )
+if missing_exact:
+    problems.append(
+        "Missing expected standards: " + ", ".join(sorted(missing_exact))
+    )
+if missing_tools:
+    problems.append(
+        "Missing expected tools: " + ", ".join(sorted(missing_tools))
+    )
+if missing_like:
+    problems.append(
+        "Missing expected AI-exchange family standards containing: "
+        + ", ".join(sorted(missing_like))
+    )
+if worker_errors:
+    problems.append(f"Worker logs include {len(worker_errors)} error markers.")
+
+print(f"[import-all] Verify: standards_total={standards_total}, cre_total={cre_total}")
+if intentional_skips:
+    print(
+        "[import-all] Verify: intentional skips via CRE_ROOT_CSV_IMPORT_ONLY = "
+        + ", ".join(sorted(intentional_skips))
+    )
+if intentional_skips_tools:
+    print(
+        "[import-all] Verify: intentional tool skips via CRE_ROOT_CSV_IMPORT_ONLY = "
+        + ", ".join(sorted(intentional_skips_tools))
+    )
+if worker_skips:
+    print(
+        f"[import-all] Verify: observed {len(worker_skips)} runtime skip messages "
+        "(likely filter-based)."
+    )
+
+if problems:
+    print("[import-all] Verify: FAILED")
+    for p in problems:
+        print(f"[import-all] Verify: - {p}")
+    print("[import-all] Verify: Next steps:")
+    print("[import-all] Verify: 1) Inspect worker-*.log for exact failing importer/standard.")
+    print("[import-all] Verify: 2) Check CRE_ROOT_CSV_IMPORT_ONLY / CRE_SKIP_IMPORT_* filters.")
+    print("[import-all] Verify: 3) Re-run `make import-all` after fixing env/data source issues.")
+    sys.exit(1)
+
+print("[import-all] Verify: OK (requested import scope is present)")
+PY
+}
+
 export_postgres_to_sqlite() {
     local pg_url="$1"
     local sqlite_path="$2"
@@ -19,6 +189,9 @@ export_postgres_to_sqlite() {
     python - <<'PY' "${pg_url}" "${sqlite_path}"
 import sqlite3
 import sys
+import json
+from datetime import date, datetime, time
+from decimal import Decimal
 from typing import List, Tuple
 
 import psycopg2
@@ -68,6 +241,17 @@ def map_type(dtype: str) -> str:
         return "INTEGER"
     return "TEXT"
 
+def normalize_value(value):
+    if value is None:
+        return None
+    if isinstance(value, (dict, list)):
+        return json.dumps(value, ensure_ascii=True, sort_keys=True)
+    if isinstance(value, (datetime, date, time)):
+        return value.isoformat()
+    if isinstance(value, Decimal):
+        return float(value)
+    return value
+
 sqlite = sqlite3.connect(sqlite_path)
 scur = sqlite.cursor()
 
@@ -92,7 +276,10 @@ for table in tables:
     col_names = [c for c, _ in cols]
     quoted_cols = ", ".join([f'"{c}"' for c in col_names])
     pg_cur.execute(f'SELECT {quoted_cols} FROM public."{table}"')
-    rows = pg_cur.fetchall()
+    rows = [
+        tuple(normalize_value(v) for v in row)
+        for row in pg_cur.fetchall()
+    ]
     if rows:
         placeholders = ", ".join(["?"] * len(col_names))
         scur.executemany(
@@ -110,6 +297,7 @@ PY
 
 trap 'log "FAILED at line $LINENO: ${BASH_COMMAND}"' ERR
 DASHBOARD_PID=""
+declare -a WORKER_PIDS=()
 
 wait_for_neo4j() {
     local max_s="${CRE_NEO4J_READY_TIMEOUT_SECONDS:-180}"
@@ -278,6 +466,7 @@ for i in $(seq 1 "$RUN_COUNT"); do
         CRE_WORKER_QUEUES="high,default,low" make start-worker &> "worker-$i.log"
     ) &
  fi
+ WORKER_PIDS+=("$!")
  done
 
 [ -d "./venv" ] && . ./venv/bin/activate
@@ -330,19 +519,23 @@ log "Stopping workers"
 # jobs without firing ERR / set -e (import already succeeded).
 set +e
 trap - ERR
-if pgrep -x python >/dev/null; then
-    killall python 2>/dev/null || true
+if [[ "${#WORKER_PIDS[@]}" -gt 0 ]]; then
+    log "Stopping ${#WORKER_PIDS[@]} worker launcher(s) by pid"
+    for pid in "${WORKER_PIDS[@]}"; do
+        kill "${pid}" 2>/dev/null || true
+    done
+    for pid in "${WORKER_PIDS[@]}"; do
+        wait "${pid}" 2>/dev/null || true
+    done
 fi
-if pgrep -x make >/dev/null; then
-    killall make 2>/dev/null || true
-fi
-wait || true
 set -e
 trap 'log "FAILED at line $LINENO: ${BASH_COMMAND}"' ERR
 
 if [[ "${USE_POSTGRES}" == "1" ]]; then
     export_postgres_to_sqlite "${POSTGRES_URL}" "standards_cache.sqlite"
 fi
+
+verify_import_outcome
 
 log "Import-all completed"
     
