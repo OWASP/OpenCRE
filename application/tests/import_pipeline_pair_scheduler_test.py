@@ -1,8 +1,16 @@
 import unittest
 from unittest.mock import Mock, patch
 
+from application.defs import cre_defs as defs
 from application.utils import import_pipeline
 from application.utils.external_project_parsers import base_parser_defs
+
+
+def _ga_eligible_standard_doc(**kwargs: object) -> Mock:
+    m = Mock(**kwargs)
+    m.doctype = defs.Credoctypes.Standard
+    m.tags = ["family:standard", "subtype:requirements_standard"]
+    return m
 
 
 class TestImportPipelinePairScheduler(unittest.TestCase):
@@ -44,8 +52,8 @@ class TestImportPipelinePairScheduler(unittest.TestCase):
         pr = base_parser_defs.ParseResult(
             results={
                 "CRE": [],
-                "ASVS": [Mock(name="a1")],
-                "CWE": [Mock(name="c1")],
+                "ASVS": [_ga_eligible_standard_doc(name="a1")],
+                "CWE": [_ga_eligible_standard_doc(name="c1")],
             },
             calculate_gap_analysis=True,
             calculate_embeddings=False,
@@ -109,7 +117,7 @@ class TestImportPipelinePairScheduler(unittest.TestCase):
         collection.with_graph.return_value = collection
 
         pr = base_parser_defs.ParseResult(
-            results={"CRE": [], "ASVS": [Mock(name="a1")]},
+            results={"CRE": [], "ASVS": [_ga_eligible_standard_doc(name="a1")]},
             calculate_gap_analysis=True,
             calculate_embeddings=False,
         )
@@ -172,7 +180,7 @@ class TestImportPipelinePairScheduler(unittest.TestCase):
         collection.with_graph.return_value = collection
 
         pr = base_parser_defs.ParseResult(
-            results={"CRE": [], "ASVS": [Mock(name="a1")]},
+            results={"CRE": [], "ASVS": [_ga_eligible_standard_doc(name="a1")]},
             calculate_gap_analysis=True,
             calculate_embeddings=False,
         )
@@ -249,7 +257,7 @@ class TestImportPipelinePairScheduler(unittest.TestCase):
         collection.with_graph.return_value = collection
 
         pr = base_parser_defs.ParseResult(
-            results={"CRE": [], "ASVS": [Mock(name="a1")]},
+            results={"CRE": [], "ASVS": [_ga_eligible_standard_doc(name="a1")]},
             calculate_gap_analysis=True,
             calculate_embeddings=False,
         )
@@ -339,7 +347,7 @@ class TestImportPipelinePairScheduler(unittest.TestCase):
         db_connect_mock.return_value = collection
 
         pr = base_parser_defs.ParseResult(
-            results={"CRE": [], "ASVS": [Mock(name="a1")]},
+            results={"CRE": [], "ASVS": [_ga_eligible_standard_doc(name="a1")]},
             calculate_gap_analysis=True,
             calculate_embeddings=False,
         )
