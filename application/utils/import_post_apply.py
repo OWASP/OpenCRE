@@ -57,6 +57,12 @@ def run_post_apply(
                 logger.warning("post-apply neo4j populate: %s", ex)
         ga_jobs = []
         for importing_name in names:
+            if not cre_main.resource_name_ga_eligible_in_db(coll, importing_name):
+                logger.info(
+                    "Skipping post-apply GA for %s (not GA-eligible)",
+                    importing_name,
+                )
+                continue
             try:
                 peers = cre_main.resolve_ga_peer_standard_names(coll, importing_name)
             except Exception as ex:

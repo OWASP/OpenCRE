@@ -222,9 +222,20 @@ def apply_parse_result(
                 raise RuntimeError(
                     f"Pair-level GA scheduling requires Postgres; detected backend={caps.backend}"
                 )
-            imported_standard_names = [
-                k for k in parse_result.results.keys() if k != cre_key
-            ]
+            imported_standard_names = []
+            for k in parse_result.results.keys():
+                if k == cre_key:
+                    continue
+                docs = parse_result.results.get(k) or []
+                if not docs:
+                    continue
+                if cre_main.document_is_ga_eligible(docs[0], log_skips=False):
+                    imported_standard_names.append(k)
+                else:
+                    logger.info(
+                        "Skipping GA pair scheduling for resource group %s (not GA-eligible)",
+                        k,
+                    )
             if imported_standard_names:
                 cre_main.populate_neo4j_db(db_connection_str)
             conn = redis.connect()
@@ -432,8 +443,11 @@ def apply_parse_result_with_rq(
                 )
                 continue
 
+            ga_eligible = bool(standard_entries) and cre_main.document_is_ga_eligible(
+                standard_entries[0], log_skips=False
+            )
             job_desc = f"import:{standard_name}"
-            if use_pair_ga_scheduler:
+            if use_pair_ga_scheduler and ga_eligible:
                 try:
                     peers = cre_main.resolve_ga_peer_standard_names(
                         collection, standard_name
@@ -457,6 +471,11 @@ def apply_parse_result_with_rq(
                         standard_name,
                         preview,
                     )
+            elif use_pair_ga_scheduler and standard_entries and not ga_eligible:
+                logger.info(
+                    "Skipping GA pair scheduling for resource group %s (not GA-eligible)",
+                    standard_name,
+                )
 
             jobs.append(
                 q.enqueue_call(
@@ -473,7 +492,8 @@ def apply_parse_result_with_rq(
                     timeout=gap_analysis.GAP_ANALYSIS_TIMEOUT,
                 )
             )
-            imported_standard_names.append(standard_name)
+            if ga_eligible:
+                imported_standard_names.append(standard_name)
 
         t0 = time.perf_counter()
         total = len(jobs)
