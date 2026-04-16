@@ -10,16 +10,19 @@ class TestImportPostApply(unittest.TestCase):
     @patch("application.utils.import_post_apply.redis.wait_for_jobs")
     @patch("application.utils.import_post_apply.cre_main.schedule_gap_analysis_pairs_with_rq")
     @patch("application.utils.import_post_apply.cre_main.resolve_ga_peer_standard_names")
+    @patch("application.utils.import_post_apply.cre_main.resource_name_ga_eligible_in_db")
     @patch("application.utils.import_post_apply.db_backend.detect_backend")
     def test_post_apply_runs_pair_level_ga_only(
         self,
         detect_backend_mock,
+        ga_eligible_mock,
         resolve_peers_mock,
         schedule_pairs_mock,
         wait_for_jobs_mock,
         populate_neo4j_mock,
         prompt_handler_cls_mock,
     ) -> None:
+        ga_eligible_mock.return_value = True
         detect_backend_mock.return_value = Mock(is_postgres=True, backend="postgres")
         collection = Mock()
         collection.with_graph.return_value = collection
