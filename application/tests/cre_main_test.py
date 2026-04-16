@@ -886,5 +886,67 @@ class TestMain(unittest.TestCase):
     #     mocked_cre2osib.assert_called_with([defs.CRE(id="000-000", name="c0")])
 
 
+class TestGaEligibilityHelpers(unittest.TestCase):
+    """Direct unit tests for GA gating helpers used by import_pipeline and post_apply."""
+
+    def test_document_is_ga_eligible_rejects_tool(self) -> None:
+        doc = defs.Tool(
+            name="Tool Resource",
+            description="t",
+            tooltype=defs.ToolTypes.Defensive,
+        )
+        self.assertFalse(main.document_is_ga_eligible(doc, log_skips=False))
+
+    def test_document_is_ga_eligible_rejects_code(self) -> None:
+        doc = defs.Code(name="Code Resource", description="c")
+        self.assertFalse(main.document_is_ga_eligible(doc, log_skips=False))
+
+    def test_document_is_ga_eligible_requires_both_tags(self) -> None:
+        partial = defs.Standard(
+            name="CWE",
+            section="sec",
+            sectionID="123",
+            tags=["family:standard"],
+        )
+        self.assertFalse(main.document_is_ga_eligible(partial, log_skips=False))
+
+        ok = defs.Standard(
+            name="ASVS",
+            section="sec",
+            sectionID="123",
+            tags=["family:standard", "subtype:requirements_standard"],
+        )
+        self.assertTrue(main.document_is_ga_eligible(ok, log_skips=False))
+
+    def test_resource_name_ga_eligible_in_db_false_when_missing(self) -> None:
+        coll = Mock()
+        q = Mock()
+        coll.session.query.return_value = q
+        q.filter.return_value = q
+        q.first.return_value = None
+        self.assertFalse(main.resource_name_ga_eligible_in_db(coll, "ASVS"))
+
+    def test_resource_name_ga_eligible_in_db_false_for_tool(self) -> None:
+        coll = Mock()
+        q = Mock()
+        coll.session.query.return_value = q
+        q.filter.return_value = q
+        row = Mock()
+        row.ntype = defs.Credoctypes.Tool.value
+        q.first.return_value = row
+        self.assertFalse(main.resource_name_ga_eligible_in_db(coll, "T"))
+
+    def test_resource_name_ga_eligible_in_db_true_for_tagged_standard(self) -> None:
+        coll = Mock()
+        q = Mock()
+        coll.session.query.return_value = q
+        q.filter.return_value = q
+        row = Mock()
+        row.ntype = defs.Credoctypes.Standard.value
+        row.tags = "family:standard,subtype:requirements_standard"
+        q.first.return_value = row
+        self.assertTrue(main.resource_name_ga_eligible_in_db(coll, "ASVS"))
+
+
 if __name__ == "__main__":
     unittest.main()
