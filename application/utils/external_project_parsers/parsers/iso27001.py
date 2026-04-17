@@ -14,9 +14,7 @@ from application.utils.external_project_parsers.base_parser_defs import (
 )
 from typing import List
 
-logging.basicConfig()
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 nist_id_re = re.compile("(?P<nist_id>\w\w\-\d+)")
 

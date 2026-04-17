@@ -6,9 +6,7 @@ from typing import Callable, List
 import rq
 import time
 
-logging.basicConfig()
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 
 def empty_queues(redis: redis.Redis):

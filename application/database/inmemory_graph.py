@@ -5,9 +5,7 @@ from typing import List, Tuple
 from application.defs import cre_defs as defs
 
 
-logging.basicConfig()
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 
 class CycleDetectedError(Exception):

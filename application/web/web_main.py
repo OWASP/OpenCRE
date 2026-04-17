@@ -57,9 +57,7 @@ app = Blueprint(
     ),
 )
 
-logging.basicConfig()
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 
 class SupportedFormats(Enum):
