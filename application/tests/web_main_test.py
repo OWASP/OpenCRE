@@ -690,6 +690,20 @@ class TestMain(unittest.TestCase):
             self.assertEqual(200, response.status_code)
             self.assertEqual(expected, json.loads(response.data))
 
+    @patch.object(redis, "from_url")
+    @patch.object(db, "Node_collection")
+    def test_supported_documents_from_db(self, node_mock, redis_conn_mock) -> None:
+        expected = {"Standard": ["A"], "Tool": ["B"], "Code": ["C"]}
+        redis_conn_mock.return_value.get.return_value = None
+        node_mock.return_value.supported_documents.return_value = expected
+        with self.app.test_client() as client:
+            response = client.get(
+                "/rest/v1/supported_documents",
+                headers={"Content-Type": "application/json"},
+            )
+            self.assertEqual(200, response.status_code)
+            self.assertEqual(expected, json.loads(response.data))
+
     def test_gap_analysis_weak_links_no_cache(self) -> None:
         with self.app.test_client() as client:
             response = client.get(

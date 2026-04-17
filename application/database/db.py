@@ -1798,6 +1798,24 @@ class Node_collection:
         )
         return list(set([s[0] for s in standards]))
 
+    def supported_documents(self) -> Dict[str, List[str]]:
+        documents_by_type: Dict[str, set[str]] = {}
+        for ntype, name in (
+            self.session.query(Node.ntype, Node.name)
+            .filter(Node.ntype.isnot(None), Node.name.isnot(None))
+            .distinct()
+        ):
+            if not ntype or not name:
+                continue
+            documents_by_type.setdefault(ntype, set()).add(name)
+
+        return {
+            ntype: sorted(list(names), key=lambda value: value.lower())
+            for ntype, names in sorted(
+                documents_by_type.items(), key=lambda item: item[0].lower()
+            )
+        }
+
     def text_search(self, text: str) -> List[Optional[cre_defs.Document]]:
         """Given a piece of text, tries to find the best match
         for the text in the database.
