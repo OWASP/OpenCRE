@@ -5,12 +5,20 @@ from datetime import datetime
 from multiprocessing import Pool
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
+from io import BytesIO
+from urllib.parse import urlparse
+
+from playwright.sync_api import Error as PlaywrightError
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError, sync_playwright
-import playwright
 from scipy import sparse
 from sklearn.metrics.pairwise import cosine_similarity
 from typing import Dict, List, Any, Tuple, Optional
 import logging
+
+try:
+    from pypdf import PdfReader
+except ImportError:
+    PdfReader = None  # type: ignore[misc, assignment]
 import nltk
 import numpy as np
 import os
@@ -27,6 +35,84 @@ SIMILARITY_THRESHOLD = float(os.environ.get("CHATBOT_SIMILARITY_THRESHOLD", "0.7
 
 def is_valid_url(url):
     return url.startswith("http://") or url.startswith("https://")
+
+
+def _is_likely_pdf_url(url: str) -> bool:
+    try:
+        return urlparse(url).path.lower().endswith(".pdf")
+    except Exception:
+        return False
+
+
+def _playwright_forced_download_error(exc: BaseException) -> bool:
+    """Playwright ``goto`` fails when the navigation triggers a file download (e.g. PDF)."""
+    return "download is starting" in str(exc).lower()
+
+
+def _fetch_pdf_text_for_embeddings(url: str) -> Optional[str]:
+    """
+    Download a PDF via HTTP and extract plain text for embedding.
+    Used when the URL is clearly a PDF or when Playwright reports a download response.
+    """
+    max_bytes = int(os.environ.get("CRE_EMBED_MAX_PDF_BYTES", str(50 * 1024 * 1024)))
+    headers = {
+        "User-Agent": os.environ.get(
+            "CRE_EMBED_REQUEST_USER_AGENT",
+            "OpenCRE-embeddings/1.0 (+https://opencre.org)",
+        )
+    }
+    logger.info("Fetching PDF for embeddings: %s", url)
+    try:
+        with requests.get(
+            url,
+            timeout=(30, 120),
+            headers=headers,
+            stream=True,
+            allow_redirects=True,
+        ) as resp:
+            resp.raise_for_status()
+            buf = bytearray()
+            for chunk in resp.iter_content(chunk_size=65536):
+                if not chunk:
+                    continue
+                buf.extend(chunk)
+                if len(buf) > max_bytes:
+                    logger.warning(
+                        "PDF from %s exceeded CRE_EMBED_MAX_PDF_BYTES=%s",
+                        url,
+                        max_bytes,
+                    )
+                    return None
+        data = bytes(buf)
+    except requests.RequestException as e:
+        logger.error("PDF fetch failed for %s: %s", url, e)
+        return None
+
+    probe = data[: min(len(data), 2048)]
+    pdf_mark = probe.find(b"%PDF")
+    if pdf_mark < 0:
+        logger.warning("Response from %s is not a PDF (missing %%PDF marker)", url)
+        return None
+    if pdf_mark > 0:
+        data = data[pdf_mark:]
+
+    if PdfReader is None:
+        logger.error(
+            "pypdf is required for PDF embedding extraction; add it to the environment"
+        )
+        return None
+
+    try:
+        reader = PdfReader(BytesIO(data))
+        parts: List[str] = []
+        for page in reader.pages:
+            t = page.extract_text()
+            if t and t.strip():
+                parts.append(t.strip())
+        return "\n".join(parts) if parts else None
+    except Exception as e:
+        logger.error("PDF parse failed for %s: %s", url, e)
+        return None
 
 
 def normalize_embeddings_content(text: Optional[str]) -> str:
@@ -48,6 +134,11 @@ def stable_json(v: Any) -> str:
         return json.dumps(str(v), sort_keys=True, separators=(",", ":"), ensure_ascii=False)
 
 
+def _embedding_text_from_node_resource_fields(node: Any) -> str:
+    """Text from DB-backed node fields only (no HTTP). ``__repr__`` uses ``todict()``."""
+    return normalize_embeddings_content(node.__repr__())
+
+
 class in_memory_embeddings:
     __instance = None
     __webkit = None
@@ -64,12 +155,23 @@ class in_memory_embeddings:
     # Function to get text content from a URL
     def get_content(self, url) -> Optional[str]:
         for attempts in range(1, 10):
+            if _is_likely_pdf_url(url):
+                text = _fetch_pdf_text_for_embeddings(url)
+                if text:
+                    return text
+                logger.warning(
+                    "PDF URL %s: no extractable text after fetch (attempt %s/9)",
+                    url,
+                    attempts,
+                )
+                continue
+
+            page = None
             try:
                 page = self.__context.new_page()
                 logger.info(f"loading page {url}")
                 page.goto(url)
                 text = page.locator("body").inner_text()
-                page.close()
                 return text
             except requests.exceptions.RequestException as e:
                 logger.error(
@@ -82,6 +184,34 @@ class in_memory_embeddings:
                     f"Page: {url}, took too long to load, playwright timeout (attempt {attempts}/9) - {str(te)}"
                 )
                 continue
+            except PlaywrightError as pe:
+                if _playwright_forced_download_error(pe):
+                    logger.info(
+                        "Navigation triggered a download for %s; using PDF text extraction",
+                        url,
+                    )
+                    text = _fetch_pdf_text_for_embeddings(url)
+                    if text:
+                        return text
+                    logger.warning(
+                        "PDF extraction failed for %s after download-style response (attempt %s/9)",
+                        url,
+                        attempts,
+                    )
+                    continue
+                logger.error(
+                    "Playwright error for %s (attempt %s/9): %s",
+                    url,
+                    attempts,
+                    pe,
+                )
+                continue
+            finally:
+                if page:
+                    try:
+                        page.close()
+                    except Exception:
+                        pass
 
         return None
 
@@ -194,32 +324,89 @@ class in_memory_embeddings:
 
             # Collect all batch content first, so embeddings are batched in one provider call.
             for db_id in batch_ids:
+                # ``missing_embeddings`` mixes CRE primary keys and node primary keys.
+                # Only call ``get_nodes`` when the id exists in ``node``; CRE ids are not
+                # nodes and would otherwise trigger spurious get_nodes "not found" paths.
+                if not database.has_node_with_db_id(db_id):
+                    cre = database.get_cre_by_db_id(db_id)
+                    if cre:
+                        content = normalize_embeddings_content(
+                            f"{cre.doctype}\n name:{cre.name}\n description:{cre.description}\n id:{cre.id}\n "
+                        )
+                        if getattr(cre, "metadata", None):
+                            metadata_json = stable_json(getattr(cre, "metadata", None))
+                            content = normalize_embeddings_content(
+                                f"{content}\nmetadata:{metadata_json}"
+                            )
+                        logger.info(f"making embedding for {content}")
+                        dbcre = db.dbCREfromCRE(cre)
+                        if not dbcre:
+                            logger.fatal(cre, "cannot be converted to database CRE")
+                            continue
+                        dbcre.id = db_id
+
+                        existing = database.get_embedding(db_id)
+                        if (
+                            existing
+                            and normalize_embeddings_content(
+                                getattr(existing[0], "embeddings_content", None)
+                            )
+                            == content
+                        ):
+                            logger.debug(
+                                f"Skipping embedding for CRE {cre.id} ({db_id}): content unchanged"
+                            )
+                            continue
+
+                        batch_contents.append(content)
+                        batch_records.append((dbcre, cre_defs.Credoctypes.CRE, content))
+                    else:
+                        logger.warning(
+                            f"missing embeddings id={db_id} not found in CRE or Node"
+                        )
+                    continue
+
                 nodes = database.get_nodes(db_id=db_id)
 
                 if nodes:
                     node = nodes[0] if isinstance(nodes, list) else nodes
                     if is_valid_url(node.hyperlink):
                         raw_content = self.get_content(node.hyperlink)
-                        if not raw_content:
-                            logger.warning(
-                                f"Skipping embedding for {node.hyperlink}: unable to fetch non-empty content"
+                        content_from_remote = ""
+                        if raw_content:
+                            content_from_remote = normalize_embeddings_content(
+                                self.clean_content(raw_content)
                             )
-                            continue
-                        base_content = normalize_embeddings_content(
-                            self.clean_content(raw_content)
-                        )
-                        # Step 4b: metadata must affect embedding meaning/caching.
-                        # When embeddings are derived from fetched URL content,
-                        # node.__repr__ (and thus node.metadata) is not included.
-                        if getattr(node, "metadata", None):
-                            metadata_json = stable_json(getattr(node, "metadata", None))
-                            base_content = normalize_embeddings_content(
-                                f"{base_content}\nmetadata:{metadata_json}"
-                            )
-                        content = base_content
+                            # Step 4b: metadata must affect embedding meaning/caching.
+                            # When embeddings are derived from fetched URL content,
+                            # fetched body does not include node.__repr__ / todict fields.
+                            if getattr(node, "metadata", None):
+                                metadata_json = stable_json(
+                                    getattr(node, "metadata", None)
+                                )
+                                content_from_remote = normalize_embeddings_content(
+                                    f"{content_from_remote}\nmetadata:{metadata_json}"
+                                )
+
+                        if content_from_remote:
+                            content = content_from_remote
+                        else:
+                            content = _embedding_text_from_node_resource_fields(node)
+                            if raw_content:
+                                logger.info(
+                                    "Remote text for %s cleaned to empty; using stored node fields for embedding",
+                                    node.hyperlink,
+                                )
+                            else:
+                                logger.info(
+                                    "No extractable remote text for %s; using stored node fields for embedding",
+                                    node.hyperlink,
+                                )
+
                         if not content:
                             logger.warning(
-                                f"Skipping embedding for {node.hyperlink}: content cleaned to empty"
+                                "Skipping embedding for %s: no text from remote or stored node fields",
+                                node.hyperlink,
                             )
                             continue
                     else:
@@ -250,43 +437,6 @@ class in_memory_embeddings:
 
                     batch_contents.append(content)
                     batch_records.append((dbnode, node.doctype, content))
-                    continue
-
-                # Only check CRE after ruling out node ids. During standard embeddings
-                # regeneration, most ids are Node ids and probing CRE first produces
-                # misleading "CRE <id> does not exist" error logs.
-                cre = database.get_cre_by_db_id(db_id)
-                if cre:
-                    content = normalize_embeddings_content(
-                        f"{cre.doctype}\n name:{cre.name}\n description:{cre.description}\n id:{cre.id}\n "
-                    )
-                    if getattr(cre, "metadata", None):
-                        metadata_json = stable_json(getattr(cre, "metadata", None))
-                        content = normalize_embeddings_content(
-                            f"{content}\nmetadata:{metadata_json}"
-                        )
-                    logger.info(f"making embedding for {content}")
-                    dbcre = db.dbCREfromCRE(cre)
-                    if not dbcre:
-                        logger.fatal(cre, "cannot be converted to database CRE")
-                        continue
-                    dbcre.id = db_id
-
-                    existing = database.get_embedding(db_id)
-                    if (
-                        existing
-                        and normalize_embeddings_content(
-                            getattr(existing[0], "embeddings_content", None)
-                        )
-                        == content
-                    ):
-                        logger.debug(
-                            f"Skipping embedding for CRE {cre.id} ({db_id}): content unchanged"
-                        )
-                        continue
-
-                    batch_contents.append(content)
-                    batch_records.append((dbcre, cre_defs.Credoctypes.CRE, content))
                     continue
 
                 logger.warning(f"missing embeddings id={db_id} not found in CRE or Node")
