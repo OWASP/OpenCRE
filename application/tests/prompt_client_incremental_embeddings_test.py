@@ -22,6 +22,9 @@ class _FakeDB:
         node = self._nodes_by_id.get(db_id)
         return [node] if node else []
 
+    def has_node_with_db_id(self, db_id):
+        return db_id in self._nodes_by_id
+
     def get_embedding(self, db_id):
         emb = self._emb_by_id.get(db_id)
         return [emb] if emb else []
@@ -143,6 +146,32 @@ class TestIncrementalEmbeddings(unittest.TestCase):
         self.assertEqual(fake_db.add_embedding.call_count, 1)
         args = fake_db.add_embedding.call_args[0]
         self.assertEqual(args[0].id, "db-4")
+
+    def test_generate_embeddings_url_without_remote_text_uses_stored_fields(self):
+        """If ``get_content`` returns nothing, embed from DB-backed node fields (no skip)."""
+        fake_db = _FakeDB()
+        node = cre_defs.Standard(
+            name="ISO 27001",
+            section="Policies",
+            sectionID="5.10",
+            subsection="",
+            hyperlink="https://example.com/unavailable.pdf",
+            version="",
+        )
+        fake_db._nodes_by_id = {"node-1": node}
+
+        emb = prompt_client.in_memory_embeddings.__new__(
+            prompt_client.in_memory_embeddings
+        )
+        emb.ai_client = Mock()
+        emb.ai_client.get_max_batch_size.return_value = 16
+        emb.ai_client.get_text_embeddings.return_value = [[0.1, 0.2]]
+        emb.get_content = Mock(return_value=None)
+
+        emb.generate_embeddings(fake_db, ["node-1"])
+        self.assertEqual(fake_db.add_embedding.call_count, 1)
+        embedding_text = fake_db.add_embedding.call_args[0][3]
+        self.assertIn("ISO 27001", embedding_text)
 
     def test_generate_embeddings_recalculates_when_node_content_changes(self):
         fake_db = _FakeDB()

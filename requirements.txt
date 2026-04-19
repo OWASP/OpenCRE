@@ -70,6 +70,7 @@ PyGithub
 PyJWT
 PyNaCl
 pyparsing
+pypdf
 pyrsistent
 PySnooper
 pytest
