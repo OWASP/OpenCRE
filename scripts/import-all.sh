@@ -2,6 +2,11 @@
 
 set -Eeuo pipefail
 
+# Postgres → SQLite export (used after parallel imports on Postgres, or alone):
+#   CRE_EXPORT_ONLY=1 [--embeddings-only] [--local-postgres-only]
+#   CRE_EXPORT_SQLITE_PATH=/abs/path.sqlite (optional; default: ./standards_cache.sqlite)
+# Env equivalents: CRE_EXPORT_EMBEDDINGS_ONLY=1, CRE_EXPORT_LOCAL_POSTGRES_ONLY=1
+
 log() {
     echo "[import-all] $*"
 }
@@ -182,11 +187,43 @@ print("[import-all] Verify: OK (requested import scope is present)")
 PY
 }
 
+enforce_loopback_postgres_url() {
+    local pg_url="$1"
+    python3 - <<'PY' "${pg_url}"
+import sys
+import urllib.parse
+
+raw = sys.argv[1]
+u = raw
+if u.startswith("postgres://"):
+    u = "postgresql://" + u[len("postgres://") :]
+p = urllib.parse.urlparse(u)
+host = (p.hostname or "").lower()
+# Empty host: typical for local socket URLs (postgresql:///db)
+if host in ("127.0.0.1", "localhost", "::1", "0.0.0.0") or host == "":
+    sys.exit(0)
+print(
+    "ERROR: --local-postgres-only requires loopback Postgres "
+    f"(127.0.0.1, localhost, ::1, or socket URL); got host {host!r}.",
+    file=sys.stderr,
+)
+sys.exit(1)
+PY
+}
+
 export_postgres_to_sqlite() {
     local pg_url="$1"
     local sqlite_path="$2"
-    log "Exporting Postgres data to sqlite at ${sqlite_path}"
-    python - <<'PY' "${pg_url}" "${sqlite_path}"
+    local embeddings_only="${3:-0}"
+    if [[ "${CRE_EXPORT_LOCAL_POSTGRES_ONLY:-0}" == "1" ]]; then
+        enforce_loopback_postgres_url "${pg_url}"
+    fi
+    if [[ "${embeddings_only}" == "1" ]]; then
+        log "Exporting embeddings table only from Postgres to sqlite at ${sqlite_path}"
+    else
+        log "Exporting Postgres data to sqlite at ${sqlite_path}"
+    fi
+    python - <<'PY' "${pg_url}" "${sqlite_path}" "${embeddings_only}"
 import sqlite3
 import sys
 import json
@@ -198,12 +235,13 @@ import psycopg2
 
 pg_url = sys.argv[1]
 sqlite_path = sys.argv[2]
+embeddings_only = sys.argv[3] == "1"
 
 pg = psycopg2.connect(pg_url)
 pg.autocommit = True
 pg_cur = pg.cursor()
 
-tables: List[str] = [
+all_tables: List[str] = [
     "alembic_version",
     "cre",
     "cre_links",
@@ -215,6 +253,7 @@ tables: List[str] = [
     "staged_change_set",
     "standard_snapshot",
 ]
+tables: List[str] = ["embeddings"] if embeddings_only else all_tables
 
 type_rows: List[Tuple[str, str, str]] = []
 for t in tables:
@@ -291,7 +330,7 @@ sqlite.commit()
 sqlite.close()
 pg_cur.close()
 pg.close()
-print(f"Copied {len(tables)} tables from Postgres to {sqlite_path}")
+print(f"Copied {len(tables)} table(s) from Postgres to {sqlite_path}")
 PY
 }
 
@@ -360,6 +399,47 @@ if [[ -f .env ]]; then
     set +a
 else
     log "No .env file found; using existing environment"
+fi
+
+CRE_EXPORT_ONLY="${CRE_EXPORT_ONLY:-0}"
+CRE_EXPORT_EMBEDDINGS_ONLY="${CRE_EXPORT_EMBEDDINGS_ONLY:-0}"
+CRE_EXPORT_LOCAL_POSTGRES_ONLY="${CRE_EXPORT_LOCAL_POSTGRES_ONLY:-0}"
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --export-postgres-to-sqlite-only | --export-only)
+            CRE_EXPORT_ONLY=1
+            shift
+            ;;
+        --embeddings-only)
+            CRE_EXPORT_EMBEDDINGS_ONLY=1
+            shift
+            ;;
+        --local-postgres-only)
+            CRE_EXPORT_LOCAL_POSTGRES_ONLY=1
+            shift
+            ;;
+        *)
+            log "ERROR: unknown argument: $1"
+            log "Usage: $0 [--export-only] [--embeddings-only] [--local-postgres-only]"
+            exit 2
+            ;;
+    esac
+done
+
+if [[ "${CRE_EXPORT_ONLY}" == "1" ]]; then
+    pg_url="${POSTGRES_URL:-${PROD_DATABASE_URL:-}}"
+    if [[ -z "${pg_url}" ]]; then
+        log "ERROR: CRE_EXPORT_ONLY requires POSTGRES_URL or PROD_DATABASE_URL"
+        exit 1
+    fi
+    sqlite_out="${CRE_EXPORT_SQLITE_PATH:-$(pwd)/standards_cache.sqlite}"
+    emb_arg="0"
+    if [[ "${CRE_EXPORT_EMBEDDINGS_ONLY}" == "1" ]]; then
+        emb_arg="1"
+    fi
+    log "CRE_EXPORT_ONLY=1: exporting Postgres → ${sqlite_out} (embeddings_only=${emb_arg})"
+    export_postgres_to_sqlite "${pg_url}" "${sqlite_out}" "${emb_arg}"
+    exit 0
 fi
 
 export OpenCRE_gspread_Auth='service_account'
@@ -532,7 +612,11 @@ set -e
 trap 'log "FAILED at line $LINENO: ${BASH_COMMAND}"' ERR
 
 if [[ "${USE_POSTGRES}" == "1" ]]; then
-    export_postgres_to_sqlite "${POSTGRES_URL}" "standards_cache.sqlite"
+    emb_arg="0"
+    if [[ "${CRE_EXPORT_EMBEDDINGS_ONLY}" == "1" ]]; then
+        emb_arg="1"
+    fi
+    export_postgres_to_sqlite "${POSTGRES_URL}" "standards_cache.sqlite" "${emb_arg}"
 fi
 
 verify_import_outcome
