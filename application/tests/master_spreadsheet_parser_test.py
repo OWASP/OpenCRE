@@ -99,6 +99,27 @@ class TestMasterSpreadsheetParser(unittest.TestCase):
             with self.assertRaises(ValueError):
                 master_spreadsheet_parser.parse_cre_hierarchy_from_rows(rows)
 
+    def test_accepts_clean_sheet_name_when_db_has_legacy_id_suffix(self) -> None:
+        """Sheet omits redundant ' (CRE-ID)' suffix that older DB rows may still have."""
+        rows = [
+            {
+                "CRE hierarchy 1": "Model action privilege minimization",
+                "CRE ID": "220-442",
+                "CRE Tags": "",
+            }
+        ]
+        with mock.patch(
+            "application.utils.external_project_parsers.parsers.master_spreadsheet_parser._load_existing_cre_identity_maps",
+            return_value=(
+                {"220-442": "Model action privilege minimization (220-442)"},
+                {"model action privilege minimization (220-442)": "220-442"},
+            ),
+        ):
+            result = master_spreadsheet_parser.parse_cre_hierarchy_from_rows(rows)
+        cre = result.results[defs.Credoctypes.CRE.value][0]
+        self.assertEqual(cre.id, "220-442")
+        self.assertEqual(cre.name, "Model action privilege minimization")
+
     def test_raises_on_same_name_different_id_conflict(self) -> None:
         rows = [
             {
