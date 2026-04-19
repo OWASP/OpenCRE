@@ -562,6 +562,31 @@ class NeoCRE(NeoDocument):  # type: ignore
         )
 
 
+def _neo_node_first_or_none_by_document_id(document_id: str) -> Any:
+    """
+    Find a Standard/Code/Tool graph node by SQL ``document_id`` without using
+    ``MATCH (:NeoNode)``.
+
+    Neo4j 5+ emits ``UnknownLabelWarning`` when a query pattern references a
+    label that is not yet in the catalog (e.g. empty graph at first import).
+    Using ``'NeoNode' IN labels(n)`` after ``MATCH (n)`` avoids that: the
+    planner does not require the label to exist in the catalog.
+    """
+    results, _ = db.cypher_query(
+        """
+        MATCH (n)
+        WHERE n.document_id = $doc_id AND 'NeoNode' IN labels(n)
+        RETURN n
+        LIMIT 1
+        """,
+        {"doc_id": document_id},
+        resolve_objects=True,
+    )
+    if not results:
+        return None
+    return results[0][0]
+
+
 class NEO_DB:
     __instance = None
 
@@ -678,7 +703,7 @@ class NEO_DB:
             ).save()
 
     def __update_dbnode(dbnode: Node):
-        existing = NeoNode.nodes.first_or_none(document_id=dbnode.id)
+        existing = _neo_node_first_or_none_by_document_id(dbnode.id)
         if dbnode.ntype == "Standard":
             existing.name = dbnode.name
             existing.doctype = dbnode.ntype
@@ -732,7 +757,7 @@ class NEO_DB:
     @classmethod
     @db.transaction
     def add_dbnode(self, dbnode: Node):
-        document = NeoNode.nodes.first_or_none(document_id=dbnode.id)
+        document = _neo_node_first_or_none_by_document_id(dbnode.id)
         if document:
             return self.__update_dbnode(dbnode)
         return self.__create_dbnode(dbnode)
@@ -756,7 +781,7 @@ class NEO_DB:
     @classmethod
     def link_CRE_to_Node(self, CRE_id, node_id, link_type):
         cre = NeoCRE.nodes.first_or_none(document_id=CRE_id)
-        node = NeoNode.nodes.first_or_none(document_id=node_id)
+        node = _neo_node_first_or_none_by_document_id(node_id)
         if not node:
             return
         if link_type == cre_defs.LinkTypes.AutomaticallyLinkedTo.value:
@@ -1328,6 +1353,12 @@ class Node_collection:
         # Always return plain strings (never SQLAlchemy row tuples).
         rows = self.session.query(CRE.id).all()
         return [r[0] for r in rows]
+
+    def has_node_with_db_id(self, db_id: str) -> bool:
+        """True if ``db_id`` is a primary key in ``node`` (any ``ntype``)."""
+        return (
+            self.session.query(Node.id).filter(Node.id == db_id).first() is not None
+        )
 
     def __get_nodes_query__(
         self,
