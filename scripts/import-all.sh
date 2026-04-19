@@ -6,6 +6,10 @@ set -Eeuo pipefail
 #   CRE_EXPORT_ONLY=1 [--embeddings-only] [--local-postgres-only]
 #   CRE_EXPORT_SQLITE_PATH=/abs/path.sqlite (optional; default: ./standards_cache.sqlite)
 # Env equivalents: CRE_EXPORT_EMBEDDINGS_ONLY=1, CRE_EXPORT_LOCAL_POSTGRES_ONLY=1
+#
+# SQLite → Postgres (embeddings table only) is not handled here; use:
+#   python scripts/sync_embeddings_table.py --from-sqlite … --to-postgres …
+#   python scripts/sync_embeddings_table.py --from-postgres … --to-postgres …
 
 log() {
     echo "[import-all] $*"
