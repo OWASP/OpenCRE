@@ -34,6 +34,27 @@ import psycopg2
 from psycopg2 import extras
 
 
+def _blank_to_none(value: Any) -> Any:
+    if isinstance(value, str) and value == "":
+        return None
+    return value
+
+
+def _normalize_embedding_row(row: Tuple[Any, ...]) -> Tuple[Any, ...]:
+    # SQLite snapshots often store "missing" FK fields as empty strings.
+    # Postgres FK checks treat empty string as a real value (not NULL),
+    # so convert blanks to NULL for cre_id/node_id before insert.
+    embeddings, doc_type, cre_id, node_id, embeddings_content, embeddings_url = row
+    return (
+        embeddings,
+        doc_type,
+        _blank_to_none(cre_id),
+        _blank_to_none(node_id),
+        _blank_to_none(embeddings_content),
+        _blank_to_none(embeddings_url),
+    )
+
+
 def _normalize_pg_url(url: str) -> str:
     if url.startswith("postgres://"):
         return "postgresql://" + url[len("postgres://") :]
@@ -53,7 +74,7 @@ def _fetch_sqlite_embeddings(path: str) -> Tuple[List[str], List[Tuple[Any, ...]
         "SELECT embeddings, doc_type, cre_id, node_id, embeddings_content, embeddings_url "
         "FROM embeddings"
     )
-    rows = [tuple(r) for r in cur.fetchall()]
+    rows = [_normalize_embedding_row(tuple(r)) for r in cur.fetchall()]
     conn.close()
     cols = [
         "embeddings",
@@ -80,7 +101,7 @@ def _fetch_postgres_embeddings(pg_url: str) -> Tuple[List[str], List[Tuple[Any, 
     try:
         cur = conn.cursor()
         cur.execute(f"SELECT {quoted} FROM public.embeddings")
-        rows = [tuple(r) for r in cur.fetchall()]
+        rows = [_normalize_embedding_row(tuple(r)) for r in cur.fetchall()]
         cur.close()
         return cols, rows
     finally:
