@@ -22,6 +22,31 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 _CRE_ID_TOKEN = re.compile(r"^\d{3}-\d{3}$")
+# Legacy DB exports sometimes stored display names with a redundant " (123-456)" suffix.
+_CRE_NAME_LEGACY_ID_SUFFIX = re.compile(r"^(.+) \((\d{3}-\d{3})\)$")
+
+
+def _cre_display_names_equivalent(
+    sheet_name: str, db_name: str, *, expected_cre_id: str
+) -> bool:
+    """
+    True if the sheet title and the DB title refer to the same CRE.
+
+    The database may still carry a legacy suffix like "Foo (220-442)" while the
+    sheet uses the clean title "Foo" (preferred for display). If the DB name has
+    a parenthetical ID, it must match ``expected_cre_id``.
+    """
+    s = sheet_name.strip()
+    d = db_name.strip()
+    if s == d:
+        return True
+    m = _CRE_NAME_LEGACY_ID_SUFFIX.match(d)
+    if not m:
+        return False
+    base, suffix_id = m.group(1).strip(), m.group(2)
+    if base != s:
+        return False
+    return suffix_id == expected_cre_id
 
 
 supported_resource_mapping = {
@@ -400,7 +425,9 @@ def _hydrate_and_validate_cre_identity(
         if _CRE_ID_TOKEN.match(hydrated_name):
             # ID-only row; hydrate the display name from DB.
             hydrated_name = db_name_for_id
-        elif hydrated_name != db_name_for_id:
+        elif not _cre_display_names_equivalent(
+            hydrated_name, db_name_for_id, expected_cre_id=hydrated_id
+        ):
             raise ValueError(
                 "Data corruption: CRE ID conflict for "
                 f"{hydrated_id}: sheet name '{hydrated_name}' != db name '{db_name_for_id}'"
