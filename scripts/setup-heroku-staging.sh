@@ -37,6 +37,11 @@ die() {
 #   SYNC_DYNO_FORMATION     1 to mirror prod dyno size+count on staging (default: 1)
 #   SKIP_DEPLOY             1 to skip git push to Heroku
 #   STRICT_ENV_SYNC         1 to unset staging vars not in prod (excluding protected keys)
+#   SYNC_TABLES             all|embeddings|gap_analysis|embeddings,gap_analysis (default: all)
+#
+# CLI flags (override SYNC_TABLES):
+#   --embeddings
+#   --gap_analysis
 
 PROD_APP="${PROD_APP:-}"
 STAGING_APP="${STAGING_APP:-}"
@@ -60,6 +65,51 @@ ENABLE_HEROKU_ACM="${ENABLE_HEROKU_ACM:-1}"
 SYNC_DYNO_FORMATION="${SYNC_DYNO_FORMATION:-1}"
 SKIP_DEPLOY="${SKIP_DEPLOY:-0}"
 STRICT_ENV_SYNC="${STRICT_ENV_SYNC:-0}"
+SYNC_TABLES="${SYNC_TABLES:-all}"
+
+SYNC_EMBEDDINGS=0
+SYNC_GAP_ANALYSIS=0
+for arg in "$@"; do
+  case "${arg}" in
+    --embeddings)
+      SYNC_EMBEDDINGS=1
+      ;;
+    --gap_analysis)
+      SYNC_GAP_ANALYSIS=1
+      ;;
+    *)
+      die "Unknown argument: ${arg} (supported: --embeddings, --gap_analysis)"
+      ;;
+  esac
+done
+
+if [[ "${SYNC_EMBEDDINGS}" == "1" || "${SYNC_GAP_ANALYSIS}" == "1" ]]; then
+  if [[ "${SYNC_EMBEDDINGS}" == "1" && "${SYNC_GAP_ANALYSIS}" == "1" ]]; then
+    SYNC_TABLES="embeddings,gap_analysis"
+  elif [[ "${SYNC_EMBEDDINGS}" == "1" ]]; then
+    SYNC_TABLES="embeddings"
+  else
+    SYNC_TABLES="gap_analysis"
+  fi
+fi
+
+if [[ "${SYNC_TABLES}" == "all" ]]; then
+  SCOPE_ALL=1
+elif [[ "${SYNC_TABLES}" == "embeddings" ]]; then
+  SCOPE_ALL=0
+  SYNC_EMBEDDINGS=1
+  SYNC_GAP_ANALYSIS=0
+elif [[ "${SYNC_TABLES}" == "gap_analysis" ]]; then
+  SCOPE_ALL=0
+  SYNC_EMBEDDINGS=0
+  SYNC_GAP_ANALYSIS=1
+elif [[ "${SYNC_TABLES}" == "embeddings,gap_analysis" || "${SYNC_TABLES}" == "gap_analysis,embeddings" ]]; then
+  SCOPE_ALL=0
+  SYNC_EMBEDDINGS=1
+  SYNC_GAP_ANALYSIS=1
+else
+  die "Invalid SYNC_TABLES='${SYNC_TABLES}' (expected all|embeddings|gap_analysis|embeddings,gap_analysis)"
+fi
 
 [[ -n "${PROD_APP}" ]] || die "PROD_APP is required"
 [[ -n "${STAGING_APP}" ]] || die "STAGING_APP is required"
@@ -349,8 +399,26 @@ import_sqlite_to_staging_postgres() {
   fi
 
   dump_file="${tmpdir}/local_staging_seed.dump"
-  pg_dump --format=custom --no-owner --no-privileges --file "${dump_file}" "${source_url}"
-  pg_restore --clean --if-exists --no-owner --no-privileges --dbname "${staging_db_url_ssl}" "${dump_file}"
+  dump_cmd=(pg_dump --format=custom --no-owner --no-privileges --file "${dump_file}")
+  if [[ "${SCOPE_ALL}" != "1" ]]; then
+    if [[ "${SYNC_EMBEDDINGS}" == "1" ]]; then
+      dump_cmd+=(--table public.embeddings)
+    fi
+    if [[ "${SYNC_GAP_ANALYSIS}" == "1" ]]; then
+      dump_cmd+=(--table public.gap_analysis_results)
+    fi
+  fi
+  dump_cmd+=("${source_url}")
+  "${dump_cmd[@]}"
+
+  restore_cmd=(pg_restore --no-owner --no-privileges --dbname "${staging_db_url_ssl}")
+  if [[ "${SCOPE_ALL}" == "1" ]]; then
+    restore_cmd=(pg_restore --clean --if-exists --no-owner --no-privileges --dbname "${staging_db_url_ssl}")
+  else
+    restore_cmd+=(--clean --if-exists)
+  fi
+  restore_cmd+=("${dump_file}")
+  "${restore_cmd[@]}"
 }
 
 ensure_domain() {
@@ -379,6 +447,11 @@ ensure_heroku_acm() {
 }
 
 main() {
+  if [[ "${SCOPE_ALL}" == "1" ]]; then
+    log "Sync scope: all tables"
+  else
+    log "Sync scope: ${SYNC_TABLES}"
+  fi
   ensure_local_postgres_if_needed
   ensure_app
   ensure_postgres
