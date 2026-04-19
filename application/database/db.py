@@ -170,30 +170,22 @@ class Links(BaseModel):  # type: ignore
 class Embeddings(BaseModel):  # type: ignore
     __tablename__ = "embeddings"
 
-    embeddings = sqla.Column(sqla.String)
-    doc_type = sqla.Column(sqla.String)
+    id = sqla.Column(sqla.String, primary_key=True, default=generate_uuid)
+    embeddings = sqla.Column(sqla.String, nullable=False)
+    doc_type = sqla.Column(sqla.String, nullable=False)
     cre_id = sqla.Column(
         sqla.String,
         sqla.ForeignKey("cre.id", onupdate="CASCADE", ondelete="CASCADE"),
-        default="",
+        nullable=True,
     )
     node_id = sqla.Column(
         sqla.String,
         sqla.ForeignKey("node.id", onupdate="CASCADE", ondelete="CASCADE"),
-        default="",
+        nullable=True,
     )
 
-    embeddings_url = sqla.Column(sqla.String, default="")
-    embeddings_content = sqla.Column(sqla.String, default="")
-    __table_args__ = (
-        sqla.PrimaryKeyConstraint(
-            embeddings,
-            doc_type,
-            cre_id,
-            node_id,
-            name="uq_entry",
-        ),
-    )
+    embeddings_url = sqla.Column(sqla.String, nullable=True, default=None)
+    embeddings_content = sqla.Column(sqla.String, nullable=True, default=None)
 
 
 class GapAnalysisResults(BaseModel):
