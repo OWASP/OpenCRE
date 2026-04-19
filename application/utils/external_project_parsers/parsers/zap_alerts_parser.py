@@ -35,7 +35,7 @@ class ZAP(ParserInterface):
     def __zap_alert(
         self, name: str, alert_id: str, description: str, tags: List[str], code: str
     ) -> defs.Tool:
-        tags.append(alert_id)
+        tags.append(f"AlertID:{alert_id}")
         return defs.Tool(
             tooltype=defs.ToolTypes.Offensive,
             name=self.name,
