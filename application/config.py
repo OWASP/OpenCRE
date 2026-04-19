@@ -49,7 +49,11 @@ class CMDConfig(Config):
         if "://" in db_uri:
             self.SQLALCHEMY_DATABASE_URI = db_uri
         else:
-            self.SQLALCHEMY_DATABASE_URI = f"sqlite:///{db_uri}"
+            # Flask-SQLAlchemy 3+ resolves non-absolute sqlite URLs against
+            # app.instance_path, not the shell cwd. CLI --cache_file should
+            # follow the user's working directory.
+            resolved = os.path.abspath(db_uri)
+            self.SQLALCHEMY_DATABASE_URI = f"sqlite:///{resolved}"
 
 
 config = {
