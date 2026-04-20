@@ -8,6 +8,7 @@ import logging
 import os
 import io
 import pathlib
+import re
 import urllib.parse
 from alive_progress import alive_bar
 from typing import Any
@@ -58,6 +59,24 @@ app = Blueprint(
 logging.basicConfig()
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
+
+
+def _ga_timeout_seconds() -> int:
+    raw = str(gap_analysis.GAP_ANALYSIS_TIMEOUT or "129600s")
+    m = re.match(r"^\s*(\d+)\s*s?\s*$", raw)
+    if m:
+        return int(m.group(1))
+    return 129600
+
+
+def _compute_ga_without_redis(database: db.Node_collection, standards: list[str]) -> dict:
+    cache_key = gap_analysis.make_resources_key(standards)
+    db.gap_analysis(neo_db=database.neo_db, node_names=standards, cache_key=cache_key)
+    cached = database.get_gap_analysis_result(cache_key=cache_key)
+    if not cached:
+        return {"result": {}}
+    parsed = json.loads(cached) if isinstance(cached, str) else cached
+    return {"result": parsed.get("result", {})}
 
 
 class SupportedFormats(Enum):
@@ -284,25 +303,61 @@ def map_analysis() -> Any:
         parsed = json.loads(cached)
         if parsed.get("result"):
             return jsonify({"result": parsed.get("result")})
+    if os.environ.get("HEROKU"):
+        abort(404, "No such Cache")
 
-    conn = redis.connect()
-    ga_queue_name = os.environ.get("CRE_GA_QUEUE_NAME", "ga")
-    q = Queue(name=ga_queue_name, connection=conn)
     db_url = os.environ.get("CRE_CACHE_FILE") or os.environ.get("PROD_DATABASE_URL")
     if not db_url:
         # Derive from current SQLAlchemy bind when not explicitly set.
         db_url = str(getattr(getattr(database.session, "bind", None), "url", ""))
-    j = q.enqueue_call(
-        description=f"{standards[0]}->{standards[1]}",
-        func=cre_main.run_gap_pair_job,
-        kwargs={
-            "importing_name": standards[0],
-            "peer_name": standards[1],
-            "db_connection_str": db_url,
-        },
-        timeout=gap_analysis.GAP_ANALYSIS_TIMEOUT,
-    )
-    return jsonify({"job_id": str(j.id)})
+    try:
+        conn = redis.connect()
+        ga_queue_name = os.environ.get("CRE_GA_QUEUE_NAME", "ga")
+        q = Queue(name=ga_queue_name, connection=conn)
+        inflight_key = f"ga:inflight:{cache_key}"
+        inflight_job_id_raw = conn.get(inflight_key)
+        inflight_job_id = (
+            inflight_job_id_raw.decode("utf-8")
+            if isinstance(inflight_job_id_raw, bytes)
+            else str(inflight_job_id_raw)
+            if inflight_job_id_raw
+            else ""
+        )
+        if inflight_job_id:
+            try:
+                inflight_job = job.Job.fetch(id=inflight_job_id, connection=conn)
+                if inflight_job.get_status() in (
+                    job.JobStatus.QUEUED,
+                    job.JobStatus.STARTED,
+                ):
+                    return jsonify({"job_id": inflight_job_id})
+            except exceptions.NoSuchJobError:
+                conn.delete(inflight_key)
+
+        j = q.enqueue_call(
+            description=f"{standards[0]}->{standards[1]}",
+            func=cre_main.run_gap_pair_job,
+            kwargs={
+                "importing_name": standards[0],
+                "peer_name": standards[1],
+                "db_connection_str": db_url,
+            },
+            timeout=gap_analysis.GAP_ANALYSIS_TIMEOUT,
+        )
+        conn.set(inflight_key, str(j.id))
+        conn.expire(inflight_key, _ga_timeout_seconds())
+        return jsonify({"job_id": str(j.id)})
+    except Exception as exc:
+        logger.warning(
+            "Redis/RQ unavailable in map_analysis for %s; using synchronous fallback: %s",
+            cache_key,
+            exc,
+        )
+        try:
+            return jsonify(_compute_ga_without_redis(database, standards))
+        except Exception as fallback_exc:
+            logger.exception("Synchronous GA fallback failed for %s", cache_key)
+            abort(503, f"Gap analysis unavailable: {fallback_exc}")
 
 
 @app.route("/rest/v1/map_analysis_weak_links", methods=["GET"])
@@ -334,7 +389,10 @@ def map_analysis_weak_links() -> Any:
 def fetch_job() -> Any:
     logger.debug("fetching job results")
     jobid = request.args.get("id")
-    conn = redis.connect()
+    try:
+        conn = redis.connect()
+    except Exception as exc:
+        abort(503, f"Job queue unavailable: {exc}")
     try:
         res = job.Job.fetch(id=jobid, connection=conn)
     except exceptions.NoSuchJobError as nje:
