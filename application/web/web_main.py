@@ -69,7 +69,9 @@ def _ga_timeout_seconds() -> int:
     return 129600
 
 
-def _compute_ga_without_redis(database: db.Node_collection, standards: list[str]) -> dict:
+def _compute_ga_without_redis(
+    database: db.Node_collection, standards: list[str]
+) -> dict:
     cache_key = gap_analysis.make_resources_key(standards)
     db.gap_analysis(neo_db=database.neo_db, node_names=standards, cache_key=cache_key)
     cached = database.get_gap_analysis_result(cache_key=cache_key)
@@ -129,7 +131,14 @@ if os.environ.get("POSTHOG_API_KEY") and os.environ.get("POSTHOG_HOST"):
 @app.route("/rest/v1/name/<crename>", methods=["GET"])
 def find_cre(creid: str = None, crename: str = None) -> Any:  # refer
     if posthog:
-        posthog.capture(f"find_cre", f"id:{creid};name{crename}")
+        source = request.args.get("source")
+        source_norm = ""
+        if source and source.strip():
+            source_norm = re.sub(r"[^a-z0-9.]+", "-", source.lower()).strip("-")
+        payload = f"id:{creid};name{crename}"
+        if source_norm:
+            payload += f";source:{source_norm}"
+        posthog.capture("find_cre", payload)
     database = db.Node_collection()
     include_only = request.args.getlist("include_only")
     # opt_osib = request.args.get("osib")
@@ -319,9 +328,7 @@ def map_analysis() -> Any:
         inflight_job_id = (
             inflight_job_id_raw.decode("utf-8")
             if isinstance(inflight_job_id_raw, bytes)
-            else str(inflight_job_id_raw)
-            if inflight_job_id_raw
-            else ""
+            else str(inflight_job_id_raw) if inflight_job_id_raw else ""
         )
         if inflight_job_id:
             try:
@@ -714,7 +721,11 @@ def login_required(f):
 def admin_imports_enabled_required(f):
     @wraps(f)
     def enabled_r(*args, **kwargs):
-        if os.environ.get("CRE_ALLOW_IMPORT") != "1":
+        if str(os.environ.get("CRE_ALLOW_IMPORT", "")).lower() not in (
+            "1",
+            "true",
+            "yes",
+        ):
             abort(404, description="Admin imports API is disabled")
         return f(*args, **kwargs)
 
@@ -780,6 +791,7 @@ def admin_import_run_changeset(run_id: str) -> Any:
     from application.utils import import_diff
 
     ops = import_diff.change_set_from_json(cs.changeset_json)
+
     def _op_to_dict(op: import_diff.ChangeSetOp) -> dict:
         d = import_diff.asdict(op) if hasattr(import_diff, "asdict") else None
         if d is None:
@@ -789,6 +801,7 @@ def admin_import_run_changeset(run_id: str) -> Any:
         if isinstance(d.get("key"), tuple):
             d["key"] = list(d["key"])
         return d
+
     return jsonify(
         {
             "run_id": run_id,
@@ -809,8 +822,9 @@ def admin_import_run_changeset_graph(run_id: str) -> Any:
     cs = db.get_staged_change_set(run_id=r.id)
     if not cs:
         return jsonify({"nodes": [], "edges": []})
-        
+
     from application.utils import import_diff, import_graph
+
     ops = import_diff.change_set_from_json(cs.changeset_json)
     graph_data = import_graph.change_set_to_graph(ops)
 
@@ -1073,9 +1087,7 @@ def get_cre_csv() -> Any:
 
 @app.route("/rest/v1/config", methods=["GET"])
 def get_config() -> Any:
-    return jsonify({
-        "CRE_ALLOW_IMPORT": os.environ.get("CRE_ALLOW_IMPORT") == "1"
-    })
+    return jsonify({"CRE_ALLOW_IMPORT": os.environ.get("CRE_ALLOW_IMPORT") == "1"})
 
 
 @app.route("/admin/imports/rerun", methods=["POST"])
@@ -1096,16 +1108,18 @@ def admin_imports_rerun() -> Any:
 
     # Simulate basic empty changes so we don't break the UI.
     from application.utils import import_diff
+
     db.persist_staged_change_set(
         run_id=run.id if run else "test-id",
-        changeset_json=import_diff.change_set_to_json([])
+        changeset_json=import_diff.change_set_to_json([]),
     )
 
     return jsonify({"status": "success", "run_id": run.id if run else "test-id"})
 
+
 @app.route("/rest/v1/cre_csv_import", methods=["POST"])
 def import_from_cre_csv() -> Any:
-    if os.environ.get("CRE_ALLOW_IMPORT") != "1":
+    if str(os.environ.get("CRE_ALLOW_IMPORT", "")).lower() not in ("1", "true", "yes"):
         abort(
             403,
             "Importing is disabled, set the environment variable CRE_ALLOW_IMPORT to allow this functionality",
@@ -1168,11 +1182,13 @@ def import_from_cre_csv() -> Any:
         existing = database.get_CREs(external_id=cre.id)
         if existing:
             doc0 = existing[0]
-            eid = getattr(doc0, "external_id", None) or getattr(doc0, "id", None) or cre.id
+            eid = (
+                getattr(doc0, "external_id", None)
+                or getattr(doc0, "id", None)
+                or cre.id
+            )
             new_cre_external_ids.append(str(eid))
-    standards_only = {
-        k: v for k, v in parse_result.results.items() if k != cre_key
-    }
+    standards_only = {k: v for k, v in parse_result.results.items() if k != cre_key}
     return jsonify(
         {
             "status": "success",
