@@ -687,6 +687,23 @@ class TestMain(unittest.TestCase):
             self.assertEqual(200, response.status_code)
             self.assertEqual(expected, json.loads(response.data))
 
+    @patch.object(cre_main, "resource_name_ga_eligible_in_db")
+    @patch.object(redis, "from_url")
+    @patch.object(db, "Node_collection")
+    def test_ga_standards_filters_non_eligible(
+        self, node_mock, redis_conn_mock, ga_eligible_mock
+    ) -> None:
+        redis_conn_mock.return_value.get.return_value = None
+        node_mock.return_value.standards.return_value = ["CAPEC", "ASVS", "ToolX"]
+        ga_eligible_mock.side_effect = lambda _db, name: name in {"CAPEC", "ASVS"}
+        with self.app.test_client() as client:
+            response = client.get(
+                "/rest/v1/ga_standards",
+                headers={"Content-Type": "application/json"},
+            )
+            self.assertEqual(200, response.status_code)
+            self.assertEqual(["ASVS", "CAPEC"], json.loads(response.data))
+
     def test_gap_analysis_weak_links_no_cache(self) -> None:
         with self.app.test_client() as client:
             response = client.get(

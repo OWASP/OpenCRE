@@ -131,7 +131,7 @@ export const GapAnalysis = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-      const result = await axios.get(`${apiUrl}/standards`);
+      const result = await axios.get(`${apiUrl}/ga_standards`);
       setLoadingStandards(false);
       setStandardOptions(
         standardOptionsDefault.concat(result.data.sort().map((x) => ({ key: x, text: x, value: x })))
