@@ -68,7 +68,11 @@ Download the latest CRE graph from upstream by running:
 make upstream-sync
 ```
 
-Keep in mind that until [Issue #534](https://github.com/OWASP/OpenCRE/issues/534) is fixed you won't have access to gap analysis results locally.
+You can precompute local gap-analysis cache after imports with:
+
+```bash
+make backfill-gap-analysis
+```
 
 To run CRE locally then you can do:
 
@@ -114,6 +118,21 @@ Some features like Gap Analysis require a neo4j DB running, you can start this w
 
 ```bash
 make docker-neo4j
+```
+
+To run only missing gap-analysis pair backfill (without starting Flask), use:
+
+```bash
+RUN_COUNT=8 bash scripts/backfill_gap_analysis.sh
+```
+
+To sync local Postgres data into a Heroku app (staging or prod), use:
+
+```bash
+APP_NAME=stagingopencreorg \
+SOURCE_DB_URL="postgresql://cre:password@127.0.0.1:5432/cre" \
+SYNC_TABLES=gap_analysis \
+bash scripts/push-local-postgres-to-heroku.sh --gap_analysis
 ```
 
 Environment variables for app to connect to neo4jDB (default):

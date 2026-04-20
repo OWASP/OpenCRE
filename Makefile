@@ -137,7 +137,7 @@ import-neo4j:
 	[ -d "./venv" ] && . ./venv/bin/activate &&\
 	export FLASK_APP="$(CURDIR)/cre.py" && python cre.py --populate_neo4j_db
 
-preload-map-analysis:
-	RUN_COUNT=5 bash ./scripts/preload_gap_analysis.sh
+backfill-gap-analysis:
+	RUN_COUNT=8 bash ./scripts/backfill_gap_analysis.sh
 
 all: clean lint test dev dev-run
