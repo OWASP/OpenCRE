@@ -15,7 +15,14 @@ jobs:
           node-version: '20'
           cache: 'yarn'
       - name: Install frontend dependencies
-        run: yarn install --frozen-lockfile
+        run: |
+          for i in 1 2 3; do
+            yarn install --frozen-lockfile --network-timeout 120000 && exit 0
+            echo "yarn install failed (attempt $i/3), retrying..."
+            sleep $((i * 10))
+          done
+          echo "yarn install failed after 3 attempts"
+          exit 1
       - name: Check frontend formatting
         run: yarn prettier --check "application/frontend/src/**/*.{ts,tsx,js}"
 
