@@ -646,6 +646,140 @@ def download_gap_analysis_from_upstream(cache: str) -> None:
                         cache_key = gap_analysis.make_resources_key([sa, sb])
                         collection.add_gap_analysis_result(cache_key, _json.dumps({"result": tojson.get("result")}))
 
+
+def _missing_ga_pairs(collection: db.Node_collection) -> List[Tuple[str, str]]:
+    standards = sorted(collection.standards())
+    existing = {
+        key for (key,) in collection.session.query(db.GapAnalysisResults.cache_key).all()
+    }
+    missing: List[Tuple[str, str]] = []
+    for sa in standards:
+        for sb in standards:
+            if sa == sb:
+                continue
+            key = gap_analysis.make_resources_key([sa, sb])
+            if key not in existing:
+                missing.append((sa, sb))
+    return missing
+
+
+def _compute_pair_direct(collection: db.Node_collection, sa: str, sb: str) -> None:
+    cache_key = gap_analysis.make_resources_key([sa, sb])
+    if collection.gap_analysis_exists(cache_key):
+        return
+    db.gap_analysis(neo_db=collection.neo_db, node_names=[sa, sb], cache_key=cache_key)
+
+
+def backfill_gap_analysis_only(
+    db_connection_str: str,
+    *,
+    batch_size: int = 200,
+    poll_seconds: int = 5,
+    max_pairs: int = 0,
+    no_queue: bool = False,
+) -> None:
+    """
+    Backfill only missing directed GA pairs from DB truth.
+    This avoids HTTP polling loops and reports progress from SQL state.
+    """
+    collection = db_connect(path=db_connection_str)
+    if os.environ.get("CRE_NO_NEO4J") != "1":
+        populate_neo4j_db(db_connection_str)
+
+    missing = _missing_ga_pairs(collection)
+    if max_pairs > 0:
+        missing = missing[:max_pairs]
+    total = len(missing)
+    if total == 0:
+        logger.info("GA backfill: no missing pairs")
+        return
+
+    logger.info(
+        "GA backfill: missing_pairs=%s batch_size=%s mode=%s",
+        total,
+        batch_size,
+        "sync" if no_queue else "queue",
+    )
+    batch_size = max(1, int(batch_size))
+    poll_seconds = max(1, int(poll_seconds))
+
+    use_queue = not no_queue
+    conn = None
+    ga_q = None
+    if use_queue:
+        try:
+            conn = redis.connect()
+            ga_q = Queue(name=os.environ.get("CRE_GA_QUEUE_NAME", "ga"), connection=conn)
+        except Exception as exc:
+            logger.warning("GA backfill queue unavailable, falling back to sync mode: %s", exc)
+            use_queue = False
+
+    done = 0
+    for i in range(0, total, batch_size):
+        batch = missing[i : i + batch_size]
+        if use_queue and ga_q is not None and conn is not None:
+            jobs = []
+            for sa, sb in batch:
+                cache_key = gap_analysis.make_resources_key([sa, sb])
+                if collection.gap_analysis_exists(cache_key):
+                    continue
+                inflight_key = f"ga:inflight:{cache_key}"
+                inflight_job_id_raw = conn.get(inflight_key)
+                inflight_job_id = (
+                    inflight_job_id_raw.decode("utf-8")
+                    if isinstance(inflight_job_id_raw, bytes)
+                    else str(inflight_job_id_raw)
+                    if inflight_job_id_raw
+                    else ""
+                )
+                if inflight_job_id:
+                    try:
+                        inflight_job = job.Job.fetch(id=inflight_job_id, connection=conn)
+                        if inflight_job.get_status() in (
+                            job.JobStatus.QUEUED,
+                            job.JobStatus.STARTED,
+                        ):
+                            continue
+                    except exceptions.NoSuchJobError:
+                        conn.delete(inflight_key)
+
+                j = ga_q.enqueue_call(
+                    description=f"{sa}->{sb}",
+                    func=run_gap_pair_job,
+                    kwargs={
+                        "importing_name": sa,
+                        "peer_name": sb,
+                        "db_connection_str": db_connection_str,
+                    },
+                    timeout=gap_analysis.GAP_ANALYSIS_TIMEOUT,
+                )
+                conn.set(inflight_key, str(j.id))
+                conn.expire(inflight_key, 129600)
+                jobs.append(j)
+
+            if jobs:
+                with alive_bar(len(jobs), title=f"GA batch {i // batch_size + 1}") as bar:
+                    redis.wait_for_jobs(jobs, bar)
+        else:
+            with alive_bar(len(batch), title=f"GA batch {i // batch_size + 1}") as bar:
+                for sa, sb in batch:
+                    _compute_pair_direct(collection, sa, sb)
+                    bar()
+
+        done = min(total, i + len(batch))
+        remaining = len(_missing_ga_pairs(collection))
+        logger.info(
+            "GA backfill progress: processed=%s/%s remaining=%s",
+            done,
+            total,
+            remaining,
+        )
+        time.sleep(poll_seconds)
+
+    final_missing = len(_missing_ga_pairs(collection))
+    logger.info("GA backfill complete: final_missing_pairs=%s", final_missing)
+
+
 def run(args: argparse.Namespace) -> None:  # pragma: no cover
     script_path = os.path.dirname(os.path.realpath(__file__))
     os.path.join(script_path, "../cres")
@@ -758,6 +892,14 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
 
     if args.preload_map_analysis_target_url:
         gap_analysis.preload(target_url=args.preload_map_analysis_target_url)
+    if getattr(args, "ga_backfill_missing", False):
+        backfill_gap_analysis_only(
+            args.cache_file,
+            batch_size=getattr(args, "ga_backfill_batch_size", 200),
+            poll_seconds=getattr(args, "ga_backfill_poll_seconds", 5),
+            max_pairs=getattr(args, "ga_backfill_max_pairs", 0),
+            no_queue=getattr(args, "ga_backfill_no_queue", False),
+        )
     if args.upstream_sync:
         download_graph_from_upstream(args.cache_file)
 

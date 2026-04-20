@@ -220,6 +220,34 @@ def main() -> None:
         help="preload map analysis for all possible 2 standards combinations, use target url as an OpenCRE base",
     )
     parser.add_argument(
+        "--ga_backfill_missing",
+        action="store_true",
+        help="calculate only missing directed gap-analysis pairs in the current cache DB",
+    )
+    parser.add_argument(
+        "--ga_backfill_batch_size",
+        type=int,
+        default=200,
+        help="batch size for queue/sync GA backfill processing",
+    )
+    parser.add_argument(
+        "--ga_backfill_poll_seconds",
+        type=int,
+        default=5,
+        help="poll interval (seconds) for GA backfill progress logs",
+    )
+    parser.add_argument(
+        "--ga_backfill_max_pairs",
+        type=int,
+        default=0,
+        help="optional cap on number of directed missing GA pairs to process (0 = no cap)",
+    )
+    parser.add_argument(
+        "--ga_backfill_no_queue",
+        action="store_true",
+        help="compute missing GA pairs synchronously without RQ queue",
+    )
+    parser.add_argument(
         "--delete_map_analysis_for",
         default="",
         help="delete all map analyses for resource spcified",
