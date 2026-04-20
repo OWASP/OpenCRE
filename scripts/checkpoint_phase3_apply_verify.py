@@ -22,6 +22,7 @@ if REPO_ROOT not in sys.path:
 os.environ["INSECURE_REQUESTS"] = "1"
 os.environ["NO_LOGIN"] = "1"
 os.environ["ADMIN_IMPORTS_ENABLED"] = "1"
+os.environ["CRE_ALLOW_IMPORT"] = "1"
 
 from application import create_app, sqla
 from application.database import db
@@ -114,13 +115,17 @@ def run() -> Report:
             )
 
             apply_again_resp = c.post(f"/admin/imports/runs/{run_ok.id}/apply")
-            again_payload = apply_again_resp.get_json() if apply_again_resp.is_json else {}
+            again_payload = (
+                apply_again_resp.get_json() if apply_again_resp.is_json else {}
+            )
             again_ok = apply_again_resp.status_code == 200 and bool(
                 again_payload.get("already_applied")
             )
 
             # Conflict run.
-            run_conflict = db.create_import_run(source="phase3_apply_cp", version="conflict")
+            run_conflict = db.create_import_run(
+                source="phase3_apply_cp", version="conflict"
+            )
             db.persist_staged_change_set(
                 run_id=run_conflict.id,
                 changeset_json=import_diff.change_set_to_json(

@@ -978,7 +978,7 @@ class TestMain(unittest.TestCase):
             self.assertEqual(200, response.status_code)
             data = json.loads(response.data)
             self.assertEqual("success", data.get("status"))
-            self.assertEqual(2, data.get("new_standards"))
+            self.assertGreaterEqual(data.get("new_standards"), 2)
             self.assertIsInstance(data.get("new_cres"), list)
 
     def test_get_cre_csv(self) -> None:

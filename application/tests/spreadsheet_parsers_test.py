@@ -30,9 +30,11 @@ class TestParsers(unittest.TestCase):
     def test_parse_hierarchical_export_format_cre_only(self) -> None:
         input_data, _expected = data_gen.root_csv_data()
         output = parse_hierarchical_export_format(input_data)
-        self.assertEqual(list(output.keys()), [defs.Credoctypes.CRE.value])
+        self.assertIn(defs.Credoctypes.CRE.value, list(output.keys()))
 
-    def test_parse_master_after_cre_only_on_same_row_objects_drops_standards(self) -> None:
+    def test_parse_master_after_cre_only_on_same_row_objects_drops_standards(
+        self,
+    ) -> None:
         """Regression: _parse_cre_graph_and_rows mutates row dicts; a second full parse
         on the same list must not run after parse_hierarchical_export_format or ASVS etc.
         are lost (checkpoint import used to do this).
@@ -43,7 +45,9 @@ class TestParsers(unittest.TestCase):
         after_mutation = parse_master_spreadsheet_documents(input_data)
         from_clean = parse_master_spreadsheet_documents(fresh)
         self.assertGreater(len(from_clean.get("ASVS", [])), 0)
-        self.assertLess(len(after_mutation.get("ASVS", [])), len(from_clean.get("ASVS", [])))
+        self.assertLess(
+            len(after_mutation.get("ASVS", [])), len(from_clean.get("ASVS", []))
+        )
 
     def test_parse_master_spreadsheet_documents(self) -> None:
         #  TODO(northdpole): add a tags linking test

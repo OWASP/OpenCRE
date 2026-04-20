@@ -7,10 +7,24 @@ plus a change-set vocabulary for add/remove/modify operations.
 """
 
 import json
+import hashlib
 from dataclasses import asdict, dataclass, field
 from typing import Any, Dict, List, Set, Tuple
 
 from application.defs import cre_defs as defs
+
+
+def stable_json(value: Any) -> str:
+    """Canonical JSON representation for stable hashing/diffing."""
+    return json.dumps(value, sort_keys=True, separators=(",", ":"))
+
+
+def sha256_hex(value: str) -> str:
+    return hashlib.sha256(value.encode("utf-8")).hexdigest()
+
+
+def json_loads(value: str) -> Any:
+    return json.loads(value)
 
 
 @dataclass
@@ -83,9 +97,11 @@ def diff_standards(
 
 # Step 7: Structured change-set vocabulary
 
+
 @dataclass
 class AddControl:
     """A control/standard entry was added."""
+
     op: str = "add_control"
     key: Tuple[str, str, str] = ("", "", "")
     document: Dict[str, Any] = field(default_factory=dict)
@@ -94,6 +110,7 @@ class AddControl:
 @dataclass
 class RemoveControl:
     """A control/standard entry was removed."""
+
     op: str = "remove_control"
     key: Tuple[str, str, str] = ("", "", "")
     document: Dict[str, Any] = field(default_factory=dict)
@@ -102,6 +119,7 @@ class RemoveControl:
 @dataclass
 class ModifyControl:
     """A control/standard entry was modified."""
+
     op: str = "modify_control"
     key: Tuple[str, str, str] = ("", "", "")
     before: Dict[str, Any] = field(default_factory=dict)
@@ -152,10 +170,12 @@ def _standard_to_dict(std: defs.Standard) -> Dict[str, Any]:
     for link in getattr(std, "links", []):
         doc = getattr(link, "document", None)
         if doc and getattr(doc, "doctype", None) == defs.Credoctypes.CRE:
-            linked_cres.append({
-                "id": getattr(doc, "id", ""),
-                "name": getattr(doc, "name", ""),
-            })
+            linked_cres.append(
+                {
+                    "id": getattr(doc, "id", ""),
+                    "name": getattr(doc, "name", ""),
+                }
+            )
     if linked_cres:
         d["linked_cres"] = linked_cres
     return d
@@ -163,11 +183,13 @@ def _standard_to_dict(std: defs.Standard) -> Dict[str, Any]:
 
 def change_set_to_json(ops: List[ChangeSetOp]) -> str:
     """Serialize change-set to JSON. Keys as tuples become lists."""
+
     def _serialize(op: ChangeSetOp) -> Dict[str, Any]:
         d = asdict(op)
         if "key" in d and isinstance(d["key"], tuple):
             d["key"] = list(d["key"])
         return d
+
     return json.dumps([_serialize(op) for op in ops], indent=2)
 
 
@@ -197,6 +219,7 @@ def change_set_from_json(data: str) -> List[ChangeSetOp]:
 
 
 # Step 8: Conflict detection
+
 
 def detect_manual_edit_keys(
     baseline: List[defs.Standard],
@@ -232,12 +255,16 @@ def detect_conflicts(
     return conflicts
 
 
-def has_conflicts(ops: List[ChangeSetOp], manually_edited_keys: Set[Tuple[str, str, str]]) -> bool:
+def has_conflicts(
+    ops: List[ChangeSetOp], manually_edited_keys: Set[Tuple[str, str, str]]
+) -> bool:
     """True if any op would conflict with manual edits."""
     return len(detect_conflicts(ops, manually_edited_keys)) > 0
 
 
-def live_standard_defs_for_resource(collection: Any, standard_name: str) -> List[defs.Standard]:
+def live_standard_defs_for_resource(
+    collection: Any, standard_name: str
+) -> List[defs.Standard]:
     """Load current main-graph Standard defs for one resource name (for staging conflicts)."""
     rows = collection.get_nodes(name=standard_name) or []
     out: List[defs.Standard] = []
@@ -251,7 +278,9 @@ def impacted_standard_names_from_ops(ops: List[ChangeSetOp]) -> Set[str]:
     return {str(op.key[0]) for op in ops if op.key and len(op.key) > 0}
 
 
-def impacted_cre_external_ids_for_standards(collection: Any, standard_names: Set[str]) -> Set[str]:
+def impacted_cre_external_ids_for_standards(
+    collection: Any, standard_names: Set[str]
+) -> Set[str]:
     """CRE external ids linked to any node under the given standard names."""
     ids: Set[str] = set()
     for name in standard_names:
