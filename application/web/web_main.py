@@ -399,6 +399,23 @@ def standards() -> Any:
     return standards
 
 
+@app.route("/rest/v1/ga_standards", methods=["GET"])
+def ga_standards() -> Any:
+    """
+    Standards eligible for gap analysis selection.
+    Keeps GA dropdowns aligned with backend GA gating.
+    """
+    if posthog:
+        posthog.capture("ga_standards", "")
+
+    database = db.Node_collection()
+    standards = database.standards()
+    eligible = [
+        s for s in standards if cre_main.resource_name_ga_eligible_in_db(database, s)
+    ]
+    return sorted(eligible)
+
+
 @app.route("/rest/v1/openapi.yaml", methods=["GET"])
 def openapi_spec() -> Any:
     """
