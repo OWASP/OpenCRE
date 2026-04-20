@@ -293,7 +293,11 @@ export const GapAnalysis = () => {
                 .map((key) => (
                   <Table.Row key={key}>
                     <Table.Cell textAlign="left" verticalAlign="top" selectable>
-                      <a href={getInternalUrl(gapAnalysis[key].start)} target="_blank" rel="noopener noreferrer">
+                      <a
+                        href={getInternalUrl(gapAnalysis[key].start)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
                         <p>
                           <b>{getDocumentDisplayName(gapAnalysis[key].start, true)}</b>
                         </p>

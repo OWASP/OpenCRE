@@ -136,7 +136,11 @@ export const Explorer = () => {
         <h1>Open CRE Explorer</h1>
         <p>
           A visual explorer of Open Common Requirement Enumerations (CREs). Originally created by:{' '}
-          <a target="_blank" rel="noopener noreferrer" href="https://zeljkoobrenovic.github.io/opencre-explorer/">
+          <a
+            target="_blank"
+            rel="noopener noreferrer"
+            href="https://zeljkoobrenovic.github.io/opencre-explorer/"
+          >
             Zeljko Obrenovic
           </a>
           .
@@ -166,11 +170,21 @@ export const Explorer = () => {
               onChange={() => setDebugMode(!debugMode)}
             />
             <Popup
-               content="Debug mode shows graph connectivity stats and link type details for each CRE node."
-            trigger={
-               <span style={{ cursor: 'help', color: '#666', fontSize: '14px', border: '1px solid #666', borderRadius: '50%', padding: '0 4px', fontWeight: 'bold' }}>
-                ?
-               </span>
+              content="Debug mode shows graph connectivity stats and link type details for each CRE node."
+              trigger={
+                <span
+                  style={{
+                    cursor: 'help',
+                    color: '#666',
+                    fontSize: '14px',
+                    border: '1px solid #666',
+                    borderRadius: '50%',
+                    padding: '0 4px',
+                    fontWeight: 'bold',
+                  }}
+                >
+                  ?
+                </span>
               }
             />
           </div>
