@@ -67,7 +67,7 @@ class TestMain(unittest.TestCase):
     @patch.object(main.gap_analysis, "perform")
     @patch.object(redis, "connect")
     @patch.object(main, "register_node")
-    def test_register_standard_skips_ga_for_taxonomy_standard(
+    def test_register_standard_allows_ga_for_taxonomy_standard(
         self,
         register_node_mock,
         redis_connect_mock,
@@ -75,11 +75,10 @@ class TestMain(unittest.TestCase):
         populate_neo4j_mock,
     ) -> None:
         """
-        Step 3 minimal behavior: GA is skipped for taxonomy-like Standard entries
-        because required GA tags are missing.
+        Taxonomy/risk-list standards (e.g. CAPEC) are GA-eligible.
         Regression test: Ensure that gap analysis is centralized and not delegated downwards.
         """
-        redis_connect_mock.return_value = None
+        redis_connect_mock.return_value = Mock(get=Mock(return_value=None), set=Mock())
         # Ensure there is another standard to compare against.
         self.collection.standards = Mock(return_value=["CWE", "ASVS"])  # type: ignore[method-assign]
 
@@ -918,6 +917,15 @@ class TestGaEligibilityHelpers(unittest.TestCase):
         )
         self.assertTrue(main.document_is_ga_eligible(ok, log_skips=False))
 
+    def test_document_is_ga_eligible_accepts_taxonomy_risk_list(self) -> None:
+        capec_like = defs.Standard(
+            name="CAPEC",
+            section="sec",
+            sectionID="123",
+            tags=["family:taxonomy", "subtype:risk_list"],
+        )
+        self.assertTrue(main.document_is_ga_eligible(capec_like, log_skips=False))
+
     def test_resource_name_ga_eligible_in_db_false_when_missing(self) -> None:
         coll = Mock()
         q = Mock()
@@ -946,6 +954,17 @@ class TestGaEligibilityHelpers(unittest.TestCase):
         row.tags = "family:standard,subtype:requirements_standard"
         q.first.return_value = row
         self.assertTrue(main.resource_name_ga_eligible_in_db(coll, "ASVS"))
+
+    def test_resource_name_ga_eligible_in_db_true_for_taxonomy_risk_list(self) -> None:
+        coll = Mock()
+        q = Mock()
+        coll.session.query.return_value = q
+        q.filter.return_value = q
+        row = Mock()
+        row.ntype = defs.Credoctypes.Standard.value
+        row.tags = "family:taxonomy,subtype:risk_list"
+        q.first.return_value = row
+        self.assertTrue(main.resource_name_ga_eligible_in_db(coll, "CAPEC"))
 
 
 if __name__ == "__main__":

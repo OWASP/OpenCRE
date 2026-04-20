@@ -172,6 +172,20 @@ def _document_doctype_value(doc: defs.Document) -> str:
     return str(doctype)
 
 
+def _has_ga_eligible_tags(tags: List[str]) -> bool:
+    """
+    GA eligibility tag matrix.
+
+    - Requirements standards remain eligible (family:standard + subtype:requirements_standard)
+    - Taxonomy/risk-list standards are also eligible (e.g. CAPEC)
+    """
+    tag_set = set(tags)
+    return (
+        {"family:standard", "subtype:requirements_standard"}.issubset(tag_set)
+        or {"family:taxonomy", "subtype:risk_list"}.issubset(tag_set)
+    )
+
+
 def document_is_ga_eligible(doc: defs.Document, *, log_skips: bool = True) -> bool:
     """
     Whether a resource group should participate in gap analysis.
@@ -184,19 +198,16 @@ def document_is_ga_eligible(doc: defs.Document, *, log_skips: bool = True) -> bo
     if doctype in (defs.Credoctypes.Tool.value, defs.Credoctypes.Code.value):
         return False
 
-    required = {"family:standard", "subtype:requirements_standard"}
     raw_tags = getattr(doc, "tags", None)
     if isinstance(raw_tags, (list, tuple, set)):
         tags = list(raw_tags)
     else:
         tags = []
-    missing = sorted([t for t in required if t not in set(tags)])
-    if missing:
+    if not _has_ga_eligible_tags(tags):
         if log_skips:
             logger.info(
-                "Skipping gap analysis for %s because tags missing %s",
+                "Skipping gap analysis for %s because tags are not GA-eligible",
                 getattr(doc, "name", "<unknown>"),
-                ",".join(missing),
             )
         return False
 
@@ -225,8 +236,7 @@ def resource_name_ga_eligible_in_db(
         return False
     raw_tags = row.tags or ""
     tag_set = {t.strip() for t in str(raw_tags).split(",") if t.strip()}
-    required = {"family:standard", "subtype:requirements_standard"}
-    return required.issubset(tag_set)
+    return _has_ga_eligible_tags(list(tag_set))
 
 
 def schedule_gap_analysis_importing_vs_peers(
