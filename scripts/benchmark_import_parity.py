@@ -7,6 +7,7 @@ from collections import defaultdict
 from typing import Any, Dict, List, Optional, Set, Tuple
 from sqlalchemy import create_engine, inspect, text
 
+
 def _json_canonical(v: Any) -> Any:
     if v is None:
         return None
@@ -24,15 +25,21 @@ def _json_canonical(v: Any) -> Any:
                 can_list.sort(key=lambda x: json.dumps(x, sort_keys=True))
             except Exception:
                 pass
-            return json.dumps(can_list, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
-        return json.dumps(parsed, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+            return json.dumps(
+                can_list, sort_keys=True, separators=(",", ":"), ensure_ascii=False
+            )
+        return json.dumps(
+            parsed, sort_keys=True, separators=(",", ":"), ensure_ascii=False
+        )
     if isinstance(v, list):
         can_list = [_json_canonical(item) for item in v]
         try:
             can_list.sort(key=lambda x: json.dumps(x, sort_keys=True))
         except Exception:
             pass
-        return json.dumps(can_list, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+        return json.dumps(
+            can_list, sort_keys=True, separators=(",", ":"), ensure_ascii=False
+        )
     if isinstance(v, dict):
         return json.dumps(v, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
     if isinstance(v, (bytes, bytearray)):
@@ -41,6 +48,7 @@ def _json_canonical(v: Any) -> Any:
         except Exception:
             return str(v)
     return v
+
 
 def _normalize_tags(v: Any) -> Any:
     if v is None:
@@ -60,6 +68,7 @@ def _normalize_tags(v: Any) -> Any:
     parts = [p.strip() for p in v.split(",")]
     return sorted([p for p in parts if p])
 
+
 def _connect_db(path: str) -> Any:
     if "://" not in path:
         path = f"sqlite:///{os.path.abspath(path)}"
@@ -69,6 +78,7 @@ def _connect_db(path: str) -> Any:
             path = "postgresql://" + path[len("postgres://") :]
     engine = create_engine(path)
     return engine
+
 
 def _fetch_all(engine: Any, query: str, params={}) -> List[Dict[str, Any]]:
     with engine.connect() as conn:
@@ -103,15 +113,20 @@ def _document_metadata_select(engine: Any, table: str) -> str:
 def _build_id_maps(db: Any) -> Tuple[Dict[str, str], Dict[str, str]]:
     cres = _fetch_all(db, "SELECT id, external_id FROM cre")
     cre_map = {str(r["id"]): str(r["external_id"]) for r in cres if r["external_id"]}
-    
+
     nodes = _fetch_all(db, "SELECT id, name, section, section_id FROM node")
     node_map = {}
     for r in nodes:
-        key_parts = [str(r.get("name") or ""), str(r.get("section") or ""), str(r.get("section_id") or "")]
+        key_parts = [
+            str(r.get("name") or ""),
+            str(r.get("section") or ""),
+            str(r.get("section_id") or ""),
+        ]
         logical_key = "::".join(key_parts)
         node_map[str(r["id"])] = logical_key
-        
+
     return cre_map, node_map
+
 
 def diff_databases(
     imported_db_path: str,
@@ -120,7 +135,7 @@ def diff_databases(
     summary_out: Optional[Dict[str, Any]] = None,
 ) -> bool:
     log_fp = open(log_file, "w")
-    
+
     def log_msg(msg: str):
         print(msg)
         log_fp.write(msg + "\n")
@@ -132,19 +147,23 @@ def diff_databases(
 
     imported = _connect_db(imported_db_path)
     upstream = _connect_db(upstream_db_path)
-    
+
     log_msg("Building Logical ID Maps...")
     i_cre_map, i_node_map = _build_id_maps(imported)
     u_cre_map, u_node_map = _build_id_maps(upstream)
-    
+
     # ---- Load links (structural) using logical IDs ----
     # Fundamental CRE structure is adjacency, not edge direction or label.
     # For parity we compare undirected CRE<->CRE connectivity.
     def _normalize_cre_pair(a: str, b: str) -> Tuple[str, str]:
         return (a, b) if a <= b else (b, a)
 
-    def load_internal_edges(db: Any, cre_map: Dict[str, str]) -> Set[Tuple[str, str, str]]:
-        rows = _fetch_all(db, 'SELECT type, "group" as group_id, cre as cre_id FROM cre_links')
+    def load_internal_edges(
+        db: Any, cre_map: Dict[str, str]
+    ) -> Set[Tuple[str, str, str]]:
+        rows = _fetch_all(
+            db, 'SELECT type, "group" as group_id, cre as cre_id FROM cre_links'
+        )
         edges = set()
         for r in rows:
             g_logical = cre_map.get(str(r["group_id"]))
@@ -153,14 +172,20 @@ def diff_databases(
                 edges.add((str(r["type"]), g_logical, c_logical))
         return edges
 
-    def to_fundamental_internal_edges(edges: Set[Tuple[str, str, str]]) -> Set[Tuple[str, str]]:
+    def to_fundamental_internal_edges(
+        edges: Set[Tuple[str, str, str]]
+    ) -> Set[Tuple[str, str]]:
         pairs: Set[Tuple[str, str]] = set()
         for _, src, dst in edges:
             pairs.add(_normalize_cre_pair(src, dst))
         return pairs
 
-    def load_external_edges(db: Any, cre_map: Dict[str, str], node_map: Dict[str, str]) -> Set[Tuple[str, str, str]]:
-        rows = _fetch_all(db, "SELECT type, cre as cre_id, node as node_id FROM cre_node_links")
+    def load_external_edges(
+        db: Any, cre_map: Dict[str, str], node_map: Dict[str, str]
+    ) -> Set[Tuple[str, str, str]]:
+        rows = _fetch_all(
+            db, "SELECT type, cre as cre_id, node as node_id FROM cre_node_links"
+        )
         edges = set()
         for r in rows:
             c_logical = cre_map.get(str(r["cre_id"]))
@@ -172,7 +197,7 @@ def diff_databases(
     log_msg("Loading Internal Edges...")
     i_internal = load_internal_edges(imported, i_cre_map)
     u_internal = load_internal_edges(upstream, u_cre_map)
-    
+
     log_msg("Loading External Edges...")
     i_external = load_external_edges(imported, i_cre_map, i_node_map)
     u_external = load_external_edges(upstream, u_cre_map, u_node_map)
@@ -245,7 +270,9 @@ def diff_databases(
             u_types = upstream_by_undir.get(undir, set())
             if "Contains" in u_types:
                 continue
-            classification = "related_in_upstream" if "Related" in u_types else "absent_in_upstream"
+            classification = (
+                "related_in_upstream" if "Related" in u_types else "absent_in_upstream"
+            )
             contains_remodeled.append(
                 {
                     "source_cre": src,
@@ -284,7 +311,7 @@ def diff_databases(
     u_internal_fundamental = to_fundamental_internal_edges(u_internal)
     added_internal_edges = sorted(i_internal_fundamental - u_internal_fundamental)
     removed_internal_edges = sorted(u_internal_fundamental - i_internal_fundamental)
-    
+
     if not added_internal_edges and not removed_internal_edges:
         log_msg("Checked Internal Edges (fundamental connectivity): OK")
     else:
@@ -303,13 +330,20 @@ def diff_databases(
 
     added_external_edges = sorted(i_external - u_external)
     removed_external_edges = sorted(u_external - i_external)
-    
+
     if not added_external_edges and not removed_external_edges:
         log_msg("Checked External Edges: OK")
     else:
-        log_msg(f"Checked External Edges: NOT OK ({len(added_external_edges)} added, {len(removed_external_edges)} removed)")
-        
-    structural_diffs = bool(added_internal_edges or removed_internal_edges or added_external_edges or removed_external_edges)
+        log_msg(
+            f"Checked External Edges: NOT OK ({len(added_external_edges)} added, {len(removed_external_edges)} removed)"
+        )
+
+    structural_diffs = bool(
+        added_internal_edges
+        or removed_internal_edges
+        or added_external_edges
+        or removed_external_edges
+    )
 
     # ---- Content diffs using logical IDs ----
     def load_cres(db: Any) -> Dict[str, Dict[str, Any]]:
@@ -339,7 +373,11 @@ def diff_databases(
         )
         nodes = {}
         for r in rows:
-            key_parts = [str(r.get("name") or ""), str(r.get("section") or ""), str(r.get("section_id") or "")]
+            key_parts = [
+                str(r.get("name") or ""),
+                str(r.get("section") or ""),
+                str(r.get("section_id") or ""),
+            ]
             logical_key = "::".join(key_parts)
             nodes[logical_key] = {
                 "name": r["name"],
@@ -358,13 +396,15 @@ def diff_databases(
     log_msg("Loading CREs...")
     i_cre = load_cres(imported)
     u_cre = load_cres(upstream)
-    
+
     added_cres = sorted(set(i_cre.keys()) - set(u_cre.keys()))
     removed_cres = sorted(set(u_cre.keys()) - set(i_cre.keys()))
     if not added_cres and not removed_cres:
         log_msg("Checked CRE Existence: OK")
     else:
-        log_msg(f"Checked CRE Existence: NOT OK ({len(added_cres)} added, {len(removed_cres)} removed)")
+        log_msg(
+            f"Checked CRE Existence: NOT OK ({len(added_cres)} added, {len(removed_cres)} removed)"
+        )
 
     log_msg("Loading Nodes...")
     i_node = load_nodes(imported)
@@ -375,7 +415,9 @@ def diff_databases(
     if not added_nodes and not removed_nodes:
         log_msg("Checked Node Existence: OK")
     else:
-        log_msg(f"Checked Node Existence: NOT OK ({len(added_nodes)} added, {len(removed_nodes)} removed)")
+        log_msg(
+            f"Checked Node Existence: NOT OK ({len(added_nodes)} added, {len(removed_nodes)} removed)"
+        )
 
     # ---- Gap Analysis Comparison ----
     def load_gap_analysis(db: Any) -> Dict[str, str]:
@@ -392,18 +434,20 @@ def diff_databases(
     # Since imported standard names might differ from upstream (e.g. 'DSOMM' vs 'DevSecOps Maturity Model (DSOMM)'),
     # we'll do our best to map them if possible, otherwise we just compare intersection
     # To keep it simple and robust, we only warn on the exact string intersection
-    
+
     intersect_ga = set(i_ga.keys()) & set(u_ga.keys())
     added_ga = sorted(set(i_ga.keys()) - set(u_ga.keys()))
     removed_ga = sorted(set(u_ga.keys()) - set(i_ga.keys()))
-    
+
     if not added_ga and not removed_ga:
         log_msg("Checked Gap Analysis Existence: OK")
     else:
-        log_msg(f"Checked Gap Analysis Existence: NOT OK ({len(added_ga)} added, {len(removed_ga)} removed)")
+        log_msg(
+            f"Checked Gap Analysis Existence: NOT OK ({len(added_ga)} added, {len(removed_ga)} removed)"
+        )
 
     content_diffs = []
-    
+
     # Gap analysis diffs
     log_msg("Comparing Gap Analysis Content (informational only)...")
     ga_diff_count = 0
@@ -412,23 +456,31 @@ def diff_databases(
         u_obj = _json_canonical(u_ga[cache_key])
         if i_obj != u_obj:
             ga_diff_count += 1
-            content_diffs.append({
-                "type": "GapAnalysis",
-                "cache_key": cache_key,
-                "diffs": {"upstream": u_obj, "imported": i_obj}
-            })
-    
+            content_diffs.append(
+                {
+                    "type": "GapAnalysis",
+                    "cache_key": cache_key,
+                    "diffs": {"upstream": u_obj, "imported": i_obj},
+                }
+            )
+
     if ga_diff_count == 0:
         log_msg("Checked Gap Analysis Content: OK")
     else:
-        log_msg(f"Checked Gap Analysis Content: INFO ({ga_diff_count} diffs found; ignored)")
+        log_msg(
+            f"Checked Gap Analysis Content: INFO ({ga_diff_count} diffs found; ignored)"
+        )
 
     log_msg("Comparing CRE Properties (informational only)...")
     cre_diff_count = 0
     for cre_id in sorted(set(i_cre.keys()) & set(u_cre.keys())):
         i_c = i_cre[cre_id]
         u_c = u_cre[cre_id]
-        diffs = {f: {"upstream": u_c.get(f), "imported": i_c.get(f)} for f in i_c.keys() if _json_canonical(i_c.get(f)) != _json_canonical(u_c.get(f))}
+        diffs = {
+            f: {"upstream": u_c.get(f), "imported": i_c.get(f)}
+            for f in i_c.keys()
+            if _json_canonical(i_c.get(f)) != _json_canonical(u_c.get(f))
+        }
         if diffs:
             cre_diff_count += 1
             content_diffs.append({"type": "CRE", "id": cre_id, "diffs": diffs})
@@ -443,31 +495,42 @@ def diff_databases(
     for node_id in sorted(set(i_node.keys()) & set(u_node.keys())):
         i_n = i_node[node_id]
         u_n = u_node[node_id]
-        diffs = {f: {"upstream": u_n.get(f), "imported": i_n.get(f)} for f in i_n.keys() if _json_canonical(i_n.get(f)) != _json_canonical(u_n.get(f))}
+        diffs = {
+            f: {"upstream": u_n.get(f), "imported": i_n.get(f)}
+            for f in i_n.keys()
+            if _json_canonical(i_n.get(f)) != _json_canonical(u_n.get(f))
+        }
         if diffs:
             node_diff_count += 1
             content_diffs.append({"type": "Node", "id": node_id, "diffs": diffs})
-            
+
     if node_diff_count == 0:
         log_msg("Checked Node Properties: OK")
     else:
-        log_msg(f"Checked Node Properties: INFO ({node_diff_count} diffs found; ignored)")
+        log_msg(
+            f"Checked Node Properties: INFO ({node_diff_count} diffs found; ignored)"
+        )
 
     if added_cres or removed_cres or added_nodes or removed_nodes:
         structural_diffs = True
-        
+
     log_msg("Writing detailed JSON output to log file...")
     log_fp.write("\n=== Content Diffs JSON ===\n")
     log_fp.write(json.dumps(content_diffs, indent=2))
     log_fp.write("\n=== Added/Removed Nodes/CREs JSON ===\n")
-    log_fp.write(json.dumps({
-        "added_cres": added_cres,
-        "removed_cres": removed_cres,
-        "added_nodes": added_nodes,
-        "removed_nodes": removed_nodes,
-        "added_ga": added_ga,
-        "removed_ga": removed_ga
-    }, indent=2))
+    log_fp.write(
+        json.dumps(
+            {
+                "added_cres": added_cres,
+                "removed_cres": removed_cres,
+                "added_nodes": added_nodes,
+                "removed_nodes": removed_nodes,
+                "added_ga": added_ga,
+                "removed_ga": removed_ga,
+            },
+            indent=2,
+        )
+    )
     log_fp.write("\n=== Internal Edge Remodeling Breakdown JSON ===\n")
     log_fp.write(json.dumps(internal_breakdown, indent=2))
     log_fp.write("\n")
@@ -540,19 +603,27 @@ def diff_databases(
     if removed_ga:
         log_msg(f"Info: Missing Gap Analysis cache keys locally: {len(removed_ga)}")
 
-    log_msg(f"Success! No fundamental structural diffs found. Detailed output is in {log_file}")
+    log_msg(
+        f"Success! No fundamental structural diffs found. Detailed output is in {log_file}"
+    )
     log_fp.close()
     return True
 
+
 def main():
     parser = argparse.ArgumentParser(description="Benchmark import parity.")
-    parser.add_argument("--upstream-db", required=True, help="Path to upstream synced DB")
+    parser.add_argument(
+        "--upstream-db", required=True, help="Path to upstream synced DB"
+    )
     parser.add_argument("--imported-db", required=True, help="Path to imported DB")
-    parser.add_argument("--log-file", default="content-diffs.log", help="Log file for content diffs")
+    parser.add_argument(
+        "--log-file", default="content-diffs.log", help="Log file for content diffs"
+    )
     args = parser.parse_args()
 
     if not diff_databases(args.imported_db, args.upstream_db, args.log_file):
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

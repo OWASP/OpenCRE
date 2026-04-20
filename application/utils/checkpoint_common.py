@@ -30,7 +30,9 @@ def repo_root() -> str:
     return os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 
 
-def _fetch_all(conn: sqlite3.Connection, sql: str, params: tuple = ()) -> List[Dict[str, Any]]:
+def _fetch_all(
+    conn: sqlite3.Connection, sql: str, params: tuple = ()
+) -> List[Dict[str, Any]]:
     conn.row_factory = sqlite3.Row
     cur = conn.execute(sql, params)
     return [dict(row) for row in cur.fetchall()]
@@ -50,7 +52,9 @@ def _json_canonical(v: Any) -> Any:
             parsed = json.loads(v)
         except Exception:
             return v
-        return json.dumps(parsed, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+        return json.dumps(
+            parsed, sort_keys=True, separators=(",", ":"), ensure_ascii=False
+        )
     if isinstance(v, (dict, list)):
         return json.dumps(v, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
     if isinstance(v, (bytes, bytearray)):
@@ -248,7 +252,9 @@ def suggest_upstream_candidates(
 
         # Strong signal: exact section_id within same family.
         sid_matches = [
-            r for r in family_rows if str(r.get("section_id") or "") == section_id and section_id
+            r
+            for r in family_rows
+            if str(r.get("section_id") or "") == section_id and section_id
         ]
         if sid_matches:
             row = sid_matches[0]
@@ -259,9 +265,15 @@ def suggest_upstream_candidates(
             continue
 
         # Fallback: fuzzy section text matches within same family.
-        upstream_sections = [str(r.get("section") or "") for r in family_rows if str(r.get("section") or "")]
+        upstream_sections = [
+            str(r.get("section") or "")
+            for r in family_rows
+            if str(r.get("section") or "")
+        ]
         if not upstream_sections:
-            out.append(f"{raw_key} -> family exists upstream but no section text candidates")
+            out.append(
+                f"{raw_key} -> family exists upstream but no section text candidates"
+            )
             continue
         close = difflib.get_close_matches(section, upstream_sections, n=3, cutoff=0.4)
         if close:
@@ -299,9 +311,7 @@ def run_import_with_ga(db_path: str, core_spreadsheet_url: str) -> None:
                 break
 
     if not core_rows:
-        raise RuntimeError(
-            "Could not find a worksheet with 'CRE hierarchy' columns."
-        )
+        raise RuntimeError("Could not find a worksheet with 'CRE hierarchy' columns.")
 
     collection = cre_main.db_connect(path=db_path)
     sqla.create_all()

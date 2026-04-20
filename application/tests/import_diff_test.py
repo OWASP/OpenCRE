@@ -73,10 +73,14 @@ class TestImportDiff(unittest.TestCase):
 
     def test_diff_to_change_set_roundtrip(self) -> None:
         prev = [
-            defs.Standard(name="ASVS", section="1.1", sectionID="1.1", description="old"),
+            defs.Standard(
+                name="ASVS", section="1.1", sectionID="1.1", description="old"
+            ),
         ]
         new = [
-            defs.Standard(name="ASVS", section="1.1", sectionID="1.1", description="new"),
+            defs.Standard(
+                name="ASVS", section="1.1", sectionID="1.1", description="new"
+            ),
         ]
         diff = diff_standards(prev, new)
         ops = diff_to_change_set(diff)
@@ -139,13 +143,23 @@ class TestImportDiff(unittest.TestCase):
 
     def test_detect_manual_edit_keys(self) -> None:
         baseline = [
-            defs.Standard(name="ASVS", section="1.1", sectionID="1.1", description="old"),
-            defs.Standard(name="ASVS", section="1.2", sectionID="1.2", description="same"),
+            defs.Standard(
+                name="ASVS", section="1.1", sectionID="1.1", description="old"
+            ),
+            defs.Standard(
+                name="ASVS", section="1.2", sectionID="1.2", description="same"
+            ),
         ]
         current = [
-            defs.Standard(name="ASVS", section="1.1", sectionID="1.1", description="new"),
-            defs.Standard(name="ASVS", section="1.2", sectionID="1.2", description="same"),
-            defs.Standard(name="ASVS", section="1.3", sectionID="1.3", description="added"),
+            defs.Standard(
+                name="ASVS", section="1.1", sectionID="1.1", description="new"
+            ),
+            defs.Standard(
+                name="ASVS", section="1.2", sectionID="1.2", description="same"
+            ),
+            defs.Standard(
+                name="ASVS", section="1.3", sectionID="1.3", description="added"
+            ),
         ]
         edited = detect_manual_edit_keys(baseline, current)
         self.assertEqual(edited, {("ASVS", "1.1", "1.1")})

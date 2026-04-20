@@ -25,7 +25,9 @@ class TestRegisterStandardIncrementalEmbeddings(unittest.TestCase):
 
     @patch.object(prompt_client.in_memory_embeddings, "setup_playwright")
     @patch.object(prompt_client.in_memory_embeddings, "teardown_playwright")
-    @patch.object(prompt_client.openai_prompt_client.OpenAIPromptClient, "get_text_embeddings")
+    @patch.object(
+        prompt_client.openai_prompt_client.OpenAIPromptClient, "get_text_embeddings"
+    )
     @patch.object(redis, "connect")
     @patch.dict(os.environ, {"OPENAI_API_KEY": "dummy"})
     def test_register_standard_skips_reembedding_unchanged_node_content(
@@ -70,4 +72,3 @@ class TestRegisterStandardIncrementalEmbeddings(unittest.TestCase):
             generate_embeddings=True,
         )
         self.assertEqual(mock_get_text_embeddings.call_count, call_count_after_first)
-

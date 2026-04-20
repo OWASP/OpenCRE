@@ -133,7 +133,9 @@ def _replace_postgres_embeddings(pg_url: str, rows: Sequence[Tuple[Any, ...]]) -
 
 
 def main() -> int:
-    p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    p = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     src = p.add_mutually_exclusive_group(required=True)
     src.add_argument(
         "--from-sqlite",

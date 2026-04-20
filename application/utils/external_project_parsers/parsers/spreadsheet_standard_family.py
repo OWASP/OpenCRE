@@ -1,4 +1,5 @@
 """Shared logic for extracting one standard family from master spreadsheet rows."""
+
 from copy import copy
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple

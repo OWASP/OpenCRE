@@ -55,9 +55,7 @@ class AiExchangeCsvTest(unittest.TestCase):
         self.assertEqual(norm[0]["Standard OWASP AI Exchange ID"], "ctlid")
 
     def test_parse_row_dicts_produces_cres_and_new_standards(self) -> None:
-        repo_root = os.path.abspath(
-            os.path.join(os.path.dirname(__file__), "..", "..")
-        )
+        repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
         csv_path = os.path.join(repo_root, "OpenCRE-AI-6-WithMitre.csv")
         if not os.path.isfile(csv_path):
             self.skipTest(f"fixture missing: {csv_path}")
@@ -73,9 +71,7 @@ class AiExchangeCsvTest(unittest.TestCase):
         from application.tests.utils import data_gen
 
         input_data, _ = data_gen.root_csv_data()
-        pr = parse_row_dicts_to_parse_result(
-            [dict(r) for r in input_data]
-        )
+        pr = parse_row_dicts_to_parse_result([dict(r) for r in input_data])
         self.assertIn(defs.Credoctypes.CRE.value, pr.results)
 
 

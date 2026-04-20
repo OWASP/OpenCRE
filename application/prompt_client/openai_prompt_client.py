@@ -16,7 +16,9 @@ class OpenAIPromptClient:
         self.model_name = "gpt-3.5-turbo"
         # OpenAI embedding input batching is constrained by total tokens per request.
         # We still keep a hard cap for operational safety.
-        self._max_batch_size = int(os.environ.get("OPENAI_EMBED_MAX_BATCH_SIZE", "2048"))
+        self._max_batch_size = int(
+            os.environ.get("OPENAI_EMBED_MAX_BATCH_SIZE", "2048")
+        )
         self._max_retries = int(os.environ.get("OPENAI_EMBED_MAX_RETRIES", "3"))
         self._retry_sleep_seconds = int(
             os.environ.get("OPENAI_EMBED_RETRY_SLEEP_SECONDS", "60")
@@ -46,9 +48,7 @@ class OpenAIPromptClient:
 
         return False
 
-    def _with_rate_limit_retry(
-        self, fn: Callable[[], Any], *, context: str
-    ) -> Any:
+    def _with_rate_limit_retry(self, fn: Callable[[], Any], *, context: str) -> Any:
         for attempt in range(self._max_retries + 1):
             try:
                 return fn()
@@ -112,6 +112,7 @@ class OpenAIPromptClient:
             },
         ]
         openai.api_key = self.api_key
+
         def _call() -> Any:
             response = openai.ChatCompletion.create(
                 model="gpt-3.5-turbo",
@@ -133,6 +134,7 @@ class OpenAIPromptClient:
             },
         ]
         openai.api_key = self.api_key
+
         def _call() -> Any:
             response = openai.ChatCompletion.create(
                 model="gpt-3.5-turbo",

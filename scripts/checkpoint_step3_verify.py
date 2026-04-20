@@ -57,7 +57,10 @@ def _seed_baseline(collection: db.Node_collection) -> List[defs.Standard]:
 def _incoming_import_snapshot() -> List[defs.Standard]:
     return [
         defs.Standard(
-            name="ASVS", section="1.1", sectionID="V1.1.1", description="imported update"
+            name="ASVS",
+            section="1.1",
+            sectionID="V1.1.1",
+            description="imported update",
         ),
         defs.Standard(
             name="ASVS", section="1.3", sectionID="V1.1.3", description="new control"
@@ -81,7 +84,9 @@ def _with_manual_edit(baseline: List[defs.Standard]) -> List[defs.Standard]:
     return current
 
 
-def run_checkpoint_3_verify(db_path: str, simulate_manual_edit: bool = True) -> Checkpoint3Report:
+def run_checkpoint_3_verify(
+    db_path: str, simulate_manual_edit: bool = True
+) -> Checkpoint3Report:
     collection = cre_main.db_connect(path=db_path)
     sqla.create_all()
 
@@ -144,9 +149,9 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    db_path = args.db or tempfile.mkstemp(
-        prefix="opencre_checkpoint3_", suffix=".sqlite"
-    )[1]
+    db_path = (
+        args.db or tempfile.mkstemp(prefix="opencre_checkpoint3_", suffix=".sqlite")[1]
+    )
     report = run_checkpoint_3_verify(
         db_path=db_path, simulate_manual_edit=not args.no_manual_edit
     )
@@ -155,7 +160,9 @@ def main() -> None:
     print(f"DB: {db_path}")
     print(f"Import runs created: {report.import_runs_created}")
     print(f"Latest run version: {report.latest_run_version}")
-    print(f"Diff counts: added={report.added} removed={report.removed} modified={report.modified}")
+    print(
+        f"Diff counts: added={report.added} removed={report.removed} modified={report.modified}"
+    )
     print(f"Change-set operations: {report.change_set_ops}")
     print(f"Conflict operations: {report.conflict_ops}")
     print(f"Checkpoint3: {'PASS' if report.pass_status else 'FAIL'}")
@@ -166,4 +173,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

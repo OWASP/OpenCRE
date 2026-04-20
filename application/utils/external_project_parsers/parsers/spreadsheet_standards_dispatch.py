@@ -1,4 +1,5 @@
 """Aggregate spreadsheet-derived standards: one module per family, same master sheet."""
+
 from typing import Dict, List, Tuple
 
 from application.defs import cre_defs as defs
@@ -55,9 +56,7 @@ _SPREADSHEET_STANDARD_PARSERS = (
     spreadsheet_nist_ai_100_2,
 )
 
-_expected = tuple(
-    supported_resource_mapping["Standards"].keys()
-)
+_expected = tuple(supported_resource_mapping["Standards"].keys())
 _actual = tuple(m.FAMILY_NAME for m in _SPREADSHEET_STANDARD_PARSERS)
 if _expected != _actual:
     raise RuntimeError(

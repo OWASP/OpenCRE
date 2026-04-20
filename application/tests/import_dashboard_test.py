@@ -27,9 +27,7 @@ ga_coverage_from_standards_and_keys = _mod.ga_coverage_from_standards_and_keys
 
 class GaCoverageMathTest(unittest.TestCase):
     def test_full_matrix_two_standards(self) -> None:
-        d = ga_coverage_from_standards_and_keys(
-            ["A", "B"], ["A >> B", "B >> A"]
-        )
+        d = ga_coverage_from_standards_and_keys(["A", "B"], ["A >> B", "B >> A"])
         self.assertEqual(d["directed_pairs_expected"], 2)
         self.assertEqual(d["directed_pairs_missing"], 0)
         self.assertEqual(d["directed_pairs_covered"], 2)

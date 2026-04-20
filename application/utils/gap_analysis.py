@@ -135,7 +135,9 @@ def run_gap_pair(
             try:
                 logger.info(f"Calculating gap analysis for {standards_hash}")
                 db.gap_analysis(
-                    neo_db=database.neo_db, node_names=standards, cache_key=standards_hash
+                    neo_db=database.neo_db,
+                    node_names=standards,
+                    cache_key=standards_hash,
                 )
                 res = database.get_gap_analysis_result(standards_hash)
                 return json.loads(res) if isinstance(res, str) else res

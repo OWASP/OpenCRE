@@ -18,6 +18,7 @@ _CRE_ID_TOKEN = re.compile(r"^\d{3}-\d{3}$")
 def _load_existing_cre_identity_maps() -> Tuple[Dict[str, str], Dict[str, str]]:
     try:
         from application.database import db
+
         rows = db.CRE.query.with_entities(db.CRE.external_id, db.CRE.name).all()
     except Exception:
         return {}, {}
@@ -132,5 +133,6 @@ def parse_rows_to_documents(rows: List[Dict[str, Any]]) -> ParseResult:
     all_docs: Dict[str, List[defs.Document]] = {cre_key: cres}
     all_docs.update(documents)
     base_parser_defs.validate_classification_tags(all_docs)
-    return ParseResult(results=all_docs, calculate_gap_analysis=True, calculate_embeddings=True)
-
+    return ParseResult(
+        results=all_docs, calculate_gap_analysis=True, calculate_embeddings=True
+    )

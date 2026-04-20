@@ -60,7 +60,9 @@ class TestGapAnalysisPairJob(unittest.TestCase):
     @patch("application.database.db.gap_analysis")
     @patch("application.utils.gap_analysis.time.sleep")
     @patch("application.utils.gap_analysis.redis.connect")
-    def test_run_gap_pair_waits_then_reads_cache(self, mock_connect, mock_sleep, mock_gap):
+    def test_run_gap_pair_waits_then_reads_cache(
+        self, mock_connect, mock_sleep, mock_gap
+    ):
         db = _FakeDB()
         key = gap_analysis.make_resources_key(["A", "B"])
 

@@ -106,7 +106,9 @@ def apply_changeset(
                     if _same_doc(_doc_from_node(current), incoming):
                         skipped += 1
                         continue
-                    raise ApplyConflict(f"Add conflict for key={key}: node already exists")
+                    raise ApplyConflict(
+                        f"Add conflict for key={key}: node already exists"
+                    )
                 if not dry_run:
                     sqla.session.add(
                         db.Node(
@@ -190,4 +192,3 @@ def apply_changeset(
                 run_id=run_id, staging_status="apply_failed", apply_error=str(ex)
             )
         raise
-

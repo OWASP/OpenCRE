@@ -119,9 +119,9 @@ class TestMain(unittest.TestCase):
         self.collection.standards = Mock(return_value=["CWE", "ASVS"])  # type: ignore[method-assign]
         self.collection.gap_analysis_exists = Mock(return_value=False)
         # Ensure DB structure changes so incremental-GA doesn't short-circuit.
-        register_node_mock.side_effect = (
-            lambda node, collection: collection.add_node(node)  # type: ignore[no-any-return]
-        )
+        register_node_mock.side_effect = lambda node, collection: collection.add_node(
+            node
+        )  # type: ignore[no-any-return]
 
         # Make it GA-eligible by providing both required tags.
         eligible_standard = defs.Standard(
@@ -161,9 +161,9 @@ class TestMain(unittest.TestCase):
         self.collection.standards = Mock(return_value=["CWE", "ASVS"])  # type: ignore[method-assign]
         self.collection.gap_analysis_exists = Mock(return_value=False)
         # Ensure DB structure changes so incremental-GA doesn't short-circuit.
-        register_node_mock.side_effect = (
-            lambda node, collection: collection.add_node(node)  # type: ignore[no-any-return]
-        )
+        register_node_mock.side_effect = lambda node, collection: collection.add_node(
+            node
+        )  # type: ignore[no-any-return]
 
         requirements_standard = defs.Standard(
             name="CWE",
