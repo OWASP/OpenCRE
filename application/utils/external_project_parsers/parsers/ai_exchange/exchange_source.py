@@ -3,6 +3,7 @@
 ``normalize_rows_for_master_import`` in ``csv_source`` is the contract: anything
 that feeds the main spreadsheet import should produce those column names.
 """
+
 from __future__ import annotations
 
 from typing import Any, Dict, List

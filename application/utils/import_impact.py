@@ -10,7 +10,9 @@ from application.database import db
 from application.utils import import_diff
 
 
-def impact_summary_for_run(run_id: str, collection: db.Node_collection) -> Dict[str, Any]:
+def impact_summary_for_run(
+    run_id: str, collection: db.Node_collection
+) -> Dict[str, Any]:
     cs = db.get_staged_change_set(run_id=run_id)
     if not cs:
         return {

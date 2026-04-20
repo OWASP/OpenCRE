@@ -1,4 +1,5 @@
 """MITRE ATLAS mitigations from the master mapping spreadsheet / AI exchange CSV."""
+
 from typing import Dict, List, Tuple
 
 from application.defs import cre_defs as defs

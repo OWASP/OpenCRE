@@ -1,4 +1,5 @@
 """ENISA mappings from AI exchange CSV/master-shaped rows."""
+
 from typing import Dict, List, Tuple
 
 from application.defs import cre_defs as defs

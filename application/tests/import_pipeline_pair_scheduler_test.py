@@ -26,7 +26,9 @@ class TestImportPipelinePairScheduler(unittest.TestCase):
     @patch("application.utils.redis.connect")
     @patch("application.utils.db_backend.detect_backend")
     @patch("application.prompt_client.prompt_client.PromptHandler")
-    @patch("application.utils.external_project_parsers.base_parser_defs.validate_classification_tags")
+    @patch(
+        "application.utils.external_project_parsers.base_parser_defs.validate_classification_tags"
+    )
     def test_postgres_schedules_pair_jobs_separately(
         self,
         validate_tags_mock,
@@ -43,7 +45,12 @@ class TestImportPipelinePairScheduler(unittest.TestCase):
         resolve_peers_mock,
         schedule_pairs_mock,
     ) -> None:
-        detect_backend_mock.return_value = Mock(is_postgres=True, backend="postgres", supports_pair_ga_scheduler=True, reason="test")
+        detect_backend_mock.return_value = Mock(
+            is_postgres=True,
+            backend="postgres",
+            supports_pair_ga_scheduler=True,
+            reason="test",
+        )
         redis_connect_mock.return_value = Mock()
         prompt_handler_cls_mock.return_value = Mock()
         collection = Mock()
@@ -81,10 +88,16 @@ class TestImportPipelinePairScheduler(unittest.TestCase):
         )
 
         # Standard jobs are enqueued with GA disabled; GA is moved to pair scheduler.
-        standard_job_kwargs = [c.kwargs["kwargs"] for c in enqueue_call_mock.call_args_list]
-        self.assertTrue(all(k["calculate_gap_analysis"] is False for k in standard_job_kwargs))
+        standard_job_kwargs = [
+            c.kwargs["kwargs"] for c in enqueue_call_mock.call_args_list
+        ]
+        self.assertTrue(
+            all(k["calculate_gap_analysis"] is False for k in standard_job_kwargs)
+        )
         self.assertEqual(2, schedule_pairs_mock.call_count)
-        self.assertEqual(2, wait_for_jobs_mock.call_count)  # one for import jobs, one for GA pair jobs
+        self.assertEqual(
+            2, wait_for_jobs_mock.call_count
+        )  # one for import jobs, one for GA pair jobs
         emit_import_event_mock.assert_not_called()
 
     @patch("application.cmd.cre_main.schedule_gap_analysis_pairs_with_rq")
@@ -96,7 +109,9 @@ class TestImportPipelinePairScheduler(unittest.TestCase):
     @patch("application.utils.redis.connect")
     @patch("application.utils.db_backend.detect_backend")
     @patch("application.prompt_client.prompt_client.PromptHandler")
-    @patch("application.utils.external_project_parsers.base_parser_defs.validate_classification_tags")
+    @patch(
+        "application.utils.external_project_parsers.base_parser_defs.validate_classification_tags"
+    )
     def test_non_postgres_rejects_ga_scheduler_path(
         self,
         validate_tags_mock,
@@ -110,7 +125,12 @@ class TestImportPipelinePairScheduler(unittest.TestCase):
         db_connect_mock,
         schedule_pairs_mock,
     ) -> None:
-        detect_backend_mock.return_value = Mock(is_postgres=False, backend="sqlite", supports_pair_ga_scheduler=False, reason="test")
+        detect_backend_mock.return_value = Mock(
+            is_postgres=False,
+            backend="sqlite",
+            supports_pair_ga_scheduler=False,
+            reason="test",
+        )
         redis_connect_mock.return_value = Mock()
         prompt_handler_cls_mock.return_value = Mock()
         collection = Mock()
@@ -155,7 +175,9 @@ class TestImportPipelinePairScheduler(unittest.TestCase):
     @patch("application.utils.redis.connect")
     @patch("application.utils.db_backend.detect_backend")
     @patch("application.prompt_client.prompt_client.PromptHandler")
-    @patch("application.utils.external_project_parsers.base_parser_defs.validate_classification_tags")
+    @patch(
+        "application.utils.external_project_parsers.base_parser_defs.validate_classification_tags"
+    )
     def test_postgres_retries_failed_pair_jobs_only(
         self,
         validate_tags_mock,
@@ -173,7 +195,12 @@ class TestImportPipelinePairScheduler(unittest.TestCase):
         schedule_pairs_mock,
         run_pair_job_mock,
     ) -> None:
-        detect_backend_mock.return_value = Mock(is_postgres=True, backend="postgres", supports_pair_ga_scheduler=True, reason="test")
+        detect_backend_mock.return_value = Mock(
+            is_postgres=True,
+            backend="postgres",
+            supports_pair_ga_scheduler=True,
+            reason="test",
+        )
         redis_connect_mock.return_value = Mock()
         prompt_handler_cls_mock.return_value = Mock()
         collection = Mock()
@@ -186,14 +213,23 @@ class TestImportPipelinePairScheduler(unittest.TestCase):
         )
         db_connect_mock.return_value = collection
         resolve_peers_mock.return_value = ["CWE"]
-        first_failed = Mock(is_failed=True, kwargs={"importing_name": "ASVS", "peer_name": "CWE"}, description="ASVS->CWE")
-        first_ok = Mock(is_failed=False, kwargs={"importing_name": "CWE", "peer_name": "ASVS"}, description="CWE->ASVS")
+        first_failed = Mock(
+            is_failed=True,
+            kwargs={"importing_name": "ASVS", "peer_name": "CWE"},
+            description="ASVS->CWE",
+        )
+        first_ok = Mock(
+            is_failed=False,
+            kwargs={"importing_name": "CWE", "peer_name": "ASVS"},
+            description="CWE->ASVS",
+        )
         schedule_pairs_mock.return_value = [first_failed, first_ok]
         enqueue_call_mock.return_value = Mock(is_failed=False)
         alive_bar_mock.return_value.__enter__.return_value = Mock()
         alive_bar_mock.return_value.__exit__.return_value = False
 
         import os
+
         os.environ["CRE_GA_PAIR_JOB_RETRY_ATTEMPTS"] = "1"
         try:
             import_pipeline.apply_parse_result_with_rq(
@@ -227,7 +263,9 @@ class TestImportPipelinePairScheduler(unittest.TestCase):
     @patch("application.utils.redis.connect")
     @patch("application.utils.db_backend.detect_backend")
     @patch("application.prompt_client.prompt_client.PromptHandler")
-    @patch("application.utils.external_project_parsers.base_parser_defs.validate_classification_tags")
+    @patch(
+        "application.utils.external_project_parsers.base_parser_defs.validate_classification_tags"
+    )
     def test_postgres_interrupted_pair_recovery_requeues_only_remaining_pair(
         self,
         validate_tags_mock,
@@ -297,7 +335,9 @@ class TestImportPipelinePairScheduler(unittest.TestCase):
             os.environ.pop("CRE_GA_PAIR_JOB_RETRY_ATTEMPTS", None)
 
         # The retry path should enqueue exactly one GA replay and only for failed ASVS->CWE.
-        self.assertEqual(enqueue_call_mock.call_count, 2)  # 1 standard import + 1 GA retry
+        self.assertEqual(
+            enqueue_call_mock.call_count, 2
+        )  # 1 standard import + 1 GA retry
         retry_call = enqueue_call_mock.call_args_list[-1]
         self.assertEqual(retry_call.kwargs["description"], "ASVS->CWE")
         self.assertEqual(
@@ -323,7 +363,9 @@ class TestImportPipelinePairScheduler(unittest.TestCase):
     @patch("application.utils.redis.connect")
     @patch("application.utils.db_backend.detect_backend")
     @patch("application.prompt_client.prompt_client.PromptHandler")
-    @patch("application.utils.external_project_parsers.base_parser_defs.validate_classification_tags")
+    @patch(
+        "application.utils.external_project_parsers.base_parser_defs.validate_classification_tags"
+    )
     def test_emits_ga_pair_op_counts_to_telemetry(
         self,
         validate_tags_mock,
@@ -339,7 +381,12 @@ class TestImportPipelinePairScheduler(unittest.TestCase):
         resolve_peers_mock,
         schedule_pairs_mock,
     ) -> None:
-        detect_backend_mock.return_value = Mock(is_postgres=True, backend="postgres", supports_pair_ga_scheduler=True, reason="test")
+        detect_backend_mock.return_value = Mock(
+            is_postgres=True,
+            backend="postgres",
+            supports_pair_ga_scheduler=True,
+            reason="test",
+        )
         redis_connect_mock.return_value = Mock()
         prompt_handler_cls_mock.return_value = Mock()
         collection = Mock()

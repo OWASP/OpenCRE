@@ -356,7 +356,9 @@ def _build_cre_name_to_id_map(
 ) -> Dict[str, str]:
     name_to_id: Dict[str, str] = {}
     for mapping in cre_file:
-        ch, name = get_highest_cre_name(mapping=mapping, highest_hierarchy=max_hierarchy)
+        ch, name = get_highest_cre_name(
+            mapping=mapping, highest_hierarchy=max_hierarchy
+        )
         if name is None or is_empty(name):
             continue
         row_id = str(mapping.get("CRE ID", "")).strip()
@@ -533,9 +535,7 @@ def _parse_cre_graph_and_rows(
         # (e.g. tag "Cryptography" means this CRE is Related to the Cryptography CRE).
         # Always append tags so rows with an empty "Link to other CRE" column still
         # get their tag-derived Related links registered.
-        mapping[link_key] = (
-            f'{mapping.get(link_key, "")},{",".join(cre.tags)}'
-        )
+        mapping[link_key] = f'{mapping.get(link_key, "")},{",".join(cre.tags)}'
 
         if not is_empty(str(mapping.get(link_key, "")).strip()):
             other_cres = list(
@@ -661,5 +661,3 @@ def parse_standards(
     for name, struct in standards_mapping.get("Standards", {}).items():
         links.extend(parse_standards_for_family(mapping, name, struct))
     return links
-
-

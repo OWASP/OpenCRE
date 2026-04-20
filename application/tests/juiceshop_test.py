@@ -137,4 +137,3 @@ class TestJuiceshopParser(unittest.TestCase):
   mitigationUrl: 'https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html'
   key: accessLogDisclosureChallenge
 """
-

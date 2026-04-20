@@ -1,4 +1,5 @@
 """Cloud Controls Matrix from the master mapping spreadsheet."""
+
 from typing import Dict, List, Tuple
 
 from application.defs import cre_defs as defs

@@ -64,6 +64,8 @@ def _fetch_rq_job(conn: Any, queue: Queue, job_id: str) -> Any:
         return Job.fetch(job_id, connection=conn, serializer=queue.serializer)
     except NoSuchJobError:
         return None
+
+
 # Only allow terminating IDs that look like Neo4j transaction ids (injection-safe).
 _TXN_ID_RE = re.compile(r"^neo4j-transaction-[A-Za-z0-9_-]+$")
 
@@ -74,9 +76,7 @@ def _import_all_default_database_uri() -> str:
         run_count = int(os.environ.get("RUN_COUNT", "1") or "1")
     except ValueError:
         run_count = 1
-    pg = os.environ.get(
-        "POSTGRES_URL", "postgresql://cre:password@127.0.0.1:5432/cre"
-    )
+    pg = os.environ.get("POSTGRES_URL", "postgresql://cre:password@127.0.0.1:5432/cre")
     if run_count > 1:
         return pg.strip()
     sqlite_path = REPO_ROOT / "standards_cache.sqlite"
@@ -112,18 +112,16 @@ def _maybe_init_sqlalchemy(app: Flask) -> None:
 
 
 def _dashboard_list_limit() -> int:
-    return max(1, min(int(os.environ.get("CRE_IMPORT_DASHBOARD_MAX_LIST_ITEMS", "80")), 500))
+    return max(
+        1, min(int(os.environ.get("CRE_IMPORT_DASHBOARD_MAX_LIST_ITEMS", "80")), 500)
+    )
 
 
 def _distinct_node_names_for_ntype(session: Any, ntype: str) -> list[str]:
     from application.database.db import Node
 
-    rows = (
-        session.query(Node.name).filter(Node.ntype == ntype).distinct().all()
-    )
-    return sorted(
-        {str(r[0]).strip() for r in rows if r[0] and str(r[0]).strip()}
-    )
+    rows = session.query(Node.name).filter(Node.ntype == ntype).distinct().all()
+    return sorted({str(r[0]).strip() for r in rows if r[0] and str(r[0]).strip()})
 
 
 def _distinct_resource_names_all(session: Any) -> list[str]:
@@ -186,8 +184,12 @@ def ga_coverage_from_standards_and_keys(
         "directed_pairs_missing": len(missing),
         "stale_pairs_in_storage": len(stale),
         "malformed_keys": malformed,
-        "sample_missing": [f"{a} → {b}" for a, b in sorted(missing)[: _dashboard_list_limit()]],
-        "sample_stale": [f"{a} → {b}" for a, b in sorted(stale)[: _dashboard_list_limit()]],
+        "sample_missing": [
+            f"{a} → {b}" for a, b in sorted(missing)[: _dashboard_list_limit()]
+        ],
+        "sample_stale": [
+            f"{a} → {b}" for a, b in sorted(stale)[: _dashboard_list_limit()]
+        ],
         "sample_covered": [
             f"{a} → {b}" for a, b in sorted(covered)[: min(20, _dashboard_list_limit())]
         ],
@@ -213,7 +215,9 @@ def _db_resources_and_ga_snapshot() -> tuple[dict[str, Any], dict[str, Any]]:
         session = sqla.session
         lim = _dashboard_list_limit()
 
-        standards = _distinct_node_names_for_ntype(session, defs.Credoctypes.Standard.value)
+        standards = _distinct_node_names_for_ntype(
+            session, defs.Credoctypes.Standard.value
+        )
         tools = _distinct_node_names_for_ntype(session, defs.Credoctypes.Tool.value)
         codes = _distinct_node_names_for_ntype(session, defs.Credoctypes.Code.value)
         all_names = _distinct_resource_names_all(session)
@@ -253,9 +257,7 @@ def _db_resources_and_ga_snapshot() -> tuple[dict[str, Any], dict[str, Any]]:
             "ok": True,
             "primary_cache_rows": len(keys),
         }
-        gap_analysis_db.update(
-            ga_coverage_from_standards_and_keys(standards, keys)
-        )
+        gap_analysis_db.update(ga_coverage_from_standards_and_keys(standards, keys))
 
         return resources_db, gap_analysis_db
     except Exception as exc:
@@ -445,7 +447,9 @@ def neo4j_orphan_gap_transactions(
         # If a GA job is started, assume this tx belongs to it (avoid false orphans).
         if not started_pairs:
             row = dict(tx)
-            row["orphan_reason"] = "GA-shaped query but no started GA jobs (likely crashed worker)"
+            row["orphan_reason"] = (
+                "GA-shaped query but no started GA jobs (likely crashed worker)"
+            )
             orphans.append(row)
     return orphans
 
@@ -508,11 +512,7 @@ def _neo4j_transactions() -> list[dict[str, str]]:
                         "elapsed": str(rec["elapsedTime"]),
                         "status": str(rec["status"]),
                         "query": str(rec["currentQuery"]).strip().replace("\n", " "),
-                        **(
-                            {"parameters": pm}
-                            if pm is not None
-                            else {}
-                        ),
+                        **({"parameters": pm} if pm is not None else {}),
                     }
                 )
         driver.close()
@@ -571,11 +571,7 @@ def _owner_processes_present() -> dict[str, Any]:
     except Exception:
         return {"count": 0, "samples": []}
     lines = [ln.strip() for ln in output.splitlines() if "python cre.py" in ln]
-    matches = [
-        ln
-        for ln in lines
-        if any(p in ln for p in patterns)
-    ]
+    matches = [ln for ln in lines if any(p in ln for p in patterns)]
     return {"count": len(matches), "samples": matches[:20]}
 
 
@@ -606,9 +602,7 @@ def _ga_pending_details(conn) -> list[dict[str, Any]]:
                     "description": (job.description or "").strip(),
                     "state": bucket,
                     "state_backend": (
-                        "rq:worker-running"
-                        if bucket == "started"
-                        else f"rq:{bucket}"
+                        "rq:worker-running" if bucket == "started" else f"rq:{bucket}"
                     ),
                     "age_seconds": age_s,
                     "age_hms": _fmt_age(age_s),
@@ -1021,7 +1015,10 @@ def create_app() -> Flask:
         if isinstance(ids, str):
             ids = [ids]
         if not isinstance(ids, list):
-            return jsonify({"ok": False, "error": "transaction_ids must be a list"}), 400
+            return (
+                jsonify({"ok": False, "error": "transaction_ids must be a list"}),
+                400,
+            )
         out = terminate_neo4j_transactions(ids)
         code = 200 if out.get("ok") else 400
         return jsonify(out), code

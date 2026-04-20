@@ -45,7 +45,7 @@ def upgrade():
                 )
             )
         op.execute('ALTER TABLE public.embeddings DROP CONSTRAINT IF EXISTS "uq_entry"')
-        op.execute('ALTER TABLE public.embeddings ADD COLUMN IF NOT EXISTS id VARCHAR')
+        op.execute("ALTER TABLE public.embeddings ADD COLUMN IF NOT EXISTS id VARCHAR")
         op.execute(
             "UPDATE public.embeddings "
             "SET id = md5(random()::text || clock_timestamp()::text) WHERE id IS NULL"
@@ -54,7 +54,7 @@ def upgrade():
             "ALTER TABLE public.embeddings "
             "ALTER COLUMN id SET DEFAULT md5(random()::text || clock_timestamp()::text)"
         )
-        op.execute('ALTER TABLE public.embeddings ALTER COLUMN id SET NOT NULL')
+        op.execute("ALTER TABLE public.embeddings ALTER COLUMN id SET NOT NULL")
         has_pk = conn.execute(
             sa.text(
                 """
@@ -71,12 +71,12 @@ def upgrade():
         ).scalar()
         if not has_pk:
             op.execute(
-                'ALTER TABLE public.embeddings ADD CONSTRAINT pk_embeddings_id PRIMARY KEY (id)'
+                "ALTER TABLE public.embeddings ADD CONSTRAINT pk_embeddings_id PRIMARY KEY (id)"
             )
-        op.execute('ALTER TABLE public.embeddings ALTER COLUMN embeddings SET NOT NULL')
-        op.execute('ALTER TABLE public.embeddings ALTER COLUMN doc_type SET NOT NULL')
-        op.execute('ALTER TABLE public.embeddings ALTER COLUMN cre_id DROP NOT NULL')
-        op.execute('ALTER TABLE public.embeddings ALTER COLUMN node_id DROP NOT NULL')
+        op.execute("ALTER TABLE public.embeddings ALTER COLUMN embeddings SET NOT NULL")
+        op.execute("ALTER TABLE public.embeddings ALTER COLUMN doc_type SET NOT NULL")
+        op.execute("ALTER TABLE public.embeddings ALTER COLUMN cre_id DROP NOT NULL")
+        op.execute("ALTER TABLE public.embeddings ALTER COLUMN node_id DROP NOT NULL")
         op.execute(
             "UPDATE public.embeddings SET cre_id = NULL WHERE cre_id IS NOT NULL AND btrim(cre_id) = ''"
         )
@@ -102,19 +102,29 @@ def upgrade():
                 )
             )
             batch_op.drop_constraint("uq_entry", type_="primary")
-            batch_op.alter_column("embeddings", existing_type=sa.String(), nullable=False)
+            batch_op.alter_column(
+                "embeddings", existing_type=sa.String(), nullable=False
+            )
             batch_op.alter_column("doc_type", existing_type=sa.String(), nullable=False)
             batch_op.alter_column("cre_id", existing_type=sa.String(), nullable=True)
             batch_op.alter_column("node_id", existing_type=sa.String(), nullable=True)
             batch_op.alter_column(
                 "embeddings_content", existing_type=sa.String(), nullable=True
             )
-            batch_op.alter_column("embeddings_url", existing_type=sa.String(), nullable=True)
+            batch_op.alter_column(
+                "embeddings_url", existing_type=sa.String(), nullable=True
+            )
             batch_op.create_primary_key("pk_embeddings_id", ["id"])
 
-        op.execute("UPDATE embeddings SET id = lower(hex(randomblob(16))) WHERE id IS NULL")
-        op.execute("UPDATE embeddings SET cre_id = NULL WHERE trim(ifnull(cre_id, '')) = ''")
-        op.execute("UPDATE embeddings SET node_id = NULL WHERE trim(ifnull(node_id, '')) = ''")
+        op.execute(
+            "UPDATE embeddings SET id = lower(hex(randomblob(16))) WHERE id IS NULL"
+        )
+        op.execute(
+            "UPDATE embeddings SET cre_id = NULL WHERE trim(ifnull(cre_id, '')) = ''"
+        )
+        op.execute(
+            "UPDATE embeddings SET node_id = NULL WHERE trim(ifnull(node_id, '')) = ''"
+        )
         op.execute(
             "UPDATE embeddings SET embeddings_content = NULL "
             "WHERE trim(ifnull(embeddings_content, '')) = ''"
@@ -135,13 +145,17 @@ def downgrade():
         op.execute(
             "UPDATE public.embeddings SET embeddings_content = '' WHERE embeddings_content IS NULL"
         )
-        op.execute("UPDATE public.embeddings SET embeddings_url = '' WHERE embeddings_url IS NULL")
-        op.execute('ALTER TABLE public.embeddings DROP CONSTRAINT IF EXISTS pk_embeddings_id')
-        op.execute('ALTER TABLE public.embeddings DROP COLUMN IF EXISTS id')
-        op.execute('ALTER TABLE public.embeddings ALTER COLUMN cre_id SET NOT NULL')
-        op.execute('ALTER TABLE public.embeddings ALTER COLUMN node_id SET NOT NULL')
         op.execute(
-            'ALTER TABLE public.embeddings ADD CONSTRAINT uq_entry PRIMARY KEY (doc_type, cre_id, node_id)'
+            "UPDATE public.embeddings SET embeddings_url = '' WHERE embeddings_url IS NULL"
+        )
+        op.execute(
+            "ALTER TABLE public.embeddings DROP CONSTRAINT IF EXISTS pk_embeddings_id"
+        )
+        op.execute("ALTER TABLE public.embeddings DROP COLUMN IF EXISTS id")
+        op.execute("ALTER TABLE public.embeddings ALTER COLUMN cre_id SET NOT NULL")
+        op.execute("ALTER TABLE public.embeddings ALTER COLUMN node_id SET NOT NULL")
+        op.execute(
+            "ALTER TABLE public.embeddings ADD CONSTRAINT uq_entry PRIMARY KEY (doc_type, cre_id, node_id)"
         )
     else:
         with op.batch_alter_table("embeddings", recreate="always") as batch_op:
@@ -152,6 +166,7 @@ def downgrade():
             batch_op.alter_column(
                 "embeddings_content", existing_type=sa.String(), nullable=False
             )
-            batch_op.alter_column("embeddings_url", existing_type=sa.String(), nullable=False)
+            batch_op.alter_column(
+                "embeddings_url", existing_type=sa.String(), nullable=False
+            )
             batch_op.create_primary_key("uq_entry", ["doc_type", "cre_id", "node_id"])
-

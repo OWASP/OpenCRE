@@ -134,4 +134,3 @@ class TestMasterSpreadsheetParser(unittest.TestCase):
         ):
             with self.assertRaises(ValueError):
                 master_spreadsheet_parser.parse_cre_hierarchy_from_rows(rows)
-

@@ -86,7 +86,10 @@ def _phase2_snapshots_and_staging(
         if not docs:
             continue
         first = docs[0]
-        if getattr(getattr(first, "doctype", None), "value", None) != defs.Credoctypes.Standard.value:
+        if (
+            getattr(getattr(first, "doctype", None), "value", None)
+            != defs.Credoctypes.Standard.value
+        ):
             continue
 
         snap_docs = sorted(docs, key=lambda d: getattr(d, "id", "") or "")
@@ -108,14 +111,19 @@ def _phase2_snapshots_and_staging(
                     defs.Document.from_dict(d)
                     for d in import_diff.json_loads(prev_snap.snapshot_json)
                 ]
-                new_docs = [defs.Document.from_dict(d) for d in import_diff.json_loads(snapshot_json)]
+                new_docs = [
+                    defs.Document.from_dict(d)
+                    for d in import_diff.json_loads(snapshot_json)
+                ]
                 diff = import_diff.diff_standards(
                     previous=prev_docs,  # type: ignore[arg-type]
                     new=new_docs,  # type: ignore[arg-type]
                 )
                 change_ops.extend(import_diff.diff_to_change_set(diff))
                 prev_standards = [d for d in prev_docs if isinstance(d, defs.Standard)]
-                live = import_diff.live_standard_defs_for_resource(collection, standard_name)
+                live = import_diff.live_standard_defs_for_resource(
+                    collection, standard_name
+                )
                 manual_keys |= import_diff.detect_manual_edit_keys(prev_standards, live)
 
     staging_has_conflicts = import_diff.has_conflicts(change_ops, manual_keys)
@@ -216,7 +224,10 @@ def apply_parse_result(
                 db_connection_str=db_connection_str,
             )
 
-        if parse_result.calculate_gap_analysis and os.environ.get("CRE_NO_CALCULATE_GAP_ANALYSIS") != "1":
+        if (
+            parse_result.calculate_gap_analysis
+            and os.environ.get("CRE_NO_CALCULATE_GAP_ANALYSIS") != "1"
+        ):
             caps = db_backend.detect_backend(db_connection_str)
             if not caps.is_postgres:
                 raise RuntimeError(
@@ -241,7 +252,9 @@ def apply_parse_result(
             conn = redis.connect()
             ga_jobs = []
             for importing_name in imported_standard_names:
-                peers = cre_main.resolve_ga_peer_standard_names(collection, importing_name)
+                peers = cre_main.resolve_ga_peer_standard_names(
+                    collection, importing_name
+                )
                 ga_jobs.extend(
                     cre_main.schedule_gap_analysis_pairs_with_rq(
                         collection=collection,
@@ -252,7 +265,9 @@ def apply_parse_result(
                     )
                 )
             if ga_jobs:
-                ga_retry_attempts = int(os.environ.get("CRE_GA_PAIR_JOB_RETRY_ATTEMPTS", "4"))
+                ga_retry_attempts = int(
+                    os.environ.get("CRE_GA_PAIR_JOB_RETRY_ATTEMPTS", "4")
+                )
                 attempt = 0
                 pending = list(ga_jobs)
                 while pending:
@@ -275,7 +290,9 @@ def apply_parse_result(
                         break
                     attempt += 1
                     if attempt > ga_retry_attempts:
-                        failed_labels = [str(getattr(j, "description", "")) for j in failed_jobs]
+                        failed_labels = [
+                            str(getattr(j, "description", "")) for j in failed_jobs
+                        ]
                         raise RuntimeError(
                             f"GA pair jobs failed after retries: {','.join(failed_labels)}"
                         )
@@ -314,7 +331,7 @@ def apply_parse_result(
                 status=status,
                 start_time=start_time,
                 end_time=time.time(),
-                error_message=error_msg
+                error_message=error_msg,
             )
 
 
@@ -345,7 +362,7 @@ def apply_parse_result_with_rq(
     from application.defs import cre_defs as defs
     from application.utils import db_backend
     from application.utils import gap_analysis, redis, telemetry
-    
+
     start_time = time.time()
     status = "success"
     error_msg = None
@@ -407,7 +424,9 @@ def apply_parse_result_with_rq(
             try:
                 import_list_json = json.loads(import_list)
             except json.JSONDecodeError as jde:
-                logger.error("CRE_ROOT_CSV_IMPORT_ONLY is not valid json: %s", import_list)
+                logger.error(
+                    "CRE_ROOT_CSV_IMPORT_ONLY is not valid json: %s", import_list
+                )
                 raise jde
             if isinstance(import_list_json, list):
                 import_only.extend(import_list_json)
@@ -427,9 +446,9 @@ def apply_parse_result_with_rq(
         use_pair_ga_scheduler = parse_result.calculate_gap_analysis
         planned_pair_count = 0
         for standard_name, standard_entries in docs.items():
-            if os.environ.get("CRE_NO_REIMPORT_IF_EXISTS") == "1" and database.get_nodes(
-                name=standard_name
-            ):
+            if os.environ.get(
+                "CRE_NO_REIMPORT_IF_EXISTS"
+            ) == "1" and database.get_nodes(name=standard_name):
                 logger.info(
                     "Already know of %s and CRE_NO_REIMPORT_IF_EXISTS is set, skipping",
                     standard_name,
@@ -511,7 +530,9 @@ def apply_parse_result_with_rq(
             ga_jobs = []
             for importing_name in imported_standard_names:
                 try:
-                    peers = cre_main.resolve_ga_peer_standard_names(collection, importing_name)
+                    peers = cre_main.resolve_ga_peer_standard_names(
+                        collection, importing_name
+                    )
                 except Exception:
                     peers = []
                 ga_jobs.extend(
@@ -527,7 +548,9 @@ def apply_parse_result_with_rq(
                 logger.info("GA scheduler enqueued %s pair jobs", len(ga_jobs))
                 op_counts["ga_pairs_planned"] = planned_pair_count
                 op_counts["ga_pairs_enqueued"] = len(ga_jobs)
-                ga_retry_attempts = int(os.environ.get("CRE_GA_PAIR_JOB_RETRY_ATTEMPTS", "4"))
+                ga_retry_attempts = int(
+                    os.environ.get("CRE_GA_PAIR_JOB_RETRY_ATTEMPTS", "4")
+                )
                 attempt = 0
                 pending = list(ga_jobs)
                 retried_total = 0
@@ -560,7 +583,9 @@ def apply_parse_result_with_rq(
                         break
                     attempt += 1
                     if attempt > ga_retry_attempts:
-                        failed_labels = [str(getattr(j, "description", "")) for j in failed_jobs]
+                        failed_labels = [
+                            str(getattr(j, "description", "")) for j in failed_jobs
+                        ]
                         op_counts["ga_pairs_failed"] = len(failed_jobs)
                         raise RuntimeError(
                             f"GA pair jobs failed after retries: {','.join(failed_labels)}"

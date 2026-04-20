@@ -54,7 +54,9 @@ class TestIncrementalEmbeddings(unittest.TestCase):
 
         fake_db._nodes_by_id = {"node-1": base_node}
 
-        emb = prompt_client.in_memory_embeddings.__new__(prompt_client.in_memory_embeddings)
+        emb = prompt_client.in_memory_embeddings.__new__(
+            prompt_client.in_memory_embeddings
+        )
         emb.ai_client = Mock()
         emb.ai_client.get_max_batch_size.return_value = 16
         emb.ai_client.get_text_embeddings.return_value = [[0.1, 0.2]]
@@ -106,12 +108,14 @@ class TestIncrementalEmbeddings(unittest.TestCase):
         cre2 = cre_defs.CRE(id="222-222", name="CRE-2", description="desc-2")
         fake_db._cre_by_id = {"db-1": cre1, "db-2": cre2}
 
-        unchanged_content = (
-            f"{cre1.doctype}\n name:{cre1.name}\n description:{cre1.description}\n id:{cre1.id}\n "
+        unchanged_content = f"{cre1.doctype}\n name:{cre1.name}\n description:{cre1.description}\n id:{cre1.id}\n "
+        fake_db._emb_by_id["db-1"] = SimpleNamespace(
+            embeddings_content=unchanged_content
         )
-        fake_db._emb_by_id["db-1"] = SimpleNamespace(embeddings_content=unchanged_content)
 
-        emb = prompt_client.in_memory_embeddings.__new__(prompt_client.in_memory_embeddings)
+        emb = prompt_client.in_memory_embeddings.__new__(
+            prompt_client.in_memory_embeddings
+        )
         emb.ai_client = Mock()
         emb.ai_client.get_max_batch_size.return_value = 16
         emb.ai_client.get_text_embeddings.return_value = [[0.1, 0.2]]
@@ -128,10 +132,10 @@ class TestIncrementalEmbeddings(unittest.TestCase):
         cre2 = cre_defs.CRE(id="444-444", name="CRE-4", description="desc-4")
         fake_db._cre_by_id = {"db-3": cre1, "db-4": cre2}
 
-        unchanged_content = (
-            f"{cre1.doctype}\n name:{cre1.name}\n description:{cre1.description}\n id:{cre1.id}\n "
+        unchanged_content = f"{cre1.doctype}\n name:{cre1.name}\n description:{cre1.description}\n id:{cre1.id}\n "
+        fake_db._emb_by_id["db-3"] = SimpleNamespace(
+            embeddings_content=unchanged_content
         )
-        fake_db._emb_by_id["db-3"] = SimpleNamespace(embeddings_content=unchanged_content)
 
         ph = prompt_client.PromptHandler.__new__(prompt_client.PromptHandler)
         ph.database = fake_db
@@ -193,10 +197,14 @@ class TestIncrementalEmbeddings(unittest.TestCase):
         )
         fake_db._nodes_by_id = {"node-1": current_node}
         fake_db._emb_by_id["node-1"] = SimpleNamespace(
-            embeddings_content=prompt_client.normalize_embeddings_content(old_node.__repr__())
+            embeddings_content=prompt_client.normalize_embeddings_content(
+                old_node.__repr__()
+            )
         )
 
-        emb = prompt_client.in_memory_embeddings.__new__(prompt_client.in_memory_embeddings)
+        emb = prompt_client.in_memory_embeddings.__new__(
+            prompt_client.in_memory_embeddings
+        )
         emb.ai_client = Mock()
         emb.ai_client.get_max_batch_size.return_value = 16
         emb.ai_client.get_text_embeddings.return_value = [[0.9, 0.8]]

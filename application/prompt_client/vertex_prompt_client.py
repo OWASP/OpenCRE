@@ -72,7 +72,9 @@ class VertexPromptClient:
         # (the error message we hit states: "at most 100 requests can be in one batch").
         return int(os.environ.get("VERTEX_EMBED_MAX_BATCH_SIZE", "100"))
 
-    def get_text_embeddings(self, text: str | List[str]) -> List[float] | List[List[float]]:
+    def get_text_embeddings(
+        self, text: str | List[str]
+    ) -> List[float] | List[List[float]]:
         """Text embedding with a Large Language Model.
 
         Supports batching when `text` is a list of strings.

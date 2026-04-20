@@ -8,9 +8,15 @@ class TestImportPostApply(unittest.TestCase):
     @patch("application.utils.import_post_apply.prompt_client.PromptHandler")
     @patch("application.utils.import_post_apply.cre_main.populate_neo4j_db")
     @patch("application.utils.import_post_apply.redis.wait_for_jobs")
-    @patch("application.utils.import_post_apply.cre_main.schedule_gap_analysis_pairs_with_rq")
-    @patch("application.utils.import_post_apply.cre_main.resolve_ga_peer_standard_names")
-    @patch("application.utils.import_post_apply.cre_main.resource_name_ga_eligible_in_db")
+    @patch(
+        "application.utils.import_post_apply.cre_main.schedule_gap_analysis_pairs_with_rq"
+    )
+    @patch(
+        "application.utils.import_post_apply.cre_main.resolve_ga_peer_standard_names"
+    )
+    @patch(
+        "application.utils.import_post_apply.cre_main.resource_name_ga_eligible_in_db"
+    )
     @patch("application.utils.import_post_apply.db_backend.detect_backend")
     def test_post_apply_runs_pair_level_ga_only(
         self,

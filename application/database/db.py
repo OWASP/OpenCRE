@@ -197,6 +197,7 @@ class GapAnalysisResults(BaseModel):
 
 class ImportRun(BaseModel):  # type: ignore
     """Tracks import runs for Module C diff/staging. Step 6."""
+
     __tablename__ = "import_run"
     id = sqla.Column(sqla.String, primary_key=True, default=generate_uuid)
     source = sqla.Column(sqla.String, nullable=False)
@@ -275,7 +276,9 @@ def get_latest_import_run(source: str) -> Optional[ImportRun]:
 
 def get_previous_import_run(source: str, current_run_id: str) -> Optional[ImportRun]:
     """Get the import run immediately before `current_run_id` for `source`."""
-    current = sqla.session.query(ImportRun).filter(ImportRun.id == current_run_id).first()
+    current = (
+        sqla.session.query(ImportRun).filter(ImportRun.id == current_run_id).first()
+    )
     if not current:
         return None
     return (
@@ -283,7 +286,10 @@ def get_previous_import_run(source: str, current_run_id: str) -> Optional[Import
         .filter(ImportRun.source == source)
         .filter(
             (ImportRun.created_at < current.created_at)
-            | ((ImportRun.created_at == current.created_at) & (ImportRun.id < current.id))
+            | (
+                (ImportRun.created_at == current.created_at)
+                & (ImportRun.id < current.id)
+            )
         )
         .order_by(ImportRun.created_at.desc(), ImportRun.id.desc())
         .first()
@@ -346,7 +352,11 @@ def persist_staged_change_set(
 
 
 def get_staged_change_set(*, run_id: str) -> Optional[StagedChangeSet]:
-    return sqla.session.query(StagedChangeSet).filter(StagedChangeSet.run_id == run_id).first()
+    return (
+        sqla.session.query(StagedChangeSet)
+        .filter(StagedChangeSet.run_id == run_id)
+        .first()
+    )
 
 
 def update_staged_change_set(
@@ -1348,9 +1358,7 @@ class Node_collection:
 
     def has_node_with_db_id(self, db_id: str) -> bool:
         """True if ``db_id`` is a primary key in ``node`` (any ``ntype``)."""
-        return (
-            self.session.query(Node.id).filter(Node.id == db_id).first() is not None
-        )
+        return self.session.query(Node.id).filter(Node.id == db_id).first() is not None
 
     def __get_nodes_query__(
         self,
@@ -1864,9 +1872,7 @@ class Node_collection:
             logger.warning(f"{node} has no registered type, cannot add, skipping")
             return None
 
-        logger.info(
-            f"insert node {dbnode.name}:{dbnode.section}:{dbnode.section_id}"
-        )
+        logger.info(f"insert node {dbnode.name}:{dbnode.section}:{dbnode.section_id}")
         self.session.add(dbnode)
         try:
             self.session.commit()

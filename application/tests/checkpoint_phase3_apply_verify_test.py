@@ -11,4 +11,3 @@ class TestCheckpointPhase3ApplyVerify(unittest.TestCase):
         self.assertEqual(report.apply_again_status, 200)
         self.assertEqual(report.conflict_status, 409)
         self.assertTrue(report.pass_status)
-

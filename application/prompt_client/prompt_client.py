@@ -131,7 +131,9 @@ def stable_json(v: Any) -> str:
     try:
         return json.dumps(v, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
     except TypeError:
-        return json.dumps(str(v), sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+        return json.dumps(
+            str(v), sort_keys=True, separators=(",", ":"), ensure_ascii=False
+        )
 
 
 def _embedding_text_from_node_resource_fields(node: Any) -> str:
@@ -439,7 +441,9 @@ class in_memory_embeddings:
                     batch_records.append((dbnode, node.doctype, content))
                     continue
 
-                logger.warning(f"missing embeddings id={db_id} not found in CRE or Node")
+                logger.warning(
+                    f"missing embeddings id={db_id} not found in CRE or Node"
+                )
 
             if not batch_contents:
                 continue
@@ -520,17 +524,19 @@ class PromptHandler:
                 cre = self.database.get_cre_by_db_id(cid)
                 if not cre:
                     continue
-                embedding_text = (
-                    f"{cre.doctype}\n name:{cre.name}\n description:{cre.description}\n id:{cre.id}\n "
-                )
+                embedding_text = f"{cre.doctype}\n name:{cre.name}\n description:{cre.description}\n id:{cre.id}\n "
                 if getattr(cre, "metadata", None):
                     metadata_json = stable_json(getattr(cre, "metadata", None))
                     embedding_text = f"{embedding_text}\nmetadata:{metadata_json}"
                 embedding_text = normalize_embeddings_content(embedding_text)
                 existing = self.database.get_embedding(cid)
-                if existing and normalize_embeddings_content(
-                    getattr(existing[0], "embeddings_content", None)
-                ) == embedding_text:
+                if (
+                    existing
+                    and normalize_embeddings_content(
+                        getattr(existing[0], "embeddings_content", None)
+                    )
+                    == embedding_text
+                ):
                     continue
                 pending.append(cid)
                 cre_by_id[cid] = cre

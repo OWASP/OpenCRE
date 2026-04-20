@@ -238,4 +238,3 @@ class TestImportStaging(unittest.TestCase):
             run_post_apply_effects=False,
         )
         self.assertTrue(res2.already_applied)
-

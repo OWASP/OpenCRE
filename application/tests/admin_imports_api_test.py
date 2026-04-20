@@ -54,8 +54,12 @@ class TestAdminImportsApi(unittest.TestCase):
 
     @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
     def test_admin_imports_endpoints_happy_path(self) -> None:
-        run1 = self._import_run_with_std(source="admin_api_test", version="run1", desc="one")
-        run2 = self._import_run_with_std(source="admin_api_test", version="run2", desc="one")
+        run1 = self._import_run_with_std(
+            source="admin_api_test", version="run1", desc="one"
+        )
+        run2 = self._import_run_with_std(
+            source="admin_api_test", version="run2", desc="one"
+        )
 
         with self.app.test_client() as c:
             r = c.get("/admin/imports/runs?source=admin_api_test")
@@ -227,7 +231,9 @@ class TestAdminImportsApi(unittest.TestCase):
             staging_status="pending_review",
         )
         with self.app.test_client() as c:
-            self.assertEqual(c.post(f"/admin/imports/runs/{run.id}/discard").status_code, 200)
+            self.assertEqual(
+                c.post(f"/admin/imports/runs/{run.id}/discard").status_code, 200
+            )
             r = c.post(
                 f"/admin/imports/runs/{run.id}/accept",
             )
@@ -262,4 +268,3 @@ class TestAdminImportsApi(unittest.TestCase):
             j = r.get_json()
             self.assertIn("impacted_standard_names", j)
             self.assertEqual(j["impacted_standard_names"], ["X"])
-
