@@ -632,12 +632,11 @@ class TestMain(unittest.TestCase):
         self, redis_conn_mock, enqueue_call_mock, fetch_mock, db_mock
     ) -> None:
         expected = {"job_id": "ABC"}
-        redis_conn_mock.return_value.exists.return_value = True
-        redis_conn_mock.return_value.get.return_value = json.dumps({"job_id": "hello"})
+        redis_conn_mock.return_value.get.return_value = None
         enqueue_call_mock.return_value = Mock(id="ABC")
         fetch_mock.return_value = MockJob()
-        db_mock.return_value.gap_analysis_exists.return_value = True
-        db_mock.return_value.get_gap_analysis_result.return_value = json.dumps({"job_id": "hello"})
+        db_mock.return_value.gap_analysis_exists.return_value = False
+        db_mock.return_value.get_gap_analysis_result.return_value = None
         with self.app.test_client() as client:
             response = client.get(
                 "/rest/v1/map_analysis?standard=aaa&standard=bbb",
@@ -646,6 +645,27 @@ class TestMain(unittest.TestCase):
             self.assertEqual(200, response.status_code)
             self.assertEqual(expected, json.loads(response.data))
             self.assertTrue(enqueue_call_mock.called)
+
+    @patch.object(db, "Node_collection")
+    @patch.object(rq.job.Job, "fetch")
+    @patch.object(rq.Queue, "enqueue_call")
+    @patch.object(redis, "from_url")
+    def test_gap_analysis_returns_existing_inflight_job(
+        self, redis_conn_mock, enqueue_call_mock, fetch_mock, db_mock
+    ) -> None:
+        redis_conn_mock.return_value.get.return_value = "job-1"
+        inflight = Mock()
+        inflight.get_status.return_value = rq.job.JobStatus.STARTED
+        fetch_mock.return_value = inflight
+        db_mock.return_value.get_gap_analysis_result.return_value = None
+        with self.app.test_client() as client:
+            response = client.get(
+                "/rest/v1/map_analysis?standard=aaa&standard=bbb",
+                headers={"Content-Type": "application/json"},
+            )
+            self.assertEqual(200, response.status_code)
+            self.assertEqual({"job_id": "job-1"}, json.loads(response.data))
+            enqueue_call_mock.assert_not_called()
 
     @patch.object(db, "Node_collection")
     @patch.object(rq.Queue, "enqueue_call")
@@ -672,6 +692,41 @@ class TestMain(unittest.TestCase):
             self.assertEqual("aaa", kwargs["kwargs"]["importing_name"])
             self.assertEqual("bbb", kwargs["kwargs"]["peer_name"])
             self.assertEqual(GAP_ANALYSIS_TIMEOUT, kwargs["timeout"])
+
+    @patch.object(db, "Node_collection")
+    @patch.object(db, "gap_analysis")
+    @patch.object(redis, "from_url")
+    def test_gap_analysis_fallback_without_redis(
+        self, redis_conn_mock, db_gap_analysis_mock, db_mock
+    ) -> None:
+        redis_conn_mock.side_effect = RuntimeError("redis down")
+        db_mock.return_value.get_gap_analysis_result.side_effect = [
+            None,
+            json.dumps({"result": {"k": {}}}),
+        ]
+        with self.app.test_client() as client:
+            response = client.get(
+                "/rest/v1/map_analysis?standard=aaa&standard=bbb",
+                headers={"Content-Type": "application/json"},
+            )
+            self.assertEqual(200, response.status_code)
+            self.assertEqual({"result": {"k": {}}}, json.loads(response.data))
+            db_gap_analysis_mock.assert_called_once()
+
+    @patch.dict(os.environ, {"HEROKU": "True"}, clear=False)
+    @patch.object(db, "Node_collection")
+    @patch.object(redis, "from_url")
+    def test_gap_analysis_heroku_cache_miss_returns_404(
+        self, redis_conn_mock, db_mock
+    ) -> None:
+        db_mock.return_value.get_gap_analysis_result.return_value = None
+        with self.app.test_client() as client:
+            response = client.get(
+                "/rest/v1/map_analysis?standard=aaa&standard=bbb",
+                headers={"Content-Type": "application/json"},
+            )
+            self.assertEqual(404, response.status_code)
+            redis_conn_mock.assert_not_called()
 
     @patch.object(redis, "from_url")
     @patch.object(db, "Node_collection")
