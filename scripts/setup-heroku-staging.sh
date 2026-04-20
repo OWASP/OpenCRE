@@ -42,6 +42,7 @@ die() {
 # CLI flags (override SYNC_TABLES):
 #   --embeddings
 #   --gap_analysis
+#   --delete                  run teardown flow instead of bootstrap flow
 
 PROD_APP="${PROD_APP:-}"
 STAGING_APP="${STAGING_APP:-}"
@@ -69,6 +70,7 @@ SYNC_TABLES="${SYNC_TABLES:-all}"
 
 SYNC_EMBEDDINGS=0
 SYNC_GAP_ANALYSIS=0
+DELETE_MODE=0
 for arg in "$@"; do
   case "${arg}" in
     --embeddings)
@@ -77,8 +79,11 @@ for arg in "$@"; do
     --gap_analysis)
       SYNC_GAP_ANALYSIS=1
       ;;
+    --delete)
+      DELETE_MODE=1
+      ;;
     *)
-      die "Unknown argument: ${arg} (supported: --embeddings, --gap_analysis)"
+      die "Unknown argument: ${arg} (supported: --embeddings, --gap_analysis, --delete)"
       ;;
   esac
 done
@@ -111,10 +116,12 @@ else
   die "Invalid SYNC_TABLES='${SYNC_TABLES}' (expected all|embeddings|gap_analysis|embeddings,gap_analysis)"
 fi
 
-[[ -n "${PROD_APP}" ]] || die "PROD_APP is required"
 [[ -n "${STAGING_APP}" ]] || die "STAGING_APP is required"
-[[ -n "${LOCAL_SQLITE_DB}" ]] || die "LOCAL_SQLITE_DB is required"
-[[ -f "${LOCAL_SQLITE_DB}" ]] || die "LOCAL_SQLITE_DB does not exist: ${LOCAL_SQLITE_DB}"
+if [[ "${DELETE_MODE}" != "1" ]]; then
+  [[ -n "${PROD_APP}" ]] || die "PROD_APP is required"
+  [[ -n "${LOCAL_SQLITE_DB}" ]] || die "LOCAL_SQLITE_DB is required"
+  [[ -f "${LOCAL_SQLITE_DB}" ]] || die "LOCAL_SQLITE_DB does not exist: ${LOCAL_SQLITE_DB}"
+fi
 
 command -v heroku >/dev/null 2>&1 || die "heroku CLI not found"
 command -v git >/dev/null 2>&1 || die "git not found"
@@ -446,7 +453,27 @@ ensure_heroku_acm() {
   heroku certs:auto -a "${STAGING_APP}" || true
 }
 
+delete_staging_resources() {
+  local script_dir teardown_script
+  script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+  teardown_script="${script_dir}/teardown-heroku-staging.sh"
+  [[ -f "${teardown_script}" ]] || die "teardown script not found: ${teardown_script}"
+
+  log "Delete mode enabled; delegating to teardown script"
+  STAGING_APP="${STAGING_APP}" \
+  STAGING_DOMAIN="${STAGING_DOMAIN}" \
+  DESTROY_DB="${DESTROY_DB:-1}" \
+  DESTROY_APP="${DESTROY_APP:-0}" \
+  REMOVE_DOMAIN_ONLY="${REMOVE_DOMAIN_ONLY:-0}" \
+  CONFIRM="${CONFIRM:-}" \
+  bash "${teardown_script}"
+}
+
 main() {
+  if [[ "${DELETE_MODE}" == "1" ]]; then
+    delete_staging_resources
+    return
+  fi
   if [[ "${SCOPE_ALL}" == "1" ]]; then
     log "Sync scope: all tables"
   else
