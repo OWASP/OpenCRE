@@ -656,8 +656,14 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
         BaseParser().call_importers(db_connection_str=args.cache_file)
 
     if args.generate_embeddings:
+        from application.validate_config import validate_embeddings_config
+
+        validate_embeddings_config()
         generate_embeddings(args.cache_file)
     if args.populate_neo4j_db:
+        from application.validate_config import validate_neo4j_config
+
+        validate_neo4j_config()
         populate_neo4j_db(args.cache_file)
     if args.start_worker:
         from application.worker import start_worker
