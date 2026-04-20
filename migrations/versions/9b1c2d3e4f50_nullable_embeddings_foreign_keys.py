@@ -22,6 +22,28 @@ def upgrade():
     dialect = conn.dialect.name
 
     if dialect == "postgresql":
+        # Handle both legacy composite PK names and environments where the table
+        # already exists with a different PK from prior bootstrap/sync paths.
+        pk_name = conn.execute(
+            sa.text(
+                """
+                SELECT c.conname
+                FROM pg_constraint c
+                JOIN pg_class t ON t.oid = c.conrelid
+                JOIN pg_namespace n ON n.oid = t.relnamespace
+                WHERE c.contype = 'p'
+                  AND n.nspname = 'public'
+                  AND t.relname = 'embeddings'
+                LIMIT 1
+                """
+            )
+        ).scalar()
+        if pk_name:
+            op.execute(
+                sa.text(
+                    f'ALTER TABLE public.embeddings DROP CONSTRAINT IF EXISTS "{pk_name}"'
+                )
+            )
         op.execute('ALTER TABLE public.embeddings DROP CONSTRAINT IF EXISTS "uq_entry"')
         op.execute('ALTER TABLE public.embeddings ADD COLUMN IF NOT EXISTS id VARCHAR')
         op.execute(
@@ -33,9 +55,24 @@ def upgrade():
             "ALTER COLUMN id SET DEFAULT md5(random()::text || clock_timestamp()::text)"
         )
         op.execute('ALTER TABLE public.embeddings ALTER COLUMN id SET NOT NULL')
-        op.execute(
-            'ALTER TABLE public.embeddings ADD CONSTRAINT pk_embeddings_id PRIMARY KEY (id)'
-        )
+        has_pk = conn.execute(
+            sa.text(
+                """
+                SELECT 1
+                FROM pg_constraint c
+                JOIN pg_class t ON t.oid = c.conrelid
+                JOIN pg_namespace n ON n.oid = t.relnamespace
+                WHERE c.contype = 'p'
+                  AND n.nspname = 'public'
+                  AND t.relname = 'embeddings'
+                LIMIT 1
+                """
+            )
+        ).scalar()
+        if not has_pk:
+            op.execute(
+                'ALTER TABLE public.embeddings ADD CONSTRAINT pk_embeddings_id PRIMARY KEY (id)'
+            )
         op.execute('ALTER TABLE public.embeddings ALTER COLUMN embeddings SET NOT NULL')
         op.execute('ALTER TABLE public.embeddings ALTER COLUMN doc_type SET NOT NULL')
         op.execute('ALTER TABLE public.embeddings ALTER COLUMN cre_id DROP NOT NULL')
