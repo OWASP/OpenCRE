@@ -423,7 +423,7 @@ class SameRel(StructuredRel):
 
 class NeoDocument(StructuredNode):
     document_id = UniqueIdProperty()
-    name = StringProperty(required=True)
+    name = StringProperty(required=True, index=True)
     description = StringProperty(required=True)
     tags = ArrayProperty(StringProperty())
     doctype = StringProperty(required=True)
@@ -457,9 +457,9 @@ class NeoNode(NeoDocument):
 
 
 class NeoStandard(NeoNode):
-    section = StringProperty()
-    subsection = StringProperty()
-    section_id = StringProperty()
+    section = StringProperty(index=True)
+    subsection = StringProperty(index=True)
+    section_id = StringProperty(index=True)
 
     @classmethod
     def to_cre_def(self, node, parse_links=True) -> cre_defs.Standard:
@@ -533,7 +533,7 @@ class NeoCode(NeoNode):
 
 
 class NeoCRE(NeoDocument):  # type: ignore
-    external_id = StringProperty()
+    external_id = StringProperty(index=True)
     contains = RelationshipTo("NeoCRE", "CONTAINS", model=ContainsRel)
     contained_in = RelationshipFrom("NeoCRE", "CONTAINS", model=ContainsRel)
     linked = RelationshipTo("NeoStandard", "LINKED_TO", model=LinkedToRel)
