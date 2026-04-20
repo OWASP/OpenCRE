@@ -1,5 +1,6 @@
 import os
 import subprocess
+import sys
 import tempfile
 import unittest
 
@@ -7,6 +8,8 @@ from scripts import checkpoint_step3_verify
 
 
 class TestCheckpointStep3Verify(unittest.TestCase):
+    REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+
     def test_run_checkpoint3_with_manual_edit(self) -> None:
         db_path = tempfile.mkstemp(prefix="cp3_test_", suffix=".sqlite")[1]
         report = checkpoint_step3_verify.run_checkpoint_3_verify(
@@ -33,16 +36,15 @@ class TestCheckpointStep3Verify(unittest.TestCase):
         db_path = tempfile.mkstemp(prefix="cp3_script_", suffix=".sqlite")[1]
         proc = subprocess.run(
             [
-                "python3",
+                sys.executable,
                 "scripts/checkpoint_step3_verify.py",
                 "--db",
                 db_path,
             ],
-            cwd="/home/sg/Projects/OpenCRE",
+            cwd=self.REPO_ROOT,
             capture_output=True,
             text=True,
             check=False,
         )
         self.assertEqual(proc.returncode, 0, proc.stdout + "\n" + proc.stderr)
         self.assertIn("Checkpoint3: PASS", proc.stdout)
-
