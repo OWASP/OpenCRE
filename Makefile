@@ -57,7 +57,7 @@ e2e:
 test:
 	[ -d "./venv" ] && . ./venv/bin/activate &&\
 	export FLASK_APP="$(CURDIR)/cre.py" &&\
-	flask routes && flask test
+	flask routes && python -m unittest discover -s application/tests -p "*_test.py"
 
 cover:
 	. ./venv/bin/activate && FLASK_APP=cre.py FLASK_CONFIG=testing flask test --cover
