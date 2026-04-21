@@ -256,7 +256,9 @@ def _db_resources_and_ga_snapshot() -> tuple[dict[str, Any], dict[str, Any]]:
             .filter(not_(GapAnalysisResults.cache_key.like("% >> %->%")))
             .all()
         )
-        from application.utils.gap_analysis import primary_gap_analysis_payload_is_material
+        from application.utils.gap_analysis import (
+            primary_gap_analysis_payload_is_material,
+        )
 
         keys: list[str] = []
         empty_primary_placeholders = 0

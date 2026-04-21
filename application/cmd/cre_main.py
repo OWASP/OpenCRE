@@ -683,7 +683,9 @@ def _missing_ga_pairs(collection: db.Node_collection) -> List[Tuple[str, str]]:
 
     standards = ga_matrix_standard_names(collection)
     rows = (
-        collection.session.query(db.GapAnalysisResults.cache_key, db.GapAnalysisResults.ga_object)
+        collection.session.query(
+            db.GapAnalysisResults.cache_key, db.GapAnalysisResults.ga_object
+        )
         .filter(not_(db.GapAnalysisResults.cache_key.like("% >> %->%")))
         .all()
     )

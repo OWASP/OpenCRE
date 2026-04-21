@@ -68,9 +68,7 @@ def main() -> int:
         )
         return 2
 
-    os.environ.setdefault(
-        "NEO4J_URL", "bolt://neo4j:password@127.0.0.1:7687"
-    )
+    os.environ.setdefault("NEO4J_URL", "bolt://neo4j:password@127.0.0.1:7687")
     os.environ.setdefault("NO_LOAD_GRAPH_DB", "1")
 
     from neomodel import config
@@ -98,7 +96,10 @@ def main() -> int:
 
     empty_primary = count_empty_primary_gap_rows(collection.session, GapAnalysisResults)
     if empty_primary:
-        logging.error("Found %s primary gap_analysis rows with empty/non-material result", empty_primary)
+        logging.error(
+            "Found %s primary gap_analysis rows with empty/non-material result",
+            empty_primary,
+        )
 
     mismatches: list[dict[str, object]] = []
     neo = NEO_DB.instance()
