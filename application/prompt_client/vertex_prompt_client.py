@@ -72,16 +72,19 @@ def _log_genai_client_error(context: str, exc: genai.errors.ClientError) -> None
 
 def _is_heroku_web_dyno() -> bool:
     """Heroku sets DYNO=web.* on HTTP dynos; the router enforces a ~30s request window."""
-    dyno = os.environ.get("DYNO", "")
+    dyno = os.environ.get("DYNO", "").lower()
     return dyno.startswith("web.")
 
 
 def _effective_gemini_generate_retry_settings() -> tuple[int, int]:
     """(max_retries, sleep_seconds) for generate_content; env vars always override."""
     if _is_heroku_web_dyno():
+        # No in-request sleeps by default: embedding + first LLM call already consume most
+        # of Gunicorn's ~30s worker budget; sleeping for backoff triggers WORKER TIMEOUT and
+        # a 500. Fail fast so /rest/v1/completion can return 503 JSON instead.
         return (
-            int(os.environ.get("GEMINI_GENERATE_MAX_RETRIES", "1")),
-            int(os.environ.get("GEMINI_GENERATE_RETRY_SLEEP_SECONDS", "6")),
+            int(os.environ.get("GEMINI_GENERATE_MAX_RETRIES", "0")),
+            int(os.environ.get("GEMINI_GENERATE_RETRY_SLEEP_SECONDS", "0")),
         )
     return (
         int(os.environ.get("GEMINI_GENERATE_MAX_RETRIES", "3")),
@@ -93,8 +96,8 @@ def _effective_vertex_embed_retry_settings() -> tuple[int, int]:
     """(max_retries, sleep_seconds) for embed_content; env vars always override."""
     if _is_heroku_web_dyno():
         return (
-            int(os.environ.get("VERTEX_EMBED_MAX_RETRIES", "1")),
-            int(os.environ.get("VERTEX_EMBED_RETRY_SLEEP_SECONDS", "6")),
+            int(os.environ.get("VERTEX_EMBED_MAX_RETRIES", "0")),
+            int(os.environ.get("VERTEX_EMBED_RETRY_SLEEP_SECONDS", "0")),
         )
     return (
         int(os.environ.get("VERTEX_EMBED_MAX_RETRIES", "3")),
@@ -143,8 +146,8 @@ class VertexPromptClient:
 
         Configure via ``GEMINI_GENERATE_MAX_RETRIES`` and
         ``GEMINI_GENERATE_RETRY_SLEEP_SECONDS``. On Heroku ``web.*`` dynos the
-        defaults are reduced so the request can finish before the ~30s router
-        timeout (long sleeps used to abort the Gunicorn worker mid-request).
+        defaults avoid blocking sleeps on Heroku web dynos so Gunicorn does not
+        hit WORKER TIMEOUT while backing off from 429 (set env vars to opt in).
         """
         max_retries, retry_sleep_seconds = _effective_gemini_generate_retry_settings()
         for attempt in range(max_retries + 1):
