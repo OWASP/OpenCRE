@@ -61,11 +61,7 @@ export const SearchBar = () => {
       </form>
       {/* Error text */}
       {search.error && (
-        <p
-          id={errorId}
-          className="search-error"
-          role="alert"
-        >
+        <p id={errorId} className="search-error" role="alert">
           {search.error}
         </p>
       )}
