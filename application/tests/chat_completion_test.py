@@ -50,7 +50,7 @@ class TestChatCompletion(unittest.TestCase):
         self.assertIn("error", data)
         self.assertIn("rate-limited", data["error"])
 
-    def test_completion_propagates_non_429_genai_error(self) -> None:
+    def test_completion_returns_500_on_non_429_genai_error(self) -> None:
         os.environ["NO_LOGIN"] = "1"
         err = genai_errors.ClientError(
             400,
@@ -66,13 +66,15 @@ class TestChatCompletion(unittest.TestCase):
         with patch("application.prompt_client.prompt_client.PromptHandler") as mock_ph:
             mock_ph.return_value.generate_text.side_effect = err
             with self.app.test_client() as client:
-                with self.assertRaises(genai_errors.ClientError) as ctx:
-                    client.post(
-                        "/rest/v1/completion",
-                        json={"prompt": "test"},
-                        content_type="application/json",
-                    )
-                self.assertIs(ctx.exception, err)
+                response = client.post(
+                    "/rest/v1/completion",
+                    json={"prompt": "test"},
+                    content_type="application/json",
+                )
+        self.assertEqual(500, response.status_code)
+        data = json.loads(response.data)
+        self.assertIn("error", data)
+        self.assertIn("AI Service Error", data["error"])
 
 
 if __name__ == "__main__":
