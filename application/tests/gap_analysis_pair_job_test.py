@@ -34,7 +34,9 @@ class TestGapAnalysisPairJob(unittest.TestCase):
         self.assertFalse(g.primary_gap_analysis_payload_is_material("{}"))
         self.assertFalse(g.primary_gap_analysis_payload_is_material('{"result":{}}'))
         self.assertFalse(g.primary_gap_analysis_payload_is_material('{"result":[]}'))
-        self.assertTrue(g.primary_gap_analysis_payload_is_material('{"result":{"x":1}}'))
+        self.assertTrue(
+            g.primary_gap_analysis_payload_is_material('{"result":{"x":1}}')
+        )
         self.assertTrue(g.primary_gap_analysis_payload_is_material('{"result":[1]}'))
 
     @patch("application.utils.gap_analysis.redis.connect")

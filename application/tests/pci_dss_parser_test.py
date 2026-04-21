@@ -5,8 +5,12 @@ from application.utils.external_project_parsers.parsers.pci_dss import PciDss
 
 
 class TestPciDssParser(unittest.TestCase):
-    @patch("application.utils.external_project_parsers.parsers.pci_dss.prompt_client.PromptHandler")
-    def test_parse_skips_standard_fallback_when_no_standard_id(self, prompt_handler_mock):
+    @patch(
+        "application.utils.external_project_parsers.parsers.pci_dss.prompt_client.PromptHandler"
+    )
+    def test_parse_skips_standard_fallback_when_no_standard_id(
+        self, prompt_handler_mock
+    ):
         parser = PciDss()
 
         cache = Mock()
@@ -36,7 +40,11 @@ class TestPciDssParser(unittest.TestCase):
         self.assertEqual(1, len(out))
         self.assertEqual(1, cache.get_nodes.call_count)
         self.assertEqual(
-            {"name": "PCI DSS", "section": "Test requirement text", "sectionID": "1.1.1"},
+            {
+                "name": "PCI DSS",
+                "section": "Test requirement text",
+                "sectionID": "1.1.1",
+            },
             cache.get_nodes.call_args.kwargs,
         )
         prompt.generate_embeddings_for.assert_called_once()

@@ -445,8 +445,7 @@ def diff_databases(
         return {
             k
             for k, v in ga_map.items()
-            if "->" not in k
-            and primary_gap_analysis_payload_is_material(str(v or ""))
+            if "->" not in k and primary_gap_analysis_payload_is_material(str(v or ""))
         }
 
     i_ga_mat = _material_primary_keys(i_ga)

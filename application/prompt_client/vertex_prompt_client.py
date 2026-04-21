@@ -114,7 +114,9 @@ class VertexPromptClient:
                     f"(attempt {attempt + 1}/{max_retries + 1}, sleep {retry_sleep_seconds}s)"
                 )
                 time.sleep(retry_sleep_seconds)
-        raise RuntimeError("unreachable: Gemini generate retry loop exited unexpectedly")
+        raise RuntimeError(
+            "unreachable: Gemini generate retry loop exited unexpectedly"
+        )
 
     def get_max_batch_size(self) -> int:
         """
