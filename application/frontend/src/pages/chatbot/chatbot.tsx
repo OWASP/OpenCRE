@@ -8,7 +8,6 @@ import { oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { Button, Container, Form, GridRow, Header, Icon } from 'semantic-ui-react';
 import { Grid } from 'semantic-ui-react';
 
-
 import { useEnvironment } from '../../hooks';
 import { Document } from '../../types';
 

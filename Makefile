@@ -8,6 +8,8 @@ prod-run:
 docker-neo4j-rm:
 	docker stop cre-neo4j
 	docker rm -f cre-neo4j
+	docker volume inspect cre_neo4j_data >/dev/null 2>&1 || docker volume create cre_neo4j_data
+	docker volume inspect cre_neo4j_logs >/dev/null 2>&1 || docker volume create cre_neo4j_logs
 	docker volume rm cre_neo4j_data
 	docker volume rm cre_neo4j_logs
 	# rm -rf .neo4j
@@ -55,7 +57,7 @@ e2e:
 test:
 	[ -d "./venv" ] && . ./venv/bin/activate &&\
 	export FLASK_APP="$(CURDIR)/cre.py" &&\
-	flask routes && flask test
+	flask routes && python -m unittest discover -s application/tests -p "*_test.py"
 
 cover:
 	. ./venv/bin/activate && FLASK_APP=cre.py FLASK_CONFIG=testing flask test --cover
@@ -127,7 +129,7 @@ import-neo4j:
 	[ -d "./venv" ] && . ./venv/bin/activate &&\
 	export FLASK_APP="$(CURDIR)/cre.py" && python cre.py --populate_neo4j_db
 
-preload-map-analysis:
-	$(shell RUN_COUNT=5 bash ./scripts/preload_gap_analysis.sh)
+backfill-gap-analysis:
+	RUN_COUNT=8 bash ./scripts/backfill_gap_analysis.sh
 
 all: clean lint test dev dev-run

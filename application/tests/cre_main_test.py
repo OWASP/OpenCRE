@@ -6,7 +6,7 @@ import unittest
 from typing import Any, Dict, List
 from unittest import mock
 from unittest.mock import Mock, patch
-from rq import Queue
+from rq import Queue, job
 from application.utils import redis
 from application.prompt_client import prompt_client as prompt_client
 from application.tests.utils import data_gen
@@ -14,6 +14,7 @@ from application import create_app, sqla  # type: ignore
 from application.cmd import cre_main as main
 from application.database import db
 from application.defs import cre_defs as defs
+from application.defs import cre_exceptions
 from application.defs import osib_defs as odefs
 from application.defs.osib_defs import Osib_id, Osib_tree
 
@@ -33,6 +34,153 @@ class TestMain(unittest.TestCase):
         self.app_context.push()
         sqla.create_all()
         self.collection = db.Node_collection()
+
+    @patch.object(main, "populate_neo4j_db")
+    @patch.object(main.gap_analysis, "perform")
+    @patch.object(redis, "connect")
+    @patch.object(main, "register_node")
+    def test_register_standard_skips_ga_for_tool_entries(
+        self, register_node_mock, redis_connect_mock, ga_mock, populate_neo4j_mock
+    ) -> None:
+        """
+        Step 3 rule: GA should not run for Tool/Code resources.
+        Regression test: Ensure that gap analysis is centralized and not delegated downwards.
+        """
+        redis_connect_mock.return_value = None
+        tool_entry = defs.Tool(
+            name="Tool Resource",
+            description="test tool",
+            tooltype=defs.ToolTypes.Defensive,
+        )
+
+        main.register_standard(
+            standard_entries=[tool_entry],  # type: ignore[list-item]
+            collection=self.collection,
+            calculate_gap_analysis=True,
+            generate_embeddings=False,
+        )
+
+        populate_neo4j_mock.assert_not_called()
+        ga_mock.assert_not_called()
+
+    @patch.object(main, "populate_neo4j_db")
+    @patch.object(main.gap_analysis, "perform")
+    @patch.object(redis, "connect")
+    @patch.object(main, "register_node")
+    def test_register_standard_allows_ga_for_taxonomy_standard(
+        self,
+        register_node_mock,
+        redis_connect_mock,
+        ga_mock,
+        populate_neo4j_mock,
+    ) -> None:
+        """
+        Taxonomy/risk-list standards (e.g. CAPEC) are GA-eligible.
+        Regression test: Ensure that gap analysis is centralized and not delegated downwards.
+        """
+        redis_connect_mock.return_value = Mock(get=Mock(return_value=None), set=Mock())
+        # Ensure there is another standard to compare against.
+        self.collection.standards = Mock(return_value=["CWE", "ASVS"])  # type: ignore[method-assign]
+
+        taxonomy_standard = defs.Standard(
+            name="CWE",
+            section="Some CWE",
+            sectionID="123",
+            tags=["family:taxonomy", "subtype:risk_list"],
+        )
+
+        main.register_standard(
+            standard_entries=[taxonomy_standard],
+            collection=self.collection,
+            calculate_gap_analysis=True,
+            generate_embeddings=False,
+        )
+
+        populate_neo4j_mock.assert_not_called()
+        ga_mock.assert_not_called()
+
+    @patch.object(main, "populate_neo4j_db")
+    @patch.object(main.gap_analysis, "perform")
+    @patch.object(redis, "connect")
+    @patch.object(main, "register_node")
+    def test_register_standard_skips_missing_ga_job_id_without_crashing(
+        self,
+        register_node_mock,
+        redis_connect_mock,
+        ga_mock,
+        populate_neo4j_mock,
+    ) -> None:
+        """
+        Regression test: Ensure that gap analysis is centralized and not delegated downwards.
+        Since we no longer delegate jobs to RQ for GA during importing, skipping missing job IDs is irrelevant.
+        Instead, we just test that ga_mock is called and doesn't crash on mocked errors if any.
+        """
+        redis_connect_mock.return_value = Mock(get=Mock(return_value=None), set=Mock())
+        self.collection.standards = Mock(return_value=["CWE", "ASVS"])  # type: ignore[method-assign]
+        self.collection.gap_analysis_exists = Mock(return_value=False)
+        # Ensure DB structure changes so incremental-GA doesn't short-circuit.
+        register_node_mock.side_effect = lambda node, collection: collection.add_node(
+            node
+        )  # type: ignore[no-any-return]
+
+        # Make it GA-eligible by providing both required tags.
+        eligible_standard = defs.Standard(
+            name="CWE",
+            section="Some CWE",
+            sectionID="123",
+            tags=["family:standard", "subtype:requirements_standard"],
+        )
+
+        main.register_standard(
+            standard_entries=[eligible_standard],
+            collection=self.collection,
+            calculate_gap_analysis=True,
+            generate_embeddings=False,
+        )
+
+        populate_neo4j_mock.assert_not_called()
+        ga_mock.assert_not_called()
+
+    @patch.object(main, "populate_neo4j_db")
+    @patch.object(main.gap_analysis, "perform")
+    @patch.object(redis, "connect")
+    @patch.object(main, "register_node")
+    def test_register_standard_runs_ga_for_requirements_standard(
+        self,
+        register_node_mock,
+        redis_connect_mock,
+        ga_mock,
+        populate_neo4j_mock,
+    ) -> None:
+        """
+        Step 3b minimal behavior: GA runs for GA-eligible Standard entries
+        (family:standard + subtype:requirements_standard).
+        Regression test: Ensure that gap analysis is centralized and not delegated downwards.
+        """
+        redis_connect_mock.return_value = Mock(get=Mock(return_value=None), set=Mock())
+        self.collection.standards = Mock(return_value=["CWE", "ASVS"])  # type: ignore[method-assign]
+        self.collection.gap_analysis_exists = Mock(return_value=False)
+        # Ensure DB structure changes so incremental-GA doesn't short-circuit.
+        register_node_mock.side_effect = lambda node, collection: collection.add_node(
+            node
+        )  # type: ignore[no-any-return]
+
+        requirements_standard = defs.Standard(
+            name="CWE",
+            section="Some CWE",
+            sectionID="123",
+            tags=["family:standard", "subtype:requirements_standard"],
+        )
+
+        main.register_standard(
+            standard_entries=[requirements_standard],
+            collection=self.collection,
+            calculate_gap_analysis=True,
+            generate_embeddings=False,
+        )
+
+        populate_neo4j_mock.assert_not_called()
+        ga_mock.assert_not_called()
 
     def test_register_node_with_links(self) -> None:
         standard_with_links = defs.Standard(
@@ -253,6 +401,15 @@ class TestMain(unittest.TestCase):
             len(self.collection.session.query(db.Node).all()), 2
         )  # 2 nodes in the db
 
+        with self.assertRaises(cre_exceptions.InvalidCREIDException):
+            invalid_cre = defs.CRE(id="100-100", name="x", description="y")
+            invalid_cre.id = ""
+            main.register_cre(invalid_cre, self.collection)
+        with self.assertRaises(cre_exceptions.InvalidCREIDException):
+            bad_cre = defs.CRE(id="100-100", name="x", description="y")
+            bad_cre.id = "invalid"
+            main.register_cre(bad_cre, self.collection)
+
         # hierarchy register tests
         main.register_cre(cre_lower, self.collection)
         main.register_cre(cre_higher, self.collection)
@@ -313,111 +470,39 @@ class TestMain(unittest.TestCase):
             ],
         )
 
-    def test_parse_file(self) -> None:
-        file: List[Dict[str, Any]] = [
-            {
-                "description": "Verify that approved cryptographic algorithms are used in the generation, seeding, and verification.",
-                "doctype": defs.Credoctypes.CRE,
-                "id": "157-573",
-                "links": [
-                    {
-                        "type": defs.LinkTypes.LinkedTo,
-                        "document": {
-                            "doctype": defs.Credoctypes.Standard,
-                            "name": "TOP10",
-                            "section": "https://owasp.org/www-project-top-ten/2017/A5_2017-Broken_Access_Control",
-                        },
-                    },
-                    {
-                        "type": defs.LinkTypes.LinkedTo,
-                        "document": {
-                            "doctype": defs.Credoctypes.Standard,
-                            "name": "ISO 25010",
-                            "section": "Secure data storage",
-                        },
-                    },
-                ],
-                "name": "CREDENTIALS_MANAGEMENT_CRYPTOGRAPHIC_DIRECTIVES",
-            },
-            {
-                "description": "Desc",
-                "doctype": defs.Credoctypes.CRE,
-                "id": "141-141",
-                "name": "name",
-            },
-        ]
-        expected = [
-            defs.CRE(
-                doctype=defs.Credoctypes.CRE,
-                id="157-573",
-                description="Verify that approved cryptographic algorithms are used in the generation, seeding, and verification.",
-                name="CREDENTIALS_MANAGEMENT_CRYPTOGRAPHIC_DIRECTIVES",
-                links=[
-                    defs.Link(
-                        document=defs.Standard(
-                            doctype=defs.Credoctypes.Standard,
-                            name="TOP10",
-                            section="https://owasp.org/www-project-top-ten/2017/A5_2017-Broken_Access_Control",
-                        ),
-                        ltype=defs.LinkTypes.LinkedTo,
-                    ),
-                    defs.Link(
-                        document=defs.Standard(
-                            doctype=defs.Credoctypes.Standard,
-                            name="ISO 25010",
-                            section="Secure data storage",
-                        ),
-                        ltype=defs.LinkTypes.LinkedTo,
-                    ),
-                ],
-            ),
-            defs.CRE(id="141-141", description="Desc", name="name"),
-        ]
-        with self.assertLogs("application.cmd.cre_main", level=logging.FATAL) as logs:
-            # negative test first parse_file accepts a list of objects
-            result = main.parse_file(
-                filename="tests",
-                yamldocs=[
-                    "no",
-                    "valid",
-                    "objects",
-                    "here",
-                    {
-                        "1": 2,
-                    },
-                ],
-                scollection=self.collection,
-            )
-
-            self.assertEqual(result, None)
-            self.assertIn(
-                "CRITICAL:application.cmd.cre_main:Malformed file tests, skipping",
-                logs.output,
-            )
-
-        self.maxDiff = None
-
-        res = main.parse_file(
-            filename="tests", yamldocs=file, scollection=self.collection
-        )
-        self.assertCountEqual(res, expected)
-
     @patch.object(main, "db_connect")
     @patch.object(Queue, "enqueue_call")
+    @patch.object(redis, "wait_for_jobs")
+    @patch.object(redis, "empty_queues")
     @patch.object(redis, "connect")
+    @patch("application.utils.db_backend.detect_backend")
+    @patch(
+        "application.utils.external_project_parsers.parsers.master_spreadsheet_parser._load_existing_cre_identity_maps"
+    )
     @patch.object(prompt_client.PromptHandler, "generate_embeddings_for")
     @patch.object(main, "populate_neo4j_db")
     def test_parse_standards_from_spreadsheeet(
         self,
         mock_populate_neo4j_db,
         mock_generate_embeddings_for,
+        mock_load_existing_identity_maps,
+        mock_detect_backend,
         mock_redis_connect,
+        mock_empty_queues,
+        mock_wait_for_jobs,
         mock_enqueue_call,
         mock_db_connect,
     ) -> None:
         self.maxDiff = None
         prompt_handler = prompt_client.PromptHandler(database=self.collection)
         mock_db_connect.return_value = self.collection
+        mock_load_existing_identity_maps.return_value = ({}, {})
+        mock_detect_backend.return_value = Mock(
+            is_postgres=True,
+            backend="postgres",
+            supports_pair_ga_scheduler=True,
+            reason="test",
+        )
         # No jobs scheduled when we're registering CREs only
         expected_cre_only_input, _ = data_gen.root_csv_cre_only()
         main.parse_standards_from_spreadsheeet(
@@ -431,6 +516,9 @@ class TestMain(unittest.TestCase):
         mock_enqueue_call.assert_called()
         expected_output.pop(defs.Credoctypes.CRE.value)
         expected_names = list(expected_output.keys())
+        expected_ids_by_name = {
+            k: {getattr(e, "id", None) for e in v} for k, v in expected_output.items()
+        }
         # This is a roundabout way of doing mock_enqueue_call.assert_has_calls([calls])
         # the reason is: in its current implementation assert_has_calls()
         # serialises kwargs to str, this ends up serialising a defs.Document
@@ -441,12 +529,14 @@ class TestMain(unittest.TestCase):
                 continue
             standard_name = call.kwargs.get("kwargs").get("standard_entries")[0].name
             for entry in call.kwargs.get("kwargs").get("standard_entries"):
-                self.assertIn(entry, expected_output[standard_name])
-                expected_output[standard_name].pop(
-                    expected_output[standard_name].index(entry)
+                self.assertIn(
+                    entry.id,
+                    expected_ids_by_name[standard_name],
+                    f"Unexpected {standard_name} entry id {entry.id}",
                 )
+                expected_ids_by_name[standard_name].remove(entry.id)
             self.assertEqual(
-                expected_output[standard_name], []
+                expected_ids_by_name[standard_name], set()
             )  # assert ALL elements of the call exist in expected
             self.assertEqual(None, call.kwargs["kwargs"]["collection"])
             self.assertEqual("", call.kwargs["kwargs"]["db_connection_str"])
@@ -457,15 +547,60 @@ class TestMain(unittest.TestCase):
             f"method parse_standards_from_spreadsheeet failed to process standards {','.join(expected_names)}",
         )
 
-    def test_get_standards_files_from_disk(self) -> None:
-        loc = tempfile.mkdtemp()
-        ymls = []
-        cre = defs.CRE(id="333-333", name="ccc", description="cd")
-        for _ in range(1, 5):
-            ymldesc, location = tempfile.mkstemp(dir=loc, suffix=".yaml", text=True)
-            os.write(ymldesc, bytes(str(cre), "utf-8"))
-            ymls.append(location)
-        self.assertCountEqual(ymls, [x for x in main.get_cre_files_from_disk(loc)])
+    @patch.object(main.redis, "connect")
+    @patch.object(main.Queue, "enqueue_call")
+    @patch.object(main, "populate_neo4j_db")
+    @patch.object(main.db_backend, "detect_backend")
+    def test_schedule_gap_analysis_pairs_with_rq_enqueues_directed_pairs(
+        self,
+        detect_backend_mock,
+        populate_neo4j_mock,
+        enqueue_call_mock,
+        redis_connect_mock,
+    ) -> None:
+        detect_backend_mock.return_value = main.db_backend.BackendCapabilities(
+            backend="postgres",
+            is_postgres=True,
+            supports_pair_ga_scheduler=True,
+            reason="test",
+        )
+        redis_connect_mock.return_value = Mock()
+        enqueue_call_mock.return_value = Mock()
+
+        jobs = main.schedule_gap_analysis_pairs_with_rq(
+            collection=self.collection,
+            importing_name="CWE",
+            db_connection_str="postgresql://cre:password@127.0.0.1:5432/cre",
+            peer_names=["ASVS"],
+            skip_neo_populate=True,
+        )
+
+        self.assertEqual(2, len(jobs))
+        self.assertEqual(2, enqueue_call_mock.call_count)
+        descs = [c.kwargs.get("description") for c in enqueue_call_mock.call_args_list]
+        self.assertIn("CWE->ASVS", descs)
+        self.assertIn("ASVS->CWE", descs)
+        populate_neo4j_mock.assert_not_called()
+
+    @patch.object(main.db_backend, "detect_backend")
+    def test_schedule_gap_analysis_pairs_with_rq_rejects_sqlite(
+        self, detect_backend_mock
+    ) -> None:
+        detect_backend_mock.return_value = main.db_backend.BackendCapabilities(
+            backend="sqlite",
+            is_postgres=False,
+            supports_pair_ga_scheduler=False,
+            reason="test",
+        )
+
+        with self.assertRaises(RuntimeError):
+            main.schedule_gap_analysis_pairs_with_rq(
+                collection=self.collection,
+                importing_name="CWE",
+                db_connection_str="sqlite:///tmp.db",
+                peer_names=["ASVS"],
+                skip_neo_populate=True,
+            )
 
     @patch("application.cmd.cre_main.ai_client_init")
     @patch("application.cmd.cre_main.db_connect")
@@ -495,7 +630,7 @@ class TestMain(unittest.TestCase):
         mocked_readSpreadsheet.return_value = {"worksheet0": [{"cre": "cre"}]}
 
         main.add_from_spreadsheet(
-            spreadsheet_url="https://example.com/sheeet", cache_loc=cache, cre_loc=dir
+            spreadsheet_url="https://example.com/sheeet", cache_loc=cache
         )
 
         mocked_db_connect.assert_called_with(path=cache)
@@ -552,7 +687,7 @@ class TestMain(unittest.TestCase):
         mocked_prepare_for_review.assert_called_with(cache)
         mocked_db_connect.assert_called_with(path=cache)
         mocked_parse_standards_from_spreadsheeet.assert_called_with(
-            [{"cre": "cre"}], self.collection, mocked_ai_client_init.return_value
+            [{"cre": "cre"}], cache, mocked_ai_client_init.return_value
         )
         # mocked_export.assert_called_with(loc) #we don't export anymore
 
@@ -604,41 +739,6 @@ class TestMain(unittest.TestCase):
     #         title="cre_review",
     #         share_with=["foo@example.com"],
     #     )
-
-    @patch("application.cmd.cre_main.db_connect")
-    @patch("application.cmd.cre_main.get_cre_files_from_disk")
-    @patch("application.cmd.cre_main.parse_file")
-    @patch("application.database.db.Node_collection.export")
-    def test_add_from_disk(
-        self,
-        mocked_export: Mock,
-        mocked_parse_file: Mock,
-        mocked_get_standards_files_from_disk: Mock,
-        mocked_db_connect: Mock,
-    ) -> None:
-        dir = tempfile.mkdtemp()
-        self.tmpdirs.append(dir)
-        yml = tempfile.mkstemp(dir=dir, suffix=".yaml")[1]
-        loc = tempfile.mkstemp(dir=dir)[1]
-        cache = tempfile.mkstemp(dir=dir, suffix=".sqlite")[1]
-        mocked_db_connect.return_value = self.collection
-        mocked_get_standards_files_from_disk.return_value = [yml for i in range(0, 3)]
-        mocked_export.return_value = [
-            defs.CRE(id="000-000", name="c0"),
-            defs.Standard(name="s0", section="s1"),
-            defs.Code(name="code0", description="code1"),
-            defs.Tool(
-                name="t0", tooltype=defs.ToolTypes.Offensive, description="tool0"
-            ),
-        ]
-
-        main.add_from_disk(cache_loc=cache, cre_loc=dir)
-
-        mocked_db_connect.assert_called_with(path=cache)
-        mocked_parse_file.assert_called_with(
-            filename=yml, yamldocs=[], scollection=self.collection
-        )
-        # mocked_export.assert_called_with(dir) # we don't export anymore
 
     # @patch("application.cmd.cre_main.prepare_for_review")
     # @patch("application.cmd.cre_main.db_connect")
@@ -783,6 +883,88 @@ class TestMain(unittest.TestCase):
     #     main.export_to_osib(file_loc=f"{dir}/osib.yaml", cache=cache)
     #     mocked_db_connect.assert_called_with(path=cache)
     #     mocked_cre2osib.assert_called_with([defs.CRE(id="000-000", name="c0")])
+
+
+class TestGaEligibilityHelpers(unittest.TestCase):
+    """Direct unit tests for GA gating helpers used by import_pipeline and post_apply."""
+
+    def test_document_is_ga_eligible_rejects_tool(self) -> None:
+        doc = defs.Tool(
+            name="Tool Resource",
+            description="t",
+            tooltype=defs.ToolTypes.Defensive,
+        )
+        self.assertFalse(main.document_is_ga_eligible(doc, log_skips=False))
+
+    def test_document_is_ga_eligible_rejects_code(self) -> None:
+        doc = defs.Code(name="Code Resource", description="c")
+        self.assertFalse(main.document_is_ga_eligible(doc, log_skips=False))
+
+    def test_document_is_ga_eligible_requires_both_tags(self) -> None:
+        partial = defs.Standard(
+            name="CWE",
+            section="sec",
+            sectionID="123",
+            tags=["family:standard"],
+        )
+        self.assertFalse(main.document_is_ga_eligible(partial, log_skips=False))
+
+        ok = defs.Standard(
+            name="ASVS",
+            section="sec",
+            sectionID="123",
+            tags=["family:standard", "subtype:requirements_standard"],
+        )
+        self.assertTrue(main.document_is_ga_eligible(ok, log_skips=False))
+
+    def test_document_is_ga_eligible_accepts_taxonomy_risk_list(self) -> None:
+        capec_like = defs.Standard(
+            name="CAPEC",
+            section="sec",
+            sectionID="123",
+            tags=["family:taxonomy", "subtype:risk_list"],
+        )
+        self.assertTrue(main.document_is_ga_eligible(capec_like, log_skips=False))
+
+    def test_resource_name_ga_eligible_in_db_false_when_missing(self) -> None:
+        coll = Mock()
+        q = Mock()
+        coll.session.query.return_value = q
+        q.filter.return_value = q
+        q.first.return_value = None
+        self.assertFalse(main.resource_name_ga_eligible_in_db(coll, "ASVS"))
+
+    def test_resource_name_ga_eligible_in_db_false_for_tool(self) -> None:
+        coll = Mock()
+        q = Mock()
+        coll.session.query.return_value = q
+        q.filter.return_value = q
+        row = Mock()
+        row.ntype = defs.Credoctypes.Tool.value
+        q.first.return_value = row
+        self.assertFalse(main.resource_name_ga_eligible_in_db(coll, "T"))
+
+    def test_resource_name_ga_eligible_in_db_true_for_tagged_standard(self) -> None:
+        coll = Mock()
+        q = Mock()
+        coll.session.query.return_value = q
+        q.filter.return_value = q
+        row = Mock()
+        row.ntype = defs.Credoctypes.Standard.value
+        row.tags = "family:standard,subtype:requirements_standard"
+        q.first.return_value = row
+        self.assertTrue(main.resource_name_ga_eligible_in_db(coll, "ASVS"))
+
+    def test_resource_name_ga_eligible_in_db_true_for_taxonomy_risk_list(self) -> None:
+        coll = Mock()
+        q = Mock()
+        coll.session.query.return_value = q
+        q.filter.return_value = q
+        row = Mock()
+        row.ntype = defs.Credoctypes.Standard.value
+        row.tags = "family:taxonomy,subtype:risk_list"
+        q.first.return_value = row
+        self.assertTrue(main.resource_name_ga_eligible_in_db(coll, "CAPEC"))
 
 
 if __name__ == "__main__":

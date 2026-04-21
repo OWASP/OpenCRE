@@ -7,6 +7,7 @@ from application.defs import cre_defs as defs
 import re
 from application.utils import spreadsheet as sheet_utils
 from application.prompt_client import prompt_client as prompt_client
+from application.utils.external_project_parsers import base_parser_defs
 from application.utils.external_project_parsers.base_parser_defs import (
     ParserInterface,
     ParseResult,
@@ -29,7 +30,9 @@ class PciDss(ParserInterface):
             ),
             cache=cache,
         )
-        return ParseResult(results={self.name: entries})
+        results = {self.name: entries}
+        base_parser_defs.validate_classification_tags(results)
+        return ParseResult(results=results)
 
     def __parse(
         self,
@@ -56,6 +59,18 @@ class PciDss(ParserInterface):
                     row.get(standard_to_spreadsheet_mappings["description"], "")
                 ).strip(),
                 version=version,
+                tags=base_parser_defs.build_tags(
+                    family=base_parser_defs.Family.STANDARD,
+                    subtype=base_parser_defs.Subtype.REQUIREMENTS_STANDARD,
+                    audience=(
+                        base_parser_defs.Audience.AUDIT
+                        if hasattr(base_parser_defs.Audience, "AUDIT")
+                        else base_parser_defs.Audience.MANAGEMENT
+                    ),
+                    maturity=base_parser_defs.Maturity.STABLE,
+                    source="pci_dss",
+                    extra=[],
+                ),
             )
             # Fix for Issue #328: Remove ID from Section Name if duplicated
             if pci_control.section.startswith(pci_control.sectionID):

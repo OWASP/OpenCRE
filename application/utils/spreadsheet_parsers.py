@@ -1,15 +1,39 @@
+"""
+Compatibility shim for legacy imports.
+
+The spreadsheet parsing logic has moved under
+`application.utils.external_project_parsers.parsers.*`.
+Keep these exports so existing tests/callers continue to work.
+"""
+
+from application.utils.external_project_parsers.parsers.export_format_parser import (
+    parse_export_format,
+)
+from application.utils.external_project_parsers.parsers.master_spreadsheet_parser import (
+    parse_hierarchical_export_format,
+    parse_master_spreadsheet_documents,
+    parse_standards,
+    supported_resource_mapping,
+)
+
+__all__ = [
+    "parse_export_format",
+    "parse_hierarchical_export_format",
+    "parse_master_spreadsheet_documents",
+    "parse_standards",
+    "supported_resource_mapping",
+]
 from pprint import pprint
 import logging
 import re
 from copy import copy
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 from dataclasses import dataclass
 
 from application.defs import cre_defs as defs
 
 # collection of methods to parse different versions of spreadsheet standards
 # each method returns a list of cre_defs documents
-
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -198,6 +222,11 @@ def validate_import_csv_rows(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]
     return validated_rows
 
 
+def validate_export_csv_rows(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Backward-compatible alias for older parser entrypoints."""
+    return validate_import_csv_rows(rows)
+
+
 def parse_export_format(lfile: List[Dict[str, Any]]) -> Dict[str, List[defs.Document]]:
     """
     Given: a spreadsheet written by prepare_spreadsheet()
@@ -364,9 +393,13 @@ def reconcile_uninitializedMappings(
     for mapping in u_mappings:
         other_cre = cres.get(mapping.other_cre_name)
         if not other_cre:
-            raise ValueError(
-                f"CRE named: '{mapping.other_cre_name}' does not have an id in the sheet"
+            logger.warning(
+                "Skipping link: CRE '%s' is not registered (no resolved ID in sheet); "
+                "cannot link from '%s'",
+                mapping.other_cre_name,
+                mapping.complete_cre.name,
             )
+            continue
         cre = cres[mapping.complete_cre.name]
         cres[cre.name] = cre.add_link(
             defs.Link(ltype=mapping.relationship, document=other_cre.shallow_copy())
@@ -384,6 +417,31 @@ def get_highest_cre_name(
         if not is_empty(mapping.get(f"CRE hierarchy {i}")):
             return i, mapping.get(f"CRE hierarchy {i}").strip()
     return -1, None
+
+
+def _build_cre_name_to_id_map(
+    cre_file: List[Dict[str, str]],
+    max_hierarchy: int,
+) -> Dict[str, str]:
+    """Scan all rows before any CRE objects exist. Row CRE ID applies to the leaf CRE only."""
+    name_to_id: Dict[str, str] = {}
+    for mapping in cre_file:
+        ch, name = get_highest_cre_name(
+            mapping=mapping, highest_hierarchy=max_hierarchy
+        )
+        if name is None or is_empty(name):
+            continue
+        row_id = str(mapping.get("CRE ID", "")).strip()
+        if is_empty(row_id):
+            continue
+        if name in name_to_id and name_to_id[name] != row_id:
+            raise ValueError(
+                f"duplicate CRE name '{name}' with conflicting IDs: "
+                f"{name_to_id[name]} vs {row_id}"
+            )
+        if name not in name_to_id:
+            name_to_id[name] = row_id
+    return name_to_id
 
 
 def update_cre_in_links(
@@ -419,12 +477,19 @@ def parse_hierarchical_export_format(
 
     logger.info("Spreadsheet is hierarchical export format")
     documents: Dict[str, List[defs.Document]] = {defs.Credoctypes.CRE.value: []}
+    # Allow empty inputs (used by unit tests and for defensive parsing).
+    # Downstream callers can decide whether they want an empty CRE list or no results key at all.
+    if not cre_file:
+        return documents
+    max_hierarchy = len([key for key in cre_file[0].keys() if "CRE hierarchy" in key])
+
+    cre_name_to_id = _build_cre_name_to_id_map(cre_file, max_hierarchy)
     cre_dict = {}
+    rows_with_cre: List[Tuple[Dict[str, str], defs.CRE]] = []
     uninitialized_cre_mappings: List[UninitializedMapping] = (
         []
     )  # the csv has a column "Link to Other CRE", this column linksa complete CRE entry to another CRE by name.
     # The other CRE might not have been initialized yet at the time of linking so it cannot be part of our main document collection yet
-    max_hierarchy = len([key for key in cre_file[0].keys() if "CRE hierarchy" in key])
     for mapping in cre_file:
         cre: defs.CRE
         name: str = ""
@@ -449,8 +514,11 @@ def parse_hierarchical_export_format(
                 f'Found entry with ID \'{mapping.get("CRE ID")}\' hierarchy {current_hierarchy} without a cre name'
             )
 
+        row_id = str(mapping.get("CRE ID", "")).strip()
+        resolved_id = row_id if not is_empty(row_id) else cre_name_to_id.get(name, "")
+
         if name in cre_dict.keys():
-            curr_id = str(mapping.get("CRE ID")).strip()
+            curr_id = row_id
             if (
                 cre_dict[name].id != curr_id
                 and cre_dict[name].id != ""
@@ -459,10 +527,13 @@ def parse_hierarchical_export_format(
                 err_msg = f"duplicate entry for cre named {name}, previous id:{cre_dict[name].id}, new id {curr_id}"
                 raise ValueError(err_msg)
             cre = cre_dict[name]
-        elif not is_empty(str(mapping.get("CRE ID")).strip()):
-            cre = defs.CRE(name=name, id=str(mapping.pop("CRE ID")))
+        elif resolved_id:
+            if not is_empty(row_id):
+                mapping.pop("CRE ID")
+            cre = defs.CRE(name=name, id=resolved_id)
         else:
-            logger.warning(f"empty Id for {name}")
+            logger.warning(f"empty Id for {name}, skipping row (CRE not registered)")
+            continue
 
         if not is_empty(str(mapping.get("CRE Tags")).strip()):
             ts = set()
@@ -515,12 +586,8 @@ def parse_hierarchical_export_format(
                     else:
                         cre = cre.add_link(lnk)
 
-        for link in parse_standards(mapping):
-            doc = link.document
-            doc = doc.add_link(
-                defs.Link(document=cre.shallow_copy(), ltype=defs.LinkTypes.LinkedTo)
-            )
-            documents = add_standard_to_documents_array(doc, documents)
+        # Collect (row, cre) for standard subparser dispatch (Step 2b: whole-doc per family)
+        rows_with_cre.append((dict(mapping), cre))
 
         # link CRE to a higher level one
         if higher_cre and not is_empty(
@@ -564,72 +631,124 @@ def parse_hierarchical_export_format(
 
     cre_dict = reconcile_uninitializedMappings(cre_dict, uninitialized_cre_mappings)
     documents[defs.Credoctypes.CRE.value] = list(cre_dict.values())
+
+    # dispatch to standard-family subparsers (whole-doc, once per family)
+    standards_from_subparsers = _dispatch_standard_subparsers(rows_with_cre)
+    for std_list in standards_from_subparsers.values():
+        for std in std_list:
+            documents = add_standard_to_documents_array(std, documents)
+
     return documents
+
+
+def parse_master_spreadsheet_documents(
+    cre_file: List[Dict[str, str]],
+) -> Dict[str, List[defs.Document]]:
+    """Legacy name kept for tests/callers that still import this symbol."""
+    return parse_hierarchical_export_format(cre_file)
+
+
+def _parse_standards_for_family(
+    mapping: Dict[str, str],
+    name: str,
+    struct: Dict[str, Any],
+) -> List[defs.Link]:
+    """Extract standard links for a single family from one row. Used by standard subparsers."""
+    links: List[defs.Link] = []
+    if not is_empty(mapping.get(struct["section"])) or not is_empty(
+        mapping.get(struct["sectionID"])
+    ):
+        if "separator" in struct:
+            separator = struct["separator"]
+            sections = str(mapping.pop(struct["section"])).split(separator)
+            subsections = str(mapping.get(struct["subsection"], "")).split(separator)
+
+            hyperlinks = str(mapping.get(struct["hyperlink"], "")).split(separator)
+            if len(sections) > len(subsections):
+                subsections.extend([""] * (len(sections) - len(subsections)))
+            if len(sections) > len(hyperlinks):
+                hyperlinks.extend([""] * (len(sections) - len(hyperlinks)))
+
+            sectionIDs = [""] * len(sections)
+            if struct["sectionID"] in mapping:
+                sectionIDs = str(mapping.pop(struct["sectionID"])).split(separator)
+
+            if len(sections) == 0:
+                sections = [""] * len(sectionIDs)
+
+            for section, subsection, link, sectionID in zip(
+                sections, subsections, hyperlinks, sectionIDs
+            ):
+                if not is_empty(section):
+                    links.append(
+                        defs.Link(
+                            ltype=defs.LinkTypes.LinkedTo,
+                            document=defs.Standard(
+                                name=name,
+                                section=section.strip(),
+                                hyperlink=link.strip(),
+                                subsection=subsection.strip(),
+                                sectionID=sectionID.strip(),
+                            ),
+                        )
+                    )
+        else:
+            section = str(mapping.get(struct["section"], ""))
+            subsection = str(mapping.get(struct["subsection"], ""))
+            hyperlink = str(mapping.get(struct["hyperlink"], ""))
+            sectionID = str(mapping.get(struct["sectionID"], ""))
+
+            links.append(
+                defs.Link(
+                    ltype=defs.LinkTypes.LinkedTo,
+                    document=defs.Standard(
+                        name=name,
+                        section=section.strip(),
+                        sectionID=sectionID.strip(),
+                        subsection=subsection.strip(),
+                        hyperlink=hyperlink.strip(),
+                    ),
+                )
+            )
+    return links
+
+
+def _dispatch_standard_subparsers(
+    rows_with_cre: List[Tuple[Dict[str, str], defs.CRE]],
+) -> Dict[str, List[defs.Document]]:
+    """
+    Dispatch to standard-family subparsers. Each subparser receives the full rows
+    and extracts only its family's content. Called once per family (whole-doc).
+    """
+    standards_docs: Dict[str, List[defs.Document]] = {}
+    standards_map = supported_resource_mapping.get("Standards", {})
+
+    for family_name, struct in standards_map.items():
+        family_standards: List[defs.Standard] = []
+        for mapping, cre in rows_with_cre:
+            row_copy = copy(mapping)
+            links = _parse_standards_for_family(row_copy, family_name, struct)
+            for link in links:
+                doc = link.document.add_link(
+                    defs.Link(
+                        document=cre.shallow_copy(),
+                        ltype=defs.LinkTypes.LinkedTo,
+                    )
+                )
+                family_standards.append(doc)
+        for std in family_standards:
+            standards_docs = add_standard_to_documents_array(std, standards_docs)
+    return standards_docs
 
 
 def parse_standards(
     mapping: Dict[str, str], standards_mapping: Dict[str, Dict[str, Any]] = None
 ) -> List[defs.Link]:
+    """Legacy: parse all standard families from one row. Prefer subparser dispatch."""
     if not standards_mapping:
         standards_mapping = supported_resource_mapping
 
     links: List[defs.Link] = []
     for name, struct in standards_mapping.get("Standards", {}).items():
-        if not is_empty(mapping.get(struct["section"])) or not is_empty(
-            mapping.get(struct["sectionID"])
-        ):
-            if "separator" in struct:
-                separator = struct["separator"]
-                sections = str(mapping.pop(struct["section"])).split(separator)
-                subsections = str(mapping.get(struct["subsection"], "")).split(
-                    separator
-                )
-
-                hyperlinks = str(mapping.get(struct["hyperlink"], "")).split(separator)
-                if len(sections) > len(subsections):
-                    subsections.extend([""] * (len(sections) - len(subsections)))
-                if len(sections) > len(hyperlinks):
-                    hyperlinks.extend([""] * (len(sections) - len(hyperlinks)))
-
-                sectionIDs = [""] * len(sections)
-                if struct["sectionID"] in mapping:
-                    sectionIDs = str(mapping.pop(struct["sectionID"])).split(separator)
-
-                if len(sections) == 0:
-                    sections = [""] * len(sectionIDs)
-
-                for section, subsection, link, sectionID in zip(
-                    sections, subsections, hyperlinks, sectionIDs
-                ):
-                    if not is_empty(section):
-                        links.append(
-                            defs.Link(
-                                ltype=defs.LinkTypes.LinkedTo,
-                                document=defs.Standard(
-                                    name=name,
-                                    section=section.strip(),
-                                    hyperlink=link.strip(),
-                                    subsection=subsection.strip(),
-                                    sectionID=sectionID.strip(),
-                                ),
-                            )
-                        )
-            else:
-                section = str(mapping.get(struct["section"], ""))
-                subsection = str(mapping.get(struct["subsection"], ""))
-                hyperlink = str(mapping.get(struct["hyperlink"], ""))
-                sectionID = str(mapping.get(struct["sectionID"], ""))
-
-                links.append(
-                    defs.Link(
-                        ltype=defs.LinkTypes.LinkedTo,
-                        document=defs.Standard(
-                            name=name,
-                            section=section.strip(),
-                            sectionID=sectionID.strip(),
-                            subsection=subsection.strip(),
-                            hyperlink=hyperlink.strip(),
-                        ),
-                    )
-                )
+        links.extend(_parse_standards_for_family(mapping, name, struct))
     return links
