@@ -53,7 +53,8 @@ class TestCloudNativeSecurityControlsParser(unittest.TestCase):
         mock_get_id_of_most_similar_cre.return_value = dbcre.id
         mock_get_id_of_most_similar_node.return_value = dbnode.id
 
-        entries = cloud_native_security_controls.CloudNativeSecurityControls().parse(
+        parser = cloud_native_security_controls.CloudNativeSecurityControls()
+        entries = parser.parse(
             cache=self.collection,
             ph=prompt_client.PromptHandler(database=self.collection),
         )
@@ -75,6 +76,13 @@ class TestCloudNativeSecurityControlsParser(unittest.TestCase):
                 subsection="Secrets are injected at runtime, such as environment variables "
                 "or as a file",
                 version="CNSWP v1.0",
+                tags=[
+                    "family:standard",
+                    "subtype:requirements_standard",
+                    "source:cloud_native_security_controls",
+                    "audience:architect",
+                    "maturity:stable",
+                ],
             ),
             defs.Standard(
                 embeddings=[0.1, 0.2],
@@ -91,12 +99,17 @@ class TestCloudNativeSecurityControlsParser(unittest.TestCase):
                 sectionID=2,
                 subsection="Applications and workloads are explicitly authorized to communicate with each other using mutual authentication",
                 version="CNSWP v1.0",
+                tags=[
+                    "family:standard",
+                    "subtype:requirements_standard",
+                    "source:cloud_native_security_controls",
+                    "audience:architect",
+                    "maturity:stable",
+                ],
             ),
         ]
         for name, nodes in entries.results.items():
-            self.assertEqual(
-                name, cloud_native_security_controls.CloudNativeSecurityControls().name
-            )
+            self.assertEqual(name, parser.name)
             self.assertEqual(len(nodes), 2)
             self.assertCountEqual(nodes[0].todict(), expected[0].todict())
             self.assertCountEqual(nodes[1].todict(), expected[1].todict())

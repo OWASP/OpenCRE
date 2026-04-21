@@ -40,15 +40,25 @@ class TestCheatsheetsParser(unittest.TestCase):
         entries = cheatsheets_parser.Cheatsheets().parse(
             cache=self.collection, ph=PromptHandler(database=self.collection)
         )
+        parser = cheatsheets_parser.Cheatsheets()
+        # NOTE: tags are asserted as literal strings on purpose so tests
+        # verify the external tagging convention, not just enum wiring.
         expected = defs.Standard(
             name="OWASP Cheat Sheets",
             hyperlink="https://github.com/foo/bar/tree/master/cs.md",
             section="Secrets Management Cheat Sheet",
             links=[defs.Link(document=cre, ltype=defs.LinkTypes.LinkedTo)],
+            tags=[
+                "family:guidance",
+                "subtype:cheatsheet",
+                "source:owasp_cheatsheets",
+                "audience:developer",
+                "maturity:stable",
+            ],
         )
         self.maxDiff = None
         for name, nodes in entries.results.items():
-            self.assertEqual(name, cheatsheets_parser.Cheatsheets().name)
+            self.assertEqual(name, parser.name)
             self.assertEqual(len(nodes), 1)
             self.assertCountEqual(expected.todict(), nodes[0].todict())
 

@@ -92,6 +92,11 @@ def main() -> None:
         "--from_spreadsheet", help="import from a spreadsheet to yaml and then database"
     )
     parser.add_argument(
+        "--from_ai_exchange_csv",
+        default=None,
+        help="import from OpenCRE AI exchange CSV (CRE tree + MITRE ATLAS + OWASP AI Exchange)",
+    )
+    parser.add_argument(
         "--print_graph",
         help="will show the graph of the relationships between standards",
     )
@@ -99,11 +104,6 @@ def main() -> None:
         "--cache_file",
         help="where to read/store data",
         default=os.path.join(script_path, "standards_cache.sqlite"),
-    )
-    parser.add_argument(
-        "--cre_loc",
-        default=os.path.join(os.path.dirname(os.path.realpath(__file__)), "./cres/"),
-        help="define location of local cre files for review/add",
     )
     parser.add_argument(
         "--owasp_proj_meta",
@@ -218,6 +218,34 @@ def main() -> None:
         "--preload_map_analysis_target_url",
         default="",
         help="preload map analysis for all possible 2 standards combinations, use target url as an OpenCRE base",
+    )
+    parser.add_argument(
+        "--ga_backfill_missing",
+        action="store_true",
+        help="calculate only missing directed gap-analysis pairs in the current cache DB",
+    )
+    parser.add_argument(
+        "--ga_backfill_batch_size",
+        type=int,
+        default=200,
+        help="batch size for queue/sync GA backfill processing",
+    )
+    parser.add_argument(
+        "--ga_backfill_poll_seconds",
+        type=int,
+        default=5,
+        help="poll interval (seconds) for GA backfill progress logs",
+    )
+    parser.add_argument(
+        "--ga_backfill_max_pairs",
+        type=int,
+        default=0,
+        help="optional cap on number of directed missing GA pairs to process (0 = no cap)",
+    )
+    parser.add_argument(
+        "--ga_backfill_no_queue",
+        action="store_true",
+        help="compute missing GA pairs synchronously without RQ queue",
     )
     parser.add_argument(
         "--delete_map_analysis_for",
