@@ -1,7 +1,7 @@
 """make embeddings foreign keys nullable with surrogate primary key
 
 Revision ID: 9b1c2d3e4f50
-Revises: 7d3076204bcf
+Revises: e1f2a3b4c5d6
 Create Date: 2026-04-19
 
 """
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = "9b1c2d3e4f50"
-down_revision = "7d3076204bcf"
+down_revision = "e1f2a3b4c5d6"
 branch_labels = None
 depends_on = None
 

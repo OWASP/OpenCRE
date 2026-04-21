@@ -307,11 +307,12 @@ def map_analysis() -> Any:
         abort(400, "Please provide two standards")
     standards = standards[:2]
     cache_key = gap_analysis.make_resources_key(standards)
-    cached = database.get_gap_analysis_result(cache_key=cache_key)
-    if cached:
-        parsed = json.loads(cached)
-        if parsed.get("result"):
-            return jsonify({"result": parsed.get("result")})
+    if database.gap_analysis_exists(cache_key):
+        cached = database.get_gap_analysis_result(cache_key=cache_key)
+        if cached:
+            parsed = json.loads(cached)
+            if "result" in parsed:
+                return jsonify({"result": parsed.get("result")})
     if os.environ.get("HEROKU"):
         abort(404, "No such Cache")
 
@@ -380,7 +381,7 @@ def map_analysis_weak_links() -> Any:
     gap_analysis_results = database.get_gap_analysis_result(cache_key=cache_key)
     if gap_analysis_results:
         gap_analysis_dict = json.loads(gap_analysis_results)
-        if gap_analysis_dict.get("result"):
+        if "result" in gap_analysis_dict:
             return jsonify({"result": gap_analysis_dict.get("result")})
 
     # if conn.exists(cache_key):
@@ -498,7 +499,7 @@ def openapi_spec() -> Any:
 
 @app.route("/rest/v1/text_search", methods=["GET"])
 def text_search() -> Any:
-    """
+    r"""
     Performs arbitrary text search among all known documents.
     Formats supported:
         * 'CRE:<id>' will search for the <id> in cre ids

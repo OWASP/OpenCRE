@@ -1,7 +1,7 @@
 """add import_runs table for Module C (Step 6)
 
 Revision ID: e1f2a3b4c5d6
-Revises: abcd1234add
+Revises: 7f27babf58e1
 Create Date: 2026-03-21
 
 """
@@ -11,7 +11,7 @@ import sqlalchemy as sa
 
 
 revision = "e1f2a3b4c5d6"
-down_revision = "abcd1234add"
+down_revision = "7f27babf58e1"
 branch_labels = None
 depends_on = None
 

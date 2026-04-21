@@ -48,7 +48,10 @@ for i in $(seq 1 "${RUN_COUNT}"); do
   worker_pids+=("$!")
 done
 
-PYTHON_BIN="./venv/bin/python"
+PYTHON_BIN="./.venv/bin/python"
+if [[ ! -x "${PYTHON_BIN}" ]]; then
+  PYTHON_BIN="./venv/bin/python"
+fi
 if [[ ! -x "${PYTHON_BIN}" ]]; then
   PYTHON_BIN="$(command -v python3)"
 fi
