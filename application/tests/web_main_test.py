@@ -974,8 +974,6 @@ class TestMain(unittest.TestCase):
             )
 
     def test_import_from_cre_csv(self) -> None:
-        os.environ["CRE_ALLOW_IMPORT"] = "True"
-
         input_data, _ = data_gen.export_format_data()
         workspace = tempfile.mkdtemp()
         data = {}
@@ -987,19 +985,20 @@ class TestMain(unittest.TestCase):
 
         data["cre_csv"] = open(os.path.join(workspace, "cre.csv"), "rb")
 
-        with self.app.test_client() as client:
-            response = client.post(
-                "/rest/v1/cre_csv_import",
-                data=data,
-                buffered=True,
-                content_type="multipart/form-data",
-            )
-            print(f"\nSTATUS CODE: {response.status_code}, DATA: {response.data}")
-            self.assertEqual(200, response.status_code)
-            data = json.loads(response.data)
-            self.assertEqual("success", data.get("status"))
-            self.assertGreaterEqual(data.get("new_standards"), 2)
-            self.assertIsInstance(data.get("new_cres"), list)
+        with patch.dict(os.environ, {"CRE_ALLOW_IMPORT": "True"}):
+            with self.app.test_client() as client:
+                response = client.post(
+                    "/rest/v1/cre_csv_import",
+                    data=data,
+                    buffered=True,
+                    content_type="multipart/form-data",
+                )
+                print(f"\nSTATUS CODE: {response.status_code}, DATA: {response.data}")
+                self.assertEqual(200, response.status_code)
+                data = json.loads(response.data)
+                self.assertEqual("success", data.get("status"))
+                self.assertGreaterEqual(data.get("new_standards"), 2)
+                self.assertIsInstance(data.get("new_cres"), list)
 
     def test_get_cre_csv(self) -> None:
         # empty string means temporary db
