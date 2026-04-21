@@ -307,11 +307,12 @@ def map_analysis() -> Any:
         abort(400, "Please provide two standards")
     standards = standards[:2]
     cache_key = gap_analysis.make_resources_key(standards)
-    cached = database.get_gap_analysis_result(cache_key=cache_key)
-    if cached:
-        parsed = json.loads(cached)
-        if parsed.get("result"):
-            return jsonify({"result": parsed.get("result")})
+    if database.gap_analysis_exists(cache_key):
+        cached = database.get_gap_analysis_result(cache_key=cache_key)
+        if cached:
+            parsed = json.loads(cached)
+            if "result" in parsed:
+                return jsonify({"result": parsed.get("result")})
     if os.environ.get("HEROKU"):
         abort(404, "No such Cache")
 
@@ -380,7 +381,7 @@ def map_analysis_weak_links() -> Any:
     gap_analysis_results = database.get_gap_analysis_result(cache_key=cache_key)
     if gap_analysis_results:
         gap_analysis_dict = json.loads(gap_analysis_results)
-        if gap_analysis_dict.get("result"):
+        if "result" in gap_analysis_dict:
             return jsonify({"result": gap_analysis_dict.get("result")})
 
     # if conn.exists(cache_key):
@@ -498,7 +499,7 @@ def openapi_spec() -> Any:
 
 @app.route("/rest/v1/text_search", methods=["GET"])
 def text_search() -> Any:
-    """
+    r"""
     Performs arbitrary text search among all known documents.
     Formats supported:
         * 'CRE:<id>' will search for the <id> in cre ids
@@ -917,10 +918,41 @@ def chat_cre() -> Any:
 
     database = db.Node_collection()
     # Lazy import to avoid loading heavy prompt/ML dependencies at web boot.
-    from application.prompt_client import prompt_client
+    from google.genai import errors as genai_errors
+    from google.api_core import exceptions as googleExceptions
+    import grpc
+    from application.prompt_client import prompt_client, vertex_prompt_client
 
     prompt = prompt_client.PromptHandler(database)
-    response = prompt.generate_text(message.get("prompt"))
+    try:
+        response = prompt.generate_text(message.get("prompt"))
+    except (
+        genai_errors.ClientError,
+        googleExceptions.GoogleAPICallError,
+        grpc.RpcError,
+    ) as e:
+        if vertex_prompt_client._is_genai_rate_limit_error(e):
+            return (
+                jsonify(
+                    {
+                        "error": (
+                            "The AI service is temporarily rate-limited or out of quota. "
+                            "Please try again in a minute."
+                        )
+                    }
+                ),
+                503,
+            )
+        return (
+            jsonify({"error": f"AI Service Error: {str(e)}"}),
+            500,
+        )
+    except Exception as e:
+        logger.exception("Unexpected error during chatbot completion")
+        return (
+            jsonify({"error": f"An unexpected error occurred: {str(e)}"}),
+            500,
+        )
     return jsonify(response)
 
 

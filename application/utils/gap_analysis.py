@@ -2,7 +2,7 @@ import os
 import requests
 import time
 import logging
-from typing import List, Dict, Any
+from typing import Any, Dict, List, Optional
 from application.utils import redis
 from flask import json as flask_json
 import json
@@ -30,6 +30,33 @@ def make_resources_key(array: List[str]):
 
 def make_subresources_key(standards: List[str], key: str) -> str:
     return str(make_resources_key(standards)) + "->" + key
+
+
+def gap_analysis_cache_key_is_primary(cache_key: str) -> bool:
+    """Primary directed-standard rows use ``A >> B``; drill-down rows append ``->...``."""
+    return "->" not in cache_key
+
+
+def primary_gap_analysis_payload_is_material(ga_object: Optional[str]) -> bool:
+    """
+    True when a stored GA payload has a non-empty object at ``result`` (main cache rows).
+
+    Empty ``{"result": {}}`` placeholders must not count as a cached gap analysis.
+    """
+    if not ga_object or not isinstance(ga_object, str):
+        return False
+    try:
+        parsed = json.loads(ga_object)
+    except json.JSONDecodeError:
+        return False
+    res = parsed.get("result")
+    if res is None:
+        return False
+    if isinstance(res, dict):
+        return len(res) > 0
+    if isinstance(res, list):
+        return len(res) > 0
+    return bool(res)
 
 
 def get_path_score(path):
@@ -102,6 +129,8 @@ def run_gap_pair(
     # Fast path: cached in SQL, no Redis/lock needed.
     if database.gap_analysis_exists(standards_hash):
         res = database.get_gap_analysis_result(standards_hash)
+        if res is None:
+            return {"result": {}}
         return json.loads(res) if isinstance(res, str) else res
 
     conn = redis.connect()
@@ -127,6 +156,8 @@ def run_gap_pair(
         # Another process may have populated cache while we were waiting for lock.
         if database.gap_analysis_exists(standards_hash):
             res = database.get_gap_analysis_result(standards_hash)
+            if res is None:
+                return {"result": {}}
             return json.loads(res) if isinstance(res, str) else res
 
         acquired = conn.setnx(lock_key, "1")
@@ -140,6 +171,8 @@ def run_gap_pair(
                     cache_key=standards_hash,
                 )
                 res = database.get_gap_analysis_result(standards_hash)
+                if res is None:
+                    return {"result": {}}
                 return json.loads(res) if isinstance(res, str) else res
             except Exception as exc:
                 attempts += 1

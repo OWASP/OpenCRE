@@ -155,7 +155,12 @@ def _distinct_names_per_ntype(session: Any) -> dict[str | None, int]:
 def ga_coverage_from_standards_and_keys(
     standard_names: list[str], primary_cache_keys: list[str]
 ) -> dict[str, Any]:
-    """Pure helper: expected directed GA pairs vs rows in gap_analysis_results (primary keys only)."""
+    """Pure helper: expected directed GA pairs vs *material* primary cache keys.
+
+    ``primary_cache_keys`` must list only primary rows (no ``->`` subresource suffix)
+    whose ``ga_object`` has a non-empty ``result`` — empty ``{"result":{}}`` rows
+    are excluded upstream.
+    """
     stds = sorted({str(s).strip() for s in standard_names if str(s).strip()})
     n = len(stds)
     expected: set[tuple[str, str]] = set()
@@ -247,15 +252,30 @@ def _db_resources_and_ga_snapshot() -> tuple[dict[str, Any], dict[str, Any]]:
         # ``"{A} >> {B}->{neo_fragment}"``. Exclude those via `` >> … ->`` so we do
         # not drop legitimate primaries whose *left* standard name contains ``->``.
         rows = (
-            session.query(GapAnalysisResults.cache_key)
+            session.query(GapAnalysisResults.cache_key, GapAnalysisResults.ga_object)
             .filter(not_(GapAnalysisResults.cache_key.like("% >> %->%")))
             .all()
         )
-        keys = [str(r[0]) for r in rows if r[0]]
+        from application.utils.gap_analysis import (
+            primary_gap_analysis_payload_is_material,
+        )
+
+        keys: list[str] = []
+        empty_primary_placeholders = 0
+        for ck, go in rows:
+            if not ck:
+                continue
+            payload = str(go or "")
+            if primary_gap_analysis_payload_is_material(payload):
+                keys.append(str(ck))
+            else:
+                empty_primary_placeholders += 1
 
         gap_analysis_db: dict[str, Any] = {
             "ok": True,
-            "primary_cache_rows": len(keys),
+            "primary_cache_rows": len(rows),
+            "primary_cache_rows_material": len(keys),
+            "directed_pairs_empty_primary_placeholder_rows": empty_primary_placeholders,
         }
         gap_analysis_db.update(ga_coverage_from_standards_and_keys(standards, keys))
 
@@ -819,8 +839,8 @@ def create_app() -> Flask:
       if (gdb.ok) {
         gaDbHtml =
           `<div>Standards in DB: <b>${gdb.standards_count}</b> · Directed pairs (all ordered A≠B): <b>${gdb.directed_pairs_expected}</b></div>` +
-          `<div style="margin-top:6px;">With GA row in DB: <b>${gdb.directed_pairs_with_result}</b> · Covered vs expected: <b>${gdb.directed_pairs_covered}</b> · <span style="color:#f0c674">Missing: <b>${gdb.directed_pairs_missing}</b></span> · Stale (not in current standard set): <b>${gdb.stale_pairs_in_storage}</b></div>` +
-          `<div class="small">Primary cache keys scanned: ${gdb.primary_cache_rows} · Malformed keys: ${gdb.malformed_keys || 0}</div>` +
+          `<div style="margin-top:6px;">With material GA cache (non-empty result): <b>${gdb.directed_pairs_with_result}</b> · Covered vs expected: <b>${gdb.directed_pairs_covered}</b> · <span style="color:#f0c674">Missing: <b>${gdb.directed_pairs_missing}</b></span> · Stale (not in current standard set): <b>${gdb.stale_pairs_in_storage}</b> · Empty primary placeholders: <b>${gdb.directed_pairs_empty_primary_placeholder_rows ?? 0}</b></div>` +
+          `<div class="small">Primary cache rows scanned: ${gdb.primary_cache_rows} (${gdb.primary_cache_rows_material ?? gdb.directed_pairs_with_result} material) · Malformed keys: ${gdb.malformed_keys || 0}</div>` +
           `<div class="small" style="margin-top:8px;"><b>Sample missing pairs</b> (estimate remaining work)</div>` +
           `<div class="logs mono" style="max-height:120px;">${esc((gdb.sample_missing || []).join('\\n') || '—')}</div>` +
           `<div class="small" style="margin-top:8px;"><b>Sample covered</b></div>` +
@@ -917,7 +937,7 @@ def create_app() -> Flask:
   <div class="row">
     <div class="card" style="flex: 1 1 100%; min-width: 280px;">
       <h2>Gap analysis pair coverage (database)</h2>
-      <div class="small">Directed pairs use the same cache key as workers: <code>make_resources_key([A,B])</code> → <code>A &gt;&gt; B</code>. &quot;Missing&quot; = expected ordered pairs among current standards minus rows in <code>gap_analysis_results</code> (primary keys only).</div>
+      <div class="small">Directed pairs use the same cache key as workers: <code>make_resources_key([A,B])</code> → <code>A &gt;&gt; B</code>. &quot;Missing&quot; = expected ordered pairs minus <em>material</em> primary caches (non-empty <code>result</code>); rows whose stored <code>result</code> is an empty object count as missing and appear as empty primary placeholders.</div>
       <div id="ga_db" style="margin-top:8px;"></div>
     </div>
   </div>

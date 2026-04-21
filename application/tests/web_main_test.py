@@ -694,6 +694,26 @@ class TestMain(unittest.TestCase):
             self.assertEqual(GAP_ANALYSIS_TIMEOUT, kwargs["timeout"])
 
     @patch.object(db, "Node_collection")
+    @patch.object(rq.Queue, "enqueue_call")
+    @patch.object(redis, "from_url")
+    def test_map_analysis_non_material_sql_cache_triggers_job(
+        self, redis_conn_mock, enqueue_call_mock, db_mock
+    ) -> None:
+        """SQL rows with empty ``result`` must not short-circuit map_analysis."""
+        redis_conn_mock.return_value.get.return_value = None
+        enqueue_call_mock.return_value = Mock(id="ABC")
+        db_mock.return_value.gap_analysis_exists.return_value = False
+        db_mock.return_value.get_gap_analysis_result.return_value = '{"result": {}}'
+        with self.app.test_client() as client:
+            response = client.get(
+                "/rest/v1/map_analysis?standard=aaa&standard=bbb",
+                headers={"Content-Type": "application/json"},
+            )
+            self.assertEqual(200, response.status_code)
+            self.assertEqual({"job_id": "ABC"}, json.loads(response.data))
+            enqueue_call_mock.assert_called_once()
+
+    @patch.object(db, "Node_collection")
     @patch.object(db, "gap_analysis")
     @patch.object(redis, "from_url")
     def test_gap_analysis_fallback_without_redis(

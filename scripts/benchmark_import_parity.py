@@ -439,11 +439,34 @@ def diff_databases(
     added_ga = sorted(set(i_ga.keys()) - set(u_ga.keys()))
     removed_ga = sorted(set(u_ga.keys()) - set(i_ga.keys()))
 
+    from application.utils.gap_analysis import primary_gap_analysis_payload_is_material
+
+    def _material_primary_keys(ga_map: Dict[str, str]) -> set[str]:
+        return {
+            k
+            for k, v in ga_map.items()
+            if "->" not in k and primary_gap_analysis_payload_is_material(str(v or ""))
+        }
+
+    i_ga_mat = _material_primary_keys(i_ga)
+    u_ga_mat = _material_primary_keys(u_ga)
+    added_ga_mat = sorted(i_ga_mat - u_ga_mat)
+    removed_ga_mat = sorted(u_ga_mat - i_ga_mat)
+
     if not added_ga and not removed_ga:
-        log_msg("Checked Gap Analysis Existence: OK")
+        log_msg("Checked Gap Analysis cache keys (any row): OK")
     else:
         log_msg(
-            f"Checked Gap Analysis Existence: NOT OK ({len(added_ga)} added, {len(removed_ga)} removed)"
+            f"Checked Gap Analysis cache keys (any row): NOT OK ({len(added_ga)} added, {len(removed_ga)} removed)"
+        )
+    log_msg(
+        f"Material primary GA caches: imported={len(i_ga_mat)}, upstream={len(u_ga_mat)} "
+        f"(symmetric diff {len(added_ga_mat) + len(removed_ga_mat)} keys)"
+    )
+    if added_ga_mat or removed_ga_mat:
+        log_msg(
+            f"Material primary GA key diff detail: only_in_imported={len(added_ga_mat)}, "
+            f"only_in_upstream={len(removed_ga_mat)}"
         )
 
     content_diffs = []
@@ -566,6 +589,8 @@ def diff_databases(
                 "gap_analysis_keys": {
                     "only_in_imported": added_ga[:200],
                     "only_in_upstream": removed_ga[:200],
+                    "material_only_in_imported": added_ga_mat[:200],
+                    "material_only_in_upstream": removed_ga_mat[:200],
                 },
                 "property_and_payload_diff_counts": {
                     "cre_rows_with_field_diffs": cre_diff_count,

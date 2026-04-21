@@ -1,3 +1,4 @@
+import json
 import unittest
 from types import SimpleNamespace
 from unittest.mock import patch
@@ -12,13 +13,32 @@ class _FakeDB:
         self.session = SimpleNamespace(bind=SimpleNamespace(url=backend_url))
 
     def gap_analysis_exists(self, cache_key: str) -> bool:
-        return cache_key in self._cache
+        raw = self._cache.get(cache_key)
+        if raw is None:
+            return False
+        if "->" in cache_key:
+            return True
+        if isinstance(raw, str):
+            return gap_analysis.primary_gap_analysis_payload_is_material(raw)
+        return gap_analysis.primary_gap_analysis_payload_is_material(json.dumps(raw))
 
     def get_gap_analysis_result(self, cache_key: str):
         return self._cache.get(cache_key)
 
 
 class TestGapAnalysisPairJob(unittest.TestCase):
+    def test_primary_gap_analysis_payload_is_material(self):
+        g = gap_analysis
+        self.assertFalse(g.primary_gap_analysis_payload_is_material(None))
+        self.assertFalse(g.primary_gap_analysis_payload_is_material(""))
+        self.assertFalse(g.primary_gap_analysis_payload_is_material("{}"))
+        self.assertFalse(g.primary_gap_analysis_payload_is_material('{"result":{}}'))
+        self.assertFalse(g.primary_gap_analysis_payload_is_material('{"result":[]}'))
+        self.assertTrue(
+            g.primary_gap_analysis_payload_is_material('{"result":{"x":1}}')
+        )
+        self.assertTrue(g.primary_gap_analysis_payload_is_material('{"result":[1]}'))
+
     @patch("application.utils.gap_analysis.redis.connect")
     def test_run_gap_pair_returns_cached_result_without_redis(self, mock_connect):
         db = _FakeDB()

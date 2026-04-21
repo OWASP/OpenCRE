@@ -13,6 +13,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 import hashlib
 import json as _json
 from rq import Queue, job, exceptions
+from sqlalchemy import not_
 
 from application.utils.external_project_parsers.base_parser import BaseParser
 from application.utils.external_project_parsers.parsers import master_spreadsheet_parser
@@ -649,11 +650,15 @@ def download_gap_analysis_from_upstream(cache: str) -> None:
                     )
                     if res.status_code == 200:
                         tojson = res.json()
-                        if tojson.get("result"):
-                            cache_key = gap_analysis.make_resources_key([sa, sb])
-                            collection.add_gap_analysis_result(
-                                cache_key, _json.dumps({"result": tojson.get("result")})
-                            )
+                        if "result" not in tojson:
+                            continue
+                        payload = _json.dumps({"result": tojson.get("result")})
+                        if not gap_analysis.primary_gap_analysis_payload_is_material(
+                            payload
+                        ):
+                            continue
+                        cache_key = gap_analysis.make_resources_key([sa, sb])
+                        collection.add_gap_analysis_result(cache_key, payload)
                     bar()
         else:
             for sa, sb in pairs:
@@ -662,18 +667,33 @@ def download_gap_analysis_from_upstream(cache: str) -> None:
                 )
                 if res.status_code == 200:
                     tojson = res.json()
-                    if tojson.get("result"):
-                        cache_key = gap_analysis.make_resources_key([sa, sb])
-                        collection.add_gap_analysis_result(
-                            cache_key, _json.dumps({"result": tojson.get("result")})
-                        )
+                    if "result" not in tojson:
+                        continue
+                    payload = _json.dumps({"result": tojson.get("result")})
+                    if not gap_analysis.primary_gap_analysis_payload_is_material(
+                        payload
+                    ):
+                        continue
+                    cache_key = gap_analysis.make_resources_key([sa, sb])
+                    collection.add_gap_analysis_result(cache_key, payload)
 
 
 def _missing_ga_pairs(collection: db.Node_collection) -> List[Tuple[str, str]]:
-    standards = sorted(collection.standards())
+    from application.utils.ga_parity import ga_matrix_standard_names
+
+    standards = ga_matrix_standard_names(collection)
+    rows = (
+        collection.session.query(
+            db.GapAnalysisResults.cache_key, db.GapAnalysisResults.ga_object
+        )
+        .filter(not_(db.GapAnalysisResults.cache_key.like("% >> %->%")))
+        .all()
+    )
     existing = {
-        key
-        for (key,) in collection.session.query(db.GapAnalysisResults.cache_key).all()
+        str(key)
+        for key, payload in rows
+        if key
+        and gap_analysis.primary_gap_analysis_payload_is_material(str(payload or ""))
     }
     missing: List[Tuple[str, str]] = []
     for sa in standards:
