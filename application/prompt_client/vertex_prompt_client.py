@@ -131,7 +131,7 @@ class VertexPromptClient:
 
     def __init__(self) -> None:
         self.client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
-        self.model_name = "gemini-2.0-flash"
+        self.model_name = os.environ.get("VERTEX_CHAT_MODEL", "gemini-2.0-flash")
 
     def get_model_name(self) -> str:
         """Return the model name being used."""
@@ -153,7 +153,11 @@ class VertexPromptClient:
         for attempt in range(max_retries + 1):
             try:
                 return fn()
-            except genai.errors.ClientError as e:
+            except (
+                genai.errors.ClientError,
+                googleExceptions.GoogleAPICallError,
+                grpc.RpcError,
+            ) as e:
                 _log_genai_client_error(context, e)
                 if not _is_genai_rate_limit_error(e) or attempt >= max_retries:
                     raise
@@ -205,9 +209,7 @@ class VertexPromptClient:
                 result = self.client.models.embed_content(
                     # Use a stable embeddings model that is supported for `embedContent`
                     # across API versions.
-                    model=os.environ.get(
-                        "VERTEX_EMBED_CONTENT_MODEL", "gemini-embedding-001"
-                    ),
+                    model=os.environ.get("VERTEX_EMBED_CONTENT_MODEL", "embedding-001"),
                     contents=texts if is_batch else texts[0],
                     config=types.EmbedContentConfig(task_type="SEMANTIC_SIMILARITY"),
                 )
@@ -217,7 +219,11 @@ class VertexPromptClient:
                 if is_batch:
                     return [emb.values for emb in result.embeddings]
                 return result.embeddings[0].values
-            except genai.errors.ClientError as e:
+            except (
+                genai.errors.ClientError,
+                googleExceptions.GoogleAPICallError,
+                grpc.RpcError,
+            ) as e:
                 _log_genai_client_error("embed_content", e)
                 if not _is_genai_rate_limit_error(e) or attempt >= max_retries:
                     raise
@@ -262,7 +268,7 @@ class VertexPromptClient:
 
         def _call() -> Any:
             response = self.client.models.generate_content(
-                model="gemini-2.0-flash",
+                model=self.model_name,
                 contents=msg,
                 config=types.GenerateContentConfig(
                     max_output_tokens=MAX_OUTPUT_TOKENS, temperature=0.5
@@ -279,7 +285,7 @@ class VertexPromptClient:
 
         def _call() -> Any:
             response = self.client.models.generate_content(
-                model="gemini-2.0-flash",
+                model=self.model_name,
                 contents=msg,
                 config=types.GenerateContentConfig(
                     max_output_tokens=MAX_OUTPUT_TOKENS, temperature=0.5
