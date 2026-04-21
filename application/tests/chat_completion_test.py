@@ -37,9 +37,7 @@ class TestChatCompletion(unittest.TestCase):
             },
             None,
         )
-        with patch(
-            "application.prompt_client.prompt_client.PromptHandler"
-        ) as mock_ph:
+        with patch("application.prompt_client.prompt_client.PromptHandler") as mock_ph:
             mock_ph.return_value.generate_text.side_effect = err
             with self.app.test_client() as client:
                 response = client.post(
@@ -56,12 +54,16 @@ class TestChatCompletion(unittest.TestCase):
         os.environ["NO_LOGIN"] = "1"
         err = genai_errors.ClientError(
             400,
-            {"error": {"code": 400, "message": "Bad request", "status": "INVALID_ARGUMENT"}},
+            {
+                "error": {
+                    "code": 400,
+                    "message": "Bad request",
+                    "status": "INVALID_ARGUMENT",
+                }
+            },
             None,
         )
-        with patch(
-            "application.prompt_client.prompt_client.PromptHandler"
-        ) as mock_ph:
+        with patch("application.prompt_client.prompt_client.PromptHandler") as mock_ph:
             mock_ph.return_value.generate_text.side_effect = err
             with self.app.test_client() as client:
                 with self.assertRaises(genai_errors.ClientError) as ctx:

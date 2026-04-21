@@ -927,14 +927,17 @@ def chat_cre() -> Any:
     except genai_errors.ClientError as e:
         # google.genai APIError uses ``code`` (HTTP status), not ``status_code``.
         if getattr(e, "code", None) == 429:
-            return jsonify(
-                {
-                    "error": (
-                        "The AI service is temporarily rate-limited. "
-                        "Please try again in a minute."
-                    )
-                }
-            ), 503
+            return (
+                jsonify(
+                    {
+                        "error": (
+                            "The AI service is temporarily rate-limited. "
+                            "Please try again in a minute."
+                        )
+                    }
+                ),
+                503,
+            )
         raise
     return jsonify(response)
 

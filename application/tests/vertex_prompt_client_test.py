@@ -72,7 +72,13 @@ class TestVertexPromptClientHelpers(unittest.TestCase):
     def test_is_genai_rate_limit_error_false_for_other_clienterror(self) -> None:
         err = genai_errors.ClientError(
             400,
-            {"error": {"code": 400, "message": "Bad request", "status": "INVALID_ARGUMENT"}},
+            {
+                "error": {
+                    "code": 400,
+                    "message": "Bad request",
+                    "status": "INVALID_ARGUMENT",
+                }
+            },
             None,
         )
         self.assertFalse(_is_genai_rate_limit_error(err))
