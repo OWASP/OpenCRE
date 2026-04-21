@@ -918,10 +918,24 @@ def chat_cre() -> Any:
 
     database = db.Node_collection()
     # Lazy import to avoid loading heavy prompt/ML dependencies at web boot.
+    from google.genai import errors as genai_errors
     from application.prompt_client import prompt_client
 
     prompt = prompt_client.PromptHandler(database)
-    response = prompt.generate_text(message.get("prompt"))
+    try:
+        response = prompt.generate_text(message.get("prompt"))
+    except genai_errors.ClientError as e:
+        # google.genai APIError uses ``code`` (HTTP status), not ``status_code``.
+        if getattr(e, "code", None) == 429:
+            return jsonify(
+                {
+                    "error": (
+                        "The AI service is temporarily rate-limited. "
+                        "Please try again in a minute."
+                    )
+                }
+            ), 503
+        raise
     return jsonify(response)
 
 

@@ -42,6 +42,7 @@ def _is_genai_rate_limit_error(err: Exception) -> bool:
     if status_code == 429:
         return True
 
+    # google.genai.errors.ClientError / APIError use ``code`` (HTTP status).
     code = getattr(err, "code", None)
     if code == 429:
         return True
@@ -55,6 +56,50 @@ def _is_genai_rate_limit_error(err: Exception) -> bool:
         return True
 
     return False
+
+
+def _log_genai_client_error(context: str, exc: genai.errors.ClientError) -> None:
+    """Log full Gemini error payload (no secrets) for support and debugging."""
+    logger.warning(
+        "Gemini ClientError [%s]: http_code=%s api_status=%s message=%s details=%r",
+        context,
+        getattr(exc, "code", None),
+        getattr(exc, "status", None),
+        getattr(exc, "message", None),
+        getattr(exc, "details", None),
+    )
+
+
+def _is_heroku_web_dyno() -> bool:
+    """Heroku sets DYNO=web.* on HTTP dynos; the router enforces a ~30s request window."""
+    dyno = os.environ.get("DYNO", "")
+    return dyno.startswith("web.")
+
+
+def _effective_gemini_generate_retry_settings() -> tuple[int, int]:
+    """(max_retries, sleep_seconds) for generate_content; env vars always override."""
+    if _is_heroku_web_dyno():
+        return (
+            int(os.environ.get("GEMINI_GENERATE_MAX_RETRIES", "1")),
+            int(os.environ.get("GEMINI_GENERATE_RETRY_SLEEP_SECONDS", "6")),
+        )
+    return (
+        int(os.environ.get("GEMINI_GENERATE_MAX_RETRIES", "3")),
+        int(os.environ.get("GEMINI_GENERATE_RETRY_SLEEP_SECONDS", "60")),
+    )
+
+
+def _effective_vertex_embed_retry_settings() -> tuple[int, int]:
+    """(max_retries, sleep_seconds) for embed_content; env vars always override."""
+    if _is_heroku_web_dyno():
+        return (
+            int(os.environ.get("VERTEX_EMBED_MAX_RETRIES", "1")),
+            int(os.environ.get("VERTEX_EMBED_RETRY_SLEEP_SECONDS", "6")),
+        )
+    return (
+        int(os.environ.get("VERTEX_EMBED_MAX_RETRIES", "3")),
+        int(os.environ.get("VERTEX_EMBED_RETRY_SLEEP_SECONDS", "60")),
+    )
 
 
 class VertexPromptClient:
@@ -96,17 +141,17 @@ class VertexPromptClient:
         Bounded retries for `generate_content` (SDK may retry briefly; this adds
         longer backoff for sustained quota pressure).
 
-        Configure via ``GEMINI_GENERATE_MAX_RETRIES`` (default 3) and
-        ``GEMINI_GENERATE_RETRY_SLEEP_SECONDS`` (default 60).
+        Configure via ``GEMINI_GENERATE_MAX_RETRIES`` and
+        ``GEMINI_GENERATE_RETRY_SLEEP_SECONDS``. On Heroku ``web.*`` dynos the
+        defaults are reduced so the request can finish before the ~30s router
+        timeout (long sleeps used to abort the Gunicorn worker mid-request).
         """
-        max_retries = int(os.environ.get("GEMINI_GENERATE_MAX_RETRIES", "3"))
-        retry_sleep_seconds = int(
-            os.environ.get("GEMINI_GENERATE_RETRY_SLEEP_SECONDS", "60")
-        )
+        max_retries, retry_sleep_seconds = _effective_gemini_generate_retry_settings()
         for attempt in range(max_retries + 1):
             try:
                 return fn()
             except genai.errors.ClientError as e:
+                _log_genai_client_error(context, e)
                 if not _is_genai_rate_limit_error(e) or attempt >= max_retries:
                     raise
                 logger.info(
@@ -150,10 +195,7 @@ class VertexPromptClient:
         texts: List[str] = text if is_batch else [_truncate_one(text)]  # type: ignore[arg-type]
         texts = [_truncate_one(t) for t in texts]
 
-        max_retries = int(os.environ.get("VERTEX_EMBED_MAX_RETRIES", "3"))
-        retry_sleep_seconds = int(
-            os.environ.get("VERTEX_EMBED_RETRY_SLEEP_SECONDS", "60")
-        )
+        max_retries, retry_sleep_seconds = _effective_vertex_embed_retry_settings()
 
         for attempt in range(max_retries + 1):
             try:
@@ -173,6 +215,7 @@ class VertexPromptClient:
                     return [emb.values for emb in result.embeddings]
                 return result.embeddings[0].values
             except genai.errors.ClientError as e:
+                _log_genai_client_error("embed_content", e)
                 if not _is_genai_rate_limit_error(e) or attempt >= max_retries:
                     raise
                 logger.info(
