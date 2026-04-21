@@ -21,6 +21,31 @@ logger.setLevel(logging.INFO)
 class PciDss(ParserInterface):
     name = "PCI DSS"
 
+    def _ensure_similarity_prereqs(
+        self, cache: db.Node_collection, prompt: prompt_client.PromptHandler
+    ) -> None:
+        """
+        PCI linking relies on CRE embeddings for nearest-neighbor matching.
+        Some import runs disable embedding generation, which leaves this parser
+        with no way to infer CRE links and silently produces unlinked controls.
+        """
+        cre_embeddings = cache.get_embeddings_by_doc_type(defs.Credoctypes.CRE.value)
+        if cre_embeddings:
+            return
+        if os.environ.get("CRE_NO_GEN_EMBEDDINGS") == "1":
+            logger.warning(
+                "CRE embeddings are empty and CRE_NO_GEN_EMBEDDINGS=1; "
+                "PCI DSS controls may import without CRE links."
+            )
+            return
+        logger.info(
+            "CRE embeddings are empty before PCI DSS parse; generating CRE embeddings now."
+        )
+        try:
+            prompt.generate_embeddings_for(defs.Credoctypes.CRE.value)
+        except Exception as ex:
+            logger.warning("Failed to generate CRE embeddings for PCI parser: %s", ex)
+
     def parse(self, cache: db.Node_collection, ph: prompt_client.PromptHandler):
         entries = self.parse_4(
             pci_file=sheet_utils.read_spreadsheet(
@@ -43,6 +68,7 @@ class PciDss(ParserInterface):
         standard_to_spreadsheet_mappings: Dict[str, str],
     ):
         prompt = prompt_client.PromptHandler(cache)
+        self._ensure_similarity_prereqs(cache, prompt)
         standard_entries = []
         for row in pci_file.get(pci_file_tab):
             pci_control = defs.Standard(
@@ -95,19 +121,35 @@ class PciDss(ParserInterface):
             pci_control.embeddings = control_embeddings
             pci_control.embeddings_text = pci_control.__repr__()
             # these embeddings are different to the ones generated from --generate embeddings, this is because we want these embedding to include the optional "description" field, it is not a big difference and cosine similarity works reasonably accurately without it but good to have
+            cre = None
             cre_id = prompt.get_id_of_most_similar_cre(control_embeddings)
             if not cre_id:
                 logger.info(
                     f"could not find an appropriate CRE for pci {pci_control.section}, findings similarities with standards instead"
                 )
                 standard_id = prompt.get_id_of_most_similar_node(control_embeddings)
-                dbstandard = cache.get_nodes(db_id=standard_id)
-                logger.info(
-                    f"found an appropriate standard for pci {pci_control.section}, it is: {dbstandard.section}"
-                )
-                cres = cache.find_cres_of_node(dbstandard)
-                if cres:
-                    cre_id = cres[0].id
+                if standard_id:
+                    dbstandard = cache.get_nodes(db_id=standard_id)
+                    if dbstandard:
+                        logger.info(
+                            "found an appropriate standard for pci %s, it is: %s",
+                            pci_control.section,
+                            dbstandard.section,
+                        )
+                        cres = cache.find_cres_of_node(dbstandard)
+                        if cres:
+                            cre_id = cres[0].id
+                    else:
+                        logger.info(
+                            "no standard record found for fallback standard id %s (pci section %s)",
+                            standard_id,
+                            pci_control.section,
+                        )
+                else:
+                    logger.info(
+                        "could not find a similar standard for pci %s; skipping fallback link",
+                        pci_control.section,
+                    )
             if cre_id:
                 cre = cache.get_cre_by_db_id(cre_id)
             ctrl_copy = pci_control.shallow_copy()
