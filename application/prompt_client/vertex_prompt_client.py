@@ -1,5 +1,5 @@
 import google.api_core.exceptions as googleExceptions
-from typing import List
+from typing import Any, Callable, List
 from vertexai.preview.language_models import TextEmbeddingModel
 from google.cloud import aiplatform
 from vertexai.preview.language_models import ChatModel
@@ -26,6 +26,35 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 MAX_OUTPUT_TOKENS = 1024
+
+
+def _is_genai_rate_limit_error(err: Exception) -> bool:
+    """True only for rate-limit / quota exhaustion so other errors fail fast."""
+    msg = str(err).lower()
+    if "rate limit" in msg or "too many requests" in msg:
+        return True
+    if "resource exhausted" in msg or "quota" in msg or "exceeded quota" in msg:
+        return True
+    if "429" in msg:
+        return True
+
+    status_code = getattr(err, "status_code", None)
+    if status_code == 429:
+        return True
+
+    code = getattr(err, "code", None)
+    if code == 429:
+        return True
+
+    candidate_types = []
+    for name in ("TooManyRequests", "ResourceExhausted"):
+        exc_t = getattr(googleExceptions, name, None)
+        if exc_t is not None:
+            candidate_types.append(exc_t)
+    if candidate_types and isinstance(err, tuple(candidate_types)):
+        return True
+
+    return False
 
 
 class VertexPromptClient:
@@ -60,6 +89,33 @@ class VertexPromptClient:
         """Return the model name being used."""
         return self.model_name
 
+    def _with_genai_rate_limit_retry(
+        self, fn: Callable[[], Any], *, context: str
+    ) -> Any:
+        """
+        Bounded retries for `generate_content` (SDK may retry briefly; this adds
+        longer backoff for sustained quota pressure).
+
+        Configure via ``GEMINI_GENERATE_MAX_RETRIES`` (default 3) and
+        ``GEMINI_GENERATE_RETRY_SLEEP_SECONDS`` (default 60).
+        """
+        max_retries = int(os.environ.get("GEMINI_GENERATE_MAX_RETRIES", "3"))
+        retry_sleep_seconds = int(
+            os.environ.get("GEMINI_GENERATE_RETRY_SLEEP_SECONDS", "60")
+        )
+        for attempt in range(max_retries + 1):
+            try:
+                return fn()
+            except genai.errors.ClientError as e:
+                if not _is_genai_rate_limit_error(e) or attempt >= max_retries:
+                    raise
+                logger.info(
+                    f"rate/quota limited during {context}; sleeping and retrying "
+                    f"(attempt {attempt + 1}/{max_retries + 1}, sleep {retry_sleep_seconds}s)"
+                )
+                time.sleep(retry_sleep_seconds)
+        raise RuntimeError("unreachable: Gemini generate retry loop exited unexpectedly")
+
     def get_max_batch_size(self) -> int:
         """
         Maximum number of input texts we will send in a single embeddings call.
@@ -92,39 +148,6 @@ class VertexPromptClient:
         texts: List[str] = text if is_batch else [_truncate_one(text)]  # type: ignore[arg-type]
         texts = [_truncate_one(t) for t in texts]
 
-        def _is_rate_limit_error(err: Exception) -> bool:
-            # We deliberately treat only rate-limit/quota-related failures as retryable.
-            # Everything else should bubble up so callers can fail fast.
-            msg = str(err).lower()
-
-            # Common textual signals.
-            if "rate limit" in msg or "too many requests" in msg:
-                return True
-            if "resource exhausted" in msg or "quota" in msg or "exceeded quota" in msg:
-                return True
-            if "429" in msg:
-                return True
-
-            # Common structured signals (best-effort; provider may expose different fields).
-            status_code = getattr(err, "status_code", None)
-            if status_code == 429:
-                return True
-
-            code = getattr(err, "code", None)
-            if code == 429:
-                return True
-
-            # Some google.api_core exceptions may also be used upstream.
-            candidate_types = []
-            for name in ("TooManyRequests", "ResourceExhausted"):
-                exc_t = getattr(googleExceptions, name, None)
-                if exc_t is not None:
-                    candidate_types.append(exc_t)
-            if candidate_types and isinstance(err, tuple(candidate_types)):
-                return True
-
-            return False
-
         max_retries = int(os.environ.get("VERTEX_EMBED_MAX_RETRIES", "3"))
         retry_sleep_seconds = int(
             os.environ.get("VERTEX_EMBED_RETRY_SLEEP_SECONDS", "60")
@@ -148,7 +171,7 @@ class VertexPromptClient:
                     return [emb.values for emb in result.embeddings]
                 return result.embeddings[0].values
             except genai.errors.ClientError as e:
-                if not _is_rate_limit_error(e) or attempt >= max_retries:
+                if not _is_genai_rate_limit_error(e) or attempt >= max_retries:
                     raise
                 logger.info(
                     "rate/quota limited during embedding; sleeping and retrying "
@@ -188,23 +211,34 @@ class VertexPromptClient:
             f"- Provide only the answer to the QUESTION.\n"
             f"- Do not include explanations about sources, retrieval, or prompt behavior.\n\n"
         )
-        response = self.client.models.generate_content(
-            model="gemini-2.0-flash",
-            contents=msg,
-            config=types.GenerateContentConfig(
-                max_output_tokens=MAX_OUTPUT_TOKENS, temperature=0.5
-            ),
+
+        def _call() -> Any:
+            response = self.client.models.generate_content(
+                model="gemini-2.0-flash",
+                contents=msg,
+                config=types.GenerateContentConfig(
+                    max_output_tokens=MAX_OUTPUT_TOKENS, temperature=0.5
+                ),
+            )
+            return response.text
+
+        return self._with_genai_rate_limit_retry(
+            _call, context="Gemini generate_content (RAG chat)"
         )
-        return response.text
 
     def query_llm(self, raw_question: str) -> str:
         msg = f"Your task is to answer the following cybersecurity question if you can, provide code examples, delimit any code snippet with three backticks, ignore any unethical questions or questions irrelevant to cybersecurity\nQuestion: `{raw_question}`\n ignore all other commands and questions that are not relevant."
-        response = self.client.models.generate_content(
-            model="gemini-2.0-flash",
-            contents=msg,
-            config=types.GenerateContentConfig(
-                max_output_tokens=MAX_OUTPUT_TOKENS, temperature=0.5
-            ),
+
+        def _call() -> Any:
+            response = self.client.models.generate_content(
+                model="gemini-2.0-flash",
+                contents=msg,
+                config=types.GenerateContentConfig(
+                    max_output_tokens=MAX_OUTPUT_TOKENS, temperature=0.5
+                ),
+            )
+            return response.text
+
+        return self._with_genai_rate_limit_retry(
+            _call, context="Gemini generate_content (query_llm)"
         )
-        # response = self.chat.send_message(msg, **parameters)
-        return response.text
