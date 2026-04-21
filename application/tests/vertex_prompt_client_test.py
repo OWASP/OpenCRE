@@ -28,6 +28,10 @@ class TestVertexPromptClientHelpers(unittest.TestCase):
         os.environ["DYNO"] = "web.1"
         self.assertTrue(_is_heroku_web_dyno())
 
+    def test_is_heroku_web_dyno_true_case_insensitive(self) -> None:
+        os.environ["DYNO"] = "Web.1"
+        self.assertTrue(_is_heroku_web_dyno())
+
     def test_is_heroku_web_dyno_false_for_worker(self) -> None:
         os.environ["DYNO"] = "worker.1"
         self.assertFalse(_is_heroku_web_dyno())
@@ -40,7 +44,7 @@ class TestVertexPromptClientHelpers(unittest.TestCase):
 
     def test_effective_gemini_retry_defaults_heroku_web(self) -> None:
         os.environ["DYNO"] = "web.1"
-        self.assertEqual(_effective_gemini_generate_retry_settings(), (1, 6))
+        self.assertEqual(_effective_gemini_generate_retry_settings(), (0, 0))
 
     def test_effective_gemini_retry_env_overrides_heroku(self) -> None:
         os.environ["DYNO"] = "web.1"
@@ -53,7 +57,7 @@ class TestVertexPromptClientHelpers(unittest.TestCase):
 
     def test_effective_embed_retry_defaults_heroku_web(self) -> None:
         os.environ["DYNO"] = "web.1"
-        self.assertEqual(_effective_vertex_embed_retry_settings(), (1, 6))
+        self.assertEqual(_effective_vertex_embed_retry_settings(), (0, 0))
 
     def test_is_genai_rate_limit_error_recognizes_clienterror_code_429(self) -> None:
         err = genai_errors.ClientError(
