@@ -78,7 +78,12 @@ export const CommonRequirementEnumeration = () => {
                 {' '}
                 {display.hyperlink}
               </a>
-              <a href={display?.hyperlink} target="_blank" rel="noopener noreferrer" aria-label="Open reference in new tab">
+              <a
+                href={display?.hyperlink}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Open reference in new tab"
+              >
                 <Icon name="external" />
               </a>
             </>
@@ -107,15 +112,21 @@ export const CommonRequirementEnumeration = () => {
                       <b>Which {getDocumentTypeText(type, links[0].document.doctype)}</b>:
                       {/* Risk of mixed doctype in here causing odd output */}
                     </div>
-                    {sortedResults.slice(0, showAll[type] ? sortedResults.length : MAX_LENGTH_FOR_AUTO_EXPAND).map((link, i) => (
-                      <div key={i} className="accordion ui fluid styled cre-page__links-container" style={{ marginBottom: '4px' }}>
-                        <DocumentNode node={link.document} linkType={type} />
-                        <FilterButton document={link.document} />
-                      </div>
-                    ))}
+                    {sortedResults
+                      .slice(0, showAll[type] ? sortedResults.length : MAX_LENGTH_FOR_AUTO_EXPAND)
+                      .map((link, i) => (
+                        <div
+                          key={i}
+                          className="accordion ui fluid styled cre-page__links-container"
+                          style={{ marginBottom: '4px' }}
+                        >
+                          <DocumentNode node={link.document} linkType={type} />
+                          <FilterButton document={link.document} />
+                        </div>
+                      ))}
                     {sortedResults.length > MAX_LENGTH_FOR_AUTO_EXPAND && (
                       <button
-                        onClick={() => setShowAll(prev => ({ ...prev, [type]: !prev[type] }))}
+                        onClick={() => setShowAll((prev) => ({ ...prev, [type]: !prev[type] }))}
                         style={{ marginTop: '8px', cursor: 'pointer' }}
                       >
                         {showAll[type] ? 'Show less ▲' : 'Show more ▼'}

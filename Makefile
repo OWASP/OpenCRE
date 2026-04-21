@@ -8,6 +8,8 @@ prod-run:
 docker-neo4j-rm:
 	docker stop cre-neo4j
 	docker rm -f cre-neo4j
+	docker volume inspect cre_neo4j_data >/dev/null 2>&1 || docker volume create cre_neo4j_data
+	docker volume inspect cre_neo4j_logs >/dev/null 2>&1 || docker volume create cre_neo4j_logs
 	docker volume rm cre_neo4j_data
 	docker volume rm cre_neo4j_logs
 	# rm -rf .neo4j
@@ -22,6 +24,10 @@ docker-redis-rm:
 docker-redis:
 	docker start cre-redis-stack 2>/dev/null ||\
 	docker run -d --name cre-redis-stack -p 6379:6379 -p 8001:8001 redis/redis-stack:latest
+
+docker-postgres:
+	docker start cre-postgres 2>/dev/null ||\
+	docker run -d --name cre-postgres -e POSTGRES_PASSWORD=password -e POSTGRES_USER=cre -e POSTGRES_DB=cre -p 5432:5432 postgres
 
 start-containers: docker-neo4j docker-redis
 
@@ -55,7 +61,7 @@ e2e:
 test:
 	[ -d "./venv" ] && . ./venv/bin/activate &&\
 	export FLASK_APP="$(CURDIR)/cre.py" &&\
-	flask routes && flask test
+	flask routes && python -m unittest discover -s application/tests -p "*_test.py"
 
 cover:
 	. ./venv/bin/activate && FLASK_APP=cre.py FLASK_CONFIG=testing flask test --cover
@@ -127,7 +133,35 @@ import-neo4j:
 	[ -d "./venv" ] && . ./venv/bin/activate &&\
 	export FLASK_APP="$(CURDIR)/cre.py" && python cre.py --populate_neo4j_db
 
-preload-map-analysis:
-	$(shell RUN_COUNT=5 bash ./scripts/preload_gap_analysis.sh)
+backfill-gap-analysis:
+	RUN_COUNT=8 bash ./scripts/backfill_gap_analysis.sh
+
+sync-gap-analysis-table-local:
+	[ -d "./venv" ] && . ./venv/bin/activate &&\
+	python scripts/sync_gap_analysis_table.py \
+		--from-sqlite "$(CURDIR)/standards_cache.sqlite" \
+		--to-postgres "postgresql://cre:password@127.0.0.1:5432/cre" \
+		--require-local-destination
+
+verify-ga-complete-prod:
+	[ -d "./venv" ] && . ./venv/bin/activate &&\
+	python scripts/verify_ga_completeness.py \
+		--base-url "https://opencre.org" \
+		--output-json "$(CURDIR)/tmp/prod-ga-completeness.json"
+
+verify-ga-parity-local:
+	@[ -d "./.venv" ] && . ./.venv/bin/activate || ([ -d "./venv" ] && . ./venv/bin/activate); \
+	export CRE_CACHE_FILE="$${CRE_CACHE_FILE:-postgresql://cre:password@127.0.0.1:5432/cre}"; \
+	export NEO4J_URL="$${NEO4J_URL:-bolt://neo4j:password@127.0.0.1:7687}"; \
+	export PYTHONPATH="$(CURDIR)"; \
+	python scripts/verify_ga_postgres_neo_parity.py --output-json "$(CURDIR)/tmp/local-ga-parity.json"
+
+backfill-gap-analysis-sync:
+	@[ -d "./.venv" ] && . ./.venv/bin/activate || ([ -d "./venv" ] && . ./venv/bin/activate); \
+	export FLASK_APP="$(CURDIR)/cre.py"; \
+	export CRE_CACHE_FILE="$${CRE_CACHE_FILE:-postgresql://cre:password@127.0.0.1:5432/cre}"; \
+	export NEO4J_URL="$${NEO4J_URL:-bolt://neo4j:password@127.0.0.1:7687}"; \
+	python cre.py --cache_file "$$CRE_CACHE_FILE" --populate_neo4j_db && \
+	python cre.py --cache_file "$$CRE_CACHE_FILE" --ga_backfill_missing --ga_backfill_no_queue
 
 all: clean lint test dev dev-run

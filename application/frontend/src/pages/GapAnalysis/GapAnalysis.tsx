@@ -131,7 +131,7 @@ export const GapAnalysis = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-      const result = await axios.get(`${apiUrl}/standards`);
+      const result = await axios.get(`${apiUrl}/ga_standards`);
       setLoadingStandards(false);
       setStandardOptions(
         standardOptionsDefault.concat(result.data.sort().map((x) => ({ key: x, text: x, value: x })))
@@ -293,7 +293,11 @@ export const GapAnalysis = () => {
                 .map((key) => (
                   <Table.Row key={key}>
                     <Table.Cell textAlign="left" verticalAlign="top" selectable>
-                      <a href={getInternalUrl(gapAnalysis[key].start)} target="_blank" rel="noopener noreferrer">
+                      <a
+                        href={getInternalUrl(gapAnalysis[key].start)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
                         <p>
                           <b>{getDocumentDisplayName(gapAnalysis[key].start, true)}</b>
                         </p>

@@ -1270,6 +1270,87 @@ class TestDB(unittest.TestCase):
             db.gap_analysis(collection.neo_db, ["788-788", "b"]),
             (["788-788", "b"], {}, {}),
         )
+        self.assertFalse(
+            collection.gap_analysis_exists(make_resources_key(["788-788", "b"])),
+            "empty grouped_paths must not be written as a SQL GA cache row",
+        )
+
+    @patch.object(db.NEO_DB, "gap_analysis")
+    def test_gap_analysis_paths_without_base_standard_nodes(self, gap_mock):
+        """Neo paths whose starts were missing from ``base_standard`` must still persist."""
+        collection = db.Node_collection()
+        collection.neo_db.connected = True
+        path = [
+            {
+                "end": defs.CRE(name="bob", id="111-111"),
+                "relationship": "LINKED_TO",
+                "start": defs.CRE(name="bob", id="788-788"),
+            },
+            {
+                "end": defs.CRE(name="bob", id="222-222"),
+                "relationship": "LINKED_TO",
+                "start": defs.CRE(name="bob", id="788-788"),
+            },
+        ]
+        gap_mock.return_value = (
+            [],
+            [
+                {
+                    "start": defs.CRE(name="bob", id="788-788"),
+                    "end": defs.CRE(name="bob", id="788-789"),
+                    "path": path,
+                }
+            ],
+        )
+        expected = (
+            ["788-788", "788-789"],
+            {
+                "788-788": {
+                    "start": defs.CRE(name="bob", id="788-788"),
+                    "paths": {
+                        "788-789": {
+                            "end": defs.CRE(name="bob", id="788-789"),
+                            "path": path,
+                            "score": 0,
+                        }
+                    },
+                    "extra": 0,
+                }
+            },
+            {"788-788": {"paths": {}}},
+        )
+        self.maxDiff = None
+        self.assertEqual(
+            db.gap_analysis(collection.neo_db, ["788-788", "788-789"]), expected
+        )
+        self.assertTrue(
+            collection.gap_analysis_exists(make_resources_key(["788-788", "788-789"])),
+        )
+
+    @patch.object(db.NEO_DB, "gap_analysis")
+    def test_gap_analysis_removes_stale_empty_primary_when_neo_empty(self, gap_mock):
+        """Placeholder ``{"result":{}}`` rows must not survive a recompute with no Neo paths."""
+        collection = db.Node_collection()
+        collection.neo_db.connected = True
+        key = make_resources_key(["788-788", "b"])
+        collection.add_gap_analysis_result(key, '{"result": {}}')
+        sub = make_subresources_key(["788-788", "b"], "111-111")
+        collection.add_gap_analysis_result(sub, '{"result": {}}')
+        self.assertFalse(collection.gap_analysis_exists(key))
+
+        gap_mock.return_value = ([], [])
+        db.gap_analysis(collection.neo_db, ["788-788", "b"])
+
+        self.assertIsNone(
+            collection.session.query(db.GapAnalysisResults)
+            .filter(db.GapAnalysisResults.cache_key == key)
+            .first(),
+        )
+        self.assertIsNone(
+            collection.session.query(db.GapAnalysisResults)
+            .filter(db.GapAnalysisResults.cache_key == sub)
+            .first(),
+        )
 
     @patch.object(db.NEO_DB, "gap_analysis")
     def test_gap_analysis_no_links(self, gap_mock):
@@ -2172,7 +2253,7 @@ class TestDB(unittest.TestCase):
             if i == 0 or i == 1:
                 cres.append(defs.CRE(name=f">> C{i}", id=f"{i}{i}{i}-{i}{i}{i}"))
             else:
-                cres.append(defs.CRE(name=f"C{i}", id=f"{i}"))
+                cres.append(defs.CRE(name=f"C{i}", id=f"{i}{i}{i}-{i}{i}{i}"))
 
             dbcres.append(collection.add_cre(cres[i]))
             nodes.append(defs.Standard(section=f"S{i}", name=f"N{i}"))
