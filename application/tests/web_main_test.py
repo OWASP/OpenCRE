@@ -451,6 +451,12 @@ class TestMain(unittest.TestCase):
         collection.add_node(docs["sa"])
 
         with self.app.test_client() as client:
+            response = client.get("/rest/v1/text_search")
+            self.assertEqual(400, response.status_code)
+
+            response = client.get("/rest/v1/text_search?text=")
+            self.assertEqual(400, response.status_code)
+
             response = client.get(f"/rest/v1/text_search?text='CRE:2'")
             self.assertEqual(404, response.status_code)
 
