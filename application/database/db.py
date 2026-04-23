@@ -1040,16 +1040,14 @@ class Node_collection:
         self, cres_only: bool = False
     ) -> List[cre_defs.Document]:
         result = []
-        nodes = []
-        cres = []
         if not cres_only:
-            node_ids = self.session.query(Node.id).all()
-            for nid in node_ids:
-                result.extend(self.get_nodes(db_id=nid[0]))
+            for node in self.session.query(Node).all():
+                result.extend(self.get_nodes(db_id=node.id))
 
-        cre_ids = self.session.query(CRE.id).all()
-        for cid in cre_ids:
-            result.append(self.get_cre_by_db_id(cid[0]))
+        for cre in self.session.query(CRE).all():
+            cres = self.get_CREs(external_id=cre.external_id)
+            if cres:
+                result.append(cres[0])
         return result
 
     @classmethod
@@ -1532,9 +1530,14 @@ class Node_collection:
         self, cre: CRE, include_only_nodes: List[str]
     ) -> List[cre_defs.Link]:
         links = []
-        for link in self.session.query(Links).filter(Links.cre == cre.id).all():
-            node = self.session.query(Node).filter(Node.id == link.node).first()
-            if node and (not include_only_nodes or node.name in include_only_nodes):
+        rows = (
+            self.session.query(Links, Node)
+            .join(Node, Node.id == Links.node)
+            .filter(Links.cre == cre.id)
+            .all()
+        )
+        for link, node in rows:
+            if not include_only_nodes or node.name in include_only_nodes:
                 links.append(
                     cre_defs.Link(
                         ltype=cre_defs.LinkTypes.from_str(link.type),
