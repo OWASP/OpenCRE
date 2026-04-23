@@ -570,6 +570,7 @@ class TestMain(unittest.TestCase):
             collection.add_link(dcb, dasvs, ltype=defs.LinkTypes.LinkedTo)
             collection.add_link(dcd, dcwe, ltype=defs.LinkTypes.LinkedTo)
 
+            # Single CRE linked to CWE/456 — should redirect directly to the CRE
             response = client.get(
                 "/smartlink/standard/CWE/456",
                 headers={"Content-Type": "application/json"},
@@ -578,9 +579,10 @@ class TestMain(unittest.TestCase):
             for head in response.headers:
                 if head[0] == "Location":
                     location = head[1]
-            self.assertEqual(location, "/node/standard/CWE/sectionid/456")
+            self.assertEqual(location, "/cre/222-222")
             self.assertEqual(302, response.status_code)
 
+            # Single CRE linked to ASVS/v0.1.2 — should redirect directly to the CRE
             response = client.get(
                 "/smartlink/standard/ASVS/v0.1.2",
                 headers={"Content-Type": "application/json"},
@@ -589,7 +591,24 @@ class TestMain(unittest.TestCase):
             for head in response.headers:
                 if head[0] == "Location":
                     location = head[1]
-            self.assertEqual(location, "/node/standard/ASVS/section/v0.1.2")
+            self.assertEqual(location, "/cre/333-333")
+            self.assertEqual(302, response.status_code)
+
+            # Multiple CREs linked — should redirect to the node page, not a single CRE
+            multi_std = defs.Standard(name="MultiCRE", section="s1")
+            dmulti = collection.add_node(multi_std)
+            collection.add_link(dcd, dmulti, ltype=defs.LinkTypes.LinkedTo)
+            collection.add_link(dcb, dmulti, ltype=defs.LinkTypes.LinkedTo)
+
+            response = client.get(
+                "/smartlink/standard/MultiCRE/s1",
+                headers={"Content-Type": "application/json"},
+            )
+            location = ""
+            for head in response.headers:
+                if head[0] == "Location":
+                    location = head[1]
+            self.assertEqual(location, "/node/standard/MultiCRE/section/s1")
             self.assertEqual(302, response.status_code)
 
             # negative test, this cwe does not exist, therefore we redirect to Mitre!
