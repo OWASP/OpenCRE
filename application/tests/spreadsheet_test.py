@@ -2,6 +2,7 @@ import unittest
 import io
 import csv
 from pprint import pprint
+from unittest import mock
 
 from application import create_app, sqla  # type: ignore
 from application.database import db
@@ -108,10 +109,15 @@ class TestDB(unittest.TestCase):
 
         self.assertCountEqual(result, expected)
 
-    def test_read_spreadsheet_iso_numbers(self) -> None:
-        url = "https://docs.google.com/spreadsheets/d/1ugU-FCIRLc5D_xpKOunelo26Wel3PTLnMKFdu7isZ3s"  # Public iso test CRE spreadsheet url
-        alias = "Test Spreadsheet"
-        result = read_spreadsheet(url, alias, validate=False, parse_numbered_only=False)
+    @mock.patch("application.utils.spreadsheet.gspread.service_account")
+    @mock.patch("application.utils.spreadsheet.gspread.oauth")
+    def test_read_spreadsheet_iso_numbers(
+        self, mock_oauth, mock_service_account
+    ) -> None:
+        """
+        Integration-style test for read_spreadsheet's numericise behavior, but
+        using a mocked gspread client instead of real Google APIs.
+        """
         expected = [
             {
                 "Standard 27001/2:2022": "Use of cryptography",
@@ -126,5 +132,27 @@ class TestDB(unittest.TestCase):
                 "Standard 27001/2:2022 Section ID": "1.31",
             },
         ]
+
+        # Fake worksheet that returns our expected data
+        fake_ws = mock.MagicMock()
+        fake_ws.title = "ISO Numericise Test"
+        fake_ws.col_count = 3
+        fake_ws.get_all_records.return_value = expected
+
+        # Fake spreadsheet client
+        fake_sh = mock.MagicMock()
+        fake_sh.worksheets.return_value = [fake_ws]
+
+        fake_client = mock.MagicMock()
+        fake_client.open_by_url.return_value = fake_sh
+
+        # Both oauth() and service_account() should return the same fake client
+        mock_oauth.return_value = fake_client
+        mock_service_account.return_value = fake_client
+
+        url = "https://example.com/fake-spreadsheet-url"
+        alias = "Test Spreadsheet"
+
+        result = read_spreadsheet(url, alias, validate=False, parse_numbered_only=False)
 
         self.assertEqual(result["ISO Numericise Test"], expected)
