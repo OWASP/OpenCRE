@@ -22,6 +22,7 @@ from application.database import db
 from application.cmd import cre_main
 from application.defs import cre_defs as defs
 from application.defs import cre_exceptions
+from application.feature_flags import is_cre_import_allowed
 
 from application.utils import spreadsheet as sheet_utils
 from application.utils import mdutils, redirectors, gap_analysis
@@ -722,11 +723,7 @@ def login_required(f):
 def admin_imports_enabled_required(f):
     @wraps(f)
     def enabled_r(*args, **kwargs):
-        if str(os.environ.get("CRE_ALLOW_IMPORT", "")).lower() not in (
-            "1",
-            "true",
-            "yes",
-        ):
+        if not is_cre_import_allowed():
             abort(404, description="Admin imports API is disabled")
         return f(*args, **kwargs)
 
@@ -1119,7 +1116,7 @@ def get_cre_csv() -> Any:
 
 @app.route("/rest/v1/config", methods=["GET"])
 def get_config() -> Any:
-    return jsonify({"CRE_ALLOW_IMPORT": os.environ.get("CRE_ALLOW_IMPORT") == "1"})
+    return jsonify({"CRE_ALLOW_IMPORT": is_cre_import_allowed()})
 
 
 @app.route("/admin/imports/rerun", methods=["POST"])
@@ -1151,7 +1148,7 @@ def admin_imports_rerun() -> Any:
 
 @app.route("/rest/v1/cre_csv_import", methods=["POST"])
 def import_from_cre_csv() -> Any:
-    if str(os.environ.get("CRE_ALLOW_IMPORT", "")).lower() not in ("1", "true", "yes"):
+    if not is_cre_import_allowed():
         abort(
             403,
             "Importing is disabled, set the environment variable CRE_ALLOW_IMPORT to allow this functionality",
