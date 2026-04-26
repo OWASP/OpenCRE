@@ -17,7 +17,12 @@ import { useEnvironment } from '../../hooks';
 import { applyFilters } from '../../hooks/applyFilters';
 import { Document } from '../../types';
 import { groupLinksByType } from '../../utils';
-import { getApiEndpoint, getDocumentTypeText, getInternalUrl, getTopicDisplayName } from '../../utils/document';
+import {
+  getApiEndpoint,
+  getDocumentTypeText,
+  getInternalUrl,
+  getTopicDisplayName,
+} from '../../utils/document';
 import { FilterButton } from '../FilterButton/FilterButton';
 import { LoadingAndErrorIndicator } from '../LoadingAndErrorIndicator';
 
@@ -67,7 +72,10 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({
       );
   };
 
-  const topicsToDisplay = useMemo(() => getTopicsToDisplayOrderdByLinkType(), [linksByType, isNestedInRelated]);
+  const topicsToDisplay = useMemo(
+    () => getTopicsToDisplayOrderdByLinkType(),
+    [linksByType, isNestedInRelated]
+  );
 
   useEffect(() => {
     const isAllowedToAutoExpandByLength =
@@ -115,7 +123,12 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({
           {' '}
           {hyperlink.hyperlink}
         </a>
-        <a href={hyperlink.hyperlink} target="_blank" rel="noopener noreferrer" aria-label="Open reference in new tab">
+        <a
+          href={hyperlink.hyperlink}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Open reference in new tab"
+        >
           <Icon name="external" />
         </a>
       </>
@@ -172,21 +185,26 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({
                   </div>
                   <div>
                     <div className="accordion ui fluid styled f0">
-                      {sortedResults.slice(0, showAll[idx] ? sortedResults.length : MAX_LENGTH_FOR_AUTO_EXPAND).map((link, i) => (
-                        <div key={`document-node-container-${type}-${idx}-${i}`} style={{ marginBottom: '4px' }}>
-                          <DocumentNode
-                            node={link.document}
-                            linkType={type}
-                            hasLinktypeRelatedParent={isNestedInRelated as boolean}
-                            key={`document-sub-node-${type}-${idx}-${i}`}
-                          />
-                          <FilterButton document={link.document} />
-                        </div>
-                      ))}
+                      {sortedResults
+                        .slice(0, showAll[idx] ? sortedResults.length : MAX_LENGTH_FOR_AUTO_EXPAND)
+                        .map((link, i) => (
+                          <div
+                            key={`document-node-container-${type}-${idx}-${i}`}
+                            style={{ marginBottom: '4px' }}
+                          >
+                            <DocumentNode
+                              node={link.document}
+                              linkType={type}
+                              hasLinktypeRelatedParent={isNestedInRelated as boolean}
+                              key={`document-sub-node-${type}-${idx}-${i}`}
+                            />
+                            <FilterButton document={link.document} />
+                          </div>
+                        ))}
                     </div>
                     {sortedResults.length > MAX_LENGTH_FOR_AUTO_EXPAND && (
                       <button
-                        onClick={() => setShowAll(prev => ({ ...prev, [idx]: !prev[idx] }))}
+                        onClick={() => setShowAll((prev) => ({ ...prev, [idx]: !prev[idx] }))}
                         style={{ marginTop: '8px', cursor: 'pointer' }}
                       >
                         {showAll[idx] ? 'Show less ▲' : 'Show more ▼'}

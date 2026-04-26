@@ -20,14 +20,14 @@ export const SearchPage = () => {
   useEffect(() => {
     const mobileMenu = document.querySelector('.navbar__mobile-menu');
     const observer = new MutationObserver(() => {
-      if (mobileMenu?.classList.contains('is-open')){
+      if (mobileMenu?.classList.contains('is-open')) {
         setIsArrowVisible(false);
-      }else{
+      } else {
         setIsArrowVisible(true);
       }
     });
-    if (mobileMenu){
-      observer.observe(mobileMenu, {attributes: true, attributeFilter: ['class']})
+    if (mobileMenu) {
+      observer.observe(mobileMenu, { attributes: true, attributeFilter: ['class'] });
     }
 
     const handleScroll = () => {

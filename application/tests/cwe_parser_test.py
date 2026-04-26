@@ -77,6 +77,13 @@ class TestCWEParser(unittest.TestCase):
                 hyperlink="https://CWE.mitre.org/data/definitions/1004.html",
                 sectionID="1004",
                 section="Accessing Functionality Not Properly Constrained by ACLs",
+                tags=[
+                    "family:taxonomy",
+                    "subtype:risk_list",
+                    "source:cwe",
+                    "audience:developer",
+                    "maturity:stable",
+                ],
             ),
             defs.Standard(
                 name="CWE",
@@ -93,6 +100,13 @@ class TestCWEParser(unittest.TestCase):
                         document=defs.CRE(name="CRE-632", id="632-632"),
                         ltype=defs.LinkTypes.LinkedTo,
                     ),
+                ],
+                tags=[
+                    "family:taxonomy",
+                    "subtype:risk_list",
+                    "source:cwe",
+                    "audience:developer",
+                    "maturity:stable",
                 ],
             ),
         ]
