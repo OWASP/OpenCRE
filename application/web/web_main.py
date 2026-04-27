@@ -487,9 +487,21 @@ def map_analysis() -> Any:
             cache_key,
             exc,
         )
-        if direct_gap_analysis:
-            return jsonify(direct_gap_analysis)
-        abort(404, "No direct overlap found for requested standards")
+        # NEW: fallback — compute gap analysis directly in the database
+        try:
+            db.gap_analysis(
+                neo_db=database.neo_db,
+                node_names=standards,
+                cache_key=cache_key,
+            )
+            cached = database.get_gap_analysis_result(cache_key=cache_key)
+            if cached:
+                parsed = json.loads(cached)
+                if "result" in parsed:
+                    return jsonify({"result": parsed["result"]})
+        except Exception as db_exc:
+            logger.error("Database gap analysis fallback failed: %s", db_exc)
+        abort(404, "Gap analysis could not be completed")
 
     # First, check if we have cached results in the database
     if database.gap_analysis_exists(standards_hash):
