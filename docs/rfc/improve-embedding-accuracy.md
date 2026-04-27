@@ -52,7 +52,7 @@ OpenCRE is **English-only** for this work: prompts, heuristics, and fixtures ass
 
 ### 5.1 Feature flag
 
-- **`CRE_EMBED_SMART_EXTRACT=off|on|shadow`**
+- **`CRE_EMBED_SMART_EXTRACT=off|on|shadow`** (default in code: **`on`** unless set to `off` or `shadow`)
   - **`off`:** Current behavior (full body / full PDF text).
   - **`on`:** Excerpt embedding + optional **`embeddings_url`** update when thresholds pass.
   - **`shadow`:** Compute excerpt + candidate `embeddings_url` for logging/metrics; keep production embedding input unchanged until validated.
@@ -167,7 +167,7 @@ So: **content is cached per URL; alignment is cached per (URL, section_key).** D
 
 ### 11.1 Implemented (code map)
 
-- **`CRE_EMBED_SMART_EXTRACT`:** `off` (default) | `on` | `shadow`.
+- **`CRE_EMBED_SMART_EXTRACT`:** `on` (default) | `off` | `shadow`.
 - **`CRE_EMBED_SMART_CONFIDENCE`:** minimum model confidence (default `0.65`).
 - **`CRE_EMBED_ALIGN_MODEL`:** OpenAI chat model for alignment JSON (default `gpt-4o-mini`).
 - **`CRE_EMBED_SMART_MIN_EXCERPT_CHARS`:** minimum excerpt length before fallback (default `30`).
