@@ -1003,14 +1003,30 @@ class PromptHandler:
         answer = ""
         closest_content = ""
         accurate = False
+        table: List[Any] = []
         if closest_object:
-            if closest_object.hyperlink:
+            emb = None
+            if closest_id and getattr(closest_object, "hyperlink", None):
                 emb = self.database.get_embedding(closest_id)
                 if emb:
-                    closest_content = emb[0].embeddings_content
+                    closest_content = emb[0].embeddings_content or ""
 
-            closest_object_str = f"{closest_content}" + "\n".join(
-                [f"{k}:{v}" for k, v in closest_object.shallow_copy().todict().items()]
+            url_hint = ""
+            if emb and getattr(emb[0], "embeddings_url", None):
+                narrow = (emb[0].embeddings_url or "").strip()
+                catalog = (closest_object.hyperlink or "").strip()
+                if narrow:
+                    url_hint = f"Preferred_source_URL_for_citations: {narrow}\n"
+                    if catalog and narrow != catalog:
+                        url_hint += f"Importer_catalog_URL: {catalog}\n"
+
+            closest_object_str = (
+                url_hint
+                + f"{closest_content}"
+                + "\n".join(
+                    f"{k}:{v}"
+                    for k, v in closest_object.shallow_copy().todict().items()
+                )
             )
             closest_object_str = closest_object_str[:8000]
             # vertex and openai have a model limit of 8100 characters
@@ -1019,11 +1035,19 @@ class PromptHandler:
                 closest_object_str=closest_object_str,
             )
             accurate = True
+
+            row: Any = closest_object
+            if emb and getattr(emb[0], "embeddings_url", None):
+                narrow = (emb[0].embeddings_url or "").strip()
+                catalog = (closest_object.hyperlink or "").strip()
+                if narrow and narrow != catalog:
+                    row = closest_object.shallow_copy().todict()
+                    row["hyperlink"] = narrow
+            table.append(row)
         else:
             answer = self.ai_client.query_llm(prompt)
 
         logger.debug(f"retrieved completion for {prompt}")
-        table = [closest_object]
         result = f"Answer: {answer}"
         model_name = self.ai_client.get_model_name() if self.ai_client else "unknown"
         return {

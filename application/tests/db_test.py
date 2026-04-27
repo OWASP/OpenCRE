@@ -2228,6 +2228,28 @@ class TestDB(unittest.TestCase):
         )
         self.assertEqual(tool_emb, {})
 
+    def test_delete_all_embeddings(self):
+        dbsa = db.Node(
+            subsection="",
+            section="Sec",
+            name="DelEmbTestStd",
+            link="https://example.com/x",
+            ntype=defs.Credoctypes.Standard.value,
+        )
+        self.collection.session.add(dbsa)
+        self.collection.session.commit()
+        embeddings = [random.uniform(-1, 1) for e in range(0, 768)]
+        self.collection.add_embedding(
+            db_object=dbsa,
+            doctype=defs.Credoctypes.Standard.value,
+            embeddings=embeddings,
+            embedding_text="x",
+        )
+        self.assertIsNotNone(self.collection.get_embedding(dbsa.id))
+        n = self.collection.delete_all_embeddings()
+        self.assertGreaterEqual(n, 1)
+        self.assertEqual(self.collection.get_embedding(dbsa.id), [])
+
     def test_get_standard_names(self):
         for s in ["sa", "sb", "sc", "sd"]:
             for sub in ["suba", "subb", "subc", "subd"]:

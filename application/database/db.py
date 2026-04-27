@@ -2263,6 +2263,15 @@ class Node_collection:
             .all()
         )
 
+    def delete_all_embeddings(self) -> int:
+        """
+        Delete every row in ``embeddings`` so a subsequent ``PromptHandler(..., load_all_embeddings=True)``
+        run rebuilds vectors (e.g. after changing smart-extract policy or embedding model).
+        """
+        n_deleted = self.session.query(Embeddings).delete(synchronize_session=False)
+        self.session.commit()
+        return int(n_deleted or 0)
+
     def add_embedding(
         self,
         db_object: CRE | Node,
