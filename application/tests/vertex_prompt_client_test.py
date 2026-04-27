@@ -2,10 +2,12 @@
 
 import os
 import unittest
+from unittest.mock import patch
 
 from google.genai import errors as genai_errors
 
 from application.prompt_client.vertex_prompt_client import (
+    VertexPromptClient,
     _effective_gemini_generate_retry_settings,
     _effective_vertex_embed_retry_settings,
     _is_genai_rate_limit_error,
@@ -21,6 +23,7 @@ class TestVertexPromptClientHelpers(unittest.TestCase):
             "GEMINI_GENERATE_RETRY_SLEEP_SECONDS",
             "VERTEX_EMBED_MAX_RETRIES",
             "VERTEX_EMBED_RETRY_SLEEP_SECONDS",
+            "VERTEX_EMBED_CONTENT_MODEL",
         ):
             os.environ.pop(key, None)
 
@@ -86,6 +89,12 @@ class TestVertexPromptClientHelpers(unittest.TestCase):
             None,
         )
         self.assertFalse(_is_genai_rate_limit_error(err))
+
+    @patch("application.prompt_client.vertex_prompt_client.genai.Client")
+    def test_requires_vertex_embed_content_model_env_var(self, _mock_client) -> None:
+        os.environ.pop("VERTEX_EMBED_CONTENT_MODEL", None)
+        with self.assertRaises(SystemExit):
+            VertexPromptClient()
 
 
 if __name__ == "__main__":

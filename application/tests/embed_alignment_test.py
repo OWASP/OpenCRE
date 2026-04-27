@@ -15,6 +15,43 @@ class _FakeAlignClient:
 
 
 class EmbedAlignmentTest(unittest.TestCase):
+    def test_schema_rejects_invalid_alignment_payload(self):
+        html = """
+        <html><body><main id="main">
+          <div id="ai-program"><p>Alpha program body text here with more words to pass excerpt length.</p></div>
+        </main></body></html>
+        """
+        node = cre_defs.Standard(
+            name="OWASP AI Exchange",
+            section="AI Program",
+            sectionID="aiprogram",
+            subsection="",
+            hyperlink="https://owaspai.org/go/aiprogram/",
+        )
+        client = _FakeAlignClient(
+            {
+                "start_bid": "oops",
+                "end_bid": "b0",
+                "suggested_fragment": "ai-program",
+                "confidence": 1.2,
+                "should_fallback_full_page": False,
+                "rationale": "bad payload",
+            }
+        )
+        out = embed_alignment.run_smart_extract(
+            html=html,
+            full_cleaned_body_text="full page text",
+            node=node,
+            ai_client=client,
+            mode="on",
+            page_cache_key="https://owaspai.org/go/aiprogram",
+            alignment_cache={},
+            confidence_threshold=0.5,
+        )
+        self.assertFalse(out.used_excerpt)
+        self.assertEqual(out.embed_plain_text, "full page text")
+        self.assertIn("llm_error:invalid alignment payload:", out.rationale)
+
     def test_build_blocks_collects_ids(self):
         html = """
         <html><body><main id="main">

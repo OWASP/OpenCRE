@@ -22,6 +22,7 @@ import logging
 import grpc
 import grpc_status
 import time
+from application.prompt_client.embed_alignment import alignment_response_json_schema
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
@@ -133,7 +134,15 @@ class VertexPromptClient:
 
     def __init__(self) -> None:
         self.client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
-        self.model_name = os.environ.get("VERTEX_CHAT_MODEL", "gemini-2.0-flash")
+        # gemini-2.0-flash is deprecated for new AI Studio keys; 2.5-flash is the current stable id in google-genai tests.
+        self.model_name = os.environ.get("VERTEX_CHAT_MODEL", "gemini-2.5-flash")
+        self.embedding_model = os.environ.get("VERTEX_EMBED_CONTENT_MODEL")
+        if not self.embedding_model:
+            logger.error(
+                "Missing required env var VERTEX_EMBED_CONTENT_MODEL; "
+                "set it explicitly (for example: gemini-embedding-001)."
+            )
+            raise SystemExit(2)
 
     def get_model_name(self) -> str:
         """Return the model name being used."""
@@ -209,9 +218,7 @@ class VertexPromptClient:
         for attempt in range(max_retries + 1):
             try:
                 result = self.client.models.embed_content(
-                    # Use a stable embeddings model that is supported for `embedContent`
-                    # across API versions.
-                    model=os.environ.get("VERTEX_EMBED_CONTENT_MODEL", "embedding-001"),
+                    model=self.embedding_model,
                     contents=texts if is_batch else texts[0],
                     config=types.EmbedContentConfig(task_type="SEMANTIC_SIMILARITY"),
                 )
@@ -294,6 +301,7 @@ class VertexPromptClient:
                     max_output_tokens=MAX_OUTPUT_TOKENS,
                     temperature=0.2,
                     response_mime_type="application/json",
+                    response_schema=alignment_response_json_schema(),
                 ),
             )
             text = (response.text or "").strip()
