@@ -2,13 +2,15 @@
 Live LLM + network tests for smart embedding alignment (OWASP AI Exchange pages).
 
 Run with: ``pytest -m llm_e2e application/tests/test_smart_embeddings_e2e_llm.py``
-Requires ``OPENAI_API_KEY`` (or set ``CRE_EMBED_ALIGN_E2E=0`` to skip entire module).
+
+Requires ``OPENAI_API_KEY`` or ``GEMINI_API_KEY`` (or set ``CRE_EMBED_ALIGN_E2E=0`` to skip).
 """
 
 from __future__ import annotations
 
 import os
 import re
+from typing import Any, Tuple
 
 import pytest
 import requests
@@ -19,11 +21,26 @@ from application.prompt_client import embed_alignment
 pytestmark = pytest.mark.llm_e2e
 
 
-def _skip_no_openai():
+def _skip_no_llm() -> None:
     if os.environ.get("CRE_EMBED_ALIGN_E2E", "1").lower() in ("0", "false", "no"):
         pytest.skip("CRE_EMBED_ALIGN_E2E disabled")
-    if not os.environ.get("OPENAI_API_KEY"):
-        pytest.skip("OPENAI_API_KEY not set")
+    if not (
+        os.environ.get("OPENAI_API_KEY") or os.environ.get("GEMINI_API_KEY")
+    ):
+        pytest.skip("No LLM credentials (set OPENAI_API_KEY or GEMINI_API_KEY)")
+
+
+def _alignment_llm_client() -> Tuple[Any, str]:
+    """Return (client, provider_label). Prefer OpenAI when both are configured."""
+    if os.environ.get("OPENAI_API_KEY"):
+        from application.prompt_client.openai_prompt_client import OpenAIPromptClient
+
+        return OpenAIPromptClient(os.environ["OPENAI_API_KEY"]), "openai"
+    if os.environ.get("GEMINI_API_KEY"):
+        from application.prompt_client.vertex_prompt_client import VertexPromptClient
+
+        return VertexPromptClient(), "vertex"
+    pytest.fail("unreachable: _skip_no_llm should have skipped")
 
 
 def _simple_clean(text: str) -> str:
@@ -47,15 +64,15 @@ def _simple_clean(text: str) -> str:
         ),
     ],
 )
-def test_owasp_ai_exchange_live_alignment_openai(
+def test_owasp_ai_exchange_live_alignment(
     hyperlink: str, section: str, section_id: str, expected_fragment: str
 ):
     """
     Fetch real AI Exchange ``/go/...`` pages (multi-section HTML) and verify the
     alignment model picks a scoped excerpt and a validated ``#fragment``.
     """
-    _skip_no_openai()
-    from application.prompt_client.openai_prompt_client import OpenAIPromptClient
+    _skip_no_llm()
+    client, provider = _alignment_llm_client()
 
     headers = {
         "User-Agent": os.environ.get(
@@ -75,7 +92,6 @@ def test_owasp_ai_exchange_live_alignment_openai(
         subsection="",
         hyperlink=hyperlink,
     )
-    client = OpenAIPromptClient(os.environ["OPENAI_API_KEY"])
     out = embed_alignment.run_smart_extract(
         html=html,
         full_cleaned_body_text=full_clean,
@@ -88,10 +104,12 @@ def test_owasp_ai_exchange_live_alignment_openai(
             os.environ.get("CRE_EMBED_SMART_CONFIDENCE", "0.55")
         ),
     )
-    assert out.used_excerpt, f"expected excerpt mode: {out.rationale!r}"
+    assert out.used_excerpt, (
+        f"expected excerpt mode ({provider}): {out.rationale!r}"
+    )
     assert expected_fragment in out.resolved_embeddings_url, (
-        f"expected #{expected_fragment} in resolved URL, got {out.resolved_embeddings_url!r}"
+        f"expected #{expected_fragment} in resolved URL ({provider}), got {out.resolved_embeddings_url!r}"
     )
     assert len(out.embed_plain_text) < len(full_clean) * 0.98, (
-        "excerpt should be materially shorter than full cleaned body"
+        f"excerpt should be materially shorter than full cleaned body ({provider})"
     )
