@@ -135,6 +135,6 @@ This deletes every row in the `embeddings` table, then runs the same full pass a
 
 ### Chatbot and deep links
 
-The chatbot matches your question to a **standard node embedding**, then answers using that node’s `embeddings_content`. When a narrower **`embeddings_url`** exists (e.g. OWASP AI Exchange `#ai-program`), the API passes that URL as **`hyperlink` in the references table** so the “References” external link opens the correct section; the LLM context also includes `Preferred_source_URL_for_citations`.
+The chatbot matches your question to a **standard node embedding**, then answers using that node’s `embeddings_content`. When **`embeddings_url`** is set (e.g. OWASP AI Exchange with a `#fragment`), the API adds it as **`embeddingsUrl`** on the reference row alongside the unchanged catalog **`hyperlink`**; the UI shows a separate “Scoped source (embedding URL)” link. The LLM context includes an `Embeddings_URL` line for citations.
 
 This is it, please follow the [CONTRIBUTING](../CONTRIBUTING.md) guidlines while contributing and thank you for your interest in OpenCRE.

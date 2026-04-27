@@ -1014,11 +1014,8 @@ class PromptHandler:
             url_hint = ""
             if emb and getattr(emb[0], "embeddings_url", None):
                 narrow = (emb[0].embeddings_url or "").strip()
-                catalog = (closest_object.hyperlink or "").strip()
                 if narrow:
-                    url_hint = f"Preferred_source_URL_for_citations: {narrow}\n"
-                    if catalog and narrow != catalog:
-                        url_hint += f"Importer_catalog_URL: {catalog}\n"
+                    url_hint = f"Embeddings_URL (scoped source, for citations): {narrow}\n"
 
             closest_object_str = (
                 url_hint
@@ -1039,10 +1036,9 @@ class PromptHandler:
             row: Any = closest_object
             if emb and getattr(emb[0], "embeddings_url", None):
                 narrow = (emb[0].embeddings_url or "").strip()
-                catalog = (closest_object.hyperlink or "").strip()
-                if narrow and narrow != catalog:
+                if narrow:
                     row = closest_object.shallow_copy().todict()
-                    row["hyperlink"] = narrow
+                    row["embeddingsUrl"] = narrow
             table.append(row)
         else:
             answer = self.ai_client.query_llm(prompt)
