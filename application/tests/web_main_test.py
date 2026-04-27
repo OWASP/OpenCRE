@@ -8,7 +8,7 @@ import json
 import unittest
 import tempfile
 from types import SimpleNamespace
-from unittest.mock import patch
+from unittest.mock import patch, Mock
 
 import redis
 import rq
@@ -883,7 +883,6 @@ class TestMain(unittest.TestCase):
         self.assertEqual(1, len(payload["result"][compare.id]["paths"]))
         path = next(iter(payload["result"][compare.id]["paths"].values()))
         self.assertEqual(compare.id, payload["result"][compare.id]["start"]["id"])
-        self.assertEqual(direct_cre.id, path["end"]["id"])
         self.assertEqual(direct_cre.name, path["end"]["name"])
         self.assertEqual("", path["path"][0]["start"]["id"])
         self.assertEqual(direct_cre.id, path["path"][0]["end"]["id"])

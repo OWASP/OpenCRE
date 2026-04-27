@@ -415,11 +415,77 @@ def map_analysis() -> Any:
         posthog.capture(f"map_analysis", f"standards:{standards}")
 
     database = db.Node_collection()
+    if len(standards) < 2:
+        abort(400, "Please provide two standards")
+    standards = standards[:2]
     standards_hash = gap_analysis.make_resources_key(standards)
 
+    # ----- PR #825: OpenCRE fast path -----
     if OPENCRE_STANDARD_NAME in standards:
         direct_gap_analysis = _build_direct_cre_overlap_map_analysis(
             standards, standards_hash, database
+        )
+        if direct_gap_analysis:
+            return jsonify(direct_gap_analysis)
+        abort(404, "No direct overlap found for requested standards")
+
+    # ----- upstream: cached result -----
+    cache_key = standards_hash
+    if database.gap_analysis_exists(cache_key):
+        cached = database.get_gap_analysis_result(cache_key=cache_key)
+        if cached:
+            parsed = json.loads(cached)
+            if "result" in parsed:
+                return jsonify({"result": parsed.get("result")})
+
+    # ----- upstream: Heroku guard -----
+    if os.environ.get("HEROKU"):
+        abort(404, "No such Cache")
+
+    # ----- upstream: Redis / RQ path with synchronous fallback -----
+    db_url = os.environ.get("CRE_CACHE_FILE") or os.environ.get("PROD_DATABASE_URL")
+    if not db_url:
+        db_url = str(getattr(getattr(database.session, "bind", None), "url", ""))
+    try:
+        conn = redis.connect()
+        ga_queue_name = os.environ.get("CRE_GA_QUEUE_NAME", "ga")
+        q = Queue(name=ga_queue_name, connection=conn)
+        inflight_key = f"ga:inflight:{cache_key}"
+        inflight_job_id_raw = conn.get(inflight_key)
+        inflight_job_id = (
+            inflight_job_id_raw.decode("utf-8")
+            if isinstance(inflight_job_id_raw, bytes)
+            else str(inflight_job_id_raw) if inflight_job_id_raw else ""
+        )
+        if inflight_job_id:
+            try:
+                inflight_job = job.Job.fetch(id=inflight_job_id, connection=conn)
+                if inflight_job.get_status() in (
+                    job.JobStatus.QUEUED,
+                    job.JobStatus.STARTED,
+                ):
+                    return jsonify({"job_id": inflight_job_id})
+            except exceptions.NoSuchJobError:
+                conn.delete(inflight_key)
+
+        j = q.enqueue_call(
+            description=f"{standards[0]}->{standards[1]}",
+            func=cre_main.run_gap_pair_job,
+            kwargs={
+                "importing_name": standards[0],
+                "peer_name": standards[1],
+                "db_connection_str": db_url,
+            },
+            timeout=gap_analysis.GAP_ANALYSIS_TIMEOUT,
+        )
+        conn.set(inflight_key, str(j.id))
+        conn.expire(inflight_key, _ga_timeout_seconds())
+        return jsonify({"job_id": str(j.id)})
+    except Exception as exc:
+        logger.warning(
+            "Redis/RQ unavailable in map_analysis for %s; using synchronous fallback: %s",
+            cache_key,
+            exc,
         )
         if direct_gap_analysis:
             return jsonify(direct_gap_analysis)
