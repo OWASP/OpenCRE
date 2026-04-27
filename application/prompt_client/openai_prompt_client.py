@@ -6,6 +6,7 @@ from typing import Any, Callable, Dict
 
 import openai
 from openai import OpenAI
+from application.prompt_client.embed_alignment import alignment_response_json_schema
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
@@ -139,7 +140,14 @@ class OpenAIPromptClient:
                     {"role": "system", "content": system_instruction},
                     {"role": "user", "content": user_payload},
                 ],
-                response_format={"type": "json_object"},
+                response_format={
+                    "type": "json_schema",
+                    "json_schema": {
+                        "name": "opencre_alignment_payload",
+                        "strict": True,
+                        "schema": alignment_response_json_schema(),
+                    },
+                },
                 temperature=0.2,
             )
             text = (resp.choices[0].message.content or "").strip()

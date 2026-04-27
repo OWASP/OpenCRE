@@ -15,6 +15,7 @@ import re
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Set, Tuple
 from urllib.parse import urldefrag
+from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 logger = logging.getLogger(__name__)
 
@@ -57,6 +58,31 @@ class SmartExtractOutcome:
     shadow_only: bool
     marker_start_bid: str = ""
     marker_end_bid: str = ""
+
+
+class AlignmentPayload(BaseModel):
+    """
+    Strict schema for LLM alignment output.
+
+    This keeps provider output deterministic and lets us fail closed to full-page
+    fallback when malformed JSON slips through.
+    """
+
+    model_config = ConfigDict(extra="ignore")
+
+    start_bid: str = Field(pattern=r"^b\d+$")
+    end_bid: str = Field(pattern=r"^b\d+$")
+    suggested_fragment: Optional[str] = None
+    confidence: float = Field(ge=0.0, le=1.0)
+    should_fallback_full_page: bool
+    rationale: str = ""
+
+
+def alignment_response_json_schema() -> Dict[str, Any]:
+    """
+    Provider-friendly JSON schema for strict structured outputs.
+    """
+    return AlignmentPayload.model_json_schema()
 
 
 def _denylist_ids() -> Set[str]:
@@ -204,14 +230,19 @@ def _call_alignment_llm(ai_client: Any, system: str, user: str) -> AlignmentResu
     else:
         raise RuntimeError("ai_client must implement align_embedding_span_json")
 
-    start_bid = str(raw.get("start_bid") or "b0").strip()
-    end_bid = str(raw.get("end_bid") or start_bid).strip()
-    conf = float(raw.get("confidence") or 0.0)
-    frag = raw.get("suggested_fragment")
+    try:
+        payload = AlignmentPayload.model_validate(raw)
+    except ValidationError as e:
+        raise RuntimeError(f"invalid alignment payload: {e}") from e
+
+    start_bid = payload.start_bid
+    end_bid = payload.end_bid
+    conf = payload.confidence
+    frag = payload.suggested_fragment
     if frag is not None:
         frag = str(frag).strip().lstrip("#") or None
-    fb = bool(raw.get("should_fallback_full_page"))
-    rationale = str(raw.get("rationale") or "")[:500]
+    fb = payload.should_fallback_full_page
+    rationale = payload.rationale[:500]
     return AlignmentResult(
         start_bid=start_bid,
         end_bid=end_bid,
