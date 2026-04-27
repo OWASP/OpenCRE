@@ -1,5 +1,7 @@
+import json
+
 import google.api_core.exceptions as googleExceptions
-from typing import Any, Callable, List
+from typing import Any, Callable, Dict, List
 from vertexai.preview.language_models import TextEmbeddingModel
 from google.cloud import aiplatform
 from vertexai.preview.language_models import ChatModel
@@ -278,6 +280,27 @@ class VertexPromptClient:
 
         return self._with_genai_rate_limit_retry(
             _call, context="Gemini generate_content (RAG chat)"
+        )
+
+    def align_embedding_span_json(self, system_instruction: str, user_payload: str) -> Dict[str, Any]:
+        """Structured JSON for smart embedding excerpt alignment (RFC: improve-embedding-accuracy)."""
+        msg = f"{system_instruction}\n\n{user_payload}"
+
+        def _call() -> Any:
+            response = self.client.models.generate_content(
+                model=self.model_name,
+                contents=msg,
+                config=types.GenerateContentConfig(
+                    max_output_tokens=MAX_OUTPUT_TOKENS,
+                    temperature=0.2,
+                    response_mime_type="application/json",
+                ),
+            )
+            text = (response.text or "").strip()
+            return json.loads(text)
+
+        return self._with_genai_rate_limit_retry(
+            _call, context="Gemini align_embedding_span_json"
         )
 
     def query_llm(self, raw_question: str) -> str:

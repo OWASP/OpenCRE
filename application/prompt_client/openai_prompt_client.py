@@ -1,8 +1,11 @@
-import openai
+import json
 import logging
 import os
 import time
-from typing import Any, Callable
+from typing import Any, Callable, Dict
+
+import openai
+from openai import OpenAI
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
@@ -121,6 +124,30 @@ class OpenAIPromptClient:
             return response.choices[0].message["content"].strip()
 
         return self._with_rate_limit_retry(_call, context="OpenAI chat completion")
+
+    def align_embedding_span_json(self, system_instruction: str, user_payload: str) -> Dict[str, Any]:
+        """
+        Structured JSON for smart embedding excerpt alignment (RFC: improve-embedding-accuracy).
+        """
+        model = os.environ.get("CRE_EMBED_ALIGN_MODEL", "gpt-4o-mini")
+        client = OpenAI(api_key=self.api_key)
+
+        def _call() -> Any:
+            resp = client.chat.completions.create(
+                model=model,
+                messages=[
+                    {"role": "system", "content": system_instruction},
+                    {"role": "user", "content": user_payload},
+                ],
+                response_format={"type": "json_object"},
+                temperature=0.2,
+            )
+            text = (resp.choices[0].message.content or "").strip()
+            return json.loads(text)
+
+        return self._with_rate_limit_retry(
+            _call, context="OpenAI align_embedding_span_json"
+        )
 
     def query_llm(self, raw_question: str) -> str:
         messages = [
