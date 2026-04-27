@@ -31,6 +31,42 @@ logger.setLevel(logging.INFO)
 MAX_OUTPUT_TOKENS = 1024
 
 
+def _parse_structured_json_text(raw_text: str) -> Dict[str, Any]:
+    """
+    Best-effort parser for provider "JSON mode" responses.
+
+    Providers occasionally wrap valid JSON in markdown fences or prepend short text.
+    We first try strict JSON, then recover the first JSON object span.
+    """
+    text = (raw_text or "").strip()
+    if not text:
+        raise ValueError("empty alignment response text")
+
+    # Common wrapper from some model responses.
+    if text.startswith("```"):
+        text = text.strip("`").strip()
+        if text.lower().startswith("json"):
+            text = text[4:].strip()
+
+    try:
+        parsed = json.loads(text)
+        if isinstance(parsed, dict):
+            return parsed
+    except json.JSONDecodeError:
+        pass
+
+    start = text.find("{")
+    end = text.rfind("}")
+    if start == -1 or end == -1 or end <= start:
+        raise ValueError("alignment response did not contain a JSON object")
+
+    candidate = text[start : end + 1]
+    parsed = json.loads(candidate)
+    if not isinstance(parsed, dict):
+        raise ValueError("alignment response JSON root must be an object")
+    return parsed
+
+
 def _is_genai_rate_limit_error(err: Exception) -> bool:
     """True only for rate-limit / quota exhaustion so other errors fail fast."""
     msg = str(err).lower()
@@ -305,7 +341,7 @@ class VertexPromptClient:
                 ),
             )
             text = (response.text or "").strip()
-            return json.loads(text)
+            return _parse_structured_json_text(text)
 
         return self._with_genai_rate_limit_retry(
             _call, context="Gemini align_embedding_span_json"
