@@ -429,7 +429,7 @@ class in_memory_embeddings:
                     resolved_embeddings_url: Optional[str] = None
                     if is_valid_url(node.hyperlink):
                         smart_mode = (
-                            os.environ.get("CRE_EMBED_SMART_EXTRACT", "off")
+                            os.environ.get("CRE_EMBED_SMART_EXTRACT", "on")
                             .lower()
                             .strip()
                         )

@@ -57,7 +57,7 @@ class TestIncrementalEmbeddings(unittest.TestCase):
         emb = prompt_client.in_memory_embeddings.__new__(
             prompt_client.in_memory_embeddings
         )
-        emb.ai_client = Mock()
+        emb.ai_client = Mock(spec=["get_max_batch_size", "get_text_embeddings"])
         emb.ai_client.get_max_batch_size.return_value = 16
         emb.ai_client.get_text_embeddings.return_value = [[0.1, 0.2]]
 
@@ -118,7 +118,7 @@ class TestIncrementalEmbeddings(unittest.TestCase):
         emb = prompt_client.in_memory_embeddings.__new__(
             prompt_client.in_memory_embeddings
         )
-        emb.ai_client = Mock()
+        emb.ai_client = Mock(spec=["get_max_batch_size", "get_text_embeddings"])
         emb.ai_client.get_max_batch_size.return_value = 16
         emb.ai_client.get_text_embeddings.return_value = [[0.1, 0.2]]
 
@@ -141,7 +141,7 @@ class TestIncrementalEmbeddings(unittest.TestCase):
 
         ph = prompt_client.PromptHandler.__new__(prompt_client.PromptHandler)
         ph.database = fake_db
-        ph.ai_client = Mock()
+        ph.ai_client = Mock(spec=["get_max_batch_size", "get_text_embeddings"])
         ph.ai_client.get_max_batch_size.return_value = 16
         # Single item batch shape can be single embedding vector.
         ph.ai_client.get_text_embeddings.return_value = [0.11, 0.22]
@@ -169,7 +169,7 @@ class TestIncrementalEmbeddings(unittest.TestCase):
         emb = prompt_client.in_memory_embeddings.__new__(
             prompt_client.in_memory_embeddings
         )
-        emb.ai_client = Mock()
+        emb.ai_client = Mock(spec=["get_max_batch_size", "get_text_embeddings"])
         emb.ai_client.get_max_batch_size.return_value = 16
         emb.ai_client.get_text_embeddings.return_value = [[0.1, 0.2]]
         emb.get_content = Mock(return_value=None)
@@ -207,7 +207,7 @@ class TestIncrementalEmbeddings(unittest.TestCase):
         emb = prompt_client.in_memory_embeddings.__new__(
             prompt_client.in_memory_embeddings
         )
-        emb.ai_client = Mock()
+        emb.ai_client = Mock(spec=["get_max_batch_size", "get_text_embeddings"])
         emb.ai_client.get_max_batch_size.return_value = 16
         emb.ai_client.get_text_embeddings.return_value = [[0.9, 0.8]]
 
