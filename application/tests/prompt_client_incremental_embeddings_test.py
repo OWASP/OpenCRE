@@ -65,7 +65,9 @@ class TestIncrementalEmbeddings(unittest.TestCase):
         emb.get_content = Mock(return_value="Page content")
         emb.clean_content = Mock(side_effect=lambda c: c)
 
-        def _add_embedding_side_effect(db_obj, _doc_type, _emb, embedding_text):
+        def _add_embedding_side_effect(
+            db_obj, _doc_type, _emb, embedding_text, embeddings_url=None
+        ):
             fake_db._emb_by_id[db_obj.id] = SimpleNamespace(
                 embeddings_content=embedding_text
             )

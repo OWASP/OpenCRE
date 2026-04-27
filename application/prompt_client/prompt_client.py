@@ -8,6 +8,8 @@ from nltk.tokenize import word_tokenize
 from io import BytesIO
 from urllib.parse import urlparse
 
+from application.prompt_client import embed_alignment
+
 from playwright.sync_api import Error as PlaywrightError
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError, sync_playwright
 from scipy import sparse
@@ -217,6 +219,52 @@ class in_memory_embeddings:
 
         return None
 
+    def get_html(self, url) -> Optional[str]:
+        """Return raw HTML document string (for smart excerpt alignment). PDF URLs unsupported."""
+        for attempts in range(1, 10):
+            if _is_likely_pdf_url(url):
+                return None
+            page = None
+            try:
+                page = self.__context.new_page()
+                logger.info(f"loading page HTML {url}")
+                page.goto(url)
+                return page.content()
+            except requests.exceptions.RequestException as e:
+                logger.error(
+                    f"Error fetching HTML for URL: {url} - {str(e)} (attempt {attempts}/9)"
+                )
+                continue
+            except PlaywrightTimeoutError as te:
+                logger.error(
+                    f"Page: {url}, took too long to load, playwright timeout (attempt {attempts}/9) - {str(te)}"
+                )
+                continue
+            except PlaywrightError as pe:
+                if _playwright_forced_download_error(pe):
+                    return None
+                logger.error(
+                    "Playwright error for %s (attempt %s/9): %s",
+                    url,
+                    attempts,
+                    pe,
+                )
+                continue
+            finally:
+                if page:
+                    try:
+                        page.close()
+                    except Exception:
+                        pass
+        return None
+
+    def _ensure_smart_embed_caches(self) -> None:
+        if not hasattr(self, "_smart_page_html_cache"):
+            self._smart_page_html_cache: Dict[str, str] = {}
+            self._smart_alignment_cache: Dict[
+                Tuple[str, str], embed_alignment.AlignmentResult
+            ] = {}
+
     def clean_content(self, content):
         content = re.sub("\s+", " ", content.strip())
 
@@ -247,6 +295,9 @@ class in_memory_embeddings:
         self.__context = self.__browser.new_context()
 
     def teardown_playwright(self):
+        if hasattr(self, "_smart_page_html_cache"):
+            self._smart_page_html_cache.clear()
+            self._smart_alignment_cache.clear()
         self.__browser.close()
         self.__playwright.stop()
 
@@ -322,7 +373,8 @@ class in_memory_embeddings:
         for i in range(0, len(missing_embeddings), batch_size):
             batch_ids = missing_embeddings[i : i + batch_size]
             batch_contents: List[str] = []
-            batch_records: List[Tuple[Any, Any, str]] = []
+            # (db_obj, doc_type, embedding_text, embeddings_url_override or None for default link)
+            batch_records: List[Tuple[Any, Any, str, Optional[str]]] = []
 
             # Collect all batch content first, so embeddings are batched in one provider call.
             for db_id in batch_ids:
@@ -361,7 +413,9 @@ class in_memory_embeddings:
                             continue
 
                         batch_contents.append(content)
-                        batch_records.append((dbcre, cre_defs.Credoctypes.CRE, content))
+                        batch_records.append(
+                            (dbcre, cre_defs.Credoctypes.CRE, content, None)
+                        )
                     else:
                         logger.warning(
                             f"missing embeddings id={db_id} not found in CRE or Node"
@@ -372,45 +426,136 @@ class in_memory_embeddings:
 
                 if nodes:
                     node = nodes[0] if isinstance(nodes, list) else nodes
+                    resolved_embeddings_url: Optional[str] = None
                     if is_valid_url(node.hyperlink):
-                        raw_content = self.get_content(node.hyperlink)
-                        content_from_remote = ""
-                        if raw_content:
-                            content_from_remote = normalize_embeddings_content(
-                                self.clean_content(raw_content)
+                        smart_mode = (
+                            os.environ.get("CRE_EMBED_SMART_EXTRACT", "off")
+                            .lower()
+                            .strip()
+                        )
+                        self._ensure_smart_embed_caches()
+                        use_smart = (
+                            smart_mode in ("on", "shadow")
+                            and not _is_likely_pdf_url(node.hyperlink)
+                            and self.ai_client is not None
+                            and hasattr(self.ai_client, "align_embedding_span_json")
+                        )
+                        content = ""
+                        if use_smart:
+                            page_key = embed_alignment.normalize_page_cache_key(
+                                node.hyperlink
                             )
-                            # Step 4b: metadata must affect embedding meaning/caching.
-                            # When embeddings are derived from fetched URL content,
-                            # fetched body does not include node.__repr__ / todict fields.
-                            if getattr(node, "metadata", None):
-                                metadata_json = stable_json(
-                                    getattr(node, "metadata", None)
+                            html = self._smart_page_html_cache.get(page_key)
+                            if html is None:
+                                html = self.get_html(node.hyperlink)
+                                if html:
+                                    self._smart_page_html_cache[page_key] = html
+                            if html:
+                                full_clean = normalize_embeddings_content(
+                                    self.clean_content(
+                                        embed_alignment.html_body_inner_text(html)
+                                    )
                                 )
-                                content_from_remote = normalize_embeddings_content(
-                                    f"{content_from_remote}\nmetadata:{metadata_json}"
+                                conf_thr = float(
+                                    os.environ.get("CRE_EMBED_SMART_CONFIDENCE", "0.65")
                                 )
-
-                        if content_from_remote:
-                            content = content_from_remote
-                        else:
-                            content = _embedding_text_from_node_resource_fields(node)
-                            if raw_content:
-                                logger.info(
-                                    "Remote text for %s cleaned to empty; using stored node fields for embedding",
-                                    node.hyperlink,
-                                )
-                            else:
-                                logger.info(
-                                    "No extractable remote text for %s; using stored node fields for embedding",
-                                    node.hyperlink,
-                                )
-
+                                try:
+                                    out = embed_alignment.run_smart_extract(
+                                        html=html,
+                                        full_cleaned_body_text=full_clean,
+                                        node=node,
+                                        ai_client=self.ai_client,
+                                        mode=smart_mode,
+                                        page_cache_key=page_key,
+                                        alignment_cache=self._smart_alignment_cache,
+                                        confidence_threshold=conf_thr,
+                                    )
+                                except Exception as e:
+                                    logger.warning(
+                                        "Smart extract failed; falling back to full page: %s",
+                                        e,
+                                    )
+                                    out = None
+                                if out is not None:
+                                    if smart_mode == "shadow" or not out.used_excerpt:
+                                        content_base = full_clean
+                                    else:
+                                        content_base = normalize_embeddings_content(
+                                            self.clean_content(out.embed_plain_text)
+                                        )
+                                    marker = ""
+                                    if (
+                                        smart_mode == "on"
+                                        and out.used_excerpt
+                                        and out.marker_start_bid
+                                    ):
+                                        marker = embed_alignment.embedding_cache_marker(
+                                            used_excerpt=True,
+                                            start_bid=out.marker_start_bid,
+                                            end_bid=out.marker_end_bid,
+                                            resolved_url=out.resolved_embeddings_url,
+                                        )
+                                    if getattr(node, "metadata", None):
+                                        metadata_json = stable_json(
+                                            getattr(node, "metadata", None)
+                                        )
+                                        content = normalize_embeddings_content(
+                                            f"{content_base}\nmetadata:{metadata_json}{marker}"
+                                        )
+                                    else:
+                                        content = normalize_embeddings_content(
+                                            f"{content_base}{marker}"
+                                        )
+                                    if smart_mode == "shadow":
+                                        resolved_embeddings_url = node.hyperlink
+                                    else:
+                                        resolved_embeddings_url = (
+                                            out.resolved_embeddings_url
+                                            or node.hyperlink
+                                        )
+                                    if smart_mode == "shadow":
+                                        logger.info(
+                                            "Smart extract shadow for %s: rationale=%s",
+                                            node.hyperlink,
+                                            out.rationale[:200],
+                                        )
                         if not content:
-                            logger.warning(
-                                "Skipping embedding for %s: no text from remote or stored node fields",
-                                node.hyperlink,
-                            )
-                            continue
+                            raw_content = self.get_content(node.hyperlink)
+                            content_from_remote = ""
+                            if raw_content:
+                                content_from_remote = normalize_embeddings_content(
+                                    self.clean_content(raw_content)
+                                )
+                                if getattr(node, "metadata", None):
+                                    metadata_json = stable_json(
+                                        getattr(node, "metadata", None)
+                                    )
+                                    content_from_remote = normalize_embeddings_content(
+                                        f"{content_from_remote}\nmetadata:{metadata_json}"
+                                    )
+                            if content_from_remote:
+                                content = content_from_remote
+                            else:
+                                content = _embedding_text_from_node_resource_fields(
+                                    node
+                                )
+                                if raw_content:
+                                    logger.info(
+                                        "Remote text for %s cleaned to empty; using stored node fields for embedding",
+                                        node.hyperlink,
+                                    )
+                                else:
+                                    logger.info(
+                                        "No extractable remote text for %s; using stored node fields for embedding",
+                                        node.hyperlink,
+                                    )
+                            if not content:
+                                logger.warning(
+                                    "Skipping embedding for %s: no text from remote or stored node fields",
+                                    node.hyperlink,
+                                )
+                                continue
+                            resolved_embeddings_url = None
                     else:
                         content = normalize_embeddings_content(node.__repr__())
 
@@ -438,7 +583,9 @@ class in_memory_embeddings:
                         continue
 
                     batch_contents.append(content)
-                    batch_records.append((dbnode, node.doctype, content))
+                    batch_records.append(
+                        (dbnode, node.doctype, content, resolved_embeddings_url)
+                    )
                     continue
 
                 logger.warning(
@@ -467,8 +614,14 @@ class in_memory_embeddings:
                 ]
 
             for rec, emb in zip(batch_records, embeddings):
-                db_obj, doc_type, embedding_text = rec
-                database.add_embedding(db_obj, doc_type, emb, embedding_text)
+                db_obj, doc_type, embedding_text, emb_url_override = rec
+                database.add_embedding(
+                    db_obj,
+                    doc_type,
+                    emb,
+                    embedding_text,
+                    embeddings_url=emb_url_override,
+                )
 
 
 class PromptHandler:

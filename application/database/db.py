@@ -2269,9 +2269,21 @@ class Node_collection:
         doctype: cre_defs.Credoctypes,
         embeddings: List[float],
         embedding_text: str,
+        embeddings_url: Optional[str] = None,
     ):
+        """
+        Persist embedding vector and content.
+
+        For nodes, ``embeddings_url`` is the resolved URL used for fetch/embed alignment
+        (may include a fragment). When ``None``, defaults to ``db_object.link`` (importer hyperlink).
+        """
         existing = self.get_embedding(db_object.id)
         embeddings_str = ",".join([str(e) for e in embeddings])
+        resolved_node_url: Optional[str] = None
+        if doctype != cre_defs.Credoctypes.CRE:
+            resolved_node_url = (
+                embeddings_url if embeddings_url is not None else db_object.link
+            )
 
         if not existing:
             emb = None
@@ -2288,7 +2300,7 @@ class Node_collection:
                     node_id=db_object.id,
                     doc_type=db_object.ntype,
                     embeddings_content=embedding_text,
-                    embeddings_url=db_object.link,
+                    embeddings_url=resolved_node_url,
                 )
             self.session.add(emb)
             self.session.commit()
@@ -2297,6 +2309,11 @@ class Node_collection:
             logger.debug(f"knew of embedding for object {db_object.id} ,updating")
             existing[0].embeddings = embeddings_str
             existing[0].embeddings_content = embedding_text
+            if doctype != cre_defs.Credoctypes.CRE:
+                if embeddings_url is not None:
+                    existing[0].embeddings_url = embeddings_url
+                elif getattr(existing[0], "embeddings_url", None) is None:
+                    existing[0].embeddings_url = db_object.link
             self.session.commit()
 
             return existing
