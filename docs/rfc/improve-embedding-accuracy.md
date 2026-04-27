@@ -173,7 +173,9 @@ So: **content is cached per URL; alignment is cached per (URL, section_key).** D
 - **`CRE_EMBED_SMART_MIN_EXCERPT_CHARS`:** minimum excerpt length before fallback (default `30`).
 - **`CRE_EMBED_FRAGMENT_ID_DENYLIST`:** comma-separated extra `id` values to ignore for fragments.
 - Code: `application/prompt_client/embed_alignment.py`, wiring in `prompt_client.py`, `align_embedding_span_json` on OpenAI and Vertex clients, `Node_collection.add_embedding(..., embeddings_url=...)`.
-- Tests: `application/tests/embed_alignment_test.py`, `application/tests/prompt_client_smart_embed_test.py`; live LLM + network: `application/tests/test_smart_embeddings_e2e_llm.py` (`pytest -m llm_e2e`, requires `OPENAI_API_KEY`).
+<<<<<<< HEAD
+- Tests: `application/tests/embed_alignment_test.py`, `application/tests/prompt_client_smart_embed_test.py`; live LLM + network: `application/tests/test_smart_embeddings_e2e_llm.py` (`pytest -m llm_e2e`, requires `OPENAI_API_KEY` or `GEMINI_API_KEY`).
+- Full rebuild after logic changes: `python cre.py --regenerate_embeddings --cache_file ./standards_cache.sqlite` (deletes all embedding rows, then re-embeds everything).
 
 ## 12. References
 

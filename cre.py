@@ -202,7 +202,12 @@ def main() -> None:
     parser.add_argument(
         "--generate_embeddings",
         action="store_true",
-        help="for every node, download the text pointed to by the hyperlink and generate embeddings for the content of the specific node",
+        help="for every node missing an embedding row, download content and generate embeddings",
+    )
+    parser.add_argument(
+        "--regenerate_embeddings",
+        action="store_true",
+        help="delete all embedding rows then rebuild embeddings for every CRE and node (use after smart-extract or model changes)",
     )
     parser.add_argument(
         "--populate_neo4j_db",

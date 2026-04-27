@@ -121,4 +121,20 @@ You can run the backend with `make dev-flask`. At the time of writing the backen
 
 You can run the frontend with `yarn start`. This should open a browser tab at the application's front page and also automatically reload the page whenever changes are detected. At the time of writing the frontend URL is `http://localhost:9001` by default.
 
+### Regenerating all embeddings (smart extract / new model)
+
+After changing embedding logic or models, wipe and rebuild stored vectors so the chatbot similarity search uses the new text:
+
+```bash
+# From repo root; uses standards_cache.sqlite by default or pass --cache_file
+export OPENAI_API_KEY=...   # or GEMINI_API_KEY for Vertex
+python cre.py --regenerate_embeddings --cache_file ./standards_cache.sqlite
+```
+
+This deletes every row in the `embeddings` table, then runs the same full pass as a cold import (Playwright fetch + optional smart excerpt + provider embed). It can take a long time and consumes API quota.
+
+### Chatbot and deep links
+
+The chatbot matches your question to a **standard node embedding**, then answers using that node’s `embeddings_content`. When a narrower **`embeddings_url`** exists (e.g. OWASP AI Exchange `#ai-program`), the API passes that URL as **`hyperlink` in the references table** so the “References” external link opens the correct section; the LLM context also includes `Preferred_source_URL_for_citations`.
+
 This is it, please follow the [CONTRIBUTING](../CONTRIBUTING.md) guidlines while contributing and thank you for your interest in OpenCRE.

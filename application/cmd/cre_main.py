@@ -930,7 +930,9 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
     if args.import_external_projects:
         BaseParser().call_importers(db_connection_str=args.cache_file)
 
-    if args.generate_embeddings:
+    if getattr(args, "regenerate_embeddings", False):
+        regenerate_embeddings(args.cache_file)
+    elif args.generate_embeddings:
         generate_embeddings(args.cache_file)
     if args.populate_neo4j_db:
         populate_neo4j_db(args.cache_file)
@@ -994,6 +996,14 @@ def prepare_for_review(cache: str) -> Tuple[str, str]:
 
 def generate_embeddings(db_url: str) -> None:
     database = db_connect(path=db_url)
+    prompt_client.PromptHandler(database, load_all_embeddings=True)
+
+
+def regenerate_embeddings(db_url: str) -> None:
+    """Wipe all embedding rows, then rebuild (CRE + every node type) like ``--generate_embeddings``."""
+    database = db_connect(path=db_url)
+    removed = database.delete_all_embeddings()
+    logger.info("Removed %s embedding rows; rebuilding embeddings", removed)
     prompt_client.PromptHandler(database, load_all_embeddings=True)
 
 
