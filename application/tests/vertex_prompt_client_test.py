@@ -12,6 +12,7 @@ from application.prompt_client.vertex_prompt_client import (
     _effective_vertex_embed_retry_settings,
     _is_genai_rate_limit_error,
     _is_heroku_web_dyno,
+    _parse_structured_json_text,
 )
 
 
@@ -95,6 +96,20 @@ class TestVertexPromptClientHelpers(unittest.TestCase):
         os.environ.pop("VERTEX_EMBED_CONTENT_MODEL", None)
         with self.assertRaises(SystemExit):
             VertexPromptClient()
+
+    def test_parse_structured_json_text_parses_clean_json(self) -> None:
+        out = _parse_structured_json_text('{"start_bid":"b0"}')
+        self.assertEqual(out["start_bid"], "b0")
+
+    def test_parse_structured_json_text_parses_fenced_json(self) -> None:
+        out = _parse_structured_json_text('```json\n{"start_bid":"b1"}\n```')
+        self.assertEqual(out["start_bid"], "b1")
+
+    def test_parse_structured_json_text_parses_prefixed_json(self) -> None:
+        out = _parse_structured_json_text(
+            'Here is the JSON you requested:\n{"start_bid":"b2"}'
+        )
+        self.assertEqual(out["start_bid"], "b2")
 
 
 if __name__ == "__main__":
