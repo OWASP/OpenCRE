@@ -1,7 +1,6 @@
 import os
 
 basedir = os.path.abspath(os.path.dirname(__file__))
-ENABLE_MYOPENCRE = os.getenv("ENABLE_MYOPENCRE", "false").lower() == "true"
 
 
 class Config:
@@ -9,10 +8,6 @@ class Config:
     SQLALCHEMY_RECORD_QUERIES = False
     ITEMS_PER_PAGE = 20
     SLOW_DB_QUERY_TIME = 0.5
-    # Feature toggle for gap analysis optimization (default: False for safety)
-    GAP_ANALYSIS_OPTIMIZED = (
-        os.environ.get("GAP_ANALYSIS_OPTIMIZED", "False").lower() == "true"
-    )
 
 
 class DevelopmentConfig(Config):
@@ -46,7 +41,18 @@ class CMDConfig(Config):
     ENVIRONMENT = "CLI"
 
     def __init__(self, db_uri: str):
-        self.SQLALCHEMY_DATABASE_URI = f"sqlite:///{db_uri}"
+        if "://" in db_uri:
+            # Heroku and some tools still emit ``postgres://``; SQLAlchemy 2 expects
+            # ``postgresql://`` for the psycopg dialect name.
+            if db_uri.startswith("postgres://"):
+                db_uri = "postgresql://" + db_uri[len("postgres://") :]
+            self.SQLALCHEMY_DATABASE_URI = db_uri
+        else:
+            # Flask-SQLAlchemy 3+ resolves non-absolute sqlite URLs against
+            # app.instance_path, not the shell cwd. CLI --cache_file should
+            # follow the user's working directory.
+            resolved = os.path.abspath(db_uri)
+            self.SQLALCHEMY_DATABASE_URI = f"sqlite:///{resolved}"
 
 
 config = {
