@@ -29,6 +29,7 @@ from application.utils import db_backend
 from alive_progress import alive_bar
 from application.prompt_client import prompt_client as prompt_client
 from application.utils import gap_analysis
+from application.utils import cres_csv_export
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
@@ -833,6 +834,14 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
     script_path = os.path.dirname(os.path.realpath(__file__))
     os.path.join(script_path, "../cres")
 
+    if getattr(args, "export", False):
+        csv_out = getattr(args, "csv", "").strip()
+        if not csv_out:
+            raise ValueError("--export requires --csv <path>")
+        rows = cres_csv_export.export_cres_and_standards_csv(output_path=csv_out)
+        logger.info("Exported %s rows to %s", rows, csv_out)
+        return
+
     if args.add and getattr(args, "from_ai_exchange_csv", None):
         add_from_ai_exchange_csv(
             csv_path=args.from_ai_exchange_csv,
@@ -930,7 +939,9 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
     if args.import_external_projects:
         BaseParser().call_importers(db_connection_str=args.cache_file)
 
-    if args.generate_embeddings:
+    if getattr(args, "regenerate_embeddings", False):
+        regenerate_embeddings(args.cache_file)
+    elif args.generate_embeddings:
         generate_embeddings(args.cache_file)
     if args.populate_neo4j_db:
         populate_neo4j_db(args.cache_file)
@@ -994,6 +1005,14 @@ def prepare_for_review(cache: str) -> Tuple[str, str]:
 
 def generate_embeddings(db_url: str) -> None:
     database = db_connect(path=db_url)
+    prompt_client.PromptHandler(database, load_all_embeddings=True)
+
+
+def regenerate_embeddings(db_url: str) -> None:
+    """Wipe all embedding rows, then rebuild (CRE + every node type) like ``--generate_embeddings``."""
+    database = db_connect(path=db_url)
+    removed = database.delete_all_embeddings()
+    logger.info("Removed %s embedding rows; rebuilding embeddings", removed)
     prompt_client.PromptHandler(database, load_all_embeddings=True)
 
 

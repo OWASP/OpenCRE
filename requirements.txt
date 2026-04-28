@@ -114,4 +114,6 @@ vertexai
 xmltodict
 google-cloud-trace
 alive-progress
+beautifulsoup4
+litellm
 
