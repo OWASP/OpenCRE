@@ -1015,7 +1015,9 @@ class PromptHandler:
             if emb and getattr(emb[0], "embeddings_url", None):
                 narrow = (emb[0].embeddings_url or "").strip()
                 if narrow:
-                    url_hint = f"Embeddings_URL (scoped source, for citations): {narrow}\n"
+                    url_hint = (
+                        f"Embeddings_URL (scoped source, for citations): {narrow}\n"
+                    )
 
             closest_object_str = (
                 url_hint
