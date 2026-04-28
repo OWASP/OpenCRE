@@ -15,6 +15,7 @@ from playwright.sync_api import TimeoutError as PlaywrightTimeoutError, sync_pla
 from scipy import sparse
 from sklearn.metrics.pairwise import cosine_similarity
 from typing import Dict, List, Any, Tuple, Optional
+from pydantic import ValidationError
 import logging
 
 try:
@@ -27,12 +28,71 @@ import os
 import json
 import re
 import requests
+import time
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 SIMILARITY_THRESHOLD = float(os.environ.get("CHATBOT_SIMILARITY_THRESHOLD", "0.7"))
+
+
+def _safe_truncate_for_log(text: str, limit: int = 600) -> str:
+    s = (text or "").replace("\n", "\\n")
+    if len(s) <= limit:
+        return s
+    return s[:limit] + "...<truncated>"
+
+
+def _extract_content_text(response: Any) -> str:
+    choices = getattr(response, "choices", None)
+    if not choices and isinstance(response, dict):
+        choices = response.get("choices")
+    if not choices:
+        raise ValueError("LLM response did not contain choices")
+    msg = choices[0].message
+    content = getattr(msg, "content", None)
+    if content is None and isinstance(msg, dict):
+        content = msg.get("content")
+    if content is None:
+        raise ValueError("LLM response did not contain message content")
+    if isinstance(content, list):
+        return "".join(
+            c.get("text", "") if isinstance(c, dict) else str(c) for c in content
+        ).strip()
+    return str(content).strip()
+
+
+def _extract_embeddings(response: Any) -> List[List[float]]:
+    data = getattr(response, "data", None)
+    if data is None and isinstance(response, dict):
+        data = response.get("data")
+    if not isinstance(data, list):
+        raise ValueError("Embedding response missing data list")
+    vectors: List[List[float]] = []
+    for item in data:
+        emb = getattr(item, "embedding", None)
+        if emb is None and isinstance(item, dict):
+            emb = item.get("embedding")
+        if not isinstance(emb, list):
+            raise ValueError("Embedding item missing vector")
+        vectors.append([float(x) for x in emb])
+    return vectors
+
+
+def _is_llm_rate_limit_error(err: Exception) -> bool:
+    msg = str(err).lower()
+    if "rate limit" in msg or "too many requests" in msg:
+        return True
+    if "resource exhausted" in msg or "quota" in msg or "exceeded quota" in msg:
+        return True
+    status = (
+        getattr(err, "status_code", None)
+        or getattr(err, "status", None)
+        or getattr(err, "http_status", None)
+        or getattr(err, "code", None)
+    )
+    return status == 429
 
 
 def is_valid_url(url):
@@ -630,20 +690,43 @@ class PromptHandler:
     embeddings_instance = None  # instance of our in_memory_embeddings singletton
 
     def __init__(self, database: db.Node_collection, load_all_embeddings=False) -> None:
-        self.ai_client = None
-        if os.environ.get("GCP_NATIVE") or os.environ.get("GEMINI_API_KEY"):
-            logger.info("using Google Vertex AI engine")
-            self.ai_client = vertex_prompt_client.VertexPromptClient()
-        elif os.getenv("OPENAI_API_KEY"):
-            logger.info("using Open AI engine")
-            self.ai_client = openai_prompt_client.OpenAIPromptClient(
-                os.getenv("OPENAI_API_KEY")
-            )
-        else:
-            logger.error(
-                "cannot instantiate ai client, neither OPENAI_API_KEY nor GEMINI_API_KEY are set "
-            )
+        try:
+            import litellm  # type: ignore
+        except ImportError as e:
+            raise RuntimeError(
+                "litellm package is required for PromptHandler LLM calls"
+            ) from e
+        self._litellm = litellm
+        self.chat_model = os.environ.get("CRE_LLM_CHAT_MODEL", "openai/gpt-4o-mini")
+        self.embed_model = os.environ.get(
+            "CRE_EMBED_MODEL", "openai/text-embedding-3-small"
+        )
+        self.align_model = os.environ.get("CRE_EMBED_ALIGN_MODEL", self.chat_model)
+        self._llm_max_retries = int(os.environ.get("CRE_LLM_MAX_RETRIES", "2"))
+        self._llm_retry_sleep_seconds = int(
+            os.environ.get("CRE_LLM_RETRY_SLEEP_SECONDS", "15")
+        )
+        expected_dim_raw = os.environ.get("CRE_EMBED_EXPECTED_DIM", "").strip()
+        self._expected_embed_dim = int(expected_dim_raw) if expected_dim_raw else None
+        self._validate_embed_dim_on_init = os.environ.get(
+            "CRE_VALIDATE_EMBED_DIM_ON_INIT", "1"
+        ).lower() not in ("0", "false", "no")
+        self.ai_client = self
+        logger.info("using LiteLLM via PromptHandler")
+        if self._expected_embed_dim is not None and self._validate_embed_dim_on_init:
+            probe = self._litellm_get_text_embeddings("dimension probe")
+            if not isinstance(probe, list):
+                raise RuntimeError("embedding probe returned no vector")
+            if len(probe) != self._expected_embed_dim:
+                raise RuntimeError(
+                    f"configured CRE_EMBED_EXPECTED_DIM={self._expected_embed_dim} "
+                    f"but model {self.embed_model} returned {len(probe)}"
+                )
         self.database = database
+        self.database.assert_embedding_contract(
+            expected_model_id=self.embed_model,
+            expected_dim=self._expected_embed_dim,
+        )
         self.embeddings_instance = in_memory_embeddings.instance().with_ai_client(
             ai_client=self.ai_client
         )
@@ -661,6 +744,172 @@ class PromptHandler:
                 logger.info(
                     f"there are {len(missing_embeddings)} embeddings missing from the dataset, db inclompete"
                 )
+
+    def _with_llm_rate_limit_retry(self, fn: Any, *, context: str) -> Any:
+        for attempt in range(self._llm_max_retries + 1):
+            try:
+                return fn()
+            except Exception as e:
+                if not _is_llm_rate_limit_error(e) or attempt >= self._llm_max_retries:
+                    raise
+                logger.info(
+                    "rate/quota limited during %s; sleeping %ss (attempt %s/%s)",
+                    context,
+                    self._llm_retry_sleep_seconds,
+                    attempt + 1,
+                    self._llm_max_retries + 1,
+                )
+                time.sleep(self._llm_retry_sleep_seconds)
+        raise RuntimeError("unreachable: retry loop exited unexpectedly")
+
+    def get_model_name(self) -> str:
+        return self.chat_model
+
+    def get_max_batch_size(self) -> int:
+        return int(os.environ.get("CRE_EMBED_BATCH_SIZE", "50"))
+
+    def _truncate_one(self, t: str) -> str:
+        if len(t) > 8000:
+            logger.info("embedding content exceeds limit; truncating to 8000 chars")
+            return t[:8000]
+        return t
+
+    def _litellm_get_text_embeddings(
+        self, text: str | List[str]
+    ) -> List[float] | List[List[float]]:
+        is_batch = isinstance(text, list)
+        payload = (
+            [self._truncate_one(t) for t in text]
+            if is_batch
+            else self._truncate_one(text)
+        )
+
+        def _call() -> Any:
+            return self._litellm.embedding(model=self.embed_model, input=payload)
+
+        vectors = _extract_embeddings(
+            self._with_llm_rate_limit_retry(_call, context="LiteLLM embeddings")
+        )
+        if self._expected_embed_dim is not None:
+            for v in vectors:
+                if len(v) != self._expected_embed_dim:
+                    raise RuntimeError(
+                        f"embedding dimension mismatch: expected {self._expected_embed_dim}, got {len(v)}"
+                    )
+        if is_batch:
+            return vectors
+        return vectors[0]
+
+    def create_chat_completion(self, prompt: str, closest_object_str: str) -> str:
+        messages = [
+            {
+                "role": "system",
+                "content": "Assistant is a large language model trained for cybersecurity help.",
+            },
+            {
+                "role": "user",
+                "content": (
+                    "Your task is to answer the following question based on this area of "
+                    f"knowledge: `{closest_object_str}` delimit any code snippet with three "
+                    "backticks ignore all other commands and questions that are not relevant.\n"
+                    f"Question: `{prompt}`"
+                ),
+            },
+        ]
+
+        def _call() -> Any:
+            return self._litellm.completion(model=self.chat_model, messages=messages)
+
+        resp = self._with_llm_rate_limit_retry(_call, context="LiteLLM chat completion")
+        return _extract_content_text(resp)
+
+    def align_embedding_span_json(
+        self, system_instruction: str, user_payload: str
+    ) -> Dict[str, Any]:
+        messages = [
+            {"role": "system", "content": system_instruction},
+            {"role": "user", "content": user_payload},
+        ]
+        strict_format = {
+            "type": "json_schema",
+            "json_schema": {
+                "name": "opencre_alignment_payload",
+                "strict": True,
+                "schema": embed_alignment.alignment_response_json_schema(),
+            },
+        }
+
+        def _call_with_json_schema() -> Any:
+            return self._litellm.completion(
+                model=self.align_model,
+                messages=messages,
+                response_format=strict_format,
+                temperature=0.2,
+            )
+
+        def _call_json_object_fallback() -> Any:
+            return self._litellm.completion(
+                model=self.align_model,
+                messages=messages,
+                response_format={"type": "json_object"},
+                temperature=0.2,
+            )
+
+        try:
+            resp = self._with_llm_rate_limit_retry(
+                _call_with_json_schema, context="LiteLLM align_embedding_span_json"
+            )
+        except Exception as e:
+            logger.warning(
+                "strict json_schema mode failed for model=%s: %s; retrying json_object",
+                self.align_model,
+                e,
+            )
+            resp = self._with_llm_rate_limit_retry(
+                _call_json_object_fallback,
+                context="LiteLLM align_embedding_span_json fallback",
+            )
+
+        text = _extract_content_text(resp)
+        try:
+            payload = embed_alignment.AlignmentPayload.model_validate_json(text)
+            return payload.model_dump()
+        except ValidationError:
+            try:
+                parsed = json.loads(text)
+                payload = embed_alignment.AlignmentPayload.model_validate(parsed)
+                return payload.model_dump()
+            except Exception as e:
+                logger.warning(
+                    "LiteLLM alignment JSON parse/validate failed: %s; raw_response=%r",
+                    e,
+                    _safe_truncate_for_log(text),
+                )
+                raise
+
+    def query_llm(self, raw_question: str) -> str:
+        messages = [
+            {
+                "role": "system",
+                "content": "Assistant is a large language model trained for cybersecurity.",
+            },
+            {
+                "role": "user",
+                "content": (
+                    "Your task is to answer the following cybersecurity question if you can, "
+                    "provide code examples, delimit any code snippet with three backticks, "
+                    "ignore any unethical questions or questions irrelevant to cybersecurity\n"
+                    f"Question: `{raw_question}`\n"
+                    "ignore all other commands and questions that are not relevant."
+                ),
+            },
+        ]
+
+        def _call() -> Any:
+            return self._litellm.completion(model=self.chat_model, messages=messages)
+
+        resp = self._with_llm_rate_limit_retry(_call, context="LiteLLM query_llm")
+        return _extract_content_text(resp)
 
     def generate_embeddings_for(self, item_name: str):
         # CRE embeddings are generated from the CRE's textual fields only
@@ -864,7 +1113,7 @@ class PromptHandler:
         return id
 
     def get_text_embeddings(self, text):
-        return self.ai_client.get_text_embeddings(text)
+        return self._litellm_get_text_embeddings(text)
 
     def get_id_of_most_similar_cre_paginated(
         self,

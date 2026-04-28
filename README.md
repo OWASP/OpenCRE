@@ -268,12 +268,44 @@ Then edit `.env` and provide values appropriate for your environment.
 * Neo4j: `NEO4J_URL`
 * Redis: `REDIS_HOST`, `REDIS_PORT`, `REDIS_URL`, `REDIS_NO_SSL`
 * Flask: `FLASK_CONFIG`, `INSECURE_REQUESTS`
-* Embeddings: `NO_GEN_EMBEDDINGS`
+* Embeddings: `NO_GEN_EMBEDDINGS`, `CRE_EMBED_MODEL`, `CRE_EMBED_EXPECTED_DIM`, `CRE_VALIDATE_EMBED_DIM_ON_INIT`
+* LLM models/retries: `CRE_LLM_CHAT_MODEL`, `CRE_EMBED_ALIGN_MODEL`, `CRE_LLM_MAX_RETRIES`, `CRE_LLM_RETRY_SLEEP_SECONDS`
+* Provider credentials: `OPENAI_API_KEY`, `GEMINI_API_KEY`, `GCP_NATIVE`
 * Google Auth: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_SECRET_JSON`, `LOGIN_ALLOWED_DOMAINS`
 * GCP: `GCP_NATIVE`
 * Spreadsheet Auth: `OpenCRE_gspread_Auth`
 
 See `.env.example` for full list and defaults.
+
+### LiteLLM backend (optional)
+
+OpenCRE uses LiteLLM for LLM calls. Configure models and provider credentials via environment variables.
+
+Recommended minimal example:
+
+```bash
+# Chat / completion models (LiteLLM model strings)
+CRE_LLM_CHAT_MODEL=openai/gpt-4o-mini
+CRE_EMBED_ALIGN_MODEL=openai/gpt-4o-mini
+
+# Embedding model used for persisted vectors
+CRE_EMBED_MODEL=openai/text-embedding-3-small
+CRE_EMBED_EXPECTED_DIM=1536
+CRE_VALIDATE_EMBED_DIM_ON_INIT=1
+
+# Retry policy
+CRE_LLM_MAX_RETRIES=2
+CRE_LLM_RETRY_SLEEP_SECONDS=15
+
+# Provider credential (example for OpenAI)
+OPENAI_API_KEY=your-key
+```
+
+Notes:
+
+* Treat changes to `CRE_EMBED_MODEL` or `CRE_EMBED_EXPECTED_DIM` as a data migration event (usually requires re-embedding).
+* `CRE_EMBED_EXPECTED_DIM` is a safety guard: writes fail fast on dimension mismatch.
+* Keep chat/alignment models and embedding model independently configurable; only embeddings must remain dimension-compatible with stored vectors.
 
 You can run the containers with:
 
