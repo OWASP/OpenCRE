@@ -24,9 +24,7 @@ pytestmark = pytest.mark.llm_e2e
 def _skip_no_llm() -> None:
     if os.environ.get("CRE_EMBED_ALIGN_E2E", "1").lower() in ("0", "false", "no"):
         pytest.skip("CRE_EMBED_ALIGN_E2E disabled")
-    if not (
-        os.environ.get("OPENAI_API_KEY") or os.environ.get("GEMINI_API_KEY")
-    ):
+    if not (os.environ.get("OPENAI_API_KEY") or os.environ.get("GEMINI_API_KEY")):
         pytest.skip("No LLM credentials (set OPENAI_API_KEY or GEMINI_API_KEY)")
 
 
@@ -104,12 +102,10 @@ def test_owasp_ai_exchange_live_alignment(
             os.environ.get("CRE_EMBED_SMART_CONFIDENCE", "0.55")
         ),
     )
-    assert out.used_excerpt, (
-        f"expected excerpt mode ({provider}): {out.rationale!r}"
-    )
-    assert expected_fragment in out.resolved_embeddings_url, (
-        f"expected #{expected_fragment} in resolved URL ({provider}), got {out.resolved_embeddings_url!r}"
-    )
-    assert len(out.embed_plain_text) < len(full_clean) * 0.98, (
-        f"excerpt should be materially shorter than full cleaned body ({provider})"
-    )
+    assert out.used_excerpt, f"expected excerpt mode ({provider}): {out.rationale!r}"
+    assert (
+        expected_fragment in out.resolved_embeddings_url
+    ), f"expected #{expected_fragment} in resolved URL ({provider}), got {out.resolved_embeddings_url!r}"
+    assert (
+        len(out.embed_plain_text) < len(full_clean) * 0.98
+    ), f"excerpt should be materially shorter than full cleaned body ({provider})"
