@@ -2644,7 +2644,7 @@ def gap_analysis(
         else:
             if end_key in grouped_paths[key]["paths"]:
                 continue
-            if end_key in extra_paths_dict[key]:
+            if end_key in extra_paths_dict[key]["paths"]:
                 if extra_paths_dict[key]["paths"][end_key]["score"] > path["score"]:
                     extra_paths_dict[key]["paths"][end_key] = path
             else:
