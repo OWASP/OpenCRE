@@ -86,6 +86,23 @@ To run the CLI application, you can run:
 python cre.py --help
 ```
 
+To export the CRE + standards taxonomy to CSV (CI-friendly), run:
+
+```bash
+python cre.py --export --csv <path/to/output.csv>
+```
+
+Example:
+
+```bash
+python cre.py --export --csv artifacts/cres_and_standards.csv
+```
+
+Notes:
+- `--export` is a dedicated export mode and exits after writing the CSV.
+- `--csv` is required when using `--export`.
+- This mode exports report data from the OpenCRE API and does not mutate the local DB.
+
 To download a remote CRE spreadsheet locally you can run:
 
 ```bash
@@ -126,14 +143,29 @@ To run only missing gap-analysis pair backfill (without starting Flask), use:
 RUN_COUNT=8 bash scripts/backfill_gap_analysis.sh
 ```
 
-To sync local Postgres data into a Heroku app (staging or prod), use:
+### Production DB Operations (opencreorg)
+
+Prefer the dedicated scripts in `scripts/db/` for production operations. These scripts enforce safety guards and always capture a fresh backup before DB changes.
+
+- Backup only:
+  - `APP_NAME=opencreorg scripts/db/backup-opencreorg.sh`
+- Sync local Postgres to Heroku:
+  - `APP_NAME=opencreorg SOURCE_DB_URL="postgresql://cre:password@127.0.0.1:5432/cre" scripts/db/sync-local-to-opencreorg.sh`
+- Targeted SQL surgery:
+  - `APP_NAME=opencreorg scripts/db/surgery-opencreorg.sh --sql-file ./tmp/change.sql`
+
+For destructive surgery (`DELETE`, `DROP`, `TRUNCATE`, irreversible `ALTER`), use:
 
 ```bash
-APP_NAME=stagingopencreorg \
-SOURCE_DB_URL="postgresql://cre:password@127.0.0.1:5432/cre" \
-SYNC_TABLES=gap_analysis \
-bash scripts/push-local-postgres-to-heroku.sh --gap_analysis
+APP_NAME=opencreorg \
+CONFIRM_DESTRUCTIVE=I_UNDERSTAND_OPENCREORG_PROD_DB_DESTRUCTIVE_ACTION \
+scripts/db/surgery-opencreorg.sh --sql-file ./tmp/destructive-change.sql --destructive
 ```
+
+Runbooks:
+
+- `docs/runbooks/opencreorg-db-sync-and-surgery.md`
+- `docs/runbooks/opencreorg-db-destructive-ops-checklist.md`
 
 Environment variables for app to connect to neo4jDB (default):
 
@@ -251,12 +283,44 @@ Then edit `.env` and provide values appropriate for your environment.
 * Neo4j: `NEO4J_URL`
 * Redis: `REDIS_HOST`, `REDIS_PORT`, `REDIS_URL`, `REDIS_NO_SSL`
 * Flask: `FLASK_CONFIG`, `INSECURE_REQUESTS`
-* Embeddings: `NO_GEN_EMBEDDINGS`
+* Embeddings: `NO_GEN_EMBEDDINGS`, `CRE_EMBED_MODEL`, `CRE_EMBED_EXPECTED_DIM`, `CRE_VALIDATE_EMBED_DIM_ON_INIT`
+* LLM models/retries: `CRE_LLM_CHAT_MODEL`, `CRE_EMBED_ALIGN_MODEL`, `CRE_LLM_MAX_RETRIES`, `CRE_LLM_RETRY_SLEEP_SECONDS`
+* Provider credentials: `OPENAI_API_KEY`, `GEMINI_API_KEY`, `GCP_NATIVE`
 * Google Auth: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_SECRET_JSON`, `LOGIN_ALLOWED_DOMAINS`
 * GCP: `GCP_NATIVE`
 * Spreadsheet Auth: `OpenCRE_gspread_Auth`
 
 See `.env.example` for full list and defaults.
+
+### LiteLLM backend (optional)
+
+OpenCRE uses LiteLLM for LLM calls. Configure models and provider credentials via environment variables.
+
+Recommended minimal example:
+
+```bash
+# Chat / completion models (LiteLLM model strings)
+CRE_LLM_CHAT_MODEL=gemini/gemini-2.5-flash
+CRE_EMBED_ALIGN_MODEL=gemini/gemini-2.5-flash
+
+# Embedding model used for persisted vectors
+CRE_EMBED_MODEL=gemini/gemini-embedding-001
+CRE_EMBED_EXPECTED_DIM=3072
+CRE_VALIDATE_EMBED_DIM_ON_INIT=1
+
+# Retry policy
+CRE_LLM_MAX_RETRIES=2
+CRE_LLM_RETRY_SLEEP_SECONDS=15
+
+# Provider credential (example for Gemini)
+GEMINI_API_KEY=your-key
+```
+
+Notes:
+
+* Treat changes to `CRE_EMBED_MODEL` or `CRE_EMBED_EXPECTED_DIM` as a data migration event (usually requires re-embedding).
+* `CRE_EMBED_EXPECTED_DIM` is a safety guard: writes fail fast on dimension mismatch.
+* Keep chat/alignment models and embedding model independently configurable; only embeddings must remain dimension-compatible with stored vectors.
 
 You can run the containers with:
 
