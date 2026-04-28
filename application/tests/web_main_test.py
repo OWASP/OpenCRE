@@ -970,7 +970,7 @@ class TestMain(unittest.TestCase):
                 headers={"Content-Type": "application/json"},
             )
             self.assertEqual(200, response.status_code)
-            self.assertEqual(["ASVS", "CAPEC"], json.loads(response.data))
+            self.assertEqual(["ASVS", "CAPEC", "OpenCRE"], json.loads(response.data))
 
     def test_gap_analysis_weak_links_no_cache(self) -> None:
         with self.app.test_client() as client:
