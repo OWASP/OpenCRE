@@ -202,7 +202,12 @@ def main() -> None:
     parser.add_argument(
         "--generate_embeddings",
         action="store_true",
-        help="for every node, download the text pointed to by the hyperlink and generate embeddings for the content of the specific node",
+        help="for every node missing an embedding row, download content and generate embeddings",
+    )
+    parser.add_argument(
+        "--regenerate_embeddings",
+        action="store_true",
+        help="delete all embedding rows then rebuild embeddings for every CRE and node (use after smart-extract or model changes)",
     )
     parser.add_argument(
         "--populate_neo4j_db",
@@ -262,8 +267,20 @@ def main() -> None:
         action="store_true",
         help="download the cre graph from upstream",
     )
+    parser.add_argument(
+        "--export",
+        action="store_true",
+        help="export CRE + standards taxonomy to CSV (CI-friendly)",
+    )
+    parser.add_argument(
+        "--csv",
+        default="",
+        help="output CSV path for --export",
+    )
 
     args = parser.parse_args()
+    if args.export and not args.csv:
+        parser.error("--export requires --csv <path>")
 
     from application.cmd import cre_main
 
