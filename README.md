@@ -143,14 +143,29 @@ To run only missing gap-analysis pair backfill (without starting Flask), use:
 RUN_COUNT=8 bash scripts/backfill_gap_analysis.sh
 ```
 
-To sync local Postgres data into a Heroku app (staging or prod), use:
+### Production DB Operations (opencreorg)
+
+Prefer the dedicated scripts in `scripts/db/` for production operations. These scripts enforce safety guards and always capture a fresh backup before DB changes.
+
+- Backup only:
+  - `APP_NAME=opencreorg scripts/db/backup-opencreorg.sh`
+- Sync local Postgres to Heroku:
+  - `APP_NAME=opencreorg SOURCE_DB_URL="postgresql://cre:password@127.0.0.1:5432/cre" scripts/db/sync-local-to-opencreorg.sh`
+- Targeted SQL surgery:
+  - `APP_NAME=opencreorg scripts/db/surgery-opencreorg.sh --sql-file ./tmp/change.sql`
+
+For destructive surgery (`DELETE`, `DROP`, `TRUNCATE`, irreversible `ALTER`), use:
 
 ```bash
-APP_NAME=stagingopencreorg \
-SOURCE_DB_URL="postgresql://cre:password@127.0.0.1:5432/cre" \
-SYNC_TABLES=gap_analysis \
-bash scripts/push-local-postgres-to-heroku.sh --gap_analysis
+APP_NAME=opencreorg \
+CONFIRM_DESTRUCTIVE=I_UNDERSTAND_OPENCREORG_PROD_DB_DESTRUCTIVE_ACTION \
+scripts/db/surgery-opencreorg.sh --sql-file ./tmp/destructive-change.sql --destructive
 ```
+
+Runbooks:
+
+- `docs/runbooks/opencreorg-db-sync-and-surgery.md`
+- `docs/runbooks/opencreorg-db-destructive-ops-checklist.md`
 
 Environment variables for app to connect to neo4jDB (default):
 
