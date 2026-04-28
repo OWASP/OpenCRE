@@ -67,6 +67,13 @@ def _parse_structured_json_text(raw_text: str) -> Dict[str, Any]:
     return parsed
 
 
+def _safe_truncate_for_log(text: str, limit: int = 600) -> str:
+    s = (text or "").replace("\n", "\\n")
+    if len(s) <= limit:
+        return s
+    return s[:limit] + "...<truncated>"
+
+
 def _is_genai_rate_limit_error(err: Exception) -> bool:
     """True only for rate-limit / quota exhaustion so other errors fail fast."""
     msg = str(err).lower()
@@ -325,7 +332,9 @@ class VertexPromptClient:
             _call, context="Gemini generate_content (RAG chat)"
         )
 
-    def align_embedding_span_json(self, system_instruction: str, user_payload: str) -> Dict[str, Any]:
+    def align_embedding_span_json(
+        self, system_instruction: str, user_payload: str
+    ) -> Dict[str, Any]:
         """Structured JSON for smart embedding excerpt alignment (RFC: improve-embedding-accuracy)."""
         msg = f"{system_instruction}\n\n{user_payload}"
 
@@ -341,7 +350,15 @@ class VertexPromptClient:
                 ),
             )
             text = (response.text or "").strip()
-            return _parse_structured_json_text(text)
+            try:
+                return _parse_structured_json_text(text)
+            except Exception as e:
+                logger.warning(
+                    "Gemini alignment JSON parse failed: %s; raw_response=%r",
+                    e,
+                    _safe_truncate_for_log(text),
+                )
+                raise
 
         return self._with_genai_rate_limit_retry(
             _call, context="Gemini align_embedding_span_json"

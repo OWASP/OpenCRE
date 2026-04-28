@@ -49,6 +49,13 @@ def _parse_structured_json_text(raw_text: str) -> Dict[str, Any]:
     return parsed
 
 
+def _safe_truncate_for_log(text: str, limit: int = 600) -> str:
+    s = (text or "").replace("\n", "\\n")
+    if len(s) <= limit:
+        return s
+    return s[:limit] + "...<truncated>"
+
+
 class OpenAIPromptClient:
     def __init__(self, openai_key) -> None:
         self.api_key = openai_key
@@ -162,7 +169,9 @@ class OpenAIPromptClient:
 
         return self._with_rate_limit_retry(_call, context="OpenAI chat completion")
 
-    def align_embedding_span_json(self, system_instruction: str, user_payload: str) -> Dict[str, Any]:
+    def align_embedding_span_json(
+        self, system_instruction: str, user_payload: str
+    ) -> Dict[str, Any]:
         """
         Structured JSON for smart embedding excerpt alignment (RFC: improve-embedding-accuracy).
         """
@@ -187,7 +196,15 @@ class OpenAIPromptClient:
                 temperature=0.2,
             )
             text = (resp.choices[0].message.content or "").strip()
-            return _parse_structured_json_text(text)
+            try:
+                return _parse_structured_json_text(text)
+            except Exception as e:
+                logger.warning(
+                    "OpenAI alignment JSON parse failed: %s; raw_response=%r",
+                    e,
+                    _safe_truncate_for_log(text),
+                )
+                raise
 
         return self._with_rate_limit_retry(
             _call, context="OpenAI align_embedding_span_json"
