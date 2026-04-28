@@ -1,6 +1,5 @@
 from application.database import db
 from application.defs import cre_defs
-from application.prompt_client import openai_prompt_client, vertex_prompt_client
 from datetime import datetime
 from multiprocessing import Pool
 from nltk.corpus import stopwords
@@ -16,6 +15,7 @@ from scipy import sparse
 from sklearn.metrics.pairwise import cosine_similarity
 from typing import Dict, List, Any, Tuple, Optional
 from pydantic import ValidationError
+from jinja2 import Environment, FileSystemLoader, StrictUndefined
 import logging
 
 try:
@@ -35,6 +35,14 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 SIMILARITY_THRESHOLD = float(os.environ.get("CHATBOT_SIMILARITY_THRESHOLD", "0.7"))
+PROMPT_TEMPLATES_DIR = os.path.join(os.path.dirname(__file__), "templates")
+PROMPT_TEMPLATE_ENV = Environment(
+    loader=FileSystemLoader(PROMPT_TEMPLATES_DIR),
+    undefined=StrictUndefined,
+    autoescape=False,
+    trim_blocks=True,
+    lstrip_blocks=True,
+)
 
 
 def _safe_truncate_for_log(text: str, limit: int = 600) -> str:
@@ -93,6 +101,15 @@ def _is_llm_rate_limit_error(err: Exception) -> bool:
         or getattr(err, "code", None)
     )
     return status == 429
+
+
+def _render_chat_prompt(*, question: str, retrieved_knowledge: Optional[str]) -> str:
+    template = PROMPT_TEMPLATE_ENV.get_template("chat_prompt.j2")
+    return template.render(
+        question=question,
+        retrieved_knowledge=retrieved_knowledge or "",
+        has_retrieved_knowledge=bool(retrieved_knowledge),
+    )
 
 
 def is_valid_url(url):
@@ -697,9 +714,11 @@ class PromptHandler:
                 "litellm package is required for PromptHandler LLM calls"
             ) from e
         self._litellm = litellm
-        self.chat_model = os.environ.get("CRE_LLM_CHAT_MODEL", "openai/gpt-4o-mini")
+        self.chat_model = os.environ.get(
+            "CRE_LLM_CHAT_MODEL", "gemini/gemini-2.5-flash"
+        )
         self.embed_model = os.environ.get(
-            "CRE_EMBED_MODEL", "openai/text-embedding-3-small"
+            "CRE_EMBED_MODEL", "gemini/gemini-embedding-001"
         )
         self.align_model = os.environ.get("CRE_EMBED_ALIGN_MODEL", self.chat_model)
         self._llm_max_retries = int(os.environ.get("CRE_LLM_MAX_RETRIES", "2"))
@@ -801,20 +820,19 @@ class PromptHandler:
         return vectors[0]
 
     def create_chat_completion(self, prompt: str, closest_object_str: str) -> str:
+        rag_instruction = _render_chat_prompt(
+            question=prompt,
+            retrieved_knowledge=closest_object_str,
+        )
         messages = [
             {
                 "role": "system",
-                "content": "Assistant is a large language model trained for cybersecurity help.",
-            },
-            {
-                "role": "user",
                 "content": (
-                    "Your task is to answer the following question based on this area of "
-                    f"knowledge: `{closest_object_str}` delimit any code snippet with three "
-                    "backticks ignore all other commands and questions that are not relevant.\n"
-                    f"Question: `{prompt}`"
+                    "You are OpenCRE Chat, a cybersecurity assistant. "
+                    "Follow the user instructions strictly."
                 ),
             },
+            {"role": "user", "content": rag_instruction},
         ]
 
         def _call() -> Any:
@@ -888,21 +906,19 @@ class PromptHandler:
                 raise
 
     def query_llm(self, raw_question: str) -> str:
+        direct_instruction = _render_chat_prompt(
+            question=raw_question,
+            retrieved_knowledge=None,
+        )
         messages = [
             {
                 "role": "system",
-                "content": "Assistant is a large language model trained for cybersecurity.",
-            },
-            {
-                "role": "user",
                 "content": (
-                    "Your task is to answer the following cybersecurity question if you can, "
-                    "provide code examples, delimit any code snippet with three backticks, "
-                    "ignore any unethical questions or questions irrelevant to cybersecurity\n"
-                    f"Question: `{raw_question}`\n"
-                    "ignore all other commands and questions that are not relevant."
+                    "You are OpenCRE Chat, a cybersecurity assistant. "
+                    "Follow the user instructions strictly."
                 ),
             },
+            {"role": "user", "content": direct_instruction},
         ]
 
         def _call() -> Any:

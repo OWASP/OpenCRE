@@ -10,10 +10,13 @@ from __future__ import annotations
 
 import os
 import re
+import json
 from typing import Any, Tuple
 
 import pytest
 import requests
+import litellm
+from pydantic import ValidationError
 
 from application.defs import cre_defs
 from application.prompt_client import embed_alignment
@@ -29,15 +32,56 @@ def _skip_no_llm() -> None:
 
 
 def _alignment_llm_client() -> Tuple[Any, str]:
-    """Return (client, provider_label). Prefer OpenAI when both are configured."""
+    """Return (client, provider_label) for LiteLLM structured alignment."""
+
+    class _LiteLLMAlignClient:
+        def __init__(self, model: str):
+            self.model = model
+
+        def align_embedding_span_json(
+            self, system_instruction: str, user_payload: str
+        ) -> dict[str, Any]:
+            messages = [
+                {"role": "system", "content": system_instruction},
+                {"role": "user", "content": user_payload},
+            ]
+            strict_format = {
+                "type": "json_schema",
+                "json_schema": {
+                    "name": "opencre_alignment_payload",
+                    "strict": True,
+                    "schema": embed_alignment.alignment_response_json_schema(),
+                },
+            }
+            try:
+                resp = litellm.completion(
+                    model=self.model,
+                    messages=messages,
+                    response_format=strict_format,
+                    temperature=0.2,
+                )
+            except Exception:
+                resp = litellm.completion(
+                    model=self.model,
+                    messages=messages,
+                    response_format={"type": "json_object"},
+                    temperature=0.2,
+                )
+            text = (resp.choices[0].message.content or "").strip()
+            try:
+                payload = embed_alignment.AlignmentPayload.model_validate_json(text)
+                return payload.model_dump()
+            except ValidationError:
+                return embed_alignment.AlignmentPayload.model_validate(
+                    json.loads(text)
+                ).model_dump()
+
     if os.environ.get("OPENAI_API_KEY"):
-        from application.prompt_client.openai_prompt_client import OpenAIPromptClient
-
-        return OpenAIPromptClient(os.environ["OPENAI_API_KEY"]), "openai"
+        model = os.environ.get("CRE_EMBED_ALIGN_MODEL", "openai/gpt-4o-mini")
+        return _LiteLLMAlignClient(model), "litellm-openai"
     if os.environ.get("GEMINI_API_KEY"):
-        from application.prompt_client.vertex_prompt_client import VertexPromptClient
-
-        return VertexPromptClient(), "vertex"
+        model = os.environ.get("CRE_EMBED_ALIGN_MODEL", "gemini/gemini-2.5-flash")
+        return _LiteLLMAlignClient(model), "litellm-gemini"
     pytest.fail("unreachable: _skip_no_llm should have skipped")
 
 
