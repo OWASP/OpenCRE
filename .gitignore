@@ -43,6 +43,11 @@ Vagrantfile
 venv/
 venv-*/
 v/
+.venv/
+
+### Local AI/editor workspaces ###
+.cursor/
+.claude/
 
 ### Frontend 
 node_modules/
@@ -53,6 +58,9 @@ coverage/
 
 ### Dev db
 *.sqlite
+*.sqlite3
+*.db
+standards_cache.sqlite
 
 ### Docs
 *.md

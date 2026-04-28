@@ -42,6 +42,10 @@ class CMDConfig(Config):
 
     def __init__(self, db_uri: str):
         if "://" in db_uri:
+            # Heroku and some tools still emit ``postgres://``; SQLAlchemy 2 expects
+            # ``postgresql://`` for the psycopg dialect name.
+            if db_uri.startswith("postgres://"):
+                db_uri = "postgresql://" + db_uri[len("postgres://") :]
             self.SQLALCHEMY_DATABASE_URI = db_uri
         else:
             # Flask-SQLAlchemy 3+ resolves non-absolute sqlite URLs against
