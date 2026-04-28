@@ -86,6 +86,23 @@ To run the CLI application, you can run:
 python cre.py --help
 ```
 
+To export the CRE + standards taxonomy to CSV (CI-friendly), run:
+
+```bash
+python cre.py --export --csv <path/to/output.csv>
+```
+
+Example:
+
+```bash
+python cre.py --export --csv artifacts/cres_and_standards.csv
+```
+
+Notes:
+- `--export` is a dedicated export mode and exits after writing the CSV.
+- `--csv` is required when using `--export`.
+- This mode exports report data from the OpenCRE API and does not mutate the local DB.
+
 To download a remote CRE spreadsheet locally you can run:
 
 ```bash

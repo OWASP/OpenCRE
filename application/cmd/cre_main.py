@@ -29,6 +29,7 @@ from application.utils import db_backend
 from alive_progress import alive_bar
 from application.prompt_client import prompt_client as prompt_client
 from application.utils import gap_analysis
+from application.utils import cres_csv_export
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
@@ -832,6 +833,14 @@ def backfill_gap_analysis_only(
 def run(args: argparse.Namespace) -> None:  # pragma: no cover
     script_path = os.path.dirname(os.path.realpath(__file__))
     os.path.join(script_path, "../cres")
+
+    if getattr(args, "export", False):
+        csv_out = getattr(args, "csv", "").strip()
+        if not csv_out:
+            raise ValueError("--export requires --csv <path>")
+        rows = cres_csv_export.export_cres_and_standards_csv(output_path=csv_out)
+        logger.info("Exported %s rows to %s", rows, csv_out)
+        return
 
     if args.add and getattr(args, "from_ai_exchange_csv", None):
         add_from_ai_exchange_csv(
