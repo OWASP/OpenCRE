@@ -267,8 +267,20 @@ def main() -> None:
         action="store_true",
         help="download the cre graph from upstream",
     )
+    parser.add_argument(
+        "--export",
+        action="store_true",
+        help="export CRE + standards taxonomy to CSV (CI-friendly)",
+    )
+    parser.add_argument(
+        "--csv",
+        default="",
+        help="output CSV path for --export",
+    )
 
     args = parser.parse_args()
+    if args.export and not args.csv:
+        parser.error("--export requires --csv <path>")
 
     from application.cmd import cre_main
 
