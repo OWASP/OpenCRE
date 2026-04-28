@@ -2291,7 +2291,7 @@ class Node_collection:
         expected_dim_raw = (os.environ.get("CRE_EMBED_EXPECTED_DIM", "") or "").strip()
         embedding_model_id = (
             os.environ.get("CRE_EMBED_MODEL", "") or ""
-        ).strip() or "openai/text-embedding-3-small"
+        ).strip() or "gemini/gemini-embedding-001"
         embedding_dim = len(embeddings)
         if expected_dim_raw:
             expected_dim = int(expected_dim_raw)

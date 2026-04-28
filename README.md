@@ -300,20 +300,20 @@ Recommended minimal example:
 
 ```bash
 # Chat / completion models (LiteLLM model strings)
-CRE_LLM_CHAT_MODEL=openai/gpt-4o-mini
-CRE_EMBED_ALIGN_MODEL=openai/gpt-4o-mini
+CRE_LLM_CHAT_MODEL=gemini/gemini-2.5-flash
+CRE_EMBED_ALIGN_MODEL=gemini/gemini-2.5-flash
 
 # Embedding model used for persisted vectors
-CRE_EMBED_MODEL=openai/text-embedding-3-small
-CRE_EMBED_EXPECTED_DIM=1536
+CRE_EMBED_MODEL=gemini/gemini-embedding-001
+CRE_EMBED_EXPECTED_DIM=3072
 CRE_VALIDATE_EMBED_DIM_ON_INIT=1
 
 # Retry policy
 CRE_LLM_MAX_RETRIES=2
 CRE_LLM_RETRY_SLEEP_SECONDS=15
 
-# Provider credential (example for OpenAI)
-OPENAI_API_KEY=your-key
+# Provider credential (example for Gemini)
+GEMINI_API_KEY=your-key
 ```
 
 Notes:
