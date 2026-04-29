@@ -193,11 +193,11 @@ export const SearchPage = () => {
               <div className="info-card__text">
                 <p>
                   OpenCRE currently links <strong>OWASP standards</strong> (Top 10, ASVS, Proactive Controls,
-                  Cheat sheets, Testing guide, ZAP, Juice shop, SAMM).
+                  Cheat sheets, Testing guide, ZAP, Juice shop, SAMM, AI Exchange, LLM Top 10, and ML Top 10).
                 </p>
                 <p>
                   Plus several <strong>other sources</strong> (CWE, CAPEC, NIST 800 53, NIST 800 63b, Cloud
-                  Control Matrix, ISO27001, ISO27002, and NIST SSDF).
+                  Control Matrix, ISO27001, ISO27002, NIST SSDF, ENISA ML, MITRE ATLAS, NIST AI, ETSI AI).
                 </p>
               </div>
             </div>
