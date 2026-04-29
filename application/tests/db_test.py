@@ -1083,7 +1083,7 @@ class TestDB(unittest.TestCase):
                 name="ccc",
                 description="c2",
                 link="https://example.com/code/hyperlink",
-                tags="1,2",
+                tags="111-111,222-222",
                 ntype=defs.Credoctypes.Code.value,
             ),
         }
