@@ -46,6 +46,13 @@ class TestSecureHeadersParser(unittest.TestCase):
             hyperlink="https://example.com/foo/bar",
             section="headerAsection",
             links=[defs.Link(document=cre, ltype=defs.LinkTypes.LinkedTo)],
+            tags=[
+                "family:guidance",
+                "subtype:cheatsheet",
+                "source:owasp_secure_headers",
+                "audience:developer",
+                "maturity:stable",
+            ],
         )
         for name, nodes in entries.results.items():
             self.assertEqual(name, secure_headers.SecureHeaders().name)

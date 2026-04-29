@@ -11,6 +11,7 @@ logging.basicConfig()
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+from application.utils.external_project_parsers import base_parser_defs
 from application.utils.external_project_parsers.base_parser_defs import (
     ParserInterface,
     ParseResult,
@@ -25,11 +26,10 @@ class Capec(ParserInterface):
     def parse(self, cache: db.Node_collection, ph: prompt_client.PromptHandler):
         xml = requests.get(self.capec_xml)
         if xml.status_code == 200:
-            return ParseResult(
-                results={
-                    self.name: self.register_capec(xml_contents=xml.text, cache=cache)
-                }
-            )
+            docs = self.register_capec(xml_contents=xml.text, cache=cache)
+            results = {self.name: docs}
+            base_parser_defs.validate_classification_tags(results)
+            return ParseResult(results=results)
         else:
             logger.fatal(f"Could not get CAPEC's XML data, error was {xml.text}")
 
@@ -73,6 +73,14 @@ class Capec(ParserInterface):
                         section=pattern["@Name"],
                         hyperlink=self.make_hyperlink(pattern["@ID"]),
                         version=version,
+                        tags=base_parser_defs.build_tags(
+                            family=base_parser_defs.Family.TAXONOMY,
+                            subtype=base_parser_defs.Subtype.RISK_LIST,
+                            audience=base_parser_defs.Audience.DEVELOPER,
+                            maturity=base_parser_defs.Maturity.STABLE,
+                            source="capec",
+                            extra=[],
+                        ),
                     )
                     logger.debug(f"Registered CAPEC with id {capec.section}")
                     if pattern.get("Related_Weaknesses"):

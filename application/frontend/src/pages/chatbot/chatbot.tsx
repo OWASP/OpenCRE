@@ -8,7 +8,6 @@ import { oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { Button, Container, Form, GridRow, Header, Icon } from 'semantic-ui-react';
 import { Grid } from 'semantic-ui-react';
 
-
 import { useEnvironment } from '../../hooks';
 import { Document } from '../../types';
 
@@ -205,6 +204,13 @@ export const Chatbot = () => {
         <a href={d.hyperlink} target="_blank" rel="noopener noreferrer">
           <strong>{d.name}</strong> — section {d.section ?? d.sectionID}
         </a>
+        {d.embeddingsUrl ? (
+          <div className="reference-link">
+            <a href={d.embeddingsUrl} target="_blank" rel="noopener noreferrer">
+              Scoped source (embedding URL)
+            </a>
+          </div>
+        ) : null}
         <div className="reference-link">
           <a href={link}>View in OpenCRE</a>
         </div>
