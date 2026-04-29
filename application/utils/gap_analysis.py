@@ -198,14 +198,25 @@ def preload(target_url: str):
         for sb in standards:
             if sa == sb:
                 continue
-            waiting.append(f"{sa}->{sb}")
+            waiting.append((sa, sb))
+
+    MAX_RETRIES = 10
+    retries = {pair: 0 for pair in waiting}
+
     while len(waiting):
-        for sa in standards:
-            for sb in standards:
-                if sa == sb:
-                    continue
-                if calculate_a_to_b(sa, sb):
-                    waiting.remove(f"{sa}->{sb}") if f"{sa}->{sb}" in waiting else ""
-        print(f"calculating {len(waiting)} gap analyses")
-        time.sleep(30)
+        for pair in list(waiting):
+            sa, sb = pair
+            if calculate_a_to_b(sa, sb):
+                waiting.remove(pair)
+            else:
+                retries[pair] += 1
+                if retries[pair] >= MAX_RETRIES:
+                    print(
+                        f"{sa}->{sb} reached max retries ({MAX_RETRIES}), dropping from waiting list"
+                    )
+                    waiting.remove(pair)
+
+        if waiting:
+            print(f"calculating {len(waiting)} gap analyses")
+            time.sleep(30)
     print("map analysis preloaded successfully")
