@@ -1095,20 +1095,13 @@ def chat_cre() -> Any:
 
     database = db.Node_collection()
     # Lazy import to avoid loading heavy prompt/ML dependencies at web boot.
-    from google.genai import errors as genai_errors
-    from google.api_core import exceptions as googleExceptions
-    import grpc
-    from application.prompt_client import prompt_client, vertex_prompt_client
+    from application.prompt_client import llm_error_utils, prompt_client
 
     prompt = prompt_client.PromptHandler(database)
     try:
         response = prompt.generate_text(message.get("prompt"))
-    except (
-        genai_errors.ClientError,
-        googleExceptions.GoogleAPICallError,
-        grpc.RpcError,
-    ) as e:
-        if vertex_prompt_client._is_genai_rate_limit_error(e):
+    except Exception as e:
+        if llm_error_utils.is_rate_limit_error(e):
             return (
                 jsonify(
                     {
@@ -1122,12 +1115,6 @@ def chat_cre() -> Any:
             )
         return (
             jsonify({"error": f"AI Service Error: {str(e)}"}),
-            500,
-        )
-    except Exception as e:
-        logger.exception("Unexpected error during chatbot completion")
-        return (
-            jsonify({"error": f"An unexpected error occurred: {str(e)}"}),
             500,
         )
     return jsonify(response)
