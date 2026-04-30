@@ -1,0 +1,86 @@
+[
+  {
+    "section_id": "AISVS1",
+    "section": "Training Data Governance & Bias Management",
+    "hyperlink": "https://github.com/OWASP/AISVS/tree/main/1.0/en/0x10-C01-Training-Data-Governance.md",
+    "cre_ids": ["227-045", "307-507"]
+  },
+  {
+    "section_id": "AISVS2",
+    "section": "User Input Validation",
+    "hyperlink": "https://github.com/OWASP/AISVS/tree/main/1.0/en/0x10-C02-User-Input-Validation.md",
+    "cre_ids": ["031-447", "760-764"]
+  },
+  {
+    "section_id": "AISVS3",
+    "section": "Model Lifecycle Management & Change Control",
+    "hyperlink": "https://github.com/OWASP/AISVS/tree/main/1.0/en/0x10-C03-Model-Lifecycle-Management.md",
+    "cre_ids": ["148-853", "613-285"]
+  },
+  {
+    "section_id": "AISVS4",
+    "section": "Infrastructure, Configuration & Deployment Security",
+    "hyperlink": "https://github.com/OWASP/AISVS/tree/main/1.0/en/0x10-C04-Infrastructure.md",
+    "cre_ids": ["233-748", "486-813"]
+  },
+  {
+    "section_id": "AISVS5",
+    "section": "Access Control & Identity for AI Components & Users",
+    "hyperlink": "https://github.com/OWASP/AISVS/tree/main/1.0/en/0x10-C05-Access-Control-and-Identity.md",
+    "cre_ids": ["633-428", "724-770"]
+  },
+  {
+    "section_id": "AISVS6",
+    "section": "Supply Chain Security for Models, Frameworks & Data",
+    "hyperlink": "https://github.com/OWASP/AISVS/tree/main/1.0/en/0x10-C06-Supply-Chain.md",
+    "cre_ids": ["613-285", "613-287", "863-521"]
+  },
+  {
+    "section_id": "AISVS7",
+    "section": "Model Behavior, Output Control & Safety Assurance",
+    "hyperlink": "https://github.com/OWASP/AISVS/tree/main/1.0/en/0x10-C07-Model-Behavior.md",
+    "cre_ids": ["064-808", "141-555"]
+  },
+  {
+    "section_id": "AISVS8",
+    "section": "Memory, Embeddings & Vector Database Security",
+    "hyperlink": "https://github.com/OWASP/AISVS/tree/main/1.0/en/0x10-C08-Memory-Embeddings-and-Vector-Database.md",
+    "cre_ids": ["126-668", "538-770"]
+  },
+  {
+    "section_id": "AISVS9",
+    "section": "Autonomous Orchestration & Agentic Action Security",
+    "hyperlink": "https://github.com/OWASP/AISVS/tree/main/1.0/en/0x10-C09-Orchestration-and-Agentic-Action.md",
+    "cre_ids": ["117-371", "650-560"]
+  },
+  {
+    "section_id": "AISVS10",
+    "section": "Model Context Protocol (MCP) Security",
+    "hyperlink": "https://github.com/OWASP/AISVS/tree/main/1.0/en/0x10-C10-MCP-Security.md",
+    "cre_ids": ["307-507", "715-223"]
+  },
+  {
+    "section_id": "AISVS11",
+    "section": "Adversarial Robustness & Privacy Defense",
+    "hyperlink": "https://github.com/OWASP/AISVS/tree/main/1.0/en/0x10-C11-Adversarial-Robustness.md",
+    "cre_ids": ["141-555", "623-550"]
+  },
+  {
+    "section_id": "AISVS12",
+    "section": "Privacy Protection & Personal Data Management",
+    "hyperlink": "https://github.com/OWASP/AISVS/tree/main/1.0/en/0x10-C12-Privacy.md",
+    "cre_ids": ["126-668", "227-045", "482-866"]
+  },
+  {
+    "section_id": "AISVS13",
+    "section": "Monitoring, Logging & Anomaly Detection",
+    "hyperlink": "https://github.com/OWASP/AISVS/tree/main/1.0/en/0x10-C13-Monitoring-and-Logging.md",
+    "cre_ids": ["058-083", "148-420", "402-706", "843-841"]
+  },
+  {
+    "section_id": "AISVS14",
+    "section": "Human Oversight, Accountability & Governance",
+    "hyperlink": "https://github.com/OWASP/AISVS/tree/main/1.0/en/0x10-C14-Human-Oversight.md",
+    "cre_ids": ["162-655", "766-162"]
+  }
+]
