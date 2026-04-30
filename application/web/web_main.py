@@ -603,9 +603,14 @@ def ga_standards() -> Any:
         posthog.capture("ga_standards", "")
 
     database = db.Node_collection()
-    standards = database.standards()
+    standards = list(database.standards())
+    if OPENCRE_STANDARD_NAME not in standards:
+        standards.append(OPENCRE_STANDARD_NAME)
     eligible = [
-        s for s in standards if cre_main.resource_name_ga_eligible_in_db(database, s)
+        s
+        for s in standards
+        if s == OPENCRE_STANDARD_NAME
+        or cre_main.resource_name_ga_eligible_in_db(database, s)
     ]
     return sorted(eligible)
 
