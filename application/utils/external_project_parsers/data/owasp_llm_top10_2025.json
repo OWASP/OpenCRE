@@ -1,0 +1,62 @@
+[
+  {
+    "section_id": "LLM01",
+    "section": "Prompt Injection",
+    "hyperlink": "https://genai.owasp.org/llmrisk/llm01-prompt-injection/",
+    "cre_ids": ["161-451", "760-764"]
+  },
+  {
+    "section_id": "LLM02",
+    "section": "Sensitive Information Disclosure",
+    "hyperlink": "https://genai.owasp.org/llmrisk/llm022025-sensitive-information-disclosure/",
+    "cre_ids": ["126-668", "227-045"]
+  },
+  {
+    "section_id": "LLM03",
+    "section": "Supply Chain",
+    "hyperlink": "https://genai.owasp.org/llmrisk/llm032025-supply-chain/",
+    "cre_ids": ["613-285", "613-287"]
+  },
+  {
+    "section_id": "LLM04",
+    "section": "Data and Model Poisoning",
+    "hyperlink": "https://genai.owasp.org/llmrisk/llm042025-data-and-model-poisoning/",
+    "cre_ids": ["307-507", "613-287"]
+  },
+  {
+    "section_id": "LLM05",
+    "section": "Improper Output Handling",
+    "hyperlink": "https://genai.owasp.org/llmrisk/llm052025-improper-output-handling/",
+    "cre_ids": ["064-808"]
+  },
+  {
+    "section_id": "LLM06",
+    "section": "Excessive Agency",
+    "hyperlink": "https://genai.owasp.org/llmrisk/llm062025-excessive-agency/",
+    "cre_ids": ["117-371", "650-560"]
+  },
+  {
+    "section_id": "LLM07",
+    "section": "System Prompt Leakage",
+    "hyperlink": "https://genai.owasp.org/llmrisk/llm072025-system-prompt-leakage/",
+    "cre_ids": ["126-668", "227-045"]
+  },
+  {
+    "section_id": "LLM08",
+    "section": "Vector and Embedding Weaknesses",
+    "hyperlink": "https://genai.owasp.org/llmrisk/llm082025-vector-and-embedding-weaknesses/",
+    "cre_ids": ["126-668", "538-770"]
+  },
+  {
+    "section_id": "LLM09",
+    "section": "Misinformation",
+    "hyperlink": "https://genai.owasp.org/llmrisk/llm092025-misinformation/",
+    "cre_ids": ["141-555"]
+  },
+  {
+    "section_id": "LLM10",
+    "section": "Unbounded Consumption",
+    "hyperlink": "https://genai.owasp.org/llmrisk/llm102025-unbounded-consumption/",
+    "cre_ids": ["267-031", "623-550"]
+  }
+]
