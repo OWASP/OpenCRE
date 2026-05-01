@@ -136,8 +136,8 @@ export const ExplorerCircles = () => {
         const label = d.data.displayName
           ? d.data.displayName.replace(/^CRE: /, '')
           : d.data.id
-          ? d.data.id
-          : '';
+            ? d.data.id
+            : '';
 
         if (label) {
           tooltip

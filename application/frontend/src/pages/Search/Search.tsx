@@ -138,9 +138,10 @@ export const SearchPage = () => {
 
           <div className="hero-section__description">
             <p>
-              OpenCRE is an interactive content linking platform that unites security standards and
-              guidelines into one resource. It makes it easier for practitioners to find information, with mappings, deeplinks, browse, search, and 
-              an AI chatbot. Writers of material just have to refer to one OpenCRE requirement, to link to coverage if that topic in all the standards.
+              OpenCRE is an interactive content linking platform that unites security standards and guidelines
+              into one resource. It makes it easier for practitioners to find information, with mappings,
+              deeplinks, browse, search, and an AI chatbot. Writers of material just have to refer to one
+              OpenCRE requirement, to link to coverage if that topic in all the standards.
             </p>
           </div>
 
@@ -197,7 +198,8 @@ export const SearchPage = () => {
                 </p>
                 <p>
                   Plus several <strong>other sources</strong> (CWE, CAPEC, NIST 800 53, NIST 800 63b, Cloud
-                  Control Matrix, ISO27001, ISO27002, NIST SSDF, and for AI: NIST, ENISA, BIML, MITRE ATLAS, and ETSI).
+                  Control Matrix, ISO27001, ISO27002, NIST SSDF, and for AI: NIST, ENISA, BIML, MITRE ATLAS,
+                  and ETSI).
                 </p>
               </div>
             </div>
