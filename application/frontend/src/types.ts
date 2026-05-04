@@ -8,6 +8,8 @@ export interface Document {
   id: string;
   // For Standards
   hyperlink?: string;
+  /** Resolved URL used for embedding fetch (e.g. with #fragment); optional chatbot-only field */
+  embeddingsUrl?: string;
   section?: string;
   subsection?: string;
   tags?: string[];

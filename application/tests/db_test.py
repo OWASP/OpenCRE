@@ -2228,6 +2228,114 @@ class TestDB(unittest.TestCase):
         )
         self.assertEqual(tool_emb, {})
 
+    def test_delete_all_embeddings(self):
+        dbsa = db.Node(
+            subsection="",
+            section="Sec",
+            name="DelEmbTestStd",
+            link="https://example.com/x",
+            ntype=defs.Credoctypes.Standard.value,
+        )
+        self.collection.session.add(dbsa)
+        self.collection.session.commit()
+        embeddings = [random.uniform(-1, 1) for e in range(0, 768)]
+        self.collection.add_embedding(
+            db_object=dbsa,
+            doctype=defs.Credoctypes.Standard.value,
+            embeddings=embeddings,
+            embedding_text="x",
+        )
+        self.assertIsNotNone(self.collection.get_embedding(dbsa.id))
+        n = self.collection.delete_all_embeddings()
+        self.assertGreaterEqual(n, 1)
+        self.assertEqual(self.collection.get_embedding(dbsa.id), [])
+
+    def test_add_embedding_rejects_unexpected_dimension(self):
+        dbsa = db.Node(
+            subsection="",
+            section="Sec",
+            name="DimGuardStd",
+            link="https://example.com/d",
+            ntype=defs.Credoctypes.Standard.value,
+        )
+        self.collection.session.add(dbsa)
+        self.collection.session.commit()
+        os.environ["CRE_EMBED_EXPECTED_DIM"] = "3"
+        try:
+            with self.assertRaises(ValueError):
+                self.collection.add_embedding(
+                    db_object=dbsa,
+                    doctype=defs.Credoctypes.Standard.value,
+                    embeddings=[0.1, 0.2],
+                    embedding_text="x",
+                )
+        finally:
+            os.environ.pop("CRE_EMBED_EXPECTED_DIM", None)
+
+    def test_add_embedding_persists_embedding_contract_metadata(self):
+        dbsa = db.Node(
+            subsection="",
+            section="Sec",
+            name="MetaStd",
+            link="https://example.com/m",
+            ntype=defs.Credoctypes.Standard.value,
+        )
+        self.collection.session.add(dbsa)
+        self.collection.session.commit()
+        os.environ["CRE_EMBED_MODEL"] = "openai/text-embedding-3-small"
+        try:
+            self.collection.add_embedding(
+                db_object=dbsa,
+                doctype=defs.Credoctypes.Standard.value,
+                embeddings=[0.1, 0.2, 0.3],
+                embedding_text="x",
+            )
+            row = self.collection.get_embedding(dbsa.id)[0]
+            self.assertEqual(row.embedding_model_id, "openai/text-embedding-3-small")
+            self.assertEqual(row.embedding_dim, 3)
+        finally:
+            os.environ.pop("CRE_EMBED_MODEL", None)
+
+    def test_assert_embedding_contract_fails_on_mixed_dimensions(self):
+        n1 = db.Node(
+            subsection="",
+            section="Sec",
+            name="D1",
+            link="https://example.com/d1",
+            ntype=defs.Credoctypes.Standard.value,
+        )
+        n2 = db.Node(
+            subsection="",
+            section="Sec",
+            name="D2",
+            link="https://example.com/d2",
+            ntype=defs.Credoctypes.Standard.value,
+        )
+        self.collection.session.add(n1)
+        self.collection.session.add(n2)
+        self.collection.session.commit()
+        os.environ["CRE_EMBED_MODEL"] = "openai/text-embedding-3-small"
+        try:
+            self.collection.add_embedding(
+                db_object=n1,
+                doctype=defs.Credoctypes.Standard.value,
+                embeddings=[0.1, 0.2],
+                embedding_text="x",
+            )
+            self.collection.add_embedding(
+                db_object=n2,
+                doctype=defs.Credoctypes.Standard.value,
+                embeddings=[0.1, 0.2, 0.3],
+                embedding_text="x",
+            )
+            with self.assertRaises(RuntimeError):
+                self.collection.assert_embedding_contract(
+                    expected_model_id="openai/text-embedding-3-small",
+                    expected_dim=2,
+                )
+        finally:
+            os.environ.pop("CRE_EMBED_MODEL", None)
+
     def test_get_standard_names(self):
         for s in ["sa", "sb", "sc", "sd"]:
             for sub in ["suba", "subb", "subc", "subd"]:

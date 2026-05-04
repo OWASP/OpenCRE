@@ -138,9 +138,10 @@ export const SearchPage = () => {
 
           <div className="hero-section__description">
             <p>
-              OpenCRE is an interactive content linking platform for uniting security standards and
-              guidelines. It offers easy navigation between documents, requirements and tools, making it
-              easier for developers and security professionals to find the resources they need.
+              OpenCRE is an interactive content linking platform that unites security standards and guidelines
+              into one resource. It makes it easier for practitioners to find information, with mappings,
+              deeplinks, browse, search, and an AI chatbot. Writers of material just have to refer to one
+              OpenCRE requirement, to link to coverage if that topic in all the standards.
             </p>
           </div>
 
@@ -193,11 +194,12 @@ export const SearchPage = () => {
               <div className="info-card__text">
                 <p>
                   OpenCRE currently links <strong>OWASP standards</strong> (Top 10, ASVS, Proactive Controls,
-                  Cheat sheets, Testing guide, ZAP, Juice shop, SAMM).
+                  Cheat sheets, Testing guide, ZAP, Juice shop, SAMM, AI Exchange, LLM top 10, ML top 10).
                 </p>
                 <p>
                   Plus several <strong>other sources</strong> (CWE, CAPEC, NIST 800 53, NIST 800 63b, Cloud
-                  Control Matrix, ISO27001, ISO27002, and NIST SSDF).
+                  Control Matrix, ISO27001, ISO27002, NIST SSDF, and for AI: NIST, ENISA, BIML, MITRE ATLAS,
+                  and ETSI).
                 </p>
               </div>
             </div>
@@ -467,7 +469,7 @@ export const SearchPage = () => {
                 Contribute to the open-source project, report issues, and explore the codebase on our GitHub
                 repository.
               </p>
-              <a href="https://github.com/OWASP/OpenCRE">
+              <a href="https://github.com/OWASP/OpenCRE#opencre">
                 <button className="community-card__button">View Repository</button>
               </a>
             </div>
