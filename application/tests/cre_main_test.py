@@ -577,6 +577,7 @@ class TestMain(unittest.TestCase):
             filename="tests", yamldocs=file, scollection=self.collection
         )
         self.assertCountEqual(res, expected)
+
     @patch.object(main, "db_connect")
     @patch.object(Queue, "enqueue_call")
     @patch.object(redis, "wait_for_jobs")

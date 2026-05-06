@@ -41,14 +41,14 @@ class TestCheatsheetsParser(unittest.TestCase):
             ),
             "w",
         ) as mdf:
-        with open(
-            os.path.join(
-                os.path.join(loc, "cheatsheets"),
-                "Secrets_Management_Cheat_Sheet.md",
-            ),
-            "w",
-        ) as mdf:
-            mdf.write(cs)
+            with open(
+                os.path.join(
+                    os.path.join(loc, "cheatsheets"),
+                    "Secrets_Management_Cheat_Sheet.md",
+                ),
+                "w",
+            ) as mdf:
+                mdf.write(cs)
         mock_clone.return_value = repo
         entries = cheatsheets_parser.Cheatsheets().parse(
             cache=self.collection, ph=PromptHandler(database=self.collection)

@@ -1086,7 +1086,10 @@ def generate_embeddings(db_url: str) -> None:
     database = db_connect(path=db_url)
     prompt_client.PromptHandler(database, load_all_embeddings=True)
 
-def parse_file(filename: str, yamldocs: List[Any], scollection) -> Optional[List[defs.Document]]:
+
+def parse_file(
+    filename: str, yamldocs: List[Any], scollection
+) -> Optional[List[defs.Document]]:
     """
     Parse a list of dictionaries (YAML/JSON documents) into defs.Document objects.
     Returns None and logs a critical error if any element is not a dict.
@@ -1107,6 +1110,7 @@ def parse_file(filename: str, yamldocs: List[Any], scollection) -> Optional[List
         return doc
 
     return [defs.Document.from_dict(normalize_links(dict(doc))) for doc in yamldocs]
+
 
 def regenerate_embeddings(db_url: str) -> None:
     """Wipe all embedding rows, then rebuild (CRE + every node type) like ``--generate_embeddings``."""
