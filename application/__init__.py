@@ -7,7 +7,7 @@ from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from flask_caching import Cache
 from flask_compress import Compress
-from application.config import config
+from application.config import CMDConfig, config
 import os
 import random
 
@@ -31,7 +31,11 @@ def create_app(mode: str = "production", conf: any = None) -> Any:
         app.config.from_object(config[mode])
     else:
         app.config.from_object(conf)
-    if os.environ.get("SQLALCHEMY_DATABASE_URI"):
+    # CLI passes an explicit URI via ``CMDConfig`` (``cre_main.db_connect``). A
+    # leftover ``SQLALCHEMY_DATABASE_URI`` in the environment (e.g. sqlite from a
+    # prior shell export) must not override it — that produced sqlite errors
+    # against a Heroku ``DATABASE_URL`` session.
+    if os.environ.get("SQLALCHEMY_DATABASE_URI") and not isinstance(conf, CMDConfig):
         app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get(
             "SQLALCHEMY_DATABASE_URI"
         )

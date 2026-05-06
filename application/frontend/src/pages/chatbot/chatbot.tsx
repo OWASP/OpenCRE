@@ -204,6 +204,13 @@ export const Chatbot = () => {
         <a href={d.hyperlink} target="_blank" rel="noopener noreferrer">
           <strong>{d.name}</strong> — section {d.section ?? d.sectionID}
         </a>
+        {d.embeddingsUrl ? (
+          <div className="reference-link">
+            <a href={d.embeddingsUrl} target="_blank" rel="noopener noreferrer">
+              Scoped source (embedding URL)
+            </a>
+          </div>
+        ) : null}
         <div className="reference-link">
           <a href={link}>View in OpenCRE</a>
         </div>

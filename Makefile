@@ -118,6 +118,10 @@ migrate-upgrade:
 	export FLASK_APP="$(CURDIR)/cre.py" 
 	flask db upgrade  
 
+alembic-guardrail:
+	[ -d "./venv" ] && . ./venv/bin/activate &&\
+	python scripts/check_alembic_revision_guardrail.py
+
 migrate-downgrade:
 	[ -d "./venv" ] && . ./venv/bin/activate &&\
 	export FLASK_APP="$(CURDIR)/cre.py"
