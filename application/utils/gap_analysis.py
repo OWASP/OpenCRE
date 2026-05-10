@@ -1,9 +1,8 @@
+import os
 import requests
 import time
 import logging
-import os
-from rq import Queue, job, exceptions
-from typing import List, Dict
+from typing import Any, Dict, List, Optional
 from application.utils import redis
 from flask import json as flask_json
 import json
@@ -33,6 +32,33 @@ def make_subresources_key(standards: List[str], key: str) -> str:
     return str(make_resources_key(standards)) + "->" + key
 
 
+def gap_analysis_cache_key_is_primary(cache_key: str) -> bool:
+    """Primary directed-standard rows use ``A >> B``; drill-down rows append ``->...``."""
+    return "->" not in cache_key
+
+
+def primary_gap_analysis_payload_is_material(ga_object: Optional[str]) -> bool:
+    """
+    True when a stored GA payload has a non-empty object at ``result`` (main cache rows).
+
+    Empty ``{"result": {}}`` placeholders must not count as a cached gap analysis.
+    """
+    if not ga_object or not isinstance(ga_object, str):
+        return False
+    try:
+        parsed = json.loads(ga_object)
+    except json.JSONDecodeError:
+        return False
+    res = parsed.get("result")
+    if res is None:
+        return False
+    if isinstance(res, dict):
+        return len(res) > 0
+    if isinstance(res, list):
+        return len(res) > 0
+    return bool(res)
+
+
 def get_path_score(path):
     score = 0
     previous_id = path["start"].id
@@ -60,116 +86,121 @@ def get_next_id(step, previous_id):
     return step["start"].id
 
 
-def _all_requested_standards_exist(standards: List[str], database) -> bool:
-    """
-    Best-effort check that all requested standards exist in the database.
+def perform(standards: List[str], database):
+    return run_gap_pair(standards[0], standards[1], database)
 
-    - If the check fails unexpectedly or returns a non-sequence (e.g. in tests
-      with heavy mocking), we assume they exist to avoid changing behaviour.
-    - If the standards list is empty, we treat it as valid and let the rest of
-      the logic handle it.
-    """
-    if not standards:
-        return True
 
+def _backend_name_from_database(database: Any) -> str:
     try:
-        existing = database.standards()
-    except Exception as exc:  # pragma: no cover - defensive guardrail
-        logger.error(
-            f"Unable to verify standards existence when scheduling gap analysis, "
-            f"proceeding anyway: {exc}"
-        )
-        return True
-
-    if not isinstance(existing, (list, tuple, set)):
-        # In test environments this may be a MagicMock; do not enforce the
-        # existence check in that case to keep behaviour unchanged.
-        logger.debug(
-            f"database.standards() returned non-iterable type "
-            f"{type(existing)}, skipping existence check"
-        )
-        return True
-
-    existing_lower = {str(s).lower() for s in existing}
-    missing = [s for s in standards if str(s).lower() not in existing_lower]
-
-    if missing:
-        standards_hash = make_resources_key(standards)
-        logger.info(
-            f"Gap analysis request {standards_hash} references standards "
-            f"that do not exist in the database: {', '.join(missing)}"
-        )
-        return False
-
-    return True
+        bind = getattr(getattr(database, "session", None), "bind", None)
+        if bind is None:
+            return "unknown"
+        url = getattr(bind, "url", None)
+        if url is None:
+            return "unknown"
+        if hasattr(url, "get_backend_name"):
+            return str(url.get_backend_name())
+        return str(url).split("://", 1)[0].lower()
+    except Exception:
+        return "unknown"
 
 
-# database is of type Node_collection, cannot annotate due to circular import
-def schedule(standards: List[str], database):
-    """
-    Schedule or retrieve gap analysis for the given standards.
-
-    This function handles Redis queue operations and job scheduling.
-    For web requests, the caller (map_analysis route) should check:
-    - Cached results in database first
-    - Heroku environment and standards existence (if on Heroku)
-    - CRE_NO_CALCULATE_GAP_ANALYSIS env var
-
-    This function still checks for cached results as a safety net for
-    non-web callers (e.g., cre_main.py during imports).
-    """
+def run_gap_pair(
+    importing_name: str,
+    peer_name: str,
+    database: Any,
+    *,
+    require_postgres: bool = False,
+    sleep_seconds: int = 10,
+    max_compute_retries: int = 2,
+):
+    """Compute/fetch one directed GA pair with cache + Redis lock coordination."""
     from application.database import db
 
+    backend_name = _backend_name_from_database(database)
+    if require_postgres and backend_name not in ("postgresql", "postgres"):
+        raise RuntimeError(
+            f"Pair GA scheduling requires Postgres backend, got {backend_name or 'unknown'}"
+        )
+
+    standards = [importing_name, peer_name]
     standards_hash = make_resources_key(standards)
 
-    # Check for cached results (safety net for non-web callers)
+    # Fast path: cached in SQL, no Redis/lock needed.
     if database.gap_analysis_exists(standards_hash):
-        return flask_json.loads(database.get_gap_analysis_result(standards_hash))
-
-    logger.info(f"Gap analysis result for {standards_hash} does not exist")
+        res = database.get_gap_analysis_result(standards_hash)
+        if res is None:
+            return {"result": {}}
+        return json.loads(res) if isinstance(res, str) else res
 
     conn = redis.connect()
-    if conn is None:
-        logger.error(
-            "Redis is not available. Please run 'make start-containers' first."
+    lock_key = f"lock:ga:{standards_hash}"
+    attempts = 0
+
+    def _is_transient_error(exc: Exception) -> bool:
+        msg = str(exc).lower()
+        transient_markers = (
+            "deadlock detected",
+            "could not serialize access",
+            "connection reset",
+            "temporarily unavailable",
+            "service unavailable",
+            "timeout",
         )
-        return {
-            "error": "Redis is not available. Please run 'make start-containers' first."
-        }
-    gap_analysis_results = conn.get(standards_hash)
-    if (
-        gap_analysis_results
-    ):  # perhaps its calculated but not cached yet, get it from redis
-        gap_analysis_dict = json.loads(gap_analysis_results)
-        if gap_analysis_dict.get("job_id"):
+        if any(m in msg for m in transient_markers):
+            return True
+        mod = exc.__class__.__module__.lower()
+        return "neo4j" in mod or "redis" in mod
+
+    while True:
+        # Another process may have populated cache while we were waiting for lock.
+        if database.gap_analysis_exists(standards_hash):
+            res = database.get_gap_analysis_result(standards_hash)
+            if res is None:
+                return {"result": {}}
+            return json.loads(res) if isinstance(res, str) else res
+
+        acquired = conn.setnx(lock_key, "1")
+        if acquired:
+            conn.expire(lock_key, 129600)
             try:
-                res = job.Job.fetch(id=gap_analysis_dict.get("job_id"), connection=conn)
-            except exceptions.NoSuchJobError as nje:
-                logger.error(
-                    f"Could not find job id for gap analysis {standards}, this is a bug"
+                logger.info(f"Calculating gap analysis for {standards_hash}")
+                db.gap_analysis(
+                    neo_db=database.neo_db,
+                    node_names=standards,
+                    cache_key=standards_hash,
                 )
-                return {"error": 404}
-            if (
-                res.get_status() != job.JobStatus.FAILED
-                and res.get_status() != job.JobStatus.STOPPED
-                and res.get_status() != job.JobStatus.CANCELED
-            ):
-                logger.info(
-                    f'gap analysis job id  {gap_analysis_dict.get("job_id")}, for standards: {standards[0]}>>{standards[1]} already exists, returning early'
-                )
-                return {"job_id": gap_analysis_dict.get("job_id")}
-    q = Queue(connection=conn)
-    gap_analysis_job = q.enqueue_call(
-        db.gap_analysis,
-        kwargs={
-            "neo_db": database.neo_db,
-            "node_names": standards,
-            "cache_key": standards_hash,
-        },
-        timeout=GAP_ANALYSIS_TIMEOUT,
-    )
-    conn.set(standards_hash, json.dumps({"job_id": gap_analysis_job.id, "result": ""}))
-    return {"job_id": gap_analysis_job.id}
+                res = database.get_gap_analysis_result(standards_hash)
+                if res is None:
+                    return {"result": {}}
+                return json.loads(res) if isinstance(res, str) else res
+            except Exception as exc:
+                attempts += 1
+                if _is_transient_error(exc) and attempts <= max_compute_retries:
+                    wait_s = int(os.environ.get("CRE_GA_RETRY_BACKOFF_SECONDS", "2"))
+                    logger.warning(
+                        "Transient GA error for %s (attempt %s/%s): %s",
+                        standards_hash,
+                        attempts,
+                        max_compute_retries,
+                        exc,
+                    )
+                    time.sleep(wait_s)
+                    continue
+                raise
+            finally:
+                conn.delete(lock_key)
+        else:
+            logger.info(
+                f"Gap analysis for {standards_hash} is being calculated by another worker. Waiting..."
+            )
+            time.sleep(sleep_seconds)
+
+
+def schedule(standards: List[str], database):
+    res = perform(standards, database)
+    # the api endpoint returns json.dumps({"result": ...}) or similar. Let's make it compatible.
+    return {"result": res.get("result") if isinstance(res, dict) else res}
 
 
 def preload(target_url: str):

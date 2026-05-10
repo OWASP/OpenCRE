@@ -7,6 +7,7 @@ from application.defs import cre_defs as defs
 import os
 import re
 from urllib.parse import urlparse, parse_qs
+from application.utils.external_project_parsers import base_parser_defs
 from application.utils.external_project_parsers.base_parser_defs import (
     ParserInterface,
     ParseResult,
@@ -23,18 +24,32 @@ class SecureHeaders(ParserInterface):
         return defs.Standard(
             name=self.name,
             section=section,
-            tags=tags,
+            tags=base_parser_defs.build_tags(
+                family=base_parser_defs.Family.GUIDANCE,
+                subtype=base_parser_defs.Subtype.CHEATSHEET,
+                audience=base_parser_defs.Audience.DEVELOPER,
+                maturity=base_parser_defs.Maturity.STABLE,
+                source="owasp_secure_headers",
+                extra=tags,
+            ),
             hyperlink=hyperlink,
         )
 
     def parse(self, cache: db.Node_collection, ph: prompt_client.PromptHandler):
         sh_repo = "https://github.com/owasp/www-project-secure-headers.git"
         file_path = "./"
-        repo = git.clone(sh_repo)
+        # Large OWASP site repo: only fetch markdown files (walk is *.md-only anyway).
+        repo = git.clone(
+            sh_repo,
+            sparse_paths=["/**/*.md"],
+            sparse_cone=False,
+        )
         entries = self.register_headers(
             repo=repo, cache=cache, file_path=file_path, repo_path=sh_repo
         )
-        return ParseResult(results={self.name: entries})
+        results = {self.name: entries}
+        base_parser_defs.validate_classification_tags(results)
+        return ParseResult(results=results)
 
     def register_headers(self, cache: db.Node_collection, repo, file_path, repo_path):
         cre_link = r"\[([\w\s\d]+)\]\((?P<url>((?:\/|https:\/\/)(www\.)?opencre\.org/cre/(?P<creID>\d+-\d+)\?[\w\d\.\/\=\#\+\&\%\-]+))\)"

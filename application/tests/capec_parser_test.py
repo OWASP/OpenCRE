@@ -62,6 +62,13 @@ class TestCapecParser(unittest.TestCase):
                 sectionID="1",
                 section="Accessing Functionality Not Properly Constrained by ACLs",
                 version="3.7",
+                tags=[
+                    "family:taxonomy",
+                    "subtype:risk_list",
+                    "source:capec",
+                    "audience:developer",
+                    "maturity:stable",
+                ],
             ),
             defs.Standard(
                 name="CAPEC",
@@ -70,6 +77,13 @@ class TestCapecParser(unittest.TestCase):
                 sectionID="10",
                 section="Another CAPEC",
                 version="3.7",
+                tags=[
+                    "family:taxonomy",
+                    "subtype:risk_list",
+                    "source:capec",
+                    "audience:developer",
+                    "maturity:stable",
+                ],
             ),
         ]
         for name, nodes in entries.results.items():

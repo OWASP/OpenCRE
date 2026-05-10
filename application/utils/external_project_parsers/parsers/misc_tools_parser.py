@@ -3,13 +3,13 @@ import logging
 import os
 import re
 import urllib
-from typing import List, NamedTuple
-from xmlrpc.client import boolean
+from typing import List
 
 from application.database import db
 from application.defs import cre_defs as defs
 from application.utils import git
 from application.prompt_client import prompt_client as prompt_client
+from application.utils.external_project_parsers import base_parser_defs
 from application.utils.external_project_parsers.base_parser_defs import (
     ParserInterface,
     ParseResult,
@@ -22,7 +22,7 @@ logger.setLevel(logging.INFO)
 
 
 class MiscTools(ParserInterface):
-    name = "miscelaneous tools"
+    name = "miscellaneous tools"
     tool_urls = [
         "https://github.com/commjoen/wrongsecrets.git",
     ]
@@ -33,23 +33,37 @@ class MiscTools(ParserInterface):
         tools = {}
         for url in self.tool_urls:
             tool_entries = self.parse_tool(cache=cache, tool_repo=url)
+            if not tool_entries:
+                continue
             tools[tool_entries[0].name] = tool_entries
+        if tools:
+            base_parser_defs.validate_classification_tags(tools)
         return ParseResult(results=tools)
 
     def parse_tool(
-        self, tool_repo: str, cache: db.Node_collection, dry_run: boolean = False
-    ):
-        if not dry_run:
-            repo = git.clone(tool_repo)
+        self, tool_repo: str, cache: db.Node_collection, dry_run: bool = False
+    ) -> List[defs.Tool]:
+        if dry_run:
+            logger.info("dry run, skipping clone and parsing for %s", tool_repo)
+            return []
+        repo = git.clone(
+            tool_repo,
+            sparse_paths=["/README.md"],
+            sparse_cone=False,
+        )
         readme = os.path.join(repo.working_dir, "README.md")
         title_regexp = r"# (?P<title>(\w+ ?)+)"
         cre_link = r".*\[.*\]\((?P<url>(https\:\/\/www\.)?opencre\.org\/cre\/(?P<cre>\d+-\d+).*)"
-        tool_entries = []
+        tool_entries: List[defs.Tool] = []
         with open(readme) as rdf:
             mdtext = rdf.read()
 
             if "opencre.org" not in mdtext:
-                logging.error("didn't find a link, bye")
+                logger.error(
+                    "no opencre.org link found in %s for repo %s, skipping",
+                    readme,
+                    tool_repo,
+                )
                 return []
             title = re.search(title_regexp, mdtext)
             cre = re.search(cre_link, mdtext, flags=re.IGNORECASE)
@@ -66,14 +80,23 @@ class MiscTools(ParserInterface):
                 )  # this parser matches tools so this is really optional
                 tool_type = values.get("tool_type")[0] or "Unknown"
                 description = values.get("description")[0] or ""
-                tags = values.get("tags")[0].split(",") if "tags" in values else []
+                extra_tags = (
+                    values.get("tags")[0].split(",") if "tags" in values else []
+                )
                 if cre_id and register:
                     cres = cache.get_CREs(external_id=cre_id)
                     hyperlink = f"{tool_repo.replace('.git','')}"
                     cs = defs.Tool(
                         name=tool_name,
                         tooltype=defs.ToolTypes.from_str(tool_type),
-                        tags=tags,
+                        tags=base_parser_defs.build_tags(
+                            family=base_parser_defs.Family.GUIDANCE,
+                            subtype=base_parser_defs.Subtype.BLOG,
+                            audience=base_parser_defs.Audience.DEVELOPER,
+                            maturity=base_parser_defs.Maturity.STABLE,
+                            source="misc_tools",
+                            extra=extra_tags,
+                        ),
                         hyperlink=hyperlink,
                         description=description,
                         sectionID="",  # we don't support sectionID and section when linking to a whole tool
@@ -86,7 +109,7 @@ class MiscTools(ParserInterface):
                                 document=dbcre,
                             )
                         )
-                        print(
+                        logger.info(
                             f"Registered new Document of type:Tool, toolType: {tool_type}, name:{tool_name} and hyperlink:{hyperlink},"
                             f"linked to cre:{dbcre.id}"
                         )

@@ -7,7 +7,7 @@ import { useEnvironment } from '../hooks/useEnvironment';
 import { Document, TreeDocument } from '../types';
 // Switched from localStorage utils to the new IndexedDB utils
 import { getDbObject, setDbObject } from '../utils'; // Assumes utils/index.tsx is the entry point
-import { getDocumentDisplayName, getInternalUrl } from '../utils/document';
+import { getInternalUrl, getTopicDisplayName } from '../utils/document';
 
 const DATA_STORE_KEY = 'data-store',
   DATA_TREE_KEY = 'record-tree';
@@ -118,7 +118,7 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
             data.forEach((x) => {
               store[getStoreKey(x)] = {
                 links: x.links,
-                displayName: getDocumentDisplayName(x),
+                displayName: getTopicDisplayName(x),
                 url: getInternalUrl(x),
                 ...x,
               };

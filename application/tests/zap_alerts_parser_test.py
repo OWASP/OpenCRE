@@ -114,7 +114,15 @@ class TestZAPAlertsParser(unittest.TestCase):
                 section="Vulnerable JS Library",
                 doctype=defs.Credoctypes.Tool,
                 description="_Unavailable_",
-                tags=["10003", "Passive"],
+                tags=[
+                    "family:guidance",
+                    "subtype:risk_list",
+                    "source:zaproxy",
+                    "audience:tester",
+                    "maturity:stable",
+                    "AlertID:10003",
+                    "Passive",
+                ],
                 hyperlink="https://github.com/zaproxy/zap-extensions/blob/main/addOns/retire/src/main/java/org/zaproxy/addon/retire/RetireScanRule.java",
                 tooltype=defs.ToolTypes.Offensive,
                 links=[
@@ -196,7 +204,15 @@ class TestZAPAlertsParser(unittest.TestCase):
             sectionID="10020-2",
             doctype=defs.Credoctypes.Tool,
             description="Ensure only a single X-Frame-Options header is present in the response.",
-            tags=["10020-2", "Passive"],
+            tags=[
+                "family:guidance",
+                "subtype:risk_list",
+                "source:zaproxy",
+                "audience:tester",
+                "maturity:stable",
+                "AlertID:10020-2",
+                "Passive",
+            ],
             hyperlink="https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrules/src/main/java/org/zaproxy/zap/extension/pscanrules/AntiClickjackingScanRule.java",
             tooltype=defs.ToolTypes.Offensive,
             links=[

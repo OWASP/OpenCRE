@@ -78,6 +78,13 @@ class TestDSOMM(unittest.TestCase):
                 sectionID="a340f46b-6360-4cb8-847b-a0d3483d09d3",
                 section="Build",
                 subsection="Building and testing of artifacts in virtual environments",
+                tags=[
+                    "family:standard",
+                    "subtype:maturity_model",
+                    "source:owasp_dsomm",
+                    "audience:developer",
+                    "maturity:stable",
+                ],
             ),
             defs.Standard(
                 name=dsomm.DSOMM().name,
@@ -104,6 +111,13 @@ class TestDSOMM(unittest.TestCase):
                 sectionID="f6f7737f-25a9-4317-8de2-09bf59f29b5b",
                 section="Build",
                 subsection="Defined build process",
+                tags=[
+                    "family:standard",
+                    "subtype:maturity_model",
+                    "source:owasp_dsomm",
+                    "audience:developer",
+                    "maturity:stable",
+                ],
             ),
         ]
         for name, nodes in entries.results.items():

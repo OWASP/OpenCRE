@@ -77,7 +77,7 @@ export const GraphDebugPanel = ({ dataStore }: GraphDebugPanelProps) => {
       </div>
 
       <div className="graph-debug-panel__table-wrap">
-        <Table compact size="small" celled>
+        <Table compact size="small" celled unstackable className="graph-debug-panel__table">
           <Table.Header>
             <Table.Row>
               <Table.HeaderCell>Node</Table.HeaderCell>

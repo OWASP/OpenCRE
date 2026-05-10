@@ -8,6 +8,7 @@ from application.defs import cre_defs as defs
 import shutil
 import xmltodict
 from application.prompt_client import prompt_client
+from application.utils.external_project_parsers import base_parser_defs
 from application.utils.external_project_parsers.base_parser_defs import (
     ParserInterface,
     ParseResult,
@@ -36,12 +37,13 @@ class CWE(ParserInterface):
         for _, _, files in os.walk(tmp_dir, topdown=False):
             for file in files:
                 if file.startswith("cwe") and file.endswith(".xml"):
+                    docs = self.register_cwe(
+                        xml_file=os.path.join(tmp_dir, file), cache=cache
+                    )
+                    results = {self.name: docs}
+                    base_parser_defs.validate_classification_tags(results)
                     return ParseResult(
-                        results={
-                            self.name: self.register_cwe(
-                                xml_file=os.path.join(tmp_dir, file), cache=cache
-                            ),
-                        },
+                        results=results,
                         calculate_gap_analysis=False,
                     )
         raise RuntimeError("there is no file named cwe.xml in the target zip")
@@ -125,6 +127,14 @@ class CWE(ParserInterface):
                             sectionID=weakness["@ID"],
                             section=weakness["@Name"],
                             hyperlink=self.make_hyperlink(weakness["@ID"]),
+                            tags=base_parser_defs.build_tags(
+                                family=base_parser_defs.Family.TAXONOMY,
+                                subtype=base_parser_defs.Subtype.RISK_LIST,
+                                audience=base_parser_defs.Audience.DEVELOPER,
+                                maturity=base_parser_defs.Maturity.STABLE,
+                                source="cwe",
+                                extra=[],
+                            ),
                         )
                     logger.debug(f"Registered CWE with id {cwe.sectionID}")
 
