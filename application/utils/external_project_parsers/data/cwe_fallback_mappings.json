@@ -1,0 +1,102 @@
+[
+  {
+    "keywords": [
+      "xml external entity",
+      "xxe"
+    ],
+    "cre_id": "764-507"
+  },
+  {
+    "keywords": [
+      "cross-site scripting",
+      " xss",
+      "(xss)"
+    ],
+    "cre_id": "760-765"
+  },
+  {
+    "keywords": [
+      "authorization",
+      "access control"
+    ],
+    "cre_id": "117-371"
+  },
+  {
+    "keywords": [
+      "improper authentication",
+      "missing authentication",
+      "authentication bypass"
+    ],
+    "cre_id": "113-133"
+  },
+  {
+    "keywords": [
+      "cross-site request forgery",
+      "(csrf)",
+      "csrf"
+    ],
+    "cre_id": "028-727"
+  },
+  {
+    "keywords": [
+      "server-side request forgery",
+      "(ssrf)",
+      "ssrf"
+    ],
+    "cre_id": "028-728"
+  },
+  {
+    "keywords": [
+      "plaintext storage of a password",
+      "storing passwords in a recoverable format"
+    ],
+    "cre_id": "622-203"
+  },
+  {
+    "keywords": [
+      "empty password in configuration file",
+      "password in configuration file"
+    ],
+    "cre_id": "881-321"
+  },
+  {
+    "keywords": [
+      "hard-coded password",
+      "hardcoded password",
+      "hard-coded credentials",
+      "hardcoded credentials",
+      "hard-coded credential",
+      "hardcoded credential",
+      "hard-coded cryptographic key",
+      "hardcoded cryptographic key",
+      "hard-coded key",
+      "hardcoded key"
+    ],
+    "cre_id": "774-888"
+  },
+  {
+    "keywords": [
+      "session fixation"
+    ],
+    "cre_id": "177-260"
+  },
+  {
+    "keywords": [
+      "sensitive cookie in https session without 'secure' attribute"
+    ],
+    "cre_id": "688-081"
+  },
+  {
+    "keywords": [
+      "deserialization of untrusted data"
+    ],
+    "cre_id": "836-068"
+  },
+  {
+    "keywords": [
+      "injection",
+      "query logic"
+    ],
+    "cre_id": "760-764"
+  }
+]
