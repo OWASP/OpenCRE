@@ -6,6 +6,9 @@ on:
         description: 'Log level'     
         required: true
         default: 'warning'
+permissions:
+  contents: read
+
 jobs:
   backup:
     environment: Heroku-DB-Backup
