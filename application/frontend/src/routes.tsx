@@ -36,12 +36,12 @@ export interface Capabilities {
 export const ROUTES = (capabilities: Capabilities): IRoute[] => [
   ...(capabilities.myopencre
     ? [
-      {
-        path: '/myopencre',
-        component: MyOpenCRE,
-        showFilter: false,
-      },
-    ]
+        {
+          path: '/myopencre',
+          component: MyOpenCRE,
+          showFilter: false,
+        },
+      ]
     : []),
 
   {

@@ -9,6 +9,7 @@ logging.basicConfig()
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+from application.utils.external_project_parsers import base_parser_defs
 from application.utils.external_project_parsers.base_parser_defs import (
     ParserInterface,
     ParseResult,
@@ -42,7 +43,10 @@ class CloudControlsMatrix(ParserInterface):
     #     )
 
     def parse(self, cache: db.Node_collection, ph: prompt_client.PromptHandler):
-        return {self.name: []}  # disabled
+        # Currently disabled until the mapping is revisited.
+        # Return an empty, but still well-classified, result set to satisfy validators.
+        results = {self.name: []}
+        return ParseResult(results=results)
         # ccmFile: Dict[str, Any] = self.get_ccm_file()
         # nist_map = self.make_nist_map(cache)
         # re_nist = re.compile("(\w+-\d+)")

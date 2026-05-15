@@ -221,7 +221,10 @@ class TestOSCALUtils(unittest.TestCase):
         )
         for i in range(0, 5):
             tool.add_link(
-                defs.Link(document=defs.CRE(name=f"cre-{i}", id=f"{i}{i}{i}-{i}{i}{i}"))
+                defs.Link(
+                    document=defs.CRE(name=f"cre-{i}", id=f"{i}{i}{i}-{i}{i}{i}"),
+                    ltype=defs.LinkTypes.LinkedTo,
+                )
             )
 
         expected = {

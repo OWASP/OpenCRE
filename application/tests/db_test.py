@@ -1270,6 +1270,87 @@ class TestDB(unittest.TestCase):
             db.gap_analysis(collection.neo_db, ["788-788", "b"]),
             (["788-788", "b"], {}, {}),
         )
+        self.assertFalse(
+            collection.gap_analysis_exists(make_resources_key(["788-788", "b"])),
+            "empty grouped_paths must not be written as a SQL GA cache row",
+        )
+
+    @patch.object(db.NEO_DB, "gap_analysis")
+    def test_gap_analysis_paths_without_base_standard_nodes(self, gap_mock):
+        """Neo paths whose starts were missing from ``base_standard`` must still persist."""
+        collection = db.Node_collection()
+        collection.neo_db.connected = True
+        path = [
+            {
+                "end": defs.CRE(name="bob", id="111-111"),
+                "relationship": "LINKED_TO",
+                "start": defs.CRE(name="bob", id="788-788"),
+            },
+            {
+                "end": defs.CRE(name="bob", id="222-222"),
+                "relationship": "LINKED_TO",
+                "start": defs.CRE(name="bob", id="788-788"),
+            },
+        ]
+        gap_mock.return_value = (
+            [],
+            [
+                {
+                    "start": defs.CRE(name="bob", id="788-788"),
+                    "end": defs.CRE(name="bob", id="788-789"),
+                    "path": path,
+                }
+            ],
+        )
+        expected = (
+            ["788-788", "788-789"],
+            {
+                "788-788": {
+                    "start": defs.CRE(name="bob", id="788-788"),
+                    "paths": {
+                        "788-789": {
+                            "end": defs.CRE(name="bob", id="788-789"),
+                            "path": path,
+                            "score": 0,
+                        }
+                    },
+                    "extra": 0,
+                }
+            },
+            {"788-788": {"paths": {}}},
+        )
+        self.maxDiff = None
+        self.assertEqual(
+            db.gap_analysis(collection.neo_db, ["788-788", "788-789"]), expected
+        )
+        self.assertTrue(
+            collection.gap_analysis_exists(make_resources_key(["788-788", "788-789"])),
+        )
+
+    @patch.object(db.NEO_DB, "gap_analysis")
+    def test_gap_analysis_removes_stale_empty_primary_when_neo_empty(self, gap_mock):
+        """Placeholder ``{"result":{}}`` rows must not survive a recompute with no Neo paths."""
+        collection = db.Node_collection()
+        collection.neo_db.connected = True
+        key = make_resources_key(["788-788", "b"])
+        collection.add_gap_analysis_result(key, '{"result": {}}')
+        sub = make_subresources_key(["788-788", "b"], "111-111")
+        collection.add_gap_analysis_result(sub, '{"result": {}}')
+        self.assertFalse(collection.gap_analysis_exists(key))
+
+        gap_mock.return_value = ([], [])
+        db.gap_analysis(collection.neo_db, ["788-788", "b"])
+
+        self.assertIsNone(
+            collection.session.query(db.GapAnalysisResults)
+            .filter(db.GapAnalysisResults.cache_key == key)
+            .first(),
+        )
+        self.assertIsNone(
+            collection.session.query(db.GapAnalysisResults)
+            .filter(db.GapAnalysisResults.cache_key == sub)
+            .first(),
+        )
 
     @patch.object(db.NEO_DB, "gap_analysis")
     def test_gap_analysis_no_links(self, gap_mock):
@@ -2147,6 +2228,114 @@ class TestDB(unittest.TestCase):
         )
         self.assertEqual(tool_emb, {})
 
+    def test_delete_all_embeddings(self):
+        dbsa = db.Node(
+            subsection="",
+            section="Sec",
+            name="DelEmbTestStd",
+            link="https://example.com/x",
+            ntype=defs.Credoctypes.Standard.value,
+        )
+        self.collection.session.add(dbsa)
+        self.collection.session.commit()
+        embeddings = [random.uniform(-1, 1) for e in range(0, 768)]
+        self.collection.add_embedding(
+            db_object=dbsa,
+            doctype=defs.Credoctypes.Standard.value,
+            embeddings=embeddings,
+            embedding_text="x",
+        )
+        self.assertIsNotNone(self.collection.get_embedding(dbsa.id))
+        n = self.collection.delete_all_embeddings()
+        self.assertGreaterEqual(n, 1)
+        self.assertEqual(self.collection.get_embedding(dbsa.id), [])
+
+    def test_add_embedding_rejects_unexpected_dimension(self):
+        dbsa = db.Node(
+            subsection="",
+            section="Sec",
+            name="DimGuardStd",
+            link="https://example.com/d",
+            ntype=defs.Credoctypes.Standard.value,
+        )
+        self.collection.session.add(dbsa)
+        self.collection.session.commit()
+        os.environ["CRE_EMBED_EXPECTED_DIM"] = "3"
+        try:
+            with self.assertRaises(ValueError):
+                self.collection.add_embedding(
+                    db_object=dbsa,
+                    doctype=defs.Credoctypes.Standard.value,
+                    embeddings=[0.1, 0.2],
+                    embedding_text="x",
+                )
+        finally:
+            os.environ.pop("CRE_EMBED_EXPECTED_DIM", None)
+
+    def test_add_embedding_persists_embedding_contract_metadata(self):
+        dbsa = db.Node(
+            subsection="",
+            section="Sec",
+            name="MetaStd",
+            link="https://example.com/m",
+            ntype=defs.Credoctypes.Standard.value,
+        )
+        self.collection.session.add(dbsa)
+        self.collection.session.commit()
+        os.environ["CRE_EMBED_MODEL"] = "openai/text-embedding-3-small"
+        try:
+            self.collection.add_embedding(
+                db_object=dbsa,
+                doctype=defs.Credoctypes.Standard.value,
+                embeddings=[0.1, 0.2, 0.3],
+                embedding_text="x",
+            )
+            row = self.collection.get_embedding(dbsa.id)[0]
+            self.assertEqual(row.embedding_model_id, "openai/text-embedding-3-small")
+            self.assertEqual(row.embedding_dim, 3)
+        finally:
+            os.environ.pop("CRE_EMBED_MODEL", None)
+
+    def test_assert_embedding_contract_fails_on_mixed_dimensions(self):
+        n1 = db.Node(
+            subsection="",
+            section="Sec",
+            name="D1",
+            link="https://example.com/d1",
+            ntype=defs.Credoctypes.Standard.value,
+        )
+        n2 = db.Node(
+            subsection="",
+            section="Sec",
+            name="D2",
+            link="https://example.com/d2",
+            ntype=defs.Credoctypes.Standard.value,
+        )
+        self.collection.session.add(n1)
+        self.collection.session.add(n2)
+        self.collection.session.commit()
+        os.environ["CRE_EMBED_MODEL"] = "openai/text-embedding-3-small"
+        try:
+            self.collection.add_embedding(
+                db_object=n1,
+                doctype=defs.Credoctypes.Standard.value,
+                embeddings=[0.1, 0.2],
+                embedding_text="x",
+            )
+            self.collection.add_embedding(
+                db_object=n2,
+                doctype=defs.Credoctypes.Standard.value,
+                embeddings=[0.1, 0.2, 0.3],
+                embedding_text="x",
+            )
+            with self.assertRaises(RuntimeError):
+                self.collection.assert_embedding_contract(
+                    expected_model_id="openai/text-embedding-3-small",
+                    expected_dim=2,
+                )
+        finally:
+            os.environ.pop("CRE_EMBED_MODEL", None)
+
     def test_get_standard_names(self):
         for s in ["sa", "sb", "sc", "sd"]:
             for sub in ["suba", "subb", "subc", "subd"]:
@@ -2172,7 +2361,7 @@ class TestDB(unittest.TestCase):
             if i == 0 or i == 1:
                 cres.append(defs.CRE(name=f">> C{i}", id=f"{i}{i}{i}-{i}{i}{i}"))
             else:
-                cres.append(defs.CRE(name=f"C{i}", id=f"{i}"))
+                cres.append(defs.CRE(name=f"C{i}", id=f"{i}{i}{i}-{i}{i}{i}"))
 
             dbcres.append(collection.add_cre(cres[i]))
             nodes.append(defs.Standard(section=f"S{i}", name=f"N{i}"))
