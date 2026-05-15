@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://opencre.org/schemas/oie/proposed-link.json",
+  "title": "ProposedLink",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["cre_id", "link_type", "confidence"],
+  "properties": {
+    "cre_id": { "type": "string", "minLength": 1 },
+    "link_type": { "type": "string" },
+    "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+    "rationale": { "type": "string" }
+  }
+}
