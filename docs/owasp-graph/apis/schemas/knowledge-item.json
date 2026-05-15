@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://opencre.org/schemas/oie/knowledge-item.json",
+  "title": "KnowledgeItem",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "chunk_id",
+    "artifact_id",
+    "event_id",
+    "pipeline_run_id",
+    "filtered_at",
+    "status",
+    "source",
+    "locator",
+    "filter"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "pattern": "^0\\.\\d+\\.\\d+$" },
+    "chunk_id": { "type": "string" },
+    "artifact_id": { "type": "string" },
+    "event_id": { "type": "string" },
+    "pipeline_run_id": { "type": "string" },
+    "filtered_at": { "type": "string", "format": "date-time" },
+    "status": {
+      "type": "string",
+      "enum": ["accepted", "rejected", "deferred"]
+    },
+    "source": { "$ref": "source-ref.json" },
+    "locator": { "$ref": "locator.json" },
+    "content": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["text"],
+      "properties": {
+        "text": { "type": "string", "minLength": 1 },
+        "title_hint": { "type": "string" },
+        "keywords": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "language": { "type": "string", "default": "en" }
+      }
+    },
+    "filter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["stages"],
+      "properties": {
+        "stages": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "passed"],
+            "properties": {
+              "name": {
+                "type": "string",
+                "enum": ["regex_path", "regex_content", "llm_relevance"]
+              },
+              "passed": { "type": "boolean" },
+              "reason": { "type": "string" },
+              "model": { "type": "string" },
+              "latency_ms": { "type": "integer", "minimum": 0 }
+            }
+          }
+        },
+        "is_security_knowledge": { "type": "boolean" },
+        "security_summary": { "type": "string" },
+        "confidence": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
+    "rejection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reason_code"],
+      "properties": {
+        "reason_code": { "type": "string" },
+        "reason_message": { "type": "string" }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "status": { "const": "accepted" } } },
+      "then": { "required": ["content"] }
+    },
+    {
+      "if": { "properties": { "status": { "const": "rejected" } } },
+      "then": { "required": ["rejection"] }
+    }
+  ]
+}
