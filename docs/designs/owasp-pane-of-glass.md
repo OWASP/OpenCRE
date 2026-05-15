@@ -31,46 +31,63 @@ The system consists of 4 autonomous modules.
 
 **Info for contributors: DO NOT write production code for a module until the "Pre-Code Experiment" is passed.**
 
-### Module A: Information Harvesting
+### Module A: Information Harvesting & Normalization
 
-**Goal:** Fetch changes from important information sources nightly.
+**Goal:** Connect to configured sources, **backfill** unseen resources, **incrementally** detect changes, then **normalize and chunk** content before anything reaches Module B.
+
+Module A owns **acquire + first-read + structure**, not relevance filtering (B) or CRE linking (C).
 
 ```ascii
-[ GitHub Actions ] (Trigger: 02:00 UTC)
+[ GitHub Actions ] (Trigger: 02:00 UTC, or manual backfill)
        |
        v
-[ A.1 Config Reader ] (Reads repos.yaml list)
+[ A.1 Config Reader ] (sources.yaml: repos, feeds, URLs)
        |
        v
-[ A.2 Diff Fetcher ] ----> [ git log --since="24h" ]
+[ A.2 Artifact Registry ] (Have we seen this artifact before?)
+       |
+       +--(new / unknown)----> [ A.3a Backfill Reader ] --> full resource body
+       |
+       +--(known)------------> [ A.3b Incremental Fetcher ] --> git diff / poll / hash
        |
        v
-[ Raw Change Bucket ] (Temporary Storage)
+[ A.4 Normalize ] (HTML/Markdown -> clean text; strip boilerplate)
+       |
+       v
+[ A.5 Chunk ] (heading-aware splits; token/size limits per chunk)
+       |
+       v
+[ Ingest Bucket ] (ArtifactIngestEvent + IngestChunk[], JSONL)
 ```
 
 * Metric	Rating
-* Difficulty	⭐⭐ (Medium)
-* Vibe Coding Potential	Low. This requires hands-on engineering. Handling rate limits, git diff parsing, and incremental crawling is "hard coding" territory.
-* Tech Stack:	Python (requests, PyGithub), GitHub Actions (Cron)
-* MVP Logic: A nightly cron job checks a static list of high-value repos (ASVS, WSTG). Simple text diffs.
+* Difficulty	⭐⭐⭐ (Medium–High)
+* Vibe Coding Potential	Low for connectors/registry; medium for chunking tuning.
+* Tech Stack:	Python (requests, PyGithub, markdown/html parsers), GitHub Actions (Cron), object storage for ingest batches.
+* **Harvest modes**
+    * **Backfill:** First time an artifact appears in the registry — read the **full** resource (whole file, feed entry body, page HTML), normalize, chunk entirely.
+    * **Incremental:** Known artifact — fetch only what changed since last `content_hash` / commit window; re-chunk affected sections or whole artifact if structure shifted.
+* **Connectors (adapters):** Pluggable per `source.type` (`github`, `rss`, `url`, …). If you have already played with **LlamaIndex** in Colab, a familiar pattern is: load files with a reader → split into chunks → write JSON lines. Field names in `docs/owasp-graph/apis/` are chosen to feel natural after that (see hints on `IngestChunk` / `ArtifactIngestEvent`).
+* **Chunking (owned by A):** Markdown: split on headings with max chunk size; HTML: readability/main-content extraction then heading or paragraph splits; cap chunk size for downstream LLM cost. Each chunk gets a stable `chunk_id` under its `artifact_id`.
+* MVP Logic: Backfill all `*.md` in ASVS + WSTG once; nightly incremental for git sources; emit `IngestBatch` to ingest bucket.
 * Pre-Code Experiment (Do This First)
     Shifting through "Junk" : Manually inspect the file structure of 10 random OWASP repositories.
         Task: Identify common junk files (e.g., package-lock.json, CNAME, _config.yml).
-        Goal: Create a Prompt and a Regex Exclusion List that eliminates 90% of noise without downloading the files.
+        Goal: Create a Regex Exclusion List that eliminates 90% of noise without downloading the files.
     "Diff" Simulation: Pick a large Markdown file (e.g., in wstg). Modify one paragraph.
-        Task: Write a 10-line script to fetch only the modified paragraph using git diff.
-        Success Criteria: The script must return clean text, not raw diff syntax like <<<< HEAD.
+        Task: Fetch the modified paragraph as clean text (not raw `<<<<` markers).
+        Success Criteria: Incremental run emits only affected chunk(s), or flags full re-chunk when headings move.
+    **Backfill drill:** Pick one repo path never ingested before. Run backfill once; verify chunk count > 0 and `event_type: discovered`. Run again with no edits; verify **no duplicate** chunks emitted (registry + content hash).
 
 * Bonus / Pro-Mode: LLM Diff Judge:
-  Instead of writing complex regex to parse code changes, pass the raw git diff to a lightweight LLM.
-  Prompt you can modify: "Review this diff. Did the logic or meaning change? Ignore formatting/typos. Reply YES/NO."
+  For ambiguous git diffs, ask a lightweight LLM whether meaning changed before re-chunking.
 
 ### Module B: Noise/Relevance Filter
 
 **Goal:** Filter out bureaucracy (formatting, linting) cheaply.
 
 ```ascii
-[ Raw Change Bucket ]
+[ Ingest Bucket ] (IngestChunk units from A)
        |
        v
 [ B.1 Regex Filter ] (Reject *.css, lockfiles, tests/)
@@ -91,9 +108,9 @@ The system consists of 4 autonomous modules.
 * MVP Logic: Regex list first (free), then Managed LLM API (cheap).
 * Pre-Code Experiment (Do This First)
     Human Benchmark:
-        Extract 100 real commit messages/diffs from owasp ai exchange and owasp/wstg.
-        Manually tag them in a spreadsheet: Relevant (Security Info) vs Noise (Typos, Admin, Formatting).
-        Run these 100 items through your proposed LLM Prompt.
+        Build a set of 100 **`IngestChunk`-sized text samples** (same shape Module B receives from A) drawn from OWASP repos and feeds — include admin/formatting noise and real security prose.
+        Manually tag each sample: Relevant (Security Info) vs Noise (Typos, Admin, Formatting).
+        Run these 100 items through your proposed LLM Prompt on `chunk.text`.
         Success Criteria: The LLM must match your tags >97% of the time. If it flags "Updated Code of Conduct" as "Security Knowledge," your prompt failed.
 
 ### Module C: The Librarian (The "Smart" Part)
@@ -142,45 +159,6 @@ The system consists of 4 autonomous modules.
     Don't rely just on vectors. Use Hybrid Search (Vector + Keyword/BM25).
     Why: Vectors are bad at exact keyword matches (e.g., specific CVE IDs).
 
-**Goal:** Accurately map text to CRE nodes (handling the "Negation Problem").
-
-```ascii
-[ Knowledge Queue ]
-       |
-       v
-[ C.1 Initial Retrieval ] (Vector Search / Pgvector)
-    -> "Get top 20 candidates"
-       |
-       v
-[ C.2 The Cross-Encoder ] (Local Re-Ranking)
-    -> Model: ms-marco-MiniLM-L-6-v2
-    -> "Compare Input vs Candidate. Output Score."
-       |
-       v
-[ C.3 Threshold Check ]
-    -> Score > 0.8? Link to CRE.
-    -> Score < 0.8? Flag for Human Review.
-```
-
-* Difficulty	⭐⭐⭐ (Hard)
-* Vibe Coding Potential	Medium. Prompts are vibe-based, but Vector Search requires strict math/logic.
-* Tech Stack	sentence-transformers (HuggingFace), pgvector, Python.
-* Prerequisites	Understanding of Embeddings, Bi-Encoders vs Cross-Encoders.
-* MVP Logic: Retrieve top 20 with Cosine Similarity, Re-rank top 5 with Cross-Encoder.
-* Pre-Code Experiment (Do This First)
-    ASVS Re-Classify Challenge:
-        Select 50 random ASVS requirements (e.g., "Verify password complexity...").
-        Strip their metadata so you only have text.
-        Feed them into a basic Vector Search (Cosine Similarity).
-        Check: Does it map to the correct CRE node?
-        Compare: Now run them through a Cross-Encoder.
-        Success Criteria: The Cross-Encoder must show a 20% accuracy improvement over basic Cosine Similarity, specifically for "Negative" requirements (e.g., "Do NOT use MD5").
-        You can use the existing CRE database as ground truth. You can repeat this with WSTG and NIST items too.
-
-* Bonus / Pro-Mode: Hybrid Search
-    Don't rely just on vectors. Use Hybrid Search (Vector + Keyword/BM25).
-    Why: Vectors are bad at exact keyword matches (e.g., specific CVE IDs).
-
 ### Module D: HITL & Logging
 
 **Goal:** Simple human oversight without db bloat.
@@ -207,6 +185,18 @@ The system consists of 4 autonomous modules.
      Capture the "Loss Event" (Input + Wrong Prediction + Correct Label) in a structured format.
     Why: Allows future researchers to "Retrain on Loss."
 
+## 2.5 Pipeline contracts (normative detail)
+
+Module boundaries above are summarized here; **JSON schemas and field tables** live in `docs/owasp-graph/apis/` (`schema_version` `0.2.0`).
+
+| Stage | Primary types | Transport (MVP) |
+| --- | --- | --- |
+| A → B | `IngestChunkRecord` (wraps `IngestChunk`) | `ingest-chunks.jsonl` |
+| B → C | `KnowledgeItem` | `knowledge-queue/` JSONL |
+| C → D | `ReviewItem` | `review-queue/` JSONL |
+| C → OpenCRE | `LinkProposal` | existing ingest path |
+| D → feedback | `HumanDecision` | `corrections.jsonl` |
+
 ## 3. Agent-Ready CI Pipeline (New way of code review)
 
 Since we expect AI-generated PRs, we cannot rely solely on human code review. We will build the following:
@@ -232,9 +222,9 @@ Phase 1: Foundation (Week 1-2)
 
 Phase 2: Ingestion & Filtering (Week 3-4)
 
-    [ ] Implement Module A (GitHub Action Cron).
+    [ ] Implement Module A (registry, backfill, connectors, normalize/chunk, GitHub Action Cron).
 
-    [ ] Implement Module B (LLM Client).
+    [ ] Implement Module B (LLM Client; consumes IngestChunk).
 
 Phase 3: Intelligence (Week 5-6)
 
@@ -250,7 +240,7 @@ Phase 4: Dashboard (Week 7)
 
 We are looking for distributed teams to own these modules.
 
-    Backend Engineers: Owner for Module A. Needs Python & GitHub API experience.
+    Backend Engineers: Owner for Module A. Needs Python, connector APIs, HTML/Markdown parsing, and chunking experience.
 
     Prompt/AI Engineers: Owner for Module B. Needs experience with prompting.
 
