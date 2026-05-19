@@ -10,10 +10,7 @@ import io
 import pathlib
 import re
 import urllib.parse
-from alive_progress import alive_bar
 from typing import Any
-from application.utils import oscal_utils, redis
-
 from rq import job, exceptions
 from rq import Queue
 
@@ -191,7 +188,7 @@ def find_node_by_name(
     sectionID: str = "",
 ) -> Any:
     if posthog:
-        posthog.capture(f"find_node_by_name", f"name:{name};nodeType{ntype}")
+        posthog.capture("find_node_by_name", f"name:{name};nodeType{ntype}")
 
     database = db.Node_collection()
     opt_section = section or request.args.get("section")
@@ -273,7 +270,7 @@ def find_node_by_name(
 def find_document_by_tag() -> Any:
     tags = request.args.getlist("tag")
     if posthog:
-        posthog.capture(f"find_document_by_tag", f"tags:{tags}")
+        posthog.capture("find_document_by_tag", f"tags:{tags}")
 
     database = db.Node_collection()
     # opt_osib = request.args.get("osib")
@@ -412,7 +409,7 @@ def _build_direct_cre_overlap_map_analysis(
 def map_analysis() -> Any:
     standards = request.args.getlist("standard")
     if posthog:
-        posthog.capture(f"map_analysis", f"standards:{standards}")
+        posthog.capture("map_analysis", f"standards:{standards}")
 
     database = db.Node_collection()
     if len(standards) < 2:
@@ -498,7 +495,7 @@ def map_analysis() -> Any:
 def map_analysis_weak_links() -> Any:
     standards = request.args.getlist("standard")
     if posthog:
-        posthog.capture(f"map_analysis_weak_links", f"standards:{standards}")
+        posthog.capture("map_analysis_weak_links", f"standards:{standards}")
 
     key = request.args.get("key")
     cache_key = gap_analysis.make_subresources_key(standards=standards, key=key)
@@ -529,7 +526,7 @@ def fetch_job() -> Any:
         abort(503, f"Job queue unavailable: {exc}")
     try:
         res = job.Job.fetch(id=jobid, connection=conn)
-    except exceptions.NoSuchJobError as nje:
+    except exceptions.NoSuchJobError:
         abort(404, "No such job")
 
     logger.debug("job exists")
@@ -584,7 +581,7 @@ def fetch_job() -> Any:
 @app.route("/rest/v1/standards", methods=["GET"])
 def standards() -> Any:
     if posthog:
-        posthog.capture(f"standards", "")
+        posthog.capture("standards", "")
 
     database = db.Node_collection()
     standards = list(database.standards())
@@ -646,7 +643,7 @@ def text_search() -> Any:
     database = db.Node_collection()
     text = request.args.get("text")
     if posthog:
-        posthog.capture(f"text_search", f"text:{text}")
+        posthog.capture("text_search", f"text:{text}")
 
     opt_format = request.args.get("format")
     documents = database.text_search(text)
@@ -674,7 +671,7 @@ def find_root_cres() -> Any:
 
     """
     if posthog:
-        posthog.capture(f"find_root_cres", "")
+        posthog.capture("find_root_cres", "")
 
     database = db.Node_collection()
     # opt_osib = request.args.get("osib")
@@ -722,7 +719,7 @@ def smartlink(
     # ATTENTION: DO NOT MESS WITH THIS FUNCTIONALITY WITHOUT A TICKET AND CORE CONTRIBUTORS APPROVAL!
     # CRITICAL FUNCTIONALITY DEPENDS ON THIS!
     if posthog:
-        posthog.capture(f"smartlink", f"name:{name}")
+        posthog.capture("smartlink", f"name:{name}")
 
     database = db.Node_collection()
     opt_version = request.args.get("version")
@@ -756,6 +753,18 @@ def smartlink(
         logger.info(
             f"found node of type {ntype}, name {name} and section {section}, redirecting to opencre"
         )
+        # If there is exactly one CRE linked to this node, jump directly to the CRE page (issue #486)
+        cre_links = [
+            link
+            for link in nodes[0].links
+            if link.document.doctype == defs.Credoctypes.CRE and link.document.id
+        ]
+        if len(cre_links) == 1:
+            cre_id = cre_links[0].document.id
+            logger.info(
+                f"single CRE {cre_id} linked to node {name}/{section}, redirecting directly to CRE page"
+            )
+            return redirect(f"/cre/{cre_id}")
         if found_section_id:
             return redirect(f"/node/{ntype}/{name}/sectionid/{section}")
         return redirect(f"/node/{ntype}/{name}/section/{section}")
@@ -767,7 +776,7 @@ def smartlink(
         )
         return redirect(redirectors.redirect(name, section))
     else:
-        logger.warning(f"not sure what happened, 404")
+        logger.warning("not sure what happened, 404")
         return abort(404, "Document does not exist")
 
 
@@ -790,7 +799,7 @@ def deeplink(
     opt_version = request.args.get("version")
     opt_subsection = request.args.get("subsection")
     if posthog:
-        posthog.capture(f"deeplink", f"name:{name}")
+        posthog.capture("deeplink", f"name:{name}")
 
     if opt_section:
         opt_section = urllib.parse.unquote(opt_section)
@@ -844,7 +853,10 @@ def login_required(f):
             allowed_domains = os.environ.get("LOGIN_ALLOWED_DOMAINS")
             abort(
                 401,
-                description=f"You need an account with one of the following providers to access this functionality {allowed_domains}",
+                description=(
+                    "You need an account with one of the following providers"
+                    f" to access this functionality {allowed_domains}"
+                ),
             )
         else:
             return f(*args, **kwargs)
@@ -1043,7 +1055,7 @@ def admin_import_run_apply(run_id: str) -> Any:
 def chat_cre() -> Any:
     message = request.get_json(force=True)
     if posthog:
-        posthog.capture(f"chat_cre", "")
+        posthog.capture("chat_cre", "")
 
     database = db.Node_collection()
     # Lazy import to avoid loading heavy prompt/ML dependencies at web boot.
@@ -1138,7 +1150,7 @@ def callback():
         flow_instance.flow.fetch_token(
             authorization_response=request.url.replace("http://", "https://")
         )  # cloud run (and others) rewrite https to http at the container
-    except oauthlib.oauth2.rfc6749.errors.MismatchingStateError as mse:
+    except oauthlib.oauth2.rfc6749.errors.MismatchingStateError:
         return redirect("/chatbot")
     if not session.get("state") or session.get("state") != request.args["state"]:
         redirect(url_for("web.login"))  # State does not match!
@@ -1168,7 +1180,10 @@ def callback():
         allowed_domains = os.environ.get("LOGIN_ALLOWED_DOMAINS")
         abort(
             401,
-            description=f"You need an account with one of the following providers to access this functionality {allowed_domains}",
+            description=(
+                "You need an account with one of the following providers"
+                f" to access this functionality {allowed_domains}"
+            ),
         )
     return redirect("/chatbot")
 
@@ -1183,7 +1198,7 @@ def logout():
 def all_cres() -> Any:
     database = db.Node_collection()
     if posthog:
-        posthog.capture(f"all_cres", "")
+        posthog.capture("all_cres", "")
 
     page = 1
     per_page = ITEMS_PER_PAGE
@@ -1209,7 +1224,7 @@ def all_cres() -> Any:
 @app.route("/rest/v1/cre_csv", methods=["GET"])
 def get_cre_csv() -> Any:
     if posthog:
-        posthog.capture(f"get_cre_csv", "")
+        posthog.capture("get_cre_csv", "")
 
     database = db.Node_collection()
     root_cres = database.get_root_cres()
@@ -1248,7 +1263,6 @@ def admin_imports_rerun() -> Any:
     if not source:
         return abort(400, "source is required")
 
-    database = db.Node_collection().with_graph()
     try:
         run = db.create_import_run(source=source, version="re-run")
     except Exception:

@@ -571,6 +571,7 @@ class TestMain(unittest.TestCase):
             collection.add_link(dcb, dasvs, ltype=defs.LinkTypes.LinkedTo)
             collection.add_link(dcd, dcwe, ltype=defs.LinkTypes.LinkedTo)
 
+            # single CRE linked via sectionID: should redirect directly to the CRE page (issue #486)
             response = client.get(
                 "/smartlink/standard/CWE/456",
                 headers={"Content-Type": "application/json"},
@@ -579,8 +580,28 @@ class TestMain(unittest.TestCase):
             for head in response.headers:
                 if head[0] == "Location":
                     location = head[1]
-            self.assertEqual(location, "/node/standard/CWE/sectionid/456")
+            self.assertEqual(location, "/cre/222-222")
             self.assertEqual(302, response.status_code)
+
+            # single CRE linked via section: should redirect directly to the CRE page (issue #486)
+            response = client.get(
+                "/smartlink/standard/ASVS/v0.1.2",
+                headers={"Content-Type": "application/json"},
+            )
+            location = ""
+            for head in response.headers:
+                if head[0] == "Location":
+                    location = head[1]
+            self.assertEqual(location, "/cre/333-333")
+            self.assertEqual(302, response.status_code)
+
+            # multi-CRE case: add a second CRE linked to the same ASVS node,
+            # should fall back to the node page instead of jumping to a CRE
+            cres["ce"] = defs.CRE(
+                id="444-444", description="CE", name="CE", tags=["te"]
+            )
+            dce = collection.add_cre(cres["ce"])
+            collection.add_link(dce, dasvs, ltype=defs.LinkTypes.LinkedTo)
 
             response = client.get(
                 "/smartlink/standard/ASVS/v0.1.2",
