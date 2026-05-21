@@ -1108,7 +1108,7 @@ body {
     background: rgba(255, 255, 255, 0.04);
     backdrop-filter: blur(6px);
     border: 1px solid rgba(255, 255, 255, 0.08);
-    transition: background-color 0.3s ease, box-shadow 0.3s ease;
+    transition: background-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease;
 
     &:hover {
       background: rgba(255, 255, 255, 0.07);
