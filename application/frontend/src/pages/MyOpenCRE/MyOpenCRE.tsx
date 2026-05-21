@@ -46,10 +46,7 @@ export const MyOpenCRE = () => {
 
   const downloadCreCsv = async () => {
     try {
-      const baseUrl = apiUrl || window.location.origin;
-      const backendUrl = baseUrl.includes('localhost') ? 'http://127.0.0.1:5000' : baseUrl;
-
-      const response = await fetch(`${backendUrl}/cre_csv`, {
+      const response = await fetch(`${apiUrl}/cre_csv`, {
         method: 'GET',
         headers: { Accept: 'text/csv' },
       });
