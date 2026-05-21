@@ -41,6 +41,8 @@ export const SearchBar = () => {
           Search OpenCRE
         </label>
 
+        <div className="search-container flex items-center">
+
         <Search className="search-icon" aria-hidden="true" />
 
         <input
@@ -58,6 +60,7 @@ export const SearchBar = () => {
             })
           }
         />
+        </div>
       </form>
       {/* Error text */}
       {search.error && (
