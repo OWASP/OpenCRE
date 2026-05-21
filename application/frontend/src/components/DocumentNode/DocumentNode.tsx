@@ -7,6 +7,7 @@ import { Icon } from 'semantic-ui-react';
 
 import {
   CRE,
+  DOCUMENT_TYPES,
   TYPE_AUTOLINKED_TO,
   TYPE_CONTAINS,
   TYPE_IS_PART_OF,
@@ -185,9 +186,15 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({
                   </div>
                   <div>
                     <div className="accordion ui fluid styled f0">
-                      {sortedResults
-                        .slice(0, showAll[idx] ? sortedResults.length : MAX_LENGTH_FOR_AUTO_EXPAND)
-                        .map((link, i) => (
+                      {(() => {
+                        const allLinksAreCres =
+                          sortedResults.length > 0 &&
+                          sortedResults.every((link) => link.document.doctype === DOCUMENT_TYPES.TYPE_CRE);
+                        const visibleResults =
+                          allLinksAreCres || showAll[idx]
+                            ? sortedResults
+                            : sortedResults.slice(0, MAX_LENGTH_FOR_AUTO_EXPAND);
+                        return visibleResults.map((link, i) => (
                           <div
                             key={`document-node-container-${type}-${idx}-${i}`}
                             style={{ marginBottom: '4px' }}
@@ -200,16 +207,18 @@ export const DocumentNode: FunctionComponent<DocumentNode> = ({
                             />
                             <FilterButton document={link.document} />
                           </div>
-                        ))}
+                        ));
+                      })()}
                     </div>
-                    {sortedResults.length > MAX_LENGTH_FOR_AUTO_EXPAND && (
-                      <button
-                        onClick={() => setShowAll((prev) => ({ ...prev, [idx]: !prev[idx] }))}
-                        style={{ marginTop: '8px', cursor: 'pointer' }}
-                      >
-                        {showAll[idx] ? 'Show less ▲' : 'Show more ▼'}
-                      </button>
-                    )}
+                    {sortedResults.length > MAX_LENGTH_FOR_AUTO_EXPAND &&
+                      !sortedResults.every((link) => link.document.doctype === DOCUMENT_TYPES.TYPE_CRE) && (
+                        <button
+                          onClick={() => setShowAll((prev) => ({ ...prev, [idx]: !prev[idx] }))}
+                          style={{ marginTop: '8px', cursor: 'pointer' }}
+                        >
+                          {showAll[idx] ? 'Show less ▲' : 'Show more ▼'}
+                        </button>
+                      )}
                   </div>
                 </div>
               );
