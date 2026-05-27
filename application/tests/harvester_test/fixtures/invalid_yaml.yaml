@@ -1,0 +1,4 @@
+repositories:
+  - repository_id: owasp-top10
+    source:
+      type github
