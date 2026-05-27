@@ -1,0 +1,16 @@
+repositories:
+  - id: owasp-asvs
+    type: github
+    owner: OWASP
+    repo: ASVS
+    paths:
+      include:
+        - "4.0/en/**/*.md"
+
+    chunking:
+      strategy: markdown
+      max_tokens: 1200
+
+    polling:
+      mode: incremental
+      interval_minutes: 60
