@@ -30,7 +30,7 @@ def test_missing_repository_id():
 
 def test_invalid_chunk_size():
     config_path = FIXTURES_DIR / "invalid_chunk_size.yaml"
-    with pytest.raises(ConfigLoaderError):
+    with pytest.raises(ConfigLoaderError, match="max_tokens"):
         load_repo_config(config_path)
 
 

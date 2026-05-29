@@ -12,7 +12,7 @@ class ConfigLoaderError(Exception):
 def load_repo_config(path: str | Path) -> ReposFile:
     config_path = Path(path)
 
-    if not config_path.exists():
+    if not config_path.is_file():
         raise FileNotFoundError(f"Configuration file not found: {config_path}")
     try:
         with config_path.open("r", encoding="utf-8") as file:
@@ -23,4 +23,6 @@ def load_repo_config(path: str | Path) -> ReposFile:
     try:
         return ReposFile.model_validate(raw_config)
     except ValidationError as exc:
-        raise ConfigLoaderError(f"schema validation failed for {config_path}") from exc
+        raise ConfigLoaderError(
+            f"schema validation failed for {config_path} : {exc}"
+        ) from exc

@@ -1,6 +1,7 @@
 repositories:
-  - type: github
+  - id: owasp-asvs
 
+    type: github
     owner: OWASP
     repo: ASVS
 
@@ -10,7 +11,7 @@ repositories:
 
     chunking:
       strategy: markdown
-      max_tokens: 1200
+      max_tokens: 0
 
     polling:
       mode: incremental

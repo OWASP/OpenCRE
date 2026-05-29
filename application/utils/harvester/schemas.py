@@ -1,10 +1,3 @@
-# core routes:
-# PathRules
-# ChunkingConfig
-# ollingConfig
-# RepositoryConfig
-# ReposFile
-
 from typing import Literal
 from pydantic import BaseModel, Field, ConfigDict
 
@@ -29,10 +22,10 @@ class ChunkingConfig(BaseModel):
 
     strategy: Literal["markdown", "plaintext"] = Field(
         ...,
-        description="Chunking startergy used for text segmentation",
+        description="Chunking strategy used for text segmentation",
     )
 
-    max_tokens: int = Field(..., gt=0, description="max toekn size per chunk")
+    max_tokens: int = Field(..., gt=0, description="max token size per chunk")
 
     overlap_tokens: int = Field(  # a bit concerned about this
         ge=0,  # this can also be = 0 i suppose
