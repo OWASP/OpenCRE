@@ -43,3 +43,33 @@ def test_invalid_yaml_syntax():
 def test_missing_config_file():
     with pytest.raises(FileNotFoundError):
         load_repo_config("does_not_exist.yaml")
+
+
+def test_empty_owner():
+    config_path = FIXTURES_DIR / "empty_owner.yaml"
+
+    with pytest.raises(
+        ConfigLoaderError,
+        match="owner",
+    ):
+        load_repo_config(config_path)
+
+
+def test_invalid_chunking_strategy():
+    config_path = FIXTURES_DIR / "invalid_chunking_strategy.yaml"
+
+    with pytest.raises(
+        ConfigLoaderError,
+        match="strategy",
+    ):
+        load_repo_config(config_path)
+
+
+def test_invalid_polling_mode():
+    config_path = FIXTURES_DIR / "invalid_polling_mode.yaml"
+
+    with pytest.raises(
+        ConfigLoaderError,
+        match="mode",
+    ):
+        load_repo_config(config_path)

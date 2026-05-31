@@ -32,3 +32,14 @@ def test_duplicate_repositories():
         match="Duplicate repository detected",
     ):
         validate_repositories(config)
+
+
+def test_duplicate_include_paths():
+    config_path = FIXTURES_DIR / "duplicate_include_paths.yaml"
+    config = load_repo_config(config_path)
+
+    with pytest.raises(
+        RepositoryValidationError,
+        match="duplicate include paths",
+    ):
+        validate_repositories(config)

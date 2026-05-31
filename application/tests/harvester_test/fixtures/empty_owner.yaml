@@ -1,0 +1,21 @@
+repositories:
+  - id: empty-owner
+    type: github
+    enabled: true
+
+    owner: ""
+    repo: ASVS
+    branch: master
+
+    paths:
+      include:
+        - "docs/**/*.md"
+
+    chunking:
+      strategy: markdown
+      max_tokens: 1200
+      overlap_tokens: 100
+
+    polling:
+      mode: incremental
+      interval_minutes: 60
