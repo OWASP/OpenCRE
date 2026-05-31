@@ -17,8 +17,8 @@ def validate_repositories(config: ReposFile) -> None:
             )
         seen_ids.add(repository.id)
         repository_key = (
-            repository.owner,
-            repository.repo,
+            repository.owner.casefold(),
+            repository.repo.casefold(),
         )
         if repository_key in seen_repositories:
             raise RepositoryValidationError(
