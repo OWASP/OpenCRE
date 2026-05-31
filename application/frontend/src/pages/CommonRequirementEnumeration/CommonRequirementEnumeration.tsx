@@ -8,6 +8,7 @@ import { Icon } from 'semantic-ui-react';
 import { DocumentNode } from '../../components/DocumentNode';
 import { ClearFilterButton, FilterButton } from '../../components/FilterButton/FilterButton';
 import { LoadingAndErrorIndicator } from '../../components/LoadingAndErrorIndicator';
+import { DOCUMENT_TYPES } from '../../const';
 import { useEnvironment } from '../../hooks';
 import { applyFilters, filterContext } from '../../hooks/applyFilters';
 import { Document } from '../../types';
@@ -106,25 +107,30 @@ export const CommonRequirementEnumeration = () => {
                 const sortedResults = links.sort((a, b) =>
                   getDocumentDisplayName(a.document).localeCompare(getDocumentDisplayName(b.document))
                 );
+                const allLinksAreCres =
+                  sortedResults.length > 0 &&
+                  sortedResults.every((link) => link.document.doctype === DOCUMENT_TYPES.TYPE_CRE);
+                const visibleResults =
+                  allLinksAreCres || showAll[type]
+                    ? sortedResults
+                    : sortedResults.slice(0, MAX_LENGTH_FOR_AUTO_EXPAND);
                 return (
                   <div className="cre-page__links" key={type}>
                     <div className="cre-page__links-eader">
                       <b>Which {getDocumentTypeText(type, links[0].document.doctype)}</b>:
                       {/* Risk of mixed doctype in here causing odd output */}
                     </div>
-                    {sortedResults
-                      .slice(0, showAll[type] ? sortedResults.length : MAX_LENGTH_FOR_AUTO_EXPAND)
-                      .map((link, i) => (
-                        <div
-                          key={i}
-                          className="accordion ui fluid styled cre-page__links-container"
-                          style={{ marginBottom: '4px' }}
-                        >
-                          <DocumentNode node={link.document} linkType={type} />
-                          <FilterButton document={link.document} />
-                        </div>
-                      ))}
-                    {sortedResults.length > MAX_LENGTH_FOR_AUTO_EXPAND && (
+                    {visibleResults.map((link, i) => (
+                      <div
+                        key={i}
+                        className="accordion ui fluid styled cre-page__links-container"
+                        style={{ marginBottom: '4px' }}
+                      >
+                        <DocumentNode node={link.document} linkType={type} />
+                        <FilterButton document={link.document} />
+                      </div>
+                    ))}
+                    {!allLinksAreCres && sortedResults.length > MAX_LENGTH_FOR_AUTO_EXPAND && (
                       <button
                         onClick={() => setShowAll((prev) => ({ ...prev, [type]: !prev[type] }))}
                         style={{ marginTop: '8px', cursor: 'pointer' }}
