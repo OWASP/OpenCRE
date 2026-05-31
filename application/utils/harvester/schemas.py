@@ -1,5 +1,5 @@
 from typing import Literal
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, model_validator
 
 
 # this will control which repo paths are included and excluded during ingestions
@@ -32,6 +32,15 @@ class ChunkingConfig(BaseModel):
         default=100,
         description="token overlap between adjacent chunks",
     )
+
+    @model_validator(mode="after")
+    def overlap_must_be_less_than_max(self) -> "ChunkingConfig":
+        if self.overlap_tokens >= self.max_tokens:
+            raise ValueError(
+                f"overlap_tokens ({self.overlap_tokens}) must be less than "
+                f"max_tokens ({self.max_tokens})"
+            )
+        return self
 
 
 # this one defines repository synchronize behaviour
