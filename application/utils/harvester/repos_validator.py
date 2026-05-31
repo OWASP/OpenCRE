@@ -22,6 +22,12 @@ def validate_repositories(config: ReposFile) -> None:
         )
         if repository_key in seen_repositories:
             raise RepositoryValidationError(
-                f"Duplicate repository detected: {repository.owner}/{repository.repo}"
+                f"Duplicate repository detected: "
+                f"{repository.owner}/{repository.repo}"
             )
         seen_repositories.add(repository_key)
+        include_patterns = set(repository.paths.include)
+        if len(include_patterns) != len(repository.paths.include):
+            raise RepositoryValidationError(
+                f"Repository '{repository.id}' " f"has duplicate include paths"
+            )
