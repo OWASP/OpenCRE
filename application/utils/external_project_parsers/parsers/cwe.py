@@ -136,9 +136,9 @@ class CWE(ParserInterface):
             for entry in related_entries:
                 if (
                     isinstance(entry, Dict)
-                    and entry.get("`@CWE_ID`")
-                    and entry.get("`@Nature`") == "ChildOf"
-               ):
+                    and entry.get("@CWE_ID")
+                    and entry.get("@Nature") == "ChildOf"
+                ):
                     related_ids.append(str(entry["@CWE_ID"]))
         return related_ids
 
