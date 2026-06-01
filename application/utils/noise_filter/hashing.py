@@ -91,6 +91,6 @@ def compute_content_hash(text: str) -> str:
 
 
 __all__ = [
-    "normalize_text",
     "compute_content_hash",
+    "normalize_text",
 ]

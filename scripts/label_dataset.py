@@ -71,11 +71,36 @@ keeping borderline cases as KNOWLEDGE.
 
 
 def load_labeled() -> dict[str, dict[str, Any]]:
-    """Indexed by chunk_id (Module A's stable identifier)."""
+    """Indexed by chunk_id (Module A's stable identifier).
+
+    Exits with a friendly message on corruption rather than dumping a stack
+    trace. Typical causes: truncated atomic write, manual edit with a
+    trailing comma, or a schema mismatch after the candidate format changed.
+    """
     if not LABELED_PATH.exists():
         return {}
-    raw = json.loads(LABELED_PATH.read_text())
-    return {r["chunk_id"]: r for r in raw}
+    try:
+        raw = json.loads(LABELED_PATH.read_text())
+    except json.JSONDecodeError as e:
+        sys.exit(
+            f"{LABELED_PATH} is not valid JSON: {e}\n"
+            f"If you edited the file by hand, check for trailing commas or "
+            f"unbalanced brackets. To start fresh, delete the file and re-run."
+        )
+    if not isinstance(raw, list):
+        sys.exit(
+            f"{LABELED_PATH} should contain a JSON array of records, "
+            f"got {type(raw).__name__}. Delete the file to start fresh."
+        )
+    try:
+        return {r["chunk_id"]: r for r in raw}
+    except (KeyError, TypeError) as e:
+        sys.exit(
+            f"{LABELED_PATH} has a record missing 'chunk_id' (or is not a "
+            f"list of dicts): {e}\n"
+            f"This usually means the schema changed since these labels were "
+            f"made. Delete the file to re-label from scratch."
+        )
 
 
 def save_labeled(labeled: dict[str, dict[str, Any]]) -> None:

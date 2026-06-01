@@ -150,11 +150,11 @@ class QueuePayload(BaseModel):
 
 __all__ = [
     "ChangeRecord",
-    "Source",
-    "GithubSource",
-    "RssSource",
-    "Span",
-    "Locator",
     "ClassifyResult",
+    "GithubSource",
+    "Locator",
     "QueuePayload",
+    "RssSource",
+    "Source",
+    "Span",
 ]

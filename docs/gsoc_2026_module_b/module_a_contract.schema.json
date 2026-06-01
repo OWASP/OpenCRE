@@ -1,4 +1,5 @@
 {
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$defs": {
     "GithubSource": {
       "description": "github source -- a commit touching a file in an OWASP repo.",
