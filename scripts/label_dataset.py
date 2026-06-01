@@ -108,11 +108,15 @@ def print_record(rec: dict[str, Any], idx: int, total: int) -> None:
         print(f"  post_guid:      {src.get('post_guid', '-')}")
         print(f"  published_at:   {src.get('post_published_at', '-')}")
     print(f"  locator:        kind={loc['kind']}  path={loc['path']}")
-    print(f"  span:           index={span['index']}/{span['total']}  "
-          f"lines={span.get('start_line', '-')}-{span.get('end_line', '-')}")
+    print(
+        f"  span:           index={span['index']}/{span['total']}  "
+        f"lines={span.get('start_line', '-')}-{span.get('end_line', '-')}"
+    )
     print(f"  heading_path:   {' > '.join(span.get('heading_path', []) or ['(root)'])}")
     chunk = rec["text"]
-    print(f"  -- text ({len(chunk)} chars total, showing first {CHUNK_DISPLAY_CHARS}) --")
+    print(
+        f"  -- text ({len(chunk)} chars total, showing first {CHUNK_DISPLAY_CHARS}) --"
+    )
     if len(chunk) > CHUNK_DISPLAY_CHARS:
         print(chunk[:CHUNK_DISPLAY_CHARS])
         print(f"  ... [truncated; {len(chunk) - CHUNK_DISPLAY_CHARS} more chars]")

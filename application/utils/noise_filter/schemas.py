@@ -20,6 +20,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 # --- Source: discriminated union -----------------------------------------
 
+
 class GithubSource(BaseModel):
     """github source -- a commit touching a file in an OWASP repo."""
 
@@ -56,6 +57,7 @@ Source = Annotated[
 
 # --- Span: chunk position within its parent artifact ---------------------
 
+
 class Span(BaseModel):
     """Position of this chunk within the parent artifact.
 
@@ -78,6 +80,7 @@ class Span(BaseModel):
 
 # --- Locator: addressing scheme for the chunk's content ------------------
 
+
 class Locator(BaseModel):
     """Where this chunk lives addressable-wise.
 
@@ -95,6 +98,7 @@ class Locator(BaseModel):
 
 
 # --- Top-level: ChangeRecord (what Module A emits per line in JSONL) ----
+
 
 class ChangeRecord(BaseModel):
     """One record in Module A's JSONL output stream.
@@ -117,6 +121,7 @@ class ChangeRecord(BaseModel):
 
 
 # --- B's internal models -------------------------------------------------
+
 
 class ClassifyResult(BaseModel):
     """Stage 2 LLM classifier output -- one decision per chunk."""

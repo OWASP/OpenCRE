@@ -27,12 +27,11 @@ from application.utils.noise_filter.schemas import (
     Span,
 )
 
-FIXTURE_PATH = (
-    Path(__file__).parent / "fixtures" / "module_a_mock.jsonl"
-)
+FIXTURE_PATH = Path(__file__).parent / "fixtures" / "module_a_mock.jsonl"
 
 
 # --- 1. Round-trip Module A's mock ---------------------------------------
+
 
 class ModuleAMockTests(unittest.TestCase):
     """Every line of Module A's mock JSONL parses through ChangeRecord."""
@@ -161,10 +160,12 @@ class ChangeRecordTests(unittest.TestCase):
 
     def test_short_commit_sha_accepted(self) -> None:
         """Mock data uses 6-char SHAs; production will use 40-char."""
-        rec = ChangeRecord.model_validate({
-            **VALID_GITHUB_RECORD,
-            "source": {**VALID_GITHUB_RECORD["source"], "commit_sha": "abc123"},
-        })
+        rec = ChangeRecord.model_validate(
+            {
+                **VALID_GITHUB_RECORD,
+                "source": {**VALID_GITHUB_RECORD["source"], "commit_sha": "abc123"},
+            }
+        )
         self.assertEqual(rec.source.commit_sha, "abc123")
 
     def test_default_heading_path_is_empty_list(self) -> None:
@@ -175,6 +176,7 @@ class ChangeRecordTests(unittest.TestCase):
 
 
 # --- 3. Source discriminated union ----------------------------------------
+
 
 class SourceUnionTests(unittest.TestCase):
 
@@ -197,6 +199,7 @@ class SourceUnionTests(unittest.TestCase):
 
 
 # --- 4. compute_content_hash ---------------------------------------------
+
 
 class ContentHashTests(unittest.TestCase):
 

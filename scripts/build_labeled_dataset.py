@@ -59,24 +59,59 @@ MAX_FILES_PER_COMMIT = 5
 MAX_CHUNK_CHARS = 4000  # Module A contract: chunking.max_chars default
 
 DENY_PATH_PREFIXES = (
-    "tests/", "test/", ".github/", "node_modules/", "dist/", "build/",
-    "_layouts/", "_includes/", "_data/", "assets/", "docs/_layouts/",
+    "tests/",
+    "test/",
+    ".github/",
+    "node_modules/",
+    "dist/",
+    "build/",
+    "_layouts/",
+    "_includes/",
+    "_data/",
+    "assets/",
+    "docs/_layouts/",
 )
 DENY_EXTENSIONS = (
-    ".css", ".scss", ".svg", ".png", ".jpg", ".jpeg", ".ico", ".gif",
-    ".lock", ".map", ".min.js", ".min.css", ".woff", ".woff2", ".ttf",
-    ".eot", ".pdf", ".yml", ".yaml", ".json",
+    ".css",
+    ".scss",
+    ".svg",
+    ".png",
+    ".jpg",
+    ".jpeg",
+    ".ico",
+    ".gif",
+    ".lock",
+    ".map",
+    ".min.js",
+    ".min.css",
+    ".woff",
+    ".woff2",
+    ".ttf",
+    ".eot",
+    ".pdf",
+    ".yml",
+    ".yaml",
+    ".json",
 )
 DENY_FILENAMES = {
-    "package-lock.json", "yarn.lock", "poetry.lock", "Pipfile.lock",
-    "CNAME", "_config.yml", ".gitignore", ".gitattributes",
-    "CODEOWNERS", ".editorconfig", "mkdocs.yml",
+    "package-lock.json",
+    "yarn.lock",
+    "poetry.lock",
+    "Pipfile.lock",
+    "CNAME",
+    "_config.yml",
+    ".gitignore",
+    ".gitattributes",
+    "CODEOWNERS",
+    ".editorconfig",
+    "mkdocs.yml",
 }
 
 OUTPUT_PATH = Path("application/tests/noise_filter/fixtures/candidate_commits.json")
 
 
 # --- Path filter ----------------------------------------------------------
+
 
 def is_doc_file(path: str) -> bool:
     if any(path.startswith(p) for p in DENY_PATH_PREFIXES):
@@ -129,15 +164,18 @@ _HEADING_RE = re.compile(r"^(#{1,6})\s+(.*)$")
 @dataclass
 class Chunk:
     """One chunk of normalized artifact text with position metadata."""
+
     text: str
-    start_char_idx: int   # into the normalized artifact text
+    start_char_idx: int  # into the normalized artifact text
     end_char_idx: int
-    start_line: int       # 1-based line number in the normalized artifact
+    start_line: int  # 1-based line number in the normalized artifact
     end_line: int
     heading_path: list[str]
 
 
-def chunk_markdown(normalized_text: str, max_chars: int = MAX_CHUNK_CHARS) -> list[Chunk]:
+def chunk_markdown(
+    normalized_text: str, max_chars: int = MAX_CHUNK_CHARS
+) -> list[Chunk]:
     """Split text into chunks at heading boundaries (fence-aware).
 
     Tracks heading_path as a stack and char/line offsets into the original
@@ -151,7 +189,7 @@ def chunk_markdown(normalized_text: str, max_chars: int = MAX_CHUNK_CHARS) -> li
     heading_stack: list[tuple[int, str]] = []  # (level, title)
     sections: list[Chunk] = []
     current_lines: list[str] = []
-    current_start_line = 1   # 1-based
+    current_start_line = 1  # 1-based
     current_start_char = 0
     current_heading_path: list[str] = []
     in_fence = False
@@ -163,14 +201,16 @@ def chunk_markdown(normalized_text: str, max_chars: int = MAX_CHUNK_CHARS) -> li
         text = "\n".join(current_lines).strip("\n")
         if not text:
             return
-        sections.append(Chunk(
-            text=text,
-            start_char_idx=current_start_char,
-            end_char_idx=end_char_exclusive,
-            start_line=current_start_line,
-            end_line=end_line_exclusive - 1,
-            heading_path=list(current_heading_path),
-        ))
+        sections.append(
+            Chunk(
+                text=text,
+                start_char_idx=current_start_char,
+                end_char_idx=end_char_exclusive,
+                start_line=current_start_line,
+                end_line=end_line_exclusive - 1,
+                heading_path=list(current_heading_path),
+            )
+        )
 
     for line_idx, line in enumerate(lines):
         line_no = line_idx + 1  # 1-based
@@ -188,7 +228,9 @@ def chunk_markdown(normalized_text: str, max_chars: int = MAX_CHUNK_CHARS) -> li
         if m:
             # Close the previous section before starting this one
             if current_lines:
-                flush(end_line_exclusive=line_no, end_char_exclusive=line_start_char - 1)
+                flush(
+                    end_line_exclusive=line_no, end_char_exclusive=line_start_char - 1
+                )
             level = len(m.group(1))
             title = m.group(2).strip()
             # Pop deeper or equal levels, then push
@@ -249,20 +291,23 @@ def _split_chunk_by_size(chunk: Chunk, max_chars: int) -> list[Chunk]:
     for t in out_texts:
         end_char = cursor_char + len(t)
         end_line = cursor_line + t.count("\n")
-        out.append(Chunk(
-            text=t,
-            start_char_idx=cursor_char,
-            end_char_idx=end_char,
-            start_line=cursor_line,
-            end_line=end_line,
-            heading_path=chunk.heading_path,
-        ))
+        out.append(
+            Chunk(
+                text=t,
+                start_char_idx=cursor_char,
+                end_char_idx=end_char,
+                start_line=cursor_line,
+                end_line=end_line,
+                heading_path=chunk.heading_path,
+            )
+        )
         cursor_char = end_char + 2  # skip "\n\n"
         cursor_line = end_line + 1
     return out
 
 
 # --- Record building (Module A nested shape) -----------------------------
+
 
 def make_artifact_id(repo: str, file_path: str) -> str:
     """Format: art:<repo>:<path>"""
@@ -296,37 +341,40 @@ def make_records_for_file(
 
     records: list[dict[str, Any]] = []
     for i, chunk in enumerate(chunks):
-        records.append({
-            "schema_version": SCHEMA_VERSION,
-            "chunk_id": make_chunk_id(artifact_id, i),
-            "artifact_id": artifact_id,
-            "pipeline_run_id": pipeline_run_id,
-            "text": chunk.text,
-            "span": {
-                "index": i,
-                "total": total,
-                "heading_path": chunk.heading_path,
-                "start_char_idx": chunk.start_char_idx,
-                "end_char_idx": chunk.end_char_idx,
-                "start_line": chunk.start_line,
-                "end_line": chunk.end_line,
-            },
-            "source": {
-                "type": "github",
-                "repo": repo,
-                "commit_sha": commit_sha,
-                "committed_at": committed_at_iso,
-            },
-            "locator": {
-                "kind": "repo_path",
-                "id": file_path,
-                "path": file_path,
-            },
-        })
+        records.append(
+            {
+                "schema_version": SCHEMA_VERSION,
+                "chunk_id": make_chunk_id(artifact_id, i),
+                "artifact_id": artifact_id,
+                "pipeline_run_id": pipeline_run_id,
+                "text": chunk.text,
+                "span": {
+                    "index": i,
+                    "total": total,
+                    "heading_path": chunk.heading_path,
+                    "start_char_idx": chunk.start_char_idx,
+                    "end_char_idx": chunk.end_char_idx,
+                    "start_line": chunk.start_line,
+                    "end_line": chunk.end_line,
+                },
+                "source": {
+                    "type": "github",
+                    "repo": repo,
+                    "commit_sha": commit_sha,
+                    "committed_at": committed_at_iso,
+                },
+                "locator": {
+                    "kind": "repo_path",
+                    "id": file_path,
+                    "path": file_path,
+                },
+            }
+        )
     return records
 
 
 # --- Persistence ----------------------------------------------------------
+
 
 def save_atomic(path: Path, records: list[dict[str, Any]]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -336,6 +384,7 @@ def save_atomic(path: Path, records: list[dict[str, Any]]) -> None:
 
 
 # --- Main harvest loop ----------------------------------------------------
+
 
 def harvest_repo(
     gh: Github,
@@ -424,7 +473,9 @@ def main() -> None:
         sys.exit("Run from repo root (no 'application/' directory here).")
 
     if OUTPUT_PATH.exists():
-        print(f"WARNING: {OUTPUT_PATH} exists. Overwriting (Module A shape replaces prior).")
+        print(
+            f"WARNING: {OUTPUT_PATH} exists. Overwriting (Module A shape replaces prior)."
+        )
         OUTPUT_PATH.unlink()
 
     pipeline_run_id = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
@@ -435,8 +486,10 @@ def main() -> None:
     try:
         rl = gh.get_rate_limit()
         core = getattr(rl, "core", None) or rl.resources.core
-        print(f"GitHub rate limit: {core.remaining}/{core.limit} "
-              f"(resets {core.reset.isoformat()})")
+        print(
+            f"GitHub rate limit: {core.remaining}/{core.limit} "
+            f"(resets {core.reset.isoformat()})"
+        )
     except Exception as e:
         print(f"(could not read rate limit: {e})")
 
