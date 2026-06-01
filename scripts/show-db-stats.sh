@@ -12,6 +12,11 @@ fi
 echo "Database: $DB_PATH"
 du -h "$DB_PATH"
 
+if [[ ! -f "$ROOT_DIR/venv/bin/python" ]]; then
+  echo "Virtual environment not found. Please run scripts/run-local.sh first to set up the environment." >&2
+  exit 1
+fi
+
 "$ROOT_DIR/venv/bin/python" - "$DB_PATH" <<'PY'
 import os
 import sqlite3
