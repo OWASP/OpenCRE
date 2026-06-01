@@ -1,0 +1,247 @@
+{
+  "$defs": {
+    "GithubSource": {
+      "description": "github source -- a commit touching a file in an OWASP repo.",
+      "properties": {
+        "type": {
+          "const": "github",
+          "title": "Type",
+          "type": "string"
+        },
+        "repo": {
+          "minLength": 3,
+          "pattern": "^[A-Za-z0-9._-]+/[A-Za-z0-9._-]+$",
+          "title": "Repo",
+          "type": "string"
+        },
+        "commit_sha": {
+          "minLength": 4,
+          "title": "Commit Sha",
+          "type": "string"
+        },
+        "committed_at": {
+          "title": "Committed At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "repo",
+        "commit_sha",
+        "committed_at"
+      ],
+      "title": "GithubSource",
+      "type": "object"
+    },
+    "Locator": {
+      "description": "Where this chunk lives addressable-wise.\n\n`kind` is the scheme: today only \"repo_path\" is observed (github file at\na commit); future schemes may include \"feed_post\" for RSS or others.\n`id` is the unique identity within the scheme; `path` is a convenience\nduplicate for repo_path (id == path in practice).",
+      "properties": {
+        "kind": {
+          "minLength": 1,
+          "title": "Kind",
+          "type": "string"
+        },
+        "id": {
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "path": {
+          "minLength": 1,
+          "title": "Path",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "path"
+      ],
+      "title": "Locator",
+      "type": "object"
+    },
+    "RssSource": {
+      "description": "rss source -- a post fetched from a feed.",
+      "properties": {
+        "type": {
+          "const": "rss",
+          "title": "Type",
+          "type": "string"
+        },
+        "feed_url": {
+          "minLength": 1,
+          "title": "Feed Url",
+          "type": "string"
+        },
+        "post_guid": {
+          "minLength": 1,
+          "title": "Post Guid",
+          "type": "string"
+        },
+        "post_published_at": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Post Published At"
+        }
+      },
+      "required": [
+        "type",
+        "feed_url",
+        "post_guid"
+      ],
+      "title": "RssSource",
+      "type": "object"
+    },
+    "Span": {
+      "description": "Position of this chunk within the parent artifact.\n\n`heading_path` is the breadcrumb of markdown headings enclosing the chunk\n(e.g. [\"Authentication\", \"JWT\"]). Used by Module B's LLM prompt as a\nsemantic context signal -- it replaces Module A v0.2's `commit_message`\nweak signal.",
+      "properties": {
+        "index": {
+          "minimum": 0,
+          "title": "Index",
+          "type": "integer"
+        },
+        "total": {
+          "minimum": 1,
+          "title": "Total",
+          "type": "integer"
+        },
+        "heading_path": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Heading Path",
+          "type": "array"
+        },
+        "start_char_idx": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Start Char Idx"
+        },
+        "end_char_idx": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "End Char Idx"
+        },
+        "start_line": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Start Line"
+        },
+        "end_line": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "End Line"
+        }
+      },
+      "required": [
+        "index",
+        "total"
+      ],
+      "title": "Span",
+      "type": "object"
+    }
+  },
+  "description": "One record in Module A's JSONL output stream.\n\nRequired by contract. `extra=\"ignore\"` ensures forward compatibility with\nfuture Module A field additions (e.g. `supersedes_artifact_id`,\n`pr_number`, etc.) -- B silently passes them through without breaking.",
+  "properties": {
+    "schema_version": {
+      "minLength": 1,
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "chunk_id": {
+      "minLength": 1,
+      "title": "Chunk Id",
+      "type": "string"
+    },
+    "artifact_id": {
+      "minLength": 1,
+      "title": "Artifact Id",
+      "type": "string"
+    },
+    "pipeline_run_id": {
+      "minLength": 1,
+      "title": "Pipeline Run Id",
+      "type": "string"
+    },
+    "text": {
+      "minLength": 1,
+      "title": "Text",
+      "type": "string"
+    },
+    "span": {
+      "$ref": "#/$defs/Span"
+    },
+    "source": {
+      "discriminator": {
+        "mapping": {
+          "github": "#/$defs/GithubSource",
+          "rss": "#/$defs/RssSource"
+        },
+        "propertyName": "type"
+      },
+      "oneOf": [
+        {
+          "$ref": "#/$defs/GithubSource"
+        },
+        {
+          "$ref": "#/$defs/RssSource"
+        }
+      ],
+      "title": "Source"
+    },
+    "locator": {
+      "$ref": "#/$defs/Locator"
+    }
+  },
+  "required": [
+    "schema_version",
+    "chunk_id",
+    "artifact_id",
+    "pipeline_run_id",
+    "text",
+    "span",
+    "source",
+    "locator"
+  ],
+  "title": "ChangeRecord",
+  "type": "object"
+}
