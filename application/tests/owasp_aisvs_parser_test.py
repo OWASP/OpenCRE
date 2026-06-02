@@ -45,7 +45,7 @@ class TestOwaspAisvsParser(unittest.TestCase):
             "Training Data Governance & Bias Management", entries[0].section
         )
         self.assertEqual(
-            "https://github.com/OWASP/AISVS/tree/main/1.0/en/0x10-C01-Training-Data-Governance.md",
+            "https://github.com/OWASP/AISVS/blob/main/1.0/en/0x10-C01-Training-Data-Governance.md",
             entries[0].hyperlink,
         )
         self.assertEqual(
@@ -57,7 +57,7 @@ class TestOwaspAisvsParser(unittest.TestCase):
             "Human Oversight, Accountability & Governance", entries[-1].section
         )
         self.assertEqual(
-            "https://github.com/OWASP/AISVS/tree/main/1.0/en/0x10-C14-Human-Oversight.md",
+            "https://github.com/OWASP/AISVS/blob/main/1.0/en/0x10-C14-Human-Oversight.md",
             entries[-1].hyperlink,
         )
         self.assertEqual(
