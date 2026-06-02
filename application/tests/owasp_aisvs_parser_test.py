@@ -49,7 +49,8 @@ class TestOwaspAisvsParser(unittest.TestCase):
             entries[0].hyperlink,
         )
         self.assertEqual(
-            ["227-045", "307-507"], [l.document.id for l in entries[0].links]
+            ["227-045", "307-507"],
+            [link.document.id for link in entries[0].links],
         )
         self.assertEqual("AISVS14", entries[-1].sectionID)
         self.assertEqual(
@@ -59,4 +60,7 @@ class TestOwaspAisvsParser(unittest.TestCase):
             "https://github.com/OWASP/AISVS/tree/main/1.0/en/0x10-C14-Human-Oversight.md",
             entries[-1].hyperlink,
         )
-        self.assertEqual(["162-655"], [l.document.id for l in entries[-1].links])
+        self.assertEqual(
+            ["162-655"],
+            [link.document.id for link in entries[-1].links],
+        )
