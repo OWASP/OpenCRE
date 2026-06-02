@@ -39,7 +39,7 @@ class TestOwaspKubernetesTop10_2022Parser(unittest.TestCase):
         self.assertEqual("K01", entries[0].sectionID)
         self.assertEqual("Insecure Workload Configurations", entries[0].section)
         self.assertEqual(
-            ["233-748", "486-813"], [l.document.id for l in entries[0].links]
+            ["233-748", "486-813"], [link.document.id for link in entries[0].links]
         )
         self.assertEqual("K10", entries[-1].sectionID)
-        self.assertEqual(["053-751"], [l.document.id for l in entries[-1].links])
+        self.assertEqual(["053-751"], [link.document.id for link in entries[-1].links])
