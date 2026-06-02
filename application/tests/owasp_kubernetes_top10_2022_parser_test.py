@@ -41,5 +41,14 @@ class TestOwaspKubernetesTop10_2022Parser(unittest.TestCase):
         self.assertEqual(
             ["233-748", "486-813"], [link.document.id for link in entries[0].links]
         )
+
+        # K09 intentionally shares the same CRE ids as K01 for this version.
+        # In OWASP Kubernetes 2025, K07 aggregates 2022 K09 and K10, so K09 maps
+        # to the same configuration-focused CREs while K10 covers outdated/vulnerable components.
+        self.assertEqual("K09", entries[8].sectionID)
+        self.assertEqual(
+            ["233-748", "486-813"], [link.document.id for link in entries[8].links]
+        )
+
         self.assertEqual("K10", entries[-1].sectionID)
         self.assertEqual(["053-751"], [link.document.id for link in entries[-1].links])
