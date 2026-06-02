@@ -2,7 +2,10 @@ from .config_loader import (
     ConfigLoaderError,
     load_repo_config,
 )
-
+from .repos_validator import (
+    RepositoryValidationError,
+    validate_repositories,
+)
 from .schemas import (
     ChunkingConfig,
     PathRules,
@@ -19,4 +22,6 @@ __all__ = [
     "RepositoryConfig",
     "ReposFile",
     "load_repo_config",
+    "RepositoryValidationError",
+    "validate_repositories",
 ]

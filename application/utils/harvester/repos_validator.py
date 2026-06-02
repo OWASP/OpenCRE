@@ -1,5 +1,5 @@
 # as the name suggests
-from application.utils.harvester.schemas import ReposFile
+from .schemas import ReposFile
 
 
 class RepositoryValidationError(Exception):
