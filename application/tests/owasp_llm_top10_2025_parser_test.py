@@ -38,8 +38,8 @@ class TestOwaspLlmTop10_2025Parser(unittest.TestCase):
         self.assertEqual("LLM01", entries[0].sectionID)
         self.assertEqual("Prompt Injection", entries[0].section)
         self.assertEqual(
-            ["161-451", "760-764"], [l.document.id for l in entries[0].links]
+            ["161-451", "760-764"], [link.document.id for link in entries[0].links]
         )
-        self.assertEqual(["064-808"], [l.document.id for l in entries[4].links])
+        self.assertEqual(["064-808"], [link.document.id for link in entries[4].links])
         self.assertEqual("LLM10", entries[-1].sectionID)
-        self.assertEqual(["623-550"], [l.document.id for l in entries[-1].links])
+        self.assertEqual(["623-550"], [link.document.id for link in entries[-1].links])
