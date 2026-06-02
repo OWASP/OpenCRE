@@ -51,18 +51,20 @@ class Cheatsheets(ParserInterface):
         c_repo = "https://github.com/OWASP/CheatSheetSeries.git"
         cheatsheets_path = "cheatsheets/"
         cheatsheets = []
+        repo = None
         try:
             repo = git.clone(c_repo, sparse_paths=["cheatsheets"], sparse_cone=True)
+        except Exception as exc:
+            self.logger.warning(
+                "Unable to clone OWASP CheatSheetSeries, continuing with supplemental cheat sheets only: %s",
+                exc,
+            )
+        if repo:
             cheatsheets = self.register_cheatsheets(
                 repo=repo,
                 cache=cache,
                 cheatsheets_path=cheatsheets_path,
                 repo_path=c_repo,
-            )
-        except Exception as exc:
-            self.logger.warning(
-                "Unable to clone OWASP CheatSheetSeries, continuing with supplemental cheat sheets only: %s",
-                exc,
             )
         cheatsheets.extend(self.register_supplemental_cheatsheets(cache=cache))
         cheatsheets = self.deduplicate_entries(cheatsheets)
@@ -113,6 +115,7 @@ class Cheatsheets(ParserInterface):
                 hyperlink=entry["hyperlink"],
                 tags=[],
             )
+            add_link_failures = False
             for cre_id in entry.get("cre_ids", []):
                 cres = cache.get_CREs(external_id=cre_id)
                 for cre in cres:
@@ -123,14 +126,31 @@ class Cheatsheets(ParserInterface):
                                 ltype=defs.LinkTypes.AutomaticallyLinkedTo,
                             )
                         )
-                    except Exception:
-                        continue
-            if cs.links:
+                    except Exception as exc:
+                        self.logger.warning(
+                            "Failed to add link for cre_id %s to cheatsheet %s: %s",
+                            cre_id,
+                            entry.get("section", "<unknown>"),
+                            exc,
+                        )
+                        add_link_failures = True
+            if cs.links and not add_link_failures:
                 standard_entries.append(cs)
         return standard_entries
 
     def deduplicate_entries(self, entries: List[defs.Standard]) -> List[defs.Standard]:
         deduped = {}
         for entry in entries:
-            deduped[(entry.section, entry.hyperlink)] = entry
+            key = (entry.section, entry.hyperlink)
+            if key in deduped:
+                # Merge duplicates: union links into existing entry
+                existing_entry = deduped[key]
+                existing_link_ids = {link.document.id for link in existing_entry.links}
+                for link in entry.links:
+                    if link.document.id not in existing_link_ids:
+                        existing_entry.add_link(link)
+                        existing_link_ids.add(link.document.id)
+            else:
+                # First occurrence: store the entry
+                deduped[key] = entry
         return list(deduped.values())
