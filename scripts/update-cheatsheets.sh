@@ -15,6 +15,11 @@ if ! python -c "import flask" >/dev/null 2>&1; then
   pip install -r "$ROOT_DIR/requirements.txt"
 fi
 
+if [[ ! -f "$DB_PATH" ]]; then
+  echo "Database file does not exist: $DB_PATH" >&2
+  exit 1
+fi
+
 BACKUP_FILE="${DB_PATH}.$(date +%Y%m%d%H%M%S).bak"
 cp "$DB_PATH" "$BACKUP_FILE"
 if [[ ! -f "$BACKUP_FILE" ]]; then

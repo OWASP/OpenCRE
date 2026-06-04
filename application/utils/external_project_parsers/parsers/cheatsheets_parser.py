@@ -124,7 +124,7 @@ class Cheatsheets(ParserInterface):
                             )
                         )
                     except Exception as exc:
-                        logger.warning(
+                        self.logger.warning(
                             "Failed to add supplemental cheatsheet link for cre_id=%s cre=%s section=%s: %s",
                             cre_id,
                             getattr(cre, "id", None),
