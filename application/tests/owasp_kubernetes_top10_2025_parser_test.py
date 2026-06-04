@@ -43,12 +43,13 @@ class TestOwaspKubernetesTop10_2025Parser(unittest.TestCase):
         self.assertEqual("K01", entries[0].sectionID)
         self.assertEqual("Insecure Workload Configurations", entries[0].section)
         self.assertEqual(
-            ["233-748", "486-813"], [l.document.id for l in entries[0].links]
+            ["233-748", "486-813"],
+            [link.document.id for link in entries[0].links],
         )
         self.assertEqual("K10", entries[-1].sectionID)
         self.assertEqual(
             ["148-420", "402-706", "843-841"],
-            [l.document.id for l in entries[-1].links],
+            [link.document.id for link in entries[-1].links],
         )
 
     def test_parse_falls_back_to_2022_mapping_when_2025_links_missing(self) -> None:

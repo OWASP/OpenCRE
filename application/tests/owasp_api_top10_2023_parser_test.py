@@ -37,7 +37,11 @@ class TestOwaspApiTop10_2023Parser(unittest.TestCase):
         self.assertEqual("API1", entries[0].sectionID)
         self.assertEqual("Broken Object Level Authorization", entries[0].section)
         self.assertEqual(
-            ["304-667", "724-770"], [l.document.id for l in entries[0].links]
+            ["304-667", "724-770"],
+            [link.document.id for link in entries[0].links],
         )
         self.assertEqual("API10", entries[-1].sectionID)
-        self.assertEqual(["715-223"], [l.document.id for l in entries[-1].links])
+        self.assertEqual(
+            ["715-223"],
+            [link.document.id for link in entries[-1].links],
+        )

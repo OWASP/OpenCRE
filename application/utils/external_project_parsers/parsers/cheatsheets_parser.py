@@ -123,7 +123,14 @@ class Cheatsheets(ParserInterface):
                                 ltype=defs.LinkTypes.AutomaticallyLinkedTo,
                             )
                         )
-                    except Exception:
+                    except Exception as exc:
+                        logger.warning(
+                            "Failed to add supplemental cheatsheet link for cre_id=%s cre=%s section=%s: %s",
+                            cre_id,
+                            getattr(cre, "id", None),
+                            entry.get("section"),
+                            exc,
+                        )
                         continue
             if cs.links:
                 standard_entries.append(cs)

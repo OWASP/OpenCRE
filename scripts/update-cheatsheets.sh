@@ -15,6 +15,14 @@ if ! python -c "import flask" >/dev/null 2>&1; then
   pip install -r "$ROOT_DIR/requirements.txt"
 fi
 
+BACKUP_FILE="${DB_PATH}.$(date +%Y%m%d%H%M%S).bak"
+cp "$DB_PATH" "$BACKUP_FILE"
+if [[ ! -f "$BACKUP_FILE" ]]; then
+  echo "Failed to create backup at $BACKUP_FILE" >&2
+  exit 1
+fi
+echo "Created backup at $BACKUP_FILE"
+
 CRE_NO_CALCULATE_GAP_ANALYSIS=1 \
 CRE_NO_GEN_EMBEDDINGS=1 \
 python "$ROOT_DIR/cre.py" --cheatsheets_in --cache_file "$DB_PATH"
