@@ -1,0 +1,29 @@
+---
+description: Keep agent context focused across tasks and stale threads
+alwaysApply: true
+---
+
+# Context Management
+
+## Do
+
+- Use `/clear` between unrelated tasks or features.
+- Reference files with `@path` instead of pasting entire file contents.
+- Use `@Past Chats` to pull in prior work instead of copy-pasting old conversations.
+- Start fresh after **2 failed corrections** on the same issue: `/clear`, then write a better prompt that incorporates what you learned.
+
+## Don't
+
+- Let context accumulate across unrelated features in one long thread.
+- Describe files vaguely when an `@` reference exists.
+- Keep correcting the same mistake in a degrading context — reset instead.
+
+## When context is stale
+
+Signs you should `/clear` and re-prompt:
+
+- Repeated fixes on the same bug without progress
+- Agent confuses requirements from an earlier, unrelated task
+- Plan has drifted significantly from what was approved
+
+After clearing, restate: goal, approved plan (or link to `.cursor/plans/*.md`), relevant `@` files, and acceptance criteria.

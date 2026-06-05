@@ -1,29 +1,54 @@
 ---
-description: Plan with reasoning before substantive code changes
+description: Require Plan Mode and user approval before non-trivial implementation
 alwaysApply: true
 ---
 
 # Plan-First Workflow
 
-Apply before making non-trivial edits that are **not** big enough to trigger `multi-agent-workflow.mdc`.
+Apply before non-trivial edits. When criteria overlap with `multi-agent-workflow.mdc` (e.g. new feature, 3+ files), follow **multi-agent** Phase 1 — it is the stricter superset.
 
-If the change is big (new feature/importer, 3+ files, >500 lines, critical paths), use the human-plan → agent-execute flow there instead of planning and coding in one step.
+## Skip planning only for
 
-## Before Editing
+- Typos, renames, obvious single-line fixes
+- Tasks fully specified with no design choices
 
-- Provide a brief plan with reasoning: goal, steps, files likely touched, and validation approach.
-- Break the problem into smaller steps and think through each separately.
-- If intent is ambiguous, ask before implementing.
-- Check `docs/runbooks/` when the change touches deploy, DB, imports, or ops workflows.
+## MUST plan before implementing when ANY apply
 
-## While Editing
+- New feature or new importer
+- Multi-file change (3+ files) or >500 lines expected
+- Refactor or migration with behavioral risk
+- Touches critical paths (auth, secrets, production data, payments, deploy)
+- Requirements have meaningful design choices
 
-- Only modify code directly relevant to the request.
-- Never replace code with placeholders (e.g. `// ... rest of the processing ...`). Include complete, working code.
-- Prefer referencing existing patterns with file paths (e.g. "similar to `application/web/web_main.py` route handlers") over inventing new conventions.
-- When debugging, state observations first, then reasoning, then the proposed fix.
+## Plan output MUST include
 
-## After Editing
+1. **Goal** — restated in one sentence
+2. **Files** — exact paths to create/modify/delete
+3. **Dependencies** — imports, DB migrations, external APIs, new packages
+4. **Steps** — ordered implementation sequence
+5. **Tests** — new/updated test files and what they assert
+6. **Edge cases** — failure modes, empty input, backwards compatibility
+7. **Verification** — exact commands (`make lint`, `make mypy`, `make test`, etc.)
+8. **Risks** — what could break and how to detect it
 
-- Before handoff, briefly explain key design choices so a reviewer can ask "why this way?" without re-reading the whole diff.
-- Prefer small, reviewable diffs; validate incrementally when possible.
+## Approval gate
+
+After presenting the plan, **wait for explicit user approval** ("proceed", "approved",
+or an edited plan confirmed by the user) before writing implementation code.
+
+After approval, **tests may be written first** per `tdd-workflow.mdc` — failing tests are not "implementation code" for Phase 1 purposes.
+
+Read-only research (grep, read files, explore codebase) is allowed during planning.
+
+Save approved plans to `.cursor/plans/<feature>.md` when scope is substantial.
+
+## Before editing (Agent Mode)
+
+- Brief plan with reasoning: goal, steps, files touched, validation approach.
+- Break into smaller steps; check `scripts/db/` and `scripts/` for deploy/DB/import ops.
+
+## While editing
+
+- Only modify code relevant to the request.
+- Never use placeholders — include complete, working code.
+- **Reference patterns specifically:** e.g. mirror `@application/utils/external_project_parsers/parsers/pci_dss.py`, tests like `@application/tests/pci_dss_parser_test.py`.
