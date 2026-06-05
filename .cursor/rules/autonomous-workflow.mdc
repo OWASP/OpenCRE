@@ -1,0 +1,20 @@
+---
+description: Autonomous execution defaults for OpenCRE
+alwaysApply: true
+---
+
+# OpenCRE Autonomous Workflow
+
+Policy (CI/PR, git, validation order, critical paths): see `AGENTS.md`.
+
+- For big changes, wait for human plan approval (`multi-agent-workflow.mdc` Phase 1) before editing.
+- After plan approval, execute tasks end-to-end unless blocked by auth/secrets, destructive actions, or material plan deviations.
+- Prefer small, safe changes and avoid unrelated refactors.
+- Use `Makefile` targets when possible.
+- For substantive code changes, run `make lint`, `make mypy`, and `make test` before handoff (skip only when clearly irrelevant and explain why).
+- If any check reports failures introduced by your changes, fix them before handoff.
+- If commit verification depends on shell initialization, run verification commands in a zsh-compatible shell context so environment-dependent checks are not skipped.
+- Run long commands in the background and monitor until completion.
+- Do NOT commit or push unless explicitly asked (except when the user explicitly requests CI auto-fix / PR creation; see `AGENTS.md`).
+- In commits do not add "made with cursor" lines.
+- At handoff, report: changed files, checks run, and any residual risks.
