@@ -1,0 +1,65 @@
+---
+description: Human plans big changes first; agent executes after explicit approval
+alwaysApply: true
+---
+
+# Multi-Agent Workflow (Human Plan → Agent Execute)
+
+For **big changes**, split work into two phases. Do not skip Phase 1.
+
+## What Counts as a Big Change
+
+Treat the change as **big** when any of these apply:
+
+- New feature, new standard importer, or new user-facing capability
+- Expected to touch **3+ files** or **>500 lines** of diff
+- Refactor or migration with behavioral risk
+- Touches critical paths (auth, secrets, production data, payments)
+- Requirements are incomplete or have meaningful product/design choices
+
+Small fixes (single-file bugfix, typo, test-only tweak, clear one-liner scope) skip this rule; use `plan-first-workflow.mdc` only.
+
+## Phase 1 — Human-Led Planning (Agent Facilitates, No Code)
+
+**Stop before editing.** Your job is to help the human produce and approve a plan.
+
+1. **Acknowledge** this is a big change and that planning comes first.
+2. **Ask the human** the minimum questions needed to plan well. Prefer a short numbered list over a long questionnaire. Typical prompts:
+   - What is the goal and definition of done?
+   - What source format / data / URLs does FOOBAR (or the feature) use?
+   - Which existing pattern should we mirror (e.g. a similar importer or route)?
+   - Acceptance criteria and manual checks?
+   - Out of scope / constraints?
+3. **Draft a plan** for the human to edit, including:
+   - Goal and acceptance criteria
+   - Steps in execution order
+   - Files likely touched (with `@`-style paths where helpful)
+   - Similar code to follow
+   - Test and validation plan (`make lint`, `make mypy`, `make test`, import smoke if relevant)
+   - Risks and open questions
+4. **Wait for explicit approval** before Phase 2. Approval looks like: "looks good", "proceed", "approved", or an edited plan the human confirms.
+5. **Do not** create commits, push, or write implementation code during Phase 1. Research and read-only exploration are fine.
+
+If the human already supplied a complete plan, reflect it back briefly and ask them to confirm before executing.
+
+## Phase 2 — Agent Execution (Autonomous)
+
+After the human approves the plan:
+
+1. **Execute end-to-end** per `autonomous-workflow.mdc` and `AGENTS.md`.
+2. **Follow the approved plan**; if you discover a material deviation, pause and ask before continuing.
+3. **Implement in small increments** when possible; run validation as you go.
+4. **Evaluate** against acceptance criteria: run tests, note manual spot-checks for the human.
+5. **Hand off** with the standard checklist (changes, checks, CI status, risks).
+
+## Optional Cursor Agent Window Roles
+
+When using parallel agents, map roles to phases:
+
+| Role | Phase | Responsibility |
+|------|-------|----------------|
+| Planner | 1 | Expand prompt into spec + acceptance criteria; human approves |
+| Builder | 2 | Implement approved plan |
+| Evaluator | 2 | Run tests/checks; compare results to acceptance criteria |
+
+One agent can cover Builder + Evaluator; Phase 1 still requires human approval before Builder starts.

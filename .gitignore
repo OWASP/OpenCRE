@@ -46,7 +46,9 @@ v/
 .venv/
 
 ### Local AI/editor workspaces ###
-.cursor/
+.cursor/*
+!.cursor/rules/
+!.cursor/rules/**
 .claude/
 
 ### Frontend 
@@ -79,3 +81,5 @@ tmp/
 
 ### CREs dir
 cres/*
+### Local project management tooling
+project management scripts/
