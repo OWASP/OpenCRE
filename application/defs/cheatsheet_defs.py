@@ -43,7 +43,9 @@ class CheatsheetRecord:
         }
 
         # Validate fields which require string values.
-        for field_name, value in required_str_fields.items():
+        for field_name in required_str_fields:
+            value = getattr(self, field_name)
+
             if not isinstance(value, str) or not value:
                 raise ValueError(
                     f"CheatsheetRecord: field '{field_name}' "
