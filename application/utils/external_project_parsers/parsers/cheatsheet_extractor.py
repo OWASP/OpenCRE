@@ -1,9 +1,11 @@
 import os
 import re
+
 from application.defs.cheatsheet_defs import CheatsheetRecord
 
 PARSER_VERSION = "v1"
 FALLBACK_USED = "false"
+
 CANONICAL_BASE_URL = "https://cheatsheetseries.owasp.org/cheatsheets/"
 
 _TITLE_RE = re.compile(r"^#\s+(?P<title>.+)$", re.MULTILINE)
@@ -51,6 +53,7 @@ def _extract_summary(markdown: str) -> str:
 
             if body:
                 return body
+
             break
 
     for match in all_heading_matches:
@@ -59,7 +62,9 @@ def _extract_summary(markdown: str) -> str:
         if body:
             return body
 
-    raise ValueError("_extract_summary: no summary could be extracted from markdown.")
+    raise ValueError(
+        "_extract_summary: no summary could be extracted from markdown."
+    )
 
 
 def extract_cheatsheet_record(
