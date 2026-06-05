@@ -17,9 +17,7 @@ class CheatsheetRecord:
     metadata: Dict[str, str] = field(default_factory=dict)
 
     def __post_init__(self):
-
-        self.summary = self.summary.strip()[:SUMMARY_MAX_LENGTH]
-
+        
         required_str_fields = {
             "source_id": self.source_id,
             "title": self.title,
@@ -28,22 +26,28 @@ class CheatsheetRecord:
             "raw_markdown_path": self.raw_markdown_path,
         }
 
+        # Summary-specific normalization
+        self.summary = self.summary.strip()[:SUMMARY_MAX_LENGTH]
+        
+        # Normalize fields which require string values.   
+        for field_name, value in required_str_fields.items():
+            if isinstance(value, str):
+                setattr(self, field_name, value.strip())
+
         list_str_fields = {
             "headings": self.headings,
             "category_hints": self.category_hints,
         }
 
-        # Validate required value type string fields.
-
-        for field_name, value in required_str_fields.items():
-            if not isinstance(value, str) or not value.strip():
+        # Validate fields which require string values.
+        for field_name, value in required_str_fields.items():    
+            if not isinstance(value, str) or not value:
                 raise ValueError(
                     f"CheatsheetRecord: field '{field_name}' "
                     f"must be a non-empty string, got {value!r}"
                 )
 
-        # Validate required value type list[string] fields.
-
+        # Validate fields which require list[str] values.
         for field_name, value in list_str_fields.items():
             if not isinstance(value, list):
                 raise ValueError(
@@ -57,8 +61,7 @@ class CheatsheetRecord:
                         f"CheatsheetRecord: value of '{field_name}' must be a string, got {item!r}"
                     )
 
-        # Validate input for metadata
-
+        # Validate input for metadata.
         if not isinstance(self.metadata, dict):
             raise ValueError(
                 "CheatsheetRecord: field 'metadata' must be a dict[str, str]"
