@@ -54,7 +54,7 @@ class CheatsheetRecord:
             for item in value:
                 if not isinstance(item, str):
                     raise ValueError(
-                        f"CheatsheetRecord : value of '{field_name}' must be a string, got {item!r}"
+                        f"CheatsheetRecord: value of '{field_name}' must be a string, got {item!r}"
                     )
 
         # Validate input for metadata
