@@ -25,7 +25,9 @@ class TestOpencreGapAnalysis(unittest.TestCase):
         sqla.create_all()
         self.collection = db.Node_collection()
 
-    def test_backfill_populates_secure_headers_pair_from_auto_linked_nodes(self) -> None:
+    def test_backfill_populates_secure_headers_pair_from_auto_linked_nodes(
+        self,
+    ) -> None:
         cre = self.collection.add_cre(
             defs.CRE(
                 id="636-347",
@@ -54,17 +56,13 @@ class TestOpencreGapAnalysis(unittest.TestCase):
         payload = json.loads(self.collection.get_gap_analysis_result(cache_key))
         self.assertIn("636-347", payload["result"])
         path = next(iter(payload["result"]["636-347"]["paths"].values()))
-        self.assertEqual(
-            "AUTOMATICALLY_LINKED_TO", path["path"][0]["relationship"]
-        )
+        self.assertEqual("AUTOMATICALLY_LINKED_TO", path["path"][0]["relationship"])
 
     @patch(
         "application.utils.gap_analysis.build_direct_cre_overlap_map_analysis",
         return_value={"result": {"x": {}}},
     )
-    def test_backfill_refresh_recomputes_cached_pairs(
-        self, build_mock: Mock
-    ) -> None:
+    def test_backfill_refresh_recomputes_cached_pairs(self, build_mock: Mock) -> None:
         collection = Mock()
         collection.standards.return_value = ["ASVS"]
 

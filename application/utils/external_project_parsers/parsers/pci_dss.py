@@ -17,23 +17,50 @@ logging.basicConfig()
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-PCI_DSS_CRE_SIMILARITY_THRESHOLDS: tuple[float, ...] = tuple(
-    float(part.strip())
-    for part in os.environ.get(
-        "PCI_DSS_CRE_SIMILARITY_THRESHOLDS", "0.55,0.45,0.35"
-    ).split(",")
-    if part.strip()
+_DEFAULT_PCI_DSS_CRE_SIMILARITY_THRESHOLDS = (0.55, 0.45, 0.35)
+_DEFAULT_PCI_BRIDGE_STANDARDS = ("NIST 800-53 v5", "ISO 27001", "ASVS", "CWE")
+_DEFAULT_PCI_BRIDGE_MIN_SIMILARITY = 0.4
+
+
+def _parse_float_env(name: str, default: float) -> float:
+    raw = os.environ.get(name, "").strip()
+    if not raw:
+        return default
+    try:
+        return float(raw)
+    except ValueError:
+        logger.warning("Invalid %s=%r; using default %s", name, raw, default)
+        return default
+
+
+def _parse_float_tuple_env(name: str, default: tuple[float, ...]) -> tuple[float, ...]:
+    raw = os.environ.get(name, "").strip()
+    if not raw:
+        return default
+    try:
+        values = tuple(float(part.strip()) for part in raw.split(",") if part.strip())
+    except ValueError:
+        logger.warning("Invalid %s=%r; using defaults %s", name, raw, default)
+        return default
+    return values or default
+
+
+def _parse_str_tuple_env(name: str, default: tuple[str, ...]) -> tuple[str, ...]:
+    raw = os.environ.get(name, "").strip()
+    if not raw:
+        return default
+    values = tuple(part.strip() for part in raw.split(",") if part.strip())
+    return values or default
+
+
+PCI_DSS_CRE_SIMILARITY_THRESHOLDS = _parse_float_tuple_env(
+    "PCI_DSS_CRE_SIMILARITY_THRESHOLDS", _DEFAULT_PCI_DSS_CRE_SIMILARITY_THRESHOLDS
 )
-PCI_BRIDGE_STANDARDS: tuple[str, ...] = tuple(
-    part.strip()
-    for part in os.environ.get(
-        "PCI_DSS_BRIDGE_STANDARDS",
-        "NIST 800-53 v5,ISO 27001,ASVS,CWE",
-    ).split(",")
-    if part.strip()
+PCI_BRIDGE_STANDARDS = _parse_str_tuple_env(
+    "PCI_DSS_BRIDGE_STANDARDS", _DEFAULT_PCI_BRIDGE_STANDARDS
 )
-PCI_BRIDGE_MIN_SIMILARITY = float(
-    os.environ.get("PCI_DSS_BRIDGE_MIN_SIMILARITY", "0.4")
+PCI_BRIDGE_MIN_SIMILARITY = _parse_float_env(
+    "PCI_DSS_BRIDGE_MIN_SIMILARITY", _DEFAULT_PCI_BRIDGE_MIN_SIMILARITY
 )
 
 
@@ -119,9 +146,7 @@ def resolve_cre_for_pci_control(
                 return cre
 
     for standard_name in PCI_BRIDGE_STANDARDS:
-        cre = best_cre_via_bridge_standard(
-            cache, control_embedding, standard_name
-        )
+        cre = best_cre_via_bridge_standard(cache, control_embedding, standard_name)
         if cre:
             return cre
 

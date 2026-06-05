@@ -57,7 +57,9 @@ logger = logging.getLogger(__name__)
 def _configure_llm_env() -> None:
     embed_model = os.environ.get("CRE_EMBED_MODEL")
     if not embed_model:
-        vertex_embed = os.environ.get("VERTEX_EMBED_CONTENT_MODEL", "gemini-embedding-001")
+        vertex_embed = os.environ.get(
+            "VERTEX_EMBED_CONTENT_MODEL", "gemini-embedding-001"
+        )
         os.environ["CRE_EMBED_MODEL"] = f"gemini/{vertex_embed}"
     os.environ.setdefault("CRE_EMBED_EXPECTED_DIM", "3072")
     os.environ.setdefault("CRE_VALIDATE_EMBED_DIM_ON_INIT", "0")
@@ -117,7 +119,9 @@ def compute_mappings(
     for index, row in enumerate(rows[:total], start=1):
         section_id = str(row.get("PCI DSS ID", "")).strip()
         section = str(row.get("Defined Approach Requirements", "")).strip()
-        description = str(row.get("Requirement Description", "") or row.get("Guidance", "")).strip()
+        description = str(
+            row.get("Requirement Description", "") or row.get("Guidance", "")
+        ).strip()
         control = defs.Standard(
             name="PCI DSS",
             sectionID=section_id,
@@ -154,14 +158,18 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Compute PCI DSS → CRE mappings")
     parser.add_argument(
         "--cache-file",
-        default=os.environ.get("CRE_CACHE_FILE", os.path.join(_REPO_ROOT, "standards_cache.sqlite")),
+        default=os.environ.get(
+            "CRE_CACHE_FILE", os.path.join(_REPO_ROOT, "standards_cache.sqlite")
+        ),
     )
     parser.add_argument(
         "--output",
         default=os.path.join(_REPO_ROOT, "data", "pci_dss_cre_mappings.json"),
     )
     parser.add_argument("--sheet-url", default=PCI_SHEET_CSV_URL)
-    parser.add_argument("--limit", type=int, default=None, help="process only first N controls")
+    parser.add_argument(
+        "--limit", type=int, default=None, help="process only first N controls"
+    )
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO, format="%(levelname)s:%(name)s:%(message)s")
