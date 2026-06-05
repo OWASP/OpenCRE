@@ -69,11 +69,7 @@ class SecureHeaders(ParserInterface):
                 return cres, candidate
         raise SecureHeadersLinkError(
             f"Secure Headers markdown references unknown CRE id {external_id!r}"
-            + (
-                f" (also tried remap {remapped!r})"
-                if remapped
-                else ""
-            )
+            + (f" (also tried remap {remapped!r})" if remapped else "")
         )
 
     def parse(self, cache: db.Node_collection, ph: prompt_client.PromptHandler):
@@ -119,9 +115,7 @@ class SecureHeaders(ParserInterface):
                     queries = parse_qs(parsed.query)
                     section = queries.get("section")
                     link = queries.get("link")
-                    cres, _resolved_id = self.resolve_cre_external_id(
-                        cache, creID
-                    )
+                    cres, _resolved_id = self.resolve_cre_external_id(cache, creID)
                     cs = self.entry(
                         section=section[0] if section else "",
                         hyperlink=link[0] if link else "",

@@ -48,11 +48,7 @@ class TestSecureHeadersParser(unittest.TestCase):
             name="Secure Headers",
             hyperlink="https://example.com/foo/bar",
             section="headerAsection",
-            links=[
-                defs.Link(
-                    document=cre, ltype=defs.LinkTypes.AutomaticallyLinkedTo
-                )
-            ],
+            links=[defs.Link(document=cre, ltype=defs.LinkTypes.AutomaticallyLinkedTo)],
             tags=[
                 "family:guidance",
                 "subtype:cheatsheet",
@@ -69,7 +65,9 @@ class TestSecureHeadersParser(unittest.TestCase):
             self.assertCountEqual(expected.todict(), nodes[0].todict())
 
     @patch.object(git, "clone")
-    def test_register_headers_creates_one_entry_per_opencre_link(self, mock_clone) -> None:
+    def test_register_headers_creates_one_entry_per_opencre_link(
+        self, mock_clone
+    ) -> None:
         class Repo:
             working_dir = ""
 
@@ -96,10 +94,12 @@ and [second](https://www.opencre.org/cre/403-005?name=Secure+Headers&section=Sec
         )
         nodes = entries.results[secure_headers.SecureHeaders().name]
         self.assertEqual(2, len(nodes))
-        self.assertEqual({"First", "Second"}, {node.section for node in nodes})
         self.assertEqual(
-            {"636-347", "743-110"},
-            {node.links[0].document.id for node in nodes},
+            {
+                "First": "636-347",
+                "Second": "743-110",
+            },
+            {node.section: node.links[0].document.id for node in nodes},
         )
 
     @patch.object(git, "clone")

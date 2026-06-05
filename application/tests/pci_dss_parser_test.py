@@ -45,7 +45,7 @@ class TestPciDssLinking(unittest.TestCase):
         prompt.get_id_of_most_similar_cre_paginated.return_value = (None, None)
         bridge_cre = defs.CRE(id="999-001", name="Bridge CRE", description="")
 
-        with patch.object(
+        with patch.object(pci_mod, "PCI_BRIDGE_STANDARDS", ("S1", "S2")), patch.object(
             pci_mod, "best_cre_via_bridge_standard", side_effect=[None, bridge_cre]
         ) as bridge_mock:
             cre = resolve_cre_for_pci_control(prompt, cache, [0.1, 0.2])
