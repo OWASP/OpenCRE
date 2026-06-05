@@ -62,9 +62,7 @@ def _extract_summary(markdown: str) -> str:
         if body:
             return body
 
-    raise ValueError(
-        "_extract_summary: no summary could be extracted from markdown."
-    )
+    raise ValueError("_extract_summary: no summary could be extracted from markdown.")
 
 
 def extract_cheatsheet_record(
