@@ -6,6 +6,8 @@ SUMMARY_MAX_LENGTH = 500
 
 @dataclass
 class CheatsheetRecord:
+    """Structured representation of an OWASP cheatsheet record."""
+
     source: str = field(default="owasp_cheatsheets", init=False)
     source_id: str
     title: str
@@ -17,7 +19,8 @@ class CheatsheetRecord:
     metadata: Dict[str, str] = field(default_factory=dict)
 
     def __post_init__(self):
-        
+        """Normalize and validate CheatsheetRecord fields."""
+
         required_str_fields = {
             "source_id": self.source_id,
             "title": self.title,
@@ -28,8 +31,8 @@ class CheatsheetRecord:
 
         # Summary-specific normalization
         self.summary = self.summary.strip()[:SUMMARY_MAX_LENGTH]
-        
-        # Normalize fields which require string values.   
+
+        # Normalize fields which require string values.
         for field_name, value in required_str_fields.items():
             if isinstance(value, str):
                 setattr(self, field_name, value.strip())
@@ -40,7 +43,7 @@ class CheatsheetRecord:
         }
 
         # Validate fields which require string values.
-        for field_name, value in required_str_fields.items():    
+        for field_name, value in required_str_fields.items():
             if not isinstance(value, str) or not value:
                 raise ValueError(
                     f"CheatsheetRecord: field '{field_name}' "
@@ -58,7 +61,8 @@ class CheatsheetRecord:
             for item in value:
                 if not isinstance(item, str):
                     raise ValueError(
-                        f"CheatsheetRecord: value of '{field_name}' must be a string, got {item!r}"
+                        f"CheatsheetRecord: value of '{field_name}' "
+                        f"must be a string, got {item!r}"
                     )
 
         # Validate input for metadata.
