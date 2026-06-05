@@ -174,4 +174,9 @@ backfill-gap-analysis-sync:
 	python cre.py --cache_file "$$CRE_CACHE_FILE" --populate_neo4j_db && \
 	python cre.py --cache_file "$$CRE_CACHE_FILE" --ga_backfill_missing --ga_backfill_no_queue
 
+backfill-opencre-ga:
+	@[ -d "./.venv" ] && . ./.venv/bin/activate || ([ -d "./venv" ] && . ./venv/bin/activate); \
+	export FLASK_APP="$(CURDIR)/cre.py"; \
+	python cre.py --cache_file "$${CRE_CACHE_FILE:-$(CURDIR)/standards_cache.sqlite}" --ga_backfill_opencre_direct
+
 all: clean lint test dev dev-run

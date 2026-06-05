@@ -225,6 +225,11 @@ def main() -> None:
         help="preload map analysis for all possible 2 standards combinations, use target url as an OpenCRE base",
     )
     parser.add_argument(
+        "--ga_backfill_opencre_direct",
+        action="store_true",
+        help="refresh OpenCRE map-analysis cache rows (manual + automatic CRE links)",
+    )
+    parser.add_argument(
         "--ga_backfill_missing",
         action="store_true",
         help="calculate only missing directed gap-analysis pairs in the current cache DB",
