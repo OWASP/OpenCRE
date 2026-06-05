@@ -1,0 +1,29 @@
+---
+description: Plan with reasoning before substantive code changes
+alwaysApply: true
+---
+
+# Plan-First Workflow
+
+Apply before making non-trivial edits that are **not** big enough to trigger `multi-agent-workflow.mdc`.
+
+If the change is big (new feature/importer, 3+ files, >500 lines, critical paths), use the human-plan → agent-execute flow there instead of planning and coding in one step.
+
+## Before Editing
+
+- Provide a brief plan with reasoning: goal, steps, files likely touched, and validation approach.
+- Break the problem into smaller steps and think through each separately.
+- If intent is ambiguous, ask before implementing.
+- Check `docs/runbooks/` when the change touches deploy, DB, imports, or ops workflows.
+
+## While Editing
+
+- Only modify code directly relevant to the request.
+- Never replace code with placeholders (e.g. `// ... rest of the processing ...`). Include complete, working code.
+- Prefer referencing existing patterns with file paths (e.g. "similar to `application/web/web_main.py` route handlers") over inventing new conventions.
+- When debugging, state observations first, then reasoning, then the proposed fix.
+
+## After Editing
+
+- Before handoff, briefly explain key design choices so a reviewer can ask "why this way?" without re-reading the whole diff.
+- Prefer small, reviewable diffs; validate incrementally when possible.
