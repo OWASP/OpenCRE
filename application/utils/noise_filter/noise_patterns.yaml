@@ -1,0 +1,96 @@
+# Module B Stage 1 noise patterns.
+#
+# See: docs/gsoc_2026_module_b/module_a_contract.md (Path-filtering ownership)
+#
+# PHILOSOPHY: be conservative. Stage 1 should only block paths where we are
+# HIGHLY confident that no security content lives there. Under the recall-first
+# rule (agreed with maintainer 2026-06-01), false negatives at Stage 2 are
+# far more costly than false positives. When in doubt, let the path through
+# to Stage 1.5 (sanitize) + Stage 2 (LLM classifier).
+#
+# Empirical context: a Week 1 labeling pass on 100 OWASP commits found that
+# `Website/layouts/`, CI directories, and build artifacts were 100% organizational.
+# `Website/content/`, `**/sponsors.md`, and `**/blog/**` were also nearly always
+# organizational but are NOT blocked here -- recall-first says let Stage 2
+# judge content based on text, not path.
+#
+# Pattern syntax: Python `fnmatch`. `*` matches any chars including `/`.
+# `**` works the same as `*` (kept for readability when meaning "any-depth").
+
+# --- Tier 1: file extensions that cannot carry security narrative ---------
+deny_extensions:
+  - .css
+  - .scss
+  - .svg
+  - .png
+  - .jpg
+  - .jpeg
+  - .ico
+  - .gif
+  - .lock
+  - .map
+  - .min.js
+  - .min.css
+  - .woff
+  - .woff2
+  - .ttf
+  - .eot
+  - .pdf   # PDFs reach Stage 2 via Module A as extracted text; we never see the binary
+
+# --- Tier 1: filenames that are universally non-security ------------------
+deny_filenames:
+  - package-lock.json
+  - yarn.lock
+  - poetry.lock
+  - Pipfile.lock
+  - CNAME
+  - _config.yml
+  - .gitignore
+  - .gitattributes
+  - CODEOWNERS
+  - .editorconfig
+  - mkdocs.yml
+
+# --- Tier 2: build / layout / CI paths ------------------------------------
+# These are template / config / artifact directories. Their content is
+# tooling, not narrative.
+deny_paths:
+  # Test directories at any depth
+  - tests/**
+  - test/**
+  - "**/tests/**"
+  - "**/test/**"
+
+  # CI/CD
+  - .github/**
+  - .gitlab-ci.yml
+
+  # Build artifacts
+  - node_modules/**
+  - dist/**
+  - build/**
+  - target/**
+  - .venv/**
+  - venv/**
+
+  # Hugo / Jekyll / Sphinx layout files (NOT content)
+  - "**/_layouts/**"
+  - "**/_includes/**"
+  - "**/_data/**"
+  - "**/layouts/**"   # SAMM uses Website/layouts/ for Hugo templates
+  - "**/static/**"
+
+  # SAMM-specific empirical finding (Week 1 labeling): meetings + enterprise metrics
+  - "**/Supporting Resources/meetings/**"
+  - "**/Supporting Resources/enterprise metrics/**"
+
+# --- Allow-overrides ------------------------------------------------------
+# If a path matches both a deny rule and an allow_override, the override wins.
+# Lets us extend deny coverage without breaking valid documents.
+#
+# Pattern note: `docs/**` covers both top-level (e.g. docs/CONTRIBUTING.md)
+# AND nested (e.g. docs/designs/foo.md) paths. `docs/**/*.md` would NOT
+# match top-level files because fnmatch requires the trailing `/*` to consume
+# at least one chunk of name -- so we use the broader form.
+allow_overrides:
+  - "docs/**"   # OpenCRE's own docs are always allowed
