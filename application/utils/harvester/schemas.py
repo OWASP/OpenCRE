@@ -27,8 +27,8 @@ class ChunkingConfig(BaseModel):
 
     max_tokens: int = Field(..., gt=0, description="max token size per chunk")
 
-    overlap_tokens: int = Field(  # a bit concerned about this
-        ge=0,  # this can also be = 0 i suppose
+    overlap_tokens: int = Field(
+        ge=0,
         default=100,
         description="token overlap between adjacent chunks",
     )
