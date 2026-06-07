@@ -43,3 +43,11 @@ def test_duplicate_include_paths():
         match="duplicate include paths",
     ):
         validate_repositories(config)
+
+
+def test_validate_valid_repositories():
+    config_path = FIXTURES_DIR / "valid_repos.yaml"
+
+    config = load_repo_config(config_path)
+
+    validate_repositories(config)

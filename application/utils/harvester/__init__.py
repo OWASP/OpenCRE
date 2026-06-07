@@ -20,8 +20,8 @@ __all__ = [
     "PathRules",
     "PollingConfig",
     "RepositoryConfig",
+    "RepositoryValidationError",
     "ReposFile",
     "load_repo_config",
-    "RepositoryValidationError",
     "validate_repositories",
 ]
