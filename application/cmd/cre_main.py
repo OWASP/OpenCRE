@@ -917,28 +917,36 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
             db_connection_str=args.cache_file,
         )
     if args.owasp_api_top10_2023_in:
-        from application.utils.external_project_parsers.parsers import owasp_api_top10_2023
+        from application.utils.external_project_parsers.parsers import (
+            owasp_api_top10_2023,
+        )
 
         BaseParser().register_resource(
             owasp_api_top10_2023.OwaspApiTop10_2023,
             db_connection_str=args.cache_file,
         )
     if args.owasp_kubernetes_top10_2022_in:
-        from application.utils.external_project_parsers.parsers import owasp_kubernetes_top10_2022
+        from application.utils.external_project_parsers.parsers import (
+            owasp_kubernetes_top10_2022,
+        )
 
         BaseParser().register_resource(
             owasp_kubernetes_top10_2022.OwaspKubernetesTop10_2022,
             db_connection_str=args.cache_file,
         )
     if args.owasp_kubernetes_top10_2025_in:
-        from application.utils.external_project_parsers.parsers import owasp_kubernetes_top10_2025
+        from application.utils.external_project_parsers.parsers import (
+            owasp_kubernetes_top10_2025,
+        )
 
         BaseParser().register_resource(
             owasp_kubernetes_top10_2025.OwaspKubernetesTop10_2025,
             db_connection_str=args.cache_file,
         )
     if args.owasp_llm_top10_2025_in:
-        from application.utils.external_project_parsers.parsers import owasp_llm_top10_2025
+        from application.utils.external_project_parsers.parsers import (
+            owasp_llm_top10_2025,
+        )
 
         BaseParser().register_resource(
             owasp_llm_top10_2025.OwaspLlmTop10_2025,

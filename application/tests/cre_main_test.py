@@ -37,9 +37,7 @@ class TestMain(unittest.TestCase):
         self.collection = db.Node_collection()
 
     @patch.object(main, "BaseParser")
-    def test_run_registers_owasp_top10_2025_resource(
-        self, base_parser_mock
-    ) -> None:
+    def test_run_registers_owasp_top10_2025_resource(self, base_parser_mock) -> None:
         parser_instance = Mock()
         base_parser_mock.return_value = parser_instance
 
