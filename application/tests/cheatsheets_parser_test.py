@@ -67,11 +67,11 @@ class TestCheatsheetsParser(unittest.TestCase):
             self.assertEqual(name, parser.name)
             sections = {node.section for node in nodes}
             self.assertIn("Secrets Management Cheat Sheet", sections)
-            secret_entry = [
-                node
-                for node in nodes
-                if node.section == "Secrets Management Cheat Sheet"
-            ][0]
+            secret_entry = next(
+                (node for node in nodes if node.section == "Secrets Management Cheat Sheet"),
+                None,
+            )
+            self.assertIsNotNone(secret_entry)
             self.assertEqual(expected.todict(), secret_entry.todict())
 
     def test_register_supplemental_cheatsheets(self) -> None:
