@@ -54,6 +54,8 @@ name_2022 = "OWASP Kubernetes Top Ten 2022"
 
 conn = sqlite3.connect(cache_file)
 cur = conn.cursor()
+# Ensure SQLite enforces foreign key constraints so deletes cascade as expected
+cur.execute("PRAGMA foreign_keys = ON")
 
 linked_2025 = cur.execute(
     """

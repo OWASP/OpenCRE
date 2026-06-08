@@ -51,19 +51,27 @@ class Cheatsheets(ParserInterface):
         c_repo = "https://github.com/OWASP/CheatSheetSeries.git"
         cheatsheets_path = "cheatsheets/"
         cheatsheets = []
+        repo = None
         try:
             repo = git.clone(c_repo, sparse_paths=["cheatsheets"], sparse_cone=True)
-            cheatsheets = self.register_cheatsheets(
-                repo=repo,
-                cache=cache,
-                cheatsheets_path=cheatsheets_path,
-                repo_path=c_repo,
-            )
         except Exception as exc:
             self.logger.warning(
                 "Unable to clone OWASP CheatSheetSeries, continuing with supplemental cheat sheets only: %s",
                 exc,
             )
+        else:
+            try:
+                cheatsheets = self.register_cheatsheets(
+                    repo=repo,
+                    cache=cache,
+                    cheatsheets_path=cheatsheets_path,
+                    repo_path=c_repo,
+                )
+            except Exception as exc:
+                self.logger.error(
+                    "Failed to register cheatsheets from cloned repo: %s",
+                    exc,
+                )
         cheatsheets.extend(self.register_supplemental_cheatsheets(cache=cache))
         cheatsheets = self.deduplicate_entries(cheatsheets)
         results = {self.name: cheatsheets}
@@ -139,5 +147,27 @@ class Cheatsheets(ParserInterface):
     def deduplicate_entries(self, entries: List[defs.Standard]) -> List[defs.Standard]:
         deduped = {}
         for entry in entries:
-            deduped[(entry.section, entry.hyperlink)] = entry
+            key = (entry.section, entry.hyperlink)
+            if key not in deduped:
+                deduped[key] = entry
+            else:
+                # merge links from duplicate into stored entry without duplicating links
+                stored = deduped[key]
+                existing_keys = set()
+                for l in getattr(stored, "links", []) or []:
+                    existing_keys.add(
+                        (getattr(l.document, "id", None), getattr(l, "ltype", None))
+                    )
+                for l in getattr(entry, "links", []) or []:
+                    lk = (getattr(l.document, "id", None), getattr(l, "ltype", None))
+                    if lk not in existing_keys:
+                        try:
+                            stored.add_link(l)
+                        except Exception:
+                            # fall back to appending if add_link is unavailable
+                            try:
+                                stored.links.append(l)
+                            except Exception:
+                                continue
+                        existing_keys.add(lk)
         return list(deduped.values())
