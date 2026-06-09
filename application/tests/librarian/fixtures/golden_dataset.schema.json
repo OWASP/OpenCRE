@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://opencre.org/schemas/oie/golden-dataset-row.json",
+  "title": "GoldenDatasetRow",
+  "description": "One labelled test case for the Module C regression harness. The dataset is an array of these. schema_version 0.1.0 (Module C internal — NOT a pipeline wire contract).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "schema_version", "slice", "input", "expected", "provenance"],
+  "properties": {
+    "id": { "type": "string", "minLength": 1, "description": "Stable golden-case id, e.g. gold:asvs:V2.1.1:explicit" },
+    "schema_version": { "type": "string", "pattern": "^0\\.\\d+\\.\\d+$" },
+    "slice": {
+      "type": "string",
+      "enum": ["explicit", "positive", "hard_negative", "update", "ambiguous"]
+    },
+    "input": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["text"],
+      "properties": {
+        "text": { "type": "string", "minLength": 1, "description": "Section text under test (same role as KnowledgeItem.content.text)" },
+        "title_hint": { "type": "string" },
+        "explicit_cre_ref": { "type": "string", "description": "Required for slice=explicit: the CRE id literally present in the source" },
+        "prior_text": { "type": "string", "description": "Required for slice=update: the previously mapped version of this content" },
+        "source_standard": {
+          "type": "string",
+          "enum": ["ASVS", "WSTG", "NIST_800_53", "PCI_DSS", "OWASP_CHEATSHEET", "OTHER"]
+        }
+      }
+    },
+    "expected": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["decision"],
+      "properties": {
+        "decision": { "type": "string", "enum": ["linked", "review"] },
+        "cre_ids": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "description": "Ground-truth CRE target(s). May be >1 (multi-link)."
+        },
+        "reason_code": {
+          "type": "string",
+          "enum": ["BELOW_THRESHOLD", "NO_CANDIDATES", "ADVERSARIAL_FLAG", "UPDATE_AMBIGUOUS"],
+          "description": "Required when decision=review"
+        },
+        "is_update": { "type": "boolean", "description": "Used by slice=update" }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ground_truth_source"],
+      "properties": {
+        "standard_version": { "type": "string" },
+        "section_path": { "type": "string", "description": "e.g. V2.1.1" },
+        "ground_truth_source": { "type": "string", "description": "How the label was established, e.g. 'existing OpenCRE DB mapping' or 'manual, reviewer=spyros'" }
+      }
+    },
+    "notes": { "type": "string" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "slice": { "const": "explicit" } } },
+      "then": { "properties": { "input": { "required": ["text", "explicit_cre_ref"] } } }
+    },
+    {
+      "if": { "properties": { "slice": { "const": "update" } } },
+      "then": {
+        "properties": {
+          "input": { "required": ["text", "prior_text"] },
+          "expected": { "required": ["decision", "is_update"] }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "expected": { "properties": { "decision": { "const": "review" } } } } },
+      "then": { "properties": { "expected": { "required": ["decision", "reason_code"] } } }
+    },
+    {
+      "if": { "properties": { "expected": { "properties": { "decision": { "const": "linked" } } } } },
+      "then": { "properties": { "expected": { "required": ["decision", "cre_ids"] } } }
+    }
+  ]
+}
