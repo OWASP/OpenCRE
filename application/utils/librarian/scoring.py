@@ -18,8 +18,6 @@ def jaccard(a: Sequence[str], b: Sequence[str]) -> float:
     if not sa and not sb:
         return 1.0
     union = sa | sb
-    if not union:
-        return 0.0
     return len(sa & sb) / len(union)
 
 

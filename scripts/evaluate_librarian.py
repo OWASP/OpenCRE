@@ -64,7 +64,7 @@ def main(argv: List[str]) -> int:
     rows = load_dataset(args.dataset)
     if args.slice:
         rows = [r for r in rows if r.slice.value == args.slice]
-    if args.limit:
+    if args.limit is not None:
         rows = rows[: args.limit]
 
     hub = build_stub_hub(rows)
