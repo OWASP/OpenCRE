@@ -65,7 +65,7 @@ pyasn1
 pyasn1-modules
 pycodestyle
 pycparser
-pydantic
+pydantic>=2,<3
 pyee
 pyflakes
 PyGithub
