@@ -734,13 +734,32 @@ class TestMain(unittest.TestCase):
             self.assertEqual({"result": {"k": {}}}, json.loads(response.data))
             db_gap_analysis_mock.assert_called_once()
 
-    @patch.dict(os.environ, {"HEROKU": "True"}, clear=False)
+    @patch.object(db, "Node_collection")
+    @patch.object(db, "gap_analysis")
+    @patch.object(redis, "from_url")
+    def test_gap_analysis_fallback_backend_failure_returns_503(
+        self, redis_conn_mock, db_gap_analysis_mock, db_mock
+    ) -> None:
+        redis_conn_mock.side_effect = RuntimeError("redis down")
+        db_gap_analysis_mock.side_effect = RuntimeError("neo unavailable")
+        db_mock.return_value.get_gap_analysis_result.return_value = None
+        with self.app.test_client() as client:
+            response = client.get(
+                "/rest/v1/map_analysis?standard=aaa&standard=bbb",
+                headers={"Content-Type": "application/json"},
+            )
+            self.assertEqual(503, response.status_code)
+            db_gap_analysis_mock.assert_called_once()
+
+    @patch.dict(os.environ, {"DYNO": "web.1"}, clear=False)
     @patch.object(db, "Node_collection")
     @patch.object(redis, "from_url")
-    def test_gap_analysis_heroku_cache_miss_returns_404(
+    def test_gap_analysis_dyno_missing_standard_returns_404(
         self, redis_conn_mock, db_mock
     ) -> None:
         db_mock.return_value.get_gap_analysis_result.return_value = None
+        db_mock.return_value.gap_analysis_exists.return_value = False
+        db_mock.return_value.standards.return_value = ["aaa"]
         with self.app.test_client() as client:
             response = client.get(
                 "/rest/v1/map_analysis?standard=aaa&standard=bbb",

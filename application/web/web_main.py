@@ -40,6 +40,7 @@ from flask import (
     session,
     send_file,
 )
+from werkzeug.exceptions import HTTPException
 from google.oauth2 import id_token
 from google_auth_oauthlib.flow import Flow
 from application.utils.spreadsheet import write_csv
@@ -438,9 +439,34 @@ def map_analysis() -> Any:
             if "result" in parsed:
                 return jsonify({"result": parsed.get("result")})
 
-    # ----- upstream: Heroku guard -----
-    if os.environ.get("HEROKU"):
-        abort(404, "No such Cache")
+    # On Heroku/read-only deployments, verify standards before attempting
+    # Redis or graph-backed fallback work.
+    is_heroku = os.environ.get("DYNO") is not None
+    if is_heroku:
+        try:
+            existing_standards = database.standards()
+            if isinstance(existing_standards, (list, tuple, set)):
+                existing_lower = {str(s).lower() for s in existing_standards}
+                missing = [s for s in standards if str(s).lower() not in existing_lower]
+                if missing:
+                    logger.info(
+                        f"On Heroku: gap analysis request {standards_hash} references "
+                        f"standards that do not exist: {', '.join(missing)}, returning 404"
+                    )
+                    abort(
+                        404, f"One or more standards do not exist: {', '.join(missing)}"
+                    )
+        except HTTPException:
+            raise
+        except Exception as exc:
+            logger.warning(f"Could not verify standards existence on Heroku: {exc}")
+
+    if os.environ.get("CRE_NO_CALCULATE_GAP_ANALYSIS"):
+        logger.info(
+            f"Gap analysis calculations are disabled by CRE_NO_CALCULATE_GAP_ANALYSIS; "
+            f"refusing to schedule new job for {standards_hash}"
+        )
+        abort(404, "Gap analysis calculations are disabled")
 
     # ----- upstream: Redis / RQ path with synchronous fallback -----
     db_url = os.environ.get("CRE_CACHE_FILE") or os.environ.get("PROD_DATABASE_URL")
@@ -487,11 +513,25 @@ def map_analysis() -> Any:
             cache_key,
             exc,
         )
+        # NEW: fallback — compute gap analysis directly in the database
         try:
-            return jsonify(_compute_ga_without_redis(database, standards))
-        except Exception as fallback_exc:
-            logger.exception("Synchronous GA fallback failed for %s", cache_key)
-            abort(503, f"Gap analysis unavailable: {fallback_exc}")
+            db.gap_analysis(
+                neo_db=database.neo_db,
+                node_names=standards,
+                cache_key=cache_key,
+            )
+            cached = database.get_gap_analysis_result(cache_key=cache_key)
+            if cached:
+                parsed = json.loads(cached)
+                if "result" in parsed:
+                    return jsonify({"result": parsed["result"]})
+        except Exception:
+            logger.exception(
+                "Database gap analysis fallback failed for %s",
+                cache_key,
+            )
+            abort(503, "Database/graph backend unavailable")
+        abort(404, "Gap analysis result not found")
 
 
 @app.route("/rest/v1/map_analysis_weak_links", methods=["GET"])
