@@ -52,6 +52,32 @@ class TestConfigLoaderOverrides(unittest.TestCase):
             with self.assertRaises(ValueError):
                 load_config()
 
+    def test_link_threshold_above_one_raises(self):
+        with mock.patch.dict(
+            os.environ, {"CRE_LIBRARIAN_LINK_THRESHOLD": "1.2"}, clear=True
+        ):
+            with self.assertRaises(ValueError):
+                load_config()
+
+    def test_negative_top_k_retrieval_raises(self):
+        with mock.patch.dict(
+            os.environ, {"CRE_LIBRARIAN_TOP_K_RETRIEVAL": "-1"}, clear=True
+        ):
+            with self.assertRaises(ValueError):
+                load_config()
+
+    def test_rerank_greater_than_retrieval_raises(self):
+        with mock.patch.dict(
+            os.environ,
+            {
+                "CRE_LIBRARIAN_TOP_K_RETRIEVAL": "3",
+                "CRE_LIBRARIAN_TOP_K_RERANK": "5",
+            },
+            clear=True,
+        ):
+            with self.assertRaises(ValueError):
+                load_config()
+
 
 if __name__ == "__main__":
     unittest.main()

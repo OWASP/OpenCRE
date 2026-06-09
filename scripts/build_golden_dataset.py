@@ -324,7 +324,10 @@ def build_explicit(conn: sqlite3.Connection) -> List[Dict]:
     for entry in CURATED_EXPLICIT:
         cre = _fetch_asvs_cre(conn, entry["asvs_section_id"])
         if cre is None:
-            continue  # silently skip if the section isn't mapped (shouldn't happen)
+            raise ValueError(
+                f"no CRE mapping found for explicit row {entry['id']} "
+                f"(ASVS section {entry['asvs_section_id']})"
+            )
         text = entry["text_template"].format(cre=cre)
         out.append(
             {
@@ -355,7 +358,10 @@ def build_update(conn: sqlite3.Connection) -> List[Dict]:
     for entry in CURATED_UPDATE:
         cre = _fetch_asvs_cre(conn, entry["asvs_section_id"])
         if cre is None:
-            continue
+            raise ValueError(
+                f"no CRE mapping found for update row {entry['id']} "
+                f"(ASVS section {entry['asvs_section_id']})"
+            )
         out.append(
             {
                 "id": entry["id"],
@@ -443,6 +449,9 @@ def main(argv: List[str]) -> int:
     text = json.dumps(rows, indent=2, ensure_ascii=False) + "\n"
 
     if args.check:
+        if not Path(args.out).exists():
+            print(f"--check: output file not found: {args.out}", file=sys.stderr)
+            return 1
         existing = Path(args.out).read_text(encoding="utf-8")
         if existing != text:
             print(

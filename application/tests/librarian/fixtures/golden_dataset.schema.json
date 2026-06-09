@@ -62,13 +62,23 @@
   "allOf": [
     {
       "if": { "properties": { "slice": { "const": "explicit" } } },
-      "then": { "properties": { "input": { "required": ["text", "explicit_cre_ref"] } } }
+      "then": {
+        "properties": {
+          "input": {
+            "required": ["text", "explicit_cre_ref"],
+            "properties": { "explicit_cre_ref": { "minLength": 1 } }
+          }
+        }
+      }
     },
     {
       "if": { "properties": { "slice": { "const": "update" } } },
       "then": {
         "properties": {
-          "input": { "required": ["text", "prior_text"] },
+          "input": {
+            "required": ["text", "prior_text"],
+            "properties": { "prior_text": { "minLength": 1 } }
+          },
           "expected": { "required": ["decision", "is_update"] }
         }
       }
@@ -79,7 +89,14 @@
     },
     {
       "if": { "properties": { "expected": { "properties": { "decision": { "const": "linked" } } } } },
-      "then": { "properties": { "expected": { "required": ["decision", "cre_ids"] } } }
+      "then": {
+        "properties": {
+          "expected": {
+            "required": ["decision", "cre_ids"],
+            "properties": { "cre_ids": { "minItems": 1 } }
+          }
+        }
+      }
     }
   ]
 }
