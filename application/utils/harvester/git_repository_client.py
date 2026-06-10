@@ -25,7 +25,7 @@ class GitRepositoryClient(RepositoryClient):
         return f"https://github.com/{self.owner}/{self.repository}.git"
 
     def clone(self) -> None:
-        if self.exists_locally():
+        if self.verify_repository_integrity():
             logger.warning(
                 "Repository %s/%s already exists locally",
                 self.owner,
@@ -44,20 +44,29 @@ class GitRepositoryClient(RepositoryClient):
             exist_ok=True,
         )
 
-        subprocess.run(
-            [
-                "git",
-                "clone",
-                "--branch",
-                self.branch,
-                self.repository_url,
-                str(self.local_path),
-            ],
-            check=True,
-            capture_output=True,
-            text=True,
-            timeout=300,
-        )
+        try:
+            subprocess.run(
+                [
+                    "git",
+                    "clone",
+                    "--branch",
+                    self.branch,
+                    self.repository_url,
+                    str(self.local_path),
+                ],
+                check=True,
+                capture_output=True,
+                text=True,
+                timeout=300,
+            )
+        except subprocess.CalledProcessError as exc:
+            logger.error(
+                "Failed to clone repository %s/%s: %s",
+                self.owner,
+                self.repository,
+                exc.stderr,
+            )
+            raise
 
     def fetch(self) -> None:
         logger.info(
@@ -66,19 +75,28 @@ class GitRepositoryClient(RepositoryClient):
             self.repository,
         )
 
-        subprocess.run(
-            [
-                "git",
-                "-C",
-                str(self.local_path),
-                "fetch",
-                "--all",
-            ],
-            check=True,
-            capture_output=True,
-            text=True,
-            timeout=300,
-        )
+        try:
+            subprocess.run(
+                [
+                    "git",
+                    "-C",
+                    str(self.local_path),
+                    "fetch",
+                    "--all",
+                ],
+                check=True,
+                capture_output=True,
+                text=True,
+                timeout=300,
+            )
+        except subprocess.CalledProcessError as exc:
+            logger.error(
+                "Failed to fetch repository %s/%s: %s",
+                self.owner,
+                self.repository,
+                exc.stderr,
+            )
+            raise
 
     def checkout(self, reference: str) -> None:
         logger.info(
@@ -88,19 +106,29 @@ class GitRepositoryClient(RepositoryClient):
             self.repository,
         )
 
-        subprocess.run(
-            [
-                "git",
-                "-C",
-                str(self.local_path),
-                "checkout",
+        try:
+            subprocess.run(
+                [
+                    "git",
+                    "-C",
+                    str(self.local_path),
+                    "checkout",
+                    reference,
+                ],
+                check=True,
+                capture_output=True,
+                text=True,
+                timeout=300,
+            )
+        except subprocess.CalledProcessError as exc:
+            logger.error(
+                "Failed to checkout %s in %s/%s: %s",
                 reference,
-            ],
-            check=True,
-            capture_output=True,
-            text=True,
-            timeout=300,
-        )
+                self.owner,
+                self.repository,
+                exc.stderr,
+            )
+            raise
 
     def get_local_path(self) -> Path:
         return self.local_path
@@ -121,19 +149,28 @@ class GitRepositoryClient(RepositoryClient):
             self.clone()
 
     def get_current_commit_sha(self) -> str:
-        result = subprocess.run(
-            [
-                "git",
-                "-C",
-                str(self.local_path),
-                "rev-parse",
-                "HEAD",
-            ],
-            check=True,
-            capture_output=True,
-            text=True,
-            timeout=300,
-        )
+        try:
+            result = subprocess.run(
+                [
+                    "git",
+                    "-C",
+                    str(self.local_path),
+                    "rev-parse",
+                    "HEAD",
+                ],
+                check=True,
+                capture_output=True,
+                text=True,
+                timeout=300,
+            )
+        except subprocess.CalledProcessError as exc:
+            logger.error(
+                "Failed to retrieve commit SHA for %s/%s: %s",
+                self.owner,
+                self.repository,
+                exc.stderr,
+            )
+            raise
 
         return result.stdout.strip()
 

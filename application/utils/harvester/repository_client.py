@@ -34,4 +34,3 @@ class RepositoryClient(ABC):
     @abstractmethod
     def verify_repository_integrity(self) -> bool:
         """Verify local repository integrity."""
-

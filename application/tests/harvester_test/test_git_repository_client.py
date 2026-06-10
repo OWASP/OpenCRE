@@ -116,3 +116,20 @@ def test_get_current_commit_sha_runs_git_command(mock_run):
 
     assert sha == "abc123"
     mock_run.assert_called_once()
+
+
+@patch("application.utils.harvester.git_repository_client.subprocess.run")
+def test_clone_runs_git_command(mock_run):
+    client = GitRepositoryClient(
+        owner="OWASP",
+        repository="ASVS",
+    )
+
+    with patch.object(
+        client,
+        "verify_repository_integrity",
+        return_value=False,
+    ):
+        client.clone()
+
+    mock_run.assert_called_once()
