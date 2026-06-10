@@ -26,6 +26,22 @@ def _pg_host_is_loopback(url: str) -> bool:
     return h in ("127.0.0.1", "localhost", "::1", "0.0.0.0") or h == ""
 
 
+def _redact_pg_url(url: str) -> str:
+    p = urllib.parse.urlparse(_normalize_pg_url(url))
+    host = p.hostname or "unknown"
+    port = f":{p.port}" if p.port else ""
+    db = (p.path or "").lstrip("/") or "postgres"
+    return f"postgresql://***@{host}{port}/{db}"
+
+
+def _is_primary_cache_key(cache_key: str) -> bool:
+    marker = " >> "
+    idx = cache_key.find(marker)
+    if idx < 0:
+        return False
+    return "->" not in cache_key[idx + len(marker) :]
+
+
 def _payload_is_material(ga_object: Optional[str]) -> bool:
     if not ga_object or not isinstance(ga_object, str):
         return False
@@ -41,7 +57,9 @@ def _payload_is_material(ga_object: Optional[str]) -> bool:
     return bool(res)
 
 
-def _fetch_sqlite_rows(path: str, material_only: bool) -> List[Tuple[str, Optional[str]]]:
+def _fetch_sqlite_rows(
+    path: str, material_only: bool
+) -> List[Tuple[str, Optional[str]]]:
     conn = sqlite3.connect(path)
     cur = conn.execute("SELECT cache_key, ga_object FROM gap_analysis_results")
     rows: List[Tuple[str, Optional[str]]] = []
@@ -54,7 +72,9 @@ def _fetch_sqlite_rows(path: str, material_only: bool) -> List[Tuple[str, Option
     return rows
 
 
-def _fetch_postgres_rows(pg_url: str, material_only: bool) -> List[Tuple[str, Optional[str]]]:
+def _fetch_postgres_rows(
+    pg_url: str, material_only: bool
+) -> List[Tuple[str, Optional[str]]]:
     conn = psycopg2.connect(_normalize_pg_url(pg_url))
     try:
         cur = conn.cursor()
@@ -71,6 +91,34 @@ def _fetch_postgres_rows(pg_url: str, material_only: bool) -> List[Tuple[str, Op
         conn.close()
 
 
+def _existing_primary_payloads(
+    cur: psycopg2.extensions.cursor, cache_keys: Sequence[str]
+) -> dict[str, Optional[str]]:
+    primary_keys = [k for k in cache_keys if _is_primary_cache_key(k)]
+    if not primary_keys:
+        return {}
+    cur.execute(
+        "SELECT cache_key, ga_object FROM public.gap_analysis_results "
+        "WHERE cache_key = ANY(%s)",
+        (list(primary_keys),),
+    )
+    return {str(k): v for k, v in cur.fetchall()}
+
+
+def _may_overwrite_primary(
+    cache_key: str,
+    new_payload: Optional[str],
+    existing_payload: Optional[str],
+) -> bool:
+    if not _is_primary_cache_key(cache_key):
+        return True
+    if _payload_is_material(new_payload):
+        return True
+    if existing_payload is None:
+        return False
+    return not _payload_is_material(existing_payload)
+
+
 def _merge_postgres_rows(
     pg_url: str, rows: Sequence[Tuple[str, Optional[str]]]
 ) -> None:
@@ -82,6 +130,14 @@ def _merge_postgres_rows(
         cur = conn.cursor()
         for i in range(0, len(rows), batch_size):
             batch = list(rows[i : i + batch_size])
+            existing_by_key = _existing_primary_payloads(cur, [k for k, _ in batch])
+            batch = [
+                (k, v)
+                for k, v in batch
+                if _may_overwrite_primary(k, v, existing_by_key.get(k))
+            ]
+            if not batch:
+                continue
             cur.execute(
                 """
                 CREATE TEMP TABLE ga_sync_stage (
@@ -115,7 +171,10 @@ def _merge_postgres_rows(
                 """
             )
             conn.commit()
-            print(f"merged batch {i // batch_size + 1}: {len(batch)} row(s)", flush=True)
+            print(
+                f"merged batch {i // batch_size + 1}: {len(batch)} row(s)",
+                flush=True,
+            )
         cur.close()
     finally:
         conn.close()
@@ -170,10 +229,15 @@ def main() -> int:
         return 2
 
     rows = _fetch_rows(args.from_sqlite, args.from_postgres, material_only)
-    source = args.from_sqlite or args.from_postgres
-    print(f"read {len(rows)} row(s) from {source!r} (material_only={material_only})")
+    if args.from_postgres:
+        source_label = _redact_pg_url(args.from_postgres)
+    else:
+        source_label = args.from_sqlite or "unknown"
+    print(
+        f"read {len(rows)} row(s) from {source_label!r} (material_only={material_only})"
+    )
     _merge_postgres_rows(args.to_postgres, rows)
-    print(f"merged {len(rows)} row(s) to postgres")
+    print(f"merged {len(rows)} row(s) to {_redact_pg_url(args.to_postgres)!r}")
     return 0
 
 
