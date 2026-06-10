@@ -17,6 +17,7 @@ class GitRepositoryClient(RepositoryClient):
         self.local_path = build_repository_cache_path(
             owner,
             repository,
+            branch,
         )
 
     @property
@@ -24,12 +25,24 @@ class GitRepositoryClient(RepositoryClient):
         return f"https://github.com/{self.owner}/{self.repository}.git"
 
     def clone(self) -> None:
+        if self.exists_locally():
+            logger.warning(
+                "Repository %s/%s already exists locally",
+                self.owner,
+                self.repository,
+            )
+            return
+
         logger.info(
             "Cloning repository %s/%s",
             self.owner,
             self.repository,
         )
-        self.local_path.parent.mkdir(parents=True, exist_ok=True)
+
+        self.local_path.parent.mkdir(
+            parents=True,
+            exist_ok=True,
+        )
 
         subprocess.run(
             [
@@ -41,6 +54,9 @@ class GitRepositoryClient(RepositoryClient):
                 str(self.local_path),
             ],
             check=True,
+            capture_output=True,
+            text=True,
+            timeout=300,
         )
 
     def fetch(self) -> None:
@@ -59,9 +75,19 @@ class GitRepositoryClient(RepositoryClient):
                 "--all",
             ],
             check=True,
+            capture_output=True,
+            text=True,
+            timeout=300,
         )
 
     def checkout(self, reference: str) -> None:
+        logger.info(
+            "Checking out %s in %s/%s",
+            reference,
+            self.owner,
+            self.repository,
+        )
+
         subprocess.run(
             [
                 "git",
@@ -71,6 +97,9 @@ class GitRepositoryClient(RepositoryClient):
                 reference,
             ],
             check=True,
+            capture_output=True,
+            text=True,
+            timeout=300,
         )
 
     def get_local_path(self) -> Path:
@@ -85,7 +114,8 @@ class GitRepositoryClient(RepositoryClient):
             self.owner,
             self.repository,
         )
-        if self.exists_locally():
+
+        if self.verify_repository_integrity():
             self.fetch()
         else:
             self.clone()
@@ -99,9 +129,10 @@ class GitRepositoryClient(RepositoryClient):
                 "rev-parse",
                 "HEAD",
             ],
+            check=True,
             capture_output=True,
             text=True,
-            check=True,
+            timeout=300,
         )
 
         return result.stdout.strip()
