@@ -66,8 +66,14 @@ def _parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+_DEFAULT_HEADERS = {
+    "Accept": "application/json",
+    "User-Agent": "OpenCRE-GA-Monitor/1.0 (+https://opencre.org)",
+}
+
+
 def _get_json(url: str, timeout: int) -> Any:
-    req = urllib.request.Request(url, headers={"Accept": "application/json"})
+    req = urllib.request.Request(url, headers=_DEFAULT_HEADERS)
     with urllib.request.urlopen(req, timeout=timeout) as resp:
         return json.loads(resp.read().decode("utf-8"))
 
@@ -80,7 +86,7 @@ def _check_pair(
     query = urllib.parse.urlencode([("standard", sa), ("standard", sb)])
     url = f"{base_rest}/map_analysis?{query}"
     try:
-        req = urllib.request.Request(url, headers={"Accept": "application/json"})
+        req = urllib.request.Request(url, headers=_DEFAULT_HEADERS)
         with urllib.request.urlopen(req, timeout=timeout) as resp:
             code = resp.status
             body = resp.read().decode("utf-8", errors="replace")
