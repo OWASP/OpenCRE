@@ -40,7 +40,6 @@ from flask import (
     session,
     send_file,
 )
-from werkzeug.exceptions import HTTPException
 from google.oauth2 import id_token
 from google_auth_oauthlib.flow import Flow
 from application.utils.spreadsheet import write_csv
@@ -70,6 +69,11 @@ def _ga_timeout_seconds() -> int:
     if m:
         return int(m.group(1))
     return 129600
+
+
+def _is_heroku_deploy() -> bool:
+    """True on Heroku/read-only web dynos where GA must be served from SQL cache only."""
+    return os.environ.get("DYNO") is not None or bool(os.environ.get("HEROKU"))
 
 
 def _compute_ga_without_redis(
@@ -421,8 +425,16 @@ def map_analysis() -> Any:
     standards = standards[:2]
     standards_hash = gap_analysis.make_resources_key(standards)
 
-    # ----- PR #825: OpenCRE fast path -----
+    # ----- PR #825: OpenCRE fast path (SQL cache only on Heroku) -----
     if OPENCRE_STANDARD_NAME in standards:
+        if database.gap_analysis_exists(standards_hash):
+            cached = database.get_gap_analysis_result(cache_key=standards_hash)
+            if cached:
+                parsed = json.loads(cached)
+                if "result" in parsed:
+                    return jsonify({"result": parsed.get("result")})
+        if _is_heroku_deploy():
+            abort(404, "No such Cache")
         direct_gap_analysis = _build_direct_cre_overlap_map_analysis(
             standards, standards_hash, database
         )
@@ -439,27 +451,13 @@ def map_analysis() -> Any:
             if "result" in parsed:
                 return jsonify({"result": parsed.get("result")})
 
-    # On Heroku/read-only deployments, verify standards before attempting
-    # Redis or graph-backed fallback work.
-    is_heroku = os.environ.get("DYNO") is not None
-    if is_heroku:
-        try:
-            existing_standards = database.standards()
-            if isinstance(existing_standards, (list, tuple, set)):
-                existing_lower = {str(s).lower() for s in existing_standards}
-                missing = [s for s in standards if str(s).lower() not in existing_lower]
-                if missing:
-                    logger.info(
-                        f"On Heroku: gap analysis request {standards_hash} references "
-                        f"standards that do not exist: {', '.join(missing)}, returning 404"
-                    )
-                    abort(
-                        404, f"One or more standards do not exist: {', '.join(missing)}"
-                    )
-        except HTTPException:
-            raise
-        except Exception as exc:
-            logger.warning(f"Could not verify standards existence on Heroku: {exc}")
+    # Heroku serves precomputed GA from Postgres only — never Redis, RQ, or Neo4j.
+    if _is_heroku_deploy():
+        logger.info(
+            "On Heroku: gap analysis cache miss for %s, returning 404",
+            standards_hash,
+        )
+        abort(404, "No such Cache")
 
     if os.environ.get("CRE_NO_CALCULATE_GAP_ANALYSIS"):
         logger.info(
@@ -513,25 +511,11 @@ def map_analysis() -> Any:
             cache_key,
             exc,
         )
-        # NEW: fallback — compute gap analysis directly in the database
         try:
-            db.gap_analysis(
-                neo_db=database.neo_db,
-                node_names=standards,
-                cache_key=cache_key,
-            )
-            cached = database.get_gap_analysis_result(cache_key=cache_key)
-            if cached:
-                parsed = json.loads(cached)
-                if "result" in parsed:
-                    return jsonify({"result": parsed["result"]})
-        except Exception:
-            logger.exception(
-                "Database gap analysis fallback failed for %s",
-                cache_key,
-            )
-            abort(503, "Database/graph backend unavailable")
-        abort(404, "Gap analysis result not found")
+            return jsonify(_compute_ga_without_redis(database, standards))
+        except Exception as fallback_exc:
+            logger.exception("Synchronous GA fallback failed for %s", cache_key)
+            abort(503, f"Gap analysis unavailable: {fallback_exc}")
 
 
 @app.route("/rest/v1/map_analysis_weak_links", methods=["GET"])
