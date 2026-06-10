@@ -24,7 +24,6 @@ def main() -> int:
     parser.add_argument(
         "--cache-file",
         default=os.environ.get("CRE_CACHE_FILE")
-        or os.environ.get("PROD_DATABASE_URL")
         or "postgresql://cre:password@127.0.0.1:5432/cre",
     )
     parser.add_argument(
