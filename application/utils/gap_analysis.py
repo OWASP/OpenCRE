@@ -34,7 +34,13 @@ def make_subresources_key(standards: List[str], key: str) -> str:
 
 def gap_analysis_cache_key_is_primary(cache_key: str) -> bool:
     """Primary directed-standard rows use ``A >> B``; drill-down rows append ``->...``."""
-    return "->" not in cache_key
+    marker = " >> "
+    idx = cache_key.find(marker)
+    if idx < 0:
+        return False
+    # Subresource keys are ``A >> B->nodeKey``; only inspect text after the pair.
+    suffix = cache_key[idx + len(marker) :]
+    return "->" not in suffix
 
 
 def primary_gap_analysis_payload_is_material(ga_object: Optional[str]) -> bool:
