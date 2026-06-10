@@ -14,11 +14,18 @@ from .schemas import (
     ReposFile,
 )
 
+from .git_repository_client import GitRepositoryClient
+from .repository_client import RepositoryClient
+from .repository_cache import build_repository_cache_path
+
 __all__ = [
+    "build_repository_cache_path",
     "ChunkingConfig",
     "ConfigLoaderError",
+    "GitRepositoryClient",
     "PathRules",
     "PollingConfig",
+    "RepositoryClient",
     "RepositoryConfig",
     "RepositoryValidationError",
     "ReposFile",
