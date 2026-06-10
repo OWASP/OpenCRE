@@ -27,6 +27,25 @@ class _FakeDB:
 
 
 class TestGapAnalysisPairJob(unittest.TestCase):
+    def test_should_persist_primary_gap_analysis_cache(self):
+        g = gap_analysis
+        self.assertFalse(
+            g.should_persist_primary_gap_analysis_cache('{"result":{}}', None)
+        )
+        self.assertFalse(
+            g.should_persist_primary_gap_analysis_cache(
+                '{"result":{}}', '{"result":{"k":1}}'
+            )
+        )
+        self.assertTrue(
+            g.should_persist_primary_gap_analysis_cache(
+                '{"result":{"k":1}}', '{"result":{}}'
+            )
+        )
+        self.assertTrue(
+            g.should_persist_primary_gap_analysis_cache('{"result":{"k":1}}', None)
+        )
+
     def test_primary_gap_analysis_payload_is_material(self):
         g = gap_analysis
         self.assertFalse(g.primary_gap_analysis_payload_is_material(None))

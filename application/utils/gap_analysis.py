@@ -59,6 +59,25 @@ def primary_gap_analysis_payload_is_material(ga_object: Optional[str]) -> bool:
     return bool(res)
 
 
+def should_persist_primary_gap_analysis_cache(
+    ga_object: str,
+    existing_ga_object: Optional[str] = None,
+) -> bool:
+    """
+    True when a primary GA SQL cache write should be applied.
+
+    Non-material empty ``{"result": {}}`` payloads must not be inserted and must
+    not overwrite an existing material row.
+    """
+    if primary_gap_analysis_payload_is_material(ga_object):
+        return True
+    if existing_ga_object is None:
+        return False
+    if primary_gap_analysis_payload_is_material(existing_ga_object):
+        return False
+    return False
+
+
 def get_path_score(path):
     score = 0
     previous_id = path["start"].id

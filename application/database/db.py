@@ -47,6 +47,7 @@ from application.utils.gap_analysis import (
     make_resources_key,
     make_subresources_key,
     primary_gap_analysis_payload_is_material,
+    should_persist_primary_gap_analysis_cache,
 )
 
 
@@ -2428,6 +2429,22 @@ class Node_collection:
             .filter(GapAnalysisResults.cache_key == cache_key)
             .first()
         )
+        if gap_analysis_cache_key_is_primary(cache_key):
+            existing_payload = existing.ga_object if existing else None
+            if not should_persist_primary_gap_analysis_cache(
+                ga_object, existing_payload
+            ):
+                if existing is None:
+                    logger.info(
+                        "Skipping empty primary gap analysis cache insert for %s",
+                        cache_key,
+                    )
+                else:
+                    logger.warning(
+                        "Refusing non-material primary gap analysis update for %s",
+                        cache_key,
+                    )
+                return
         if existing:
             existing.ga_object = ga_object
             self.session.add(existing)
