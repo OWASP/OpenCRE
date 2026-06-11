@@ -745,6 +745,15 @@ class TestDB(unittest.TestCase):
 
         self.assertEqual([c_id_only], collection.get_CREs(internal_id=db_id_only.id))
 
+    @patch.object(db.Node_collection, "get_CREs")
+    def test_get_cre_by_db_id_returns_none_when_get_cres_empty(
+        self, get_cres_mock
+    ) -> None:
+        get_cres_mock.return_value = []
+        result = self.collection.get_cre_by_db_id(self.dbcre.id)
+        self.assertIsNone(result)
+        get_cres_mock.assert_called_once_with(external_id=self.dbcre.external_id)
+
     def test_get_standards(self) -> None:
         """Given: a Standard 'S1' that links to cres
         return the Standard in Document format"""
