@@ -8,9 +8,20 @@ PARSER_VERSION = "v1"
 
 CANONICAL_BASE_URL = "https://cheatsheetseries.owasp.org/cheatsheets/"
 
-_TITLE_RE = re.compile(r"^#\s+(?P<title>.+)$", re.MULTILINE)
-_HEADING_RE = re.compile(r"^##\s+(?P<heading>.+)$", re.MULTILINE)
-_ANY_HEADING_RE = re.compile(r"^#{1,6}\s+.+$", re.MULTILINE)
+_TITLE_RE = re.compile(
+    r"^\s*#(?!#)\s*(?P<title>.+?)$",
+    re.MULTILINE,
+)
+
+_HEADING_RE = re.compile(
+    r"^\s*##(?!#)\s*(?P<heading>.+?)$",
+    re.MULTILINE,
+)
+
+_ANY_HEADING_RE = re.compile(
+    r"^\s*#{1,6}(?!#)\s*.+?$",
+    re.MULTILINE,
+)
 
 
 def _derive_source_id(source_path: str) -> str:
@@ -44,7 +55,7 @@ def _extract_summary(markdown: str) -> str:
     """Extract summary from Introduction section in cheatsheet markdown."""
 
     for match in _ANY_HEADING_RE.finditer(markdown):
-        if match.group().lstrip("#").strip().lower() == "introduction":
+        if match.group().strip().lstrip("#").strip().lower() == "introduction":
             body = _extract_body_after_heading(markdown, match)
             if body:
                 return body
