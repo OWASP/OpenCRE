@@ -53,6 +53,7 @@ class SecureHeaders(ParserInterface):
     def resolve_cre_external_id(
         self, cache: db.Node_collection, external_id: str
     ) -> tuple[list[defs.CRE], str]:
+        """Resolve a markdown CRE id, applying legacy remaps when needed."""
         candidates = [external_id]
         remapped = LEGACY_CRE_ID_REMAP.get(external_id)
         if remapped and remapped not in candidates:
