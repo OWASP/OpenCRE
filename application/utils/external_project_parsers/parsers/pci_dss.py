@@ -23,6 +23,7 @@ _DEFAULT_PCI_BRIDGE_MIN_SIMILARITY = 0.4
 
 
 def _parse_float_env(name: str, default: float) -> float:
+    """Read a float from an environment variable, falling back on invalid values."""
     raw = os.environ.get(name, "").strip()
     if not raw:
         return default
@@ -34,6 +35,7 @@ def _parse_float_env(name: str, default: float) -> float:
 
 
 def _parse_float_tuple_env(name: str, default: tuple[float, ...]) -> tuple[float, ...]:
+    """Read a comma-separated float tuple from env, falling back on invalid values."""
     raw = os.environ.get(name, "").strip()
     if not raw:
         return default
@@ -46,6 +48,7 @@ def _parse_float_tuple_env(name: str, default: tuple[float, ...]) -> tuple[float
 
 
 def _parse_str_tuple_env(name: str, default: tuple[str, ...]) -> tuple[str, ...]:
+    """Read a comma-separated string tuple from env, falling back when empty."""
     raw = os.environ.get(name, "").strip()
     if not raw:
         return default
