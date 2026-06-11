@@ -1344,7 +1344,13 @@ class Node_collection:
         if not external_id:
             logger.error(f"CRE {id} does not exist in the db")
             return None
-        return self.get_CREs(external_id=external_id[0])[0]
+        cres = self.get_CREs(external_id=external_id[0])
+        if not cres:
+            logger.error(
+                f"CRE {id} exists but get_CREs returned no results for external_id={external_id[0]}"
+            )
+            return None
+        return cres[0]
 
     def list_node_ids_by_ntype(self, ntype: str) -> List[str]:
         # Always return plain strings (never SQLAlchemy row tuples).
