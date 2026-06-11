@@ -55,6 +55,7 @@ logger = logging.getLogger(__name__)
 
 
 def _configure_llm_env() -> None:
+    """Set default embedding model env vars for offline PCI mapping runs."""
     embed_model = os.environ.get("CRE_EMBED_MODEL")
     if not embed_model:
         vertex_embed = os.environ.get(
@@ -66,6 +67,7 @@ def _configure_llm_env() -> None:
 
 
 def fetch_pci_rows(url: str = PCI_SHEET_CSV_URL) -> List[Dict[str, str]]:
+    """Download PCI DSS spreadsheet rows that include a control id."""
     with urllib.request.urlopen(url, timeout=120) as resp:
         raw = resp.read().decode("utf-8-sig")
     reader = csv.DictReader(io.StringIO(raw))
@@ -80,6 +82,7 @@ def resolve_with_method(
     cache,
     control_embedding: List[float],
 ) -> tuple[Optional[defs.CRE], str, Optional[float]]:
+    """Resolve one PCI control embedding using the staged PCI DSS linker."""
     for threshold in PCI_DSS_CRE_SIMILARITY_THRESHOLDS:
         match = prompt.get_id_of_most_similar_cre_paginated(
             control_embedding, similarity_threshold=threshold
@@ -112,6 +115,7 @@ def compute_mappings(
     *,
     limit: Optional[int] = None,
 ) -> List[Dict[str, Any]]:
+    """Embed PCI rows and resolve CRE links, returning per-control mapping records."""
     prompt = prompt_client.PromptHandler(cache)
     mappings: List[Dict[str, Any]] = []
     total = len(rows) if limit is None else min(limit, len(rows))
@@ -155,6 +159,7 @@ def compute_mappings(
 
 
 def main() -> int:
+    """CLI entrypoint for computing PCI DSS to CRE mapping JSON."""
     parser = argparse.ArgumentParser(description="Compute PCI DSS → CRE mappings")
     parser.add_argument(
         "--cache-file",

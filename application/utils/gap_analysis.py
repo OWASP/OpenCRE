@@ -117,12 +117,14 @@ def get_next_id(step, previous_id):
 
 
 def _link_type_to_path_relationship(ltype: defs.LinkTypes) -> str:
+    """Map a link type to the path relationship label stored in GA cache rows."""
     if ltype == defs.LinkTypes.AutomaticallyLinkedTo:
         return "AUTOMATICALLY_LINKED_TO"
     return "LINKED_TO"
 
 
 def _opencre_overlap_link_sort_key(link: defs.Link) -> int:
+    """Prefer manual CRE links over automatic links when ordering overlap paths."""
     if link.ltype == defs.LinkTypes.LinkedTo:
         return 0
     if link.ltype == defs.LinkTypes.AutomaticallyLinkedTo:
@@ -136,6 +138,7 @@ def _build_direct_link_path(
     *,
     ltype: defs.LinkTypes = defs.LinkTypes.LinkedTo,
 ) -> Dict[str, Any]:
+    """Build a single-hop GA path between two documents with the given link type."""
     segment_start = start_document.shallow_copy()
     if segment_start.doctype != defs.Credoctypes.CRE.value:
         segment_start.id = ""
@@ -160,6 +163,7 @@ def _add_direct_link_result(
     *,
     ltype: defs.LinkTypes = defs.LinkTypes.LinkedTo,
 ) -> None:
+    """Insert one direct link path into grouped GA results, skipping duplicates."""
     shared_paths = grouped_paths.setdefault(
         start_document.id,
         {
@@ -244,6 +248,7 @@ def opencre_direct_pairs(standard_names: List[str]) -> List[List[str]]:
 
 
 def missing_opencre_direct_pairs(collection: Any) -> List[List[str]]:
+    """Return OpenCRE-directed standard pairs that are not yet cached."""
     missing: List[List[str]] = []
     for pair in opencre_direct_pairs(collection.standards()):
         cache_key = make_resources_key(pair)
