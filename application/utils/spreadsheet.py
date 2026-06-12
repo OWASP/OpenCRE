@@ -26,6 +26,18 @@ def findDups(x):
     return {val for val in x if (val in seen or seen.add(val))}
 
 
+def _records_from_worksheet_values(rows: List[List[Any]]) -> List[Dict[str, Any]]:
+    """Build row dicts from raw gspread values without numeric coercion."""
+    if not rows:
+        return []
+    headers = rows[0]
+    records: List[Dict[str, Any]] = []
+    for row in rows[1:]:
+        padded = list(row) + [""] * max(0, len(headers) - len(row))
+        records.append(dict(zip(headers, padded[: len(headers)])))
+    return records
+
+
 def load_csv():
     pass
 
@@ -58,15 +70,11 @@ def read_spreadsheet(
                     "(remember, only numbered worksheets"
                     " will be processed by convention)" % wsh.title
                 )
-                rows = wsh.get_all_values()
-                headers = rows[0]
-                records = [dict(zip(headers, row)) for row in rows[1:]]
+                records = _records_from_worksheet_values(wsh.get_all_values())
                 toyaml = yaml.safe_load(yaml.safe_dump(records))
                 result[wsh.title] = toyaml
             elif not parse_numbered_only:
-                rows = wsh.get_all_values()
-                headers = rows[0]
-                records = [dict(zip(headers, row)) for row in rows[1:]]
+                records = _records_from_worksheet_values(wsh.get_all_values())
                 toyaml = yaml.safe_load(yaml.safe_dump(records))
                 result[wsh.title] = toyaml
     except gspread.exceptions.APIError as ae:

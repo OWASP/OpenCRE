@@ -161,3 +161,58 @@ class TestDB(unittest.TestCase):
         result = read_spreadsheet(url, alias, validate=False, parse_numbered_only=False)
 
         self.assertEqual(result["ISO Numericise Test"], expected)
+
+    @mock.patch("application.utils.spreadsheet.gspread.service_account")
+    @mock.patch("application.utils.spreadsheet.gspread.oauth")
+    def test_read_spreadsheet_empty_worksheet(
+        self, mock_oauth, mock_service_account
+    ) -> None:
+        fake_ws = mock.MagicMock()
+        fake_ws.title = "Empty Sheet"
+        fake_ws.get_all_values.return_value = []
+
+        fake_sh = mock.MagicMock()
+        fake_sh.worksheets.return_value = [fake_ws]
+
+        fake_client = mock.MagicMock()
+        fake_client.open_by_url.return_value = fake_sh
+        mock_oauth.return_value = fake_client
+        mock_service_account.return_value = fake_client
+
+        result = read_spreadsheet(
+            "https://example.com/fake-spreadsheet-url",
+            "Test Spreadsheet",
+            validate=False,
+            parse_numbered_only=False,
+        )
+
+        self.assertEqual(result["Empty Sheet"], [])
+
+    @mock.patch("application.utils.spreadsheet.gspread.service_account")
+    @mock.patch("application.utils.spreadsheet.gspread.oauth")
+    def test_read_spreadsheet_short_row_padded(
+        self, mock_oauth, mock_service_account
+    ) -> None:
+        fake_ws = mock.MagicMock()
+        fake_ws.title = "Short Row"
+        fake_ws.get_all_values.return_value = [
+            ["Col A", "Col B"],
+            ["only-a"],
+        ]
+
+        fake_sh = mock.MagicMock()
+        fake_sh.worksheets.return_value = [fake_ws]
+
+        fake_client = mock.MagicMock()
+        fake_client.open_by_url.return_value = fake_sh
+        mock_oauth.return_value = fake_client
+        mock_service_account.return_value = fake_client
+
+        result = read_spreadsheet(
+            "https://example.com/fake-spreadsheet-url",
+            "Test Spreadsheet",
+            validate=False,
+            parse_numbered_only=False,
+        )
+
+        self.assertEqual(result["Short Row"], [{"Col A": "only-a", "Col B": ""}])
