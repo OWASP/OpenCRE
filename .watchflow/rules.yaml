@@ -1,0 +1,36 @@
+rules:
+- description: Require that every pull request includes a linked issue reference in
+    the title or description.
+  enabled: true
+  severity: medium
+  event_types:
+  - pull_request
+  parameters: {}
+- description: Enforce a minimum length for pull request descriptions to ensure clarity
+    and context.
+  enabled: true
+  severity: medium
+  event_types:
+  - pull_request
+  parameters:
+    min_length: 50
+- description: Limit the total lines changed in a pull request to a maximum of 500
+    lines.
+  enabled: true
+  severity: low
+  event_types:
+  - pull_request
+  parameters:
+    max_lines: 500
+- description: Require that pull requests include specific labels to aid in categorization
+    and tracking.
+  enabled: true
+  severity: low
+  event_types:
+  - pull_request
+  parameters:
+    labels:
+    - bug
+    - feature
+    - documentation
+    - enhancement
