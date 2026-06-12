@@ -13,7 +13,8 @@ import { GraphDebugPanel } from './GraphDebugPanel';
 import { LinkedStandards } from './LinkedStandards';
 
 export const Explorer = () => {
-  const { dataLoading, dataTree, dataStore, hasMore, isLoadingMore, loadNextPage } = useDataStore();
+  const { dataLoading, dataTree, dataStore, hasMore, isLoadingMore, loadNextPage, dataLoadError } =
+    useDataStore();
   const [loading, setLoading] = useState<boolean>(false);
   const [filter, setFilter] = useState('');
   const [filteredTree, setFilteredTree] = useState<TreeDocument[]>();
@@ -212,7 +213,7 @@ export const Explorer = () => {
 
         {debugMode && <GraphDebugPanel dataStore={dataStore} />}
 
-        <LoadingAndErrorIndicator loading={loading} error={null} />
+        <LoadingAndErrorIndicator loading={loading || dataLoading} error={dataLoadError} />
         <List>
           {filteredTree?.map((item) => {
             return processNode(item);

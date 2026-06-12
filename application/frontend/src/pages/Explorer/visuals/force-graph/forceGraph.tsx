@@ -22,8 +22,15 @@ export const ExplorerForceGraph = () => {
   const [ignoreTypes, setIgnoreTypes] = useState(['same']);
   const [maxCount, setMaxCount] = useState(0);
   const [maxNodeSize, setMaxNodeSize] = useState(0);
-  const { dataLoading, dataTree, getStoreKey, dataStore, ensureFullExplorerData, fullLoadProgress } =
-    useDataStore();
+  const {
+    dataLoading,
+    dataTree,
+    getStoreKey,
+    dataStore,
+    ensureFullExplorerData,
+    fullLoadProgress,
+    dataLoadError,
+  } = useDataStore();
   const fgRef = useRef<ForceGraphMethods>();
   // ADDING STATE FOR FILTERING LOGIC
   const [filterTypeA, setFilterTypeA] = useState('');
@@ -34,7 +41,15 @@ export const ExplorerForceGraph = () => {
   const [combinedOptions, setCombinedOptions] = useState<DropdownOption[]>([]);
 
   useEffect(() => {
-    ensureFullExplorerData();
+    let active = true;
+    void ensureFullExplorerData().catch((err) => {
+      if (active) {
+        console.error('Failed to load explorer graph data', err);
+      }
+    });
+    return () => {
+      active = false;
+    };
   }, [ensureFullExplorerData]);
 
   // Adding a show all checkbox
@@ -436,7 +451,7 @@ export const ExplorerForceGraph = () => {
   }, [graphData]);
   return (
     <div>
-      <LoadingAndErrorIndicator loading={dataLoading || !!fullLoadProgress} error={null} />
+      <LoadingAndErrorIndicator loading={dataLoading || !!fullLoadProgress} error={dataLoadError} />
       {fullLoadProgress && (
         <p className="explorer-full-load-progress">Loading graph data ({fullLoadProgress})…</p>
       )}
