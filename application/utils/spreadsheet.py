@@ -27,14 +27,24 @@ def findDups(x):
 
 
 def _records_from_worksheet_values(rows: List[List[Any]]) -> List[Dict[str, Any]]:
-    """Build row dicts from raw gspread values without numeric coercion."""
+    """Build row dicts from raw worksheet cell values without numeric coercion.
+
+    Uses the first row as column headers. Short data rows are padded with empty
+    strings. Raises ``GSpreadException`` when duplicate header names are present
+    so callers fail fast instead of silently collapsing columns in ``dict(zip)``.
+    """
     if not rows:
         return []
     headers = rows[0]
+    duplicates = sorted(findDups(headers))
+    if duplicates:
+        raise gspread.exceptions.GSpreadException(
+            f"Duplicate worksheet headers: {duplicates}"
+        )
     records: List[Dict[str, Any]] = []
     for row in rows[1:]:
         padded = list(row) + [""] * max(0, len(headers) - len(row))
-        records.append(dict(zip(headers, padded[: len(headers)])))
+        records.append(dict(zip(headers, padded[: len(headers)], strict=True)))
     return records
 
 
