@@ -33,6 +33,7 @@ type DataContextValues = {
   hasMore: boolean;
   isLoadingMore: boolean;
   fullLoadProgress: string | null;
+  dataLoadError: Error | null;
   loadNextPage: () => Promise<void>;
   ensureFullExplorerData: () => Promise<void>;
 };
@@ -71,12 +72,14 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
   const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false);
   const [isFullStoreLoaded, setIsFullStoreLoaded] = useState<boolean>(false);
   const [fullLoadProgress, setFullLoadProgress] = useState<string | null>(null);
+  const [dataLoadError, setDataLoadError] = useState<Error | null>(null);
 
   const dataStoreRef = useRef(dataStore);
   const loadedPagesRef = useRef(loadedPages);
   const totalPagesRef = useRef(totalPages);
   const isFullStoreLoadedRef = useRef(isFullStoreLoaded);
   const loadingPageRef = useRef(false);
+  const loadChainRef = useRef(Promise.resolve<Record<string, TreeDocument>>({}));
   const fullLoadRef = useRef<Promise<void> | null>(null);
   const bootstrapDoneRef = useRef(false);
 
@@ -102,23 +105,23 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
   const buildTree = useCallback(
     (doc: Document, store: Record<string, TreeDocument>, keyPath: string[] = []): TreeDocument => {
       const selfKey = getStoreKey(doc);
-      keyPath.push(selfKey);
+      const nextPath = [...keyPath, selfKey];
       const storedDoc = structuredClone(store[selfKey] ?? doc);
       const initialLinks = storedDoc.links || [];
       let creLinks = initialLinks.filter(
-        (x) => !!x.document && !keyPath.includes(getStoreKey(x.document)) && getStoreKey(x.document) in store
+        (x) => !!x.document && !nextPath.includes(getStoreKey(x.document)) && getStoreKey(x.document) in store
       );
       creLinks = creLinks.filter((x) => x.ltype === 'Contains');
       creLinks = creLinks.map((x) => ({
         ltype: x.ltype,
-        document: buildTree(x.document, store, keyPath),
+        document: buildTree(x.document, store, nextPath),
       }));
       storedDoc.links = [...creLinks];
       const standards = initialLinks.filter(
         (link) =>
           link.document &&
           link.document.doctype === 'Standard' &&
-          !keyPath.includes(getStoreKey(link.document))
+          !nextPath.includes(getStoreKey(link.document))
       );
       storedDoc.links = [...creLinks, ...standards];
       return storedDoc;
@@ -154,51 +157,68 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
         setDataTree([]);
         return [];
       }
-      const result = await axios.get(`${apiUrl}/root_cres`);
-      const treeData = result.data.data.map((x: Document) => buildTree(x, store));
-      setDataTree(treeData);
-      return treeData;
+      try {
+        const result = await axios.get(`${apiUrl}/root_cres`);
+        const treeData = result.data.data.map((x: Document) => buildTree(x, store));
+        setDataTree(treeData);
+        return treeData;
+      } catch (err) {
+        const error = err instanceof Error ? err : new Error('Failed to load explorer tree');
+        setDataLoadError(error);
+        throw error;
+      }
     },
     [apiUrl, buildTree]
   );
 
   const loadPage = useCallback(
     async (page: number): Promise<Record<string, TreeDocument>> => {
-      if (loadingPageRef.current) {
-        return dataStoreRef.current;
-      }
-      loadingPageRef.current = true;
-      setIsLoadingMore(true);
-      try {
-        const result = await axios.get(`${apiUrl}/all_cres`, {
-          params: { page, per_page: EXPLORER_CRE_PAGE_SIZE },
-        });
-        const docs: Document[] = result.data.data || [];
-        const pagesTotal = Number(result.data.total_pages) || 1;
-        const nextStore = mergeDocsIntoStore(docs, dataStoreRef.current, getStoreKey);
-        const pagesLoaded = page;
-
-        dataStoreRef.current = nextStore;
-        setDataStore(nextStore);
-        setLoadedPages(pagesLoaded);
-        setTotalPages(pagesTotal);
-        loadedPagesRef.current = pagesLoaded;
-        totalPagesRef.current = pagesTotal;
-
-        const fullLoaded = pagesLoaded >= pagesTotal;
-        if (fullLoaded) {
-          isFullStoreLoadedRef.current = true;
-          setIsFullStoreLoaded(true);
+      const nextLoad = loadChainRef.current.then(async () => {
+        if (isFullStoreLoadedRef.current || (loadedPagesRef.current >= page && loadedPagesRef.current > 0)) {
+          return dataStoreRef.current;
         }
 
-        const treeData = await rebuildDataTree(nextStore);
-        await persistCache(nextStore, pagesLoaded, pagesTotal, fullLoaded, treeData);
+        loadingPageRef.current = true;
+        setIsLoadingMore(true);
+        try {
+          const result = await axios.get(`${apiUrl}/all_cres`, {
+            params: { page, per_page: EXPLORER_CRE_PAGE_SIZE },
+          });
+          const docs: Document[] = result.data.data || [];
+          const pagesTotal = Number(result.data.total_pages) || 1;
+          const nextStore = mergeDocsIntoStore(docs, dataStoreRef.current, getStoreKey);
+          const pagesLoaded = page;
 
-        return nextStore;
-      } finally {
-        loadingPageRef.current = false;
-        setIsLoadingMore(false);
-      }
+          dataStoreRef.current = nextStore;
+          setDataStore(nextStore);
+          setLoadedPages(pagesLoaded);
+          setTotalPages(pagesTotal);
+          loadedPagesRef.current = pagesLoaded;
+          totalPagesRef.current = pagesTotal;
+          setDataLoadError(null);
+
+          const fullLoaded = pagesLoaded >= pagesTotal;
+          if (fullLoaded) {
+            isFullStoreLoadedRef.current = true;
+            setIsFullStoreLoaded(true);
+          }
+
+          const treeData = await rebuildDataTree(nextStore);
+          await persistCache(nextStore, pagesLoaded, pagesTotal, fullLoaded, treeData);
+
+          return nextStore;
+        } catch (err) {
+          const error = err instanceof Error ? err : new Error('Failed to load CRE data');
+          setDataLoadError(error);
+          throw error;
+        } finally {
+          loadingPageRef.current = false;
+          setIsLoadingMore(false);
+        }
+      });
+
+      loadChainRef.current = nextLoad.catch(() => dataStoreRef.current);
+      return nextLoad;
     },
     [apiUrl, getStoreKey, persistCache, rebuildDataTree]
   );
@@ -289,6 +309,8 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
         } else if (Object.keys(dataStoreRef.current).length) {
           await rebuildDataTree(dataStoreRef.current);
         }
+      } catch {
+        // loadPage/rebuildDataTree already set dataLoadError
       } finally {
         setDataLoading(false);
       }
@@ -332,6 +354,7 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
         hasMore,
         isLoadingMore,
         fullLoadProgress,
+        dataLoadError,
         loadNextPage,
         ensureFullExplorerData,
       }}

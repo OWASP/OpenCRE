@@ -26,6 +26,10 @@ import { MyOpenCRE } from './pages/MyOpenCRE/MyOpenCRE';
 import { SearchName } from './pages/Search/SearchName';
 import { StandardSection } from './pages/Standard/StandardSection';
 
+const ExplorerWithLayout = withExplorerLayout(Explorer);
+const ExplorerCirclesWithLayout = withExplorerLayout(ExplorerCircles);
+const ExplorerForceGraphWithLayout = withExplorerLayout(ExplorerForceGraph);
+
 export interface IRoute {
   path: string;
   component: ReactNode | ReactNode[];
@@ -113,17 +117,17 @@ export const ROUTES = (capabilities: Capabilities): IRoute[] => [
   },
   {
     path: `${EXPLORER}/circles`,
-    component: withExplorerLayout(ExplorerCircles),
+    component: ExplorerCirclesWithLayout,
     showFilter: false,
   },
   {
     path: `${EXPLORER}/force_graph`,
-    component: withExplorerLayout(ExplorerForceGraph),
+    component: ExplorerForceGraphWithLayout,
     showFilter: false,
   },
   {
     path: `${EXPLORER}`,
-    component: withExplorerLayout(Explorer),
+    component: ExplorerWithLayout,
     showFilter: false,
   },
 ];
