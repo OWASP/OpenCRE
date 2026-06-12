@@ -558,7 +558,7 @@ def text_search() -> Any:
         Anything else will be a case insensitive LIKE query in the database
     """
     database = db.Node_collection()
-    text = request.args.get("text")
+    text = (request.args.get("text") or "").strip()
     if not text:
         return jsonify({"error": "text parameter is required"}), 400
     if posthog:

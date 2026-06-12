@@ -458,6 +458,12 @@ class TestMain(unittest.TestCase):
             response = client.get("/rest/v1/text_search?text=")
             self.assertEqual(400, response.status_code)
 
+            response = client.get("/rest/v1/text_search?text=+%20%20")
+            self.assertEqual(400, response.status_code)
+            self.assertEqual(
+                response.json, {"error": "text parameter is required"}
+            )
+
             response = client.get(f"/rest/v1/text_search?text='CRE:2'")
             self.assertEqual(404, response.status_code)
 
