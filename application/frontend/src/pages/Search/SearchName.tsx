@@ -19,6 +19,13 @@ export const SearchName = () => {
   const [error, setError] = useState<string | Object | null>(null);
 
   useEffect(() => {
+    if (!searchTerm?.trim()) {
+      setDocuments([]);
+      setError('Search term cannot be blank');
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     axios
       .get(`${apiUrl}/text_search`, { params: { text: searchTerm } })
@@ -27,18 +34,22 @@ export const SearchName = () => {
         setDocuments(response.data);
       })
       .catch(function (axiosError) {
-        // TODO: backend errors if no matches, should return
-        //       proper error instead.
-        if (axiosError.response.status === 404) {
+        const status = axiosError.response?.status;
+        if (status === 404) {
           setError('No results match your search term');
+        } else if (status === 400) {
+          const message = axiosError.response?.data?.error;
+          setError(
+            typeof message === 'string' ? message : 'Invalid search request'
+          );
         } else {
-          setError(axiosError.response);
+          setError('Document could not be loaded');
         }
       })
       .finally(() => {
         setLoading(false);
       });
-  }, [searchTerm]);
+  }, [apiUrl, searchTerm]);
 
   const groupedByType = groupBy(documents, (doc) => doc.doctype);
   Object.keys(groupedByType).forEach((key) => {
