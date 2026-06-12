@@ -10,7 +10,7 @@ import { Button, Icon } from 'semantic-ui-react';
 export const ExplorerCircles = () => {
   const { height, width } = useWindowDimensions();
   const [useFullScreen, setUseFullScreen] = useState(false);
-  const { dataLoading, dataTree } = useDataStore();
+  const { dataLoading, dataTree, ensureFullExplorerData, fullLoadProgress } = useDataStore();
   const [breadcrumb, setBreadcrumb] = useState<string[]>([]);
   const svgRef = React.useRef(null);
 
@@ -20,6 +20,10 @@ export const ExplorerCircles = () => {
   const viewRef = React.useRef<any>(null);
   const zoomToRef = React.useRef<any>(null);
   const margin = 20;
+
+  useEffect(() => {
+    ensureFullExplorerData();
+  }, [ensureFullExplorerData]);
 
   const defaultSize = width > height ? height - 100 : width;
   const size = useFullScreen ? width : defaultSize;
@@ -447,7 +451,10 @@ export const ExplorerCircles = () => {
           <g transform={`translate(${size / 2},${size / 2})`}></g>
         </svg>
       </div>
-      <LoadingAndErrorIndicator loading={dataLoading} error={null} />
+      <LoadingAndErrorIndicator loading={dataLoading || !!fullLoadProgress} error={null} />
+      {fullLoadProgress && (
+        <p className="explorer-full-load-progress">Loading graph data ({fullLoadProgress})…</p>
+      )}
     </div>
   );
 };

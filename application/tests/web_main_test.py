@@ -1223,6 +1223,55 @@ class TestMain(unittest.TestCase):
                 json.loads(response.data),
             )
 
+    @patch.object(db, "Node_collection")
+    def test_all_cres_caps_per_page(self, db_mock) -> None:
+        db_mock.return_value.all_cres_with_pagination.return_value = ([], 1, 1)
+
+        with self.app.test_client() as client:
+            client.get(
+                "/rest/v1/all_cres?per_page=1000",
+                headers={"Content-Type": "application/json"},
+            )
+
+        db_mock.return_value.all_cres_with_pagination.assert_called_once_with(1, 100)
+
+    def test_all_cres_per_page_cap_integration(self) -> None:
+        """all_cres caps per_page at MAX_ITEMS_PER_PAGE against a real database."""
+        collection = db.Node_collection()
+        for i in range(110):
+            collection.add_cre(
+                defs.CRE(name=f"paginated-cre-{i}", id=f"{i:03d}-{i:03d}")
+            )
+        collection.session.commit()
+
+        with self.app.test_client() as client:
+            response = client.get(
+                "/rest/v1/all_cres?per_page=1000&page=1",
+                headers={"Content-Type": "application/json"},
+            )
+            self.assertEqual(200, response.status_code)
+            body = json.loads(response.data)
+            self.assertEqual(100, len(body["data"]))
+            self.assertEqual(1, body["page"])
+            self.assertEqual(2, body["total_pages"])
+
+            response = client.get(
+                "/rest/v1/all_cres?per_page=101&page=1",
+                headers={"Content-Type": "application/json"},
+            )
+            self.assertEqual(200, response.status_code)
+            body = json.loads(response.data)
+            self.assertEqual(100, len(body["data"]))
+
+            response = client.get(
+                "/rest/v1/all_cres?page=1",
+                headers={"Content-Type": "application/json"},
+            )
+            self.assertEqual(200, response.status_code)
+            body = json.loads(response.data)
+            self.assertEqual(web_main.ITEMS_PER_PAGE, len(body["data"]))
+            self.assertEqual(6, body["total_pages"])
+
     def test_import_from_cre_csv(self) -> None:
         input_data, _ = data_gen.export_format_data()
         workspace = tempfile.mkdtemp()
