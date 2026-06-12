@@ -133,11 +133,16 @@ class TestDB(unittest.TestCase):
             },
         ]
 
-        # Fake worksheet that returns our expected data
+        # Fake worksheet that returns our expected data (raw rows, not numericised)
         fake_ws = mock.MagicMock()
         fake_ws.title = "ISO Numericise Test"
         fake_ws.col_count = 3
-        fake_ws.get_all_records.return_value = expected
+        fake_ws.get_all_values.return_value = [
+            list(expected[0].keys()),
+            [expected[0][k] for k in expected[0]],
+            [expected[1][k] for k in expected[1]],
+            [expected[2][k] for k in expected[2]],
+        ]
 
         # Fake spreadsheet client
         fake_sh = mock.MagicMock()
