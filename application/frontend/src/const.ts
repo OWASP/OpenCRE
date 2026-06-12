@@ -1,4 +1,5 @@
 export const TWO_DAYS_MILLISECONDS = 1.728e8;
+export const EXPLORER_CRE_PAGE_SIZE = 20;
 
 export const TYPE_IS_PART_OF = 'Is Part Of';
 export const TYPE_LINKED_TO = 'Linked To';
