@@ -22,6 +22,11 @@ PENALTIES = {
 }
 
 GAP_ANALYSIS_TIMEOUT = "129600s"  # 36 hours
+OPENCRE_STANDARD_NAME = "OpenCRE"
+OPENCRE_OVERLAP_LINK_TYPES = (
+    defs.LinkTypes.LinkedTo,
+    defs.LinkTypes.AutomaticallyLinkedTo,
+)
 
 
 def make_resources_key(array: List[str]):
@@ -34,7 +39,13 @@ def make_subresources_key(standards: List[str], key: str) -> str:
 
 def gap_analysis_cache_key_is_primary(cache_key: str) -> bool:
     """Primary directed-standard rows use ``A >> B``; drill-down rows append ``->...``."""
-    return "->" not in cache_key
+    marker = " >> "
+    idx = cache_key.find(marker)
+    if idx < 0:
+        return False
+    # Subresource keys are ``A >> B->nodeKey``; only inspect text after the pair.
+    suffix = cache_key[idx + len(marker) :]
+    return "->" not in suffix
 
 
 def primary_gap_analysis_payload_is_material(ga_object: Optional[str]) -> bool:
@@ -57,6 +68,25 @@ def primary_gap_analysis_payload_is_material(ga_object: Optional[str]) -> bool:
     if isinstance(res, list):
         return len(res) > 0
     return bool(res)
+
+
+def should_persist_primary_gap_analysis_cache(
+    ga_object: str,
+    existing_ga_object: Optional[str] = None,
+) -> bool:
+    """
+    True when a primary GA SQL cache write should be applied.
+
+    Non-material empty ``{"result": {}}`` payloads must not be inserted and must
+    not overwrite an existing material row.
+    """
+    if primary_gap_analysis_payload_is_material(ga_object):
+        return True
+    if existing_ga_object is None:
+        return False
+    if primary_gap_analysis_payload_is_material(existing_ga_object):
+        return False
+    return False
 
 
 def get_path_score(path):
@@ -84,6 +114,173 @@ def get_next_id(step, previous_id):
     if step["start"].id == previous_id:
         return step["end"].id
     return step["start"].id
+
+
+def _link_type_to_path_relationship(ltype: defs.LinkTypes) -> str:
+    """Map a link type to the path relationship label stored in GA cache rows."""
+    if ltype == defs.LinkTypes.AutomaticallyLinkedTo:
+        return "AUTOMATICALLY_LINKED_TO"
+    return "LINKED_TO"
+
+
+def _opencre_overlap_link_sort_key(link: defs.Link) -> int:
+    """Prefer manual CRE links over automatic links when ordering overlap paths."""
+    if link.ltype == defs.LinkTypes.LinkedTo:
+        return 0
+    if link.ltype == defs.LinkTypes.AutomaticallyLinkedTo:
+        return 1
+    return 2
+
+
+def _build_direct_link_path(
+    start_document: defs.Document,
+    end_document: defs.Document,
+    *,
+    ltype: defs.LinkTypes = defs.LinkTypes.LinkedTo,
+) -> Dict[str, Any]:
+    """Build a single-hop GA path between two documents with the given link type."""
+    segment_start = start_document.shallow_copy()
+    if segment_start.doctype != defs.Credoctypes.CRE.value:
+        segment_start.id = ""
+    return {
+        "end": end_document.shallow_copy(),
+        "path": [
+            {
+                "start": segment_start,
+                "end": end_document.shallow_copy(),
+                "relationship": _link_type_to_path_relationship(ltype),
+                "score": 0,
+            }
+        ],
+        "score": 0,
+    }
+
+
+def _add_direct_link_result(
+    grouped_paths: Dict[str, Dict[str, Any]],
+    start_document: defs.Document,
+    end_document: defs.Document,
+    *,
+    ltype: defs.LinkTypes = defs.LinkTypes.LinkedTo,
+) -> None:
+    """Insert one direct link path into grouped GA results, skipping duplicates."""
+    shared_paths = grouped_paths.setdefault(
+        start_document.id,
+        {
+            "start": start_document.shallow_copy(),
+            "paths": {},
+            "extra": 0,
+        },
+    )["paths"]
+    path_key = end_document.id
+    if path_key in shared_paths:
+        return
+    shared_paths[path_key] = _build_direct_link_path(
+        start_document, end_document, ltype=ltype
+    )
+
+
+def build_direct_cre_overlap_map_analysis(
+    standards: List[str],
+    standards_hash: str,
+    collection: Any,
+) -> Optional[Dict[str, Any]]:
+    """Compute one-step OpenCRE links (manual and automatic) for a standard pair."""
+    if len(standards) < 2:
+        return None
+
+    base_standard = standards[0]
+    compare_standard = standards[1]
+    base_is_opencre = base_standard == OPENCRE_STANDARD_NAME
+    compare_is_opencre = compare_standard == OPENCRE_STANDARD_NAME
+    if not base_is_opencre and not compare_is_opencre:
+        return None
+
+    standard_name = compare_standard if base_is_opencre else base_standard
+    standard_nodes = collection.get_nodes(name=standard_name)
+    if not standard_nodes:
+        return None
+
+    grouped_paths: Dict[str, Dict[str, Any]] = {}
+    for standard_node in standard_nodes:
+        cre_links = [
+            link
+            for link in (standard_node.links or [])
+            if link.ltype in OPENCRE_OVERLAP_LINK_TYPES
+            and link.document.doctype == defs.Credoctypes.CRE.value
+        ]
+        for link in sorted(cre_links, key=_opencre_overlap_link_sort_key):
+            linked_document = link.document
+            if base_is_opencre:
+                _add_direct_link_result(
+                    grouped_paths,
+                    linked_document,
+                    standard_node,
+                    ltype=link.ltype,
+                )
+            else:
+                _add_direct_link_result(
+                    grouped_paths,
+                    standard_node,
+                    linked_document,
+                    ltype=link.ltype,
+                )
+
+    if not grouped_paths:
+        return None
+
+    result = {"result": grouped_paths}
+    collection.add_gap_analysis_result(
+        cache_key=standards_hash, ga_object=flask_json.dumps(result)
+    )
+    return result
+
+
+def opencre_direct_pairs(standard_names: List[str]) -> List[List[str]]:
+    """Directed OpenCRE pairs for every real standard name."""
+    pairs: List[List[str]] = []
+    for name in sorted({str(s).strip() for s in standard_names if str(s).strip()}):
+        if name == OPENCRE_STANDARD_NAME:
+            continue
+        pairs.append([OPENCRE_STANDARD_NAME, name])
+        pairs.append([name, OPENCRE_STANDARD_NAME])
+    return pairs
+
+
+def missing_opencre_direct_pairs(collection: Any) -> List[List[str]]:
+    """Return OpenCRE-directed standard pairs that are not yet cached."""
+    missing: List[List[str]] = []
+    for pair in opencre_direct_pairs(collection.standards()):
+        cache_key = make_resources_key(pair)
+        if not collection.gap_analysis_exists(cache_key):
+            missing.append(pair)
+    return missing
+
+
+def backfill_opencre_direct_pairs(collection: Any, *, refresh: bool = False) -> int:
+    """Populate SQL cache rows for OpenCRE map analysis pairs (manual + automatic links)."""
+    pairs = opencre_direct_pairs(collection.standards())
+    if refresh:
+        todo = pairs
+        logger.info("OpenCRE direct GA backfill: refreshing all pairs=%s", len(todo))
+    else:
+        todo = missing_opencre_direct_pairs(collection)
+        if not todo:
+            logger.info("OpenCRE direct GA backfill: no missing pairs")
+            return 0
+        logger.info("OpenCRE direct GA backfill: missing_pairs=%s", len(todo))
+
+    written = 0
+    for pair in todo:
+        cache_key = make_resources_key(pair)
+        if build_direct_cre_overlap_map_analysis(pair, cache_key, collection):
+            written += 1
+    logger.info(
+        "OpenCRE direct GA backfill: wrote=%s remaining=%s",
+        written,
+        len(missing_opencre_direct_pairs(collection)),
+    )
+    return written
 
 
 def perform(standards: List[str], database):

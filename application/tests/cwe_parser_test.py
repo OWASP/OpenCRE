@@ -116,6 +116,157 @@ class TestCWEParser(unittest.TestCase):
             self.assertCountEqual(nodes[0].todict(), expected[0].todict())
             self.assertCountEqual(nodes[1].todict(), expected[1].todict())
 
+    @patch.object(requests, "get")
+    def test_register_CWE_inherits_mappings_transitively(self, mock_requests) -> None:
+        tmpdir = mkdtemp()
+        tmpFile = os.path.join(tmpdir, "cwe.xml")
+        tmpzip = os.path.join(tmpdir, "cwe.zip")
+        with open(tmpFile, "w") as cx:
+            cx.write(self.CWE_transitive_xml)
+        with zipfile.ZipFile(tmpzip, "w", zipfile.ZIP_DEFLATED) as zipf:
+            zipf.write(tmpFile, arcname="cwe.xml")
+
+        class fakeRequest:
+            def iter_content(self, chunk_size=None):
+                with open(tmpzip, "rb") as zipf:
+                    return [zipf.read()]
+
+        mock_requests.return_value = fakeRequest()
+
+        cre = defs.CRE(id="089-089", name="CRE-Injection")
+        dbcre = self.collection.add_cre(cre=cre)
+        dbcwe = self.collection.add_node(defs.Standard(name="CWE", sectionID="89"))
+        self.collection.add_link(dbcre, dbcwe, defs.LinkTypes.LinkedTo)
+
+        entries = cwe.CWE().parse(
+            cache=self.collection,
+            ph=prompt_client.PromptHandler(database=self.collection),
+        )
+        imported_cwes = {node.sectionID: node for node in entries.results["CWE"]}
+
+        self.assertEqual(imported_cwes["2001"].links[0].document.todict(), cre.todict())
+        self.assertEqual(imported_cwes["2002"].links[0].document.todict(), cre.todict())
+
+    @patch.object(requests, "get")
+    def test_register_CWE_applies_fallback_family_mappings(self, mock_requests) -> None:
+        tmpdir = mkdtemp()
+        tmpFile = os.path.join(tmpdir, "cwe.xml")
+        tmpzip = os.path.join(tmpdir, "cwe.zip")
+        with open(tmpFile, "w") as cx:
+            cx.write(self.CWE_fallback_xml)
+        with zipfile.ZipFile(tmpzip, "w", zipfile.ZIP_DEFLATED) as zipf:
+            zipf.write(tmpFile, arcname="cwe.xml")
+
+        class fakeRequest:
+            def iter_content(self, chunk_size=None):
+                with open(tmpzip, "rb") as zipf:
+                    return [zipf.read()]
+
+        mock_requests.return_value = fakeRequest()
+
+        injection_cre = defs.CRE(id="760-764", name="Injection protection")
+        xss_cre = defs.CRE(id="760-765", name="XSS protection")
+        xxe_cre = defs.CRE(id="764-507", name="Restrict XML parsing (against XXE)")
+        auth_cre = defs.CRE(
+            id="117-371", name="Use a centralized access control mechanism"
+        )
+        authn_cre = defs.CRE(
+            id="113-133", name="Use centralized authentication mechanism"
+        )
+        csrf_cre = defs.CRE(id="028-727", name="CSRF protection")
+        ssrf_cre = defs.CRE(id="028-728", name="SSRF protection")
+        hardcoded_secret_cre = defs.CRE(
+            id="774-888", name="Do not store secrets in the code"
+        )
+        password_storage_cre = defs.CRE(
+            id="622-203", name="Store passwords salted and hashed"
+        )
+        credential_storage_cre = defs.CRE(
+            id="881-321", name="Store credentials securely"
+        )
+        session_management_cre = defs.CRE(id="177-260", name="Session management")
+        secure_cookie_cre = defs.CRE(
+            id="688-081", name='Set "secure" attribute for cookie-based session tokens'
+        )
+        deserialization_cre = defs.CRE(id="836-068", name="Deserialization Prevention")
+        self.collection.add_cre(cre=injection_cre)
+        self.collection.add_cre(cre=xss_cre)
+        self.collection.add_cre(cre=xxe_cre)
+        self.collection.add_cre(cre=auth_cre)
+        self.collection.add_cre(cre=authn_cre)
+        self.collection.add_cre(cre=csrf_cre)
+        self.collection.add_cre(cre=ssrf_cre)
+        self.collection.add_cre(cre=hardcoded_secret_cre)
+        self.collection.add_cre(cre=password_storage_cre)
+        self.collection.add_cre(cre=credential_storage_cre)
+        self.collection.add_cre(cre=session_management_cre)
+        self.collection.add_cre(cre=secure_cookie_cre)
+        self.collection.add_cre(cre=deserialization_cre)
+
+        entries = cwe.CWE().parse(
+            cache=self.collection,
+            ph=prompt_client.PromptHandler(database=self.collection),
+        )
+        imported_cwes = {node.sectionID: node for node in entries.results["CWE"]}
+
+        self.assertEqual(
+            imported_cwes["89"].links[0].document.todict(), injection_cre.todict()
+        )
+        self.assertEqual(
+            imported_cwes["79"].links[0].document.todict(), xss_cre.todict()
+        )
+        self.assertEqual(
+            imported_cwes["611"].links[0].document.todict(), xxe_cre.todict()
+        )
+        self.assertEqual(
+            imported_cwes["612"].links[0].document.todict(), auth_cre.todict()
+        )
+        self.assertEqual(
+            imported_cwes["287"].links[0].document.todict(), authn_cre.todict()
+        )
+        self.assertEqual(
+            imported_cwes["352"].links[0].document.todict(), csrf_cre.todict()
+        )
+        self.assertEqual(
+            imported_cwes["918"].links[0].document.todict(), ssrf_cre.todict()
+        )
+        self.assertEqual(
+            imported_cwes["798"].links[0].document.todict(),
+            hardcoded_secret_cre.todict(),
+        )
+        self.assertEqual(
+            imported_cwes["321"].links[0].document.todict(),
+            hardcoded_secret_cre.todict(),
+        )
+        self.assertEqual(
+            imported_cwes["256"].links[0].document.todict(),
+            password_storage_cre.todict(),
+        )
+        self.assertEqual(
+            imported_cwes["257"].links[0].document.todict(),
+            password_storage_cre.todict(),
+        )
+        self.assertEqual(
+            imported_cwes["258"].links[0].document.todict(),
+            credential_storage_cre.todict(),
+        )
+        self.assertEqual(
+            imported_cwes["260"].links[0].document.todict(),
+            credential_storage_cre.todict(),
+        )
+        self.assertEqual(
+            imported_cwes["384"].links[0].document.todict(),
+            session_management_cre.todict(),
+        )
+        self.assertEqual(
+            imported_cwes["614"].links[0].document.todict(),
+            secure_cookie_cre.todict(),
+        )
+        self.assertEqual(
+            imported_cwes["502"].links[0].document.todict(),
+            deserialization_cre.todict(),
+        )
+
     CWE_xml = """<?xml version="1.0" encoding="UTF-8"?>
 <Weakness_Catalog Name="CWE" Version="4.10" Date="2023-01-31" xmlns="http://cwe.mitre.org/cwe-6"
    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -514,3 +665,78 @@ class TestCWEParser(unittest.TestCase):
       </Weakness>
    </Weaknesses>
 </Weakness_Catalog>"""
+
+    CWE_transitive_xml = """<?xml version="1.0" encoding="UTF-8"?>
+<Weakness_Catalog Name="CWE" Version="4.10" Date="2023-01-31" xmlns="http://cwe.mitre.org/cwe-6">
+   <Weaknesses>
+      <Weakness ID="2001" Name="Injection Child" Abstraction="Variant" Structure="Simple" Status="Draft">
+         <Related_Weaknesses>
+            <Related_Weakness Nature="ChildOf" CWE_ID="89" View_ID="1000" Ordinal="Primary" />
+         </Related_Weaknesses>
+      </Weakness>
+      <Weakness ID="2002" Name="Injection Grandchild" Abstraction="Variant" Structure="Simple" Status="Draft">
+         <Related_Weaknesses>
+            <Related_Weakness Nature="ChildOf" CWE_ID="2001" View_ID="1000" Ordinal="Primary" />
+         </Related_Weaknesses>
+      </Weakness>
+      <Weakness ID="2003" Name="Standalone" Abstraction="Variant" Structure="Simple" Status="Draft">
+         <Description>Padding entry so xmltodict returns a list of Weakness elements.</Description>
+      </Weakness>
+   </Weaknesses>
+</Weakness_Catalog>
+"""
+
+    CWE_fallback_xml = """<?xml version="1.0" encoding="UTF-8"?>
+<Weakness_Catalog Name="CWE" Version="4.10" Date="2023-01-31" xmlns="http://cwe.mitre.org/cwe-6">
+   <Weaknesses>
+      <Weakness ID="79" Name="Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')" Abstraction="Base" Structure="Simple" Status="Draft">
+         <Description>XSS entry.</Description>
+      </Weakness>
+      <Weakness ID="89" Name="Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')" Abstraction="Base" Structure="Simple" Status="Draft">
+         <Description>SQL injection entry.</Description>
+      </Weakness>
+      <Weakness ID="611" Name="Improper Restriction of XML External Entity Reference" Abstraction="Base" Structure="Simple" Status="Draft">
+         <Description>XXE entry.</Description>
+      </Weakness>
+      <Weakness ID="612" Name="Improper Authorization of Index Containing Sensitive Information" Abstraction="Base" Structure="Simple" Status="Draft">
+         <Description>Authorization entry.</Description>
+      </Weakness>
+      <Weakness ID="287" Name="Improper Authentication" Abstraction="Base" Structure="Simple" Status="Draft">
+         <Description>Authentication entry.</Description>
+      </Weakness>
+      <Weakness ID="352" Name="Cross-Site Request Forgery (CSRF)" Abstraction="Base" Structure="Simple" Status="Draft">
+         <Description>CSRF entry.</Description>
+      </Weakness>
+      <Weakness ID="798" Name="Use of Hard-coded Credentials" Abstraction="Base" Structure="Simple" Status="Draft">
+         <Description>Hard-coded credentials entry.</Description>
+      </Weakness>
+      <Weakness ID="321" Name="Use of Hard-coded Cryptographic Key" Abstraction="Base" Structure="Simple" Status="Draft">
+         <Description>Hard-coded key entry.</Description>
+      </Weakness>
+      <Weakness ID="256" Name="Plaintext Storage of a Password" Abstraction="Base" Structure="Simple" Status="Draft">
+         <Description>Password storage entry.</Description>
+      </Weakness>
+      <Weakness ID="257" Name="Storing Passwords in a Recoverable Format" Abstraction="Base" Structure="Simple" Status="Draft">
+         <Description>Recoverable password entry.</Description>
+      </Weakness>
+      <Weakness ID="258" Name="Empty Password in Configuration File" Abstraction="Base" Structure="Simple" Status="Draft">
+         <Description>Password in config entry.</Description>
+      </Weakness>
+      <Weakness ID="260" Name="Password in Configuration File" Abstraction="Base" Structure="Simple" Status="Draft">
+         <Description>Password in config entry.</Description>
+      </Weakness>
+      <Weakness ID="384" Name="Session Fixation" Abstraction="Base" Structure="Simple" Status="Draft">
+         <Description>Session fixation entry.</Description>
+      </Weakness>
+      <Weakness ID="614" Name="Sensitive Cookie in HTTPS Session Without 'Secure' Attribute" Abstraction="Base" Structure="Simple" Status="Draft">
+         <Description>Cookie secure attribute entry.</Description>
+      </Weakness>
+      <Weakness ID="502" Name="Deserialization of Untrusted Data" Abstraction="Base" Structure="Simple" Status="Draft">
+         <Description>Deserialization entry.</Description>
+      </Weakness>
+      <Weakness ID="918" Name="Server-Side Request Forgery (SSRF)" Abstraction="Base" Structure="Simple" Status="Draft">
+         <Description>SSRF entry.</Description>
+      </Weakness>
+   </Weaknesses>
+</Weakness_Catalog>
+"""

@@ -734,6 +734,27 @@ class TestMain(unittest.TestCase):
             self.assertEqual({"result": {"k": {}}}, json.loads(response.data))
             db_gap_analysis_mock.assert_called_once()
 
+    @patch.object(db, "Node_collection")
+    @patch.object(db, "gap_analysis")
+    @patch.object(redis, "from_url")
+    def test_gap_analysis_fallback_backend_failure_returns_503(
+        self, redis_conn_mock, db_gap_analysis_mock, db_mock
+    ) -> None:
+        redis_conn_mock.side_effect = RuntimeError("redis down")
+        db_gap_analysis_mock.side_effect = RuntimeError("neo unavailable")
+        db_mock.return_value.get_gap_analysis_result.return_value = None
+        db_mock.return_value.gap_analysis_exists.return_value = False
+        with self.app.test_client() as client:
+            with patch.dict(os.environ, {}, clear=False):
+                os.environ.pop("DYNO", None)
+                os.environ.pop("HEROKU", None)
+                response = client.get(
+                    "/rest/v1/map_analysis?standard=aaa&standard=bbb",
+                    headers={"Content-Type": "application/json"},
+                )
+            self.assertEqual(503, response.status_code)
+            db_gap_analysis_mock.assert_called_once()
+
     @patch.dict(os.environ, {"HEROKU": "True"}, clear=False)
     @patch.object(db, "Node_collection")
     @patch.object(redis, "from_url")
@@ -741,6 +762,7 @@ class TestMain(unittest.TestCase):
         self, redis_conn_mock, db_mock
     ) -> None:
         db_mock.return_value.get_gap_analysis_result.return_value = None
+        db_mock.return_value.gap_analysis_exists.return_value = False
         with self.app.test_client() as client:
             response = client.get(
                 "/rest/v1/map_analysis?standard=aaa&standard=bbb",
@@ -748,6 +770,38 @@ class TestMain(unittest.TestCase):
             )
             self.assertEqual(404, response.status_code)
             redis_conn_mock.assert_not_called()
+
+    @patch.dict(os.environ, {"DYNO": "web.1"}, clear=False)
+    @patch.object(db, "Node_collection")
+    @patch.object(redis, "from_url")
+    def test_gap_analysis_dyno_cache_miss_returns_404(
+        self, redis_conn_mock, db_mock
+    ) -> None:
+        db_mock.return_value.get_gap_analysis_result.return_value = None
+        db_mock.return_value.gap_analysis_exists.return_value = False
+        with self.app.test_client() as client:
+            response = client.get(
+                "/rest/v1/map_analysis?standard=aaa&standard=bbb",
+                headers={"Content-Type": "application/json"},
+            )
+            self.assertEqual(404, response.status_code)
+            redis_conn_mock.assert_not_called()
+
+    @patch.dict(os.environ, {"HEROKU": "True"}, clear=False)
+    @patch.object(db, "Node_collection")
+    @patch.object(redis, "from_url")
+    def test_map_analysis_opencre_heroku_cache_miss_returns_404(
+        self, redis_conn_mock, db_mock
+    ) -> None:
+        db_mock.return_value.gap_analysis_exists.return_value = False
+        with self.app.test_client() as client:
+            response = client.get(
+                "/rest/v1/map_analysis?standard=OpenCRE&standard=NIST%20800-53%20v5",
+                headers={"Content-Type": "application/json"},
+            )
+        self.assertEqual(404, response.status_code)
+        db_mock.return_value.get_nodes.assert_not_called()
+        redis_conn_mock.assert_not_called()
 
     @patch.object(redis, "from_url")
     @patch.object(db, "Node_collection")
@@ -776,20 +830,12 @@ class TestMain(unittest.TestCase):
         compare.add_link(
             defs.Link(ltype=defs.LinkTypes.LinkedTo, document=shared_cre.shallow_copy())
         )
-        opencre = defs.CRE(id="170-772", name="Cryptography", description="")
-        opencre.add_link(
-            defs.Link(ltype=defs.LinkTypes.LinkedTo, document=compare.shallow_copy())
-        )
 
         db_mock.return_value.get_gap_analysis_result.return_value = None
         db_mock.return_value.gap_analysis_exists.return_value = False
         db_mock.return_value.get_nodes.side_effect = lambda name=None, **kwargs: (
             [compare] if name == "OWASP Web Security Testing Guide (WSTG)" else []
         )
-        db_mock.return_value.session.query.return_value.all.return_value = [
-            SimpleNamespace(id="cre-internal-1")
-        ]
-        db_mock.return_value.get_CREs.return_value = [opencre]
 
         with self.app.test_client() as client:
             response = client.get(
@@ -800,15 +846,35 @@ class TestMain(unittest.TestCase):
         payload = json.loads(response.data)
         self.assertEqual(200, response.status_code)
         self.assertIn("result", payload)
-        self.assertIn(opencre.id, payload["result"])
-        self.assertEqual(1, len(payload["result"][opencre.id]["paths"]))
-        path = next(iter(payload["result"][opencre.id]["paths"].values()))
+        self.assertIn(shared_cre.id, payload["result"])
+        self.assertEqual(1, len(payload["result"][shared_cre.id]["paths"]))
+        path = next(iter(payload["result"][shared_cre.id]["paths"].values()))
         self.assertEqual(compare.id, path["end"]["id"])
         schedule_mock.assert_not_called()
 
     @patch.object(web_main.gap_analysis, "schedule")
     @patch.object(db, "Node_collection")
-    def test_gap_analysis_returns_only_direct_opencre_mappings(
+    def test_map_analysis_opencre_pair_returns_cached_result(
+        self, db_mock, schedule_mock
+    ) -> None:
+        expected = {"result": {"170-772": {"start": {"id": "170-772"}, "paths": {}}}}
+        db_mock.return_value.gap_analysis_exists.return_value = True
+        db_mock.return_value.get_gap_analysis_result.return_value = json.dumps(expected)
+
+        with self.app.test_client() as client:
+            response = client.get(
+                "/rest/v1/map_analysis?standard=OpenCRE&standard=NIST%20800-53%20v5",
+                headers={"Content-Type": "application/json"},
+            )
+
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(expected, json.loads(response.data))
+        db_mock.return_value.get_nodes.assert_not_called()
+        schedule_mock.assert_not_called()
+
+    @patch.object(web_main.gap_analysis, "schedule")
+    @patch.object(db, "Node_collection")
+    def test_gap_analysis_opencre_mappings_include_linked_and_auto(
         self, db_mock, schedule_mock
     ) -> None:
         compare = defs.Standard(
@@ -820,9 +886,6 @@ class TestMain(unittest.TestCase):
             id="804-220",
             name="Set httponly attribute for cookie-based session tokens",
             description="",
-        )
-        direct_cre.add_link(
-            defs.Link(ltype=defs.LinkTypes.LinkedTo, document=compare.shallow_copy())
         )
         auto_linked_cres = []
         for i, cre_id in enumerate(
@@ -842,33 +905,24 @@ class TestMain(unittest.TestCase):
                 name=f"Automatically mapped CRE {i}",
                 description="",
             )
-            cre.add_link(
-                defs.Link(
-                    ltype=defs.LinkTypes.AutomaticallyLinkedTo,
-                    document=compare.shallow_copy(),
-                )
-            )
             auto_linked_cres.append(cre)
 
-        opencre_documents = [direct_cre] + auto_linked_cres
-        internal_ids = [
-            SimpleNamespace(id=f"cre-internal-{i}")
-            for i in range(len(opencre_documents))
-        ]
+        compare.add_link(
+            defs.Link(ltype=defs.LinkTypes.LinkedTo, document=direct_cre.shallow_copy())
+        )
+        for cre in auto_linked_cres:
+            compare.add_link(
+                defs.Link(
+                    ltype=defs.LinkTypes.AutomaticallyLinkedTo,
+                    document=cre.shallow_copy(),
+                )
+            )
 
         db_mock.return_value.get_gap_analysis_result.return_value = None
         db_mock.return_value.gap_analysis_exists.return_value = False
         db_mock.return_value.get_nodes.side_effect = lambda name=None, **kwargs: (
             [compare] if name == "CWE" else []
         )
-        db_mock.return_value.session.query.return_value.all.return_value = internal_ids
-        db_mock.return_value.get_CREs.side_effect = lambda internal_id=None, **kwargs: [
-            next(
-                cre
-                for index, cre in enumerate(opencre_documents)
-                if internal_id == f"cre-internal-{index}"
-            )
-        ]
 
         with self.app.test_client() as client:
             response = client.get(
@@ -880,12 +934,17 @@ class TestMain(unittest.TestCase):
         self.assertEqual(200, response.status_code)
         self.assertIn("result", payload)
         self.assertEqual([compare.id], list(payload["result"].keys()))
-        self.assertEqual(1, len(payload["result"][compare.id]["paths"]))
-        path = next(iter(payload["result"][compare.id]["paths"].values()))
+        self.assertEqual(8, len(payload["result"][compare.id]["paths"]))
+        path = payload["result"][compare.id]["paths"][direct_cre.id]
         self.assertEqual(compare.id, payload["result"][compare.id]["start"]["id"])
         self.assertEqual(direct_cre.name, path["end"]["name"])
         self.assertEqual("", path["path"][0]["start"]["id"])
         self.assertEqual(direct_cre.id, path["path"][0]["end"]["id"])
+        self.assertEqual("LINKED_TO", path["path"][0]["relationship"])
+        auto_path = payload["result"][compare.id]["paths"][auto_linked_cres[0].id]
+        self.assertEqual(
+            "AUTOMATICALLY_LINKED_TO", auto_path["path"][0]["relationship"]
+        )
         schedule_mock.assert_not_called()
 
     @patch.object(web_main.gap_analysis, "schedule")
@@ -903,40 +962,26 @@ class TestMain(unittest.TestCase):
             name="Set httponly attribute for cookie-based session tokens",
             description="",
         )
-        direct_cre.add_link(
-            defs.Link(ltype=defs.LinkTypes.LinkedTo, document=compare.shallow_copy())
-        )
         indirect_cre = defs.CRE(
             id="117-371",
             name="Use a centralized access control mechanism",
             description="",
         )
-        indirect_cre.add_link(
+        compare.add_link(
+            defs.Link(ltype=defs.LinkTypes.LinkedTo, document=direct_cre.shallow_copy())
+        )
+        compare.add_link(
             defs.Link(
                 ltype=defs.LinkTypes.AutomaticallyLinkedTo,
-                document=compare.shallow_copy(),
+                document=indirect_cre.shallow_copy(),
             )
         )
-
-        opencre_documents = [direct_cre, indirect_cre]
-        internal_ids = [
-            SimpleNamespace(id=f"cre-internal-{i}")
-            for i in range(len(opencre_documents))
-        ]
 
         db_mock.return_value.get_gap_analysis_result.return_value = None
         db_mock.return_value.gap_analysis_exists.return_value = False
         db_mock.return_value.get_nodes.side_effect = lambda name=None, **kwargs: (
             [compare] if name == "CWE" else []
         )
-        db_mock.return_value.session.query.return_value.all.return_value = internal_ids
-        db_mock.return_value.get_CREs.side_effect = lambda internal_id=None, **kwargs: [
-            next(
-                cre
-                for index, cre in enumerate(opencre_documents)
-                if internal_id == f"cre-internal-{index}"
-            )
-        ]
 
         with self.app.test_client() as client:
             response = client.get(
@@ -946,13 +991,19 @@ class TestMain(unittest.TestCase):
 
         payload = json.loads(response.data)
         self.assertEqual(200, response.status_code)
-        self.assertEqual([direct_cre.id], list(payload["result"].keys()))
+        self.assertEqual(
+            sorted([direct_cre.id, indirect_cre.id]),
+            sorted(payload["result"].keys()),
+        )
         self.assertEqual(1, len(payload["result"][direct_cre.id]["paths"]))
         path = next(iter(payload["result"][direct_cre.id]["paths"].values()))
         self.assertEqual(direct_cre.id, payload["result"][direct_cre.id]["start"]["id"])
         self.assertEqual(compare.id, path["end"]["id"])
-        self.assertEqual(direct_cre.id, path["path"][0]["start"]["id"])
-        self.assertEqual(compare.id, path["path"][0]["end"]["id"])
+        self.assertEqual("LINKED_TO", path["path"][0]["relationship"])
+        auto_path = next(iter(payload["result"][indirect_cre.id]["paths"].values()))
+        self.assertEqual(
+            "AUTOMATICALLY_LINKED_TO", auto_path["path"][0]["relationship"]
+        )
         schedule_mock.assert_not_called()
 
     @patch.object(cre_main, "resource_name_ga_eligible_in_db")

@@ -1,0 +1,53 @@
+---
+description: Stop and ask clarifying questions before coding when requirements are incomplete
+alwaysApply: true
+---
+
+# Requirements Gate
+
+If ANY of the following is missing or ambiguous, **STOP and ask clarifying questions**.
+Do NOT write, edit, or delete code until the gaps are filled.
+
+| Required | What to ask |
+|----------|-------------|
+| **Clear goal** | What outcome does the user want? What problem are we solving? |
+| **Verifiable success criteria** | Which checks must pass? (tests, typecheck, linter, CI, manual steps) |
+| **Context references** | Which files, modules, or prior chats apply? Prefer `@path/to/file` refs when ambiguous. |
+| **Constraints** | Out of scope, performance, compatibility, no new deps, prod DB safety, etc. |
+
+## Context references — when `@` refs are required
+
+- **Satisfied without `@`** when the message names specific paths, modules, or patterns clearly (e.g. "add tests for `application/utils/gap_analysis.py`").
+- **Ask for `@` refs** when multiple files could apply, the pattern to mirror is unclear, or prior chat/issue context is needed.
+
+## Skip the gate only when
+
+The request is fully specified in one sentence with obvious success criteria and unambiguous context, e.g.
+"Fix typo in README line 42" or "Rename `foo` to `bar` in `application/utils/gap_analysis.py`."
+
+## Requirements template (offer when info is missing)
+
+```
+## Task
+<One-sentence goal>
+
+## Success criteria (all must pass)
+- [ ] `make lint`
+- [ ] `make mypy`
+- [ ] `make test` (or targeted: `python -m unittest application/tests/<module>_test.py`)
+- [ ] `make frontend` / `yarn build` (if frontend touched)
+- [ ] CI green (`gh pr checks` or Actions UI)
+- [ ] Other: ___
+
+## Context
+- Files: @path/to/relevant/file.py
+- Pattern to mirror: @path/to/similar/implementation.py
+- Prior work: @Past Chats / issue # / PR #
+
+## Constraints
+- In scope: ___
+- Out of scope: ___
+- Dependencies: none / explain before adding
+- Mocks: allowed / not allowed
+- Production DB: N/A / read-only / destructive (requires explicit confirmation)
+```
