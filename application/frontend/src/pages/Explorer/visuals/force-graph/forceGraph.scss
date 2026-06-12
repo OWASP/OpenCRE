@@ -1,3 +1,251 @@
-body {
-    margin: 0;
-} 
+.explorer-force-graph-page {
+  --fg-control-bg: rgba(6, 10, 18, 0.9);
+  --fg-border: rgba(148, 163, 184, 0.22);
+  --fg-text: #e2e8f0;
+  --fg-muted: #a4b1c2;
+  --fg-nav-height: 4rem;
+  --fg-nav-border: 1px;
+
+  height: calc(100dvh - var(--fg-nav-height) - var(--fg-nav-border));
+  min-height: calc(100dvh - var(--fg-nav-height) - var(--fg-nav-border));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  color: var(--fg-text);
+  background: #02050d;
+}
+
+@supports not (height: 100dvh) {
+  .explorer-force-graph-page {
+    height: calc(100vh - var(--fg-nav-height) - var(--fg-nav-border));
+    min-height: calc(100vh - var(--fg-nav-height) - var(--fg-nav-border));
+  }
+}
+
+.explorer-force-graph-controls {
+  position: relative;
+  z-index: 90;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--fg-border);
+  background: var(--fg-control-bg);
+  backdrop-filter: blur(8px);
+}
+
+.explorer-force-graph-controls__toggles,
+.explorer-force-graph-controls__filters,
+.explorer-force-graph-controls__meta {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.explorer-force-graph-controls__meta {
+  color: var(--fg-muted);
+  font-size: 0.88rem;
+  letter-spacing: 0.01em;
+}
+
+.explorer-force-graph-controls__meta strong {
+  color: #f8fafc;
+  font-weight: 700;
+}
+
+.graph-chip.ui.checkbox {
+  display: inline-flex;
+  align-items: center;
+  margin: 0;
+}
+
+.graph-chip.ui.checkbox label {
+  border: 1px solid rgba(148, 163, 184, 0.32);
+  border-radius: 999px;
+  color: #dbeafe;
+  background: rgba(15, 23, 42, 0.72);
+  font-size: 0.85rem;
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  padding: 0 14px 0 34px;
+  transition: all 0.16s ease;
+}
+
+.graph-chip.ui.checkbox input:checked ~ label {
+  color: #f8fafc;
+  border-color: rgba(147, 197, 253, 0.7);
+  box-shadow: 0 0 0 1px rgba(147, 197, 253, 0.24);
+}
+
+.graph-chip.ui.checkbox .box:before,
+.graph-chip.ui.checkbox label:before,
+.graph-chip.ui.checkbox .box:after,
+.graph-chip.ui.checkbox label:after {
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.graph-chip--contains.ui.checkbox input:checked ~ label {
+  border-color: rgba(45, 212, 191, 0.7);
+  box-shadow: 0 0 0 1px rgba(45, 212, 191, 0.3);
+}
+
+.graph-chip--related.ui.checkbox input:checked ~ label {
+  border-color: rgba(96, 165, 250, 0.7);
+  box-shadow: 0 0 0 1px rgba(96, 165, 250, 0.28);
+}
+
+.graph-chip--linked.ui.checkbox input:checked ~ label {
+  border-color: rgba(196, 181, 253, 0.72);
+  box-shadow: 0 0 0 1px rgba(196, 181, 253, 0.28);
+}
+
+.graph-chip--same.ui.checkbox input:checked ~ label {
+  border-color: rgba(251, 113, 133, 0.72);
+  box-shadow: 0 0 0 1px rgba(251, 113, 133, 0.3);
+}
+
+.graph-select.ui.selection.dropdown {
+  min-width: 220px;
+  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: rgba(15, 23, 42, 0.8);
+  color: #dbeafe;
+}
+
+.graph-select--wide.ui.selection.dropdown {
+  min-width: 270px;
+}
+
+.graph-select.ui.selection.dropdown .text,
+.graph-select.ui.selection.dropdown .default.text,
+.graph-select.ui.selection.dropdown > .dropdown.icon {
+  color: #cbd5e1;
+}
+
+.graph-select.ui.selection.dropdown .menu {
+  z-index: 3000 !important;
+  background: #0b1226;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+.graph-select.ui.selection.dropdown .menu > .item {
+  color: #dbeafe;
+}
+
+.graph-select.ui.selection.dropdown .menu > .item:hover {
+  background: rgba(59, 130, 246, 0.18);
+}
+
+.graph-chip--all.ui.checkbox label {
+  border-color: rgba(147, 197, 253, 0.4);
+}
+
+.explorer-force-graph-canvas {
+  position: relative;
+  z-index: 10;
+  overflow: hidden;
+  flex: 1;
+  min-height: 0;
+  background: #02050d;
+}
+
+.explorer-force-graph-canvas > div {
+  width: 100% !important;
+  height: 100% !important;
+  background: #02050d;
+}
+
+.explorer-force-graph-canvas canvas {
+  display: block;
+  background: #02050d;
+}
+
+.explorer-force-graph-empty {
+  min-height: 500px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #a3b7d8;
+  font-size: 1rem;
+}
+
+.explorer-force-graph-legend {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 4000;
+  display: grid;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  background: rgba(8, 15, 32, 0.82);
+  color: #dbeafe;
+  font-size: 0.8rem;
+  letter-spacing: 0.01em;
+  pointer-events: none;
+}
+
+.legend-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.legend-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.08);
+}
+
+.legend-swatch--contains {
+  background: rgba(45, 212, 191, 0.85);
+}
+
+.legend-swatch--related {
+  background: rgba(96, 165, 250, 0.85);
+}
+
+.legend-swatch--linked {
+  background: rgba(196, 181, 253, 0.88);
+}
+
+.legend-swatch--same {
+  background: rgba(251, 113, 133, 0.88);
+}
+
+@media (max-width: 1024px) {
+  .graph-select.ui.selection.dropdown,
+  .graph-select--wide.ui.selection.dropdown {
+    min-width: 200px;
+  }
+}
+
+@media (max-width: 760px) {
+  .explorer-force-graph-controls {
+    padding: 10px;
+    gap: 8px;
+  }
+
+  .graph-select.ui.selection.dropdown,
+  .graph-select--wide.ui.selection.dropdown {
+    width: 100%;
+    min-width: 100%;
+  }
+
+  .explorer-force-graph-controls__meta {
+    font-size: 0.8rem;
+  }
+
+  .explorer-force-graph-legend {
+    right: 10px;
+    bottom: 10px;
+    font-size: 0.75rem;
+  }
+}
