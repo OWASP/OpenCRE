@@ -3,6 +3,7 @@ import os
 import shutil
 import tempfile
 import unittest
+from argparse import Namespace
 from typing import Any, Dict, List
 from unittest import mock
 from unittest.mock import Mock, patch
@@ -34,6 +35,62 @@ class TestMain(unittest.TestCase):
         self.app_context.push()
         sqla.create_all()
         self.collection = db.Node_collection()
+
+    @patch.object(main, "BaseParser")
+    def test_run_registers_owasp_top10_2025_resource(self, base_parser_mock) -> None:
+        parser_instance = Mock()
+        base_parser_mock.return_value = parser_instance
+
+        args = Namespace(
+            export=False,
+            csv="",
+            add=False,
+            from_ai_exchange_csv=None,
+            from_spreadsheet=None,
+            delete_map_analysis_for="",
+            delete_resource="",
+            zap_in=False,
+            cheatsheets_in=False,
+            github_tools_in=False,
+            capec_in=False,
+            cwe_in=False,
+            csa_ccm_v4_in=False,
+            iso_27001_in=False,
+            owasp_secure_headers_in=False,
+            owasp_top10_2025_in=True,
+            owasp_api_top10_2023_in=False,
+            owasp_kubernetes_top10_2022_in=False,
+            owasp_kubernetes_top10_2025_in=False,
+            owasp_llm_top10_2025_in=False,
+            owasp_aisvs_in=False,
+            pci_dss_4_in=False,
+            juiceshop_in=False,
+            dsomm_in=False,
+            cloud_native_security_controls_in=False,
+            import_external_projects=False,
+            regenerate_embeddings=False,
+            generate_embeddings=False,
+            populate_neo4j_db=False,
+            start_worker=False,
+            preload_map_analysis_target_url="",
+            ga_backfill_missing=False,
+            ga_backfill_batch_size=200,
+            ga_backfill_poll_seconds=5,
+            ga_backfill_max_pairs=0,
+            ga_backfill_no_queue=False,
+            upstream_sync=False,
+            cache_file="standards_cache.sqlite",
+        )
+
+        main.run(args)
+
+        parser_instance.register_resource.assert_called_once()
+        resource_class = parser_instance.register_resource.call_args[0][0]
+        self.assertEqual(resource_class.__name__, "OwaspTop10_2025")
+        self.assertEqual(
+            parser_instance.register_resource.call_args.kwargs["db_connection_str"],
+            "standards_cache.sqlite",
+        )
 
     @patch.object(main, "populate_neo4j_db")
     @patch.object(main.gap_analysis, "perform")
