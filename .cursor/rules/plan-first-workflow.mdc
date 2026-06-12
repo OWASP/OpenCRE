@@ -1,0 +1,54 @@
+---
+description: Require Plan Mode and user approval before non-trivial implementation
+alwaysApply: true
+---
+
+# Plan-First Workflow
+
+Apply before non-trivial edits. When criteria overlap with `multi-agent-workflow.mdc` (e.g. new feature, 3+ files), follow **multi-agent** Phase 1 — it is the stricter superset.
+
+## Skip planning only for
+
+- Typos, renames, obvious single-line fixes
+- Tasks fully specified with no design choices
+
+## MUST plan before implementing when ANY apply
+
+- New feature or new importer
+- Multi-file change (3+ files) or >500 lines expected
+- Refactor or migration with behavioral risk
+- Touches critical paths (auth, secrets, production data, payments, deploy)
+- Requirements have meaningful design choices
+
+## Plan output MUST include
+
+1. **Goal** — restated in one sentence
+2. **Files** — exact paths to create/modify/delete
+3. **Dependencies** — imports, DB migrations, external APIs, new packages
+4. **Steps** — ordered implementation sequence
+5. **Tests** — new/updated test files and what they assert
+6. **Edge cases** — failure modes, empty input, backwards compatibility
+7. **Verification** — exact commands (`make lint`, `make mypy`, `make test`, etc.)
+8. **Risks** — what could break and how to detect it
+
+## Approval gate
+
+After presenting the plan, **wait for explicit user approval** ("proceed", "approved",
+or an edited plan confirmed by the user) before writing implementation code.
+
+After approval, **tests may be written first** per `tdd-workflow.mdc` — failing tests are not "implementation code" for Phase 1 purposes.
+
+Read-only research (grep, read files, explore codebase) is allowed during planning.
+
+Save approved plans to `.cursor/plans/<feature>.md` when scope is substantial.
+
+## Before editing (Agent Mode)
+
+- Brief plan with reasoning: goal, steps, files touched, validation approach.
+- Break into smaller steps; check `scripts/db/` and `scripts/` for deploy/DB/import ops.
+
+## While editing
+
+- Only modify code relevant to the request.
+- Never use placeholders — include complete, working code.
+- **Reference patterns specifically:** e.g. mirror `@application/utils/external_project_parsers/parsers/pci_dss.py`, tests like `@application/tests/pci_dss_parser_test.py`.

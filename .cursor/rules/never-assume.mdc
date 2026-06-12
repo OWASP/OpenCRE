@@ -1,0 +1,30 @@
+---
+description: Verify or ask — no guessing packages, APIs, patterns, or incomplete code
+alwaysApply: true
+---
+
+# Never Assume
+
+| Do NOT | Instead |
+|--------|---------|
+| Assume package names, API endpoints, DB schema, or file locations | Read the codebase; grep; ask |
+| Add new dependencies without explanation | State why, alternatives considered, and get approval |
+| Use mocks unless explicitly requested | Prefer integration-style tests matching `@application/tests/` patterns |
+| Replace code with placeholders, TODOs, or stubs | Ship complete, working code |
+| Write incomplete implementations | Finish the feature or stop and explain what's blocked |
+| Guess production/staging targets for DB ops | Confirm target app; follow `production-db-ops-safety.mdc` |
+| Commit or push unless asked | Wait for explicit user request |
+
+## Scope and diff discipline
+
+- Minimize scope — smallest correct diff; no drive-by refactors.
+- Match surrounding naming, types, imports, and documentation level.
+- Comments only for non-obvious business logic.
+- Do not add markdown/docs files the user did not ask for.
+- Do not use "made with cursor" or similar in commits.
+
+## OpenCRE conventions
+
+- Mirror patterns in existing code (importers, tests, web routes).
+- Use Makefile targets over ad-hoc commands when available.
+- Prefer `scripts/db/` for production DB operations over raw SQL.
