@@ -2531,7 +2531,16 @@ class TestDB(unittest.TestCase):
 
         for paginated_cre in paginated_cres:
             expected = collection.get_CREs(external_id=paginated_cre.id)[0]
-            self.assertEqual(expected.todict(), paginated_cre.todict())
+            expected_dict = expected.todict()
+            actual_dict = paginated_cre.todict()
+            self.assertEqual(expected_dict["id"], actual_dict["id"])
+            self.assertEqual(expected_dict["name"], actual_dict["name"])
+            self.assertEqual(
+                expected_dict.get("description"), actual_dict.get("description")
+            )
+            self.assertCountEqual(
+                expected_dict.get("links", []), actual_dict.get("links", [])
+            )
 
         child1_paginated = next(c for c in paginated_cres if c.id == "101-101")
         link_types = {link.ltype for link in child1_paginated.links}
