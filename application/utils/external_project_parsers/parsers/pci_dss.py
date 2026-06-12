@@ -1,7 +1,7 @@
 from pprint import pprint
 import logging
 import os
-from typing import Dict, Any
+from typing import Dict, Any, List, Optional
 from application.database import db
 from application.defs import cre_defs as defs
 import re
@@ -16,6 +16,157 @@ from application.utils.external_project_parsers.base_parser_defs import (
 logging.basicConfig()
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
+
+_DEFAULT_PCI_DSS_CRE_SIMILARITY_THRESHOLDS = (0.55, 0.45, 0.35)
+_DEFAULT_PCI_BRIDGE_STANDARDS = ("NIST 800-53 v5", "ISO 27001", "ASVS", "CWE")
+_DEFAULT_PCI_BRIDGE_MIN_SIMILARITY = 0.4
+
+
+def _parse_float_env(name: str, default: float) -> float:
+    """Read a float from an environment variable, falling back on invalid values."""
+    raw = os.environ.get(name, "").strip()
+    if not raw:
+        return default
+    try:
+        return float(raw)
+    except ValueError:
+        logger.warning("Invalid %s=%r; using default %s", name, raw, default)
+        return default
+
+
+def _parse_float_tuple_env(name: str, default: tuple[float, ...]) -> tuple[float, ...]:
+    """Read a comma-separated float tuple from env, falling back on invalid values."""
+    raw = os.environ.get(name, "").strip()
+    if not raw:
+        return default
+    try:
+        values = tuple(float(part.strip()) for part in raw.split(",") if part.strip())
+    except ValueError:
+        logger.warning("Invalid %s=%r; using defaults %s", name, raw, default)
+        return default
+    return values or default
+
+
+def _parse_str_tuple_env(name: str, default: tuple[str, ...]) -> tuple[str, ...]:
+    """Read a comma-separated string tuple from env, falling back when empty."""
+    raw = os.environ.get(name, "").strip()
+    if not raw:
+        return default
+    values = tuple(part.strip() for part in raw.split(",") if part.strip())
+    return values or default
+
+
+PCI_DSS_CRE_SIMILARITY_THRESHOLDS = _parse_float_tuple_env(
+    "PCI_DSS_CRE_SIMILARITY_THRESHOLDS", _DEFAULT_PCI_DSS_CRE_SIMILARITY_THRESHOLDS
+)
+PCI_BRIDGE_STANDARDS = _parse_str_tuple_env(
+    "PCI_DSS_BRIDGE_STANDARDS", _DEFAULT_PCI_BRIDGE_STANDARDS
+)
+PCI_BRIDGE_MIN_SIMILARITY = _parse_float_env(
+    "PCI_DSS_BRIDGE_MIN_SIMILARITY", _DEFAULT_PCI_BRIDGE_MIN_SIMILARITY
+)
+
+
+class PciDssLinkError(Exception):
+    """Raised when one or more PCI DSS controls cannot be linked to a CRE."""
+
+
+def pci_control_embedding_text(control: defs.Standard) -> str:
+    """Text used for PCI→CRE similarity (avoid full Standard repr JSON noise)."""
+    return "\n".join(
+        part.strip()
+        for part in (control.sectionID, control.section, control.description)
+        if part and str(part).strip()
+    )
+
+
+def best_cre_via_bridge_standard(
+    cache: db.Node_collection,
+    control_embedding: List[float],
+    standard_name: str,
+    *,
+    min_similarity: float = PCI_BRIDGE_MIN_SIMILARITY,
+) -> Optional[defs.CRE]:
+    """Pick the best CRE linked to ``standard_name`` by node embedding similarity."""
+    import numpy as np
+    from scipy import sparse
+    from sklearn.metrics.pairwise import cosine_similarity
+
+    if not control_embedding:
+        return None
+
+    embedding_array = sparse.csr_matrix(
+        np.array(control_embedding, dtype=np.float64).reshape(1, -1)
+    )
+    best_similarity = -1.0
+    best_cre: Optional[defs.CRE] = None
+
+    for node in cache.get_nodes(name=standard_name) or []:
+        node_embedding = cache.get_embeddings_for_doc(node)
+        if not node_embedding:
+            continue
+        node_array = sparse.csr_matrix(
+            np.array(node_embedding, dtype=np.float64).reshape(1, -1)
+        )
+        similarity = float(cosine_similarity(embedding_array, node_array)[0][0])
+        if similarity < min_similarity or similarity <= best_similarity:
+            continue
+        linked_cres = cache.find_cres_of_node(node)
+        if not linked_cres:
+            continue
+        cre = cache.get_cre_by_db_id(linked_cres[0].id)
+        if cre:
+            best_similarity = similarity
+            best_cre = cre
+
+    if best_cre:
+        logger.info(
+            "PCI DSS bridge match via %s (similarity %.3f)",
+            standard_name,
+            best_similarity,
+        )
+    return best_cre
+
+
+def resolve_cre_for_pci_control(
+    prompt: prompt_client.PromptHandler,
+    cache: db.Node_collection,
+    control_embedding: List[float],
+) -> Optional[defs.CRE]:
+    """Resolve a CRE for one PCI control using staged similarity + bridge fallbacks."""
+    for threshold in PCI_DSS_CRE_SIMILARITY_THRESHOLDS:
+        match = prompt.get_id_of_most_similar_cre_paginated(
+            control_embedding, similarity_threshold=threshold
+        )
+        if match and match[0]:
+            cre = cache.get_cre_by_db_id(match[0])
+            if cre:
+                logger.info(
+                    "PCI DSS CRE similarity match %.3f (threshold %s)",
+                    match[1],
+                    threshold,
+                )
+                return cre
+
+    for standard_name in PCI_BRIDGE_STANDARDS:
+        cre = best_cre_via_bridge_standard(cache, control_embedding, standard_name)
+        if cre:
+            return cre
+
+    standard_id = prompt.get_id_of_most_similar_node(control_embedding)
+    if standard_id:
+        nodes = cache.get_nodes(db_id=standard_id)
+        if nodes:
+            linked_cres = cache.find_cres_of_node(nodes[0])
+            if linked_cres:
+                cre = cache.get_cre_by_db_id(linked_cres[0].id)
+                if cre:
+                    logger.info(
+                        "PCI DSS linked via global standard fallback (%s)",
+                        nodes[0].name,
+                    )
+                    return cre
+    return None
 
 
 class PciDss(ParserInterface):
@@ -70,6 +221,7 @@ class PciDss(ParserInterface):
         prompt = prompt_client.PromptHandler(cache)
         self._ensure_similarity_prereqs(cache, prompt)
         standard_entries = []
+        unlinked_controls: list[str] = []
         for row in pci_file.get(pci_file_tab):
             pci_control = defs.Standard(
                 name=self.name,
@@ -117,56 +269,40 @@ class PciDss(ParserInterface):
                         f"Node {pci_control.todict()} already exists and has embeddings, skipping"
                     )
 
-            control_embeddings = prompt.get_text_embeddings(pci_control.__repr__())
+            control_embeddings = prompt.get_text_embeddings(
+                pci_control_embedding_text(pci_control)
+            )
             pci_control.embeddings = control_embeddings
-            pci_control.embeddings_text = pci_control.__repr__()
-            # these embeddings are different to the ones generated from --generate embeddings, this is because we want these embedding to include the optional "description" field, it is not a big difference and cosine similarity works reasonably accurately without it but good to have
-            cre = None
-            cre_id = prompt.get_id_of_most_similar_cre(control_embeddings)
-            if not cre_id:
-                logger.info(
-                    f"could not find an appropriate CRE for pci {pci_control.section}, findings similarities with standards instead"
-                )
-                standard_id = prompt.get_id_of_most_similar_node(control_embeddings)
-                if standard_id:
-                    dbstandard = cache.get_nodes(db_id=standard_id)
-                    if dbstandard:
-                        logger.info(
-                            "found an appropriate standard for pci %s, it is: %s",
-                            pci_control.section,
-                            dbstandard.section,
-                        )
-                        cres = cache.find_cres_of_node(dbstandard)
-                        if cres:
-                            cre_id = cres[0].id
-                    else:
-                        logger.info(
-                            "no standard record found for fallback standard id %s (pci section %s)",
-                            standard_id,
-                            pci_control.section,
-                        )
-                else:
-                    logger.info(
-                        "could not find a similar standard for pci %s; skipping fallback link",
-                        pci_control.section,
-                    )
-            if cre_id:
-                cre = cache.get_cre_by_db_id(cre_id)
-            ctrl_copy = pci_control.shallow_copy()
+            pci_control.embeddings_text = pci_control_embedding_text(pci_control)
+            cre = resolve_cre_for_pci_control(prompt, cache, control_embeddings)
             pci_control.description = ""
             if cre:
                 pci_control.add_link(
                     defs.Link(document=cre, ltype=defs.LinkTypes.AutomaticallyLinkedTo)
                 )
-                pci_control.add_link(
-                    defs.Link(ltype=defs.LinkTypes.AutomaticallyLinkedTo, document=cre)
-                )
                 logger.info(f"successfully stored {pci_control.__repr__()}")
             else:
-                logger.info(
-                    f"stored pci control: {pci_control.__repr__()} but could not link it to any CRE reliably"
+                unlinked_controls.append(
+                    f"{pci_control.sectionID}: {pci_control.section}"
+                )
+                logger.error(
+                    "PCI DSS control %s (%s) could not be linked to any CRE",
+                    pci_control.sectionID,
+                    pci_control.section,
                 )
             standard_entries.append(pci_control)
+        if unlinked_controls:
+            sample = unlinked_controls[:5]
+            extra = (
+                f" (and {len(unlinked_controls) - len(sample)} more)"
+                if len(unlinked_controls) > len(sample)
+                else ""
+            )
+            raise PciDssLinkError(
+                "PCI DSS import requires every control to link to a CRE; "
+                f"{len(unlinked_controls)} control(s) failed: "
+                f"{'; '.join(sample)}{extra}"
+            )
         return standard_entries
 
     def parse_3_2(self, pci_file: Dict[str, Any], cache: db.Node_collection):

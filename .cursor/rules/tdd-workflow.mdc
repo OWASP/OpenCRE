@@ -1,0 +1,30 @@
+---
+description: Test-first workflow for new behavior, importers, and API changes
+alwaysApply: true
+---
+
+# TDD Workflow
+
+Use for new behavior, bug fixes with clear reproduction, and importers/API changes where expected I/O is known.
+
+Skip for: typos, pure refactors with existing test coverage, config-only changes.
+
+## Timing relative to planning
+
+- **After plan approval** (or immediately for trivial fixes that skip planning): write failing tests, then implementation.
+- Do not write production code before plan approval when planning is required.
+
+## Loop
+
+1. **Write tests first** from expected input/output or acceptance criteria.
+2. **Run tests and confirm they fail** for the right reason. Do not write implementation yet.
+3. **Commit tests** only when the user explicitly asks to commit mid-flow.
+4. **Implement** the minimum code to pass tests. Do not modify tests to make them pass unless requirements changed (say so explicitly).
+5. **Iterate** until `make test` (and lint/mypy) pass.
+6. **Commit implementation** when the user asks.
+
+## OpenCRE conventions
+
+- Follow patterns in `@application/tests/` (e.g. `@application/tests/pci_dss_parser_test.py` for importers).
+- Use test DB setup from existing parser/web tests; avoid unnecessary mocks when integration-style tests match the codebase.
+- Prefer one focused test class per behavior area.

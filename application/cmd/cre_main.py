@@ -730,12 +730,14 @@ def backfill_gap_analysis_only(
     if os.environ.get("CRE_NO_NEO4J") != "1":
         populate_neo4j_db(db_connection_str)
 
+    gap_analysis.backfill_opencre_direct_pairs(collection, refresh=True)
+
     missing = _missing_ga_pairs(collection)
     if max_pairs > 0:
         missing = missing[:max_pairs]
     total = len(missing)
     if total == 0:
-        logger.info("GA backfill: no missing pairs")
+        logger.info("GA backfill: no missing neo4j pairs")
         return
 
     logger.info(
@@ -952,6 +954,9 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
 
     if args.preload_map_analysis_target_url:
         gap_analysis.preload(target_url=args.preload_map_analysis_target_url)
+    if getattr(args, "ga_backfill_opencre_direct", False):
+        collection = db_connect(path=args.cache_file)
+        gap_analysis.backfill_opencre_direct_pairs(collection, refresh=True)
     if getattr(args, "ga_backfill_missing", False):
         backfill_gap_analysis_only(
             args.cache_file,

@@ -4,10 +4,13 @@ import csv
 from pprint import pprint
 from unittest import mock
 
+import gspread
+
 from application import create_app, sqla  # type: ignore
 from application.database import db
 from application.defs import cre_defs as defs
 from application.utils.spreadsheet import *
+from application.utils.spreadsheet import _records_from_worksheet_values
 from application.tests.utils.data_gen import export_format_data
 
 
@@ -133,11 +136,16 @@ class TestDB(unittest.TestCase):
             },
         ]
 
-        # Fake worksheet that returns our expected data
+        # Fake worksheet that returns our expected data (raw rows, not numericised)
         fake_ws = mock.MagicMock()
         fake_ws.title = "ISO Numericise Test"
         fake_ws.col_count = 3
-        fake_ws.get_all_records.return_value = expected
+        fake_ws.get_all_values.return_value = [
+            list(expected[0].keys()),
+            [expected[0][k] for k in expected[0]],
+            [expected[1][k] for k in expected[1]],
+            [expected[2][k] for k in expected[2]],
+        ]
 
         # Fake spreadsheet client
         fake_sh = mock.MagicMock()
@@ -156,3 +164,95 @@ class TestDB(unittest.TestCase):
         result = read_spreadsheet(url, alias, validate=False, parse_numbered_only=False)
 
         self.assertEqual(result["ISO Numericise Test"], expected)
+
+    @mock.patch("application.utils.spreadsheet.gspread.service_account")
+    @mock.patch("application.utils.spreadsheet.gspread.oauth")
+    def test_read_spreadsheet_empty_worksheet(
+        self, mock_oauth, mock_service_account
+    ) -> None:
+        fake_ws = mock.MagicMock()
+        fake_ws.title = "Empty Sheet"
+        fake_ws.get_all_values.return_value = []
+
+        fake_sh = mock.MagicMock()
+        fake_sh.worksheets.return_value = [fake_ws]
+
+        fake_client = mock.MagicMock()
+        fake_client.open_by_url.return_value = fake_sh
+        mock_oauth.return_value = fake_client
+        mock_service_account.return_value = fake_client
+
+        result = read_spreadsheet(
+            "https://example.com/fake-spreadsheet-url",
+            "Test Spreadsheet",
+            validate=False,
+            parse_numbered_only=False,
+        )
+
+        self.assertEqual(result["Empty Sheet"], [])
+
+    @mock.patch("application.utils.spreadsheet.gspread.service_account")
+    @mock.patch("application.utils.spreadsheet.gspread.oauth")
+    def test_read_spreadsheet_short_row_padded(
+        self, mock_oauth, mock_service_account
+    ) -> None:
+        fake_ws = mock.MagicMock()
+        fake_ws.title = "Short Row"
+        fake_ws.get_all_values.return_value = [
+            ["Col A", "Col B"],
+            ["only-a"],
+        ]
+
+        fake_sh = mock.MagicMock()
+        fake_sh.worksheets.return_value = [fake_ws]
+
+        fake_client = mock.MagicMock()
+        fake_client.open_by_url.return_value = fake_sh
+        mock_oauth.return_value = fake_client
+        mock_service_account.return_value = fake_client
+
+        result = read_spreadsheet(
+            "https://example.com/fake-spreadsheet-url",
+            "Test Spreadsheet",
+            validate=False,
+            parse_numbered_only=False,
+        )
+
+        self.assertEqual(result["Short Row"], [{"Col A": "only-a", "Col B": ""}])
+
+    def test_records_from_worksheet_values_duplicate_headers(self) -> None:
+        with self.assertRaises(gspread.exceptions.GSpreadException) as ctx:
+            _records_from_worksheet_values(
+                [["Col A", "Col B", "Col A"], ["x", "y", "z"]]
+            )
+        self.assertIn("Duplicate worksheet headers", str(ctx.exception))
+        self.assertIn("Col A", str(ctx.exception))
+
+    @mock.patch("application.utils.spreadsheet.gspread.service_account")
+    @mock.patch("application.utils.spreadsheet.gspread.oauth")
+    def test_read_spreadsheet_duplicate_headers(
+        self, mock_oauth, mock_service_account
+    ) -> None:
+        fake_ws = mock.MagicMock()
+        fake_ws.title = "Dup Headers"
+        fake_ws.get_all_values.return_value = [
+            ["Name", "Name"],
+            ["row"],
+        ]
+
+        fake_sh = mock.MagicMock()
+        fake_sh.worksheets.return_value = [fake_ws]
+
+        fake_client = mock.MagicMock()
+        fake_client.open_by_url.return_value = fake_sh
+        mock_oauth.return_value = fake_client
+        mock_service_account.return_value = fake_client
+
+        result = read_spreadsheet(
+            "https://example.com/fake-spreadsheet-url",
+            "Test Spreadsheet",
+            validate=False,
+            parse_numbered_only=False,
+        )
+
+        self.assertEqual(result, {})

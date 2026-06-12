@@ -745,6 +745,15 @@ class TestDB(unittest.TestCase):
 
         self.assertEqual([c_id_only], collection.get_CREs(internal_id=db_id_only.id))
 
+    @patch.object(db.Node_collection, "get_CREs")
+    def test_get_cre_by_db_id_returns_none_when_get_cres_empty(
+        self, get_cres_mock
+    ) -> None:
+        get_cres_mock.return_value = []
+        result = self.collection.get_cre_by_db_id(self.dbcre.id)
+        self.assertIsNone(result)
+        get_cres_mock.assert_called_once_with(external_id=self.dbcre.external_id)
+
     def test_get_standards(self) -> None:
         """Given: a Standard 'S1' that links to cres
         return the Standard in Document format"""
@@ -1083,7 +1092,7 @@ class TestDB(unittest.TestCase):
                 name="ccc",
                 description="c2",
                 link="https://example.com/code/hyperlink",
-                tags="1,2",
+                tags="111-111,222-222",
                 ntype=defs.Credoctypes.Code.value,
             ),
         }
@@ -1327,15 +1336,73 @@ class TestDB(unittest.TestCase):
             collection.gap_analysis_exists(make_resources_key(["788-788", "788-789"])),
         )
 
+    def test_add_gap_analysis_result_skips_empty_primary_insert(self):
+        collection = db.Node_collection()
+        key = make_resources_key(["788-788", "b"])
+        collection.add_gap_analysis_result(key, '{"result": {}}')
+        self.assertIsNone(
+            collection.session.query(db.GapAnalysisResults)
+            .filter(db.GapAnalysisResults.cache_key == key)
+            .first()
+        )
+        self.assertFalse(collection.gap_analysis_exists(key))
+
+    def test_add_gap_analysis_result_does_not_clobber_material_primary(self):
+        collection = db.Node_collection()
+        key = make_resources_key(["788-788", "b"])
+        material = '{"result": {"111-111": {"paths": {}}}}'
+        collection.add_gap_analysis_result(key, material)
+        collection.add_gap_analysis_result(key, '{"result": {}}')
+        row = (
+            collection.session.query(db.GapAnalysisResults)
+            .filter(db.GapAnalysisResults.cache_key == key)
+            .first()
+        )
+        self.assertEqual(row.ga_object, material)
+        self.assertTrue(collection.gap_analysis_exists(key))
+
+    def test_add_gap_analysis_result_allows_material_over_empty_primary(self):
+        collection = db.Node_collection()
+        key = make_resources_key(["788-788", "b"])
+        collection.session.add(
+            db.GapAnalysisResults(cache_key=key, ga_object='{"result": {}}')
+        )
+        collection.session.commit()
+        material = '{"result": {"111-111": {"paths": {}}}}'
+        collection.add_gap_analysis_result(key, material)
+        row = (
+            collection.session.query(db.GapAnalysisResults)
+            .filter(db.GapAnalysisResults.cache_key == key)
+            .first()
+        )
+        self.assertEqual(row.ga_object, material)
+
+    def test_add_gap_analysis_result_allows_empty_subresource(self):
+        collection = db.Node_collection()
+        sub = make_subresources_key(["788-788", "b"], "111-111")
+        collection.add_gap_analysis_result(sub, '{"result": {}}')
+        row = (
+            collection.session.query(db.GapAnalysisResults)
+            .filter(db.GapAnalysisResults.cache_key == sub)
+            .first()
+        )
+        self.assertIsNotNone(row)
+        self.assertEqual(row.ga_object, '{"result": {}}')
+
     @patch.object(db.NEO_DB, "gap_analysis")
     def test_gap_analysis_removes_stale_empty_primary_when_neo_empty(self, gap_mock):
         """Placeholder ``{"result":{}}`` rows must not survive a recompute with no Neo paths."""
         collection = db.Node_collection()
         collection.neo_db.connected = True
         key = make_resources_key(["788-788", "b"])
-        collection.add_gap_analysis_result(key, '{"result": {}}')
+        collection.session.add(
+            db.GapAnalysisResults(cache_key=key, ga_object='{"result": {}}')
+        )
         sub = make_subresources_key(["788-788", "b"], "111-111")
-        collection.add_gap_analysis_result(sub, '{"result": {}}')
+        collection.session.add(
+            db.GapAnalysisResults(cache_key=sub, ga_object='{"result": {}}')
+        )
+        collection.session.commit()
         self.assertFalse(collection.gap_analysis_exists(key))
 
         gap_mock.return_value = ([], [])

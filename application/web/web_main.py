@@ -40,7 +40,6 @@ from flask import (
     session,
     send_file,
 )
-from werkzeug.exceptions import HTTPException
 from google.oauth2 import id_token
 from google_auth_oauthlib.flow import Flow
 from application.utils.spreadsheet import write_csv
@@ -49,7 +48,7 @@ import google.auth.transport.requests
 
 
 ITEMS_PER_PAGE = 20
-OPENCRE_STANDARD_NAME = "OpenCRE"
+OPENCRE_STANDARD_NAME = gap_analysis.OPENCRE_STANDARD_NAME
 
 app = Blueprint(
     "web",
@@ -70,6 +69,11 @@ def _ga_timeout_seconds() -> int:
     if m:
         return int(m.group(1))
     return 129600
+
+
+def _is_heroku_deploy() -> bool:
+    """True on Heroku/read-only web dynos where GA must be served from SQL cache only."""
+    return os.environ.get("DYNO") is not None or bool(os.environ.get("HEROKU"))
 
 
 def _compute_ga_without_redis(
@@ -299,116 +303,6 @@ def find_document_by_tag() -> Any:
     abort(404, "Tag does not exist")
 
 
-def _get_opencre_documents(collection: db.Node_collection) -> list[defs.CRE]:
-    return [
-        collection.get_CREs(internal_id=cre.id)[0]
-        for cre in collection.session.query(db.CRE).all()
-    ]
-
-
-def _get_map_analysis_documents(
-    standard: str, collection: db.Node_collection
-) -> list[defs.Document]:
-    if standard == OPENCRE_STANDARD_NAME:
-        return _get_opencre_documents(collection)
-    return collection.get_nodes(name=standard)
-
-
-def _build_direct_link_path(
-    start_document: defs.Document, end_document: defs.Document
-) -> dict[str, Any]:
-    segment_start = start_document.shallow_copy()
-    # The current gap-analysis popup mutates non-CRE row ids during display
-    # before it resolves the one-step direct path. Keep this direct-link fast
-    # path compatible by mirroring that display-only shape in the segment start.
-    if segment_start.doctype != defs.Credoctypes.CRE.value:
-        segment_start.id = ""
-    return {
-        "end": end_document.shallow_copy(),
-        "path": [
-            {
-                "start": segment_start,
-                "end": end_document.shallow_copy(),
-                "relationship": "LINKED_TO",
-                "score": 0,
-            }
-        ],
-        "score": 0,
-    }
-
-
-def _make_direct_link_path_key(end_document: defs.Document) -> str:
-    return end_document.id
-
-
-def _add_direct_link_result(
-    grouped_paths: dict[str, dict[str, Any]],
-    start_document: defs.Document,
-    end_document: defs.Document,
-) -> None:
-    shared_paths = grouped_paths.setdefault(
-        start_document.id,
-        {
-            "start": start_document.shallow_copy(),
-            "paths": {},
-            "extra": 0,
-        },
-    )["paths"]
-    shared_paths.setdefault(
-        _make_direct_link_path_key(end_document),
-        _build_direct_link_path(start_document, end_document),
-    )
-
-
-def _build_direct_cre_overlap_map_analysis(
-    standards: list[str],
-    standards_hash: str,
-    collection: db.Node_collection,
-) -> dict[str, Any] | None:
-    if len(standards) < 2:
-        return None
-
-    base_standard = standards[0]
-    compare_standard = standards[1]
-    base_nodes = _get_map_analysis_documents(base_standard, collection)
-    compare_nodes = _get_map_analysis_documents(compare_standard, collection)
-    if not base_nodes or not compare_nodes:
-        return None
-
-    base_is_opencre = base_standard == OPENCRE_STANDARD_NAME
-    opencre_nodes = base_nodes if base_is_opencre else compare_nodes
-    standard_nodes = compare_nodes if base_is_opencre else base_nodes
-
-    standard_nodes_by_id = {
-        standard_node.id: standard_node for standard_node in standard_nodes
-    }
-    direct_pairs: list[tuple[defs.CRE, defs.Document]] = []
-    for opencre_node in opencre_nodes:
-        for link in opencre_node.links:
-            if link.ltype != defs.LinkTypes.LinkedTo:
-                continue
-            standard_node = standard_nodes_by_id.get(link.document.id)
-            if not standard_node:
-                continue
-            direct_pairs.append((opencre_node, standard_node))
-
-    grouped_paths: dict[str, dict[str, Any]] = {}
-    for opencre_node, standard_node in direct_pairs:
-        if base_is_opencre:
-            _add_direct_link_result(grouped_paths, opencre_node, standard_node)
-        else:
-            _add_direct_link_result(grouped_paths, standard_node, opencre_node)
-
-    if not grouped_paths:
-        return None
-
-    result = {"result": grouped_paths}
-    collection.add_gap_analysis_result(
-        cache_key=standards_hash, ga_object=flask_json.dumps(result)
-    )
-    return result
-
-
 @app.route("/rest/v1/map_analysis", methods=["GET"])
 def map_analysis() -> Any:
     standards = request.args.getlist("standard")
@@ -421,9 +315,17 @@ def map_analysis() -> Any:
     standards = standards[:2]
     standards_hash = gap_analysis.make_resources_key(standards)
 
-    # ----- PR #825: OpenCRE fast path -----
+    # ----- PR #825: OpenCRE fast path (SQL cache only on Heroku) -----
     if OPENCRE_STANDARD_NAME in standards:
-        direct_gap_analysis = _build_direct_cre_overlap_map_analysis(
+        if database.gap_analysis_exists(standards_hash):
+            cached = database.get_gap_analysis_result(cache_key=standards_hash)
+            if cached:
+                parsed = json.loads(cached)
+                if "result" in parsed:
+                    return jsonify({"result": parsed.get("result")})
+        if _is_heroku_deploy():
+            abort(404, "No such Cache")
+        direct_gap_analysis = gap_analysis.build_direct_cre_overlap_map_analysis(
             standards, standards_hash, database
         )
         if direct_gap_analysis:
@@ -439,27 +341,13 @@ def map_analysis() -> Any:
             if "result" in parsed:
                 return jsonify({"result": parsed.get("result")})
 
-    # On Heroku/read-only deployments, verify standards before attempting
-    # Redis or graph-backed fallback work.
-    is_heroku = os.environ.get("DYNO") is not None
-    if is_heroku:
-        try:
-            existing_standards = database.standards()
-            if isinstance(existing_standards, (list, tuple, set)):
-                existing_lower = {str(s).lower() for s in existing_standards}
-                missing = [s for s in standards if str(s).lower() not in existing_lower]
-                if missing:
-                    logger.info(
-                        f"On Heroku: gap analysis request {standards_hash} references "
-                        f"standards that do not exist: {', '.join(missing)}, returning 404"
-                    )
-                    abort(
-                        404, f"One or more standards do not exist: {', '.join(missing)}"
-                    )
-        except HTTPException:
-            raise
-        except Exception as exc:
-            logger.warning(f"Could not verify standards existence on Heroku: {exc}")
+    # Heroku serves precomputed GA from Postgres only — never Redis, RQ, or Neo4j.
+    if _is_heroku_deploy():
+        logger.info(
+            "On Heroku: gap analysis cache miss for %s, returning 404",
+            standards_hash,
+        )
+        abort(404, "No such Cache")
 
     if os.environ.get("CRE_NO_CALCULATE_GAP_ANALYSIS"):
         logger.info(
@@ -513,25 +401,11 @@ def map_analysis() -> Any:
             cache_key,
             exc,
         )
-        # NEW: fallback — compute gap analysis directly in the database
         try:
-            db.gap_analysis(
-                neo_db=database.neo_db,
-                node_names=standards,
-                cache_key=cache_key,
-            )
-            cached = database.get_gap_analysis_result(cache_key=cache_key)
-            if cached:
-                parsed = json.loads(cached)
-                if "result" in parsed:
-                    return jsonify({"result": parsed["result"]})
-        except Exception:
-            logger.exception(
-                "Database gap analysis fallback failed for %s",
-                cache_key,
-            )
-            abort(503, "Database/graph backend unavailable")
-        abort(404, "Gap analysis result not found")
+            return jsonify(_compute_ga_without_redis(database, standards))
+        except Exception as fallback_exc:
+            logger.exception("Synchronous GA fallback failed for %s", cache_key)
+            abort(503, f"Gap analysis unavailable: {fallback_exc}")
 
 
 @app.route("/rest/v1/map_analysis_weak_links", methods=["GET"])
@@ -685,6 +559,8 @@ def text_search() -> Any:
     """
     database = db.Node_collection()
     text = request.args.get("text")
+    if not text:
+        return jsonify({"error": "text parameter is required"}), 400
     if posthog:
         posthog.capture(f"text_search", f"text:{text}")
 
