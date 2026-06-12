@@ -13,11 +13,12 @@ import { GraphDebugPanel } from './GraphDebugPanel';
 import { LinkedStandards } from './LinkedStandards';
 
 export const Explorer = () => {
-  const { dataLoading, dataTree, dataStore } = useDataStore();
+  const { dataLoading, dataTree, dataStore, hasMore, isLoadingMore, loadNextPage } = useDataStore();
   const [loading, setLoading] = useState<boolean>(false);
   const [filter, setFilter] = useState('');
   const [filteredTree, setFilteredTree] = useState<TreeDocument[]>();
   const [debugMode, setDebugMode] = useState<boolean>(false);
+  const loadMoreRef = React.useRef<HTMLDivElement | null>(null);
 
   const applyHighlight = (text, term) => {
     if (!term) return text;
@@ -83,6 +84,25 @@ export const Explorer = () => {
   useEffect(() => {
     setLoading(dataLoading);
   }, [dataLoading]);
+
+  useEffect(() => {
+    const sentinel = loadMoreRef.current;
+    if (!sentinel || !hasMore) {
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          loadNextPage();
+        }
+      },
+      { rootMargin: '200px' }
+    );
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [hasMore, loadNextPage, filteredTree]);
 
   function processNode(item) {
     if (!item) {
@@ -198,6 +218,8 @@ export const Explorer = () => {
             return processNode(item);
           })}
         </List>
+        <div ref={loadMoreRef} style={{ height: 1 }} />
+        {isLoadingMore && hasMore && <p className="explorer-load-more">Loading more requirements…</p>}
       </main>
     </>
   );

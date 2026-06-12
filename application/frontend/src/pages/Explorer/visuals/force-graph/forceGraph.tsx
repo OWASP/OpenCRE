@@ -22,7 +22,8 @@ export const ExplorerForceGraph = () => {
   const [ignoreTypes, setIgnoreTypes] = useState(['same']);
   const [maxCount, setMaxCount] = useState(0);
   const [maxNodeSize, setMaxNodeSize] = useState(0);
-  const { dataLoading, dataTree, getStoreKey, dataStore } = useDataStore();
+  const { dataLoading, dataTree, getStoreKey, dataStore, ensureFullExplorerData, fullLoadProgress } =
+    useDataStore();
   const fgRef = useRef<ForceGraphMethods>();
   // ADDING STATE FOR FILTERING LOGIC
   const [filterTypeA, setFilterTypeA] = useState('');
@@ -31,6 +32,10 @@ export const ExplorerForceGraph = () => {
   // Separated CRE options and combined options with proper typing
   const [creOptions, setCreOptions] = useState<DropdownOption[]>([]);
   const [combinedOptions, setCombinedOptions] = useState<DropdownOption[]>([]);
+
+  useEffect(() => {
+    ensureFullExplorerData();
+  }, [ensureFullExplorerData]);
 
   // Adding a show all checkbox
   const [showAll, setShowAll] = useState(true);
@@ -431,7 +436,10 @@ export const ExplorerForceGraph = () => {
   }, [graphData]);
   return (
     <div>
-      <LoadingAndErrorIndicator loading={dataLoading} error={null} />
+      <LoadingAndErrorIndicator loading={dataLoading || !!fullLoadProgress} error={null} />
+      {fullLoadProgress && (
+        <p className="explorer-full-load-progress">Loading graph data ({fullLoadProgress})…</p>
+      )}
 
       <Checkbox
         label="Contains"
