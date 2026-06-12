@@ -1,0 +1,4 @@
+repositories:
+  - id: broken
+    paths:
+      include: [unclosed
