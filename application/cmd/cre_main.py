@@ -911,6 +911,44 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
         BaseParser().register_resource(
             secure_headers.SecureHeaders, db_connection_str=args.cache_file
         )
+    if getattr(args, "owasp_top10_2025_in", False):
+        from application.utils.external_project_parsers.parsers import owasp_top10_2025
+
+        BaseParser().register_resource(
+            owasp_top10_2025.OwaspTop10_2025, db_connection_str=args.cache_file
+        )
+    if getattr(args, "owasp_api_top10_2023_in", False):
+        from application.utils.external_project_parsers.parsers import (
+            owasp_api_top10_2023,
+        )
+
+        BaseParser().register_resource(
+            owasp_api_top10_2023.OwaspApiTop10_2023,
+            db_connection_str=args.cache_file,
+        )
+    if getattr(args, "owasp_kubernetes_top10_2022_in", False):
+        logger.warning(
+            "--owasp_kubernetes_top10_2022_in requested, but no Kubernetes 2022 parser module is present in this branch; skipping"
+        )
+    if getattr(args, "owasp_kubernetes_top10_2025_in", False):
+        logger.warning(
+            "--owasp_kubernetes_top10_2025_in requested, but no Kubernetes 2025 parser module is present in this branch; skipping"
+        )
+    if getattr(args, "owasp_llm_top10_2025_in", False):
+        from application.utils.external_project_parsers.parsers import (
+            owasp_llm_top10_2025,
+        )
+
+        BaseParser().register_resource(
+            owasp_llm_top10_2025.OwaspLlmTop10_2025,
+            db_connection_str=args.cache_file,
+        )
+    if getattr(args, "owasp_aisvs_in", False):
+        from application.utils.external_project_parsers.parsers import owasp_aisvs
+
+        BaseParser().register_resource(
+            owasp_aisvs.OwaspAisvs, db_connection_str=args.cache_file
+        )
     if args.pci_dss_4_in:
         from application.utils.external_project_parsers.parsers import pci_dss
 
