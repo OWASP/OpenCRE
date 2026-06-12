@@ -1,0 +1,34 @@
+"""Where Module C reads accepted chunks from.
+
+Defines the source interface plus a fixture-backed stub for testing. The real
+DB-backed source (polling Module B's knowledge_queue table) lands W8 and yields
+the same KnowledgeQueueItem rows; C synthesizes the RFC KnowledgeItem envelope
+from each row at processing time (master guide §1.2).
+"""
+
+import json
+from abc import ABC, abstractmethod
+from typing import Iterator
+
+from application.utils.librarian.schemas import KnowledgeQueueItem
+
+
+class KnowledgeSource(ABC):
+    @abstractmethod
+    def items(self) -> Iterator[KnowledgeQueueItem]:
+        """Yield knowledge_queue rows awaiting classification."""
+        raise NotImplementedError
+
+
+class FixtureKnowledgeSource(KnowledgeSource):
+    """Reads knowledge_queue rows from a JSONL fixture (one JSON object per line)."""
+
+    def __init__(self, jsonl_path: str) -> None:
+        self._path = jsonl_path
+
+    def items(self) -> Iterator[KnowledgeQueueItem]:
+        with open(self._path, encoding="utf-8") as fh:
+            for line in fh:
+                line = line.strip()
+                if line:
+                    yield KnowledgeQueueItem.model_validate_json(line)
