@@ -7,6 +7,8 @@ from typing import Any, Dict, List
 from unittest import mock
 from unittest.mock import Mock, patch
 from rq import Queue, job
+import requests
+from rq import Queue, job
 from application.utils import redis
 from application.prompt_client import prompt_client as prompt_client
 from application.tests.utils import data_gen
@@ -469,6 +471,112 @@ class TestMain(unittest.TestCase):
                 )
             ],
         )
+
+    @patch("application.cmd.cre_main.time.sleep")
+    @patch("application.cmd.cre_main.requests.get")
+    def test_fetch_upstream_json_retries_transient_failures(
+        self, mock_get, mock_sleep
+    ) -> None:
+        transient_error = requests.exceptions.ConnectionError("reset by peer")
+        success_response = Mock()
+        success_response.status_code = 200
+        success_response.json.return_value = {"data": []}
+        mock_get.side_effect = [transient_error, success_response]
+
+        data = main.fetch_upstream_json("/root_cres")
+
+        self.assertEqual(data, {"data": []})
+        self.assertEqual(mock_get.call_count, 2)
+        mock_sleep.assert_called_once()
+
+    def test_parse_file(self) -> None:
+        file: List[Dict[str, Any]] = [
+            {
+                "description": "Verify that approved cryptographic algorithms are used in the generation, seeding, and verification.",
+                "doctype": defs.Credoctypes.CRE,
+                "id": "157-573",
+                "links": [
+                    {
+                        "type": defs.LinkTypes.LinkedTo,
+                        "document": {
+                            "doctype": defs.Credoctypes.Standard,
+                            "name": "TOP10",
+                            "section": "https://owasp.org/www-project-top-ten/2017/A5_2017-Broken_Access_Control",
+                        },
+                    },
+                    {
+                        "type": defs.LinkTypes.LinkedTo,
+                        "document": {
+                            "doctype": defs.Credoctypes.Standard,
+                            "name": "ISO 25010",
+                            "section": "Secure data storage",
+                        },
+                    },
+                ],
+                "name": "CREDENTIALS_MANAGEMENT_CRYPTOGRAPHIC_DIRECTIVES",
+            },
+            {
+                "description": "Desc",
+                "doctype": defs.Credoctypes.CRE,
+                "id": "141-141",
+                "name": "name",
+            },
+        ]
+        expected = [
+            defs.CRE(
+                doctype=defs.Credoctypes.CRE,
+                id="157-573",
+                description="Verify that approved cryptographic algorithms are used in the generation, seeding, and verification.",
+                name="CREDENTIALS_MANAGEMENT_CRYPTOGRAPHIC_DIRECTIVES",
+                links=[
+                    defs.Link(
+                        document=defs.Standard(
+                            doctype=defs.Credoctypes.Standard,
+                            name="TOP10",
+                            section="https://owasp.org/www-project-top-ten/2017/A5_2017-Broken_Access_Control",
+                        ),
+                        ltype=defs.LinkTypes.LinkedTo,
+                    ),
+                    defs.Link(
+                        document=defs.Standard(
+                            doctype=defs.Credoctypes.Standard,
+                            name="ISO 25010",
+                            section="Secure data storage",
+                        ),
+                        ltype=defs.LinkTypes.LinkedTo,
+                    ),
+                ],
+            ),
+            defs.CRE(id="141-141", description="Desc", name="name"),
+        ]
+        with self.assertLogs("application.cmd.cre_main", level=logging.FATAL) as logs:
+            # negative test first parse_file accepts a list of objects
+            result = main.parse_file(
+                filename="tests",
+                yamldocs=[
+                    "no",
+                    "valid",
+                    "objects",
+                    "here",
+                    {
+                        "1": 2,
+                    },
+                ],
+                scollection=self.collection,
+            )
+
+            self.assertEqual(result, None)
+            self.assertIn(
+                "CRITICAL:application.cmd.cre_main:Malformed file tests, skipping",
+                logs.output,
+            )
+
+        self.maxDiff = None
+
+        res = main.parse_file(
+            filename="tests", yamldocs=file, scollection=self.collection
+        )
+        self.assertCountEqual(res, expected)
 
     @patch.object(main, "db_connect")
     @patch.object(Queue, "enqueue_call")
