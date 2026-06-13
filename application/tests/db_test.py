@@ -1092,7 +1092,7 @@ class TestDB(unittest.TestCase):
                 name="ccc",
                 description="c2",
                 link="https://example.com/code/hyperlink",
-                tags="1,2",
+                tags="111-111,222-222",
                 ntype=defs.Credoctypes.Code.value,
             ),
         }
@@ -2487,6 +2487,65 @@ class TestDB(unittest.TestCase):
         self.assertEqual(paginated_cres, [cres[0], cres[1]])
         self.assertEqual(page, 1)
         self.assertEqual(total_pages, 4)
+
+    def test_all_cres_with_pagination_hydrates_full_link_graph(self) -> None:
+        """Batch pagination must return the same link graph as get_CREs per CRE."""
+        sqla.session.remove()
+        sqla.drop_all()
+        sqla.create_all()
+        collection = db.Node_collection().with_graph()
+        parent = defs.CRE(name="Parent", id="100-100")
+        child1 = defs.CRE(name="Child1", id="101-101")
+        child2 = defs.CRE(name="Child2", id="102-102")
+        sibling = defs.CRE(name="Sibling", id="103-103")
+        std1 = defs.Standard(name="StdParent", section="SP")
+        std2 = defs.Standard(name="StdChild", section="SC")
+
+        db_parent = collection.add_cre(parent)
+        db_child1 = collection.add_cre(child1)
+        db_child2 = collection.add_cre(child2)
+        db_sibling = collection.add_cre(sibling)
+        db_std1 = collection.add_node(std1)
+        db_std2 = collection.add_node(std2)
+
+        collection.add_internal_link(
+            higher=db_parent, lower=db_child1, ltype=defs.LinkTypes.Contains
+        )
+        collection.add_internal_link(
+            higher=db_parent, lower=db_child2, ltype=defs.LinkTypes.Contains
+        )
+        collection.add_internal_link(
+            higher=db_sibling, lower=db_child2, ltype=defs.LinkTypes.Related
+        )
+        collection.add_link(cre=db_parent, node=db_std1, ltype=defs.LinkTypes.LinkedTo)
+        collection.add_link(cre=db_child1, node=db_std2, ltype=defs.LinkTypes.LinkedTo)
+        collection.session.commit()
+
+        paginated_cres, page, total_pages = collection.all_cres_with_pagination(
+            page=1, per_page=5
+        )
+
+        self.assertEqual(page, 1)
+        self.assertEqual(total_pages, 1)
+        self.assertEqual(4, len(paginated_cres))
+
+        for paginated_cre in paginated_cres:
+            expected = collection.get_CREs(external_id=paginated_cre.id)[0]
+            expected_dict = expected.todict()
+            actual_dict = paginated_cre.todict()
+            self.assertEqual(expected_dict["id"], actual_dict["id"])
+            self.assertEqual(expected_dict["name"], actual_dict["name"])
+            self.assertEqual(
+                expected_dict.get("description"), actual_dict.get("description")
+            )
+            self.assertCountEqual(
+                expected_dict.get("links", []), actual_dict.get("links", [])
+            )
+
+        child1_paginated = next(c for c in paginated_cres if c.id == "101-101")
+        link_types = {link.ltype for link in child1_paginated.links}
+        self.assertIn(defs.LinkTypes.PartOf, link_types)
+        self.assertIn(defs.LinkTypes.LinkedTo, link_types)
 
     def test_get_cre_hierarchy(self) -> None:
         # this needs a clean database and a clean graph so reinit everything
