@@ -8,9 +8,10 @@ Provides:
 Design rules
 ------------
 * All labels come ONLY from TAXONOMY (a controlled vocabulary).
-* Deterministic mode (default): pure keyword/rule matching — no LLM, no randomness.
+* Deterministic mode (default): pure keyword/rule matching, no LLM,
+  no randomness.
 * Same input always returns the same output.
-* Unknown/ambiguous inputs map to [UNCATEGORIZED] — never raise.
+* Unknown/ambiguous inputs map to [UNCATEGORIZED] -- never raise.
 * LLM path is opt-in and always has a safe deterministic fallback.
 * Group IDs are stable: sha256(sorted category labels) so they survive
   re-ordering of the input list.
@@ -21,7 +22,7 @@ from __future__ import annotations
 import hashlib
 import logging
 from dataclasses import dataclass, field
-from typing import List, Optional
+from typing import List
 
 logger = logging.getLogger(__name__)
 
@@ -66,10 +67,11 @@ TAXONOMY: List[str] = [
     UNCATEGORIZED,
 ]
 
-# Keyword → taxonomy label map.
-# Keys are lowercase substrings matched against title + headings + category_hints.
-# Evaluated in order; first match wins for each label (multiple labels allowed).
-_KEYWORD_RULES: List[tuple[str, str]] = [
+# Keyword -> taxonomy label map.
+# Keys are lowercase substrings matched against title + headings +
+# category_hints.
+# Evaluated in order; first match wins per label (multiple labels allowed).
+_KEYWORD_RULES: List[tuple] = [
     # secrets / key management
     ("secret", "secrets-management"),
     ("key management", "secrets-management"),
@@ -155,7 +157,7 @@ _KEYWORD_RULES: List[tuple[str, str]] = [
     ("cors", "browser-security"),
     ("content security policy", "browser-security"),
     ("csp", "browser-security"),
-    # operations / secure coding (broad catch-alls — keep near the bottom)
+    # operations / secure coding (broad catch-alls -- keep near the bottom)
     ("operational", "operations"),
     ("rotation", "operations"),
     ("secure coding", "secure-coding"),
@@ -170,8 +172,8 @@ _KEYWORD_RULES: List[tuple[str, str]] = [
 
 @dataclass
 class CheatsheetRecord:
-    """
-    Typed representation of a parsed cheat sheet.
+    """Typed representation of a parsed cheat sheet.
+
     Workstream B owns the full implementation; this definition covers
     exactly the fields Workstream C needs so C can be developed and
     tested independently.
@@ -186,10 +188,26 @@ class CheatsheetRecord:
     summary: str  # bounded summary text
     headings: List[str]  # ordered headings from markdown
     raw_markdown_path: str  # path in the source repo
-    category_hints: List[str] = field(
-        default_factory=list
-    )  # optional lightweight hints
-    metadata: dict = field(default_factory=dict)  # trace data
+    category_hints: List[str] = field(default_factory=list)
+    metadata: dict = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        """Enforce that all required fields are non-empty after construction."""
+        required_str_fields = [
+            "source",
+            "source_id",
+            "title",
+            "hyperlink",
+            "summary",
+            "raw_markdown_path",
+        ]
+        for fname in required_str_fields:
+            value = getattr(self, fname)
+            if not isinstance(value, str) or not value.strip():
+                raise ValueError(
+                    f"CheatsheetRecord.{fname} must be a non-empty string, "
+                    f"got {value!r}"
+                )
 
 
 # ---------------------------------------------------------------------------
@@ -199,11 +217,10 @@ class CheatsheetRecord:
 
 @dataclass
 class CheatsheetGroup:
-    """
-    A stable group of cheat sheet records sharing the same category labels.
+    """A stable group of cheat sheet records sharing the same category labels.
 
     group_id is deterministic: sha256 of the sorted, pipe-joined labels
-    truncated to 12 hex chars.  It stays stable across repeated runs with
+    truncated to 12 hex chars.  Stays stable across repeated runs with
     the same input.
     """
 
@@ -213,7 +230,8 @@ class CheatsheetGroup:
 
     @staticmethod
     def make_group_id(labels: List[str]) -> str:
-        key = "|".join(sorted(labels))
+        """Return a 12-char hex digest that uniquely identifies a label set."""
+        key = "|".join(sorted(set(labels)))
         return hashlib.sha256(key.encode()).hexdigest()[:12]
 
 
@@ -228,8 +246,7 @@ def categorize_cheatsheet(
     use_llm: bool = False,
     llm_categorize_fn=None,
 ) -> List[str]:
-    """
-    Return a list of taxonomy labels for *record*.
+    """Return a sorted list of taxonomy labels for *record*.
 
     Labels are drawn exclusively from TAXONOMY.
     If no label matches, returns [UNCATEGORIZED].
@@ -237,7 +254,7 @@ def categorize_cheatsheet(
     Parameters
     ----------
     record:
-        A CheatsheetRecord (from Workstream B or the stub above).
+        A CheatsheetRecord (from Workstream B or the local stub).
     use_llm:
         When True, attempt to call *llm_categorize_fn* first.
         Falls back to deterministic categorisation on any failure.
@@ -248,7 +265,8 @@ def categorize_cheatsheet(
     Returns
     -------
     list[str]
-        Ordered, deduplicated taxonomy labels.  Always at least [UNCATEGORIZED].
+        Ordered, deduplicated taxonomy labels.
+        Always contains at least [UNCATEGORIZED].
     """
     if use_llm and llm_categorize_fn is not None:
         try:
@@ -258,12 +276,13 @@ def categorize_cheatsheet(
                 logger.debug("LLM categorization used for %s", record.source_id)
                 return validated
             logger.warning(
-                "LLM returned no valid labels for %s, falling back to deterministic",
+                "LLM returned no valid labels for %s, " "falling back to deterministic",
                 record.source_id,
             )
         except Exception as exc:  # noqa: BLE001
             logger.warning(
-                "LLM categorization failed for %s (%s), falling back to deterministic",
+                "LLM categorization failed for %s (%s), "
+                "falling back to deterministic",
                 record.source_id,
                 exc,
             )
@@ -277,17 +296,18 @@ def group_cheatsheets(
     use_llm: bool = False,
     llm_categorize_fn=None,
 ) -> List[CheatsheetGroup]:
-    """
-    Assign every record to a CheatsheetGroup based on its category labels.
+    """Assign every record to a CheatsheetGroup based on its category labels.
 
-    Group IDs are stable: same set of labels → same group_id regardless of
-    the order records appear in *records*.
+    Group IDs are stable: same set of labels produces the same group_id
+    regardless of the order records appear in *records*.
 
     Parameters
     ----------
     records:
-        List of CheatsheetRecord objects.
-    use_llm / llm_categorize_fn:
+        List of CheatsheetRecord objects to group.
+    use_llm:
+        Forwarded to categorize_cheatsheet.
+    llm_categorize_fn:
         Forwarded to categorize_cheatsheet.
 
     Returns
@@ -295,11 +315,13 @@ def group_cheatsheets(
     list[CheatsheetGroup]
         Groups sorted by group_id for deterministic output order.
     """
-    bucket: dict[str, CheatsheetGroup] = {}
+    bucket: dict = {}
 
     for record in records:
         labels = categorize_cheatsheet(
-            record, use_llm=use_llm, llm_categorize_fn=llm_categorize_fn
+            record,
+            use_llm=use_llm,
+            llm_categorize_fn=llm_categorize_fn,
         )
         gid = CheatsheetGroup.make_group_id(labels)
         if gid not in bucket:
@@ -315,20 +337,20 @@ def group_cheatsheets(
 
 
 def _build_searchable_text(record: CheatsheetRecord) -> str:
-    """Combine title, headings, and category_hints into one lowercase string."""
+    """Combine title, headings, and category_hints into lowercase text."""
     parts = [record.title] + record.headings + record.category_hints
     return " ".join(parts).lower()
 
 
 def _deterministic_categorize(record: CheatsheetRecord) -> List[str]:
-    """
-    Pure keyword-matching categoriser.  No external calls.
-    Returns sorted, deduplicated labels from TAXONOMY.
-    Falls back to [UNCATEGORIZED] when nothing matches.
+    """Run pure keyword matching against a record.
+
+    No external calls are made.  Returns sorted, deduplicated labels
+    from TAXONOMY, or [UNCATEGORIZED] when nothing matches.
     """
     text = _build_searchable_text(record)
     found: List[str] = []
-    seen: set[str] = set()
+    seen: set = set()
 
     for keyword, label in _KEYWORD_RULES:
         if label not in seen and keyword in text:
@@ -342,17 +364,18 @@ def _deterministic_categorize(record: CheatsheetRecord) -> List[str]:
 
 
 def _validate_labels(labels) -> List[str]:
-    """
-    Filter an LLM-returned label list to only approved TAXONOMY entries.
-    Returns [] if nothing valid remains (caller should fall back).
+    """Filter an LLM-returned label list to only approved TAXONOMY entries.
+
+    Returns an empty list if nothing valid remains; the caller should
+    fall back to deterministic categorisation in that case.
     """
     if not isinstance(labels, list):
         return []
-    valid = [l for l in labels if isinstance(l, str) and l in TAXONOMY]
-    seen: set[str] = set()
+    valid = [lbl for lbl in labels if isinstance(lbl, str) and lbl in TAXONOMY]
+    seen: set = set()
     deduped: List[str] = []
-    for l in valid:
-        if l not in seen:
-            deduped.append(l)
-            seen.add(l)
+    for lbl in valid:
+        if lbl not in seen:
+            deduped.append(lbl)
+            seen.add(lbl)
     return deduped
