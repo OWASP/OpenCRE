@@ -71,94 +71,94 @@ TAXONOMY: List[str] = [
 # Evaluated in order; first match wins for each label (multiple labels allowed).
 _KEYWORD_RULES: List[tuple[str, str]] = [
     # secrets / key management
-    ("secret",          "secrets-management"),
-    ("key management",  "secrets-management"),
-    ("credential",      "secrets-management"),
+    ("secret", "secrets-management"),
+    ("key management", "secrets-management"),
+    ("credential", "secrets-management"),
     # authentication
-    ("authentication",  "authentication"),
-    ("password",        "authentication"),
-    ("multi-factor",    "authentication"),
-    ("mfa",             "authentication"),
-    ("saml",            "authentication"),
-    ("oauth",           "authentication"),
-    ("oidc",            "authentication"),
-    ("jwt",             "authentication"),
+    ("authentication", "authentication"),
+    ("password", "authentication"),
+    ("multi-factor", "authentication"),
+    ("mfa", "authentication"),
+    ("saml", "authentication"),
+    ("oauth", "authentication"),
+    ("oidc", "authentication"),
+    ("jwt", "authentication"),
     ("forgot password", "authentication"),
     # authorization / access control
-    ("authorization",   "authorization"),
-    ("access control",  "access-control"),
-    ("privilege",       "access-control"),
-    ("rbac",            "access-control"),
+    ("authorization", "authorization"),
+    ("access control", "access-control"),
+    ("privilege", "access-control"),
+    ("rbac", "access-control"),
     # session
-    ("session",         "session-management"),
+    ("session", "session-management"),
     # cryptography
-    ("cryptograph",     "cryptography"),
-    ("encrypt",         "cryptography"),
-    ("tls",             "cryptography"),
-    ("hashing",         "cryptography"),
-    ("cipher",          "cryptography"),
+    ("cryptograph", "cryptography"),
+    ("encrypt", "cryptography"),
+    ("tls", "cryptography"),
+    ("hashing", "cryptography"),
+    ("cipher", "cryptography"),
     # input validation / output encoding
-    ("input validation","input-validation"),
-    ("sanitiz",         "input-validation"),
+    ("input validation", "input-validation"),
+    ("sanitiz", "input-validation"),
     ("output encoding", "output-encoding"),
-    ("xss",             "output-encoding"),
-    ("cross-site scrip","output-encoding"),
+    ("xss", "output-encoding"),
+    ("cross-site scrip", "output-encoding"),
     # injection
-    ("sql injection",   "injection"),
-    ("injection",       "injection"),
-    ("ldap injection",  "injection"),
-    ("xxe",             "xml-security"),
+    ("sql injection", "injection"),
+    ("injection", "injection"),
+    ("ldap injection", "injection"),
+    ("xxe", "xml-security"),
     # api
-    ("api security",    "api-security"),
-    ("graphql",         "api-security"),
-    ("rest security",   "api-security"),
+    ("api security", "api-security"),
+    ("graphql", "api-security"),
+    ("rest security", "api-security"),
     # logging / monitoring
-    ("logging",         "logging-and-monitoring"),
-    ("monitoring",      "logging-and-monitoring"),
-    ("audit",           "logging-and-monitoring"),
+    ("logging", "logging-and-monitoring"),
+    ("monitoring", "logging-and-monitoring"),
+    ("audit", "logging-and-monitoring"),
     # error handling
-    ("error handling",  "error-handling"),
-    ("exception",       "error-handling"),
+    ("error handling", "error-handling"),
+    ("exception", "error-handling"),
     # file upload
-    ("file upload",     "file-upload"),
+    ("file upload", "file-upload"),
     # xml
-    ("xml",             "xml-security"),
-    ("xpath",           "xml-security"),
+    ("xml", "xml-security"),
+    ("xpath", "xml-security"),
     # deserialization
-    ("deserializ",      "deserialization"),
+    ("deserializ", "deserialization"),
     # supply chain
-    ("dependency",      "supply-chain"),
-    ("third-party",     "supply-chain"),
+    ("dependency", "supply-chain"),
+    ("third-party", "supply-chain"),
     ("software composition", "supply-chain"),
     # infrastructure / network
-    ("infrastructure",  "infrastructure-security"),
-    ("network security","network-security"),
-    ("firewall",        "network-security"),
+    ("infrastructure", "infrastructure-security"),
+    ("network security", "network-security"),
+    ("firewall", "network-security"),
     # container / cloud / microservices
-    ("container",       "container-security"),
-    ("docker",          "container-security"),
-    ("kubernetes",      "container-security"),
-    ("cloud",           "cloud-security"),
-    ("microservice",    "microservices-security"),
-    ("serverless",      "cloud-security"),
+    ("container", "container-security"),
+    ("docker", "container-security"),
+    ("kubernetes", "container-security"),
+    ("cloud", "cloud-security"),
+    ("microservice", "microservices-security"),
+    ("serverless", "cloud-security"),
     # privacy / threat modeling / incident response
-    ("privacy",         "privacy"),
-    ("gdpr",            "privacy"),
-    ("threat model",    "threat-modeling"),
-    ("incident response","incident-response"),
-    ("disclosure",      "vulnerability-disclosure"),
+    ("privacy", "privacy"),
+    ("gdpr", "privacy"),
+    ("threat model", "threat-modeling"),
+    ("incident response", "incident-response"),
+    ("disclosure", "vulnerability-disclosure"),
     # mobile / browser
-    ("mobile",          "mobile-security"),
-    ("android",         "mobile-security"),
-    ("ios",             "mobile-security"),
-    ("browser",         "browser-security"),
-    ("cors",            "browser-security"),
+    ("mobile", "mobile-security"),
+    ("android", "mobile-security"),
+    ("ios", "mobile-security"),
+    ("browser", "browser-security"),
+    ("cors", "browser-security"),
     ("content security policy", "browser-security"),
-    ("csp",             "browser-security"),
+    ("csp", "browser-security"),
     # operations / secure coding (broad catch-alls — keep near the bottom)
-    ("operational",     "operations"),
-    ("rotation",        "operations"),
-    ("secure coding",   "secure-coding"),
+    ("operational", "operations"),
+    ("rotation", "operations"),
+    ("secure coding", "secure-coding"),
     ("secure development", "secure-coding"),
 ]
 
@@ -166,6 +166,7 @@ _KEYWORD_RULES: List[tuple[str, str]] = [
 # ---------------------------------------------------------------------------
 # 2.  CheatsheetRecord (minimal interface expected by this module)
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class CheatsheetRecord:
@@ -177,20 +178,24 @@ class CheatsheetRecord:
 
     Required fields must be non-empty strings / lists after normalisation.
     """
-    source: str                           # always "owasp_cheatsheets"
-    source_id: str                        # e.g. "Secrets_Management_Cheat_Sheet"
-    title: str                            # human-readable title
-    hyperlink: str                        # canonical cheatsheetseries URL
-    summary: str                          # bounded summary text
-    headings: List[str]                   # ordered headings from markdown
-    raw_markdown_path: str                # path in the source repo
-    category_hints: List[str] = field(default_factory=list)   # optional lightweight hints
-    metadata: dict = field(default_factory=dict)              # trace data
+
+    source: str  # always "owasp_cheatsheets"
+    source_id: str  # e.g. "Secrets_Management_Cheat_Sheet"
+    title: str  # human-readable title
+    hyperlink: str  # canonical cheatsheetseries URL
+    summary: str  # bounded summary text
+    headings: List[str]  # ordered headings from markdown
+    raw_markdown_path: str  # path in the source repo
+    category_hints: List[str] = field(
+        default_factory=list
+    )  # optional lightweight hints
+    metadata: dict = field(default_factory=dict)  # trace data
 
 
 # ---------------------------------------------------------------------------
 # 3.  CheatsheetGroup
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class CheatsheetGroup:
@@ -201,6 +206,7 @@ class CheatsheetGroup:
     truncated to 12 hex chars.  It stays stable across repeated runs with
     the same input.
     """
+
     group_id: str
     labels: List[str]
     members: List[CheatsheetRecord] = field(default_factory=list)
@@ -214,6 +220,7 @@ class CheatsheetGroup:
 # ---------------------------------------------------------------------------
 # 4.  Core public functions
 # ---------------------------------------------------------------------------
+
 
 def categorize_cheatsheet(
     record: CheatsheetRecord,
@@ -305,6 +312,7 @@ def group_cheatsheets(
 # ---------------------------------------------------------------------------
 # 5.  Internal helpers
 # ---------------------------------------------------------------------------
+
 
 def _build_searchable_text(record: CheatsheetRecord) -> str:
     """Combine title, headings, and category_hints into one lowercase string."""

@@ -30,6 +30,7 @@ from application.utils.external_project_parsers.parsers.cheatsheet_categorizer i
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _make_record(
     source_id: str,
     title: str,
@@ -52,6 +53,7 @@ def _make_record(
 # 1. TAXONOMY integrity
 # ---------------------------------------------------------------------------
 
+
 class TestTaxonomy(unittest.TestCase):
 
     def test_uncategorized_in_taxonomy(self):
@@ -73,6 +75,7 @@ class TestTaxonomy(unittest.TestCase):
 # 2. categorize_cheatsheet — deterministic, known categories
 # ---------------------------------------------------------------------------
 
+
 class TestCategorizeDeterministic(unittest.TestCase):
 
     def _cats(self, record):
@@ -90,8 +93,11 @@ class TestCategorizeDeterministic(unittest.TestCase):
         self.assertIn("authentication", result)
 
     def test_oauth_implies_authentication(self):
-        r = _make_record("OAuth_Cheat_Sheet", "OAuth 2.0 Cheat Sheet",
-                         headings=["Authorization Code Flow"])
+        r = _make_record(
+            "OAuth_Cheat_Sheet",
+            "OAuth 2.0 Cheat Sheet",
+            headings=["Authorization Code Flow"],
+        )
         result = self._cats(r)
         self.assertIn("authentication", result)
 
@@ -143,14 +149,14 @@ class TestCategorizeDeterministic(unittest.TestCase):
 
     # --- api security ---
     def test_api_security(self):
-        r = _make_record("REST_Security_Cheat_Sheet", "REST Security Cheat Sheet",
-                         headings=["API Security Overview"])
+        r = _make_record(
+            "REST_Security_Cheat_Sheet",
+            "REST Security Cheat Sheet",
+            headings=["API Security Overview"],
+        )
         result = self._cats(r)
         # "rest security" or "api security" matches
-        self.assertTrue(
-            "api-security" in result,
-            f"Expected api-security in {result}"
-        )
+        self.assertTrue("api-security" in result, f"Expected api-security in {result}")
 
     # --- output encoding / xss ---
     def test_xss_implies_output_encoding(self):
@@ -167,7 +173,8 @@ class TestCategorizeDeterministic(unittest.TestCase):
     # --- category hints contribute ---
     def test_category_hints_used(self):
         r = _make_record(
-            "Misc_Cheat_Sheet", "Miscellaneous Cheat Sheet",
+            "Misc_Cheat_Sheet",
+            "Miscellaneous Cheat Sheet",
             category_hints=["cloud"],
         )
         result = self._cats(r)
@@ -176,7 +183,8 @@ class TestCategorizeDeterministic(unittest.TestCase):
     # --- output properties ---
     def test_output_is_sorted(self):
         r = _make_record(
-            "Auth_Session", "Authentication Session Management",
+            "Auth_Session",
+            "Authentication Session Management",
             headings=["Session Tokens", "Password Policy"],
         )
         result = self._cats(r)
@@ -184,7 +192,8 @@ class TestCategorizeDeterministic(unittest.TestCase):
 
     def test_output_no_duplicates(self):
         r = _make_record(
-            "Auth_Auth", "Authentication Authentication",
+            "Auth_Auth",
+            "Authentication Authentication",
         )
         result = self._cats(r)
         self.assertEqual(len(result), len(set(result)))
@@ -213,6 +222,7 @@ class TestCategorizeDeterministic(unittest.TestCase):
 # 3. categorize_cheatsheet — UNCATEGORIZED fallback
 # ---------------------------------------------------------------------------
 
+
 class TestUncategorizedFallback(unittest.TestCase):
 
     def test_empty_record_returns_uncategorized(self):
@@ -230,6 +240,7 @@ class TestUncategorizedFallback(unittest.TestCase):
 # ---------------------------------------------------------------------------
 # 4. categorize_cheatsheet — LLM path
 # ---------------------------------------------------------------------------
+
 
 class TestCategorizeLLMPath(unittest.TestCase):
 
@@ -250,6 +261,7 @@ class TestCategorizeLLMPath(unittest.TestCase):
 
     def test_llm_bad_labels_falls_back_to_deterministic(self):
         """LLM returns labels not in TAXONOMY → fall back."""
+
         def bad_llm(record):
             return ["not-a-real-label", "also-fake"]
 
@@ -263,6 +275,7 @@ class TestCategorizeLLMPath(unittest.TestCase):
 
     def test_llm_exception_falls_back_to_deterministic(self):
         """LLM raises an exception → fall back gracefully."""
+
         def crashing_llm(record):
             raise RuntimeError("API timeout")
 
@@ -309,6 +322,7 @@ class TestCategorizeLLMPath(unittest.TestCase):
 # 5. group_cheatsheets
 # ---------------------------------------------------------------------------
 
+
 class TestGroupCheatsheets(unittest.TestCase):
 
     def setUp(self):
@@ -323,9 +337,7 @@ class TestGroupCheatsheets(unittest.TestCase):
             "Secrets Management Cheat Sheet",
             headings=["Secret Rotation", "Operational Practices"],
         )
-        self.unknown_record = _make_record(
-            "Unknown_Topic_Cheat_Sheet", "Unknown Topic"
-        )
+        self.unknown_record = _make_record("Unknown_Topic_Cheat_Sheet", "Unknown Topic")
 
     def test_same_category_same_group(self):
         groups = group_cheatsheets([self.auth_record, self.password_record])
@@ -357,8 +369,10 @@ class TestGroupCheatsheets(unittest.TestCase):
 
     def test_output_is_sorted_by_group_id(self):
         records = [
-            self.auth_record, self.secrets_record,
-            self.unknown_record, self.password_record,
+            self.auth_record,
+            self.secrets_record,
+            self.unknown_record,
+            self.password_record,
         ]
         groups = group_cheatsheets(records)
         ids = [g.group_id for g in groups]
@@ -389,6 +403,7 @@ class TestGroupCheatsheets(unittest.TestCase):
 # 6. CheatsheetGroup.make_group_id
 # ---------------------------------------------------------------------------
 
+
 class TestMakeGroupId(unittest.TestCase):
 
     def test_same_labels_same_id(self):
@@ -415,6 +430,7 @@ class TestMakeGroupId(unittest.TestCase):
 # ---------------------------------------------------------------------------
 # 7. _validate_labels
 # ---------------------------------------------------------------------------
+
 
 class TestValidateLabels(unittest.TestCase):
 
@@ -447,6 +463,7 @@ class TestValidateLabels(unittest.TestCase):
 # ---------------------------------------------------------------------------
 # 8. _deterministic_categorize  (direct unit tests)
 # ---------------------------------------------------------------------------
+
 
 class TestDeterministicCategorize(unittest.TestCase):
 
