@@ -30,15 +30,16 @@ More content.
 
 EMPTY_MD = ""
 
-# No ## headings — _extract_summary raises, _fallback_summary matches # via _ANY_HEADING_RE
-# and extracts body until len(markdown) since there is no next heading.
+# No ## Introduction heading exists, so summary extraction
+# falls back to the first available body content.
 BODY_UNDER_H1_MD = """\
 # Single Heading Cheat Sheet
 
 Body text directly under H1, no subheadings at all.
 """
 
-# Leading spaces before # and ##malformed (no space) — both handled by \s* and (?!#) regex
+# Leading whitespace before H1 and malformed ## headings
+# should still be normalized and extracted correctly.
 MALFORMED_MD = """\
    # Malformed Title
 
@@ -55,8 +56,8 @@ class TestNormal(unittest.TestCase):
     def setUp(self):
         self.record = extract_cheatsheet_record(NORMAL_MD, SOURCE_PATH)
 
-    # source, source_id, hyperlink, raw_markdown_path are derived from SOURCE_PATH
-    # and are independent of markdown content — verified once here for all cases
+    # source-derived fields should remain deterministic and
+    # independent of markdown content across all extraction paths.
     def test_source(self):
         self.assertEqual(self.record.source, "owasp_cheatsheets")
 
@@ -76,8 +77,8 @@ class TestNormal(unittest.TestCase):
         self.assertEqual(self.record.summary, "Storage guidance.")
 
     def test_summary_bounded(self):
-        # SUMMARY_MAX_LENGTH truncation happens in CheatsheetRecord.__post_init__
-        # for every record — testing once here covers all cases
+        # Summary truncation is enforced centrally via
+        # CheatsheetRecord.__post_init__.
         self.assertLessEqual(len(self.record.summary), SUMMARY_MAX_LENGTH)
 
     def test_headings(self):
@@ -114,7 +115,7 @@ class TestEmptyMarkdown(unittest.TestCase):
         self.assertEqual(self.record.title, "No title found.")
 
     def test_summary_no_summary_found(self):
-        # No headings at all — _fallback_summary returns this literal string
+        # Empty markdown should trigger terminal summary fallback.
         self.assertEqual(self.record.summary, "No summary found.")
 
     def test_headings_empty(self):
@@ -132,11 +133,11 @@ class TestBodyUnderH1(unittest.TestCase):
         self.assertEqual(self.record.title, "Single Heading Cheat Sheet")
 
     def test_summary_from_fallback_via_h1(self):
-        # _fallback_summary matches # heading, extracts body until len(markdown)
+        # Summary fallback should extract body content beneath the H1 section.
         self.assertIn("body text", self.record.summary.lower())
 
     def test_headings_empty(self):
-        # _HEADING_RE only matches ## — no ## present here
+        # No valid ## headings should produce an empty headings list.
         self.assertEqual(self.record.headings, [])
 
     def test_fallback_used(self):
