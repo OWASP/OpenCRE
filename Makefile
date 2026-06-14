@@ -46,14 +46,14 @@ dev-flask-docker:
 	. ./venv/bin/activate && INSECURE_REQUESTS=1 FLASK_APP=`pwd`/cre.py  FLASK_CONFIG=development flask run --host=0.0.0.0 --port $(PORT)
 
 e2e:
-	yarn build
+	(cd application/frontend && yarn build)
 	[ -d "./venv" ] && . ./venv/bin/activate &&\
 	export FLASK_APP="$(CURDIR)/cre.py" &&\
 	export FLASK_CONFIG=development &&\
 	export INSECURE_REQUESTS=1 &&\
 	flask run &
 	sleep 5
-	yarn test:e2e
+	(cd application/frontend && yarn test:e2e)
 	sleep 20
 	killall yarn
 	killall flask
@@ -69,7 +69,7 @@ cover:
 install-deps-python:
 	[ -d "./venv" ] && . ./venv/bin/activate &&\
 	pip install --upgrade pip setuptools &&\
-	pip install -r requirements.txt
+	pip install -r application/requirements.txt
 
 install-deps-typescript:
 	(cd application/frontend && yarn install)
@@ -100,13 +100,13 @@ docker-prod-run:
 	 docker run -it -p $(PORT):$(PORT) opencre:$(shell git rev-parse HEAD)
 
 lint:
-	[ -d "./venv" ] && . ./venv/bin/activate && black . && yarn lint
+	[ -d "./venv" ] && . ./venv/bin/activate && black . && (cd application/frontend && yarn lint)
 
 mypy:
 	[ -d "./venv" ] && . ./venv/bin/activate &&  mypy --ignore-missing-imports --implicit-reexport --no-strict-optional --strict application
 
 frontend:
-	yarn build
+	(cd application/frontend && yarn build)
 
 clean:
 	find . -type f -name '*.pyc' -delete
