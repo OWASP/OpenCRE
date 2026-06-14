@@ -603,7 +603,9 @@ class TestMain(unittest.TestCase):
 
             # multi-CRE case: add a second CRE linked to the same ASVS node,
             # should fall back to the node page instead of jumping to a CRE
-            cres["ce"] = defs.CRE(id="444-444", description="CE", name="CE", tags=["te"])
+            cres["ce"] = defs.CRE(
+                id="444-444", description="CE", name="CE", tags=["te"]
+            )
             dce = collection.add_cre(cres["ce"])
             collection.add_link(dce, dasvs, ltype=defs.LinkTypes.LinkedTo)
 
