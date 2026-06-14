@@ -51,8 +51,7 @@
     "section_id": "K09",
     "section": "Misconfigured Cluster Components",
     "hyperlink": "https://owasp.org/www-project-kubernetes-top-ten/2022/en/src/K09-misconfigured-cluster-components",
-    "cre_ids": ["233-748", "486-813"],
-    "note": "Duplication of configuration-focused CRE IDs (233-748 and 486-813) with K01 is intentional: both represent configuration hardening/management requirements, but apply at different layers (workload level vs. cluster component level)."
+    "cre_ids": []
   },
   {
     "section_id": "K10",
