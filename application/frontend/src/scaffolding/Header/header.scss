@@ -173,12 +173,23 @@
   }
 }
 
+.mobile-menu-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: white;
+  z-index:100;
+}
+
 .navbar__mobile-menu {
   position: fixed;
   top: 0;
   right: 0;
   width: 300px;
-  height: 100%;
+  height: fit-content;
   background-color: var(--background);
   border-left: 1px solid var(--border);
   padding: 1rem;
