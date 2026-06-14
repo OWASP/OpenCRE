@@ -315,7 +315,7 @@ def group_cheatsheets(
     list[CheatsheetGroup]
         Groups sorted by group_id for deterministic output order.
     """
-    bucket: dict = {}
+    bucket: dict[str, CheatsheetGroup] = {}
 
     for record in records:
         labels = categorize_cheatsheet(
@@ -338,7 +338,7 @@ def group_cheatsheets(
 
 def _build_searchable_text(record: CheatsheetRecord) -> str:
     """Combine title, headings, and category_hints into lowercase text."""
-    parts = [record.title] + record.headings + record.category_hints
+    parts = [record.title, *record.headings, *record.category_hints]
     return " ".join(parts).lower()
 
 
