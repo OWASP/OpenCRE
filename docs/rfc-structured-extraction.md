@@ -248,11 +248,9 @@ Secrets should be encrypted.
 
 ## Additional behavior notes
 
-It is ensured that markdown files with malformed title/headings such as:
+The extractor correctly handles markdown files with malformed titles/headings such as:
 
-* With leading whitespace (e.g. `   # My Title`, `   ## My Heading`)
+* Titles with leading whitespace
 * No space after the marker (e.g. `##Authentication`)
-
-are extracted correctly.
 
 ---
