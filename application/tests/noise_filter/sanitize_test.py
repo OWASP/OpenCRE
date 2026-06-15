@@ -32,7 +32,7 @@ class PipelineTests(unittest.TestCase):
 
     def test_strips_zero_width_characters(self) -> None:
         # U+200B ZWSP between every char of "hello".
-        text = "h​e​l​l​o"
+        text = "h\u200be\u200bl\u200bl\u200bo"
         self.assertEqual(sanitize_text(text), "hello")
 
     def test_strips_html_tags(self) -> None:
@@ -102,7 +102,7 @@ class IdempotencyTests(unittest.TestCase):
         self._assert_idempotent("<p>Use <b>MFA</b> for auth.</p>")
 
     def test_idempotent_on_dirty_text_with_zero_width(self) -> None:
-        self._assert_idempotent("h​e​l​l​o")
+        self._assert_idempotent("h\u200be\u200bl\u200bl\u200bo")
 
     def test_idempotent_on_multiline_text(self) -> None:
         self._assert_idempotent("Line one.\n\nLine two.\n\nLine three.")

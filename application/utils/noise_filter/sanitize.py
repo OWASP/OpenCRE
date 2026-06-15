@@ -53,7 +53,9 @@ _HTML_TAG_RE: re.Pattern[str] = re.compile(r"</?[a-zA-Z][^>]*>")
 
 # Zero-width characters that shift embedding spaces but render invisibly:
 # ZWSP (U+200B), ZWNJ (U+200C), ZWJ (U+200D), BOM/ZWNBSP (U+FEFF).
-_ZERO_WIDTH_RE: re.Pattern[str] = re.compile("[​‌‍﻿]")
+# Escapes are used instead of literal codepoints so the source is grep-able
+# and lint tools (Ruff PLE2515) don't flag invisible characters.
+_ZERO_WIDTH_RE: re.Pattern[str] = re.compile("[\u200B\u200C\u200D\uFEFF]")
 
 
 def _strip_null_bytes(text: str) -> str:
