@@ -44,7 +44,7 @@ def _make_record(
         source_id=source_id,
         title=title,
         hyperlink=f"{base}/{source_id}.html",
-        summary="",
+        summary="Test summary",
         headings=headings or [],
         raw_markdown_path=f"cheatsheets/{source_id}.md",
         category_hints=category_hints or [],

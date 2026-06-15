@@ -208,6 +208,15 @@ class CheatsheetRecord:
                     f"CheatsheetRecord.{fname} must be a non-empty string, "
                     f"got {value!r}"
                 )
+        for fname in ("headings", "category_hints"):
+            value = getattr(self, fname)
+            if not isinstance(value, list) or not all(
+                isinstance(item, str) for item in value
+            ):
+                raise ValueError(
+                    f"CheatsheetRecord.{fname} must be a list of strings, "
+                    f"got {value!r}"
+                )
 
 
 # ---------------------------------------------------------------------------
@@ -368,6 +377,7 @@ def _validate_labels(labels) -> List[str]:
 
     Returns an empty list if nothing valid remains; the caller should
     fall back to deterministic categorisation in that case.
+    UNCATEGORIZED is stripped if other real labels are present.
     """
     if not isinstance(labels, list):
         return []
@@ -378,4 +388,5 @@ def _validate_labels(labels) -> List[str]:
         if lbl not in seen:
             deduped.append(lbl)
             seen.add(lbl)
-    return deduped
+    real = [lbl for lbl in deduped if lbl != UNCATEGORIZED]
+    return real if real else deduped
