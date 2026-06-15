@@ -1,169 +1,348 @@
 import axios from 'axios';
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { useQuery } from 'react-query';
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 
-import { TWO_DAYS_MILLISECONDS } from '../const';
+import { EXPLORER_CRE_PAGE_SIZE, TWO_DAYS_MILLISECONDS } from '../const';
 import { useEnvironment } from '../hooks/useEnvironment';
 import { Document, TreeDocument } from '../types';
-// Switched from localStorage utils to the new IndexedDB utils
-import { getDbObject, setDbObject } from '../utils'; // Assumes utils/index.tsx is the entry point
+import { getDbObject, setDbObject } from '../utils';
 import { getInternalUrl, getTopicDisplayName } from '../utils/document';
 
-const DATA_STORE_KEY = 'data-store',
-  DATA_TREE_KEY = 'record-tree';
+const DATA_STORE_CACHE_KEY = 'data-store-v2';
+const DATA_TREE_KEY = 'record-tree';
+
+type DataStoreCache = {
+  store: Record<string, TreeDocument>;
+  loadedPages: number;
+  totalPages: number;
+  isFullStoreLoaded: boolean;
+};
+
+const isDataStoreCache = (value: unknown): value is DataStoreCache => {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+  const record = value as Record<string, unknown>;
+  return 'store' in record && 'loadedPages' in record && 'totalPages' in record;
+};
 
 type DataContextValues = {
   dataLoading: boolean;
   dataStore: Record<string, TreeDocument>;
   dataTree: TreeDocument[];
-  getStoreKey;
+  getStoreKey: (doc: Document) => string;
+  hasMore: boolean;
+  isLoadingMore: boolean;
+  fullLoadProgress: string | null;
+  dataLoadError: Error | null;
+  loadNextPage: () => Promise<void>;
+  ensureFullExplorerData: () => Promise<void>;
 };
 
 export const DataContext = createContext<DataContextValues | null>(null);
 
+const docToStoreEntry = (doc: Document): TreeDocument =>
+  ({
+    links: doc.links ?? [],
+    displayName: getTopicDisplayName(doc),
+    url: getInternalUrl(doc),
+    ...doc,
+  } as TreeDocument);
+
+const mergeDocsIntoStore = (
+  docs: Document[],
+  store: Record<string, TreeDocument>,
+  getStoreKey: (doc: Document) => string
+): Record<string, TreeDocument> => {
+  const nextStore = { ...store };
+  docs.forEach((doc) => {
+    nextStore[getStoreKey(doc)] = docToStoreEntry(doc);
+  });
+  return nextStore;
+};
+
 export const DataProvider = ({ children }: { children: React.ReactNode }) => {
   const { apiUrl } = useEnvironment();
 
-  // Default loading to 'true' and initialize data states as empty
   const [dataLoading, setDataLoading] = useState<boolean>(true);
   const [dataStore, setDataStore] = useState<Record<string, TreeDocument>>({});
   const [dataTree, setDataTree] = useState<TreeDocument[]>([]);
-
-  // Add new state to track if we have checked IndexedDB for cached data
   const [isHydrated, setIsHydrated] = useState<boolean>(false);
+  const [loadedPages, setLoadedPages] = useState<number>(0);
+  const [totalPages, setTotalPages] = useState<number>(0);
+  const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false);
+  const [isFullStoreLoaded, setIsFullStoreLoaded] = useState<boolean>(false);
+  const [fullLoadProgress, setFullLoadProgress] = useState<string | null>(null);
+  const [dataLoadError, setDataLoadError] = useState<Error | null>(null);
 
-  const getStoreKey = (doc: Document): string => {
+  const dataStoreRef = useRef(dataStore);
+  const loadedPagesRef = useRef(loadedPages);
+  const totalPagesRef = useRef(totalPages);
+  const isFullStoreLoadedRef = useRef(isFullStoreLoaded);
+  const loadingPageRef = useRef(false);
+  const loadChainRef = useRef(Promise.resolve<Record<string, TreeDocument>>({}));
+  const fullLoadRef = useRef<Promise<void> | null>(null);
+  const bootstrapDoneRef = useRef(false);
+
+  useEffect(() => {
+    dataStoreRef.current = dataStore;
+  }, [dataStore]);
+  useEffect(() => {
+    loadedPagesRef.current = loadedPages;
+  }, [loadedPages]);
+  useEffect(() => {
+    totalPagesRef.current = totalPages;
+  }, [totalPages]);
+  useEffect(() => {
+    isFullStoreLoadedRef.current = isFullStoreLoaded;
+  }, [isFullStoreLoaded]);
+
+  const getStoreKey = useCallback((doc: Document): string => {
     if (doc.doctype === 'CRE') return doc.id;
     if (doc.doctype === 'Standard') return doc.name;
     return `${doc.name}-${doc.sectionID}-${doc.section}`;
-  };
+  }, []);
 
-  const buildTree = (doc: Document, keyPath: string[] = []): TreeDocument => {
-    const selfKey = getStoreKey(doc);
-    keyPath.push(selfKey);
-    const storedDoc = structuredClone(dataStore[selfKey]);
-    const initialLinks = storedDoc.links;
-    let creLinks = initialLinks.filter(
-      (x) =>
-        !!x.document && !keyPath.includes(getStoreKey(x.document)) && getStoreKey(x.document) in dataStore
-    );
-    creLinks = creLinks.filter((x) => x.ltype === 'Contains');
-    creLinks = creLinks.map((x) => ({ ltype: x.ltype, document: buildTree(x.document, keyPath) }));
-    storedDoc.links = [...creLinks];
-    const standards = initialLinks.filter(
-      (link) =>
-        link.document && link.document.doctype === 'Standard' && !keyPath.includes(getStoreKey(link.document))
-    );
-    storedDoc.links = [...creLinks, ...standards];
-    return storedDoc;
-  };
+  const buildTree = useCallback(
+    (doc: Document, store: Record<string, TreeDocument>, keyPath: string[] = []): TreeDocument => {
+      const selfKey = getStoreKey(doc);
+      const nextPath = [...keyPath, selfKey];
+      const storedDoc = structuredClone(store[selfKey] ?? doc);
+      const initialLinks = storedDoc.links || [];
+      let creLinks = initialLinks.filter(
+        (x) => !!x.document && !nextPath.includes(getStoreKey(x.document)) && getStoreKey(x.document) in store
+      );
+      creLinks = creLinks.filter((x) => x.ltype === 'Contains');
+      creLinks = creLinks.map((x) => ({
+        ltype: x.ltype,
+        document: buildTree(x.document, store, nextPath),
+      }));
+      storedDoc.links = [...creLinks];
+      const standards = initialLinks.filter(
+        (link) =>
+          link.document &&
+          link.document.doctype === 'Standard' &&
+          !nextPath.includes(getStoreKey(link.document))
+      );
+      storedDoc.links = [...creLinks, ...standards];
+      return storedDoc;
+    },
+    [getStoreKey]
+  );
 
-  // New effect to asynchronously load data from IndexedDB on component mount
+  const persistCache = useCallback(
+    async (
+      store: Record<string, TreeDocument>,
+      pagesLoaded: number,
+      pagesTotal: number,
+      fullLoaded: boolean,
+      tree?: TreeDocument[]
+    ) => {
+      const payload: DataStoreCache = {
+        store,
+        loadedPages: pagesLoaded,
+        totalPages: pagesTotal,
+        isFullStoreLoaded: fullLoaded,
+      };
+      await setDbObject(DATA_STORE_CACHE_KEY, payload, TWO_DAYS_MILLISECONDS);
+      if (tree) {
+        await setDbObject(DATA_TREE_KEY, tree, TWO_DAYS_MILLISECONDS);
+      }
+    },
+    []
+  );
+
+  const rebuildDataTree = useCallback(
+    async (store: Record<string, TreeDocument>) => {
+      if (!Object.keys(store).length) {
+        setDataTree([]);
+        return [];
+      }
+      try {
+        const result = await axios.get(`${apiUrl}/root_cres`);
+        const treeData = result.data.data.map((x: Document) => buildTree(x, store));
+        setDataTree(treeData);
+        return treeData;
+      } catch (err) {
+        const error = err instanceof Error ? err : new Error('Failed to load explorer tree');
+        setDataLoadError(error);
+        throw error;
+      }
+    },
+    [apiUrl, buildTree]
+  );
+
+  const loadPage = useCallback(
+    async (page: number): Promise<Record<string, TreeDocument>> => {
+      const nextLoad = loadChainRef.current.then(async () => {
+        if (isFullStoreLoadedRef.current || (loadedPagesRef.current >= page && loadedPagesRef.current > 0)) {
+          return dataStoreRef.current;
+        }
+
+        loadingPageRef.current = true;
+        setIsLoadingMore(true);
+        try {
+          const result = await axios.get(`${apiUrl}/all_cres`, {
+            params: { page, per_page: EXPLORER_CRE_PAGE_SIZE },
+          });
+          const docs: Document[] = result.data.data || [];
+          const pagesTotal = Number(result.data.total_pages) || 1;
+          const nextStore = mergeDocsIntoStore(docs, dataStoreRef.current, getStoreKey);
+          const pagesLoaded = page;
+
+          dataStoreRef.current = nextStore;
+          setDataStore(nextStore);
+          setLoadedPages(pagesLoaded);
+          setTotalPages(pagesTotal);
+          loadedPagesRef.current = pagesLoaded;
+          totalPagesRef.current = pagesTotal;
+          setDataLoadError(null);
+
+          const fullLoaded = pagesLoaded >= pagesTotal;
+          if (fullLoaded) {
+            isFullStoreLoadedRef.current = true;
+            setIsFullStoreLoaded(true);
+          }
+
+          const treeData = await rebuildDataTree(nextStore);
+          await persistCache(nextStore, pagesLoaded, pagesTotal, fullLoaded, treeData);
+
+          return nextStore;
+        } catch (err) {
+          const error = err instanceof Error ? err : new Error('Failed to load CRE data');
+          setDataLoadError(error);
+          throw error;
+        } finally {
+          loadingPageRef.current = false;
+          setIsLoadingMore(false);
+        }
+      });
+
+      loadChainRef.current = nextLoad.catch(() => dataStoreRef.current);
+      return nextLoad;
+    },
+    [apiUrl, getStoreKey, persistCache, rebuildDataTree]
+  );
+
+  const loadNextPage = useCallback(async () => {
+    if (isFullStoreLoadedRef.current) {
+      return;
+    }
+    const nextPage = loadedPagesRef.current + 1;
+    if (nextPage > totalPagesRef.current && totalPagesRef.current > 0) {
+      return;
+    }
+    await loadPage(nextPage);
+  }, [loadPage]);
+
+  const ensureFullExplorerData = useCallback(async () => {
+    if (fullLoadRef.current) {
+      return fullLoadRef.current;
+    }
+
+    fullLoadRef.current = (async () => {
+      setFullLoadProgress(null);
+      if (!loadedPagesRef.current) {
+        await loadPage(1);
+      }
+      while (loadedPagesRef.current < totalPagesRef.current) {
+        setFullLoadProgress(`${loadedPagesRef.current}/${totalPagesRef.current}`);
+        await loadPage(loadedPagesRef.current + 1);
+      }
+      isFullStoreLoadedRef.current = true;
+      setIsFullStoreLoaded(true);
+      setFullLoadProgress(null);
+      await rebuildDataTree(dataStoreRef.current);
+    })();
+
+    try {
+      await fullLoadRef.current;
+    } finally {
+      fullLoadRef.current = null;
+    }
+  }, [loadPage, rebuildDataTree]);
+
   useEffect(() => {
     const hydrateStateFromDb = async () => {
-      console.log('Attempting to hydrate state from IndexedDB...');
-      const cachedStore = await getDbObject(DATA_STORE_KEY);
+      const cached = await getDbObject(DATA_STORE_CACHE_KEY);
       const cachedTree = await getDbObject(DATA_TREE_KEY);
 
-      // If we found valid, unexpired data in the cache, load it into our state
-      if (cachedStore && Object.keys(cachedStore).length > 0) {
-        console.log('Cache hit. Hydrating state from IndexedDB.');
-        setDataStore(cachedStore);
-        setDataTree(cachedTree || []); // Use cached tree, or empty array as fallback
-      } else {
-        console.log('Cache miss or expired. Will fetch fresh data from API.');
+      if (isDataStoreCache(cached) && Object.keys(cached.store).length > 0) {
+        dataStoreRef.current = cached.store;
+        setDataStore(cached.store);
+        setLoadedPages(cached.loadedPages);
+        setTotalPages(cached.totalPages);
+        loadedPagesRef.current = cached.loadedPages;
+        totalPagesRef.current = cached.totalPages;
+        isFullStoreLoadedRef.current = cached.isFullStoreLoaded;
+        setIsFullStoreLoaded(cached.isFullStoreLoaded);
+        if (cachedTree?.length) {
+          setDataTree(cachedTree);
+        }
+      } else if (cached && typeof cached === 'object' && !isDataStoreCache(cached)) {
+        const legacyStore = cached as Record<string, TreeDocument>;
+        dataStoreRef.current = legacyStore;
+        setDataStore(legacyStore);
+        isFullStoreLoadedRef.current = true;
+        setIsFullStoreLoaded(true);
+        if (cachedTree?.length) {
+          setDataTree(cachedTree);
+        }
       }
 
-      // Mark hydration as complete. This will enable the API queries to run.
       setIsHydrated(true);
     };
 
     hydrateStateFromDb();
   }, []);
 
-  const getTreeQuery = useQuery(
-    'root_cres',
-    async () => {
-      if (!dataTree.length && Object.keys(dataStore).length) {
-        try {
-          const result = await axios.get(`${apiUrl}/root_cres`);
-          const treeData = result.data.data.map((x) => buildTree(x));
-
-          // Save to IndexedDB (async) instead of localStorage
-          await setDbObject(DATA_TREE_KEY, treeData, TWO_DAYS_MILLISECONDS);
-
-          setDataTree(treeData);
-        } catch (error) {
-          console.error(error);
-        }
-      }
-    },
-    {
-      retry: false,
-      // The query is disabled until hydration is complete
-      enabled: isHydrated,
-    }
-  );
-
-  const getStoreQuery = useQuery(
-    'all_cres',
-    async () => {
-      if (!Object.keys(dataStore).length) {
-        try {
-          const result = await axios.get(`${apiUrl}/all_cres?page=1&per_page=1000`);
-          let data = result.data.data;
-          let store = {};
-
-          if (data.length) {
-            data.forEach((x) => {
-              store[getStoreKey(x)] = {
-                links: x.links,
-                displayName: getTopicDisplayName(x),
-                url: getInternalUrl(x),
-                ...x,
-              };
-            });
-
-            // CHANGE 5: Save to IndexedDB (async) instead of localStorage
-            await setDbObject(DATA_STORE_KEY, store, TWO_DAYS_MILLISECONDS);
-
-            setDataStore(store);
-            console.log('retrieved all cres');
-          }
-        } catch (error) {
-          console.error('Could not retrieve CREs error:');
-          console.error(error);
-        }
-      }
-    },
-    {
-      retry: false,
-      //  The query is disabled until hydration is complete
-      enabled: isHydrated,
-    }
-  );
-
   useEffect(() => {
-    //  Refined loading logic to account for the hydration phase
-    if (!isHydrated) {
+    if (!isHydrated || bootstrapDoneRef.current) {
+      return;
+    }
+    bootstrapDoneRef.current = true;
+
+    const bootstrap = async () => {
       setDataLoading(true);
-    } else {
-      setDataLoading(getStoreQuery.isLoading || getTreeQuery.isLoading);
-    }
-  }, [isHydrated, getStoreQuery.isLoading, getTreeQuery.isLoading]);
+      try {
+        if (loadedPagesRef.current === 0 && !isFullStoreLoadedRef.current) {
+          await loadPage(1);
+        } else if (Object.keys(dataStoreRef.current).length) {
+          await rebuildDataTree(dataStoreRef.current);
+        }
+      } catch {
+        // loadPage/rebuildDataTree already set dataLoadError
+      } finally {
+        setDataLoading(false);
+      }
+    };
 
-  //  Added 'isHydrated' guard to prevent premature API calls
-  useEffect(() => {
-    if (isHydrated) {
-      getStoreQuery.refetch();
-    }
-  }, [dataTree, isHydrated]);
+    bootstrap();
+  }, [isHydrated, loadPage, rebuildDataTree]);
 
   useEffect(() => {
-    if (isHydrated) {
-      getTreeQuery.refetch();
+    if (!isHydrated || isFullStoreLoaded || loadedPages === 0) {
+      return;
     }
-  }, [dataStore, isHydrated]); // Also removed setDataStore from deps to be safer
+
+    const idleCallback = (window as Window & { requestIdleCallback?: Function }).requestIdleCallback;
+    const cancelIdleCallback = (window as Window & { cancelIdleCallback?: Function }).cancelIdleCallback;
+
+    const prefetch = () => {
+      if (!isFullStoreLoadedRef.current && loadedPagesRef.current < totalPagesRef.current) {
+        loadNextPage();
+      }
+    };
+
+    if (idleCallback) {
+      const handle = idleCallback(prefetch, { timeout: 4000 });
+      return () => cancelIdleCallback?.(handle);
+    }
+
+    const timer = window.setTimeout(prefetch, 2000);
+    return () => window.clearTimeout(timer);
+  }, [isHydrated, isFullStoreLoaded, loadedPages, totalPages, loadNextPage]);
+
+  const hasMore = !isFullStoreLoaded && loadedPages > 0 && loadedPages < totalPages;
 
   return (
     <DataContext.Provider
@@ -172,6 +351,12 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
         dataStore,
         dataTree,
         getStoreKey,
+        hasMore,
+        isLoadingMore,
+        fullLoadProgress,
+        dataLoadError,
+        loadNextPage,
+        ensureFullExplorerData,
       }}
     >
       {children}

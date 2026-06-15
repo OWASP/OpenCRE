@@ -48,6 +48,7 @@ import google.auth.transport.requests
 
 
 ITEMS_PER_PAGE = 20
+MAX_ITEMS_PER_PAGE = 100
 OPENCRE_STANDARD_NAME = gap_analysis.OPENCRE_STANDARD_NAME
 
 app = Blueprint(
@@ -559,6 +560,8 @@ def text_search() -> Any:
     """
     database = db.Node_collection()
     text = request.args.get("text")
+    if not text:
+        return jsonify({"error": "text parameter is required"}), 400
     if posthog:
         posthog.capture(f"text_search", f"text:{text}")
 
@@ -1109,6 +1112,7 @@ def all_cres() -> Any:
         and int(request.args.get("per_page")) > 0
     ):
         per_page = int(request.args.get("per_page"))
+    per_page = min(per_page, MAX_ITEMS_PER_PAGE)
 
     documents, page, total_pages = database.all_cres_with_pagination(page, per_page)
     if documents:
