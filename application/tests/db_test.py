@@ -1054,6 +1054,33 @@ class TestDB(unittest.TestCase):
             res = self.collection.text_search(k)
             self.assertCountEqual(res, val)
 
+    def test_text_search_expands_xxe_aliases(self) -> None:
+        xxe_cre = defs.CRE(
+            id="764-507",
+            name="Restrict XML parsing (against XXE)",
+        )
+        cwe_611 = defs.Standard(
+            name="CWE",
+            section="Improper Restriction of XML External Entity Reference",
+            sectionID="611",
+            hyperlink="https://cwe.mitre.org/data/definitions/611.html",
+        )
+
+        self.collection.add_cre(xxe_cre)
+        self.collection.add_node(cwe_611)
+
+        results = self.collection.text_search("XXE")
+
+        self.assertIn("764-507", [doc.id for doc in results if doc.doctype == "CRE"])
+        self.assertTrue(
+            any(
+                doc.doctype == "Standard"
+                and doc.name == "CWE"
+                and doc.sectionID == "611"
+                for doc in results
+            )
+        )
+
     def test_dbNodeFromNode(self) -> None:
         data = {
             "tool": defs.Tool(

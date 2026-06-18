@@ -2162,6 +2162,7 @@ class Node_collection:
                 CRE ids before it performs a free text search
            Anything else will be a case insensitive LIKE query in the database
         """
+        search_terms = self._expand_text_search_aliases(text)
         # structured text search first
         cre_id_search = r"CRE(:| )(?P<id>\d+-\d+)"
         cre_naked_id_search = r"\d\d\d-\d\d\d"
@@ -2213,33 +2214,79 @@ class Node_collection:
             if results:
                 return list(set(results))
         # fuzzy matches second
-        args = [f"%{text}%", "", "", "", "", ""]
         results = {}
-        s = set([p for p in permutations(args, 6)])
-        for combo in s:
-            nodes = self.get_nodes(
-                name=combo[0],
-                section=combo[1],
-                subsection=combo[2],
-                link=combo[3],
-                description=combo[4],
-                partial=True,
-                ntype=None,  # type: ignore
-                sectionID=combo[5],
-            )
-            if nodes:
-                for node in nodes:
-                    node_key = f"{node.name}:{node.version}:{node.section}:{node.sectionID}:{node.subsection}:"
-                    results[node_key] = node
-        args = [f"%{text}%", None, None]
-        for combo in permutations(args, 3):
-            cres = self.get_CREs(
-                name=combo[0], external_id=combo[1], description=combo[2], partial=True
-            )
-            if cres:
-                for cre in cres:
-                    results[cre.id] = cre
+        for search_term in search_terms:
+            args = [f"%{search_term}%", "", "", "", "", ""]
+            s = set([p for p in permutations(args, 6)])
+            for combo in s:
+                nodes = self.get_nodes(
+                    name=combo[0],
+                    section=combo[1],
+                    subsection=combo[2],
+                    link=combo[3],
+                    description=combo[4],
+                    partial=True,
+                    ntype=None,  # type: ignore
+                    sectionID=combo[5],
+                )
+                if nodes:
+                    for node in nodes:
+                        node_key = f"{node.name}:{node.version}:{node.section}:{node.sectionID}:{node.subsection}:"
+                        results[node_key] = node
+            args = [f"%{search_term}%", None, None]
+            for combo in permutations(args, 3):
+                cres = self.get_CREs(
+                    name=combo[0],
+                    external_id=combo[1],
+                    description=combo[2],
+                    partial=True,
+                )
+                if cres:
+                    for cre in cres:
+                        results[cre.id] = cre
         return list(results.values())
+
+    def _expand_text_search_aliases(self, text: str) -> List[str]:
+        normalized = text.strip()
+        lowered = normalized.lower()
+        aliases = {
+            "xxe": [
+                "XXE",
+                "XML External Entity",
+                "XML External Entity Reference",
+            ],
+            "xss": [
+                "XSS",
+                "Cross Site Scripting",
+                "Cross-Site Scripting",
+            ],
+            "ssrf": [
+                "SSRF",
+                "Server Side Request Forgery",
+                "Server-Side Request Forgery",
+            ],
+            "csrf": [
+                "CSRF",
+                "Cross Site Request Forgery",
+                "Cross-Site Request Forgery",
+            ],
+            "rce": [
+                "RCE",
+                "Remote Code Execution",
+            ],
+        }
+        expanded = [normalized]
+        expanded.extend(aliases.get(lowered, []))
+
+        deduped = []
+        seen = set()
+        for entry in expanded:
+            key = entry.lower()
+            if key in seen:
+                continue
+            seen.add(key)
+            deduped.append(entry)
+        return deduped
 
     def get_root_cres(self):
         """Returns CRES that only have "Contains" links"""

@@ -24,6 +24,7 @@ logger.setLevel(logging.INFO)
 class CWE(ParserInterface):
     name = "CWE"
     cwe_zip = "https://cwe.mitre.org/data/xml/cwec_latest.xml.zip"
+    allowed_statuses = {"Stable", "Incomplete", "Draft"}
     fallback_mapping_path = (
         Path(__file__).resolve().parent.parent / "data" / "cwe_fallback_mappings.json"
     )
@@ -180,12 +181,7 @@ class CWE(ParserInterface):
             for weakness in weaknesses:
                 statuses[weakness["@Status"]] = 1
                 cwe = None
-                if weakness["@Status"] in [
-                    "Stable",
-                    "Incomplete",
-                    "Draft",
-                    "PROHIBITED",
-                ]:
+                if weakness["@Status"] in self.allowed_statuses:
                     cwes = cache.get_nodes(self.name, sectionID=weakness["@ID"])
                     if cwes:  # update the CWE in the database
                         cwe = cwes[0]
