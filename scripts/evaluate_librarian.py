@@ -94,6 +94,63 @@ def predict(section: Section, registry: Set[str], hub: List[HubRep]) -> List[str
     return []
 
 
+def report_retrieval_recall(
+    rows: List[GoldenDatasetRow], cache_file: str, top_k: int, threshold: float
+) -> None:
+    """Measure C.1 retrieval recall@k over the positive slice, live.
+
+    Recall@k is the W3 metric — not the Jaccard link rule (that grades the
+    final auto-link, which needs the W4 reranker). It asks the only question
+    the search step controls: does the expected CRE id make it into the top-K
+    shortlist the reranker will later see? A miss here is unrecoverable
+    downstream, so it is the right thing to gate retrieval on.
+
+    Live-only: there is no honest way to compute this offline. The candidate
+    pool must be the real CRE-node vectors, and seeding it from the golden
+    text itself is exactly the leakage the hub firewall strips.
+    """
+    # Live deps are imported lazily so the offline harness needs neither a DB
+    # nor an embedding model.
+    from application.cmd.cre_main import db_connect
+    from application.defs import cre_defs
+    from application.prompt_client import prompt_client
+    from application.utils.librarian.candidate_retriever import (
+        CandidatePool,
+        CandidateRetriever,
+    )
+
+    database = db_connect(path=cache_file)
+    ph = prompt_client.PromptHandler(database=database)
+    pool = CandidatePool.from_mapping(
+        database.get_embeddings_by_doc_type(cre_defs.Credoctypes.CRE.value)
+    )
+    retriever = CandidateRetriever(
+        embed_fn=ph.get_text_embeddings,
+        pool=pool,
+        top_k=top_k,
+        threshold=threshold,
+    )
+
+    positives = [r for r in rows if r.slice.value == "positive" and r.expected.cre_ids]
+    if not positives:
+        print("retrieval recall: no positive rows with expected ids in this selection")
+        return
+    any_hit = all_hit = 0
+    for row in positives:
+        retrieved = {c.cre_id for c in retriever.retrieve(row.input.text).candidates}
+        expected = set(row.expected.cre_ids or [])
+        if expected & retrieved:
+            any_hit += 1
+        if expected <= retrieved:
+            all_hit += 1
+    n = len(positives)
+    print(
+        f"retrieval recall@{top_k} (live, {n} positive rows): "
+        f"any-hit {any_hit}/{n} ({any_hit / n:.0%}), "
+        f"all-hit {all_hit}/{n} ({all_hit / n:.0%})"
+    )
+
+
 def main(argv: List[str]) -> int:
     cfg = load_config()
     parser = argparse.ArgumentParser(description="Module C eval harness (W2: C.0)")
@@ -110,6 +167,17 @@ def main(argv: List[str]) -> int:
         "--no_hub_firewall",
         action="store_true",
         help="disable the leakage firewall (firewall is ON by default)",
+    )
+    parser.add_argument(
+        "--use_live_embeddings",
+        action="store_true",
+        help="connect to the OpenCRE DB + embedding model and measure semantic "
+        "retrieval recall@k over the positive slice (needs an LLM + populated DB)",
+    )
+    parser.add_argument(
+        "--cache_file",
+        default="standards_cache.sqlite",
+        help="OpenCRE cache DB path for --use_live_embeddings",
     )
     args = parser.parse_args(argv)
 
@@ -167,6 +235,15 @@ def main(argv: List[str]) -> int:
         )
         if not gate_ok:
             return 1
+    if args.use_live_embeddings:
+        report_retrieval_recall(
+            rows, args.cache_file, args.top_k_retrieval, args.threshold
+        )
+    else:
+        print(
+            "semantic retriever (C.1): wired; recall@k needs --use_live_embeddings "
+            "(no CRE vectors offline — seeding from golden text would be leakage)"
+        )
     print(f"correct overall (semantic path still stubbed): {correct}/{len(rows)}")
     return 0
 
