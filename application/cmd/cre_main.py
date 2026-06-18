@@ -1005,6 +1005,12 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
         )
     if args.upstream_sync:
         download_graph_from_upstream(args.cache_file)
+    if args.run_librarian or args.librarian_dry_run:
+        run_librarian(
+            cache_file=args.cache_file,
+            dry_run=args.librarian_dry_run or not args.run_librarian,
+            source_jsonl=args.librarian_source,
+        )
 
 
 def ai_client_init(database: db.Node_collection):
@@ -1049,6 +1055,114 @@ def prepare_for_review(cache: str) -> Tuple[str, str]:
 def generate_embeddings(db_url: str) -> None:
     database = db_connect(path=db_url)
     prompt_client.PromptHandler(database, load_all_embeddings=True)
+
+
+_DEFAULT_LIBRARIAN_SOURCE = os.path.join(
+    os.path.dirname(os.path.dirname(__file__)),
+    "tests",
+    "librarian",
+    "fixtures",
+    "sample_knowledge_queue.jsonl",
+)
+
+
+def run_librarian(
+    cache_file: str, dry_run: bool = True, source_jsonl: Optional[str] = None
+) -> None:
+    """Module C entrypoint — the pipeline switch (W3).
+
+    For each knowledge-queue section: try the deterministic explicit-CRE fast
+    path (C.0.5); on no/ambiguous reference, run the semantic retriever (C.1)
+    and log the top-K candidate shortlist. The cross-encoder rerank (C.2, W4),
+    decision/threshold routing (C.3-C.4, W5) and graph writes (W8) are not
+    built yet, so this is dry-run only: it never writes a link. ``--run_librarian``
+    without writes behaves identically and warns.
+    """
+    from application.utils.librarian.candidate_retriever import (
+        CandidatePool,
+        RetrieverBackend,
+        build_retriever,
+    )
+    from application.utils.librarian.config_loader import load_config
+    from application.utils.librarian.explicit_link_resolver import (
+        ResolutionOutcome,
+        resolve,
+    )
+    from application.utils.librarian.knowledge_source import FixtureKnowledgeSource
+    from application.utils.librarian.section_validator import (
+        SectionValidationError,
+        section_from_queue_row,
+    )
+
+    if not dry_run:
+        logger.warning(
+            "the Librarian cannot write links yet (DecisionEngine + graph write "
+            "land W8); running in dry-run mode"
+        )
+
+    cfg = load_config()
+    database = db_connect(path=cache_file)
+    ph = prompt_client.PromptHandler(database=database)
+
+    backend = RetrieverBackend(cfg.retriever_backend)
+    # The CRE ids present in the hub are exactly the known ids the explicit
+    # resolver may auto-link to (W2 seeded this from the golden set; here it is
+    # the real DB-backed registry).
+    cre_embeddings = database.get_embeddings_by_doc_type(defs.Credoctypes.CRE.value)
+    known_ids = set(cre_embeddings.keys())
+    # in_memory loads the hub matrix; pgvector ranks in the DB over the
+    # embedding_vec column (no in-RAM pool). Both honor the same retrieve().
+    pool = (
+        CandidatePool.from_mapping(cre_embeddings)
+        if backend is RetrieverBackend.in_memory
+        else None
+    )
+    retriever = build_retriever(
+        backend,
+        embed_fn=ph.get_text_embeddings,
+        top_k=cfg.top_k_retrieval,
+        threshold=cfg.link_threshold,
+        pool=pool,
+        connection=database.session.connection(),
+    )
+
+    source = FixtureKnowledgeSource(source_jsonl or _DEFAULT_LIBRARIAN_SOURCE)
+    sections = explicit = semantic = rejected = 0
+    for item in source.items():
+        try:
+            section = section_from_queue_row(item)
+        except SectionValidationError as exc:
+            rejected += 1
+            logger.warning("section rejected at C.0 boundary: %s", exc)
+            continue
+        sections += 1
+
+        resolution = resolve(section.text, known_ids)
+        if resolution.outcome == ResolutionOutcome.resolved:
+            explicit += 1
+            logger.info("[explicit] %s -> %s", section.chunk_id, resolution.cre_ids[0])
+            continue
+
+        semantic += 1
+        audit = retriever.retrieve(section.text)
+        top = ", ".join(
+            f"{c.cre_id}:{c.score_vector:.3f}" for c in audit.candidates[:5]
+        )
+        logger.info(
+            "[semantic] %s -> %d candidates (top5: %s)",
+            section.chunk_id,
+            len(audit.candidates),
+            top or "<none>",
+        )
+
+    logger.info(
+        "librarian dry-run complete: %d sections (%d explicit, %d semantic), "
+        "%d rejected at boundary",
+        sections,
+        explicit,
+        semantic,
+        rejected,
+    )
 
 
 def regenerate_embeddings(db_url: str) -> None:
