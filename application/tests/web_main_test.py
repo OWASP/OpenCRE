@@ -585,7 +585,7 @@ class TestMain(unittest.TestCase):
             for head in response.headers:
                 if head[0] == "Location":
                     location = head[1]
-            self.assertEqual(location, "/node/standard/CWE/sectionid/456")
+            self.assertEqual(location, "/cre/222-222")
             self.assertEqual(302, response.status_code)
 
             response = client.get(
@@ -596,7 +596,28 @@ class TestMain(unittest.TestCase):
             for head in response.headers:
                 if head[0] == "Location":
                     location = head[1]
-            self.assertEqual(location, "/node/standard/ASVS/section/v0.1.2")
+            self.assertEqual(location, "/cre/333-333")
+            self.assertEqual(302, response.status_code)
+
+            # Multiple CREs linked to same standard → should fall back to node page
+            cwe_multi = defs.Standard(name="CWEmulti", sectionID="789")
+            ce = defs.CRE(id="444-444", description="CE", name="CE", tags=[])
+            cf = defs.CRE(id="555-555", description="CF", name="CF", tags=[])
+            dcwe_multi = collection.add_node(cwe_multi)
+            dce = collection.add_cre(ce)
+            dcf = collection.add_cre(cf)
+            collection.add_link(dce, dcwe_multi, ltype=defs.LinkTypes.LinkedTo)
+            collection.add_link(dcf, dcwe_multi, ltype=defs.LinkTypes.LinkedTo)
+
+            response = client.get(
+                "/smartlink/standard/CWEmulti/789",
+                headers={"Content-Type": "application/json"},
+            )
+            location = ""
+            for head in response.headers:
+                if head[0] == "Location":
+                    location = head[1]
+            self.assertEqual(location, "/node/standard/CWEmulti/sectionid/789")
             self.assertEqual(302, response.status_code)
 
             # negative test, this cwe does not exist, therefore we redirect to Mitre!
