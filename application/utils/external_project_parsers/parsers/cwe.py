@@ -24,7 +24,7 @@ logger.setLevel(logging.INFO)
 class CWE(ParserInterface):
     name = "CWE"
     cwe_zip = "https://cwe.mitre.org/data/xml/cwec_latest.xml.zip"
-    allowed_statuses = frozenset({"Stable", "Incomplete", "Draft"})    
+    allowed_statuses = frozenset({"Stable", "Incomplete", "Draft"})
     fallback_mapping_path = (
         Path(__file__).resolve().parent.parent / "data" / "cwe_fallback_mappings.json"
     )
