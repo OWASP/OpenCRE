@@ -2248,6 +2248,8 @@ class Node_collection:
 
     def _expand_text_search_aliases(self, text: str) -> List[str]:
         normalized = text.strip()
+        if not normalized:
+            return []
         lowered = normalized.lower()
         aliases = {
             "xxe": [
@@ -2277,7 +2279,6 @@ class Node_collection:
         }
         expanded = [normalized]
         expanded.extend(aliases.get(lowered, []))
-
         deduped = []
         seen = set()
         for entry in expanded:
