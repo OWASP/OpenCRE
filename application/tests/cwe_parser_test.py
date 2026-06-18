@@ -258,6 +258,14 @@ class TestCWEParser(unittest.TestCase):
             imported_cwes["384"].links[0].document.todict(),
             session_management_cre.todict(),
         )
+        self.assertEqual(
+            imported_cwes["614"].links[0].document.todict(),
+            secure_cookie_cre.todict(),
+        )
+        self.assertEqual(
+            imported_cwes["502"].links[0].document.todict(),
+            deserialization_cre.todict(),
+        )
 
     @patch.object(requests, "get")
     def test_register_CWE_skips_prohibited_entries(self, mock_requests) -> None:
