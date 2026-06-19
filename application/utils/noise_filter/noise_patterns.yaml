@@ -65,6 +65,15 @@ deny_paths:
   - .github/**
   - .gitlab-ci.yml
 
+  # AI coding-agent dotfile directories — per maintainer review on Week 2 PR.
+  # These hold editor / agent configuration (settings, prompts, MCP servers,
+  # session history), never security narrative. Extend the list as new agents
+  # become common.
+  - .claude/**
+  - .cursor/**
+  - .aider/**
+  - .continue/**
+
   # Build artifacts
   - node_modules/**
   - dist/**
@@ -93,4 +102,13 @@ deny_paths:
 # match top-level files because fnmatch requires the trailing `/*` to consume
 # at least one chunk of name -- so we use the broader form.
 allow_overrides:
-  - "docs/**"   # OpenCRE's own docs are always allowed
+  # Any repo's top-level `docs/` directory. Multiple OWASP projects keep
+  # narrative content there (OpenCRE itself, OWASP/Top10, etc.) and we want
+  # all of them to reach Stage 2 LLM judgment rather than being blocked at
+  # the path level. Intentionally repo-AGNOSTIC: per Module A's input
+  # contract (v0.3), `locator.path` is repo-relative POSIX (no
+  # `OWASP/<repo>/` prefix), so a literal pattern like `OpenCRE/docs/**`
+  # would match nothing. The repo identity lives in `source.repo`, not in
+  # the path -- repo-scoped overrides would require restructuring this
+  # YAML and the RegexFilter API, which is not in scope here.
+  - "docs/**"
