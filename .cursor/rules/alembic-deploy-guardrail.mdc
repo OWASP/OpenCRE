@@ -1,0 +1,14 @@
+---
+description: Enforce Alembic DB-revision guardrail before deploy/migration operations
+alwaysApply: true
+---
+
+# Alembic Deploy Guardrail
+
+- Before any production/staging deploy or migration operation, run the Alembic guardrail check:
+  - `python scripts/check_alembic_revision_guardrail.py`
+  - or `make alembic-guardrail`
+- If the guardrail reports unknown DB revision(s), stop immediately and do not run migrations until lineage is reconciled.
+- For Heroku deploys, keep `Procfile` `release:` wired to the guardrail so incompatible slugs fail before web/worker rollout.
+- After backup restore operations, re-run the guardrail before any `flask db upgrade`.
+

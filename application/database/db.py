@@ -10,7 +10,7 @@ import yaml
 
 from pprint import pprint
 
-from collections import Counter
+from collections import Counter, defaultdict
 from itertools import permutations
 from typing import Any, Dict, List, Optional, Tuple, cast
 from neomodel.exceptions import (
@@ -47,6 +47,7 @@ from application.utils.gap_analysis import (
     make_resources_key,
     make_subresources_key,
     primary_gap_analysis_payload_is_material,
+    should_persist_primary_gap_analysis_cache,
 )
 
 
@@ -1343,7 +1344,13 @@ class Node_collection:
         if not external_id:
             logger.error(f"CRE {id} does not exist in the db")
             return None
-        return self.get_CREs(external_id=external_id[0])[0]
+        cres = self.get_CREs(external_id=external_id[0])
+        if not cres:
+            logger.error(
+                f"CRE {id} exists but get_CREs returned no results for external_id={external_id[0]}"
+            )
+            return None
+        return cres[0]
 
     def list_node_ids_by_ntype(self, ntype: str) -> List[str]:
         # Always return plain strings (never SQLAlchemy row tuples).
@@ -1442,7 +1449,6 @@ class Node_collection:
         include_only: Optional[List[str]] = None,
         internal_id: Optional[str] = None,
     ) -> List[cre_defs.CRE]:
-        cres: List[cre_defs.CRE] = []
         query = CRE.query
         if not external_id and not name and not description and not internal_id:
             logger.error(
@@ -1477,40 +1483,99 @@ class Node_collection:
             )
             return []
 
-        for matching_cre in dbcres:
-            cre = CREfromDB(matching_cre)
-            cre.links = self.__make_cre_links(
-                cre=matching_cre, include_only_nodes=include_only
-            )
-            cre.links.extend(self.__make_cre_internal_links(cre=matching_cre))
-            cres.append(cre)
-        return cres
+        return self._hydrate_cres_batch(dbcres, include_only_nodes=include_only)
 
-    def __make_cre_internal_links(self, cre: CRE) -> List[cre_defs.Link]:
-        links = []
-        internal_links = (
+    def _hydrate_cres_batch(
+        self,
+        dbcres: List[CRE],
+        include_only_nodes: Optional[List[str]] = None,
+    ) -> List[cre_defs.CRE]:
+        if not dbcres:
+            return []
+
+        cre_ids = [cre.id for cre in dbcres]
+        node_links_by_cre: Dict[str, List[Links]] = defaultdict(list)
+        node_ids: set = set()
+        for link in self.session.query(Links).filter(Links.cre.in_(cre_ids)).all():
+            node_links_by_cre[link.cre].append(link)
+            node_ids.add(link.node)
+
+        nodes_by_id: Dict[str, Node] = {}
+        if node_ids:
+            nodes_by_id = {
+                node.id: node
+                for node in self.session.query(Node).filter(Node.id.in_(node_ids)).all()
+            }
+
+        internal_links_by_cre: Dict[str, List[InternalLinks]] = defaultdict(list)
+        linked_cre_ids: set = set()
+        for internal_link in (
             self.session.query(InternalLinks)
             .filter(
-                sqla.or_(InternalLinks.cre == cre.id, InternalLinks.group == cre.id)
+                sqla.or_(
+                    InternalLinks.cre.in_(cre_ids),
+                    InternalLinks.group.in_(cre_ids),
+                )
             )
             .all()
-        )
+        ):
+            linked_cre_ids.add(internal_link.cre)
+            linked_cre_ids.add(internal_link.group)
+            if internal_link.cre in cre_ids:
+                internal_links_by_cre[internal_link.cre].append(internal_link)
+            if internal_link.group in cre_ids:
+                internal_links_by_cre[internal_link.group].append(internal_link)
 
-        if len(internal_links) == 0:
+        cres_by_id: Dict[str, CRE] = {cre.id: cre for cre in dbcres}
+        extra_cre_ids = linked_cre_ids - set(cre_ids)
+        if extra_cre_ids:
+            for linked in (
+                self.session.query(CRE).filter(CRE.id.in_(extra_cre_ids)).all()
+            ):
+                cres_by_id[linked.id] = linked
+
+        result: List[cre_defs.CRE] = []
+        for matching_cre in dbcres:
+            cre = CREfromDB(matching_cre)
+            cre.links = self._assemble_cre_node_links(
+                node_links_by_cre.get(matching_cre.id, []),
+                nodes_by_id,
+                include_only_nodes,
+            )
+            seen_internal: set = set()
+            internal_rows = []
+            for row in internal_links_by_cre.get(matching_cre.id, []):
+                key = (row.cre, row.group, row.type)
+                if key not in seen_internal:
+                    seen_internal.add(key)
+                    internal_rows.append(row)
+            cre.links.extend(
+                self._assemble_cre_internal_links(
+                    matching_cre, internal_rows, cres_by_id
+                )
+            )
+            result.append(cre)
+        return result
+
+    def _assemble_cre_internal_links(
+        self,
+        cre: CRE,
+        internal_links: List[InternalLinks],
+        cres_by_id: Dict[str, CRE],
+    ) -> List[cre_defs.Link]:
+        links: List[cre_defs.Link] = []
+        if not internal_links:
             logger.debug(
                 f"CRE {cre.name}:{cre.external_id}:{cre.id} has no internal links"
             )
 
         for internal_link in internal_links:
-
-            linked_cre_query = self.session.query(CRE)
             link_type = cre_defs.LinkTypes.from_str(internal_link.type)
 
             if internal_link.cre == cre.id:
-                # if we are the lower cre in this relationship, we need to flip the "Contains" linktypes
-                linked_cre = linked_cre_query.filter(
-                    CRE.id == internal_link.group
-                ).first()  # get the higher cre so we can add the link
+                linked_cre = cres_by_id.get(internal_link.group)
+                if not linked_cre:
+                    continue
                 if link_type == cre_defs.LinkTypes.Contains:
                     links.append(
                         cre_defs.Link(
@@ -1518,24 +1583,28 @@ class Node_collection:
                             document=CREfromDB(linked_cre),
                         )
                     )
-                elif (
-                    link_type == cre_defs.LinkTypes.Related
-                ):  # if it's not a "Contains" link, it's a "Related" link
+                elif link_type == cre_defs.LinkTypes.Related:
                     links.append(
                         cre_defs.Link(ltype=link_type, document=CREfromDB(linked_cre))
                     )
                 continue
-            # if we are are the higher cre then we don't need to do anything, relationship types are always "higher"->"lower"
-            linked_cre = linked_cre_query.filter(CRE.id == internal_link.cre).first()
-            links.append(cre_defs.Link(ltype=link_type, document=CREfromDB(linked_cre)))
+
+            linked_cre = cres_by_id.get(internal_link.cre)
+            if linked_cre:
+                links.append(
+                    cre_defs.Link(ltype=link_type, document=CREfromDB(linked_cre))
+                )
         return links
 
-    def __make_cre_links(
-        self, cre: CRE, include_only_nodes: List[str]
+    def _assemble_cre_node_links(
+        self,
+        node_links: List[Links],
+        nodes_by_id: Dict[str, Node],
+        include_only_nodes: Optional[List[str]],
     ) -> List[cre_defs.Link]:
-        links = []
-        for link in self.session.query(Links).filter(Links.cre == cre.id).all():
-            node = self.session.query(Node).filter(Node.id == link.node).first()
+        links: List[cre_defs.Link] = []
+        for link in node_links:
+            node = nodes_by_id.get(link.node)
             if node and (not include_only_nodes or node.name in include_only_nodes):
                 links.append(
                     cre_defs.Link(
@@ -1640,13 +1709,11 @@ class Node_collection:
     def all_cres_with_pagination(
         self, page: int = 1, per_page: int = 10
     ) -> List[cre_defs.CRE]:
-        result: List[cre_defs.CRE] = []
         cres = self.session.query(CRE).paginate(
             page=int(page), per_page=per_page, error_out=False
         )
         total_pages = cres.pages
-        for cre in cres.items:
-            result.extend(self.get_CREs(external_id=cre.external_id))
+        result = self._hydrate_cres_batch(list(cres.items))
         return result, page, total_pages
 
     def get_cre_path(self, fromID: str, toID: str) -> List[cre_defs.Document]:
@@ -2195,10 +2262,7 @@ class Node_collection:
             )
             .all()
         )
-        result = []
-        for c in cres:
-            result.extend(self.get_CREs(external_id=c.external_id))
-        return result
+        return self._hydrate_cres_batch(list(cres))
 
     def get_embeddings_by_doc_type(self, doc_type: str) -> Dict[str, List[float]]:
         res = {}
@@ -2428,6 +2492,22 @@ class Node_collection:
             .filter(GapAnalysisResults.cache_key == cache_key)
             .first()
         )
+        if gap_analysis_cache_key_is_primary(cache_key):
+            existing_payload = existing.ga_object if existing else None
+            if not should_persist_primary_gap_analysis_cache(
+                ga_object, existing_payload
+            ):
+                if existing is None:
+                    logger.info(
+                        "Skipping empty primary gap analysis cache insert for %s",
+                        cache_key,
+                    )
+                else:
+                    logger.warning(
+                        "Refusing non-material primary gap analysis update for %s",
+                        cache_key,
+                    )
+                return
         if existing:
             existing.ga_object = ga_object
             self.session.add(existing)
