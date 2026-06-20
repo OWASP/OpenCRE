@@ -23,7 +23,7 @@ from sqlalchemy.orm import aliased
 from flask_sqlalchemy.model import DefaultMeta
 from sqlalchemy import func, delete, cast as sql_cast, literal, or_
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.exc import OperationalError, IntegrityError
+from sqlalchemy.exc import OperationalError, IntegrityError, SQLAlchemyError
 
 from neomodel import (
     config,
@@ -2289,12 +2289,12 @@ class Node_collection:
                 "db_reachable": False,
                 "reason": "database unreachable",
             }
-        except Exception:  # pragma: no cover - defensive, never fail open
-            return {
-                "ok": False,
-                "db_reachable": False,
-                "reason": "database health query failed",
-            }
+        except SQLAlchemyError:  # pragma: no cover - defensive, never fail open
+             return {
+                 "ok": False,
+                 "db_reachable": False,
+                 "reason": "database health query failed",
+             }
 
         if cre_count == 0 or standards_count == 0:
             return {
