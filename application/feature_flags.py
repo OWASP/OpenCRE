@@ -1,5 +1,12 @@
 import os
 
+try:
+    from dotenv import load_dotenv  # type: ignore
+
+    load_dotenv()
+except ImportError:
+    pass
+
 TRUE_VALUES = {"1", "true", "yes"}
 
 
