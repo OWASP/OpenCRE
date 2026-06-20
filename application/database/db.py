@@ -2290,11 +2290,11 @@ class Node_collection:
                 "reason": "database unreachable",
             }
         except SQLAlchemyError:  # pragma: no cover - defensive, never fail open
-             return {
-                 "ok": False,
-                 "db_reachable": False,
-                 "reason": "database health query failed",
-             }
+            return {
+                "ok": False,
+                "db_reachable": False,
+                "reason": "database health query failed",
+            }
 
         if cre_count == 0 or standards_count == 0:
             return {
