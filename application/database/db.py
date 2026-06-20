@@ -2163,6 +2163,9 @@ class Node_collection:
            Anything else will be a case insensitive LIKE query in the database
         """
         search_terms = self._expand_text_search_aliases(text)
+        if not search_terms:
+            return []
+        text = text.strip()
         # structured text search first
         cre_id_search = r"CRE(:| )(?P<id>\d+-\d+)"
         cre_naked_id_search = r"\d\d\d-\d\d\d"
