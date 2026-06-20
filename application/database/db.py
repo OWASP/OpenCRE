@@ -2264,6 +2264,54 @@ class Node_collection:
         )
         return self._hydrate_cres_batch(list(cres))
 
+    def health_check(self) -> Dict[str, Any]:
+        """Lightweight liveness/readiness probe for the serving database.
+
+        Intended for use by a deploy/uptime health endpoint, NOT for deep
+        operational checks (GA completeness, mapping coverage, etc.) which are
+        slow and belong in ops tooling. Performs cheap COUNT queries and never
+        raises: connectivity failures are reported as ``ok=False`` so the caller
+        can return an appropriate status code.
+
+        Returns a dict with:
+          - ``ok``: True only if the DB is reachable AND holds a non-empty
+            dataset (at least one CRE and one standard/node).
+          - ``db_reachable``: True if the COUNT queries executed.
+          - ``cre_count`` / ``standards_count``: populated when reachable.
+          - ``reason``: short human-readable explanation when ``ok`` is False.
+        """
+        try:
+            cre_count = self.session.query(func.count(CRE.id)).scalar() or 0
+            standards_count = self.session.query(func.count(Node.id)).scalar() or 0
+        except OperationalError:
+            return {
+                "ok": False,
+                "db_reachable": False,
+                "reason": "database unreachable",
+            }
+        except Exception:  # pragma: no cover - defensive, never fail open
+            return {
+                "ok": False,
+                "db_reachable": False,
+                "reason": "database health query failed",
+            }
+
+        if cre_count == 0 or standards_count == 0:
+            return {
+                "ok": False,
+                "db_reachable": True,
+                "cre_count": cre_count,
+                "standards_count": standards_count,
+                "reason": "empty dataset",
+            }
+
+        return {
+            "ok": True,
+            "db_reachable": True,
+            "cre_count": cre_count,
+            "standards_count": standards_count,
+        }
+
     def get_embeddings_by_doc_type(self, doc_type: str) -> Dict[str, List[float]]:
         res = {}
         embeddings = (

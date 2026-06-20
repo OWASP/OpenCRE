@@ -289,6 +289,7 @@ Then edit `.env` and provide values appropriate for your environment.
 * Google Auth: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_SECRET_JSON`, `LOGIN_ALLOWED_DOMAINS`
 * GCP: `GCP_NATIVE`
 * Spreadsheet Auth: `OpenCRE_gspread_Auth`
+* Feature flags: `CRE_ENABLE_HEALTH` (enable the `GET /rest/v1/health` deploy/uptime probe; off by default, returns 404 when unset)
 
 See `.env.example` for full list and defaults.
 
