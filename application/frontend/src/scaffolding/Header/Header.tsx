@@ -1,6 +1,6 @@
 import './header.scss';
 
-import { Menu, Search } from 'lucide-react';
+import { LogOut, Menu, Search, User } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { Link, useHistory } from 'react-router-dom';
 import { NavLink } from 'react-router-dom';
@@ -9,6 +9,7 @@ import { Button } from 'semantic-ui-react';
 import { ClearFilterButton } from '../../components/FilterButton/FilterButton';
 import { Capabilities } from '../../hooks/useCapabilities';
 import { useLocationFromOutsideRoute } from '../../hooks/useLocationFromOutsideRoute';
+import { useUser } from '../../hooks/useUser';
 import { SearchBar } from '../../pages/Search/components/SearchBar';
 import { ROUTES } from '../../routes';
 
@@ -25,6 +26,8 @@ export const Header = ({ capabilities }: HeaderProps) => {
     history.push(window.location.pathname + '?' + currentUrlParams.toString());
   };
   const { showFilter } = useLocationFromOutsideRoute(routes);
+
+  const { user, isLoggedIn, loading: userLoading, login, logout } = useUser();
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   useEffect(() => {
@@ -100,28 +103,24 @@ export const Header = ({ capabilities }: HeaderProps) => {
             </div>
 
             <div className="navbar__actions">
-              {/* Left these divs so that we can add auth functionality directly here. */}
-              {/* <div className="navbar__desktop-auth">
-                <Link
-                  to={{
-                    pathname: '/auth',
-                    state: { mode: 'login' },
-                  }}
-                  className="btn btn--ghost"
-                >
-                  Log In
-                </Link>
-
-                <Link
-                  to={{
-                    pathname: '/auth',
-                    state: { mode: 'signup' },
-                  }}
-                  className="btn btn--primary"
-                >
-                  Sign Up
-                </Link>
-              </div> */}
+              {!userLoading && (
+                <div className="navbar__desktop-auth">
+                  {isLoggedIn ? (
+                    <div className="user-info">
+                      <div className="user-details">
+                        <User className="icon" />
+                        <span>{user}</span>
+                      </div>
+                      <Button onClick={logout}>
+                        <LogOut className="icon" />
+                        Logout
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button onClick={login} content="Login" />
+                  )}
+                </div>
+              )}
 
               <button className="navbar__mobile-menu-toggle" onClick={() => setIsMobileMenuOpen(true)}>
                 <Menu className="icon" />
@@ -210,31 +209,37 @@ export const Header = ({ capabilities }: HeaderProps) => {
           )}
         </div>
 
-        <div className="mobile-auth">
-          {/* <div className="auth-buttons">
-            <Link
-              to={{
-                pathname: '/auth',
-                state: { mode: 'login' },
-              }}
-              className="btn btn--ghost"
-              onClick={closeMobileMenu}
-            >
-              Log In
-            </Link>
-
-            <Link
-              to={{
-                pathname: '/auth',
-                state: { mode: 'signup' },
-              }}
-              className="btn btn--primary"
-              onClick={closeMobileMenu}
-            >
-              Sign Up
-            </Link>
-          </div> */}
-        </div>
+        {!userLoading && (
+          <div className="mobile-auth">
+            {isLoggedIn ? (
+              <div className="user-info">
+                <div className="user-details">
+                  <User className="icon" />
+                  <span>{user}</span>
+                </div>
+                <Button
+                  onClick={() => {
+                    closeMobileMenu();
+                    logout();
+                  }}
+                >
+                  <LogOut className="icon" />
+                  Logout
+                </Button>
+              </div>
+            ) : (
+              <div className="auth-buttons">
+                <Button
+                  onClick={() => {
+                    closeMobileMenu();
+                    login();
+                  }}
+                  content="Login"
+                />
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </>
   );
