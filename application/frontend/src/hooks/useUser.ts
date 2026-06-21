@@ -20,17 +20,25 @@ export const useUser = () => {
         if (res.status === 200) {
           return res.text();
         }
-        return null; // 401 or anything else => treated as not logged in
+        if (res.status === 401) {
+          return null; // the normal anonymous case — not logged in
+        }
+        // Unexpected status (e.g. 5xx): a real failure, not a clean anonymous state.
+        throw new Error(`Unexpected /user status: ${res.status}`);
       })
       .then((value) => {
         if (active) {
           setUser(value && value.trim() !== '' ? value : null);
         }
       })
-      .catch(() => {
+      .catch((err) => {
+        // Network error or unexpected status. Degrade to anonymous so public
+        // pages stay accessible (never block or redirect), but log the failure
+        // instead of silently masking it as a normal logged-out state.
         if (active) {
-          setUser(null); // network error => treat as anonymous, do NOT redirect
+          setUser(null);
         }
+        console.error('useUser: could not resolve /user login state', err);
       })
       .finally(() => {
         if (active) {
