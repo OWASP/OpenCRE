@@ -1360,3 +1360,66 @@ class TestMain(unittest.TestCase):
                 data.getvalue(),
                 response.data.decode(),
             )
+
+    def test_health_disabled_by_default_returns_404(self) -> None:
+        os.environ.pop("CRE_ENABLE_HEALTH", None)
+        with self.app.test_client() as client:
+            response = client.get("/rest/v1/health")
+            self.assertEqual(404, response.status_code)
+
+    def test_health_enabled_empty_dataset_returns_503(self) -> None:
+        os.environ["CRE_ENABLE_HEALTH"] = "1"
+        try:
+            with self.app.test_client() as client:
+                response = client.get("/rest/v1/health")
+                self.assertEqual(503, response.status_code)
+                body = json.loads(response.data.decode())
+                self.assertFalse(body["ok"])
+                self.assertTrue(body["db_reachable"])
+                self.assertEqual("empty dataset", body["reason"])
+        finally:
+            os.environ.pop("CRE_ENABLE_HEALTH", None)
+
+    def test_health_enabled_populated_returns_200(self) -> None:
+        os.environ["CRE_ENABLE_HEALTH"] = "1"
+        try:
+            collection = db.Node_collection()
+            collection.add_cre(
+                defs.CRE(id="111-115", description="CA", name="CA", tags=["ta"])
+            )
+            collection.add_node(
+                defs.Standard(
+                    name="s1", section="s11", subsection="s111", version="1.1.1"
+                )
+            )
+            with self.app.test_client() as client:
+                response = client.get("/rest/v1/health")
+                self.assertEqual(200, response.status_code)
+                body = json.loads(response.data.decode())
+                self.assertTrue(body["ok"])
+                self.assertTrue(body["db_reachable"])
+                self.assertGreaterEqual(body["cre_count"], 1)
+                self.assertGreaterEqual(body["standards_count"], 1)
+        finally:
+            os.environ.pop("CRE_ENABLE_HEALTH", None)
+
+    def test_health_db_unreachable_returns_503(self) -> None:
+        os.environ["CRE_ENABLE_HEALTH"] = "1"
+        try:
+            with patch.object(
+                db.Node_collection,
+                "health_check",
+                return_value={
+                    "ok": False,
+                    "db_reachable": False,
+                    "reason": "database unreachable",
+                },
+            ):
+                with self.app.test_client() as client:
+                    response = client.get("/rest/v1/health")
+                    self.assertEqual(503, response.status_code)
+                    body = json.loads(response.data.decode())
+                    self.assertFalse(body["ok"])
+                    self.assertFalse(body["db_reachable"])
+        finally:
+            os.environ.pop("CRE_ENABLE_HEALTH", None)
