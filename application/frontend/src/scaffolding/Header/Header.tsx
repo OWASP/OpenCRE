@@ -103,7 +103,7 @@ export const Header = ({ capabilities }: HeaderProps) => {
             </div>
 
             <div className="navbar__actions">
-              {!userLoading && (
+              {capabilities.login && !userLoading && (
                 <div className="navbar__desktop-auth">
                   {isLoggedIn ? (
                     <div className="user-info">
@@ -209,7 +209,7 @@ export const Header = ({ capabilities }: HeaderProps) => {
           )}
         </div>
 
-        {!userLoading && (
+        {capabilities.login && !userLoading && (
           <div className="mobile-auth">
             {isLoggedIn ? (
               <div className="user-info">
