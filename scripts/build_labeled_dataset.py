@@ -159,6 +159,9 @@ def _process_fence(segment: str) -> str:
 # --- Position-aware markdown chunker -------------------------------------
 
 _HEADING_RE = re.compile(r"^(#{1,6})\s+(.*)$")
+# <pre> open/close tags. Must not match <pre-something> or <preformatted>.
+_PRE_OPEN_RE = re.compile(r"<pre[\s>]")
+_PRE_CLOSE_RE = re.compile(r"</pre\s*>")
 
 
 @dataclass
@@ -193,6 +196,7 @@ def chunk_markdown(
     current_start_char = 0
     current_heading_path: list[str] = []
     in_fence = False
+    pre_depth = 0
     char_cursor = 0
 
     def flush(end_line_exclusive: int, end_char_exclusive: int) -> None:
@@ -223,8 +227,18 @@ def chunk_markdown(
             char_cursor += len(line) + 1  # +1 for the \n we split on
             continue
 
-        # Heading? (only outside fences)
-        m = _HEADING_RE.match(line) if not in_fence else None
+        # Track <pre>...</pre> depth. The "was_in_pre" flag captures the state
+        # at the START of this line; subsequent count updates apply to lines
+        # AFTER this one. This handles the common multi-line <pre> block.
+        # A pathological single-line case (`<pre># heading`) is rare and would
+        # still be slightly mis-classified -- pragmatic trade-off.
+        was_in_pre = pre_depth > 0
+        opens_on_line = len(_PRE_OPEN_RE.findall(line))
+        closes_on_line = len(_PRE_CLOSE_RE.findall(line))
+        pre_depth = max(0, pre_depth + opens_on_line - closes_on_line)
+
+        # Heading? (only outside fences AND outside <pre> blocks)
+        m = _HEADING_RE.match(line) if not in_fence and not was_in_pre else None
         if m:
             # Close the previous section before starting this one
             if current_lines:
@@ -260,40 +274,60 @@ def chunk_markdown(
 
 
 def _split_chunk_by_size(chunk: Chunk, max_chars: int) -> list[Chunk]:
-    """Split a too-large chunk on \\n\\n boundaries, preserving metadata.
+    """Split a too-large chunk on `\\n\\n` boundaries, preserving metadata.
 
-    Sub-chunks inherit heading_path; char/line offsets are approximated by
-    walking the original chunk text.
+    Sub-chunks inherit heading_path. char/line offsets are computed with the
+    correct separator width per entry:
+      * Normal `\\n\\n` boundary -> +2 chars, +2 lines between sub-chunks.
+      * Hard-split fragment from an oversized paragraph -> contiguous in the
+        original text (0 chars, 0 lines between sub-chunks).
     """
     parts = chunk.text.split("\n\n")
-    out_texts: list[str] = []
+    # Each entry: (text, sep_before_chars). sep_before is 2 for normal
+    # paragraph boundaries (preceded by `\n\n`), 0 for hard-split fragments
+    # that continue the previous entry's paragraph contiguously.
+    entries: list[tuple[str, int]] = []
     buf = ""
+
+    def _flush_buf() -> None:
+        """Emit `buf` as a normally-separated entry (preceded by \\n\\n)."""
+        nonlocal buf
+        if buf:
+            sep = 2 if entries else 0  # first entry isn't preceded by anything
+            entries.append((buf, sep))
+            buf = ""
+
     for p in parts:
         if len(p) > max_chars:
-            if buf:
-                out_texts.append(buf)
-                buf = ""
+            _flush_buf()
             for i in range(0, len(p), max_chars):
-                out_texts.append(p[i : i + max_chars])
+                piece = p[i : i + max_chars]
+                if i == 0:
+                    sep = 2 if entries else 0
+                else:
+                    sep = 0  # contiguous hard-split fragment
+                entries.append((piece, sep))
         elif (len(buf) + len(p) + (2 if buf else 0)) <= max_chars:
             buf = (buf + "\n\n" + p) if buf else p
         else:
-            if buf:
-                out_texts.append(buf)
+            _flush_buf()
             buf = p
-    if buf:
-        out_texts.append(buf)
+    _flush_buf()
 
-    # Approximate offsets: re-find each sub-chunk in the parent.
+    # Compute offsets, advancing past each entry's separator before recording.
+    # sep is 0 or 2; `\n\n` contains 2 newline chars -> +2 lines, conveniently
+    # the same numeric value as the char advance.
     out: list[Chunk] = []
     cursor_char = chunk.start_char_idx
     cursor_line = chunk.start_line
-    for t in out_texts:
-        end_char = cursor_char + len(t)
-        end_line = cursor_line + t.count("\n")
+    for text, sep_before in entries:
+        cursor_char += sep_before
+        cursor_line += sep_before
+        end_char = cursor_char + len(text)
+        end_line = cursor_line + text.count("\n")
         out.append(
             Chunk(
-                text=t,
+                text=text,
                 start_char_idx=cursor_char,
                 end_char_idx=end_char,
                 start_line=cursor_line,
@@ -301,8 +335,8 @@ def _split_chunk_by_size(chunk: Chunk, max_chars: int) -> list[Chunk]:
                 heading_path=chunk.heading_path,
             )
         )
-        cursor_char = end_char + 2  # skip "\n\n"
-        cursor_line = end_line + 1
+        cursor_char = end_char
+        cursor_line = end_line
     return out
 
 

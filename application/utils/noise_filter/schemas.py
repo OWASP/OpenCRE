@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from typing import Annotated, Literal, Optional, Union
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 # --- Source: discriminated union -----------------------------------------
@@ -77,6 +77,30 @@ class Span(BaseModel):
     start_line: Optional[int] = Field(default=None, ge=0)
     end_line: Optional[int] = Field(default=None, ge=0)
 
+    @model_validator(mode="after")
+    def _check_invariants(self) -> "Span":
+        # index is 0-based within total chunks; index must be strictly less.
+        # "chunk N+1 of N" is impossible by the contract.
+        if self.index >= self.total:
+            raise ValueError(
+                f"Span.index ({self.index}) must be < Span.total ({self.total})"
+            )
+        # Char offset range must be non-negative width when both ends are set.
+        if self.start_char_idx is not None and self.end_char_idx is not None:
+            if self.end_char_idx < self.start_char_idx:
+                raise ValueError(
+                    f"Span.end_char_idx ({self.end_char_idx}) must be >= "
+                    f"start_char_idx ({self.start_char_idx})"
+                )
+        # Same for line range.
+        if self.start_line is not None and self.end_line is not None:
+            if self.end_line < self.start_line:
+                raise ValueError(
+                    f"Span.end_line ({self.end_line}) must be >= "
+                    f"start_line ({self.start_line})"
+                )
+        return self
+
 
 # --- Locator: addressing scheme for the chunk's content ------------------
 
@@ -106,9 +130,16 @@ class ChangeRecord(BaseModel):
     Required by contract. `extra="ignore"` ensures forward compatibility with
     future Module A field additions (e.g. `supersedes_artifact_id`,
     `pr_number`, etc.) -- B silently passes them through without breaking.
+
+    `str_strip_whitespace` is intentionally NOT enabled here: the `text` field
+    is the canonical chunk payload. `compute_content_hash(text)` produces our
+    queue dedup key, and `span.start_char_idx`/`end_char_idx` index into the
+    same text. If Pydantic silently stripped leading/trailing whitespace
+    during validation, hash and span offsets would silently disagree with the
+    payload. Module A's own normalization is the only authority on whitespace.
     """
 
-    model_config = ConfigDict(extra="ignore", str_strip_whitespace=True)
+    model_config = ConfigDict(extra="ignore")
 
     schema_version: str = Field(min_length=1)
     chunk_id: str = Field(min_length=1)
