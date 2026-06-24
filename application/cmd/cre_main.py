@@ -734,6 +734,7 @@ def backfill_gap_analysis_only(
         gap_analysis.backfill_opencre_direct_pairs(collection, refresh=True)
     else:
         logger.warning("Skipping GA recomputation on production environment")
+        return
 
     missing = _missing_ga_pairs(collection)
     if max_pairs > 0:
