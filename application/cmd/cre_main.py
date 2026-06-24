@@ -730,7 +730,10 @@ def backfill_gap_analysis_only(
     if os.environ.get("CRE_NO_NEO4J") != "1":
         populate_neo4j_db(db_connection_str)
 
-    gap_analysis.backfill_opencre_direct_pairs(collection, refresh=True)
+    if os.environ.get("OPENCRE_ENV") not in {"heroku", "opencreorg"}:
+        gap_analysis.backfill_opencre_direct_pairs(collection, refresh=True)
+    else:
+        logger.warning("Skipping GA recomputation on production environment")
 
     missing = _missing_ga_pairs(collection)
     if max_pairs > 0:
