@@ -585,7 +585,7 @@ class TestMain(unittest.TestCase):
             for head in response.headers:
                 if head[0] == "Location":
                     location = head[1]
-            self.assertEqual(location, "/node/standard/CWE/sectionid/456")
+            self.assertEqual(location, "/cre/222-222")
             self.assertEqual(302, response.status_code)
 
             response = client.get(
@@ -596,7 +596,28 @@ class TestMain(unittest.TestCase):
             for head in response.headers:
                 if head[0] == "Location":
                     location = head[1]
-            self.assertEqual(location, "/node/standard/ASVS/section/v0.1.2")
+            self.assertEqual(location, "/cre/333-333")
+            self.assertEqual(302, response.status_code)
+
+            # Multiple CREs linked to same standard → should fall back to node page
+            cwe_multi = defs.Standard(name="CWEmulti", sectionID="789")
+            ce = defs.CRE(id="444-444", description="CE", name="CE", tags=[])
+            cf = defs.CRE(id="555-555", description="CF", name="CF", tags=[])
+            dcwe_multi = collection.add_node(cwe_multi)
+            dce = collection.add_cre(ce)
+            dcf = collection.add_cre(cf)
+            collection.add_link(dce, dcwe_multi, ltype=defs.LinkTypes.LinkedTo)
+            collection.add_link(dcf, dcwe_multi, ltype=defs.LinkTypes.LinkedTo)
+
+            response = client.get(
+                "/smartlink/standard/CWEmulti/789",
+                headers={"Content-Type": "application/json"},
+            )
+            location = ""
+            for head in response.headers:
+                if head[0] == "Location":
+                    location = head[1]
+            self.assertEqual(location, "/node/standard/CWEmulti/sectionid/789")
             self.assertEqual(302, response.status_code)
 
             # negative test, this cwe does not exist, therefore we redirect to Mitre!
@@ -612,6 +633,87 @@ class TestMain(unittest.TestCase):
                 location, "https://cwe.mitre.org/data/definitions/999.html"
             )
             self.assertEqual(302, response.status_code)
+
+    def _smartlink_redirect_location(self, client, path: str) -> tuple[int, str]:
+        response = client.get(path, headers={"Content-Type": "application/json"})
+        location = ""
+        for head in response.headers:
+            if head[0] == "Location":
+                location = head[1]
+        return response.status_code, location
+
+    def test_smartlink_critical_edge_cases(self) -> None:
+        """Critical smartlink paths from #945 — multi-CRE, unlinked node, ntype, version."""
+        collection = db.Node_collection().with_graph()
+        with self.app.test_client() as client:
+            # Multiple CREs → standard-section node page (preserved by #938).
+            cwe_multi = defs.Standard(name="CWEmulti", sectionID="789")
+            ce = defs.CRE(id="444-444", description="CE", name="CE", tags=[])
+            cf = defs.CRE(id="555-555", description="CF", name="CF", tags=[])
+            dcwe_multi = collection.add_node(cwe_multi)
+            dce = collection.add_cre(ce)
+            dcf = collection.add_cre(cf)
+            collection.add_link(dce, dcwe_multi, ltype=defs.LinkTypes.LinkedTo)
+            collection.add_link(dcf, dcwe_multi, ltype=defs.LinkTypes.LinkedTo)
+
+            status, location = self._smartlink_redirect_location(
+                client, "/smartlink/standard/CWEmulti/789"
+            )
+            self.assertEqual(status, 302)
+            self.assertEqual(location, "/node/standard/CWEmulti/sectionid/789")
+
+            # Local standard with no CRE links → MITRE external redirect, not node page.
+            orphan = defs.Standard(name="CWE", sectionID="8888")
+            collection.add_node(orphan)
+            status, location = self._smartlink_redirect_location(
+                client, "/smartlink/standard/CWE/8888"
+            )
+            self.assertEqual(status, 302)
+            self.assertEqual(
+                location, "https://cwe.mitre.org/data/definitions/8888.html"
+            )
+
+            # Case-insensitive ntype still resolves the standard node.
+            cwe_std = defs.Standard(name="CWE", sectionID="456")
+            cre_a = defs.CRE(id="222-222", description="CD", name="CD", tags=[])
+            cre_b = defs.CRE(id="223-223", description="CE", name="CE", tags=[])
+            dcwe = collection.add_node(cwe_std)
+            dcre_a = collection.add_cre(cre_a)
+            dcre_b = collection.add_cre(cre_b)
+            collection.add_link(dcre_a, dcwe, ltype=defs.LinkTypes.LinkedTo)
+            collection.add_link(dcre_b, dcwe, ltype=defs.LinkTypes.LinkedTo)
+
+            status, location = self._smartlink_redirect_location(
+                client, "/smartlink/STANDARD/CWE/456"
+            )
+            self.assertEqual(status, 302)
+            self.assertEqual(location, "/node/STANDARD/CWE/sectionid/456")
+
+            # version query param selects the matching standard row (multi-CRE → node page).
+            std_v1 = defs.Standard(name="VERSTD", sectionID="100", version="1.0")
+            std_v2 = defs.Standard(name="VERSTD", sectionID="200", version="2.0")
+            cre_v1a = defs.CRE(id="100-100", description="v1a", name="V1A", tags=[])
+            cre_v1b = defs.CRE(id="100-101", description="v1b", name="V1B", tags=[])
+            cre_v2a = defs.CRE(id="200-200", description="v2a", name="V2A", tags=[])
+            cre_v2b = defs.CRE(id="200-201", description="v2b", name="V2B", tags=[])
+            dstd_v1 = collection.add_node(std_v1)
+            dstd_v2 = collection.add_node(std_v2)
+            for cre in (cre_v1a, cre_v1b, cre_v2a, cre_v2b):
+                dcre = collection.add_cre(cre)
+                target = dstd_v1 if cre.id.startswith("100") else dstd_v2
+                collection.add_link(dcre, target, ltype=defs.LinkTypes.LinkedTo)
+
+            status, location = self._smartlink_redirect_location(
+                client, "/smartlink/standard/VERSTD/100?version=1.0"
+            )
+            self.assertEqual(status, 302)
+            self.assertEqual(location, "/node/standard/VERSTD/sectionid/100")
+
+            status, location = self._smartlink_redirect_location(
+                client, "/smartlink/standard/VERSTD/200?version=2.0"
+            )
+            self.assertEqual(status, 302)
+            self.assertEqual(location, "/node/standard/VERSTD/sectionid/200")
 
     @patch.object(redis, "from_url")
     @patch.object(db, "Node_collection")
@@ -1360,3 +1462,66 @@ class TestMain(unittest.TestCase):
                 data.getvalue(),
                 response.data.decode(),
             )
+
+    def test_health_disabled_by_default_returns_404(self) -> None:
+        os.environ.pop("CRE_ENABLE_HEALTH", None)
+        with self.app.test_client() as client:
+            response = client.get("/rest/v1/health")
+            self.assertEqual(404, response.status_code)
+
+    def test_health_enabled_empty_dataset_returns_503(self) -> None:
+        os.environ["CRE_ENABLE_HEALTH"] = "1"
+        try:
+            with self.app.test_client() as client:
+                response = client.get("/rest/v1/health")
+                self.assertEqual(503, response.status_code)
+                body = json.loads(response.data.decode())
+                self.assertFalse(body["ok"])
+                self.assertTrue(body["db_reachable"])
+                self.assertEqual("empty dataset", body["reason"])
+        finally:
+            os.environ.pop("CRE_ENABLE_HEALTH", None)
+
+    def test_health_enabled_populated_returns_200(self) -> None:
+        os.environ["CRE_ENABLE_HEALTH"] = "1"
+        try:
+            collection = db.Node_collection()
+            collection.add_cre(
+                defs.CRE(id="111-115", description="CA", name="CA", tags=["ta"])
+            )
+            collection.add_node(
+                defs.Standard(
+                    name="s1", section="s11", subsection="s111", version="1.1.1"
+                )
+            )
+            with self.app.test_client() as client:
+                response = client.get("/rest/v1/health")
+                self.assertEqual(200, response.status_code)
+                body = json.loads(response.data.decode())
+                self.assertTrue(body["ok"])
+                self.assertTrue(body["db_reachable"])
+                self.assertGreaterEqual(body["cre_count"], 1)
+                self.assertGreaterEqual(body["standards_count"], 1)
+        finally:
+            os.environ.pop("CRE_ENABLE_HEALTH", None)
+
+    def test_health_db_unreachable_returns_503(self) -> None:
+        os.environ["CRE_ENABLE_HEALTH"] = "1"
+        try:
+            with patch.object(
+                db.Node_collection,
+                "health_check",
+                return_value={
+                    "ok": False,
+                    "db_reachable": False,
+                    "reason": "database unreachable",
+                },
+            ):
+                with self.app.test_client() as client:
+                    response = client.get("/rest/v1/health")
+                    self.assertEqual(503, response.status_code)
+                    body = json.loads(response.data.decode())
+                    self.assertFalse(body["ok"])
+                    self.assertFalse(body["db_reachable"])
+        finally:
+            os.environ.pop("CRE_ENABLE_HEALTH", None)
