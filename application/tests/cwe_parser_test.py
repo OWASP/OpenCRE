@@ -267,6 +267,32 @@ class TestCWEParser(unittest.TestCase):
             deserialization_cre.todict(),
         )
 
+    @patch.object(requests, "get")
+    def test_register_CWE_skips_prohibited_entries(self, mock_requests) -> None:
+        tmpdir = mkdtemp()
+        tmpFile = os.path.join(tmpdir, "cwe.xml")
+        tmpzip = os.path.join(tmpdir, "cwe.zip")
+        with open(tmpFile, "w") as cx:
+            cx.write(self.CWE_prohibited_xml)
+        with zipfile.ZipFile(tmpzip, "w", zipfile.ZIP_DEFLATED) as zipf:
+            zipf.write(tmpFile, arcname="cwe.xml")
+
+        class fakeRequest:
+            def iter_content(self, chunk_size=None):
+                with open(tmpzip, "rb") as zipf:
+                    return [zipf.read()]
+
+        mock_requests.return_value = fakeRequest()
+
+        entries = cwe.CWE().parse(
+            cache=self.collection,
+            ph=prompt_client.PromptHandler(database=self.collection),
+        )
+        imported_cwes = {node.sectionID: node for node in entries.results["CWE"]}
+
+        self.assertIn("611", imported_cwes)
+        self.assertNotIn("9999", imported_cwes)
+
     CWE_xml = """<?xml version="1.0" encoding="UTF-8"?>
 <Weakness_Catalog Name="CWE" Version="4.10" Date="2023-01-31" xmlns="http://cwe.mitre.org/cwe-6"
    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -736,6 +762,19 @@ class TestCWEParser(unittest.TestCase):
       </Weakness>
       <Weakness ID="918" Name="Server-Side Request Forgery (SSRF)" Abstraction="Base" Structure="Simple" Status="Draft">
          <Description>SSRF entry.</Description>
+      </Weakness>
+   </Weaknesses>
+</Weakness_Catalog>
+"""
+
+    CWE_prohibited_xml = """<?xml version="1.0" encoding="UTF-8"?>
+<Weakness_Catalog Name="CWE" Version="4.10" Date="2023-01-31" xmlns="http://cwe.mitre.org/cwe-6">
+   <Weaknesses>
+      <Weakness ID="611" Name="Improper Restriction of XML External Entity Reference" Abstraction="Base" Structure="Simple" Status="Draft">
+         <Description>Allowed XXE entry.</Description>
+      </Weakness>
+      <Weakness ID="9999" Name="Prohibited Example" Abstraction="Base" Structure="Simple" Status="PROHIBITED">
+         <Description>This entry should not be imported.</Description>
       </Weakness>
    </Weaknesses>
 </Weakness_Catalog>
