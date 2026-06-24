@@ -18,11 +18,9 @@ class CandidateCRE:
                     f"CandidateCRE: field '{field_name}' must be a non-empty string"
                 )
 
-        # description is optional in CRE DB model, empty string allowed
+        # description is optional in CRE DB model, empty string allowed.
         if not isinstance(self.description, str):
-            raise ValueError(
-                "CandidateCRE: field 'description' must be a string"
-            )
+            raise ValueError("CandidateCRE: field 'description' must be a string")
 
         if not re.match(r"\d{3}-\d{3}", self.cre_id):
             raise ValueError(
@@ -30,9 +28,7 @@ class CandidateCRE:
             )
 
         if not isinstance(self.score, float):
-            raise ValueError(
-                "CandidateCRE: field 'score' must be a float"
-            )
+            raise ValueError("CandidateCRE: field 'score' must be a float")
 
         if not (0.0 <= self.score <= 1.0):
             raise ValueError(

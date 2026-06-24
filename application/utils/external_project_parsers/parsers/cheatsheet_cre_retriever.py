@@ -1,4 +1,3 @@
-import logging
 import numpy as np
 
 from scipy import sparse
@@ -10,8 +9,6 @@ from application.defs.candidate_cre_defs import CandidateCRE
 from application.defs.cheatsheet_defs import CheatsheetRecord
 from application.defs import cre_defs
 from application.prompt_client import prompt_client
-
-logger = logging.getLogger(__name__)
 
 
 def retrieve_candidate_cres(
@@ -38,9 +35,7 @@ def retrieve_candidate_cres(
     query_vector = ph.get_text_embeddings(query_text)
 
     # fetch all pre-stored CRE vectors from DB
-    db_cre_embeddings = cache.get_embeddings_by_doc_type(
-        cre_defs.Credoctypes.CRE.value
-    )
+    db_cre_embeddings = cache.get_embeddings_by_doc_type(cre_defs.Credoctypes.CRE.value)
 
     # build ordered lists of internal ids and their vectors
     internal_ids = list(db_cre_embeddings.keys())
