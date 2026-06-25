@@ -87,6 +87,42 @@ def _extract_text(resp: Any) -> str:
         return ""
 
 
+def _is_schema_unsupported_error(err: Exception) -> bool:
+    """Best-effort: did the strict json_schema request fail *because the provider
+    doesn't support it* (vs. an auth/network/quota error)?
+
+    Only a capability gap should trigger the json_object fallback; every other
+    error must propagate so it isn't masked by a second attempt. LiteLLM surfaces
+    a provider's rejection of response_format/json_schema as a 400-class
+    BadRequestError whose message references the schema or response format.
+    """
+    # Rate-limit / quota errors have their own retry and must propagate if
+    # exhausted -- never treat them as a capability gap.
+    if is_rate_limit_error(err):
+        return False
+    msg = str(err).lower()
+    if any(
+        token in msg
+        for token in (
+            "response_format",
+            "response format",
+            "json_schema",
+            "json schema",
+            "schema",
+            "not supported",
+            "unsupported",
+            "does not support",
+        )
+    ):
+        return True
+    status = (
+        getattr(err, "status_code", None)
+        or getattr(err, "status", None)
+        or getattr(err, "code", None)
+    )
+    return status == 400
+
+
 class LLMClassifier:
     """Stage 2 classifier: ChangeRecord -> ClassifyResult via a cheap LLM."""
 
@@ -152,9 +188,16 @@ class LLMClassifier:
             resp = self._completion_with_retry(
                 messages=messages, response_format=strict_format
             )
-        except Exception as e:  # noqa: BLE001 -- provider may not support strict schema
+        except (
+            Exception
+        ) as e:  # noqa: BLE001 -- inspect; fall back only on a capability gap
+            if not _is_schema_unsupported_error(e):
+                # Auth/network/quota/etc. -- propagate; a json_object retry would
+                # only mask the real error.
+                raise
             logger.warning(
-                "strict json_schema mode failed for model=%s: %s; retrying json_object",
+                "strict json_schema unsupported for model=%s (%s); "
+                "retrying in json_object mode",
                 self.config.llm_model,
                 e,
             )

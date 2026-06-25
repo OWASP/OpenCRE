@@ -233,6 +233,22 @@ class FallbackTests(unittest.TestCase):
         self.assertEqual(out[0].label, "KNOWLEDGE")
         self.assertEqual(formats, ["json_schema", "json_object"])
 
+    def test_non_capability_error_does_not_fall_back(self) -> None:
+        """A non-schema error must propagate, not trigger a json_object retry."""
+        clf = _classifier()
+        formats = []
+
+        def completion(**kw):
+            formats.append(kw["response_format"]["type"])
+            raise ValueError("authentication token invalid")  # not a capability gap
+
+        clf._litellm = Mock(completion=completion)
+        out = clf.classify_batch([_record()])
+        # No fallback attempt; the error surfaces as a failed batch.
+        self.assertEqual(formats, ["json_schema"])
+        self.assertEqual(out[0].label, "UNCERTAIN")
+        self.assertEqual(out[0].reasoning, "llm_call_failed")
+
 
 # --- Rate-limit retry -----------------------------------------------------
 
