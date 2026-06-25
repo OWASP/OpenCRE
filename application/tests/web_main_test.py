@@ -1525,3 +1525,31 @@ class TestMain(unittest.TestCase):
                     self.assertFalse(body["db_reachable"])
         finally:
             os.environ.pop("CRE_ENABLE_HEALTH", None)
+
+    def test_capabilities_endpoint_returns_myopencre_key(self) -> None:
+        os.environ.pop("CRE_ENABLE_MYOPENCRE", None)
+        with self.app.test_client() as client:
+            response = client.get("/api/capabilities")
+            self.assertEqual(200, response.status_code)
+            body = json.loads(response.data.decode())
+            self.assertIn("myopencre", body)
+            self.assertIsInstance(body["myopencre"], bool)
+
+    def test_capabilities_myopencre_false_by_default(self) -> None:
+        os.environ.pop("CRE_ENABLE_MYOPENCRE", None)
+        with self.app.test_client() as client:
+            response = client.get("/api/capabilities")
+            self.assertEqual(200, response.status_code)
+            body = json.loads(response.data.decode())
+            self.assertFalse(body["myopencre"])
+
+    def test_capabilities_myopencre_true_when_flag_set(self) -> None:
+        os.environ["CRE_ENABLE_MYOPENCRE"] = "1"
+        try:
+            with self.app.test_client() as client:
+                response = client.get("/api/capabilities")
+                self.assertEqual(200, response.status_code)
+                body = json.loads(response.data.decode())
+                self.assertTrue(body["myopencre"])
+        finally:
+            os.environ.pop("CRE_ENABLE_MYOPENCRE", None)
