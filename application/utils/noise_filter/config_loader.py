@@ -35,6 +35,23 @@ class NoiseFilterConfig:
     max_chars: int = DEFAULT_MAX_CHARS
     confidence_threshold: float = DEFAULT_CONFIDENCE_THRESHOLD
 
+    def __post_init__(self) -> None:
+        """Fail fast on invalid settings, regardless of construction path.
+
+        Validated here (not only in load_config) so direct constructors --
+        e.g. tests -- get the same guarantees. batch_size in particular must
+        be >= 1: it becomes the step of range() when batching records.
+        """
+        if self.batch_size < 1:
+            raise ValueError(f"batch_size must be >= 1, got {self.batch_size}")
+        if self.max_chars < 1:
+            raise ValueError(f"max_chars must be >= 1, got {self.max_chars}")
+        if not 0.0 <= self.confidence_threshold <= 1.0:
+            raise ValueError(
+                f"confidence_threshold must be in [0.0, 1.0], got "
+                f"{self.confidence_threshold}"
+            )
+
 
 def load_config() -> NoiseFilterConfig:
     """Build a NoiseFilterConfig from the CRE_NOISE_FILTER_* environment."""
