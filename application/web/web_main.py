@@ -1202,6 +1202,7 @@ def get_config() -> Any:
 
 @app.route("/api/capabilities", methods=["GET"])
 def get_capabilities() -> Any:
+    """Expose frontend feature capabilities, e.g. whether MyOpenCRE is enabled."""
     return jsonify({"myopencre": is_myopencre_enabled()})
 
 
