@@ -258,7 +258,7 @@ def build_positive_multilink(conn: sqlite3.Connection) -> List[Dict]:
         """
     ).fetchall()
     out = []
-    for node_id, name, section_id, text, cre_concat in rows:
+    for _node_id, name, section_id, text, cre_concat in rows:
         cre_ids = sorted(set(cre_concat.split("|")))
         std = "OTHER"
         if "Top 10" in name:

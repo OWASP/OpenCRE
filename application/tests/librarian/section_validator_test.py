@@ -6,6 +6,7 @@ Asserts the boundary never leaks a raw Pydantic ValidationError.
 """
 
 import unittest
+from datetime import datetime, timezone
 
 from pydantic import ValidationError
 
@@ -86,7 +87,10 @@ class QueueRowBoundaryTest(unittest.TestCase):
             section.artifact_id, "art:OWASP/ASVS:4.0/en/0x11-V2-Authentication.md"
         )
         self.assertEqual(section.source.repo, "OWASP/ASVS")
-        self.assertEqual(section.source.committed_at, "2026-05-25T02:25:00Z")
+        self.assertEqual(
+            section.source.committed_at,
+            datetime(2026, 5, 25, 2, 25, tzinfo=timezone.utc),
+        )
         self.assertEqual(section.locator.path, "4.0/en/0x11-V2-Authentication.md")
         self.assertEqual(section.language, "en")
 

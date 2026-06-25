@@ -1,5 +1,6 @@
 import os
 import unittest
+from dataclasses import FrozenInstanceError
 from unittest import mock
 
 from application.utils.librarian.config_loader import LibrarianConfig, load_config
@@ -18,8 +19,9 @@ class TestConfigLoaderDefaults(unittest.TestCase):
         self.assertEqual(cfg.conformal_alpha, 0.10)
 
     def test_config_is_frozen(self):
-        cfg = load_config()
-        with self.assertRaises(Exception):
+        with mock.patch.dict(os.environ, {}, clear=True):
+            cfg = load_config()
+        with self.assertRaises(FrozenInstanceError):
             cfg.link_threshold = 0.5  # type: ignore[misc]
 
 

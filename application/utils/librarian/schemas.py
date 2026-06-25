@@ -12,10 +12,11 @@ harness golden row, respectively.
 from __future__ import annotations
 
 import re
+from datetime import datetime
 from enum import Enum
 from typing import List, Literal, Optional
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import AnyUrl, BaseModel, ConfigDict, Field, model_validator
 
 SCHEMA_VERSION = "0.2.0"
 _SCHEMA_VERSION_RE = re.compile(r"^0\.\d+\.\d+$")
@@ -64,10 +65,10 @@ class SourceRef(BaseModel):
     model_config = ConfigDict(extra="forbid")
     type: SourceType
     repo: Optional[str] = None
-    url: Optional[str] = None
+    url: Optional[AnyUrl] = None
     commit_sha: Optional[str] = Field(default=None, min_length=7)
     commit_message: Optional[str] = None
-    committed_at: str
+    committed_at: datetime
     author_login: Optional[str] = None
 
     @model_validator(mode="after")
@@ -84,7 +85,7 @@ class Locator(BaseModel):
     kind: LocatorKind
     id: str = Field(min_length=1)
     path: Optional[str] = None
-    url: Optional[str] = None
+    url: Optional[AnyUrl] = None
     title: Optional[str] = None
 
     @model_validator(mode="after")
@@ -201,7 +202,7 @@ class KnowledgeItem(BaseModel):
     artifact_id: str
     event_id: str
     pipeline_run_id: str
-    filtered_at: str
+    filtered_at: datetime
     status: KnowledgeStatus
     source: SourceRef
     locator: Locator
@@ -228,7 +229,7 @@ class LinkProposal(BaseModel):
     chunk_id: str
     artifact_id: str
     pipeline_run_id: str
-    classified_at: str
+    classified_at: datetime
     status: Literal["linked"] = "linked"
     knowledge: KnowledgeSnapshot
     retrieval: RetrievalAudit
@@ -251,7 +252,7 @@ class ReviewItem(BaseModel):
     chunk_id: str
     artifact_id: str
     pipeline_run_id: str
-    created_at: str
+    created_at: datetime
     status: Literal["review_required"] = "review_required"
     reason_code: ReasonCode
     knowledge: KnowledgeSnapshot
