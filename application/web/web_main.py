@@ -656,7 +656,15 @@ def index(path: str) -> Any:
 def smartlink(
     name: str, ntype: str = defs.Credoctypes.Standard.value, section: str = ""
 ) -> Any:
-    """if node is found, show node, else redirect"""
+    """If a standard section node is found, redirect to it.
+
+    If the node has exactly one linked CRE, redirect directly to that CRE
+    page instead of the intermediate standard-section page, so the user
+    immediately sees the full wealth of CRE information.
+    If the node has multiple CRE links, redirect to the standard-section
+    node page as before.  If the node is not found in the database, fall
+    back to any known external redirect (e.g. the Mitre CWE catalogue).
+    """
     # ATTENTION: DO NOT MESS WITH THIS FUNCTIONALITY WITHOUT A TICKET AND CORE CONTRIBUTORS APPROVAL!
     # CRITICAL FUNCTIONALITY DEPENDS ON THIS!
     if posthog:
@@ -694,6 +702,17 @@ def smartlink(
         logger.info(
             f"found node of type {ntype}, name {name} and section {section}, redirecting to opencre"
         )
+        cre_links = [
+            lnk
+            for lnk in nodes[0].links
+            if lnk.document.doctype == defs.Credoctypes.CRE
+        ]
+        if len(cre_links) == 1:
+            logger.info(
+                f"exactly one CRE linked to {ntype}/{name}/{section},"
+                f" redirecting directly to CRE {cre_links[0].document.id}"
+            )
+            return redirect(f"/cre/{cre_links[0].document.id}")
         if found_section_id:
             return redirect(f"/node/{ntype}/{name}/sectionid/{section}")
         return redirect(f"/node/{ntype}/{name}/section/{section}")
