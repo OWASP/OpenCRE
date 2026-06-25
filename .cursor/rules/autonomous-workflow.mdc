@@ -1,0 +1,19 @@
+---
+description: End-to-end execution policy after plan approval
+alwaysApply: true
+---
+
+# OpenCRE Autonomous Workflow
+
+Policy: see `AGENTS.md`. Verification: see `verifiable-goals.mdc`.
+
+- For big changes, wait for human plan approval (`multi-agent-workflow.mdc` Phase 1) before editing.
+- After approval, execute end-to-end unless blocked by auth/secrets, destructive actions, or material plan deviations.
+- Prefer small, safe changes; avoid unrelated refactors.
+- Use `Makefile` targets when possible.
+- **Always run lint, mypy, and tests after substantive changes; iterate until green.** Show evidence in handoff.
+- If commit verification depends on shell initialization, use a zsh-compatible shell context.
+- Run long commands in background; monitor until completion.
+- Do NOT commit or push unless explicitly asked.
+- In commits do not add "made with cursor" lines.
+- On substantive changes, recommend or run judge/subagent review before handoff.
