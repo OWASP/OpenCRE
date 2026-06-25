@@ -164,8 +164,9 @@ def section_from_knowledge_item(
         raise NotKnowledgeError(
             f"status={item.status.value!r}; only 'accepted' items may be linked"
         )
-    # status=accepted guarantees content (enforced by the KnowledgeItem model).
-    assert item.content is not None
+    # Keep boundary behavior typed even for pre-built/mutated model instances.
+    if item.content is None:
+        raise MalformedKnowledgeItemError("status='accepted' requires content")
     _require_text(item.content.text)
     language = _require_language(item.content.language)
 

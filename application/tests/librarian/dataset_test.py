@@ -111,6 +111,7 @@ class TestDatasetDeterminism(unittest.TestCase):
             [sys.executable, _BUILD_SCRIPT, "--check"],
             capture_output=True,
             text=True,
+            timeout=120,
         )
         self.assertEqual(
             result.returncode,

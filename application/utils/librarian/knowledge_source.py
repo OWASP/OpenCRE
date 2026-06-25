@@ -6,10 +6,15 @@ the same KnowledgeQueueItem rows; C synthesizes the RFC KnowledgeItem envelope
 from each row at processing time (master guide §1.2).
 """
 
+import logging
 from abc import ABC, abstractmethod
 from typing import Iterator
 
+from pydantic import ValidationError
+
 from application.utils.librarian.schemas import KnowledgeQueueItem
+
+logger = logging.getLogger(__name__)
 
 
 class KnowledgeSource(ABC):
@@ -27,7 +32,15 @@ class FixtureKnowledgeSource(KnowledgeSource):
 
     def items(self) -> Iterator[KnowledgeQueueItem]:
         with open(self._path, encoding="utf-8") as fh:
-            for line in fh:
+            for line_no, line in enumerate(fh, start=1):
                 line = line.strip()
                 if line:
-                    yield KnowledgeQueueItem.model_validate_json(line)
+                    try:
+                        yield KnowledgeQueueItem.model_validate_json(line)
+                    except ValidationError as exc:
+                        logger.warning(
+                            "Skipping malformed knowledge_queue row at line %d: %s",
+                            line_no,
+                            exc,
+                        )
+                        continue
