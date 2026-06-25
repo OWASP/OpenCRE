@@ -16,3 +16,7 @@ def is_cre_import_allowed() -> bool:
 
 def is_health_endpoint_enabled() -> bool:
     return os.getenv("CRE_ENABLE_HEALTH", "").strip().lower() in TRUE_VALUES
+
+
+def is_myopencre_enabled() -> bool:
+    return os.getenv("CRE_ENABLE_MYOPENCRE", "").strip().lower() in TRUE_VALUES
