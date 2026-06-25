@@ -23,7 +23,7 @@ from sqlalchemy.orm import aliased
 from flask_sqlalchemy.model import DefaultMeta
 from sqlalchemy import func, delete, cast as sql_cast, literal, or_
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.exc import OperationalError, IntegrityError
+from sqlalchemy.exc import OperationalError, IntegrityError, SQLAlchemyError
 
 from neomodel import (
     config,
@@ -2162,6 +2162,10 @@ class Node_collection:
                 CRE ids before it performs a free text search
            Anything else will be a case insensitive LIKE query in the database
         """
+        search_terms = self._expand_text_search_aliases(text)
+        if not search_terms:
+            return []
+        text = text.strip()
         # structured text search first
         cre_id_search = r"CRE(:| )(?P<id>\d+-\d+)"
         cre_naked_id_search = r"\d\d\d-\d\d\d"
@@ -2213,33 +2217,80 @@ class Node_collection:
             if results:
                 return list(set(results))
         # fuzzy matches second
-        args = [f"%{text}%", "", "", "", "", ""]
         results = {}
-        s = set([p for p in permutations(args, 6)])
-        for combo in s:
-            nodes = self.get_nodes(
-                name=combo[0],
-                section=combo[1],
-                subsection=combo[2],
-                link=combo[3],
-                description=combo[4],
-                partial=True,
-                ntype=None,  # type: ignore
-                sectionID=combo[5],
-            )
-            if nodes:
-                for node in nodes:
-                    node_key = f"{node.name}:{node.version}:{node.section}:{node.sectionID}:{node.subsection}:"
-                    results[node_key] = node
-        args = [f"%{text}%", None, None]
-        for combo in permutations(args, 3):
-            cres = self.get_CREs(
-                name=combo[0], external_id=combo[1], description=combo[2], partial=True
-            )
-            if cres:
-                for cre in cres:
-                    results[cre.id] = cre
+        for search_term in search_terms:
+            args = [f"%{search_term}%", "", "", "", "", ""]
+            s = set([p for p in permutations(args, 6)])
+            for combo in s:
+                nodes = self.get_nodes(
+                    name=combo[0],
+                    section=combo[1],
+                    subsection=combo[2],
+                    link=combo[3],
+                    description=combo[4],
+                    partial=True,
+                    ntype=None,  # type: ignore
+                    sectionID=combo[5],
+                )
+                if nodes:
+                    for node in nodes:
+                        node_key = f"{node.name}:{node.version}:{node.section}:{node.sectionID}:{node.subsection}:"
+                        results[node_key] = node
+            args = [f"%{search_term}%", None, None]
+            for combo in permutations(args, 3):
+                cres = self.get_CREs(
+                    name=combo[0],
+                    external_id=combo[1],
+                    description=combo[2],
+                    partial=True,
+                )
+                if cres:
+                    for cre in cres:
+                        results[cre.id] = cre
         return list(results.values())
+
+    def _expand_text_search_aliases(self, text: str) -> List[str]:
+        normalized = text.strip()
+        if not normalized:
+            return []
+        lowered = normalized.lower()
+        aliases = {
+            "xxe": [
+                "XXE",
+                "XML External Entity",
+                "XML External Entity Reference",
+            ],
+            "xss": [
+                "XSS",
+                "Cross Site Scripting",
+                "Cross-Site Scripting",
+            ],
+            "ssrf": [
+                "SSRF",
+                "Server Side Request Forgery",
+                "Server-Side Request Forgery",
+            ],
+            "csrf": [
+                "CSRF",
+                "Cross Site Request Forgery",
+                "Cross-Site Request Forgery",
+            ],
+            "rce": [
+                "RCE",
+                "Remote Code Execution",
+            ],
+        }
+        expanded = [normalized]
+        expanded.extend(aliases.get(lowered, []))
+        deduped = []
+        seen = set()
+        for entry in expanded:
+            key = entry.lower()
+            if key in seen:
+                continue
+            seen.add(key)
+            deduped.append(entry)
+        return deduped
 
     def get_root_cres(self):
         """Returns CRES that only have "Contains" links"""
@@ -2263,6 +2314,54 @@ class Node_collection:
             .all()
         )
         return self._hydrate_cres_batch(list(cres))
+
+    def health_check(self) -> Dict[str, Any]:
+        """Lightweight liveness/readiness probe for the serving database.
+
+        Intended for use by a deploy/uptime health endpoint, NOT for deep
+        operational checks (GA completeness, mapping coverage, etc.) which are
+        slow and belong in ops tooling. Performs cheap COUNT queries and never
+        raises: connectivity failures are reported as ``ok=False`` so the caller
+        can return an appropriate status code.
+
+        Returns a dict with:
+          - ``ok``: True only if the DB is reachable AND holds a non-empty
+            dataset (at least one CRE and one standard/node).
+          - ``db_reachable``: True if the COUNT queries executed.
+          - ``cre_count`` / ``standards_count``: populated when reachable.
+          - ``reason``: short human-readable explanation when ``ok`` is False.
+        """
+        try:
+            cre_count = self.session.query(func.count(CRE.id)).scalar() or 0
+            standards_count = self.session.query(func.count(Node.id)).scalar() or 0
+        except OperationalError:
+            return {
+                "ok": False,
+                "db_reachable": False,
+                "reason": "database unreachable",
+            }
+        except SQLAlchemyError:  # pragma: no cover - defensive, never fail open
+            return {
+                "ok": False,
+                "db_reachable": False,
+                "reason": "database health query failed",
+            }
+
+        if cre_count == 0 or standards_count == 0:
+            return {
+                "ok": False,
+                "db_reachable": True,
+                "cre_count": cre_count,
+                "standards_count": standards_count,
+                "reason": "empty dataset",
+            }
+
+        return {
+            "ok": True,
+            "db_reachable": True,
+            "cre_count": cre_count,
+            "standards_count": standards_count,
+        }
 
     def get_embeddings_by_doc_type(self, doc_type: str) -> Dict[str, List[float]]:
         res = {}
