@@ -745,6 +745,15 @@ class TestDB(unittest.TestCase):
 
         self.assertEqual([c_id_only], collection.get_CREs(internal_id=db_id_only.id))
 
+    @patch.object(db.Node_collection, "get_CREs")
+    def test_get_cre_by_db_id_returns_none_when_get_cres_empty(
+        self, get_cres_mock
+    ) -> None:
+        get_cres_mock.return_value = []
+        result = self.collection.get_cre_by_db_id(self.dbcre.id)
+        self.assertIsNone(result)
+        get_cres_mock.assert_called_once_with(external_id=self.dbcre.external_id)
+
     def test_get_standards(self) -> None:
         """Given: a Standard 'S1' that links to cres
         return the Standard in Document format"""
@@ -1045,6 +1054,33 @@ class TestDB(unittest.TestCase):
             res = self.collection.text_search(k)
             self.assertCountEqual(res, val)
 
+    def test_text_search_expands_xxe_aliases(self) -> None:
+        xxe_cre = defs.CRE(
+            id="764-507",
+            name="Restrict XML parsing (against XXE)",
+        )
+        cwe_611 = defs.Standard(
+            name="CWE",
+            section="Improper Restriction of XML External Entity Reference",
+            sectionID="611",
+            hyperlink="https://cwe.mitre.org/data/definitions/611.html",
+        )
+
+        self.collection.add_cre(xxe_cre)
+        self.collection.add_node(cwe_611)
+
+        results = self.collection.text_search("XXE")
+
+        self.assertIn("764-507", [doc.id for doc in results if doc.doctype == "CRE"])
+        self.assertTrue(
+            any(
+                doc.doctype == "Standard"
+                and doc.name == "CWE"
+                and doc.sectionID == "611"
+                for doc in results
+            )
+        )
+
     def test_dbNodeFromNode(self) -> None:
         data = {
             "tool": defs.Tool(
@@ -1083,7 +1119,7 @@ class TestDB(unittest.TestCase):
                 name="ccc",
                 description="c2",
                 link="https://example.com/code/hyperlink",
-                tags="1,2",
+                tags="111-111,222-222",
                 ntype=defs.Credoctypes.Code.value,
             ),
         }
@@ -1327,15 +1363,73 @@ class TestDB(unittest.TestCase):
             collection.gap_analysis_exists(make_resources_key(["788-788", "788-789"])),
         )
 
+    def test_add_gap_analysis_result_skips_empty_primary_insert(self):
+        collection = db.Node_collection()
+        key = make_resources_key(["788-788", "b"])
+        collection.add_gap_analysis_result(key, '{"result": {}}')
+        self.assertIsNone(
+            collection.session.query(db.GapAnalysisResults)
+            .filter(db.GapAnalysisResults.cache_key == key)
+            .first()
+        )
+        self.assertFalse(collection.gap_analysis_exists(key))
+
+    def test_add_gap_analysis_result_does_not_clobber_material_primary(self):
+        collection = db.Node_collection()
+        key = make_resources_key(["788-788", "b"])
+        material = '{"result": {"111-111": {"paths": {}}}}'
+        collection.add_gap_analysis_result(key, material)
+        collection.add_gap_analysis_result(key, '{"result": {}}')
+        row = (
+            collection.session.query(db.GapAnalysisResults)
+            .filter(db.GapAnalysisResults.cache_key == key)
+            .first()
+        )
+        self.assertEqual(row.ga_object, material)
+        self.assertTrue(collection.gap_analysis_exists(key))
+
+    def test_add_gap_analysis_result_allows_material_over_empty_primary(self):
+        collection = db.Node_collection()
+        key = make_resources_key(["788-788", "b"])
+        collection.session.add(
+            db.GapAnalysisResults(cache_key=key, ga_object='{"result": {}}')
+        )
+        collection.session.commit()
+        material = '{"result": {"111-111": {"paths": {}}}}'
+        collection.add_gap_analysis_result(key, material)
+        row = (
+            collection.session.query(db.GapAnalysisResults)
+            .filter(db.GapAnalysisResults.cache_key == key)
+            .first()
+        )
+        self.assertEqual(row.ga_object, material)
+
+    def test_add_gap_analysis_result_allows_empty_subresource(self):
+        collection = db.Node_collection()
+        sub = make_subresources_key(["788-788", "b"], "111-111")
+        collection.add_gap_analysis_result(sub, '{"result": {}}')
+        row = (
+            collection.session.query(db.GapAnalysisResults)
+            .filter(db.GapAnalysisResults.cache_key == sub)
+            .first()
+        )
+        self.assertIsNotNone(row)
+        self.assertEqual(row.ga_object, '{"result": {}}')
+
     @patch.object(db.NEO_DB, "gap_analysis")
     def test_gap_analysis_removes_stale_empty_primary_when_neo_empty(self, gap_mock):
         """Placeholder ``{"result":{}}`` rows must not survive a recompute with no Neo paths."""
         collection = db.Node_collection()
         collection.neo_db.connected = True
         key = make_resources_key(["788-788", "b"])
-        collection.add_gap_analysis_result(key, '{"result": {}}')
+        collection.session.add(
+            db.GapAnalysisResults(cache_key=key, ga_object='{"result": {}}')
+        )
         sub = make_subresources_key(["788-788", "b"], "111-111")
-        collection.add_gap_analysis_result(sub, '{"result": {}}')
+        collection.session.add(
+            db.GapAnalysisResults(cache_key=sub, ga_object='{"result": {}}')
+        )
+        collection.session.commit()
         self.assertFalse(collection.gap_analysis_exists(key))
 
         gap_mock.return_value = ([], [])
@@ -2420,6 +2514,65 @@ class TestDB(unittest.TestCase):
         self.assertEqual(paginated_cres, [cres[0], cres[1]])
         self.assertEqual(page, 1)
         self.assertEqual(total_pages, 4)
+
+    def test_all_cres_with_pagination_hydrates_full_link_graph(self) -> None:
+        """Batch pagination must return the same link graph as get_CREs per CRE."""
+        sqla.session.remove()
+        sqla.drop_all()
+        sqla.create_all()
+        collection = db.Node_collection().with_graph()
+        parent = defs.CRE(name="Parent", id="100-100")
+        child1 = defs.CRE(name="Child1", id="101-101")
+        child2 = defs.CRE(name="Child2", id="102-102")
+        sibling = defs.CRE(name="Sibling", id="103-103")
+        std1 = defs.Standard(name="StdParent", section="SP")
+        std2 = defs.Standard(name="StdChild", section="SC")
+
+        db_parent = collection.add_cre(parent)
+        db_child1 = collection.add_cre(child1)
+        db_child2 = collection.add_cre(child2)
+        db_sibling = collection.add_cre(sibling)
+        db_std1 = collection.add_node(std1)
+        db_std2 = collection.add_node(std2)
+
+        collection.add_internal_link(
+            higher=db_parent, lower=db_child1, ltype=defs.LinkTypes.Contains
+        )
+        collection.add_internal_link(
+            higher=db_parent, lower=db_child2, ltype=defs.LinkTypes.Contains
+        )
+        collection.add_internal_link(
+            higher=db_sibling, lower=db_child2, ltype=defs.LinkTypes.Related
+        )
+        collection.add_link(cre=db_parent, node=db_std1, ltype=defs.LinkTypes.LinkedTo)
+        collection.add_link(cre=db_child1, node=db_std2, ltype=defs.LinkTypes.LinkedTo)
+        collection.session.commit()
+
+        paginated_cres, page, total_pages = collection.all_cres_with_pagination(
+            page=1, per_page=5
+        )
+
+        self.assertEqual(page, 1)
+        self.assertEqual(total_pages, 1)
+        self.assertEqual(4, len(paginated_cres))
+
+        for paginated_cre in paginated_cres:
+            expected = collection.get_CREs(external_id=paginated_cre.id)[0]
+            expected_dict = expected.todict()
+            actual_dict = paginated_cre.todict()
+            self.assertEqual(expected_dict["id"], actual_dict["id"])
+            self.assertEqual(expected_dict["name"], actual_dict["name"])
+            self.assertEqual(
+                expected_dict.get("description"), actual_dict.get("description")
+            )
+            self.assertCountEqual(
+                expected_dict.get("links", []), actual_dict.get("links", [])
+            )
+
+        child1_paginated = next(c for c in paginated_cres if c.id == "101-101")
+        link_types = {link.ltype for link in child1_paginated.links}
+        self.assertIn(defs.LinkTypes.PartOf, link_types)
+        self.assertIn(defs.LinkTypes.LinkedTo, link_types)
 
     def test_get_cre_hierarchy(self) -> None:
         # this needs a clean database and a clean graph so reinit everything

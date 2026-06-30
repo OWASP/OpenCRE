@@ -17,6 +17,7 @@ import { CommonRequirementEnumeration, Graph, SearchPage, Standard } from './pag
 import { BrowseRootCres } from './pages/BrowseRootCres/browseRootCres';
 import { Chatbot } from './pages/chatbot/chatbot';
 import { Explorer } from './pages/Explorer/explorer';
+import { withExplorerLayout } from './pages/Explorer/ExplorerLayout';
 import { ExplorerCircles } from './pages/Explorer/visuals/circles/circles';
 import { ExplorerForceGraph } from './pages/Explorer/visuals/force-graph/forceGraph';
 import { GapAnalysis } from './pages/GapAnalysis/GapAnalysis';
@@ -24,6 +25,10 @@ import { MembershipRequired } from './pages/MembershipRequired/MembershipRequire
 import { MyOpenCRE } from './pages/MyOpenCRE/MyOpenCRE';
 import { SearchName } from './pages/Search/SearchName';
 import { StandardSection } from './pages/Standard/StandardSection';
+
+const ExplorerWithLayout = withExplorerLayout(Explorer);
+const ExplorerCirclesWithLayout = withExplorerLayout(ExplorerCircles);
+const ExplorerForceGraphWithLayout = withExplorerLayout(ExplorerForceGraph);
 
 export interface IRoute {
   path: string;
@@ -112,17 +117,17 @@ export const ROUTES = (capabilities: Capabilities): IRoute[] => [
   },
   {
     path: `${EXPLORER}/circles`,
-    component: ExplorerCircles,
+    component: ExplorerCirclesWithLayout,
     showFilter: false,
   },
   {
     path: `${EXPLORER}/force_graph`,
-    component: ExplorerForceGraph,
+    component: ExplorerForceGraphWithLayout,
     showFilter: false,
   },
   {
     path: `${EXPLORER}`,
-    component: Explorer,
+    component: ExplorerWithLayout,
     showFilter: false,
   },
 ];
