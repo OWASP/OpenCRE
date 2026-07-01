@@ -1,0 +1,62 @@
+[
+  {
+    "section_id": "API1",
+    "section": "Broken Object Level Authorization",
+    "hyperlink": "https://owasp.org/API-Security/editions/2023/en/0xa1-broken-object-level-authorization/",
+    "cre_ids": ["304-667", "724-770"]
+  },
+  {
+    "section_id": "API2",
+    "section": "Broken Authentication",
+    "hyperlink": "https://owasp.org/API-Security/editions/2023/en/0xa2-broken-authentication/",
+    "cre_ids": ["177-260", "586-842", "633-428"]
+  },
+  {
+    "section_id": "API3",
+    "section": "Broken Object Property Level Authorization",
+    "hyperlink": "https://owasp.org/API-Security/editions/2023/en/0xa3-broken-object-property-level-authorization/",
+    "cre_ids": ["538-770", "724-770", "128-128"]
+  },
+  {
+    "section_id": "API4",
+    "section": "Unrestricted Resource Consumption",
+    "hyperlink": "https://owasp.org/API-Security/editions/2023/en/0xa4-unrestricted-resource-consumption/",
+    "cre_ids": ["623-550"]
+  },
+  {
+    "section_id": "API5",
+    "section": "Broken Function Level Authorization",
+    "hyperlink": "https://owasp.org/API-Security/editions/2023/en/0xa5-broken-function-level-authorization/",
+    "cre_ids": ["650-560", "724-770"]
+  },
+  {
+    "section_id": "API6",
+    "section": "Unrestricted Access to Sensitive Business Flows",
+    "hyperlink": "https://owasp.org/API-Security/editions/2023/en/0xa6-unrestricted-access-to-sensitive-business-flows/",
+    "cre_ids": ["534-605", "630-573"]
+  },
+  {
+    "section_id": "API7",
+    "section": "Server Side Request Forgery",
+    "hyperlink": "https://owasp.org/API-Security/editions/2023/en/0xa7-server-side-request-forgery/",
+    "cre_ids": ["028-728", "657-084"]
+  },
+  {
+    "section_id": "API8",
+    "section": "Security Misconfiguration",
+    "hyperlink": "https://owasp.org/API-Security/editions/2023/en/0xa8-security-misconfiguration/",
+    "cre_ids": ["486-813"]
+  },
+  {
+    "section_id": "API9",
+    "section": "Improper Inventory Management",
+    "hyperlink": "https://owasp.org/API-Security/editions/2023/en/0xa9-improper-inventory-management/",
+    "cre_ids": ["162-655", "863-521"]
+  },
+  {
+    "section_id": "API10",
+    "section": "Unsafe Consumption of APIs",
+    "hyperlink": "https://owasp.org/API-Security/editions/2023/en/0xaa-unsafe-consumption-of-apis/",
+    "cre_ids": ["715-223"]
+  }
+]
