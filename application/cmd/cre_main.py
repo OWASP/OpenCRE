@@ -69,13 +69,22 @@ def fetch_upstream_json(
             last_error = exc
 
         if attempt < max_attempts:
+            retry_after_header = None
+            sleep_seconds = backoff_seconds * attempt
+            if "response" in locals() and response.status_code == 429:
+                retry_after_header = response.headers.get("Retry-After")
+                try:
+                    if retry_after_header is not None:
+                        sleep_seconds = float(retry_after_header)
+                except (TypeError, ValueError):
+                    sleep_seconds = backoff_seconds * attempt
             logger.warning(
                 "upstream fetch failed for %s on attempt %s/%s, retrying",
                 url,
                 attempt,
                 max_attempts,
             )
-            time.sleep(backoff_seconds * attempt)
+            time.sleep(sleep_seconds)
 
     if last_error:
         raise RuntimeError(f"upstream fetch failed for {url}") from last_error
@@ -635,11 +644,11 @@ def download_graph_from_upstream(cache: str) -> None:
     collection = db_connect(path=cache).with_graph()
 
     def download_cre_from_upstream(creid: str):
+        if creid in imported_cres:
+            return
         data = fetch_upstream_json(f"/id/{creid}")
         credict = data["data"]
         cre = defs.Document.from_dict(credict)
-        if cre.id in imported_cres:
-            return
 
         register_cre(cre, collection)
         imported_cres[cre.id] = ""
