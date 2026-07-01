@@ -168,6 +168,16 @@ def main() -> None:
         help="import owasp secure headers",
     )
     parser.add_argument(
+        "--owasp_kubernetes_top10_2022_in",
+        action="store_true",
+        help="import OWASP Kubernetes Top Ten 2022",
+    )
+    parser.add_argument(
+        "--owasp_kubernetes_top10_2025_in",
+        action="store_true",
+        help="import OWASP Kubernetes Top Ten 2025 draft",
+    )
+    parser.add_argument(
         "--pci_dss_3_2_in",
         action="store_true",
         help="import pci dss from https://www.compliancequickstart.com/",
