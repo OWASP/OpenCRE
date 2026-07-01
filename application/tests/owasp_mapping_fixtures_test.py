@@ -30,6 +30,13 @@ class TestOwaspMappingFixtures(unittest.TestCase):
                 self.assertIsInstance(payload, list)
                 self.assertGreater(len(payload), 0)
 
+                known_section_ids = {
+                    entry["section_id"]
+                    for entry in payload
+                    if "section_id" in entry and isinstance(entry["section_id"], str)
+                }
+                seen_section_ids: set[str] = set()
+
                 for entry in payload:
                     self.assertIsInstance(entry, dict)
                     self.assertIsInstance(entry.get("section"), str)
@@ -43,6 +50,27 @@ class TestOwaspMappingFixtures(unittest.TestCase):
                     if "section_id" in entry:
                         self.assertIsInstance(entry["section_id"], str)
                         self.assertTrue(entry["section_id"].strip())
+                        self.assertNotIn(
+                            entry["section_id"],
+                            seen_section_ids,
+                            msg=f"Duplicate section_id {entry['section_id']} in {path.name}",
+                        )
+                        seen_section_ids.add(entry["section_id"])
+
+                    if "fallback_section_ids" in entry:
+                        self.assertIsInstance(entry["fallback_section_ids"], list)
+                        self.assertGreater(len(entry["fallback_section_ids"]), 0)
+                        for fallback_section_id in entry["fallback_section_ids"]:
+                            self.assertIsInstance(fallback_section_id, str)
+                            self.assertTrue(fallback_section_id.strip())
+                            self.assertIn(
+                                fallback_section_id,
+                                known_section_ids,
+                                msg=(
+                                    f"Fallback section id {fallback_section_id} "
+                                    f"in {path.name} is not a known section_id"
+                                ),
+                            )
 
                     for cre_id in entry["cre_ids"]:
                         self.assertIsInstance(cre_id, str)
