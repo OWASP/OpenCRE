@@ -54,6 +54,7 @@ def fetch_upstream_json(
     last_error: Optional[Exception] = None
 
     for attempt in range(1, max_attempts + 1):
+        response = None
         try:
             response = requests.get(url, timeout=timeout)
             if response.status_code == 200:
@@ -71,7 +72,7 @@ def fetch_upstream_json(
         if attempt < max_attempts:
             retry_after_header = None
             sleep_seconds = backoff_seconds * attempt
-            if "response" in locals() and response.status_code == 429:
+            if response is not None and response.status_code == 429:
                 retry_after_header = response.headers.get("Retry-After")
                 try:
                     if retry_after_header is not None:
