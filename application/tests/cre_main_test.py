@@ -6,6 +6,7 @@ import unittest
 from typing import Any, Dict, List
 from unittest import mock
 from unittest.mock import Mock, patch
+import requests
 from rq import Queue, job
 from application.utils import redis
 from application.prompt_client import prompt_client as prompt_client
@@ -469,6 +470,23 @@ class TestMain(unittest.TestCase):
                 )
             ],
         )
+
+    @patch("application.cmd.cre_main.time.sleep")
+    @patch("application.cmd.cre_main.requests.get")
+    def test_fetch_upstream_json_retries_transient_failures(
+        self, mock_get, mock_sleep
+    ) -> None:
+        transient_error = requests.exceptions.ConnectionError("reset by peer")
+        success_response = Mock()
+        success_response.status_code = 200
+        success_response.json.return_value = {"data": []}
+        mock_get.side_effect = [transient_error, success_response]
+
+        data = main.fetch_upstream_json("/root_cres")
+
+        self.assertEqual(data, {"data": []})
+        self.assertEqual(mock_get.call_count, 2)
+        mock_sleep.assert_called_once()
 
     @patch.object(main, "db_connect")
     @patch.object(Queue, "enqueue_call")
