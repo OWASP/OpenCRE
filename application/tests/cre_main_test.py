@@ -482,7 +482,9 @@ class TestMain(unittest.TestCase):
         success_response.json.return_value = {"data": []}
         mock_get.side_effect = [transient_error, success_response]
 
-        data = main.fetch_upstream_json("/root_cres")
+        # Make retry behaviour deterministic for the test by passing explicit
+        # retry settings instead of relying on environment defaults.
+        data = main.fetch_upstream_json("/root_cres", max_attempts=2, backoff_seconds=1)
 
         self.assertEqual(data, {"data": []})
         self.assertEqual(mock_get.call_count, 2)
