@@ -153,6 +153,12 @@ verify-ga-complete-prod:
 		--base-url "https://opencre.org" \
 		--output-json "$(CURDIR)/tmp/prod-ga-completeness.json"
 
+monitor-ga-health-prod:
+	@[ -d "./.venv" ] && . ./.venv/bin/activate || ([ -d "./venv" ] && . ./venv/bin/activate); \
+	python scripts/monitor_ga_health.py \
+		--base-url "https://opencre.org" \
+		--output-json "$(CURDIR)/tmp/prod-ga-health.json"
+
 verify-ga-parity-local:
 	@[ -d "./.venv" ] && . ./.venv/bin/activate || ([ -d "./venv" ] && . ./venv/bin/activate); \
 	export CRE_CACHE_FILE="$${CRE_CACHE_FILE:-postgresql://cre:password@127.0.0.1:5432/cre}"; \
@@ -167,5 +173,10 @@ backfill-gap-analysis-sync:
 	export NEO4J_URL="$${NEO4J_URL:-bolt://neo4j:password@127.0.0.1:7687}"; \
 	python cre.py --cache_file "$$CRE_CACHE_FILE" --populate_neo4j_db && \
 	python cre.py --cache_file "$$CRE_CACHE_FILE" --ga_backfill_missing --ga_backfill_no_queue
+
+backfill-opencre-ga:
+	@[ -d "./.venv" ] && . ./.venv/bin/activate || ([ -d "./venv" ] && . ./venv/bin/activate); \
+	export FLASK_APP="$(CURDIR)/cre.py"; \
+	python cre.py --cache_file "$${CRE_CACHE_FILE:-$(CURDIR)/standards_cache.sqlite}" --ga_backfill_opencre_direct
 
 all: clean lint test dev dev-run

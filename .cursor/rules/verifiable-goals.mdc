@@ -1,0 +1,49 @@
+---
+description: Non-negotiable lint, mypy, test, and CI checks with evidence in handoff
+alwaysApply: true
+---
+
+# Verifiable Goals
+
+Agents need pass/fail checks to close the loop. Without verification, the human becomes the verification loop.
+
+## Required checks (code changes)
+
+Run in order unless clearly irrelevant (explain why if skipped):
+
+1. `make lint`
+2. `make mypy`
+3. `make test` — full suite, or a targeted module when scope is narrow
+4. `make frontend` / `yarn build` — when frontend/TS/TSX touched
+5. `make alembic-guardrail` — before deploy/migration ops
+
+## CI
+
+When preparing or fixing a PR: all workflow jobs must be green.
+Use `gh pr checks` or the GitHub Actions UI. Fix failures iteratively.
+
+## Frontend TypeScript (when TS/TSX changed)
+
+- Webpack production build must succeed (`make frontend` / `yarn build`)
+- TypeScript must compile with no errors
+- Prettier must pass (`make lint` runs black for Python and prettier for frontend)
+
+## Iterate until green
+
+- If any check fails, fix the failure and rerun from the failed step.
+- Do not hand off with failing checks unless blocked; document the blocker explicitly.
+- Before commit (when user asks): all relevant checks must pass.
+
+## Handoff evidence (mandatory)
+
+Report what you ran and the outcome — not assertions:
+
+```
+make lint      — passed
+make mypy      — passed
+make test      — passed (N tests, 0 failures)
+make frontend  — passed (if applicable)
+gh pr checks   — all green (if PR-related)
+```
+
+If a check failed, show the error, the fix, and the rerun result.
