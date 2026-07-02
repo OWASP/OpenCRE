@@ -1,15 +1,15 @@
 """Golden-set scoring for the eval harness.
 
-Implements the multi-link correctness rule. The rule itself (Q-D) is provisional
-pending mentor confirmation at the Friday call — keep it isolated here so a
-change touches one function only.
+Implements the multi-link correctness rule (Q-D). This is the confirmed,
+canonical baseline for the harness — kept isolated here so a change touches
+one function only.
 """
 
 from typing import List, Sequence
 
-# TODO(Q-D): provisional default — confirm with mentor before relying on results.
-# A predicted set is correct iff Jaccard(expected, predicted) >= 0.5 AND the
-# top-1 prediction is in the expected set.
+# Q-D correctness rule (confirmed on PR #922): a predicted set is correct iff
+# Jaccard(expected, predicted) >= 0.5 AND the top-1 prediction is in the
+# expected set.
 JACCARD_THRESHOLD = 0.5
 
 
