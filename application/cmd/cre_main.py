@@ -1105,6 +1105,16 @@ def run_librarian(
     ph = prompt_client.PromptHandler(database=database)
 
     backend = RetrieverBackend(cfg.retriever_backend)
+    if backend is RetrieverBackend.pgvector:
+        dialect = database.session.connection().dialect.name
+        if dialect != "postgresql":
+            logger.warning(
+                "CRE_LIBRARIAN_RETRIEVER_BACKEND=pgvector selected on a %r "
+                "database, but the pgvector backend needs Postgres with the "
+                "embedding_vec column (lands W8) and will fail at retrieve() "
+                "time here. Set the backend to in_memory until then.",
+                dialect,
+            )
     # The CRE ids present in the hub are exactly the known ids the explicit
     # resolver may auto-link to (W2 seeded this from the golden set; here it is
     # the real DB-backed registry).
