@@ -19,6 +19,7 @@ grpcio_status
 grpcio
 gspread
 gunicorn
+jsonschema>=4.26.0
 networkx
 nltk
 oauthlib
@@ -84,6 +85,7 @@ python-frontmatter
 python-markdown-maker
 python-slugify
 PyYAML==6.0.1
+referencing>=0.37.0
 regex
 requests
 requests-oauthlib
