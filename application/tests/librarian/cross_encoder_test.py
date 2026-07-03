@@ -96,9 +96,7 @@ class RerankTest(unittest.TestCase):
         )
 
     def test_empty_candidates_yields_empty_reranked(self) -> None:
-        empty = RetrievalAudit(
-            retriever="r", candidates=[], reranked=[], threshold=0.8
-        )
+        empty = RetrievalAudit(retriever="r", candidates=[], reranked=[], threshold=0.8)
         out = make_reranker().rerank("q", empty)
         self.assertEqual(out.reranked, [])
 
