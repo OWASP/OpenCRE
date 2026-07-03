@@ -204,9 +204,6 @@ def main(argv: List[str]) -> int:
     parser.add_argument("--top_k_retrieval", type=int, default=cfg.top_k_retrieval)
     parser.add_argument("--top_k_rerank", type=int, default=cfg.top_k_rerank)
     parser.add_argument(
-        "--dry_run", action="store_true", help="no writes (always true pre-W8)"
-    )
-    parser.add_argument(
         "--no_hub_firewall",
         action="store_true",
         help="disable the leakage firewall (firewall is ON by default)",

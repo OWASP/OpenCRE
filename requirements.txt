@@ -96,7 +96,7 @@ redis
 ruamel.yaml
 ruamel.yaml.clib
 scikit-learn
-sentence-transformers
+sentence-transformers>=5.0.0,<6.0.0
 Shapely
 six
 smmap

@@ -195,19 +195,27 @@ CURATED_AMBIGUOUS = [
 
 
 def _fetch_asvs_cre(conn: sqlite3.Connection, section_id: str) -> Optional[str]:
-    row = conn.execute(
+    rows = conn.execute(
         """
-        SELECT c.external_id
+        SELECT DISTINCT c.external_id
         FROM node n
         JOIN cre_node_links l ON l.node = n.id
         JOIN cre c ON c.id = l.cre
         WHERE n.name LIKE '%ASVS%' AND n.section_id = ?
         ORDER BY c.external_id
-        LIMIT 1
         """,
         (section_id,),
-    ).fetchone()
-    return row[0] if row else None
+    ).fetchall()
+    if not rows:
+        return None
+    if len(rows) > 1:
+        # Fail loud rather than silently pick one — an ambiguous section would
+        # bake a wrong CRE into the golden set (matches build_explicit/build_update).
+        raise ValueError(
+            f"ASVS section {section_id!r} maps to multiple CREs "
+            f"({', '.join(r[0] for r in rows)}); cannot pick a golden CRE"
+        )
+    return rows[0][0]
 
 
 def build_positive_asvs(conn: sqlite3.Connection) -> List[Dict]:

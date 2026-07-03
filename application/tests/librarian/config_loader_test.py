@@ -1,6 +1,7 @@
 import os
 import unittest
 from dataclasses import FrozenInstanceError
+from typing import ClassVar, Dict
 from unittest import mock
 
 from application.utils.librarian.config_loader import LibrarianConfig, load_config
@@ -27,7 +28,7 @@ class TestConfigLoaderDefaults(unittest.TestCase):
 
 
 class TestConfigLoaderOverrides(unittest.TestCase):
-    OVERRIDES = {
+    OVERRIDES: ClassVar[Dict[str, str]] = {
         "CRE_LIBRARIAN_RETRIEVER_BACKEND": "pgvector",
         "CRE_LIBRARIAN_CROSSENCODER_MODEL": "cross-encoder/other",
         "CRE_LIBRARIAN_TOP_K_RETRIEVAL": "50",
