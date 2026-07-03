@@ -157,7 +157,9 @@ class CandidateRetriever:
         # Top-K by descending score. argsort is ascending, so take the tail
         # and reverse; cap at pool size when the hub is smaller than K.
         k = min(self._top_k, len(self._pool.cre_ids))
-        top_idx = np.argsort(scores)[-k:][::-1]
+        # Stable descending sort so tied cosine scores keep hub (index) order —
+        # deterministic across runs. argsort(-scores) descends; kind="stable".
+        top_idx = np.argsort(-scores, kind="stable")[:k]
 
         candidates: List[CreCandidate] = [
             CreCandidate(

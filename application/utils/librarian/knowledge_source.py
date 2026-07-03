@@ -38,9 +38,11 @@ class FixtureKnowledgeSource(KnowledgeSource):
                     try:
                         yield KnowledgeQueueItem.model_validate_json(line)
                     except ValidationError as exc:
+                        # Log only error locations/types, never the raw input —
+                        # queue rows can carry sensitive content.
                         logger.warning(
                             "Skipping malformed knowledge_queue row at line %d: %s",
                             line_no,
-                            exc,
+                            exc.errors(include_input=False),
                         )
                         continue

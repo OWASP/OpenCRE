@@ -100,7 +100,7 @@ class CrossEncoderReranker:
 
         reranked = [
             c.model_copy(update={"score_rerank": float(s)})
-            for c, s in zip(candidates, scores)
+            for c, s in zip(candidates, scores, strict=True)
         ]
         # Highest cross-encoder score first, then keep only the best top_n.
         # Python's sort is stable, so ties preserve C.1's cosine order.

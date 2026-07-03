@@ -1073,10 +1073,10 @@ def run_librarian(
 
     For each knowledge-queue section: try the deterministic explicit-CRE fast
     path (C.0.5); on no/ambiguous reference, run the semantic retriever (C.1)
-    and log the top-K candidate shortlist. The cross-encoder rerank (C.2, W4),
-    decision/threshold routing (C.3-C.4, W5) and graph writes (W8) are not
-    built yet, so this is dry-run only: it never writes a link. ``--run_librarian``
-    without writes behaves identically and warns.
+    and rerank its top-K shortlist with the cross-encoder (C.2, W4), then log
+    the reranked candidates. Decision/threshold routing (C.3-C.4, W5) and graph
+    writes (W8) are not built yet, so this is dry-run only: it never writes a
+    link. ``--run_librarian`` without writes behaves identically and warns.
 
     Ops note: this is opt-in CLI only — it is not on the ``Procfile`` and is
     wired into neither the web app nor the background worker (that lands W8).
@@ -1172,9 +1172,19 @@ def run_librarian(
             logger.info("[explicit] %s -> %s", section.chunk_id, resolution.cre_ids[0])
             continue
 
+        try:
+            audit = retriever.retrieve(section.text)
+            audit = reranker.rerank(section.text, audit)
+        except Exception as exc:  # noqa: BLE001 - one bad section must not abort the batch
+            rejected += 1
+            logger.warning(
+                "[semantic] %s skipped: retrieval/rerank failed: %s",
+                section.chunk_id,
+                exc,
+            )
+            continue
+
         semantic += 1
-        audit = retriever.retrieve(section.text)
-        audit = reranker.rerank(section.text, audit)
         top = ", ".join(
             f"{c.cre_id}:{c.score_rerank:.3f}" for c in audit.reranked
         )

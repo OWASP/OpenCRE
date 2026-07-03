@@ -22,6 +22,15 @@ SCHEMA_VERSION = "0.2.0"
 _SCHEMA_VERSION_RE = re.compile(r"^0\.\d+\.\d+$")
 
 
+def _require_schema_version(value: str) -> None:
+    """Shared envelope check — every RFC envelope pins schema_version to 0.x.y.
+
+    Centralized so the regex and message can't drift across envelopes.
+    """
+    if not _SCHEMA_VERSION_RE.match(value):
+        raise ValueError(r"schema_version must match ^0\.\d+\.\d+$")
+
+
 # ---------- Enums (RFC) ----------
 
 
@@ -212,8 +221,7 @@ class KnowledgeItem(BaseModel):
 
     @model_validator(mode="after")
     def _rfc_rules(self) -> "KnowledgeItem":
-        if not _SCHEMA_VERSION_RE.match(self.schema_version):
-            raise ValueError(r"schema_version must match ^0\.\d+\.\d+$")
+        _require_schema_version(self.schema_version)
         if self.status == KnowledgeStatus.accepted and self.content is None:
             raise ValueError("status=accepted requires content")
         if self.status == KnowledgeStatus.rejected and self.rejection is None:
@@ -238,8 +246,7 @@ class LinkProposal(BaseModel):
 
     @model_validator(mode="after")
     def _schema_version_pattern(self) -> "LinkProposal":
-        if not _SCHEMA_VERSION_RE.match(self.schema_version):
-            raise ValueError(r"schema_version must match ^0\.\d+\.\d+$")
+        _require_schema_version(self.schema_version)
         return self
 
 
@@ -262,8 +269,7 @@ class ReviewItem(BaseModel):
 
     @model_validator(mode="after")
     def _schema_version_pattern(self) -> "ReviewItem":
-        if not _SCHEMA_VERSION_RE.match(self.schema_version):
-            raise ValueError(r"schema_version must match ^0\.\d+\.\d+$")
+        _require_schema_version(self.schema_version)
         return self
 
 

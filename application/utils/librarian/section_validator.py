@@ -32,9 +32,9 @@ Pydantic ``ValidationError`` never escapes this module.
 """
 
 from dataclasses import dataclass
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, Optional, Type, TypeVar, Union
 
-from pydantic import ValidationError
+from pydantic import BaseModel, ValidationError
 
 from application.utils.librarian.schemas import (
     KnowledgeItem,
@@ -45,6 +45,8 @@ from application.utils.librarian.schemas import (
     SourceRef,
     SourceType,
 )
+
+_ModelT = TypeVar("_ModelT", bound=BaseModel)
 
 KNOWLEDGE_LABEL = "KNOWLEDGE"
 
@@ -86,6 +88,17 @@ class Section:
     locator: Locator
 
 
+def _validate_or_raise(model_cls: Type[_ModelT], raw: Any) -> _ModelT:
+    """Coerce a raw row into ``model_cls``, converting Pydantic's ValidationError
+    into a typed MalformedKnowledgeItemError so it never escapes this module."""
+    if isinstance(raw, model_cls):
+        return raw
+    try:
+        return model_cls.model_validate(raw)
+    except ValidationError as exc:
+        raise MalformedKnowledgeItemError(str(exc)) from exc
+
+
 def _require_text(text: str) -> str:
     if not text or not text.strip():
         raise EmptyTextError("section text is empty or whitespace-only")
@@ -111,11 +124,7 @@ def section_from_queue_row(
 
     Raises a SectionValidationError subclass on any rejection.
     """
-    if not isinstance(row, KnowledgeQueueItem):
-        try:
-            row = KnowledgeQueueItem.model_validate(row)
-        except ValidationError as exc:
-            raise MalformedKnowledgeItemError(str(exc)) from exc
+    row = _validate_or_raise(KnowledgeQueueItem, row)
 
     if row.llm_label != KNOWLEDGE_LABEL:
         raise NotKnowledgeError(
@@ -154,11 +163,7 @@ def section_from_knowledge_item(
 
     Raises a SectionValidationError subclass on any rejection.
     """
-    if not isinstance(item, KnowledgeItem):
-        try:
-            item = KnowledgeItem.model_validate(item)
-        except ValidationError as exc:
-            raise MalformedKnowledgeItemError(str(exc)) from exc
+    item = _validate_or_raise(KnowledgeItem, item)
 
     if item.status != KnowledgeStatus.accepted:
         raise NotKnowledgeError(
