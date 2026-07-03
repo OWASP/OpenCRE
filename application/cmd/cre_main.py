@@ -1175,7 +1175,8 @@ def run_librarian(
         try:
             audit = retriever.retrieve(section.text)
             audit = reranker.rerank(section.text, audit)
-        except Exception as exc:  # noqa: BLE001 - one bad section must not abort the batch
+        # one bad section must not abort the batch
+        except Exception as exc:  # noqa: BLE001
             rejected += 1
             logger.warning(
                 "[semantic] %s skipped: retrieval/rerank failed: %s",
@@ -1185,9 +1186,7 @@ def run_librarian(
             continue
 
         semantic += 1
-        top = ", ".join(
-            f"{c.cre_id}:{c.score_rerank:.3f}" for c in audit.reranked
-        )
+        top = ", ".join(f"{c.cre_id}:{c.score_rerank:.3f}" for c in audit.reranked)
         logger.info(
             "[semantic] %s -> %d candidates, reranked top%d: %s",
             section.chunk_id,
