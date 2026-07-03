@@ -8,7 +8,7 @@ repositories:
       include: []
 
     chunking:
-      strategy: markdown
+      strategy: markdown_heading
       max_tokens: 1200
 
     polling:

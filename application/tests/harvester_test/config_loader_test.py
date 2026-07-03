@@ -3,6 +3,7 @@ import unittest
 
 from application.utils.harvester.config_loader import (
     ConfigLoaderError,
+    ConfigFileNotFoundError,
     load_repo_config,
 )
 
@@ -42,7 +43,7 @@ class ConfigLoaderTests(unittest.TestCase):
             load_repo_config(config_path)
 
     def test_missing_config_file(self):
-        with self.assertRaises(FileNotFoundError):
+        with self.assertRaises(ConfigFileNotFoundError):
             load_repo_config("does_not_exist.yaml")
 
     def test_invalid_polling_interval(self):

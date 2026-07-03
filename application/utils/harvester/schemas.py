@@ -20,7 +20,7 @@ class PathRules(BaseModel):
 class ChunkingConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    strategy: Literal["markdown", "plaintext"] = Field(
+    strategy: Literal["markdown_heading", "html_readability", "fixed_size"] = Field(
         ...,
         description="Chunking strategy used for text segmentation",
     )
@@ -29,7 +29,7 @@ class ChunkingConfig(BaseModel):
 
     overlap_tokens: int = Field(
         ge=0,
-        default=100,
+        default=20,
         description="token overlap between adjacent chunks",
     )
 

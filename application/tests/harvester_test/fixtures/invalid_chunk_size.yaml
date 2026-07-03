@@ -10,7 +10,7 @@ repositories:
         - "4.0/en/**/*.md"
 
     chunking:
-      strategy: markdown
+      strategy: markdown_heading
       max_tokens: 0
 
     polling:

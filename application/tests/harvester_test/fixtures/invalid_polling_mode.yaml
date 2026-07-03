@@ -12,7 +12,7 @@ repositories:
         - "docs/**/*.md"
 
     chunking:
-      strategy: markdown
+      strategy: markdown_heading
       max_tokens: 1200
       overlap_tokens: 100
 
