@@ -13,7 +13,9 @@ Scope so far:
   W1 (C.-1): contracts + config + eval harness + golden dataset.
   W2 (C.0):  input boundary — SectionValidator (validate/adapt without
              re-normalizing text) and ExplicitLinkResolver (fail-safe
-             explicit-link resolution). No retrieval/ranking logic yet.
+             explicit-link resolution).
+  W3 (C.1):  candidate retriever (in-memory + pgvector) + pipeline switch.
+Cross-encoder rerank (C.2, W4) onward is not built yet.
 
 Vendored RFC JSON schemas live under ``_rfc_schemas/``. They are pinned to
 upstream/owasp-graph @ 2b1437987768d5ed20fe9ee721ab9a898c4b84af (PR #734).

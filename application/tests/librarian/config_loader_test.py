@@ -10,6 +10,7 @@ class TestConfigLoaderDefaults(unittest.TestCase):
     def test_defaults_when_env_unset(self):
         with mock.patch.dict(os.environ, {}, clear=True):
             cfg = load_config()
+        self.assertEqual(cfg.retriever_backend, "in_memory")
         self.assertEqual(cfg.crossencoder_model, "cross-encoder/ms-marco-MiniLM-L-6-v2")
         self.assertEqual(cfg.top_k_retrieval, 20)
         self.assertEqual(cfg.top_k_rerank, 5)
@@ -27,6 +28,7 @@ class TestConfigLoaderDefaults(unittest.TestCase):
 
 class TestConfigLoaderOverrides(unittest.TestCase):
     OVERRIDES = {
+        "CRE_LIBRARIAN_RETRIEVER_BACKEND": "pgvector",
         "CRE_LIBRARIAN_CROSSENCODER_MODEL": "cross-encoder/other",
         "CRE_LIBRARIAN_TOP_K_RETRIEVAL": "50",
         "CRE_LIBRARIAN_TOP_K_RERANK": "10",
@@ -39,6 +41,7 @@ class TestConfigLoaderOverrides(unittest.TestCase):
     def test_env_overrides_apply(self):
         with mock.patch.dict(os.environ, self.OVERRIDES, clear=True):
             cfg = load_config()
+        self.assertEqual(cfg.retriever_backend, "pgvector")
         self.assertEqual(cfg.crossencoder_model, "cross-encoder/other")
         self.assertEqual(cfg.top_k_retrieval, 50)
         self.assertEqual(cfg.top_k_rerank, 10)
