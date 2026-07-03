@@ -1,4 +1,10 @@
-**/.git/**
+# Placeholder for repository-level exclude patterns.
+
+# This file will be consumed by the Week 4 noise-reduction pipeline
+
+# to filter non-documentation files during harvesting.
+
+**/.git/*
 **/node_modules/**
 **/__pycache__/**
 **/.claude/**

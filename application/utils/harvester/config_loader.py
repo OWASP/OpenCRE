@@ -5,15 +5,19 @@ from .schemas import ReposFile
 
 
 class ConfigLoaderError(Exception):
-    # when repo config loading fails
-    pass
+    """Base class for configuration loading errors."""
+
+
+class ConfigFileNotFoundError(ConfigLoaderError):
+    """Raised when the configuration file cannot be found."""
 
 
 def load_repo_config(path: str | Path) -> ReposFile:
     config_path = Path(path)
 
     if not config_path.is_file():
-        raise FileNotFoundError(f"Configuration file not found: {config_path}")
+        raise ConfigFileNotFoundError(f"Configuration file not found: {config_path}")
+
     try:
         with config_path.open("r", encoding="utf-8") as file:
             raw_config = yaml.safe_load(file)
@@ -24,5 +28,5 @@ def load_repo_config(path: str | Path) -> ReposFile:
         return ReposFile.model_validate(raw_config)
     except ValidationError as exc:
         raise ConfigLoaderError(
-            f"schema validation failed for {config_path} : {exc}"
+            f"Schema validation failed for {config_path}: {exc}"
         ) from exc
