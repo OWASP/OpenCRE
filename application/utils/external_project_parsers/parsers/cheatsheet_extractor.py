@@ -1,16 +1,27 @@
+import logging
 import os
 import re
 
 from application.defs.cheatsheet_defs import CheatsheetRecord
 
 PARSER_VERSION = "v1"
-FALLBACK_USED = "false"
 
 CANONICAL_BASE_URL = "https://cheatsheetseries.owasp.org/cheatsheets/"
 
-_TITLE_RE = re.compile(r"^#\s+(?P<title>.+)$", re.MULTILINE)
-_HEADING_RE = re.compile(r"^##\s+(?P<heading>.+)$", re.MULTILINE)
-_ANY_HEADING_RE = re.compile(r"^#{1,6}\s+.+$", re.MULTILINE)
+_TITLE_RE = re.compile(
+    r"^\s*#(?!#)\s*(?P<title>.+?)$",
+    re.MULTILINE,
+)
+
+_HEADING_RE = re.compile(
+    r"^\s*##(?!#)\s*(?P<heading>.+?)$",
+    re.MULTILINE,
+)
+
+_ANY_HEADING_RE = re.compile(
+    r"^\s*#{1,6}(?!#)\s*.+?$",
+    re.MULTILINE,
+)
 
 
 def _derive_source_id(source_path: str) -> str:
@@ -41,28 +52,44 @@ def _extract_body_after_heading(markdown: str, heading_match: re.Match) -> str:
 
 
 def _extract_summary(markdown: str) -> str:
-    """Extract a summary section from cheatsheet markdown."""
+    """Extract summary from Introduction section in cheatsheet markdown."""
 
-    all_heading_matches = list(_ANY_HEADING_RE.finditer(markdown))
-
-    for match in all_heading_matches:
-        heading_text = match.group().lstrip("#").strip()
-
-        if heading_text.lower() == "introduction":
+    for match in _ANY_HEADING_RE.finditer(markdown):
+        if match.group().strip().lstrip("#").strip().lower() == "introduction":
             body = _extract_body_after_heading(markdown, match)
-
             if body:
                 return body
 
-            break
+    raise ValueError(
+        "_extract_summary: no suitable summary section could be extracted from markdown."
+    )
 
-    for match in all_heading_matches:
+
+def _extract_title(markdown: str) -> str:
+    """Extract H1 title from cheatsheet markdown."""
+
+    match = _TITLE_RE.search(markdown)
+    if not match:
+        raise ValueError("_extract_title: no title found in markdown.")
+
+    return match.group("title").strip()
+
+
+def _fallback_title() -> str:
+    """Return fallback title for malformed markdown."""
+
+    return "No title found."
+
+
+def _fallback_summary(markdown: str) -> str:
+    """Return first non-empty paragraph after any heading, or 'No summary found.'"""
+
+    for match in _ANY_HEADING_RE.finditer(markdown):
         body = _extract_body_after_heading(markdown, match)
-
         if body:
             return body
 
-    raise ValueError("_extract_summary: no summary could be extracted from markdown.")
+    return "No summary found."
 
 
 def extract_cheatsheet_record(
@@ -71,12 +98,24 @@ def extract_cheatsheet_record(
 ) -> CheatsheetRecord:
     """Extract a structured CheatsheetRecord from markdown content."""
 
-    title_match = _TITLE_RE.search(markdown)
-    title = title_match.group("title").strip()
+    fallback_used = "false"
 
+    try:
+        title = _extract_title(markdown)
+    except ValueError as e:
+        logging.warning(str(e))
+        title = _fallback_title()
+        fallback_used = "true"
+
+    # Headings can be empty.
     headings = [m.group("heading").strip() for m in _HEADING_RE.finditer(markdown)]
 
-    summary = _extract_summary(markdown)
+    try:
+        summary = _extract_summary(markdown)
+    except ValueError as e:
+        logging.warning(str(e))
+        summary = _fallback_summary(markdown)
+        fallback_used = "true"
 
     source_id = _derive_source_id(source_path)
     hyperlink = _derive_hyperlink(source_path)
@@ -91,6 +130,6 @@ def extract_cheatsheet_record(
         category_hints=[],
         metadata={
             "parser_version": PARSER_VERSION,
-            "fallback_used": FALLBACK_USED,
+            "fallback_used": fallback_used,
         },
     )
