@@ -1,6 +1,8 @@
 **/.git/**
 **/node_modules/**
 **/__pycache__/**
+**/.claude/**
+**/.cursor/**
 **/*.png
 **/*.jpg
 **/*.jpeg
