@@ -1089,6 +1089,10 @@ def run_librarian(
         build_retriever,
     )
     from application.utils.librarian.config_loader import load_config
+    from application.utils.librarian.cross_encoder import (
+        CrossEncoderReranker,
+        build_cross_encoder_score_fn,
+    )
     from application.utils.librarian.explicit_link_resolver import (
         ResolutionOutcome,
         resolve,
@@ -1141,6 +1145,16 @@ def run_librarian(
         connection=database.session.connection(),
     )
 
+    # C.2 reranker: reads each (section, candidate-CRE) pair together and
+    # re-sorts C.1's shortlist. Scored against the CRE's embeddings_content —
+    # the same text the hub vectors were built from.
+    cre_texts = database.get_embedding_contents_by_doc_type(defs.Credoctypes.CRE.value)
+    reranker = CrossEncoderReranker(
+        score_fn=build_cross_encoder_score_fn(cfg.crossencoder_model),
+        top_n=cfg.top_k_rerank,
+        cre_texts=cre_texts,
+    )
+
     source = FixtureKnowledgeSource(source_jsonl or _DEFAULT_LIBRARIAN_SOURCE)
     sections = explicit = semantic = rejected = 0
     for item in source.items():
@@ -1160,13 +1174,15 @@ def run_librarian(
 
         semantic += 1
         audit = retriever.retrieve(section.text)
+        audit = reranker.rerank(section.text, audit)
         top = ", ".join(
-            f"{c.cre_id}:{c.score_vector:.3f}" for c in audit.candidates[:5]
+            f"{c.cre_id}:{c.score_rerank:.3f}" for c in audit.reranked
         )
         logger.info(
-            "[semantic] %s -> %d candidates (top5: %s)",
+            "[semantic] %s -> %d candidates, reranked top%d: %s",
             section.chunk_id,
             len(audit.candidates),
+            len(audit.reranked),
             top or "<none>",
         )
 

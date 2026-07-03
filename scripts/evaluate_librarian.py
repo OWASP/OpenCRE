@@ -95,22 +95,27 @@ def predict(section: Section, registry: Set[str], hub: List[HubRep]) -> List[str
 
 
 def report_retrieval_recall(
-    rows: List[GoldenDatasetRow], cache_file: str, top_k: int, threshold: float
+    rows: List[GoldenDatasetRow],
+    cache_file: str,
+    top_k: int,
+    threshold: float,
+    top_n_rerank: int,
+    crossencoder_model: str,
 ) -> None:
-    """Measure C.1 retrieval recall@k over the positive slice, live.
+    """Measure the live C.1 -> C.2 pipeline over the positive slice (v1).
 
-    Recall@k is the W3 metric — not the Jaccard link rule (that grades the
-    final auto-link, which needs the W4 reranker). It asks the only question
-    the search step controls: does the expected CRE id make it into the top-K
-    shortlist the reranker will later see? A miss here is unrecoverable
-    downstream, so it is the right thing to gate retrieval on.
+    Two metrics, both live — there is no honest offline value: the candidate
+    pool must be the real CRE-node vectors, and seeding it from the golden text
+    is exactly the leakage the hub firewall strips.
 
-    Live-only: there is no honest way to compute this offline. The candidate
-    pool must be the real CRE-node vectors, and seeding it from the golden
-    text itself is exactly the leakage the hub firewall strips.
+    - retrieval recall@k (C.1): does the expected CRE id make it into the top-K
+      shortlist the reranker will see? A miss here is unrecoverable downstream.
+    - rerank top-1 (C.2): after the cross-encoder re-reads each pair and re-sorts
+      the shortlist, is the #1 candidate an expected CRE? This is the first
+      end-to-end accuracy number for the search path (W4 target >= 0.80).
     """
-    # Live deps are imported lazily so the offline harness needs neither a DB
-    # nor an embedding model.
+    # Live deps are imported lazily so the offline harness needs neither a DB,
+    # an embedding model, nor the cross-encoder stack.
     from application.cmd.cre_main import db_connect
     from application.defs import cre_defs
     from application.prompt_client import prompt_client
@@ -119,6 +124,10 @@ def report_retrieval_recall(
         CandidateRetriever,
     )
     from sqlalchemy import text as _sql_text
+    from application.utils.librarian.cross_encoder import (
+        CrossEncoderReranker,
+        build_cross_encoder_score_fn,
+    )
 
     database = db_connect(path=cache_file)
     ph = prompt_client.PromptHandler(database=database)
@@ -149,24 +158,39 @@ def report_retrieval_recall(
         top_k=top_k,
         threshold=threshold,
     )
+    reranker = CrossEncoderReranker(
+        score_fn=build_cross_encoder_score_fn(crossencoder_model),
+        top_n=top_n_rerank,
+        cre_texts=database.get_embedding_contents_by_doc_type(
+            cre_defs.Credoctypes.CRE.value
+        ),
+    )
 
     positives = [r for r in rows if r.slice.value == "positive" and r.expected.cre_ids]
     if not positives:
         print("retrieval recall: no positive rows with expected ids in this selection")
         return
-    any_hit = all_hit = 0
+    any_hit = all_hit = top1_hit = 0
     for row in positives:
-        retrieved = {c.cre_id for c in retriever.retrieve(row.input.text).candidates}
+        audit = retriever.retrieve(row.input.text)
+        audit = reranker.rerank(row.input.text, audit)
+        retrieved = {c.cre_id for c in audit.candidates}
         expected = set(row.expected.cre_ids or [])
         if expected & retrieved:
             any_hit += 1
         if expected <= retrieved:
             all_hit += 1
+        if audit.reranked and audit.reranked[0].cre_id in expected:
+            top1_hit += 1
     n = len(positives)
     print(
         f"retrieval recall@{top_k} (live, {n} positive rows): "
         f"any-hit {any_hit}/{n} ({any_hit / n:.0%}), "
         f"all-hit {all_hit}/{n} ({all_hit / n:.0%})"
+    )
+    print(
+        f"rerank top-1 (C.2, top_n={top_n_rerank}): "
+        f"{top1_hit}/{n} ({top1_hit / n:.0%})"
     )
 
 
@@ -190,8 +214,9 @@ def main(argv: List[str]) -> int:
     parser.add_argument(
         "--use_live_embeddings",
         action="store_true",
-        help="connect to the OpenCRE DB + embedding model and measure semantic "
-        "retrieval recall@k over the positive slice (needs an LLM + populated DB)",
+        help="connect to the OpenCRE DB + embedding model and measure the live "
+        "C.1 retrieval recall@k and C.2 rerank top-1 over the positive slice "
+        "(needs an LLM + populated DB)",
     )
     parser.add_argument(
         "--cache_file",
@@ -256,12 +281,18 @@ def main(argv: List[str]) -> int:
             return 1
     if args.use_live_embeddings:
         report_retrieval_recall(
-            rows, args.cache_file, args.top_k_retrieval, args.threshold
+            rows,
+            args.cache_file,
+            args.top_k_retrieval,
+            args.threshold,
+            args.top_k_rerank,
+            cfg.crossencoder_model,
         )
     else:
         print(
-            "semantic retriever (C.1): wired; recall@k needs --use_live_embeddings "
-            "(no CRE vectors offline — seeding from golden text would be leakage)"
+            "semantic pipeline (C.1 retrieve + C.2 rerank): wired; recall@k and "
+            "rerank top-1 need --use_live_embeddings (no CRE vectors offline — "
+            "seeding from golden text would be leakage)"
         )
     print(f"correct overall (semantic path still stubbed): {correct}/{len(rows)}")
     return 0
