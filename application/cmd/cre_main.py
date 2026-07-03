@@ -1077,6 +1077,11 @@ def run_librarian(
     decision/threshold routing (C.3-C.4, W5) and graph writes (W8) are not
     built yet, so this is dry-run only: it never writes a link. ``--run_librarian``
     without writes behaves identically and warns.
+
+    Ops note: this is opt-in CLI only — it is not on the ``Procfile`` and is
+    wired into neither the web app nor the background worker (that lands W8).
+    It calls the paid embedding API, so cost is incurred only when someone runs
+    the command manually; the running deployment never triggers it on its own.
     """
     from application.utils.librarian.candidate_retriever import (
         CandidatePool,
