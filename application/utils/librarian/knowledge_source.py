@@ -6,7 +6,6 @@ the same KnowledgeQueueItem rows; C synthesizes the RFC KnowledgeItem envelope
 from each row at processing time (master guide §1.2).
 """
 
-import json
 from abc import ABC, abstractmethod
 from typing import Iterator
 
