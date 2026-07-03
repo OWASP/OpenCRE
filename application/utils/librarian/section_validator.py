@@ -16,6 +16,10 @@ Two entry points, one per upstream shape:
       artifact_id = "art:{source_repo}:{source_path}"
       chunk_id    = "chk:{source_repo}@{source_commit_sha}:{source_path}"
 
+  This chunk_id format differs from Module B's ``ChangeRecord``
+  (``chk:art:{repo}:{path}:{index}``); align the two when the live
+  B->C pipeline wiring lands (W8). Not blocking W2 — no shared consumer yet.
+
 - ``section_from_knowledge_item`` — the full RFC ``KnowledgeItem``
   envelope (fixtures today; the live B->C path lands W8).
 

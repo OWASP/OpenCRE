@@ -103,7 +103,7 @@ class KnowledgeContent(BaseModel):
     text: str = Field(min_length=1)
     title_hint: Optional[str] = None
     keywords: Optional[List[str]] = None
-    language: Optional[str] = None
+    language: Optional[str] = "en"
 
 
 class FilterStage(BaseModel):
@@ -276,6 +276,8 @@ class KnowledgeQueueItem(BaseModel):
     `KnowledgeItem` envelope from them. Not a wire contract; tolerates extra
     fields so B can extend the row without breaking C.
     """
+
+    model_config = ConfigDict(extra="ignore")
 
     id: str
     source_repo: str
