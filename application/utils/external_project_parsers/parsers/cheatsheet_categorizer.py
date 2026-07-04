@@ -277,7 +277,7 @@ def group_cheatsheets(
     list[CheatsheetGroup]
         Groups sorted by group_id for deterministic output order.
     """
-    bucket: dict[str, CheatsheetGroup] = {}
+    bucket: dict[tuple[str, ...], CheatsheetGroup] = {}
 
     for record in records:
         labels = categorize_cheatsheet(
@@ -285,10 +285,14 @@ def group_cheatsheets(
             use_llm=use_llm,
             llm_categorize_fn=llm_categorize_fn,
         )
-        gid = CheatsheetGroup.make_group_id(labels)
-        if gid not in bucket:
-            bucket[gid] = CheatsheetGroup(group_id=gid, labels=sorted(labels))
-        bucket[gid].members.append(record)
+        canonical_labels = tuple(sorted(set(labels)))
+        gid = CheatsheetGroup.make_group_id(list(canonical_labels))
+        if canonical_labels not in bucket:
+            bucket[canonical_labels] = CheatsheetGroup(
+                group_id=gid,
+                labels=list(canonical_labels),
+            )
+        bucket[canonical_labels].members.append(record)
 
     return sorted(bucket.values(), key=lambda g: g.group_id)
 
