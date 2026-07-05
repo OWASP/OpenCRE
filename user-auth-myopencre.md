@@ -54,7 +54,7 @@ A `User` SQLAlchemy model, three auth routes, and session binding.
     created_at    TIMESTAMP WITH TIME ZONE
     last_seen_at  TIMESTAMP WITH TIME ZONE
   ```
-  `google_sub` is used as the identity anchor because it is immutable; email can change and would silently break identity if used instead.
+  `google_sub` is used as the identity anchor because it is immutable; email can change and would silently break identity if used instead. (`google_sub` is the same value currently stored in `session['google_id']`; renamed to `google_sub` to match Google's OIDC `sub` claim.)
 
 - Add to `application/web/web_main.py`:
   - `GET /auth/login` → redirect to Google consent; store `next` URL in session
@@ -63,6 +63,8 @@ A `User` SQLAlchemy model, three auth routes, and session binding.
 - Update `login_required` decorator to redirect to `/auth/login?next=<current_url>`
 - Session stores only `user_id` (UUID). Display name looked up on demand.
 - Session duration: 30-day sliding window, configurable via `SESSION_LIFETIME_DAYS` env var
+
+**Reconciling with existing code:** The current `login_required` decorator checks `session['google_id']` and `session['name']` and aborts with 401 when they are missing. TODO 1 migrates it to check `session['user_id']` instead, and to redirect to `/auth/login?next=<current_url>` on a missing session — replacing the 401 with a redirect into the login flow. Display name is no longer stored in the session; it is looked up from the `User` model on demand. Note that `google_sub` is the same immutable Google `sub` claim currently stored as `session['google_id']` — a rename for clarity, not a new identifier.
 
 **Tests:**
 - New user → exactly one row in `users`, correct `google_sub`
@@ -175,7 +177,7 @@ A standalone mapping function and rq job that takes PENDING sections and produce
 - rq job is idempotent: killing and restarting worker re-processes only PENDING sections
 
 **Checkpoint — pass criteria:**
-- At least one fixture upload (ASVS, WSTG) yields ≥ 98% correct mappings against known CRE links
+- **Mapping accuracy:** Ground truth is the set of existing human-verified CRE links already in the graph. The metric is exact-match accuracy of the section→CRE mapping — an exact match of the predicted `cre_db_id` against the human-verified link, not precision/recall/F1 — evaluated only against those existing human mappings. Target: ≥ 98% exact-match accuracy on at least one fixture upload (ASVS, WSTG). Treat 98% as a target to validate in an initial spike rather than a hard gate; the deterministic re-run count below is the second pass criterion.
 - Deterministic mapped/unmapped counts on re-run of the same fixture
 
 **Failure / rollback:**
@@ -301,4 +303,4 @@ Gap analysis on user standards (`GET /rest/v2/gap_analysis?user_standard=<id>&co
 
 ## Privacy note
 
-This RFC stores user email and display name for the first time (currently nothing is stored, per issue #375). Privacy policy must be updated before production rollout on opencre.org — tracked separately with maintainers, non-blocking for this coding increment.
+This RFC introduces the first persistent storage of user email and display name. Nothing is currently persisted to the database (per issue #375) — session-only identifying data (`name`, `google_id`) already exists in the Flask session, but this RFC is the first to store user email and display name in the database. Privacy policy must be updated before production rollout on opencre.org — tracked separately with maintainers, non-blocking for this coding increment.
