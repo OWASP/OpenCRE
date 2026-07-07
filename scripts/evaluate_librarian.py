@@ -118,11 +118,30 @@ def report_retrieval_recall(
         CandidatePool,
         CandidateRetriever,
     )
+    from sqlalchemy import text as _sql_text
 
     database = db_connect(path=cache_file)
     ph = prompt_client.PromptHandler(database=database)
+
+    # The embeddings pool is keyed by the CRE's internal UUID (add_embedding
+    # stores cre_id=db_object.id), but the golden dataset speaks external_ids
+    # ("616-305"). Translate the pool keys to external_id so recall compares in
+    # the same id-space. Keys not in the map (a DB that already stores
+    # external_ids) pass through unchanged.
+    id_to_ext = {
+        row[0]: row[1]
+        for row in database.session.execute(
+            _sql_text("SELECT id, external_id FROM cre")
+        )
+        if row[1]
+    }
     pool = CandidatePool.from_mapping(
-        database.get_embeddings_by_doc_type(cre_defs.Credoctypes.CRE.value)
+        {
+            id_to_ext.get(k, k): v
+            for k, v in database.get_embeddings_by_doc_type(
+                cre_defs.Credoctypes.CRE.value
+            ).items()
+        }
     )
     retriever = CandidateRetriever(
         embed_fn=ph.get_text_embeddings,
