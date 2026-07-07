@@ -11,16 +11,16 @@ fi
 
 source "$VENV_DIR/bin/activate"
 
-if ! python -c "import flask" >/dev/null 2>&1; then
-  pip install -r "$ROOT_DIR/requirements.txt"
-fi
+# FIX: always install requirements to pick up new/updated packages
+pip install -r "$ROOT_DIR/requirements.txt"
 
 if [[ ! -f "$DB_PATH" ]]; then
   echo "Database file does not exist: $DB_PATH" >&2
   exit 1
 fi
 
-BACKUP_FILE="${DB_PATH}.$(date +%Y%m%d%H%M%S).bak"
+# FIX: add PID to backup filename to avoid collisions
+BACKUP_FILE="${DB_PATH}.$(date +%Y%m%d%H%M%S)_$$.bak"
 cp "$DB_PATH" "$BACKUP_FILE"
 if [[ ! -f "$BACKUP_FILE" ]]; then
   echo "Failed to create backup at $BACKUP_FILE" >&2
