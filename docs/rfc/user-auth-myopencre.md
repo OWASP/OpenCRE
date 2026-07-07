@@ -1,9 +1,5 @@
 # RFC: User Authentication and Personal MyOpenCRE Views
 
-**Author:** Saatwik Kumar Yadav  
-**Status:** Draft — submitted for community review  
-**Related issues:** #375, #585, #586
-
 ---
 
 ## Context
