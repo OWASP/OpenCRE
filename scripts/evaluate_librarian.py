@@ -133,10 +133,10 @@ def report_retrieval_recall(
     ph = prompt_client.PromptHandler(database=database)
 
     # The embeddings pool is keyed by the CRE's internal UUID (add_embedding
-    # stores cre_id=db_object.id), but the golden dataset speaks external_ids
-    # ("616-305"). Translate the pool keys to external_id so recall compares in
-    # the same id-space. Keys not in the map (a DB that already stores
-    # external_ids) pass through unchanged.
+    # stores cre_id=db_object.id), but the golden dataset and the explicit
+    # resolver both speak external_ids ("616-305"). Translate the pool/reranker
+    # keys to external_id so recall/top-1 compare in the same id-space. Keys not
+    # in the map (a DB that already stores external_ids) pass through unchanged.
     id_to_ext = {
         row[0]: row[1]
         for row in database.session.execute(
@@ -144,13 +144,12 @@ def report_retrieval_recall(
         )
         if row[1]
     }
+
+    def _to_ext(mapping):
+        return {id_to_ext.get(k, k): v for k, v in mapping.items()}
+
     pool = CandidatePool.from_mapping(
-        {
-            id_to_ext.get(k, k): v
-            for k, v in database.get_embeddings_by_doc_type(
-                cre_defs.Credoctypes.CRE.value
-            ).items()
-        }
+        _to_ext(database.get_embeddings_by_doc_type(cre_defs.Credoctypes.CRE.value))
     )
     retriever = CandidateRetriever(
         embed_fn=ph.get_text_embeddings,
@@ -161,8 +160,8 @@ def report_retrieval_recall(
     reranker = CrossEncoderReranker(
         score_fn=build_cross_encoder_score_fn(crossencoder_model),
         top_n=top_n_rerank,
-        cre_texts=database.get_embedding_contents_by_doc_type(
-            cre_defs.Credoctypes.CRE.value
+        cre_texts=_to_ext(
+            database.get_embedding_contents_by_doc_type(cre_defs.Credoctypes.CRE.value)
         ),
     )
 
