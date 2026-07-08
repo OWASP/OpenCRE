@@ -37,6 +37,7 @@ export interface IRoute {
 }
 export interface Capabilities {
   myopencre: boolean;
+  login: boolean;
 }
 export const ROUTES = (capabilities: Capabilities): IRoute[] => [
   ...(capabilities.myopencre

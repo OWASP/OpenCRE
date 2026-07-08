@@ -22,7 +22,12 @@ from application.database import db
 from application.cmd import cre_main
 from application.defs import cre_defs as defs
 from application.defs import cre_exceptions
-from application.feature_flags import is_cre_import_allowed, is_health_endpoint_enabled
+from application.feature_flags import (
+    is_cre_import_allowed,
+    is_health_endpoint_enabled,
+    is_login_enabled,
+    is_myopencre_enabled,
+)
 
 from application.utils import spreadsheet as sheet_utils
 from application.utils import mdutils, redirectors, gap_analysis
@@ -1194,6 +1199,17 @@ def get_cre_csv() -> Any:
 @app.route("/rest/v1/config", methods=["GET"])
 def get_config() -> Any:
     return jsonify({"CRE_ALLOW_IMPORT": is_cre_import_allowed()})
+
+
+@app.route("/api/capabilities", methods=["GET"])
+def get_capabilities() -> Any:
+    """Expose frontend feature capabilities (MyOpenCRE, login UI)."""
+    return jsonify(
+        {
+            "myopencre": is_myopencre_enabled(),
+            "login": is_login_enabled(),
+        }
+    )
 
 
 @app.route("/admin/imports/rerun", methods=["POST"])
