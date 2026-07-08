@@ -15,6 +15,12 @@ OpenCRE consists of:
 To see how you can contribute to the application or to the data (catalog or standard mappings), see [Contributing](docs/CONTRIBUTING.md).
 We really welcome you!
 
+# Documentation
+
+- [In-app Docs](https://www.opencre.org/docs) — getting started, FAQ, and interactive API reference
+- [FAQ](docs/faq.md) — frequently asked questions (also rendered at [/docs#faq](https://www.opencre.org/docs#faq))
+- [OpenAPI spec](docs/api/openapi.yaml) — public REST API (`/rest/v1/openapi.yaml` when running)
+
 # Roadmap
 
 For a roadmap please see the [issues](https://github.com/OWASP/OpenCRE/issues).
