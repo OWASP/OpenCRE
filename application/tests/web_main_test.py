@@ -1526,16 +1526,19 @@ class TestMain(unittest.TestCase):
         finally:
             os.environ.pop("CRE_ENABLE_HEALTH", None)
 
-    def test_capabilities_endpoint_returns_myopencre_key(self) -> None:
-        """GET /api/capabilities returns 200 with a boolean myopencre key."""
+    def test_capabilities_endpoint_returns_capability_keys(self) -> None:
+        """GET /api/capabilities returns 200 with boolean myopencre and login keys."""
         with patch.dict(os.environ, {}, clear=False):
             os.environ.pop("CRE_ENABLE_MYOPENCRE", None)
+            os.environ.pop("CRE_ENABLE_LOGIN", None)
             with self.app.test_client() as client:
                 response = client.get("/api/capabilities")
                 self.assertEqual(200, response.status_code)
                 body = json.loads(response.data.decode())
                 self.assertIn("myopencre", body)
+                self.assertIn("login", body)
                 self.assertIsInstance(body["myopencre"], bool)
+                self.assertIsInstance(body["login"], bool)
 
     def test_capabilities_myopencre_false_by_default(self) -> None:
         """myopencre is False when CRE_ENABLE_MYOPENCRE is unset."""
@@ -1555,3 +1558,22 @@ class TestMain(unittest.TestCase):
                 self.assertEqual(200, response.status_code)
                 body = json.loads(response.data.decode())
                 self.assertTrue(body["myopencre"])
+
+    def test_capabilities_login_false_by_default(self) -> None:
+        """login is False when CRE_ENABLE_LOGIN is unset."""
+        with patch.dict(os.environ, {}, clear=False):
+            os.environ.pop("CRE_ENABLE_LOGIN", None)
+            with self.app.test_client() as client:
+                response = client.get("/api/capabilities")
+                self.assertEqual(200, response.status_code)
+                body = json.loads(response.data.decode())
+                self.assertFalse(body["login"])
+
+    def test_capabilities_login_true_when_flag_set(self) -> None:
+        """login is True when CRE_ENABLE_LOGIN is set to a truthy value."""
+        with patch.dict(os.environ, {"CRE_ENABLE_LOGIN": "1"}, clear=False):
+            with self.app.test_client() as client:
+                response = client.get("/api/capabilities")
+                self.assertEqual(200, response.status_code)
+                body = json.loads(response.data.decode())
+                self.assertTrue(body["login"])
