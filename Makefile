@@ -80,7 +80,7 @@ install-python:
 	virtualenv -p python3  venv
 	. ./venv/bin/activate &&\
 	make install-deps-python &&\
-	playwright install
+	playwright install  # Python embeddings/scraping (prompt_client); NOT frontend e2e — keep when migrating to Cypress
 	
 install-typescript:
 	yarn add webpack && cd application/frontend && yarn build
