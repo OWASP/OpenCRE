@@ -4,6 +4,7 @@ import logging
 from application.database import db
 from application.defs import cre_defs as defs
 from application.prompt_client import prompt_client as prompt_client
+from application.utils.external_project_parsers import base_parser_defs
 from application.utils.external_project_parsers.base_parser_defs import (
     ParserInterface,
     ParseResult,
@@ -43,6 +44,14 @@ class CloudNativeSecurityControls(ParserInterface):
                 hyperlink="https://github.com/cloud-native-security-controls/controls-catalog/blob/main/controls/controls_catalog.csv#L"
                 + str(int(entry.get("ID")) + 1),
                 version=entry.get("Originating Document"),
+                tags=base_parser_defs.build_tags(
+                    family=base_parser_defs.Family.STANDARD,
+                    subtype=base_parser_defs.Subtype.REQUIREMENTS_STANDARD,
+                    audience=base_parser_defs.Audience.ARCHITECT,
+                    maturity=base_parser_defs.Maturity.STABLE,
+                    source="cloud_native_security_controls",
+                    extra=[],
+                ),
             )
             existing = cache.get_nodes(
                 name=cnsc.name, section=cnsc.section, sectionID=cnsc.sectionID
@@ -82,4 +91,6 @@ class CloudNativeSecurityControls(ParserInterface):
                     f"stored {cnsc.__repr__()} but could not link it to any CRE reliably"
                 )
             standard_entries.append(cnsc)
-        return ParseResult(results={self.name: standard_entries})
+        results = {self.name: standard_entries}
+        base_parser_defs.validate_classification_tags(results)
+        return ParseResult(results=results)

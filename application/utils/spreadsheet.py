@@ -26,6 +26,28 @@ def findDups(x):
     return {val for val in x if (val in seen or seen.add(val))}
 
 
+def _records_from_worksheet_values(rows: List[List[Any]]) -> List[Dict[str, Any]]:
+    """Build row dicts from raw worksheet cell values without numeric coercion.
+
+    Uses the first row as column headers. Short data rows are padded with empty
+    strings. Raises ``GSpreadException`` when duplicate header names are present
+    so callers fail fast instead of silently collapsing columns in ``dict(zip)``.
+    """
+    if not rows:
+        return []
+    headers = rows[0]
+    duplicates = sorted(findDups(headers))
+    if duplicates:
+        raise gspread.exceptions.GSpreadException(
+            f"Duplicate worksheet headers: {duplicates}"
+        )
+    records: List[Dict[str, Any]] = []
+    for row in rows[1:]:
+        padded = list(row) + [""] * max(0, len(headers) - len(row))
+        records.append(dict(zip(headers, padded[: len(headers)], strict=True)))
+    return records
+
+
 def load_csv():
     pass
 
@@ -58,21 +80,11 @@ def read_spreadsheet(
                     "(remember, only numbered worksheets"
                     " will be processed by convention)" % wsh.title
                 )
-                records = wsh.get_all_records(
-                    head=1,
-                    numericise_ignore=list(
-                        range(1, wsh.col_count)
-                    ),  # Added numericise_ignore parameter
-                )  # workaround because of https://github.com/burnash/gspread/issues/1007 # this will break if the column names are in any other line
+                records = _records_from_worksheet_values(wsh.get_all_values())
                 toyaml = yaml.safe_load(yaml.safe_dump(records))
                 result[wsh.title] = toyaml
             elif not parse_numbered_only:
-                records = wsh.get_all_records(
-                    head=1,
-                    numericise_ignore=list(
-                        range(1, wsh.col_count)
-                    ),  # Added numericise_ignore parameter -- DO NOT make this 'all', gspread has a bug
-                )  # workaround because of https://github.com/burnash/gspread/issues/1007 # this will break if the column names are in any other line
+                records = _records_from_worksheet_values(wsh.get_all_values())
                 toyaml = yaml.safe_load(yaml.safe_dump(records))
                 result[wsh.title] = toyaml
     except gspread.exceptions.APIError as ae:

@@ -1,8 +1,9 @@
-from typing import Optional
+from typing import List, Optional
 import logging
 
 import os
 from datetime import datetime
+import subprocess
 import tempfile
 
 import git
@@ -66,17 +67,70 @@ def createPullRequest(
     github = Github(apiToken)
     body = "CRE Sync %s" % title
     pr = github.get_repo(repo).create_pull(
-        title=title, body=body, head=srcBranch, base="master"
+        title=title, body=body, head=srcBranch, base=targetBranch
     )
 
 
-def clone(source: str, dest: Optional[str] = None):
-    class Progress(git.remote.RemoteProgress):
-        def update(self, op_code, cur_count, max_count=None, message=""):
-            print(f"update({op_code}, {cur_count}, {max_count}, {message})")
+def clone(
+    source: str,
+    dest: Optional[str] = None,
+    sparse_paths: Optional[List[str]] = None,
+    sparse_cone: bool = True,
+    depth: int = 1,
+    filter_blob_none: bool = True,
+) -> Repo:
+    """
+    Shallow **clone** (latest commit) with optional **sparse checkout** of subtrees/patterns.
 
+    This is **not** “clone vs cone” as alternatives: you always **clone** the repo; ``cone`` only
+    selects how ``git sparse-checkout set`` interprets ``sparse_paths`` (Git’s “cone mode” vs
+    gitignore-style patterns). See ``git help sparse-checkout``.
+
+    Steps:
+
+    1. ``git clone --depth N --single-branch [--filter=blob:none] [--sparse] <url> <dest>``
+    2. If ``sparse_paths`` is set: ``git -C <dest> sparse-checkout set [--cone|--no-cone] <paths>``
+
+    - ``sparse_cone=True``: use ``--cone``; each entry must be a **single path segment**
+      (e.g. ``cheatsheets``), i.e. a top-level directory to include with its contents.
+    - ``sparse_cone=False``: use ``--no-cone``; entries are **patterns** (e.g. ``/README.md``,
+      ``/**/*.md``, ``site/content/docs/alerts``) for nested paths or file globs.
+
+    Requires Git ≥ 2.25 for ``clone --sparse``; ≥ 2.19 recommended for ``filter=blob:none``.
+    """
     if not dest:
         dest = tempfile.mkdtemp()
-    with git.Git().custom_environment():
-        repo = Repo.clone_from(url=source, to_path=dest, progress=Progress())
-        return repo
+
+    clone_cmd = [
+        "git",
+        "clone",
+        "--depth",
+        str(depth),
+        "--single-branch",
+    ]
+    if filter_blob_none:
+        clone_cmd.extend(["--filter=blob:none"])
+    if sparse_paths:
+        clone_cmd.append("--sparse")
+    clone_cmd.extend([source, dest])
+
+    logger.info(
+        "git clone (depth=%s, sparse=%s, filter=blob:none=%s) -> %s",
+        depth,
+        bool(sparse_paths),
+        filter_blob_none,
+        dest,
+    )
+    subprocess.run(clone_cmd, check=True)
+
+    if sparse_paths:
+        set_cmd = ["git", "-C", dest, "sparse-checkout", "set"]
+        if sparse_cone:
+            set_cmd.append("--cone")
+        else:
+            set_cmd.append("--no-cone")
+        set_cmd.extend(sparse_paths)
+        logger.info("git sparse-checkout set (%s paths)", len(sparse_paths))
+        subprocess.run(set_cmd, check=True)
+
+    return Repo(dest)

@@ -41,7 +41,15 @@ class TestMiscToolsParser(unittest.TestCase):
             name="OWASP WrongSecrets",
             doctype=defs.Credoctypes.Tool,
             description="With this app, we have packed various ways of how to not store your secrets. These can help you to realize whether your secret management is ok. The challenge is to find all the different secrets by means of various tools and techniques. Can you solve all the 14 challenges?) -->",
-            tags=["secrets", "training"],
+            tags=[
+                "family:guidance",
+                "subtype:blog",
+                "source:misc_tools",
+                "audience:developer",
+                "maturity:stable",
+                "secrets",
+                "training",
+            ],
             hyperlink="https://example.com/foo/bar/project",
             tooltype=defs.ToolTypes.Training,
         ).add_link(defs.Link(document=cre, ltype=defs.LinkTypes.LinkedTo))

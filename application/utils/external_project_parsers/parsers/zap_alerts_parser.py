@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 from application.prompt_client import prompt_client as prompt_client
+from application.utils.external_project_parsers import base_parser_defs
 from application.utils.external_project_parsers.base_parser_defs import (
     ParserInterface,
     ParseResult,
@@ -34,14 +35,21 @@ class ZAP(ParserInterface):
     def __zap_alert(
         self, name: str, alert_id: str, description: str, tags: List[str], code: str
     ) -> defs.Tool:
-        tags.append(alert_id)
+        tags.append(f"AlertID:{alert_id}")
         return defs.Tool(
             tooltype=defs.ToolTypes.Offensive,
             name=self.name,
             section=name,
             sectionID=alert_id,
             description=description,
-            tags=tags,
+            tags=base_parser_defs.build_tags(
+                family=base_parser_defs.Family.GUIDANCE,
+                subtype=base_parser_defs.Subtype.RISK_LIST,
+                audience=base_parser_defs.Audience.TESTER,
+                maturity=base_parser_defs.Maturity.STABLE,
+                source="zaproxy",
+                extra=tags,
+            ),
             hyperlink=code,
         )
 
@@ -49,9 +57,15 @@ class ZAP(ParserInterface):
         self, cache: db.Node_collection, ph: prompt_client.PromptHandler
     ) -> List[defs.Tool]:
         zaproxy_website = "https://github.com/zaproxy/zaproxy-website.git"
-        repo = git.clone(zaproxy_website)
+        repo = git.clone(
+            zaproxy_website,
+            sparse_paths=["site/content/docs/alerts"],
+            sparse_cone=False,
+        )
         alerts = self.__register_alerts(repo=repo, cache=cache)
-        return ParseResult(results={self.name: alerts})
+        results = {self.name: alerts}
+        base_parser_defs.validate_classification_tags(results)
+        return ParseResult(results=results)
 
     def __link_to_top10(
         self, alert: defs.Tool, top10: re.Match[str] | None, cache: db.Node_collection
@@ -146,7 +160,7 @@ class ZAP(ParserInterface):
             )
         return alert
 
-    def __register_alerts(self, cache: db.Node_collection, repo: git.git):
+    def __register_alerts(self, cache: db.Node_collection, repo):
         alerts = []
         for mdfile in os.listdir(os.path.join(repo.working_dir, self.alerts_path)):
             pth = os.path.join(repo.working_dir, self.alerts_path, mdfile)

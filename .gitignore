@@ -43,6 +43,13 @@ Vagrantfile
 venv/
 venv-*/
 v/
+.venv/
+
+### Local AI/editor workspaces ###
+.cursor/*
+!.cursor/rules/
+!.cursor/rules/**
+.claude/
 
 ### Frontend 
 node_modules/
@@ -53,9 +60,13 @@ coverage/
 
 ### Dev db
 *.sqlite
+*.sqlite3
+*.db
+standards_cache.sqlite
 
 ### Docs
 *.md
+!AGENTS.md
 
 ### Dev DBDumps
 *.sql
@@ -70,3 +81,5 @@ tmp/
 
 ### CREs dir
 cres/*
+### Local project management tooling
+project management scripts/

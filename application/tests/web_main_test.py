@@ -7,7 +7,8 @@ import re
 import json
 import unittest
 import tempfile
-from unittest.mock import patch
+from types import SimpleNamespace
+from unittest.mock import patch, Mock
 
 import redis
 import rq
@@ -17,6 +18,7 @@ import networkx as nx
 from application import create_app, sqla  # type: ignore
 from application.tests.utils import data_gen
 from application.database import db
+from application.cmd import cre_main
 from application.utils import spreadsheet
 from application.defs import cre_defs as defs
 from application.web import web_main
@@ -450,6 +452,12 @@ class TestMain(unittest.TestCase):
         collection.add_node(docs["sa"])
 
         with self.app.test_client() as client:
+            response = client.get("/rest/v1/text_search")
+            self.assertEqual(400, response.status_code)
+
+            response = client.get("/rest/v1/text_search?text=")
+            self.assertEqual(400, response.status_code)
+
             response = client.get(f"/rest/v1/text_search?text='CRE:2'")
             self.assertEqual(404, response.status_code)
 
@@ -577,7 +585,7 @@ class TestMain(unittest.TestCase):
             for head in response.headers:
                 if head[0] == "Location":
                     location = head[1]
-            self.assertEqual(location, "/node/standard/CWE/sectionid/456")
+            self.assertEqual(location, "/cre/222-222")
             self.assertEqual(302, response.status_code)
 
             response = client.get(
@@ -588,7 +596,28 @@ class TestMain(unittest.TestCase):
             for head in response.headers:
                 if head[0] == "Location":
                     location = head[1]
-            self.assertEqual(location, "/node/standard/ASVS/section/v0.1.2")
+            self.assertEqual(location, "/cre/333-333")
+            self.assertEqual(302, response.status_code)
+
+            # Multiple CREs linked to same standard → should fall back to node page
+            cwe_multi = defs.Standard(name="CWEmulti", sectionID="789")
+            ce = defs.CRE(id="444-444", description="CE", name="CE", tags=[])
+            cf = defs.CRE(id="555-555", description="CF", name="CF", tags=[])
+            dcwe_multi = collection.add_node(cwe_multi)
+            dce = collection.add_cre(ce)
+            dcf = collection.add_cre(cf)
+            collection.add_link(dce, dcwe_multi, ltype=defs.LinkTypes.LinkedTo)
+            collection.add_link(dcf, dcwe_multi, ltype=defs.LinkTypes.LinkedTo)
+
+            response = client.get(
+                "/smartlink/standard/CWEmulti/789",
+                headers={"Content-Type": "application/json"},
+            )
+            location = ""
+            for head in response.headers:
+                if head[0] == "Location":
+                    location = head[1]
+            self.assertEqual(location, "/node/standard/CWEmulti/sectionid/789")
             self.assertEqual(302, response.status_code)
 
             # negative test, this cwe does not exist, therefore we redirect to Mitre!
@@ -604,6 +633,87 @@ class TestMain(unittest.TestCase):
                 location, "https://cwe.mitre.org/data/definitions/999.html"
             )
             self.assertEqual(302, response.status_code)
+
+    def _smartlink_redirect_location(self, client, path: str) -> tuple[int, str]:
+        response = client.get(path, headers={"Content-Type": "application/json"})
+        location = ""
+        for head in response.headers:
+            if head[0] == "Location":
+                location = head[1]
+        return response.status_code, location
+
+    def test_smartlink_critical_edge_cases(self) -> None:
+        """Critical smartlink paths from #945 — multi-CRE, unlinked node, ntype, version."""
+        collection = db.Node_collection().with_graph()
+        with self.app.test_client() as client:
+            # Multiple CREs → standard-section node page (preserved by #938).
+            cwe_multi = defs.Standard(name="CWEmulti", sectionID="789")
+            ce = defs.CRE(id="444-444", description="CE", name="CE", tags=[])
+            cf = defs.CRE(id="555-555", description="CF", name="CF", tags=[])
+            dcwe_multi = collection.add_node(cwe_multi)
+            dce = collection.add_cre(ce)
+            dcf = collection.add_cre(cf)
+            collection.add_link(dce, dcwe_multi, ltype=defs.LinkTypes.LinkedTo)
+            collection.add_link(dcf, dcwe_multi, ltype=defs.LinkTypes.LinkedTo)
+
+            status, location = self._smartlink_redirect_location(
+                client, "/smartlink/standard/CWEmulti/789"
+            )
+            self.assertEqual(status, 302)
+            self.assertEqual(location, "/node/standard/CWEmulti/sectionid/789")
+
+            # Local standard with no CRE links → MITRE external redirect, not node page.
+            orphan = defs.Standard(name="CWE", sectionID="8888")
+            collection.add_node(orphan)
+            status, location = self._smartlink_redirect_location(
+                client, "/smartlink/standard/CWE/8888"
+            )
+            self.assertEqual(status, 302)
+            self.assertEqual(
+                location, "https://cwe.mitre.org/data/definitions/8888.html"
+            )
+
+            # Case-insensitive ntype still resolves the standard node.
+            cwe_std = defs.Standard(name="CWE", sectionID="456")
+            cre_a = defs.CRE(id="222-222", description="CD", name="CD", tags=[])
+            cre_b = defs.CRE(id="223-223", description="CE", name="CE", tags=[])
+            dcwe = collection.add_node(cwe_std)
+            dcre_a = collection.add_cre(cre_a)
+            dcre_b = collection.add_cre(cre_b)
+            collection.add_link(dcre_a, dcwe, ltype=defs.LinkTypes.LinkedTo)
+            collection.add_link(dcre_b, dcwe, ltype=defs.LinkTypes.LinkedTo)
+
+            status, location = self._smartlink_redirect_location(
+                client, "/smartlink/STANDARD/CWE/456"
+            )
+            self.assertEqual(status, 302)
+            self.assertEqual(location, "/node/STANDARD/CWE/sectionid/456")
+
+            # version query param selects the matching standard row (multi-CRE → node page).
+            std_v1 = defs.Standard(name="VERSTD", sectionID="100", version="1.0")
+            std_v2 = defs.Standard(name="VERSTD", sectionID="200", version="2.0")
+            cre_v1a = defs.CRE(id="100-100", description="v1a", name="V1A", tags=[])
+            cre_v1b = defs.CRE(id="100-101", description="v1b", name="V1B", tags=[])
+            cre_v2a = defs.CRE(id="200-200", description="v2a", name="V2A", tags=[])
+            cre_v2b = defs.CRE(id="200-201", description="v2b", name="V2B", tags=[])
+            dstd_v1 = collection.add_node(std_v1)
+            dstd_v2 = collection.add_node(std_v2)
+            for cre in (cre_v1a, cre_v1b, cre_v2a, cre_v2b):
+                dcre = collection.add_cre(cre)
+                target = dstd_v1 if cre.id.startswith("100") else dstd_v2
+                collection.add_link(dcre, target, ltype=defs.LinkTypes.LinkedTo)
+
+            status, location = self._smartlink_redirect_location(
+                client, "/smartlink/standard/VERSTD/100?version=1.0"
+            )
+            self.assertEqual(status, 302)
+            self.assertEqual(location, "/node/standard/VERSTD/sectionid/100")
+
+            status, location = self._smartlink_redirect_location(
+                client, "/smartlink/standard/VERSTD/200?version=2.0"
+            )
+            self.assertEqual(status, 302)
+            self.assertEqual(location, "/node/standard/VERSTD/sectionid/200")
 
     @patch.object(redis, "from_url")
     @patch.object(db, "Node_collection")
@@ -630,12 +740,12 @@ class TestMain(unittest.TestCase):
     def test_gap_analysis_from_cache_job_id(
         self, redis_conn_mock, enqueue_call_mock, fetch_mock, db_mock
     ) -> None:
-        expected = {"job_id": "hello"}
-        redis_conn_mock.return_value.exists.return_value = True
-        redis_conn_mock.return_value.get.return_value = json.dumps(expected)
+        expected = {"job_id": "ABC"}
+        redis_conn_mock.return_value.get.return_value = None
+        enqueue_call_mock.return_value = Mock(id="ABC")
         fetch_mock.return_value = MockJob()
-        db_mock.return_value.gap_analysis_exists.return_value = True
-        db_mock.return_value.get_gap_analysis_result.return_value = json.dumps(expected)
+        db_mock.return_value.gap_analysis_exists.return_value = False
+        db_mock.return_value.get_gap_analysis_result.return_value = None
         with self.app.test_client() as client:
             response = client.get(
                 "/rest/v1/map_analysis?standard=aaa&standard=bbb",
@@ -643,7 +753,28 @@ class TestMain(unittest.TestCase):
             )
             self.assertEqual(200, response.status_code)
             self.assertEqual(expected, json.loads(response.data))
-            self.assertFalse(enqueue_call_mock.called)
+            self.assertTrue(enqueue_call_mock.called)
+
+    @patch.object(db, "Node_collection")
+    @patch.object(rq.job.Job, "fetch")
+    @patch.object(rq.Queue, "enqueue_call")
+    @patch.object(redis, "from_url")
+    def test_gap_analysis_returns_existing_inflight_job(
+        self, redis_conn_mock, enqueue_call_mock, fetch_mock, db_mock
+    ) -> None:
+        redis_conn_mock.return_value.get.return_value = "job-1"
+        inflight = Mock()
+        inflight.get_status.return_value = rq.job.JobStatus.STARTED
+        fetch_mock.return_value = inflight
+        db_mock.return_value.get_gap_analysis_result.return_value = None
+        with self.app.test_client() as client:
+            response = client.get(
+                "/rest/v1/map_analysis?standard=aaa&standard=bbb",
+                headers={"Content-Type": "application/json"},
+            )
+            self.assertEqual(200, response.status_code)
+            self.assertEqual({"job_id": "job-1"}, json.loads(response.data))
+            enqueue_call_mock.assert_not_called()
 
     @patch.object(db, "Node_collection")
     @patch.object(rq.Queue, "enqueue_call")
@@ -653,7 +784,7 @@ class TestMain(unittest.TestCase):
     ) -> None:
         expected = {"job_id": "ABC"}
         redis_conn_mock.return_value.get.return_value = None
-        enqueue_call_mock.return_value = MockJob()
+        enqueue_call_mock.return_value = Mock(id="ABC")
         db_mock.return_value.get_gap_analysis_result.return_value = None
         db_mock.return_value.gap_analysis_exists.return_value = False
         with self.app.test_client() as client:
@@ -663,18 +794,122 @@ class TestMain(unittest.TestCase):
             )
             self.assertEqual(200, response.status_code)
             self.assertEqual(expected, json.loads(response.data))
-            enqueue_call_mock.assert_called_with(
-                db.gap_analysis,
-                kwargs={
-                    "neo_db": db_mock().neo_db,
-                    "node_names": ["aaa", "bbb"],
-                    "cache_key": "aaa >> bbb",
-                },
-                timeout=GAP_ANALYSIS_TIMEOUT,
+            self.assertTrue(enqueue_call_mock.called)
+            _, kwargs = enqueue_call_mock.call_args
+            self.assertEqual("aaa->bbb", kwargs["description"])
+            self.assertEqual(cre_main.run_gap_pair_job, kwargs["func"])
+            self.assertEqual("aaa", kwargs["kwargs"]["importing_name"])
+            self.assertEqual("bbb", kwargs["kwargs"]["peer_name"])
+            self.assertEqual(GAP_ANALYSIS_TIMEOUT, kwargs["timeout"])
+
+    @patch.object(db, "Node_collection")
+    @patch.object(rq.Queue, "enqueue_call")
+    @patch.object(redis, "from_url")
+    def test_map_analysis_non_material_sql_cache_triggers_job(
+        self, redis_conn_mock, enqueue_call_mock, db_mock
+    ) -> None:
+        """SQL rows with empty ``result`` must not short-circuit map_analysis."""
+        redis_conn_mock.return_value.get.return_value = None
+        enqueue_call_mock.return_value = Mock(id="ABC")
+        db_mock.return_value.gap_analysis_exists.return_value = False
+        db_mock.return_value.get_gap_analysis_result.return_value = '{"result": {}}'
+        with self.app.test_client() as client:
+            response = client.get(
+                "/rest/v1/map_analysis?standard=aaa&standard=bbb",
+                headers={"Content-Type": "application/json"},
             )
-            redis_conn_mock.return_value.set.assert_called_with(
-                "aaa >> bbb", '{"job_id": "ABC", "result": ""}'
+            self.assertEqual(200, response.status_code)
+            self.assertEqual({"job_id": "ABC"}, json.loads(response.data))
+            enqueue_call_mock.assert_called_once()
+
+    @patch.object(db, "Node_collection")
+    @patch.object(db, "gap_analysis")
+    @patch.object(redis, "from_url")
+    def test_gap_analysis_fallback_without_redis(
+        self, redis_conn_mock, db_gap_analysis_mock, db_mock
+    ) -> None:
+        redis_conn_mock.side_effect = RuntimeError("redis down")
+        db_mock.return_value.get_gap_analysis_result.side_effect = [
+            None,
+            json.dumps({"result": {"k": {}}}),
+        ]
+        with self.app.test_client() as client:
+            response = client.get(
+                "/rest/v1/map_analysis?standard=aaa&standard=bbb",
+                headers={"Content-Type": "application/json"},
             )
+            self.assertEqual(200, response.status_code)
+            self.assertEqual({"result": {"k": {}}}, json.loads(response.data))
+            db_gap_analysis_mock.assert_called_once()
+
+    @patch.object(db, "Node_collection")
+    @patch.object(db, "gap_analysis")
+    @patch.object(redis, "from_url")
+    def test_gap_analysis_fallback_backend_failure_returns_503(
+        self, redis_conn_mock, db_gap_analysis_mock, db_mock
+    ) -> None:
+        redis_conn_mock.side_effect = RuntimeError("redis down")
+        db_gap_analysis_mock.side_effect = RuntimeError("neo unavailable")
+        db_mock.return_value.get_gap_analysis_result.return_value = None
+        db_mock.return_value.gap_analysis_exists.return_value = False
+        with self.app.test_client() as client:
+            with patch.dict(os.environ, {}, clear=False):
+                os.environ.pop("DYNO", None)
+                os.environ.pop("HEROKU", None)
+                response = client.get(
+                    "/rest/v1/map_analysis?standard=aaa&standard=bbb",
+                    headers={"Content-Type": "application/json"},
+                )
+            self.assertEqual(503, response.status_code)
+            db_gap_analysis_mock.assert_called_once()
+
+    @patch.dict(os.environ, {"HEROKU": "True"}, clear=False)
+    @patch.object(db, "Node_collection")
+    @patch.object(redis, "from_url")
+    def test_gap_analysis_heroku_cache_miss_returns_404(
+        self, redis_conn_mock, db_mock
+    ) -> None:
+        db_mock.return_value.get_gap_analysis_result.return_value = None
+        db_mock.return_value.gap_analysis_exists.return_value = False
+        with self.app.test_client() as client:
+            response = client.get(
+                "/rest/v1/map_analysis?standard=aaa&standard=bbb",
+                headers={"Content-Type": "application/json"},
+            )
+            self.assertEqual(404, response.status_code)
+            redis_conn_mock.assert_not_called()
+
+    @patch.dict(os.environ, {"DYNO": "web.1"}, clear=False)
+    @patch.object(db, "Node_collection")
+    @patch.object(redis, "from_url")
+    def test_gap_analysis_dyno_cache_miss_returns_404(
+        self, redis_conn_mock, db_mock
+    ) -> None:
+        db_mock.return_value.get_gap_analysis_result.return_value = None
+        db_mock.return_value.gap_analysis_exists.return_value = False
+        with self.app.test_client() as client:
+            response = client.get(
+                "/rest/v1/map_analysis?standard=aaa&standard=bbb",
+                headers={"Content-Type": "application/json"},
+            )
+            self.assertEqual(404, response.status_code)
+            redis_conn_mock.assert_not_called()
+
+    @patch.dict(os.environ, {"HEROKU": "True"}, clear=False)
+    @patch.object(db, "Node_collection")
+    @patch.object(redis, "from_url")
+    def test_map_analysis_opencre_heroku_cache_miss_returns_404(
+        self, redis_conn_mock, db_mock
+    ) -> None:
+        db_mock.return_value.gap_analysis_exists.return_value = False
+        with self.app.test_client() as client:
+            response = client.get(
+                "/rest/v1/map_analysis?standard=OpenCRE&standard=NIST%20800-53%20v5",
+                headers={"Content-Type": "application/json"},
+            )
+        self.assertEqual(404, response.status_code)
+        db_mock.return_value.get_nodes.assert_not_called()
+        redis_conn_mock.assert_not_called()
 
     @patch.object(redis, "from_url")
     @patch.object(db, "Node_collection")
@@ -688,7 +923,213 @@ class TestMain(unittest.TestCase):
                 headers={"Content-Type": "application/json"},
             )
             self.assertEqual(200, response.status_code)
-            self.assertEqual(expected, json.loads(response.data))
+            self.assertEqual(expected + ["OpenCRE"], json.loads(response.data))
+
+    @patch.object(web_main.gap_analysis, "schedule")
+    @patch.object(db, "Node_collection")
+    def test_gap_analysis_supports_opencre_as_standard(
+        self, db_mock, schedule_mock
+    ) -> None:
+        shared_cre = defs.CRE(id="170-772", name="Cryptography", description="")
+        compare = defs.Standard(
+            name="OWASP Web Security Testing Guide (WSTG)",
+            section="WSTG-CRYP-04",
+        )
+        compare.add_link(
+            defs.Link(ltype=defs.LinkTypes.LinkedTo, document=shared_cre.shallow_copy())
+        )
+
+        db_mock.return_value.get_gap_analysis_result.return_value = None
+        db_mock.return_value.gap_analysis_exists.return_value = False
+        db_mock.return_value.get_nodes.side_effect = lambda name=None, **kwargs: (
+            [compare] if name == "OWASP Web Security Testing Guide (WSTG)" else []
+        )
+
+        with self.app.test_client() as client:
+            response = client.get(
+                "/rest/v1/map_analysis?standard=OpenCRE&standard=OWASP%20Web%20Security%20Testing%20Guide%20(WSTG)",
+                headers={"Content-Type": "application/json"},
+            )
+
+        payload = json.loads(response.data)
+        self.assertEqual(200, response.status_code)
+        self.assertIn("result", payload)
+        self.assertIn(shared_cre.id, payload["result"])
+        self.assertEqual(1, len(payload["result"][shared_cre.id]["paths"]))
+        path = next(iter(payload["result"][shared_cre.id]["paths"].values()))
+        self.assertEqual(compare.id, path["end"]["id"])
+        schedule_mock.assert_not_called()
+
+    @patch.object(web_main.gap_analysis, "schedule")
+    @patch.object(db, "Node_collection")
+    def test_map_analysis_opencre_pair_returns_cached_result(
+        self, db_mock, schedule_mock
+    ) -> None:
+        expected = {"result": {"170-772": {"start": {"id": "170-772"}, "paths": {}}}}
+        db_mock.return_value.gap_analysis_exists.return_value = True
+        db_mock.return_value.get_gap_analysis_result.return_value = json.dumps(expected)
+
+        with self.app.test_client() as client:
+            response = client.get(
+                "/rest/v1/map_analysis?standard=OpenCRE&standard=NIST%20800-53%20v5",
+                headers={"Content-Type": "application/json"},
+            )
+
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(expected, json.loads(response.data))
+        db_mock.return_value.get_nodes.assert_not_called()
+        schedule_mock.assert_not_called()
+
+    @patch.object(web_main.gap_analysis, "schedule")
+    @patch.object(db, "Node_collection")
+    def test_gap_analysis_opencre_mappings_include_linked_and_auto(
+        self, db_mock, schedule_mock
+    ) -> None:
+        compare = defs.Standard(
+            name="CWE",
+            sectionID="1004",
+            section="Sensitive Cookie Without 'HttpOnly' Flag",
+        )
+        direct_cre = defs.CRE(
+            id="804-220",
+            name="Set httponly attribute for cookie-based session tokens",
+            description="",
+        )
+        auto_linked_cres = []
+        for i, cre_id in enumerate(
+            [
+                "117-371",
+                "166-151",
+                "284-521",
+                "368-633",
+                "612-252",
+                "664-080",
+                "801-310",
+            ],
+            start=1,
+        ):
+            cre = defs.CRE(
+                id=cre_id,
+                name=f"Automatically mapped CRE {i}",
+                description="",
+            )
+            auto_linked_cres.append(cre)
+
+        compare.add_link(
+            defs.Link(ltype=defs.LinkTypes.LinkedTo, document=direct_cre.shallow_copy())
+        )
+        for cre in auto_linked_cres:
+            compare.add_link(
+                defs.Link(
+                    ltype=defs.LinkTypes.AutomaticallyLinkedTo,
+                    document=cre.shallow_copy(),
+                )
+            )
+
+        db_mock.return_value.get_gap_analysis_result.return_value = None
+        db_mock.return_value.gap_analysis_exists.return_value = False
+        db_mock.return_value.get_nodes.side_effect = lambda name=None, **kwargs: (
+            [compare] if name == "CWE" else []
+        )
+
+        with self.app.test_client() as client:
+            response = client.get(
+                "/rest/v1/map_analysis?standard=CWE&standard=OpenCRE",
+                headers={"Content-Type": "application/json"},
+            )
+
+        payload = json.loads(response.data)
+        self.assertEqual(200, response.status_code)
+        self.assertIn("result", payload)
+        self.assertEqual([compare.id], list(payload["result"].keys()))
+        self.assertEqual(8, len(payload["result"][compare.id]["paths"]))
+        path = payload["result"][compare.id]["paths"][direct_cre.id]
+        self.assertEqual(compare.id, payload["result"][compare.id]["start"]["id"])
+        self.assertEqual(direct_cre.name, path["end"]["name"])
+        self.assertEqual("", path["path"][0]["start"]["id"])
+        self.assertEqual(direct_cre.id, path["path"][0]["end"]["id"])
+        self.assertEqual("LINKED_TO", path["path"][0]["relationship"])
+        auto_path = payload["result"][compare.id]["paths"][auto_linked_cres[0].id]
+        self.assertEqual(
+            "AUTOMATICALLY_LINKED_TO", auto_path["path"][0]["relationship"]
+        )
+        schedule_mock.assert_not_called()
+
+    @patch.object(web_main.gap_analysis, "schedule")
+    @patch.object(db, "Node_collection")
+    def test_gap_analysis_returns_only_direct_opencre_mappings_when_opencre_is_left(
+        self, db_mock, schedule_mock
+    ) -> None:
+        compare = defs.Standard(
+            name="CWE",
+            sectionID="1004",
+            section="Sensitive Cookie Without 'HttpOnly' Flag",
+        )
+        direct_cre = defs.CRE(
+            id="804-220",
+            name="Set httponly attribute for cookie-based session tokens",
+            description="",
+        )
+        indirect_cre = defs.CRE(
+            id="117-371",
+            name="Use a centralized access control mechanism",
+            description="",
+        )
+        compare.add_link(
+            defs.Link(ltype=defs.LinkTypes.LinkedTo, document=direct_cre.shallow_copy())
+        )
+        compare.add_link(
+            defs.Link(
+                ltype=defs.LinkTypes.AutomaticallyLinkedTo,
+                document=indirect_cre.shallow_copy(),
+            )
+        )
+
+        db_mock.return_value.get_gap_analysis_result.return_value = None
+        db_mock.return_value.gap_analysis_exists.return_value = False
+        db_mock.return_value.get_nodes.side_effect = lambda name=None, **kwargs: (
+            [compare] if name == "CWE" else []
+        )
+
+        with self.app.test_client() as client:
+            response = client.get(
+                "/rest/v1/map_analysis?standard=OpenCRE&standard=CWE",
+                headers={"Content-Type": "application/json"},
+            )
+
+        payload = json.loads(response.data)
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(
+            sorted([direct_cre.id, indirect_cre.id]),
+            sorted(payload["result"].keys()),
+        )
+        self.assertEqual(1, len(payload["result"][direct_cre.id]["paths"]))
+        path = next(iter(payload["result"][direct_cre.id]["paths"].values()))
+        self.assertEqual(direct_cre.id, payload["result"][direct_cre.id]["start"]["id"])
+        self.assertEqual(compare.id, path["end"]["id"])
+        self.assertEqual("LINKED_TO", path["path"][0]["relationship"])
+        auto_path = next(iter(payload["result"][indirect_cre.id]["paths"].values()))
+        self.assertEqual(
+            "AUTOMATICALLY_LINKED_TO", auto_path["path"][0]["relationship"]
+        )
+        schedule_mock.assert_not_called()
+
+    @patch.object(cre_main, "resource_name_ga_eligible_in_db")
+    @patch.object(redis, "from_url")
+    @patch.object(db, "Node_collection")
+    def test_ga_standards_filters_non_eligible(
+        self, node_mock, redis_conn_mock, ga_eligible_mock
+    ) -> None:
+        redis_conn_mock.return_value.get.return_value = None
+        node_mock.return_value.standards.return_value = ["CAPEC", "ASVS", "ToolX"]
+        ga_eligible_mock.side_effect = lambda _db, name: name in {"CAPEC", "ASVS"}
+        with self.app.test_client() as client:
+            response = client.get(
+                "/rest/v1/ga_standards",
+                headers={"Content-Type": "application/json"},
+            )
+            self.assertEqual(200, response.status_code)
+            self.assertEqual(["ASVS", "CAPEC", "OpenCRE"], json.loads(response.data))
 
     def test_gap_analysis_weak_links_no_cache(self) -> None:
         with self.app.test_client() as client:
@@ -884,9 +1325,56 @@ class TestMain(unittest.TestCase):
                 json.loads(response.data),
             )
 
-    def test_import_from_cre_csv(self) -> None:
-        os.environ["CRE_ALLOW_IMPORT"] = "True"
+    @patch.object(db, "Node_collection")
+    def test_all_cres_caps_per_page(self, db_mock) -> None:
+        db_mock.return_value.all_cres_with_pagination.return_value = ([], 1, 1)
 
+        with self.app.test_client() as client:
+            client.get(
+                "/rest/v1/all_cres?per_page=1000",
+                headers={"Content-Type": "application/json"},
+            )
+
+        db_mock.return_value.all_cres_with_pagination.assert_called_once_with(1, 100)
+
+    def test_all_cres_per_page_cap_integration(self) -> None:
+        """all_cres caps per_page at MAX_ITEMS_PER_PAGE against a real database."""
+        collection = db.Node_collection()
+        for i in range(110):
+            collection.add_cre(
+                defs.CRE(name=f"paginated-cre-{i}", id=f"{i:03d}-{i:03d}")
+            )
+        collection.session.commit()
+
+        with self.app.test_client() as client:
+            response = client.get(
+                "/rest/v1/all_cres?per_page=1000&page=1",
+                headers={"Content-Type": "application/json"},
+            )
+            self.assertEqual(200, response.status_code)
+            body = json.loads(response.data)
+            self.assertEqual(100, len(body["data"]))
+            self.assertEqual(1, body["page"])
+            self.assertEqual(2, body["total_pages"])
+
+            response = client.get(
+                "/rest/v1/all_cres?per_page=101&page=1",
+                headers={"Content-Type": "application/json"},
+            )
+            self.assertEqual(200, response.status_code)
+            body = json.loads(response.data)
+            self.assertEqual(100, len(body["data"]))
+
+            response = client.get(
+                "/rest/v1/all_cres?page=1",
+                headers={"Content-Type": "application/json"},
+            )
+            self.assertEqual(200, response.status_code)
+            body = json.loads(response.data)
+            self.assertEqual(web_main.ITEMS_PER_PAGE, len(body["data"]))
+            self.assertEqual(6, body["total_pages"])
+
+    def test_import_from_cre_csv(self) -> None:
         input_data, _ = data_gen.export_format_data()
         workspace = tempfile.mkdtemp()
         data = {}
@@ -898,19 +1386,20 @@ class TestMain(unittest.TestCase):
 
         data["cre_csv"] = open(os.path.join(workspace, "cre.csv"), "rb")
 
-        with self.app.test_client() as client:
-            response = client.post(
-                "/rest/v1/cre_csv_import",
-                data=data,
-                buffered=True,
-                content_type="multipart/form-data",
-            )
-            print(f"\nSTATUS CODE: {response.status_code}, DATA: {response.data}")
-            self.assertEqual(200, response.status_code)
-            data = json.loads(response.data)
-            self.assertEqual("success", data.get("status"))
-            self.assertEqual(2, data.get("new_standards"))
-            self.assertIsInstance(data.get("new_cres"), list)
+        with patch.dict(os.environ, {"CRE_ALLOW_IMPORT": "True"}):
+            with self.app.test_client() as client:
+                response = client.post(
+                    "/rest/v1/cre_csv_import",
+                    data=data,
+                    buffered=True,
+                    content_type="multipart/form-data",
+                )
+                print(f"\nSTATUS CODE: {response.status_code}, DATA: {response.data}")
+                self.assertEqual(200, response.status_code)
+                data = json.loads(response.data)
+                self.assertEqual("success", data.get("status"))
+                self.assertGreaterEqual(data.get("new_standards"), 2)
+                self.assertIsInstance(data.get("new_cres"), list)
 
     def test_get_cre_csv(self) -> None:
         # empty string means temporary db
@@ -973,3 +1462,118 @@ class TestMain(unittest.TestCase):
                 data.getvalue(),
                 response.data.decode(),
             )
+
+    def test_health_disabled_by_default_returns_404(self) -> None:
+        os.environ.pop("CRE_ENABLE_HEALTH", None)
+        with self.app.test_client() as client:
+            response = client.get("/rest/v1/health")
+            self.assertEqual(404, response.status_code)
+
+    def test_health_enabled_empty_dataset_returns_503(self) -> None:
+        os.environ["CRE_ENABLE_HEALTH"] = "1"
+        try:
+            with self.app.test_client() as client:
+                response = client.get("/rest/v1/health")
+                self.assertEqual(503, response.status_code)
+                body = json.loads(response.data.decode())
+                self.assertFalse(body["ok"])
+                self.assertTrue(body["db_reachable"])
+                self.assertEqual("empty dataset", body["reason"])
+        finally:
+            os.environ.pop("CRE_ENABLE_HEALTH", None)
+
+    def test_health_enabled_populated_returns_200(self) -> None:
+        os.environ["CRE_ENABLE_HEALTH"] = "1"
+        try:
+            collection = db.Node_collection()
+            collection.add_cre(
+                defs.CRE(id="111-115", description="CA", name="CA", tags=["ta"])
+            )
+            collection.add_node(
+                defs.Standard(
+                    name="s1", section="s11", subsection="s111", version="1.1.1"
+                )
+            )
+            with self.app.test_client() as client:
+                response = client.get("/rest/v1/health")
+                self.assertEqual(200, response.status_code)
+                body = json.loads(response.data.decode())
+                self.assertTrue(body["ok"])
+                self.assertTrue(body["db_reachable"])
+                self.assertGreaterEqual(body["cre_count"], 1)
+                self.assertGreaterEqual(body["standards_count"], 1)
+        finally:
+            os.environ.pop("CRE_ENABLE_HEALTH", None)
+
+    def test_health_db_unreachable_returns_503(self) -> None:
+        os.environ["CRE_ENABLE_HEALTH"] = "1"
+        try:
+            with patch.object(
+                db.Node_collection,
+                "health_check",
+                return_value={
+                    "ok": False,
+                    "db_reachable": False,
+                    "reason": "database unreachable",
+                },
+            ):
+                with self.app.test_client() as client:
+                    response = client.get("/rest/v1/health")
+                    self.assertEqual(503, response.status_code)
+                    body = json.loads(response.data.decode())
+                    self.assertFalse(body["ok"])
+                    self.assertFalse(body["db_reachable"])
+        finally:
+            os.environ.pop("CRE_ENABLE_HEALTH", None)
+
+    def test_capabilities_endpoint_returns_capability_keys(self) -> None:
+        """GET /api/capabilities returns 200 with boolean myopencre and login keys."""
+        with patch.dict(os.environ, {}, clear=False):
+            os.environ.pop("CRE_ENABLE_MYOPENCRE", None)
+            os.environ.pop("CRE_ENABLE_LOGIN", None)
+            with self.app.test_client() as client:
+                response = client.get("/api/capabilities")
+                self.assertEqual(200, response.status_code)
+                body = json.loads(response.data.decode())
+                self.assertIn("myopencre", body)
+                self.assertIn("login", body)
+                self.assertIsInstance(body["myopencre"], bool)
+                self.assertIsInstance(body["login"], bool)
+
+    def test_capabilities_myopencre_false_by_default(self) -> None:
+        """myopencre is False when CRE_ENABLE_MYOPENCRE is unset."""
+        with patch.dict(os.environ, {}, clear=False):
+            os.environ.pop("CRE_ENABLE_MYOPENCRE", None)
+            with self.app.test_client() as client:
+                response = client.get("/api/capabilities")
+                self.assertEqual(200, response.status_code)
+                body = json.loads(response.data.decode())
+                self.assertFalse(body["myopencre"])
+
+    def test_capabilities_myopencre_true_when_flag_set(self) -> None:
+        """myopencre is True when CRE_ENABLE_MYOPENCRE is set to a truthy value."""
+        with patch.dict(os.environ, {"CRE_ENABLE_MYOPENCRE": "1"}, clear=False):
+            with self.app.test_client() as client:
+                response = client.get("/api/capabilities")
+                self.assertEqual(200, response.status_code)
+                body = json.loads(response.data.decode())
+                self.assertTrue(body["myopencre"])
+
+    def test_capabilities_login_false_by_default(self) -> None:
+        """login is False when CRE_ENABLE_LOGIN is unset."""
+        with patch.dict(os.environ, {}, clear=False):
+            os.environ.pop("CRE_ENABLE_LOGIN", None)
+            with self.app.test_client() as client:
+                response = client.get("/api/capabilities")
+                self.assertEqual(200, response.status_code)
+                body = json.loads(response.data.decode())
+                self.assertFalse(body["login"])
+
+    def test_capabilities_login_true_when_flag_set(self) -> None:
+        """login is True when CRE_ENABLE_LOGIN is set to a truthy value."""
+        with patch.dict(os.environ, {"CRE_ENABLE_LOGIN": "1"}, clear=False):
+            with self.app.test_client() as client:
+                response = client.get("/api/capabilities")
+                self.assertEqual(200, response.status_code)
+                body = json.loads(response.data.decode())
+                self.assertTrue(body["login"])
