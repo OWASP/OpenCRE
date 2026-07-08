@@ -7,7 +7,9 @@
     "lint": "prettier --write '**/*.tsx' '**/*.ts' '**/*.js'",
     "build": "webpack --config webpack.prod.js",
     "start": "webpack serve",
-    "test:e2e": "jest",
+    "test:e2e": "cypress run",
+    "cypress:open": "cypress open",
+    "cypress:run": "cypress run",
     "postinstall": "del-cli node_modules/@types/react-dom/node_modules/@types && del-cli node_modules/webpack/types.d.ts"
   },
   "keywords": [],
@@ -23,6 +25,7 @@
     "@types/react-router-dom": "^5",
     "@wojtekmaj/enzyme-adapter-react-17": "^0.6.1",
     "babel-loader": "^8.2.2",
+    "cypress": "^13.17.0",
     "css-loader": "^5.2.4",
     "del-cli": "^3.0.1",
     "enzyme": "3.11.0",

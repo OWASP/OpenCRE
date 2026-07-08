@@ -47,16 +47,19 @@ dev-flask-docker:
 
 e2e:
 	yarn build
-	[ -d "./venv" ] && . ./venv/bin/activate &&\
-	export FLASK_APP="$(CURDIR)/cre.py" &&\
-	export FLASK_CONFIG=development &&\
-	export INSECURE_REQUESTS=1 &&\
-	flask run &
-	sleep 5
-	yarn test:e2e
-	sleep 20
-	killall yarn
-	killall flask
+	if [ -d "./venv" ]; then . ./venv/bin/activate; fi
+	export FLASK_APP="$(CURDIR)/cre.py"
+	export FLASK_CONFIG=development
+	export INSECURE_REQUESTS=1
+	flask run --host=127.0.0.1 --port=5000 > /tmp/opencre-e2e-flask.log 2>&1 &
+	FLASK_PID=$$!
+	trap 'kill $$FLASK_PID 2>/dev/null || true' EXIT INT TERM
+	for i in `seq 1 30`; do \
+		curl -fsS http://127.0.0.1:5000 >/dev/null && break; \
+		sleep 1; \
+	done
+	curl -fsS http://127.0.0.1:5000 >/dev/null || { echo "ERROR: Flask did not become ready on http://127.0.0.1:5000 after 30s; see /tmp/opencre-e2e-flask.log"; exit 1; }
+	env -u ELECTRON_RUN_AS_NODE yarn test:e2e
 
 test:
 	[ -d "./venv" ] && . ./venv/bin/activate &&\
@@ -81,7 +84,7 @@ install-python:
 	. ./venv/bin/activate &&\
 	make install-deps-python &&\
 	playwright install
-	
+
 install-typescript:
 	yarn add webpack && cd application/frontend && yarn build
 
