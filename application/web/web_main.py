@@ -25,6 +25,7 @@ from application.defs import cre_exceptions
 from application.feature_flags import (
     is_cre_import_allowed,
     is_health_endpoint_enabled,
+    is_login_enabled,
     is_myopencre_enabled,
 )
 
@@ -1202,8 +1203,13 @@ def get_config() -> Any:
 
 @app.route("/api/capabilities", methods=["GET"])
 def get_capabilities() -> Any:
-    """Expose frontend feature capabilities, e.g. whether MyOpenCRE is enabled."""
-    return jsonify({"myopencre": is_myopencre_enabled()})
+    """Expose frontend feature capabilities (MyOpenCRE, login UI)."""
+    return jsonify(
+        {
+            "myopencre": is_myopencre_enabled(),
+            "login": is_login_enabled(),
+        }
+    )
 
 
 @app.route("/admin/imports/rerun", methods=["POST"])
