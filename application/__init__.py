@@ -51,6 +51,10 @@ def create_app(mode: str = "production", conf: any = None) -> Any:
 
     app.register_blueprint(app_blueprint)
 
+    from application.web.openapi_registry import init_openapi
+
+    init_openapi(app)
+
     CORS(app)
     app.config["CORS_HEADERS"] = "Content-Type"
 

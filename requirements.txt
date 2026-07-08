@@ -40,6 +40,8 @@ neo4j
 neomodel
 openapi-schema-validator
 openapi-spec-validator
+marshmallow
+apispec
 openpyxl
 orderedmultidict
 packaging
