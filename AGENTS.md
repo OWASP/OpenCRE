@@ -133,4 +133,5 @@ make mypy              # Python typecheck
 make test              # Python unittest suite
 make frontend          # yarn build (when TS/TSX changed)
 make alembic-guardrail # before deploy/migration ops
+make install-python    # includes `playwright install` for Python embeddings (prompt_client) — not frontend e2e; do not remove when adding Cypress
 ```
