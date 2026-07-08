@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime
+from pydantic import BaseModel
 
 
 @dataclass(slots=True)
@@ -14,3 +15,9 @@ class RepositoryChangeSet:
     repository_id: str
     commit_sha: str
     modified_files: list[str]
+
+
+class FilteringMetrics(BaseModel):
+    total_files: int
+    retained_files: int
+    filtered_files: int
