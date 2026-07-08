@@ -2,8 +2,8 @@ FROM node:lts AS build
 
 WORKDIR /code
 RUN apt-get update && apt-get install -y chromium
-COPY package.json yarn.lock ./
-RUN yarn install
+COPY application/frontend/package.json application/frontend/yarn.lock application/frontend/
+RUN cd application/frontend && yarn install
 
 COPY . .
 

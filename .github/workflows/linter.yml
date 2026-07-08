@@ -16,6 +16,7 @@ jobs:
           cache: 'yarn'
       - name: Install frontend dependencies
         run: |
+          cd application/frontend
           for i in 1 2 3; do
             yarn install --frozen-lockfile --network-timeout 120000 && exit 0
             echo "yarn install failed (attempt $i/3), retrying..."
@@ -24,7 +25,9 @@ jobs:
           echo "yarn install failed after 3 attempts"
           exit 1
       - name: Check frontend formatting
-        run: yarn prettier --check "application/frontend/src/**/*.{ts,tsx,js}"
+        run: |
+          cd application/frontend
+          yarn prettier --check "src/**/*.{ts,tsx,js}"
 
   build:
     name: Lint Code Base
