@@ -659,6 +659,19 @@ def page_not_found(e) -> Any:
     return "Resource Not found", 404
 
 
+@app.route("/docs/faq.md", methods=["GET"])
+def faq_markdown() -> Any:
+    """Serve FAQ markdown for the in-app docs page."""
+    return send_from_directory(
+        directory=os.path.join(
+            os.path.dirname(os.path.realpath(__file__)),
+            "../../docs",
+        ),
+        path="faq.md",
+        mimetype="text/markdown; charset=utf-8",
+    )
+
+
 # If no other routes are matched, serve the react app, or any other static files (like bundle.js)
 @app.route("/", defaults={"path": ""})
 @app.route("/<path:path>")
