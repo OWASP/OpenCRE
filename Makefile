@@ -58,6 +58,7 @@ e2e:
 		curl -fsS http://127.0.0.1:5000 >/dev/null && break; \
 		sleep 1; \
 	done
+	curl -fsS http://127.0.0.1:5000 >/dev/null || { echo "ERROR: Flask did not become ready on http://127.0.0.1:5000 after 30s; see /tmp/opencre-e2e-flask.log"; exit 1; }
 	env -u ELECTRON_RUN_AS_NODE yarn test:e2e
 
 test:
