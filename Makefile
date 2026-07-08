@@ -100,7 +100,7 @@ docker-prod-run:
 	 docker run -it -p $(PORT):$(PORT) opencre:$(shell git rev-parse HEAD)
 
 lint:
-	[ -d "./venv" ] && . ./venv/bin/activate && black . && yarn lint
+	[ -d "./venv" ] && . ./venv/bin/activate && black . && yarn lint && make openapi-guardrail
 
 mypy:
 	[ -d "./venv" ] && . ./venv/bin/activate &&  mypy --ignore-missing-imports --implicit-reexport --no-strict-optional --strict application
@@ -121,6 +121,14 @@ migrate-upgrade:
 alembic-guardrail:
 	[ -d "./venv" ] && . ./venv/bin/activate &&\
 	python scripts/check_alembic_revision_guardrail.py
+
+openapi-generate:
+	[ -d "./venv" ] && . ./venv/bin/activate &&\
+	python scripts/generate_openapi.py
+
+openapi-guardrail:
+	[ -d "./venv" ] && . ./venv/bin/activate &&\
+	python scripts/check_openapi_guardrail.py
 
 migrate-downgrade:
 	[ -d "./venv" ] && . ./venv/bin/activate &&\
