@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import { ElementType } from 'react';
 
 import {
   BROWSEROOT,
@@ -34,7 +34,7 @@ const ExplorerForceGraphWithLayout = withExplorerLayout(ExplorerForceGraph);
 
 export interface IRoute {
   path: string;
-  component: ReactNode | ReactNode[];
+  component: ElementType;
   showFilter: boolean;
 }
 export interface Capabilities {

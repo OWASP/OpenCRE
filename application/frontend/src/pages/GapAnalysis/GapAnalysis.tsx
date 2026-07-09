@@ -127,7 +127,7 @@ export const GapAnalysis = () => {
   const [loadingGA, setLoadingGA] = useState<boolean>(false);
   const [error, setError] = useState<string | null | object>(null);
   const { apiUrl } = useEnvironment();
-  const timerIdRef = useRef<NodeJS.Timer>();
+  const timerIdRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -173,7 +173,9 @@ export const GapAnalysis = () => {
       timerIdRef.current = setInterval(pollingCallback, 10000);
     };
     const stopPolling = () => {
-      clearInterval(timerIdRef.current);
+      if (timerIdRef.current !== undefined) {
+        clearInterval(timerIdRef.current);
+      }
     };
 
     if (gaJob) {

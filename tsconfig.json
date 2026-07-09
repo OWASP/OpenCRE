@@ -16,5 +16,5 @@
     "esModuleInterop": true
   },
   "include": ["**/*.ts", "**/*.tsx", "**/*.js", "src/**/*"],
-  "exclude": ["venv", "dist", "node_modules", "build", "scripts"]
+  "exclude": ["venv", "dist", "node_modules", "build", "scripts", "application/frontend/www"]
 }
