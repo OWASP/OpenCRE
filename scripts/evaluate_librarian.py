@@ -161,17 +161,18 @@ def _build_live_pipeline(
 
 def report_retrieval_recall(
     rows: List[GoldenDatasetRow],
-    cache_file: str,
+    retriever,
+    reranker,
     top_k: int,
-    threshold: float,
     top_n_rerank: int,
-    crossencoder_model: str,
 ) -> None:
     """Measure the live C.1 -> C.2 pipeline over the positive slice (v1).
 
-    Two metrics, both live — there is no honest offline value: the candidate
-    pool must be the real CRE-node vectors, and seeding it from the golden text
-    is exactly the leakage the hub firewall strips.
+    Takes a prebuilt ``retriever``/``reranker`` (built once in ``main``) so the
+    DB, embedding model, and cross-encoder load once per run and are shared with
+    ``report_calibration``. Two metrics, both live — there is no honest offline
+    value: the candidate pool must be the real CRE-node vectors, and seeding it
+    from the golden text is exactly the leakage the hub firewall strips.
 
     - retrieval recall@k (C.1): does the expected CRE id make it into the top-K
       shortlist the reranker will see? A miss here is unrecoverable downstream.
@@ -179,10 +180,6 @@ def report_retrieval_recall(
       the shortlist, is the #1 candidate an expected CRE? This is the first
       end-to-end accuracy number for the search path (W4 target >= 0.80).
     """
-    retriever, reranker = _build_live_pipeline(
-        cache_file, top_k, threshold, top_n_rerank, crossencoder_model
-    )
-
     positives = [r for r in rows if r.slice.value == "positive" and r.expected.cre_ids]
     if not positives:
         print("retrieval recall: no positive rows with expected ids in this selection")
@@ -213,20 +210,19 @@ def report_retrieval_recall(
 
 def report_calibration(
     rows: List[GoldenDatasetRow],
-    cache_file: str,
-    top_k: int,
-    threshold: float,
-    top_n_rerank: int,
-    crossencoder_model: str,
+    retriever,
+    reranker,
 ) -> int:
     """Fit temperature on the golden set and report the Week 5 ECE gate (< 0.10).
 
-    Builds a (shortlist, label) calibration set from the live C.1 -> C.2 pipeline
-    over the positive + hard_negative slices: each row's *reranked shortlist* of
-    logits, labelled 1 iff its top-1 candidate is an expected CRE (hard_negatives
-    expect none, so they contribute the 0 class). Both slices are needed so the
-    fit sees both outcomes (else it is degenerate). Confidence is the top-1 mass
-    of softmax(logits / T); prints ECE at T=1 vs the fitted T and PASS/FAIL on
+    Takes the prebuilt ``retriever``/``reranker`` shared with
+    ``report_retrieval_recall`` (built once in ``main``). Builds a
+    (shortlist, label) calibration set from the live C.1 -> C.2 pipeline over the
+    positive + hard_negative slices: each row's *reranked shortlist* of logits,
+    labelled 1 iff its top-1 candidate is an expected CRE (hard_negatives expect
+    none, so they contribute the 0 class). Both slices are needed so the fit sees
+    both outcomes (else it is degenerate). Confidence is the top-1 mass of
+    softmax(logits / T); prints ECE at T=1 vs the fitted T and PASS/FAIL on
     ECE < 0.10; returns 1 on a failed gate so a live run can fail.
     """
     from application.utils.librarian.calibration.temperature import (
@@ -235,9 +231,6 @@ def report_calibration(
         fit_temperature,
     )
 
-    retriever, reranker = _build_live_pipeline(
-        cache_file, top_k, threshold, top_n_rerank, crossencoder_model
-    )
     cal_rows = [r for r in rows if r.slice.value in ("positive", "hard_negative")]
     logit_sets: List[List[float]] = []
     labels: List[float] = []
@@ -355,22 +348,20 @@ def main(argv: List[str]) -> int:
             return 1
     calib_status = 0
     if args.use_live_embeddings:
+        # Build the live pipeline once (DB + embedding model + cross-encoder) and
+        # share it across both live reports, so the heavy load and per-row rerank
+        # happen a single time per run.
+        retriever, reranker = _build_live_pipeline(
+            args.cache_file,
+            args.top_k_retrieval,
+            args.threshold,
+            args.top_k_rerank,
+            cfg.crossencoder_model,
+        )
         report_retrieval_recall(
-            rows,
-            args.cache_file,
-            args.top_k_retrieval,
-            args.threshold,
-            args.top_k_rerank,
-            cfg.crossencoder_model,
+            rows, retriever, reranker, args.top_k_retrieval, args.top_k_rerank
         )
-        calib_status = report_calibration(
-            rows,
-            args.cache_file,
-            args.top_k_retrieval,
-            args.threshold,
-            args.top_k_rerank,
-            cfg.crossencoder_model,
-        )
+        calib_status = report_calibration(rows, retriever, reranker)
     else:
         print(
             "semantic pipeline (C.1 retrieve + C.2 rerank) + calibration (C.3): "
