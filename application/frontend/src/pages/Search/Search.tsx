@@ -499,8 +499,8 @@ export const SearchPage = () => {
               <div className="footer__links-column">
                 <h4 className="column-title">Resources</h4>
                 <div className="links-list">
-                  <a href="https://github.com/OWASP/OpenCRE/blob/main/README.md">Documentation</a>
-                  <a href="https://github.com/OWASP/OpenCRE/blob/main/docs/my-opencre-user-guide.md">API</a>
+                  <Link to="/docs">Documentation</Link>
+                  <Link to="/docs#api-reference">API</Link>
                   <a href="https://github.com/OWASP/OpenCRE/">GitHub</a>
                   <a href="https://github.com/OWASP/OpenCRE/blob/main/docs/CONTRIBUTING.md">Contribute</a>
                 </div>

@@ -32,6 +32,7 @@ from application.feature_flags import (
 from application.utils import spreadsheet as sheet_utils
 from application.utils import mdutils, redirectors, gap_analysis
 from application.utils.external_project_parsers.parsers import myopencre_parser
+from application.web.openapi_registry import openapi_documented
 from enum import Enum
 from flask import json as flask_json
 from flask import (
@@ -140,6 +141,7 @@ if os.environ.get("POSTHOG_API_KEY") and os.environ.get("POSTHOG_HOST"):
     )
 
 
+@openapi_documented("find_cre")
 @app.route("/rest/v1/id/<creid>", methods=["GET"])
 @app.route("/rest/v1/name/<crename>", methods=["GET"])
 def find_cre(creid: str = None, crename: str = None) -> Any:  # refer
@@ -183,6 +185,7 @@ def find_cre(creid: str = None, crename: str = None) -> Any:  # refer
     abort(404, "CRE does not exist")
 
 
+@openapi_documented("find_node_by_name")
 @app.route("/rest/v1/<ntype>/<name>", methods=["GET"])
 @app.route("/rest/v1/standard/<name>", methods=["GET"])
 @app.route("/rest/v1/<ntype>/<name>/sectionid/<sectionID>", methods=["GET"])
@@ -280,6 +283,7 @@ def find_node_by_name(
 
 
 # TODO: (spyros) paginate
+@openapi_documented("find_document_by_tag")
 @app.route("/rest/v1/tags", methods=["GET"])
 def find_document_by_tag() -> Any:
     tags = request.args.getlist("tag")
@@ -309,6 +313,7 @@ def find_document_by_tag() -> Any:
     abort(404, "Tag does not exist")
 
 
+@openapi_documented("map_analysis")
 @app.route("/rest/v1/map_analysis", methods=["GET"])
 def map_analysis() -> Any:
     standards = request.args.getlist("standard")
@@ -414,6 +419,7 @@ def map_analysis() -> Any:
             abort(503, f"Gap analysis unavailable: {fallback_exc}")
 
 
+@openapi_documented("map_analysis_weak_links")
 @app.route("/rest/v1/map_analysis_weak_links", methods=["GET"])
 def map_analysis_weak_links() -> Any:
     standards = request.args.getlist("standard")
@@ -439,6 +445,7 @@ def map_analysis_weak_links() -> Any:
     abort(404, "No such Cache")
 
 
+@openapi_documented("fetch_job")
 @app.route("/rest/v1/ma_job_results", methods=["GET"])
 def fetch_job() -> Any:
     logger.debug("fetching job results")
@@ -501,6 +508,7 @@ def fetch_job() -> Any:
         abort(500)
 
 
+@openapi_documented("standards")
 @app.route("/rest/v1/standards", methods=["GET"])
 def standards() -> Any:
     if posthog:
@@ -513,6 +521,7 @@ def standards() -> Any:
     return standards
 
 
+@openapi_documented("ga_standards")
 @app.route("/rest/v1/ga_standards", methods=["GET"])
 def ga_standards() -> Any:
     """
@@ -550,6 +559,7 @@ def openapi_spec() -> Any:
     )
 
 
+@openapi_documented("text_search")
 @app.route("/rest/v1/text_search", methods=["GET"])
 def text_search() -> Any:
     r"""
@@ -589,6 +599,7 @@ def text_search() -> Any:
         abort(404, "No object matches the given search terms")
 
 
+@openapi_documented("health")
 @app.route("/rest/v1/health", methods=["GET"])
 def health() -> Any:
     """Deploy/uptime health probe (feature-flagged, off by default).
@@ -610,6 +621,7 @@ def health() -> Any:
     return jsonify(result), status_code
 
 
+@openapi_documented("find_root_cres")
 @app.route("/rest/v1/root_cres", methods=["GET"])
 def find_root_cres() -> Any:
     """
@@ -645,6 +657,22 @@ def find_root_cres() -> Any:
 @app.errorhandler(404)
 def page_not_found(e) -> Any:
     return "Resource Not found", 404
+
+
+_REPO_ROOT = os.path.abspath(
+    os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..")
+)
+_DOCS_DIR = os.path.join(_REPO_ROOT, "docs")
+
+
+@app.route("/docs/faq.md", methods=["GET"])
+def faq_markdown() -> Any:
+    """Serve FAQ markdown for the in-app docs page."""
+    return send_from_directory(
+        directory=_DOCS_DIR,
+        path="faq.md",
+        mimetype="text/markdown; charset=utf-8",
+    )
 
 
 # If no other routes are matched, serve the react app, or any other static files (like bundle.js)
@@ -733,6 +761,7 @@ def smartlink(
         return abort(404, "Document does not exist")
 
 
+@openapi_documented("deeplink")
 @app.route("/rest/v1/deeplink/<ntype>/<name>", methods=["GET"])
 @app.route("/rest/v1/deeplink/<name>", methods=["GET"])
 @app.route("/deeplink/<ntype>/<name>", methods=["GET"])
@@ -1154,6 +1183,7 @@ def logout():
     return redirect("/")
 
 
+@openapi_documented("all_cres")
 @app.route("/rest/v1/all_cres", methods=["GET"])
 def all_cres() -> Any:
     database = db.Node_collection()
@@ -1182,6 +1212,7 @@ def all_cres() -> Any:
 # Importing Handlers
 
 
+@openapi_documented("get_cre_csv")
 @app.route("/rest/v1/cre_csv", methods=["GET"])
 def get_cre_csv() -> Any:
     if posthog:
@@ -1209,6 +1240,7 @@ def get_cre_csv() -> Any:
     abort(404)
 
 
+@openapi_documented("get_config")
 @app.route("/rest/v1/config", methods=["GET"])
 def get_config() -> Any:
     return jsonify({"CRE_ALLOW_IMPORT": is_cre_import_allowed()})

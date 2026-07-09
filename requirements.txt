@@ -19,6 +19,7 @@ grpcio_status
 grpcio
 gspread
 gunicorn
+jsonschema>=4.26.0
 networkx
 nltk
 oauthlib
@@ -40,6 +41,8 @@ neo4j
 neomodel
 openapi-schema-validator
 openapi-spec-validator
+marshmallow
+apispec
 openpyxl
 orderedmultidict
 packaging
@@ -63,7 +66,7 @@ pyasn1
 pyasn1-modules
 pycodestyle
 pycparser
-pydantic
+pydantic>=2.4.0,<3
 pyee
 pyflakes
 PyGithub
@@ -82,6 +85,7 @@ python-frontmatter
 python-markdown-maker
 python-slugify
 PyYAML==6.0.1
+referencing>=0.37.0
 regex
 requests
 requests-oauthlib
@@ -92,6 +96,7 @@ redis
 ruamel.yaml
 ruamel.yaml.clib
 scikit-learn
+sentence-transformers>=5.0.0,<6.0.0
 Shapely
 six
 smmap

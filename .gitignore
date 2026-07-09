@@ -67,6 +67,7 @@ standards_cache.sqlite
 ### Docs
 *.md
 !AGENTS.md
+!docs/faq.md
 
 ### Dev DBDumps
 *.sql

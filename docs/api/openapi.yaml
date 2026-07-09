@@ -1,206 +1,420 @@
-openapi: 3.0.1
-
 info:
+  description: Public REST API for OpenCRE (Open Common Requirement Enumeration).
+    Documents read-only endpoints implemented by the OpenCRE backend.
   title: OpenCRE REST API
-  description: >
-    Public REST API for OpenCRE (Open Common Requirement Enumeration).
-    This specification documents the currently exposed, read-only API
-    endpoints implemented by the OpenCRE backend.
   version: 1.0.0
-
 paths:
-  /rest/v1/id/{creid}: 
+  /rest/v1/all_cres:
     get:
-      summary: Get a CRE by ID
-      description: Retrieve a Common Requirement Enumeration (CRE) by its external ID.
+      tags:
+      - CRE
+      summary: List all CREs (paginated)
       parameters:
-        - name: creid
-          in: path
-          required: true
-          description: External CRE identifier
-          schema:
-            type: string
-        - name: format
-          in: query
-          required: false
-          description: Optional response format
-          schema:
-            type: string
-            enum: [json, md, csv, oscal]
-        - name: source
-          in: query
-          required: false
-          description: Optional integration source identifier (for metrics), e.g. wstg
-          schema:
-            type: string
-        - name: include_only
-          in: query
-          required: false
-          description: Filter returned fields
-          schema:
-            type: array
-            items:
-              type: string
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+      - name: per_page
+        in: query
+        required: false
+        schema:
+          type: integer
       responses:
         '200':
-          description: CRE found
+          description: Success
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  data:
-                    type: object
+                $ref: '#/components/schemas/AllCREsResponseSchema'
         '404':
-          description: CRE not found
-
+          description: Not found
+  /rest/v1/config:
+    get:
+      tags:
+      - Operations
+      summary: Public configuration flags
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfigResponseSchema'
+  /rest/v1/cre_csv:
+    get:
+      tags:
+      - CRE
+      summary: Download CRE catalogue CSV
+      description: Returns a CSV attachment of the CRE mapping template.
+      responses:
+        '200':
+          description: CSV file download
+          content:
+            text/csv:
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: Not found
+  /rest/v1/deeplink/{name}:
+    get:
+      tags:
+      - Deeplink
+      summary: Resolve REST deeplink by name
+      description: Redirects to an external hyperlink when found.
+      parameters:
+      - name: name
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Success
+        '404':
+          description: Not found
+  /rest/v1/deeplink/{ntype}/{name}:
+    get:
+      tags:
+      - Deeplink
+      summary: Resolve REST deeplink by type and name
+      parameters:
+      - name: ntype
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: name
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Success
+        '404':
+          description: Not found
+  /rest/v1/ga_standards:
+    get:
+      tags:
+      - Gap analysis
+      summary: Standards eligible for gap analysis
+      responses:
+        '200':
+          description: Eligible standards retrieved
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+  /rest/v1/health:
+    get:
+      tags:
+      - Operations
+      summary: Health check
+      description: Feature-flagged via CRE_ENABLE_HEALTH=1.
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponseSchema'
+        '404':
+          description: Not found
+        '503':
+          description: Unhealthy
+  /rest/v1/id/{creid}:
+    get:
+      tags:
+      - CRE
+      summary: Get a CRE by ID
+      description: Retrieve a Common Requirement Enumeration (CRE) by its external
+        ID.
+      parameters:
+      - name: creid
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: format
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - json
+          - md
+          - csv
+          - oscal
+        description: 'Response format (default: json)'
+      - name: source
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Integration source identifier for metrics, e.g. wstg
+      - name: include_only
+        in: query
+        required: false
+        schema:
+          type: array
+          items:
+            type: string
+        style: form
+        explode: true
+        description: Filter returned fields
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CREResponseSchema'
+        '404':
+          description: Not found
+  /rest/v1/ma_job_results:
+    get:
+      tags:
+      - Gap analysis
+      summary: Gap analysis background job status/result
+      parameters:
+      - name: id
+        in: query
+        required: true
+        schema:
+          type: string
+        description: Background job id
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobStatusResponseSchema'
+        '404':
+          description: Not found
+        '500':
+          description: Job failed
+  /rest/v1/map_analysis:
+    get:
+      tags:
+      - Gap analysis
+      summary: Map analysis between two standards
+      description: Returns cached gap analysis or enqueues a background job.
+      parameters:
+      - name: standard
+        in: query
+        required: true
+        schema:
+          type: array
+          items:
+            type: string
+          minItems: 2
+          maxItems: 2
+        style: form
+        explode: true
+        description: Exactly two standard names
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MapAnalysisResponseSchema'
+        '404':
+          description: Not found
+        '400':
+          description: Fewer than two standards provided
+        '503':
+          description: Gap analysis unavailable
+  /rest/v1/map_analysis_weak_links:
+    get:
+      tags:
+      - Gap analysis
+      summary: Weak links for a map analysis result
+      parameters:
+      - name: standard
+        in: query
+        required: true
+        schema:
+          type: array
+          items:
+            type: string
+          minItems: 2
+          maxItems: 2
+        style: form
+        explode: true
+      - name: key
+        in: query
+        required: true
+        schema:
+          type: string
+        description: Gap-analysis cache key
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MapAnalysisResponseSchema'
+        '404':
+          description: Not found
   /rest/v1/name/{crename}:
     get:
+      tags:
+      - CRE
       summary: Get a CRE by name
-      description: Retrieve a Common Requirement Enumeration (CRE) by its name.
       parameters:
-        - name: crename
-          in: path
-          required: true
-          description: CRE name
-          schema:
+      - name: crename
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: format
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - json
+          - md
+          - csv
+          - oscal
+        description: 'Response format (default: json)'
+      - name: source
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Integration source identifier for metrics, e.g. wstg
+      - name: include_only
+        in: query
+        required: false
+        schema:
+          type: array
+          items:
             type: string
-        - name: format
-          in: query
-          required: false
-          schema:
-            type: string
-            enum: [json, md, csv, oscal]
-        - name: source
-          in: query
-          required: false
-          description: Optional integration source identifier (for metrics), e.g. wstg
-          schema:
-            type: string
+        style: form
+        explode: true
+        description: Filter returned fields
       responses:
         '200':
-          description: CRE found
+          description: Success
           content:
             application/json:
               schema:
-                type: object
+                $ref: '#/components/schemas/CREResponseSchema'
         '404':
-          description: CRE not found
-
-  /rest/v1/{ntype}/{name}:
-    get:
-      summary: Get nodes by type and name
-      description: >
-        Retrieve standards, tools, or other node types by name.
-        Supports pagination and filtering.
-      parameters:
-        - name: ntype
-          in: path
-          required: true
-          description: Node type (e.g. standard)
-          schema:
-            type: string
-        - name: name
-          in: path
-          required: true
-          description: Node name
-          schema:
-            type: string
-        - name: section
-          in: query
-          required: false
-          schema:
-            type: string
-        - name: subsection
-          in: query
-          required: false
-          schema:
-            type: string
-        - name: sectionID
-          in: query
-          required: false
-          schema:
-            type: string
-        - name: page
-          in: query
-          required: false
-          schema:
-            type: integer
-        - name: items_per_page
-          in: query
-          required: false
-          schema:
-            type: integer
-        - name: format
-          in: query
-          required: false
-          schema:
-            type: string
-            enum: [json, md, csv, oscal]
-      responses:
-        '200':
-          description: Nodes retrieved
-          content:
-            application/json:
-              schema:
-                type: object
-        '404':
-          description: Node not found
-
-  /rest/v1/tags:
-    get:
-      summary: Get documents by tag
-      description: Retrieve documents associated with one or more tags.
-      parameters:
-        - name: tag
-          in: query
-          required: true
-          description: Tag name(s)
-          schema:
-            type: array
-            items:
-              type: string
-        - name: format
-          in: query
-          required: false
-          schema:
-            type: string
-            enum: [json, md, csv, oscal]
-      responses:
-        '200':
-          description: Documents retrieved
-          content:
-            application/json:
-              schema:
-                type: object
-        '404':
-          description: Tag not found
-
+          description: Not found
   /rest/v1/root_cres:
     get:
+      tags:
+      - CRE
       summary: Get root CREs
-      description: Retrieve top-level CREs for browsing.
       parameters:
-        - name: format
-          in: query
-          required: false
-          schema:
-            type: string
-            enum: [json, md, csv, oscal]
+      - name: format
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - json
+          - md
+          - csv
+          - oscal
+        description: 'Response format (default: json)'
       responses:
         '200':
-          description: Root CREs retrieved
+          description: Success
           content:
             application/json:
               schema:
-                type: object
+                $ref: '#/components/schemas/DataListResponseSchema'
         '404':
-          description: No root CREs found
-
+          description: Not found
+  /rest/v1/standard/{name}:
+    get:
+      tags:
+      - Nodes
+      summary: Get standard nodes by name
+      parameters:
+      - name: name
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: format
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - json
+          - md
+          - csv
+          - oscal
+        description: 'Response format (default: json)'
+      - name: section
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: subsection
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: sectionID
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+      - name: items_per_page
+        in: query
+        required: false
+        schema:
+          type: integer
+      - name: version
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: hyperlink
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: include_only
+        in: query
+        required: false
+        schema:
+          type: array
+          items:
+            type: string
+        style: form
+        explode: true
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NodeListResponseSchema'
+        '404':
+          description: Not found
   /rest/v1/standards:
     get:
+      tags:
+      - Standards
       summary: List standards
-      description: Retrieve all known standards.
       responses:
         '200':
           description: Standards retrieved
@@ -210,32 +424,553 @@ paths:
                 type: array
                 items:
                   type: string
-
-  /rest/v1/text_search:
+  /rest/v1/tags:
     get:
-      summary: Text search
-      description: Perform a free-text search across CREs and standards.
+      tags:
+      - Tags
+      summary: Get documents by tag
       parameters:
-        - name: text
-          in: query
-          required: true
-          description: Search query
-          schema:
+      - name: format
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - json
+          - md
+          - csv
+          - oscal
+        description: 'Response format (default: json)'
+      - name: tag
+        in: query
+        required: true
+        schema:
+          type: array
+          items:
             type: string
-        - name: format
-          in: query
-          required: false
-          schema:
-            type: string
-            enum: [json, md, csv, oscal]
+        style: form
+        explode: true
+        description: Tag name(s)
       responses:
         '200':
-          description: Search results
+          description: Success
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  type: object
+                $ref: '#/components/schemas/DataListResponseSchema'
         '404':
-          description: No results found
+          description: Not found
+  /rest/v1/text_search:
+    get:
+      tags:
+      - Search
+      summary: Text search
+      parameters:
+      - name: format
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - json
+          - md
+          - csv
+          - oscal
+        description: 'Response format (default: json)'
+      - name: text
+        in: query
+        required: true
+        schema:
+          type: string
+        description: Search query
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataListResponseSchema'
+        '404':
+          description: Not found
+        '400':
+          description: Missing text parameter
+  /rest/v1/{ntype}/{name}:
+    get:
+      tags:
+      - Nodes
+      summary: Get nodes by type and name
+      description: Retrieve standards, tools, or other node types by name.
+      parameters:
+      - name: ntype
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: name
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: format
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - json
+          - md
+          - csv
+          - oscal
+        description: 'Response format (default: json)'
+      - name: section
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: subsection
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: sectionID
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+      - name: items_per_page
+        in: query
+        required: false
+        schema:
+          type: integer
+      - name: version
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: hyperlink
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: include_only
+        in: query
+        required: false
+        schema:
+          type: array
+          items:
+            type: string
+        style: form
+        explode: true
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NodeListResponseSchema'
+        '404':
+          description: Not found
+  /rest/v1/{ntype}/{name}/section/{section}:
+    get:
+      tags:
+      - Nodes
+      summary: Get nodes by section
+      parameters:
+      - name: ntype
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: name
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: section
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: format
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - json
+          - md
+          - csv
+          - oscal
+        description: 'Response format (default: json)'
+      - name: subsection
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: sectionID
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+      - name: items_per_page
+        in: query
+        required: false
+        schema:
+          type: integer
+      - name: version
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: hyperlink
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: include_only
+        in: query
+        required: false
+        schema:
+          type: array
+          items:
+            type: string
+        style: form
+        explode: true
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NodeListResponseSchema'
+        '404':
+          description: Not found
+  /rest/v1/{ntype}/{name}/section/{section}/subsection/{subsection}:
+    get:
+      tags:
+      - Nodes
+      summary: Get nodes by section and subsection
+      parameters:
+      - name: ntype
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: name
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: section
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: subsection
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: format
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - json
+          - md
+          - csv
+          - oscal
+        description: 'Response format (default: json)'
+      - name: sectionID
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+      - name: items_per_page
+        in: query
+        required: false
+        schema:
+          type: integer
+      - name: version
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: hyperlink
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: include_only
+        in: query
+        required: false
+        schema:
+          type: array
+          items:
+            type: string
+        style: form
+        explode: true
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NodeListResponseSchema'
+        '404':
+          description: Not found
+  /rest/v1/{ntype}/{name}/sectionid/{sectionID}:
+    get:
+      tags:
+      - Nodes
+      summary: Get nodes by section ID
+      parameters:
+      - name: ntype
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: name
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: sectionID
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: format
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - json
+          - md
+          - csv
+          - oscal
+        description: 'Response format (default: json)'
+      - name: section
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: subsection
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+      - name: items_per_page
+        in: query
+        required: false
+        schema:
+          type: integer
+      - name: version
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: hyperlink
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: include_only
+        in: query
+        required: false
+        schema:
+          type: array
+          items:
+            type: string
+        style: form
+        explode: true
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NodeListResponseSchema'
+        '404':
+          description: Not found
+  /rest/v1/{ntype}/{name}/sectionid/{sectionID}/subsection/{subsection}:
+    get:
+      tags:
+      - Nodes
+      summary: Get nodes by section ID and subsection
+      parameters:
+      - name: ntype
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: name
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: sectionID
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: subsection
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: format
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - json
+          - md
+          - csv
+          - oscal
+        description: 'Response format (default: json)'
+      - name: section
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+      - name: items_per_page
+        in: query
+        required: false
+        schema:
+          type: integer
+      - name: version
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: hyperlink
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: include_only
+        in: query
+        required: false
+        schema:
+          type: array
+          items:
+            type: string
+        style: form
+        explode: true
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NodeListResponseSchema'
+        '404':
+          description: Not found
+openapi: 3.0.3
+components:
+  schemas:
+    CREResponseSchema:
+      type: object
+      properties:
+        data:
+          type: object
+          description: CRE document
+          additionalProperties: {}
+      additionalProperties: false
+    NodeListResponseSchema:
+      type: object
+      properties:
+        total_pages:
+          type: integer
+          nullable: true
+        page:
+          type: integer
+          nullable: true
+        standards:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+      additionalProperties: false
+    DataListResponseSchema:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+      additionalProperties: false
+    MapAnalysisResponseSchema:
+      type: object
+      properties:
+        result:
+          description: Gap analysis result payload
+      additionalProperties: false
+    JobStatusResponseSchema:
+      type: object
+      properties:
+        status:
+          type: string
+        result: {}
+      additionalProperties: false
+    HealthResponseSchema:
+      type: object
+      properties:
+        ok:
+          type: boolean
+        cre_count:
+          type: integer
+        standards_count:
+          type: integer
+        message:
+          type: string
+      additionalProperties: false
+    AllCREsResponseSchema:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        page:
+          type: integer
+        total_pages:
+          type: integer
+      additionalProperties: false
+    ConfigResponseSchema:
+      type: object
+      properties:
+        CRE_ALLOW_IMPORT:
+          type: boolean
+      additionalProperties: false

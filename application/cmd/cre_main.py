@@ -38,6 +38,60 @@ logger.setLevel(logging.INFO)
 app = None
 
 
+def fetch_upstream_json(
+    path: str,
+    timeout: Optional[float] = None,
+    max_attempts: Optional[int] = None,
+    backoff_seconds: Optional[float] = None,
+) -> Dict[str, Any]:
+    base_url = os.environ.get("CRE_UPSTREAM_API_URL", "https://opencre.org/rest/v1")
+    timeout = timeout or float(os.environ.get("CRE_UPSTREAM_TIMEOUT_SECONDS", "30"))
+    max_attempts = max_attempts or int(os.environ.get("CRE_UPSTREAM_MAX_ATTEMPTS", "4"))
+    backoff_seconds = backoff_seconds or float(
+        os.environ.get("CRE_UPSTREAM_RETRY_BACKOFF_SECONDS", "2")
+    )
+    url = f"{base_url}{path}"
+    last_error: Optional[Exception] = None
+
+    for attempt in range(1, max_attempts + 1):
+        response = None
+        try:
+            response = requests.get(url, timeout=timeout)
+            if response.status_code == 200:
+                return response.json()
+
+            status_error = RuntimeError(
+                f"cannot connect to upstream status code {response.status_code}"
+            )
+            if response.status_code < 500 and response.status_code != 429:
+                raise status_error
+            last_error = status_error
+        except requests.exceptions.RequestException as exc:
+            last_error = exc
+
+        if attempt < max_attempts:
+            retry_after_header = None
+            sleep_seconds = backoff_seconds * attempt
+            if response is not None and response.status_code == 429:
+                retry_after_header = response.headers.get("Retry-After")
+                try:
+                    if retry_after_header is not None:
+                        sleep_seconds = float(retry_after_header)
+                except (TypeError, ValueError):
+                    sleep_seconds = backoff_seconds * attempt
+            logger.warning(
+                "upstream fetch failed for %s on attempt %s/%s, retrying",
+                url,
+                attempt,
+                max_attempts,
+            )
+            time.sleep(sleep_seconds)
+
+    if last_error:
+        raise RuntimeError(f"upstream fetch failed for {url}") from last_error
+    raise RuntimeError(f"upstream fetch failed for {url}")
+
+
 def register_node(node: defs.Node, collection: db.Node_collection) -> db.Node:
     """
     for each link find if either the root node or the link have a CRE,
@@ -591,19 +645,11 @@ def download_graph_from_upstream(cache: str) -> None:
     collection = db_connect(path=cache).with_graph()
 
     def download_cre_from_upstream(creid: str):
-        cre_response = requests.get(
-            os.environ.get("CRE_UPSTREAM_API_URL", "https://opencre.org/rest/v1")
-            + f"/id/{creid}"
-        )
-        if cre_response.status_code != 200:
-            raise RuntimeError(
-                f"cannot connect to upstream status code {cre_response.status_code}"
-            )
-        data = cre_response.json()
+        if creid in imported_cres:
+            return
+        data = fetch_upstream_json(f"/id/{creid}")
         credict = data["data"]
         cre = defs.Document.from_dict(credict)
-        if cre.id in imported_cres:
-            return
 
         register_cre(cre, collection)
         imported_cres[cre.id] = ""
@@ -611,15 +657,7 @@ def download_graph_from_upstream(cache: str) -> None:
             if link.document.doctype == defs.Credoctypes.CRE:
                 download_cre_from_upstream(link.document.id)
 
-    root_cres_response = requests.get(
-        os.environ.get("CRE_UPSTREAM_API_URL", "https://opencre.org/rest/v1")
-        + "/root_cres"
-    )
-    if root_cres_response.status_code != 200:
-        raise RuntimeError(
-            f"cannot connect to upstream status code {root_cres_response.status_code}"
-        )
-    data = root_cres_response.json()
+    data = fetch_upstream_json("/root_cres")
     for root_cre in data["data"]:
         cre = defs.Document.from_dict(root_cre)
         register_cre(cre, collection)
@@ -967,6 +1005,12 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
         )
     if args.upstream_sync:
         download_graph_from_upstream(args.cache_file)
+    if args.run_librarian or args.librarian_dry_run:
+        run_librarian(
+            cache_file=args.cache_file,
+            dry_run=args.librarian_dry_run or not args.run_librarian,
+            source_jsonl=args.librarian_source,
+        )
 
 
 def ai_client_init(database: db.Node_collection):
@@ -1011,6 +1055,154 @@ def prepare_for_review(cache: str) -> Tuple[str, str]:
 def generate_embeddings(db_url: str) -> None:
     database = db_connect(path=db_url)
     prompt_client.PromptHandler(database, load_all_embeddings=True)
+
+
+_DEFAULT_LIBRARIAN_SOURCE = os.path.join(
+    os.path.dirname(os.path.dirname(__file__)),
+    "tests",
+    "librarian",
+    "fixtures",
+    "sample_knowledge_queue.jsonl",
+)
+
+
+def run_librarian(
+    cache_file: str, dry_run: bool = True, source_jsonl: Optional[str] = None
+) -> None:
+    """Module C entrypoint — the pipeline switch (W3).
+
+    For each knowledge-queue section: try the deterministic explicit-CRE fast
+    path (C.0.5); on no/ambiguous reference, run the semantic retriever (C.1)
+    and rerank its top-K shortlist with the cross-encoder (C.2, W4), then log
+    the reranked candidates. Decision/threshold routing (C.3-C.4, W5) and graph
+    writes (W8) are not built yet, so this is dry-run only: it never writes a
+    link. ``--run_librarian`` without writes behaves identically and warns.
+
+    Ops note: this is opt-in CLI only — it is not on the ``Procfile`` and is
+    wired into neither the web app nor the background worker (that lands W8).
+    It calls the paid embedding API, so cost is incurred only when someone runs
+    the command manually; the running deployment never triggers it on its own.
+    """
+    from application.utils.librarian.candidate_retriever import (
+        CandidatePool,
+        RetrieverBackend,
+        build_retriever,
+    )
+    from application.utils.librarian.config_loader import load_config
+    from application.utils.librarian.cross_encoder import (
+        CrossEncoderReranker,
+        build_cross_encoder_score_fn,
+    )
+    from application.utils.librarian.explicit_link_resolver import (
+        ResolutionOutcome,
+        resolve,
+    )
+    from application.utils.librarian.knowledge_source import FixtureKnowledgeSource
+    from application.utils.librarian.section_validator import (
+        SectionValidationError,
+        section_from_queue_row,
+    )
+
+    if not dry_run:
+        logger.warning(
+            "the Librarian cannot write links yet (DecisionEngine + graph write "
+            "land W8); running in dry-run mode"
+        )
+
+    cfg = load_config()
+    database = db_connect(path=cache_file)
+    ph = prompt_client.PromptHandler(database=database)
+
+    backend = RetrieverBackend(cfg.retriever_backend)
+    if backend is RetrieverBackend.pgvector:
+        dialect = database.session.connection().dialect.name
+        if dialect != "postgresql":
+            logger.warning(
+                "CRE_LIBRARIAN_RETRIEVER_BACKEND=pgvector selected on a %r "
+                "database, but the pgvector backend needs Postgres with the "
+                "embedding_vec column (lands W8) and will fail at retrieve() "
+                "time here. Set the backend to in_memory until then.",
+                dialect,
+            )
+    # The CRE ids present in the hub are exactly the known ids the explicit
+    # resolver may auto-link to (W2 seeded this from the golden set; here it is
+    # the real DB-backed registry).
+    cre_embeddings = database.get_embeddings_by_doc_type(defs.Credoctypes.CRE.value)
+    known_ids = set(cre_embeddings.keys())
+    # in_memory loads the hub matrix; pgvector ranks in the DB over the
+    # embedding_vec column (no in-RAM pool). Both honor the same retrieve().
+    pool = (
+        CandidatePool.from_mapping(cre_embeddings)
+        if backend is RetrieverBackend.in_memory
+        else None
+    )
+    retriever = build_retriever(
+        backend,
+        embed_fn=ph.get_text_embeddings,
+        top_k=cfg.top_k_retrieval,
+        threshold=cfg.link_threshold,
+        pool=pool,
+        connection=database.session.connection(),
+    )
+
+    # C.2 reranker: reads each (section, candidate-CRE) pair together and
+    # re-sorts C.1's shortlist. Scored against the CRE's embeddings_content —
+    # the same text the hub vectors were built from.
+    cre_texts = database.get_embedding_contents_by_doc_type(defs.Credoctypes.CRE.value)
+    reranker = CrossEncoderReranker(
+        score_fn=build_cross_encoder_score_fn(cfg.crossencoder_model),
+        top_n=cfg.top_k_rerank,
+        cre_texts=cre_texts,
+    )
+
+    source = FixtureKnowledgeSource(source_jsonl or _DEFAULT_LIBRARIAN_SOURCE)
+    sections = explicit = semantic = rejected = 0
+    for item in source.items():
+        try:
+            section = section_from_queue_row(item)
+        except SectionValidationError as exc:
+            rejected += 1
+            logger.warning("section rejected at C.0 boundary: %s", exc)
+            continue
+        sections += 1
+
+        resolution = resolve(section.text, known_ids)
+        if resolution.outcome == ResolutionOutcome.resolved:
+            explicit += 1
+            logger.info("[explicit] %s -> %s", section.chunk_id, resolution.cre_ids[0])
+            continue
+
+        try:
+            audit = retriever.retrieve(section.text)
+            audit = reranker.rerank(section.text, audit)
+        # one bad section must not abort the batch
+        except Exception as exc:  # noqa: BLE001
+            rejected += 1
+            logger.warning(
+                "[semantic] %s skipped: retrieval/rerank failed: %s",
+                section.chunk_id,
+                exc,
+            )
+            continue
+
+        semantic += 1
+        top = ", ".join(f"{c.cre_id}:{c.score_rerank:.3f}" for c in audit.reranked)
+        logger.info(
+            "[semantic] %s -> %d candidates, reranked top%d: %s",
+            section.chunk_id,
+            len(audit.candidates),
+            len(audit.reranked),
+            top or "<none>",
+        )
+
+    logger.info(
+        "librarian dry-run complete: %d sections (%d explicit, %d semantic), "
+        "%d rejected at boundary",
+        sections,
+        explicit,
+        semantic,
+        rejected,
+    )
 
 
 def regenerate_embeddings(db_url: str) -> None:

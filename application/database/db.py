@@ -2489,6 +2489,27 @@ class Node_collection:
                     res[entry.node_id] = [float(e) for e in entry.embeddings.split(",")]
         return res
 
+    def get_embedding_contents_by_doc_type(self, doc_type: str) -> Dict[str, str]:
+        """Return ``{id -> embeddings_content}`` for a doc type.
+
+        ``embeddings_content`` is the text a vector was built from — the pair
+        text the Module C.2 cross-encoder scores a candidate against. Keyed by
+        cre_id for CREs, node_id otherwise, mirroring
+        ``get_embeddings_by_doc_type``. Rows with no content are skipped.
+        """
+        res: Dict[str, str] = {}
+        embeddings = (
+            self.session.query(Embeddings).filter(Embeddings.doc_type == doc_type).all()
+        )
+        for entry in embeddings:
+            if not entry.embeddings_content:
+                continue
+            if doc_type == cre_defs.Credoctypes.CRE.value:
+                res[entry.cre_id] = entry.embeddings_content
+            else:
+                res[entry.node_id] = entry.embeddings_content
+        return res
+
     def get_embeddings_by_doc_type_paginated(
         self, doc_type: str, page: int = 1, per_page: int = 100
     ) -> Tuple[Dict[str, List[float]], int, int]:

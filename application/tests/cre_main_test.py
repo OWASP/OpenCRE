@@ -6,6 +6,7 @@ import unittest
 from typing import Any, Dict, List
 from unittest import mock
 from unittest.mock import Mock, patch
+import requests
 from rq import Queue, job
 from application.utils import redis
 from application.prompt_client import prompt_client as prompt_client
@@ -469,6 +470,75 @@ class TestMain(unittest.TestCase):
                 )
             ],
         )
+
+    @patch("application.cmd.cre_main.time.sleep")
+    @patch("application.cmd.cre_main.requests.get")
+    def test_fetch_upstream_json_retries_transient_failures(
+        self, mock_get, mock_sleep
+    ) -> None:
+        transient_error = requests.exceptions.ConnectionError("reset by peer")
+        success_response = Mock()
+        success_response.status_code = 200
+        success_response.json.return_value = {"data": []}
+        mock_get.side_effect = [transient_error, success_response]
+
+        # Make retry behaviour deterministic for the test by passing explicit
+        # retry settings instead of relying on environment defaults.
+        data = main.fetch_upstream_json("/root_cres", max_attempts=2, backoff_seconds=1)
+
+        self.assertEqual(data, {"data": []})
+        self.assertEqual(mock_get.call_count, 2)
+        mock_sleep.assert_called_once()
+
+    @patch("application.cmd.cre_main.time.sleep")
+    @patch("application.cmd.cre_main.requests.get")
+    def test_fetch_upstream_json_fails_fast_on_non_retryable_status(
+        self, mock_get, mock_sleep
+    ) -> None:
+        response = Mock()
+        response.status_code = 404
+        response.headers = {}
+        mock_get.return_value = response
+
+        with self.assertRaises(RuntimeError):
+            main.fetch_upstream_json("/root_cres")
+
+        self.assertEqual(mock_get.call_count, 1)
+        mock_sleep.assert_not_called()
+
+    @patch("application.cmd.cre_main.time.sleep")
+    @patch("application.cmd.cre_main.requests.get")
+    def test_fetch_upstream_json_retries_retryable_status_until_exhausted(
+        self, mock_get, mock_sleep
+    ) -> None:
+        response = Mock()
+        response.status_code = 503
+        response.headers = {}
+        mock_get.return_value = response
+
+        with self.assertRaises(RuntimeError):
+            main.fetch_upstream_json("/root_cres", max_attempts=3, backoff_seconds=2)
+
+        self.assertEqual(mock_get.call_count, 3)
+        self.assertEqual(mock_sleep.call_count, 2)
+        mock_sleep.assert_any_call(2)
+        mock_sleep.assert_any_call(4)
+
+    @patch("application.cmd.cre_main.time.sleep")
+    @patch("application.cmd.cre_main.requests.get")
+    def test_fetch_upstream_json_honors_retry_after_for_rate_limit(
+        self, mock_get, mock_sleep
+    ) -> None:
+        response = Mock()
+        response.status_code = 429
+        response.headers = {"Retry-After": "7"}
+        mock_get.side_effect = [response, response, RuntimeError("should not reach")]
+
+        with self.assertRaises(RuntimeError):
+            main.fetch_upstream_json("/root_cres", max_attempts=2, backoff_seconds=2)
+
+        self.assertEqual(mock_get.call_count, 2)
+        mock_sleep.assert_called_once_with(7.0)
 
     @patch.object(main, "db_connect")
     @patch.object(Queue, "enqueue_call")

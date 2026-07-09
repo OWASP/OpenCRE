@@ -210,6 +210,24 @@ def main() -> None:
         help="delete all embedding rows then rebuild embeddings for every CRE and node (use after smart-extract or model changes)",
     )
     parser.add_argument(
+        "--run_librarian",
+        action="store_true",
+        help="run Module C (the Librarian): for each knowledge-queue section, "
+        "resolve explicit CRE ids or retrieve the top-K semantic CRE candidates",
+    )
+    parser.add_argument(
+        "--librarian_dry_run",
+        action="store_true",
+        help="run the Librarian without writing any links (the only supported "
+        "mode pre-W8; logs the candidate shortlist per section)",
+    )
+    parser.add_argument(
+        "--librarian_source",
+        default=None,
+        help="path to a knowledge_queue JSONL for --run_librarian "
+        "(defaults to the bundled sample fixture)",
+    )
+    parser.add_argument(
         "--populate_neo4j_db",
         action="store_true",
         help="populate the neo4j db",
