@@ -105,7 +105,7 @@ export const Chatbot = () => {
 
   function processResponse(response: string) {
     const responses = response.split('```');
-    const res: JSX.Element[] = [];
+    const res: React.ReactElement[] = [];
 
     responses.forEach((txt, i) => {
       if (i % 2 === 0) {
