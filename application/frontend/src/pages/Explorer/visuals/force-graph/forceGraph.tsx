@@ -31,7 +31,7 @@ export const ExplorerForceGraph = () => {
     fullLoadProgress,
     dataLoadError,
   } = useDataStore();
-  const fgRef = useRef<ForceGraphMethods>();
+  const fgRef = useRef<ForceGraphMethods | undefined>(undefined);
   // ADDING STATE FOR FILTERING LOGIC
   const [filterTypeA, setFilterTypeA] = useState('');
   const [filterTypeB, setFilterTypeB] = useState('');
