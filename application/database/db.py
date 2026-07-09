@@ -263,7 +263,7 @@ class User(BaseModel):  # type: ignore
 
     __tablename__ = "users"
     id = sqla.Column(sqla.String, primary_key=True, default=generate_uuid)
-    google_sub = sqla.Column(sqla.String, nullable=False, unique=True)
+    google_sub = sqla.Column(sqla.String, nullable=False)
     email = sqla.Column(sqla.String, nullable=False)
     display_name = sqla.Column(sqla.String, nullable=True)
     created_at = sqla.Column(sqla.DateTime, nullable=False)
@@ -1046,24 +1046,43 @@ class Node_collection:
         from datetime import datetime, timezone
 
         now = datetime.now(timezone.utc)
-        user = self.session.query(User).filter(User.google_sub == google_sub).first()
-        if user is None:
-            user = User(
-                id=generate_uuid(),
-                google_sub=google_sub,
-                email=email,
-                display_name=display_name,
-                created_at=now,
-                last_seen_at=now,
-            )
-            self.session.add(user)
-        else:
+
+        def _apply_profile(u: User) -> None:
             if email:
-                user.email = email
+                u.email = email
             if display_name is not None:
-                user.display_name = display_name
-            user.last_seen_at = now
-        self.session.commit()
+                u.display_name = display_name
+            u.last_seen_at = now
+
+        user = self.session.query(User).filter(User.google_sub == google_sub).first()
+        if user is not None:
+            _apply_profile(user)
+            self.session.commit()
+            return user
+
+        user = User(
+            id=generate_uuid(),
+            google_sub=google_sub,
+            email=email,
+            display_name=display_name,
+            created_at=now,
+            last_seen_at=now,
+        )
+        self.session.add(user)
+        try:
+            self.session.commit()
+        except IntegrityError:
+            # A concurrent login inserted the same google_sub first; recover by
+            # rolling back and updating the now-existing row (mirrors add_node).
+            self.session.rollback()
+            existing = (
+                self.session.query(User).filter(User.google_sub == google_sub).first()
+            )
+            if existing is None:
+                raise
+            _apply_profile(existing)
+            self.session.commit()
+            return existing
         return user
 
     def get_user_by_sub(self, google_sub: str) -> Optional[User]:

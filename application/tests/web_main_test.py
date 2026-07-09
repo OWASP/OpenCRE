@@ -1173,18 +1173,22 @@ class TestMain(unittest.TestCase):
                 "INSECURE_REQUESTS": "1",
             },
         ):
+            session_user_id = None
             with self.app.test_client() as client:
                 with client.session_transaction() as sess:
                     sess["state"] = "xyz"
                 client.get("/rest/v1/callback?state=xyz")
                 with client.session_transaction() as sess:
                     self.assertIn("user_id", sess)
+                    session_user_id = sess["user_id"]
 
         users = sqla.session.query(db.User).all()
         self.assertEqual(len(users), 1)
         self.assertEqual(users[0].google_sub, "sub-xyz")
         self.assertEqual(users[0].email, "test@example.com")
         self.assertEqual(users[0].display_name, "Test User")
+        # Session id must match the persisted row (guards PR2's /user wiring).
+        self.assertEqual(session_user_id, users[0].id)
 
     @patch("application.web.web_main.id_token")
     @patch("application.web.web_main.CREFlow")

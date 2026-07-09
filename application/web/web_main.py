@@ -1165,15 +1165,21 @@ def callback():
     # Persist the account when login is enabled; the session keeps working
     # unchanged if this no-ops (flag off) or fails.
     if is_login_enabled():
-        try:
-            user = db.Node_collection().upsert_user(
-                google_sub=id_info.get("sub"),
-                email=id_info.get("email") or "",
-                display_name=id_info.get("name"),
+        google_sub = id_info.get("sub")
+        if not google_sub:
+            logger.error(
+                "OIDC callback returned no 'sub' claim; skipping user persistence"
             )
-            session["user_id"] = user.id
-        except Exception as e:
-            logger.error(f"failed to persist user on login: {e}")
+        else:
+            try:
+                user = db.Node_collection().upsert_user(
+                    google_sub=google_sub,
+                    email=id_info.get("email") or "",
+                    display_name=id_info.get("name"),
+                )
+                session["user_id"] = user.id
+            except Exception as e:
+                logger.error(f"failed to persist user on login: {e}")
     return redirect("/chatbot")
 
 
