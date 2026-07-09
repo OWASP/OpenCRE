@@ -659,14 +659,17 @@ def page_not_found(e) -> Any:
     return "Resource Not found", 404
 
 
+_REPO_ROOT = os.path.abspath(
+    os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..")
+)
+_DOCS_DIR = os.path.join(_REPO_ROOT, "docs")
+
+
 @app.route("/docs/faq.md", methods=["GET"])
 def faq_markdown() -> Any:
     """Serve FAQ markdown for the in-app docs page."""
     return send_from_directory(
-        directory=os.path.join(
-            os.path.dirname(os.path.realpath(__file__)),
-            "../../docs",
-        ),
+        directory=_DOCS_DIR,
         path="faq.md",
         mimetype="text/markdown; charset=utf-8",
     )

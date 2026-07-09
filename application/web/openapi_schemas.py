@@ -74,12 +74,17 @@ class MapAnalysisQuerySchema(Schema):
     standard = fields.List(
         fields.Str(),
         required=True,
+        validate=validate.Length(min=2, max=2),
         metadata={"description": "Exactly two standard names"},
     )
 
 
 class MapAnalysisWeakLinksQuerySchema(Schema):
-    standard = fields.List(fields.Str(), required=True)
+    standard = fields.List(
+        fields.Str(),
+        required=True,
+        validate=validate.Length(min=2, max=2),
+    )
     key = fields.Str(required=True, metadata={"description": "Gap-analysis cache key"})
 
 
