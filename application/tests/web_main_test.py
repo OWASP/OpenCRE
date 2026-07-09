@@ -1151,6 +1151,68 @@ class TestMain(unittest.TestCase):
             self.assertEqual(200, response.status_code)
             self.assertEqual(expected, json.loads(response.data))
 
+    @patch("application.web.web_main.id_token")
+    @patch("application.web.web_main.CREFlow")
+    def test_callback_upserts_user_and_sets_session(
+        self, cre_flow_mock, id_token_mock
+    ) -> None:
+        id_token_mock.verify_oauth2_token.return_value = {
+            "sub": "sub-xyz",
+            "name": "Test User",
+            "email": "test@example.com",
+        }
+        flow_instance = cre_flow_mock.instance.return_value
+        flow_instance.flow.credentials._id_token = "tok"
+        self.app.secret_key = "test-secret"
+        with patch.dict(
+            os.environ,
+            {
+                "CRE_ENABLE_LOGIN": "1",
+                "LOGIN_ALLOWED_DOMAINS": "*",
+                "NO_LOAD_GRAPH_DB": "1",
+                "INSECURE_REQUESTS": "1",
+            },
+        ):
+            with self.app.test_client() as client:
+                with client.session_transaction() as sess:
+                    sess["state"] = "xyz"
+                client.get("/rest/v1/callback?state=xyz")
+                with client.session_transaction() as sess:
+                    self.assertIn("user_id", sess)
+
+        users = sqla.session.query(db.User).all()
+        self.assertEqual(len(users), 1)
+        self.assertEqual(users[0].google_sub, "sub-xyz")
+        self.assertEqual(users[0].email, "test@example.com")
+        self.assertEqual(users[0].display_name, "Test User")
+
+    @patch("application.web.web_main.id_token")
+    @patch("application.web.web_main.CREFlow")
+    def test_callback_does_not_persist_when_login_flag_off(
+        self, cre_flow_mock, id_token_mock
+    ) -> None:
+        id_token_mock.verify_oauth2_token.return_value = {
+            "sub": "sub-xyz",
+            "name": "Test User",
+            "email": "test@example.com",
+        }
+        flow_instance = cre_flow_mock.instance.return_value
+        flow_instance.flow.credentials._id_token = "tok"
+        self.app.secret_key = "test-secret"
+        env = {
+            "LOGIN_ALLOWED_DOMAINS": "*",
+            "NO_LOAD_GRAPH_DB": "1",
+            "INSECURE_REQUESTS": "1",
+        }
+        with patch.dict(os.environ, env):
+            os.environ.pop("CRE_ENABLE_LOGIN", None)
+            with self.app.test_client() as client:
+                with client.session_transaction() as sess:
+                    sess["state"] = "xyz"
+                client.get("/rest/v1/callback?state=xyz")
+
+        self.assertEqual(sqla.session.query(db.User).count(), 0)
+
     def test_deeplink(self) -> None:
         self.maxDiff = None
         collection = db.Node_collection().with_graph()
