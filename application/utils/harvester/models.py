@@ -21,3 +21,9 @@ class FilteringMetrics(BaseModel):
     total_files: int
     retained_files: int
     filtered_files: int
+
+
+@dataclass(slots=True)
+class DiffBlock:
+    file_path: str
+    added_lines: list[str]
