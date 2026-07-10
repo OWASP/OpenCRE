@@ -7,10 +7,37 @@ logger = logging.getLogger(__name__)
 
 
 class DiffRetriever:
+    MAX_DIFF_SIZE_BYTES = 50 * 1024 * 1024
+    """
+
+    Retrieves unified git diffs between two commits.
+
+    This class is responsible only for retrieving raw diff text.
+
+    Parsing and normalization are handled by downstream components.
+
+    """
+
     def __init__(self, repository_client: GitRepositoryClient) -> None:
         self.repository_client = repository_client
 
     def get_diff(self, base_commit: str, target_commit: str = "HEAD") -> str:
+        """
+        Return the unified git diff between two commits.
+
+        Args:
+            base_commit:
+                Base commit SHA.
+            target_commit:
+                Target commit SHA or branch.
+
+        Raises:
+            subprocess.CalledProcessError:
+                If git diff fails.
+
+            ValueError:
+                If the diff exceeds the configured size limit.
+        """
         logger.info(
             "Retrieving diff between %s and %s",
             base_commit,
@@ -36,4 +63,14 @@ class DiffRetriever:
             logger.error("Failed to retrieve diff: %s", exc.stderr)
             raise
 
-        return result.stdout
+        diff = result.stdout
+
+        diff_size = len(diff.encode("utf-8"))
+
+        if diff_size > self.MAX_DIFF_SIZE_BYTES:
+            raise ValueError(
+                f"Diff size ({diff_size} bytes) exceeds "
+                f"maximum supported size ({self.MAX_DIFF_SIZE_BYTES} bytes)."
+            )
+
+        return diff

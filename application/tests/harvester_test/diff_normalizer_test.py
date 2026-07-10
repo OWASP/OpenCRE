@@ -1,4 +1,5 @@
 import unittest
+from datetime import datetime
 
 from application.utils.harvester.diff_normalizer import (
     DiffNormalizer,
@@ -7,6 +8,13 @@ from application.utils.harvester.diff_normalizer import (
 from application.utils.harvester.models import (
     DiffBlock,
 )
+
+
+DIFF_METADATA = {
+    "repository": "OWASP/ASVS",
+    "commit_sha": "abc123",
+    "committed_at": datetime(2026, 1, 1),
+}
 
 
 class DiffNormalizerTests(unittest.TestCase):
@@ -30,6 +38,7 @@ class DiffNormalizerTests(unittest.TestCase):
                     "   `inline code`   ",
                     "   **Important**   ",
                 ],
+                **DIFF_METADATA,
             )
         ]
 
@@ -62,6 +71,7 @@ class DiffNormalizerTests(unittest.TestCase):
                     "   ",
                     "Hello",
                 ],
+                **DIFF_METADATA,
             )
         ]
 
@@ -81,10 +91,12 @@ class DiffNormalizerTests(unittest.TestCase):
             DiffBlock(
                 file_path="a.md",
                 added_lines=["  One  "],
+                **DIFF_METADATA,
             ),
             DiffBlock(
                 file_path="b.md",
                 added_lines=["  Two  "],
+                **DIFF_METADATA,
             ),
         ]
 
