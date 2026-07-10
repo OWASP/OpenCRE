@@ -16,6 +16,9 @@ class DiffRetrieverTests(unittest.TestCase):
             MagicMock(stdout="def456\n"),
             MagicMock(stdout=b"diff --git a/README.md b/README.md\n"),
         ]
+        mock_run.return_value = MagicMock(
+            stdout="diff --git a/README.md b/README.md\n",
+        )
 
         client = MagicMock()
         client.get_local_path.return_value = "/tmp/repo"
@@ -93,6 +96,21 @@ class DiffRetrieverTests(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             retriever.get_diff("a", "b")
+
+        mock_run.assert_called_once_with(
+            [
+                "git",
+                "-C",
+                "/tmp/repo",
+                "diff",
+                "abc123",
+                "def456",
+            ],
+            capture_output=True,
+            text=True,
+            check=True,
+            timeout=300,
+        )
 
 
 if __name__ == "__main__":
