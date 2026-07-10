@@ -83,3 +83,5 @@ tmp/
 cres/*
 ### Local project management tooling
 project management scripts/
+
+.harvester_cache/
