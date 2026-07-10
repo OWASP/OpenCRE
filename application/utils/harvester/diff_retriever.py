@@ -8,7 +8,6 @@ logger = logging.getLogger(__name__)
 
 class DiffRetriever:
     """
-
     Retrieves unified git diffs between two commits.
 
     This class is responsible only for retrieving raw diff text.
