@@ -5,6 +5,7 @@ from application.utils.harvester.diff_parser import (
     DiffParser,
 )
 
+
 TEST_REPOSITORY = "OWASP/ASVS"
 TEST_COMMIT_SHA = "abc123"
 TEST_COMMITTED_AT = datetime.now(UTC)
