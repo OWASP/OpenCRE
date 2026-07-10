@@ -44,6 +44,20 @@ class DiffRetrieverTests(unittest.TestCase):
             timeout=300,
         )
 
+    @patch("application.utils.harvester.diff_retriever.subprocess.run")
+    def test_large_diff_raises(self, mock_run):
+        mock_run.return_value = MagicMock(
+            stdout="A" * (51 * 1024 * 1024),
+        )
+
+        client = MagicMock()
+        client.get_local_path.return_value = "/tmp/repo"
+
+        retriever = DiffRetriever(client)
+
+        with self.assertRaises(ValueError):
+            retriever.get_diff("a", "b")
+
 
 if __name__ == "__main__":
     unittest.main()

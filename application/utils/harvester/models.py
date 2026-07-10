@@ -29,5 +29,13 @@ class FilteringMetrics(BaseModel):
 
 @dataclass(slots=True)
 class DiffBlock:
+    """
+    Intermediate representation of normalized additions
+    extracted from a repository diff.
+    """
+
     file_path: str
     added_lines: list[str]
+    repository: str
+    commit_sha: str
+    committed_at: datetime | None = None
