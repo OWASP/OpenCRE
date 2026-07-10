@@ -13,7 +13,6 @@ from application.utils.harvester.git_repository_client import GitRepositoryClien
 class DiffPipelineBenchmark(unittest.TestCase):
     """
     Simple benchmark to ensure the complete diff pipeline remains fast.
-
     This is not intended as a strict performance benchmark, only as a
     regression guard against accidental slowdowns.
     """
@@ -63,3 +62,7 @@ class DiffPipelineBenchmark(unittest.TestCase):
 
         print(f"\nPipeline took {elapsed:.3f}s")
         self.assertLess(elapsed, 5)
+
+
+if __name__ == "__main__":
+    unittest.main()
