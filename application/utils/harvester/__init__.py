@@ -21,7 +21,6 @@ from .file_filter import FileFilter
 from .filtering_metrics import FilteringMetricsCollector
 from .diff_retriever import DiffRetriever
 
-
 from .filtering_benchmark import (
     FilteringBenchmark,
     FilteringBenchmarkResult,

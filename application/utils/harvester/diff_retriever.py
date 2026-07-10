@@ -40,6 +40,7 @@ class DiffRetriever:
             base_commit,
             target_commit,
         )
+
         base_commit = self._resolve_commit(base_commit)
         target_commit = self._resolve_commit(target_commit)
 

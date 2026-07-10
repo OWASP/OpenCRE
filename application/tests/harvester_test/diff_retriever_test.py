@@ -18,6 +18,7 @@ class DiffRetrieverTests(unittest.TestCase):
         ]
         client = MagicMock()
         client.get_local_path.return_value = "/tmp/repo"
+
         retriever = DiffRetriever(client)
 
         diff = retriever.get_diff(
@@ -29,6 +30,7 @@ class DiffRetrieverTests(unittest.TestCase):
             diff,
             "diff --git a/README.md b/README.md\n",
         )
+
         mock_run.assert_has_calls(
             [
                 call(
