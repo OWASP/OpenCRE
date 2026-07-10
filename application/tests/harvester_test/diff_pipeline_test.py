@@ -19,7 +19,6 @@ class DiffPipelineBenchmark(unittest.TestCase):
     """
 
     def test_pipeline_benchmark(self):
-
         if os.getenv("OPENCRE_RUN_NETWORK_TESTS") != "1":
             self.skipTest("Network benchmark disabled")
 
@@ -29,9 +28,7 @@ class DiffPipelineBenchmark(unittest.TestCase):
             "master",
         )
         client.sync()
-
         head_commit = client.get_current_commit_sha()
-
         previous_commit = subprocess.run(
             [
                 "git",
@@ -51,23 +48,18 @@ class DiffPipelineBenchmark(unittest.TestCase):
         normalizer = DiffNormalizer()
 
         start = time.perf_counter()
-
         diff = retriever.get_diff(
             previous_commit,
             head_commit,
         )
-
         blocks = parser.parse(
             diff,
             repository="OWASP/ASVS",
             commit_sha=head_commit,
             committed_at=datetime.now(UTC),
         )
-
         normalizer.normalize(blocks)
-
         elapsed = time.perf_counter() - start
 
         print(f"\nPipeline took {elapsed:.3f}s")
-
         self.assertLess(elapsed, 5)

@@ -11,9 +11,7 @@ class DiffRetriever:
     Retrieves unified git diffs between two commits.
 
     This class is responsible only for retrieving raw diff text.
-
     Parsing and normalization are handled by downstream components.
-
     """
 
     MAX_DIFF_SIZE_BYTES = 50 * 1024 * 1024
@@ -34,7 +32,6 @@ class DiffRetriever:
         Raises:
             subprocess.CalledProcessError:
                 If git diff fails.
-
             ValueError:
                 If the diff exceeds the configured size limit.
         """
@@ -43,7 +40,6 @@ class DiffRetriever:
             base_commit,
             target_commit,
         )
-
         base_commit = self._resolve_commit(base_commit)
         target_commit = self._resolve_commit(target_commit)
 
@@ -69,9 +65,7 @@ class DiffRetriever:
             raise
 
         diff_bytes = result.stdout
-
         diff_size = len(diff_bytes)
-
         if diff_size > self.MAX_DIFF_SIZE_BYTES:
             raise ValueError(
                 f"Diff size ({diff_size} bytes) exceeds "
