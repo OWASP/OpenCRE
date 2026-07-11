@@ -27,8 +27,8 @@
       "id": "document/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/10-Test_for_Subdomain_Takeover.md",
       "path": "document/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/10-Test_for_Subdomain_Takeover.md"
     },
-    "label": "KNOWLEDGE",
-    "label_rationale": "",
+    "label": "NOISE",
+    "label_rationale": "Heading/title-only chunk with no methodology body [heading-only tiny-chunk -> NOISE, consistent rule 2026-07-03; was KNOWLEDGE]",
     "labeled_by": "manshusainishab",
     "labeled_at": "2026-05-29"
   },
@@ -96,8 +96,8 @@
       "id": "document/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/10-Test_for_Subdomain_Takeover.md",
       "path": "document/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/10-Test_for_Subdomain_Takeover.md"
     },
-    "label": "UNCERTAIN",
-    "label_rationale": "borderline: structured as an example but is the primary methodology unit for testing GitHub-specific subdomain takeover. Prompt iteration must clarify whether canonical WSTG worked examples count as KNOWLEDGE or as \"additional example\" NOISE.",
+    "label": "KNOWLEDGE",
+    "label_rationale": "Worked attack-scenario walkthrough (GitHub subdomain takeover) -- security content [recall-first correction 2026-07-03; was UNCERTAIN]",
     "labeled_by": "manshusainishab",
     "labeled_at": "2026-05-29"
   },
@@ -131,8 +131,8 @@
       "id": "document/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/10-Test_for_Subdomain_Takeover.md",
       "path": "document/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/10-Test_for_Subdomain_Takeover.md"
     },
-    "label": "UNCERTAIN",
-    "label_rationale": "same case as chunk 3 — scenario walkthrough under Summary. Linked for prompt-iteration consistency.",
+    "label": "KNOWLEDGE",
+    "label_rationale": "Worked attack-scenario walkthrough (expired-domain subdomain takeover) [recall-first correction 2026-07-03; was UNCERTAIN]",
     "labeled_by": "manshusainishab",
     "labeled_at": "2026-05-29"
   },
@@ -548,8 +548,8 @@
       "id": "document/4-Web_Application_Security_Testing/04-Authentication_Testing/11-Testing_Multi-Factor_Authentication.md",
       "path": "document/4-Web_Application_Security_Testing/04-Authentication_Testing/11-Testing_Multi-Factor_Authentication.md"
     },
-    "label": "KNOWLEDGE",
-    "label_rationale": "",
+    "label": "NOISE",
+    "label_rationale": "Heading/title-only chunk with no methodology body [heading-only tiny-chunk -> NOISE, consistent rule 2026-07-03; was KNOWLEDGE]",
     "labeled_by": "manshusainishab",
     "labeled_at": "2026-05-29"
   },
@@ -1748,8 +1748,8 @@
       "id": "cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md",
       "path": "cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md"
     },
-    "label": "KNOWLEDGE",
-    "label_rationale": "",
+    "label": "NOISE",
+    "label_rationale": "Heading/title-only chunk with no methodology body [heading-only tiny-chunk -> NOISE, consistent rule 2026-07-03; was KNOWLEDGE]",
     "labeled_by": "manshusainishab",
     "labeled_at": "2026-05-29"
   },
@@ -1851,8 +1851,8 @@
       "id": "cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md",
       "path": "cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md"
     },
-    "label": "KNOWLEDGE",
-    "label_rationale": "",
+    "label": "NOISE",
+    "label_rationale": "Heading/title-only chunk with no methodology body [heading-only tiny-chunk -> NOISE, consistent rule 2026-07-03; was KNOWLEDGE]",
     "labeled_by": "manshusainishab",
     "labeled_at": "2026-05-29"
   },
@@ -1887,8 +1887,8 @@
       "id": "cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md",
       "path": "cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md"
     },
-    "label": "UNCERTAIN",
-    "label_rationale": "DOM sinks (innerHTML/outerHTML) framed as examples but functionally an attack-vector catalog. Same pattern as chunks 3-4; needs prompt clarification on canonical-primitive vs illustrative-example.",
+    "label": "KNOWLEDGE",
+    "label_rationale": "Catalog of dangerous DOM sinks (innerHTML/outerHTML) = XSS attack vectors [recall-first correction 2026-07-03; was UNCERTAIN]",
     "labeled_by": "manshusainishab",
     "labeled_at": "2026-05-29"
   },
@@ -1923,8 +1923,8 @@
       "id": "cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md",
       "path": "cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md"
     },
-    "label": "UNCERTAIN",
-    "label_rationale": "same case as chunk 55 — DOM sinks framed as examples. Linked for prompt-iteration consistency.",
+    "label": "KNOWLEDGE",
+    "label_rationale": "Catalog of dangerous DOM methods (document.write/writeln) = XSS attack vectors [recall-first correction 2026-07-03; was UNCERTAIN]",
     "labeled_by": "manshusainishab",
     "labeled_at": "2026-05-29"
   },
@@ -3068,8 +3068,8 @@
       "id": "Website/content/en/user-day/owasp-samm-to-the-rescue.md",
       "path": "Website/content/en/user-day/owasp-samm-to-the-rescue.md"
     },
-    "label": "UNCERTAIN",
-    "label_rationale": "talk abstract with substantive attack content (AWS CodeBuild StartBuild pipeline poisoning) wrapped in event-page framing. Prompt iteration must clarify whether talk teasers with named attack techniques count as KNOWLEDGE.",
+    "label": "KNOWLEDGE",
+    "label_rationale": "Talk abstract naming a concrete technique (CodeBuild pipeline poisoning) [recall-first correction 2026-07-03; was UNCERTAIN]",
     "labeled_by": "manshusainishab",
     "labeled_at": "2026-05-29"
   },
