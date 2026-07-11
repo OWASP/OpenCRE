@@ -2,15 +2,11 @@ from application.database import db
 from application.defs import cre_defs
 from datetime import datetime
 from multiprocessing import Pool
-from nltk.corpus import stopwords
-from nltk.tokenize import word_tokenize
 from io import BytesIO
 from urllib.parse import urlparse
 
 from application.prompt_client import embed_alignment
 
-from playwright.sync_api import Error as PlaywrightError
-from playwright.sync_api import TimeoutError as PlaywrightTimeoutError, sync_playwright
 from scipy import sparse
 from sklearn.metrics.pairwise import cosine_similarity
 from typing import Dict, List, Any, Tuple, Optional
@@ -22,7 +18,6 @@ try:
     from pypdf import PdfReader
 except ImportError:
     PdfReader = None  # type: ignore[misc, assignment]
-import nltk
 import numpy as np
 import os
 import json
@@ -247,6 +242,11 @@ class in_memory_embeddings:
                 )
                 continue
 
+            # Playwright is for scrape/import embedding generation only — not chat.
+            # Import after the PDF branch so PDF-only extraction works without Playwright.
+            from playwright.sync_api import Error as PlaywrightError
+            from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
+
             page = None
             try:
                 page = self.__context.new_page()
@@ -301,6 +301,9 @@ class in_memory_embeddings:
         for attempts in range(1, 10):
             if _is_likely_pdf_url(url):
                 return None
+            from playwright.sync_api import Error as PlaywrightError
+            from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
+
             page = None
             try:
                 page = self.__context.new_page()
@@ -343,6 +346,8 @@ class in_memory_embeddings:
             ] = {}
 
     def clean_content(self, content):
+        from nltk.tokenize import word_tokenize  # lazy: scrape/import path only
+
         content = re.sub("\s+", " ", content.strip())
 
         # split into words
@@ -363,6 +368,9 @@ class in_memory_embeddings:
 
     def setup_playwright(self):
         # in case we want to run without connectivity to ai_client or playwright
+        import nltk
+        from playwright.sync_api import sync_playwright
+
         self.__playwright = sync_playwright().start()
         nltk.download("punkt")
         nltk.download("punkt_tab")

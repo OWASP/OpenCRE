@@ -39,7 +39,7 @@ load_dotenv()
 try:
     from github import Auth, Github, GithubException
 except ImportError:
-    sys.exit("PyGithub not installed. Run: pip install -r requirements.txt")
+    sys.exit("PyGithub not installed. Run: pip install -r requirements-dev.txt")
 
 
 # --- Configuration --------------------------------------------------------

@@ -28,7 +28,7 @@ Typical flow:
 Foreign keys on ``embeddings`` reference ``cre`` and ``node``; every ``cre_id`` /
 ``node_id`` in the source rows must already exist on the target or inserts will fail.
 
-Requires: psycopg2 (see requirements.txt). SQLite uses the stdlib ``sqlite3`` module.
+Requires: psycopg2 (see requirements.txt / requirements-dev.txt). SQLite uses the stdlib ``sqlite3`` module.
 """
 
 from __future__ import annotations
