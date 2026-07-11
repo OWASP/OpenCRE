@@ -27,9 +27,15 @@ vectors, testing methodology, mitigations, code samples, advisories, security \
 configurations, EVEN clarifications, typo fixes, expanded examples, \
 restatements of well-known material, added reference links, or restructured \
 security sections. When in doubt, choose KNOWLEDGE.
-- NOISE: ONLY chunks with no security signal at all -- sponsorship pages, \
-meeting notes, CI/build configuration, release tags, website layout, \
-contributor onboarding, project governance.
+- NOISE: ONLY chunks with no security-knowledge content at all -- sponsorship \
+pages, meeting notes, CI/build configuration, release tags, website layout, \
+contributor onboarding, project governance. This includes content *about* a \
+security project rather than security knowledge itself: version/release \
+announcements, licenses, translation notes, citation/reference-format \
+instructions, tables of contents, project titles/banners, and event/talk \
+teasers -- even when they name a security standard or project (e.g. "ASVS", \
+"SAMM"). Naming a security project is not the same as containing security \
+knowledge.
 - UNCERTAIN: only when genuinely 50/50 even after applying the bias above. \
 This label is rare.
 
@@ -132,6 +138,33 @@ FEW_SHOT_EXAMPLES = [
         "label": "NOISE",
         "confidence": 0.95,
         "reasoning": "CI release-tagging workflow; build infrastructure, not security knowledge.",
+    },
+    {
+        "heading_path": [
+            "OWASP Application Security Verification Standard",
+            "Latest Stable Version",
+        ],
+        "text": (
+            "The latest stable version is 5.0.0 (dated May 2025), available as a "
+            "PDF and in the GitHub repository. See the release notes for changes "
+            "since 4.0."
+        ),
+        "label": "NOISE",
+        "confidence": 0.9,
+        "reasoning": "Version/release announcement about a security standard -- content about the project, not security knowledge.",
+    },
+    {
+        "heading_path": [
+            "OWASP Application Security Verification Standard",
+            "License",
+        ],
+        "text": (
+            "The entire project content is under the Creative Commons "
+            "Attribution-Share Alike v4.0 license."
+        ),
+        "label": "NOISE",
+        "confidence": 0.95,
+        "reasoning": "Licensing information about a security project -- organizational, no security methodology.",
     },
     {
         "heading_path": ["About"],
