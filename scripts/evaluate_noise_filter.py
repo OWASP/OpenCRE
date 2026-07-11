@@ -149,12 +149,17 @@ def _print_report(
     preds: list[Prediction], threshold: float, n_calls: int, use_regex: bool
 ) -> None:
     total = len(preds)
-    correct = sum(1 for p in preds if p.gold == p.predicted)
-    cm = _confusion(preds)
 
     print("\n" + "=" * 64)
     print("MODULE B — EVALUATION REPORT")
     print("=" * 64)
+    if total == 0:
+        print("no records to score (empty dataset or all labels invalid).")
+        print("=" * 64 + "\n")
+        return
+
+    correct = sum(1 for p in preds if p.gold == p.predicted)
+    cm = _confusion(preds)
     print(f"records:        {total}")
     print(f"threshold:      {threshold}  (KNOWLEDGE below this -> UNCERTAIN)")
     print(f"regex stage:    {'on' if use_regex else 'off'}")
