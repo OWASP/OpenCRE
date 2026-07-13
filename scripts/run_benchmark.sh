@@ -39,12 +39,13 @@ setup_db() {
     echo "Setting up DB in container $container on port $port"
     docker stop "$container" 2>/dev/null || true
     docker rm -v "$container" 2>/dev/null || true
-    docker run -d --name "$container" -e POSTGRES_PASSWORD=password -e POSTGRES_USER=cre -e POSTGRES_DB=cre -p "$port:5432" postgres
+    docker run -d --name "$container" -e POSTGRES_PASSWORD=password -e POSTGRES_USER=cre -e POSTGRES_DB=cre -p "$port:5432" "${POSTGRES_IMAGE:-pgvector/pgvector:pg16}"
     
     echo "Waiting for $container to be ready..."
     until docker exec "$container" pg_isready -U cre -d cre; do
       sleep 1
     done
+    docker exec "$container" psql -U cre -d cre -c "CREATE EXTENSION IF NOT EXISTS vector;" >/dev/null
 
     echo "Running migrations for $container..."
     [ -d "./venv" ] && . ./venv/bin/activate
