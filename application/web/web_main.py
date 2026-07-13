@@ -1179,7 +1179,9 @@ def callback():
                 )
                 session["user_id"] = user.id
             except Exception as e:
-                logger.error(f"failed to persist user on login: {e}")
+                # Avoid logging the raw exception: it can carry SQL parameters
+                # such as the user's email or OIDC subject. Log only the class.
+                logger.error("failed to persist user on login: %s", type(e).__name__)
     return redirect("/chatbot")
 
 

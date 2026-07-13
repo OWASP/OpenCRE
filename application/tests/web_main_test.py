@@ -1217,6 +1217,38 @@ class TestMain(unittest.TestCase):
 
         self.assertEqual(sqla.session.query(db.User).count(), 0)
 
+    @patch("application.web.web_main.id_token")
+    @patch("application.web.web_main.CREFlow")
+    def test_callback_skips_persistence_when_sub_missing(
+        self, cre_flow_mock, id_token_mock
+    ) -> None:
+        # Login enabled, but the OIDC token has no 'sub' claim: must not create
+        # a user (google_sub is NOT NULL) and must not set session['user_id'].
+        id_token_mock.verify_oauth2_token.return_value = {
+            "name": "Test User",
+            "email": "test@example.com",
+        }
+        flow_instance = cre_flow_mock.instance.return_value
+        flow_instance.flow.credentials._id_token = "tok"
+        self.app.secret_key = "test-secret"
+        with patch.dict(
+            os.environ,
+            {
+                "CRE_ENABLE_LOGIN": "1",
+                "LOGIN_ALLOWED_DOMAINS": "*",
+                "NO_LOAD_GRAPH_DB": "1",
+                "INSECURE_REQUESTS": "1",
+            },
+        ):
+            with self.app.test_client() as client:
+                with client.session_transaction() as sess:
+                    sess["state"] = "xyz"
+                client.get("/rest/v1/callback?state=xyz")
+                with client.session_transaction() as sess:
+                    self.assertNotIn("user_id", sess)
+
+        self.assertEqual(sqla.session.query(db.User).count(), 0)
+
     def test_deeplink(self) -> None:
         self.maxDiff = None
         collection = db.Node_collection().with_graph()
