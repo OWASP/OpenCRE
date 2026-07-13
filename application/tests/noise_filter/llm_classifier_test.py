@@ -83,7 +83,7 @@ class PromptContentTests(unittest.TestCase):
     def test_few_shot_label_distribution(self) -> None:
         labels = [e["label"] for e in FEW_SHOT_EXAMPLES]
         self.assertEqual(labels.count("KNOWLEDGE"), 5)
-        self.assertEqual(labels.count("NOISE"), 3)
+        self.assertEqual(labels.count("NOISE"), 5)
         self.assertEqual(labels.count("UNCERTAIN"), 2)
 
 
