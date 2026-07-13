@@ -16,6 +16,7 @@ import os
 from typing import Any, Iterable, Optional, Sequence, Set, Tuple
 
 from sqlalchemy import text
+from sqlalchemy.engine import Engine
 
 HEROKU_REEMBED_WARNING = (
     "Do not re-embed the full corpus on Heroku/production dynos — likely "
@@ -26,6 +27,20 @@ HEROKU_REEMBED_WARNING = (
 
 class MultiDimEmbeddingError(RuntimeError):
     """Raised when more than one embedding dimension is present in the DB."""
+
+
+def _execute(connection: Any, statement: Any, params: Optional[dict] = None):
+    """Run ``statement`` on a Connection/Session, or open one from an Engine.
+
+    SQLAlchemy 2 removed ``Engine.execute``; Alembic upgrade passes a
+    Connection, while runtime code often has ``session.get_bind()`` → Engine.
+    """
+    if isinstance(connection, Engine):
+        with connection.connect() as conn:
+            result = conn.execute(statement, params or {})
+            conn.commit()
+            return result
+    return connection.execute(statement, params or {})
 
 
 def to_pgvector_literal(vector: Sequence[float]) -> str:
@@ -65,8 +80,8 @@ def require_single_embedding_dim(connection: Any) -> int:
     Prefers ``embedding_dim`` metadata; falls back to CSV length. If the table
     is empty, uses ``CRE_EMBED_EXPECTED_DIM`` when set.
     """
-    rows = connection.execute(
-        text("SELECT embedding_dim, embeddings FROM embeddings")
+    rows = _execute(
+        connection, text("SELECT embedding_dim, embeddings FROM embeddings")
     ).fetchall()
     dims = collect_distinct_dims((row[0], row[1]) for row in rows)
     if len(dims) > 1:
@@ -90,19 +105,20 @@ def require_single_embedding_dim(connection: Any) -> int:
 
 def embedding_vec_column_exists(connection: Any) -> bool:
     """True when ``embeddings.embedding_vec`` exists (Postgres information_schema)."""
-    if getattr(getattr(connection, "dialect", None), "name", None) != "postgresql":
-        # SQLite / others: probe via PRAGMA or SQLAlchemy inspector if needed.
-        dialect_name = getattr(getattr(connection, "dialect", None), "name", "")
-        if dialect_name == "sqlite":
-            rows = connection.execute(text("PRAGMA table_info(embeddings)")).fetchall()
-            return any(r[1] == "embedding_vec" for r in rows)
+    dialect_name = getattr(getattr(connection, "dialect", None), "name", "") or ""
+
+    if dialect_name == "sqlite":
+        rows = _execute(connection, text("PRAGMA table_info(embeddings)")).fetchall()
+        return any(r[1] == "embedding_vec" for r in rows)
+    if dialect_name != "postgresql":
         return False
-    row = connection.execute(
+    row = _execute(
+        connection,
         text(
             "SELECT 1 FROM information_schema.columns "
             "WHERE table_name = 'embeddings' AND column_name = 'embedding_vec' "
             "LIMIT 1"
-        )
+        ),
     ).fetchone()
     return row is not None
 
@@ -112,7 +128,8 @@ def backfill_embedding_vec(connection: Any, dim: int) -> int:
 
     Returns the number of rows reported updated (driver-dependent).
     """
-    result = connection.execute(
+    result = _execute(
+        connection,
         text(
             """
             UPDATE embeddings

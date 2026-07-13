@@ -2581,14 +2581,18 @@ class Node_collection:
 
         sql = most_similar_id_sql(id_column)
         bind = self.session.get_bind()
+        params = {
+            "q": to_pgvector_literal(query_embedding),
+            "doc_type": doc_type,
+        }
         try:
-            row = bind.execute(
-                sql_text(sql),
-                {
-                    "q": to_pgvector_literal(query_embedding),
-                    "doc_type": doc_type,
-                },
-            ).fetchone()
+            # Prefer the Session so we stay inside the app transaction; fall
+            # back to a Connection from the Engine for SQLAlchemy 2.
+            if hasattr(self.session, "execute"):
+                row = self.session.execute(sql_text(sql), params).fetchone()
+            else:
+                with bind.connect() as conn:
+                    row = conn.execute(sql_text(sql), params).fetchone()
             if not row:
                 return None, None
             score = float(row.score)
