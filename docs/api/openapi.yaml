@@ -494,6 +494,43 @@ paths:
           description: Not found
         '400':
           description: Missing text parameter
+  /rest/v1/user/resources:
+    get:
+      tags:
+      - User
+      summary: Get the current user's selected standards
+      description: Requires login and the MyOpenCRE feature; returns an empty selection
+        when either is disabled.
+      responses:
+        '200':
+          description: The user's selected standards
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  selected:
+                    type: array
+                    items:
+                      type: string
+    put:
+      tags:
+      - User
+      summary: Replace the current user's selected standards
+      responses:
+        '200':
+          description: The stored selection
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  selected:
+                    type: array
+                    items:
+                      type: string
+        '400':
+          description: Invalid selection body
   /rest/v1/{ntype}/{name}:
     get:
       tags:

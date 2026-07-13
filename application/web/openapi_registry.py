@@ -301,6 +301,62 @@ OPENAPI_PATHS: List[PathSpec] = [
         response_schema=schemas.ConfigResponseSchema,
         not_found=False,
     ),
+    PathSpec(
+        "/rest/v1/user/resources",
+        "get_user_resources",
+        tags=["User"],
+        summary="Get the current user's selected standards",
+        description=(
+            "Requires login and the MyOpenCRE feature; returns an empty "
+            "selection when either is disabled."
+        ),
+        not_found=False,
+        response_override={
+            "200": {
+                "description": "The user's selected standards",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "selected": {
+                                    "type": "array",
+                                    "items": {"type": "string"},
+                                }
+                            },
+                        }
+                    }
+                },
+            }
+        },
+    ),
+    PathSpec(
+        "/rest/v1/user/resources",
+        "put_user_resources",
+        method="put",
+        tags=["User"],
+        summary="Replace the current user's selected standards",
+        not_found=False,
+        extra_responses={"400": {"description": "Invalid selection body"}},
+        response_override={
+            "200": {
+                "description": "The stored selection",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "selected": {
+                                    "type": "array",
+                                    "items": {"type": "string"},
+                                }
+                            },
+                        }
+                    }
+                },
+            }
+        },
+    ),
 ]
 
 
