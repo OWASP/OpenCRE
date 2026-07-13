@@ -46,5 +46,32 @@ class MyOpenCreParserIdentityTest(unittest.TestCase):
                 myopencre_parser._reconcile_cre_identities(cres)
 
 
+class MyOpenCreCsvValidationTest(unittest.TestCase):
+    def test_accepts_well_formed_cre_cells(self) -> None:
+        myopencre_parser.validate_cre_csv_rows(
+            [{"CRE 0": "123-456|Access Control", "standard|name": "ASVS"}]
+        )
+
+    def test_rejects_short_cre_id(self) -> None:
+        with self.assertRaises(ValueError) as cm:
+            myopencre_parser.validate_cre_csv_rows(
+                [{"CRE 0": "12-456|Bad Id", "standard|name": "ASVS"}]
+            )
+        self.assertIn("Expected XXX-XXX|Name", str(cm.exception))
+        self.assertIn("row 2", str(cm.exception))
+
+    def test_rejects_missing_separator(self) -> None:
+        with self.assertRaises(ValueError) as cm:
+            myopencre_parser.validate_cre_csv_rows(
+                [{"CRE 0": "123-456 Access Control", "standard|name": "ASVS"}]
+            )
+        self.assertIn("Expected XXX-XXX|Name", str(cm.exception))
+
+    def test_skips_empty_cre_cells(self) -> None:
+        myopencre_parser.validate_cre_csv_rows(
+            [{"CRE 0": "", "CRE 1": "n/a", "standard|name": "ASVS"}]
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
