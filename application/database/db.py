@@ -254,6 +254,49 @@ class StagedChangeSet(BaseModel):  # type: ignore
     created_at = sqla.Column(sqla.DateTime, nullable=False)
 
 
+class User(BaseModel):  # type: ignore
+    """Persisted account identity for OIDC login (issue #586, RFC #876 TODO 1).
+
+    ``google_sub`` is the immutable OIDC ``sub`` claim (the same value stored in
+    ``session['google_id']``); email can change, so identity is anchored on the sub.
+    """
+
+    __tablename__ = "users"
+    id = sqla.Column(sqla.String, primary_key=True, default=generate_uuid)
+    google_sub = sqla.Column(sqla.String, nullable=False)
+    email = sqla.Column(sqla.String, nullable=False)
+    display_name = sqla.Column(sqla.String, nullable=True)
+    created_at = sqla.Column(sqla.DateTime, nullable=False)
+    last_seen_at = sqla.Column(sqla.DateTime, nullable=False)
+
+    resource_selection = sqla.relationship(
+        "UserResourceSelection",
+        cascade="all, delete-orphan",
+    )
+
+    __table_args__ = (sqla.UniqueConstraint(google_sub, name="uq_users_google_sub"),)
+
+
+class UserResourceSelection(BaseModel):  # type: ignore
+    """A single standard name a user has chosen to keep in view (issue #586)."""
+
+    __tablename__ = "user_resource_selection"
+    id = sqla.Column(sqla.String, primary_key=True, default=generate_uuid)
+    user_id = sqla.Column(
+        sqla.String,
+        sqla.ForeignKey("users.id", onupdate="CASCADE", ondelete="CASCADE"),
+        nullable=False,
+    )
+    standard_name = sqla.Column(sqla.String, nullable=False)
+    created_at = sqla.Column(sqla.DateTime, nullable=False)
+
+    __table_args__ = (
+        sqla.UniqueConstraint(
+            user_id, standard_name, name="uq_user_resource_selection"
+        ),
+    )
+
+
 def create_import_run(source: str, version: Optional[str] = None) -> ImportRun:
     """Create and persist an import run record. Returns the new ImportRun."""
     from datetime import datetime, timezone
@@ -991,6 +1034,95 @@ class Node_collection:
         logger.info("Successfully loaded CRE graph in memory")
 
         return self
+
+    def upsert_user(
+        self, google_sub: str, email: str, display_name: Optional[str] = None
+    ) -> User:
+        """Create or refresh the User row for an OIDC ``sub`` (issue #586).
+
+        Idempotent on ``google_sub``: a repeat login updates the existing row's
+        profile fields and ``last_seen_at`` instead of inserting a duplicate.
+        """
+        from datetime import datetime, timezone
+
+        now = datetime.now(timezone.utc)
+
+        def _apply_profile(u: User) -> None:
+            if email:
+                u.email = email
+            if display_name is not None:
+                u.display_name = display_name
+            u.last_seen_at = now
+
+        user = self.session.query(User).filter(User.google_sub == google_sub).first()
+        if user is not None:
+            _apply_profile(user)
+            self.session.commit()
+            return user
+
+        user = User(
+            id=generate_uuid(),
+            google_sub=google_sub,
+            email=email,
+            display_name=display_name,
+            created_at=now,
+            last_seen_at=now,
+        )
+        self.session.add(user)
+        try:
+            self.session.commit()
+        except IntegrityError:
+            # A concurrent login inserted the same google_sub first; recover by
+            # rolling back and updating the now-existing row (mirrors add_node).
+            self.session.rollback()
+            existing = (
+                self.session.query(User).filter(User.google_sub == google_sub).first()
+            )
+            if existing is None:
+                raise
+            _apply_profile(existing)
+            self.session.commit()
+            return existing
+        return user
+
+    def get_user_by_sub(self, google_sub: str) -> Optional[User]:
+        return self.session.query(User).filter(User.google_sub == google_sub).first()
+
+    def get_user_resource_selection(self, user_id: str) -> List[str]:
+        """Return the standard names a user has selected, ordered by name."""
+        rows = (
+            self.session.query(UserResourceSelection)
+            .filter(UserResourceSelection.user_id == user_id)
+            .order_by(UserResourceSelection.standard_name)
+            .all()
+        )
+        return [row.standard_name for row in rows]
+
+    def set_user_resource_selection(
+        self, user_id: str, standard_names: List[str]
+    ) -> List[str]:
+        """Replace a user's resource selection with ``standard_names`` (deduped)."""
+        from datetime import datetime, timezone
+
+        now = datetime.now(timezone.utc)
+        deduped: List[str] = []
+        for name in standard_names:
+            if name not in deduped:
+                deduped.append(name)
+        self.session.query(UserResourceSelection).filter(
+            UserResourceSelection.user_id == user_id
+        ).delete()
+        for name in deduped:
+            self.session.add(
+                UserResourceSelection(
+                    id=generate_uuid(),
+                    user_id=user_id,
+                    standard_name=name,
+                    created_at=now,
+                )
+            )
+        self.session.commit()
+        return self.get_user_resource_selection(user_id)
 
     def __get_external_links(self) -> List[Tuple[CRE, Node, str]]:
         external_links: List[Tuple[CRE, Node, str]] = []

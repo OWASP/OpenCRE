@@ -1161,6 +1161,27 @@ def callback():
             401,
             description=f"You need an account with one of the following providers to access this functionality {allowed_domains}",
         )
+
+    # Persist the account when login is enabled; the session keeps working
+    # unchanged if this no-ops (flag off) or fails.
+    if is_login_enabled():
+        google_sub = id_info.get("sub")
+        if not google_sub:
+            logger.error(
+                "OIDC callback returned no 'sub' claim; skipping user persistence"
+            )
+        else:
+            try:
+                user = db.Node_collection().upsert_user(
+                    google_sub=google_sub,
+                    email=id_info.get("email") or "",
+                    display_name=id_info.get("name"),
+                )
+                session["user_id"] = user.id
+            except Exception as e:
+                # Avoid logging the raw exception: it can carry SQL parameters
+                # such as the user's email or OIDC subject. Log only the class.
+                logger.error("failed to persist user on login: %s", type(e).__name__)
     return redirect("/chatbot")
 
 
