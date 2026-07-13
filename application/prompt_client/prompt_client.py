@@ -1060,6 +1060,15 @@ class PromptHandler:
         Returns:
             str: _description_
         """
+        if self.database.can_use_pgvector_similarity():
+            match_id, _score = self.database.find_most_similar_embedding_id(
+                item_embedding,
+                doc_type=cre_defs.Credoctypes.CRE.value,
+                id_column="cre_id",
+                similarity_threshold=SIMILARITY_THRESHOLD,
+            )
+            return match_id
+
         if not hasattr(self, "existing_cre_embeddings"):
             (
                 self.existing_cre_embeddings,
@@ -1102,6 +1111,15 @@ class PromptHandler:
         Returns:
             str: the database id of the closest database standard
         """
+        if self.database.can_use_pgvector_similarity():
+            match_id, _score = self.database.find_most_similar_embedding_id(
+                standard_text_embedding,
+                doc_type=cre_defs.Credoctypes.Standard.value,
+                id_column="node_id",
+                similarity_threshold=SIMILARITY_THRESHOLD,
+            )
+            return match_id
+
         if not hasattr(self, "existing_node_embeddings"):
             (
                 self.existing_node_embeddings,
@@ -1145,6 +1163,14 @@ class PromptHandler:
         Returns:
             str: the ID of the CRE with the closest cosine_similarity
         """
+        if self.database.can_use_pgvector_similarity():
+            return self.database.find_most_similar_embedding_id(
+                item_embedding,
+                doc_type=cre_defs.Credoctypes.CRE.value,
+                id_column="cre_id",
+                similarity_threshold=similarity_threshold,
+            )
+
         embedding_array = sparse.csr_matrix(
             np.array(item_embedding).reshape(1, -1)
         )  # convert embedding into a 1-dimentional numpy array
@@ -1197,6 +1223,14 @@ class PromptHandler:
         Returns:
             str: the db id of the most similar object
         """
+        if self.database.can_use_pgvector_similarity():
+            return self.database.find_most_similar_embedding_id(
+                question_embedding,
+                doc_type=cre_defs.Credoctypes.Standard.value,
+                id_column="node_id",
+                similarity_threshold=similarity_threshold,
+            )
+
         embedding_array = sparse.csr_matrix(
             np.array(question_embedding).reshape(1, -1)
         )  # convert embedding into a 1-dimentional numpy array

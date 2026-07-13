@@ -1115,14 +1115,14 @@ def run_librarian(
 
     backend = RetrieverBackend(cfg.retriever_backend)
     if backend is RetrieverBackend.pgvector:
-        dialect = database.session.connection().dialect.name
-        if dialect != "postgresql":
+        # Readiness must include the embedding_vec column (not dialect alone):
+        # Postgres pre-migration would otherwise fail on every retrieve().
+        if not database.can_use_pgvector_similarity():
             logger.warning(
-                "CRE_LIBRARIAN_RETRIEVER_BACKEND=pgvector selected on a %r "
-                "database, but the pgvector backend needs Postgres with the "
-                "embedding_vec column (lands W8) and will fail at retrieve() "
-                "time here. Set the backend to in_memory until then.",
-                dialect,
+                "CRE_LIBRARIAN_RETRIEVER_BACKEND=pgvector selected, but "
+                "Postgres is not ready for pgvector similarity (need Alembic "
+                "c7d8e9f0a1b2 / #977 embedding_vec). Set the backend to "
+                "in_memory until then."
             )
     # The CRE ids present in the hub are exactly the known ids the explicit
     # resolver may auto-link to (W2 seeded this from the golden set; here it is

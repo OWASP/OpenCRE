@@ -26,9 +26,8 @@ Two interchangeable backends behind one ``retrieve()`` seam, selected by
     SQLite dev use. Loads the whole hub into RAM.
   - ``pgvector`` — pushes the cosine into Postgres via the ``<=>`` operator
     over an ``embedding_vec vector(dim)`` column; never loads the hub into
-    RAM. Requires the ``vector`` extension + that column (the Alembic
-    migration lands W8, during live integration, where it is validated
-    against real Postgres). Unavailable on SQLite.
+    RAM. Requires the ``vector`` extension + that column (Alembic
+    ``c7d8e9f0a1b2`` / #977). Unavailable on SQLite.
 
 The RFC is silent on retrieval tech — it mandates only the
 ``candidates[]``/``reranked[]`` audit trail — so the backend choice is ours;
@@ -47,6 +46,7 @@ from typing import Any, Callable, List, Mapping, Optional, Sequence, Tuple
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 
+from application.database.pgvector_utils import to_pgvector_literal
 from application.utils.librarian.schemas import CreCandidate, RetrievalAudit
 
 # A function that turns one piece of text into a single dense vector.
@@ -63,7 +63,7 @@ class RetrieverBackend(str, Enum):
     # sklearn cosine over an in-RAM matrix — SQLite dev, CI, and the harness.
     in_memory = "in_memory"
     # Postgres-side cosine via pgvector's ``<=>`` operator (needs the vector
-    # extension + an embedding_vec column; migration lands W8).
+    # extension + an embedding_vec column; Alembic c7d8e9f0a1b2 / #977).
     pgvector = "pgvector"
 
 
@@ -177,11 +177,6 @@ class CandidateRetriever:
         )
 
 
-def to_pgvector_literal(vector: Sequence[float]) -> str:
-    """Render a vector in pgvector's text input format: ``[1.0,2.0,3.0]``."""
-    return "[" + ",".join(repr(float(x)) for x in vector) + "]"
-
-
 class PgVectorRetriever:
     """Postgres-side top-K cosine via pgvector's ``<=>`` operator.
 
@@ -192,8 +187,8 @@ class PgVectorRetriever:
     in-memory backend's cosine *similarity*.
 
     Needs the ``vector`` extension and an ``embedding_vec vector(dim)`` column
-    (migration lands W8). Unavailable on SQLite — the factory routes SQLite to
-    ``in_memory``.
+    (Alembic ``c7d8e9f0a1b2`` / #977). Unavailable on SQLite — the factory
+    routes SQLite to ``in_memory``.
     """
 
     # Parameterized; :q is bound as a pgvector text literal and cast in-SQL.

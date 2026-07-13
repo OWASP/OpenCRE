@@ -191,6 +191,9 @@ class Embeddings(BaseModel):  # type: ignore
     embeddings_content = sqla.Column(sqla.String, nullable=True, default=None)
     embedding_model_id = sqla.Column(sqla.String, nullable=True, default=None)
     embedding_dim = sqla.Column(sqla.Integer, nullable=True, default=None)
+    # Postgres: real ``vector(N)`` via Alembic (c7d8e9f0a1b2). SQLite tests map
+    # this as Text storing a pgvector literal for dual-write coverage.
+    embedding_vec = sqla.Column(sqla.Text, nullable=True, default=None)
 
 
 class GapAnalysisResults(BaseModel):
@@ -2486,6 +2489,12 @@ class Node_collection:
                 )
         existing = self.get_embedding(db_object.id)
         embeddings_str = ",".join([str(e) for e in embeddings])
+        # Dual-write CSV + pgvector literal. On Postgres after migration the
+        # column is ``vector(N)``; on SQLite tests it is Text. Never LLM
+        # re-embed here — see application.database.pgvector_utils.
+        from application.database.pgvector_utils import to_pgvector_literal
+
+        embedding_vec_literal = to_pgvector_literal(embeddings)
         resolved_node_url: Optional[str] = None
         if doctype != cre_defs.Credoctypes.CRE:
             resolved_node_url = (
@@ -2502,6 +2511,7 @@ class Node_collection:
                     embeddings_content=embedding_text,
                     embedding_model_id=embedding_model_id,
                     embedding_dim=embedding_dim,
+                    embedding_vec=embedding_vec_literal,
                 )
             else:
                 emb = Embeddings(
@@ -2512,6 +2522,7 @@ class Node_collection:
                     embeddings_url=resolved_node_url,
                     embedding_model_id=embedding_model_id,
                     embedding_dim=embedding_dim,
+                    embedding_vec=embedding_vec_literal,
                 )
             self.session.add(emb)
             self.session.commit()
@@ -2522,6 +2533,7 @@ class Node_collection:
             existing[0].embeddings_content = embedding_text
             existing[0].embedding_model_id = embedding_model_id
             existing[0].embedding_dim = embedding_dim
+            existing[0].embedding_vec = embedding_vec_literal
             if doctype != cre_defs.Credoctypes.CRE:
                 if embeddings_url is not None:
                     existing[0].embeddings_url = embeddings_url
@@ -2530,6 +2542,67 @@ class Node_collection:
             self.session.commit()
 
             return existing
+
+    def can_use_pgvector_similarity(self) -> bool:
+        """True when Postgres has ``embeddings.embedding_vec`` for SQL cosine."""
+        cached = getattr(self, "_pgvector_similarity_ready", None)
+        if cached is not None:
+            return bool(cached)
+        try:
+            bind = self.session.get_bind()
+            from application.database.pgvector_utils import embedding_vec_column_exists
+
+            ready = getattr(
+                bind.dialect, "name", ""
+            ) == "postgresql" and embedding_vec_column_exists(bind)
+        except Exception:
+            ready = False
+        self._pgvector_similarity_ready = ready
+        return ready
+
+    def find_most_similar_embedding_id(
+        self,
+        query_embedding: List[float],
+        *,
+        doc_type: str,
+        id_column: str,
+        similarity_threshold: float,
+    ) -> Tuple[Optional[str], Optional[float]]:
+        """Top-1 cosine match via pgvector ``<=>`` (Postgres only).
+
+        Returns ``(object_id, score)`` or ``(None, None)`` below threshold /
+        when no rows match.
+        """
+        from application.database.pgvector_utils import (
+            most_similar_id_sql,
+            to_pgvector_literal,
+        )
+        from sqlalchemy import text as sql_text
+
+        sql = most_similar_id_sql(id_column)
+        bind = self.session.get_bind()
+        try:
+            row = bind.execute(
+                sql_text(sql),
+                {
+                    "q": to_pgvector_literal(query_embedding),
+                    "doc_type": doc_type,
+                },
+            ).fetchone()
+            if not row:
+                return None, None
+            score = float(row.score)
+            if score < similarity_threshold:
+                return None, None
+            return str(row.object_id), score
+        except Exception as exc:
+            # Match prior sklearn-path resilience: chat/import should degrade
+            # to "no match" rather than 500 on a transient driver/query error.
+            logger.warning(
+                "pgvector similarity query failed (%s); returning no match",
+                exc,
+            )
+            return None, None
 
     def assert_embedding_contract(
         self,
