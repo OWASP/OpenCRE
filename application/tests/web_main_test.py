@@ -1401,6 +1401,51 @@ class TestMain(unittest.TestCase):
                 self.assertGreaterEqual(data.get("new_standards"), 2)
                 self.assertIsInstance(data.get("new_cres"), list)
 
+    def test_import_from_cre_csv_rejects_bad_cre_format(self) -> None:
+        """Malformed CRE cells must 400 with a clear message (#554 / #751)."""
+        workspace = tempfile.mkdtemp()
+        path = os.path.join(workspace, "bad_cre.csv")
+        with open(path, "w", encoding="utf-8") as f:
+            writer = csv.DictWriter(
+                f, fieldnames=["CRE 0", "standard|name", "standard|id"]
+            )
+            writer.writeheader()
+            writer.writerow(
+                {
+                    "CRE 0": "12-456|Too Short",
+                    "standard|name": "ASVS",
+                    "standard|id": "1.1.1",
+                }
+            )
+        with patch.dict(os.environ, {"CRE_ALLOW_IMPORT": "True"}):
+            with self.app.test_client() as client:
+                response = client.post(
+                    "/rest/v1/cre_csv_import",
+                    data={"cre_csv": open(path, "rb")},
+                    buffered=True,
+                    content_type="multipart/form-data",
+                )
+                self.assertEqual(400, response.status_code)
+                self.assertIn(b"Expected XXX-XXX|Name", response.data)
+
+    def test_import_from_cre_csv_rejects_triple_quotes(self) -> None:
+        """Triple-quoted content must not create bogus root CREs (#554)."""
+        workspace = tempfile.mkdtemp()
+        path = os.path.join(workspace, "triple.csv")
+        with open(path, "w", encoding="utf-8") as f:
+            f.write('CRE 0,standard|name,standard|id\n')
+            f.write('"""123-456|Quoted""",ASVS,1.1.1\n')
+        with patch.dict(os.environ, {"CRE_ALLOW_IMPORT": "True"}):
+            with self.app.test_client() as client:
+                response = client.post(
+                    "/rest/v1/cre_csv_import",
+                    data={"cre_csv": open(path, "rb")},
+                    buffered=True,
+                    content_type="multipart/form-data",
+                )
+                self.assertEqual(400, response.status_code)
+                self.assertIn(b"triple-quoted", response.data)
+
     def test_get_cre_csv(self) -> None:
         # empty string means temporary db
         collection = db.Node_collection().with_graph()

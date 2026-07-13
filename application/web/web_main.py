@@ -1292,9 +1292,27 @@ def import_from_cre_csv() -> Any:
     if file is None:
         abort(400, "No file provided")
     contents = file.read()
-    csv_read = csv.DictReader(contents.decode("utf-8").splitlines())
     try:
-        parse_result = myopencre_parser.parse_rows_to_documents(list(csv_read))
+        contents_text = contents.decode("utf-8")
+    except UnicodeDecodeError:
+        abort(400, "Invalid CSV encoding. Expected UTF-8.")
+
+    # Triple-quoted blobs were previously mis-parsed into bogus root CREs (#554).
+    if '"""' in contents_text:
+        abort(
+            400,
+            "Invalid CSV content: triple-quoted text detected. "
+            "Use standard CSV quoting (double quotes) instead.",
+        )
+
+    try:
+        csv_read = csv.DictReader(contents_text.splitlines())
+        rows = list(csv_read)
+    except csv.Error as exc:
+        abort(400, f"Invalid CSV content: {exc}")
+
+    try:
+        parse_result = myopencre_parser.parse_rows_to_documents(rows)
     except cre_exceptions.DuplicateLinkException as dle:
         abort(500, f"error during parsing of the incoming CSV, err:{dle}")
     except ValueError as ve:
