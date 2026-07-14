@@ -39,3 +39,49 @@ class DiffBlock:
     repository: str
     commit_sha: str
     committed_at: datetime | None = None
+
+
+@dataclass(slots=True)
+class SourceInfo:
+    type: str
+    repository: str
+    commit_sha: str
+    committed_at: datetime
+
+
+@dataclass(slots=True)
+class Locator:
+    kind: str
+    id: str
+    path: str
+
+
+@dataclass(slots=True)
+class SpanInfo:
+    heading_path: list[str]
+    start_line: int
+    end_line: int
+    index: int | None = None
+    total: int | None = None
+    start_char_idx: int | None = None
+    end_char_idx: int | None = None
+
+
+@dataclass(slots=True)
+class HeadingNode:
+    level: int
+    text: str
+    start_line: int
+    end_line: int
+
+
+@dataclass(slots=True)
+class Document:
+    schema_version: str
+    artifact_id: str
+    pipeline_run_id: str
+    text: str
+    source: SourceInfo
+    locator: Locator
+    heading_structure: list[HeadingNode]
+    span: SpanInfo
