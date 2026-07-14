@@ -31,11 +31,14 @@ from .heading_extractor import (
     HeadingNode,
 )
 
+from .document_builder import DocumentBuilder
+
 __all__ = [
     "build_repository_cache_path",
     "ChunkingConfig",
     "ConfigLoaderError",
     "DiffRetriever",
+    "DocumentBuilder",
     "GitRepositoryClient",
     "FileFilter",
     "FilteringMetricsCollector",
