@@ -310,10 +310,19 @@ OPENAPI_PATHS: List[PathSpec] = [
         tags=["User"],
         summary="Get the current user's selected standards",
         description=(
-            "Requires login and the MyOpenCRE feature; returns an empty "
-            "selection when either is disabled."
+            "Requires login (CRE_ENABLE_LOGIN) and the MyOpenCRE feature "
+            "(CRE_ENABLE_MYOPENCRE). When either flag is disabled the endpoint "
+            "does not authenticate and returns an empty selection. When both are "
+            "enabled, anonymous requests receive 401."
         ),
         not_found=False,
+        extra_responses={
+            "401": {
+                "description": (
+                    "Not authenticated (both feature flags enabled and no active session)"
+                )
+            }
+        },
         response_override={
             "200": {
                 "description": "The user's selected standards",
@@ -321,6 +330,7 @@ OPENAPI_PATHS: List[PathSpec] = [
                     "application/json": {
                         "schema": {
                             "type": "object",
+                            "required": ["selected"],
                             "properties": {
                                 "selected": {
                                     "type": "array",
@@ -339,8 +349,21 @@ OPENAPI_PATHS: List[PathSpec] = [
         method="put",
         tags=["User"],
         summary="Replace the current user's selected standards",
+        description=(
+            "Requires login (CRE_ENABLE_LOGIN) and the MyOpenCRE feature "
+            "(CRE_ENABLE_MYOPENCRE). When either flag is disabled the request is a "
+            "no-op and returns an empty selection. When both are enabled, anonymous "
+            "requests receive 401."
+        ),
         not_found=False,
-        extra_responses={"400": {"description": "Invalid selection body"}},
+        extra_responses={
+            "400": {"description": "Invalid selection body"},
+            "401": {
+                "description": (
+                    "Not authenticated (both feature flags enabled and no active session)"
+                )
+            },
+        },
         request_body={
             "required": True,
             "content": {
@@ -369,6 +392,7 @@ OPENAPI_PATHS: List[PathSpec] = [
                     "application/json": {
                         "schema": {
                             "type": "object",
+                            "required": ["selected"],
                             "properties": {
                                 "selected": {
                                     "type": "array",
