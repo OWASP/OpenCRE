@@ -517,6 +517,22 @@ paths:
       tags:
       - User
       summary: Replace the current user's selected standards
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - selected
+              properties:
+                selected:
+                  type: array
+                  items:
+                    type: string
+                    minLength: 1
+                  description: Standard names to select. Non-empty strings; values
+                    are trimmed and deduplicated.
       responses:
         '200':
           description: The stored selection

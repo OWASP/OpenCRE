@@ -1258,9 +1258,12 @@ def put_user_resources() -> Any:
     body = request.get_json(silent=True)
     if not isinstance(body, dict) or not isinstance(body.get("selected"), list):
         abort(400, description="Body must be a JSON object with a 'selected' list")
-    selected = body["selected"]
-    if not all(isinstance(name, str) and name.strip() for name in selected):
+    raw_selected = body["selected"]
+    if not all(isinstance(name, str) and name.strip() for name in raw_selected):
         abort(400, description="'selected' must be a list of non-empty strings")
+    # Normalize before storing: otherwise " ASVS " and "ASVS" both validate but
+    # persist as distinct rows, defeating the dedupe.
+    selected = [name.strip() for name in raw_selected]
     database = db.Node_collection()
     user = _resolve_current_user(database)
     if user is None:

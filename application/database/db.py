@@ -1109,19 +1109,30 @@ class Node_collection:
         for name in standard_names:
             if name not in deduped:
                 deduped.append(name)
-        self.session.query(UserResourceSelection).filter(
-            UserResourceSelection.user_id == user_id
-        ).delete()
-        for name in deduped:
-            self.session.add(
-                UserResourceSelection(
-                    id=generate_uuid(),
-                    user_id=user_id,
-                    standard_name=name,
-                    created_at=now,
+
+        def _replace() -> None:
+            self.session.query(UserResourceSelection).filter(
+                UserResourceSelection.user_id == user_id
+            ).delete()
+            for name in deduped:
+                self.session.add(
+                    UserResourceSelection(
+                        id=generate_uuid(),
+                        user_id=user_id,
+                        standard_name=name,
+                        created_at=now,
+                    )
                 )
-            )
-        self.session.commit()
+            self.session.commit()
+
+        try:
+            _replace()
+        except IntegrityError:
+            # A concurrent PUT for the same user can collide on
+            # uq_user_resource_selection between our delete and our inserts;
+            # roll back and retry once (mirrors upsert_user).
+            self.session.rollback()
+            _replace()
         return self.get_user_resource_selection(user_id)
 
     def __get_external_links(self) -> List[Tuple[CRE, Node, str]]:

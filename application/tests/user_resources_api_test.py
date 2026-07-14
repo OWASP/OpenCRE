@@ -187,6 +187,32 @@ class TestUserResourcesApi(unittest.TestCase):
                     sorted(json.loads(resp.data)["selected"]), ["ASVS", "CWE"]
                 )
 
+    def test_put_trims_and_dedupes_whitespace_variants(self) -> None:
+        # " ASVS " and "ASVS" must normalize to a single stored entry, otherwise
+        # they'd persist as distinct rows and defeat the dedupe.
+        self.collection.upsert_user(
+            google_sub="sub-1", email="a@x.com", display_name="U"
+        )
+        with patch.dict(
+            os.environ,
+            {
+                "CRE_ENABLE_LOGIN": "1",
+                "CRE_ENABLE_MYOPENCRE": "1",
+                "INSECURE_REQUESTS": "1",
+            },
+        ):
+            with self.app.test_client() as client:
+                self._login(client, "sub-1", "U")
+                resp = client.put(
+                    "/rest/v1/user/resources",
+                    json={"selected": [" ASVS ", "ASVS", "CWE "]},
+                )
+                self.assertEqual(resp.status_code, 200)
+                self.assertEqual(
+                    sorted(json.loads(resp.data)["selected"]), ["ASVS", "CWE"]
+                )
+        self.assertEqual(sqla.session.query(db.UserResourceSelection).count(), 2)
+
     def test_put_400_on_invalid_body(self) -> None:
         self.collection.upsert_user(
             google_sub="sub-1", email="a@x.com", display_name="U"
