@@ -32,6 +32,7 @@ from .heading_extractor import (
 )
 
 from .document_builder import DocumentBuilder
+from .document_validator import DocumentValidator
 
 __all__ = [
     "build_repository_cache_path",
@@ -39,6 +40,7 @@ __all__ = [
     "ConfigLoaderError",
     "DiffRetriever",
     "DocumentBuilder",
+    "DocumentValidator",
     "GitRepositoryClient",
     "FileFilter",
     "FilteringMetricsCollector",
