@@ -1,16 +1,5 @@
 from dataclasses import dataclass
-
-
-@dataclass(slots=True)
-class HeadingNode:
-    """
-    Represents a Markdown heading within a document.
-    """
-
-    level: int
-    text: str
-    start_line: int
-    end_line: int
+from .models import HeadingNode
 
 
 class HeadingExtractor:
