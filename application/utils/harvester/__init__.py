@@ -26,6 +26,11 @@ from .filtering_benchmark import (
     FilteringBenchmarkResult,
 )
 
+from .heading_extractor import (
+    HeadingExtractor,
+    HeadingNode,
+)
+
 __all__ = [
     "build_repository_cache_path",
     "ChunkingConfig",
@@ -36,6 +41,8 @@ __all__ = [
     "FilteringMetricsCollector",
     "FilteringBenchmark",
     "FilteringBenchmarkResult",
+    "HeadingExtractor",
+    "HeadingNode",
     "PathRules",
     "PollingConfig",
     "RepositoryClient",
