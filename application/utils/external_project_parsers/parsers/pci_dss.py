@@ -101,8 +101,13 @@ def best_cre_via_bridge_standard(
     best_similarity = -1.0
     best_cre: Optional[defs.CRE] = None
 
+    from application.database.pgvector_utils import parse_stored_embedding_vec
+
     for node in cache.get_nodes(name=standard_name) or []:
-        node_embedding = cache.get_embeddings_for_doc(node)
+        emb_row = cache.get_embeddings_for_doc(node)
+        if not emb_row or not emb_row.embedding_vec:
+            continue
+        node_embedding = parse_stored_embedding_vec(emb_row.embedding_vec)
         if not node_embedding:
             continue
         node_array = sparse.csr_matrix(
@@ -264,7 +269,7 @@ class PciDss(ParserInterface):
             )
             if existing:
                 embeddings = cache.get_embeddings_for_doc(existing[0])
-                if embeddings:
+                if embeddings and getattr(embeddings, "embedding_vec", None):
                     logger.info(
                         f"Node {pci_control.todict()} already exists and has embeddings, skipping"
                     )

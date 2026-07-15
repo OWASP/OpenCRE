@@ -27,6 +27,73 @@ class PgvectorLiteralTest(unittest.TestCase):
         self.assertEqual(parse_csv_embedding_dim("0.1,0.2,0.3"), 3)
         self.assertEqual(parse_csv_embedding_dim(""), 0)
 
+    def test_parse_stored_embedding_vec(self) -> None:
+        from application.database.pgvector_utils import parse_stored_embedding_vec
+
+        self.assertEqual(parse_stored_embedding_vec("[1.0, 2.0]"), [1.0, 2.0])
+        self.assertEqual(parse_stored_embedding_vec("1,2,3"), [1.0, 2.0, 3.0])
+        self.assertEqual(parse_stored_embedding_vec(None), [])
+        self.assertEqual(parse_stored_embedding_vec([1, 2]), [1.0, 2.0])
+
+    def test_sqlite_connection_refuses_pgvector(self) -> None:
+        from application.database.pgvector_utils import (
+            PGVECTOR_UNAVAILABLE_EXIT_MSG,
+            require_pgvector_connection,
+        )
+
+        conn = MagicMock()
+        conn.dialect.name = "sqlite"
+        with self.assertRaises(SystemExit) as cm:
+            require_pgvector_connection(conn, context="unit-test")
+        self.assertIn("pgvector embeddings are required", str(cm.exception))
+        self.assertIn(PGVECTOR_UNAVAILABLE_EXIT_MSG[:32], str(cm.exception))
+
+    def test_postgres_connection_accepted(self) -> None:
+        from application.database.pgvector_utils import require_pgvector_connection
+
+        conn = MagicMock()
+        conn.dialect.name = "postgresql"
+        require_pgvector_connection(conn)  # does not raise
+
+    def test_fake_connection_without_dialect_allowed(self) -> None:
+        from application.database.pgvector_utils import require_pgvector_connection
+
+        class NoDialect:
+            pass
+
+        require_pgvector_connection(NoDialect())  # hermetic fakes OK
+
+
+class EmbeddingVecStoreGateTest(unittest.TestCase):
+    def test_legacy_sqlite_schema_exits(self) -> None:
+        from application.database.pgvector_utils import (
+            EMBEDDING_VEC_REQUIRED_EXIT_MSG,
+            require_embedding_vec_store,
+        )
+
+        conn = MagicMock()
+        conn.dialect.name = "sqlite"
+        # PRAGMA table_info rows: (cid, name, type, notnull, dflt, pk)
+        conn.execute.return_value.fetchall.return_value = [
+            (0, "embeddings", "TEXT", 1, None, 0),
+            (1, "doc_type", "TEXT", 1, None, 0),
+        ]
+        with self.assertRaises(SystemExit) as cm:
+            require_embedding_vec_store(conn, context="unit-test")
+        self.assertIn("embedding_vec is required", str(cm.exception))
+        self.assertIn(EMBEDDING_VEC_REQUIRED_EXIT_MSG[:40], str(cm.exception))
+
+    def test_vec_column_present_ok(self) -> None:
+        from application.database.pgvector_utils import require_embedding_vec_store
+
+        conn = MagicMock()
+        conn.dialect.name = "sqlite"
+        conn.execute.return_value.fetchall.return_value = [
+            (0, "embedding_vec", "TEXT", 1, None, 0),
+            (1, "doc_type", "TEXT", 1, None, 0),
+        ]
+        require_embedding_vec_store(conn)
+
 
 class DistinctDimsTest(unittest.TestCase):
     def test_single_dim_from_metadata(self) -> None:

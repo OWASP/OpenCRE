@@ -53,18 +53,7 @@ def _time_backend(retriever, queries: List[str], runs: int) -> float:
 
 def _pgvector_available(database) -> bool:
     """True only on Postgres with the embedding_vec column present."""
-    conn = database.session.connection()
-    if conn.dialect.name != "postgresql":
-        return False
-    from sqlalchemy import text
-
-    row = conn.execute(
-        text(
-            "SELECT 1 FROM information_schema.columns "
-            "WHERE table_name = 'embeddings' AND column_name = 'embedding_vec'"
-        )
-    ).fetchone()
-    return row is not None
+    return bool(database.can_use_pgvector_similarity())
 
 
 def main(argv: List[str]) -> int:
@@ -93,8 +82,9 @@ def main(argv: List[str]) -> int:
 
     if not _pgvector_available(database):
         print(
-            "pgvector  : SKIPPED (needs Postgres + the embedding_vec column; "
-            "lands with the W8 pgvector migration + backfill)"
+            "pgvector  : SKIPPED (needs Postgres + embedding_vec; SQLite cannot "
+            "run <=> — use CRE_LIBRARIAN_RETRIEVER_BACKEND=in_memory or "
+            "postgresql://… after Alembic c7d8e9f0a1b2)"
         )
         return 0
 

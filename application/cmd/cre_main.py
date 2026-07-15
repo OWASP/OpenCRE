@@ -1115,14 +1115,12 @@ def run_librarian(
 
     backend = RetrieverBackend(cfg.retriever_backend)
     if backend is RetrieverBackend.pgvector:
-        # Readiness must include the embedding_vec column (not dialect alone):
-        # Postgres pre-migration would otherwise fail on every retrieve().
+        # Hard-fail: do not silently fall back to in_memory / sklearn CSV paths.
+        from application.database.pgvector_utils import fail_pgvector_unavailable
+
         if not database.can_use_pgvector_similarity():
-            logger.warning(
-                "CRE_LIBRARIAN_RETRIEVER_BACKEND=pgvector selected, but "
-                "Postgres is not ready for pgvector similarity (need Alembic "
-                "c7d8e9f0a1b2 / #977 embedding_vec). Set the backend to "
-                "in_memory until then."
+            fail_pgvector_unavailable(
+                context="CRE_LIBRARIAN_RETRIEVER_BACKEND=pgvector"
             )
     # The CRE ids present in the hub are exactly the known ids the explicit
     # resolver may auto-link to (W2 seeded this from the golden set; here it is
@@ -1136,13 +1134,16 @@ def run_librarian(
         if backend is RetrieverBackend.in_memory
         else None
     )
+    pg_connection = None
+    if backend is RetrieverBackend.pgvector:
+        pg_connection = database.session.connection()
     retriever = build_retriever(
         backend,
         embed_fn=ph.get_text_embeddings,
         top_k=cfg.top_k_retrieval,
         threshold=cfg.link_threshold,
         pool=pool,
-        connection=database.session.connection(),
+        connection=pg_connection,
     )
 
     # C.2 reranker: reads each (section, candidate-CRE) pair together and

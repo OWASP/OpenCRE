@@ -2390,8 +2390,8 @@ class TestDB(unittest.TestCase):
         finally:
             os.environ.pop("CRE_EMBED_MODEL", None)
 
-    def test_add_embedding_dual_writes_embedding_vec_literal(self):
-        """CSV + embedding_vec literal are persisted together (#977)."""
+    def test_add_embedding_writes_embedding_vec_literal(self):
+        """Vectors are stored only in embedding_vec (#977 option C)."""
         from application.database.pgvector_utils import to_pgvector_literal
 
         dbsa = db.Node(
@@ -2408,13 +2408,17 @@ class TestDB(unittest.TestCase):
             db_object=dbsa,
             doctype=defs.Credoctypes.Standard.value,
             embeddings=vec,
-            embedding_text="dual-write",
+            embedding_text="vec-only",
         )
         row = self.collection.get_embedding(dbsa.id)[0]
-        self.assertEqual(row.embeddings, "0.1,0.2,0.3")
-        self.assertEqual(row.embeddings_content, "dual-write")
+        self.assertNotIn("embeddings", type(row).__table__.c)
+        self.assertEqual(row.embeddings_content, "vec-only")
         self.assertEqual(row.embedding_vec, to_pgvector_literal(vec))
         self.assertEqual(row.embedding_dim, 3)
+        by_type = self.collection.get_embeddings_by_doc_type(
+            defs.Credoctypes.Standard.value
+        )
+        self.assertEqual(by_type[dbsa.id], vec)
 
     def test_assert_embedding_contract_fails_on_mixed_dimensions(self):
         n1 = db.Node(

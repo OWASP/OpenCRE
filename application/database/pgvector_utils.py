@@ -3,8 +3,8 @@
 Do **not** re-embed the full corpus on Heroku/production dynos — likely
 OOM-killed. Re-embedding (fix missing / wrong-dim rows via the LLM) must run
 only where there is enough RAM (local or a high-resource worker), then
-sync/backfill vectors. Alembic on prod only: enable extension, add column,
-copy CSV→vector for matching dims.
+sync/backfill vectors. Alembic on prod: enable extension, add column, copy
+CSV→vector for matching dims, then DROP the legacy CSV ``embeddings`` column.
 
 HNSW/IVFFlat indexes are deferred (Essential-1 capacity); see migration
 ``c7d8e9f0a1b2`` docstring for the follow-up plan.
@@ -21,12 +21,121 @@ from sqlalchemy.engine import Engine
 HEROKU_REEMBED_WARNING = (
     "Do not re-embed the full corpus on Heroku/production dynos — likely "
     "OOM-killed. Re-embedding must run only on a machine with enough RAM, "
-    "then sync/backfill vectors. Alembic on prod only copies CSV→vector."
+    "then sync/backfill vectors. Alembic on prod only copies CSV→vector "
+    "then drops the CSV column."
+)
+
+PGVECTOR_UNAVAILABLE_EXIT_MSG = (
+    "pgvector embeddings are required but unavailable on this database. "
+    "Need Postgres with embeddings.embedding_vec (Alembic c7d8e9f0a1b2). "
+    "SQLite cannot serve pgvector similarity (``<=>``). For Module C / "
+    "Librarian on SQLite or CI, set CRE_LIBRARIAN_RETRIEVER_BACKEND=in_memory "
+    "(reads ``embedding_vec`` Text literals into an in-RAM hub). For "
+    "Postgres-side similarity, use local Postgres (make docker-postgres) or "
+    "a remote Postgres URL with the vector extension."
+)
+
+EMBEDDING_VEC_REQUIRED_EXIT_MSG = (
+    "embeddings.embedding_vec is required; the legacy CSV ``embeddings`` "
+    "column is no longer a supported store. Postgres: run Alembic upgrade "
+    "to c7d8e9f0a1b2. SQLite caches: rewrite with "
+    "`python scripts/rewrite_sqlite_embeddings_to_vec.py --db PATH` or "
+    "re-export from Postgres after the migration."
 )
 
 
 class MultiDimEmbeddingError(RuntimeError):
     """Raised when more than one embedding dimension is present in the DB."""
+
+
+class PgVectorUnavailableError(RuntimeError):
+    """Raised when a pgvector operation is requested without Postgres+vector."""
+
+
+def _exit_with_message(msg: str) -> None:
+    import logging
+
+    logging.getLogger(__name__).error(msg)
+    raise SystemExit(msg)
+
+
+def fail_pgvector_unavailable(*, context: str = "") -> None:
+    """Log and exit — callers must not silently fall back to CSV/sklearn.
+
+    Intentionally raises ``SystemExit`` so CLI/import paths stop with a clear
+    message when ``CRE_LIBRARIAN_RETRIEVER_BACKEND=pgvector`` (or other
+    pgvector-only code) runs against SQLite / pre-migration Postgres.
+    """
+    detail = f" ({context})" if context else ""
+    _exit_with_message(PGVECTOR_UNAVAILABLE_EXIT_MSG + detail)
+
+
+def fail_embedding_vec_required(*, context: str = "") -> None:
+    """Exit when the vector store column is missing (legacy CSV-only schema)."""
+    detail = f" ({context})" if context else ""
+    _exit_with_message(EMBEDDING_VEC_REQUIRED_EXIT_MSG + detail)
+
+
+def connection_dialect_name(connection: Any) -> str:
+    """Best-effort dialect name from a SQLAlchemy Connection/Engine/Session bind."""
+    dialect = getattr(connection, "dialect", None)
+    if dialect is not None:
+        return getattr(dialect, "name", "") or ""
+    bind = getattr(connection, "get_bind", None)
+    if callable(bind):
+        return connection_dialect_name(bind())
+    engine = getattr(connection, "engine", None)
+    if engine is not None:
+        return connection_dialect_name(engine)
+    return ""
+
+
+def require_pgvector_connection(connection: Any, *, context: str = "") -> None:
+    """Refuse SQLite (and unknown non-Postgres) when loading pgvector embeddings."""
+    dialect = connection_dialect_name(connection)
+    if dialect == "sqlite":
+        fail_pgvector_unavailable(context=context or "sqlite connection")
+    # Hermetic test fakes often omit dialect — allow those through.
+    if dialect and dialect != "postgresql":
+        fail_pgvector_unavailable(context=context or f"unsupported dialect {dialect!r}")
+
+
+def _embeddings_table_columns(connection: Any) -> Optional[Set[str]]:
+    """Return column names for ``embeddings``, or None when the table is absent."""
+    dialect = connection_dialect_name(connection)
+    if dialect == "sqlite":
+        rows = _execute(connection, text("PRAGMA table_info(embeddings)")).fetchall()
+        if not rows:
+            return None
+        return {str(r[1]) for r in rows}
+    if dialect != "postgresql":
+        return None
+    rows = _execute(
+        connection,
+        text(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_name = 'embeddings'"
+        ),
+    ).fetchall()
+    if not rows:
+        return None
+    return {str(r[0]) for r in rows}
+
+
+def require_embedding_vec_store(connection: Any, *, context: str = "") -> None:
+    """Refuse legacy CSV-only schemas; require ``embedding_vec``.
+
+    No-ops for hermetic fakes (empty dialect) and when the ``embeddings``
+    table does not exist yet (caller will hit a normal SQLAlchemy error).
+    """
+    dialect = connection_dialect_name(connection)
+    if not dialect:
+        return
+    cols = _embeddings_table_columns(connection)
+    if cols is None:
+        return
+    if "embedding_vec" not in cols:
+        fail_embedding_vec_required(context=context or f"{dialect} embeddings schema")
 
 
 def _execute(connection: Any, statement: Any, params: Optional[dict] = None):
@@ -51,6 +160,23 @@ def to_pgvector_literal(vector: Sequence[float]) -> str:
 def csv_embeddings_to_literal(csv: str) -> str:
     """Wrap a comma-separated CSV embedding string as a pgvector literal."""
     return f"[{(csv or '').strip()}]"
+
+
+def parse_stored_embedding_vec(value: Any) -> list[float]:
+    """Parse a stored ``embedding_vec`` (pgvector / Text literal) to floats.
+
+    Accepts ``[1.0, 2.0]``, ``1.0,2.0``, or a sequence of numbers.
+    """
+    if value is None:
+        return []
+    if isinstance(value, (list, tuple)):
+        return [float(x) for x in value]
+    s = str(value).strip()
+    if not s:
+        return []
+    if s.startswith("[") and s.endswith("]"):
+        s = s[1:-1]
+    return [float(part.strip()) for part in s.split(",") if part.strip() != ""]
 
 
 def parse_csv_embedding_dim(csv: str) -> int:

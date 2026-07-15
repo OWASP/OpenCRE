@@ -53,6 +53,7 @@ class FindMostSimilarEmbeddingIdResilienceTest(unittest.TestCase):
         session.execute.side_effect = RuntimeError("driver boom")
         session.get_bind.return_value = MagicMock()
         database.session = session
+        database._pgvector_similarity_ready = True
 
         with patch("application.database.db.logger"):
             match_id, score = database.find_most_similar_embedding_id(
@@ -63,6 +64,24 @@ class FindMostSimilarEmbeddingIdResilienceTest(unittest.TestCase):
             )
         self.assertIsNone(match_id)
         self.assertIsNone(score)
+
+    def test_sqlite_refuses_pgvector_similarity_with_systemexit(self) -> None:
+        from application.database.db import Node_collection
+        from application.database.pgvector_utils import PGVECTOR_UNAVAILABLE_EXIT_MSG
+
+        database = Node_collection.__new__(Node_collection)
+        database.session = MagicMock()
+        database._pgvector_similarity_ready = False
+
+        with self.assertRaises(SystemExit) as cm:
+            database.find_most_similar_embedding_id(
+                [0.1, 0.2, 0.3],
+                doc_type="CRE",
+                id_column="cre_id",
+                similarity_threshold=0.7,
+            )
+        self.assertIn("pgvector embeddings are required", str(cm.exception))
+        self.assertIn(PGVECTOR_UNAVAILABLE_EXIT_MSG[:40], str(cm.exception))
 
 
 if __name__ == "__main__":

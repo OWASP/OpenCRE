@@ -57,10 +57,15 @@ docker-postgres:
 			-p 5432:5432 \
 			"$$wanted"; \
 	fi; \
-	for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do \
-		docker exec cre-postgres pg_isready -U cre -d cre >/dev/null 2>&1 && break; \
+	ready=0; \
+	for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30; do \
+		if docker exec cre-postgres pg_isready -U cre -d cre >/dev/null 2>&1; then ready=1; break; fi; \
 		sleep 1; \
 	done; \
+	if [ "$$ready" != "1" ]; then \
+		echo "error: cre-postgres did not become ready within 30s" >&2; \
+		exit 1; \
+	fi; \
 	docker exec cre-postgres psql -U cre -d cre -c "CREATE EXTENSION IF NOT EXISTS vector;" >/dev/null
 
 start-containers: docker-neo4j docker-redis
