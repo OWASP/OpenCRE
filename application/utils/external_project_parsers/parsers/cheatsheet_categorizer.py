@@ -277,7 +277,7 @@ def group_cheatsheets(
     list[CheatsheetGroup]
         Groups sorted by group_id for deterministic output order.
     """
-    bucket: dict[str, CheatsheetGroup] = {}
+    bucket: dict[tuple[str, ...], CheatsheetGroup] = {}
 
     for record in records:
         labels = categorize_cheatsheet(
