@@ -285,10 +285,11 @@ def group_cheatsheets(
             use_llm=use_llm,
             llm_categorize_fn=llm_categorize_fn,
         )
-        gid = CheatsheetGroup.make_group_id(labels)
-        if gid not in bucket:
-            bucket[gid] = CheatsheetGroup(group_id=gid, labels=sorted(labels))
-        bucket[gid].members.append(record)
+        canonical_key = "|".join(sorted(set(labels)))
+        if canonical_key not in bucket:
+            gid = CheatsheetGroup.make_group_id(labels)
+            bucket[canonical_key] = CheatsheetGroup(group_id=gid, labels=sorted(labels))
+        bucket[canonical_key].members.append(record)
 
     return sorted(bucket.values(), key=lambda g: g.group_id)
 
@@ -328,18 +329,20 @@ def _deterministic_categorize(record: CheatsheetRecord) -> List[str]:
 def _validate_labels(labels) -> List[str]:
     """Filter an LLM-returned label list to only approved TAXONOMY entries.
 
+    Returns labels in canonical TAXONOMY order after filtering and deduping.
+    UNCATEGORIZED is stripped when real labels are present.
     Returns an empty list if nothing valid remains; the caller should
     fall back to deterministic categorisation in that case.
-    UNCATEGORIZED is stripped if other real labels are present.
     """
     if not isinstance(labels, list):
         return []
-    valid = [lbl for lbl in labels if isinstance(lbl, str) and lbl in TAXONOMY]
     seen: set = set()
-    deduped: List[str] = []
-    for lbl in valid:
-        if lbl not in seen:
-            deduped.append(lbl)
+    valid: List[str] = []
+    for lbl in labels:
+        if isinstance(lbl, str) and lbl in TAXONOMY and lbl not in seen:
+            valid.append(lbl)
             seen.add(lbl)
-    real = [lbl for lbl in deduped if lbl != UNCATEGORIZED]
-    return real if real else deduped
+    # Return in canonical TAXONOMY order
+    ordered = [lbl for lbl in TAXONOMY if lbl in seen]
+    real = [lbl for lbl in ordered if lbl != UNCATEGORIZED]
+    return real if real else ordered
