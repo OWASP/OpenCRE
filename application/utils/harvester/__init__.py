@@ -35,6 +35,7 @@ from .document_builder import DocumentBuilder
 from .document_validator import DocumentValidator
 from .content_hash import generate_content_hash
 from .artifact_registry import ArtifactRegistry
+from .document_deduplicator import DocumentDeduplicator
 
 __all__ = [
     "ArtifactRegistry",
@@ -43,6 +44,7 @@ __all__ = [
     "ConfigLoaderError",
     "DiffRetriever",
     "DocumentBuilder",
+    "DocumentDeduplicator",
     "DocumentValidator",
     "GitRepositoryClient",
     "FileFilter",

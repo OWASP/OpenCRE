@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from datetime import datetime
 from pydantic import BaseModel
+from enum import Enum
 
 
 @dataclass(slots=True)
@@ -102,3 +103,9 @@ class ArtifactRegistryRecord:
     last_pipeline_run: str
     last_processed_at: datetime
     status: str
+
+
+class DeduplicationStatus(str, Enum):
+    NEW = "new"
+    UPDATED = "updated"
+    UNCHANGED = "unchanged"
