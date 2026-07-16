@@ -1,5 +1,6 @@
 from datetime import datetime
 from .checkpoint_manager import CheckpointManager
+from .deduplication_metrics import DeduplicationMetrics
 from .document_deduplicator import (
     DeduplicationStatus,
     DocumentDeduplicator,
@@ -20,14 +21,17 @@ class IncrementalPipeline:
     def __init__(
         self, deduplicator: DocumentDeduplicator, checkpoint_manager: CheckpointManager
     ):
+
         self._deduplicator = deduplicator
         self._checkpoint_manager = checkpoint_manager
+        self.metrics = DeduplicationMetrics()
 
     def process(
         self, repository: str, pipeline_run_id: str, documents: list[Document]
     ) -> list[Document]:
 
         emitted: list[Document] = []
+        metrics = DeduplicationMetrics()
 
         if documents:
             self._checkpoint_manager.save(
@@ -43,6 +47,7 @@ class IncrementalPipeline:
         for document in documents:
             status = self._deduplicator.process(document)
 
+            metrics.record(status)
             self._checkpoint_manager.update_commit(
                 repository,
                 document.source.commit_sha,
@@ -55,4 +60,5 @@ class IncrementalPipeline:
             repository,
         )
 
+        self.metrics = metrics
         return emitted

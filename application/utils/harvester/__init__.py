@@ -21,6 +21,7 @@ from .file_filter import FileFilter
 from .filtering_metrics import FilteringMetricsCollector
 from .diff_retriever import DiffRetriever
 
+
 from .filtering_benchmark import (
     FilteringBenchmark,
     FilteringBenchmarkResult,
@@ -38,6 +39,7 @@ from .artifact_registry import ArtifactRegistry
 from .document_deduplicator import DocumentDeduplicator
 from .checkpoint_manager import CheckpointManager
 from .incremental_pipeline import IncrementalPipeline
+from .deduplication_metrics import DeduplicationMetrics
 
 __all__ = [
     "ArtifactRegistry",
@@ -45,6 +47,7 @@ __all__ = [
     "CheckpointManager",
     "ChunkingConfig",
     "ConfigLoaderError",
+    "DeduplicationMetrics",
     "DiffRetriever",
     "DocumentBuilder",
     "DocumentDeduplicator",
