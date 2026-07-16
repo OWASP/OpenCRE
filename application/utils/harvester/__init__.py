@@ -37,6 +37,7 @@ from .content_hash import generate_content_hash
 from .artifact_registry import ArtifactRegistry
 from .document_deduplicator import DocumentDeduplicator
 from .checkpoint_manager import CheckpointManager
+from .incremental_pipeline import IncrementalPipeline
 
 __all__ = [
     "ArtifactRegistry",
@@ -56,6 +57,7 @@ __all__ = [
     "generate_content_hash",
     "HeadingExtractor",
     "HeadingNode",
+    "IncrementalPipeline",
     "PathRules",
     "PollingConfig",
     "RepositoryClient",
