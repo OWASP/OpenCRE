@@ -109,3 +109,12 @@ class DeduplicationStatus(str, Enum):
     NEW = "new"
     UPDATED = "updated"
     UNCHANGED = "unchanged"
+
+
+@dataclass(slots=True)
+class CheckpointRecord:
+    repository: str
+    pipeline_run_id: str
+    last_processed_commit: str
+    status: str
+    updated_at: datetime

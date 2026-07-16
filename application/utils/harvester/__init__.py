@@ -36,10 +36,12 @@ from .document_validator import DocumentValidator
 from .content_hash import generate_content_hash
 from .artifact_registry import ArtifactRegistry
 from .document_deduplicator import DocumentDeduplicator
+from .checkpoint_manager import CheckpointManager
 
 __all__ = [
     "ArtifactRegistry",
     "build_repository_cache_path",
+    "CheckpointManager",
     "ChunkingConfig",
     "ConfigLoaderError",
     "DiffRetriever",
