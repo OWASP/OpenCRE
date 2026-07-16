@@ -34,8 +34,10 @@ from .heading_extractor import (
 from .document_builder import DocumentBuilder
 from .document_validator import DocumentValidator
 from .content_hash import generate_content_hash
+from .artifact_registry import ArtifactRegistry
 
 __all__ = [
+    "ArtifactRegistry",
     "build_repository_cache_path",
     "ChunkingConfig",
     "ConfigLoaderError",
