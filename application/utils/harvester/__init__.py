@@ -33,6 +33,7 @@ from .heading_extractor import (
 
 from .document_builder import DocumentBuilder
 from .document_validator import DocumentValidator
+from .content_hash import generate_content_hash
 
 __all__ = [
     "build_repository_cache_path",
@@ -46,6 +47,7 @@ __all__ = [
     "FilteringMetricsCollector",
     "FilteringBenchmark",
     "FilteringBenchmarkResult",
+    "generate_content_hash",
     "HeadingExtractor",
     "HeadingNode",
     "PathRules",
