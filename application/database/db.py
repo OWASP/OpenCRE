@@ -174,7 +174,6 @@ class Embeddings(BaseModel):  # type: ignore
     __tablename__ = "embeddings"
 
     id = sqla.Column(sqla.String, primary_key=True, default=generate_uuid)
-    embeddings = sqla.Column(sqla.String, nullable=False)
     doc_type = sqla.Column(sqla.String, nullable=False)
     cre_id = sqla.Column(
         sqla.String,
@@ -191,6 +190,10 @@ class Embeddings(BaseModel):  # type: ignore
     embeddings_content = sqla.Column(sqla.String, nullable=True, default=None)
     embedding_model_id = sqla.Column(sqla.String, nullable=True, default=None)
     embedding_dim = sqla.Column(sqla.Integer, nullable=True, default=None)
+    # Postgres: real ``vector(N)`` via Alembic (c7d8e9f0a1b2) — sole store for
+    # vectors (legacy CSV ``embeddings`` column is dropped in that migration).
+    # SQLite/tests: Text holding a pgvector literal ``[1.0,2.0,...]``.
+    embedding_vec = sqla.Column(sqla.Text, nullable=False)
 
 
 class GapAnalysisResults(BaseModel):
@@ -2364,16 +2367,27 @@ class Node_collection:
         }
 
     def get_embeddings_by_doc_type(self, doc_type: str) -> Dict[str, List[float]]:
+        from application.database.pgvector_utils import (
+            parse_stored_embedding_vec,
+            require_embedding_vec_store,
+        )
+
+        require_embedding_vec_store(
+            self.session.get_bind(), context="get_embeddings_by_doc_type"
+        )
         res = {}
         embeddings = (
             self.session.query(Embeddings).filter(Embeddings.doc_type == doc_type).all()
         )
         if embeddings:
             for entry in embeddings:
+                vec = parse_stored_embedding_vec(entry.embedding_vec)
+                if not vec:
+                    continue
                 if doc_type == cre_defs.Credoctypes.CRE.value:
-                    res[entry.cre_id] = [float(e) for e in entry.embeddings.split(",")]
+                    res[entry.cre_id] = vec
                 else:
-                    res[entry.node_id] = [float(e) for e in entry.embeddings.split(",")]
+                    res[entry.node_id] = vec
         return res
 
     def get_embedding_contents_by_doc_type(self, doc_type: str) -> Dict[str, str]:
@@ -2400,6 +2414,14 @@ class Node_collection:
     def get_embeddings_by_doc_type_paginated(
         self, doc_type: str, page: int = 1, per_page: int = 100
     ) -> Tuple[Dict[str, List[float]], int, int]:
+        from application.database.pgvector_utils import (
+            parse_stored_embedding_vec,
+            require_embedding_vec_store,
+        )
+
+        require_embedding_vec_store(
+            self.session.get_bind(), context="get_embeddings_by_doc_type_paginated"
+        )
         res = {}
         embeddings = (
             self.session.query(Embeddings)
@@ -2409,13 +2431,21 @@ class Node_collection:
         total_pages = embeddings.pages
         if embeddings.items:
             for entry in embeddings.items:
+                vec = parse_stored_embedding_vec(entry.embedding_vec)
+                if not vec:
+                    continue
                 if doc_type == cre_defs.Credoctypes.CRE.value:
-                    res[entry.cre_id] = [float(e) for e in entry.embeddings.split(",")]
+                    res[entry.cre_id] = vec
                 else:
-                    res[entry.node_id] = [float(e) for e in entry.embeddings.split(",")]
+                    res[entry.node_id] = vec
         return res, total_pages, page
 
     def get_embeddings_for_doc(self, doc: cre_defs.Node | cre_defs.CRE) -> Embeddings:
+        from application.database.pgvector_utils import require_embedding_vec_store
+
+        require_embedding_vec_store(
+            self.session.get_bind(), context="get_embeddings_for_doc"
+        )
         if doc.doctype == cre_defs.Credoctypes.CRE:
             obj = self.session.query(CRE).filter(CRE.external_id == doc.id).first()
             return (
@@ -2484,8 +2514,16 @@ class Node_collection:
                     f"embedding dimension mismatch for {db_object.id}: "
                     f"expected {expected_dim}, got {len(embeddings)}"
                 )
+        from application.database.pgvector_utils import (
+            require_embedding_vec_store,
+            to_pgvector_literal,
+        )
+
+        require_embedding_vec_store(self.session.get_bind(), context="add_embedding")
         existing = self.get_embedding(db_object.id)
-        embeddings_str = ",".join([str(e) for e in embeddings])
+        # Sole store is ``embedding_vec`` (pgvector on Postgres; Text literal
+        # on SQLite). Never LLM re-embed here — see pgvector_utils.
+        embedding_vec_literal = to_pgvector_literal(embeddings)
         resolved_node_url: Optional[str] = None
         if doctype != cre_defs.Credoctypes.CRE:
             resolved_node_url = (
@@ -2496,32 +2534,32 @@ class Node_collection:
             emb = None
             if doctype == cre_defs.Credoctypes.CRE:
                 emb = Embeddings(
-                    embeddings=embeddings_str,
                     cre_id=db_object.id,
                     doc_type=cre_defs.Credoctypes.CRE.value,
                     embeddings_content=embedding_text,
                     embedding_model_id=embedding_model_id,
                     embedding_dim=embedding_dim,
+                    embedding_vec=embedding_vec_literal,
                 )
             else:
                 emb = Embeddings(
-                    embeddings=embeddings_str,
                     node_id=db_object.id,
                     doc_type=db_object.ntype,
                     embeddings_content=embedding_text,
                     embeddings_url=resolved_node_url,
                     embedding_model_id=embedding_model_id,
                     embedding_dim=embedding_dim,
+                    embedding_vec=embedding_vec_literal,
                 )
             self.session.add(emb)
             self.session.commit()
             return emb
         else:
             logger.debug(f"knew of embedding for object {db_object.id} ,updating")
-            existing[0].embeddings = embeddings_str
             existing[0].embeddings_content = embedding_text
             existing[0].embedding_model_id = embedding_model_id
             existing[0].embedding_dim = embedding_dim
+            existing[0].embedding_vec = embedding_vec_literal
             if doctype != cre_defs.Credoctypes.CRE:
                 if embeddings_url is not None:
                     existing[0].embeddings_url = embeddings_url
@@ -2530,6 +2568,79 @@ class Node_collection:
             self.session.commit()
 
             return existing
+
+    def can_use_pgvector_similarity(self) -> bool:
+        """True when Postgres has ``embeddings.embedding_vec`` for SQL cosine."""
+        cached = getattr(self, "_pgvector_similarity_ready", None)
+        if cached is not None:
+            return bool(cached)
+        try:
+            bind = self.session.get_bind()
+            from application.database.pgvector_utils import embedding_vec_column_exists
+
+            ready = getattr(
+                bind.dialect, "name", ""
+            ) == "postgresql" and embedding_vec_column_exists(bind)
+        except Exception:
+            ready = False
+        self._pgvector_similarity_ready = ready
+        return ready
+
+    def find_most_similar_embedding_id(
+        self,
+        query_embedding: List[float],
+        *,
+        doc_type: str,
+        id_column: str,
+        similarity_threshold: float,
+    ) -> Tuple[Optional[str], Optional[float]]:
+        """Top-1 cosine match via pgvector ``<=>`` (Postgres only).
+
+        Returns ``(object_id, score)`` or ``(None, None)`` below threshold /
+        when no rows match. Refuses SQLite / missing ``embedding_vec`` with
+        ``SystemExit`` — callers that need a soft fallback must gate on
+        ``can_use_pgvector_similarity()`` first and use sklearn instead.
+        """
+        from application.database.pgvector_utils import (
+            fail_pgvector_unavailable,
+            most_similar_id_sql,
+            to_pgvector_literal,
+        )
+        from sqlalchemy import text as sql_text
+
+        if not self.can_use_pgvector_similarity():
+            fail_pgvector_unavailable(context="find_most_similar_embedding_id")
+
+        sql = most_similar_id_sql(id_column)
+        bind = self.session.get_bind()
+        params = {
+            "q": to_pgvector_literal(query_embedding),
+            "doc_type": doc_type,
+        }
+        try:
+            # Prefer the Session so we stay inside the app transaction; fall
+            # back to a Connection from the Engine for SQLAlchemy 2.
+            if hasattr(self.session, "execute"):
+                row = self.session.execute(sql_text(sql), params).fetchone()
+            else:
+                with bind.connect() as conn:
+                    row = conn.execute(sql_text(sql), params).fetchone()
+            if not row:
+                return None, None
+            score = float(row.score)
+            if score < similarity_threshold:
+                return None, None
+            return str(row.object_id), score
+        except SystemExit:
+            raise
+        except Exception as exc:
+            # Match prior sklearn-path resilience: chat/import should degrade
+            # to "no match" rather than 500 on a transient driver/query error.
+            logger.warning(
+                "pgvector similarity query failed (%s); returning no match",
+                exc,
+            )
+            return None, None
 
     def assert_embedding_contract(
         self,
