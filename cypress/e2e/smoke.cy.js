@@ -3,6 +3,8 @@ describe('OpenCRE e2e smoke', () => {
     cy.visit('/');
     cy.get('form#search-bar').should('exist');
     cy.get('form#search-bar input[type="text"]').should('be.visible');
+    // Historical Jest coverage asserted the search UI "contains Search".
+    cy.contains('form#search-bar button[type="submit"]', 'Search').should('be.visible');
   });
 
   it('home search routes to search results page', () => {
