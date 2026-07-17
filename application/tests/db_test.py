@@ -125,6 +125,54 @@ class TestDB(unittest.TestCase):
         self.assertEqual(self.collection.get_by_tags([]), [])
         self.assertEqual(self.collection.get_by_tags(["this should not be a tag"]), [])
 
+    def test_get_by_tags_with_pagination(self) -> None:
+
+        for i in range(5):
+            dbcre = db.CRE(
+                description=f"Pagiation CRE {i}",
+                name=f"PaginationCRE{i}",
+                tags="pagination-test",
+                external_id=f"500-{i:03d}",
+            )
+            self.collection.session.add(dbcre)
+        self.collection.session.commit()
+
+        total_pages, docs = self.collection.get_by_tags_with_pagination(
+            ["pagination-test"], page=1, items_per_page=10
+        )
+        self.assertEqual(len(docs), 5)
+        self.assertEqual(total_pages, 1)
+
+        total_pages, docs = self.collection.get_by_tags_with_pagination(
+            ["pagination-test"], page=1, items_per_page=2
+        )
+        self.assertEqual(len(docs), 2)
+        self.assertEqual(total_pages, 3)
+
+        total_pages, docs = self.collection.get_by_tags_with_pagination(
+            ["pagination-test"], page=2, items_per_page=2
+        )
+        self.assertEqual(len(docs), 2)
+        self.assertEqual(total_pages, 3)
+
+        total_pages, docs = self.collection.get_by_tags_with_pagination(
+            ["pagination-test"], page=3, items_per_page=2
+        )
+        self.assertEqual(len(docs), 1)
+        self.assertEqual(total_pages, 3)
+
+        total_pages, docs = self.collection.get_by_tags_with_pagination(
+            [], page=1, items_per_page=1
+        )
+        self.assertEqual(total_pages, 0)
+        self.assertEqual(docs, [])
+
+        total_pages, docs = self.collection.get_by_tags_with_pagination(
+            ["non-existent-tag"], page=1, items_per_page=10
+        )
+        self.assertEqual(total_pages, 0)
+        self.assertEqual(docs, [])
+
     def test_get_standards_names(self) -> None:
         result = self.collection.get_node_names()
         expected = [("Standard", "BarStand"), ("Standard", "Unlinked")]
