@@ -25,12 +25,13 @@ Use Makefile targets — do not hand-roll `docker run`:
 ```bash
 make docker-neo4j      # Neo4j (7474/7687)
 make docker-redis      # Redis Stack (6379/8001)
-make docker-postgres   # local Postgres (5432, cre/password)
+make docker-postgres   # local Postgres+pgvector (5432, cre/password)
 make start-containers  # neo4j + redis only
 make migrate-upgrade   # after postgres is up
 ```
 
-Reset volumes: `make docker-neo4j-rm` / `make docker-redis-rm`.
+Reset volumes: `make docker-neo4j-rm` / `make docker-redis-rm` / `make docker-postgres-rm`.
+Local Postgres is **`pgvector/pgvector:pg16`** by default (`POSTGRES_IMAGE` override). Plain `postgres` images are not supported for app DB use — `embedding_vec` / chat / Librarian need the `vector` extension.
 
 ### Imports and Neo4j populate
 

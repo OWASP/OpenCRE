@@ -21,14 +21,15 @@ The retriever is a thin, dependency-injected seam over two collaborators:
 Two interchangeable backends behind one ``retrieve()`` seam, selected by
 ``CRE_LIBRARIAN_RETRIEVER_BACKEND``:
 
-  - ``in_memory`` — sklearn cosine over an in-RAM matrix. The only backend
-    that works on SQLite, so it is what CI, the golden-dataset harness, and
-    SQLite dev use. Loads the whole hub into RAM.
+  - ``in_memory`` — sklearn cosine over an in-RAM matrix. Works on SQLite
+    (CI / harness) by reading stored ``embedding_vec`` Text literals into a
+    hub matrix. Does not use the pgvector ``<=>`` operator.
   - ``pgvector`` — pushes the cosine into Postgres via the ``<=>`` operator
     over an ``embedding_vec vector(dim)`` column; never loads the hub into
-    RAM. Requires the ``vector`` extension + that column (the Alembic
-    migration lands W8, during live integration, where it is validated
-    against real Postgres). Unavailable on SQLite.
+    RAM. Requires the ``vector`` extension + that column (Alembic
+    ``c7d8e9f0a1b2`` / #977). On SQLite (or Postgres without the column)
+    construction/use raises ``SystemExit`` with a clear message — never
+    silently falls back.
 
 The RFC is silent on retrieval tech — it mandates only the
 ``candidates[]``/``reranked[]`` audit trail — so the backend choice is ours;
@@ -47,6 +48,7 @@ from typing import Any, Callable, List, Mapping, Optional, Sequence, Tuple
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 
+from application.database.pgvector_utils import to_pgvector_literal
 from application.utils.librarian.schemas import CreCandidate, RetrievalAudit
 
 # A function that turns one piece of text into a single dense vector.
@@ -63,7 +65,7 @@ class RetrieverBackend(str, Enum):
     # sklearn cosine over an in-RAM matrix — SQLite dev, CI, and the harness.
     in_memory = "in_memory"
     # Postgres-side cosine via pgvector's ``<=>`` operator (needs the vector
-    # extension + an embedding_vec column; migration lands W8).
+    # extension + an embedding_vec column; Alembic c7d8e9f0a1b2 / #977).
     pgvector = "pgvector"
 
 
@@ -177,11 +179,6 @@ class CandidateRetriever:
         )
 
 
-def to_pgvector_literal(vector: Sequence[float]) -> str:
-    """Render a vector in pgvector's text input format: ``[1.0,2.0,3.0]``."""
-    return "[" + ",".join(repr(float(x)) for x in vector) + "]"
-
-
 class PgVectorRetriever:
     """Postgres-side top-K cosine via pgvector's ``<=>`` operator.
 
@@ -192,8 +189,8 @@ class PgVectorRetriever:
     in-memory backend's cosine *similarity*.
 
     Needs the ``vector`` extension and an ``embedding_vec vector(dim)`` column
-    (migration lands W8). Unavailable on SQLite — the factory routes SQLite to
-    ``in_memory``.
+    (Alembic ``c7d8e9f0a1b2`` / #977). SQLite is refused at construct/execute time
+    with ``SystemExit`` — never silently routed to ``in_memory``.
     """
 
     # Parameterized; :q is bound as a pgvector text literal and cast in-SQL.
@@ -218,6 +215,11 @@ class PgVectorRetriever:
     ) -> None:
         if top_k <= 0:
             raise RetrieverError(f"top_k must be > 0, got {top_k}")
+        from application.database.pgvector_utils import require_pgvector_connection
+
+        require_pgvector_connection(
+            connection, context="PgVectorRetriever / Module C.1"
+        )
         self._embed_fn = embed_fn
         self._conn = connection
         self._top_k = top_k
@@ -234,6 +236,9 @@ class PgVectorRetriever:
         """
         from sqlalchemy import text as sql_text
 
+        from application.database.pgvector_utils import require_pgvector_connection
+
+        require_pgvector_connection(self._conn, context="PgVectorRetriever.retrieve")
         query = to_pgvector_literal(list(self._embed_fn(text)))
         rows = self._conn.execute(
             sql_text(self._SQL),

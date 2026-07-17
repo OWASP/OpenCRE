@@ -237,7 +237,7 @@ ensure_local_postgres_if_needed() {
       -e POSTGRES_USER="${LOCAL_PG_USER}" \
       -e POSTGRES_DB="${LOCAL_PG_DB}" \
       -p "${LOCAL_PG_PORT}:5432" \
-      postgres:16 >/dev/null
+      "${LOCAL_PG_IMAGE:-pgvector/pgvector:pg16}" >/dev/null
   fi
 
   local ready=0
@@ -249,6 +249,8 @@ ensure_local_postgres_if_needed() {
     sleep 1
   done
   [[ "${ready}" == "1" ]] || die "Local postgres docker did not become ready in time"
+  docker exec "${LOCAL_PG_CONTAINER}" psql -U "${LOCAL_PG_USER}" -d "${LOCAL_PG_DB}" \
+    -c "CREATE EXTENSION IF NOT EXISTS vector;" >/dev/null
 }
 
 copy_env_from_prod() {
