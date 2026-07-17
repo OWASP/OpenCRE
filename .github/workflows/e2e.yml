@@ -1,30 +1,37 @@
-# name: Test-e2e
-# on: [push, pull_request]
-# jobs:
-#   build:
-#     name: Test-e2e
-#     runs-on: ubuntu-latest
-#     timeout-minutes: 10
-#     steps:
-#       - name: Check out code
-#         uses: actions/checkout@v4
-#       - uses: actions/setup-python@v4
-#         with:
-#           python-version: '3.11.4' 
-#           cache: 'pip'
-#       - uses: actions/setup-node@v3
-#         with:
-#           cache: 'yarn'
-#           node-version: 'v20.12.1'
-#       - name: Install dependencies
-#         run: |
-#           sudo apt-get update
-#           sudo apt-get install -y python3-setuptools python3-pip python3-virtualenv chromium-browser libgbm1
-#           make install
-#       - name: DB setup
-#         run: |
-#             make migrate-upgrade
-#             python cre.py --upstream_sync
-#       # - name: Run app and e2e tests
-      #   run: |
-      #       make e2e
+name: Test-e2e
+on: [push, pull_request]
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Test-e2e
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.3'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20.12.1'
+          cache: 'yarn'
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+              python3-setuptools \
+              python3-virtualenv \
+              python3-pip \
+              libxml2-dev \
+              libxslt-dev
+      - name: Install app dependencies
+        run: |
+          pip install --upgrade pip setuptools
+          make install
+      - name: Load CRE data
+        run: make upstream-sync
+      - name: Run Cypress smoke e2e
+        run: make e2e
