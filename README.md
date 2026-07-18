@@ -352,6 +352,25 @@ make cover
 
 Try to keep the coverage above 70%.
 
+### Frontend end-to-end tests (Cypress)
+
+Frontend E2E tests run with [Cypress](https://www.cypress.io/) against a local Flask server.
+First seed a local database — this builds the schema from the ORM models and loads the CRE graph
+from upstream into `./standards_cache.sqlite` — then run the suite headlessly:
+
+```bash
+make e2e-db   # one-time: build and populate the local SQLite cache
+make e2e      # build the frontend, start Flask on 127.0.0.1:5000, run Cypress
+```
+
+To watch the tests run interactively, start the backend in one terminal and open Cypress in
+another (after seeding with `make e2e-db`):
+
+```bash
+make dev-flask       # terminal 1: serves http://127.0.0.1:5000
+yarn cypress:open    # terminal 2: opens the Cypress runner
+```
+
 ---
 
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
