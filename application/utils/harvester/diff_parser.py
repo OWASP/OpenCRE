@@ -44,16 +44,16 @@ class DiffParser:
 
                 continue
 
-            if line.startswith("+++"):
+            if line.startswith("+++ b/") or line.startswith("++/dev/null"):
                 continue
 
-            if line.startswith("---"):
+            if line.startswith("--- a/") or line.startswith("--- /dev/null"):
                 continue
 
             if line.startswith("@@"):
                 continue
 
-            if line.startswith("+") and not line.startswith("+++"):
+            if line.startswith("+"):
                 added_lines.append(line[1:])
 
         if current_file is not None:

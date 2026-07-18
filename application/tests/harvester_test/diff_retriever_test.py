@@ -11,7 +11,7 @@ class DiffRetrieverTests(unittest.TestCase):
     @patch("application.utils.harvester.diff_retriever.subprocess.run")
     def test_get_diff(self, mock_run):
         mock_run.return_value = MagicMock(
-            stdout="diff --git a/README.md b/README.md\n",
+            stdout=b"diff --git a/README.md b/README.md\n",
         )
 
         client = MagicMock()
@@ -39,7 +39,6 @@ class DiffRetrieverTests(unittest.TestCase):
                 "def456",
             ],
             capture_output=True,
-            text=True,
             check=True,
             timeout=300,
         )
@@ -47,7 +46,7 @@ class DiffRetrieverTests(unittest.TestCase):
     @patch("application.utils.harvester.diff_retriever.subprocess.run")
     def test_large_diff_raises(self, mock_run):
         mock_run.return_value = MagicMock(
-            stdout="A" * (51 * 1024 * 1024),
+            stdout=b"A" * (51 * 1024 * 1024),
         )
 
         client = MagicMock()

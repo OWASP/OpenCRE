@@ -56,16 +56,18 @@ class DiffRetriever:
                 ],
                 check=True,
                 capture_output=True,
-                text=True,
                 timeout=300,
             )
         except subprocess.CalledProcessError as exc:
-            logger.error("Failed to retrieve diff: %s", exc.stderr)
+            logger.error(
+                "Failed to retrieve diff: %s",
+                exc.stderr.decode("utf-8", errors="replace"),
+            )
             raise
 
-        diff = result.stdout
+        diff_bytes = result.stdout
 
-        diff_size = len(diff.encode("utf-8"))
+        diff_size = len(diff_bytes)
 
         if diff_size > self.MAX_DIFF_SIZE_BYTES:
             raise ValueError(
@@ -73,4 +75,4 @@ class DiffRetriever:
                 f"maximum supported size ({self.MAX_DIFF_SIZE_BYTES} bytes)."
             )
 
-        return diff
+        return diff_bytes.decode("utf-8", errors="replace")

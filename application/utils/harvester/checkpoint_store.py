@@ -11,14 +11,14 @@ class CheckpointStore:
         self.checkpoint_file = checkpoint_file
 
     def load(self, repository_id: str) -> RepositoryCheckpoint | None:
-        if not self.checkpoint_file.exists():
-            return None
-
-        data = json.loads(
-            self.checkpoint_file.read_text(
-                encoding="utf-8",
+        try:
+            data = json.loads(
+                self.checkpoint_file.read_text(
+                    encoding="utf-8",
+                )
             )
-        )
+        except FileNotFoundError:
+            return None
 
         if repository_id not in data:
             return None
@@ -34,13 +34,14 @@ class CheckpointStore:
         )
 
     def save(self, checkpoint: RepositoryCheckpoint) -> None:
-        data = {}
-        if self.checkpoint_file.exists():
+        try:
             data = json.loads(
                 self.checkpoint_file.read_text(
                     encoding="utf-8",
                 )
             )
+        except FileNotFoundError:
+            data = {}
 
         data[checkpoint.repository_id] = {
             "last_processed_commit": checkpoint.last_processed_commit,

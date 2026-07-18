@@ -11,14 +11,14 @@ DEFAULT_ALLOWED_EXTENSIONS = {
 DEFAULT_EXCLUDE_PATTERNS = [
     r"^\.github/",
     r"^\.git/",
-    r"^node_modules/",
-    r"^dist/",
-    r"^build/",
-    r"^coverage/",
-    r"^vendor/",
-    r".*package-lock\.json$",
-    r".*yarn\.lock$",
-    r".*pnpm-lock\.yaml$",
+    r"(?:^|/)node_modules/",
+    r"(?:^|/)dist/",
+    r"(?:^|/)build/",
+    r"(?:^|/)coverage/",
+    r"(?:^|/)vendor/",
+    r"package-lock\.json$",
+    r"yarn\.lock$",
+    r"pnpm-lock\.yaml$",
 ]
 
 

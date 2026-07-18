@@ -1,4 +1,5 @@
 from datetime import UTC, datetime
+import subprocess
 import time
 import unittest
 
@@ -22,6 +23,23 @@ class DiffPipelineBenchmark(unittest.TestCase):
             "ASVS",
             "master",
         )
+        client.sync()
+
+        head_commit = client.get_current_commit_sha()
+
+        previous_commit = subprocess.run(
+            [
+                "git",
+                "-C",
+                str(client.get_local_path()),
+                "rev-parse",
+                "HEAD~1",
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=300,
+        ).stdout.strip()
 
         retriever = DiffRetriever(client)
         parser = DiffParser()
@@ -30,14 +48,14 @@ class DiffPipelineBenchmark(unittest.TestCase):
         start = time.perf_counter()
 
         diff = retriever.get_diff(
-            "a79c0184",
-            "122d9e0969465a6041e16c806a0464b35deea444",
+            previous_commit,
+            head_commit,
         )
 
         blocks = parser.parse(
             diff,
             repository="OWASP/ASVS",
-            commit_sha="122d9e0969465a6041e16c806a0464b35deea444",
+            commit_sha=head_commit,
             committed_at=datetime.now(UTC),
         )
 
