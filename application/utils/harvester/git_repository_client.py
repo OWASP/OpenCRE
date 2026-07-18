@@ -113,6 +113,7 @@ class GitRepositoryClient(RepositoryClient):
                     "-C",
                     str(self.local_path),
                     "checkout",
+                    "--",
                     reference,
                 ],
                 check=True,
