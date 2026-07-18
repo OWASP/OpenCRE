@@ -264,6 +264,100 @@ def report_calibration(
     return 0 if gate_ok else 1
 
 
+def report_decision_accuracy(
+    rows: List[GoldenDatasetRow],
+    retriever,
+    reranker,
+    threshold: float,
+) -> int:
+    """Run the full C.1 -> C.4 decision over the golden set and measure how often
+    ``decide()`` lands on the expected auto-link-vs-review call.
+
+    Fits temperature on the positive + hard_negative slices (as in
+    ``report_calibration``), then for every golden row carrying an expected
+    decision: retrieve -> rerank -> C.3 confidence (top-1 softmax mass) ->
+    ``decide()`` at the auto-link threshold. Reports the linked-vs-review accuracy
+    (the meaningful C.4 number at this fixed threshold) and, for expected-review
+    rows, how often the ``reason_code`` matches too.
+
+    Informational — it does not fail the run: the SafetyGuard flags (adversarial /
+    update_ambiguous) are not wired yet, so ``decide()`` sees them as False here and
+    reason codes that depend on them lag until that lands; and tuning the threshold
+    itself is the Week 7 experiment, so hard-gating it now would be premature.
+    """
+    from application.utils.librarian.calibration.temperature import fit_temperature
+    from application.utils.librarian.decision_engine import decide
+    from application.utils.librarian.schemas import Decision
+
+    # Fit T on the same positive + hard_negative calibration set as C.3.
+    cal_rows = [r for r in rows if r.slice.value in ("positive", "hard_negative")]
+    logit_sets: List[List[float]] = []
+    labels: List[float] = []
+    for row in cal_rows:
+        audit = reranker.rerank(row.input.text, retriever.retrieve(row.input.text))
+        reranked = [c for c in audit.reranked if c.score_rerank is not None]
+        if not reranked:
+            continue
+        expected = set(row.expected.cre_ids or [])
+        logit_sets.append([float(c.score_rerank) for c in reranked])
+        labels.append(1.0 if reranked[0].cre_id in expected else 0.0)
+    if len(set(labels)) < 2:
+        print("decision (C.4): need both outcomes to fit temperature; skipped")
+        return 0
+    scaler = fit_temperature(logit_sets, labels)
+
+    graded = [r for r in rows if r.expected.decision is not None]
+    if not graded:
+        print("decision (C.4): no rows with an expected decision in this selection")
+        return 0
+
+    dec_match = reason_match = 0
+    link_total = link_correct = review_total = review_correct = 0
+    for row in graded:
+        audit = reranker.rerank(row.input.text, retriever.retrieve(row.input.text))
+        reranked = [c for c in audit.reranked if c.score_rerank is not None]
+        logits = [float(c.score_rerank) for c in reranked]
+        cre_ids = [c.cre_id for c in reranked]
+        confidence = scaler.confidence(logits) if logits else 0.0
+        result = decide(confidence, cre_ids, threshold=threshold)
+        matched = result.decision == row.expected.decision
+        if matched:
+            dec_match += 1
+        if row.expected.decision == Decision.linked:
+            link_total += 1
+            link_correct += matched
+        elif row.expected.decision == Decision.review:
+            review_total += 1
+            review_correct += matched
+            if result.reason_code == row.expected.reason_code:
+                reason_match += 1
+
+    # Overall agreement plus the two directions split out, because a single
+    # accuracy hides the story at an untuned threshold: at tau=0.80 the softmax
+    # top-1 mass of a correct-but-close winner is often ~0.5, so many correct
+    # positives fall *below* the bar and route to review (the safe direction).
+    # Auto-link recall vs review recall makes that visible; W7 tunes tau.
+    n = len(graded)
+    print(
+        f"decision (C.4, {n} rows @ tau={threshold:.2f}): "
+        f"overall {dec_match}/{n} ({dec_match / n:.0%})"
+    )
+    if link_total:
+        print(
+            f"  auto-link recall (expected-linked rows): "
+            f"{link_correct}/{link_total} ({link_correct / link_total:.0%})"
+        )
+    if review_total:
+        print(
+            f"  review recall (expected-review rows): "
+            f"{review_correct}/{review_total} ({review_correct / review_total:.0%}); "
+            f"reason_code match {reason_match}/{review_total} "
+            f"({reason_match / review_total:.0%}) "
+            f"(SafetyGuard flags not wired — flag-based codes lag)"
+        )
+    return 0
+
+
 def main(argv: List[str]) -> int:
     cfg = load_config()
     parser = argparse.ArgumentParser(description="Module C eval harness (W2: C.0)")
@@ -362,6 +456,7 @@ def main(argv: List[str]) -> int:
             rows, retriever, reranker, args.top_k_retrieval, args.top_k_rerank
         )
         calib_status = report_calibration(rows, retriever, reranker)
+        report_decision_accuracy(rows, retriever, reranker, args.threshold)
     else:
         print(
             "semantic pipeline (C.1 retrieve + C.2 rerank) + calibration (C.3): "
