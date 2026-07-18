@@ -13,7 +13,6 @@ except ImportError:
     pass
 
 import click  # type: ignore
-import coverage  # type: ignore
 from flask_migrate import Migrate  # type: ignore
 
 from application import create_app, sqla  # type: ignore
@@ -33,6 +32,8 @@ migrate = Migrate(app, sqla, render_as_batch=True)
 def test(cover: bool, test_names: List[str]) -> None:
     COV = None
     if cover or os.environ.get("FLASK_COVERAGE"):
+        import coverage  # type: ignore  # lazy: not needed for web/worker boot
+
         COV = coverage.coverage(
             branch=True,
             include="application/*",

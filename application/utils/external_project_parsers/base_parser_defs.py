@@ -1,10 +1,12 @@
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, TYPE_CHECKING
 from dataclasses import dataclass
 from enum import Enum
 
 from application.defs import cre_defs as defs
-from application.prompt_client import prompt_client as prompt_client
 from application.database import db
+
+if TYPE_CHECKING:
+    from application.prompt_client import prompt_client as prompt_client
 
 # abstract class/interface that shows how to import a project that is not cre or its core resources
 
@@ -125,7 +127,7 @@ class ParserInterface(object):
 
     def parse(
         database: db.Node_collection,
-        prompt_client: Optional[prompt_client.PromptHandler],
+        prompt_client: Optional["prompt_client.PromptHandler"],
     ) -> ParseResult:
         """
         Parses the resources of a project,

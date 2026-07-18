@@ -62,7 +62,16 @@ class TestPciDssLinking(unittest.TestCase):
         low_cre = defs.CRE(id="111-111", name="Low", description="")
         high_cre = defs.CRE(id="222-222", name="High", description="")
         cache.get_nodes.return_value = [low_node, high_node]
-        cache.get_embeddings_for_doc.side_effect = [[0.0, 1.0], [1.0, 0.0]]
+
+        def _emb_row(vec):
+            row = Mock()
+            row.embedding_vec = "[" + ",".join(str(x) for x in vec) + "]"
+            return row
+
+        cache.get_embeddings_for_doc.side_effect = [
+            _emb_row([0.0, 1.0]),
+            _emb_row([1.0, 0.0]),
+        ]
         cache.find_cres_of_node.side_effect = [
             [Mock(id="low-db")],
             [Mock(id="high-db")],

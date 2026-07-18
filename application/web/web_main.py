@@ -10,16 +10,13 @@ import io
 import pathlib
 import re
 import urllib.parse
-from alive_progress import alive_bar
 from typing import Any
-from application.utils import oscal_utils, redis
 
 from rq import job, exceptions
 from rq import Queue
 
-from application.utils import oscal_utils, redis
+from application.utils import redis
 from application.database import db
-from application.cmd import cre_main
 from application.defs import cre_defs as defs
 from application.defs import cre_exceptions
 from application.feature_flags import (
@@ -31,7 +28,6 @@ from application.feature_flags import (
 
 from application.utils import spreadsheet as sheet_utils
 from application.utils import mdutils, redirectors, gap_analysis
-from application.utils.external_project_parsers.parsers import myopencre_parser
 from application.web.openapi_registry import openapi_documented
 from enum import Enum
 from flask import json as flask_json
@@ -179,6 +175,15 @@ def find_cre(creid: str = None, crename: str = None) -> Any:  # refer
             return write_csv(docs=docs).getvalue().encode("utf-8")
 
         elif opt_format == SupportedFormats.OSCAL.value:
+            try:
+                from application.utils import oscal_utils
+            except ImportError:
+                abort(
+                    503,
+                    "OSCAL export is unavailable on this deployment "
+                    "(compliance-trestle not installed).",
+                )
+
             result = {"data": json.loads(oscal_utils.document_to_oscal(cre))}
 
         return jsonify(result)
@@ -270,6 +275,15 @@ def find_node_by_name(
             return write_csv(docs=docs).getvalue().encode("utf-8")
 
         elif opt_format == SupportedFormats.OSCAL.value:
+            try:
+                from application.utils import oscal_utils
+            except ImportError:
+                abort(
+                    503,
+                    "OSCAL export is unavailable on this deployment "
+                    "(compliance-trestle not installed).",
+                )
+
             return jsonify(json.loads(oscal_utils.list_to_oscal(nodes)))
 
         # if opt_osib:
@@ -307,6 +321,15 @@ def find_document_by_tag() -> Any:
             )
             return write_csv(docs=docs).getvalue().encode("utf-8")
         elif opt_format == SupportedFormats.OSCAL.value:
+            try:
+                from application.utils import oscal_utils
+            except ImportError:
+                abort(
+                    503,
+                    "OSCAL export is unavailable on this deployment "
+                    "(compliance-trestle not installed).",
+                )
+
             return jsonify(json.loads(oscal_utils.list_to_oscal(documents)))
 
         return jsonify(result)
@@ -395,7 +418,7 @@ def map_analysis() -> Any:
 
         j = q.enqueue_call(
             description=f"{standards[0]}->{standards[1]}",
-            func=cre_main.run_gap_pair_job,
+            func="application.cmd.cre_main.run_gap_pair_job",
             kwargs={
                 "importing_name": standards[0],
                 "peer_name": standards[1],
@@ -535,6 +558,8 @@ def ga_standards() -> Any:
     standards = list(database.standards())
     if OPENCRE_STANDARD_NAME not in standards:
         standards.append(OPENCRE_STANDARD_NAME)
+    from application.cmd import cre_main
+
     eligible = [
         s
         for s in standards
@@ -591,6 +616,15 @@ def text_search() -> Any:
             )
             return write_csv(docs=docs).getvalue().encode("utf-8")
         elif opt_format == SupportedFormats.OSCAL.value:
+            try:
+                from application.utils import oscal_utils
+            except ImportError:
+                abort(
+                    503,
+                    "OSCAL export is unavailable on this deployment "
+                    "(compliance-trestle not installed).",
+                )
+
             return jsonify(json.loads(oscal_utils.list_to_oscal(documents)))
 
         res = [doc.todict() for doc in documents]
@@ -648,6 +682,15 @@ def find_root_cres() -> Any:
             )
             return write_csv(docs=docs).getvalue().encode("utf-8")
         elif opt_format == SupportedFormats.OSCAL.value:
+            try:
+                from application.utils import oscal_utils
+            except ImportError:
+                abort(
+                    503,
+                    "OSCAL export is unavailable on this deployment "
+                    "(compliance-trestle not installed).",
+                )
+
             return jsonify(json.loads(oscal_utils.list_to_oscal(documents)))
 
         return jsonify(result)
@@ -1038,9 +1081,24 @@ def chat_cre() -> Any:
 
     database = db.Node_collection()
     # Lazy import to avoid loading heavy prompt/ML dependencies at web boot.
-    from application.prompt_client import llm_error_utils, prompt_client
+    try:
+        from application.prompt_client import llm_error_utils, prompt_client
 
-    prompt = prompt_client.PromptHandler(database)
+        prompt = prompt_client.PromptHandler(database)
+    except ImportError:
+        abort(
+            503,
+            "Chat is unavailable on this deployment (ML/LLM dependencies not installed).",
+        )
+    except RuntimeError as exc:
+        # PromptHandler raises RuntimeError when litellm is missing.
+        if "litellm" not in str(exc).lower():
+            raise
+        abort(
+            503,
+            "Chat is unavailable on this deployment (ML/LLM dependencies not installed).",
+        )
+
     try:
         response = prompt.generate_text(message.get("prompt"))
     except Exception as e:
@@ -1315,6 +1373,8 @@ def import_from_cre_csv() -> Any:
     contents = file.read()
     csv_read = csv.DictReader(contents.decode("utf-8").splitlines())
     try:
+        from application.utils.external_project_parsers.parsers import myopencre_parser
+
         parse_result = myopencre_parser.parse_rows_to_documents(list(csv_read))
     except cre_exceptions.DuplicateLinkException as dle:
         abort(500, f"error during parsing of the incoming CSV, err:{dle}")

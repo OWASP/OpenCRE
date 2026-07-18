@@ -6,6 +6,7 @@ the RetrievalAudit shape are all assertable without an LLM or a DB.
 """
 
 import unittest
+from unittest.mock import MagicMock
 
 from application.utils.librarian.candidate_retriever import (
     PGVECTOR_RETRIEVER_NAME,
@@ -207,6 +208,19 @@ class BuildRetrieverTest(unittest.TestCase):
             connection=_FakeConnection([]),
         )
         self.assertIsInstance(pg, PgVectorRetriever)
+
+    def test_pgvector_backend_exits_on_sqlite_connection(self) -> None:
+        conn = MagicMock()
+        conn.dialect.name = "sqlite"
+        with self.assertRaises(SystemExit) as cm:
+            build_retriever(
+                RetrieverBackend.pgvector,
+                fake_embed,
+                top_k=20,
+                threshold=0.8,
+                connection=conn,
+            )
+        self.assertIn("pgvector embeddings are required", str(cm.exception))
 
 
 if __name__ == "__main__":

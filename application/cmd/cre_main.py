@@ -9,14 +9,12 @@ import tempfile
 import requests
 
 from collections import deque
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple, TYPE_CHECKING
 import hashlib
 import json as _json
 from rq import Queue, job, exceptions
 from sqlalchemy import not_
 
-from application.utils.external_project_parsers.base_parser import BaseParser
-from application.utils.external_project_parsers.parsers import master_spreadsheet_parser
 from application import create_app  # type: ignore
 from application.config import CMDConfig
 from application.database import db
@@ -26,10 +24,11 @@ from application.defs import osib_defs as odefs
 from application.utils import spreadsheet as sheet_utils
 from application.utils import redis
 from application.utils import db_backend
-from alive_progress import alive_bar
-from application.prompt_client import prompt_client as prompt_client
 from application.utils import gap_analysis
 from application.utils import cres_csv_export
+
+if TYPE_CHECKING:
+    from application.prompt_client import prompt_client as prompt_client
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
@@ -469,6 +468,8 @@ def register_standard(
         return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
     conn = redis.connect()
+    from application.prompt_client import prompt_client as prompt_client
+
     ph = prompt_client.PromptHandler(database=collection)
     importing_name = standard_entries[0].name
     effective_calculate_gap_analysis = (
@@ -541,7 +542,7 @@ def register_standard(
 def parse_standards_from_spreadsheeet(
     cre_file: List[Dict[str, Any]],
     cache_location: str,
-    prompt_handler: prompt_client.PromptHandler,
+    prompt_handler: "prompt_client.PromptHandler",
 ) -> None:
     """given a csv with standards, build a list of standards in the db"""
     if not cre_file:
@@ -568,6 +569,10 @@ def parse_standards_from_spreadsheeet(
         from application.utils import import_pipeline
 
         collection = db_connect(cache_location)
+        from application.utils.external_project_parsers.parsers import (
+            master_spreadsheet_parser,
+        )
+
         parse_result = master_spreadsheet_parser.MasterSpreadsheetParser.parse_rows(
             cre_file
         )
@@ -682,6 +687,8 @@ def download_gap_analysis_from_upstream(cache: str) -> None:
         pairs = [(sa, sb) for sa in standards for sb in standards if sa != sb]
 
         if os.environ.get("BENCHMARK_MODE") == "1":
+            from alive_progress import alive_bar
+
             with alive_bar(len(pairs), title="Fetching upstream Gap Analysis") as bar:
                 for sa, sb in pairs:
                     res = requests.get(
@@ -846,11 +853,15 @@ def backfill_gap_analysis_only(
                 jobs.append(j)
 
             if jobs:
+                from alive_progress import alive_bar
+
                 with alive_bar(
                     len(jobs), title=f"GA batch {i // batch_size + 1}"
                 ) as bar:
                     redis.wait_for_jobs(jobs, bar)
         else:
+            from alive_progress import alive_bar
+
             with alive_bar(len(batch), title=f"GA batch {i // batch_size + 1}") as bar:
                 for sa, sb in batch:
                     _compute_pair_direct(collection, sa, sb)
@@ -901,6 +912,8 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
         cache.delete_nodes(args.delete_resource)
 
     # individual resource importing
+    from application.utils.external_project_parsers.base_parser import BaseParser
+
     if args.zap_in:
         from application.utils.external_project_parsers.parsers import zap_alerts_parser
 
@@ -1014,6 +1027,8 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
 
 
 def ai_client_init(database: db.Node_collection):
+    from application.prompt_client import prompt_client as prompt_client
+
     return prompt_client.PromptHandler(database=database)
 
 
@@ -1053,6 +1068,8 @@ def prepare_for_review(cache: str) -> Tuple[str, str]:
 
 
 def generate_embeddings(db_url: str) -> None:
+    from application.prompt_client import prompt_client as prompt_client
+
     database = db_connect(path=db_url)
     prompt_client.PromptHandler(database, load_all_embeddings=True)
 
@@ -1109,20 +1126,20 @@ def run_librarian(
             "land W8); running in dry-run mode"
         )
 
+    from application.prompt_client import prompt_client as prompt_client
+
     cfg = load_config()
     database = db_connect(path=cache_file)
     ph = prompt_client.PromptHandler(database=database)
 
     backend = RetrieverBackend(cfg.retriever_backend)
     if backend is RetrieverBackend.pgvector:
-        dialect = database.session.connection().dialect.name
-        if dialect != "postgresql":
-            logger.warning(
-                "CRE_LIBRARIAN_RETRIEVER_BACKEND=pgvector selected on a %r "
-                "database, but the pgvector backend needs Postgres with the "
-                "embedding_vec column (lands W8) and will fail at retrieve() "
-                "time here. Set the backend to in_memory until then.",
-                dialect,
+        # Hard-fail: do not silently fall back to in_memory / sklearn CSV paths.
+        from application.database.pgvector_utils import fail_pgvector_unavailable
+
+        if not database.can_use_pgvector_similarity():
+            fail_pgvector_unavailable(
+                context="CRE_LIBRARIAN_RETRIEVER_BACKEND=pgvector"
             )
     # The CRE ids present in the hub are exactly the known ids the explicit
     # resolver may auto-link to (W2 seeded this from the golden set; here it is
@@ -1136,13 +1153,16 @@ def run_librarian(
         if backend is RetrieverBackend.in_memory
         else None
     )
+    pg_connection = None
+    if backend is RetrieverBackend.pgvector:
+        pg_connection = database.session.connection()
     retriever = build_retriever(
         backend,
         embed_fn=ph.get_text_embeddings,
         top_k=cfg.top_k_retrieval,
         threshold=cfg.link_threshold,
         pool=pool,
-        connection=database.session.connection(),
+        connection=pg_connection,
     )
 
     # C.2 reranker: reads each (section, candidate-CRE) pair together and
@@ -1207,6 +1227,8 @@ def run_librarian(
 
 def regenerate_embeddings(db_url: str) -> None:
     """Wipe all embedding rows, then rebuild (CRE + every node type) like ``--generate_embeddings``."""
+    from application.prompt_client import prompt_client as prompt_client
+
     database = db_connect(path=db_url)
     removed = database.delete_all_embeddings()
     logger.info("Removed %s embedding rows; rebuilding embeddings", removed)
