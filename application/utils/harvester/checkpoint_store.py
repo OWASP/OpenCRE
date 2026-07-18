@@ -1,4 +1,5 @@
 import json
+import os
 from datetime import datetime
 from pathlib import Path
 
@@ -27,13 +28,19 @@ class CheckpointStore:
         return RepositoryCheckpoint(
             repository_id=repository_id,
             last_processed_commit=checkpoint["last_processed_commit"],
-            updated_at=datetime.fromisoformat(checkpoint["updated_at"]),
+            updated_at=datetime.fromisoformat(
+                checkpoint["updated_at"],
+            ),
         )
 
     def save(self, checkpoint: RepositoryCheckpoint) -> None:
         data = {}
         if self.checkpoint_file.exists():
-            data = json.loads(self.checkpoint_file.read_text(encoding="utf-8"))
+            data = json.loads(
+                self.checkpoint_file.read_text(
+                    encoding="utf-8",
+                )
+            )
 
         data[checkpoint.repository_id] = {
             "last_processed_commit": checkpoint.last_processed_commit,
@@ -45,10 +52,13 @@ class CheckpointStore:
             exist_ok=True,
         )
 
-        self.checkpoint_file.write_text(
+        temp_file = self.checkpoint_file.with_suffix(".tmp")
+        temp_file.write_text(
             json.dumps(
                 data,
                 indent=2,
             ),
             encoding="utf-8",
         )
+
+        os.replace(temp_file, self.checkpoint_file)
