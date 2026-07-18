@@ -22,8 +22,10 @@ class CheckpointStore:
             .filter_by(repository_id=repository_id)
             .first()
         )
+
         if record is None:
             return None
+
         return RepositoryCheckpoint(
             repository_id=record.repository_id,
             last_processed_commit=record.last_processed_commit,
@@ -53,6 +55,7 @@ class CheckpointStore:
                 )
                 .first()
             )
+
             if canonical_conflict is not None:
                 session.rollback()
                 raise ValueError("duplicate canonical source identity")
