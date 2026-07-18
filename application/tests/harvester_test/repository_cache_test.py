@@ -1,4 +1,5 @@
 import unittest
+from pathlib import Path
 
 from application.utils.harvester.repository_cache import (
     build_repository_cache_path,
@@ -13,8 +14,8 @@ class RepositoryCacheTests(unittest.TestCase):
         )
 
         self.assertEqual(
-            str(path),
-            ".harvester_cache/owasp/asvs/main",
+            path,
+            Path(".harvester_cache/owasp/asvs/main"),
         )
 
     def test_different_branches_have_different_cache_paths(self):
