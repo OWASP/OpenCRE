@@ -140,10 +140,24 @@ class TestDB(unittest.TestCase):
         self.collection.session.add(dbstandard)
         self.collection.session.commit()
 
-        with patch.object(self.collection, "get_nodes", return_value=[]):
+        with patch.object(self.collection, "get_nodes", return_value=[]) as mock_get_nodes:
             res = self.collection.get_by_tags(["regression_tag"])
             self.assertEqual(res, [])
-            mock_logger.fatal.assert_called_once()
+            
+            mock_get_nodes.assert_called_once_with(
+                name=dbstandard.name,
+                section=dbstandard.section,
+                subsection=dbstandard.subsection,
+                version=dbstandard.version,
+                link=dbstandard.link,
+                ntype=dbstandard.ntype,
+                sectionID=dbstandard.section_id,
+            )
+            
+            mock_logger.fatal.assert_called_once_with(
+                "db.get_node returned None for Node %s:%s:%s that exists, BUG!"
+                % (dbstandard.name, dbstandard.section, dbstandard.section_id)
+            )
 
     def test_get_standards_names(self) -> None:
         result = self.collection.get_node_names()
