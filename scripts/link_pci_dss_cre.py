@@ -38,6 +38,7 @@ def main() -> int:
 
     from application.cmd import cre_main
     from application.database import db
+    from application.database.pgvector_utils import parse_stored_embedding_vec
     from application.defs import cre_defs as defs
     from application.prompt_client import prompt_client
 
@@ -85,12 +86,18 @@ def main() -> int:
             .filter(db.Embeddings.node_id == db_node.id)
             .first()
         )
-        if not emb_row or not emb_row.embeddings:
+        if not emb_row or not emb_row.embedding_vec:
             logger.warning("No embedding for PCI node %s; skipping", db_node.section_id)
             skipped_no_match += 1
             continue
 
-        control_embeddings = [float(e) for e in emb_row.embeddings.split(",")]
+        control_embeddings = parse_stored_embedding_vec(emb_row.embedding_vec)
+        if not control_embeddings:
+            logger.warning(
+                "Empty embedding for PCI node %s; skipping", db_node.section_id
+            )
+            skipped_no_match += 1
+            continue
         cre_id = ph.get_id_of_most_similar_cre(control_embeddings)
         if not cre_id:
             standard_id = ph.get_id_of_most_similar_node(control_embeddings)

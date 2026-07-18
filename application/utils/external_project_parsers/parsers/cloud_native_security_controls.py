@@ -58,7 +58,7 @@ class CloudNativeSecurityControls(ParserInterface):
             )
             if existing:
                 embeddings = cache.get_embeddings_for_doc(existing[0])
-                if embeddings:
+                if embeddings and getattr(embeddings, "embedding_vec", None):
                     logger.info(
                         f"Node {cnsc.todict()} already exists and has embeddings, skipping"
                     )

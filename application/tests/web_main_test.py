@@ -797,7 +797,9 @@ class TestMain(unittest.TestCase):
             self.assertTrue(enqueue_call_mock.called)
             _, kwargs = enqueue_call_mock.call_args
             self.assertEqual("aaa->bbb", kwargs["description"])
-            self.assertEqual(cre_main.run_gap_pair_job, kwargs["func"])
+            self.assertEqual(
+                "application.cmd.cre_main.run_gap_pair_job", kwargs["func"]
+            )
             self.assertEqual("aaa", kwargs["kwargs"]["importing_name"])
             self.assertEqual("bbb", kwargs["kwargs"]["peer_name"])
             self.assertEqual(GAP_ANALYSIS_TIMEOUT, kwargs["timeout"])

@@ -112,8 +112,8 @@ class TestDB(unittest.TestCase):
 
         self.assertCountEqual(result, expected)
 
-    @mock.patch("application.utils.spreadsheet.gspread.service_account")
-    @mock.patch("application.utils.spreadsheet.gspread.oauth")
+    @mock.patch("gspread.service_account")
+    @mock.patch("gspread.oauth")
     def test_read_spreadsheet_iso_numbers(
         self, mock_oauth, mock_service_account
     ) -> None:
@@ -165,8 +165,8 @@ class TestDB(unittest.TestCase):
 
         self.assertEqual(result["ISO Numericise Test"], expected)
 
-    @mock.patch("application.utils.spreadsheet.gspread.service_account")
-    @mock.patch("application.utils.spreadsheet.gspread.oauth")
+    @mock.patch("gspread.service_account")
+    @mock.patch("gspread.oauth")
     def test_read_spreadsheet_empty_worksheet(
         self, mock_oauth, mock_service_account
     ) -> None:
@@ -191,8 +191,8 @@ class TestDB(unittest.TestCase):
 
         self.assertEqual(result["Empty Sheet"], [])
 
-    @mock.patch("application.utils.spreadsheet.gspread.service_account")
-    @mock.patch("application.utils.spreadsheet.gspread.oauth")
+    @mock.patch("gspread.service_account")
+    @mock.patch("gspread.oauth")
     def test_read_spreadsheet_short_row_padded(
         self, mock_oauth, mock_service_account
     ) -> None:
@@ -221,15 +221,15 @@ class TestDB(unittest.TestCase):
         self.assertEqual(result["Short Row"], [{"Col A": "only-a", "Col B": ""}])
 
     def test_records_from_worksheet_values_duplicate_headers(self) -> None:
-        with self.assertRaises(gspread.exceptions.GSpreadException) as ctx:
+        with self.assertRaises(ValueError) as ctx:
             _records_from_worksheet_values(
                 [["Col A", "Col B", "Col A"], ["x", "y", "z"]]
             )
         self.assertIn("Duplicate worksheet headers", str(ctx.exception))
         self.assertIn("Col A", str(ctx.exception))
 
-    @mock.patch("application.utils.spreadsheet.gspread.service_account")
-    @mock.patch("application.utils.spreadsheet.gspread.oauth")
+    @mock.patch("gspread.service_account")
+    @mock.patch("gspread.oauth")
     def test_read_spreadsheet_duplicate_headers(
         self, mock_oauth, mock_service_account
     ) -> None:
