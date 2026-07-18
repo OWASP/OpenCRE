@@ -5,7 +5,6 @@ import logging
 from copy import deepcopy
 from typing import Any, Dict, List, Optional, Set
 import os
-import gspread
 import yaml
 from application.database import db
 from application.defs import cre_defs as defs
@@ -30,7 +29,7 @@ def _records_from_worksheet_values(rows: List[List[Any]]) -> List[Dict[str, Any]
     """Build row dicts from raw worksheet cell values without numeric coercion.
 
     Uses the first row as column headers. Short data rows are padded with empty
-    strings. Raises ``GSpreadException`` when duplicate header names are present
+    strings. Raises ``ValueError`` when duplicate header names are present
     so callers fail fast instead of silently collapsing columns in ``dict(zip)``.
     """
     if not rows:
@@ -38,9 +37,7 @@ def _records_from_worksheet_values(rows: List[List[Any]]) -> List[Dict[str, Any]
     headers = rows[0]
     duplicates = sorted(findDups(headers))
     if duplicates:
-        raise gspread.exceptions.GSpreadException(
-            f"Duplicate worksheet headers: {duplicates}"
-        )
+        raise ValueError(f"Duplicate worksheet headers: {duplicates}")
     records: List[Dict[str, Any]] = []
     for row in rows[1:]:
         padded = list(row) + [""] * max(0, len(headers) - len(row))
@@ -57,7 +54,10 @@ def read_spreadsheet(
 ) -> Dict[str, Any]:
     """given remote google spreadsheet url,
     reads each workbook into a collection of documents"""
+    import gspread  # lazy: Google Sheets import is CLI/local only
+
     result = {}
+    wsh = None
     try:
         if (
             os.environ.get("OpenCRE_gspread_Auth")
@@ -91,11 +91,14 @@ def read_spreadsheet(
         logger.error('Error opening spreadsheet "%s" : "%s"' % (alias, url))
         logger.error(ae)
         exit(1)
-    except gspread.exceptions.GSpreadException as gse:
-        logger.error(
-            "If this exception says you have a duplicate cell name, the duplicate is",
-            findDups(wsh.row_values(1)),
-        )
+    except (gspread.exceptions.GSpreadException, ValueError) as gse:
+        if wsh is not None:
+            logger.error(
+                "If this exception says you have a duplicate cell name, the duplicate is",
+                findDups(wsh.row_values(1)),
+            )
+        else:
+            logger.error("Spreadsheet error before worksheets were loaded: %s", gse)
 
     return result
 
@@ -302,6 +305,8 @@ def write_csv(docs: List[Dict[str, Any]]) -> io.StringIO:
 
 def write_spreadsheet(title: str, docs: List[Dict[str, Any]], emails: List[str]) -> str:
     """upload local array of flat yamls to url, share with email list"""
+    import gspread  # lazy: Google Sheets write is CLI/local only
+
     gc = gspread.oauth()  # oauth config,
     # TODO (northdpole): make this configurable
     sh = gc.create("0." + title)
