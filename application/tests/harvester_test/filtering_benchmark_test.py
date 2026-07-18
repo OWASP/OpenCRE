@@ -1,11 +1,7 @@
 import unittest
 
-from application.utils.harvester.file_filter import (
-    FileFilter,
-)
-from application.utils.harvester.models import (
-    FilteringMetrics,
-)
+from application.utils.harvester.file_filter import FileFilter
+from application.utils.harvester.filtering_benchmark import FilteringBenchmark
 
 
 class FilteringBenchmarkTests(unittest.TestCase):
@@ -19,30 +15,15 @@ class FilteringBenchmarkTests(unittest.TestCase):
             "package-lock.json",
         ]
 
-        file_filter = FileFilter()
+        benchmark = FilteringBenchmark(file_filter=FileFilter())
 
-        retained_files = file_filter.filter_files(files)
+        result = benchmark.run(files)
 
-        metrics = FilteringMetrics(
-            total_files=len(files),
-            retained_files=len(retained_files),
-            filtered_files=len(files) - len(retained_files),
-        )
-
-        self.assertEqual(
-            metrics.total_files,
-            6,
-        )
-
-        self.assertEqual(
-            metrics.retained_files,
-            3,
-        )
-
-        self.assertEqual(
-            metrics.filtered_files,
-            3,
-        )
+        self.assertEqual(result.total_files, 6)
+        self.assertEqual(result.retained_files, 3)
+        self.assertEqual(result.filtered_files, 3)
+        self.assertEqual(result.retention_rate, 0.5)
+        self.assertEqual(result.filtering_rate, 0.5)
 
 
 if __name__ == "__main__":
