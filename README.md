@@ -359,7 +359,7 @@ First seed a local database — this builds the schema from the ORM models and l
 from upstream into `./standards_cache.sqlite` — then run the suite headlessly:
 
 ```bash
-make e2e-db   # one-time: build and populate the local SQLite cache
+make e2e-db   # rebuild and populate the local SQLite cache (discards any existing cache)
 make e2e      # build the frontend, start Flask on 127.0.0.1:5000, run Cypress
 ```
 
