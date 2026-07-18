@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 
 from .file_filter import FileFilter
-from .models import FilteringMetrics
 
 
 @dataclass
@@ -14,13 +13,8 @@ class FilteringBenchmarkResult:
 
 
 class FilteringBenchmark:
-    def __init__(
-        self,
-        file_filter: FileFilter,
-        metrics: FilteringMetrics,
-    ):
+    def __init__(self, file_filter: FileFilter):
         self.file_filter = file_filter
-        self.metrics = metrics
 
     def run(self, file_paths: list[str]) -> FilteringBenchmarkResult:
         retained = self.file_filter.filter_files(file_paths)

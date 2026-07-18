@@ -146,6 +146,30 @@ class GitRepositoryClient(RepositoryClient):
 
         if self.verify_repository_integrity():
             self.fetch()
+
+            try:
+                subprocess.run(
+                    [
+                        "git",
+                        "-C",
+                        str(self.local_path),
+                        "reset",
+                        "--hard",
+                        f"origin/{self.branch}",
+                    ],
+                    check=True,
+                    capture_output=True,
+                    text=True,
+                    timeout=300,
+                )
+            except subprocess.CalledProcessError as exc:
+                logger.error(
+                    "Failed to reset repository %s/%s: %s",
+                    self.owner,
+                    self.repository,
+                    exc.stderr,
+                )
+                raise
         else:
             self.clone()
 
