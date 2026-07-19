@@ -893,6 +893,22 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
         logger.info("Exported %s rows to %s", rows, csv_out)
         return
 
+    if getattr(args, "run_noise_filter", False):
+        from application import sqla
+        from application.utils.noise_filter.pipeline import run_noise_filter
+
+        run_id = getattr(args, "run_id", "").strip()
+        if not run_id:
+            raise ValueError("--run_noise_filter requires --run_id <pipeline_run_id>")
+        db_connect(args.cache_file)
+        summary = run_noise_filter(
+            sqla.session,
+            run_id,
+            dry_run=getattr(args, "noise_filter_dry_run", False),
+        )
+        print(summary.to_json())
+        return
+
     if args.add and getattr(args, "from_ai_exchange_csv", None):
         add_from_ai_exchange_csv(
             csv_path=args.from_ai_exchange_csv,
