@@ -257,6 +257,77 @@ class StagedChangeSet(BaseModel):  # type: ignore
     created_at = sqla.Column(sqla.DateTime, nullable=False)
 
 
+# --- Module B: Noise/Relevance Filter (harvest in -> knowledge queue out) ---
+
+
+class HarvestInput(BaseModel):  # type: ignore
+    """Module A's harvested chunks, staged for Module B to classify.
+
+    Module A writes one row per chunk (the full Module A v0.3 ChangeRecord in
+    `payload`). The orchestrator triggers Module B, which reads the rows for a
+    given `pipeline_run_id`, classifies them, and marks each `processed`.
+    Contract: docs/gsoc_2026_module_b/orchestrator_integration_design.md.
+    """
+
+    __tablename__ = "harvest_input"
+    id = sqla.Column(sqla.String, primary_key=True, default=generate_uuid)
+    pipeline_run_id = sqla.Column(sqla.String, nullable=False, index=True)
+    status = sqla.Column(
+        sqla.String, nullable=False, default="pending"
+    )  # pending | processed
+    # A's ChangeRecord (contract v0.3). JSONB on Postgres, JSON on SQLite
+    # (dev/CI/tests); Module B parses it with schemas.ChangeRecord directly.
+    payload = sqla.Column(sqla.JSON().with_variant(JSONB, "postgresql"), nullable=False)
+    created_at = sqla.Column(
+        sqla.DateTime, nullable=False, server_default=sqla.func.now()
+    )
+    __table_args__ = (
+        sqla.Index("ix_harvest_input_run_status", "pipeline_run_id", "status"),
+    )
+
+
+class KnowledgeQueueItem(BaseModel):  # type: ignore
+    """Module B's output queue: security-knowledge chunks for Module C.
+
+    Module B inserts KNOWLEDGE and UNCERTAIN verdicts (NOISE is dropped),
+    deduped on `content_hash`. Module C reads unconsumed rows and sets
+    `consumed_at`. Contract: docs/gsoc_2026_module_b/module_c_contract.md (v0.2).
+    """
+
+    __tablename__ = "knowledge_queue"
+    id = sqla.Column(sqla.String, primary_key=True, default=generate_uuid)
+    content_hash = sqla.Column(sqla.String, nullable=False)  # B-computed dedup key
+    # provenance / traceability (Module A v0.3 record)
+    chunk_id = sqla.Column(sqla.String, nullable=False)
+    artifact_id = sqla.Column(sqla.String, nullable=False)
+    pipeline_run_id = sqla.Column(sqla.String, nullable=False)
+    schema_version = sqla.Column(sqla.String, nullable=False)
+    source_type = sqla.Column(sqla.String, nullable=False)  # github | rss
+    source_repo = sqla.Column(sqla.String, nullable=True)
+    source_commit_sha = sqla.Column(sqla.String, nullable=True)
+    source_committed_at = sqla.Column(sqla.String, nullable=True)  # ISO-8601, unparsed
+    feed_url = sqla.Column(sqla.String, nullable=True)
+    post_guid = sqla.Column(sqla.String, nullable=True)
+    locator_kind = sqla.Column(sqla.String, nullable=False)
+    locator_path = sqla.Column(sqla.String, nullable=False)
+    span_index = sqla.Column(sqla.Integer, nullable=False)
+    span_total = sqla.Column(sqla.Integer, nullable=False)
+    span_heading_path = sqla.Column(sqla.Text, nullable=True)  # JSON-encoded list[str]
+    # payload + B's verdict
+    text = sqla.Column(sqla.Text, nullable=False)
+    llm_label = sqla.Column(sqla.String, nullable=False)  # KNOWLEDGE | UNCERTAIN
+    confidence = sqla.Column(sqla.Float, nullable=False)
+    llm_reasoning = sqla.Column(sqla.Text, nullable=True)
+    created_at = sqla.Column(
+        sqla.DateTime, nullable=False, server_default=sqla.func.now()
+    )
+    consumed_at = sqla.Column(sqla.DateTime, nullable=True)
+    __table_args__ = (
+        sqla.Index("ix_knowledge_queue_unconsumed", "consumed_at"),
+        sqla.UniqueConstraint("content_hash", name="uq_content_hash"),
+    )
+
+
 def create_import_run(source: str, version: Optional[str] = None) -> ImportRun:
     """Create and persist an import run record. Returns the new ImportRun."""
     from datetime import datetime, timezone
