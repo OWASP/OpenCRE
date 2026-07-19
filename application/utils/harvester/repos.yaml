@@ -13,7 +13,7 @@ repositories:
         - "**/archive/**"
 
     chunking:
-      strategy: markdown
+      strategy: markdown_heading
       max_tokens: 1200
       overlap_tokens: 100
 
@@ -34,7 +34,7 @@ repositories:
         - "cheatsheets/**/*.md"
 
     chunking:
-      strategy: markdown
+      strategy: markdown_heading
       max_tokens: 1000
       overlap_tokens: 100
 
