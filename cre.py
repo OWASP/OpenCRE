@@ -301,6 +301,21 @@ def main() -> None:
         default="",
         help="output CSV path for --export",
     )
+    parser.add_argument(
+        "--run_noise_filter",
+        action="store_true",
+        help="run Module B noise/relevance filter over a harvest run's chunks",
+    )
+    parser.add_argument(
+        "--run_id",
+        default="",
+        help="pipeline_run_id to process (required with --run_noise_filter)",
+    )
+    parser.add_argument(
+        "--noise_filter_dry_run",
+        action="store_true",
+        help="classify without writing to knowledge_queue or marking rows processed",
+    )
 
     args = parser.parse_args()
     if args.export and not args.csv:
