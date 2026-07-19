@@ -56,7 +56,7 @@ class PollingConfig(BaseModel):
 
 # top level repository ingestion configuration
 class RepositoryConfig(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
     id: str = Field(
         ...,
