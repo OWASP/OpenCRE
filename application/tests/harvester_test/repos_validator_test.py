@@ -53,6 +53,28 @@ class ReposValidatorTests(unittest.TestCase):
 
         validate_repositories(config)
 
+    def test_duplicate_repository_ids_case_insensitive(self):
+        config_path = FIXTURES_DIR / "duplicate_repo_ids_case.yaml"
+
+        config = load_repo_config(config_path)
+
+        with self.assertRaisesRegex(
+            RepositoryValidationError,
+            "Duplicate repository id",
+        ):
+            validate_repositories(config)
+
+    def test_duplicate_repositories_case_insensitive(self):
+        config_path = FIXTURES_DIR / "duplicate_repositories_case.yaml"
+
+        config = load_repo_config(config_path)
+
+        with self.assertRaisesRegex(
+            RepositoryValidationError,
+            "Duplicate repository detected",
+        ):
+            validate_repositories(config)
+
 
 if __name__ == "__main__":
     unittest.main()
