@@ -1,7 +1,7 @@
 """add users and user_resource_selection tables (issue #586)
 
 Revision ID: a1b2c3d4e5f6
-Revises: f0e1d2c3b4a5
+Revises: c7d8e9f0a1b2
 Create Date: 2026-07-08
 
 """
@@ -11,7 +11,7 @@ import sqlalchemy as sa
 
 
 revision = "a1b2c3d4e5f6"
-down_revision = "f0e1d2c3b4a5"
+down_revision = "c7d8e9f0a1b2"
 branch_labels = None
 depends_on = None
 
