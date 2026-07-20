@@ -44,6 +44,7 @@ from flask import (
 )
 from google.oauth2 import id_token
 from google_auth_oauthlib.flow import Flow
+from sqlalchemy.exc import SQLAlchemyError
 from application.utils.spreadsheet import write_csv
 import oauthlib
 import google.auth.transport.requests
@@ -1165,6 +1166,21 @@ def login():
         session["state"] = {"state": True}
         session["google_id"] = "some dev id"
         session["name"] = "dev user"
+        # Persist the dev account as well, so local/dev sessions carry a real
+        # user_id for user-scoped endpoints to hang data on. Without this the
+        # dev session looks logged in but has no User row. Mirrors the callback.
+        if is_login_enabled():
+            try:
+                user = db.Node_collection().upsert_user(
+                    google_sub=session["google_id"],
+                    email="",
+                    display_name=session["name"],
+                )
+                session["user_id"] = user.id
+            except SQLAlchemyError as e:
+                logger.error(
+                    "failed to persist dev user on login: %s", type(e).__name__
+                )
         return redirect("/chatbot")
     flow_instance = CREFlow.instance()
     authorization_url, state = flow_instance.flow.authorization_url()
@@ -1236,9 +1252,11 @@ def callback():
                     display_name=id_info.get("name"),
                 )
                 session["user_id"] = user.id
-            except Exception as e:
-                # Avoid logging the raw exception: it can carry SQL parameters
-                # such as the user's email or OIDC subject. Log only the class.
+            except SQLAlchemyError as e:
+                # Keep DB failures soft so persistence can never block login, but
+                # let unexpected (non-DB) bugs surface instead of being swallowed.
+                # Log only the exception class: the message can carry SQL
+                # parameters such as the user's email or OIDC subject.
                 logger.error("failed to persist user on login: %s", type(e).__name__)
     return redirect("/chatbot")
 

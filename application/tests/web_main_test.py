@@ -1219,6 +1219,47 @@ class TestMain(unittest.TestCase):
 
         self.assertEqual(sqla.session.query(db.User).count(), 0)
 
+    def test_no_login_dev_path_persists_user_and_sets_session(self) -> None:
+        # NO_LOGIN=1 bypasses OAuth for local dev. It must still upsert a User
+        # and set session['user_id'], otherwise the dev session looks logged in
+        # but user-scoped endpoints have no row to hang a selection on.
+        self.app.secret_key = "test-secret"
+        with patch.dict(
+            os.environ,
+            {
+                "NO_LOGIN": "1",
+                "CRE_ENABLE_LOGIN": "1",
+                "NO_LOAD_GRAPH_DB": "1",
+                "INSECURE_REQUESTS": "1",
+            },
+        ):
+            with self.app.test_client() as client:
+                client.get("/rest/v1/login")
+                with client.session_transaction() as sess:
+                    self.assertIn("user_id", sess)
+                    session_user_id = sess["user_id"]
+
+        users = sqla.session.query(db.User).all()
+        self.assertEqual(len(users), 1)
+        self.assertEqual(users[0].google_sub, "some dev id")
+        self.assertEqual(session_user_id, users[0].id)
+
+    def test_no_login_dev_path_does_not_persist_when_flag_off(self) -> None:
+        self.app.secret_key = "test-secret"
+        with patch.dict(
+            os.environ,
+            {
+                "NO_LOGIN": "1",
+                "NO_LOAD_GRAPH_DB": "1",
+                "INSECURE_REQUESTS": "1",
+            },
+        ):
+            os.environ.pop("CRE_ENABLE_LOGIN", None)
+            with self.app.test_client() as client:
+                client.get("/rest/v1/login")
+
+        self.assertEqual(sqla.session.query(db.User).count(), 0)
+
     @patch("application.web.web_main.id_token")
     @patch("application.web.web_main.CREFlow")
     def test_callback_skips_persistence_when_sub_missing(
