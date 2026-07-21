@@ -2,6 +2,7 @@ import subprocess
 import tempfile
 import unittest
 from pathlib import Path
+import threading
 
 from application.utils.harvester.git_repository_client import (
     GitRepositoryClient,
@@ -164,6 +165,41 @@ class GitRepositoryClientIntegrationTests(unittest.TestCase):
         self.assertFalse(
             client.verify_repository_integrity(),
         )
+
+    def test_sync_serializes_clone_operations(self):
+        client1 = self.create_client()
+        client2 = self.create_client()
+
+        exceptions = []
+
+        def run_sync(client):
+            try:
+                client.sync()
+            except Exception as exc:
+                exceptions.append(exc)
+
+        t1 = threading.Thread(target=run_sync, args=(client1,))
+        t2 = threading.Thread(target=run_sync, args=(client2,))
+
+        t1.start()
+        t2.start()
+
+        t1.join()
+        t2.join()
+
+        self.assertFalse(exceptions, f"Unexpected exceptions: {exceptions}")
+
+        self.assertTrue(client1.verify_repository_integrity())
+        self.assertTrue(client2.verify_repository_integrity())
+
+        self.assertTrue((self.cache / ".git").exists())
+
+        self.assertEqual(
+            client1.get_current_commit_sha(),
+            client2.get_current_commit_sha(),
+        )
+
+        self.assertEqual((self.cache / "test.txt").read_text(), "v1")
 
 
 if __name__ == "__main__":
