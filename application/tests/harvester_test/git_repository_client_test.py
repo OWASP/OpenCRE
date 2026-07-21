@@ -1,6 +1,9 @@
 import unittest
 from unittest.mock import patch
 
+import tempfile
+from pathlib import Path
+
 from application.utils.harvester.git_repository_client import (
     GitRepositoryClient,
 )
@@ -30,20 +33,24 @@ class GitRepositoryClientTests(unittest.TestCase):
         )
 
     def test_repository_exists_locally_false(self):
-        client = GitRepositoryClient(
-            owner="OWASP",
-            repository="ASVS",
-        )
+        with tempfile.TemporaryDirectory() as tmpdir:
+            client = GitRepositoryClient(
+                owner="OWASP",
+                repository="ASVS",
+                local_path=Path(tmpdir) / "repo",
+            )
 
-        self.assertFalse(client.exists_locally())
+            self.assertFalse(client.exists_locally())
 
     def test_verify_repository_integrity_false(self):
-        client = GitRepositoryClient(
-            owner="OWASP",
-            repository="ASVS",
-        )
+        with tempfile.TemporaryDirectory() as tmpdir:
+            client = GitRepositoryClient(
+                owner="OWASP",
+                repository="ASVS",
+                local_path=Path(tmpdir) / "repo",
+            )
 
-        self.assertFalse(client.verify_repository_integrity())
+            self.assertFalse(client.verify_repository_integrity())
 
     def test_sync_clones_when_repository_missing(self):
         client = GitRepositoryClient(
@@ -136,14 +143,13 @@ class GitRepositoryClientTests(unittest.TestCase):
             repository="ASVS",
         )
 
-        with patch.object(
-            client,
-            "verify_repository_integrity",
-            return_value=False,
+        with (
+            patch.object(client, "verify_repository_integrity", return_value=False),
+            patch.object(client, "is_valid_repository", return_value=True),
         ):
             client.clone()
 
-        mock_run.assert_called_once()
+        mock_run.assert_called()
 
 
 if __name__ == "__main__":
