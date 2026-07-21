@@ -4,6 +4,10 @@ from pathlib import Path
 from .repository_cache import build_repository_cache_path
 from .repository_client import RepositoryClient
 import logging
+from .repository_lock import repository_lock
+import os
+import shutil
+import tempfile
 
 logger = logging.getLogger(__name__)
 
@@ -31,13 +35,6 @@ class GitRepositoryClient(RepositoryClient):
         return f"https://github.com/{self.owner}/{self.repository}.git"
 
     def clone(self) -> None:
-        if self.verify_repository_integrity():
-            logger.warning(
-                "Repository %s/%s already exists locally",
-                self.owner,
-                self.repository,
-            )
-            return
 
         logger.info(
             "Cloning repository %s/%s",
@@ -50,6 +47,16 @@ class GitRepositoryClient(RepositoryClient):
             exist_ok=True,
         )
 
+        self._clone_atomically()
+
+    def _clone_atomically(self) -> None:
+        temp_path = Path(
+            tempfile.mkdtemp(
+                prefix=f"{self.repository}-",
+                dir=self.local_path.parent,
+            )
+        )
+
         try:
             subprocess.run(
                 [
@@ -58,13 +65,23 @@ class GitRepositoryClient(RepositoryClient):
                     "--branch",
                     self.branch,
                     self.repository_url,
-                    str(self.local_path),
+                    str(temp_path),
                 ],
                 check=True,
                 capture_output=True,
                 text=True,
                 timeout=300,
             )
+
+            if not self.is_valid_repository(temp_path):
+                raise RuntimeError("Temporary clone failed integrity verification")
+
+            if self.local_path.exists():
+                shutil.rmtree(temp_path)
+                return
+
+            os.replace(temp_path, self.local_path)
+
         except subprocess.CalledProcessError as exc:
             logger.error(
                 "Failed to clone repository %s/%s: %s",
@@ -73,6 +90,10 @@ class GitRepositoryClient(RepositoryClient):
                 exc.stderr,
             )
             raise
+
+        finally:
+            if temp_path.exists():
+                shutil.rmtree(temp_path, ignore_errors=True)
 
     def fetch(self) -> None:
         logger.info(
@@ -169,10 +190,11 @@ class GitRepositoryClient(RepositoryClient):
             self.repository,
         )
 
-        if self.verify_repository_integrity():
-            self.fetch()
-        else:
-            self.clone()
+        with repository_lock(self.local_path):
+            if self.verify_repository_integrity():
+                self.fetch()
+            else:
+                self.clone()
 
     def get_current_commit_sha(self) -> str:
         try:
@@ -200,8 +222,8 @@ class GitRepositoryClient(RepositoryClient):
 
         return result.stdout.strip()
 
-    def verify_repository_integrity(self) -> bool:
-        if not (self.local_path.exists() and self.local_path.is_dir()):
+    def is_valid_repository(self, repository_path: Path) -> bool:
+        if not (repository_path.exists() and repository_path.is_dir()):
             return False
 
         try:
@@ -209,7 +231,7 @@ class GitRepositoryClient(RepositoryClient):
                 [
                     "git",
                     "-C",
-                    str(self.local_path),
+                    str(repository_path),
                     "rev-parse",
                     "--is-inside-work-tree",
                 ],
@@ -223,7 +245,7 @@ class GitRepositoryClient(RepositoryClient):
                 [
                     "git",
                     "-C",
-                    str(self.local_path),
+                    str(repository_path),
                     "config",
                     "--get",
                     "remote.origin.url",
@@ -241,7 +263,7 @@ class GitRepositoryClient(RepositoryClient):
                 [
                     "git",
                     "-C",
-                    str(self.local_path),
+                    str(repository_path),
                     "show-ref",
                     "--verify",
                     f"refs/remotes/origin/{self.branch}",
@@ -256,3 +278,6 @@ class GitRepositoryClient(RepositoryClient):
 
         except subprocess.CalledProcessError:
             return False
+
+    def verify_repository_integrity(self) -> bool:
+        return self.is_valid_repository(self.local_path)
