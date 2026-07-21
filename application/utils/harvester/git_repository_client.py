@@ -82,13 +82,30 @@ class GitRepositoryClient(RepositoryClient):
                     "-C",
                     str(self.local_path),
                     "fetch",
-                    "--all",
+                    "origin",
+                    self.branch,
                 ],
                 check=True,
                 capture_output=True,
                 text=True,
                 timeout=300,
             )
+
+            subprocess.run(
+                [
+                    "git",
+                    "-C",
+                    str(self.local_path),
+                    "reset",
+                    "--hard",
+                    f"origin/{self.branch}",
+                ],
+                check=True,
+                capture_output=True,
+                text=True,
+                timeout=300,
+            )
+
         except subprocess.CalledProcessError as exc:
             logger.error(
                 "Failed to fetch repository %s/%s: %s",
@@ -99,6 +116,9 @@ class GitRepositoryClient(RepositoryClient):
             raise
 
     def checkout(self, reference: str) -> None:
+        if reference.startswith("-"):
+            raise ValueError("Invalid git reference")
+
         logger.info(
             "Checking out %s in %s/%s",
             reference,
@@ -113,7 +133,6 @@ class GitRepositoryClient(RepositoryClient):
                     "-C",
                     str(self.local_path),
                     "checkout",
-                    "--",
                     reference,
                 ],
                 check=True,
@@ -176,10 +195,58 @@ class GitRepositoryClient(RepositoryClient):
         return result.stdout.strip()
 
     def verify_repository_integrity(self) -> bool:
-        git_directory = self.local_path / ".git"
+        if not (self.local_path.exists() and self.local_path.is_dir()):
+            return False
 
-        return (
-            self.local_path.exists()
-            and self.local_path.is_dir()
-            and git_directory.exists()
-        )
+        try:
+            subprocess.run(
+                [
+                    "git",
+                    "-C",
+                    str(self.local_path),
+                    "rev-parse",
+                    "--is-inside-work-tree",
+                ],
+                check=True,
+                capture_output=True,
+                text=True,
+                timeout=300,
+            )
+
+            remote = subprocess.run(
+                [
+                    "git",
+                    "-C",
+                    str(self.local_path),
+                    "config",
+                    "--get",
+                    "remote.origin.url",
+                ],
+                check=True,
+                capture_output=True,
+                text=True,
+                timeout=300,
+            ).stdout.strip()
+
+            if remote.rstrip("/") != self.repository_url.rstrip("/"):
+                return False
+
+            subprocess.run(
+                [
+                    "git",
+                    "-C",
+                    str(self.local_path),
+                    "show-ref",
+                    "--verify",
+                    f"refs/remotes/origin/{self.branch}",
+                ],
+                check=True,
+                capture_output=True,
+                text=True,
+                timeout=300,
+            )
+
+            return True
+
+        except subprocess.CalledProcessError:
+            return False
