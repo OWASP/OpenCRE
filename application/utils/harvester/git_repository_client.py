@@ -9,15 +9,21 @@ logger = logging.getLogger(__name__)
 
 
 class GitRepositoryClient(RepositoryClient):
-    def __init__(self, owner: str, repository: str, branch: str = "main") -> None:
+    def __init__(
+        self,
+        owner: str,
+        repository: str,
+        branch: str = "main",
+        local_path: Path | None = None,
+    ) -> None:
         self.owner = owner
         self.repository = repository
         self.branch = branch
 
-        self.local_path = build_repository_cache_path(
-            owner,
-            repository,
-            branch,
+        self.local_path = (
+            local_path
+            if local_path is not None
+            else build_repository_cache_path(owner, repository, branch)
         )
 
     @property
