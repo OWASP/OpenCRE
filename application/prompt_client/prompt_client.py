@@ -396,7 +396,7 @@ class in_memory_embeddings:
         Returns:
             List[str]: a list of db ids which do not have embeddings
         """
-        logger.info(f"syncing nodes with embeddings")
+        logger.info("syncing nodes with embeddings")
         missing_embeddings = []
         for doc_type in cre_defs.Credoctypes:
             db_ids = []
@@ -1211,7 +1211,7 @@ class PromptHandler:
 
         if max_similarity < similarity_threshold:
             logger.info(
-                f"there is no good cre candidate for this standard section, returning nothing"
+                "there is no good cre candidate for this standard section, returning nothing"
             )
             return None, None
         return most_similar_id, max_similarity
