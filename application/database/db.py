@@ -439,7 +439,7 @@ class NeoDocument(StructuredNode):
 
     @classmethod
     def to_cre_def(self, node, parse_links=True):
-        raise Exception(f"Shouldn't be parsing a NeoDocument")
+        raise Exception("Shouldn't be parsing a NeoDocument")
 
     @classmethod
     def get_links(self, links_dict):
@@ -461,7 +461,7 @@ class NeoNode(NeoDocument):
 
     @classmethod
     def to_cre_def(self, node, parse_links=True):
-        raise Exception(f"Shouldn't be parsing a NeoNode")
+        raise Exception("Shouldn't be parsing a NeoNode")
 
 
 class NeoStandard(NeoNode):
@@ -1980,7 +1980,7 @@ class Node_collection:
             ltype (cre_defs.LinkTypes, optional): the linktype
         Returns: the cre_defs.Link or None in case of error (cycle)
         """
-        if ltype == None:
+        if ltype is None:
             raise ValueError("Every link should have a link type")
 
         if ltype == cre_defs.LinkTypes.PartOf:
@@ -2908,7 +2908,7 @@ def gap_analysis(
         key = node.id
         if not key:
             logger.error(
-                f"key is empty, this is a bug and this gap analysis will not progress"
+                "key is empty, this is a bug and this gap analysis will not progress"
             )
             continue
         if key not in grouped_paths:
@@ -2934,7 +2934,7 @@ def gap_analysis(
         end_key = path["end"].id
         if not end_key:
             logger.error(
-                f"end_key is empty, this is a bug and this gap analysis will not progress"
+                "end_key is empty, this is a bug and this gap analysis will not progress"
             )
             continue
         path["score"] = get_path_score(path)

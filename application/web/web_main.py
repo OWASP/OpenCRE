@@ -210,7 +210,7 @@ def find_node_by_name(
     sectionID: str = "",
 ) -> Any:
     if posthog:
-        posthog.capture(f"find_node_by_name", f"name:{name};nodeType{ntype}")
+        posthog.capture("find_node_by_name", f"name:{name};nodeType{ntype}")
 
     database = db.Node_collection()
     opt_section = section or request.args.get("section")
@@ -302,7 +302,7 @@ def find_node_by_name(
 def find_document_by_tag() -> Any:
     tags = request.args.getlist("tag")
     if posthog:
-        posthog.capture(f"find_document_by_tag", f"tags:{tags}")
+        posthog.capture("find_document_by_tag", f"tags:{tags}")
 
     database = db.Node_collection()
     # opt_osib = request.args.get("osib")
@@ -341,7 +341,7 @@ def find_document_by_tag() -> Any:
 def map_analysis() -> Any:
     standards = request.args.getlist("standard")
     if posthog:
-        posthog.capture(f"map_analysis", f"standards:{standards}")
+        posthog.capture("map_analysis", f"standards:{standards}")
 
     database = db.Node_collection()
     if len(standards) < 2:
@@ -447,7 +447,7 @@ def map_analysis() -> Any:
 def map_analysis_weak_links() -> Any:
     standards = request.args.getlist("standard")
     if posthog:
-        posthog.capture(f"map_analysis_weak_links", f"standards:{standards}")
+        posthog.capture("map_analysis_weak_links", f"standards:{standards}")
 
     key = request.args.get("key")
     cache_key = gap_analysis.make_subresources_key(standards=standards, key=key)
@@ -535,7 +535,7 @@ def fetch_job() -> Any:
 @app.route("/rest/v1/standards", methods=["GET"])
 def standards() -> Any:
     if posthog:
-        posthog.capture(f"standards", "")
+        posthog.capture("standards", "")
 
     database = db.Node_collection()
     standards = list(database.standards())
@@ -603,7 +603,7 @@ def text_search() -> Any:
     if not text:
         return jsonify({"error": "text parameter is required"}), 400
     if posthog:
-        posthog.capture(f"text_search", f"text:{text}")
+        posthog.capture("text_search", f"text:{text}")
 
     opt_format = request.args.get("format")
     documents = database.text_search(text)
@@ -663,7 +663,7 @@ def find_root_cres() -> Any:
 
     """
     if posthog:
-        posthog.capture(f"find_root_cres", "")
+        posthog.capture("find_root_cres", "")
 
     database = db.Node_collection()
     # opt_osib = request.args.get("osib")
@@ -744,7 +744,7 @@ def smartlink(
     # ATTENTION: DO NOT MESS WITH THIS FUNCTIONALITY WITHOUT A TICKET AND CORE CONTRIBUTORS APPROVAL!
     # CRITICAL FUNCTIONALITY DEPENDS ON THIS!
     if posthog:
-        posthog.capture(f"smartlink", f"name:{name}")
+        posthog.capture("smartlink", f"name:{name}")
 
     database = db.Node_collection()
     opt_version = request.args.get("version")
@@ -800,7 +800,7 @@ def smartlink(
         )
         return redirect(redirectors.redirect(name, section))
     else:
-        logger.warning(f"not sure what happened, 404")
+        logger.warning("not sure what happened, 404")
         return abort(404, "Document does not exist")
 
 
@@ -824,7 +824,7 @@ def deeplink(
     opt_version = request.args.get("version")
     opt_subsection = request.args.get("subsection")
     if posthog:
-        posthog.capture(f"deeplink", f"name:{name}")
+        posthog.capture("deeplink", f"name:{name}")
 
     if opt_section:
         opt_section = urllib.parse.unquote(opt_section)
@@ -1077,7 +1077,7 @@ def admin_import_run_apply(run_id: str) -> Any:
 def chat_cre() -> Any:
     message = request.get_json(force=True)
     if posthog:
-        posthog.capture(f"chat_cre", "")
+        posthog.capture("chat_cre", "")
 
     database = db.Node_collection()
     # Lazy import to avoid loading heavy prompt/ML dependencies at web boot.
@@ -1233,7 +1233,7 @@ def logout():
 def all_cres() -> Any:
     database = db.Node_collection()
     if posthog:
-        posthog.capture(f"all_cres", "")
+        posthog.capture("all_cres", "")
 
     page = 1
     per_page = ITEMS_PER_PAGE
@@ -1261,7 +1261,7 @@ def all_cres() -> Any:
 @app.route("/rest/v1/cre_csv", methods=["GET"])
 def get_cre_csv() -> Any:
     if posthog:
-        posthog.capture(f"get_cre_csv", "")
+        posthog.capture("get_cre_csv", "")
 
     database = db.Node_collection()
     root_cres = database.get_root_cres()
