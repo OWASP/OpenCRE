@@ -33,6 +33,52 @@ class RepositoryCacheTests(unittest.TestCase):
 
         self.assertNotEqual(main_path, dev_path)
 
+    def test_case_sensitive_branches_have_different_cache_paths(self):
+        release_path = build_repository_cache_path(
+            owner="OWASP",
+            repository="ASVS",
+            branch="Release",
+        )
+
+        release_lower_path = build_repository_cache_path(
+            owner="OWASP",
+            repository="ASVS",
+            branch="release",
+        )
+
+        self.assertNotEqual(release_path, release_lower_path)
+
+    def test_path_traversal_owner_rejected(self):
+        with self.assertRaises(ValueError):
+            build_repository_cache_path(
+                owner="../../tmp",
+                repository="ASVS",
+            )
+
+    def test_absolute_owner_rejected(self):
+        with self.assertRaises(ValueError):
+            build_repository_cache_path(
+                owner="/tmp",
+                repository="ASVS",
+            )
+
+    def test_invalid_repository_name_rejected(self):
+        with self.assertRaises(ValueError):
+            build_repository_cache_path(
+                owner="OWASP",
+                repository="../ASVS",
+            )
+
+    def test_branch_path_is_encoded(self):
+        path = build_repository_cache_path(
+            owner="OWASP",
+            repository="ASVS",
+            branch="feature/test",
+        )
+
+        self.assertNotIn("feature/test", str(path))
+        self.assertIn("feature%2Ftest", str(path))
+
 
 if __name__ == "__main__":
     unittest.main()
