@@ -451,6 +451,18 @@ paths:
         style: form
         explode: true
         description: Tag name(s)
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+        description: 1-based page number for paginated results
+      - name: items_per_page
+        in: query
+        required: false
+        schema:
+          type: integer
+        description: Number of items per page (capped server-side)
       responses:
         '200':
           description: Success
@@ -483,6 +495,18 @@ paths:
         schema:
           type: string
         description: Search query
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+        description: 1-based page number for paginated results
+      - name: items_per_page
+        in: query
+        required: false
+        schema:
+          type: integer
+        description: Number of items per page (capped server-side)
       responses:
         '200':
           description: Success
@@ -929,6 +953,12 @@ components:
           items:
             type: object
             additionalProperties: {}
+        page:
+          type: integer
+          description: Current 1-based page (when pagination is applied)
+        total_pages:
+          type: integer
+          description: Total pages for the result set (when pagination is applied)
       additionalProperties: false
     MapAnalysisResponseSchema:
       type: object

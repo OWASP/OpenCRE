@@ -45,6 +45,16 @@ class NodeListResponseSchema(Schema):
 
 class DataListResponseSchema(Schema):
     data = fields.List(fields.Dict(keys=fields.Str(), values=fields.Raw()))
+    page = fields.Int(
+        required=False,
+        metadata={"description": "Current 1-based page (when pagination is applied)"},
+    )
+    total_pages = fields.Int(
+        required=False,
+        metadata={
+            "description": "Total pages for the result set (when pagination is applied)"
+        },
+    )
 
 
 class TagQuerySchema(FormatQuerySchema):
@@ -53,10 +63,26 @@ class TagQuerySchema(FormatQuerySchema):
         required=True,
         metadata={"description": "Tag name(s)"},
     )
+    page = fields.Int(
+        required=False,
+        metadata={"description": "1-based page number for paginated results"},
+    )
+    items_per_page = fields.Int(
+        required=False,
+        metadata={"description": "Number of items per page (capped server-side)"},
+    )
 
 
 class TextSearchQuerySchema(FormatQuerySchema):
     text = fields.Str(required=True, metadata={"description": "Search query"})
+    page = fields.Int(
+        required=False,
+        metadata={"description": "1-based page number for paginated results"},
+    )
+    items_per_page = fields.Int(
+        required=False,
+        metadata={"description": "Number of items per page (capped server-side)"},
+    )
 
 
 class NodeQuerySchema(FormatQuerySchema):
