@@ -1,0 +1,34 @@
+repositories:
+  - id: asvs-1
+    type: github
+    owner: OWASP
+    repo: ASVS
+
+    paths:
+      include:
+        - "4.0/en/**/*.md"
+
+    chunking:
+      strategy: markdown_heading
+      max_tokens: 1200
+
+    polling:
+      mode: incremental
+      interval_minutes: 60
+
+  - id: asvs-2
+    type: github
+    owner: OWASP
+    repo: ASVS
+
+    paths:
+      include:
+        - "4.0/en/**/*.md"
+
+    chunking:
+      strategy: markdown_heading
+      max_tokens: 1200
+
+    polling:
+      mode: incremental
+      interval_minutes: 60
