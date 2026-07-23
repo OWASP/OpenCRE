@@ -494,6 +494,73 @@ paths:
           description: Not found
         '400':
           description: Missing text parameter
+  /rest/v1/user/resources:
+    get:
+      tags:
+      - User
+      summary: Get the current user's selected standards
+      description: Requires login (CRE_ENABLE_LOGIN) and the MyOpenCRE feature (CRE_ENABLE_MYOPENCRE).
+        When either flag is disabled the endpoint does not authenticate and returns
+        an empty selection. When both are enabled, anonymous requests receive 401.
+      responses:
+        '200':
+          description: The user's selected standards
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - selected
+                properties:
+                  selected:
+                    type: array
+                    items:
+                      type: string
+        '401':
+          description: Not authenticated (both feature flags enabled and no active
+            session)
+    put:
+      tags:
+      - User
+      summary: Replace the current user's selected standards
+      description: Requires login (CRE_ENABLE_LOGIN) and the MyOpenCRE feature (CRE_ENABLE_MYOPENCRE).
+        When either flag is disabled the request is a no-op and returns an empty selection.
+        When both are enabled, anonymous requests receive 401.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - selected
+              properties:
+                selected:
+                  type: array
+                  items:
+                    type: string
+                    minLength: 1
+                  description: Standard names to select. Non-empty strings; values
+                    are trimmed and deduplicated.
+      responses:
+        '200':
+          description: The stored selection
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - selected
+                properties:
+                  selected:
+                    type: array
+                    items:
+                      type: string
+        '400':
+          description: Invalid selection body
+        '401':
+          description: Not authenticated (both feature flags enabled and no active
+            session)
   /rest/v1/{ntype}/{name}:
     get:
       tags:

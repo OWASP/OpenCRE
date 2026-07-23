@@ -886,6 +886,45 @@ def login_required(f):
     return login_r
 
 
+def feature_enabled_or_default(is_enabled: Any, default_factory: Any) -> Any:
+    """Gate a view on a feature predicate.
+
+    When ``is_enabled()`` is false the wrapped view is skipped and
+    ``default_factory()`` is returned, so callers receive a safe default instead
+    of an auth error. When true the view runs (typically behind ``login_required``).
+    """
+
+    def decorator(f):
+        @wraps(f)
+        def wrapper(*args, **kwargs):
+            if not is_enabled():
+                return default_factory()
+            return f(*args, **kwargs)
+
+        return wrapper
+
+    return decorator
+
+
+def _resolve_current_user(database):
+    """Return the persisted User for the current session, creating it if absent.
+
+    Anchored on the OIDC subject in ``session['google_id']`` (guaranteed present
+    by ``login_required``). Returns None when there is no authenticated subject.
+    """
+    google_sub = session.get("google_id")
+    if not google_sub:
+        return None
+    user = database.get_user_by_sub(google_sub)
+    if user is None:
+        user = database.upsert_user(
+            google_sub=google_sub,
+            email=session.get("email") or "",
+            display_name=session.get("name"),
+        )
+    return user
+
+
 def admin_imports_enabled_required(f):
     @wraps(f)
     def enabled_r(*args, **kwargs):
@@ -1219,6 +1258,27 @@ def callback():
             401,
             description=f"You need an account with one of the following providers to access this functionality {allowed_domains}",
         )
+
+    # Persist the account when login is enabled; the session keeps working
+    # unchanged if this no-ops (flag off) or fails.
+    if is_login_enabled():
+        google_sub = id_info.get("sub")
+        if not google_sub:
+            logger.error(
+                "OIDC callback returned no 'sub' claim; skipping user persistence"
+            )
+        else:
+            try:
+                user = db.Node_collection().upsert_user(
+                    google_sub=google_sub,
+                    email=id_info.get("email") or "",
+                    display_name=id_info.get("name"),
+                )
+                session["user_id"] = user.id
+            except Exception as e:
+                # Avoid logging the raw exception: it can carry SQL parameters
+                # such as the user's email or OIDC subject. Log only the class.
+                logger.error("failed to persist user on login: %s", type(e).__name__)
     return redirect("/chatbot")
 
 
@@ -1226,6 +1286,48 @@ def callback():
 def logout():
     session.clear()
     return redirect("/")
+
+
+@openapi_documented("get_user_resources")
+@app.route("/rest/v1/user/resources", methods=["GET"])
+@feature_enabled_or_default(
+    lambda: is_login_enabled() and is_myopencre_enabled(),
+    lambda: jsonify({"selected": []}),
+)
+@login_required
+def get_user_resources() -> Any:
+    """Return the standard names the current user has selected."""
+    database = db.Node_collection()
+    user = _resolve_current_user(database)
+    if user is None:
+        abort(401, description="Not authenticated")
+    return jsonify({"selected": database.get_user_resource_selection(user.id)})
+
+
+@openapi_documented("put_user_resources")
+@app.route("/rest/v1/user/resources", methods=["PUT"])
+@feature_enabled_or_default(
+    lambda: is_login_enabled() and is_myopencre_enabled(),
+    lambda: jsonify({"selected": []}),
+)
+@login_required
+def put_user_resources() -> Any:
+    """Replace the current user's selected standards."""
+    body = request.get_json(silent=True)
+    if not isinstance(body, dict) or not isinstance(body.get("selected"), list):
+        abort(400, description="Body must be a JSON object with a 'selected' list")
+    raw_selected = body["selected"]
+    if not all(isinstance(name, str) and name.strip() for name in raw_selected):
+        abort(400, description="'selected' must be a list of non-empty strings")
+    # Normalize before storing: otherwise " ASVS " and "ASVS" both validate but
+    # persist as distinct rows, defeating the dedupe.
+    selected = [name.strip() for name in raw_selected]
+    database = db.Node_collection()
+    user = _resolve_current_user(database)
+    if user is None:
+        abort(401, description="Not authenticated")
+    stored = database.set_user_resource_selection(user.id, selected)
+    return jsonify({"selected": stored})
 
 
 @openapi_documented("all_cres")
