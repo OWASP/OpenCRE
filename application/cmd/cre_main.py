@@ -461,7 +461,7 @@ def register_standard(
                     tuple(sorted(links)),
                 )
             )
-        payload = _json.dumps(
+        payload = json.dumps(
             sorted(rows), sort_keys=True, separators=(",", ":"), ensure_ascii=False
         )
         return hashlib.sha256(payload.encode("utf-8")).hexdigest()
@@ -697,7 +697,7 @@ def download_gap_analysis_from_upstream(cache: str) -> None:
                         tojson = res.json()
                         if "result" not in tojson:
                             continue
-                        payload = _json.dumps({"result": tojson.get("result")})
+                        payload = json.dumps({"result": tojson.get("result")})
                         if not gap_analysis.primary_gap_analysis_payload_is_material(
                             payload
                         ):
@@ -714,7 +714,7 @@ def download_gap_analysis_from_upstream(cache: str) -> None:
                     tojson = res.json()
                     if "result" not in tojson:
                         continue
-                    payload = _json.dumps({"result": tojson.get("result")})
+                    payload = json.dumps({"result": tojson.get("result")})
                     if not gap_analysis.primary_gap_analysis_payload_is_material(
                         payload
                     ):
