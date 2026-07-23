@@ -7,6 +7,7 @@ import threading
 from application.utils.harvester.git_repository_client import (
     GitRepositoryClient,
 )
+from application.utils.harvester.change_detector import ChangeDetector
 
 
 class IntegrationGitRepositoryClient(GitRepositoryClient):
@@ -200,6 +201,71 @@ class GitRepositoryClientIntegrationTests(unittest.TestCase):
         )
 
         self.assertEqual((self.cache / "test.txt").read_text(), "v1")
+
+    def test_change_detector_uses_captured_target_sha(self):
+        client = self.create_client()
+        client.clone()
+
+        detector = ChangeDetector(client)
+
+        base = client.get_current_commit_sha()
+
+        (self.work / "file.txt").write_text("B")
+        git("add", ".", cwd=self.work)
+        git("commit", "-m", "second", cwd=self.work)
+        git("push", "origin", "main", cwd=self.work)
+
+        client.fetch()
+
+        target = client.get_current_commit_sha()
+
+        (self.work / "another.txt").write_text("C")
+        git("add", ".", cwd=self.work)
+        git("commit", "-m", "third", cwd=self.work)
+        git("push", "origin", "main", cwd=self.work)
+
+        client.fetch()
+        files = detector.get_modified_files_since(base, target)
+        commits = detector.get_commits_since(base, target)
+
+        self.assertEqual(files, ["file.txt"])
+        self.assertEqual(commits, [target])
+
+    def test_change_detector_returns_commits_oldest_first(self):
+        client = self.create_client()
+        client.clone()
+
+        detector = ChangeDetector(client)
+        base = client.get_current_commit_sha()
+
+        (self.work / "file.txt").write_text("B")
+        git("add", ".", cwd=self.work)
+        git("commit", "-m", "B", cwd=self.work)
+        commit_b = git_output("rev-parse", "HEAD", cwd=self.work)
+
+        (self.work / "file.txt").write_text("C")
+        git("add", ".", cwd=self.work)
+        git("commit", "-m", "C", cwd=self.work)
+        commit_c = git_output("rev-parse", "HEAD", cwd=self.work)
+
+        (self.work / "file.txt").write_text("D")
+        git("add", ".", cwd=self.work)
+        git("commit", "-m", "D", cwd=self.work)
+        commit_d = git_output("rev-parse", "HEAD", cwd=self.work)
+
+        git("push", "origin", "main", cwd=self.work)
+
+        client.fetch()
+
+        commits = detector.get_commits_since(base, commit_d)
+        self.assertEqual(
+            commits,
+            [
+                commit_b,
+                commit_c,
+                commit_d,
+            ],
+        )
 
 
 if __name__ == "__main__":
