@@ -11,7 +11,6 @@ import requests
 from collections import deque
 from typing import Any, Callable, Dict, List, Optional, Tuple, TYPE_CHECKING
 import hashlib
-import json as _json
 from rq import Queue, job, exceptions
 from sqlalchemy import not_
 
@@ -462,7 +461,7 @@ def register_standard(
                     tuple(sorted(links)),
                 )
             )
-        payload = _json.dumps(
+        payload = json.dumps(
             sorted(rows), sort_keys=True, separators=(",", ":"), ensure_ascii=False
         )
         return hashlib.sha256(payload.encode("utf-8")).hexdigest()
@@ -698,7 +697,7 @@ def download_gap_analysis_from_upstream(cache: str) -> None:
                         tojson = res.json()
                         if "result" not in tojson:
                             continue
-                        payload = _json.dumps({"result": tojson.get("result")})
+                        payload = json.dumps({"result": tojson.get("result")})
                         if not gap_analysis.primary_gap_analysis_payload_is_material(
                             payload
                         ):
@@ -715,7 +714,7 @@ def download_gap_analysis_from_upstream(cache: str) -> None:
                     tojson = res.json()
                     if "result" not in tojson:
                         continue
-                    payload = _json.dumps({"result": tojson.get("result")})
+                    payload = json.dumps({"result": tojson.get("result")})
                     if not gap_analysis.primary_gap_analysis_payload_is_material(
                         payload
                     ):
@@ -1242,13 +1241,13 @@ def populate_neo4j_db(cache: str):
     ):
         logger.info("Skipping Neo4j population as per environment variables")
         return
-    logger.info(f"Populating neo4j DB: Connecting to SQL DB")
+    logger.info("Populating neo4j DB: Connecting to SQL DB")
     database = db_connect(path=cache)
     if database.neo_db:
-        logger.info(f"Populating neo4j DB: Populating")
+        logger.info("Populating neo4j DB: Populating")
         database.neo_db.populate_DB(database.session)
-        logger.info(f"Populating neo4j DB: Complete")
+        logger.info("Populating neo4j DB: Complete")
     else:
         logger.warning(
-            f"Populating neo4j DB: database.neo_db is None, skipping population"
+            "Populating neo4j DB: database.neo_db is None, skipping population"
         )
