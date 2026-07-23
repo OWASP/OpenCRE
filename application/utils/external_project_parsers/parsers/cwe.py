@@ -6,6 +6,7 @@ from pathlib import Path
 import requests
 from typing import Dict, List
 from sqlalchemy import func
+from sqlalchemy.exc import IntegrityError
 from application.database import db
 from application.defs import cre_defs as defs
 import shutil
@@ -126,16 +127,27 @@ class CWE(ParserInterface):
             for link in entry_links:
                 cache.session.delete(link)
 
-            embeddings = cache.get_embeddings_for_doc(db.nodeFromDB(entry))
-            if embeddings:
-                cache.session.delete(embeddings)
+            # Delete all embeddings associated with this node
+            # Use node_id (the foreign key column) instead of node (which doesn't exist)
+            embeddings = (
+                cache.session.query(db.Embeddings)
+                .filter(db.Embeddings.node_id == entry.id)
+                .all()
+            )
+            for emb in embeddings:
+                cache.session.delete(emb)
+
             cache.session.delete(entry)
 
-        cache.session.commit()
-        logger.info(
-            "Deleted %s prohibited CWE entries from the local database",
-            len(entries),
-        )
+        try:
+            cache.session.commit()
+            logger.info(
+                "Deleted %s prohibited CWE entries from the local database",
+                len(entries),
+            )
+        except IntegrityError as e:
+            cache.session.rollback()
+            logger.error("Failed to delete prohibited CWE entries: %s", e)
 
     def link_cwe_to_capec_cre(
         self, cwe: defs.Standard, cache: db.Node_collection, capec_id: str
