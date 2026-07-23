@@ -14,7 +14,7 @@ def repository_lock(repository_path: Path):
     Acquire an exclusive inter-process lock for a repository cache path.
     """
 
-    lock_path = repository_path.with_suffix(".lock")
+    lock_path = repository_path.parent / f"{repository_path.name}.lock"
     lock_path.parent.mkdir(parents=True, exist_ok=True)
 
     with lock_path.open("w") as lock_file:

@@ -20,6 +20,8 @@ class GitRepositoryClient(RepositoryClient):
         branch: str = "main",
         local_path: Path | None = None,
     ) -> None:
+        if branch.startswith("-"):
+            raise ValueError("Invalid git branch")
         self.owner = owner
         self.repository = repository
         self.branch = branch
