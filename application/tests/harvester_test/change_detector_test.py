@@ -12,7 +12,7 @@ class ChangeDetectorTests(unittest.TestCase):
     @patch("application.utils.harvester.change_detector.subprocess.run")
     def test_get_modified_files_since(self, mock_run):
         client = MagicMock()
-        client.get_local_path.return_value = "/tmp/repo"
+        client.get_local_path.return_value = "repo-under-test"
 
         mock_run.side_effect = [
             MagicMock(stdout="resolved_base\n"),
@@ -41,7 +41,7 @@ class ChangeDetectorTests(unittest.TestCase):
                     [
                         "git",
                         "-C",
-                        "/tmp/repo",
+                        "repo-under-test",
                         "rev-parse",
                         "--verify",
                         "--end-of-options",
@@ -56,7 +56,7 @@ class ChangeDetectorTests(unittest.TestCase):
                     [
                         "git",
                         "-C",
-                        "/tmp/repo",
+                        "repo-under-test",
                         "rev-parse",
                         "--verify",
                         "--end-of-options",
@@ -71,7 +71,7 @@ class ChangeDetectorTests(unittest.TestCase):
                     [
                         "git",
                         "-C",
-                        "/tmp/repo",
+                        "repo-under-test",
                         "diff",
                         "--name-only",
                         "resolved_base",
@@ -88,7 +88,7 @@ class ChangeDetectorTests(unittest.TestCase):
     @patch("application.utils.harvester.change_detector.subprocess.run")
     def test_get_commits_since(self, mock_run):
         client = MagicMock()
-        client.get_local_path.return_value = "/tmp/repo"
+        client.get_local_path.return_value = "repo-under-test"
 
         mock_run.side_effect = [
             MagicMock(stdout="resolved_base\n"),
@@ -119,7 +119,7 @@ class ChangeDetectorTests(unittest.TestCase):
                     [
                         "git",
                         "-C",
-                        "/tmp/repo",
+                        "repo-under-test",
                         "rev-parse",
                         "--verify",
                         "--end-of-options",
@@ -134,7 +134,7 @@ class ChangeDetectorTests(unittest.TestCase):
                     [
                         "git",
                         "-C",
-                        "/tmp/repo",
+                        "repo-under-test",
                         "rev-parse",
                         "--verify",
                         "--end-of-options",
@@ -149,7 +149,7 @@ class ChangeDetectorTests(unittest.TestCase):
                     [
                         "git",
                         "-C",
-                        "/tmp/repo",
+                        "repo-under-test",
                         "log",
                         "--reverse",
                         "--format=%H",
