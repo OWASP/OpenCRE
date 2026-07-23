@@ -254,6 +254,83 @@ class StagedChangeSet(BaseModel):  # type: ignore
     created_at = sqla.Column(sqla.DateTime, nullable=False)
 
 
+class ArtifactIngestEvent(BaseModel):  # type: ignore
+    """Tracks one harvested artifact persisted per import run."""
+
+    __tablename__ = "artifact_ingest_event"
+    id = sqla.Column(sqla.String, primary_key=True, default=generate_uuid)
+    run_id = sqla.Column(
+        sqla.String,
+        sqla.ForeignKey("import_run.id", onupdate="CASCADE", ondelete="CASCADE"),
+        nullable=False,
+    )
+    artifact_id = sqla.Column(sqla.String, nullable=False)
+    harvest_mode = sqla.Column(sqla.String, nullable=False)
+    event_type = sqla.Column(sqla.String, nullable=False)
+    source_json = sqla.Column(sqla.Text, nullable=False)
+    locator_json = sqla.Column(sqla.Text, nullable=False)
+    artifact_json = sqla.Column(sqla.Text, nullable=False)
+    harvest_json = sqla.Column(sqla.Text, nullable=False)
+    observed_at = sqla.Column(sqla.DateTime, nullable=False)
+    created_at = sqla.Column(sqla.DateTime, nullable=False)
+
+    __table_args__ = (
+        sqla.UniqueConstraint(
+            run_id,
+            artifact_id,
+            name="uq_artifact_ingest_event_run_artifact",
+        ),
+    )
+
+
+class IngestChunk(BaseModel):  # type: ignore
+    """Tracks every chunk belonging to an artifact ingest event."""
+
+    __tablename__ = "ingest_chunk"
+    id = sqla.Column(sqla.String, primary_key=True, default=generate_uuid)
+    artifact_event_id = sqla.Column(
+        sqla.String,
+        sqla.ForeignKey(
+            "artifact_ingest_event.id",
+            onupdate="CASCADE",
+            ondelete="CASCADE",
+        ),
+        nullable=False,
+    )
+    chunk_id = sqla.Column(sqla.String, nullable=False)
+    text = sqla.Column(sqla.Text, nullable=False)
+    char_count = sqla.Column(sqla.Integer, nullable=False)
+    span_json = sqla.Column(sqla.Text, nullable=False)
+    delta_json = sqla.Column(sqla.Text, nullable=True)
+    created_at = sqla.Column(sqla.DateTime, nullable=False)
+
+    __table_args__ = (
+        sqla.UniqueConstraint(
+            artifact_event_id,
+            chunk_id,
+            name="uq_ingest_chunk_artifact_chunk",
+        ),
+    )
+
+
+def _serialize_json_value(value: Any) -> str:
+    if value is None:
+        return "null"
+    if isinstance(value, str):
+        return value
+    return flask_json.dumps(value)
+
+
+def _normalize_utc_datetime(value: Any) -> Any:
+    from datetime import datetime, timezone
+
+    if isinstance(value, datetime):
+        if value.tzinfo is None:
+            return value
+        return value.astimezone(timezone.utc)
+    return value
+
+
 def create_import_run(source: str, version: Optional[str] = None) -> ImportRun:
     """Create and persist an import run record. Returns the new ImportRun."""
     from datetime import datetime, timezone
@@ -299,6 +376,68 @@ def get_previous_import_run(source: str, current_run_id: str) -> Optional[Import
         .order_by(ImportRun.created_at.desc(), ImportRun.id.desc())
         .first()
     )
+
+
+def create_artifact_ingest_event(
+    *,
+    run_id: str,
+    artifact_id: str,
+    harvest_mode: str,
+    event_type: str,
+    source_json: Any,
+    locator_json: Any,
+    artifact_json: Any,
+    harvest_json: Any,
+    observed_at: Any,
+) -> ArtifactIngestEvent:
+    from datetime import datetime, timezone
+
+    observed_at = _normalize_utc_datetime(observed_at)
+
+    event = ArtifactIngestEvent(
+        id=generate_uuid(),
+        run_id=run_id,
+        artifact_id=artifact_id,
+        harvest_mode=harvest_mode,
+        event_type=event_type,
+        source_json=_serialize_json_value(source_json),
+        locator_json=_serialize_json_value(locator_json),
+        artifact_json=_serialize_json_value(artifact_json),
+        harvest_json=_serialize_json_value(harvest_json),
+        observed_at=observed_at,
+        created_at=_normalize_utc_datetime(datetime.now(timezone.utc)),
+    )
+    sqla.session.add(event)
+    sqla.session.commit()
+    return event
+
+
+def create_ingest_chunk(
+    *,
+    artifact_event_id: str,
+    chunk_id: str,
+    text: str,
+    char_count: int,
+    span_json: Any,
+    delta_json: Optional[Any] = None,
+) -> IngestChunk:
+    from datetime import datetime, timezone
+
+    chunk = IngestChunk(
+        id=generate_uuid(),
+        artifact_event_id=artifact_event_id,
+        chunk_id=chunk_id,
+        text=text,
+        char_count=char_count,
+        span_json=_serialize_json_value(span_json),
+        delta_json=(
+            _serialize_json_value(delta_json) if delta_json is not None else None
+        ),
+        created_at=_normalize_utc_datetime(datetime.now(timezone.utc)),
+    )
+    sqla.session.add(chunk)
+    sqla.session.commit()
+    return chunk
 
 
 def persist_standard_snapshot(
