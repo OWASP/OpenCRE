@@ -292,6 +292,42 @@ class TestCWEParser(unittest.TestCase):
 
         self.assertIn("611", imported_cwes)
         self.assertNotIn("9999", imported_cwes)
+        self.assertNotIn("16", imported_cwes)
+
+    @patch.object(requests, "get")
+    def test_register_CWE_removes_stale_prohibited_entries(self, mock_requests) -> None:
+        stale_category = self.collection.add_node(
+            defs.Standard(
+                name="CWE",
+                sectionID="16",
+                section="Configuration",
+                hyperlink="https://cwe.mitre.org/data/definitions/16.html",
+            )
+        )
+        self.collection.session.add(stale_category)
+        self.collection.session.commit()
+
+        tmpdir = mkdtemp()
+        tmpFile = os.path.join(tmpdir, "cwe.xml")
+        tmpzip = os.path.join(tmpdir, "cwe.zip")
+        with open(tmpFile, "w") as cx:
+            cx.write(self.CWE_prohibited_xml)
+        with zipfile.ZipFile(tmpzip, "w", zipfile.ZIP_DEFLATED) as zipf:
+            zipf.write(tmpFile, arcname="cwe.xml")
+
+        class fakeRequest:
+            def iter_content(self, chunk_size=None):
+                with open(tmpzip, "rb") as zipf:
+                    return [zipf.read()]
+
+        mock_requests.return_value = fakeRequest()
+
+        cwe.CWE().parse(
+            cache=self.collection,
+            ph=prompt_client.PromptHandler(database=self.collection),
+        )
+
+        self.assertEqual(self.collection.get_nodes(name="CWE", sectionID="16"), [])
 
     CWE_xml = """<?xml version="1.0" encoding="UTF-8"?>
 <Weakness_Catalog Name="CWE" Version="4.10" Date="2023-01-31" xmlns="http://cwe.mitre.org/cwe-6"
@@ -773,9 +809,20 @@ class TestCWEParser(unittest.TestCase):
       <Weakness ID="611" Name="Improper Restriction of XML External Entity Reference" Abstraction="Base" Structure="Simple" Status="Draft">
          <Description>Allowed XXE entry.</Description>
       </Weakness>
-      <Weakness ID="9999" Name="Prohibited Example" Abstraction="Base" Structure="Simple" Status="PROHIBITED">
+      <Weakness ID="9999" Name="Prohibited Example" Abstraction="Base" Structure="Simple" Status="Draft">
          <Description>This entry should not be imported.</Description>
+         <Mapping_Notes>
+            <Usage>Prohibited</Usage>
+         </Mapping_Notes>
       </Weakness>
    </Weaknesses>
+   <Categories>
+      <Category ID="16" Name="Configuration" Status="Obsolete">
+         <Summary>Prohibited category entry.</Summary>
+         <Mapping_Notes>
+            <Usage>Prohibited</Usage>
+         </Mapping_Notes>
+      </Category>
+   </Categories>
 </Weakness_Catalog>
 """
