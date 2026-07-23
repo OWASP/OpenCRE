@@ -1,0 +1,16 @@
+repositories:
+  - id: invalid-overlap
+    type: github
+    owner: OWASP
+    repo: ASVS
+    branch: master
+    paths:
+      include:
+        - "docs/**/*.md"
+    chunking:
+      strategy: markdown_heading
+      max_tokens: 100
+      overlap_tokens: 100
+    polling:
+      mode: incremental
+      interval_minutes: 60
