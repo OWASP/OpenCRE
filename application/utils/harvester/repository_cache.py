@@ -18,6 +18,9 @@ def build_repository_cache_path(
     if not _VALID_COMPONENT.fullmatch(repository):
         raise ValueError(f"Invalid repository name: {repository}")
 
+    if branch in {".", ".."}:
+        raise ValueError("Invalid branch name")
+
     encoded_branch = quote(branch, safe="")
     candidate = CACHE_ROOT / owner.casefold() / repository.casefold() / encoded_branch
 
