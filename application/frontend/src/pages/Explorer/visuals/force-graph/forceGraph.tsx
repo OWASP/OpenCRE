@@ -19,7 +19,7 @@ interface DropdownOption {
 
 export const ExplorerForceGraph = () => {
   const [graphData, setGraphData] = useState();
-  const [ignoreTypes, setIgnoreTypes] = useState(['same']);
+  const [ignoreTypes, setIgnoreTypes] = useState<string[]>([]);
   const [maxCount, setMaxCount] = useState(0);
   const [maxNodeSize, setMaxNodeSize] = useState(0);
   const {
@@ -31,7 +31,7 @@ export const ExplorerForceGraph = () => {
     fullLoadProgress,
     dataLoadError,
   } = useDataStore();
-  const fgRef = useRef<ForceGraphMethods>();
+  const fgRef = useRef<ForceGraphMethods | undefined>(undefined);
   // ADDING STATE FOR FILTERING LOGIC
   const [filterTypeA, setFilterTypeA] = useState('');
   const [filterTypeB, setFilterTypeB] = useState('');
@@ -376,8 +376,6 @@ export const ExplorerForceGraph = () => {
         return 'skyblue';
       case 'linked to':
         return 'gray';
-      case 'same':
-        return 'red';
       default:
         return 'white';
     }
@@ -473,8 +471,6 @@ export const ExplorerForceGraph = () => {
         checked={!ignoreTypes.includes('linked to')}
         onChange={() => toggleLinks('linked to')}
       />
-      {' | '}
-      <Checkbox label="Same" checked={!ignoreTypes.includes('same')} onChange={() => toggleLinks('same')} />
 
       <div style={{ marginBottom: '10px', marginTop: '10px', marginLeft: '10px' }}>
         <Dropdown

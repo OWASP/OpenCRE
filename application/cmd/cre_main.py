@@ -9,14 +9,12 @@ import tempfile
 import requests
 
 from collections import deque
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple, TYPE_CHECKING
 import hashlib
 import json as _json
 from rq import Queue, job, exceptions
 from sqlalchemy import not_
 
-from application.utils.external_project_parsers.base_parser import BaseParser
-from application.utils.external_project_parsers.parsers import master_spreadsheet_parser
 from application import create_app  # type: ignore
 from application.config import CMDConfig
 from application.database import db
@@ -26,16 +24,71 @@ from application.defs import osib_defs as odefs
 from application.utils import spreadsheet as sheet_utils
 from application.utils import redis
 from application.utils import db_backend
-from alive_progress import alive_bar
-from application.prompt_client import prompt_client as prompt_client
 from application.utils import gap_analysis
 from application.utils import cres_csv_export
+
+if TYPE_CHECKING:
+    from application.prompt_client import prompt_client as prompt_client
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 app = None
+
+
+def fetch_upstream_json(
+    path: str,
+    timeout: Optional[float] = None,
+    max_attempts: Optional[int] = None,
+    backoff_seconds: Optional[float] = None,
+) -> Dict[str, Any]:
+    base_url = os.environ.get("CRE_UPSTREAM_API_URL", "https://opencre.org/rest/v1")
+    timeout = timeout or float(os.environ.get("CRE_UPSTREAM_TIMEOUT_SECONDS", "30"))
+    max_attempts = max_attempts or int(os.environ.get("CRE_UPSTREAM_MAX_ATTEMPTS", "4"))
+    backoff_seconds = backoff_seconds or float(
+        os.environ.get("CRE_UPSTREAM_RETRY_BACKOFF_SECONDS", "2")
+    )
+    url = f"{base_url}{path}"
+    last_error: Optional[Exception] = None
+
+    for attempt in range(1, max_attempts + 1):
+        response = None
+        try:
+            response = requests.get(url, timeout=timeout)
+            if response.status_code == 200:
+                return response.json()
+
+            status_error = RuntimeError(
+                f"cannot connect to upstream status code {response.status_code}"
+            )
+            if response.status_code < 500 and response.status_code != 429:
+                raise status_error
+            last_error = status_error
+        except requests.exceptions.RequestException as exc:
+            last_error = exc
+
+        if attempt < max_attempts:
+            retry_after_header = None
+            sleep_seconds = backoff_seconds * attempt
+            if response is not None and response.status_code == 429:
+                retry_after_header = response.headers.get("Retry-After")
+                try:
+                    if retry_after_header is not None:
+                        sleep_seconds = float(retry_after_header)
+                except (TypeError, ValueError):
+                    sleep_seconds = backoff_seconds * attempt
+            logger.warning(
+                "upstream fetch failed for %s on attempt %s/%s, retrying",
+                url,
+                attempt,
+                max_attempts,
+            )
+            time.sleep(sleep_seconds)
+
+    if last_error:
+        raise RuntimeError(f"upstream fetch failed for {url}") from last_error
+    raise RuntimeError(f"upstream fetch failed for {url}")
 
 
 def register_node(node: defs.Node, collection: db.Node_collection) -> db.Node:
@@ -415,6 +468,8 @@ def register_standard(
         return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
     conn = redis.connect()
+    from application.prompt_client import prompt_client as prompt_client
+
     ph = prompt_client.PromptHandler(database=collection)
     importing_name = standard_entries[0].name
     effective_calculate_gap_analysis = (
@@ -487,7 +542,7 @@ def register_standard(
 def parse_standards_from_spreadsheeet(
     cre_file: List[Dict[str, Any]],
     cache_location: str,
-    prompt_handler: prompt_client.PromptHandler,
+    prompt_handler: "prompt_client.PromptHandler",
 ) -> None:
     """given a csv with standards, build a list of standards in the db"""
     if not cre_file:
@@ -514,6 +569,10 @@ def parse_standards_from_spreadsheeet(
         from application.utils import import_pipeline
 
         collection = db_connect(cache_location)
+        from application.utils.external_project_parsers.parsers import (
+            master_spreadsheet_parser,
+        )
+
         parse_result = master_spreadsheet_parser.MasterSpreadsheetParser.parse_rows(
             cre_file
         )
@@ -591,19 +650,11 @@ def download_graph_from_upstream(cache: str) -> None:
     collection = db_connect(path=cache).with_graph()
 
     def download_cre_from_upstream(creid: str):
-        cre_response = requests.get(
-            os.environ.get("CRE_UPSTREAM_API_URL", "https://opencre.org/rest/v1")
-            + f"/id/{creid}"
-        )
-        if cre_response.status_code != 200:
-            raise RuntimeError(
-                f"cannot connect to upstream status code {cre_response.status_code}"
-            )
-        data = cre_response.json()
+        if creid in imported_cres:
+            return
+        data = fetch_upstream_json(f"/id/{creid}")
         credict = data["data"]
         cre = defs.Document.from_dict(credict)
-        if cre.id in imported_cres:
-            return
 
         register_cre(cre, collection)
         imported_cres[cre.id] = ""
@@ -611,15 +662,7 @@ def download_graph_from_upstream(cache: str) -> None:
             if link.document.doctype == defs.Credoctypes.CRE:
                 download_cre_from_upstream(link.document.id)
 
-    root_cres_response = requests.get(
-        os.environ.get("CRE_UPSTREAM_API_URL", "https://opencre.org/rest/v1")
-        + "/root_cres"
-    )
-    if root_cres_response.status_code != 200:
-        raise RuntimeError(
-            f"cannot connect to upstream status code {root_cres_response.status_code}"
-        )
-    data = root_cres_response.json()
+    data = fetch_upstream_json("/root_cres")
     for root_cre in data["data"]:
         cre = defs.Document.from_dict(root_cre)
         register_cre(cre, collection)
@@ -644,6 +687,8 @@ def download_gap_analysis_from_upstream(cache: str) -> None:
         pairs = [(sa, sb) for sa in standards for sb in standards if sa != sb]
 
         if os.environ.get("BENCHMARK_MODE") == "1":
+            from alive_progress import alive_bar
+
             with alive_bar(len(pairs), title="Fetching upstream Gap Analysis") as bar:
                 for sa, sb in pairs:
                     res = requests.get(
@@ -808,11 +853,15 @@ def backfill_gap_analysis_only(
                 jobs.append(j)
 
             if jobs:
+                from alive_progress import alive_bar
+
                 with alive_bar(
                     len(jobs), title=f"GA batch {i // batch_size + 1}"
                 ) as bar:
                     redis.wait_for_jobs(jobs, bar)
         else:
+            from alive_progress import alive_bar
+
             with alive_bar(len(batch), title=f"GA batch {i // batch_size + 1}") as bar:
                 for sa, sb in batch:
                     _compute_pair_direct(collection, sa, sb)
@@ -863,6 +912,8 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
         cache.delete_nodes(args.delete_resource)
 
     # individual resource importing
+    from application.utils.external_project_parsers.base_parser import BaseParser
+
     if args.zap_in:
         from application.utils.external_project_parsers.parsers import zap_alerts_parser
 
@@ -967,9 +1018,17 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
         )
     if args.upstream_sync:
         download_graph_from_upstream(args.cache_file)
+    if args.run_librarian or args.librarian_dry_run:
+        run_librarian(
+            cache_file=args.cache_file,
+            dry_run=args.librarian_dry_run or not args.run_librarian,
+            source_jsonl=args.librarian_source,
+        )
 
 
 def ai_client_init(database: db.Node_collection):
+    from application.prompt_client import prompt_client as prompt_client
+
     return prompt_client.PromptHandler(database=database)
 
 
@@ -1009,12 +1068,167 @@ def prepare_for_review(cache: str) -> Tuple[str, str]:
 
 
 def generate_embeddings(db_url: str) -> None:
+    from application.prompt_client import prompt_client as prompt_client
+
     database = db_connect(path=db_url)
     prompt_client.PromptHandler(database, load_all_embeddings=True)
 
 
+_DEFAULT_LIBRARIAN_SOURCE = os.path.join(
+    os.path.dirname(os.path.dirname(__file__)),
+    "tests",
+    "librarian",
+    "fixtures",
+    "sample_knowledge_queue.jsonl",
+)
+
+
+def run_librarian(
+    cache_file: str, dry_run: bool = True, source_jsonl: Optional[str] = None
+) -> None:
+    """Module C entrypoint — the pipeline switch (W3).
+
+    For each knowledge-queue section: try the deterministic explicit-CRE fast
+    path (C.0.5); on no/ambiguous reference, run the semantic retriever (C.1)
+    and rerank its top-K shortlist with the cross-encoder (C.2, W4), then log
+    the reranked candidates. Decision/threshold routing (C.3-C.4, W5) and graph
+    writes (W8) are not built yet, so this is dry-run only: it never writes a
+    link. ``--run_librarian`` without writes behaves identically and warns.
+
+    Ops note: this is opt-in CLI only — it is not on the ``Procfile`` and is
+    wired into neither the web app nor the background worker (that lands W8).
+    It calls the paid embedding API, so cost is incurred only when someone runs
+    the command manually; the running deployment never triggers it on its own.
+    """
+    from application.utils.librarian.candidate_retriever import (
+        CandidatePool,
+        RetrieverBackend,
+        build_retriever,
+    )
+    from application.utils.librarian.config_loader import load_config
+    from application.utils.librarian.cross_encoder import (
+        CrossEncoderReranker,
+        build_cross_encoder_score_fn,
+    )
+    from application.utils.librarian.explicit_link_resolver import (
+        ResolutionOutcome,
+        resolve,
+    )
+    from application.utils.librarian.knowledge_source import FixtureKnowledgeSource
+    from application.utils.librarian.section_validator import (
+        SectionValidationError,
+        section_from_queue_row,
+    )
+
+    if not dry_run:
+        logger.warning(
+            "the Librarian cannot write links yet (DecisionEngine + graph write "
+            "land W8); running in dry-run mode"
+        )
+
+    from application.prompt_client import prompt_client as prompt_client
+
+    cfg = load_config()
+    database = db_connect(path=cache_file)
+    ph = prompt_client.PromptHandler(database=database)
+
+    backend = RetrieverBackend(cfg.retriever_backend)
+    if backend is RetrieverBackend.pgvector:
+        # Hard-fail: do not silently fall back to in_memory / sklearn CSV paths.
+        from application.database.pgvector_utils import fail_pgvector_unavailable
+
+        if not database.can_use_pgvector_similarity():
+            fail_pgvector_unavailable(
+                context="CRE_LIBRARIAN_RETRIEVER_BACKEND=pgvector"
+            )
+    # The CRE ids present in the hub are exactly the known ids the explicit
+    # resolver may auto-link to (W2 seeded this from the golden set; here it is
+    # the real DB-backed registry).
+    cre_embeddings = database.get_embeddings_by_doc_type(defs.Credoctypes.CRE.value)
+    known_ids = set(cre_embeddings.keys())
+    # in_memory loads the hub matrix; pgvector ranks in the DB over the
+    # embedding_vec column (no in-RAM pool). Both honor the same retrieve().
+    pool = (
+        CandidatePool.from_mapping(cre_embeddings)
+        if backend is RetrieverBackend.in_memory
+        else None
+    )
+    pg_connection = None
+    if backend is RetrieverBackend.pgvector:
+        pg_connection = database.session.connection()
+    retriever = build_retriever(
+        backend,
+        embed_fn=ph.get_text_embeddings,
+        top_k=cfg.top_k_retrieval,
+        threshold=cfg.link_threshold,
+        pool=pool,
+        connection=pg_connection,
+    )
+
+    # C.2 reranker: reads each (section, candidate-CRE) pair together and
+    # re-sorts C.1's shortlist. Scored against the CRE's embeddings_content —
+    # the same text the hub vectors were built from.
+    cre_texts = database.get_embedding_contents_by_doc_type(defs.Credoctypes.CRE.value)
+    reranker = CrossEncoderReranker(
+        score_fn=build_cross_encoder_score_fn(cfg.crossencoder_model),
+        top_n=cfg.top_k_rerank,
+        cre_texts=cre_texts,
+    )
+
+    source = FixtureKnowledgeSource(source_jsonl or _DEFAULT_LIBRARIAN_SOURCE)
+    sections = explicit = semantic = rejected = 0
+    for item in source.items():
+        try:
+            section = section_from_queue_row(item)
+        except SectionValidationError as exc:
+            rejected += 1
+            logger.warning("section rejected at C.0 boundary: %s", exc)
+            continue
+        sections += 1
+
+        resolution = resolve(section.text, known_ids)
+        if resolution.outcome == ResolutionOutcome.resolved:
+            explicit += 1
+            logger.info("[explicit] %s -> %s", section.chunk_id, resolution.cre_ids[0])
+            continue
+
+        try:
+            audit = retriever.retrieve(section.text)
+            audit = reranker.rerank(section.text, audit)
+        # one bad section must not abort the batch
+        except Exception as exc:  # noqa: BLE001
+            rejected += 1
+            logger.warning(
+                "[semantic] %s skipped: retrieval/rerank failed: %s",
+                section.chunk_id,
+                exc,
+            )
+            continue
+
+        semantic += 1
+        top = ", ".join(f"{c.cre_id}:{c.score_rerank:.3f}" for c in audit.reranked)
+        logger.info(
+            "[semantic] %s -> %d candidates, reranked top%d: %s",
+            section.chunk_id,
+            len(audit.candidates),
+            len(audit.reranked),
+            top or "<none>",
+        )
+
+    logger.info(
+        "librarian dry-run complete: %d sections (%d explicit, %d semantic), "
+        "%d rejected at boundary",
+        sections,
+        explicit,
+        semantic,
+        rejected,
+    )
+
+
 def regenerate_embeddings(db_url: str) -> None:
     """Wipe all embedding rows, then rebuild (CRE + every node type) like ``--generate_embeddings``."""
+    from application.prompt_client import prompt_client as prompt_client
+
     database = db_connect(path=db_url)
     removed = database.delete_all_embeddings()
     logger.info("Removed %s embedding rows; rebuilding embeddings", removed)

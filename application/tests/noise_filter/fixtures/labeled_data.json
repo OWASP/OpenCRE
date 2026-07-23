@@ -1,0 +1,3400 @@
+[
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/wstg:document/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/10-Test_for_Subdomain_Takeover.md:0",
+    "artifact_id": "art:OWASP/wstg:document/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/10-Test_for_Subdomain_Takeover.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "# Test for Subdomain Takeover\n\n|ID |\n|------------|\n|WSTG-CONF-10|",
+    "span": {
+      "index": 0,
+      "total": 15,
+      "heading_path": [
+        "Test for Subdomain Takeover"
+      ],
+      "start_char_idx": 0,
+      "end_char_idx": 67,
+      "start_line": 1,
+      "end_line": 6
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/wstg",
+      "commit_sha": "7dea71b751ea76f792b89186655739720b614d9a",
+      "committed_at": "2026-05-27T15:14:56Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "document/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/10-Test_for_Subdomain_Takeover.md",
+      "path": "document/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/10-Test_for_Subdomain_Takeover.md"
+    },
+    "label": "NOISE",
+    "label_rationale": "Heading/title-only chunk with no methodology body [heading-only tiny-chunk -> NOISE, consistent rule 2026-07-03; was KNOWLEDGE]",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/wstg:document/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/10-Test_for_Subdomain_Takeover.md:1",
+    "artifact_id": "art:OWASP/wstg:document/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/10-Test_for_Subdomain_Takeover.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "## Summary\n\nA successful exploitation of this kind of vulnerability allows an adversary to claim and take control of the victim's subdomain. This attack relies on the following:\n\n1. The victim's external DNS server subdomain record is configured to point to a non-existing or non-active resource/external service/endpoint. The proliferation of XaaS (Anything as a Service) products and public cloud services offer a lot of potential targets to consider.\n2. The service provider hosting the resource/external service/endpoint does not handle subdomain ownership verification properly.\n\nIf the subdomain takeover is successful, a wide variety of attacks are possible (serving malicious content, phishing, stealing user session cookies, credentials, etc.). This vulnerability could be exploited for a wide variety of DNS resource records including: `A`, `CNAME`, `MX`, `NS`, `TXT` etc. In terms of the attack severity, an `NS` subdomain takeover (although less likely) has the highest impact, because a successful attack could result in full control over the whole DNS zone and the victim's domain.",
+    "span": {
+      "index": 1,
+      "total": 15,
+      "heading_path": [
+        "Test for Subdomain Takeover",
+        "Summary"
+      ],
+      "start_char_idx": 68,
+      "end_char_idx": 1164,
+      "start_line": 7,
+      "end_line": 15
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/wstg",
+      "commit_sha": "7dea71b751ea76f792b89186655739720b614d9a",
+      "committed_at": "2026-05-27T15:14:56Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "document/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/10-Test_for_Subdomain_Takeover.md",
+      "path": "document/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/10-Test_for_Subdomain_Takeover.md"
+    },
+    "label": "KNOWLEDGE",
+    "label_rationale": "It's the canonical OWASP description of a vulnerability class",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/wstg:document/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/10-Test_for_Subdomain_Takeover.md:2",
+    "artifact_id": "art:OWASP/wstg:document/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/10-Test_for_Subdomain_Takeover.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "### GitHub\n\n1. The victim (victim.com) uses GitHub for development and configured a DNS record (`coderepo.victim.com`) to access it.\n2. The victim decides to migrate their code repository from GitHub to a commercial platform and does not remove `coderepo.victim.com` from their DNS server.\n3. An adversary discovers that `coderepo.victim.com` is hosted on GitHub and claims it using GitHub Pages and their own GitHub account.",
+    "span": {
+      "index": 2,
+      "total": 15,
+      "heading_path": [
+        "Test for Subdomain Takeover",
+        "Summary",
+        "GitHub"
+      ],
+      "start_char_idx": 1165,
+      "end_char_idx": 1591,
+      "start_line": 16,
+      "end_line": 21
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/wstg",
+      "commit_sha": "7dea71b751ea76f792b89186655739720b614d9a",
+      "committed_at": "2026-05-27T15:14:56Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "document/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/10-Test_for_Subdomain_Takeover.md",
+      "path": "document/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/10-Test_for_Subdomain_Takeover.md"
+    },
+    "label": "KNOWLEDGE",
+    "label_rationale": "Worked attack-scenario walkthrough (GitHub subdomain takeover) -- security content [recall-first correction 2026-07-03; was UNCERTAIN]",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/wstg:document/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/10-Test_for_Subdomain_Takeover.md:3",
+    "artifact_id": "art:OWASP/wstg:document/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/10-Test_for_Subdomain_Takeover.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "### Expired Domain\n\n1. The victim (victim.com) owns another domain (victimotherdomain.com) and uses a CNAME record (www) to reference the other domain (`www.victim.com` --> `victimotherdomain.com`)\n2. At some point, victimotherdomain.com expires, becoming available for registration by anyone. Since the CNAME record is not deleted from the victim.com DNS zone, anyone who registers `victimotherdomain.com` has full control over `www.victim.com` until the DNS record is removed or updated.",
+    "span": {
+      "index": 3,
+      "total": 15,
+      "heading_path": [
+        "Test for Subdomain Takeover",
+        "Summary",
+        "Expired Domain"
+      ],
+      "start_char_idx": 1592,
+      "end_char_idx": 2082,
+      "start_line": 22,
+      "end_line": 26
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/wstg",
+      "commit_sha": "7dea71b751ea76f792b89186655739720b614d9a",
+      "committed_at": "2026-05-27T15:14:56Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "document/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/10-Test_for_Subdomain_Takeover.md",
+      "path": "document/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/10-Test_for_Subdomain_Takeover.md"
+    },
+    "label": "KNOWLEDGE",
+    "label_rationale": "Worked attack-scenario walkthrough (expired-domain subdomain takeover) [recall-first correction 2026-07-03; was UNCERTAIN]",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/wstg:document/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/10-Test_for_Subdomain_Takeover.md:4",
+    "artifact_id": "art:OWASP/wstg:document/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/10-Test_for_Subdomain_Takeover.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "## Test Objectives\n\n- Enumerate all possible domains (previous and current).\n- Identify any forgotten or misconfigured domains.",
+    "span": {
+      "index": 4,
+      "total": 15,
+      "heading_path": [
+        "Test for Subdomain Takeover",
+        "Test Objectives"
+      ],
+      "start_char_idx": 2083,
+      "end_char_idx": 2211,
+      "start_line": 27,
+      "end_line": 31
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/wstg",
+      "commit_sha": "7dea71b751ea76f792b89186655739720b614d9a",
+      "committed_at": "2026-05-27T15:14:56Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "document/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/10-Test_for_Subdomain_Takeover.md",
+      "path": "document/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/10-Test_for_Subdomain_Takeover.md"
+    },
+    "label": "KNOWLEDGE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/wstg:document/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/10-Test_for_Subdomain_Takeover.md:5",
+    "artifact_id": "art:OWASP/wstg:document/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/10-Test_for_Subdomain_Takeover.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "## How to Test",
+    "span": {
+      "index": 5,
+      "total": 15,
+      "heading_path": [
+        "Test for Subdomain Takeover",
+        "How to Test"
+      ],
+      "start_char_idx": 2212,
+      "end_char_idx": 2227,
+      "start_line": 32,
+      "end_line": 33
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/wstg",
+      "commit_sha": "7dea71b751ea76f792b89186655739720b614d9a",
+      "committed_at": "2026-05-27T15:14:56Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "document/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/10-Test_for_Subdomain_Takeover.md",
+      "path": "document/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/10-Test_for_Subdomain_Takeover.md"
+    },
+    "label": "NOISE",
+    "label_rationale": "Empty section header — 14 chars, zero content, no methodology described.",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/wstg:document/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/10-Test_for_Subdomain_Takeover.md:6",
+    "artifact_id": "art:OWASP/wstg:document/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/10-Test_for_Subdomain_Takeover.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "### Black-Box Testing\n\nTesting for subdomain takeover follows three phases: subdomain enumeration, automated fingerprint-based detection, and manual validation.\n\nA dangling DNS record occurs when a DNS entry points to an external resource that no longer exists or has been deprovisioned. For example, a CNAME record pointing to a GitHub Pages site that the owner deleted still resolves, but the underlying resource is unclaimed. An attacker can register that resource and take control of the subdomain.",
+    "span": {
+      "index": 6,
+      "total": 15,
+      "heading_path": [
+        "Test for Subdomain Takeover",
+        "How to Test",
+        "Black-Box Testing"
+      ],
+      "start_char_idx": 2228,
+      "end_char_idx": 2731,
+      "start_line": 34,
+      "end_line": 39
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/wstg",
+      "commit_sha": "7dea71b751ea76f792b89186655739720b614d9a",
+      "committed_at": "2026-05-27T15:14:56Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "document/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/10-Test_for_Subdomain_Takeover.md",
+      "path": "document/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/10-Test_for_Subdomain_Takeover.md"
+    },
+    "label": "KNOWLEDGE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/wstg:document/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/10-Test_for_Subdomain_Takeover.md:7",
+    "artifact_id": "art:OWASP/wstg:document/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/10-Test_for_Subdomain_Takeover.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "#### Subdomain Enumeration\n\nUse [subfinder](https://github.com/projectdiscovery/subfinder) to discover subdomains for the target domain: `subfinder -d victim.com -o subdomains.txt`\n\nThis produces a list of subdomains to use in the detection phase.",
+    "span": {
+      "index": 7,
+      "total": 15,
+      "heading_path": [
+        "Test for Subdomain Takeover",
+        "How to Test",
+        "Black-Box Testing",
+        "Subdomain Enumeration"
+      ],
+      "start_char_idx": 2732,
+      "end_char_idx": 2980,
+      "start_line": 40,
+      "end_line": 45
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/wstg",
+      "commit_sha": "7dea71b751ea76f792b89186655739720b614d9a",
+      "committed_at": "2026-05-27T15:14:56Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "document/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/10-Test_for_Subdomain_Takeover.md",
+      "path": "document/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/10-Test_for_Subdomain_Takeover.md"
+    },
+    "label": "KNOWLEDGE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/wstg:document/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/10-Test_for_Subdomain_Takeover.md:8",
+    "artifact_id": "art:OWASP/wstg:document/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/10-Test_for_Subdomain_Takeover.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "#### Fingerprint-Based Detection\n\nFingerprint-based detection works by comparing each subdomain's HTTP response against a database of known vulnerable service responses. The [can-i-take-over-xyz](https://github.com/EdOverflow/can-i-take-over-xyz) project maintains this database, cataloging the specific response strings returned by service providers such as GitHub Pages, AWS S3, Heroku, and Fastly when a resource is unclaimed.\n\nUse [subzy](https://github.com/LukaSikic/subzy) for a quick initial scan: `subzy run --targets subdomains.txt`\n\nFollow up with [nuclei](https://github.com/projectdiscovery/nuclei) using the dedicated takeover templates for a more accurate result: `nuclei -l subdomains.txt -t takeovers/`\n\nA positive result from either tool indicates that a subdomain's response matched a known vulnerable fingerprint, suggesting a dangling DNS record pointing to an unclaimed resource on a third-party service.\n\nFor example, a subdomain pointing to an unclaimed GitHub Pages site returns the following response:\n\n```http\nHTTP/1.1 404 Not Found\n...\n<p>There isn't a GitHub Pages site here.</p>\n```\n\nThis specific string is listed in can-i-take-over-xyz as the GitHub Pages fingerprint. When subzy or nuclei matches this response, it flags the subdomain as potentially vulnerable.",
+    "span": {
+      "index": 8,
+      "total": 15,
+      "heading_path": [
+        "Test for Subdomain Takeover",
+        "How to Test",
+        "Black-Box Testing",
+        "Fingerprint-Based Detection"
+      ],
+      "start_char_idx": 2981,
+      "end_char_idx": 4275,
+      "start_line": 46,
+      "end_line": 65
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/wstg",
+      "commit_sha": "7dea71b751ea76f792b89186655739720b614d9a",
+      "committed_at": "2026-05-27T15:14:56Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "document/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/10-Test_for_Subdomain_Takeover.md",
+      "path": "document/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/10-Test_for_Subdomain_Takeover.md"
+    },
+    "label": "KNOWLEDGE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/wstg:document/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/10-Test_for_Subdomain_Takeover.md:9",
+    "artifact_id": "art:OWASP/wstg:document/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/10-Test_for_Subdomain_Takeover.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "#### Manual Validation\n\nAutomated tools produce false positives. Validate each finding manually before reporting it.\n\n1. Confirm the DNS record and where it points: `dig CNAME subdomain.victim.com`\n\n1. Confirm the response matches the expected fingerprint for that service provider as listed in [can-i-take-over-xyz](https://github.com/EdOverflow/can-i-take-over-xyz): `curl -i http://subdomain.victim.com`\n\n1. Confirm the resource is unclaimed on the service provider's platform. Do not claim it.",
+    "span": {
+      "index": 9,
+      "total": 15,
+      "heading_path": [
+        "Test for Subdomain Takeover",
+        "How to Test",
+        "Black-Box Testing",
+        "Manual Validation"
+      ],
+      "start_char_idx": 4276,
+      "end_char_idx": 4774,
+      "start_line": 66,
+      "end_line": 75
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/wstg",
+      "commit_sha": "7dea71b751ea76f792b89186655739720b614d9a",
+      "committed_at": "2026-05-27T15:14:56Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "document/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/10-Test_for_Subdomain_Takeover.md",
+      "path": "document/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/10-Test_for_Subdomain_Takeover.md"
+    },
+    "label": "KNOWLEDGE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/wstg:document/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/10-Test_for_Subdomain_Takeover.md:10",
+    "artifact_id": "art:OWASP/wstg:document/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/10-Test_for_Subdomain_Takeover.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "#### Cloud-Specific Takeovers\n\nMajor cloud providers have distinct takeover patterns worth specific attention:\n\n- AWS S3: A CNAME pointing to an S3 bucket URL (for example, `bucket.s3.amazonaws.com`) where the bucket no longer exists returns a `NoSuchBucket` response. Anyone who creates a bucket with the same name in any AWS account can claim the subdomain.\n- Azure: Dangling CNAMEs pointing to deprovisioned Azure resources such as App Services or Traffic Manager endpoints can be claimed by registering the same resource name in a different Azure subscription.\n- GCP: Similar patterns exist for Cloud Storage buckets and Firebase Hosting endpoints.",
+    "span": {
+      "index": 10,
+      "total": 15,
+      "heading_path": [
+        "Test for Subdomain Takeover",
+        "How to Test",
+        "Black-Box Testing",
+        "Cloud-Specific Takeovers"
+      ],
+      "start_char_idx": 4775,
+      "end_char_idx": 5428,
+      "start_line": 76,
+      "end_line": 83
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/wstg",
+      "commit_sha": "7dea71b751ea76f792b89186655739720b614d9a",
+      "committed_at": "2026-05-27T15:14:56Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "document/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/10-Test_for_Subdomain_Takeover.md",
+      "path": "document/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/10-Test_for_Subdomain_Takeover.md"
+    },
+    "label": "KNOWLEDGE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/wstg:document/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/10-Test_for_Subdomain_Takeover.md:11",
+    "artifact_id": "art:OWASP/wstg:document/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/10-Test_for_Subdomain_Takeover.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "### Gray-Box Testing\n\nThe tester has the DNS zone file available, which means DNS enumeration is not necessary. The testing methodology is the same.",
+    "span": {
+      "index": 11,
+      "total": 15,
+      "heading_path": [
+        "Test for Subdomain Takeover",
+        "How to Test",
+        "Gray-Box Testing"
+      ],
+      "start_char_idx": 5429,
+      "end_char_idx": 5578,
+      "start_line": 84,
+      "end_line": 87
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/wstg",
+      "commit_sha": "7dea71b751ea76f792b89186655739720b614d9a",
+      "committed_at": "2026-05-27T15:14:56Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "document/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/10-Test_for_Subdomain_Takeover.md",
+      "path": "document/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/10-Test_for_Subdomain_Takeover.md"
+    },
+    "label": "KNOWLEDGE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/wstg:document/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/10-Test_for_Subdomain_Takeover.md:12",
+    "artifact_id": "art:OWASP/wstg:document/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/10-Test_for_Subdomain_Takeover.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "## Remediation\n\nTo mitigate the risk of subdomain takeover, the vulnerable DNS resource record(s) should be removed from the DNS zone. Continuous monitoring and periodic checks are recommended as best practice.",
+    "span": {
+      "index": 12,
+      "total": 15,
+      "heading_path": [
+        "Test for Subdomain Takeover",
+        "Remediation"
+      ],
+      "start_char_idx": 5579,
+      "end_char_idx": 5790,
+      "start_line": 88,
+      "end_line": 91
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/wstg",
+      "commit_sha": "7dea71b751ea76f792b89186655739720b614d9a",
+      "committed_at": "2026-05-27T15:14:56Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "document/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/10-Test_for_Subdomain_Takeover.md",
+      "path": "document/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/10-Test_for_Subdomain_Takeover.md"
+    },
+    "label": "KNOWLEDGE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/wstg:document/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/10-Test_for_Subdomain_Takeover.md:13",
+    "artifact_id": "art:OWASP/wstg:document/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/10-Test_for_Subdomain_Takeover.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "## Tools\n\n- [subfinder - Subdomain enumeration tool](https://github.com/projectdiscovery/subfinder)\n- [subzy - Subdomain takeover detection tool](https://github.com/LukaSikic/subzy)\n- [nuclei - Vulnerability scanner with takeover templates](https://github.com/projectdiscovery/nuclei)\n- [nuclei-templates - Community takeover templates](https://github.com/projectdiscovery/nuclei-templates)\n- [can-i-take-over-xyz - Vulnerable service fingerprint database](https://github.com/EdOverflow/can-i-take-over-xyz)\n- [dig - DNS lookup utility](https://man.cx/dig)\n- [OWASP Domain Protect](https://owasp.org/www-project-domain-protect)",
+    "span": {
+      "index": 13,
+      "total": 15,
+      "heading_path": [
+        "Test for Subdomain Takeover",
+        "Tools"
+      ],
+      "start_char_idx": 5791,
+      "end_char_idx": 6419,
+      "start_line": 92,
+      "end_line": 101
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/wstg",
+      "commit_sha": "7dea71b751ea76f792b89186655739720b614d9a",
+      "committed_at": "2026-05-27T15:14:56Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "document/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/10-Test_for_Subdomain_Takeover.md",
+      "path": "document/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/10-Test_for_Subdomain_Takeover.md"
+    },
+    "label": "KNOWLEDGE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/wstg:document/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/10-Test_for_Subdomain_Takeover.md:14",
+    "artifact_id": "art:OWASP/wstg:document/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/10-Test_for_Subdomain_Takeover.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "## References\n\n- [HackerOne - A Guide To Subdomain Takeovers](https://www.hackerone.com/blog/Guide-Subdomain-Takeovers)\n- [Subdomain Takeover: Basics](https://0xpatrik.com/subdomain-takeover-basics/)\n- [Subdomain Takeover: Going beyond CNAME](https://0xpatrik.com/subdomain-takeover-ns/)\n- [can-i-take-over-xyz - A list of vulnerable services](https://github.com/EdOverflow/can-i-take-over-xyz/)\n- [OWASP AppSec Europe 2017 - Frans Rosén: DNS hijacking using cloud providers – no verification needed](https://2017.appsec.eu/presos/Developer/DNS%20hijacking%20using%20cloud%20providers%20%E2%80%93%20no%20verification%20needed%20-%20Frans%20Rosen%20-%20OWASP_AppSec-Eu_2017.pdf)",
+    "span": {
+      "index": 14,
+      "total": 15,
+      "heading_path": [
+        "Test for Subdomain Takeover",
+        "References"
+      ],
+      "start_char_idx": 6420,
+      "end_char_idx": 7097,
+      "start_line": 102,
+      "end_line": 108
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/wstg",
+      "commit_sha": "7dea71b751ea76f792b89186655739720b614d9a",
+      "committed_at": "2026-05-27T15:14:56Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "document/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/10-Test_for_Subdomain_Takeover.md",
+      "path": "document/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/10-Test_for_Subdomain_Takeover.md"
+    },
+    "label": "KNOWLEDGE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/wstg:document/4-Web_Application_Security_Testing/04-Authentication_Testing/11-Testing_Multi-Factor_Authentication.md:0",
+    "artifact_id": "art:OWASP/wstg:document/4-Web_Application_Security_Testing/04-Authentication_Testing/11-Testing_Multi-Factor_Authentication.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "# Testing Multi-Factor Authentication (MFA)\n\n|ID |\n|------------|\n|WSTG-ATHN-11|",
+    "span": {
+      "index": 0,
+      "total": 20,
+      "heading_path": [
+        "Testing Multi-Factor Authentication (MFA)"
+      ],
+      "start_char_idx": 0,
+      "end_char_idx": 81,
+      "start_line": 1,
+      "end_line": 6
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/wstg",
+      "commit_sha": "d386ff1b7c3b237f39be65d56ba48774e0443ed4",
+      "committed_at": "2026-05-27T10:22:50Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "document/4-Web_Application_Security_Testing/04-Authentication_Testing/11-Testing_Multi-Factor_Authentication.md",
+      "path": "document/4-Web_Application_Security_Testing/04-Authentication_Testing/11-Testing_Multi-Factor_Authentication.md"
+    },
+    "label": "NOISE",
+    "label_rationale": "Heading/title-only chunk with no methodology body [heading-only tiny-chunk -> NOISE, consistent rule 2026-07-03; was KNOWLEDGE]",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/wstg:document/4-Web_Application_Security_Testing/04-Authentication_Testing/11-Testing_Multi-Factor_Authentication.md:1",
+    "artifact_id": "art:OWASP/wstg:document/4-Web_Application_Security_Testing/04-Authentication_Testing/11-Testing_Multi-Factor_Authentication.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "## Summary\n\nMany applications implement Multi-Factor Authentication (MFA) as an additional layer of security to protect the login process. This is also known as two-factor authentication (2FA) or two-step verification (2SV) - although these are not strictly the same thing. MFA means asking the user to provide *at least* two different [authentication factors](#types-of-mfa) when logging in.\n\nMFA adds additional complexity to both the authentication functionality, and also to other security-related areas (such as credential management and password recovery), meaning that it is critical for it to be implemented in a correct and robust manner.",
+    "span": {
+      "index": 1,
+      "total": 20,
+      "heading_path": [
+        "Testing Multi-Factor Authentication (MFA)",
+        "Summary"
+      ],
+      "start_char_idx": 82,
+      "end_char_idx": 730,
+      "start_line": 7,
+      "end_line": 12
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/wstg",
+      "commit_sha": "d386ff1b7c3b237f39be65d56ba48774e0443ed4",
+      "committed_at": "2026-05-27T10:22:50Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "document/4-Web_Application_Security_Testing/04-Authentication_Testing/11-Testing_Multi-Factor_Authentication.md",
+      "path": "document/4-Web_Application_Security_Testing/04-Authentication_Testing/11-Testing_Multi-Factor_Authentication.md"
+    },
+    "label": "KNOWLEDGE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/wstg:document/4-Web_Application_Security_Testing/04-Authentication_Testing/11-Testing_Multi-Factor_Authentication.md:2",
+    "artifact_id": "art:OWASP/wstg:document/4-Web_Application_Security_Testing/04-Authentication_Testing/11-Testing_Multi-Factor_Authentication.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "## Test Objectives\n\n- Identify the type of MFA used by the application.\n- Determine whether the MFA implementation is robust and secure.\n- Attempt to bypass the MFA.",
+    "span": {
+      "index": 2,
+      "total": 20,
+      "heading_path": [
+        "Testing Multi-Factor Authentication (MFA)",
+        "Test Objectives"
+      ],
+      "start_char_idx": 731,
+      "end_char_idx": 897,
+      "start_line": 13,
+      "end_line": 18
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/wstg",
+      "commit_sha": "d386ff1b7c3b237f39be65d56ba48774e0443ed4",
+      "committed_at": "2026-05-27T10:22:50Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "document/4-Web_Application_Security_Testing/04-Authentication_Testing/11-Testing_Multi-Factor_Authentication.md",
+      "path": "document/4-Web_Application_Security_Testing/04-Authentication_Testing/11-Testing_Multi-Factor_Authentication.md"
+    },
+    "label": "KNOWLEDGE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/wstg:document/4-Web_Application_Security_Testing/04-Authentication_Testing/11-Testing_Multi-Factor_Authentication.md:3",
+    "artifact_id": "art:OWASP/wstg:document/4-Web_Application_Security_Testing/04-Authentication_Testing/11-Testing_Multi-Factor_Authentication.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "## How to Test",
+    "span": {
+      "index": 3,
+      "total": 20,
+      "heading_path": [
+        "Testing Multi-Factor Authentication (MFA)",
+        "How to Test"
+      ],
+      "start_char_idx": 898,
+      "end_char_idx": 913,
+      "start_line": 19,
+      "end_line": 20
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/wstg",
+      "commit_sha": "d386ff1b7c3b237f39be65d56ba48774e0443ed4",
+      "committed_at": "2026-05-27T10:22:50Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "document/4-Web_Application_Security_Testing/04-Authentication_Testing/11-Testing_Multi-Factor_Authentication.md",
+      "path": "document/4-Web_Application_Security_Testing/04-Authentication_Testing/11-Testing_Multi-Factor_Authentication.md"
+    },
+    "label": "NOISE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/wstg:document/4-Web_Application_Security_Testing/04-Authentication_Testing/11-Testing_Multi-Factor_Authentication.md:4",
+    "artifact_id": "art:OWASP/wstg:document/4-Web_Application_Security_Testing/04-Authentication_Testing/11-Testing_Multi-Factor_Authentication.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "### Types of MFA\n\nMFA means that *at least* two of the following factors are required to authentication:\n\n| Factor | Examples |\n|--------|----------|\n| Something You Know | Passwords, PINs and security questions. |\n| Something You Have | Hardware or software tokens, certificates, email*, SMS, and phone calls. |\n| Something You Are | Fingerprints, facial recognition, iris scans, handprint scans and behavioural factors. |\n| Location | Source IP ranges, and geolocation. |\n\n\\* Email only really constitutes \"something you have\" if the email account itself is protected with MFA. As such, it should be considered weaker than other alternatives such as certificates or TOTP, and may not be accepted as MFA under some definitions.\n\nNote that requiring multiple examples of a single factor (such as needing both a password and a PIN) **does not constitute MFA**, although it may provide some security benefits over a simple password, and may be considered two-step verification (2SV).\n\nDue to the complexity of implementing biometrics in a browser-based environment, \"Something You Are\" is rarely used for web applications, although it is starting to be adopted using standards such as WebAuthn. The most common second factor is \"Something You Have\".",
+    "span": {
+      "index": 4,
+      "total": 20,
+      "heading_path": [
+        "Testing Multi-Factor Authentication (MFA)",
+        "How to Test",
+        "Types of MFA"
+      ],
+      "start_char_idx": 914,
+      "end_char_idx": 2162,
+      "start_line": 21,
+      "end_line": 37
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/wstg",
+      "commit_sha": "d386ff1b7c3b237f39be65d56ba48774e0443ed4",
+      "committed_at": "2026-05-27T10:22:50Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "document/4-Web_Application_Security_Testing/04-Authentication_Testing/11-Testing_Multi-Factor_Authentication.md",
+      "path": "document/4-Web_Application_Security_Testing/04-Authentication_Testing/11-Testing_Multi-Factor_Authentication.md"
+    },
+    "label": "KNOWLEDGE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/wstg:document/4-Web_Application_Security_Testing/04-Authentication_Testing/11-Testing_Multi-Factor_Authentication.md:5",
+    "artifact_id": "art:OWASP/wstg:document/4-Web_Application_Security_Testing/04-Authentication_Testing/11-Testing_Multi-Factor_Authentication.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "### Check for MFA Bypasses\n\nThe first step for testing MFA is to identify all of the authentication functionality in the application, which may include:\n\n- The main login page.\n- Security critical functionality (such as disabling MFA or changing a password).\n- Federated login providers.\n- API endpoints (from both the main web interface and mobile apps).\n- Alternative (non-HTTP) protocols.\n- Test or debug functionality.\n\nAll of the different login methods should be reviewed, to ensure that MFA is enforced consistently. If some methods do not require MFA, then these can provide a simple method to bypass them.\n\nIf the authentication is done in multiple steps then it may be possible to bypass it by completing the first step of the authentication process (entering the username and password), and then force-browsing to the application or making direct API requests without completing the second stage (entering the MFA code).\n\nIf the authentication is using a OpenID Connect (OIDC) provider that allows custom authentication flows (or policies) such as Azure B2C, there may be multiple flows defined, some of which may not require MFA. For example if the application authenticates with a flow called `B2C_1_SignInWithMFA`, then try tampering that to `B2C_1_SignIn`, `B2C_1_SignInWithoutMFA` or other similar values.\n\nIn some cases, there may also be intentional MFA bypasses implemented, such as not requiring MFA:\n\n- From specific IP addresses (which may be spoofable using the `X-Forwarded-For` HTTP header).\n- When a specific HTTP header is set (such as a non-standard header like `X-Debug`).\n- For a specific hard-coded account (such as a \"root\" or \"breakglass\" account).\n\nWhere an application supports both local and federated logins, it may be possible to bypass the MFA if there is no strong separation between these two types of accounts. For example, if a user registers a local account and configures MFA for it, but does not have MFA configured on their account on the federated login provider, it may be possible for an attacker to re-register (or link) a federated account on the target application with the same email address by compromising the user's account on the federated login provider.\n\nFinally, if the MFA is implemented on a different system to the main application (such as on a reverse proxy, in order to protect a legacy application that does not natively support MFA), then it may be possible to bypass it by connecting directly to the backend application server, as discussed in the guide on how to [map the application architecture](../01-Information_Gathering/10-Map_Application_Architecture.md#content-delivery-network-cdn).",
+    "span": {
+      "index": 5,
+      "total": 20,
+      "heading_path": [
+        "Testing Multi-Factor Authentication (MFA)",
+        "How to Test",
+        "Check for MFA Bypasses"
+      ],
+      "start_char_idx": 2163,
+      "end_char_idx": 4826,
+      "start_line": 38,
+      "end_line": 64
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/wstg",
+      "commit_sha": "d386ff1b7c3b237f39be65d56ba48774e0443ed4",
+      "committed_at": "2026-05-27T10:22:50Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "document/4-Web_Application_Security_Testing/04-Authentication_Testing/11-Testing_Multi-Factor_Authentication.md",
+      "path": "document/4-Web_Application_Security_Testing/04-Authentication_Testing/11-Testing_Multi-Factor_Authentication.md"
+    },
+    "label": "KNOWLEDGE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/wstg:document/4-Web_Application_Security_Testing/04-Authentication_Testing/11-Testing_Multi-Factor_Authentication.md:6",
+    "artifact_id": "art:OWASP/wstg:document/4-Web_Application_Security_Testing/04-Authentication_Testing/11-Testing_Multi-Factor_Authentication.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "### Check MFA Management\n\nThe functionality used to manage MFA from inside the user's account should be tested for vulnerabilities, including:\n\n- Is the user required to re-authenticate to remove or change MFA settings?\n- Is the MFA management functionality vulnerable to [cross-site request forgery](../06-Session_Management_Testing/05-Testing_for_Cross_Site_Request_Forgery.md)?\n- Can other users' MFA setting be modified through [IDOR vulnerabilities](../05-Authorization_Testing/04-Testing_for_Insecure_Direct_Object_References.md)?",
+    "span": {
+      "index": 6,
+      "total": 20,
+      "heading_path": [
+        "Testing Multi-Factor Authentication (MFA)",
+        "How to Test",
+        "Check MFA Management"
+      ],
+      "start_char_idx": 4827,
+      "end_char_idx": 5364,
+      "start_line": 65,
+      "end_line": 72
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/wstg",
+      "commit_sha": "d386ff1b7c3b237f39be65d56ba48774e0443ed4",
+      "committed_at": "2026-05-27T10:22:50Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "document/4-Web_Application_Security_Testing/04-Authentication_Testing/11-Testing_Multi-Factor_Authentication.md",
+      "path": "document/4-Web_Application_Security_Testing/04-Authentication_Testing/11-Testing_Multi-Factor_Authentication.md"
+    },
+    "label": "KNOWLEDGE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/wstg:document/4-Web_Application_Security_Testing/04-Authentication_Testing/11-Testing_Multi-Factor_Authentication.md:7",
+    "artifact_id": "art:OWASP/wstg:document/4-Web_Application_Security_Testing/04-Authentication_Testing/11-Testing_Multi-Factor_Authentication.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "### Check MFA Recovery Options\n\nMany applications will provide users with a way to regain access to their account if they are unable to authenticate with their second factor (for example if they have lost their phone). These mechanisms can often represent a significant weakness in the application, as they effectively allow the second authentication factor to be bypassed.",
+    "span": {
+      "index": 7,
+      "total": 20,
+      "heading_path": [
+        "Testing Multi-Factor Authentication (MFA)",
+        "How to Test",
+        "Check MFA Recovery Options"
+      ],
+      "start_char_idx": 5365,
+      "end_char_idx": 5739,
+      "start_line": 73,
+      "end_line": 76
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/wstg",
+      "commit_sha": "d386ff1b7c3b237f39be65d56ba48774e0443ed4",
+      "committed_at": "2026-05-27T10:22:50Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "document/4-Web_Application_Security_Testing/04-Authentication_Testing/11-Testing_Multi-Factor_Authentication.md",
+      "path": "document/4-Web_Application_Security_Testing/04-Authentication_Testing/11-Testing_Multi-Factor_Authentication.md"
+    },
+    "label": "KNOWLEDGE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/wstg:document/4-Web_Application_Security_Testing/04-Authentication_Testing/11-Testing_Multi-Factor_Authentication.md:8",
+    "artifact_id": "art:OWASP/wstg:document/4-Web_Application_Security_Testing/04-Authentication_Testing/11-Testing_Multi-Factor_Authentication.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "#### Recovery Codes\n\nSome applications will provide the user with a list of recovery or backup codes when they enable MFA, which can be used to login. These should be checked to ensure:\n\n- They are sufficiently long and complex to protect against brute-force attacks.\n- They are securely generated.\n- They can only be used once.\n- Brute-force protection is in place (such as account lockout).\n- The user is notified (via email, SMS, etc) when a code is used.\n\nSee the [\"Backup Codes\" section in the Forgotten Password Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Forgot_Password_Cheat_Sheet.html#backup-codes) for further details.",
+    "span": {
+      "index": 8,
+      "total": 20,
+      "heading_path": [
+        "Testing Multi-Factor Authentication (MFA)",
+        "How to Test",
+        "Check MFA Recovery Options",
+        "Recovery Codes"
+      ],
+      "start_char_idx": 5740,
+      "end_char_idx": 6386,
+      "start_line": 77,
+      "end_line": 88
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/wstg",
+      "commit_sha": "d386ff1b7c3b237f39be65d56ba48774e0443ed4",
+      "committed_at": "2026-05-27T10:22:50Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "document/4-Web_Application_Security_Testing/04-Authentication_Testing/11-Testing_Multi-Factor_Authentication.md",
+      "path": "document/4-Web_Application_Security_Testing/04-Authentication_Testing/11-Testing_Multi-Factor_Authentication.md"
+    },
+    "label": "KNOWLEDGE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/wstg:document/4-Web_Application_Security_Testing/04-Authentication_Testing/11-Testing_Multi-Factor_Authentication.md:9",
+    "artifact_id": "art:OWASP/wstg:document/4-Web_Application_Security_Testing/04-Authentication_Testing/11-Testing_Multi-Factor_Authentication.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "#### MFA Reset Process\n\nIf the application implements an MFA reset process, this should be tested in the same way that the [password reset process](09-Testing_for_Weak_Password_Change_or_Reset_Functionalities.md) is tested. It is important that this process is *at least* as strong as the MFA implementation for the application.",
+    "span": {
+      "index": 9,
+      "total": 20,
+      "heading_path": [
+        "Testing Multi-Factor Authentication (MFA)",
+        "How to Test",
+        "Check MFA Recovery Options",
+        "MFA Reset Process"
+      ],
+      "start_char_idx": 6387,
+      "end_char_idx": 6716,
+      "start_line": 89,
+      "end_line": 92
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/wstg",
+      "commit_sha": "d386ff1b7c3b237f39be65d56ba48774e0443ed4",
+      "committed_at": "2026-05-27T10:22:50Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "document/4-Web_Application_Security_Testing/04-Authentication_Testing/11-Testing_Multi-Factor_Authentication.md",
+      "path": "document/4-Web_Application_Security_Testing/04-Authentication_Testing/11-Testing_Multi-Factor_Authentication.md"
+    },
+    "label": "KNOWLEDGE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/ASVS:5.0/en/0x01-Frontispiece.md:0",
+    "artifact_id": "art:OWASP/ASVS:5.0/en/0x01-Frontispiece.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "# Frontispiece",
+    "span": {
+      "index": 0,
+      "total": 7,
+      "heading_path": [
+        "Frontispiece"
+      ],
+      "start_char_idx": 0,
+      "end_char_idx": 15,
+      "start_line": 1,
+      "end_line": 2
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/ASVS",
+      "commit_sha": "a79c0184f0d5ade9dc4c9f4c0f22362e8136e4af",
+      "committed_at": "2026-03-17T07:04:40Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "5.0/en/0x01-Frontispiece.md",
+      "path": "5.0/en/0x01-Frontispiece.md"
+    },
+    "label": "NOISE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/ASVS:5.0/en/0x01-Frontispiece.md:1",
+    "artifact_id": "art:OWASP/ASVS:5.0/en/0x01-Frontispiece.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "## About the Standard\n\nThe Application Security Verification Standard is a list of application security requirements that architects, developers, testers, security professionals, tool vendors, and consumers can use to define, build, test, and verify secure applications.",
+    "span": {
+      "index": 1,
+      "total": 7,
+      "heading_path": [
+        "Frontispiece",
+        "About the Standard"
+      ],
+      "start_char_idx": 16,
+      "end_char_idx": 287,
+      "start_line": 3,
+      "end_line": 6
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/ASVS",
+      "commit_sha": "a79c0184f0d5ade9dc4c9f4c0f22362e8136e4af",
+      "committed_at": "2026-03-17T07:04:40Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "5.0/en/0x01-Frontispiece.md",
+      "path": "5.0/en/0x01-Frontispiece.md"
+    },
+    "label": "NOISE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/ASVS:5.0/en/0x01-Frontispiece.md:2",
+    "artifact_id": "art:OWASP/ASVS:5.0/en/0x01-Frontispiece.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "## Copyright and License\n\nVersion 5.0.0, May 2025\n\n![license](../images/license.png)\n\nCopyright © 2008-2025 The OWASP Foundation.\n\nThis document is released under the [Creative Commons Attribution-ShareAlike 4.0 International License](https://creativecommons.org/licenses/by-sa/4.0/).\n\nFor any reuse or distribution, you must clearly communicate the license terms of this work to others.",
+    "span": {
+      "index": 2,
+      "total": 7,
+      "heading_path": [
+        "Frontispiece",
+        "Copyright and License"
+      ],
+      "start_char_idx": 288,
+      "end_char_idx": 676,
+      "start_line": 7,
+      "end_line": 18
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/ASVS",
+      "commit_sha": "a79c0184f0d5ade9dc4c9f4c0f22362e8136e4af",
+      "committed_at": "2026-03-17T07:04:40Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "5.0/en/0x01-Frontispiece.md",
+      "path": "5.0/en/0x01-Frontispiece.md"
+    },
+    "label": "NOISE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/ASVS:5.0/en/0x01-Frontispiece.md:3",
+    "artifact_id": "art:OWASP/ASVS:5.0/en/0x01-Frontispiece.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "## Project Leads\n\n| | | |\n|---------------------- |----------------- |----------------- |\n| Daniel Cuthbert | Elar Lang | Josh C Grossman |",
+    "span": {
+      "index": 3,
+      "total": 7,
+      "heading_path": [
+        "Frontispiece",
+        "Project Leads"
+      ],
+      "start_char_idx": 677,
+      "end_char_idx": 817,
+      "start_line": 19,
+      "end_line": 24
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/ASVS",
+      "commit_sha": "a79c0184f0d5ade9dc4c9f4c0f22362e8136e4af",
+      "committed_at": "2026-03-17T07:04:40Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "5.0/en/0x01-Frontispiece.md",
+      "path": "5.0/en/0x01-Frontispiece.md"
+    },
+    "label": "NOISE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/ASVS:5.0/en/0x01-Frontispiece.md:4",
+    "artifact_id": "art:OWASP/ASVS:5.0/en/0x01-Frontispiece.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "## Working Group\n\n| | | | |\n|---------------- |------------------ |------------------- |----------------- |\n| Tobias Ahnoff | Ralph Andalis | Ryan Armstrong | Gabriel Corona |\n| Meghan Jacquot | Shanni Prutchi | Iman Sharafaldin | Eden Yardeni |",
+    "span": {
+      "index": 4,
+      "total": 7,
+      "heading_path": [
+        "Frontispiece",
+        "Working Group"
+      ],
+      "start_char_idx": 818,
+      "end_char_idx": 1064,
+      "start_line": 25,
+      "end_line": 31
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/ASVS",
+      "commit_sha": "a79c0184f0d5ade9dc4c9f4c0f22362e8136e4af",
+      "committed_at": "2026-03-17T07:04:40Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "5.0/en/0x01-Frontispiece.md",
+      "path": "5.0/en/0x01-Frontispiece.md"
+    },
+    "label": "NOISE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/ASVS:5.0/en/0x01-Frontispiece.md:5",
+    "artifact_id": "art:OWASP/ASVS:5.0/en/0x01-Frontispiece.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "## Other Major Contributors\n\n| | |\n|-------------------|-------------------|\n| Sjoerd Langkemper | Isaac Lewis |\n| Mark Carney | Sandro Gauci |",
+    "span": {
+      "index": 5,
+      "total": 7,
+      "heading_path": [
+        "Frontispiece",
+        "Other Major Contributors"
+      ],
+      "start_char_idx": 1065,
+      "end_char_idx": 1209,
+      "start_line": 32,
+      "end_line": 38
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/ASVS",
+      "commit_sha": "a79c0184f0d5ade9dc4c9f4c0f22362e8136e4af",
+      "committed_at": "2026-03-17T07:04:40Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "5.0/en/0x01-Frontispiece.md",
+      "path": "5.0/en/0x01-Frontispiece.md"
+    },
+    "label": "NOISE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/ASVS:5.0/en/0x01-Frontispiece.md:6",
+    "artifact_id": "art:OWASP/ASVS:5.0/en/0x01-Frontispiece.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "## Other Contributors and Reviewers\n\nWe have included a list of the other contributors in Appendix E.\n\nIf a credit is missing from the 5.x credit list, please log a ticket at GitHub to be recognized in future 5.x updates.\n\nThe Application Security Verification Standard builds on the work of those involved in ASVS 1.0 (2008) through 4.0 (2019). Much of the structure and many of the verification items that remain in ASVS today were originally written by Andrew van der Stock, Mike Boberski, Jeff Williams, and Dave Wichers, among numerous other contributors. We would also like to acknowledge Jim Manico for his significant and long-standing contributions to ASVS, starting as a Lead Author from version 1.0 (2009) and serving as a Project Lead from ASVS 4.0 through to after the release of ASVS 5.0. Thank you to everyone who has contributed in the past. For a comprehensive list of earlier contributors, please consult each prior version.",
+    "span": {
+      "index": 6,
+      "total": 7,
+      "heading_path": [
+        "Frontispiece",
+        "Other Contributors and Reviewers"
+      ],
+      "start_char_idx": 1210,
+      "end_char_idx": 2152,
+      "start_line": 39,
+      "end_line": 45
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/ASVS",
+      "commit_sha": "a79c0184f0d5ade9dc4c9f4c0f22362e8136e4af",
+      "committed_at": "2026-03-17T07:04:40Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "5.0/en/0x01-Frontispiece.md",
+      "path": "5.0/en/0x01-Frontispiece.md"
+    },
+    "label": "NOISE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/ASVS:README.md:0",
+    "artifact_id": "art:OWASP/ASVS:README.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "# OWASP Application Security Verification Standard\n\n<img src=\"https://owasp.org/www-project-application-security-verification-standard/assets/images/OWASP_ASVS_Linkedin_Banner-01.jpg\" width=\"700px\">\n\n[![CC BY-SA 4.0][cc-by-sa-shield]][cc-by-sa]\n\nThis work is licensed under a\n[Creative Commons Attribution-ShareAlike 4.0 International License][cc-by-sa].\n\n[![CC BY-SA 4.0][cc-by-sa-image]][cc-by-sa]\n\n[cc-by-sa]: https://creativecommons.org/licenses/by-sa/4.0/\n[cc-by-sa-image]: https://licensebuttons.net/l/by-sa/4.0/88x31.png\n[cc-by-sa-shield]: https://img.shields.io/badge/License-CC%20BY--SA%204.0-blue.svg\n\n🎉🎉🎉 **Welcome to Version 5.0 of the ASVS!** 🎉🎉🎉\n\n**Released LIVE on stage at Global AppSec EU Barcelona 2025!**",
+    "span": {
+      "index": 0,
+      "total": 7,
+      "heading_path": [
+        "OWASP Application Security Verification Standard"
+      ],
+      "start_char_idx": 0,
+      "end_char_idx": 724,
+      "start_line": 1,
+      "end_line": 19
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/ASVS",
+      "commit_sha": "a79c0184f0d5ade9dc4c9f4c0f22362e8136e4af",
+      "committed_at": "2026-03-17T07:04:40Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "README.md",
+      "path": "README.md"
+    },
+    "label": "NOISE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/ASVS:README.md:1",
+    "artifact_id": "art:OWASP/ASVS:README.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "## Introduction\n\nThe primary aim of the OWASP Application Security Verification Standard (ASVS) Project is to provide an open application security standard for web apps and web services of all types.\n\nOriginally launched in 2008 through a global community collaboration, the ASVS defines a comprehensive set of security requirements for designing, developing, and testing modern web applications and services.\n\nFollowing the release of ASVS 4.0 in 2019 and its minor update (v4.0.3) in 2021, Version 5.0 represents a significant milestone—modernized to reflect the latest advances in software security.\n\nWe gratefully recognize the organizations who have supported the project either through significant time provision or financially on our \"[Supporters](SUPPORTERS.md)\" page!\n\n**Please [log issues](https://github.com/OWASP/ASVS/issues) if you find any bugs or if you have ideas. We may subsequently ask you to [open a pull request](https://github.com/OWASP/ASVS/pulls) based on the discussion in the issue. We are also actively looking for [translations of the 5.n branch](CONTRIBUTING.md#translations).**",
+    "span": {
+      "index": 1,
+      "total": 7,
+      "heading_path": [
+        "OWASP Application Security Verification Standard",
+        "Introduction"
+      ],
+      "start_char_idx": 725,
+      "end_char_idx": 1833,
+      "start_line": 20,
+      "end_line": 31
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/ASVS",
+      "commit_sha": "a79c0184f0d5ade9dc4c9f4c0f22362e8136e4af",
+      "committed_at": "2026-03-17T07:04:40Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "README.md",
+      "path": "README.md"
+    },
+    "label": "NOISE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/ASVS:README.md:2",
+    "artifact_id": "art:OWASP/ASVS:README.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "## Project Leaders and Working Group\n\nThe project is led by the three project leaders [Daniel Cuthbert](https://github.com/danielcuthbert), [Josh Grossman](https://github.com/tghosth), and [Elar Lang](https://github.com/elarlang).\n\nThey are supported by the ASVS Working Group which consists of [Shanni Prutchi](https://github.com/EnigmaRosa), [Ralph Andalis](https://github.com/csfreak92), [Meghan Jacquot](https://github.com/meghanjacquot), [Iman Sharafaldin](https://github.com/ImanSharaf), [Ryan Armstrong](https://github.com/ryarmst), [Gabriel Corona](https://github.com/randomstuff), [Tobias Ahnoff](https://github.com/TobiasAhnoff), and [Eden Yardeni](https://github.com/cronchie).",
+    "span": {
+      "index": 2,
+      "total": 7,
+      "heading_path": [
+        "OWASP Application Security Verification Standard",
+        "Project Leaders and Working Group"
+      ],
+      "start_char_idx": 1834,
+      "end_char_idx": 2523,
+      "start_line": 32,
+      "end_line": 37
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/ASVS",
+      "commit_sha": "a79c0184f0d5ade9dc4c9f4c0f22362e8136e4af",
+      "committed_at": "2026-03-17T07:04:40Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "README.md",
+      "path": "README.md"
+    },
+    "label": "NOISE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/ASVS:README.md:3",
+    "artifact_id": "art:OWASP/ASVS:README.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "## Latest Stable Version - 5.0.0\n\nThe latest stable version is version 5.0.0 (dated May 2025), which can be found:\n\n* [OWASP Application Security Verification Standard 5.0.0 English (PDF)](https://github.com/OWASP/ASVS/raw/v5.0.0/5.0/OWASP_Application_Security_Verification_Standard_5.0.0_en.pdf)\n* [OWASP Application Security Verification Standard 5.0.0 English (Word)](https://github.com/OWASP/ASVS/raw/v5.0.0/5.0/docs_en/OWASP_Application_Security_Verification_Standard_5.0.0_en.docx)\n* [OWASP Application Security Verification Standard 5.0.0 English (CSV)](https://github.com/OWASP/ASVS/raw/v5.0.0/5.0/docs_en/OWASP_Application_Security_Verification_Standard_5.0.0_en.csv)\n* [OWASP Application Security Verification Standard 5.0.0 (GitHub Branch)](https://github.com/OWASP/ASVS/tree/v5.0.0)\n\nThe master branch of this repository will always be the \"bleeding edge version\" which might have in-progress changes or other edits open. The next release target will be a patch release, version **5.0.1**. For details on the ASVS release strategy, see [the release strategy section of CONTRIBUTING.md](CONTRIBUTING.md#release-strategy).",
+    "span": {
+      "index": 3,
+      "total": 7,
+      "heading_path": [
+        "OWASP Application Security Verification Standard",
+        "Latest Stable Version - 5.0.0"
+      ],
+      "start_char_idx": 2524,
+      "end_char_idx": 3657,
+      "start_line": 38,
+      "end_line": 48
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/ASVS",
+      "commit_sha": "a79c0184f0d5ade9dc4c9f4c0f22362e8136e4af",
+      "committed_at": "2026-03-17T07:04:40Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "README.md",
+      "path": "README.md"
+    },
+    "label": "NOISE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/ASVS:README.md:4",
+    "artifact_id": "art:OWASP/ASVS:README.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "### Translations\n\nThe OWASP Community effort with regards to translations is a best effort. Whilst we do our utmost to ensure the content is valid, from a structural perspective, there is only so much we can do to ensure the translations are correct. We rely on you, the community, to help make the ASVS as usable as possible to all around the globe, and translating the main branch into your language is important to the project.\n\nIf you think you can help with translations, or indeed ensuring the current list of translations below are correct, we'd love for you to join the community and make the ASVS amazing for all. For more information on translating the ASVS see the [translations section of CONTRIBUTING.md](CONTRIBUTING.md#translations).\n\nCurrently available translations:\n\n* [OWASP Application Security Verification Standard 5.0.0 Turkish (PDF)](https://github.com/OWASP/ASVS/raw/v5.0.0/5.0/OWASP_Application_Security_Verification_Standard_5.0.0_tr.pdf) and [other formats](https://github.com/OWASP/ASVS/raw/v5.0.0/5.0/docs_tr). (Thanks to [Ata Seren](https://github.com/ataseren))\n* [OWASP Application Security Verification Standard 5.0.0 Russian (PDF)](https://github.com/OWASP/ASVS/raw/v5.0.0/5.0/OWASP_Application_Security_Verification_Standard_5.0.0_ru.pdf) and [other formats](https://github.com/OWASP/ASVS/raw/v5.0.0/5.0/docs_ru). (Thanks to [Khalina Daria](https://github.com/whitealisia), [Shnayder Eugenia](https://github.com/ZhenyaShnayder), [Smirnov Vyacheslav](https://github.com/Borgc), [Mukovkin Dmitry](https://github.com/shipko), [Nadezhda](https://github.com/yoshtvoumed), [Fomin Danil](https://github.com/EvtDanya), Sluzhevsky Anton, [Zolotarev Maxim](https://github.com/kibertard), [Gorky Kirill](https://github.com/ToxicSnail), [Nosenko Aleksei](https://github.com/avnosenko))\n* [OWASP Application Security Verification Standard 5.0.0 French (PDF)](https://github.com/OWASP/ASVS/raw/v5.0.0/5.0/OWASP_Application_Security_Verification_Standard_5.0.0_fr.pdf) and [other formats](https://github.com/OWASP/ASVS/raw/v5.0.0/5.0/docs_fr). (Thanks to [Cédric Lallier](https://github.com/clallier94), [Alexandre Joly](https://github.com/inaz0), [Michael Vacarella](https://github.com/Aif4thah), [Sebastien Gioria](https://github.com/SPoint42) and [Gabriel Corona](https://github.com/randomstuff))\n* [OWASP Application Security Verification Standard 5.0.0 Korean (PDF)](https://github.com/OWASP/ASVS/raw/v5.0.0/5.0/OWASP_Application_Security_Verification_Standard_5.0.0_ko.pdf) and [other formats](https://github.com/OWASP/ASVS/raw/v5.0.0/5.0/docs_ko). (Thanks to [박우현(Park WooHyun)](https://github.com/woohyun212), [김용환(Kim YongHwan)](https://github.com/prokyhsigma), [조예진(Jo YeJin)](https://github.com/yejinj), [이본영(Lee BonYeong)](https://github.com/FoO-511), [박재욱(Park JaeWook)](https://github.com/ffinguMac), [박준범(Park JunBeom)](https://github.com/blatter95), [차원제(Cha WonJe)](https://github.com/breakpack), [신승민(Shin SeungMin)](https://github.com/COKEPAIN), [이준서(Lee JunSeo)](https://github.com/typemnm), [박민균(Park MinGyun)](https://github.com/survey05), [윤현정(Youn HyunJung)](https://github.com/kimchiudon), [이지훈(Lee JiHun)](https://github.com/effortjh1112), [김어진(Kim EoJin)](https://github.com/rladjwls57), [오모세(O Moses)](https://github.com/wwwahtp), [정수진(Jeong SooJin)](https://github.com/zsxen), [이하린(Lee HaRin)](https://github.com/sari-harin), [양 진(Yang Jin)](https://github.com/yjiiny) and [정민석(Jung MinSuk)](https://github.com/j93es))\n\nHistoric translations of the v4.x versions can be found in the [TRANSLATIONS.md file](4.0/TRANSLATIONS.md) in the 4.0 folder.",
+    "span": {
+      "index": 4,
+      "total": 7,
+      "heading_path": [
+        "OWASP Application Security Verification Standard",
+        "Latest Stable Version - 5.0.0",
+        "Translations"
+      ],
+      "start_char_idx": 3658,
+      "end_char_idx": 7254,
+      "start_line": 49,
+      "end_line": 63
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/ASVS",
+      "commit_sha": "a79c0184f0d5ade9dc4c9f4c0f22362e8136e4af",
+      "committed_at": "2026-03-17T07:04:40Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "README.md",
+      "path": "README.md"
+    },
+    "label": "NOISE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/ASVS:README.md:5",
+    "artifact_id": "art:OWASP/ASVS:README.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "## How To Reference ASVS Requirements\n\nEach requirement has an identifier in the format `<chapter>.<section>.<requirement>`, where each element is a number. For example, `1.11.3`.\n\n* The `<chapter>` value corresponds to the chapter from which the requirement comes; for example, all `1.#.#` requirements are from the 'Encoding and Sanitization' chapter.\n* The `<section>` value corresponds to the section within that chapter where the requirement appears, for example: all `1.2.#` requirements are in the 'Injection Prevention' section of the 'Encoding and Sanitization' chapter.\n* The `<requirement>` value identifies the specific requirement within the chapter and section, for example, `1.2.5` which as of version 5.0.0 of this standard is:\n\n> Verify that the application protects against OS command injection and that operating system calls use parameterized OS queries or use contextual command line output encoding.\n\nSince the identifiers may change between versions of the standard, it is preferable for other documents, reports, or tools to use the following format: `v<version>-<chapter>.<section>.<requirement>`, where: 'version' is the ASVS version tag. For example: `v5.0.0-1.2.5` would be understood to mean specifically the 5th requirement in the 'Injection Prevention' section of the 'Encoding and Sanitization' chapter from version 5.0.0. (This could be summarized as `v<version>-<requirement_identifier>`.)\n\nNote: The `v` preceding the version number in the format should always be lowercase.\n\nIf identifiers are used without including the `v<version>` element then they should be assumed to refer to the latest Application Security Verification Standard content. As the standard grows and changes this becomes problematic, which is why writers or developers should include the version element.",
+    "span": {
+      "index": 5,
+      "total": 7,
+      "heading_path": [
+        "OWASP Application Security Verification Standard",
+        "How To Reference ASVS Requirements"
+      ],
+      "start_char_idx": 7255,
+      "end_char_idx": 9067,
+      "start_line": 64,
+      "end_line": 79
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/ASVS",
+      "commit_sha": "a79c0184f0d5ade9dc4c9f4c0f22362e8136e4af",
+      "committed_at": "2026-03-17T07:04:40Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "README.md",
+      "path": "README.md"
+    },
+    "label": "NOISE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/ASVS:README.md:6",
+    "artifact_id": "art:OWASP/ASVS:README.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "## License\n\nThe entire project content is under the **[Creative Commons Attribution-Share Alike v4.0](https://creativecommons.org/licenses/by-sa/4.0/)** license.",
+    "span": {
+      "index": 6,
+      "total": 7,
+      "heading_path": [
+        "OWASP Application Security Verification Standard",
+        "License"
+      ],
+      "start_char_idx": 9068,
+      "end_char_idx": 9229,
+      "start_line": 80,
+      "end_line": 82
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/ASVS",
+      "commit_sha": "a79c0184f0d5ade9dc4c9f4c0f22362e8136e4af",
+      "committed_at": "2026-03-17T07:04:40Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "README.md",
+      "path": "README.md"
+    },
+    "label": "NOISE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/ASVS:5.0/en/0x92-Appendix-C_Cryptography.md:0",
+    "artifact_id": "art:OWASP/ASVS:5.0/en/0x92-Appendix-C_Cryptography.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "# Appendix C: Cryptography Standards\n\nThe \"Cryptography\" chapter goes beyond simply defining best practices. It aims to enhance understanding of cryptography principles and encourage the adoption of more resilient, modern security methods. This appendix provides detailed technical information regarding each requirement, complementing the overarching standards outlined in the \"Cryptography\" chapter.\n\nThis appendix defines the level of approval for different cryptographic mechanisms:\n\n* Approved (A) mechanisms can be used in applications.\n* Legacy mechanisms (L) should not be used in applications but might still be used for compatibility with existing legacy applications or code only. While the usage of such these mechanisms is currently not considered to be a vulnerability in itself, they should be replaced by more secure and future-proof mechanisms as soon as possible.\n* Disallowed mechanisms (D) must not be used because they are currently considered broken or do not provide sufficient security.\n\nThis list may be overridden in the context of a given application for various reasons including:\n\n* new evolutions in the field of cryptography;\n* compliance with regulation.",
+    "span": {
+      "index": 0,
+      "total": 20,
+      "heading_path": [
+        "Appendix C: Cryptography Standards"
+      ],
+      "start_char_idx": 0,
+      "end_char_idx": 1187,
+      "start_line": 1,
+      "end_line": 15
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/ASVS",
+      "commit_sha": "63eea77c287b48cb3e27bfac1dcad4580b7bd349",
+      "committed_at": "2026-02-26T17:46:04Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "5.0/en/0x92-Appendix-C_Cryptography.md",
+      "path": "5.0/en/0x92-Appendix-C_Cryptography.md"
+    },
+    "label": "KNOWLEDGE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/ASVS:5.0/en/0x92-Appendix-C_Cryptography.md:1",
+    "artifact_id": "art:OWASP/ASVS:5.0/en/0x92-Appendix-C_Cryptography.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "## Cryptographic Inventory and Documentation\n\nThis section provides additional information\nfor V11.1 Cryptographic Inventory and Documentation.\n\nIt is important to ensure that all cryptographic assets, such as algorithms, keys, and certificates, are regularly discovered, inventoried, and assessed. For Level 3, this should include the use of static and dynamic scanning to discover the use of cryptography in an application. Tools such as SAST and DAST may help with this but it is possible that dedicated tools would be needed to get more comprehensive coverage. Freeware examples of tools include:\n\n* [CryptoMon - Network Cryptography Monitor - using eBPF, written in python](https://github.com/Santandersecurityresearch/CryptoMon)\n* [Cryptobom Forge Tool: Generating Comprehensive CBOMs from CodeQL Outputs](https://github.com/Santandersecurityresearch/cryptobom-forge)",
+    "span": {
+      "index": 1,
+      "total": 20,
+      "heading_path": [
+        "Appendix C: Cryptography Standards",
+        "Cryptographic Inventory and Documentation"
+      ],
+      "start_char_idx": 1188,
+      "end_char_idx": 2062,
+      "start_line": 16,
+      "end_line": 25
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/ASVS",
+      "commit_sha": "63eea77c287b48cb3e27bfac1dcad4580b7bd349",
+      "committed_at": "2026-02-26T17:46:04Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "5.0/en/0x92-Appendix-C_Cryptography.md",
+      "path": "5.0/en/0x92-Appendix-C_Cryptography.md"
+    },
+    "label": "KNOWLEDGE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/ASVS:5.0/en/0x92-Appendix-C_Cryptography.md:2",
+    "artifact_id": "art:OWASP/ASVS:5.0/en/0x92-Appendix-C_Cryptography.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "## Equivalent Strengths of Cryptographic Parameters\n\nThe relative security strengths for various cryptographic systems are in this table (from [NIST SP 800-57 Part 1](https://csrc.nist.gov/pubs/sp/800/57/pt1/r5/final), p.71):\n\n| Security Strength | Symmetric Key Algorithms | Finite Field | Integer Factorization | Elliptic Curve |\n|--|--|--|--|--|\n| <= 80 | 2TDEA | L = 1024 <br> N = 160 | k = 1024 | f = 160-223 |\n| 112 | 3TDEA | L = 2048 <br> N = 224 | k = 2048 | f = 224-255 |\n| 128 | AES-128 | L = 3072 <br> N = 256 | k = 3072 | f = 256-383 |\n| 192 | AES-192 | L = 7680 <br> N = 384 | k = 7680 | f = 384-511 |\n| 256 | AES-256 | L = 15360 <br> N = 512 | k = 15360 | f = 512+ |\n\nExample of applications:\n\n* Finite Field Cryptography: DSA, FFDH, MQV\n* Integer Factorization Cryptography: RSA\n* Elliptic Curve Cryptography: ECDSA, EdDSA, ECDH, MQV\n\nNote: that this section assumes that no quantum computer exists; if such a computer would exist, the estimates for the last 3 columns would be no longer valid.",
+    "span": {
+      "index": 2,
+      "total": 20,
+      "heading_path": [
+        "Appendix C: Cryptography Standards",
+        "Equivalent Strengths of Cryptographic Parameters"
+      ],
+      "start_char_idx": 2063,
+      "end_char_idx": 3073,
+      "start_line": 26,
+      "end_line": 45
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/ASVS",
+      "commit_sha": "63eea77c287b48cb3e27bfac1dcad4580b7bd349",
+      "committed_at": "2026-02-26T17:46:04Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "5.0/en/0x92-Appendix-C_Cryptography.md",
+      "path": "5.0/en/0x92-Appendix-C_Cryptography.md"
+    },
+    "label": "KNOWLEDGE",
+    "label_rationale": "\\",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/ASVS:5.0/en/0x92-Appendix-C_Cryptography.md:3",
+    "artifact_id": "art:OWASP/ASVS:5.0/en/0x92-Appendix-C_Cryptography.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "## Random Values\n\nThis section provides additional information\nfor V11.5 Random Values.\n\n| Name | Version/Reference | Notes | Status |\n|:---|:----|:----|:-:|\n| `/dev/random` | Linux 4.8+ [(Oct 2016)](https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=818e607b57c94ade9824dad63a96c2ea6b21baf3), also found in iOS, Android, and other Linux-based POSIX operating systems. Based on [RFC7539](https://datatracker.ietf.org/doc/html/rfc7539) | Utilizing ChaCha20 stream. Found in iOS [`SecRandomCopyBytes`](https://developer.apple.com/documentation/security/secrandomcopybytes(_:_:_:)?language=objc) and Android [`Secure Random`](https://developer.android.com/reference/java/security/SecureRandom) with the correct settings provided to each. | A |\n| `/dev/urandom` | Linux kernel's special file for providing random data | Provides high-quality, entropy sources from hardware randomness | A |\n| `AES-CTR-DRBG` | [NIST SP800-90A](https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-90Ar1.pdf) | As used in common implementations, such as [Windows CNG API `BCryptGenRandom`](https://learn.microsoft.com/en-us/windows/win32/api/bcrypt/nf-bcrypt-bcryptgenrandom) set by [`BCRYPT_RNG_ALGORITHM`](https://learn.microsoft.com/en-us/windows/win32/seccng/cng-algorithm-identifiers). | A |\n| `HMAC-DRBG` | [NIST SP800-90A](https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-90Ar1.pdf) | | A |\n| `Hash-DRBG` | [NIST SP800-90A](https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-90Ar1.pdf) | | A |\n| `getentropy()` | [OpenBSD](https://man.openbsd.org/getentropy.2), available in [Linux glibc 2.25+](https://man7.org/linux/man-pages/man3/getentropy.3.html) and [macOS 10.12+](https://support.apple.com/en-gb/guide/security/seca0c73a75b/web) | Provides secure random bytes directly from the kernel's entropy source with a straightforward and minimal API. It’s more modern and avoids pitfalls associated with older APIs. | A |\n\nThe underlying hash function used with HMAC-DRBG or Hash-DRBG must be approved for this usage.",
+    "span": {
+      "index": 3,
+      "total": 20,
+      "heading_path": [
+        "Appendix C: Cryptography Standards",
+        "Random Values"
+      ],
+      "start_char_idx": 3074,
+      "end_char_idx": 5146,
+      "start_line": 46,
+      "end_line": 61
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/ASVS",
+      "commit_sha": "63eea77c287b48cb3e27bfac1dcad4580b7bd349",
+      "committed_at": "2026-02-26T17:46:04Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "5.0/en/0x92-Appendix-C_Cryptography.md",
+      "path": "5.0/en/0x92-Appendix-C_Cryptography.md"
+    },
+    "label": "KNOWLEDGE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/ASVS:5.0/en/0x92-Appendix-C_Cryptography.md:4",
+    "artifact_id": "art:OWASP/ASVS:5.0/en/0x92-Appendix-C_Cryptography.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "## Cipher Algorithms\n\nThis section provides additional information\nfor V11.3 Encryption Algorithms.\n\nApproved cipher algorithms are listed in order of preference.\n\n| Symmetric Key Algorithms | Reference | Status |\n| ------ | ------ |:-:|\n| AES-256 | [FIPS 197](https://csrc.nist.gov/pubs/fips/197/final) | A |\n| Salsa20 | [Salsa 20 specification](https://cr.yp.to/snuffle/spec.pdf) | A |\n| XChaCha20 | [XChaCha20 Draft](https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-xchacha-03) | A |\n| XSalsa20 | [Extending the Salsa20 nonce](https://cr.yp.to/snuffle/xsalsa-20110204.pdf) | A |\n| ChaCha20 | [RFC 8439](https://www.rfc-editor.org/info/rfc8439) | A |\n| AES-192 | [FIPS 197](https://csrc.nist.gov/pubs/fips/197/final) | A |\n| AES-128 | [FIPS 197](https://csrc.nist.gov/pubs/fips/197/final) | L |\n| 2TDEA | | D |\n| TDEA (3DES/3DEA) | | D |\n| IDEA | | D |\n| RC4 | | D |\n| Blowfish| | D |\n| ARC4 | | D |\n| DES | | D |",
+    "span": {
+      "index": 4,
+      "total": 20,
+      "heading_path": [
+        "Appendix C: Cryptography Standards",
+        "Cipher Algorithms"
+      ],
+      "start_char_idx": 5147,
+      "end_char_idx": 6068,
+      "start_line": 62,
+      "end_line": 85
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/ASVS",
+      "commit_sha": "63eea77c287b48cb3e27bfac1dcad4580b7bd349",
+      "committed_at": "2026-02-26T17:46:04Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "5.0/en/0x92-Appendix-C_Cryptography.md",
+      "path": "5.0/en/0x92-Appendix-C_Cryptography.md"
+    },
+    "label": "KNOWLEDGE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/ASVS:5.0/en/0x92-Appendix-C_Cryptography.md:5",
+    "artifact_id": "art:OWASP/ASVS:5.0/en/0x92-Appendix-C_Cryptography.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "### AES Cipher Modes\n\nBlock ciphers, such as AES, can be used with different modes of operations. Many modes of operations, such as Electronic codebook (ECB), are insecure and must not be used. The Galois/Counter Mode (GCM) and Counter with cipher block chaining message authentication code (CCM) modes of operations provide authenticated encryption and should be used in modern applications.\n\nApproved modes are listed in order of preference.\n\n| Mode | Authenticated | Reference | Status | Restriction |\n|--|--|--|:-:|--|\n| GCM | Yes | [NIST SP 800-38D](https://csrc.nist.gov/pubs/sp/800/38/d/final) | A | |\n| CCM | Yes | [NIST SP 800-38C](https://csrc.nist.gov/pubs/sp/800/38/c/upd1/final) | A | |\n| CBC | No | [NIST SP 800-38A](https://csrc.nist.gov/pubs/sp/800/38/a/final) | L | |\n| CCM-8 | Yes | | D | |\n| ECB | No | | D | |\n| CFB | No | | D | |\n| OFB | No | | D | |\n| CTR | No | | D | |\n\nNotes:\n\n* All encrypted messages must be authenticated. For ANY use of CBC mode there MUST be an associated hashing MAC algorithm to validate the message. In general, this MUST be applied in the Encrypt-Then-Hash method (but TLS 1.2 uses Hash-Then-Encrypt instead). If this cannot be guaranteed, then CBC MUST NOT be used. The only application where encryption without a MAC algorithm is allowed is disk encryption.\n* If CBC is used, it shall be guaranteed that the verification of the padding is performed in constant time.\n* When using CCM-8, the MAC tag only has 64 bits of security. This does not conform to requirement 11.2.3 which requires at least 128 bits of security.\n* Disk encryption is considered out of scope for the ASVS. Therefore this appendix does not list any approved method for disk encryption. For this usage, encryption without authentication is usually accepted and the XTS, XEX and LRW modes are typically used.",
+    "span": {
+      "index": 5,
+      "total": 20,
+      "heading_path": [
+        "Appendix C: Cryptography Standards",
+        "Cipher Algorithms",
+        "AES Cipher Modes"
+      ],
+      "start_char_idx": 6069,
+      "end_char_idx": 7899,
+      "start_line": 86,
+      "end_line": 109
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/ASVS",
+      "commit_sha": "63eea77c287b48cb3e27bfac1dcad4580b7bd349",
+      "committed_at": "2026-02-26T17:46:04Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "5.0/en/0x92-Appendix-C_Cryptography.md",
+      "path": "5.0/en/0x92-Appendix-C_Cryptography.md"
+    },
+    "label": "KNOWLEDGE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/ASVS:5.0/en/0x92-Appendix-C_Cryptography.md:6",
+    "artifact_id": "art:OWASP/ASVS:5.0/en/0x92-Appendix-C_Cryptography.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "### Key Wrapping\n\nCryptographic key wrap (and corresponding key unwrap) is a method of protecting an existing key by encapsulating (i.e., wrapping) it by employing an additional encryption mechanism so that the original key is not obviously exposed, e.g., during a transfer. This additional key used to protect the original key is referred to as the wrap key.\n\nThis operation may be performed when it is desirable to protect keys in places deemed untrustworthy, or to send sensitive keys over untrusted networks or within applications.\nHowever, serious consideration should be given to understanding the nature (e.g., the identity and the purpose) of the original key prior to committing to a wrap/unwrap procedure as this may have repercussions for both source and target systems/applications in terms of security and especially compliance which may include audit trails of a key's function (e.g., signing) as well as appropriate key storage.\n\nSpecifically, AES-256 MUST be used for key wrapping, following [NIST SP 800-38F](https://csrc.nist.gov/pubs/sp/800/38/f/final) and considering forward-looking provisions against the quantum threat. Cipher modes using AES are the following, in order of preference:\n\n| Key Wrapping | Reference | Status |\n|--|--|:-:|\n| KW | [NIST SP 800-38F](https://csrc.nist.gov/pubs/sp/800/38/f/final) | A |\n| KWP | [NIST SP 800-38F](https://csrc.nist.gov/pubs/sp/800/38/f/final) | A |\n\nAES-192 and AES-128 MAY be used if the use case demands it, but its motivation MUST be documented in the entity's cryptography inventory.",
+    "span": {
+      "index": 6,
+      "total": 20,
+      "heading_path": [
+        "Appendix C: Cryptography Standards",
+        "Cipher Algorithms",
+        "Key Wrapping"
+      ],
+      "start_char_idx": 7900,
+      "end_char_idx": 9454,
+      "start_line": 110,
+      "end_line": 125
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/ASVS",
+      "commit_sha": "63eea77c287b48cb3e27bfac1dcad4580b7bd349",
+      "committed_at": "2026-02-26T17:46:04Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "5.0/en/0x92-Appendix-C_Cryptography.md",
+      "path": "5.0/en/0x92-Appendix-C_Cryptography.md"
+    },
+    "label": "KNOWLEDGE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/ASVS:5.0/en/0x92-Appendix-C_Cryptography.md:7",
+    "artifact_id": "art:OWASP/ASVS:5.0/en/0x92-Appendix-C_Cryptography.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "### Authenticated Encryption\n\nWith the exception of disk encryption, encrypted data must be protected against unauthorized modification using some form of authenticated encryption (AE) scheme, usually using an authenticated encryption with associated data (AEAD) scheme.\n\nThe application should preferably use an approved AEAD scheme. It might alternatively combine an approved cipher scheme and an approved MAC algorithm with a Encrypt-then-MAC construct.\n\nMAC-then-encrypt is still allowed for compatibility with legacy applications. It is used in TLS v1.2 with old ciphers suites.\n\n| AEAD mechanism | Reference | Status |\n|---|---------|:-:|\n|AES-GCM | [SP 800-38D](https://csrc.nist.gov/pubs/sp/800/38/d/final) | A |\n|AES-CCM | [SP 800-38C](https://csrc.nist.gov/pubs/sp/800/38/c/upd1/final) | A |\n|ChaCha-Poly1305 | [RFC 7539](https://datatracker.ietf.org/doc/html/rfc7539) | A |\n|AEGIS-256 | [AEGIS: A Fast Authenticated Encryption Algorithm (v1.1)](https://competitions.cr.yp.to/round3/aegisv11.pdf) | A |\n|AEGIS-128 | [AEGIS: A Fast Authenticated Encryption Algorithm (v1.1)](https://competitions.cr.yp.to/round3/aegisv11.pdf) | A |\n|AEGIS-128L| [AEGIS: A Fast Authenticated Encryption Algorithm (v1.1)](https://competitions.cr.yp.to/round3/aegisv11.pdf) | A |\n|Encrypt-then-MAC | | A |\n|MAC-then-encrypt | | L |",
+    "span": {
+      "index": 7,
+      "total": 20,
+      "heading_path": [
+        "Appendix C: Cryptography Standards",
+        "Cipher Algorithms",
+        "Authenticated Encryption"
+      ],
+      "start_char_idx": 9455,
+      "end_char_idx": 10776,
+      "start_line": 126,
+      "end_line": 144
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/ASVS",
+      "commit_sha": "63eea77c287b48cb3e27bfac1dcad4580b7bd349",
+      "committed_at": "2026-02-26T17:46:04Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "5.0/en/0x92-Appendix-C_Cryptography.md",
+      "path": "5.0/en/0x92-Appendix-C_Cryptography.md"
+    },
+    "label": "KNOWLEDGE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/ASVS:5.0/en/0x92-Appendix-C_Cryptography.md:8",
+    "artifact_id": "art:OWASP/ASVS:5.0/en/0x92-Appendix-C_Cryptography.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "## Hash Functions\n\nThis section provides additional information\nfor V11.4 Hashing and Hash-based Functions.",
+    "span": {
+      "index": 8,
+      "total": 20,
+      "heading_path": [
+        "Appendix C: Cryptography Standards",
+        "Hash Functions"
+      ],
+      "start_char_idx": 10777,
+      "end_char_idx": 10885,
+      "start_line": 145,
+      "end_line": 149
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/ASVS",
+      "commit_sha": "63eea77c287b48cb3e27bfac1dcad4580b7bd349",
+      "committed_at": "2026-02-26T17:46:04Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "5.0/en/0x92-Appendix-C_Cryptography.md",
+      "path": "5.0/en/0x92-Appendix-C_Cryptography.md"
+    },
+    "label": "KNOWLEDGE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/ASVS:5.0/en/0x92-Appendix-C_Cryptography.md:9",
+    "artifact_id": "art:OWASP/ASVS:5.0/en/0x92-Appendix-C_Cryptography.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "### Hash Functions for General Use Cases\n\nThe following table lists hash functions approved in general cryptographic use cases such as digital signatures:\n\n* Approved hash functions provide strong collision resistance and are suitable for high-security applications.\n* Some of these algorithms offer strong resistance to attacks when used with proper cryptographic key management, and so are additionally approved for HMAC, KDF, and RBG functions.\n* Hash function with less than 254 bit of output have insufficient collision resistance and must not be used for digital signature or other applications requiring collision resistance. For other usages, they might be used for compatibility and verification ONLY with legacy systems but must not be used in new designs.\n\n| Hash function | Reference | Status | Restrictions |\n| ------ | ----------- |:-:| ---------- |\n| SHA3-512 |[FIPS 202](https://csrc.nist.gov/pubs/fips/202/final) | A | |\n| SHA-512 |[FIPS 180-4](https://csrc.nist.gov/pubs/fips/180-4/upd1/final) | A | |\n| SHA3-384 |[FIPS 202](https://csrc.nist.gov/pubs/fips/202/final) | A | |\n| SHA-384 |[FIPS 180-4](https://csrc.nist.gov/pubs/fips/180-4/upd1/final) | A | |\n| SHA3-256 |[FIPS 202](https://csrc.nist.gov/pubs/fips/202/final) | A | |\n| SHA-512/256 |[FIPS 180-4](https://csrc.nist.gov/pubs/fips/180-4/upd1/final) | A | |\n| SHA-256 |[FIPS 180-4](https://csrc.nist.gov/pubs/fips/180-4/upd1/final) | A | |\n| SHAKE256 |[FIPS 202](https://csrc.nist.gov/pubs/fips/202/final) | A | |\n| BLAKE2s | [BLAKE2: simpler, smaller, fast as MD5](https://eprint.iacr.org/2013/322) | A | |\n| BLAKE2b | [BLAKE2: simpler, smaller, fast as MD5](https://eprint.iacr.org/2013/322) | A | |\n| BLAKE3 | [BLAKE3 one function, fast everywhere](https://github.com/BLAKE3-team/BLAKE3-specs/raw/master/blake3.pdf) | A | |\n| SHA-224 | [FIPS 180-4](https://csrc.nist.gov/pubs/fips/180-4/upd1/final) | L | Not suitable for HMAC, KDF, RBG, digital signatures |\n| SHA-512/224 | [FIPS 180-4](https://csrc.nist.gov/pubs/fips/180-4/upd1/final) | L | Not suitable for HMAC, KDF, RBG, digital signatures |\n| SHA3-224 | [FIPS 202](https://csrc.nist.gov/pubs/fips/202/final) | L | Not suitable for HMAC, KDF, RBG, digital signatures |\n| SHA-1 | [RFC 3174](https://www.rfc-editor.org/info/rfc3174) & [RFC 6194](https://www.rfc-editor.org/info/rfc6194) | L | Not suitable for HMAC, KDF, RBG, digital signatures |\n| CRC (any length) | | D | |\n| MD4 | [RFC 1320](https://www.rfc-editor.org/info/rfc1320) | D | |\n| MD5 | [RFC 1321](https://www.rfc-editor.org/info/rfc1321) | D | |",
+    "span": {
+      "index": 9,
+      "total": 20,
+      "heading_path": [
+        "Appendix C: Cryptography Standards",
+        "Hash Functions",
+        "Hash Functions for General Use Cases"
+      ],
+      "start_char_idx": 10886,
+      "end_char_idx": 13433,
+      "start_line": 150,
+      "end_line": 178
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/ASVS",
+      "commit_sha": "63eea77c287b48cb3e27bfac1dcad4580b7bd349",
+      "committed_at": "2026-02-26T17:46:04Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "5.0/en/0x92-Appendix-C_Cryptography.md",
+      "path": "5.0/en/0x92-Appendix-C_Cryptography.md"
+    },
+    "label": "KNOWLEDGE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/ASVS:5.0/en/0x92-Appendix-C_Cryptography.md:10",
+    "artifact_id": "art:OWASP/ASVS:5.0/en/0x92-Appendix-C_Cryptography.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "### Hash Functions for Password Storage\n\nFor secure password hashing, dedicated hash functions must be used. These slow-hashing algorithms mitigate brute-force and dictionary attacks by increasing the computational difficulty of password cracking.\n\n| KDF | Reference | Required Parameters | Status |\n| ---------- | --------- | ------------ |:-:|\n| argon2id | [RFC 9106](https://www.rfc-editor.org/info/rfc9106) | t = 1: m ≥ 47104 (46 MiB), p = 1 | A |\n| | | t = 2: m ≥ 19456 (19 MiB), p = 1 | A |\n| | | t ≥ 3: m ≥ 12288 (12 MiB), p = 1 | A |\n| scrypt | [RFC 7914](https://www.rfc-editor.org/info/rfc7914) | p = 1: N ≥ 2^17 (128 MiB), r = 8 | A |\n| | | p = 2: N ≥ 2^16 (64 MiB), r = 8 | A |\n| | | p ≥ 3: N ≥ 2^15 (32 MiB), r = 8 | A |\n| bcrypt | [A Future-Adaptable Password Scheme](https://www.researchgate.net/publication/2519476_A_Future-Adaptable_Password_Scheme) | cost ≥ 10 | A |\n| PBKDF2-HMAC-SHA-512 | [NIST SP 800-132](https://csrc.nist.gov/pubs/sp/800/132/final), [FIPS 180-4](https://csrc.nist.gov/pubs/fips/180-4/upd1/final) | iterations ≥ 210,000 | A |\n| PBKDF2-HMAC-SHA-256 | [NIST SP 800-132](https://csrc.nist.gov/pubs/sp/800/132/final), [FIPS 180-4](https://csrc.nist.gov/pubs/fips/180-4/upd1/final) | iterations ≥ 600,000 | A |\n| PBKDF2-HMAC-SHA-1 | [NIST SP 800-132](https://csrc.nist.gov/pubs/sp/800/132/final), [FIPS 180-4](https://csrc.nist.gov/pubs/fips/180-4/upd1/final) | iterations ≥ 1,300,000 | L |\n\nApproved password-based key derivations functions can be used for password storage.",
+    "span": {
+      "index": 10,
+      "total": 20,
+      "heading_path": [
+        "Appendix C: Cryptography Standards",
+        "Hash Functions",
+        "Hash Functions for Password Storage"
+      ],
+      "start_char_idx": 13434,
+      "end_char_idx": 14944,
+      "start_line": 179,
+      "end_line": 197
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/ASVS",
+      "commit_sha": "63eea77c287b48cb3e27bfac1dcad4580b7bd349",
+      "committed_at": "2026-02-26T17:46:04Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "5.0/en/0x92-Appendix-C_Cryptography.md",
+      "path": "5.0/en/0x92-Appendix-C_Cryptography.md"
+    },
+    "label": "KNOWLEDGE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/CheatSheetSeries:cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md:0",
+    "artifact_id": "art:OWASP/CheatSheetSeries:cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "# DOM based XSS Prevention Cheat Sheet",
+    "span": {
+      "index": 0,
+      "total": 36,
+      "heading_path": [
+        "DOM based XSS Prevention Cheat Sheet"
+      ],
+      "start_char_idx": 0,
+      "end_char_idx": 39,
+      "start_line": 1,
+      "end_line": 2
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/CheatSheetSeries",
+      "commit_sha": "00f27a7b9e5ea10f00f840f6781a0ba7d8925f0a",
+      "committed_at": "2026-05-29T07:37:46Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md",
+      "path": "cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md"
+    },
+    "label": "NOISE",
+    "label_rationale": "Heading/title-only chunk with no methodology body [heading-only tiny-chunk -> NOISE, consistent rule 2026-07-03; was KNOWLEDGE]",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/CheatSheetSeries:cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md:1",
+    "artifact_id": "art:OWASP/CheatSheetSeries:cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "## Introduction\n\nWhen looking at XSS (Cross-Site Scripting), there are three generally recognized forms of [XSS](https://owasp.org/www-community/attacks/xss/):\n\n- [Reflected or Stored](https://owasp.org/www-community/attacks/xss/#stored-and-reflected-xss-attacks)\n- [DOM Based XSS](https://owasp.org/www-community/attacks/DOM_Based_XSS).\n\nThe [XSS Prevention Cheatsheet](Cross_Site_Scripting_Prevention_Cheat_Sheet.md) does an excellent job of addressing Reflected and Stored XSS. This cheatsheet addresses DOM (Document Object Model) based XSS and is an extension (and assumes comprehension) of the [XSS Prevention Cheatsheet](Cross_Site_Scripting_Prevention_Cheat_Sheet.md).\n\nIn order to understand DOM based XSS, one needs to see the fundamental difference between Reflected and Stored XSS when compared to DOM based XSS. The primary difference is where the attack is injected into the application.\n\nReflected and Stored XSS are server side injection issues while DOM based XSS is a client (browser) side injection issue.\n\nAll of this code originates on the server, which means it is the application owner's responsibility to make it safe from XSS, regardless of the type of XSS flaw it is. Also, XSS attacks always **execute** in the browser.\n\nThe difference between Reflected/Stored XSS is where the attack is added or injected into the application. With Reflected/Stored the attack is injected into the application during server-side processing of requests where untrusted input is dynamically added to HTML. For DOM XSS, the attack is injected into the application during runtime in the client directly.\n\nWhen a browser is rendering HTML and any other associated content like CSS or JavaScript, it identifies various rendering contexts for the different kinds of input and follows different rules for each context. A rendering context is associated with the parsing of HTML tags and their attributes.\n\n- The HTML parser of the rendering context dictates how data is presented and laid out on the page and can be further broken down into the standard contexts of HTML, HTML attribute, URL, and CSS.\n- The JavaScript or VBScript parser of an execution context is associated with the parsing and execution of script code. Each parser has distinct and separate semantics in the way they can possibly execute script code which make creating consistent rules for mitigating vulnerabilities in various contexts difficult. The complication is compounded by the differing meanings and treatment of encoded values within each subcontext (HTML, HTML attribute, URL, and CSS) within the execution context.\n\nFor the purposes of this article, we refer to the HTML, HTML attribute, URL, and CSS contexts as subcontexts because each of these contexts can be reached and set within a JavaScript execution context.\n\nIn JavaScript code, the main context is JavaScript but with the right tags and context closing characters, an attacker can try to attack the other 4 contexts using equivalent JavaScript DOM methods.\n\nThe following is an example vulnerability which occurs in the JavaScript context and HTML subcontext:\n\n```html\n <script>\n var x = '<%= taintedVar %>';\n var d = document.createElement('div');\n d.innerHTML = x;\n document.body.appendChild(d);\n </script>\n```\n\nLet's look at the individual subcontexts of the execution context in turn.",
+    "span": {
+      "index": 1,
+      "total": 36,
+      "heading_path": [
+        "DOM based XSS Prevention Cheat Sheet",
+        "Introduction"
+      ],
+      "start_char_idx": 40,
+      "end_char_idx": 3376,
+      "start_line": 3,
+      "end_line": 41
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/CheatSheetSeries",
+      "commit_sha": "00f27a7b9e5ea10f00f840f6781a0ba7d8925f0a",
+      "committed_at": "2026-05-29T07:37:46Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md",
+      "path": "cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md"
+    },
+    "label": "KNOWLEDGE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/CheatSheetSeries:cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md:2",
+    "artifact_id": "art:OWASP/CheatSheetSeries:cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "## RULE \\#1 - HTML Escape then JavaScript Escape Before Inserting Untrusted Data into HTML Subcontext within the Execution Context\n\nThere are several methods and attributes which can be used to directly render HTML content within JavaScript. These methods constitute the HTML Subcontext within the Execution Context. If these methods are provided with untrusted input, then an XSS vulnerability could result. For example:",
+    "span": {
+      "index": 2,
+      "total": 36,
+      "heading_path": [
+        "DOM based XSS Prevention Cheat Sheet",
+        "RULE \\#1 - HTML Escape then JavaScript Escape Before Inserting Untrusted Data into HTML Subcontext within the Execution Context"
+      ],
+      "start_char_idx": 3377,
+      "end_char_idx": 3799,
+      "start_line": 42,
+      "end_line": 45
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/CheatSheetSeries",
+      "commit_sha": "00f27a7b9e5ea10f00f840f6781a0ba7d8925f0a",
+      "committed_at": "2026-05-29T07:37:46Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md",
+      "path": "cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md"
+    },
+    "label": "KNOWLEDGE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/CheatSheetSeries:cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md:3",
+    "artifact_id": "art:OWASP/CheatSheetSeries:cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "### Example Dangerous HTML Methods",
+    "span": {
+      "index": 3,
+      "total": 36,
+      "heading_path": [
+        "DOM based XSS Prevention Cheat Sheet",
+        "RULE \\#1 - HTML Escape then JavaScript Escape Before Inserting Untrusted Data into HTML Subcontext within the Execution Context",
+        "Example Dangerous HTML Methods"
+      ],
+      "start_char_idx": 3800,
+      "end_char_idx": 3835,
+      "start_line": 46,
+      "end_line": 47
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/CheatSheetSeries",
+      "commit_sha": "00f27a7b9e5ea10f00f840f6781a0ba7d8925f0a",
+      "committed_at": "2026-05-29T07:37:46Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md",
+      "path": "cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md"
+    },
+    "label": "NOISE",
+    "label_rationale": "Heading/title-only chunk with no methodology body [heading-only tiny-chunk -> NOISE, consistent rule 2026-07-03; was KNOWLEDGE]",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/CheatSheetSeries:cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md:4",
+    "artifact_id": "art:OWASP/CheatSheetSeries:cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "#### Attributes\n\n```javascript\n element.innerHTML = \"<HTML> Tags and markup\";\n element.outerHTML = \"<HTML> Tags and markup\";\n```",
+    "span": {
+      "index": 4,
+      "total": 36,
+      "heading_path": [
+        "DOM based XSS Prevention Cheat Sheet",
+        "RULE \\#1 - HTML Escape then JavaScript Escape Before Inserting Untrusted Data into HTML Subcontext within the Execution Context",
+        "Example Dangerous HTML Methods",
+        "Attributes"
+      ],
+      "start_char_idx": 3836,
+      "end_char_idx": 3965,
+      "start_line": 48,
+      "end_line": 54
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/CheatSheetSeries",
+      "commit_sha": "00f27a7b9e5ea10f00f840f6781a0ba7d8925f0a",
+      "committed_at": "2026-05-29T07:37:46Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md",
+      "path": "cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md"
+    },
+    "label": "KNOWLEDGE",
+    "label_rationale": "Catalog of dangerous DOM sinks (innerHTML/outerHTML) = XSS attack vectors [recall-first correction 2026-07-03; was UNCERTAIN]",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/CheatSheetSeries:cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md:5",
+    "artifact_id": "art:OWASP/CheatSheetSeries:cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "#### Methods\n\n```javascript\n document.write(\"<HTML> Tags and markup\");\n document.writeln(\"<HTML> Tags and markup\");\n```",
+    "span": {
+      "index": 5,
+      "total": 36,
+      "heading_path": [
+        "DOM based XSS Prevention Cheat Sheet",
+        "RULE \\#1 - HTML Escape then JavaScript Escape Before Inserting Untrusted Data into HTML Subcontext within the Execution Context",
+        "Example Dangerous HTML Methods",
+        "Methods"
+      ],
+      "start_char_idx": 3966,
+      "end_char_idx": 4086,
+      "start_line": 55,
+      "end_line": 61
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/CheatSheetSeries",
+      "commit_sha": "00f27a7b9e5ea10f00f840f6781a0ba7d8925f0a",
+      "committed_at": "2026-05-29T07:37:46Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md",
+      "path": "cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md"
+    },
+    "label": "KNOWLEDGE",
+    "label_rationale": "Catalog of dangerous DOM methods (document.write/writeln) = XSS attack vectors [recall-first correction 2026-07-03; was UNCERTAIN]",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/CheatSheetSeries:cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md:6",
+    "artifact_id": "art:OWASP/CheatSheetSeries:cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "### Guideline\n\nTo make dynamic updates to HTML in the DOM safe, we recommend:\n\n 1. HTML encoding, and then\n 2. JavaScript encoding all untrusted input, as shown in these examples:\n\n```javascript\n var ESAPI = require('node-esapi');\n element.innerHTML = \"<%=ESAPI.encoder().encodeForJavascript(ESAPI.encoder().encodeForHTML(untrustedData))%>\";\n element.outerHTML = \"<%=ESAPI.encoder().encodeForJavascript(ESAPI.encoder().encodeForHTML(untrustedData))%>\";\n```\n\n```javascript\n var ESAPI = require('node-esapi');\n document.write(\"<%=ESAPI.encoder().encodeForJavascript(ESAPI.encoder().encodeForHTML(untrustedData))%>\");\n document.writeln(\"<%=ESAPI.encoder().encodeForJavascript(ESAPI.encoder().encodeForHTML(untrustedData))%>\");\n```",
+    "span": {
+      "index": 6,
+      "total": 36,
+      "heading_path": [
+        "DOM based XSS Prevention Cheat Sheet",
+        "RULE \\#1 - HTML Escape then JavaScript Escape Before Inserting Untrusted Data into HTML Subcontext within the Execution Context",
+        "Guideline"
+      ],
+      "start_char_idx": 4087,
+      "end_char_idx": 4815,
+      "start_line": 62,
+      "end_line": 80
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/CheatSheetSeries",
+      "commit_sha": "00f27a7b9e5ea10f00f840f6781a0ba7d8925f0a",
+      "committed_at": "2026-05-29T07:37:46Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md",
+      "path": "cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md"
+    },
+    "label": "KNOWLEDGE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/CheatSheetSeries:cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md:7",
+    "artifact_id": "art:OWASP/CheatSheetSeries:cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "## RULE \\#2 - JavaScript Escape Before Inserting Untrusted Data into HTML Attribute Subcontext within the Execution Context\n\nThe HTML attribute *subcontext* within the *execution* context is divergent from the standard encoding rules. This is because the rule to HTML attribute encode in an HTML attribute rendering context is necessary in order to mitigate attacks which try to exit out of an HTML attributes or try to add additional attributes which could lead to XSS.\n\nWhen you are in a DOM execution context you only need to JavaScript encode HTML attributes which do not execute code (attributes other than event handler, CSS, and URL attributes).\n\nFor example, the general rule is to HTML Attribute encode untrusted data (data from the database, HTTP request, user, back-end system, etc.) placed in an HTML Attribute. This is the appropriate step to take when outputting data in a rendering context, however using HTML Attribute encoding in an execution context will break the application display of data.",
+    "span": {
+      "index": 7,
+      "total": 36,
+      "heading_path": [
+        "DOM based XSS Prevention Cheat Sheet",
+        "RULE \\#2 - JavaScript Escape Before Inserting Untrusted Data into HTML Attribute Subcontext within the Execution Context"
+      ],
+      "start_char_idx": 4816,
+      "end_char_idx": 5828,
+      "start_line": 81,
+      "end_line": 88
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/CheatSheetSeries",
+      "commit_sha": "00f27a7b9e5ea10f00f840f6781a0ba7d8925f0a",
+      "committed_at": "2026-05-29T07:37:46Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md",
+      "path": "cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md"
+    },
+    "label": "KNOWLEDGE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/CheatSheetSeries:cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md:8",
+    "artifact_id": "art:OWASP/CheatSheetSeries:cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "### SAFE but BROKEN example\n\n```javascript\n var ESAPI = require('node-esapi');\n var x = document.createElement(\"input\");\n x.setAttribute(\"name\", \"company_name\");\n // In the following line of code, companyName represents untrusted user input\n // The ESAPI.encoder().encodeForHTMLAttribute() is unnecessary and causes double-encoding\n x.setAttribute(\"value\", '<%=ESAPI.encoder().encodeForJavascript(ESAPI.encoder().encodeForHTMLAttribute(companyName))%>');\n var form1 = document.forms[0];\n form1.appendChild(x);\n```\n\nThe problem is that if companyName had the value \"Johnson & Johnson\". What would be displayed in the input text field would be \"Johnson &#x26;amp; Johnson\". The appropriate encoding to use in the above case would be only JavaScript encoding to disallow an attacker from closing out the single quotes and in-lining code, or escaping to HTML and opening a new script tag.",
+    "span": {
+      "index": 8,
+      "total": 36,
+      "heading_path": [
+        "DOM based XSS Prevention Cheat Sheet",
+        "RULE \\#2 - JavaScript Escape Before Inserting Untrusted Data into HTML Attribute Subcontext within the Execution Context",
+        "SAFE but BROKEN example"
+      ],
+      "start_char_idx": 5829,
+      "end_char_idx": 6714,
+      "start_line": 89,
+      "end_line": 103
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/CheatSheetSeries",
+      "commit_sha": "00f27a7b9e5ea10f00f840f6781a0ba7d8925f0a",
+      "committed_at": "2026-05-29T07:37:46Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md",
+      "path": "cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md"
+    },
+    "label": "KNOWLEDGE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/CheatSheetSeries:cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md:9",
+    "artifact_id": "art:OWASP/CheatSheetSeries:cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "### SAFE and FUNCTIONALLY CORRECT example\n\n```javascript\n var ESAPI = require('node-esapi');\n var x = document.createElement(\"input\");\n x.setAttribute(\"name\", \"company_name\");\n x.setAttribute(\"value\", '<%=ESAPI.encoder().encodeForJavascript(companyName)%>');\n var form1 = document.forms[0];\n form1.appendChild(x);\n```\n\nIt is important to note that when setting an HTML attribute which does not execute code, the value is set directly within the object attribute of the HTML element so there is no concerns with injecting up.",
+    "span": {
+      "index": 9,
+      "total": 36,
+      "heading_path": [
+        "DOM based XSS Prevention Cheat Sheet",
+        "RULE \\#2 - JavaScript Escape Before Inserting Untrusted Data into HTML Attribute Subcontext within the Execution Context",
+        "SAFE and FUNCTIONALLY CORRECT example"
+      ],
+      "start_char_idx": 6715,
+      "end_char_idx": 7240,
+      "start_line": 104,
+      "end_line": 116
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/CheatSheetSeries",
+      "commit_sha": "00f27a7b9e5ea10f00f840f6781a0ba7d8925f0a",
+      "committed_at": "2026-05-29T07:37:46Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md",
+      "path": "cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md"
+    },
+    "label": "KNOWLEDGE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/CheatSheetSeries:cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md:10",
+    "artifact_id": "art:OWASP/CheatSheetSeries:cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "## RULE \\#3 - Be Careful when Inserting Untrusted Data into the Event Handler and JavaScript code Subcontexts within an Execution Context\n\nPutting dynamic data within JavaScript code is especially dangerous because JavaScript encoding has different semantics for JavaScript encoded data when compared to other encodings. In many cases, JavaScript encoding does not stop attacks within an execution context. For example, a JavaScript encoded string will execute even though it is JavaScript encoded.\n\nTherefore, the primary recommendation is to **avoid including untrusted data in this context**. If you must, the following examples describe some approaches that do and do not work.\n\n```javascript\nvar x = document.createElement(\"a\");\nx.href=\"#\";\n// In the line of code below, the encoded data on the right (the second argument to setAttribute)\n// is an example of untrusted data that was properly JavaScript encoded but still executes.\nx.setAttribute(\"onclick\", \"\\u0061\\u006c\\u0065\\u0072\\u0074\\u0028\\u0032\\u0032\\u0029\");\nvar y = document.createTextNode(\"Click To Test\");\nx.appendChild(y);\ndocument.body.appendChild(x);\n```\n\nThe `setAttribute(name_string,value_string)` method is dangerous because it implicitly coerces the *value_string* into the DOM attribute datatype of *name_string*.\n\nIn the case above, the attribute name is an JavaScript event handler, so the attribute value is implicitly converted to JavaScript code and evaluated. In the case above, JavaScript encoding does not mitigate against DOM based XSS.\n\nOther JavaScript methods which take code as a string types will have a similar problem as outline above (`setTimeout`, `setInterval`, new Function, etc.). This is in stark contrast to JavaScript encoding in the event handler attribute of a HTML tag (HTML parser) where JavaScript encoding mitigates against XSS.\n\n```html\n<!-- Does NOT work  -->\n<a id=\"bb\" href=\"#\" onclick=\"\\u0061\\u006c\\u0065\\u0072\\u0074\\u0028\\u0031\\u0029\"> Test Me</a>\n```\n\nAn alternative to using `Element.setAttribute(...)` to set DOM attributes is to set the attribute directly. Directly setting event handler attributes will allow JavaScript encoding to mitigate against DOM based XSS. Please note, it is always dangerous design to put untrusted data directly into a command execution context.\n\n``` html\n<a id=\"bb\" href=\"#\"> Test Me</a>\n```\n\n``` javascript\n//The following does NOT work because the event handler is being set to a string.\n//\"alert(7)\" is JavaScript encoded.\ndocument.getElementById(\"bb\").onclick = \"\\u0061\\u006c\\u0065\\u0072\\u0074\\u0028\\u0037\\u0029\";\n\n//The following does NOT work because the event handler is being set to a string.\ndocument.getElementById(\"bb\").onmouseover = \"testIt\";\n\n//The following does NOT work because of the encoded \"(\" and \")\".\n//\"alert(77)\" is JavaScript encoded.\ndocument.getElementById(\"bb\").onmouseover = \\u0061\\u006c\\u0065\\u0072\\u0074\\u0028\\u0037\\u0037\\u0029;\n\n//The following example is tricky\n// first testIt will be assigned as an onmousehover event handler, The second testIt will fire while parsing.\n// becasue second testIt is a separate js statement\n// this happen because of ; separator\n//\"testIt;testIt\" is JavaScript encoded.\ndocument.getElementById(\"bb\").onmouseover = \\u0074\\u0065\\u0073\\u0074\\u0049\\u0074\\u003b\\u0074\\u0065\\u0073\n                                            \\u0074\\u0049\\u0074;\n\n//The following DOES WORK because the encoded value is a valid variable name or function reference.\n//\"testIt\" is JavaScript encoded\ndocument.getElementById(\"bb\").onmouseover = \\u0074\\u0065\\u0073\\u0074\\u0049\\u0074;\n\nfunction testIt() {\n   alert(\"I was called.\");\n}\n```\n\nThere are other places in JavaScript where JavaScript encoding is accepted as valid executable code.",
+    "span": {
+      "index": 10,
+      "total": 36,
+      "heading_path": [
+        "DOM based XSS Prevention Cheat Sheet",
+        "RULE \\#3 - Be Careful when Inserting Untrusted Data into the Event Handler and JavaScript code Subcontexts within an Execution Context"
+      ],
+      "start_char_idx": 7241,
+      "end_char_idx": 10958,
+      "start_line": 117,
+      "end_line": 180
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/CheatSheetSeries",
+      "commit_sha": "00f27a7b9e5ea10f00f840f6781a0ba7d8925f0a",
+      "committed_at": "2026-05-29T07:37:46Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md",
+      "path": "cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md"
+    },
+    "label": "KNOWLEDGE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/CheatSheetSeries:cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md:11",
+    "artifact_id": "art:OWASP/CheatSheetSeries:cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "```javascript\n for(var \\u0062=0; \\u0062 < 10; \\u0062++){\n     \\u0064\\u006f\\u0063\\u0075\\u006d\\u0065\\u006e\\u0074\n     .\\u0077\\u0072\\u0069\\u0074\\u0065\\u006c\\u006e\n     (\"\\u0048\\u0065\\u006c\\u006c\\u006f\\u0020\\u0057\\u006f\\u0072\\u006c\\u0064\");\n }\n \\u0077\\u0069\\u006e\\u0064\\u006f\\u0077\n .\\u0065\\u0076\\u0061\\u006c\n \\u0064\\u006f\\u0063\\u0075\\u006d\\u0065\\u006e\\u0074\n .\\u0077\\u0072\\u0069\\u0074\\u0065(111111111);\n```\n\nor\n\n```javascript\n var s = \"\\u0065\\u0076\\u0061\\u006c\";\n var t = \"\\u0061\\u006c\\u0065\\u0072\\u0074\\u0028\\u0031\\u0031\\u0029\";\n window[s](t);\n```\n\nBecause JavaScript is based on an international standard (ECMAScript), JavaScript encoding enables the support of international characters in programming constructs and variables in addition to alternate string representations (string escapes).\n\nHowever the opposite is the case with HTML encoding. HTML tag elements are well defined and do not support alternate representations of the same tag. So HTML encoding cannot be used to allow the developer to have alternate representations of the `<a>` tag for example.",
+    "span": {
+      "index": 11,
+      "total": 36,
+      "heading_path": [
+        "DOM based XSS Prevention Cheat Sheet",
+        "RULE \\#3 - Be Careful when Inserting Untrusted Data into the Event Handler and JavaScript code Subcontexts within an Execution Context"
+      ],
+      "start_char_idx": 10960,
+      "end_char_idx": 12021,
+      "start_line": 181,
+      "end_line": 203
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/CheatSheetSeries",
+      "commit_sha": "00f27a7b9e5ea10f00f840f6781a0ba7d8925f0a",
+      "committed_at": "2026-05-29T07:37:46Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md",
+      "path": "cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md"
+    },
+    "label": "KNOWLEDGE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/CheatSheetSeries:cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md:12",
+    "artifact_id": "art:OWASP/CheatSheetSeries:cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "### HTML Encoding's Disarming Nature\n\nIn general, HTML encoding serves to castrate HTML tags which are placed in HTML and HTML attribute contexts. Working example (no HTML encoding):\n\n```html\n<a href=\"...\" >\n```\n\nNormally encoded example (Does Not Work – DNW):\n\n```html\n&#x3c;a href=... &#x3e;\n```\n\nHTML encoded example to highlight a fundamental difference with JavaScript encoded values (DNW):\n\n```html\n<&#x61; href=...>\n```\n\nIf HTML encoding followed the same semantics as JavaScript encoding, the line above could have possibly worked to render a link. This difference makes JavaScript encoding a less viable weapon in our fight against XSS.",
+    "span": {
+      "index": 12,
+      "total": 36,
+      "heading_path": [
+        "DOM based XSS Prevention Cheat Sheet",
+        "RULE \\#3 - Be Careful when Inserting Untrusted Data into the Event Handler and JavaScript code Subcontexts within an Execution Context",
+        "HTML Encoding's Disarming Nature"
+      ],
+      "start_char_idx": 12023,
+      "end_char_idx": 12669,
+      "start_line": 206,
+      "end_line": 227
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/CheatSheetSeries",
+      "commit_sha": "00f27a7b9e5ea10f00f840f6781a0ba7d8925f0a",
+      "committed_at": "2026-05-29T07:37:46Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md",
+      "path": "cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md"
+    },
+    "label": "KNOWLEDGE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/CheatSheetSeries:cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md:13",
+    "artifact_id": "art:OWASP/CheatSheetSeries:cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "## RULE \\#4 - JavaScript Escape Before Inserting Untrusted Data into the CSS Attribute Subcontext within the Execution Context\n\nNormally executing JavaScript from a CSS context required either passing `javascript:attackCode()` to the CSS `url()` method or invoking the CSS `expression()` method passing JavaScript code to be directly executed.\n\nFrom my experience, calling the `expression()` function from an execution context (JavaScript) has been disabled. In order to mitigate against the CSS `url()` method, ensure that you are URL encoding the data passed to the CSS `url()` method.\n\n```javascript\nvar ESAPI = require('node-esapi');\ndocument.body.style.backgroundImage = \"url(<%=ESAPI.encoder().encodeForJavascript(ESAPI.encoder().encodeForURL(companyName))%>)\";\n```",
+    "span": {
+      "index": 13,
+      "total": 36,
+      "heading_path": [
+        "DOM based XSS Prevention Cheat Sheet",
+        "RULE \\#4 - JavaScript Escape Before Inserting Untrusted Data into the CSS Attribute Subcontext within the Execution Context"
+      ],
+      "start_char_idx": 12670,
+      "end_char_idx": 13442,
+      "start_line": 228,
+      "end_line": 238
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/CheatSheetSeries",
+      "commit_sha": "00f27a7b9e5ea10f00f840f6781a0ba7d8925f0a",
+      "committed_at": "2026-05-29T07:37:46Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md",
+      "path": "cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md"
+    },
+    "label": "KNOWLEDGE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/CheatSheetSeries:cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md:14",
+    "artifact_id": "art:OWASP/CheatSheetSeries:cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "## RULE \\#5 - URL Escape then JavaScript Escape Before Inserting Untrusted Data into URL Attribute Subcontext within the Execution Context\n\nThe logic which parses URLs in both execution and rendering contexts looks to be the same. Therefore there is little change in the encoding rules for URL attributes in an execution (DOM) context.\n\n```javascript\nvar ESAPI = require('node-esapi');\nvar x = document.createElement(\"a\");\nx.setAttribute(\"href\", '<%=ESAPI.encoder().encodeForJavascript(ESAPI.encoder().encodeForURL(userRelativePath))%>');\nvar y = document.createTextElement(\"Click Me To Test\");\nx.appendChild(y);\ndocument.body.appendChild(x);\n```\n\nIf you utilize fully qualified URLs then this will break the links as the colon in the protocol identifier (`http:` or `javascript:`) will be URL encoded preventing the `http` and `javascript` protocols from being invoked.",
+    "span": {
+      "index": 14,
+      "total": 36,
+      "heading_path": [
+        "DOM based XSS Prevention Cheat Sheet",
+        "RULE \\#5 - URL Escape then JavaScript Escape Before Inserting Untrusted Data into URL Attribute Subcontext within the Execution Context"
+      ],
+      "start_char_idx": 13443,
+      "end_char_idx": 14314,
+      "start_line": 239,
+      "end_line": 253
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/CheatSheetSeries",
+      "commit_sha": "00f27a7b9e5ea10f00f840f6781a0ba7d8925f0a",
+      "committed_at": "2026-05-29T07:37:46Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md",
+      "path": "cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md"
+    },
+    "label": "KNOWLEDGE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/CheatSheetSeries:cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md:15",
+    "artifact_id": "art:OWASP/CheatSheetSeries:cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "## RULE \\#6 - Populate the DOM using safe JavaScript functions or properties\n\nThe most fundamental safe way to populate the DOM with untrusted data is to use the safe assignment property `textContent`.\n\nHere is an example of safe usage.\n\n```html\n<script>\nelement.textContent = untrustedData;  //does not execute code\n</script>\n```",
+    "span": {
+      "index": 15,
+      "total": 36,
+      "heading_path": [
+        "DOM based XSS Prevention Cheat Sheet",
+        "RULE \\#6 - Populate the DOM using safe JavaScript functions or properties"
+      ],
+      "start_char_idx": 14315,
+      "end_char_idx": 14646,
+      "start_line": 254,
+      "end_line": 265
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/CheatSheetSeries",
+      "commit_sha": "00f27a7b9e5ea10f00f840f6781a0ba7d8925f0a",
+      "committed_at": "2026-05-29T07:37:46Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md",
+      "path": "cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md"
+    },
+    "label": "KNOWLEDGE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/CheatSheetSeries:cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md:16",
+    "artifact_id": "art:OWASP/CheatSheetSeries:cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "## RULE \\#7 - Fixing DOM Cross-site Scripting Vulnerabilities\n\nThe best way to fix DOM based cross-site scripting is to use the right output method (sink). For example if you want to use user input to write in a `div tag` element don't use `innerHtml`, instead use `innerText` or `textContent`. This will solve the problem, and it is the right way to re-mediate DOM based XSS vulnerabilities.\n\n**It is always a bad idea to use a user-controlled input in dangerous sources such as eval. 99% of the time it is an indication of bad or lazy programming practice, so simply don't do it instead of trying to sanitize the input.**\n\nFinally, to fix the problem in our initial code, instead of trying to encode the output correctly which is a hassle and can easily go wrong we would simply use `element.textContent` to write it in a content like this:\n\n```html\n<b>Current URL:</b> <span id=\"contentholder\"></span>\n...\n<script>\ndocument.getElementById(\"contentholder\").textContent = document.baseURI;\n</script>\n```\n\nIt does the same thing but this time it is not vulnerable to DOM based cross-site scripting vulnerabilities.",
+    "span": {
+      "index": 16,
+      "total": 36,
+      "heading_path": [
+        "DOM based XSS Prevention Cheat Sheet",
+        "RULE \\#7 - Fixing DOM Cross-site Scripting Vulnerabilities"
+      ],
+      "start_char_idx": 14647,
+      "end_char_idx": 15762,
+      "start_line": 266,
+      "end_line": 283
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/CheatSheetSeries",
+      "commit_sha": "00f27a7b9e5ea10f00f840f6781a0ba7d8925f0a",
+      "committed_at": "2026-05-29T07:37:46Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md",
+      "path": "cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md"
+    },
+    "label": "KNOWLEDGE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/CheatSheetSeries:cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md:17",
+    "artifact_id": "art:OWASP/CheatSheetSeries:cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "## Guidelines for Developing Secure Applications Utilizing JavaScript\n\nDOM based XSS is extremely difficult to mitigate against because of its large attack surface and lack of standardization across browsers.\n\nThe guidelines below are an attempt to provide guidelines for developers when developing Web based JavaScript applications (Web 2.0) such that they can avoid XSS.",
+    "span": {
+      "index": 17,
+      "total": 36,
+      "heading_path": [
+        "DOM based XSS Prevention Cheat Sheet",
+        "Guidelines for Developing Secure Applications Utilizing JavaScript"
+      ],
+      "start_char_idx": 15763,
+      "end_char_idx": 16136,
+      "start_line": 284,
+      "end_line": 289
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/CheatSheetSeries",
+      "commit_sha": "00f27a7b9e5ea10f00f840f6781a0ba7d8925f0a",
+      "committed_at": "2026-05-29T07:37:46Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md",
+      "path": "cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md"
+    },
+    "label": "KNOWLEDGE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/CheatSheetSeries:cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md:18",
+    "artifact_id": "art:OWASP/CheatSheetSeries:cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "### GUIDELINE \\#1 - Untrusted data should only be treated as displayable text\n\nAvoid treating untrusted data as code or markup within JavaScript code.",
+    "span": {
+      "index": 18,
+      "total": 36,
+      "heading_path": [
+        "DOM based XSS Prevention Cheat Sheet",
+        "Guidelines for Developing Secure Applications Utilizing JavaScript",
+        "GUIDELINE \\#1 - Untrusted data should only be treated as displayable text"
+      ],
+      "start_char_idx": 16137,
+      "end_char_idx": 16288,
+      "start_line": 290,
+      "end_line": 293
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/CheatSheetSeries",
+      "commit_sha": "00f27a7b9e5ea10f00f840f6781a0ba7d8925f0a",
+      "committed_at": "2026-05-29T07:37:46Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md",
+      "path": "cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md"
+    },
+    "label": "KNOWLEDGE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/CheatSheetSeries:cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md:19",
+    "artifact_id": "art:OWASP/CheatSheetSeries:cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "### GUIDELINE \\#2 - Always JavaScript encode and delimit untrusted data as quoted strings when entering the application when building templated JavaScript\n\nAlways JavaScript encode and delimit untrusted data as quoted strings when entering the application as illustrated in the following example.\n\n```javascript\nvar x = \"<%= Encode.forJavaScript(untrustedData) %>\";\n```",
+    "span": {
+      "index": 19,
+      "total": 36,
+      "heading_path": [
+        "DOM based XSS Prevention Cheat Sheet",
+        "Guidelines for Developing Secure Applications Utilizing JavaScript",
+        "GUIDELINE \\#2 - Always JavaScript encode and delimit untrusted data as quoted strings when entering the application when building templated JavaScript"
+      ],
+      "start_char_idx": 16289,
+      "end_char_idx": 16659,
+      "start_line": 294,
+      "end_line": 301
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/CheatSheetSeries",
+      "commit_sha": "00f27a7b9e5ea10f00f840f6781a0ba7d8925f0a",
+      "committed_at": "2026-05-29T07:37:46Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md",
+      "path": "cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md"
+    },
+    "label": "KNOWLEDGE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/CheatSheetSeries:cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md:20",
+    "artifact_id": "art:OWASP/CheatSheetSeries:cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "### GUIDELINE \\#3 - Use document.createElement(\"...\"), element.setAttribute(\"...\",\"value\"), element.appendChild(...) and similar to build dynamic interfaces\n\n`document.createElement(\"...\")`, `element.setAttribute(\"...\",\"value\")`, `element.appendChild(...)` and similar are safe ways to build dynamic interfaces.\n\nPlease note, `element.setAttribute` is only safe for a limited number of attributes.\n\nDangerous attributes include any attribute that is a command execution context, such as `onclick` or `onblur`.\n\nExamples of safe attributes includes: `align`, `alink`, `alt`, `bgcolor`, `border`, `cellpadding`, `cellspacing`, `class`, `color`, `cols`, `colspan`, `coords`, `dir`, `face`, `height`, `hspace`, `ismap`, `lang`, `marginheight`, `marginwidth`, `multiple`, `nohref`, `noresize`, `noshade`, `nowrap`, `ref`, `rel`, `rev`, `rows`, `rowspan`, `scrolling`, `shape`, `span`, `summary`, `tabindex`, `title`, `usemap`, `valign`, `value`, `vlink`, `vspace`, `width`.",
+    "span": {
+      "index": 20,
+      "total": 36,
+      "heading_path": [
+        "DOM based XSS Prevention Cheat Sheet",
+        "Guidelines for Developing Secure Applications Utilizing JavaScript",
+        "GUIDELINE \\#3 - Use document.createElement(\"...\"), element.setAttribute(\"...\",\"value\"), element.appendChild(...) and similar to build dynamic interfaces"
+      ],
+      "start_char_idx": 16660,
+      "end_char_idx": 17629,
+      "start_line": 302,
+      "end_line": 311
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/CheatSheetSeries",
+      "commit_sha": "00f27a7b9e5ea10f00f840f6781a0ba7d8925f0a",
+      "committed_at": "2026-05-29T07:37:46Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md",
+      "path": "cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md"
+    },
+    "label": "KNOWLEDGE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/CheatSheetSeries:cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md:21",
+    "artifact_id": "art:OWASP/CheatSheetSeries:cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "### GUIDELINE \\#4 - Avoid sending untrusted data into HTML rendering methods\n\nAvoid populating the following methods with untrusted data.\n\n1. `element.innerHTML = \"...\";`\n2. `element.outerHTML = \"...\";`\n3. `document.write(...);`\n4. `document.writeln(...);`",
+    "span": {
+      "index": 21,
+      "total": 36,
+      "heading_path": [
+        "DOM based XSS Prevention Cheat Sheet",
+        "Guidelines for Developing Secure Applications Utilizing JavaScript",
+        "GUIDELINE \\#4 - Avoid sending untrusted data into HTML rendering methods"
+      ],
+      "start_char_idx": 17630,
+      "end_char_idx": 17887,
+      "start_line": 312,
+      "end_line": 320
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/CheatSheetSeries",
+      "commit_sha": "00f27a7b9e5ea10f00f840f6781a0ba7d8925f0a",
+      "committed_at": "2026-05-29T07:37:46Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md",
+      "path": "cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md"
+    },
+    "label": "KNOWLEDGE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/CheatSheetSeries:cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md:22",
+    "artifact_id": "art:OWASP/CheatSheetSeries:cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "### GUIDELINE \\#5 - Avoid the numerous methods which implicitly eval() data passed to it\n\nThere are numerous methods which implicitly `eval()` data passed to it that must be avoided.\n\nMake sure that any untrusted data passed to these methods is:\n\n1. Delimited with string delimiters\n2. Enclosed within a closure or JavaScript encoded to N-levels based on usage\n3. Wrapped in a custom function.\n\nEnsure to follow step 3 above to make sure that the untrusted data is not sent to dangerous methods within the custom function or handle it by adding an extra layer of encoding.",
+    "span": {
+      "index": 22,
+      "total": 36,
+      "heading_path": [
+        "DOM based XSS Prevention Cheat Sheet",
+        "Guidelines for Developing Secure Applications Utilizing JavaScript",
+        "GUIDELINE \\#5 - Avoid the numerous methods which implicitly eval() data passed to it"
+      ],
+      "start_char_idx": 17888,
+      "end_char_idx": 18461,
+      "start_line": 321,
+      "end_line": 332
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/CheatSheetSeries",
+      "commit_sha": "00f27a7b9e5ea10f00f840f6781a0ba7d8925f0a",
+      "committed_at": "2026-05-29T07:37:46Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md",
+      "path": "cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md"
+    },
+    "label": "KNOWLEDGE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/CheatSheetSeries:cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md:23",
+    "artifact_id": "art:OWASP/CheatSheetSeries:cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "#### Utilizing an Enclosure (as suggested by Gaz)\n\nThe example that follows illustrates using closures to avoid double JavaScript encoding.\n\n```javascript\n var ESAPI = require('node-esapi');\n setTimeout((function(param) { return function() {\n          customFunction(param);\n        }\n })(\"<%=ESAPI.encoder().encodeForJavascript(untrustedData)%>\"), y);\n```\n\nThe other alternative is using N-levels of encoding.",
+    "span": {
+      "index": 23,
+      "total": 36,
+      "heading_path": [
+        "DOM based XSS Prevention Cheat Sheet",
+        "Guidelines for Developing Secure Applications Utilizing JavaScript",
+        "GUIDELINE \\#5 - Avoid the numerous methods which implicitly eval() data passed to it",
+        "Utilizing an Enclosure (as suggested by Gaz)"
+      ],
+      "start_char_idx": 18462,
+      "end_char_idx": 18873,
+      "start_line": 333,
+      "end_line": 346
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/CheatSheetSeries",
+      "commit_sha": "00f27a7b9e5ea10f00f840f6781a0ba7d8925f0a",
+      "committed_at": "2026-05-29T07:37:46Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md",
+      "path": "cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md"
+    },
+    "label": "KNOWLEDGE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/CheatSheetSeries:cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md:24",
+    "artifact_id": "art:OWASP/CheatSheetSeries:cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "#### N-Levels of Encoding\n\nIf your code looked like the following, you would need to only double JavaScript encode input data.\n\n```javascript\nsetTimeout(\"customFunction('<%=doubleJavaScriptEncodedData%>', y)\");\nfunction customFunction (firstName, lastName)\n     alert(\"Hello\" + firstName + \" \" + lastNam);\n}\n```\n\nThe `doubleJavaScriptEncodedData` has its first layer of JavaScript encoding reversed (upon execution) in the single quotes.\n\nThen the implicit `eval` of `setTimeout` reverses another layer of JavaScript encoding to pass the correct value to `customFunction`\n\nThe reason why you only need to double JavaScript encode is that the `customFunction` function did not itself pass the input to another method which implicitly or explicitly called `eval` If *firstName* was passed to another JavaScript method which implicitly or explicitly called `eval()` then `<%=doubleJavaScriptEncodedData%>` above would need to be changed to `<%=tripleJavaScriptEncodedData%>`.\n\nAn important implementation note is that if the JavaScript code tries to utilize the double or triple encoded data in string comparisons, the value may be interpreted as different values based on the number of `evals()` the data has passed through before being passed to the if comparison and the number of times the value was JavaScript encoded.\n\nIf **A** is double JavaScript encoded then the following **if** check will return false.\n\n``` javascript\n var x = \"doubleJavaScriptEncodedA\";  //\\u005c\\u0075\\u0030\\u0030\\u0034\\u0031\n if (x == \"A\") {\n    alert(\"x is A\");\n } else if (x == \"\\u0041\") {\n    alert(\"This is what pops\");\n }\n```\n\nThis brings up an interesting design point. Ideally, the correct way to apply encoding and avoid the problem stated above is to server-side encode for the output context where data is introduced into the application.\n\nThen client-side encode (using a JavaScript encoding library such as [node-esapi](https://github.com/ESAPI/node-esapi/)) for the individual subcontext (DOM methods) which untrusted data is passed to.\n\nHere are some examples of how they are used:\n\n```javascript\n//server-side encoding\nvar ESAPI = require('node-esapi');\nvar input = \"<%=ESAPI.encoder().encodeForJavascript(untrustedData)%>\";\n```\n\n```javascript\n//HTML encoding is happening in JavaScript\nvar ESAPI = require('node-esapi');\ndocument.writeln(ESAPI.encoder().encodeForHTML(input));\n```\n\nOne option is utilize ECMAScript 5 immutable properties in the JavaScript library.\nAnother option provided by Gaz (Gareth) was to use a specific code construct to limit mutability with anonymous closures.\n\nAn example follows:\n\n```javascript\nfunction escapeHTML(str) {\n     str = str + \"''\";\n     var out = \"''\";\n     for(var i=0; i<str.length; i++) {\n         if(str[i] === '<') {\n             out += '&lt;';\n         } else if(str[i] === '>') {\n             out += '&gt;';\n         } else if(str[i] === \"'\") {\n             out += '&#39;';\n         } else if(str[i] === '\"') {\n             out += '&quot;';\n         } else {\n             out += str[i];\n         }\n     }\n     return out;\n}\n```",
+    "span": {
+      "index": 24,
+      "total": 36,
+      "heading_path": [
+        "DOM based XSS Prevention Cheat Sheet",
+        "Guidelines for Developing Secure Applications Utilizing JavaScript",
+        "GUIDELINE \\#5 - Avoid the numerous methods which implicitly eval() data passed to it",
+        "N-Levels of Encoding"
+      ],
+      "start_char_idx": 18874,
+      "end_char_idx": 21945,
+      "start_line": 347,
+      "end_line": 420
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/CheatSheetSeries",
+      "commit_sha": "00f27a7b9e5ea10f00f840f6781a0ba7d8925f0a",
+      "committed_at": "2026-05-29T07:37:46Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md",
+      "path": "cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.md"
+    },
+    "label": "KNOWLEDGE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/SAMM:README.md:0",
+    "artifact_id": "art:OWASP/SAMM:README.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "# OWASP SAMM HAS MOVED!\n\nOWASP SAMM has moved to a new organization: https://github.com/owaspsamm. There you will now find both the [core model](https://github.com/owaspsamm/core) as well as all derived projects.\n\nIf you're looking for documents related to OWASP SAMM, you can find them in the project's [Google Drive](https://drive.google.com/drive/folders/0ABxHAwRHSNR0Uk9PVA).\n\nThis repository has been archived. You can still browse all the historical information up until and including the version 2.0 here, however all the new development is taking place in the new org.",
+    "span": {
+      "index": 0,
+      "total": 1,
+      "heading_path": [
+        "OWASP SAMM HAS MOVED!"
+      ],
+      "start_char_idx": 0,
+      "end_char_idx": 576,
+      "start_line": 1,
+      "end_line": 7
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/SAMM",
+      "commit_sha": "4d7acb66eb81f2943a6ddbbe70af5a982b688612",
+      "committed_at": "2021-06-23T20:25:58Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "README.md",
+      "path": "README.md"
+    },
+    "label": "NOISE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/SAMM:readme_old.md:0",
+    "artifact_id": "art:OWASP/SAMM:readme_old.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "SAMM (Software Assurance Maturity Model )\n========\n\n[![Build Status](https://img.shields.io/endpoint.svg?url=https%3A%2F%2Factions-badge.atrox.dev%2FOWASP%2Fsamm%2Fbadge%3Fref%3Dmaster&style=flat)](https://actions-badge.atrox.dev/OWASP/samm/goto?ref=master)\n\nWelcome to the OWASP SAMM github repository.\n\nThis repository contains the source files for OWASP SAMM.\n\nYou will find more information at [owaspsamm.org](https://owaspsamm.org/) or the [OWASP SAMM project wiki page](https://www.owasp.org/index.php?title=Category:Software_Assurance_Maturity_Model)\n\nThis will not help you with your twitter addiction, but our premier source for SAMM gossip and news is [@owaspSAMM](https://twitter.com/owaspsamm).\n\nOr speak to us on our [Slack channel](https://owasp.slack.com/messages/C0VF1EJGH)!",
+    "span": {
+      "index": 0,
+      "total": 6,
+      "heading_path": [],
+      "start_char_idx": 0,
+      "end_char_idx": 791,
+      "start_line": 1,
+      "end_line": 15
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/SAMM",
+      "commit_sha": "4d7acb66eb81f2943a6ddbbe70af5a982b688612",
+      "committed_at": "2021-06-23T20:25:58Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "readme_old.md",
+      "path": "readme_old.md"
+    },
+    "label": "NOISE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/SAMM:readme_old.md:1",
+    "artifact_id": "art:OWASP/SAMM:readme_old.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "## Directories\n\n- Current Releases: maintained versions of OWASP SAMM in a format/structure that is compatible with the static site generator (Hugo)\n- Website: source for the static website and related libraries\n- Supporting Resources: other files, notes and presentations that do not follow the Hugo model",
+    "span": {
+      "index": 1,
+      "total": 6,
+      "heading_path": [
+        "Directories"
+      ],
+      "start_char_idx": 792,
+      "end_char_idx": 1099,
+      "start_line": 16,
+      "end_line": 21
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/SAMM",
+      "commit_sha": "4d7acb66eb81f2943a6ddbbe70af5a982b688612",
+      "committed_at": "2021-06-23T20:25:58Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "readme_old.md",
+      "path": "readme_old.md"
+    },
+    "label": "NOISE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/SAMM:readme_old.md:2",
+    "artifact_id": "art:OWASP/SAMM:readme_old.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "## Contributions\n\nPlease see guidance here: [/Current Releases/head/contributing-to-git.md](https://github.com/OWASP/samm/blob/master/Current%20Releases/head/contributing-to-git.md).",
+    "span": {
+      "index": 2,
+      "total": 6,
+      "heading_path": [
+        "Contributions"
+      ],
+      "start_char_idx": 1100,
+      "end_char_idx": 1283,
+      "start_line": 22,
+      "end_line": 25
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/SAMM",
+      "commit_sha": "4d7acb66eb81f2943a6ddbbe70af5a982b688612",
+      "committed_at": "2021-06-23T20:25:58Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "readme_old.md",
+      "path": "readme_old.md"
+    },
+    "label": "NOISE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/SAMM:readme_old.md:3",
+    "artifact_id": "art:OWASP/SAMM:readme_old.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "## Custom Development\n* Install hugo or pull a hugo docker image\n* Clone this repo\n* Change directory to _Website/hugo_\n* Execute `hugo server`",
+    "span": {
+      "index": 3,
+      "total": 6,
+      "heading_path": [
+        "Custom Development"
+      ],
+      "start_char_idx": 1284,
+      "end_char_idx": 1428,
+      "start_line": 26,
+      "end_line": 31
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/SAMM",
+      "commit_sha": "4d7acb66eb81f2943a6ddbbe70af5a982b688612",
+      "committed_at": "2021-06-23T20:25:58Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "readme_old.md",
+      "path": "readme_old.md"
+    },
+    "label": "NOISE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/SAMM:readme_old.md:4",
+    "artifact_id": "art:OWASP/SAMM:readme_old.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "## SAMM Sponsors\n\nWe thank our sponsors for their OWASP SAMM support. All proceeds from the\nsponsorship support the mission of the OWASP Foundation and the further\ndevelopment of SAMM. Supporting the project drives the funding for\nresearch grants, SAMM hosting, tools, templates, documents, promotion,\nand more.\n\nBy sponsoring SAMM, you not only support an important and flagship OWASP\nproject, you will also get visibility during the next SAMM User Conference\nand recognition on the OWASP SAMM [web site](https://owaspsamm.org/) and\nthe next releases of SAMM.\n\nFor more information: Contact <seba@owasp.org>",
+    "span": {
+      "index": 4,
+      "total": 6,
+      "heading_path": [
+        "SAMM Sponsors"
+      ],
+      "start_char_idx": 1429,
+      "end_char_idx": 2038,
+      "start_line": 32,
+      "end_line": 46
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/SAMM",
+      "commit_sha": "4d7acb66eb81f2943a6ddbbe70af5a982b688612",
+      "committed_at": "2021-06-23T20:25:58Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "readme_old.md",
+      "path": "readme_old.md"
+    },
+    "label": "NOISE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/SAMM:readme_old.md:5",
+    "artifact_id": "art:OWASP/SAMM:readme_old.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "### Project Sponsors\n* [Concord](https://concordusa.com/)\n* [Fortify](https://www.microfocus.com/en-us/solutions/application-security)\n* [NCC Group](https://www.nccgroup.trust/uk/)\n* [PWC](https://www.pwc.com/)\n* [Splunk](https://splunk.com)\n* [Toreon](https://toreon.com)\n* [White Jaguars](https://www.whitejaguars.com/)",
+    "span": {
+      "index": 5,
+      "total": 6,
+      "heading_path": [
+        "SAMM Sponsors",
+        "Project Sponsors"
+      ],
+      "start_char_idx": 2039,
+      "end_char_idx": 2360,
+      "start_line": 47,
+      "end_line": 54
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/SAMM",
+      "commit_sha": "4d7acb66eb81f2943a6ddbbe70af5a982b688612",
+      "committed_at": "2021-06-23T20:25:58Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "readme_old.md",
+      "path": "readme_old.md"
+    },
+    "label": "NOISE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/SAMM:Website/content/en/user-day/_index.md:0",
+    "artifact_id": "art:OWASP/SAMM:Website/content/en/user-day/_index.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "---\ntitle: User Day\nlayout: main-page\ndescription: User Day May 27th, 2021\nkeywords: [\"about\",\"what is\",\"questions\", \"event\", \"user\"]\n---",
+    "span": {
+      "index": 0,
+      "total": 5,
+      "heading_path": [],
+      "start_char_idx": 0,
+      "end_char_idx": 138,
+      "start_line": 1,
+      "end_line": 7
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/SAMM",
+      "commit_sha": "23742dc43966ff904d461a4b5ec2e358f77dc7b8",
+      "committed_at": "2021-05-06T06:31:58Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "Website/content/en/user-day/_index.md",
+      "path": "Website/content/en/user-day/_index.md"
+    },
+    "label": "NOISE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/SAMM:Website/content/en/user-day/_index.md:1",
+    "artifact_id": "art:OWASP/SAMM:Website/content/en/user-day/_index.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "## Registration is open and free\n\nSAMM User Day is on May 27th.\n\n{{< button_dark \"https://www.eventbrite.com/e/owasp-samm-spring-user-day-2021-tickets-153193173907\" \"Register now\">}}",
+    "span": {
+      "index": 1,
+      "total": 5,
+      "heading_path": [
+        "Registration is open and free"
+      ],
+      "start_char_idx": 139,
+      "end_char_idx": 323,
+      "start_line": 8,
+      "end_line": 14
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/SAMM",
+      "commit_sha": "23742dc43966ff904d461a4b5ec2e358f77dc7b8",
+      "committed_at": "2021-05-06T06:31:58Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "Website/content/en/user-day/_index.md",
+      "path": "Website/content/en/user-day/_index.md"
+    },
+    "label": "NOISE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/SAMM:Website/content/en/user-day/_index.md:2",
+    "artifact_id": "art:OWASP/SAMM:Website/content/en/user-day/_index.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "## Agenda\n\nWe received several proposals for talks and workshops and want to thank you all for getting in touch. We had to narrow the list down to fit our half-a-day event, so here it is! There will be more opportunities to share your experience with the community.\n\n{{< user_day_agenda_2021a >}}",
+    "span": {
+      "index": 2,
+      "total": 5,
+      "heading_path": [
+        "Agenda"
+      ],
+      "start_char_idx": 324,
+      "end_char_idx": 621,
+      "start_line": 15,
+      "end_line": 20
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/SAMM",
+      "commit_sha": "23742dc43966ff904d461a4b5ec2e358f77dc7b8",
+      "committed_at": "2021-05-06T06:31:58Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "Website/content/en/user-day/_index.md",
+      "path": "Website/content/en/user-day/_index.md"
+    },
+    "label": "NOISE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/SAMM:Website/content/en/user-day/_index.md:3",
+    "artifact_id": "art:OWASP/SAMM:Website/content/en/user-day/_index.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "## More User Days\n\nIn 2021 we'll have 2 User Days, one on May 27th and another one around November.\n\nBased on feedback from last year, we decided to have 2 shorter User Days instead of just one that lasts all day.",
+    "span": {
+      "index": 3,
+      "total": 5,
+      "heading_path": [
+        "More User Days"
+      ],
+      "start_char_idx": 622,
+      "end_char_idx": 836,
+      "start_line": 21,
+      "end_line": 26
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/SAMM",
+      "commit_sha": "23742dc43966ff904d461a4b5ec2e358f77dc7b8",
+      "committed_at": "2021-05-06T06:31:58Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "Website/content/en/user-day/_index.md",
+      "path": "Website/content/en/user-day/_index.md"
+    },
+    "label": "NOISE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/SAMM:Website/content/en/user-day/_index.md:4",
+    "artifact_id": "art:OWASP/SAMM:Website/content/en/user-day/_index.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "## Archive\n\nYou can always visit last year's SAMM User Day page, where you can see the full list of talks, with downloadable material and YouTube links.\n\n{{< button \"2020\" \"Visit the 2020 User Day page\">}}",
+    "span": {
+      "index": 4,
+      "total": 5,
+      "heading_path": [
+        "Archive"
+      ],
+      "start_char_idx": 837,
+      "end_char_idx": 1042,
+      "start_line": 27,
+      "end_line": 31
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/SAMM",
+      "commit_sha": "23742dc43966ff904d461a4b5ec2e358f77dc7b8",
+      "committed_at": "2021-05-06T06:31:58Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "Website/content/en/user-day/_index.md",
+      "path": "Website/content/en/user-day/_index.md"
+    },
+    "label": "NOISE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/SAMM:Website/content/en/user-day/from_samm_project_towards_samm_suite.md:0",
+    "artifact_id": "art:OWASP/SAMM:Website/content/en/user-day/from_samm_project_towards_samm_suite.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "---\nurl: /user-day/from-samm-project-towards-samm-suite/\ntype: user-day\ntitle: User day\nname: From SAMM Project towards SAMM Suite\nspeaker: Daniel Kefer\nimage: /img/people/Daniel_Kefer.jpg\naffiliation:\nrole:\ntwitter: \"@DKefer\"\nabstract: |\n We're in the process of splitting the SAMM \"monorepo\" into separate subprojects. The presentation will explain the motivation behind this step, expected structure and outcomes, as well as how everybody in the community can leverage this change to become a contributor of the project more easily.\nbio: |\n Daniel works as Head of IT Security for Germany's biggest email provider, mainly known under the brands GMX and WEB.DE. With OWASP, he's been a member of the SAMM project for 6 years, and co-lead of the SecurityRAT project for almost the same amount of time.\n---",
+    "span": {
+      "index": 0,
+      "total": 1,
+      "heading_path": [],
+      "start_char_idx": 0,
+      "end_char_idx": 806,
+      "start_line": 1,
+      "end_line": 15
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/SAMM",
+      "commit_sha": "23742dc43966ff904d461a4b5ec2e358f77dc7b8",
+      "committed_at": "2021-05-06T06:31:58Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "Website/content/en/user-day/from_samm_project_towards_samm_suite.md",
+      "path": "Website/content/en/user-day/from_samm_project_towards_samm_suite.md"
+    },
+    "label": "NOISE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/SAMM:Website/content/en/user-day/organizational-scope-of-an-owasp-samm-assessment.md:0",
+    "artifact_id": "art:OWASP/SAMM:Website/content/en/user-day/organizational-scope-of-an-owasp-samm-assessment.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "---\nurl: /user-day/organizational-scope-of-an-owasp-samm-assessment/\ntype: user-day\ntitle: User day\nname: What should be the organizational scope of an OWASP SAMM assessment?\nspeaker: Carsten Huth\nimage: /img/people/Carsten_Huth.jpg\naffiliation:\nrole:\nlinkedin: \"https://www.linkedin.com/in/carstenhuth/\"\nabstract: |\n Discussion around what should be the scope of an OWASP SAMM assessment. It can range from one dev team to the whole organisation and anything in between.\n My understanding is that one application team is assessed but there are a lot of aspects like in the Governance business function or also the Operations business function that will be defined in a wider scope e.g., organisation-wide, for one division of a larger organisation, for a subsidiary, or for a country representation of a company.\n The discussion here should be around how assessments can be combined between application development teams and aggregated on a higher level.\n\n Questions to discuss can include\n - Should application team assessment include the whole scope of an OWASP SAMM assessment or only the parts that an application team can talk about with authority? Should strategy & metrics be excluded when performing an assessment with an application team?\n - Also, if several or all application development teams are assessed, should their results be aggregated and averaged out to get an assessment of the whole software development organisation?\n\n The result of this discussion can be a proposal how to combine assessments in a large organisation.\n This workshop also ties in with my other suggestion about the roles in an organisation to respond to questions of an OWASP SAMM assessment.\n\nbio: |\n Carsten has over 10 years of experience in application security. He has carried out numerous AppSec program rollouts and deployments as a professional services consultant at HP and Fortify Software before becoming the practice principal of the Fortify professional services team in EMEA and managing a team of up to about eight software security consultants.\n\n When joining Checkmarx in 2016, Carsten initially worked as the first Technical Account Manager (TAM) at Checkmarx in EMEA, handling some of the largest accounts of Checkmarx. After about 1.5 years in this role Carsten started building the team of technical account managers around him and a year later also the AppSec advisor team. Carsten has contributed to the OWASP SAMM project and has presented at various application security conferences.\n\n---",
+    "span": {
+      "index": 0,
+      "total": 1,
+      "heading_path": [],
+      "start_char_idx": 0,
+      "end_char_idx": 2504,
+      "start_line": 1,
+      "end_line": 28
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/SAMM",
+      "commit_sha": "23742dc43966ff904d461a4b5ec2e358f77dc7b8",
+      "committed_at": "2021-05-06T06:31:58Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "Website/content/en/user-day/organizational-scope-of-an-owasp-samm-assessment.md",
+      "path": "Website/content/en/user-day/organizational-scope-of-an-owasp-samm-assessment.md"
+    },
+    "label": "NOISE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/SAMM:Website/content/en/user-day/owasp-samm-to-the-rescue.md:0",
+    "artifact_id": "art:OWASP/SAMM:Website/content/en/user-day/owasp-samm-to-the-rescue.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "---\nurl: /user-day/owasp-samm-to-the-rescue/\ntype: user-day\ntitle: User day\nname: OWASP SAMM to the rescue? On the intricate challenges of setting up a secure CICD pipeline\nspeaker: Asier Rivera Fernandez and Nessim Kisserli\nimage: /img/people/Asier_Rivera_Fernandez.jpg\naffiliation:\nrole:\nlinkedin: \"http://linkedin.com/in/deveeshree\"\nabstract: |\n The last few years have seen a rise in the adoption of CICD pipelines. Today, they are near ubiquitous in organisations building software and have come to play a central role in the development and, increasingly, the deployment of software artefacts. This growth has led to a corresponding increase in complexity, as pipelines leverage stateless containers to orchestrate an ever larger arsenal of build, test, deployment and configuration tools. As a system grows in complexity, so does the challenge of securing it.\n\n The first half of the talk presents a practical pipeline poisoning attack on the managed AWS CodeBuild service. We demonstrate how the StartBuild action, frequently granted to developers, can be abused to bypass typical SDLC security controls such as peer code reviews, secret management and segregation of duties in order to tamper with applications, exfiltrate their secrets, or execute privileged commands on deployment servers to gain further control.\n\n Against this backdrop, the second half of the talk focuses on the SAMM practices most relevant to preventing this type of attack. We discuss the importance of the Secure Build and Secure Deployment practices introduced in the new SAMM 2.0 business function “Implementation”, and highlight the need to treat the CICD pipeline and its supporting components as part of the tools and processes to secure, monitor and test. We aim to engage the audience in reflecting on the role other SAMM practices can play in helping detect and mitigate pipeline poisoning attacks, such as Policy & Compliance, Threat Assessment, Security Architecture, Security Testing, and Environment Management. Along the way, we will also touch on the new challenges and considerations of working in cloud environments.\nbio: |\n Asier Rivera Fernandez is a Senior Associate in PwC Belgium’s Cyber & Privacy team. He is part of the Expert Track and focuses on building technical skills in the areas of cloud security, with a strong interest for application security and secure development.\n Asier has a Computer Science degree from Mondragon University in Spain, a master’s in Computer Systems and Networks from Chalmers University in Sweden and the KU Leuven University in Belgium. He holds the ISC² CSSLP and AWS and Azure certificates for security and development.\n\n Nessim Kisserli is a Technical Expert within the Cyber & Privacy team at PwC Belgium with 20 years of experience in information and application security. He currently focuses on assurance in modern application development at the intersection of Agile, CI/CD, microservices, and Kubernetes. He has worked as a UNIX system administrator, carried out research into software protection and supervised the research and writing of security MSc theses. He has a bachelor’s in computer science from the University of Northern Iowa and a Master’s in Information Security from Royal Holloway University of London. Nessim is a member of the OWASP SAMM project.\n---",
+    "span": {
+      "index": 0,
+      "total": 1,
+      "heading_path": [],
+      "start_char_idx": 0,
+      "end_char_idx": 3318,
+      "start_line": 1,
+      "end_line": 22
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/SAMM",
+      "commit_sha": "23742dc43966ff904d461a4b5ec2e358f77dc7b8",
+      "committed_at": "2021-05-06T06:31:58Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "Website/content/en/user-day/owasp-samm-to-the-rescue.md",
+      "path": "Website/content/en/user-day/owasp-samm-to-the-rescue.md"
+    },
+    "label": "KNOWLEDGE",
+    "label_rationale": "Talk abstract naming a concrete technique (CodeBuild pipeline poisoning) [recall-first correction 2026-07-03; was UNCERTAIN]",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/SAMM:Website/content/en/user-day/samm-in-k12-schools.md:0",
+    "artifact_id": "art:OWASP/SAMM:Website/content/en/user-day/samm-in-k12-schools.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "---\nurl: /user-day/implementation-of-samm-in-k12-schools/\ntype: user-day\ntitle: User day\nname: Implementation of OWASP SAMM in K12 schools\nspeaker: Deveeshree Nayak\nimage: /img/people/Deveeshree_Nayak.jpg\naffiliation:\nrole:\nlinkedin: \"http://linkedin.com/in/deveeshree\"\nabstract: |\n OWASP SAMM is a prime maturity model for software assurance that offers a great way for k12 schools to analyze and improve their software security posture. Due to COVID19 situations, K12 schools are forced to switch to online. With the implementation OWASP SAMM, K12 schools will be risk-driven in nature and it will help teachers and students to learn, implement and improve secure software practices. In this presentation, I will be discussing possible implementation scenarios of OWASP SAMM in K12 schools. This presentation is targeted to all types audiences because we must offer our children a safe and secure learning environment.\nbio: |\n A cybersecurity and IT Professor at the UW Tacoma with a diverse background in the field of cybersecurity (information system, computer engineering, and criminology and criminal justice), Deveeshree Nayak is a member of the inclusion working group of WiCyS and has been a member of WiCyS since 2014. She is also a member of Anita Borg Institute, OWASP, IEEE, ACM, etc. She has master’s in IS, CE, and criminology. Nayak has taught/trained over 1,000 underrepresented people in STEM as a volunteer and as a trainer. She is a part of the review and program committee for GHC Security and Privacy, I4CS, SciPy 2019, RESPECT 2020.\n---",
+    "span": {
+      "index": 0,
+      "total": 1,
+      "heading_path": [],
+      "start_char_idx": 0,
+      "end_char_idx": 1559,
+      "start_line": 1,
+      "end_line": 15
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/SAMM",
+      "commit_sha": "23742dc43966ff904d461a4b5ec2e358f77dc7b8",
+      "committed_at": "2021-05-06T06:31:58Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "Website/content/en/user-day/samm-in-k12-schools.md",
+      "path": "Website/content/en/user-day/samm-in-k12-schools.md"
+    },
+    "label": "NOISE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/SAMM:Website/layouts/user-day/single.html:0",
+    "artifact_id": "art:OWASP/SAMM:Website/layouts/user-day/single.html",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "{{ define \"content\" }}\n<div class=\"col-md-12 samm-page-content\">\n <div class=\"heading\">\n <h2>{{ .Params.name | markdownify }}</h2>\n </div>\n <div class=\"row\">\n <div class=\"col-md-3\">\n {{ if .Params.image }}\n <img src=\"{{ .Params.image }}\" class=\"img-left\" style=\"max-width: 200px;\" alt=\"speaker picture\"/>\n {{ else }}\n <img src=\"/img/people/undraw_male_avatar_323b.png\" class=\"img-left\" style=\"max-width: 200px;\" alt=\"generic avatar\"/>\n {{ end }}\n </div>\n <div class=\"col-md-9\">\n <h3>{{ .Params.speaker }}</h3>\n {{ with .Params.twitter }}\n <a href=\"https://twitter.com/{{ . }}\" target=\"_blank\"><i class=\"fab fa-2x fa fa-twitter-square\"></i></a>\n {{ end }}\n {{ with .Params.linkedin }}\n <a href=\"https://linkedin.com/in/{{ . }}\" target=\"_blank\"><i class=\"fab fa-2x fa fa-linkedin-square\"></i></a>\n {{ end }}\n </br></br>\n <p>\n {{ .Params.affiliation }}\n </br>\n {{ .Params.role }}\n </p>\n </div>\n </div>\n {{ with .Params.abstract }}\n <div class=\"row\">\n <div class=\"col-md-12\">\n <h2>Abstract</h2>\n <p>{{ . | markdownify }}</p>\n </div>\n </div>\n {{ end }}\n {{ with .Params.bio }}\n <div class=\"row\">\n <div class=\"col-md-12\">\n <h2>Speaker bio</h2>\n <p>{{ . | markdownify }}</p>\n </div>\n </div>\n {{ end }}\n\n <div class=\"samm-content-with-space\">\n {{ .Content }}\n </div>\n</div>\n\n{{ end }}",
+    "span": {
+      "index": 0,
+      "total": 1,
+      "heading_path": [],
+      "start_char_idx": 0,
+      "end_char_idx": 1276,
+      "start_line": 1,
+      "end_line": 52
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/SAMM",
+      "commit_sha": "68fe4b4020dcf1a1241fdaca0c92c24002efa6da",
+      "committed_at": "2021-05-04T00:29:12Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "Website/layouts/user-day/single.html",
+      "path": "Website/layouts/user-day/single.html"
+    },
+    "label": "NOISE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/SAMM:Website/layouts/stream/single.html:0",
+    "artifact_id": "art:OWASP/SAMM:Website/layouts/stream/single.html",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "<!DOCTYPE html>\n<html lang=\"{{ .Site.LanguageCode }}\">\n\n {{ partial \"head.html\" . }}\n\n <body>\n\n <div id=\"all\">\n\n <header>\n\n {{ partial \"nav.html\" . }}\n\n </header>\n\n {{ partial \"breadcrumbs.html\" . }}\n\n <div id=\"content\">\n\n <div class=\"container\">\n\n <div class=\"row\">\n\n <div class=\"col-md-12 samm-page-content\">\n {{ $practicepagename := (replace .Params.practice \"&\" \"and\") }}\n <h3>\n <a href=\"../../../\">Model</a> | <a href=\"../../../{{ .Params.business_function_url }}\">{{ .Params.business_function }}</a> | <a href=\"/model/{{ .Params.business_function | urlize }}/{{ $practicepagename | urlize }}\">{{ .Params.practice }}</a> | {{ .Params.title }}\n </h3>\n\n {{ partial \"tabs.html\" . }}\n\n <div>\n {{ .Content }}\n </div>\n\n </div>\n\n </div>\n <!-- /.row -->\n\n </div>\n <!-- /.container -->\n\n </div>\n <!-- /#content -->\n\n {{ partial \"footer.html\" . }}\n\n </div>\n <!-- /#all -->\n\n {{ partial \"scripts.html\" . }}\n\n </body>\n</html>",
+    "span": {
+      "index": 0,
+      "total": 1,
+      "heading_path": [],
+      "start_char_idx": 0,
+      "end_char_idx": 918,
+      "start_line": 1,
+      "end_line": 55
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/SAMM",
+      "commit_sha": "cffc3f327571acb8c24dfa5bf8ed202073fb777a",
+      "committed_at": "2021-03-24T12:11:01Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "Website/layouts/stream/single.html",
+      "path": "Website/layouts/stream/single.html"
+    },
+    "label": "NOISE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/SAMM:Website/content/en/sponsors.md:0",
+    "artifact_id": "art:OWASP/SAMM:Website/content/en/sponsors.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "+++\ntitle = \"Sponsors\"\ndescription = \"Sponsors\"\nkeywords = [\"Sponsors\",\"questions\"]\n+++",
+    "span": {
+      "index": 0,
+      "total": 6,
+      "heading_path": [],
+      "start_char_idx": 0,
+      "end_char_idx": 88,
+      "start_line": 1,
+      "end_line": 6
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/SAMM",
+      "commit_sha": "580de35adc0e7e52347c90237d415f1f0b1f82b2",
+      "committed_at": "2021-03-22T11:03:43Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "Website/content/en/sponsors.md",
+      "path": "Website/content/en/sponsors.md"
+    },
+    "label": "NOISE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/SAMM:Website/content/en/sponsors.md:1",
+    "artifact_id": "art:OWASP/SAMM:Website/content/en/sponsors.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "## By sponsoring SAMM, you support a Flagship OWASP project.\n\nThe OWASP Flagship designation is given to projects that have demonstrated strategic value to OWASP and application security as a whole.\n\nDon't hesitate to [contact us](mailto:info@owaspsamm.org).\n\n---\n{{< sponsors >}}\n\n---",
+    "span": {
+      "index": 1,
+      "total": 6,
+      "heading_path": [
+        "By sponsoring SAMM, you support a Flagship OWASP project."
+      ],
+      "start_char_idx": 89,
+      "end_char_idx": 375,
+      "start_line": 7,
+      "end_line": 17
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/SAMM",
+      "commit_sha": "580de35adc0e7e52347c90237d415f1f0b1f82b2",
+      "committed_at": "2021-03-22T11:03:43Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "Website/content/en/sponsors.md",
+      "path": "Website/content/en/sponsors.md"
+    },
+    "label": "NOISE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/SAMM:Website/content/en/sponsors.md:2",
+    "artifact_id": "art:OWASP/SAMM:Website/content/en/sponsors.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "### Proceeds\n\nAll proceeds from the sponsorship support the mission of the OWASP Foundation and the further development of SAMM, funding\n\n* marketing & PR support\n* technical editing & UX support\n* website development and hosting\n* SAMM participation in the Open Security Summit\n* core team summits\n* tooling for the SAMM Benchmark project",
+    "span": {
+      "index": 2,
+      "total": 6,
+      "heading_path": [
+        "By sponsoring SAMM, you support a Flagship OWASP project.",
+        "Proceeds"
+      ],
+      "start_char_idx": 376,
+      "end_char_idx": 716,
+      "start_line": 18,
+      "end_line": 28
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/SAMM",
+      "commit_sha": "580de35adc0e7e52347c90237d415f1f0b1f82b2",
+      "committed_at": "2021-03-22T11:03:43Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "Website/content/en/sponsors.md",
+      "path": "Website/content/en/sponsors.md"
+    },
+    "label": "NOISE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/SAMM:Website/content/en/sponsors.md:3",
+    "artifact_id": "art:OWASP/SAMM:Website/content/en/sponsors.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "### Sponsorship levels\n\n{{< sponsorship_levels >}}",
+    "span": {
+      "index": 3,
+      "total": 6,
+      "heading_path": [
+        "By sponsoring SAMM, you support a Flagship OWASP project.",
+        "Sponsorship levels"
+      ],
+      "start_char_idx": 717,
+      "end_char_idx": 768,
+      "start_line": 29,
+      "end_line": 32
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/SAMM",
+      "commit_sha": "580de35adc0e7e52347c90237d415f1f0b1f82b2",
+      "committed_at": "2021-03-22T11:03:43Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "Website/content/en/sponsors.md",
+      "path": "Website/content/en/sponsors.md"
+    },
+    "label": "NOISE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/SAMM:Website/content/en/sponsors.md:4",
+    "artifact_id": "art:OWASP/SAMM:Website/content/en/sponsors.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "### Sponsorship benefits\n\n{{< sponsorship_benefits >}}\n\nBy sponsoring SAMM, you get\n\n* visibility during the next SAMM Summit\n* recognition on our website and the v 2.0 release of SAMM",
+    "span": {
+      "index": 4,
+      "total": 6,
+      "heading_path": [
+        "By sponsoring SAMM, you support a Flagship OWASP project.",
+        "Sponsorship benefits"
+      ],
+      "start_char_idx": 769,
+      "end_char_idx": 955,
+      "start_line": 33,
+      "end_line": 42
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/SAMM",
+      "commit_sha": "580de35adc0e7e52347c90237d415f1f0b1f82b2",
+      "committed_at": "2021-03-22T11:03:43Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "Website/content/en/sponsors.md",
+      "path": "Website/content/en/sponsors.md"
+    },
+    "label": "NOISE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/SAMM:Website/content/en/sponsors.md:5",
+    "artifact_id": "art:OWASP/SAMM:Website/content/en/sponsors.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "### Join as a sponsor\n\n1. Select your level.\n2. We draw a sponsorship contract and provide you with an invoice.\n3. Upon payment, we activate your benefits for 1 year and for SAMM release 2.0 publications.\n\n---\n\n> **Interested in becoming a SAMM sponsor?**\nFor more information, check out the [Support OWASP SAMM](https://www.slideshare.net/sdeleersnyder/support-owasp-samm-178691671) presentation.",
+    "span": {
+      "index": 5,
+      "total": 6,
+      "heading_path": [
+        "By sponsoring SAMM, you support a Flagship OWASP project.",
+        "Join as a sponsor"
+      ],
+      "start_char_idx": 956,
+      "end_char_idx": 1353,
+      "start_line": 43,
+      "end_line": 52
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/SAMM",
+      "commit_sha": "580de35adc0e7e52347c90237d415f1f0b1f82b2",
+      "committed_at": "2021-03-22T11:03:43Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "Website/content/en/sponsors.md",
+      "path": "Website/content/en/sponsors.md"
+    },
+    "label": "NOISE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  },
+  {
+    "schema_version": "0.2.0",
+    "chunk_id": "chk:art:OWASP/SAMM:Website/content/en/blog/samm-suite.md:0",
+    "artifact_id": "art:OWASP/SAMM:Website/content/en/blog/samm-suite.md",
+    "pipeline_run_id": "20260529T115000Z",
+    "text": "+++\ntitle = \"Towards a well-governed SAMM Suite\"\ndate = \"2021-03-23T00:00:00+02:00\"\ntags = [\"governance\", \"samm\", \"suite\", \"next\", \"what's new\"]\ncategories = [\"roadmap\"]\nbanner = \"img/banners/samm_suite.png\"\nauthor = \"The SAMM Project Team\"\n+++",
+    "span": {
+      "index": 0,
+      "total": 6,
+      "heading_path": [],
+      "start_char_idx": 0,
+      "end_char_idx": 245,
+      "start_line": 1,
+      "end_line": 9
+    },
+    "source": {
+      "type": "github",
+      "repo": "OWASP/SAMM",
+      "commit_sha": "8d4beaa62dcce56b9ef2664c492b4298150b0932",
+      "committed_at": "2021-03-21T07:39:15Z"
+    },
+    "locator": {
+      "kind": "repo_path",
+      "id": "Website/content/en/blog/samm-suite.md",
+      "path": "Website/content/en/blog/samm-suite.md"
+    },
+    "label": "NOISE",
+    "label_rationale": "",
+    "labeled_by": "manshusainishab",
+    "labeled_at": "2026-05-29"
+  }
+]

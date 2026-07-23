@@ -12,9 +12,9 @@ fi
 
 source "$VENV_DIR/bin/activate"
 
-if ! python -c "import flask" >/dev/null 2>&1; then
-  echo "Installing Python dependencies"
-  pip install -r "$ROOT_DIR/requirements.txt"
+if ! python -c "import pytest" >/dev/null 2>&1; then
+  echo "Installing Python development dependencies"
+  pip install -r "$ROOT_DIR/requirements-dev.txt"
 fi
 
 export NO_LOGIN="${NO_LOGIN:-1}"

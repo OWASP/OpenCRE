@@ -25,9 +25,48 @@ docker-redis:
 	docker start cre-redis-stack 2>/dev/null ||\
 	docker run -d --name cre-redis-stack -p 6379:6379 -p 8001:8001 redis/redis-stack:latest
 
+# Local app DB — always pgvector (embedding_vec / Librarian / chat similarity).
+POSTGRES_IMAGE ?= pgvector/pgvector:pg16
+
+docker-postgres-rm:
+	-docker stop cre-postgres
+	-docker rm -f cre-postgres
+
 docker-postgres:
-	docker start cre-postgres 2>/dev/null ||\
-	docker run -d --name cre-postgres -e POSTGRES_PASSWORD=password -e POSTGRES_USER=cre -e POSTGRES_DB=cre -p 5432:5432 postgres
+	@wanted="$(POSTGRES_IMAGE)"; \
+	if docker inspect cre-postgres >/dev/null 2>&1; then \
+		have=$$(docker inspect -f '{{.Config.Image}}' cre-postgres); \
+		if [ "$$have" = "$$wanted" ]; then \
+			docker start cre-postgres >/dev/null; \
+		else \
+			echo "Recreating cre-postgres (was $$have → $$wanted)"; \
+			docker stop cre-postgres >/dev/null 2>&1 || true; \
+			docker rm -f cre-postgres >/dev/null 2>&1 || true; \
+			docker run -d --name cre-postgres \
+				-e POSTGRES_PASSWORD=password \
+				-e POSTGRES_USER=cre \
+				-e POSTGRES_DB=cre \
+				-p 5432:5432 \
+				"$$wanted"; \
+		fi; \
+	else \
+		docker run -d --name cre-postgres \
+			-e POSTGRES_PASSWORD=password \
+			-e POSTGRES_USER=cre \
+			-e POSTGRES_DB=cre \
+			-p 5432:5432 \
+			"$$wanted"; \
+	fi; \
+	ready=0; \
+	for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30; do \
+		if docker exec cre-postgres pg_isready -U cre -d cre >/dev/null 2>&1; then ready=1; break; fi; \
+		sleep 1; \
+	done; \
+	if [ "$$ready" != "1" ]; then \
+		echo "error: cre-postgres did not become ready within 30s" >&2; \
+		exit 1; \
+	fi; \
+	docker exec cre-postgres psql -U cre -d cre -c "CREATE EXTENSION IF NOT EXISTS vector;" >/dev/null
 
 start-containers: docker-neo4j docker-redis
 
@@ -69,7 +108,7 @@ cover:
 install-deps-python:
 	[ -d "./venv" ] && . ./venv/bin/activate &&\
 	pip install --upgrade pip setuptools &&\
-	pip install -r requirements.txt
+	pip install -r requirements-dev.txt
 
 install-deps-typescript:
 	(cd application/frontend && yarn install)
@@ -85,7 +124,7 @@ install-python:
 install-typescript:
 	yarn add webpack && cd application/frontend && yarn build
 
-install: install-typescript install-python
+install: install-typescript install-python migrate-upgrade
 
 docker-dev:
 	docker build -f Dockerfile-dev -t opencre-dev:$(shell git rev-parse HEAD) .
@@ -100,7 +139,7 @@ docker-prod-run:
 	 docker run -it -p $(PORT):$(PORT) opencre:$(shell git rev-parse HEAD)
 
 lint:
-	[ -d "./venv" ] && . ./venv/bin/activate && black . && yarn lint
+	[ -d "./venv" ] && . ./venv/bin/activate && black . && yarn lint && make openapi-guardrail
 
 mypy:
 	[ -d "./venv" ] && . ./venv/bin/activate &&  mypy --ignore-missing-imports --implicit-reexport --no-strict-optional --strict application
@@ -121,6 +160,14 @@ migrate-upgrade:
 alembic-guardrail:
 	[ -d "./venv" ] && . ./venv/bin/activate &&\
 	python scripts/check_alembic_revision_guardrail.py
+
+openapi-generate:
+	[ -d "./venv" ] && . ./venv/bin/activate &&\
+	python scripts/generate_openapi.py
+
+openapi-guardrail:
+	[ -d "./venv" ] && . ./venv/bin/activate &&\
+	python scripts/check_openapi_guardrail.py
 
 migrate-downgrade:
 	[ -d "./venv" ] && . ./venv/bin/activate &&\

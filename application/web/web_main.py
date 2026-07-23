@@ -10,23 +10,25 @@ import io
 import pathlib
 import re
 import urllib.parse
-from alive_progress import alive_bar
 from typing import Any
-from application.utils import oscal_utils, redis
 
 from rq import job, exceptions
 from rq import Queue
 
-from application.utils import oscal_utils, redis
+from application.utils import redis
 from application.database import db
-from application.cmd import cre_main
 from application.defs import cre_defs as defs
 from application.defs import cre_exceptions
-from application.feature_flags import is_cre_import_allowed, is_health_endpoint_enabled
+from application.feature_flags import (
+    is_cre_import_allowed,
+    is_health_endpoint_enabled,
+    is_login_enabled,
+    is_myopencre_enabled,
+)
 
 from application.utils import spreadsheet as sheet_utils
 from application.utils import mdutils, redirectors, gap_analysis
-from application.utils.external_project_parsers.parsers import myopencre_parser
+from application.web.openapi_registry import openapi_documented
 from enum import Enum
 from flask import json as flask_json
 from flask import (
@@ -135,6 +137,7 @@ if os.environ.get("POSTHOG_API_KEY") and os.environ.get("POSTHOG_HOST"):
     )
 
 
+@openapi_documented("find_cre")
 @app.route("/rest/v1/id/<creid>", methods=["GET"])
 @app.route("/rest/v1/name/<crename>", methods=["GET"])
 def find_cre(creid: str = None, crename: str = None) -> Any:  # refer
@@ -172,12 +175,22 @@ def find_cre(creid: str = None, crename: str = None) -> Any:  # refer
             return write_csv(docs=docs).getvalue().encode("utf-8")
 
         elif opt_format == SupportedFormats.OSCAL.value:
+            try:
+                from application.utils import oscal_utils
+            except ImportError:
+                abort(
+                    503,
+                    "OSCAL export is unavailable on this deployment "
+                    "(compliance-trestle not installed).",
+                )
+
             result = {"data": json.loads(oscal_utils.document_to_oscal(cre))}
 
         return jsonify(result)
     abort(404, "CRE does not exist")
 
 
+@openapi_documented("find_node_by_name")
 @app.route("/rest/v1/<ntype>/<name>", methods=["GET"])
 @app.route("/rest/v1/standard/<name>", methods=["GET"])
 @app.route("/rest/v1/<ntype>/<name>/sectionid/<sectionID>", methods=["GET"])
@@ -262,6 +275,15 @@ def find_node_by_name(
             return write_csv(docs=docs).getvalue().encode("utf-8")
 
         elif opt_format == SupportedFormats.OSCAL.value:
+            try:
+                from application.utils import oscal_utils
+            except ImportError:
+                abort(
+                    503,
+                    "OSCAL export is unavailable on this deployment "
+                    "(compliance-trestle not installed).",
+                )
+
             return jsonify(json.loads(oscal_utils.list_to_oscal(nodes)))
 
         # if opt_osib:
@@ -275,6 +297,7 @@ def find_node_by_name(
 
 
 # TODO: (spyros) paginate
+@openapi_documented("find_document_by_tag")
 @app.route("/rest/v1/tags", methods=["GET"])
 def find_document_by_tag() -> Any:
     tags = request.args.getlist("tag")
@@ -298,12 +321,22 @@ def find_document_by_tag() -> Any:
             )
             return write_csv(docs=docs).getvalue().encode("utf-8")
         elif opt_format == SupportedFormats.OSCAL.value:
+            try:
+                from application.utils import oscal_utils
+            except ImportError:
+                abort(
+                    503,
+                    "OSCAL export is unavailable on this deployment "
+                    "(compliance-trestle not installed).",
+                )
+
             return jsonify(json.loads(oscal_utils.list_to_oscal(documents)))
 
         return jsonify(result)
     abort(404, "Tag does not exist")
 
 
+@openapi_documented("map_analysis")
 @app.route("/rest/v1/map_analysis", methods=["GET"])
 def map_analysis() -> Any:
     standards = request.args.getlist("standard")
@@ -385,7 +418,7 @@ def map_analysis() -> Any:
 
         j = q.enqueue_call(
             description=f"{standards[0]}->{standards[1]}",
-            func=cre_main.run_gap_pair_job,
+            func="application.cmd.cre_main.run_gap_pair_job",
             kwargs={
                 "importing_name": standards[0],
                 "peer_name": standards[1],
@@ -409,6 +442,7 @@ def map_analysis() -> Any:
             abort(503, f"Gap analysis unavailable: {fallback_exc}")
 
 
+@openapi_documented("map_analysis_weak_links")
 @app.route("/rest/v1/map_analysis_weak_links", methods=["GET"])
 def map_analysis_weak_links() -> Any:
     standards = request.args.getlist("standard")
@@ -434,6 +468,7 @@ def map_analysis_weak_links() -> Any:
     abort(404, "No such Cache")
 
 
+@openapi_documented("fetch_job")
 @app.route("/rest/v1/ma_job_results", methods=["GET"])
 def fetch_job() -> Any:
     logger.debug("fetching job results")
@@ -496,6 +531,7 @@ def fetch_job() -> Any:
         abort(500)
 
 
+@openapi_documented("standards")
 @app.route("/rest/v1/standards", methods=["GET"])
 def standards() -> Any:
     if posthog:
@@ -508,6 +544,7 @@ def standards() -> Any:
     return standards
 
 
+@openapi_documented("ga_standards")
 @app.route("/rest/v1/ga_standards", methods=["GET"])
 def ga_standards() -> Any:
     """
@@ -521,6 +558,8 @@ def ga_standards() -> Any:
     standards = list(database.standards())
     if OPENCRE_STANDARD_NAME not in standards:
         standards.append(OPENCRE_STANDARD_NAME)
+    from application.cmd import cre_main
+
     eligible = [
         s
         for s in standards
@@ -545,6 +584,7 @@ def openapi_spec() -> Any:
     )
 
 
+@openapi_documented("text_search")
 @app.route("/rest/v1/text_search", methods=["GET"])
 def text_search() -> Any:
     r"""
@@ -576,6 +616,15 @@ def text_search() -> Any:
             )
             return write_csv(docs=docs).getvalue().encode("utf-8")
         elif opt_format == SupportedFormats.OSCAL.value:
+            try:
+                from application.utils import oscal_utils
+            except ImportError:
+                abort(
+                    503,
+                    "OSCAL export is unavailable on this deployment "
+                    "(compliance-trestle not installed).",
+                )
+
             return jsonify(json.loads(oscal_utils.list_to_oscal(documents)))
 
         res = [doc.todict() for doc in documents]
@@ -584,6 +633,7 @@ def text_search() -> Any:
         abort(404, "No object matches the given search terms")
 
 
+@openapi_documented("health")
 @app.route("/rest/v1/health", methods=["GET"])
 def health() -> Any:
     """Deploy/uptime health probe (feature-flagged, off by default).
@@ -605,6 +655,7 @@ def health() -> Any:
     return jsonify(result), status_code
 
 
+@openapi_documented("find_root_cres")
 @app.route("/rest/v1/root_cres", methods=["GET"])
 def find_root_cres() -> Any:
     """
@@ -631,6 +682,15 @@ def find_root_cres() -> Any:
             )
             return write_csv(docs=docs).getvalue().encode("utf-8")
         elif opt_format == SupportedFormats.OSCAL.value:
+            try:
+                from application.utils import oscal_utils
+            except ImportError:
+                abort(
+                    503,
+                    "OSCAL export is unavailable on this deployment "
+                    "(compliance-trestle not installed).",
+                )
+
             return jsonify(json.loads(oscal_utils.list_to_oscal(documents)))
 
         return jsonify(result)
@@ -640,6 +700,22 @@ def find_root_cres() -> Any:
 @app.errorhandler(404)
 def page_not_found(e) -> Any:
     return "Resource Not found", 404
+
+
+_REPO_ROOT = os.path.abspath(
+    os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..")
+)
+_DOCS_DIR = os.path.join(_REPO_ROOT, "docs")
+
+
+@app.route("/docs/faq.md", methods=["GET"])
+def faq_markdown() -> Any:
+    """Serve FAQ markdown for the in-app docs page."""
+    return send_from_directory(
+        directory=_DOCS_DIR,
+        path="faq.md",
+        mimetype="text/markdown; charset=utf-8",
+    )
 
 
 # If no other routes are matched, serve the react app, or any other static files (like bundle.js)
@@ -656,7 +732,15 @@ def index(path: str) -> Any:
 def smartlink(
     name: str, ntype: str = defs.Credoctypes.Standard.value, section: str = ""
 ) -> Any:
-    """if node is found, show node, else redirect"""
+    """If a standard section node is found, redirect to it.
+
+    If the node has exactly one linked CRE, redirect directly to that CRE
+    page instead of the intermediate standard-section page, so the user
+    immediately sees the full wealth of CRE information.
+    If the node has multiple CRE links, redirect to the standard-section
+    node page as before.  If the node is not found in the database, fall
+    back to any known external redirect (e.g. the Mitre CWE catalogue).
+    """
     # ATTENTION: DO NOT MESS WITH THIS FUNCTIONALITY WITHOUT A TICKET AND CORE CONTRIBUTORS APPROVAL!
     # CRITICAL FUNCTIONALITY DEPENDS ON THIS!
     if posthog:
@@ -694,6 +778,17 @@ def smartlink(
         logger.info(
             f"found node of type {ntype}, name {name} and section {section}, redirecting to opencre"
         )
+        cre_links = [
+            lnk
+            for lnk in nodes[0].links
+            if lnk.document.doctype == defs.Credoctypes.CRE
+        ]
+        if len(cre_links) == 1:
+            logger.info(
+                f"exactly one CRE linked to {ntype}/{name}/{section},"
+                f" redirecting directly to CRE {cre_links[0].document.id}"
+            )
+            return redirect(f"/cre/{cre_links[0].document.id}")
         if found_section_id:
             return redirect(f"/node/{ntype}/{name}/sectionid/{section}")
         return redirect(f"/node/{ntype}/{name}/section/{section}")
@@ -709,6 +804,7 @@ def smartlink(
         return abort(404, "Document does not exist")
 
 
+@openapi_documented("deeplink")
 @app.route("/rest/v1/deeplink/<ntype>/<name>", methods=["GET"])
 @app.route("/rest/v1/deeplink/<name>", methods=["GET"])
 @app.route("/deeplink/<ntype>/<name>", methods=["GET"])
@@ -985,9 +1081,24 @@ def chat_cre() -> Any:
 
     database = db.Node_collection()
     # Lazy import to avoid loading heavy prompt/ML dependencies at web boot.
-    from application.prompt_client import llm_error_utils, prompt_client
+    try:
+        from application.prompt_client import llm_error_utils, prompt_client
 
-    prompt = prompt_client.PromptHandler(database)
+        prompt = prompt_client.PromptHandler(database)
+    except ImportError:
+        abort(
+            503,
+            "Chat is unavailable on this deployment (ML/LLM dependencies not installed).",
+        )
+    except RuntimeError as exc:
+        # PromptHandler raises RuntimeError when litellm is missing.
+        if "litellm" not in str(exc).lower():
+            raise
+        abort(
+            503,
+            "Chat is unavailable on this deployment (ML/LLM dependencies not installed).",
+        )
+
     try:
         response = prompt.generate_text(message.get("prompt"))
     except Exception as e:
@@ -1117,6 +1228,7 @@ def logout():
     return redirect("/")
 
 
+@openapi_documented("all_cres")
 @app.route("/rest/v1/all_cres", methods=["GET"])
 def all_cres() -> Any:
     database = db.Node_collection()
@@ -1145,6 +1257,7 @@ def all_cres() -> Any:
 # Importing Handlers
 
 
+@openapi_documented("get_cre_csv")
 @app.route("/rest/v1/cre_csv", methods=["GET"])
 def get_cre_csv() -> Any:
     if posthog:
@@ -1172,9 +1285,21 @@ def get_cre_csv() -> Any:
     abort(404)
 
 
+@openapi_documented("get_config")
 @app.route("/rest/v1/config", methods=["GET"])
 def get_config() -> Any:
     return jsonify({"CRE_ALLOW_IMPORT": is_cre_import_allowed()})
+
+
+@app.route("/api/capabilities", methods=["GET"])
+def get_capabilities() -> Any:
+    """Expose frontend feature capabilities (MyOpenCRE, login UI)."""
+    return jsonify(
+        {
+            "myopencre": is_myopencre_enabled(),
+            "login": is_login_enabled(),
+        }
+    )
 
 
 @app.route("/admin/imports/rerun", methods=["POST"])
@@ -1227,6 +1352,8 @@ def import_from_cre_csv() -> Any:
     contents = file.read()
     csv_read = csv.DictReader(contents.decode("utf-8").splitlines())
     try:
+        from application.utils.external_project_parsers.parsers import myopencre_parser
+
         parse_result = myopencre_parser.parse_rows_to_documents(list(csv_read))
     except cre_exceptions.DuplicateLinkException as dle:
         abort(500, f"error during parsing of the incoming CSV, err:{dle}")

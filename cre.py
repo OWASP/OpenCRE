@@ -13,7 +13,6 @@ except ImportError:
     pass
 
 import click  # type: ignore
-import coverage  # type: ignore
 from flask_migrate import Migrate  # type: ignore
 
 from application import create_app, sqla  # type: ignore
@@ -33,6 +32,8 @@ migrate = Migrate(app, sqla, render_as_batch=True)
 def test(cover: bool, test_names: List[str]) -> None:
     COV = None
     if cover or os.environ.get("FLASK_COVERAGE"):
+        import coverage  # type: ignore  # lazy: not needed for web/worker boot
+
         COV = coverage.coverage(
             branch=True,
             include="application/*",
@@ -208,6 +209,24 @@ def main() -> None:
         "--regenerate_embeddings",
         action="store_true",
         help="delete all embedding rows then rebuild embeddings for every CRE and node (use after smart-extract or model changes)",
+    )
+    parser.add_argument(
+        "--run_librarian",
+        action="store_true",
+        help="run Module C (the Librarian): for each knowledge-queue section, "
+        "resolve explicit CRE ids or retrieve the top-K semantic CRE candidates",
+    )
+    parser.add_argument(
+        "--librarian_dry_run",
+        action="store_true",
+        help="run the Librarian without writing any links (the only supported "
+        "mode pre-W8; logs the candidate shortlist per section)",
+    )
+    parser.add_argument(
+        "--librarian_source",
+        default=None,
+        help="path to a knowledge_queue JSONL for --run_librarian "
+        "(defaults to the bundled sample fixture)",
     )
     parser.add_argument(
         "--populate_neo4j_db",

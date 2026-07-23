@@ -15,6 +15,12 @@ OpenCRE consists of:
 To see how you can contribute to the application or to the data (catalog or standard mappings), see [Contributing](docs/CONTRIBUTING.md).
 We really welcome you!
 
+# Documentation
+
+- [In-app Docs](https://www.opencre.org/docs) — getting started, FAQ, and interactive API reference
+- [FAQ](docs/faq.md) — frequently asked questions (also rendered at [/docs#faq](https://www.opencre.org/docs#faq))
+- [OpenAPI spec](docs/api/openapi.yaml) — public REST API (`/rest/v1/openapi.yaml` when running)
+
 # Roadmap
 
 For a roadmap please see the [issues](https://github.com/OWASP/OpenCRE/issues).
@@ -289,7 +295,7 @@ Then edit `.env` and provide values appropriate for your environment.
 * Google Auth: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_SECRET_JSON`, `LOGIN_ALLOWED_DOMAINS`
 * GCP: `GCP_NATIVE`
 * Spreadsheet Auth: `OpenCRE_gspread_Auth`
-* Feature flags: `CRE_ENABLE_HEALTH` (enable the `GET /rest/v1/health` deploy/uptime probe; off by default, returns 404 when unset)
+* Feature flags: `CRE_ENABLE_HEALTH` (enable the `GET /rest/v1/health` deploy/uptime probe; off by default, returns 404 when unset), `CRE_ENABLE_MYOPENCRE` (expose MyOpenCRE in `GET /api/capabilities`; off by default), `CRE_ENABLE_LOGIN` (expose Login/Logout UI via `capabilities.login`; off by default)
 
 See `.env.example` for full list and defaults.
 

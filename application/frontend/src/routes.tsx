@@ -1,8 +1,9 @@
-import { ReactNode } from 'react';
+import { ElementType } from 'react';
 
 import {
   BROWSEROOT,
   CRE,
+  DOCS,
   EXPLORER,
   GAP_ANALYSIS,
   GRAPH,
@@ -16,6 +17,7 @@ import {
 import { CommonRequirementEnumeration, Graph, SearchPage, Standard } from './pages';
 import { BrowseRootCres } from './pages/BrowseRootCres/browseRootCres';
 import { Chatbot } from './pages/chatbot/chatbot';
+import { Docs } from './pages/Docs/Docs';
 import { Explorer } from './pages/Explorer/explorer';
 import { withExplorerLayout } from './pages/Explorer/ExplorerLayout';
 import { ExplorerCircles } from './pages/Explorer/visuals/circles/circles';
@@ -32,11 +34,12 @@ const ExplorerForceGraphWithLayout = withExplorerLayout(ExplorerForceGraph);
 
 export interface IRoute {
   path: string;
-  component: ReactNode | ReactNode[];
+  component: ElementType;
   showFilter: boolean;
 }
 export interface Capabilities {
   myopencre: boolean;
+  login: boolean;
 }
 export const ROUTES = (capabilities: Capabilities): IRoute[] => [
   ...(capabilities.myopencre
@@ -52,6 +55,11 @@ export const ROUTES = (capabilities: Capabilities): IRoute[] => [
   {
     path: INDEX,
     component: SearchPage,
+    showFilter: false,
+  },
+  {
+    path: DOCS,
+    component: Docs,
     showFilter: false,
   },
   {

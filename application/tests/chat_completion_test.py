@@ -76,6 +76,48 @@ class TestChatCompletion(unittest.TestCase):
         self.assertIn("error", data)
         self.assertIn("AI Service Error", data["error"])
 
+    def test_completion_returns_503_when_prompt_client_import_fails(self) -> None:
+        os.environ["NO_LOGIN"] = "1"
+        with patch(
+            "application.prompt_client.prompt_client.PromptHandler",
+            side_effect=ImportError("nltk"),
+        ):
+            with self.app.test_client() as client:
+                response = client.post(
+                    "/rest/v1/completion",
+                    json={"prompt": "test"},
+                    content_type="application/json",
+                )
+        self.assertEqual(503, response.status_code)
+
+    def test_completion_returns_503_when_litellm_missing(self) -> None:
+        os.environ["NO_LOGIN"] = "1"
+        with patch(
+            "application.prompt_client.prompt_client.PromptHandler",
+            side_effect=RuntimeError("litellm package is required for PromptHandler"),
+        ):
+            with self.app.test_client() as client:
+                response = client.post(
+                    "/rest/v1/completion",
+                    json={"prompt": "test"},
+                    content_type="application/json",
+                )
+        self.assertEqual(503, response.status_code)
+
+    def test_completion_propagates_unrelated_runtime_error(self) -> None:
+        os.environ["NO_LOGIN"] = "1"
+        with patch(
+            "application.prompt_client.prompt_client.PromptHandler",
+            side_effect=RuntimeError("database exploded"),
+        ):
+            with self.app.test_client() as client:
+                with self.assertRaises(RuntimeError):
+                    client.post(
+                        "/rest/v1/completion",
+                        json={"prompt": "test"},
+                        content_type="application/json",
+                    )
+
 
 if __name__ == "__main__":
     unittest.main()
