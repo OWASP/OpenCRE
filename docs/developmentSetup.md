@@ -109,7 +109,38 @@ If the tests pass, the project should be operational. You can run tests with
 
 ### Import the database
 
-You can run `make migrate-upgrade` first and then `make upstream-sync`
+For local development, you do **not** need access to the OpenCRE Google Sheet.
+That spreadsheet is part of the maintainer workflow for bulk standards imports.
+
+The supported contributor workflow is:
+
+1. create the local database schema
+2. sync the public OpenCRE graph from upstream
+3. import your own mappings locally through MyOpenCRE if needed
+
+Run:
+
+```bash
+make migrate-upgrade
+make upstream-sync
+```
+
+`make upstream-sync` downloads the OpenCRE graph from the public API into your
+local `standards_cache.sqlite`.
+
+If you want to map your own standard locally, enable imports and use MyOpenCRE
+or the CSV import endpoint:
+
+```bash
+export CRE_ALLOW_IMPORT=true
+make dev-flask
+```
+
+Then you can:
+
+- open the local MyOpenCRE UI
+- download a CSV template from `GET /rest/v1/cre_csv`
+- upload your CSV to `POST /rest/v1/cre_csv_import`
 
 ## Running locally
 
