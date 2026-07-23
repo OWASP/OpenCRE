@@ -134,4 +134,7 @@ make mypy              # Python typecheck
 make test              # Python unittest suite
 make frontend          # yarn build (when TS/TSX changed)
 make alembic-guardrail # before deploy/migration ops
+make install-python    # includes `playwright install` for Python embeddings (prompt_client) — not frontend e2e; do not remove when adding Cypress
+make e2e-db            # seed ./standards_cache.sqlite for e2e (create_all from models + upstream_sync)
+make e2e               # frontend Cypress e2e (build, serve Flask on 127.0.0.1:5000, cypress run)
 ```

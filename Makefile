@@ -86,16 +86,30 @@ dev-flask-docker:
 
 e2e:
 	yarn build
+	if [ -d "./venv" ]; then . ./venv/bin/activate; fi
+	export FLASK_APP="$(CURDIR)/cre.py"
+	export FLASK_CONFIG=development
+	export INSECURE_REQUESTS=1
+	flask run --host=127.0.0.1 --port=5000 > /tmp/opencre-e2e-flask.log 2>&1 &
+	FLASK_PID=$$!
+	trap 'kill $$FLASK_PID 2>/dev/null || true' EXIT INT TERM
+	for i in `seq 1 30`; do \
+		curl -fsS http://127.0.0.1:5000 >/dev/null && break; \
+		sleep 1; \
+	done
+	curl -fsS http://127.0.0.1:5000 >/dev/null || { echo "ERROR: Flask did not become ready on http://127.0.0.1:5000 after 30s; see /tmp/opencre-e2e-flask.log"; exit 1; }
+	env -u ELECTRON_RUN_AS_NODE yarn test:e2e
+
+# Build the e2e SQLite schema from the ORM models (create_all), then load CRE
+# data from upstream. Local/CI e2e uses create_all, NOT migrate-upgrade:
+# migrations are the Postgres path and omit columns the models added without a
+# migration (e.g. cre.document_metadata, see application/database/db.py), so a
+# migrate-built SQLite cache is incomplete. create_all always matches the models.
+e2e-db:
 	[ -d "./venv" ] && . ./venv/bin/activate &&\
-	export FLASK_APP="$(CURDIR)/cre.py" &&\
-	export FLASK_CONFIG=development &&\
-	export INSECURE_REQUESTS=1 &&\
-	flask run &
-	sleep 5
-	yarn test:e2e
-	sleep 20
-	killall yarn
-	killall flask
+	rm -f "$(CURDIR)/standards_cache.sqlite" &&\
+	NO_LOAD_GRAPH_DB=1 FLASK_CONFIG=development python -c "from application import create_app, sqla; app=create_app(mode='development'); app.app_context().push(); sqla.create_all()" &&\
+	python cre.py --upstream_sync
 
 test:
 	[ -d "./venv" ] && . ./venv/bin/activate &&\
@@ -116,11 +130,11 @@ install-deps-typescript:
 install-deps: install-deps-python install-deps-typescript
 
 install-python:
-	virtualenv -p python3  venv
+	virtualenv -p python3 venv
 	. ./venv/bin/activate &&\
 	make install-deps-python &&\
-	playwright install
-	
+	playwright install  # Python embeddings/scraping (prompt_client); NOT frontend e2e — keep when migrating to Cypress
+
 install-typescript:
 	yarn add webpack && cd application/frontend && yarn build
 

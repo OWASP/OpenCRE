@@ -1,30 +1,46 @@
-# name: Test-e2e
-# on: [push, pull_request]
-# jobs:
-#   build:
-#     name: Test-e2e
-#     runs-on: ubuntu-latest
-#     timeout-minutes: 10
-#     steps:
-#       - name: Check out code
-#         uses: actions/checkout@v4
-#       - uses: actions/setup-python@v4
-#         with:
-#           python-version: '3.11.4' 
-#           cache: 'pip'
-#       - uses: actions/setup-node@v3
-#         with:
-#           cache: 'yarn'
-#           node-version: 'v20.12.1'
-#       - name: Install dependencies
-#         run: |
-#           sudo apt-get update
-#           sudo apt-get install -y python3-setuptools python3-pip python3-virtualenv chromium-browser libgbm1
-#           make install
-#       - name: DB setup
-#         run: |
-#             make migrate-upgrade
-#             python cre.py --upstream_sync
-#       # - name: Run app and e2e tests
-      #   run: |
-      #       make e2e
+name: Test-e2e
+on: [push, pull_request]
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Test-e2e
+    runs-on: ubuntu-latest
+    # upstream_sync downloads the full CRE graph over the network (per-CRE
+    # fetches); allow headroom on top of install + frontend build + Cypress.
+    timeout-minutes: 45
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.3'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20.12.1'
+          cache: 'yarn'
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+              python3-setuptools \
+              python3-virtualenv \
+              python3-pip \
+              libxml2-dev \
+              libxslt-dev
+      - name: Create venv and install Python deps (no Playwright — Cypress ships its own browser)
+        run: |
+          pip install --upgrade pip setuptools virtualenv
+          virtualenv -p python3 venv
+          make install-deps-python
+      - name: Install Node deps (root for Cypress, frontend for build)
+        run: |
+          yarn install
+          make install-deps-typescript
+      - name: Seed e2e database (schema from models via create_all, data from upstream)
+        run: make e2e-db
+      - name: Run Cypress e2e
+        run: make e2e
