@@ -390,6 +390,10 @@ class HarvesterCheckpoint(BaseModel):  # type: ignore
 
 
 def _serialize_json_value(value: Any) -> str:
+    if value is None:
+        return "null"
+    if isinstance(value, str):
+        return value
     return flask_json.dumps(value)
 
 
