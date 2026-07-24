@@ -1,0 +1,21 @@
+repositories:
+  - id: invalid-polling
+    type: github
+    enabled: true
+
+    owner: OWASP
+    repo: ASVS
+    branch: master
+
+    paths:
+      include:
+        - "docs/**/*.md"
+
+    chunking:
+      strategy: markdown_heading
+      max_tokens: 1200
+      overlap_tokens: 100
+
+    polling:
+      mode: realtime
+      interval_minutes: 60
