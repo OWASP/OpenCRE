@@ -1,0 +1,42 @@
+"""add missing document_metadata column to node and cre
+
+Revision ID: b5ac48010165
+Revises: c7d8e9f0a1b2
+Create Date: 2026-07-24 22:19:01.724833
+
+"""
+from alembic import op
+import sqlalchemy as sa
+from sqlalchemy import inspect
+
+
+# revision identifiers, used by Alembic.
+revision = 'b5ac48010165'
+down_revision = 'c7d8e9f0a1b2'
+branch_labels = None
+depends_on = None
+
+
+def upgrade():
+    # Defensive: some environments (e.g. production) already have this column
+    # applied out-of-band without a corresponding migration ever being
+    # committed, so this must not assume a clean "column doesn't exist" state.
+    inspector = inspect(op.get_bind())
+    node_columns = {c["name"] for c in inspector.get_columns("node")}
+    cre_columns = {c["name"] for c in inspector.get_columns("cre")}
+
+    if "document_metadata" not in node_columns:
+        with op.batch_alter_table("node", schema=None) as batch_op:
+            batch_op.add_column(sa.Column("document_metadata", sa.JSON(), nullable=True))
+
+    if "document_metadata" not in cre_columns:
+        with op.batch_alter_table("cre", schema=None) as batch_op:
+            batch_op.add_column(sa.Column("document_metadata", sa.JSON(), nullable=True))
+
+
+def downgrade():
+    with op.batch_alter_table("cre", schema=None) as batch_op:
+        batch_op.drop_column("document_metadata")
+
+    with op.batch_alter_table("node", schema=None) as batch_op:
+        batch_op.drop_column("document_metadata")
