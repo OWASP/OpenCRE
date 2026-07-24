@@ -28,10 +28,14 @@ from application.utils.librarian.schemas import (
 )
 from application.utils.librarian.section_validator import Section
 
-# The link type C stamps on an auto-linked chunk. Mirrors
-# cre_defs.LinkTypes.AutomaticallyLinkedTo.value; kept as a literal so the emitter
-# stays import-light and hermetic.
+# Link types C stamps on a ProposedLink, kept as literals so the emitter stays
+# import-light and hermetic (both mirror cre_defs.LinkTypes values).
+#   AUTO_LINK_TYPE      -- an auto-linked chunk (LinkProposal.links): C committed to it.
+#   SUGGESTED_LINK_TYPE -- a review suggestion (ReviewItem.suggested_links): only a
+#                          candidate for a human to consider, NOT an auto-link, so it
+#                          must not claim "Automatically linked to".
 AUTO_LINK_TYPE = "Automatically linked to"
+SUGGESTED_LINK_TYPE = "Related"
 
 
 class EmitterError(ValueError):
@@ -49,12 +53,17 @@ def _snapshot(section: Section) -> KnowledgeSnapshot:
     )
 
 
-def _proposed_links(result: DecisionResult) -> list:
-    """One ProposedLink per chosen CRE (top-1), carrying the calibrated confidence."""
+def _proposed_links(result: DecisionResult, link_type: str) -> list:
+    """One ProposedLink per chosen CRE (top-1), carrying the calibrated confidence.
+
+    ``link_type`` distinguishes an auto-link (``AUTO_LINK_TYPE``) from a review
+    suggestion (``SUGGESTED_LINK_TYPE``) so a not-yet-confirmed suggestion is never
+    labelled as an automatic link.
+    """
     return [
         ProposedLink(
             cre_id=cre_id,
-            link_type=AUTO_LINK_TYPE,
+            link_type=link_type,
             confidence=result.confidence,
             rationale=None,
         )
@@ -76,7 +85,7 @@ def build_link_proposal(
         raise EmitterError(
             f"build_link_proposal needs a linked decision, got {result.decision}"
         )
-    links = _proposed_links(result)
+    links = _proposed_links(result, AUTO_LINK_TYPE)
     if not links:
         raise EmitterError("a linked decision must carry at least one CRE id")
     return LinkProposal(
@@ -108,7 +117,9 @@ def build_review_item(
         )
     if result.reason_code is None:
         raise EmitterError("a review decision must carry a reason_code")
-    suggested = _proposed_links(result) or None  # best guess, may be empty
+    suggested = (
+        _proposed_links(result, SUGGESTED_LINK_TYPE) or None
+    )  # best guess, may be empty
     return ReviewItem(
         schema_version=SCHEMA_VERSION,
         review_id=f"review:{section.chunk_id}",
