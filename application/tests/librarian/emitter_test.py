@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 from application.utils.librarian.decision_engine import DecisionResult
 from application.utils.librarian.emitter import (
     AUTO_LINK_TYPE,
+    SUGGESTED_LINK_TYPE,
     EmitterError,
     build_link_proposal,
     build_review_item,
@@ -103,6 +104,9 @@ class EmitReviewTest(unittest.TestCase):
         )  # deterministic
         self.assertIsNotNone(env.suggested_links)
         self.assertEqual(env.suggested_links[0].cre_id, "616-305")
+        # a review suggestion is a candidate, not an auto-link — must not claim it
+        self.assertEqual(env.suggested_links[0].link_type, SUGGESTED_LINK_TYPE)
+        self.assertNotEqual(env.suggested_links[0].link_type, AUTO_LINK_TYPE)
 
     def test_no_candidates_review_has_no_suggestions(self):
         env = emit(_section(), _audit(), REVIEW_EMPTY, pipeline_run_id=RUN, at=AT)
@@ -120,10 +124,11 @@ class EmitReviewTest(unittest.TestCase):
 
 
 class MetadataTest(unittest.TestCase):
-    def test_auto_link_type_matches_cre_defs(self):
+    def test_link_types_match_cre_defs(self):
         from application.defs.cre_defs import LinkTypes
 
         self.assertEqual(AUTO_LINK_TYPE, LinkTypes.AutomaticallyLinkedTo.value)
+        self.assertEqual(SUGGESTED_LINK_TYPE, LinkTypes.Related.value)
 
 
 if __name__ == "__main__":
