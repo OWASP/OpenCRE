@@ -7,5 +7,21 @@ describe('OpenCRE standard browse', () => {
     cy.get('.accordion').should('have.length.greaterThan', 0);
     // Semantic-ui pagination is present for a multi-section standard.
     cy.get('.pagination').should('exist');
+
+    // ASVS/V13.2.5 (owned by scripts/seed_e2e_fixtures.py) sorts first and
+    // is linked to CRE 558-807; its external reference renders unexpanded.
+    cy.contains('.title.document-node', 'V13.2.5').should('be.visible');
+    cy.contains('a[href="https://example.com/asvs/v13.2.5"]', 'https://example.com/asvs/v13.2.5').should(
+      'be.visible'
+    );
+    // Expanding it follows through to the linked CRE.
+    cy.contains('.title.document-node', 'V13.2.5').click();
+    cy.get('a[href="/cre/558-807"]').should('exist');
+
+    // Clicking pagination actually changes the rendered content.
+    cy.get('.accordion').first().invoke('text').then((firstPageText) => {
+      cy.get('.pagination').contains('2').click();
+      cy.get('.accordion').first().invoke('text').should('not.eq', firstPageText);
+    });
   });
 });

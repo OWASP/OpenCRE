@@ -87,6 +87,7 @@ dev-flask-docker:
 e2e:
 	yarn build
 	if [ -d "./venv" ]; then . ./venv/bin/activate; fi
+	[ -f "$(CURDIR)/standards_cache.sqlite" ] || { echo "ERROR: standards_cache.sqlite not found — run 'make e2e-db' first"; exit 1; }
 	export FLASK_APP="$(CURDIR)/cre.py"
 	export FLASK_CONFIG=development
 	export INSECURE_REQUESTS=1
@@ -100,16 +101,17 @@ e2e:
 	curl -fsS http://127.0.0.1:5000 >/dev/null || { echo "ERROR: Flask did not become ready on http://127.0.0.1:5000 after 30s; see /tmp/opencre-e2e-flask.log"; exit 1; }
 	env -u ELECTRON_RUN_AS_NODE yarn test:e2e
 
-# Build the e2e SQLite schema from the ORM models (create_all), then load CRE
-# data from upstream. Local/CI e2e uses create_all, NOT migrate-upgrade:
-# migrations are the Postgres path and omit columns the models added without a
-# migration (e.g. cre.document_metadata, see application/database/db.py), so a
-# migrate-built SQLite cache is incomplete. create_all always matches the models.
+# Build the e2e SQLite schema from the ORM models (create_all), then load a
+# small checked-in fixture graph. Local/CI e2e uses create_all, NOT
+# migrate-upgrade: migrations are the Postgres path and omit columns the
+# models added without a migration (e.g. cre.document_metadata, see
+# application/database/db.py), so a migrate-built SQLite cache is incomplete.
+# create_all always matches the models.
 e2e-db:
 	[ -d "./venv" ] && . ./venv/bin/activate &&\
 	rm -f "$(CURDIR)/standards_cache.sqlite" &&\
 	NO_LOAD_GRAPH_DB=1 FLASK_CONFIG=development python -c "from application import create_app, sqla; app=create_app(mode='development'); app.app_context().push(); sqla.create_all()" &&\
-	python cre.py --upstream_sync
+	FLASK_CONFIG=development python scripts/seed_e2e_fixtures.py
 
 test:
 	[ -d "./venv" ] && . ./venv/bin/activate &&\

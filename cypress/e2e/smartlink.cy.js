@@ -1,14 +1,13 @@
 describe('OpenCRE smartlink redirects', () => {
-  // A standard section that exists in OpenCRE redirects to the internal page
-  // for that section (directly to /cre/{id} when a single CRE is linked, or to
-  // the /node/ section page otherwise).
+  // ASVS/V13.2.5 (owned by scripts/seed_e2e_fixtures.py) has exactly one
+  // linked CRE, so this redirects directly to that CRE page.
   it('redirects a known standard section to an internal OpenCRE page', () => {
     cy.request({
       url: '/smartlink/standard/ASVS/V13.2.5',
       followRedirect: false,
     }).then((resp) => {
       expect(resp.status).to.eq(302);
-      expect(resp.headers.location).to.match(/^\/(cre|node)\//);
+      expect(resp.headers.location).to.eq('/cre/558-807');
     });
   });
 
