@@ -125,6 +125,42 @@ class TestDB(unittest.TestCase):
         self.assertEqual(self.collection.get_by_tags([]), [])
         self.assertEqual(self.collection.get_by_tags(["this should not be a tag"]), [])
 
+    @patch("application.database.db.logger")
+    def test_get_by_tags_empty_nodes_regression(self, mock_logger) -> None:
+        """
+        Simulate get_nodes returning an empty list to test the error path in get_by_tags.
+        See PR #837 regression fix.
+        """
+        dbstandard = db.Node(
+            section="regression_section",
+            name="regression_name",
+            tags="regression_tag",
+            ntype=defs.Standard.__name__,
+        )
+        self.collection.session.add(dbstandard)
+        self.collection.session.commit()
+
+        with patch.object(
+            self.collection, "get_nodes", return_value=[]
+        ) as mock_get_nodes:
+            res = self.collection.get_by_tags(["regression_tag"])
+            self.assertEqual(res, [])
+
+            mock_get_nodes.assert_called_once_with(
+                name=dbstandard.name,
+                section=dbstandard.section,
+                subsection=dbstandard.subsection,
+                version=dbstandard.version,
+                link=dbstandard.link,
+                ntype=dbstandard.ntype,
+                sectionID=dbstandard.section_id,
+            )
+
+            mock_logger.fatal.assert_called_once_with(
+                "get_nodes() returned no documents for Node %s:%s:%s that exists, BUG!"
+                % (dbstandard.name, dbstandard.section, dbstandard.section_id)
+            )
+
     def test_get_standards_names(self) -> None:
         result = self.collection.get_node_names()
         expected = [("Standard", "BarStand"), ("Standard", "Unlinked")]
