@@ -8,6 +8,7 @@ import re
 import time
 import yaml
 
+from datetime import datetime, timezone
 from pprint import pprint
 
 from collections import Counter, defaultdict
@@ -355,6 +356,35 @@ class IngestChunk(BaseModel):  # type: ignore
             artifact_event_id,
             chunk_id,
             name="uq_ingest_chunk_artifact_chunk",
+        ),
+    )
+
+
+class HarvesterCheckpoint(BaseModel):  # type: ignore
+    __tablename__ = "harvester_checkpoint"
+    repository_id = sqla.Column(sqla.String, primary_key=True)
+    provider = sqla.Column(sqla.String, nullable=False)
+    owner = sqla.Column(sqla.String, nullable=False)
+    repository = sqla.Column(sqla.String, nullable=False)
+    branch = sqla.Column(sqla.String, nullable=False)
+    last_processed_commit = sqla.Column(sqla.String, nullable=True)
+    created_at = sqla.Column(
+        sqla.DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+    )
+    updated_at = sqla.Column(
+        sqla.DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+    )
+    __table_args__ = (
+        sqla.UniqueConstraint(
+            "provider",
+            "owner",
+            "repository",
+            "branch",
+            name="uq_harvester_checkpoint_canonical_source",
         ),
     )
 

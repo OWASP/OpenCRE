@@ -1,91 +1,192 @@
 import unittest
-from datetime import datetime
-from pathlib import Path
+from datetime import datetime, timezone
 
-from application.utils.harvester.checkpoint_store import (
-    CheckpointStore,
-)
-from application.utils.harvester.models import (
-    RepositoryCheckpoint,
-)
+from application import create_app, sqla
+from application.utils.harvester.checkpoint_store import CheckpointStore
+from application.utils.harvester.models import RepositoryCheckpoint
 
 
 class CheckpointStoreTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.app = create_app(mode="test")
+        self.app_context = self.app.app_context()
+        self.app_context.push()
+        sqla.create_all()
+
+    def tearDown(self) -> None:
+        sqla.session.remove()
+        sqla.drop_all()
+        self.app_context.pop()
+
     def test_save_and_load_checkpoint(self):
-        tmp_dir = Path(self._testMethodName)
+        store = CheckpointStore()
+        checkpoint = RepositoryCheckpoint(
+            repository_id="owasp-asvs",
+            last_processed_commit="abc123",
+            updated_at=datetime.now(timezone.utc),
+            provider="github",
+            owner="owasp",
+            repository="asvs",
+            branch="main",
+        )
 
-        try:
-            store = CheckpointStore(
-                tmp_dir / "checkpoints.json",
-            )
+        store.save(checkpoint)
+        loaded = store.load("owasp-asvs")
 
-            checkpoint = RepositoryCheckpoint(
-                repository_id="owasp-asvs",
-                last_processed_commit="abc123",
-                updated_at=datetime.now(),
-            )
+        self.assertIsNotNone(loaded)
+        assert loaded is not None
+        self.assertEqual(loaded.last_processed_commit, "abc123")
+        self.assertEqual(loaded.provider, "github")
 
-            store.save(checkpoint)
+    def test_update_upsert_and_two_repositories_remain_isolated(self):
+        store = CheckpointStore()
+        repo_a = RepositoryCheckpoint(
+            repository_id="repo-a",
+            last_processed_commit="commit-1",
+            updated_at=datetime.now(timezone.utc),
+            provider="github",
+            owner="sample",
+            repository="repo-a",
+            branch="main",
+        )
+        repo_b = RepositoryCheckpoint(
+            repository_id="repo-b",
+            last_processed_commit="commit-b",
+            updated_at=datetime.now(timezone.utc),
+            provider="github",
+            owner="sample",
+            repository="repo-b",
+            branch="main",
+        )
+        store.save(repo_a)
+        store.save(repo_b)
 
-            loaded = store.load("owasp-asvs")
+        updated_a = RepositoryCheckpoint(
+            repository_id="repo-a",
+            last_processed_commit="commit-2",
+            updated_at=datetime.now(timezone.utc),
+            provider="github",
+            owner="sample",
+            repository="repo-a",
+            branch="main",
+        )
+        store.save(updated_a)
 
-            if loaded is None:
-                self.fail("Checkpoint should have been loaded")
+        loaded_a = store.load("repo-a")
+        loaded_b = store.load("repo-b")
 
-            self.assertEqual(
-                loaded.last_processed_commit,
-                "abc123",
-            )
+        self.assertIsNotNone(loaded_a)
+        self.assertIsNotNone(loaded_b)
+        assert loaded_a is not None
+        assert loaded_b is not None
+        self.assertEqual(loaded_a.last_processed_commit, "commit-2")
+        self.assertEqual(loaded_b.last_processed_commit, "commit-b")
 
-        finally:
-            if tmp_dir.exists():
-                import shutil
+    def test_duplicate_canonical_source_identity_rejected(self):
+        store = CheckpointStore()
+        first = RepositoryCheckpoint(
+            repository_id="repo-a",
+            last_processed_commit="commit-1",
+            updated_at=datetime.now(timezone.utc),
+            provider="github",
+            owner="sample",
+            repository="shared",
+            branch="main",
+        )
+        second = RepositoryCheckpoint(
+            repository_id="repo-b",
+            last_processed_commit="commit-2",
+            updated_at=datetime.now(timezone.utc),
+            provider="github",
+            owner="sample",
+            repository="shared",
+            branch="main",
+        )
 
-                shutil.rmtree(tmp_dir)
+        store.save(first)
 
-    def test_load_missing_file(self):
-        tmp_dir = Path(self._testMethodName)
+        with self.assertRaises(ValueError):
+            store.save(second)
 
-        try:
-            store = CheckpointStore(
-                tmp_dir / "missing.json",
-            )
+    def test_immutable_repository_identity(self):
+        store = CheckpointStore()
+        first = RepositoryCheckpoint(
+            repository_id="repo-a",
+            last_processed_commit="commit-1",
+            updated_at=datetime.now(timezone.utc),
+            provider="github",
+            owner="sample",
+            repository="repo-a",
+            branch="main",
+        )
+        store.save(first)
 
-            self.assertIsNone(
-                store.load("repo"),
-            )
+        conflicting = RepositoryCheckpoint(
+            repository_id="repo-a",
+            last_processed_commit="commit-2",
+            updated_at=datetime.now(timezone.utc),
+            provider="github",
+            owner="sample",
+            repository="repo-a",
+            branch="develop",
+        )
 
-        finally:
-            if tmp_dir.exists():
-                import shutil
+        with self.assertRaises(ValueError):
+            store.save(conflicting)
 
-                shutil.rmtree(tmp_dir)
+    def test_null_initial_checkpoint(self):
+        store = CheckpointStore()
+        checkpoint = RepositoryCheckpoint(
+            repository_id="repo-a",
+            last_processed_commit=None,
+            updated_at=datetime.now(timezone.utc),
+            provider="github",
+            owner="sample",
+            repository="repo-a",
+            branch="main",
+        )
+
+        store.save(checkpoint)
+        loaded = store.load("repo-a")
+
+        self.assertIsNotNone(loaded)
+        assert loaded is not None
+        self.assertIsNone(loaded.last_processed_commit)
+
+    def test_transaction_rollback_leaves_previous_checkpoint_intact(self):
+        store = CheckpointStore()
+        original = RepositoryCheckpoint(
+            repository_id="repo-a",
+            last_processed_commit="commit-1",
+            updated_at=datetime.now(timezone.utc),
+            provider="github",
+            owner="sample",
+            repository="repo-a",
+            branch="main",
+        )
+        store.save(original)
+
+        conflicting = RepositoryCheckpoint(
+            repository_id="repo-a",
+            last_processed_commit="commit-2",
+            updated_at=datetime.now(timezone.utc),
+            provider="github",
+            owner="sample",
+            repository="repo-a",
+            branch="develop",
+        )
+
+        with self.assertRaises(ValueError):
+            store.save(conflicting)
+
+        loaded = store.load("repo-a")
+        self.assertIsNotNone(loaded)
+        assert loaded is not None
+        self.assertEqual(loaded.last_processed_commit, "commit-1")
 
     def test_load_missing_repository(self):
-        tmp_dir = Path(self._testMethodName)
-
-        try:
-            store = CheckpointStore(
-                tmp_dir / "checkpoint.json",
-            )
-
-            store.save(
-                RepositoryCheckpoint(
-                    repository_id="repo-a",
-                    last_processed_commit="abc123",
-                    updated_at=datetime.now(),
-                )
-            )
-
-            self.assertIsNone(
-                store.load("repo-b"),
-            )
-
-        finally:
-            if tmp_dir.exists():
-                import shutil
-
-                shutil.rmtree(tmp_dir)
+        store = CheckpointStore()
+        self.assertIsNone(store.load("repo-b"))
 
 
 if __name__ == "__main__":

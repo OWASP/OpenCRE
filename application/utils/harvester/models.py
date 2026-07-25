@@ -7,6 +7,10 @@ class RepositoryCheckpoint:
     repository_id: str
     last_processed_commit: str | None
     updated_at: datetime
+    provider: str
+    owner: str
+    repository: str
+    branch: str
 
 
 @dataclass(slots=True)
