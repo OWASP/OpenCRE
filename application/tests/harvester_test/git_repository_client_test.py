@@ -114,6 +114,7 @@ class GitRepositoryClientTests(unittest.TestCase):
                 "-C",
                 str(client.get_local_path()),
                 "checkout",
+                "--",
                 "main",
             ],
             check=True,
