@@ -1,6 +1,6 @@
 """add harvester_checkpoint table
 
-Revision ID: d4e5f6a7b8c9
+Revision ID: 6a9d0d62ef41
 Revises: 9f1a2b3c4d5e
 Create Date: 2026-07-25
 
