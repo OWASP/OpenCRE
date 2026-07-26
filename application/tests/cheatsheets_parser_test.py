@@ -103,7 +103,9 @@ class TestCheatsheetsParser(unittest.TestCase):
         )
 
     @patch.object(git, "clone")
-    def test_parse_returns_supplemental_entries_when_clone_fails(self, mock_clone) -> None:
+    def test_parse_returns_supplemental_entries_when_clone_fails(
+        self, mock_clone
+    ) -> None:
         for cre_id, name in [
             ("118-110", "API/web services"),
             ("724-770", "Technical application access control"),
