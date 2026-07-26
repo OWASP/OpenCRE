@@ -19,6 +19,7 @@ export const SearchName = () => {
   const [error, setError] = useState<string | Object | null>(null);
 
   useEffect(() => {
+    window.scrollTo(0, 0);
     setLoading(true);
     axios
       .get(`${apiUrl}/text_search`, { params: { text: searchTerm } })

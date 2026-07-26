@@ -9,13 +9,13 @@ describe('OpenCRE standard browse', () => {
     cy.get('.pagination').should('exist');
 
     // ASVS/V13.2.5 (owned by scripts/seed_e2e_fixtures.py) sorts first and
-    // is linked to CRE 558-807; its external reference renders unexpanded.
-    cy.contains('.title.document-node', 'V13.2.5').should('be.visible');
+    // is linked to CRE 558-807. Its content (external reference + CRE link)
+    // lives in a collapsed accordion panel, so expand it first.
+    cy.contains('.title.document-node', 'V13.2.5').should('be.visible').click();
     cy.contains('a[href="https://example.com/asvs/v13.2.5"]', 'https://example.com/asvs/v13.2.5').should(
       'be.visible'
     );
     // Expanding it follows through to the linked CRE.
-    cy.contains('.title.document-node', 'V13.2.5').click();
     cy.get('a[href="/cre/558-807"]').should('exist');
 
     // Clicking pagination actually changes the rendered content.
