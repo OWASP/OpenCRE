@@ -1,5 +1,6 @@
 # script to parse cheatsheet md files find the links to opencre.org and add the cheatsheets to CRE
 from typing import List
+import subprocess
 from application.database import db
 from application.utils import git
 from application.defs import cre_defs as defs
@@ -54,7 +55,7 @@ class Cheatsheets(ParserInterface):
         repo = None
         try:
             repo = git.clone(c_repo, sparse_paths=["cheatsheets"], sparse_cone=True)
-        except Exception as exc:
+        except (subprocess.SubprocessError, OSError) as exc:
             self.logger.warning(
                 "Unable to clone OWASP CheatSheetSeries, continuing with supplemental cheat sheets only: %s",
                 exc,
