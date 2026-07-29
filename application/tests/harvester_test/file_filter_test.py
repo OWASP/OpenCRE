@@ -57,6 +57,31 @@ class FileFilterTests(unittest.TestCase):
             ],
         )
 
+    def test_empty_overrides_are_respected(self):
+        file_filter = FileFilter(
+            exclude_patterns=[],
+            allowed_extensions=set(),
+        )
+
+        result = file_filter.filter_files(
+            [
+                "README.md",
+                "image.png",
+            ]
+        )
+
+        self.assertEqual(result, [])
+
+    def test_default_instances_are_isolated(self):
+        first = FileFilter()
+        second = FileFilter()
+
+        first.exclude_patterns.append("custom")
+        first.allowed_extensions.add(".pdf")
+
+        self.assertNotIn("custom", second.exclude_patterns)
+        self.assertNotIn(".pdf", second.allowed_extensions)
+
 
 if __name__ == "__main__":
     unittest.main()
