@@ -28,8 +28,15 @@ class FileFilter:
         exclude_patterns: list[str] | None = None,
         allowed_extensions: set[str] | None = None,
     ):
-        self.exclude_patterns = exclude_patterns or DEFAULT_EXCLUDE_PATTERNS
-        self.allowed_extensions = allowed_extensions or DEFAULT_ALLOWED_EXTENSIONS
+        if exclude_patterns is None:
+            self.exclude_patterns = list(DEFAULT_EXCLUDE_PATTERNS)
+        else:
+            self.exclude_patterns = list(exclude_patterns)
+
+        if allowed_extensions is None:
+            self.allowed_extensions = set(DEFAULT_ALLOWED_EXTENSIONS)
+        else:
+            self.allowed_extensions = set(allowed_extensions)
 
     def is_excluded_by_pattern(self, file_path: str) -> bool:
         return any(re.search(pattern, file_path) for pattern in self.exclude_patterns)
