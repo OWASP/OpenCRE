@@ -4,7 +4,8 @@
 
 # to filter non-documentation files during harvesting.
 
-**/.git/*
+**/.github/**
+**/.git/**
 **/node_modules/**
 **/__pycache__/**
 **/.claude/**

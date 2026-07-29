@@ -22,7 +22,7 @@ class FileFilterTests(unittest.TestCase):
             ["README.md"],
         )
 
-    def test_regex_filtering(self):
+    def test_path_exclusion(self):
         file_filter = FileFilter()
 
         result = file_filter.filter_files(
@@ -43,8 +43,8 @@ class FileFilterTests(unittest.TestCase):
         result = file_filter.filter_files(
             [
                 "README.md",
-                ".github/workflows/test.yml",
-                "node_modules/react/index.js",
+                ".github/workflows/README.md",
+                "node_modules/react/README.md",
                 "docs/setup.md",
             ]
         )
@@ -72,15 +72,45 @@ class FileFilterTests(unittest.TestCase):
 
         self.assertEqual(result, [])
 
-    def test_default_instances_are_isolated(self):
+    def test_nested_directory_globs(self):
+        file_filter = FileFilter()
+
+        result = file_filter.filter_files(
+            [
+                ".github/README.md",
+                "packages/site/node_modules/README.md",
+                "docs/archive/old.md",
+                ".cursor/rules/project.md",
+                "docs/setup.md",
+            ]
+        )
+
+        self.assertEqual(result, ["docs/setup.md"])
+
+    def test_explicit_empty_exclusions(self):
+        file_filter = FileFilter(exclude_patterns=[])
+
+        result = file_filter.filter_files(
+            [
+                ".github/README.md",
+            ]
+        )
+
+        self.assertEqual(
+            result,
+            [".github/README.md"],
+        )
+
+    def test_default_instance_isolation(self):
         first = FileFilter()
         second = FileFilter()
 
-        first.exclude_patterns.append("custom")
-        first.allowed_extensions.add(".pdf")
+        first.exclude_patterns.append("**/foo/**")
 
-        self.assertNotIn("custom", second.exclude_patterns)
-        self.assertNotIn(".pdf", second.allowed_extensions)
+        self.assertNotIn(
+            "**/foo/**",
+            second.exclude_patterns,
+        )
 
 
 if __name__ == "__main__":
