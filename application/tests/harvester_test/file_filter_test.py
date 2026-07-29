@@ -112,6 +112,10 @@ class FileFilterTests(unittest.TestCase):
             second.exclude_patterns,
         )
 
+    def test_empty_extension_raises(self):
+        with self.assertRaises(ValueError):
+            FileFilter(allowed_extensions={""})
+
 
 if __name__ == "__main__":
     unittest.main()
