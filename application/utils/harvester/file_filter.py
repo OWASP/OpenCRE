@@ -54,6 +54,9 @@ class FileFilter:
         if any(not pattern for pattern in self.exclude_patterns):
             raise ValueError("Exclude pattern cannot be empty")
 
+        if any(not extension for extension in self.allowed_extensions):
+            raise ValueError("Allowed extension cannot be empty")
+
     def _normalize_path(self, file_path: str) -> str:
         return PurePosixPath(file_path).as_posix()
 
