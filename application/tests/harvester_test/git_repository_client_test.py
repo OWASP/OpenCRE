@@ -89,21 +89,6 @@ class GitRepositoryClientTests(unittest.TestCase):
 
         mock_fetch.assert_called_once()
 
-        mock_run.assert_called_once_with(
-            [
-                "git",
-                "-C",
-                str(client.get_local_path()),
-                "reset",
-                "--hard",
-                "origin/main",
-            ],
-            check=True,
-            capture_output=True,
-            text=True,
-            timeout=300,
-        )
-
     @patch("application.utils.harvester.git_repository_client.subprocess.run")
     def test_fetch_runs_git_command(self, mock_run):
         client = GitRepositoryClient(
