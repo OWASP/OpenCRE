@@ -126,6 +126,20 @@ class PipelineTests(unittest.TestCase):
         self.assertEqual(s.read, 1)
         self.assertEqual(HarvestInput.query.filter_by(status="pending").count(), 1)
 
+    def test_misaligned_verdicts_raise_and_persist_nothing(self) -> None:
+        self._add(_payload("document/auth.md"))
+        self._add(_payload("document/xss.md"))
+
+        class _ShortClassifier:  # returns fewer verdicts than survivors
+            def classify_batch(self, records):
+                return [_v("KNOWLEDGE")]
+
+        with self.assertRaises(RuntimeError):
+            run_noise_filter(sqla.session, "run1", classifier=_ShortClassifier())
+        # nothing written, no rows marked processed
+        self.assertEqual(KnowledgeQueueItem.query.count(), 0)
+        self.assertEqual(HarvestInput.query.filter_by(status="pending").count(), 2)
+
 
 if __name__ == "__main__":
     unittest.main()
