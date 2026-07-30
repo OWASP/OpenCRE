@@ -44,6 +44,9 @@ class DiffRetriever:
             target_commit,
         )
 
+        base_commit = self._resolve_commit(base_commit)
+        target_commit = self._resolve_commit(target_commit)
+
         try:
             result = subprocess.run(
                 [
@@ -76,3 +79,21 @@ class DiffRetriever:
             )
 
         return diff_bytes.decode("utf-8", errors="replace")
+
+    def _resolve_commit(self, commit: str) -> str:
+        result = subprocess.run(
+            [
+                "git",
+                "-C",
+                str(self.repository_client.get_local_path()),
+                "rev-parse",
+                "--verify",
+                "--end-of-options",
+                f"{commit}^{{commit}}",
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
+        return result.stdout.strip()

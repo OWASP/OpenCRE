@@ -44,7 +44,7 @@ class DiffParser:
 
                 continue
 
-            if line.startswith("+++ b/") or line.startswith("++/dev/null"):
+            if line.startswith("+++ b/") or line.startswith("+++ /dev/null"):
                 continue
 
             if line.startswith("--- a/") or line.startswith("--- /dev/null"):

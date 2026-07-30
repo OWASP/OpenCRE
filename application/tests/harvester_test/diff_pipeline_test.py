@@ -2,6 +2,7 @@ from datetime import UTC, datetime
 import subprocess
 import time
 import unittest
+import os
 
 from application.utils.harvester.diff_normalizer import DiffNormalizer
 from application.utils.harvester.diff_parser import DiffParser
@@ -18,6 +19,10 @@ class DiffPipelineBenchmark(unittest.TestCase):
     """
 
     def test_pipeline_benchmark(self):
+
+        if os.getenv("OPENCRE_RUN_NETWORK_TESTS") != "1":
+            self.skipTest("Network benchmark disabled")
+
         client = GitRepositoryClient(
             "OWASP",
             "ASVS",
