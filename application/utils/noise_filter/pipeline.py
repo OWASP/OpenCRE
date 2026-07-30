@@ -110,9 +110,16 @@ def run_noise_filter(
         else:
             survivors.append(_sanitized(record))
 
-    # Stage 2: LLM classify.
+    # Stage 2: LLM classify. Require exactly one verdict per survivor -- a
+    # misaligned classifier must fail the run loudly rather than let zip()
+    # silently truncate (which would drop chunks yet still mark rows processed).
     classifier = classifier or LLMClassifier(config)
     verdicts = classifier.classify_batch(survivors)
+    if len(verdicts) != len(survivors):
+        raise RuntimeError(
+            f"classifier returned {len(verdicts)} verdicts for "
+            f"{len(survivors)} chunks; refusing to write a partial batch"
+        )
 
     triples = [
         (rec, v, compute_content_hash(rec.text)) for rec, v in zip(survivors, verdicts)
