@@ -38,9 +38,8 @@ class DiffParser:
 
                 match = re.match(r"diff --git a/(.+?) b/", line)
 
-                if match:
-                    current_file = match.group(1)
-                    added_lines = []
+                current_file = match.group(1) if match else None
+                added_lines = []
 
                 continue
 
