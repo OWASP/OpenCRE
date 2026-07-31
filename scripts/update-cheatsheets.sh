@@ -5,14 +5,14 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DB_PATH="${1:-$ROOT_DIR/standards_cache.sqlite}"
 VENV_DIR="$ROOT_DIR/venv"
 
-if [[ ! -d "$VENV_DIR" ]]; then
+if [[ ! -x "$VENV_DIR/bin/python" ]]; then
   python3 -m venv "$VENV_DIR"
 fi
 
 source "$VENV_DIR/bin/activate"
 
 # FIX: always install requirements to pick up new/updated packages
-pip install -r "$ROOT_DIR/requirements.txt"
+"$VENV_DIR/bin/python" -m pip install -r "$ROOT_DIR/requirements.txt"
 
 if [[ ! -f "$DB_PATH" ]]; then
   echo "Database file does not exist: $DB_PATH" >&2
@@ -21,18 +21,35 @@ fi
 
 # FIX: add PID to backup filename to avoid collisions
 BACKUP_FILE="${DB_PATH}.$(date +%Y%m%d%H%M%S)_$$.bak"
-cp "$DB_PATH" "$BACKUP_FILE"
+
+# Use sqlite3 backup (safe for live DB) and verify integrity
+"$VENV_DIR/bin/python" -c "
+import sqlite3, sys
+src, dst = sys.argv[1], sys.argv[2]
+try:
+    with sqlite3.connect(src) as src_conn, sqlite3.connect(dst) as dst_conn:
+        src_conn.backup(dst_conn)
+    cur = dst_conn.cursor()
+    cur.execute('PRAGMA integrity_check')
+    if cur.fetchone()[0] != 'ok':
+        print('Integrity check failed for backup', file=sys.stderr)
+        sys.exit(1)
+except Exception as e:
+    print(f'Backup failed: {e}', file=sys.stderr)
+    sys.exit(1)
+" "$DB_PATH" "$BACKUP_FILE"
+
 if [[ ! -f "$BACKUP_FILE" ]]; then
   echo "Failed to create backup at $BACKUP_FILE" >&2
   exit 1
 fi
-echo "Created backup at $BACKUP_FILE"
+echo "Created verified backup at $BACKUP_FILE"
 
 CRE_NO_CALCULATE_GAP_ANALYSIS=1 \
 CRE_NO_GEN_EMBEDDINGS=1 \
-python "$ROOT_DIR/cre.py" --cheatsheets_in --cache_file "$DB_PATH"
+"$VENV_DIR/bin/python" "$ROOT_DIR/cre.py" --cheatsheets_in --cache_file "$DB_PATH"
 
-python - "$DB_PATH" <<'PY'
+"$VENV_DIR/bin/python" - "$DB_PATH" <<'PY'
 import os
 import sqlite3
 import sys
