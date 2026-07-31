@@ -10,6 +10,7 @@ import unittest
 
 from application import create_app, sqla
 from application.database.db import HarvestInput, KnowledgeQueueItem
+from application.utils.noise_filter.hashing import compute_content_hash
 from application.utils.noise_filter.pipeline import run_noise_filter
 from application.utils.noise_filter.schemas import ClassifyResult
 
@@ -139,6 +140,25 @@ class PipelineTests(unittest.TestCase):
         # nothing written, no rows marked processed
         self.assertEqual(KnowledgeQueueItem.query.count(), 0)
         self.assertEqual(HarvestInput.query.filter_by(status="pending").count(), 2)
+
+    def test_sanitize_is_llm_input_only(self) -> None:
+        # The "ﬀ" ligature is sanitized to "ff" for the LLM, but the queue keeps
+        # the original text and hashes the original (stable dedup key).
+        original = "oﬀice hardening steps"
+        self._add(_payload("document/lig.md", text=original))
+        seen = {}
+
+        class _Capture:
+            def classify_batch(self, records):
+                seen["text"] = records[0].text
+                return [_v("KNOWLEDGE")]
+
+        run_noise_filter(sqla.session, "run1", classifier=_Capture())
+
+        self.assertEqual(seen["text"], "office hardening steps")  # LLM saw sanitized
+        row = KnowledgeQueueItem.query.first()
+        self.assertEqual(row.text, original)  # queue kept the canonical original
+        self.assertEqual(row.content_hash, compute_content_hash(original))
 
 
 if __name__ == "__main__":
