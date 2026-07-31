@@ -6,7 +6,7 @@ from pathlib import Path
 import requests
 from typing import Dict, List
 from sqlalchemy import func
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from application.database import db
 from application.defs import cre_defs as defs
 import shutil
@@ -145,7 +145,7 @@ class CWE(ParserInterface):
                 "Deleted %s prohibited CWE entries from the local database",
                 len(entries),
             )
-        except IntegrityError as e:
+        except SQLAlchemyError as e:
             cache.session.rollback()
             logger.error("Failed to delete prohibited CWE entries: %s", e)
 
@@ -309,9 +309,9 @@ class CWE(ParserInterface):
                                         cwe=cwe, cache=cache, capec_id=capec_id
                                     )
                             else:
-                                id = lst["@CAPEC_ID"]
+                                capec_id_value = lst["@CAPEC_ID"]
                                 cwe = self.link_cwe_to_capec_cre(
-                                    cwe=cwe, cache=cache, capec_id=id
+                                    cwe=cwe, cache=cache, capec_id=capec_id_value
                                 )
                 else:
                     logger.info(

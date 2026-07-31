@@ -296,7 +296,7 @@ class TestCWEParser(unittest.TestCase):
 
     @patch.object(requests, "get")
     def test_register_CWE_removes_stale_prohibited_entries(self, mock_requests) -> None:
-        stale_category = self.collection.add_node(
+        self.collection.add_node(
             defs.Standard(
                 name="CWE",
                 sectionID="16",
@@ -304,8 +304,6 @@ class TestCWEParser(unittest.TestCase):
                 hyperlink="https://cwe.mitre.org/data/definitions/16.html",
             )
         )
-        self.collection.session.add(stale_category)
-        self.collection.session.commit()
 
         tmpdir = mkdtemp()
         tmpFile = os.path.join(tmpdir, "cwe.xml")
