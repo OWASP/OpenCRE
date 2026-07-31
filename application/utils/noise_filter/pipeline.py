@@ -113,13 +113,15 @@ def run_noise_filter(
         if is_noise:
             summary.dropped_noise += 1
         else:
-            survivors.append(_sanitized(record))
+            survivors.append(record)
 
-    # Stage 2: LLM classify. Require exactly one verdict per survivor -- a
-    # misaligned classifier must fail the run loudly rather than let zip()
-    # silently truncate (which would drop chunks yet still mark rows processed).
+    # Stage 1.5 + Stage 2: sanitization is for the classifier's eyes only. We
+    # hash and persist the ORIGINAL (canonical) text so the dedup key stays
+    # stable across sanitizer changes and the queue keeps A's provenance; only a
+    # sanitized copy reaches the LLM. Require exactly one verdict per survivor --
+    # a misaligned classifier must fail loudly rather than let zip() truncate.
     classifier = classifier or LLMClassifier(config)
-    verdicts = classifier.classify_batch(survivors)
+    verdicts = classifier.classify_batch([_sanitized(rec) for rec in survivors])
     if len(verdicts) != len(survivors):
         raise RuntimeError(
             f"classifier returned {len(verdicts)} verdicts for "
