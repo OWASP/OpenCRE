@@ -320,6 +320,8 @@ def main() -> None:
     args = parser.parse_args()
     if args.export and not args.csv:
         parser.error("--export requires --csv <path>")
+    if args.run_noise_filter and not args.run_id.strip():
+        parser.error("--run_noise_filter requires --run_id <pipeline_run_id>")
 
     from application.cmd import cre_main
 
