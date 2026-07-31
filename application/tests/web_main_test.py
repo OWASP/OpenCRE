@@ -1153,6 +1153,145 @@ class TestMain(unittest.TestCase):
             self.assertEqual(200, response.status_code)
             self.assertEqual(expected, json.loads(response.data))
 
+    @patch("application.web.web_main.id_token")
+    @patch("application.web.web_main.CREFlow")
+    def test_callback_upserts_user_and_sets_session(
+        self, cre_flow_mock, id_token_mock
+    ) -> None:
+        id_token_mock.verify_oauth2_token.return_value = {
+            "sub": "sub-xyz",
+            "name": "Test User",
+            "email": "test@example.com",
+        }
+        flow_instance = cre_flow_mock.instance.return_value
+        flow_instance.flow.credentials._id_token = "tok"
+        self.app.secret_key = "test-secret"
+        with patch.dict(
+            os.environ,
+            {
+                "CRE_ENABLE_LOGIN": "1",
+                "LOGIN_ALLOWED_DOMAINS": "*",
+                "NO_LOAD_GRAPH_DB": "1",
+                "INSECURE_REQUESTS": "1",
+            },
+        ):
+            session_user_id = None
+            with self.app.test_client() as client:
+                with client.session_transaction() as sess:
+                    sess["state"] = "xyz"
+                client.get("/rest/v1/callback?state=xyz")
+                with client.session_transaction() as sess:
+                    self.assertIn("user_id", sess)
+                    session_user_id = sess["user_id"]
+
+        users = sqla.session.query(db.User).all()
+        self.assertEqual(len(users), 1)
+        self.assertEqual(users[0].google_sub, "sub-xyz")
+        self.assertEqual(users[0].email, "test@example.com")
+        self.assertEqual(users[0].display_name, "Test User")
+        # Session id must match the persisted row (guards PR2's /user wiring).
+        self.assertEqual(session_user_id, users[0].id)
+
+    @patch("application.web.web_main.id_token")
+    @patch("application.web.web_main.CREFlow")
+    def test_callback_does_not_persist_when_login_flag_off(
+        self, cre_flow_mock, id_token_mock
+    ) -> None:
+        id_token_mock.verify_oauth2_token.return_value = {
+            "sub": "sub-xyz",
+            "name": "Test User",
+            "email": "test@example.com",
+        }
+        flow_instance = cre_flow_mock.instance.return_value
+        flow_instance.flow.credentials._id_token = "tok"
+        self.app.secret_key = "test-secret"
+        env = {
+            "LOGIN_ALLOWED_DOMAINS": "*",
+            "NO_LOAD_GRAPH_DB": "1",
+            "INSECURE_REQUESTS": "1",
+        }
+        with patch.dict(os.environ, env):
+            os.environ.pop("CRE_ENABLE_LOGIN", None)
+            with self.app.test_client() as client:
+                with client.session_transaction() as sess:
+                    sess["state"] = "xyz"
+                client.get("/rest/v1/callback?state=xyz")
+
+        self.assertEqual(sqla.session.query(db.User).count(), 0)
+
+    def test_no_login_dev_path_persists_user_and_sets_session(self) -> None:
+        # NO_LOGIN=1 bypasses OAuth for local dev. It must still upsert a User
+        # and set session['user_id'], otherwise the dev session looks logged in
+        # but user-scoped endpoints have no row to hang a selection on.
+        self.app.secret_key = "test-secret"
+        with patch.dict(
+            os.environ,
+            {
+                "NO_LOGIN": "1",
+                "CRE_ENABLE_LOGIN": "1",
+                "NO_LOAD_GRAPH_DB": "1",
+                "INSECURE_REQUESTS": "1",
+            },
+        ):
+            with self.app.test_client() as client:
+                client.get("/rest/v1/login")
+                with client.session_transaction() as sess:
+                    self.assertIn("user_id", sess)
+                    session_user_id = sess["user_id"]
+
+        users = sqla.session.query(db.User).all()
+        self.assertEqual(len(users), 1)
+        self.assertEqual(users[0].google_sub, "some dev id")
+        self.assertEqual(session_user_id, users[0].id)
+
+    def test_no_login_dev_path_does_not_persist_when_flag_off(self) -> None:
+        self.app.secret_key = "test-secret"
+        with patch.dict(
+            os.environ,
+            {
+                "NO_LOGIN": "1",
+                "NO_LOAD_GRAPH_DB": "1",
+                "INSECURE_REQUESTS": "1",
+            },
+        ):
+            os.environ.pop("CRE_ENABLE_LOGIN", None)
+            with self.app.test_client() as client:
+                client.get("/rest/v1/login")
+
+        self.assertEqual(sqla.session.query(db.User).count(), 0)
+
+    @patch("application.web.web_main.id_token")
+    @patch("application.web.web_main.CREFlow")
+    def test_callback_skips_persistence_when_sub_missing(
+        self, cre_flow_mock, id_token_mock
+    ) -> None:
+        # Login enabled, but the OIDC token has no 'sub' claim: must not create
+        # a user (google_sub is NOT NULL) and must not set session['user_id'].
+        id_token_mock.verify_oauth2_token.return_value = {
+            "name": "Test User",
+            "email": "test@example.com",
+        }
+        flow_instance = cre_flow_mock.instance.return_value
+        flow_instance.flow.credentials._id_token = "tok"
+        self.app.secret_key = "test-secret"
+        with patch.dict(
+            os.environ,
+            {
+                "CRE_ENABLE_LOGIN": "1",
+                "LOGIN_ALLOWED_DOMAINS": "*",
+                "NO_LOAD_GRAPH_DB": "1",
+                "INSECURE_REQUESTS": "1",
+            },
+        ):
+            with self.app.test_client() as client:
+                with client.session_transaction() as sess:
+                    sess["state"] = "xyz"
+                client.get("/rest/v1/callback?state=xyz")
+                with client.session_transaction() as sess:
+                    self.assertNotIn("user_id", sess)
+
+        self.assertEqual(sqla.session.query(db.User).count(), 0)
+
     def test_deeplink(self) -> None:
         self.maxDiff = None
         collection = db.Node_collection().with_graph()
