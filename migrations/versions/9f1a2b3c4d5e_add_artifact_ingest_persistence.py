@@ -1,7 +1,7 @@
 """add artifact ingest event and chunk tables
 
 Revision ID: 9f1a2b3c4d5e
-Revises: e1f2a3b4c5d6
+Revises: a1b2c3d4e5f6
 Create Date: 2026-07-23
 
 """
@@ -11,7 +11,7 @@ import sqlalchemy as sa
 
 
 revision = "9f1a2b3c4d5e"
-down_revision = "c7d8e9f0a1b2"
+down_revision = "a1b2c3d4e5f6"
 branch_labels = None
 depends_on = None
 
