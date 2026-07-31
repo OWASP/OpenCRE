@@ -897,13 +897,11 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
         from application import sqla
         from application.utils.noise_filter.pipeline import run_noise_filter
 
-        run_id = getattr(args, "run_id", "").strip()
-        if not run_id:
-            raise ValueError("--run_noise_filter requires --run_id <pipeline_run_id>")
+        # --run_id presence is validated in cre.py via parser.error().
         db_connect(args.cache_file)
         summary = run_noise_filter(
             sqla.session,
-            run_id,
+            args.run_id.strip(),
             dry_run=getattr(args, "noise_filter_dry_run", False),
         )
         print(summary.to_json())

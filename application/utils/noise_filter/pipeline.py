@@ -98,7 +98,12 @@ def run_noise_filter(
         except ValidationError as e:
             summary.parse_errors += 1
             failed.append(row)
-            logger.warning("harvest_input row %s failed validation: %s", row.id, e)
+            # Redact input snippets from logs (payload may carry repo secrets).
+            logger.warning(
+                "harvest_input row %s failed validation: %s",
+                row.id,
+                e.errors(include_input=False),
+            )
 
     # Stage 1: regex path filter (dropped = NOISE). Survivors get Stage 1.5 sanitize.
     regex = RegexFilter()
