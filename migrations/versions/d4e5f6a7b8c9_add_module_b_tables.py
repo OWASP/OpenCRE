@@ -1,7 +1,7 @@
 """add Module B tables: harvest_input + knowledge_queue
 
 Revision ID: d4e5f6a7b8c9
-Revises: a1b2c3d4e5f6
+Revises: 6a9d0d62ef41
 Create Date: 2026-07-19
 
 harvest_input  -- Module A writes harvested chunks here (JSONB payload); B reads.
@@ -16,7 +16,7 @@ from sqlalchemy.dialects import postgresql
 
 
 revision = "d4e5f6a7b8c9"
-down_revision = "a1b2c3d4e5f6"
+down_revision = "6a9d0d62ef41"
 branch_labels = None
 depends_on = None
 
