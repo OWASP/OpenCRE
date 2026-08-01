@@ -17,6 +17,7 @@ from application.database import db
 class TestUserResourcesApi(unittest.TestCase):
     def setUp(self) -> None:
         # SQL-only surface; skip the Neo4j graph load and allow http in tests.
+        self._prev_no_load_graph = os.environ.get("NO_LOAD_GRAPH_DB")
         os.environ["NO_LOAD_GRAPH_DB"] = "1"
         self.app = create_app(mode="test")
         self.app.secret_key = "test-secret"
@@ -29,7 +30,12 @@ class TestUserResourcesApi(unittest.TestCase):
         sqla.session.remove()
         sqla.drop_all()
         self.app_context.pop()
-        os.environ.pop("NO_LOAD_GRAPH_DB", None)
+        # Restore the prior value rather than unconditionally deleting it, so a
+        # value set by the test runner survives for later tests.
+        if self._prev_no_load_graph is None:
+            os.environ.pop("NO_LOAD_GRAPH_DB", None)
+        else:
+            os.environ["NO_LOAD_GRAPH_DB"] = self._prev_no_load_graph
 
     def _login(self, client: Any, google_sub: str = "sub-1", name: str = "U") -> None:
         with client.session_transaction() as sess:
