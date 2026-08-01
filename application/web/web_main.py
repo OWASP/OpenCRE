@@ -866,6 +866,11 @@ def before_request():
 
 @app.after_request
 def add_header(response):
+    # Per-user endpoints must never be shared-cached; no-store wins over the
+    # default max-age for them (this hook runs after the view).
+    if request.path == "/rest/v1/user/resources":
+        response.cache_control.no_store = True
+        return response
     response.cache_control.max_age = 300
     return response
 
@@ -885,6 +890,52 @@ def login_required(f):
             return f(*args, **kwargs)
 
     return login_r
+
+
+def feature_enabled_or_default(is_enabled: Any, default_factory: Any) -> Any:
+    """Gate a view on a feature predicate.
+
+    When ``is_enabled()`` is false the wrapped view is skipped and
+    ``default_factory()`` is returned, so callers receive a safe default instead
+    of an auth error. When true the view runs (typically behind ``login_required``).
+    """
+
+    def decorator(f):
+        @wraps(f)
+        def wrapper(*args, **kwargs):
+            if not is_enabled():
+                return default_factory()
+            return f(*args, **kwargs)
+
+        return wrapper
+
+    return decorator
+
+
+def _resolve_current_user(database):
+    """Return the persisted User for the current session, creating it if absent.
+
+    Prefers ``session['user_id']`` (recorded by the login flow) and only falls
+    back to resolving/creating by the OIDC subject when it is absent — e.g. a
+    session established before the id was recorded. Returns None when there is no
+    authenticated subject.
+    """
+    user_id = session.get("user_id")
+    if user_id:
+        user = database.session.query(db.User).filter(db.User.id == user_id).first()
+        if user is not None:
+            return user
+    google_sub = session.get("google_id")
+    if not google_sub:
+        return None
+    user = database.get_user_by_sub(google_sub)
+    if user is None:
+        user = database.upsert_user(
+            google_sub=google_sub,
+            email=session.get("email") or "",
+            display_name=session.get("name"),
+        )
+    return user
 
 
 def admin_imports_enabled_required(f):
@@ -1265,6 +1316,48 @@ def callback():
 def logout():
     session.clear()
     return redirect("/")
+
+
+@openapi_documented("get_user_resources")
+@app.route("/rest/v1/user/resources", methods=["GET"])
+@feature_enabled_or_default(
+    lambda: is_login_enabled() and is_myopencre_enabled(),
+    lambda: jsonify({"selected": []}),
+)
+@login_required
+def get_user_resources() -> Any:
+    """Return the standard names the current user has selected."""
+    database = db.Node_collection()
+    user = _resolve_current_user(database)
+    if user is None:
+        abort(401, description="Not authenticated")
+    return jsonify({"selected": database.get_user_resource_selection(user.id)})
+
+
+@openapi_documented("put_user_resources")
+@app.route("/rest/v1/user/resources", methods=["PUT"])
+@feature_enabled_or_default(
+    lambda: is_login_enabled() and is_myopencre_enabled(),
+    lambda: jsonify({"selected": []}),
+)
+@login_required
+def put_user_resources() -> Any:
+    """Replace the current user's selected standards."""
+    body = request.get_json(silent=True)
+    if not isinstance(body, dict) or not isinstance(body.get("selected"), list):
+        abort(400, description="Body must be a JSON object with a 'selected' list")
+    raw_selected = body["selected"]
+    if not all(isinstance(name, str) and name.strip() for name in raw_selected):
+        abort(400, description="'selected' must be a list of non-empty strings")
+    # Normalize before storing: otherwise " ASVS " and "ASVS" both validate but
+    # persist as distinct rows, defeating the dedupe.
+    selected = [name.strip() for name in raw_selected]
+    database = db.Node_collection()
+    user = _resolve_current_user(database)
+    if user is None:
+        abort(401, description="Not authenticated")
+    stored = database.set_user_resource_selection(user.id, selected)
+    return jsonify({"selected": stored})
 
 
 @openapi_documented("all_cres")
