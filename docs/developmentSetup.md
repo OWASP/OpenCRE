@@ -140,8 +140,15 @@ Then you can:
 
 - open the local MyOpenCRE UI
 - download a CSV template from `GET /rest/v1/cre_csv`
-- upload your CSV to `POST /rest/v1/cre_csv_import`
+- upload your CSV to `POST /rest/v1/cre_csv_import` after starting the local API
 - send the multipart file field as `cre_csv`
+
+Example, once `make dev-flask` is running:
+
+```bash
+curl -X POST http://localhost:5000/rest/v1/cre_csv_import \
+  -F cre_csv=@my_mappings.csv
+```
 
 Maintainer-only spreadsheet import example:
 

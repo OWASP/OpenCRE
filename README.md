@@ -133,8 +133,15 @@ make start-containers
 Then use:
 
 - `GET /rest/v1/cre_csv` to download a template
-- `POST /rest/v1/cre_csv_import` to upload your CSV
+- `POST /rest/v1/cre_csv_import` to upload your CSV after starting the local API
 - send the multipart file field as `cre_csv`
+
+Example, once `make dev-flask` is running:
+
+```bash
+curl -X POST http://localhost:5000/rest/v1/cre_csv_import \
+  -F cre_csv=@my_mappings.csv
+```
 
 To run the web application for development you can run:
 
