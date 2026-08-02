@@ -148,6 +148,7 @@ class CWE(ParserInterface):
         except SQLAlchemyError as e:
             cache.session.rollback()
             logger.error("Failed to delete prohibited CWE entries: %s", e)
+            raise RuntimeError("Failed to delete prohibited CWE entries") from e
 
     def link_cwe_to_capec_cre(
         self, cwe: defs.Standard, cache: db.Node_collection, capec_id: str

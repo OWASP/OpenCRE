@@ -15,10 +15,8 @@ fi
 
 source "$VENV_DIR/bin/activate"
 
-if ! python -c "import requests" >/dev/null 2>&1; then
-  echo "Installing Python runtime dependencies"
-  pip install -r "$ROOT_DIR/requirements.txt"
-fi
+echo "Installing Python runtime dependencies"
+pip install -r "$ROOT_DIR/requirements.txt"
 
 if [[ -f "$CACHE_FILE" ]]; then
   cp "$CACHE_FILE" "$BACKUP_FILE"
