@@ -1718,3 +1718,25 @@ class TestMain(unittest.TestCase):
                 self.assertEqual(200, response.status_code)
                 body = json.loads(response.data.decode())
                 self.assertTrue(body["login"])
+
+    def test_faq_markdown_endpoint_serves_repo_faq(self) -> None:
+        """GET /docs/faq.md returns the committed FAQ markdown."""
+        with self.app.test_client() as client:
+            response = client.get("/docs/faq.md")
+            self.assertEqual(200, response.status_code)
+            body = response.data.decode()
+            self.assertIn("# OpenCRE FAQ", body)
+            self.assertIn("What is a CRE?", body)
+            self.assertTrue(
+                response.content_type.startswith("text/markdown"),
+                msg=f"unexpected content_type={response.content_type}",
+            )
+
+    def test_openapi_yaml_endpoint_serves_spec(self) -> None:
+        """GET /rest/v1/openapi.yaml returns the committed OpenAPI document."""
+        with self.app.test_client() as client:
+            response = client.get("/rest/v1/openapi.yaml")
+            self.assertEqual(200, response.status_code)
+            body = response.data.decode()
+            self.assertIn("openapi:", body)
+            self.assertIn("/rest/v1/", body)
