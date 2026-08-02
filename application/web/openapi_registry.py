@@ -59,6 +59,7 @@ class PathSpec:
         "extra_responses",
         "response_override",
         "request_body",
+        "parameters",
     )
 
     def __init__(
@@ -76,6 +77,7 @@ class PathSpec:
         extra_responses: Optional[Dict[str, Any]] = None,
         response_override: Optional[Dict[str, Any]] = None,
         request_body: Optional[Dict[str, Any]] = None,
+        parameters: Optional[List[Dict[str, Any]]] = None,
     ) -> None:
         self.path = path
         self.method = method.lower()
@@ -89,6 +91,7 @@ class PathSpec:
         self.extra_responses = extra_responses or {}
         self.response_override = response_override
         self.request_body = request_body
+        self.parameters = parameters
 
 
 OPENAPI_PATHS: List[PathSpec] = [
@@ -201,6 +204,24 @@ OPENAPI_PATHS: List[PathSpec] = [
         "standards",
         tags=["Standards"],
         summary="List standards",
+        description=(
+            "For a logged-in user with a saved resource selection (and the "
+            "MyOpenCRE feature enabled), the list is restricted to that selection "
+            "(OpenCRE is always included). Pass all=true to bypass the filter and "
+            "return every standard."
+        ),
+        parameters=[
+            {
+                "name": "all",
+                "in": "query",
+                "required": False,
+                "schema": {"type": "boolean"},
+                "description": (
+                    "When true, return all standards even if the user has a saved "
+                    "selection."
+                ),
+            }
+        ],
         not_found=False,
         response_override={
             "200": {
@@ -493,6 +514,10 @@ def _operation_from_path(
         query_params = _marshmallow_query_parameters(path_spec.query_schema)
         parameters.extend(
             [param for param in query_params if param["name"] not in path_names]
+        )
+    if path_spec.parameters:
+        parameters.extend(
+            [param for param in path_spec.parameters if param["name"] not in path_names]
         )
     if parameters:
         operation["parameters"] = parameters

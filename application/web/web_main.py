@@ -542,6 +542,7 @@ def standards() -> Any:
     standards = list(database.standards())
     if OPENCRE_STANDARD_NAME not in standards:
         standards.append(OPENCRE_STANDARD_NAME)
+    standards = apply_user_resource_filter(database, standards)
     return standards
 
 
@@ -936,6 +937,29 @@ def _resolve_current_user(database):
             display_name=session.get("name"),
         )
     return user
+
+
+def apply_user_resource_filter(database, names):
+    """Restrict ``names`` to the current user's saved resource selection.
+
+    No-op (returns ``names`` unchanged) unless login AND MyOpenCRE are enabled, a
+    user is resolved, and that user has a non-empty selection — same discipline
+    as the resource-selection API. ``?all=true`` bypasses the filter for a single
+    request. ``OPENCRE_STANDARD_NAME`` is always kept (it is the core graph and is
+    already special-cased). Part of #586.
+    """
+    if request.args.get("all") == "true":
+        return names
+    if not (is_login_enabled() and is_myopencre_enabled()):
+        return names
+    user = _resolve_current_user(database)
+    if user is None:
+        return names
+    selection = database.get_user_resource_selection(user.id)
+    if not selection:
+        return names
+    keep = set(selection) | {OPENCRE_STANDARD_NAME}
+    return [name for name in names if name in keep]
 
 
 def admin_imports_enabled_required(f):

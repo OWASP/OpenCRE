@@ -415,6 +415,17 @@ paths:
       tags:
       - Standards
       summary: List standards
+      description: For a logged-in user with a saved resource selection (and the MyOpenCRE
+        feature enabled), the list is restricted to that selection (OpenCRE is always
+        included). Pass all=true to bypass the filter and return every standard.
+      parameters:
+      - name: all
+        in: query
+        required: false
+        schema:
+          type: boolean
+        description: When true, return all standards even if the user has a saved
+          selection.
       responses:
         '200':
           description: Standards retrieved
