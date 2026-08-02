@@ -1,13 +1,14 @@
 cres/
 .devcontainer/
-# Exclude docs bulk (RFCs, runbooks, roadmap) but keep runtime assets
-# served by Flask: GET /docs/faq.md and GET /rest/v1/openapi.yaml.
-# Note: `docs/` would block re-includes; use `docs/*` + negations instead.
-docs/*
-!docs/faq.md
-!docs/api/
-docs/api/*
-!docs/api/openapi.yaml
+# Heroku slugignore does not support gitignore-style ! negations.
+# Exclude heavy docs trees only; keep docs/faq.md and docs/api/openapi.yaml
+# for GET /docs/faq.md and GET /rest/v1/openapi.yaml on prod.
+docs/designs/
+docs/rfc/
+docs/roadmap/
+docs/runbooks/
+docs/gsoc_2026_module_b/
+docs/pull-model-compliance/
 application/tests
 application/frontend/src/test/basic-e2e.test.ts
 .github
