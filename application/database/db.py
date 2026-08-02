@@ -8,6 +8,7 @@ import re
 import time
 import yaml
 
+from datetime import datetime, timezone
 from pprint import pprint
 
 from collections import Counter, defaultdict
@@ -300,6 +301,179 @@ class UserResourceSelection(BaseModel):  # type: ignore
     )
 
 
+class ArtifactIngestEvent(BaseModel):  # type: ignore
+    """Tracks one harvested artifact persisted per import run."""
+
+    __tablename__ = "artifact_ingest_event"
+    id = sqla.Column(sqla.String, primary_key=True, default=generate_uuid)
+    run_id = sqla.Column(
+        sqla.String,
+        sqla.ForeignKey("import_run.id", onupdate="CASCADE", ondelete="CASCADE"),
+        nullable=False,
+    )
+    artifact_id = sqla.Column(sqla.String, nullable=False)
+    harvest_mode = sqla.Column(sqla.String, nullable=False)
+    event_type = sqla.Column(sqla.String, nullable=False)
+    source_json = sqla.Column(sqla.Text, nullable=False)
+    locator_json = sqla.Column(sqla.Text, nullable=False)
+    artifact_json = sqla.Column(sqla.Text, nullable=False)
+    harvest_json = sqla.Column(sqla.Text, nullable=False)
+    observed_at = sqla.Column(sqla.DateTime, nullable=False)
+    created_at = sqla.Column(sqla.DateTime, nullable=False)
+
+    __table_args__ = (
+        sqla.UniqueConstraint(
+            run_id,
+            artifact_id,
+            name="uq_artifact_ingest_event_run_artifact",
+        ),
+    )
+
+
+class IngestChunk(BaseModel):  # type: ignore
+    """Tracks every chunk belonging to an artifact ingest event."""
+
+    __tablename__ = "ingest_chunk"
+    id = sqla.Column(sqla.String, primary_key=True, default=generate_uuid)
+    artifact_event_id = sqla.Column(
+        sqla.String,
+        sqla.ForeignKey(
+            "artifact_ingest_event.id",
+            onupdate="CASCADE",
+            ondelete="CASCADE",
+        ),
+        nullable=False,
+    )
+    chunk_id = sqla.Column(sqla.String, nullable=False)
+    text = sqla.Column(sqla.Text, nullable=False)
+    char_count = sqla.Column(sqla.Integer, nullable=False)
+    span_json = sqla.Column(sqla.Text, nullable=False)
+    delta_json = sqla.Column(sqla.Text, nullable=True)
+    created_at = sqla.Column(sqla.DateTime, nullable=False)
+
+    __table_args__ = (
+        sqla.UniqueConstraint(
+            artifact_event_id,
+            chunk_id,
+            name="uq_ingest_chunk_artifact_chunk",
+        ),
+    )
+
+
+class HarvesterCheckpoint(BaseModel):  # type: ignore
+    __tablename__ = "harvester_checkpoint"
+    repository_id = sqla.Column(sqla.String, primary_key=True)
+    provider = sqla.Column(sqla.String, nullable=False)
+    owner = sqla.Column(sqla.String, nullable=False)
+    repository = sqla.Column(sqla.String, nullable=False)
+    branch = sqla.Column(sqla.String, nullable=False)
+    last_processed_commit = sqla.Column(sqla.String, nullable=True)
+    created_at = sqla.Column(
+        sqla.DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+    )
+    updated_at = sqla.Column(
+        sqla.DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+    )
+    __table_args__ = (
+        sqla.UniqueConstraint(
+            "provider",
+            "owner",
+            "repository",
+            "branch",
+            name="uq_harvester_checkpoint_canonical_source",
+        ),
+    )
+
+
+def _serialize_json_value(value: Any) -> str:
+    return flask_json.dumps(value)
+
+
+def _normalize_utc_datetime(value: Any) -> Any:
+    from datetime import datetime, timezone
+
+    if isinstance(value, datetime):
+        if value.tzinfo is None:
+            return value
+        return value.astimezone(timezone.utc)
+    return value
+
+
+# --- Module B: Noise/Relevance Filter (harvest in -> knowledge queue out) ---
+
+
+class HarvestInput(BaseModel):  # type: ignore
+    """Module A's harvested chunks, staged for Module B to classify.
+
+    Module A writes one row per chunk (the full Module A v0.3 ChangeRecord in
+    `payload`). The orchestrator triggers Module B, which reads the rows for a
+    given `pipeline_run_id`, classifies them, and marks each `processed`.
+    Contract: docs/gsoc_2026_module_b/orchestrator_integration_design.md.
+    """
+
+    __tablename__ = "harvest_input"
+    id = sqla.Column(sqla.String, primary_key=True, default=generate_uuid)
+    pipeline_run_id = sqla.Column(sqla.String, nullable=False, index=True)
+    status = sqla.Column(
+        sqla.String, nullable=False, default="pending"
+    )  # pending | processed | error
+    # A's ChangeRecord (contract v0.3). JSONB on Postgres, JSON on SQLite
+    # (dev/CI/tests); Module B parses it with schemas.ChangeRecord directly.
+    payload = sqla.Column(sqla.JSON().with_variant(JSONB, "postgresql"), nullable=False)
+    created_at = sqla.Column(
+        sqla.DateTime, nullable=False, server_default=sqla.func.now()
+    )
+    __table_args__ = (
+        sqla.Index("ix_harvest_input_run_status", "pipeline_run_id", "status"),
+    )
+
+
+class KnowledgeQueueItem(BaseModel):  # type: ignore
+    """Module B's output queue: security-knowledge chunks for Module C.
+
+    Module B inserts KNOWLEDGE and UNCERTAIN verdicts (NOISE is dropped),
+    deduped on `content_hash`. Module C reads unconsumed rows and sets
+    `consumed_at`. Contract: docs/gsoc_2026_module_b/module_c_contract.md (v0.2).
+    """
+
+    __tablename__ = "knowledge_queue"
+    id = sqla.Column(sqla.String, primary_key=True, default=generate_uuid)
+    content_hash = sqla.Column(sqla.String, nullable=False)  # B-computed dedup key
+    # provenance / traceability (Module A v0.3 record)
+    chunk_id = sqla.Column(sqla.String, nullable=False)
+    artifact_id = sqla.Column(sqla.String, nullable=False)
+    pipeline_run_id = sqla.Column(sqla.String, nullable=False)
+    schema_version = sqla.Column(sqla.String, nullable=False)
+    source_type = sqla.Column(sqla.String, nullable=False)  # github | rss
+    source_repo = sqla.Column(sqla.String, nullable=True)
+    source_commit_sha = sqla.Column(sqla.String, nullable=True)
+    source_committed_at = sqla.Column(sqla.String, nullable=True)  # ISO-8601, unparsed
+    feed_url = sqla.Column(sqla.String, nullable=True)
+    post_guid = sqla.Column(sqla.String, nullable=True)
+    locator_kind = sqla.Column(sqla.String, nullable=False)
+    locator_path = sqla.Column(sqla.String, nullable=False)
+    span_index = sqla.Column(sqla.Integer, nullable=False)
+    span_total = sqla.Column(sqla.Integer, nullable=False)
+    span_heading_path = sqla.Column(sqla.Text, nullable=True)  # JSON-encoded list[str]
+    # payload + B's verdict
+    text = sqla.Column(sqla.Text, nullable=False)
+    llm_label = sqla.Column(sqla.String, nullable=False)  # KNOWLEDGE | UNCERTAIN
+    confidence = sqla.Column(sqla.Float, nullable=False)
+    llm_reasoning = sqla.Column(sqla.Text, nullable=True)
+    created_at = sqla.Column(
+        sqla.DateTime, nullable=False, server_default=sqla.func.now()
+    )
+    consumed_at = sqla.Column(sqla.DateTime, nullable=True)
+    __table_args__ = (
+        sqla.Index("ix_knowledge_queue_unconsumed", "consumed_at"),
+        sqla.UniqueConstraint("content_hash", name="uq_content_hash"),
+    )
+
+
 def create_import_run(source: str, version: Optional[str] = None) -> ImportRun:
     """Create and persist an import run record. Returns the new ImportRun."""
     from datetime import datetime, timezone
@@ -345,6 +519,68 @@ def get_previous_import_run(source: str, current_run_id: str) -> Optional[Import
         .order_by(ImportRun.created_at.desc(), ImportRun.id.desc())
         .first()
     )
+
+
+def create_artifact_ingest_event(
+    *,
+    run_id: str,
+    artifact_id: str,
+    harvest_mode: str,
+    event_type: str,
+    source_json: Any,
+    locator_json: Any,
+    artifact_json: Any,
+    harvest_json: Any,
+    observed_at: Any,
+) -> ArtifactIngestEvent:
+    from datetime import datetime, timezone
+
+    observed_at = _normalize_utc_datetime(observed_at)
+
+    event = ArtifactIngestEvent(
+        id=generate_uuid(),
+        run_id=run_id,
+        artifact_id=artifact_id,
+        harvest_mode=harvest_mode,
+        event_type=event_type,
+        source_json=_serialize_json_value(source_json),
+        locator_json=_serialize_json_value(locator_json),
+        artifact_json=_serialize_json_value(artifact_json),
+        harvest_json=_serialize_json_value(harvest_json),
+        observed_at=observed_at,
+        created_at=_normalize_utc_datetime(datetime.now(timezone.utc)),
+    )
+    sqla.session.add(event)
+    sqla.session.commit()
+    return event
+
+
+def create_ingest_chunk(
+    *,
+    artifact_event_id: str,
+    chunk_id: str,
+    text: str,
+    char_count: int,
+    span_json: Any,
+    delta_json: Optional[Any] = None,
+) -> IngestChunk:
+    from datetime import datetime, timezone
+
+    chunk = IngestChunk(
+        id=generate_uuid(),
+        artifact_event_id=artifact_event_id,
+        chunk_id=chunk_id,
+        text=text,
+        char_count=char_count,
+        span_json=_serialize_json_value(span_json),
+        delta_json=(
+            _serialize_json_value(delta_json) if delta_json is not None else None
+        ),
+        created_at=_normalize_utc_datetime(datetime.now(timezone.utc)),
+    )
+    sqla.session.add(chunk)
+    sqla.session.commit()
+    return chunk
 
 
 def persist_standard_snapshot(

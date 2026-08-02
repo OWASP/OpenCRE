@@ -58,6 +58,7 @@ class PathSpec:
         "not_found",
         "extra_responses",
         "response_override",
+        "request_body",
     )
 
     def __init__(
@@ -74,6 +75,7 @@ class PathSpec:
         not_found: bool = True,
         extra_responses: Optional[Dict[str, Any]] = None,
         response_override: Optional[Dict[str, Any]] = None,
+        request_body: Optional[Dict[str, Any]] = None,
     ) -> None:
         self.path = path
         self.method = method.lower()
@@ -86,6 +88,7 @@ class PathSpec:
         self.not_found = not_found
         self.extra_responses = extra_responses or {}
         self.response_override = response_override
+        self.request_body = request_body
 
 
 OPENAPI_PATHS: List[PathSpec] = [
@@ -301,6 +304,107 @@ OPENAPI_PATHS: List[PathSpec] = [
         response_schema=schemas.ConfigResponseSchema,
         not_found=False,
     ),
+    PathSpec(
+        "/rest/v1/user/resources",
+        "get_user_resources",
+        tags=["User"],
+        summary="Get the current user's selected standards",
+        description=(
+            "Requires login (CRE_ENABLE_LOGIN) and the MyOpenCRE feature "
+            "(CRE_ENABLE_MYOPENCRE). When either flag is disabled the endpoint "
+            "does not authenticate and returns an empty selection. When both are "
+            "enabled, anonymous requests receive 401."
+        ),
+        not_found=False,
+        extra_responses={
+            "401": {
+                "description": (
+                    "Not authenticated (both feature flags enabled and no active session)"
+                )
+            }
+        },
+        response_override={
+            "200": {
+                "description": "The user's selected standards",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "required": ["selected"],
+                            "properties": {
+                                "selected": {
+                                    "type": "array",
+                                    "items": {"type": "string"},
+                                }
+                            },
+                        }
+                    }
+                },
+            }
+        },
+    ),
+    PathSpec(
+        "/rest/v1/user/resources",
+        "put_user_resources",
+        method="put",
+        tags=["User"],
+        summary="Replace the current user's selected standards",
+        description=(
+            "Requires login (CRE_ENABLE_LOGIN) and the MyOpenCRE feature "
+            "(CRE_ENABLE_MYOPENCRE). When either flag is disabled the request is a "
+            "no-op and returns an empty selection. When both are enabled, anonymous "
+            "requests receive 401."
+        ),
+        not_found=False,
+        extra_responses={
+            "400": {"description": "Invalid selection body"},
+            "401": {
+                "description": (
+                    "Not authenticated (both feature flags enabled and no active session)"
+                )
+            },
+        },
+        request_body={
+            "required": True,
+            "content": {
+                "application/json": {
+                    "schema": {
+                        "type": "object",
+                        "required": ["selected"],
+                        "properties": {
+                            "selected": {
+                                "type": "array",
+                                "items": {"type": "string", "minLength": 1},
+                                "description": (
+                                    "Standard names to select. Non-empty strings; "
+                                    "values are trimmed and deduplicated."
+                                ),
+                            }
+                        },
+                    }
+                }
+            },
+        },
+        response_override={
+            "200": {
+                "description": "The stored selection",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "required": ["selected"],
+                            "properties": {
+                                "selected": {
+                                    "type": "array",
+                                    "items": {"type": "string"},
+                                }
+                            },
+                        }
+                    }
+                },
+            }
+        },
+    ),
 ]
 
 
@@ -392,6 +496,9 @@ def _operation_from_path(
         )
     if parameters:
         operation["parameters"] = parameters
+
+    if path_spec.request_body is not None:
+        operation["requestBody"] = path_spec.request_body
 
     if path_spec.response_override is not None:
         responses = dict(path_spec.response_override)

@@ -68,11 +68,16 @@ Install dependencies:
 make install
 ```
 
-Download the latest CRE graph from upstream by running:
+Create the local schema and download the latest CRE graph from upstream:
 
 ```bash
+make migrate-upgrade
 make upstream-sync
 ```
+
+For contributors, this is the supported local data bootstrap path. You do
+**not** need access to the internal OpenCRE Google Sheet to work on the
+project.
 
 You can precompute local gap-analysis cache after imports with:
 
@@ -109,16 +114,33 @@ Notes:
 - `--csv` is required when using `--export`.
 - This mode exports report data from the OpenCRE API and does not mutate the local DB.
 
-To download a remote CRE spreadsheet locally you can run:
-
-```bash
-python cre.py --review --from_spreadsheet <google sheets url>
-```
-
-To add a remote spreadsheet to your local database you can run:
+Maintainer-only: if you need to add a remote spreadsheet to your local
+database, you can run:
 
 ```bash
 python cre.py --add --from_spreadsheet <google sheets url>
+```
+
+Those spreadsheet commands are not required for ordinary contribution and local
+development. If you want to import your own mappings locally, use MyOpenCRE or
+the CSV import endpoint with imports enabled:
+
+```bash
+export CRE_ALLOW_IMPORT=true
+make start-containers
+```
+
+Then use:
+
+- `GET /rest/v1/cre_csv` to download a template
+- `POST /rest/v1/cre_csv_import` to upload your CSV after starting the local API
+- send the multipart file field as `cre_csv`
+
+Example, once `make dev-flask` is running:
+
+```bash
+curl -X POST http://localhost:5000/rest/v1/cre_csv_import \
+  -F cre_csv=@my_mappings.csv
 ```
 
 To run the web application for development you can run:
@@ -239,8 +261,12 @@ xcode-select --install
 Sync upstream CRE data (requires internet access):
 
 ```bash
+make migrate-upgrade
 make upstream-sync
 ```
+
+You do not need Google Sheet access for this workflow. `make upstream-sync`
+pulls the public OpenCRE graph into your local database.
 
 Then start the local server:
 
