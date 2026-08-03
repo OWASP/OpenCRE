@@ -1,0 +1,21 @@
+repositories:
+  - id: invalid-strategy
+    type: github
+    enabled: true
+
+    owner: OWASP
+    repo: ASVS
+    branch: master
+
+    paths:
+      include:
+        - "docs/**/*.md"
+
+    chunking:
+      strategy: invalid_strategy
+      max_tokens: 1200
+      overlap_tokens: 100
+
+    polling:
+      mode: incremental
+      interval_minutes: 60
