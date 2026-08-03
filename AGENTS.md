@@ -58,6 +58,7 @@ make sync-gap-analysis-table-local      # upsert material rows sqlite → local 
 ```bash
 make verify-ga-complete-prod    # scripts/verify_ga_completeness.py
 make monitor-ga-health-prod     # scripts/monitor_ga_health.py (503 / empty result alerts)
+make monitor-chatbot-health-prod # scripts/monitor_chatbot_health.py (SPA + /completion 401)
 make verify-ga-parity-local     # scripts/verify_ga_postgres_neo_parity.py
 ```
 
@@ -91,13 +92,14 @@ Schedule a **Cursor Automation** (not GitHub Actions) to run weekly — prod is 
 **Agent prompt (paste into Automations editor):**
 
 ```
-Weekly OpenCRE prod GA and data completeness for opencreorg.
+Weekly OpenCRE prod GA, chatbot, and data completeness for opencreorg.
 
 1. python3 scripts/monitor_ga_health.py --base-url https://opencre.org --output-json tmp/prod-ga-health.json
 2. python3 scripts/verify_ga_completeness.py --base-url https://opencre.org --output-json tmp/prod-ga-completeness.json
-3. Confirm /rest/v1/standards and /rest/v1/ga_standards return non-empty lists.
-4. If incomplete_pairs > 0 or non-zero exit: list failing pairs/buckets; recommend AGENTS.md Operational scripts (local backfill + scripts/sync_gap_analysis_table.py). Do not compute GA on Heroku or run destructive prod DB ops without explicit approval.
-5. If all pass: report complete/total pairs and standards counts.
+3. python3 scripts/monitor_chatbot_health.py --base-url https://opencre.org --output-json tmp/prod-chatbot-health.json
+4. Confirm /rest/v1/standards and /rest/v1/ga_standards return non-empty lists.
+5. If incomplete_pairs > 0, chatbot checks fail, or non-zero exit: list failing pairs/buckets/checks; recommend AGENTS.md Operational scripts (local backfill + scripts/sync_gap_analysis_table.py). Do not compute GA on Heroku, do not send authenticated chatbot prompts, and do not run destructive prod DB ops without explicit approval.
+6. If all pass: report complete/total pairs, standards counts, and chatbot check results.
 ```
 
 Create via **Cursor → Automations → New** (Agents Window). Do not hand-roll docker/GA setup in the automation prompt.

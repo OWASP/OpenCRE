@@ -1,6 +1,6 @@
 import './chatbot.scss';
 
-import DOMPurify, { sanitize } from 'dompurify';
+import DOMPurify from 'dompurify';
 import { marked } from 'marked';
 import React, { useEffect, useRef, useState } from 'react';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -10,6 +10,12 @@ import { Grid } from 'semantic-ui-react';
 
 import { useEnvironment } from '../../hooks';
 import { Document } from '../../types';
+
+/** Render chatbot markdown safely for dangerouslySetInnerHTML. */
+export function renderChatMarkdown(markdown: string): string {
+  const parsed = marked.parse(markdown, { async: false });
+  return DOMPurify.sanitize(String(parsed), { USE_PROFILES: { html: true } });
+}
 
 export const Chatbot = () => {
   type chatMessage = {
@@ -113,7 +119,7 @@ export const Chatbot = () => {
           <p
             key={i}
             dangerouslySetInnerHTML={{
-              __html: sanitize(marked(txt), { USE_PROFILES: { html: true } }),
+              __html: renderChatMarkdown(txt),
             }}
           />
         );
