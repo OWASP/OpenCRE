@@ -8,27 +8,55 @@ import SwaggerUI from 'swagger-ui-react';
 import { MarkdownFromRepo } from '../../components/MarkdownFromRepo/MarkdownFromRepo';
 import { useEnvironment } from '../../hooks';
 
+const SECTIONS: ReadonlyArray<{ id: string; label: string }> = [
+  { id: 'getting-started', label: 'Getting started' },
+  { id: 'api-reference', label: 'API reference' },
+  { id: 'faq', label: 'FAQ' },
+  { id: 'resources', label: 'Resources' },
+];
+
+const scrollToSection = (id: string) => {
+  const el = document.getElementById(id);
+  if (!el) return;
+  // body is overflow:hidden; #mount is the real scroll container.
+  el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+};
+
 const scrollToHash = () => {
   const hash = window.location.hash.replace('#', '');
   if (!hash) return;
-  const el = document.getElementById(hash);
-  if (el) {
-    el.scrollIntoView({ behavior: 'smooth' });
-  }
+  scrollToSection(hash);
 };
 
 export const Docs = () => {
   const { apiUrl } = useEnvironment();
 
   useEffect(() => {
-    window.scrollTo(0, 0);
-    scrollToHash();
+    const mount = document.getElementById('mount');
+    if (mount && !window.location.hash) {
+      mount.scrollTop = 0;
+    }
+    // Wait a tick so section nodes are laid out (Swagger UI mounts async below).
+    const timer = window.setTimeout(scrollToHash, 0);
+
+    // pushState/replaceState hash updates do not fire hashchange; popstate covers
+    // back/forward. Keep hashchange for plain fragment navigations.
+    window.addEventListener('hashchange', scrollToHash);
+    window.addEventListener('popstate', scrollToHash);
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener('hashchange', scrollToHash);
+      window.removeEventListener('popstate', scrollToHash);
+    };
   }, []);
 
-  useEffect(() => {
-    window.addEventListener('hashchange', scrollToHash);
-    return () => window.removeEventListener('hashchange', scrollToHash);
-  }, []);
+  const handleNavClick = (event: React.MouseEvent<HTMLAnchorElement>, id: string) => {
+    event.preventDefault();
+    if (window.location.hash !== `#${id}`) {
+      window.history.pushState(null, '', `#${id}`);
+    }
+    scrollToSection(id);
+  };
 
   return (
     <div className="docs-page">
@@ -38,10 +66,11 @@ export const Docs = () => {
           Getting started with OpenCRE, the public REST API, and frequently asked questions.
         </p>
         <nav className="docs-page__nav" aria-label="Docs sections">
-          <a href="#getting-started">Getting started</a>
-          <a href="#api-reference">API reference</a>
-          <a href="#faq">FAQ</a>
-          <a href="#resources">Resources</a>
+          {SECTIONS.map(({ id, label }) => (
+            <a key={id} href={`#${id}`} onClick={(event) => handleNavClick(event, id)}>
+              {label}
+            </a>
+          ))}
         </nav>
       </header>
 
