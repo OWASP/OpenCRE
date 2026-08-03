@@ -223,7 +223,8 @@ def report_calibration(
     none, so they contribute the 0 class). Both slices are needed so the fit sees
     both outcomes (else it is degenerate). Confidence is the top-1 mass of
     softmax(logits / T); prints ECE at T=1 vs the fitted T and PASS/FAIL on
-    ECE < 0.10; returns 1 on a failed gate so a live run can fail.
+    ECE < 0.10. Returns 1 on a failed gate, and also on a degenerate calibration
+    set, so a live run can never exit 0 without the gate actually having run.
     """
     from application.utils.librarian.calibration.temperature import (
         TemperatureScaler,
@@ -244,11 +245,17 @@ def report_calibration(
         labels.append(1.0 if reranked[0].cre_id in expected else 0.0)
 
     if len(set(labels)) < 2:
+        # Degenerate calibration set: single-class labels, or nothing left after
+        # dropping rows with an empty shortlist. Either way the ECE gate did not
+        # run, so this must not exit 0 — a skipped gate reported as success lets
+        # CI greenwash a live run in which calibration was never checked.
         print(
             "calibration (C.3): need both outcomes in the selection (positive + "
-            "hard_negative slices) to fit temperature; skipped"
+            "hard_negative slices) to fit temperature; got "
+            f"{len(labels)} row(s) covering {len(set(labels))} class(es); "
+            "FAILED (gate did not run)"
         )
-        return 0
+        return 1
 
     scaler = fit_temperature(logit_sets, labels)
     conf_raw = [TemperatureScaler(1.0).confidence(s) for s in logit_sets]
