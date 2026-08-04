@@ -48,9 +48,25 @@ _SYNTHETIC_CREATED_AT = "2026-06-01T00:00:00Z"
 
 
 def load_dataset(path: str) -> List[GoldenDatasetRow]:
+    """Load and validate the golden set, rejecting duplicate row ids.
+
+    The live reports key their shared audits by ``row.id``, so two rows sharing an
+    id would collapse in that dict and one row would be scored against the other's
+    shortlist. The schema only requires an id to be non-empty, so uniqueness is
+    enforced here rather than discovered as a wrong number downstream.
+    """
     with open(path, encoding="utf-8") as fh:
         raw = json.load(fh)
-    return [GoldenDatasetRow.model_validate(row) for row in raw]
+    rows = [GoldenDatasetRow.model_validate(row) for row in raw]
+    duplicates = sorted(
+        row_id for row_id, n in Counter(r.id for r in rows).items() if n > 1
+    )
+    if duplicates:
+        raise ValueError(
+            f"golden dataset {path} has duplicate row ids: {', '.join(duplicates)}; "
+            "ids key the shared retrieval audits and must be unique"
+        )
+    return rows
 
 
 def queue_row_from_golden(row: GoldenDatasetRow) -> dict:
