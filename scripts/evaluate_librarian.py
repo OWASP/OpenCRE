@@ -19,7 +19,7 @@ import json
 import os
 import sys
 from collections import Counter
-from typing import List, Set
+from typing import Any, Dict, List, Set
 
 # Bootstrap project root onto sys.path so this runs as a standalone script.
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -104,9 +104,10 @@ def _build_live_pipeline(
     """Construct the live C.1 retriever + C.2 reranker against the OpenCRE DB.
 
     Live deps are imported lazily so the offline harness needs neither a DB, an
-    embedding model, nor the cross-encoder stack. Shared by every live report
-    (recall/top-1 and calibration) so the heavy hub + model load happens once
-    per report and the id-space translation stays in one place.
+    embedding model, nor the cross-encoder stack. Called once per run from
+    ``main`` and shared by every live report (recall/top-1 and calibration), so
+    the heavy hub + model load happens a single time and the id-space translation
+    stays in one place.
     """
     from application.cmd.cre_main import db_connect
     from application.defs import cre_defs
@@ -159,20 +160,39 @@ def _build_live_pipeline(
     return retriever, reranker
 
 
-def report_retrieval_recall(
+def live_audits(
     rows: List[GoldenDatasetRow],
     retriever,
     reranker,
+) -> Dict[str, Any]:
+    """Retrieve + rerank every row once, keyed by golden row id.
+
+    Every live report wants the same thing per row: the reranked shortlist. The
+    cross-encoder pass is the expensive step (one inference per candidate pair),
+    and the positive slice is read by more than one report, so computing the
+    audits here means a live run pays for exactly one retrieve + rerank per row
+    regardless of how many reports consume it.
+    """
+    return {
+        row.id: reranker.rerank(row.input.text, retriever.retrieve(row.input.text))
+        for row in rows
+    }
+
+
+def report_retrieval_recall(
+    rows: List[GoldenDatasetRow],
+    audits: Dict[str, Any],
     top_k: int,
     top_n_rerank: int,
 ) -> None:
     """Measure the live C.1 -> C.2 pipeline over the positive slice (v1).
 
-    Takes a prebuilt ``retriever``/``reranker`` (built once in ``main``) so the
-    DB, embedding model, and cross-encoder load once per run and are shared with
-    ``report_calibration``. Two metrics, both live — there is no honest offline
-    value: the candidate pool must be the real CRE-node vectors, and seeding it
-    from the golden text is exactly the leakage the hub firewall strips.
+    Reads the shared ``audits`` from ``live_audits`` (computed once in ``main``)
+    so the DB, embedding model, and cross-encoder load once per run and no row is
+    retrieved or reranked twice. Two metrics, both live — there is no honest
+    offline value: the candidate pool must be the real CRE-node vectors, and
+    seeding it from the golden text is exactly the leakage the hub firewall
+    strips.
 
     - retrieval recall@k (C.1): does the expected CRE id make it into the top-K
       shortlist the reranker will see? A miss here is unrecoverable downstream.
@@ -180,14 +200,19 @@ def report_retrieval_recall(
       the shortlist, is the #1 candidate an expected CRE? This is the first
       end-to-end accuracy number for the search path (W4 target >= 0.80).
     """
-    positives = [r for r in rows if r.slice.value == "positive" and r.expected.cre_ids]
+    # Only rows that were actually audited count toward the denominator, so the
+    # printed fractions never silently divide by rows no report ever scored.
+    positives = [
+        r
+        for r in rows
+        if r.slice.value == "positive" and r.expected.cre_ids and r.id in audits
+    ]
     if not positives:
         print("retrieval recall: no positive rows with expected ids in this selection")
         return
     any_hit = all_hit = top1_hit = 0
     for row in positives:
-        audit = retriever.retrieve(row.input.text)
-        audit = reranker.rerank(row.input.text, audit)
+        audit = audits[row.id]
         retrieved = {c.cre_id for c in audit.candidates}
         expected = set(row.expected.cre_ids or [])
         if expected & retrieved:
@@ -210,13 +235,13 @@ def report_retrieval_recall(
 
 def report_calibration(
     rows: List[GoldenDatasetRow],
-    retriever,
-    reranker,
+    audits: Dict[str, Any],
 ) -> int:
     """Fit temperature on the golden set and report the Week 5 ECE gate (< 0.10).
 
-    Takes the prebuilt ``retriever``/``reranker`` shared with
-    ``report_retrieval_recall`` (built once in ``main``). Builds a
+    Reads the shared ``audits`` from ``live_audits``, the same shortlists
+    ``report_retrieval_recall`` scores, so the positive slice is not retrieved and
+    reranked a second time just to calibrate on it. Builds a
     (shortlist, label) calibration set from the live C.1 -> C.2 pipeline over the
     positive + hard_negative slices: each row's *reranked shortlist* of logits,
     labelled 1 iff its top-1 candidate is an expected CRE (hard_negatives expect
@@ -236,7 +261,9 @@ def report_calibration(
     logit_sets: List[List[float]] = []
     labels: List[float] = []
     for row in cal_rows:
-        audit = reranker.rerank(row.input.text, retriever.retrieve(row.input.text))
+        audit = audits.get(row.id)
+        if audit is None:
+            continue
         reranked = [c for c in audit.reranked if c.score_rerank is not None]
         if not reranked:
             continue
@@ -355,9 +382,10 @@ def main(argv: List[str]) -> int:
             return 1
     calib_status = 0
     if args.use_live_embeddings:
-        # Build the live pipeline once (DB + embedding model + cross-encoder) and
-        # share it across both live reports, so the heavy load and per-row rerank
-        # happen a single time per run.
+        # Build the live pipeline once (DB + embedding model + cross-encoder), then
+        # retrieve + rerank each row once, so the heavy model load *and* the
+        # per-pair cross-encoder inference each happen a single time per run no
+        # matter how many reports read the shortlists.
         retriever, reranker = _build_live_pipeline(
             args.cache_file,
             args.top_k_retrieval,
@@ -365,10 +393,13 @@ def main(argv: List[str]) -> int:
             args.top_k_rerank,
             cfg.crossencoder_model,
         )
-        report_retrieval_recall(
-            rows, retriever, reranker, args.top_k_retrieval, args.top_k_rerank
+        audits = live_audits(
+            [r for r in rows if r.slice.value in ("positive", "hard_negative")],
+            retriever,
+            reranker,
         )
-        calib_status = report_calibration(rows, retriever, reranker)
+        report_retrieval_recall(rows, audits, args.top_k_retrieval, args.top_k_rerank)
+        calib_status = report_calibration(rows, audits)
     else:
         print(
             "semantic pipeline (C.1 retrieve + C.2 rerank) + calibration (C.3): "
