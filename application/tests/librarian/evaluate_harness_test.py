@@ -120,7 +120,7 @@ class LiveAuditsTest(unittest.TestCase):
 
         # Three reports read the same audits; none of them may re-run the pipeline.
         harness.report_retrieval_recall(rows, audits, 10, 5)
-        status, scaler = harness.report_calibration(rows, audits)
+        _status, scaler = harness.report_calibration(rows, audits)
         self.assertIsNotNone(scaler)
         harness.report_decision_accuracy(rows, audits, scaler, 0.80)
         self.assertEqual(pipe.retrieve_calls, 2)
