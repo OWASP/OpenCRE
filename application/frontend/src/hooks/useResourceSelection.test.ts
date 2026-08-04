@@ -69,6 +69,16 @@ describe('useResourceSelection', () => {
     expect(getByTestId('error').textContent).toBe('Could not load your saved standards.');
   });
 
+  it('flags loadError=true on a 200 with a malformed body (no selected[])', async () => {
+    (global as any).fetch = jest.fn().mockResolvedValueOnce(jsonResponse({ nope: true }, 200));
+
+    const { getByTestId } = render(React.createElement(Probe));
+
+    await waitFor(() => expect(getByTestId('loading').textContent).toBe('false'));
+    expect(captured.loadError).toBe(true);
+    expect(getByTestId('selected').textContent).toBe(''); // persisted data untouched
+  });
+
   it('save() PUTs the selection with the right headers/body and reflects the stored list', async () => {
     const fetchMock = jest
       .fn()
