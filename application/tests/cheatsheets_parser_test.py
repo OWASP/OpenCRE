@@ -64,20 +64,21 @@ class TestCheatsheetsParser(unittest.TestCase):
             ],
         )
         self.maxDiff = None
-        for name, nodes in entries.results.items():
-            self.assertEqual(name, parser.name)
-            sections = {node.section for node in nodes}
-            self.assertIn("Secrets Management Cheat Sheet", sections)
-            secret_entry = next(
-                (
-                    node
-                    for node in nodes
-                    if node.section == "Secrets Management Cheat Sheet"
-                ),
-                None,
-            )
-            self.assertIsNotNone(secret_entry)
-            self.assertEqual(expected.todict(), secret_entry.todict())
+        # Ensure the parser name exists in results before inspecting
+        self.assertIn(parser.name, entries.results)
+        nodes = entries.results[parser.name]
+        sections = {node.section for node in nodes}
+        self.assertIn("Secrets Management Cheat Sheet", sections)
+        secret_entry = next(
+            (
+                node
+                for node in nodes
+                if node.section == "Secrets Management Cheat Sheet"
+            ),
+            None,
+        )
+        self.assertIsNotNone(secret_entry)
+        self.assertEqual(expected.todict(), secret_entry.todict())
 
     def test_register_supplemental_cheatsheets(self) -> None:
         for cre_id, name in [
@@ -123,6 +124,7 @@ class TestCheatsheetsParser(unittest.TestCase):
         entries = cheatsheets_parser.Cheatsheets().parse(
             cache=self.collection, ph=PromptHandler(database=self.collection)
         )
+        mock_clone.assert_called_once()
 
         rest = next(
             node
