@@ -222,6 +222,12 @@ monitor-ga-health-prod:
 		--base-url "https://opencre.org" \
 		--output-json "$(CURDIR)/tmp/prod-ga-health.json"
 
+monitor-chatbot-health-prod:
+	@[ -d "./.venv" ] && . ./.venv/bin/activate || ([ -d "./venv" ] && . ./venv/bin/activate); \
+	python scripts/monitor_chatbot_health.py \
+		--base-url "https://opencre.org" \
+		--output-json "$(CURDIR)/tmp/prod-chatbot-health.json"
+
 verify-ga-parity-local:
 	@[ -d "./.venv" ] && . ./.venv/bin/activate || ([ -d "./venv" ] && . ./venv/bin/activate); \
 	export CRE_CACHE_FILE="$${CRE_CACHE_FILE:-postgresql://cre:password@127.0.0.1:5432/cre}"; \
