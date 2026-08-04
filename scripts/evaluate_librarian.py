@@ -1,8 +1,8 @@
 #!/usr/bin/env python
-"""Module C regression harness — Week 2: C.0 deterministic input boundary.
+"""Module C regression harness — C.0 through C.4 over the golden set.
 
-On top of the W1 skeleton (golden dataset + scorer + TRACT hub-firewall),
-the harness now runs every golden row through the C.0 boundary:
+On top of the W1 skeleton (golden dataset + scorer + TRACT hub-firewall), every
+golden row runs through the C.0 boundary, and these two reports are offline:
 
 1. SectionValidator — each row is adapted to a synthetic knowledge_queue row
    and must validate into an internal ``Section``; the harness prints the
@@ -10,8 +10,19 @@ the harness now runs every golden row through the C.0 boundary:
 2. ExplicitLinkResolver — sections citing a CRE id resolve deterministically
    (no ML); the explicit slice is gated at 100% correctness.
 
-The semantic path (retriever W3, cross-encoder W4) is still stubbed: rows
-without an explicit reference yield no predictions.
+The semantic path needs ``--use_live_embeddings``, because there is no honest
+offline value: the candidate pool must be the real CRE-node vectors, and seeding
+it from golden text is the leakage the hub firewall exists to strip. Under that
+flag the run retrieves and reranks each row once (``live_audits``) and three
+reports share those shortlists:
+
+3. C.1 retrieval recall@k and C.2 rerank top-1 over the positive slice.
+4. C.3 temperature calibration — fits one ``T`` and gates on ECE < 0.10. This is
+   the only live report that sets the exit status: a failed *or* skipped gate
+   returns nonzero, so a live run cannot pass without calibration having run.
+5. C.4 decision accuracy — thresholds that same fitted ``T`` through ``decide()``.
+   Informational only, since the SafetyGuard flags are not wired until W8 and
+   tuning tau is the W7 experiment.
 """
 
 import argparse
@@ -124,9 +135,9 @@ def _build_live_pipeline(
 
     Live deps are imported lazily so the offline harness needs neither a DB, an
     embedding model, nor the cross-encoder stack. Called once per run from
-    ``main`` and shared by every live report (recall/top-1 and calibration), so
-    the heavy hub + model load happens a single time and the id-space translation
-    stays in one place.
+    ``main`` and shared by every live report (recall/top-1, the C.3 ECE gate, and
+    the C.4 decision accuracy), so the heavy hub + model load happens a single
+    time and the id-space translation stays in one place.
     """
     from application.cmd.cre_main import db_connect
     from application.defs import cre_defs
@@ -432,8 +443,10 @@ def main(argv: List[str]) -> int:
     parser.add_argument(
         "--use_live_embeddings",
         action="store_true",
-        help="connect to the OpenCRE DB + embedding model and measure the live "
-        "C.1 retrieval recall@k and C.2 rerank top-1 over the positive slice "
+        help="connect to the OpenCRE DB + embedding model and run every live "
+        "report: C.1 retrieval recall@k and C.2 rerank top-1 over the positive "
+        "slice, the C.3 ECE gate (which sets a nonzero exit status when it fails "
+        "or cannot run), and the informational C.4 decision accuracy "
         "(needs an LLM + populated DB)",
     )
     parser.add_argument(
@@ -533,10 +546,10 @@ def main(argv: List[str]) -> int:
             print("decision (C.4): skipped — calibration produced no fitted T")
     else:
         print(
-            "semantic pipeline (C.1 retrieve + C.2 rerank) + calibration (C.3): "
-            "wired; recall@k, rerank top-1, and the ECE gate need "
-            "--use_live_embeddings (no CRE vectors offline — seeding from golden "
-            "text would be leakage)"
+            "semantic pipeline (C.1 retrieve + C.2 rerank) + calibration (C.3) + "
+            "decision (C.4): wired; recall@k, rerank top-1, the ECE gate, and the "
+            "decision accuracy all need --use_live_embeddings (no CRE vectors "
+            "offline — seeding from golden text would be leakage)"
         )
     print(f"correct overall (semantic path still stubbed): {correct}/{len(rows)}")
     return calib_status
