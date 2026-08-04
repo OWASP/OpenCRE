@@ -120,14 +120,15 @@ class Cheatsheets(ParserInterface):
             for cre_id in entry.get("cre_ids", []):
                 cres = cache.get_CREs(external_id=cre_id)
                 for cre in cres:
+                    link = defs.Link(
+                        document=cre.shallow_copy(),
+                        ltype=defs.LinkTypes.AutomaticallyLinkedTo,
+                    )
                     try:
-                        cs.add_link(
-                            defs.Link(
-                                document=cre.shallow_copy(),
-                                ltype=defs.LinkTypes.AutomaticallyLinkedTo,
-                            )
-                        )
-                    except Exception as exc:
+                        cs.add_link(link)
+                    except (
+                        ValueError
+                    ) as exc:  # expected validation error (e.g., duplicate link)
                         self.logger.warning(
                             "Failed to add link for cre_id %s to cheatsheet %s: %s",
                             cre_id,
