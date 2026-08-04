@@ -26,33 +26,40 @@ export const useResourceSelection = (): ResourceSelectionState => {
 
   useEffect(() => {
     let active = true;
-    fetch(`${apiUrl}/user/resources`, { method: 'GET' })
-      .then((res) => {
-        if (res.status === 200) {
-          return res.json();
-        }
+
+    const load = async () => {
+      try {
+        const res = await fetch(`${apiUrl}/user/resources`, { method: 'GET' });
         if (res.status === 401) {
-          return null; // anonymous / feature not available — not an error
+          return; // anonymous / feature not available — not an error
         }
-        throw new Error(`Unexpected /user/resources status: ${res.status}`);
-      })
-      .then((data) => {
-        if (active && data && Array.isArray(data.selected)) {
+        if (res.status !== 200) {
+          throw new Error(`Unexpected /user/resources status: ${res.status}`);
+        }
+        const data = await res.json();
+        // Only accept a well-formed payload; a malformed 200 must not be treated
+        // as an (empty) selection that could later overwrite persisted data.
+        if (!data || !Array.isArray(data.selected)) {
+          throw new Error('Malformed /user/resources response: missing selected[]');
+        }
+        if (active) {
           setSelected(data.selected);
         }
-      })
-      .catch((err) => {
+      } catch (err) {
         if (active) {
           setError('Could not load your saved standards.');
           setLoadError(true);
         }
         console.error('useResourceSelection: could not load selection', err);
-      })
-      .finally(() => {
+      } finally {
         if (active) {
           setLoading(false);
         }
-      });
+      }
+    };
+
+    load();
+
     return () => {
       active = false;
     };
