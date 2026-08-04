@@ -114,7 +114,96 @@ class PipelineTest(unittest.TestCase):
         self.assertEqual(result.stats.total, 3)
         self.assertEqual(result.stats.linked, 2)
         self.assertEqual(result.stats.skipped, 1)
+        self.assertEqual(result.stats.errored, 0)
         self.assertEqual(len(result.envelopes), 2)
+
+
+class PipelineErrorContainmentTest(unittest.TestCase):
+    """A failing row must cost that row only, never the envelopes already built.
+
+    These stages are stubs today but become live DB / embedding / cross-encoder
+    calls in W8, so the containment is asserted at each seam that can raise.
+    """
+
+    def _run_with(self, failing_component, rows):
+        """Build a pipeline whose one named component raises on every call."""
+        parts = {
+            "retriever": _Retriever(),
+            "reranker": _Reranker(TOP),
+            "scaler": _Scaler(0.95),
+        }
+        parts[failing_component] = failing_component_stub(failing_component)
+        return LibrarianPipeline(
+            _Source(rows),
+            parts["retriever"],
+            parts["reranker"],
+            parts["scaler"],
+            threshold=0.8,
+            pipeline_run_id=RUN,
+        ).run(at=AT)
+
+    def test_retriever_failure_is_contained(self):
+        result = self._run_with("retriever", [_row()])
+        self.assertEqual(result.stats.errored, 1)
+        self.assertEqual(result.stats.total, 1)
+        self.assertEqual(result.envelopes, [])
+
+    def test_reranker_failure_is_contained(self):
+        result = self._run_with("reranker", [_row()])
+        self.assertEqual(result.stats.errored, 1)
+        self.assertEqual(result.envelopes, [])
+
+    def test_scaler_failure_is_contained(self):
+        result = self._run_with("scaler", [_row()])
+        self.assertEqual(result.stats.errored, 1)
+        self.assertEqual(result.envelopes, [])
+
+    def test_one_bad_row_does_not_discard_the_good_ones(self):
+        # The reranker fails only on the middle row's text.
+        class _FlakyReranker:
+            def rerank(self, text, audit):
+                if "boom" in text:
+                    raise RuntimeError("cross-encoder blew up on this pair")
+                return audit.model_copy(update={"reranked": list(TOP)})
+
+        rows = [_row(), _row(text="boom goes the model"), _row()]
+        result = LibrarianPipeline(
+            _Source(rows),
+            _Retriever(),
+            _FlakyReranker(),
+            _Scaler(0.95),
+            threshold=0.8,
+            pipeline_run_id=RUN,
+        ).run(at=AT)
+
+        self.assertEqual(result.stats.total, 3)
+        self.assertEqual(result.stats.errored, 1)
+        self.assertEqual(result.stats.linked, 2)
+        self.assertEqual(len(result.envelopes), 2)
+
+    def test_errored_is_counted_separately_from_skipped(self):
+        rows = [_row(label="UNCERTAIN"), _row()]
+        result = self._run_with("retriever", rows)
+        # The UNCERTAIN row is a clean boundary refusal; the other is a fault.
+        self.assertEqual(result.stats.skipped, 1)
+        self.assertEqual(result.stats.errored, 1)
+
+
+def failing_component_stub(kind):
+    """A stub whose single method always raises, for the given seam."""
+
+    class _Boom:
+        def retrieve(self, text):
+            raise RuntimeError("retriever down")
+
+        def rerank(self, text, audit):
+            raise RuntimeError("reranker down")
+
+        def confidence(self, logits):
+            raise RuntimeError("scaler down")
+
+    assert kind in ("retriever", "reranker", "scaler")
+    return _Boom()
 
 
 if __name__ == "__main__":
