@@ -31,7 +31,7 @@ confidence it thresholds on.
 """
 
 from dataclasses import dataclass
-from typing import Sequence
+from typing import List, Sequence, Tuple
 
 import numpy as np
 from scipy.optimize import minimize_scalar
@@ -60,12 +60,18 @@ class DegenerateLabelsError(CalibrationError):
     """
 
 
-def _softmax_top(logits: Sequence[float], temperature: float) -> float:
-    """Top-1 probability mass of ``softmax(logits / T)`` over one shortlist."""
+def _softmax_at(logits: Sequence[float], temperature: float) -> np.ndarray:
+    """``softmax(logits / T)`` over one shortlist.
+
+    The single place the empty-shortlist guard lives: ``TemperatureScaler``'s
+    ``probabilities``/``confidence`` and the free-``T`` NLL objective all route
+    their softmax through here, so the distribution is only defined once.
+    """
     z = np.asarray(list(logits), dtype=float)
     if z.size == 0:
         raise CalibrationError("cannot calibrate an empty candidate shortlist")
-    return float(softmax(z / temperature).max())
+    # scipy is untyped, so re-assert the array type for --strict.
+    return np.asarray(softmax(z / temperature), dtype=float)
 
 
 def _validate_temperature(temperature: float) -> None:
@@ -73,7 +79,9 @@ def _validate_temperature(temperature: float) -> None:
         raise CalibrationError(f"temperature must be finite and > 0, got {temperature}")
 
 
-def _paired(logit_sets: Sequence[Sequence[float]], labels: Sequence[float]):
+def _paired(
+    logit_sets: Sequence[Sequence[float]], labels: Sequence[float]
+) -> Tuple[List[Sequence[float]], np.ndarray]:
     """Validate matched (shortlist, label) inputs: non-empty and equal length."""
     sets = list(logit_sets)
     y = np.asarray(list(labels), dtype=float)
@@ -104,17 +112,16 @@ class TemperatureScaler:
 
     def probabilities(self, logits: Sequence[float]) -> np.ndarray:
         """The full ``softmax(logits / T)`` distribution over one shortlist."""
-        z = np.asarray(list(logits), dtype=float)
-        if z.size == 0:
-            raise CalibrationError("cannot calibrate an empty candidate shortlist")
-        return softmax(z / self.temperature)
+        return _softmax_at(logits, self.temperature)
 
     def confidence(self, logits: Sequence[float]) -> float:
         """P(the top candidate is correct) — the top-1 mass of the softmax.
 
-        This is the number the W6 decision engine thresholds on.
+        Derived from ``probabilities`` rather than recomputing the softmax, so
+        the two can never disagree. This is the number the W6 decision engine
+        thresholds on.
         """
-        return _softmax_top(logits, self.temperature)
+        return float(self.probabilities(logits).max())
 
 
 def negative_log_likelihood(
@@ -132,7 +139,7 @@ def negative_log_likelihood(
     _validate_temperature(temperature)
     sets, y = _paired(logit_sets, labels)
     p = np.clip(
-        np.array([_softmax_top(s, temperature) for s in sets]), _EPS, 1.0 - _EPS
+        np.array([_softmax_at(s, temperature).max() for s in sets]), _EPS, 1.0 - _EPS
     )
     return float(-np.sum(y * np.log(p) + (1.0 - y) * np.log(1.0 - p)))
 
@@ -141,7 +148,7 @@ def fit_temperature(
     logit_sets: Sequence[Sequence[float]],
     labels: Sequence[float],
     *,
-    bounds: tuple = (1e-2, 1e2),
+    bounds: Tuple[float, float] = (1e-2, 1e2),
 ) -> TemperatureScaler:
     """Fit ``T`` by minimising NLL over (shortlist, is-top1-correct) pairs.
 
@@ -160,8 +167,11 @@ def fit_temperature(
             "calibration set needs both correct and incorrect top-1s"
         )
 
+    # Hoisted out of the objective: the labels are re-validated on every NLL call,
+    # so convert once rather than per optimiser iteration.
+    y_list: List[float] = [float(v) for v in y.tolist()]
     result = minimize_scalar(
-        lambda t: negative_log_likelihood(sets, y, t),
+        lambda t: negative_log_likelihood(sets, y_list, t),
         bounds=bounds,
         method="bounded",
     )
