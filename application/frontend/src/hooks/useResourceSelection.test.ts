@@ -56,6 +56,17 @@ describe('useResourceSelection', () => {
     await waitFor(() => expect(getByTestId('loading').textContent).toBe('false'));
     expect(getByTestId('selected').textContent).toBe('');
     expect(getByTestId('error').textContent).toBe('');
+    expect(captured.loadError).toBe(false); // 401 is not a load failure
+  });
+
+  it('flags loadError=true when the initial load fails (non-401)', async () => {
+    (global as any).fetch = jest.fn().mockResolvedValueOnce(jsonResponse(null, 500));
+
+    const { getByTestId } = render(React.createElement(Probe));
+
+    await waitFor(() => expect(getByTestId('loading').textContent).toBe('false'));
+    expect(captured.loadError).toBe(true);
+    expect(getByTestId('error').textContent).toBe('Could not load your saved standards.');
   });
 
   it('save() PUTs the selection with the right headers/body and reflects the stored list', async () => {

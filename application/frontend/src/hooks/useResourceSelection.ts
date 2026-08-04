@@ -7,6 +7,10 @@ export type ResourceSelectionState = {
   loading: boolean;
   saving: boolean;
   error: string | null;
+  // True only when the INITIAL load genuinely failed (network / unexpected
+  // status) — NOT for the 401 anonymous case. When true the selection is
+  // unknown, so callers must not let an empty list overwrite persisted data.
+  loadError: boolean;
   save: (next: string[]) => Promise<string[] | null>;
 };
 
@@ -18,6 +22,7 @@ export const useResourceSelection = (): ResourceSelectionState => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -39,6 +44,7 @@ export const useResourceSelection = (): ResourceSelectionState => {
       .catch((err) => {
         if (active) {
           setError('Could not load your saved standards.');
+          setLoadError(true);
         }
         console.error('useResourceSelection: could not load selection', err);
       })
@@ -77,5 +83,5 @@ export const useResourceSelection = (): ResourceSelectionState => {
     }
   };
 
-  return { selected, loading, saving, error, save };
+  return { selected, loading, saving, error, loadError, save };
 };

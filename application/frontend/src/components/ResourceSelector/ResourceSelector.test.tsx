@@ -43,6 +43,7 @@ describe('ResourceSelector', () => {
       loading: false,
       saving: false,
       error: null,
+      loadError: false,
       save: jest.fn().mockResolvedValue(['ASVS']),
     });
     (global as any).fetch = standardsFetch(['ASVS', 'CWE', 'SAMM']);
@@ -77,6 +78,7 @@ describe('ResourceSelector', () => {
       loading: false,
       saving: false,
       error: null,
+      loadError: false,
       save: saveMock,
     });
     const { container, findByText, getByText } = render(<ResourceSelector />);
@@ -104,10 +106,26 @@ describe('ResourceSelector', () => {
       loading: false,
       saving: false,
       error: 'Could not save your standards. Please try again.',
+      loadError: false,
       save: jest.fn(),
     });
     const { findByText } = render(<ResourceSelector />);
     expect(await findByText(/could not save/i)).toBeTruthy();
+  });
+
+  it('blocks the picker (no Save) when the initial selection load failed', async () => {
+    // A failed load must not let an empty selection overwrite persisted data.
+    mockSel.mockReturnValue({
+      selected: [],
+      loading: false,
+      saving: false,
+      error: 'Could not load your saved standards.',
+      loadError: true,
+      save: jest.fn(),
+    });
+    const { findByText, queryByText } = render(<ResourceSelector />);
+    expect(await findByText(/could not load your saved standards/i)).toBeTruthy();
+    expect(queryByText('Save')).toBeNull();
   });
 
   it('renders a login prompt (not the checklist) when logged out', async () => {
@@ -120,6 +138,23 @@ describe('ResourceSelector', () => {
     });
     const { findByText, queryByText } = render(<ResourceSelector />);
     expect(await findByText(/log in/i)).toBeTruthy();
+    expect(queryByText('Save')).toBeNull();
+  });
+
+  it('shows an unavailable message (no picker) when logged out and login is disabled', async () => {
+    mockCaps.mockReturnValue({
+      capabilities: { myopencre: true, login: false },
+      loading: false,
+    });
+    mockUser.mockReturnValue({
+      user: null,
+      isLoggedIn: false,
+      loading: false,
+      login: jest.fn(),
+      logout: jest.fn(),
+    });
+    const { findByText, queryByText } = render(<ResourceSelector />);
+    expect(await findByText(/unavailable/i)).toBeTruthy();
     expect(queryByText('Save')).toBeNull();
   });
 
