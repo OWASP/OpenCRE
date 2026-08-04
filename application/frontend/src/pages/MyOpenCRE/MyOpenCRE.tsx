@@ -3,6 +3,7 @@ import './MyOpenCRE.scss';
 import React, { useRef, useState } from 'react';
 import { Button, Container, Form, Header, Message } from 'semantic-ui-react';
 
+import { ResourceSelector } from '../../components/ResourceSelector/ResourceSelector';
 import { useEnvironment } from '../../hooks';
 
 type RowValidationError = {
@@ -247,6 +248,11 @@ export const MyOpenCRE = () => {
         Start by downloading the CRE catalogue below, then map your standard's controls or sections to CRE IDs
         in the spreadsheet.
       </p>
+
+      <div className="myopencre-section myopencre-resources">
+        <Header as="h3">Your standards</Header>
+        <ResourceSelector />
+      </div>
 
       <div className="myopencre-section">
         <Button primary onClick={downloadCreCsv}>
