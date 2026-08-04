@@ -13,7 +13,7 @@ export const ResourceSelector = () => {
   const { apiUrl } = useEnvironment();
   const { capabilities } = useCapabilities();
   const { isLoggedIn, loading: userLoading, login } = useUser();
-  const { selected, loading: selectionLoading, saving, error, save } = useResourceSelection();
+  const { selected, loading: selectionLoading, saving, error, loadError, save } = useResourceSelection();
 
   const [standards, setStandards] = useState<string[]>([]);
   const [standardsLoading, setStandardsLoading] = useState(true);
@@ -77,19 +77,35 @@ export const ResourceSelector = () => {
     return null;
   }
 
-  // Logged-out: prompt to sign in rather than showing a blank/broken picker.
-  if (capabilities && capabilities.login && !userLoading && !isLoggedIn) {
-    return (
-      <Message info>
-        <Message.Header>Log in to choose your standards</Message.Header>
-        <p>Sign in to pick which standards appear in your OpenCRE view.</p>
-        <Button primary onClick={login} content="Login" />
-      </Message>
-    );
+  // Wait for capabilities and auth state to settle before deciding.
+  if (!capabilities || userLoading) {
+    return <Loader active inline="centered" content="Loading your standards…" />;
   }
 
-  if (!capabilities || userLoading || selectionLoading || standardsLoading) {
+  // Anonymous users can never edit a selection — cover EVERY logged-out case,
+  // not only when the login capability is available.
+  if (!isLoggedIn) {
+    if (capabilities.login) {
+      return (
+        <Message info>
+          <Message.Header>Log in to choose your standards</Message.Header>
+          <p>Sign in to pick which standards appear in your OpenCRE view.</p>
+          <Button primary onClick={login} content="Login" />
+        </Message>
+      );
+    }
+    return <Message info>Choosing your standards requires signing in, which is unavailable here.</Message>;
+  }
+
+  // Logged in: wait for the selection and the standards universe to load.
+  if (selectionLoading || standardsLoading) {
     return <Loader active inline="centered" content="Loading your standards…" />;
+  }
+
+  // If the initial selection load failed we don't know the user's real
+  // selection — block editing/Save so an empty list can't overwrite it.
+  if (loadError) {
+    return <Message negative>Could not load your saved standards. Please refresh and try again.</Message>;
   }
 
   if (standardsError) {
