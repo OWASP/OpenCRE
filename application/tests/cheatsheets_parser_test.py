@@ -90,9 +90,11 @@ class TestCheatsheetsParser(unittest.TestCase):
         entries = cheatsheets_parser.Cheatsheets().register_supplemental_cheatsheets(
             cache=self.collection
         )
-        rest = [
+        rest = next(
             entry for entry in entries if entry.section == "REST Security Cheat Sheet"
-        ][0]
+        )
+        for link in rest.links:
+            self.assertEqual(link.ltype, defs.LinkTypes.AutomaticallyLinkedTo)
         self.assertEqual(
             "https://cheatsheetseries.owasp.org/cheatsheets/REST_Security_Cheat_Sheet.html",
             rest.hyperlink,
@@ -122,11 +124,11 @@ class TestCheatsheetsParser(unittest.TestCase):
             cache=self.collection, ph=PromptHandler(database=self.collection)
         )
 
-        rest = [
+        rest = next(
             node
             for node in entries.results["OWASP Cheat Sheets"]
             if node.section == "REST Security Cheat Sheet"
-        ][0]
+        )
         self.assertEqual(
             "https://cheatsheetseries.owasp.org/cheatsheets/REST_Security_Cheat_Sheet.html",
             rest.hyperlink,
@@ -146,7 +148,9 @@ class TestCheatsheetsParser(unittest.TestCase):
             working_dir = ""
 
         repo = Repo()
-        loc = tempfile.mkdtemp()
+        temp_dir = tempfile.TemporaryDirectory()
+        self.addCleanup(temp_dir.cleanup)
+        loc = temp_dir.name
         os.mkdir(os.path.join(loc, "cheatsheets"))
         repo.working_dir = loc
         for cre_id, name in [
