@@ -39,8 +39,17 @@ def upgrade():
 
 
 def downgrade():
-    # Remove document_metadata from cre and node using SQLite batch pattern
+    # Remove document_metadata from cre and node only if they were added by this migration
+    # (i.e., they exist but we can't tell if they were pre-existing, but we can check existence)
+    # For safety, we drop only if the column exists; if it existed before, this migration
+    # would have skipped adding it, but we can't track that. So we drop unconditionally
+    # because it's unlikely the column existed before this migration.
+    # However, to be safe, we can use batch_alter_table only if the column exists.
     with op.batch_alter_table("cre") as batch_op:
-        batch_op.drop_column("document_metadata")
+        # If the column doesn't exist, drop_column will raise an error, so we must check.
+        # We'll re-use column_exists but note that it's defined above.
+        if column_exists("cre", "document_metadata"):
+            batch_op.drop_column("document_metadata")
     with op.batch_alter_table("node") as batch_op:
-        batch_op.drop_column("document_metadata")
+        if column_exists("node", "document_metadata"):
+            batch_op.drop_column("document_metadata")
