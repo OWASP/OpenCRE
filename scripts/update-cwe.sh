@@ -15,10 +15,8 @@ fi
 
 source "$VENV_DIR/bin/activate"
 
-if ! python -c "import pytest" >/dev/null 2>&1; then
-  echo "Installing Python development dependencies"
-  pip install -r "$ROOT_DIR/requirements-dev.txt"
-fi
+echo "Installing Python runtime dependencies"
+pip install -r "$ROOT_DIR/requirements.txt"
 
 if [[ -f "$CACHE_FILE" ]]; then
   cp "$CACHE_FILE" "$BACKUP_FILE"
@@ -29,5 +27,5 @@ export CRE_NO_NEO4J="${CRE_NO_NEO4J:-1}"
 export CRE_NO_GEN_EMBEDDINGS="${CRE_NO_GEN_EMBEDDINGS:-1}"
 
 echo "Importing latest MITRE CWE data into $CACHE_FILE"
-echo "CWE parser will import only allowed statuses and skip PROHIBITED entries"
+echo "CWE parser will skip entries marked PROHIBITED by either @Status attribute or Mapping_Notes -> Usage field, covering both weaknesses and categories."
 exec python "$ROOT_DIR/cre.py" --cwe_in --cache_file "$CACHE_FILE"
