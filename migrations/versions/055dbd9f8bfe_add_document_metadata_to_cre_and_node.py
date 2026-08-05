@@ -8,7 +8,6 @@ Create Date: 2026-08-06 00:13:49.191527
 
 from alembic import op
 import sqlalchemy as sa
-from sqlalchemy.engine.reflection import Inspector
 
 revision = '055dbd9f8bfe'
 down_revision = 'd4e5f6a7b8c9'   # or whatever the current head is
@@ -17,7 +16,7 @@ depends_on = None
 
 def column_exists(table, column):
     conn = op.get_bind()
-    inspector = Inspector.from_engine(conn)
+    inspector = sa.inspect(conn)
     columns = [c['name'] for c in inspector.get_columns(table)]
     return column in columns
 
@@ -37,7 +36,8 @@ def upgrade():
         print("Column document_metadata already exists in node, skipping.")
 
 def downgrade():
-    # Remove columns (optional, but we want a clean downgrade)
-    # Note: SQLite does not support DROP COLUMN directly, but you can use batch.
-    # For simplicity, we'll just raise an error or skip.
-    pass
+    # Remove document_metadata from cre and node using SQLite batch pattern
+    with op.batch_alter_table("cre") as batch_op:
+        batch_op.drop_column("document_metadata")
+    with op.batch_alter_table("node") as batch_op:
+        batch_op.drop_column("document_metadata")
