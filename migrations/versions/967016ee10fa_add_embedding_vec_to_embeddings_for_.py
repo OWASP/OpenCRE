@@ -8,7 +8,6 @@ Create Date: 2026-08-06 00:13:49.191527
 
 from alembic import op
 import sqlalchemy as sa
-from sqlalchemy.engine.reflection import Inspector
 
 revision = '967016ee10fa'
 down_revision = '055dbd9f8bfe'   # <-- set this to the head revision you found
@@ -17,7 +16,7 @@ depends_on = None
 
 def column_exists(table, column):
     conn = op.get_bind()
-    inspector = Inspector.from_engine(conn)
+    inspector = sa.inspect(conn)
     columns = [c['name'] for c in inspector.get_columns(table)]
     return column in columns
 
@@ -29,5 +28,6 @@ def upgrade():
         print("Column embedding_vec already exists in embeddings, skipping.")
 
 def downgrade():
-    # SQLite does not support DROP COLUMN directly; skip or use batch if needed.
-    pass
+    # Remove embedding_vec from embeddings using SQLite batch pattern
+    with op.batch_alter_table("embeddings") as batch_op:
+        batch_op.drop_column("embedding_vec")
