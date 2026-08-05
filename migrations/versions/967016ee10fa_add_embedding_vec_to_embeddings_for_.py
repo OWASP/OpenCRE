@@ -33,6 +33,6 @@ def upgrade():
 
 
 def downgrade():
-    # Remove embedding_vec from embeddings using SQLite batch pattern
     with op.batch_alter_table("embeddings") as batch_op:
-        batch_op.drop_column("embedding_vec")
+        if column_exists("embeddings", "embedding_vec"):
+            batch_op.drop_column("embedding_vec")

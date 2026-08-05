@@ -21,11 +21,23 @@ def table_exists(table_name):
     return table_name in inspector.get_table_names()
 
 
-def constraint_exists(table, constraint_name):
+def has_unique_on_columns(table, columns):
+    """Return True if any unique constraint (named or unnamed) exists on exactly these columns."""
     conn = op.get_bind()
     inspector = sa.inspect(conn)
     constraints = inspector.get_unique_constraints(table)
-    return any(c["name"] == constraint_name for c in constraints)
+    for c in constraints:
+        if c["column_names"] == columns:
+            return True
+    return False
+
+
+def constraint_name_exists(table, constraint_name):
+    conn = op.get_bind()
+    inspector = sa.inspect(conn)
+    return any(
+        c["name"] == constraint_name for c in inspector.get_unique_constraints(table)
+    )
 
 
 def upgrade():
@@ -57,11 +69,18 @@ def upgrade():
     else:
         print("Table artifact_ingest_event already exists, checking constraints...")
         # Ensure the unique constraint exists
-        if not constraint_exists(
-            "artifact_ingest_event", "uq_artifact_ingest_event_run_artifact"
+        if not has_unique_on_columns(
+            "artifact_ingest_event", ["run_id", "artifact_id"]
         ):
             print("Adding missing unique constraint to artifact_ingest_event...")
             with op.batch_alter_table("artifact_ingest_event") as batch_op:
+                # Drop any existing named constraint with our name (if it has wrong columns)
+                if constraint_name_exists(
+                    "artifact_ingest_event", "uq_artifact_ingest_event_run_artifact"
+                ):
+                    batch_op.drop_constraint(
+                        "uq_artifact_ingest_event_run_artifact", type_="unique"
+                    )
                 batch_op.create_unique_constraint(
                     "uq_artifact_ingest_event_run_artifact", ["run_id", "artifact_id"]
                 )
@@ -90,10 +109,15 @@ def upgrade():
         )
     else:
         print("Table ingest_chunk already exists, checking constraints...")
-        # Ensure the unique constraint exists
-        if not constraint_exists("ingest_chunk", "uq_ingest_chunk_artifact_chunk"):
+        if not has_unique_on_columns("ingest_chunk", ["artifact_event_id", "chunk_id"]):
             print("Adding missing unique constraint to ingest_chunk...")
             with op.batch_alter_table("ingest_chunk") as batch_op:
+                if constraint_name_exists(
+                    "ingest_chunk", "uq_ingest_chunk_artifact_chunk"
+                ):
+                    batch_op.drop_constraint(
+                        "uq_ingest_chunk_artifact_chunk", type_="unique"
+                    )
                 batch_op.create_unique_constraint(
                     "uq_ingest_chunk_artifact_chunk", ["artifact_event_id", "chunk_id"]
                 )
