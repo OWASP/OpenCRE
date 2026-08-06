@@ -22,7 +22,9 @@ class Cheatsheets(ParserInterface):
     cheatsheetseries_base_url = "https://cheatsheetseries.owasp.org/cheatsheets"
     supplement_data_file = (
         Path(__file__).resolve().parent.parent
-        / "data"
+        / "test"
+        / "fixtures"
+        / "owasp_mappings"
         / "owasp_cheatsheets_supplement.json"
     )
     logger = logging.getLogger(__name__)
