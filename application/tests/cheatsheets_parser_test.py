@@ -189,6 +189,12 @@ class TestCheatsheetsParser(unittest.TestCase):
             ["223-780", "118-110", "724-770", "623-550"],
             [link.document.id for link in rest_entries[0].links],
         )
+        self.assertTrue(
+            all(
+                link.ltype == defs.LinkTypes.AutomaticallyLinkedTo
+                for link in rest_entries[0].links
+            )
+        )
 
     cheatsheets_md = """ # Secrets Management Cheat Sheet
 
