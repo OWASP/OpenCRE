@@ -21,7 +21,7 @@ class Cheatsheets(ParserInterface):
     name = "OWASP Cheat Sheets"
     cheatsheetseries_base_url = "https://cheatsheetseries.owasp.org/cheatsheets"
     supplement_data_file = (
-        Path(__file__).resolve().parent.parent
+        Path(__file__).resolve().parents[3]
         / "tests"
         / "fixtures"
         / "owasp_mappings"
@@ -108,35 +108,11 @@ class Cheatsheets(ParserInterface):
         return standard_entries
 
     def register_supplemental_cheatsheets(self, cache: db.Node_collection):
-        # Check if file exists
-        if not self.supplement_data_file.exists():
-            self.logger.warning(
-                "Supplemental cheatsheet file not found at %s – skipping.",
-                self.supplement_data_file
-            )
-            return []
-
-        # Try to load and parse JSON
-        try:
-            with self.supplement_data_file.open("r", encoding="utf-8") as handle:
-                supplement_entries = json.load(handle)
-        except (json.JSONDecodeError, OSError) as exc:
-            self.logger.error(
-                "Failed to load supplemental cheatsheet file %s: %s – skipping.",
-                self.supplement_data_file, exc
-            )
-            return []
+        with self.supplement_data_file.open("r", encoding="utf-8") as handle:
+            supplement_entries = json.load(handle)
 
         standard_entries = []
         for entry in supplement_entries:
-            # Validate required keys
-            if not all(k in entry for k in ("section", "hyperlink")):
-                self.logger.warning(
-                    "Skipping malformed supplemental entry (missing 'section' or 'hyperlink'): %s",
-                    entry
-                )
-                continue
-
             cs = self.cheatsheet(
                 section=entry["section"],
                 hyperlink=entry["hyperlink"],
@@ -152,7 +128,9 @@ class Cheatsheets(ParserInterface):
                     )
                     try:
                         cs.add_link(link)
-                    except ValueError as exc:
+                    except (
+                        ValueError
+                    ) as exc:  # expected validation error (e.g., duplicate link)
                         self.logger.warning(
                             "Failed to add link for cre_id %s to cheatsheet %s: %s",
                             cre_id,
