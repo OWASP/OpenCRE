@@ -16,7 +16,9 @@ Scope so far:
              explicit-link resolution).
   W3 (C.1):  candidate retriever (in-memory + pgvector) + pipeline switch.
   W4 (C.2):  cross-encoder reranker — re-sorts the C.1 shortlist, fills reranked[].
-Calibration + decision routing (C.3-C.4, W5-W6) onward is not built yet.
+  W5 (C.3):  confidence calibration — temperature scaling maps a rerank logit to
+             an honest probability (fit by NLL on the golden set, gated ECE < 0.10).
+Decision routing (C.4, W6) onward is not built yet.
 
 Vendored RFC JSON schemas live under ``_rfc_schemas/``. They are pinned to
 upstream/owasp-graph @ 2b1437987768d5ed20fe9ee721ab9a898c4b84af (PR #734).
