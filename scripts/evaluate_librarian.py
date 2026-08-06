@@ -19,7 +19,7 @@ import json
 import os
 import sys
 from collections import Counter
-from typing import List, Set
+from typing import Any, Dict, List, Set
 
 # Bootstrap project root onto sys.path so this runs as a standalone script.
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -45,9 +45,25 @@ _SYNTHETIC_CREATED_AT = "2026-06-01T00:00:00Z"
 
 
 def load_dataset(path: str) -> List[GoldenDatasetRow]:
+    """Load and validate the golden set, rejecting duplicate row ids.
+
+    The live reports key their shared audits by ``row.id``, so two rows sharing an
+    id would collapse in that dict and one row would be scored against the other's
+    shortlist. The schema only requires an id to be non-empty, so uniqueness is
+    enforced here rather than discovered as a wrong number downstream.
+    """
     with open(path, encoding="utf-8") as fh:
         raw = json.load(fh)
-    return [GoldenDatasetRow.model_validate(row) for row in raw]
+    rows = [GoldenDatasetRow.model_validate(row) for row in raw]
+    duplicates = sorted(
+        row_id for row_id, n in Counter(r.id for r in rows).items() if n > 1
+    )
+    if duplicates:
+        raise ValueError(
+            f"golden dataset {path} has duplicate row ids: {', '.join(duplicates)}; "
+            "ids key the shared retrieval audits and must be unique"
+        )
+    return rows
 
 
 def queue_row_from_golden(row: GoldenDatasetRow) -> dict:
@@ -94,28 +110,21 @@ def predict(section: Section, registry: Set[str], hub: List[HubRep]) -> List[str
     return []
 
 
-def report_retrieval_recall(
-    rows: List[GoldenDatasetRow],
+def _build_live_pipeline(
     cache_file: str,
     top_k: int,
     threshold: float,
     top_n_rerank: int,
     crossencoder_model: str,
-) -> None:
-    """Measure the live C.1 -> C.2 pipeline over the positive slice (v1).
+):
+    """Construct the live C.1 retriever + C.2 reranker against the OpenCRE DB.
 
-    Two metrics, both live — there is no honest offline value: the candidate
-    pool must be the real CRE-node vectors, and seeding it from the golden text
-    is exactly the leakage the hub firewall strips.
-
-    - retrieval recall@k (C.1): does the expected CRE id make it into the top-K
-      shortlist the reranker will see? A miss here is unrecoverable downstream.
-    - rerank top-1 (C.2): after the cross-encoder re-reads each pair and re-sorts
-      the shortlist, is the #1 candidate an expected CRE? This is the first
-      end-to-end accuracy number for the search path (W4 target >= 0.80).
+    Live deps are imported lazily so the offline harness needs neither a DB, an
+    embedding model, nor the cross-encoder stack. Called once per run from
+    ``main`` and shared by every live report (recall/top-1 and calibration), so
+    the heavy hub + model load happens a single time and the id-space translation
+    stays in one place.
     """
-    # Live deps are imported lazily so the offline harness needs neither a DB,
-    # an embedding model, nor the cross-encoder stack.
     from application.cmd.cre_main import db_connect
     from application.defs import cre_defs
     from application.prompt_client import prompt_client
@@ -164,15 +173,62 @@ def report_retrieval_recall(
             database.get_embedding_contents_by_doc_type(cre_defs.Credoctypes.CRE.value)
         ),
     )
+    return retriever, reranker
 
-    positives = [r for r in rows if r.slice.value == "positive" and r.expected.cre_ids]
+
+def live_audits(
+    rows: List[GoldenDatasetRow],
+    retriever,
+    reranker,
+) -> Dict[str, Any]:
+    """Retrieve + rerank every row once, keyed by golden row id.
+
+    Every live report wants the same thing per row: the reranked shortlist. The
+    cross-encoder pass is the expensive step (one inference per candidate pair),
+    and the positive slice is read by more than one report, so computing the
+    audits here means a live run pays for exactly one retrieve + rerank per row
+    regardless of how many reports consume it.
+    """
+    return {
+        row.id: reranker.rerank(row.input.text, retriever.retrieve(row.input.text))
+        for row in rows
+    }
+
+
+def report_retrieval_recall(
+    rows: List[GoldenDatasetRow],
+    audits: Dict[str, Any],
+    top_k: int,
+    top_n_rerank: int,
+) -> None:
+    """Measure the live C.1 -> C.2 pipeline over the positive slice (v1).
+
+    Reads the shared ``audits`` from ``live_audits`` (computed once in ``main``)
+    so the DB, embedding model, and cross-encoder load once per run and no row is
+    retrieved or reranked twice. Two metrics, both live — there is no honest
+    offline value: the candidate pool must be the real CRE-node vectors, and
+    seeding it from the golden text is exactly the leakage the hub firewall
+    strips.
+
+    - retrieval recall@k (C.1): does the expected CRE id make it into the top-K
+      shortlist the reranker will see? A miss here is unrecoverable downstream.
+    - rerank top-1 (C.2): after the cross-encoder re-reads each pair and re-sorts
+      the shortlist, is the #1 candidate an expected CRE? This is the first
+      end-to-end accuracy number for the search path (W4 target >= 0.80).
+    """
+    # Only rows that were actually audited count toward the denominator, so the
+    # printed fractions never silently divide by rows no report ever scored.
+    positives = [
+        r
+        for r in rows
+        if r.slice.value == "positive" and r.expected.cre_ids and r.id in audits
+    ]
     if not positives:
         print("retrieval recall: no positive rows with expected ids in this selection")
         return
     any_hit = all_hit = top1_hit = 0
     for row in positives:
-        audit = retriever.retrieve(row.input.text)
-        audit = reranker.rerank(row.input.text, audit)
+        audit = audits[row.id]
         retrieved = {c.cre_id for c in audit.candidates}
         expected = set(row.expected.cre_ids or [])
         if expected & retrieved:
@@ -191,6 +247,71 @@ def report_retrieval_recall(
         f"rerank top-1 (C.2, top_n={top_n_rerank}): "
         f"{top1_hit}/{n} ({top1_hit / n:.0%})"
     )
+
+
+def report_calibration(
+    rows: List[GoldenDatasetRow],
+    audits: Dict[str, Any],
+) -> int:
+    """Fit temperature on the golden set and report the Week 5 ECE gate (< 0.10).
+
+    Reads the shared ``audits`` from ``live_audits``, the same shortlists
+    ``report_retrieval_recall`` scores, so the positive slice is not retrieved and
+    reranked a second time just to calibrate on it. Builds a
+    (shortlist, label) calibration set from the live C.1 -> C.2 pipeline over the
+    positive + hard_negative slices: each row's *reranked shortlist* of logits,
+    labelled 1 iff its top-1 candidate is an expected CRE (hard_negatives expect
+    none, so they contribute the 0 class). Both slices are needed so the fit sees
+    both outcomes (else it is degenerate). Confidence is the top-1 mass of
+    softmax(logits / T); prints ECE at T=1 vs the fitted T and PASS/FAIL on
+    ECE < 0.10. Returns 1 on a failed gate, and also on a degenerate calibration
+    set, so a live run can never exit 0 without the gate actually having run.
+    """
+    from application.utils.librarian.calibration.temperature import (
+        TemperatureScaler,
+        expected_calibration_error,
+        fit_temperature,
+    )
+
+    cal_rows = [r for r in rows if r.slice.value in ("positive", "hard_negative")]
+    logit_sets: List[List[float]] = []
+    labels: List[float] = []
+    for row in cal_rows:
+        audit = audits.get(row.id)
+        if audit is None:
+            continue
+        reranked = [c for c in audit.reranked if c.score_rerank is not None]
+        if not reranked:
+            continue
+        expected = set(row.expected.cre_ids or [])
+        logit_sets.append([float(c.score_rerank) for c in reranked])
+        labels.append(1.0 if reranked[0].cre_id in expected else 0.0)
+
+    if len(set(labels)) < 2:
+        # Degenerate calibration set: single-class labels, or nothing left after
+        # dropping rows with an empty shortlist. Either way the ECE gate did not
+        # run, so this must not exit 0 — a skipped gate reported as success lets
+        # CI greenwash a live run in which calibration was never checked.
+        print(
+            "calibration (C.3): need both outcomes in the selection (positive + "
+            "hard_negative slices) to fit temperature; got "
+            f"{len(labels)} row(s) covering {len(set(labels))} class(es); "
+            "FAILED (gate did not run)"
+        )
+        return 1
+
+    scaler = fit_temperature(logit_sets, labels)
+    conf_raw = [TemperatureScaler(1.0).confidence(s) for s in logit_sets]
+    conf_cal = [scaler.confidence(s) for s in logit_sets]
+    ece_raw = expected_calibration_error(conf_raw, labels)
+    ece_cal = expected_calibration_error(conf_cal, labels)
+    gate_ok = ece_cal < 0.10
+    print(
+        f"calibration (C.3, {len(labels)} rows): fitted T={scaler.temperature:.3f}; "
+        f"ECE {ece_raw:.3f} (raw, T=1) -> {ece_cal:.3f} (calibrated); "
+        f"gate ECE<0.10: {'PASS' if gate_ok else 'FAIL'}"
+    )
+    return 0 if gate_ok else 1
 
 
 def main(argv: List[str]) -> int:
@@ -275,23 +396,35 @@ def main(argv: List[str]) -> int:
         )
         if not gate_ok:
             return 1
+    calib_status = 0
     if args.use_live_embeddings:
-        report_retrieval_recall(
-            rows,
+        # Build the live pipeline once (DB + embedding model + cross-encoder), then
+        # retrieve + rerank each row once, so the heavy model load *and* the
+        # per-pair cross-encoder inference each happen a single time per run no
+        # matter how many reports read the shortlists.
+        retriever, reranker = _build_live_pipeline(
             args.cache_file,
             args.top_k_retrieval,
             args.threshold,
             args.top_k_rerank,
             cfg.crossencoder_model,
         )
+        audits = live_audits(
+            [r for r in rows if r.slice.value in ("positive", "hard_negative")],
+            retriever,
+            reranker,
+        )
+        report_retrieval_recall(rows, audits, args.top_k_retrieval, args.top_k_rerank)
+        calib_status = report_calibration(rows, audits)
     else:
         print(
-            "semantic pipeline (C.1 retrieve + C.2 rerank): wired; recall@k and "
-            "rerank top-1 need --use_live_embeddings (no CRE vectors offline — "
-            "seeding from golden text would be leakage)"
+            "semantic pipeline (C.1 retrieve + C.2 rerank) + calibration (C.3): "
+            "wired; recall@k, rerank top-1, and the ECE gate need "
+            "--use_live_embeddings (no CRE vectors offline — seeding from golden "
+            "text would be leakage)"
         )
     print(f"correct overall (semantic path still stubbed): {correct}/{len(rows)}")
-    return 0
+    return calib_status
 
 
 if __name__ == "__main__":

@@ -101,6 +101,47 @@ class TestGoldenDatasetShape(unittest.TestCase):
         self.assertEqual(len(ids), len(set(ids)))
 
 
+class TestLoadDatasetRejectsDuplicateIds(unittest.TestCase):
+    """The harness keys its shared retrieval audits by row id.
+
+    Two rows sharing an id would collapse in that dict and one row would be
+    scored against the other's shortlist, so ``load_dataset`` must refuse the
+    file rather than let a wrong number through. The schema only requires an id
+    to be non-empty, which is why this is checked at load time.
+    """
+
+    def _load_harness(self):
+        import importlib.util
+
+        path = os.path.join(_REPO_ROOT, "scripts", "evaluate_librarian.py")
+        spec = importlib.util.spec_from_file_location("evaluate_librarian", path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+
+    def test_committed_dataset_loads(self):
+        harness = self._load_harness()
+        self.assertEqual(len(harness.load_dataset(_DATASET)), len(_load(_DATASET)))
+
+    def test_duplicate_id_is_rejected(self):
+        import tempfile
+
+        harness = self._load_harness()
+        rows = _load(_DATASET)[:2]
+        rows[1] = dict(rows[1], id=rows[0]["id"])  # force a collision
+        with tempfile.NamedTemporaryFile(
+            "w", suffix=".json", delete=False, encoding="utf-8"
+        ) as fh:
+            json.dump(rows, fh)
+            tmp = fh.name
+        try:
+            with self.assertRaises(ValueError) as ctx:
+                harness.load_dataset(tmp)
+            self.assertIn(rows[0]["id"], str(ctx.exception))
+        finally:
+            os.unlink(tmp)
+
+
 class TestDatasetDeterminism(unittest.TestCase):
     """The committed JSON must re-derive identically from the DB."""
 
