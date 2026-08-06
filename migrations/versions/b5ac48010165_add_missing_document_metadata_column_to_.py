@@ -40,8 +40,11 @@ def upgrade():
 
 
 def downgrade():
-    with op.batch_alter_table("cre", schema=None) as batch_op:
-        batch_op.drop_column("document_metadata")
-
-    with op.batch_alter_table("node", schema=None) as batch_op:
-        batch_op.drop_column("document_metadata")
+    # Intentional no-op: upgrade() only adds this column where it was
+    # missing, so on environments where it pre-existed (e.g. production,
+    # applied out-of-band) this migration never created it. Unconditionally
+    # dropping it here would destroy that pre-existing data on downgrade.
+    # There is no reliable way to tell "did *this* migration add the
+    # column" apart from "did it already exist," so the safe choice is to
+    # leave the column alone rather than risk deleting real data.
+    pass
