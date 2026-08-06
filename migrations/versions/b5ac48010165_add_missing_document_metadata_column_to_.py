@@ -5,14 +5,15 @@ Revises: c7d8e9f0a1b2
 Create Date: 2026-07-24 22:19:01.724833
 
 """
+
 from alembic import op
 import sqlalchemy as sa
 from sqlalchemy import inspect
 
 
 # revision identifiers, used by Alembic.
-revision = 'b5ac48010165'
-down_revision = 'c7d8e9f0a1b2'
+revision = "b5ac48010165"
+down_revision = "c7d8e9f0a1b2"
 branch_labels = None
 depends_on = None
 
@@ -27,11 +28,15 @@ def upgrade():
 
     if "document_metadata" not in node_columns:
         with op.batch_alter_table("node", schema=None) as batch_op:
-            batch_op.add_column(sa.Column("document_metadata", sa.JSON(), nullable=True))
+            batch_op.add_column(
+                sa.Column("document_metadata", sa.JSON(), nullable=True)
+            )
 
     if "document_metadata" not in cre_columns:
         with op.batch_alter_table("cre", schema=None) as batch_op:
-            batch_op.add_column(sa.Column("document_metadata", sa.JSON(), nullable=True))
+            batch_op.add_column(
+                sa.Column("document_metadata", sa.JSON(), nullable=True)
+            )
 
 
 def downgrade():
