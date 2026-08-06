@@ -1,7 +1,7 @@
 """add missing document_metadata column to node and cre
 
 Revision ID: b5ac48010165
-Revises: c7d8e9f0a1b2
+Revises: d4e5f6a7b8c9
 Create Date: 2026-07-24 22:19:01.724833
 
 """
@@ -13,7 +13,7 @@ from sqlalchemy import inspect
 
 # revision identifiers, used by Alembic.
 revision = "b5ac48010165"
-down_revision = "c7d8e9f0a1b2"
+down_revision = "d4e5f6a7b8c9"
 branch_labels = None
 depends_on = None
 
