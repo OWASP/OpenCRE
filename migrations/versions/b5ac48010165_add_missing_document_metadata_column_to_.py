@@ -9,7 +9,6 @@ Create Date: 2026-07-24 22:19:01.724833
 from alembic import op
 import sqlalchemy as sa
 
-
 # revision identifiers, used by Alembic.
 revision = "b5ac48010165"
 down_revision = "d4e5f6a7b8c9"
@@ -24,34 +23,78 @@ def column_exists(table, column):
     return column in columns
 
 
+def table_exists(table):
+    conn = op.get_bind()
+    inspector = sa.inspect(conn)
+    return table in inspector.get_table_names()
+
+
+def tracking_record_exists(revision, table_name, column_name):
+    conn = op.get_bind()
+    # Use a raw query because the tracking table may not exist yet in some contexts.
+    # We'll check existence first.
+    if not table_exists("_migration_tracking"):
+        return False
+    result = conn.execute(
+        sa.text(
+            "SELECT 1 FROM _migration_tracking WHERE revision = :rev AND table_name = :tbl AND column_name = :col"
+        ),
+        {"rev": revision, "tbl": table_name, "col": column_name},
+    )
+    return result.first() is not None
+
+
+def add_tracking_record(revision, table_name, column_name):
+    # Ensure the tracking table exists
+    if not table_exists("_migration_tracking"):
+        op.create_table(
+            "_migration_tracking",
+            sa.Column("revision", sa.String, primary_key=True),
+            sa.Column("table_name", sa.String, primary_key=True),
+            sa.Column("column_name", sa.String, primary_key=True),
+        )
+    op.execute(
+        sa.text(
+            "INSERT INTO _migration_tracking (revision, table_name, column_name) VALUES (:rev, :tbl, :col)"
+        ),
+        {"rev": revision, "tbl": table_name, "col": column_name},
+    )
+
+
+def remove_tracking_record(revision, table_name, column_name):
+    if table_exists("_migration_tracking"):
+        op.execute(
+            sa.text(
+                "DELETE FROM _migration_tracking WHERE revision = :rev AND table_name = :tbl AND column_name = :col"
+            ),
+            {"rev": revision, "tbl": table_name, "col": column_name},
+        )
+
+
 def upgrade():
     # Add to 'cre' table if missing
     if not column_exists("cre", "document_metadata"):
         op.add_column("cre", sa.Column("document_metadata", sa.JSON(), nullable=True))
-        print("Added document_metadata to cre")
-    else:
-        print("Column document_metadata already exists in cre, skipping.")
+        add_tracking_record(revision, "cre", "document_metadata")
 
     # Add to 'node' table if missing
     if not column_exists("node", "document_metadata"):
         op.add_column("node", sa.Column("document_metadata", sa.JSON(), nullable=True))
-        print("Added document_metadata to node")
-    else:
-        print("Column document_metadata already exists in node, skipping.")
+        add_tracking_record(revision, "node", "document_metadata")
 
 
 def downgrade():
-    # Remove document_metadata from cre and node only if they were added by this migration
-    # (i.e., they exist but we can't tell if they were pre-existing, but we can check existence)
-    # For safety, we drop only if the column exists; if it existed before, this migration
-    # would have skipped adding it, but we can't track that. So we drop unconditionally
-    # because it's unlikely the column existed before this migration.
-    # However, to be safe, we can use batch_alter_table only if the column exists.
-    with op.batch_alter_table("cre") as batch_op:
-        # If the column doesn't exist, drop_column will raise an error, so we must check.
-        # We'll re-use column_exists but note that it's defined above.
-        if column_exists("cre", "document_metadata"):
-            batch_op.drop_column("document_metadata")
-    with op.batch_alter_table("node") as batch_op:
-        if column_exists("node", "document_metadata"):
-            batch_op.drop_column("document_metadata")
+    # Drop only columns that were added by this migration (tracked)
+    # For 'cre'
+    if tracking_record_exists(revision, "cre", "document_metadata"):
+        with op.batch_alter_table("cre") as batch_op:
+            if column_exists("cre", "document_metadata"):
+                batch_op.drop_column("document_metadata")
+        remove_tracking_record(revision, "cre", "document_metadata")
+
+    # For 'node'
+    if tracking_record_exists(revision, "node", "document_metadata"):
+        with op.batch_alter_table("node") as batch_op:
+            if column_exists("node", "document_metadata"):
+                batch_op.drop_column("document_metadata")
+        remove_tracking_record(revision, "node", "document_metadata")
