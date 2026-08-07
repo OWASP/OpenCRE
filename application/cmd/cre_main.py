@@ -26,6 +26,10 @@ from application.utils import redis
 from application.utils import db_backend
 from application.utils import gap_analysis
 from application.utils import cres_csv_export
+from application.utils.external_project_parsers.parsers import (
+    owasp_kubernetes_top10_2022,
+    owasp_kubernetes_top10_2025,
+)
 
 if TYPE_CHECKING:
     from application.prompt_client import prompt_client as prompt_client
@@ -976,6 +980,24 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
         BaseParser().register_resource(
             secure_headers.SecureHeaders, db_connection_str=args.cache_file
         )
+    if args.owasp_kubernetes_top10_2022_in:
+        from application.utils.external_project_parsers.parsers import (
+            owasp_kubernetes_top10_2022,
+        )
+
+        BaseParser().register_resource(
+            owasp_kubernetes_top10_2022.OwaspKubernetesTop10_2022,
+            db_connection_str=args.cache_file,
+        )
+    if args.owasp_kubernetes_top10_2025_in:
+        from application.utils.external_project_parsers.parsers import (
+            owasp_kubernetes_top10_2025,
+        )
+
+        BaseParser().register_resource(
+            owasp_kubernetes_top10_2025.OwaspKubernetesTop10_2025,
+            db_connection_str=args.cache_file,
+        )
     if args.pci_dss_4_in:
         from application.utils.external_project_parsers.parsers import pci_dss
 
@@ -1004,7 +1026,18 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
     # /end individual resource importing
 
     if args.import_external_projects:
-        BaseParser().call_importers(db_connection_str=args.cache_file)
+        # Create a single parser instance and register the Kubernetes parsers unconditionally
+        # so they are included in the batch discovery flow.
+        parser = BaseParser()
+        parser.register_resource(
+            owasp_kubernetes_top10_2022.OwaspKubernetesTop10_2022,
+            db_connection_str=args.cache_file,
+        )
+        parser.register_resource(
+            owasp_kubernetes_top10_2025.OwaspKubernetesTop10_2025,
+            db_connection_str=args.cache_file,
+        )
+        parser.call_importers(db_connection_str=args.cache_file)
 
     if getattr(args, "regenerate_embeddings", False):
         regenerate_embeddings(args.cache_file)
