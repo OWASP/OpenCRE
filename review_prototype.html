@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Review UI Prototype</title>
+</head>
+<body>
+    <h1>Content Review</h1>
+    <p id="content">Sample content to review</p>
+    <button onclick="approve()">Approve (Y)</button>
+    <button onclick="reject()">Reject (N)</button>
+    <script>
+        function approve() {
+            alert('Approved');
+        }
+        function reject() {
+            alert('Rejected');
+        }
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'y') approve();
+            if (e.key === 'n') reject();
+        });
+    </script>
+</body>
+</html>
