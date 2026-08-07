@@ -40,6 +40,45 @@ def constraint_name_exists(table, constraint_name):
     )
 
 
+def tracking_record_exists(revision, table_name):
+    """Check if this migration created the given table."""
+    conn = op.get_bind()
+    if not table_exists("_migration_tracking"):
+        return False
+    result = conn.execute(
+        sa.text(
+            "SELECT 1 FROM _migration_tracking WHERE revision = :rev AND table_name = :tbl"
+        ),
+        {"rev": revision, "tbl": table_name},
+    )
+    return result.first() is not None
+
+
+def add_tracking_record(revision, table_name):
+    if not table_exists("_migration_tracking"):
+        op.create_table(
+            "_migration_tracking",
+            sa.Column("revision", sa.String, primary_key=True),
+            sa.Column("table_name", sa.String, primary_key=True),
+        )
+    op.execute(
+        sa.text(
+            "INSERT INTO _migration_tracking (revision, table_name) VALUES (:rev, :tbl)"
+        ),
+        {"rev": revision, "tbl": table_name},
+    )
+
+
+def remove_tracking_record(revision, table_name):
+    if table_exists("_migration_tracking"):
+        op.execute(
+            sa.text(
+                "DELETE FROM _migration_tracking WHERE revision = :rev AND table_name = :tbl"
+            ),
+            {"rev": revision, "tbl": table_name},
+        )
+
+
 def upgrade():
     # Create artifact_ingest_event only if it doesn't exist
     if not table_exists("artifact_ingest_event"):
@@ -66,24 +105,29 @@ def upgrade():
                 "run_id", "artifact_id", name="uq_artifact_ingest_event_run_artifact"
             ),
         )
+        add_tracking_record(revision, "artifact_ingest_event")
     else:
-        print("Table artifact_ingest_event already exists, checking constraints...")
         # Ensure the unique constraint exists
         if not has_unique_on_columns(
             "artifact_ingest_event", ["run_id", "artifact_id"]
         ):
-            print("Adding missing unique constraint to artifact_ingest_event...")
-            with op.batch_alter_table("artifact_ingest_event") as batch_op:
-                # Drop any existing named constraint with our name (if it has wrong columns)
-                if constraint_name_exists(
-                    "artifact_ingest_event", "uq_artifact_ingest_event_run_artifact"
-                ):
-                    batch_op.drop_constraint(
-                        "uq_artifact_ingest_event_run_artifact", type_="unique"
+            # Temporarily disable foreign keys for SQLite because we may drop the parent table
+            op.execute("PRAGMA foreign_keys=OFF")
+            try:
+                with op.batch_alter_table("artifact_ingest_event") as batch_op:
+                    if constraint_name_exists(
+                        "artifact_ingest_event",
+                        "uq_artifact_ingest_event_run_artifact",
+                    ):
+                        batch_op.drop_constraint(
+                            "uq_artifact_ingest_event_run_artifact", type_="unique"
+                        )
+                    batch_op.create_unique_constraint(
+                        "uq_artifact_ingest_event_run_artifact",
+                        ["run_id", "artifact_id"],
                     )
-                batch_op.create_unique_constraint(
-                    "uq_artifact_ingest_event_run_artifact", ["run_id", "artifact_id"]
-                )
+            finally:
+                op.execute("PRAGMA foreign_keys=ON")
 
     # Create ingest_chunk only if it doesn't exist
     if not table_exists("ingest_chunk"):
@@ -104,13 +148,14 @@ def upgrade():
                 ondelete="CASCADE",
             ),
             sa.UniqueConstraint(
-                "artifact_event_id", "chunk_id", name="uq_ingest_chunk_artifact_chunk"
+                "artifact_event_id",
+                "chunk_id",
+                name="uq_ingest_chunk_artifact_chunk",
             ),
         )
+        add_tracking_record(revision, "ingest_chunk")
     else:
-        print("Table ingest_chunk already exists, checking constraints...")
         if not has_unique_on_columns("ingest_chunk", ["artifact_event_id", "chunk_id"]):
-            print("Adding missing unique constraint to ingest_chunk...")
             with op.batch_alter_table("ingest_chunk") as batch_op:
                 if constraint_name_exists(
                     "ingest_chunk", "uq_ingest_chunk_artifact_chunk"
@@ -119,11 +164,17 @@ def upgrade():
                         "uq_ingest_chunk_artifact_chunk", type_="unique"
                     )
                 batch_op.create_unique_constraint(
-                    "uq_ingest_chunk_artifact_chunk", ["artifact_event_id", "chunk_id"]
+                    "uq_ingest_chunk_artifact_chunk",
+                    ["artifact_event_id", "chunk_id"],
                 )
 
 
 def downgrade():
-    # Drop tables in reverse order; constraints are dropped automatically with the tables.
-    op.drop_table("ingest_chunk")
-    op.drop_table("artifact_ingest_event")
+    # Drop only tables that were created by this migration
+    if tracking_record_exists(revision, "ingest_chunk"):
+        op.drop_table("ingest_chunk")
+        remove_tracking_record(revision, "ingest_chunk")
+
+    if tracking_record_exists(revision, "artifact_ingest_event"):
+        op.drop_table("artifact_ingest_event")
+        remove_tracking_record(revision, "artifact_ingest_event")
