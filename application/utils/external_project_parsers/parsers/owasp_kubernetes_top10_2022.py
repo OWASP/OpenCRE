@@ -13,8 +13,10 @@ from application.utils.external_project_parsers.base_parser_defs import (
 class OwaspKubernetesTop10_2022(ParserInterface):
     name = "OWASP Kubernetes Top Ten 2022"
     data_file = (
-        Path(__file__).resolve().parent.parent
-        / "data"
+        Path(__file__).resolve().parents[3]
+        / "tests"
+        / "fixtures"
+        / "owasp_mappings"
         / "owasp_kubernetes_top10_2022.json"
     )
 
