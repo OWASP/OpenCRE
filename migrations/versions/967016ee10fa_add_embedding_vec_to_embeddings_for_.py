@@ -10,7 +10,7 @@ from alembic import op
 import sqlalchemy as sa
 
 revision = "967016ee10fa"
-down_revision = "b5ac48010165"  # <-- set this to the head revision you found
+down_revision = "b5ac48010165"
 branch_labels = None
 depends_on = None
 
@@ -27,9 +27,6 @@ def upgrade():
         op.add_column(
             "embeddings", sa.Column("embedding_vec", sa.Text(), nullable=True)
         )
-        print("Added embedding_vec to embeddings")
-    else:
-        print("Column embedding_vec already exists in embeddings, skipping.")
 
 
 def downgrade():
