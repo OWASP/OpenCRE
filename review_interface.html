@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenCRE Review Interface - Module D</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            padding: 30px;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 20px;
+        }
+        
+        h1 { color: #333; font-size: 24px; }
+        
+        .stats {
+            display: flex;
+            gap: 20px;
+            font-size: 14px;
+        }
+        
+        .stat {
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #0066cc;
+        }
+        
+        .stat-label {
+            color: #666;
+            margin-top: 4px;
+        }
+        
+        .review-item {
+            background: #f9f9f9;
+            border: 1px solid #eee;
+            border-radius: 6px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .item-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+        
+        .item-id {
+            font-weight: bold;
+            color: #333;
+            font-family: monospace;
+        }
+        
+        .item-source {
+            color: #0066cc;
+            font-size: 12px;
+        }
+        
+        .item-content {
+            background: white;
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 4px;
+            line-height: 1.6;
+            color: #444;
+            margin-bottom: 15px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-size: 14px;
+        }
+        
+        .actions {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        button {
+            flex: 1;
+            padding: 12px 16px;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .btn-approve {
+            background: #28a745;
+            color: white;
+        }
+        
+        .btn-approve:hover { background: #218838; }
+        .btn-approve:active { transform: scale(0.98); }
+        
+        .btn-reject {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .btn-reject:hover { background: #c82333; }
+        .btn-reject:active { transform: scale(0.98); }
+        
+        .notes {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 12px;
+            font-family: monospace;
+            resize: vertical;
+            min-height: 40px;
+        }
+        
+        .keyboard-hints {
+            background: #e8f4f8;
+            border-left: 4px solid #0066cc;
+            padding: 12px;
+            margin-top: 20px;
+            border-radius: 4px;
+            font-size: 12px;
+            color: #333;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+        
+        .timer {
+            font-size: 12px;
+            color: #666;
+            margin-top: 10px;
+        }
+        
+        .loading { opacity: 0.6; pointer-events: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔍 OpenCRE Content Review</h1>
+            <div class="stats">
+                <div class="stat">
+                    <div class="stat-value" id="approvedCount">0</div>
+                    <div class="stat-label">Approved</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value" id="rejectedCount">0</div>
+                    <div class="stat-label">Rejected</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value" id="pendingCount">1</div>
+                    <div class="stat-label">Pending</div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="reviewContainer">
+            <!-- Review items populated by JavaScript -->
+        </div>
+        
+        <div class="empty-state" id="emptyState" style="display: none;">
+            ✓ All items reviewed! Great work.
+        </div>
+        
+        <div class="keyboard-hints">
+            <strong>⌨️ Keyboard Shortcuts:</strong><br>
+            <code>Y</code> to approve • <code>N</code> to reject • <code>↓</code> next item
+        </div>
+    </div>
+
+    <script>
+        class ReviewInterface {
+            constructor() {
+                this.currentItem = null;
+                this.startTime = null;
+                this.approved = 0;
+                this.rejected = 0;
+                
+                // Demo data (replace with API calls)
+                this.queue = [
+                    {
+                        id: "commit_abc123",
+                        content: "Fix: Add input validation for CSV import - check file extension and size",
+                        source: "OWASP/OpenCRE"
+                    },
+                    {
+                        id: "commit_def456",
+                        content: "Feature: Implement gap analysis caching for improved performance",
+                        source: "OWASP/OpenCRE"
+                    },
+                    {
+                        id: "commit_ghi789",
+                        content: "Docs: Update README with API documentation",
+                        source: "OWASP/OpenCRE"
+                    }
+                ];
+                
+                this.init();
+            }
+            
+            init() {
+                this.setupKeyboardShortcuts();
+                this.loadNextItem();
+                this.updateStats();
+            }
+            
+            setupKeyboardShortcuts() {
+                document.addEventListener('keydown', (e) => {
+                    if (e.key.toLowerCase() === 'y') {
+                        e.preventDefault();
+                        this.approve();
+                    } else if (e.key.toLowerCase() === 'n') {
+                        e.preventDefault();
+                        this.reject();
+                    } else if (e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        this.loadNextItem();
+                    }
+                });
+            }
+            
+            loadNextItem() {
+                if (this.queue.length === 0) {
+                    document.getElementById('reviewContainer').innerHTML = '';
+                    document.getElementById('emptyState').style.display = 'block';
+                    return;
+                }
+                
+                this.currentItem = this.queue.shift();
+                this.startTime = Date.now();
+                this.renderItem();
+            }
+            
+            renderItem() {
+                const item = this.currentItem;
+                const html = `
+                    <div class="review-item">
+                        <div class="item-header">
+                            <div class="item-id">#${item.id}</div>
+                            <div class="item-source">${item.source}</div>
+                        </div>
+                        <div class="item-content">${this.escapeHtml(item.content)}</div>
+                        <div class="actions">
+                            <button class="btn-approve" onclick="reviewUI.approve()">
+                                ✓ Approve (Y)
+                            </button>
+                            <button class="btn-reject" onclick="reviewUI.reject()">
+                                ✗ Reject (N)
+                            </button>
+                        </div>
+                        <textarea class="notes" placeholder="Optional notes..." id="notesField"></textarea>
+                        <div class="timer" id="timer">Reviewing...</div>
+                    </div>
+                `;
+                
+                document.getElementById('reviewContainer').innerHTML = html;
+                document.getElementById('notesField').focus();
+                this.startTimer();
+            }
+            
+            startTimer() {
+                const timerEl = document.getElementById('timer');
+                const interval = setInterval(() => {
+                    const elapsed = Math.round((Date.now() - this.startTime) / 1000);
+                    timerEl.textContent = `Time: ${elapsed}s`;
+                    if (elapsed > 180) clearInterval(interval); // Stop at 3 minutes
+                }, 100);
+            }
+            
+            approve() {
+                const item = this.currentItem;
+                const notes = document.getElementById('notesField')?.value || '';
+                
+                console.log('Approved:', {
+                    ...item,
+                    notes,
+                    decision: 'approved',
+                    timeSpent: Math.round((Date.now() - this.startTime) / 1000)
+                });
+                
+                this.approved++;
+                this.logReview('approved');
+                this.loadNextItem();
+                this.updateStats();
+            }
+            
+            reject() {
+                const item = this.currentItem;
+                const notes = document.getElementById('notesField')?.value || '';
+                
+                console.log('Rejected:', {
+                    ...item,
+                    notes,
+                    decision: 'rejected',
+                    timeSpent: Math.round((Date.now() - this.startTime) / 1000)
+                });
+                
+                this.rejected++;
+                this.logReview('rejected');
+                this.loadNextItem();
+                this.updateStats();
+            }
+            
+            logReview(decision) {
+                // TODO: Replace with API call to /api/review/submit
+                // fetch('/api/review/submit', {
+                //     method: 'POST',
+                //     headers: {'Content-Type': 'application/json'},
+                //     body: JSON.stringify({
+                //         content_id: this.currentItem.id,
+                //         decision: decision,
+                //         notes: document.getElementById('notesField').value
+                //     })
+                // });
+            }
+            
+            updateStats() {
+                document.getElementById('approvedCount').textContent = this.approved;
+                document.getElementById('rejectedCount').textContent = this.rejected;
+                document.getElementById('pendingCount').textContent = this.queue.length;
+            }
+            
+            escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+        }
+        
+        // Initialize on load
+        let reviewUI;
+        document.addEventListener('DOMContentLoaded', () => {
+            reviewUI = new ReviewInterface();
+        });
+    </script>
+</body>
+</html>
