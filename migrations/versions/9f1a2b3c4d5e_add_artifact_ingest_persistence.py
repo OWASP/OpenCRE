@@ -16,6 +16,7 @@ depends_on = None
 
 
 def table_exists(table_name):
+    """Check if a table exists in the current database."""
     conn = op.get_bind()
     inspector = sa.inspect(conn)
     return table_name in inspector.get_table_names()
@@ -33,6 +34,7 @@ def has_unique_on_columns(table, columns):
 
 
 def constraint_name_exists(table, constraint_name):
+    """Return True if a unique constraint with the given name exists on the table."""
     conn = op.get_bind()
     inspector = sa.inspect(conn)
     return any(
@@ -55,6 +57,7 @@ def tracking_record_exists(revision, table_name):
 
 
 def add_tracking_record(revision, table_name):
+    """Record that this migration created a table."""
     if not table_exists("_migration_tracking"):
         op.create_table(
             "_migration_tracking",
@@ -70,6 +73,7 @@ def add_tracking_record(revision, table_name):
 
 
 def remove_tracking_record(revision, table_name):
+    """Remove the tracking record for a table created by this migration."""
     if table_exists("_migration_tracking"):
         op.execute(
             sa.text(
@@ -80,6 +84,11 @@ def remove_tracking_record(revision, table_name):
 
 
 def upgrade():
+    """Create artifact_ingest_event and ingest_chunk tables with proper constraints.
+
+    If the tables already exist, ensure the required unique constraints are present,
+    handling SQLite batch rewrites with foreign key enforcement disabled.
+    """
     # Create artifact_ingest_event only if it doesn't exist
     if not table_exists("artifact_ingest_event"):
         op.create_table(
@@ -170,6 +179,7 @@ def upgrade():
 
 
 def downgrade():
+    """Drop only tables that were created by this migration."""
     # Drop only tables that were created by this migration
     if tracking_record_exists(revision, "ingest_chunk"):
         op.drop_table("ingest_chunk")
