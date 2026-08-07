@@ -16,6 +16,7 @@ depends_on = None
 
 
 def column_exists(table, column):
+    """Check whether a column exists in the given table."""
     conn = op.get_bind()
     inspector = sa.inspect(conn)
     columns = [c["name"] for c in inspector.get_columns(table)]
@@ -23,12 +24,14 @@ def column_exists(table, column):
 
 
 def table_exists(table):
+    """Check whether a table exists in the current database."""
     conn = op.get_bind()
     inspector = sa.inspect(conn)
     return table in inspector.get_table_names()
 
 
 def tracking_record_exists(revision, table_name, column_name):
+    """Return True if a tracking record exists for this migration, table, and column."""
     conn = op.get_bind()
     if not table_exists("_migration_tracking"):
         return False
@@ -42,6 +45,7 @@ def tracking_record_exists(revision, table_name, column_name):
 
 
 def add_tracking_record(revision, table_name, column_name):
+    """Insert a tracking record to remember that this migration added a column."""
     if not table_exists("_migration_tracking"):
         op.create_table(
             "_migration_tracking",
@@ -58,6 +62,7 @@ def add_tracking_record(revision, table_name, column_name):
 
 
 def remove_tracking_record(revision, table_name, column_name):
+    """Remove the tracking record for a column added by this migration."""
     if table_exists("_migration_tracking"):
         op.execute(
             sa.text(
@@ -68,6 +73,12 @@ def remove_tracking_record(revision, table_name, column_name):
 
 
 def upgrade():
+    """Add the 'document_metadata' JSON column to the 'cre' and 'node' tables if missing.
+
+    This migration checks each table individually and only adds the column if it does not
+    already exist. After adding, it records the addition in the '_migration_tracking'
+    table to allow safe downgrades.
+    """
     # Add to 'cre' table if missing
     if not column_exists("cre", "document_metadata"):
         op.add_column("cre", sa.Column("document_metadata", sa.JSON(), nullable=True))
@@ -80,6 +91,11 @@ def upgrade():
 
 
 def downgrade():
+    """Remove the 'document_metadata' column from 'cre' and 'node' only if they were added by this migration.
+
+    Uses the tracking table to verify that this migration originally added the column,
+    then drops the column and removes the tracking record to keep the system consistent.
+    """
     # Drop only columns that were added by this migration (tracked)
     if tracking_record_exists(revision, "cre", "document_metadata"):
         with op.batch_alter_table("cre") as batch_op:
