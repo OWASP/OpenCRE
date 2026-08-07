@@ -31,8 +31,6 @@ def table_exists(table):
 
 def tracking_record_exists(revision, table_name, column_name):
     conn = op.get_bind()
-    # Use a raw query because the tracking table may not exist yet in some contexts.
-    # We'll check existence first.
     if not table_exists("_migration_tracking"):
         return False
     result = conn.execute(
@@ -45,7 +43,6 @@ def tracking_record_exists(revision, table_name, column_name):
 
 
 def add_tracking_record(revision, table_name, column_name):
-    # Ensure the tracking table exists
     if not table_exists("_migration_tracking"):
         op.create_table(
             "_migration_tracking",
@@ -85,14 +82,12 @@ def upgrade():
 
 def downgrade():
     # Drop only columns that were added by this migration (tracked)
-    # For 'cre'
     if tracking_record_exists(revision, "cre", "document_metadata"):
         with op.batch_alter_table("cre") as batch_op:
             if column_exists("cre", "document_metadata"):
                 batch_op.drop_column("document_metadata")
         remove_tracking_record(revision, "cre", "document_metadata")
 
-    # For 'node'
     if tracking_record_exists(revision, "node", "document_metadata"):
         with op.batch_alter_table("node") as batch_op:
             if column_exists("node", "document_metadata"):
