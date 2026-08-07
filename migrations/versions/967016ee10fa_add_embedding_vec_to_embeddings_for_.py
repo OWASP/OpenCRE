@@ -16,6 +16,7 @@ depends_on = None
 
 
 def column_exists(table, column):
+    """Check if a column exists in the given table."""
     conn = op.get_bind()
     inspector = sa.inspect(conn)
     columns = [c["name"] for c in inspector.get_columns(table)]
@@ -23,6 +24,7 @@ def column_exists(table, column):
 
 
 def upgrade():
+    """Add embedding_vec as a TEXT column for SQLite if it doesn't already exist."""
     if not column_exists("embeddings", "embedding_vec"):
         op.add_column(
             "embeddings", sa.Column("embedding_vec", sa.Text(), nullable=True)
@@ -30,6 +32,7 @@ def upgrade():
 
 
 def downgrade():
+    """Remove embedding_vec from embeddings if it was added by this migration."""
     with op.batch_alter_table("embeddings") as batch_op:
         if column_exists("embeddings", "embedding_vec"):
             batch_op.drop_column("embedding_vec")
