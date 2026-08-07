@@ -10,7 +10,7 @@ from alembic import op
 import sqlalchemy as sa
 
 revision = "967016ee10fa"
-down_revision = "055dbd9f8bfe"  # <-- set this to the head revision you found
+down_revision = "b5ac48010165"  # <-- set this to the head revision you found
 branch_labels = None
 depends_on = None
 
