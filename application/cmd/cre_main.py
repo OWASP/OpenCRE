@@ -976,13 +976,13 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
         BaseParser().register_resource(
             secure_headers.SecureHeaders, db_connection_str=args.cache_file
         )
-    if args.owasp_kubernetes_top10_2022_in:
+    if args.owasp_kubernetes_top10_2025_in:
         from application.utils.external_project_parsers.parsers import (
-            owasp_kubernetes_top10_2022,
+            owasp_kubernetes_top10_2025,
         )
 
         BaseParser().register_resource(
-            owasp_kubernetes_top10_2022.OwaspKubernetesTop10_2022,
+            owasp_kubernetes_top10_2025.OwaspKubernetesTop10_2025,
             db_connection_str=args.cache_file,
         )
     if args.owasp_kubernetes_top10_2025_in:
