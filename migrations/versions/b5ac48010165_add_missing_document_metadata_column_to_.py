@@ -27,14 +27,14 @@ def column_exists(table, column):
 def upgrade():
     # Add to 'cre' table if missing
     if not column_exists("cre", "document_metadata"):
-        op.add_column("cre", sa.Column("document_metadata", sa.Text(), nullable=True))
+        op.add_column("cre", sa.Column("document_metadata", sa.JSON(), nullable=True))
         print("Added document_metadata to cre")
     else:
         print("Column document_metadata already exists in cre, skipping.")
 
     # Add to 'node' table if missing
     if not column_exists("node", "document_metadata"):
-        op.add_column("node", sa.Column("document_metadata", sa.Text(), nullable=True))
+        op.add_column("node", sa.Column("document_metadata", sa.JSON(), nullable=True))
         print("Added document_metadata to node")
     else:
         print("Column document_metadata already exists in node, skipping.")
