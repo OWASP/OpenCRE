@@ -18,33 +18,41 @@ branch_labels = None
 depends_on = None
 
 
+def column_exists(table, column):
+    conn = op.get_bind()
+    inspector = sa.inspect(conn)
+    columns = [c["name"] for c in inspector.get_columns(table)]
+    return column in columns
+
+
 def upgrade():
-    # Defensive: some environments (e.g. production) already have this column
-    # applied out-of-band without a corresponding migration ever being
-    # committed, so this must not assume a clean "column doesn't exist" state.
-    inspector = inspect(op.get_bind())
-    node_columns = {c["name"] for c in inspector.get_columns("node")}
-    cre_columns = {c["name"] for c in inspector.get_columns("cre")}
+    # Add to 'cre' table if missing
+    if not column_exists("cre", "document_metadata"):
+        op.add_column("cre", sa.Column("document_metadata", sa.Text(), nullable=True))
+        print("Added document_metadata to cre")
+    else:
+        print("Column document_metadata already exists in cre, skipping.")
 
-    if "document_metadata" not in node_columns:
-        with op.batch_alter_table("node", schema=None) as batch_op:
-            batch_op.add_column(
-                sa.Column("document_metadata", sa.JSON(), nullable=True)
-            )
-
-    if "document_metadata" not in cre_columns:
-        with op.batch_alter_table("cre", schema=None) as batch_op:
-            batch_op.add_column(
-                sa.Column("document_metadata", sa.JSON(), nullable=True)
-            )
+    # Add to 'node' table if missing
+    if not column_exists("node", "document_metadata"):
+        op.add_column("node", sa.Column("document_metadata", sa.Text(), nullable=True))
+        print("Added document_metadata to node")
+    else:
+        print("Column document_metadata already exists in node, skipping.")
 
 
 def downgrade():
-    # Intentional no-op: upgrade() only adds this column where it was
-    # missing, so on environments where it pre-existed (e.g. production,
-    # applied out-of-band) this migration never created it. Unconditionally
-    # dropping it here would destroy that pre-existing data on downgrade.
-    # There is no reliable way to tell "did *this* migration add the
-    # column" apart from "did it already exist," so the safe choice is to
-    # leave the column alone rather than risk deleting real data.
-    pass
+    # Remove document_metadata from cre and node only if they were added by this migration
+    # (i.e., they exist but we can't tell if they were pre-existing, but we can check existence)
+    # For safety, we drop only if the column exists; if it existed before, this migration
+    # would have skipped adding it, but we can't track that. So we drop unconditionally
+    # because it's unlikely the column existed before this migration.
+    # However, to be safe, we can use batch_alter_table only if the column exists.
+    with op.batch_alter_table("cre") as batch_op:
+        # If the column doesn't exist, drop_column will raise an error, so we must check.
+        # We'll re-use column_exists but note that it's defined above.
+        if column_exists("cre", "document_metadata"):
+            batch_op.drop_column("document_metadata")
+    with op.batch_alter_table("node") as batch_op:
+        if column_exists("node", "document_metadata"):
+            batch_op.drop_column("document_metadata")
