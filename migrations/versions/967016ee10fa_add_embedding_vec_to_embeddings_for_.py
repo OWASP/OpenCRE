@@ -1,7 +1,7 @@
 """add embedding_vec to embeddings for SQLite
 
 Revision ID: 967016ee10fa
-Revises: 055dbd9f8bfe
+Revises: b5ac48010165
 Create Date: 2026-08-06 00:13:49.191527
 
 """
