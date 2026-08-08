@@ -47,7 +47,7 @@ def document_to_oscal(
             version=version,
             links=[common.Link(href=hyperlink)],
         )
-    if uuid == None or uuid == "":
+    if uuid is None or uuid == "":
         uuid = str(uuid4())
     c = catalog.Catalog(metadata=m, uuid=uuid)
     controls: List[catalog.Control] = []

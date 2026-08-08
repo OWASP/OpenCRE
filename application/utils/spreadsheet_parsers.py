@@ -290,7 +290,7 @@ def parse_export_format(lfile: List[Dict[str, Any]]) -> Dict[str, List[defs.Docu
                         logger.warning(
                             f"Link between {highest_cre.name} and {working_cre.name} already exists"
                         )
-                elif highest_cre == None:
+                elif highest_cre is None:
                     highest_cre = working_cre
                     highest_index = i
 
@@ -499,7 +499,7 @@ def parse_hierarchical_export_format(
         current_hierarchy, name = get_highest_cre_name(
             mapping=mapping, highest_hierarchy=max_hierarchy
         )
-        if name == None:  # skip empty lines
+        if name is None:  # skip empty lines
             continue
 
         if current_hierarchy > 0:  # find the previous higher CRE so we can link
