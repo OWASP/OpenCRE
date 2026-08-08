@@ -238,7 +238,7 @@ class TestUserModel(unittest.TestCase):
                     # is the method's own FOR UPDATE — which isolates it from the
                     # FK lock an INSERT would otherwise take.
                     db.Node_collection().set_user_resource_selection(user_id, [])
-                except Exception as e:
+                except Exception as e:  # noqa: BLE001 - report worker failures to test
                     errors.append(e)
                 finally:
                     sqla.session.remove()
