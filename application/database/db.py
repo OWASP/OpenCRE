@@ -1353,7 +1353,16 @@ class Node_collection:
             if name not in deduped:
                 deduped.append(name)
 
-        def _replace() -> None:
+        def _replace() -> List[str]:
+            # Serialize concurrent replacements for this user by locking the
+            # parent User row: a second PUT for the same user waits here until
+            # ours commits, then its DELETE sees our rows. Without this, two
+            # *disjoint* selections could both commit (no IntegrityError) and
+            # merge, breaking replacement semantics. FOR UPDATE is a no-op on
+            # SQLite (dev/tests).
+            self.session.query(User).filter(
+                User.id == user_id
+            ).with_for_update().first()
             self.session.query(UserResourceSelection).filter(
                 UserResourceSelection.user_id == user_id
             ).delete()
@@ -1366,17 +1375,20 @@ class Node_collection:
                         created_at=now,
                     )
                 )
+            # Capture our selection while still holding the lock, so the return
+            # value can't reflect a later concurrent write.
+            stored = self.get_user_resource_selection(user_id)
             self.session.commit()
+            return stored
 
         try:
-            _replace()
+            return _replace()
         except IntegrityError:
-            # A concurrent PUT for the same user committed the same rows between
-            # our delete and insert; roll back and retry the replace exactly once
-            # (mirrors upsert_user). A second failure propagates — no retry loop.
+            # Same-key collision on uq_user_resource_selection; roll back and
+            # retry the replace exactly once (mirrors upsert_user). A second
+            # failure propagates — no retry loop.
             self.session.rollback()
-            _replace()
-        return self.get_user_resource_selection(user_id)
+            return _replace()
 
     def __get_external_links(self) -> List[Tuple[CRE, Node, str]]:
         external_links: List[Tuple[CRE, Node, str]] = []
