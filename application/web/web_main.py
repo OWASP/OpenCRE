@@ -49,7 +49,6 @@ from application.utils.spreadsheet import write_csv
 import oauthlib
 import google.auth.transport.requests
 
-
 ITEMS_PER_PAGE = 20
 MAX_ITEMS_PER_PAGE = 100
 OPENCRE_STANDARD_NAME = gap_analysis.OPENCRE_STANDARD_NAME
@@ -801,7 +800,7 @@ def smartlink(
                 f"did not find node of type {ntype}, name {name} and section {section}, redirecting to external resource"
             )
             return redirect(url)
-            
+
     logger.warning("not sure what happened, 404")
     return abort(404, "Document does not exist")
 
