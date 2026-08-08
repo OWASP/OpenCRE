@@ -1,8 +1,8 @@
 #!/usr/bin/env python
-"""Module C regression harness — Week 2: C.0 deterministic input boundary.
+"""Module C regression harness — C.0 through C.4 over the golden set.
 
-On top of the W1 skeleton (golden dataset + scorer + TRACT hub-firewall),
-the harness now runs every golden row through the C.0 boundary:
+On top of the W1 skeleton (golden dataset + scorer + TRACT hub-firewall), every
+golden row runs through the C.0 boundary, and these two reports are offline:
 
 1. SectionValidator — each row is adapted to a synthetic knowledge_queue row
    and must validate into an internal ``Section``; the harness prints the
@@ -10,8 +10,19 @@ the harness now runs every golden row through the C.0 boundary:
 2. ExplicitLinkResolver — sections citing a CRE id resolve deterministically
    (no ML); the explicit slice is gated at 100% correctness.
 
-The semantic path (retriever W3, cross-encoder W4) is still stubbed: rows
-without an explicit reference yield no predictions.
+The semantic path needs ``--use_live_embeddings``, because there is no honest
+offline value: the candidate pool must be the real CRE-node vectors, and seeding
+it from golden text is the leakage the hub firewall exists to strip. Under that
+flag the run retrieves and reranks each row once (``live_audits``) and three
+reports share those shortlists:
+
+3. C.1 retrieval recall@k and C.2 rerank top-1 over the positive slice.
+4. C.3 temperature calibration — fits one ``T`` and gates on ECE < 0.10. This is
+   the only live report that sets the exit status: a failed *or* skipped gate
+   returns nonzero, so a live run cannot pass without calibration having run.
+5. C.4 decision accuracy — thresholds that same fitted ``T`` through ``decide()``.
+   Informational only, since the SafetyGuard flags are not wired until W8 and
+   tuning tau is the W7 experiment.
 """
 
 import argparse
@@ -19,7 +30,7 @@ import json
 import os
 import sys
 from collections import Counter
-from typing import Any, Dict, List, Set
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Tuple
 
 # Bootstrap project root onto sys.path so this runs as a standalone script.
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -37,6 +48,9 @@ from application.utils.librarian.section_validator import (
     SectionValidationError,
     section_from_queue_row,
 )
+
+if TYPE_CHECKING:  # the live calibration deps are imported lazily below
+    from application.utils.librarian.calibration.temperature import TemperatureScaler
 
 # Harness-only synthetic provenance: golden rows are not queue rows, so we
 # synthesize the minimum B-shaped row needed to exercise the C.0 boundary.
@@ -121,9 +135,9 @@ def _build_live_pipeline(
 
     Live deps are imported lazily so the offline harness needs neither a DB, an
     embedding model, nor the cross-encoder stack. Called once per run from
-    ``main`` and shared by every live report (recall/top-1 and calibration), so
-    the heavy hub + model load happens a single time and the id-space translation
-    stays in one place.
+    ``main`` and shared by every live report (recall/top-1, the C.3 ECE gate, and
+    the C.4 decision accuracy), so the heavy hub + model load happens a single
+    time and the id-space translation stays in one place.
     """
     from application.cmd.cre_main import db_connect
     from application.defs import cre_defs
@@ -249,34 +263,26 @@ def report_retrieval_recall(
     )
 
 
-def report_calibration(
+def calibration_set(
     rows: List[GoldenDatasetRow],
     audits: Dict[str, Any],
-) -> int:
-    """Fit temperature on the golden set and report the Week 5 ECE gate (< 0.10).
+) -> Tuple[List[List[float]], List[float]]:
+    """The (shortlist, is-top1-correct) pairs temperature is fit on.
 
-    Reads the shared ``audits`` from ``live_audits``, the same shortlists
-    ``report_retrieval_recall`` scores, so the positive slice is not retrieved and
-    reranked a second time just to calibrate on it. Builds a
-    (shortlist, label) calibration set from the live C.1 -> C.2 pipeline over the
-    positive + hard_negative slices: each row's *reranked shortlist* of logits,
-    labelled 1 iff its top-1 candidate is an expected CRE (hard_negatives expect
-    none, so they contribute the 0 class). Both slices are needed so the fit sees
-    both outcomes (else it is degenerate). Confidence is the top-1 mass of
-    softmax(logits / T); prints ECE at T=1 vs the fitted T and PASS/FAIL on
-    ECE < 0.10. Returns 1 on a failed gate, and also on a degenerate calibration
-    set, so a live run can never exit 0 without the gate actually having run.
+    Drawn from the positive + hard_negative slices: each row contributes its
+    *reranked shortlist* of logits, labelled 1 iff its top-1 candidate is an
+    expected CRE (hard_negatives expect none, so they supply the 0 class). Both
+    slices are needed or the fit is degenerate.
+
+    Split out so the C.3 gate and the C.4 decision report derive the calibration
+    set exactly once from the same shared audits, rather than each rebuilding it
+    and fitting its own ``T`` off a separate rerank pass.
     """
-    from application.utils.librarian.calibration.temperature import (
-        TemperatureScaler,
-        expected_calibration_error,
-        fit_temperature,
-    )
-
-    cal_rows = [r for r in rows if r.slice.value in ("positive", "hard_negative")]
     logit_sets: List[List[float]] = []
     labels: List[float] = []
-    for row in cal_rows:
+    for row in rows:
+        if row.slice.value not in ("positive", "hard_negative"):
+            continue
         audit = audits.get(row.id)
         if audit is None:
             continue
@@ -286,6 +292,34 @@ def report_calibration(
         expected = set(row.expected.cre_ids or [])
         logit_sets.append([float(c.score_rerank) for c in reranked])
         labels.append(1.0 if reranked[0].cre_id in expected else 0.0)
+    return logit_sets, labels
+
+
+def report_calibration(
+    rows: List[GoldenDatasetRow],
+    audits: Dict[str, Any],
+) -> Tuple[int, Optional["TemperatureScaler"]]:
+    """Fit temperature on the golden set and report the Week 5 ECE gate (< 0.10).
+
+    Reads the shared ``audits`` from ``live_audits``, the same shortlists
+    ``report_retrieval_recall`` scores, so the positive slice is not retrieved and
+    reranked a second time just to calibrate on it. Confidence is the top-1 mass
+    of softmax(logits / T); prints ECE at T=1 vs the fitted T and PASS/FAIL on
+    ECE < 0.10.
+
+    Returns ``(status, scaler)``. Status is 1 on a failed gate, and also on a
+    degenerate calibration set, so a live run can never exit 0 without the gate
+    actually having run. The fitted scaler is handed back (``None`` when the set
+    was degenerate) so the C.4 report thresholds on this same ``T`` instead of
+    fitting its own.
+    """
+    from application.utils.librarian.calibration.temperature import (
+        TemperatureScaler,
+        expected_calibration_error,
+        fit_temperature,
+    )
+
+    logit_sets, labels = calibration_set(rows, audits)
 
     if len(set(labels)) < 2:
         # Degenerate calibration set: single-class labels, or nothing left after
@@ -298,7 +332,7 @@ def report_calibration(
             f"{len(labels)} row(s) covering {len(set(labels))} class(es); "
             "FAILED (gate did not run)"
         )
-        return 1
+        return 1, None
 
     scaler = fit_temperature(logit_sets, labels)
     conf_raw = [TemperatureScaler(1.0).confidence(s) for s in logit_sets]
@@ -311,7 +345,85 @@ def report_calibration(
         f"ECE {ece_raw:.3f} (raw, T=1) -> {ece_cal:.3f} (calibrated); "
         f"gate ECE<0.10: {'PASS' if gate_ok else 'FAIL'}"
     )
-    return 0 if gate_ok else 1
+    return (0 if gate_ok else 1), scaler
+
+
+def report_decision_accuracy(
+    rows: List[GoldenDatasetRow],
+    audits: Dict[str, Any],
+    scaler: "TemperatureScaler",
+    threshold: float,
+) -> int:
+    """Run the full C.1 -> C.4 decision over the golden set and measure how often
+    ``decide()`` lands on the expected auto-link-vs-review call.
+
+    Takes the ``scaler`` already fitted by ``report_calibration`` and the shared
+    ``audits``, so the calibration set is derived once and ``T`` is fit once per
+    run: this report re-uses both rather than rebuilding the set and fitting its
+    own ``T`` off a second rerank pass. For every golden row carrying an expected
+    decision: C.3 confidence (top-1 softmax mass) -> ``decide()`` at the auto-link
+    threshold. Reports the linked-vs-review accuracy (the meaningful C.4 number at
+    this fixed threshold) and, for expected-review rows, how often the
+    ``reason_code`` matches too.
+
+    Informational — it does not fail the run: the SafetyGuard flags (adversarial /
+    update_ambiguous) are not wired yet, so ``decide()`` sees them as False here and
+    reason codes that depend on them lag until that lands; and tuning the threshold
+    itself is the Week 7 experiment, so hard-gating it now would be premature.
+    """
+    from application.utils.librarian.decision_engine import decide
+    from application.utils.librarian.schemas import Decision
+
+    graded = [r for r in rows if r.expected.decision is not None and r.id in audits]
+    if not graded:
+        print("decision (C.4): no rows with an expected decision in this selection")
+        return 0
+
+    dec_match = reason_match = 0
+    link_total = link_correct = review_total = review_correct = 0
+    for row in graded:
+        audit = audits[row.id]
+        reranked = [c for c in audit.reranked if c.score_rerank is not None]
+        logits = [float(c.score_rerank) for c in reranked]
+        cre_ids = [c.cre_id for c in reranked]
+        confidence = scaler.confidence(logits) if logits else 0.0
+        result = decide(confidence, cre_ids, threshold=threshold)
+        matched = result.decision == row.expected.decision
+        if matched:
+            dec_match += 1
+        if row.expected.decision == Decision.linked:
+            link_total += 1
+            link_correct += matched
+        elif row.expected.decision == Decision.review:
+            review_total += 1
+            review_correct += matched
+            if result.reason_code == row.expected.reason_code:
+                reason_match += 1
+
+    # Overall agreement plus the two directions split out, because a single
+    # accuracy hides the story at an untuned threshold: at tau=0.80 the softmax
+    # top-1 mass of a correct-but-close winner is often ~0.5, so many correct
+    # positives fall *below* the bar and route to review (the safe direction).
+    # Auto-link recall vs review recall makes that visible; W7 tunes tau.
+    n = len(graded)
+    print(
+        f"decision (C.4, {n} rows @ tau={threshold:.2f}): "
+        f"overall {dec_match}/{n} ({dec_match / n:.0%})"
+    )
+    if link_total:
+        print(
+            f"  auto-link recall (expected-linked rows): "
+            f"{link_correct}/{link_total} ({link_correct / link_total:.0%})"
+        )
+    if review_total:
+        print(
+            f"  review recall (expected-review rows): "
+            f"{review_correct}/{review_total} ({review_correct / review_total:.0%}); "
+            f"reason_code match {reason_match}/{review_total} "
+            f"({reason_match / review_total:.0%}) "
+            f"(SafetyGuard flags not wired — flag-based codes lag)"
+        )
+    return 0
 
 
 def main(argv: List[str]) -> int:
@@ -331,8 +443,10 @@ def main(argv: List[str]) -> int:
     parser.add_argument(
         "--use_live_embeddings",
         action="store_true",
-        help="connect to the OpenCRE DB + embedding model and measure the live "
-        "C.1 retrieval recall@k and C.2 rerank top-1 over the positive slice "
+        help="connect to the OpenCRE DB + embedding model and run every live "
+        "report: C.1 retrieval recall@k and C.2 rerank top-1 over the positive "
+        "slice, the C.3 ECE gate (which sets a nonzero exit status when it fails "
+        "or cannot run), and the informational C.4 decision accuracy "
         "(needs an LLM + populated DB)",
     )
     parser.add_argument(
@@ -409,19 +523,33 @@ def main(argv: List[str]) -> int:
             args.top_k_rerank,
             cfg.crossencoder_model,
         )
+        # Union of what the reports read: the calibration slices, plus any row
+        # carrying an expected decision — C.4 grades those and they are not
+        # confined to positive/hard_negative.
         audits = live_audits(
-            [r for r in rows if r.slice.value in ("positive", "hard_negative")],
+            [
+                r
+                for r in rows
+                if r.slice.value in ("positive", "hard_negative")
+                or r.expected.decision is not None
+            ],
             retriever,
             reranker,
         )
         report_retrieval_recall(rows, audits, args.top_k_retrieval, args.top_k_rerank)
-        calib_status = report_calibration(rows, audits)
+        calib_status, scaler = report_calibration(rows, audits)
+        if scaler is not None:
+            report_decision_accuracy(rows, audits, scaler, args.threshold)
+        else:
+            # No fitted T means no honest confidence for C.4 to threshold on.
+            # report_calibration has already failed the run.
+            print("decision (C.4): skipped — calibration produced no fitted T")
     else:
         print(
-            "semantic pipeline (C.1 retrieve + C.2 rerank) + calibration (C.3): "
-            "wired; recall@k, rerank top-1, and the ECE gate need "
-            "--use_live_embeddings (no CRE vectors offline — seeding from golden "
-            "text would be leakage)"
+            "semantic pipeline (C.1 retrieve + C.2 rerank) + calibration (C.3) + "
+            "decision (C.4): wired; recall@k, rerank top-1, the ECE gate, and the "
+            "decision accuracy all need --use_live_embeddings (no CRE vectors "
+            "offline — seeding from golden text would be leakage)"
         )
     print(f"correct overall (semantic path still stubbed): {correct}/{len(rows)}")
     return calib_status
