@@ -1376,6 +1376,11 @@ def put_user_resources() -> Any:
     # Normalize before storing: otherwise " ASVS " and "ASVS" both validate but
     # persist as distinct rows, defeating the dedupe.
     selected = [name.strip() for name in raw_selected]
+    # OpenCRE is always part of a non-empty selection (matches the read filter and
+    # the "OpenCRE is always included" UI copy). An empty selection stays empty —
+    # [] means "show everything", so injecting OpenCRE would wrongly narrow it.
+    if selected and OPENCRE_STANDARD_NAME not in selected:
+        selected.append(OPENCRE_STANDARD_NAME)
     database = db.Node_collection()
     user = _resolve_current_user(database)
     if user is None:

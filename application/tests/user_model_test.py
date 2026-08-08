@@ -2,6 +2,8 @@
 
 import os
 import unittest
+from typing import Any
+from unittest.mock import patch
 
 from sqlalchemy.exc import IntegrityError
 
@@ -158,6 +160,49 @@ class TestUserModel(unittest.TestCase):
         sqla.session.delete(user)
         sqla.session.commit()
         self.assertEqual(sqla.session.query(db.UserResourceSelection).count(), 0)
+
+    def test_set_resource_selection_recovers_from_integrity_error(self) -> None:
+        # A concurrent PUT can make the first commit raise IntegrityError on
+        # uq_user_resource_selection. The method must roll back and retry once,
+        # then return the correct selection.
+        user = self.collection.upsert_user(
+            google_sub="sub-1", email="a@x.com", display_name="U"
+        )
+        real_commit = self.collection.session.commit
+        calls = {"n": 0}
+
+        def flaky_commit(*args: Any, **kwargs: Any) -> None:
+            calls["n"] += 1
+            if calls["n"] == 1:
+                raise IntegrityError(
+                    "stmt", {}, Exception("uq_user_resource_selection")
+                )
+            real_commit()
+
+        with patch.object(self.collection.session, "commit", side_effect=flaky_commit):
+            result = self.collection.set_user_resource_selection(
+                user.id, ["ASVS", "CWE"]
+            )
+
+        self.assertEqual(sorted(result), ["ASVS", "CWE"])
+        self.assertEqual(calls["n"], 2)  # retried exactly once
+
+    def test_set_resource_selection_reraises_on_persistent_integrity_error(
+        self,
+    ) -> None:
+        # If the retry also fails, the error propagates — the recovery must not
+        # loop indefinitely (retry exactly once).
+        user = self.collection.upsert_user(
+            google_sub="sub-1", email="a@x.com", display_name="U"
+        )
+
+        def always_raise(*args: Any, **kwargs: Any) -> None:
+            raise IntegrityError("stmt", {}, Exception("uq_user_resource_selection"))
+
+        with patch.object(self.collection.session, "commit", side_effect=always_raise):
+            with self.assertRaises(IntegrityError):
+                self.collection.set_user_resource_selection(user.id, ["ASVS"])
+        self.collection.session.rollback()
 
 
 if __name__ == "__main__":
