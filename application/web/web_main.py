@@ -795,7 +795,14 @@ def smartlink(
         return redirect(f"/node/{ntype}/{name}/section/{section}")
     elif doctype == defs.Credoctypes.Standard.value:
         url = redirectors.redirect(name, section)
-        if url and isinstance(url, str) and url.startswith("https://"):
+        if (
+            url
+            and isinstance(url, str)
+            and (
+                url.startswith("https://cwe.mitre.org/")
+                or url.startswith("https://capec.mitre.org/")
+            )
+        ):
             logger.info(
                 f"did not find node of type {ntype}, name {name} and section {section}, redirecting to external resource"
             )
