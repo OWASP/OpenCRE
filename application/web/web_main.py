@@ -794,16 +794,16 @@ def smartlink(
         if found_section_id:
             return redirect(f"/node/{ntype}/{name}/sectionid/{section}")
         return redirect(f"/node/{ntype}/{name}/section/{section}")
-    elif doctype == defs.Credoctypes.Standard.value and redirectors.redirect(
-        name, section
-    ):
-        logger.info(
-            f"did not find node of type {ntype}, name {name} and section {section}, redirecting to external resource"
-        )
-        return redirect(redirectors.redirect(name, section))
-    else:
-        logger.warning("not sure what happened, 404")
-        return abort(404, "Document does not exist")
+    elif doctype == defs.Credoctypes.Standard.value:
+        url = redirectors.redirect(name, section)
+        if url and isinstance(url, str) and url.startswith("https://"):
+            logger.info(
+                f"did not find node of type {ntype}, name {name} and section {section}, redirecting to external resource"
+            )
+            return redirect(url)
+            
+    logger.warning("not sure what happened, 404")
+    return abort(404, "Document does not exist")
 
 
 @openapi_documented("deeplink")
