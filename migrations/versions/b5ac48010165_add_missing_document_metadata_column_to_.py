@@ -8,103 +8,43 @@ Create Date: 2026-07-24 22:19:01.724833
 
 from alembic import op
 import sqlalchemy as sa
+from sqlalchemy import inspect
 
+
+# revision identifiers, used by Alembic.
 revision = "b5ac48010165"
 down_revision = "d4e5f6a7b8c9"
 branch_labels = None
 depends_on = None
 
 
-def column_exists(table, column):
-    """Check whether a column exists in the given table."""
-    conn = op.get_bind()
-    inspector = sa.inspect(conn)
-    columns = [c["name"] for c in inspector.get_columns(table)]
-    return column in columns
-
-
-def table_exists(table):
-    """Check whether a table exists in the current database."""
-    conn = op.get_bind()
-    inspector = sa.inspect(conn)
-    return table in inspector.get_table_names()
-
-
-def tracking_record_exists(revision, table_name, column_name):
-    """Return True if a tracking record exists for this migration, table, and column."""
-    conn = op.get_bind()
-    if not table_exists("_migration_tracking"):
-        return False
-    result = conn.execute(
-        sa.text(
-            "SELECT 1 FROM _migration_tracking WHERE revision = :rev AND table_name = :tbl AND column_name = :col"
-        ),
-        {"rev": revision, "tbl": table_name, "col": column_name},
-    )
-    return result.first() is not None
-
-
-def add_tracking_record(revision, table_name, column_name):
-    """Insert a tracking record to remember that this migration added a column."""
-    if not table_exists("_migration_tracking"):
-        op.create_table(
-            "_migration_tracking",
-            sa.Column("revision", sa.String, primary_key=True),
-            sa.Column("table_name", sa.String, primary_key=True),
-            sa.Column("column_name", sa.String, primary_key=True),
-        )
-    op.execute(
-        sa.text(
-            "INSERT INTO _migration_tracking (revision, table_name, column_name) VALUES (:rev, :tbl, :col)"
-        ),
-        {"rev": revision, "tbl": table_name, "col": column_name},
-    )
-
-
-def remove_tracking_record(revision, table_name, column_name):
-    """Remove the tracking record for a column added by this migration."""
-    if table_exists("_migration_tracking"):
-        op.execute(
-            sa.text(
-                "DELETE FROM _migration_tracking WHERE revision = :rev AND table_name = :tbl AND column_name = :col"
-            ),
-            {"rev": revision, "tbl": table_name, "col": column_name},
-        )
-
-
 def upgrade():
-    """Add the 'document_metadata' JSON column to the 'cre' and 'node' tables if missing.
+    # Defensive: some environments (e.g. production) already have this column
+    # applied out-of-band without a corresponding migration ever being
+    # committed, so this must not assume a clean "column doesn't exist" state.
+    inspector = inspect(op.get_bind())
+    node_columns = {c["name"] for c in inspector.get_columns("node")}
+    cre_columns = {c["name"] for c in inspector.get_columns("cre")}
 
-    This migration checks each table individually and only adds the column if it does not
-    already exist. After adding, it records the addition in the '_migration_tracking'
-    table to allow safe downgrades.
-    """
-    # Add to 'cre' table if missing
-    if not column_exists("cre", "document_metadata"):
-        op.add_column("cre", sa.Column("document_metadata", sa.JSON(), nullable=True))
-        add_tracking_record(revision, "cre", "document_metadata")
+    if "document_metadata" not in node_columns:
+        with op.batch_alter_table("node", schema=None) as batch_op:
+            batch_op.add_column(
+                sa.Column("document_metadata", sa.JSON(), nullable=True)
+            )
 
-    # Add to 'node' table if missing
-    if not column_exists("node", "document_metadata"):
-        op.add_column("node", sa.Column("document_metadata", sa.JSON(), nullable=True))
-        add_tracking_record(revision, "node", "document_metadata")
+    if "document_metadata" not in cre_columns:
+        with op.batch_alter_table("cre", schema=None) as batch_op:
+            batch_op.add_column(
+                sa.Column("document_metadata", sa.JSON(), nullable=True)
+            )
 
 
 def downgrade():
-    """Remove the 'document_metadata' column from 'cre' and 'node' only if they were added by this migration.
-
-    Uses the tracking table to verify that this migration originally added the column,
-    then drops the column and removes the tracking record to keep the system consistent.
-    """
-    # Drop only columns that were added by this migration (tracked)
-    if tracking_record_exists(revision, "cre", "document_metadata"):
-        with op.batch_alter_table("cre") as batch_op:
-            if column_exists("cre", "document_metadata"):
-                batch_op.drop_column("document_metadata")
-        remove_tracking_record(revision, "cre", "document_metadata")
-
-    if tracking_record_exists(revision, "node", "document_metadata"):
-        with op.batch_alter_table("node") as batch_op:
-            if column_exists("node", "document_metadata"):
-                batch_op.drop_column("document_metadata")
-        remove_tracking_record(revision, "node", "document_metadata")
+    # Intentional no-op: upgrade() only adds this column where it was
+    # missing, so on environments where it pre-existed (e.g. production,
+    # applied out-of-band) this migration never created it. Unconditionally
+    # dropping it here would destroy that pre-existing data on downgrade.
+    # There is no reliable way to tell "did *this* migration add the
+    # column" apart from "did it already exist," so the safe choice is to
+    # leave the column alone rather than risk deleting real data.
+    pass
