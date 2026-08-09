@@ -18,7 +18,12 @@ Scope so far:
   W4 (C.2):  cross-encoder reranker — re-sorts the C.1 shortlist, fills reranked[].
   W5 (C.3):  confidence calibration — temperature scaling maps a rerank logit to
              an honest probability (fit by NLL on the golden set, gated ECE < 0.10).
-Decision routing (C.4, W6) onward is not built yet.
+  W6 (C.4):  decision engine — thresholds the calibrated confidence to auto-link
+             (LinkProposal) or route to human review (ReviewItem), with a reason.
+  W6b (C.4): envelope emitter — builds the RFC LinkProposal / ReviewItem from a
+             DecisionResult — plus the C.0->C.4 pipeline glue that runs a batch
+             of queue rows end to end (dry-run: nothing is persisted).
+The live queue drain and the graph / review-queue writers (W8) are not built yet.
 
 Vendored RFC JSON schemas live under ``_rfc_schemas/``. They are pinned to
 upstream/owasp-graph @ 2b1437987768d5ed20fe9ee721ab9a898c4b84af (PR #734).

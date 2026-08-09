@@ -113,7 +113,7 @@ class TestMain(unittest.TestCase):
         }
 
         for c, v in cres.items():
-            res = web_main.extend_cre_with_tag_links(  # type:ignore # mypy bug
+            res = web_main.extend_cre_with_tag_links(  # type: ignore # mypy bug
                 v, collection=collection
             )
             self.assertCountEqual(res.links, v.links)
@@ -714,6 +714,32 @@ class TestMain(unittest.TestCase):
             )
             self.assertEqual(status, 302)
             self.assertEqual(location, "/node/standard/VERSTD/sectionid/200")
+
+    @patch("application.utils.redirectors.redirect")
+    def test_smartlink_rejected_redirects(self, mock_redirect) -> None:
+        """Test that invalid URLs returned by redirectors.redirect result in a 404."""
+        with self.app.test_client() as client:
+            # 1. http:// URL
+            mock_redirect.return_value = (
+                "http://cwe.mitre.org/data/definitions/999.html"
+            )
+            response = client.get("/smartlink/standard/CWE/999")
+            self.assertEqual(404, response.status_code)
+            mock_redirect.assert_called_once_with("CWE", "999")
+
+            mock_redirect.reset_mock()
+            # 2. javascript: URL
+            mock_redirect.return_value = "javascript:alert(1)"
+            response = client.get("/smartlink/standard/CWE/999")
+            self.assertEqual(404, response.status_code)
+            mock_redirect.assert_called_once_with("CWE", "999")
+
+            mock_redirect.reset_mock()
+            # 3. non-string result
+            mock_redirect.return_value = {"url": "https://cwe.mitre.org"}
+            response = client.get("/smartlink/standard/CWE/999")
+            self.assertEqual(404, response.status_code)
+            mock_redirect.assert_called_once_with("CWE", "999")
 
     @patch.object(redis, "from_url")
     @patch.object(db, "Node_collection")

@@ -111,10 +111,19 @@ class TestLoadDatasetRejectsDuplicateIds(unittest.TestCase):
     """
 
     def _load_harness(self):
+        # The harness is a standalone script, not an importable module, so it is
+        # loaded by path. spec_from_file_location returns None when the path is
+        # not there, and a spec without a loader is possible too. The harness is
+        # committed, so either case is a real breakage rather than an absent
+        # optional dependency — raise with the path instead of skipping (a skip
+        # would report success for a harness that never ran) and instead of an
+        # AttributeError on None, which names neither the file nor the cause.
         import importlib.util
 
         path = os.path.join(_REPO_ROOT, "scripts", "evaluate_librarian.py")
         spec = importlib.util.spec_from_file_location("evaluate_librarian", path)
+        if spec is None or spec.loader is None:
+            raise ImportError(f"cannot load the eval harness from {path}")
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
         return module
