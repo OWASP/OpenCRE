@@ -53,6 +53,7 @@ ITEMS_PER_PAGE = 20
 MAX_ITEMS_PER_PAGE = 100
 OPENCRE_STANDARD_NAME = gap_analysis.OPENCRE_STANDARD_NAME
 
+
 def _llm_error_status_code(err: BaseException) -> int | None:
     """Best-effort extraction of an HTTP-like status code from provider errors."""
     for attr in ("status", "status_code", "http_status", "code"):
