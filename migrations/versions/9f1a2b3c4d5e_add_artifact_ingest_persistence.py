@@ -17,15 +17,18 @@ depends_on = None
 
 
 def _is_sqlite() -> bool:
+    """Return True if the current database dialect is SQLite."""
     return op.get_bind().dialect.name == "sqlite"
 
 
 def table_exists(table_name: str) -> bool:
+    """Check whether a table with the given name exists in the database."""
     inspector = sa.inspect(op.get_bind())
     return table_name in inspector.get_table_names()
 
 
 def has_unique_on_columns(table: str, columns: list) -> bool:
+    """Return True if the table already has a UNIQUE constraint on the exact column list."""
     inspector = sa.inspect(op.get_bind())
     for constraint in inspector.get_unique_constraints(table):
         if constraint["column_names"] == columns:
@@ -34,6 +37,7 @@ def has_unique_on_columns(table: str, columns: list) -> bool:
 
 
 def constraint_name_exists(table: str, constraint_name: str) -> bool:
+    """Return True if a named UNIQUE constraint exists on the table."""
     inspector = sa.inspect(op.get_bind())
     return any(
         c["name"] == constraint_name for c in inspector.get_unique_constraints(table)
@@ -41,6 +45,12 @@ def constraint_name_exists(table: str, constraint_name: str) -> bool:
 
 
 def _ensure_unique_constraint(table: str, name: str, columns: list) -> None:
+    """
+    Add a named UNIQUE constraint on the given columns if one does not already exist.
+
+    For SQLite, this uses batch_alter_table (which rewrites the table) and temporarily
+    disables foreign key enforcement to allow the parent table to be dropped.
+    """
     if has_unique_on_columns(table, columns):
         return
     # SQLite cannot ALTER ADD CONSTRAINT; batch_alter rewrites the table.
@@ -57,6 +67,11 @@ def _ensure_unique_constraint(table: str, name: str, columns: list) -> None:
 
 
 def upgrade():
+    """
+    Create artifact_ingest_event and ingest_chunk tables with SQLite‑safe UNIQUE
+    constraints. If a table already exists, ensure its required unique constraint
+    is present, repairing it if necessary.
+    """
     # UniqueConstraints must be declared inside create_table: SQLite rejects
     # op.create_unique_constraint() after CREATE TABLE.
     if not table_exists("artifact_ingest_event"):
@@ -122,6 +137,7 @@ def upgrade():
 
 
 def downgrade():
+    """Drop the tables in reverse dependency order."""
     if table_exists("ingest_chunk"):
         op.drop_table("ingest_chunk")
     if table_exists("artifact_ingest_event"):
