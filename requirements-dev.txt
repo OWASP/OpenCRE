@@ -78,7 +78,6 @@ types-PyYAML
 typing-inspect
 pycodestyle
 pyflakes
-textacy
 
 # lint / test / typecheck
 black==24.4.2

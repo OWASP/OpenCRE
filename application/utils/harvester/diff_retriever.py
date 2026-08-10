@@ -7,7 +7,6 @@ logger = logging.getLogger(__name__)
 
 
 class DiffRetriever:
-    MAX_DIFF_SIZE_BYTES = 50 * 1024 * 1024
     """
 
     Retrieves unified git diffs between two commits.
@@ -17,6 +16,8 @@ class DiffRetriever:
     Parsing and normalization are handled by downstream components.
 
     """
+
+    MAX_DIFF_SIZE_BYTES = 50 * 1024 * 1024
 
     def __init__(self, repository_client: GitRepositoryClient) -> None:
         self.repository_client = repository_client
