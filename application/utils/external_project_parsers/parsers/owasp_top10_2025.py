@@ -13,7 +13,11 @@ from application.utils.external_project_parsers.base_parser_defs import (
 class OwaspTop10_2025(ParserInterface):
     name = "OWASP Top 10 2025"
     data_file = (
-        Path(__file__).resolve().parents[3] / "tests" / "fixtures" / "owasp_mappings" / "owasp_top10_2025.json"
+        Path(__file__).resolve().parents[3]
+        / "tests"
+        / "fixtures"
+        / "owasp_mappings"
+        / "owasp_top10_2025.json"
     )
 
     def parse(self, cache: db.Node_collection, ph: prompt_client.PromptHandler):

@@ -12,7 +12,13 @@ from application.utils.external_project_parsers.base_parser_defs import (
 
 class OwaspAisvs(ParserInterface):
     name = "OWASP AI Security Verification Standard (AISVS)"
-    data_file = Path(__file__).resolve().parents[3] / "tests" / "fixtures" / "owasp_mappings"/ "owasp_aisvs_1_0.json"
+    data_file = (
+        Path(__file__).resolve().parents[3]
+        / "tests"
+        / "fixtures"
+        / "owasp_mappings"
+        / "owasp_aisvs_1_0.json"
+    )
 
     def parse(self, cache: db.Node_collection, ph: prompt_client.PromptHandler):
         with self.data_file.open("r", encoding="utf-8") as handle:
