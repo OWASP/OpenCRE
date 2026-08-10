@@ -1228,7 +1228,7 @@ def run_librarian(
     # resolver may auto-link to (W2 seeded this from the golden set; here it is
     # the real DB-backed registry).
     cre_embeddings = database.get_embeddings_by_doc_type(defs.Credoctypes.CRE.value)
-    known_ids = set(cre_embeddings.keys())
+    known_ids = {cre.external_id for cre in database.get_CREs()}
     # in_memory loads the hub matrix; pgvector ranks in the DB over the
     # embedding_vec column (no in-RAM pool). Both honor the same retrieve().
     pool = (
@@ -1273,6 +1273,12 @@ def run_librarian(
         if resolution.outcome == ResolutionOutcome.resolved:
             explicit += 1
             logger.info("[explicit] %s -> %s", section.chunk_id, resolution.cre_ids[0])
+            continue
+        elif resolution.outcome == ResolutionOutcome.no_reference:
+            # Continue to semantic retrieval below
+            pass
+        else:  # unknown_reference or conflicting_references
+            logger.info("[review] %s -> %s", section.chunk_id, resolution.outcome)
             continue
 
         try:
