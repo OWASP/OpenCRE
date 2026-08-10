@@ -28,8 +28,8 @@ class TestOwaspAisvsParser(unittest.TestCase):
                 "Allow only trusted sources both build time and runtime; therefore perform integrity checks on all resources and code",
             ),
             (
-                "162-655",
-                "Documentation of all components' business or security function",
+                "058-083",
+                "Generate and retain audit logs for security events",
             ),
         ]:
             self.collection.add_cre(defs.CRE(id=cre_id, name=name, description=""))
@@ -39,28 +39,26 @@ class TestOwaspAisvsParser(unittest.TestCase):
         )
 
         entries = result.results["OWASP AI Security Verification Standard (AISVS)"]
-        self.assertEqual(14, len(entries))
+        self.assertEqual(12, len(entries))
         self.assertEqual("AISVS1", entries[0].sectionID)
+        self.assertEqual("Training Data Integrity & Traceability", entries[0].section)
         self.assertEqual(
-            "Training Data Governance & Bias Management", entries[0].section
-        )
-        self.assertEqual(
-            "https://github.com/OWASP/AISVS/tree/main/1.0/en/0x10-C01-Training-Data-Integrity-and-Traceability.md",
+            "https://github.com/OWASP/AISVS/blob/main/1.0/en/0x10-C01-Training-Data-Integrity-and-Traceability.md",
             entries[0].hyperlink,
         )
         self.assertEqual(
             ["227-045", "307-507"],
             [link.document.id for link in entries[0].links],
         )
-        self.assertEqual("AISVS14", entries[-1].sectionID)
+        self.assertEqual("AISVS12", entries[-1].sectionID)
         self.assertEqual(
-            "Human Oversight, Accountability & Governance", entries[-1].section
+            "Monitoring, Logging & Anomaly Detection", entries[-1].section
         )
         self.assertEqual(
-            "https://github.com/OWASP/AISVS/tree/main/1.0/en/0x10-C14-Human-Oversight.md",
+            "https://github.com/OWASP/AISVS/tree/main/1.0/en/0x10-C12-Monitoring-and-Logging.md",
             entries[-1].hyperlink,
         )
         self.assertEqual(
-            ["162-655"],
+            ["058-083"],
             [link.document.id for link in entries[-1].links],
         )
