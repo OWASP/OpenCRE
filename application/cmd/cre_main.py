@@ -1246,11 +1246,22 @@ def run_librarian(
             explicit += 1
             logger.info("[explicit] %s -> %s", section.chunk_id, resolution.cre_ids[0])
             continue
-        elif resolution.outcome == ResolutionOutcome.no_reference:
+        if resolution.outcome == ResolutionOutcome.no_reference:
             # Continue to semantic retrieval below
             pass
-        else:  # unknown_reference or conflicting_references
+        elif resolution.outcome in (
+            ResolutionOutcome.unknown_reference,
+            ResolutionOutcome.conflicting_references,
+        ):
             logger.info("[review] %s -> %s", section.chunk_id, resolution.outcome)
+            continue
+        else:
+            rejected += 1
+            logger.warning(
+                "[review] %s skipped: unexpected resolution outcome %s",
+                section.chunk_id,
+                resolution.outcome,
+            )
             continue
 
         try:
