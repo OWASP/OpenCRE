@@ -3,6 +3,7 @@ import re
 from typing import Dict, List, Any, Tuple
 
 from application.defs import cre_defs as defs
+from application.utils import spreadsheet_parsers
 from application.utils.external_project_parsers.parsers import export_format_parser
 from application.utils.external_project_parsers import base_parser_defs
 from application.utils.external_project_parsers.base_parser_defs import ParseResult
@@ -13,38 +14,6 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 _CRE_ID_TOKEN = re.compile(r"^\d{3}-\d{3}$")
-# Exported CRE cells are ``<id>|<name>`` (see ExportFormat.separator).
-_CRE_CELL_PATTERN = re.compile(r"^\d{3}-\d{3}\|.+$")
-
-
-def _is_empty_cell(value: Any) -> bool:
-    if value is None:
-        return True
-    text = str(value).strip()
-    return text == "" or text.lower() in {"none", "nan", "n/a", "no", "tbd", "0"}
-
-
-def validate_cre_csv_rows(rows: List[Dict[str, Any]]) -> None:
-    """Fail fast on CRE cells that are not ``XXX-XXX|Name`` (#554).
-
-    Raises ``ValueError`` with a row/column message so the web layer can
-    return HTTP 400 instead of a 500 / silent bad parse.
-    """
-    if not rows:
-        return
-    cre_headers = [h for h in rows[0].keys() if str(h).startswith("CRE")]
-    for row_index, row in enumerate(rows, start=2):
-        for header in cre_headers:
-            value = row.get(header)
-            if _is_empty_cell(value):
-                continue
-            normalized = str(value).strip()
-            if not _CRE_CELL_PATTERN.match(normalized):
-                raise ValueError(
-                    "Invalid CRE column format in row "
-                    f"{row_index}, column '{header}'. Expected XXX-XXX|Name "
-                    f"(got '{normalized}')."
-                )
 
 
 def _load_existing_cre_identity_maps() -> Tuple[Dict[str, str], Dict[str, str]]:
@@ -122,7 +91,7 @@ def parse_rows_to_documents(rows: List[Dict[str, Any]]) -> ParseResult:
     conventions. It reuses export_format_parser.parse_export_format to
     understand the CSV structure.
     """
-    validate_cre_csv_rows(rows)
+    rows = spreadsheet_parsers.validate_import_csv_rows(rows)
     documents = export_format_parser.parse_export_format(rows)
 
     # CREs are under the Credoctypes.CRE value key
