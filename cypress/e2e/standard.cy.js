@@ -19,9 +19,12 @@ describe('OpenCRE standard browse', () => {
     cy.get('a[href="/cre/558-807"]').should('exist');
 
     // Clicking pagination actually changes the rendered content.
-    cy.get('.accordion').first().invoke('text').then((firstPageText) => {
-      cy.get('.pagination').contains('2').click();
-      cy.get('.accordion').first().invoke('text').should('not.eq', firstPageText);
-    });
+    cy.get('.accordion')
+      .first()
+      .invoke('text')
+      .then((firstPageText) => {
+        cy.get('.pagination').contains('2').click();
+        cy.get('.accordion').first().invoke('text').should('not.eq', firstPageText);
+      });
   });
 });
