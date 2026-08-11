@@ -390,6 +390,10 @@ class HarvesterCheckpoint(BaseModel):  # type: ignore
 
 
 def _serialize_json_value(value: Any) -> str:
+    if value is None:
+        return "null"
+    if isinstance(value, str):
+        return value
     return flask_json.dumps(value)
 
 
@@ -718,7 +722,7 @@ class NeoDocument(StructuredNode):
 
     @classmethod
     def to_cre_def(self, node, parse_links=True):
-        raise Exception(f"Shouldn't be parsing a NeoDocument")
+        raise Exception("Shouldn't be parsing a NeoDocument")
 
     @classmethod
     def get_links(self, links_dict):
@@ -740,7 +744,7 @@ class NeoNode(NeoDocument):
 
     @classmethod
     def to_cre_def(self, node, parse_links=True):
-        raise Exception(f"Shouldn't be parsing a NeoNode")
+        raise Exception("Shouldn't be parsing a NeoNode")
 
 
 class NeoStandard(NeoNode):
@@ -1348,20 +1352,43 @@ class Node_collection:
         for name in standard_names:
             if name not in deduped:
                 deduped.append(name)
-        self.session.query(UserResourceSelection).filter(
-            UserResourceSelection.user_id == user_id
-        ).delete()
-        for name in deduped:
-            self.session.add(
-                UserResourceSelection(
-                    id=generate_uuid(),
-                    user_id=user_id,
-                    standard_name=name,
-                    created_at=now,
+
+        def _replace() -> List[str]:
+            # Serialize concurrent replacements for this user by locking the
+            # parent User row: a second PUT for the same user waits here until
+            # ours commits, then its DELETE sees our rows. Without this, two
+            # *disjoint* selections could both commit (no IntegrityError) and
+            # merge, breaking replacement semantics. FOR UPDATE is a no-op on
+            # SQLite (dev/tests).
+            self.session.query(User).filter(
+                User.id == user_id
+            ).with_for_update().first()
+            self.session.query(UserResourceSelection).filter(
+                UserResourceSelection.user_id == user_id
+            ).delete()
+            for name in deduped:
+                self.session.add(
+                    UserResourceSelection(
+                        id=generate_uuid(),
+                        user_id=user_id,
+                        standard_name=name,
+                        created_at=now,
+                    )
                 )
-            )
-        self.session.commit()
-        return self.get_user_resource_selection(user_id)
+            # Capture our selection while still holding the lock, so the return
+            # value can't reflect a later concurrent write.
+            stored = self.get_user_resource_selection(user_id)
+            self.session.commit()
+            return stored
+
+        try:
+            return _replace()
+        except IntegrityError:
+            # Same-key collision on uq_user_resource_selection; roll back and
+            # retry the replace exactly once (mirrors upsert_user). A second
+            # failure propagates — no retry loop.
+            self.session.rollback()
+            return _replace()
 
     def __get_external_links(self) -> List[Tuple[CRE, Node, str]]:
         external_links: List[Tuple[CRE, Node, str]] = []
@@ -2348,7 +2375,7 @@ class Node_collection:
             ltype (cre_defs.LinkTypes, optional): the linktype
         Returns: the cre_defs.Link or None in case of error (cycle)
         """
-        if ltype == None:
+        if ltype is None:
             raise ValueError("Every link should have a link type")
 
         if ltype == cre_defs.LinkTypes.PartOf:
@@ -3276,7 +3303,7 @@ def gap_analysis(
         key = node.id
         if not key:
             logger.error(
-                f"key is empty, this is a bug and this gap analysis will not progress"
+                "key is empty, this is a bug and this gap analysis will not progress"
             )
             continue
         if key not in grouped_paths:
@@ -3302,7 +3329,7 @@ def gap_analysis(
         end_key = path["end"].id
         if not end_key:
             logger.error(
-                f"end_key is empty, this is a bug and this gap analysis will not progress"
+                "end_key is empty, this is a bug and this gap analysis will not progress"
             )
             continue
         path["score"] = get_path_score(path)

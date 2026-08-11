@@ -8,6 +8,7 @@ from application.utils import git
 import tempfile
 from unittest.mock import patch
 import os
+import subprocess
 
 
 class TestCheatsheetsParser(unittest.TestCase):
@@ -34,7 +35,13 @@ class TestCheatsheetsParser(unittest.TestCase):
         repo.working_dir = loc
         cre = defs.CRE(name="blah", id="223-780")
         self.collection.add_cre(cre)
-        with open(os.path.join(os.path.join(loc, "cheatsheets"), "cs.md"), "w") as mdf:
+        with open(
+            os.path.join(
+                os.path.join(loc, "cheatsheets"),
+                "Secrets_Management_Cheat_Sheet.md",
+            ),
+            "w",
+        ) as mdf:
             mdf.write(cs)
         mock_clone.return_value = repo
         entries = cheatsheets_parser.Cheatsheets().parse(
@@ -45,22 +52,149 @@ class TestCheatsheetsParser(unittest.TestCase):
         # verify the external tagging convention, not just enum wiring.
         expected = defs.Standard(
             name="OWASP Cheat Sheets",
-            hyperlink="https://github.com/foo/bar/tree/master/cs.md",
+            hyperlink="https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html",
             section="Secrets Management Cheat Sheet",
-            links=[defs.Link(document=cre, ltype=defs.LinkTypes.LinkedTo)],
+            links=[defs.Link(document=cre, ltype=defs.LinkTypes.AutomaticallyLinkedTo)],
             tags=[
                 "family:guidance",
                 "subtype:cheatsheet",
-                "source:owasp_cheatsheets",
                 "audience:developer",
                 "maturity:stable",
+                "source:owasp_cheatsheets",
             ],
         )
         self.maxDiff = None
-        for name, nodes in entries.results.items():
-            self.assertEqual(name, parser.name)
-            self.assertEqual(len(nodes), 1)
-            self.assertCountEqual(expected.todict(), nodes[0].todict())
+        # Ensure the parser name exists in results before inspecting
+        self.assertIn(parser.name, entries.results)
+        nodes = entries.results[parser.name]
+        sections = {node.section for node in nodes}
+        self.assertIn("Secrets Management Cheat Sheet", sections)
+        secret_entry = next(
+            (
+                node
+                for node in nodes
+                if node.section == "Secrets Management Cheat Sheet"
+            ),
+            None,
+        )
+        self.assertIsNotNone(secret_entry)
+        self.assertEqual(expected.todict(), secret_entry.todict())
+
+    def test_register_supplemental_cheatsheets(self) -> None:
+        for cre_id, name in [
+            ("118-110", "API/web services"),
+            ("724-770", "Technical application access control"),
+            ("623-550", "Denial Of Service protection"),
+        ]:
+            self.collection.add_cre(defs.CRE(name=name, id=cre_id))
+
+        entries = cheatsheets_parser.Cheatsheets().register_supplemental_cheatsheets(
+            cache=self.collection
+        )
+        rest = next(
+            entry for entry in entries if entry.section == "REST Security Cheat Sheet"
+        )
+        for link in rest.links:
+            self.assertEqual(link.ltype, defs.LinkTypes.AutomaticallyLinkedTo)
+        self.assertEqual(
+            "https://cheatsheetseries.owasp.org/cheatsheets/REST_Security_Cheat_Sheet.html",
+            rest.hyperlink,
+        )
+        self.assertEqual(
+            ["118-110", "724-770", "623-550"],
+            [link.document.id for link in rest.links],
+        )
+
+    @patch.object(git, "clone")
+    def test_parse_returns_supplemental_entries_when_clone_fails(
+        self, mock_clone
+    ) -> None:
+        for cre_id, name in [
+            ("118-110", "API/web services"),
+            ("724-770", "Technical application access control"),
+            ("623-550", "Denial Of Service protection"),
+        ]:
+            self.collection.add_cre(defs.CRE(name=name, id=cre_id))
+
+        mock_clone.side_effect = subprocess.CalledProcessError(
+            returncode=1,
+            cmd=["git", "clone"],
+        )
+
+        entries = cheatsheets_parser.Cheatsheets().parse(
+            cache=self.collection, ph=PromptHandler(database=self.collection)
+        )
+        mock_clone.assert_called_once()
+
+        rest = next(
+            node
+            for node in entries.results["OWASP Cheat Sheets"]
+            if node.section == "REST Security Cheat Sheet"
+        )
+        self.assertEqual(
+            "https://cheatsheetseries.owasp.org/cheatsheets/REST_Security_Cheat_Sheet.html",
+            rest.hyperlink,
+        )
+        self.assertEqual(
+            ["118-110", "724-770", "623-550"],
+            [link.document.id for link in rest.links],
+        )
+
+    @patch.object(git, "clone")
+    def test_parse_merges_repo_and_supplemental_duplicate_entries(
+        self, mock_clone
+    ) -> None:
+        cs = self.rest_cheatsheet_md
+
+        class Repo:
+            working_dir = ""
+
+        repo = Repo()
+        temp_dir = tempfile.TemporaryDirectory()
+        self.addCleanup(temp_dir.cleanup)
+        loc = temp_dir.name
+        os.mkdir(os.path.join(loc, "cheatsheets"))
+        repo.working_dir = loc
+        for cre_id, name in [
+            ("223-780", "REST security repo link"),
+            ("118-110", "API/web services"),
+            ("724-770", "Technical application access control"),
+            ("623-550", "Denial Of Service protection"),
+        ]:
+            self.collection.add_cre(defs.CRE(name=name, id=cre_id))
+
+        with open(
+            os.path.join(
+                os.path.join(loc, "cheatsheets"),
+                "REST_Security_Cheat_Sheet.md",
+            ),
+            "w",
+        ) as mdf:
+            mdf.write(cs)
+        mock_clone.return_value = repo
+
+        entries = cheatsheets_parser.Cheatsheets().parse(
+            cache=self.collection, ph=PromptHandler(database=self.collection)
+        )
+
+        rest_entries = [
+            node
+            for node in entries.results["OWASP Cheat Sheets"]
+            if node.section == "REST Security Cheat Sheet"
+            and node.hyperlink
+            == "https://cheatsheetseries.owasp.org/cheatsheets/REST_Security_Cheat_Sheet.html"
+        ]
+        self.assertEqual(1, len(rest_entries))
+        self.assertCountEqual(
+            ["223-780", "118-110", "724-770", "623-550"],
+            [link.document.id for link in rest_entries[0].links],
+        )
+        self.assertTrue(
+            all(
+                link.ltype == defs.LinkTypes.AutomaticallyLinkedTo
+                for link in rest_entries[0].links
+            )
+        )
 
     cheatsheets_md = """ # Secrets Management Cheat Sheet
 
@@ -119,4 +253,11 @@ See [the Open CRE project on secrets lookup](https://www.opencre.org/cre/223-780
 - [NIST SP 800-57 Recommendation for Key Management](https://csrc.nist.gov/publications/detail/sp/800-57-part-1/rev-5/final)
 
 
+"""
+
+    rest_cheatsheet_md = """# REST Security Cheat Sheet
+
+## Authentication
+
+For access-control recommendations see [OpenCRE REST reference](https://www.opencre.org/cre/223-780).
 """

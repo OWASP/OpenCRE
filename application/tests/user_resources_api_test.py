@@ -12,6 +12,7 @@ from unittest.mock import patch
 
 from application import create_app, sqla
 from application.database import db
+from application.utils.gap_analysis import OPENCRE_STANDARD_NAME
 
 
 class TestUserResourcesApi(unittest.TestCase):
@@ -145,11 +146,13 @@ class TestUserResourcesApi(unittest.TestCase):
                 )
                 self.assertEqual(resp.status_code, 200)
                 self.assertEqual(
-                    sorted(json.loads(resp.data)["selected"]), ["ASVS", "CWE"]
+                    sorted(json.loads(resp.data)["selected"]),
+                    sorted(["ASVS", "CWE", OPENCRE_STANDARD_NAME]),
                 )
                 get = client.get("/rest/v1/user/resources")
                 self.assertEqual(
-                    sorted(json.loads(get.data)["selected"]), ["ASVS", "CWE"]
+                    sorted(json.loads(get.data)["selected"]),
+                    sorted(["ASVS", "CWE", OPENCRE_STANDARD_NAME]),
                 )
 
     def test_put_replaces_previous_selection(self) -> None:
@@ -169,7 +172,10 @@ class TestUserResourcesApi(unittest.TestCase):
                 self._login(client, "sub-1", "U")
                 client.put("/rest/v1/user/resources", json={"selected": ["SAMM"]})
                 get = client.get("/rest/v1/user/resources")
-                self.assertEqual(json.loads(get.data)["selected"], ["SAMM"])
+                self.assertEqual(
+                    sorted(json.loads(get.data)["selected"]),
+                    sorted(["SAMM", OPENCRE_STANDARD_NAME]),
+                )
 
     def test_put_dedupes_input(self) -> None:
         self.collection.upsert_user(
@@ -190,7 +196,8 @@ class TestUserResourcesApi(unittest.TestCase):
                     json={"selected": ["ASVS", "ASVS", "CWE"]},
                 )
                 self.assertEqual(
-                    sorted(json.loads(resp.data)["selected"]), ["ASVS", "CWE"]
+                    sorted(json.loads(resp.data)["selected"]),
+                    sorted(["ASVS", "CWE", OPENCRE_STANDARD_NAME]),
                 )
 
     def test_put_trims_and_dedupes_whitespace_variants(self) -> None:
@@ -215,9 +222,73 @@ class TestUserResourcesApi(unittest.TestCase):
                 )
                 self.assertEqual(resp.status_code, 200)
                 self.assertEqual(
-                    sorted(json.loads(resp.data)["selected"]), ["ASVS", "CWE"]
+                    sorted(json.loads(resp.data)["selected"]),
+                    sorted(["ASVS", "CWE", OPENCRE_STANDARD_NAME]),
                 )
-        self.assertEqual(sqla.session.query(db.UserResourceSelection).count(), 2)
+        # ASVS, CWE, and the always-injected OpenCRE.
+        self.assertEqual(sqla.session.query(db.UserResourceSelection).count(), 3)
+
+    def test_put_always_persists_opencre(self) -> None:
+        # A non-empty selection without OpenCRE gets OpenCRE injected at write.
+        self.collection.upsert_user(
+            google_sub="sub-1", email="a@x.com", display_name="U"
+        )
+        with patch.dict(
+            os.environ,
+            {
+                "CRE_ENABLE_LOGIN": "1",
+                "CRE_ENABLE_MYOPENCRE": "1",
+                "INSECURE_REQUESTS": "1",
+            },
+        ):
+            with self.app.test_client() as client:
+                self._login(client, "sub-1", "U")
+                resp = client.put(
+                    "/rest/v1/user/resources", json={"selected": ["ASVS"]}
+                )
+                self.assertEqual(resp.status_code, 200)
+                self.assertIn(OPENCRE_STANDARD_NAME, json.loads(resp.data)["selected"])
+
+    def test_put_opencre_not_duplicated(self) -> None:
+        self.collection.upsert_user(
+            google_sub="sub-1", email="a@x.com", display_name="U"
+        )
+        with patch.dict(
+            os.environ,
+            {
+                "CRE_ENABLE_LOGIN": "1",
+                "CRE_ENABLE_MYOPENCRE": "1",
+                "INSECURE_REQUESTS": "1",
+            },
+        ):
+            with self.app.test_client() as client:
+                self._login(client, "sub-1", "U")
+                resp = client.put(
+                    "/rest/v1/user/resources",
+                    json={"selected": ["ASVS", OPENCRE_STANDARD_NAME]},
+                )
+                selected = json.loads(resp.data)["selected"]
+                self.assertEqual(selected.count(OPENCRE_STANDARD_NAME), 1)
+
+    def test_put_empty_selection_stays_empty(self) -> None:
+        # Empty PUT must remain [] (PR3 treats [] as "show all") — OpenCRE must
+        # NOT be injected, or that would become "show only OpenCRE".
+        self.collection.upsert_user(
+            google_sub="sub-1", email="a@x.com", display_name="U"
+        )
+        with patch.dict(
+            os.environ,
+            {
+                "CRE_ENABLE_LOGIN": "1",
+                "CRE_ENABLE_MYOPENCRE": "1",
+                "INSECURE_REQUESTS": "1",
+            },
+        ):
+            with self.app.test_client() as client:
+                self._login(client, "sub-1", "U")
+                resp = client.put("/rest/v1/user/resources", json={"selected": []})
+                self.assertEqual(resp.status_code, 200)
+                self.assertEqual(json.loads(resp.data)["selected"], [])
 
     def test_put_400_on_invalid_body(self) -> None:
         self.collection.upsert_user(

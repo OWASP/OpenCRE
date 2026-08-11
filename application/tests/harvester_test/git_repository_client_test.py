@@ -70,7 +70,8 @@ class GitRepositoryClientTests(unittest.TestCase):
 
         mock_clone.assert_called_once()
 
-    def test_sync_fetches_when_repository_exists(self):
+    @patch("application.utils.harvester.git_repository_client.subprocess.run")
+    def test_sync_fetches_when_repository_exists(self, mock_run):
         client = GitRepositoryClient(
             owner="OWASP",
             repository="ASVS",
