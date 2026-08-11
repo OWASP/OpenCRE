@@ -159,6 +159,10 @@ def is_empty(value: Optional[str]) -> bool:
     )
 
 
+# Exported CRE cells are ``<id>|<name>`` (see ExportFormat.separator).
+_CRE_CELL_PATTERN = re.compile(r"^\d{3}-\d{3}\|.+$")
+
+
 def validate_import_csv_rows(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """
     Entry point for parsing imported CSV files.
@@ -203,14 +207,22 @@ def validate_import_csv_rows(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]
         if all(not v for v in normalized.values()):
             continue
 
-        cre_values = [v for k, v in normalized.items() if k.startswith("CRE") and v]
+        cre_cells = {
+            k: v
+            for k, v in normalized.items()
+            if k.startswith("CRE") and not is_empty(v)
+        }
 
-        for cre in cre_values:
-            if "|" not in cre:
+        for header, cre in cre_cells.items():
+            if not _CRE_CELL_PATTERN.match(str(cre)):
                 errors.append(
                     {
                         "row": row_index,
-                        "message": f"Invalid CRE entry '{cre}', expected '<CRE-ID>|<Name>'",
+                        "message": (
+                            f"Invalid CRE column format in row {row_index}, "
+                            f"column '{header}'. Expected XXX-XXX|Name "
+                            f"(got '{cre}')."
+                        ),
                     }
                 )
 

@@ -1600,7 +1600,7 @@ class TestMain(unittest.TestCase):
         workspace = tempfile.mkdtemp()
         path = os.path.join(workspace, "triple.csv")
         with open(path, "w", encoding="utf-8") as f:
-            f.write('CRE 0,standard|name,standard|id\n')
+            f.write("CRE 0,standard|name,standard|id\n")
             f.write('"""123-456|Quoted""",ASVS,1.1.1\n')
         with patch.dict(os.environ, {"CRE_ALLOW_IMPORT": "True"}):
             with self.app.test_client() as client:
