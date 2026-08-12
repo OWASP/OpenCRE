@@ -1,0 +1,57 @@
+name: Librarian Regression Gate
+# Module C's accuracy gate. The unit suite proves the code runs; this proves the
+# pipeline still *decides* correctly over the golden set.
+#
+# Deliberately hermetic: no DB, no API key, no model download. The semantic
+# reports (C.1 recall, C.2 top-1, the C.3 ECE gate, C.4 decision accuracy) need
+# live CRE vectors and are measured locally — seeding a candidate pool from
+# golden text offline is the leakage the hub firewall exists to strip, so a CI
+# job that "measured" them would be measuring nothing.
+#
+# What this gate does catch is the failure that actually bit us: a Module B
+# schema change silently rejecting every row at the C.0 boundary, which used to
+# leave the explicit gate with nothing to count and still exit 0.
+
+on:
+  pull_request:
+    paths:
+      - 'application/utils/librarian/**'
+      - 'application/tests/librarian/**'
+      - 'scripts/evaluate_librarian.py'
+      - '.github/workflows/librarian_regression.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'application/utils/librarian/**'
+      - 'application/tests/librarian/**'
+      - 'scripts/evaluate_librarian.py'
+
+permissions:
+  contents: read
+
+jobs:
+  regression:
+    name: Librarian Regression Gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.3'
+
+      - name: Install python dependencies
+        run: |
+          pip install --upgrade pip setuptools
+          make install-python
+
+      - name: Librarian unit suite
+        run: python -m pytest application/tests/librarian/ -q
+
+      - name: Golden-set decision gate
+        # Non-zero on: a failed explicit-slice gate (C.0.5 must be 100%), or a
+        # C.0 boundary that rejected the whole dataset.
+        run: |
+          python scripts/evaluate_librarian.py \
+            --dataset application/tests/librarian/fixtures/golden_dataset.json
