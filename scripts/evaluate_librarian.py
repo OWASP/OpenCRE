@@ -26,6 +26,7 @@ reports share those shortlists:
 """
 
 import argparse
+import hashlib
 import json
 import os
 import sys
@@ -54,8 +55,13 @@ if TYPE_CHECKING:  # the live calibration deps are imported lazily below
 
 # Harness-only synthetic provenance: golden rows are not queue rows, so we
 # synthesize the minimum B-shaped row needed to exercise the C.0 boundary.
+# The shape tracks Module B's live ``knowledge_queue`` (v0.2, merged in #989),
+# not the flat pre-W8 mirror — if it drifts again, every row fails validation
+# and the slice gates below stop grading anything.
 _SYNTHETIC_SHA = "0" * 40
 _SYNTHETIC_CREATED_AT = "2026-06-01T00:00:00Z"
+_SYNTHETIC_RUN_ID = "golden-harness"
+_SCHEMA_VERSION = "0.2.0"
 
 
 def load_dataset(path: str) -> List[GoldenDatasetRow]:
@@ -81,13 +87,39 @@ def load_dataset(path: str) -> List[GoldenDatasetRow]:
 
 
 def queue_row_from_golden(row: GoldenDatasetRow) -> dict:
-    """Adapt a golden row into the knowledge_queue shape C.0 validates."""
+    """Adapt a golden row into the knowledge_queue shape C.0 validates.
+
+    Golden rows carry no chunk or artifact identity — they predate the A->B->C
+    id-space — so the harness mints deterministic stand-ins from the row id.
+    Deterministic, not random: two runs over the same dataset must produce the
+    same ids, or the shared audits keyed off them stop lining up.
+
+    Everything here is a synthetic github-repo-path row. The golden set is drawn
+    from checked-in OWASP standards, so ``repo_path`` is the honest locator kind;
+    an rss-shaped variant would exercise a provenance branch the dataset has no
+    examples of.
+    """
     standard = row.input.source_standard.value if row.input.source_standard else "OTHER"
+    path = row.provenance.section_path or "unknown.md"
+    artifact_id = f"art:golden/{standard}:{path}"
     return {
         "id": row.id,
+        # The row id is already unique (load_dataset enforces it), so it is a
+        # sound dedup key without hashing the text.
+        "content_hash": hashlib.sha256(row.id.encode("utf-8")).hexdigest(),
+        "chunk_id": f"chk:{artifact_id}:0",
+        "artifact_id": artifact_id,
+        "pipeline_run_id": _SYNTHETIC_RUN_ID,
+        "schema_version": _SCHEMA_VERSION,
+        "source_type": "github",
         "source_repo": f"golden/{standard}",
-        "source_path": row.provenance.section_path or "unknown.md",
         "source_commit_sha": _SYNTHETIC_SHA,
+        "locator_kind": "repo_path",
+        "locator_path": path,
+        # One span per golden row: the dataset stores whole sections, already
+        # chunked by hand, so there is no second span to point at.
+        "span_index": 0,
+        "span_total": 1,
         "text": row.input.text,
         "confidence": 0.99,
         "llm_label": "KNOWLEDGE",
@@ -502,6 +534,29 @@ def main(argv: List[str]) -> int:
         f"hub-firewall: {'ON' if firewall_on else 'OFF'}; "
         f"stripped {stripped} leaking hub entries"
     )
+    # A boundary that rejects everything silently un-grades every report below
+    # it: nothing reaches the resolver, so the explicit gate has nothing to
+    # count, reports PASS-by-vacuum, and the run exits 0. That is the same
+    # skipped-gate-reports-success failure the C.3 calibration gate was fixed
+    # for, and it is how a knowledge_queue schema drift would slip through.
+    validated_total = sum(validated_per_slice.values())
+    if rows and not validated_total:
+        print(
+            f"validation (C.0): 0/{len(rows)} rows validated — the whole golden "
+            "set was rejected at the boundary, so no report below this line "
+            "graded anything; FAILED (gates did not run). Most likely the "
+            "synthetic row shape has drifted from Module B's knowledge_queue"
+        )
+        return 1
+
+    explicit_expected = per_slice.get("explicit", 0)
+    if explicit_expected and not explicit_total:
+        print(
+            f"explicit slice (C.0.5 resolver): 0/{explicit_expected} reached the "
+            "resolver — every explicit row was rejected at the C.0 boundary; "
+            "FAILED (gate did not run)"
+        )
+        return 1
     if explicit_total:
         gate_ok = explicit_correct == explicit_total
         print(
