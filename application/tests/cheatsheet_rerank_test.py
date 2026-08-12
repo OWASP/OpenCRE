@@ -10,6 +10,13 @@ from application.utils.external_project_parsers.parsers.cheatsheet_rerank import
     rerank_candidates_with_llm,
 )
 
+# LangGraph's first StateGraph().compile() in a process pays a one-time
+# lazy-import/compile cost (observed ~0.5s), unrelated to anything under
+# test. Pay it here, at module load, so timing-sensitive assertions (e.g.
+# test_llm_timeout_falls_back) measure only our own timeout mechanism, both
+# in isolation and as part of the full suite.
+build_rerank_graph()
+
 
 def _record(**overrides) -> CheatsheetRecord:
     defaults = dict(
@@ -121,10 +128,13 @@ class RerankCandidatesWithLlmTest(unittest.TestCase):
         results = rerank_candidates_with_llm(
             _record(), _candidates(), llm_score_fn=stub, top_n=5
         )
-        ids = {r.cre_id for r in results}
-        self.assertNotIn("999-999", ids)
-        # the un-scored real candidate still gets a retrieval-only entry
-        self.assertIn("123-456", ids)
+        by_id = {r.cre_id: r for r in results}
+        self.assertNotIn("999-999", by_id)
+        # the un-scored real candidate still gets a retrieval-only entry,
+        # and must always be flagged for review since it was never actually
+        # judged by the reranker (regardless of its confidence band).
+        self.assertIn("123-456", by_id)
+        self.assertTrue(by_id["123-456"].needs_review)
 
     def test_llm_exception_falls_back_to_retrieval_score(self):
         def stub(system, user, *, model):
@@ -146,6 +156,7 @@ class RerankCandidatesWithLlmTest(unittest.TestCase):
             time.sleep(0.2)
             return {"ranked": []}
 
+        started = time.monotonic()
         results = rerank_candidates_with_llm(
             _record(),
             _candidates(),
@@ -153,6 +164,8 @@ class RerankCandidatesWithLlmTest(unittest.TestCase):
             top_n=5,
             timeout_seconds=0.01,
         )
+        elapsed = time.monotonic() - started
+        self.assertLess(elapsed, 0.15)  # well under the 0.2s stub delay
         self.assertEqual(len(results), 2)
         self.assertTrue(all(r.trace.fallback_used for r in results))
 

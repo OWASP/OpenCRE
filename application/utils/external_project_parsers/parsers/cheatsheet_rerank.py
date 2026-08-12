@@ -43,6 +43,7 @@ import logging
 import os
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError
 from dataclasses import dataclass
+from functools import partial
 from datetime import datetime, timezone
 from typing import Any, Callable, Dict, List, Optional, TypedDict
 
@@ -55,12 +56,10 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 # Confidence thresholds (RFC section 11 bootstrap defaults; recalibrate via env)
 # ---------------------------------------------------------------------------
-HIGH_CONFIDENCE_THRESHOLD = float(
-    os.environ.get("CRE_CHEATSHEET_RERANK_HIGH_THRESHOLD", "0.85")
-)
-MEDIUM_CONFIDENCE_THRESHOLD = float(
-    os.environ.get("CRE_CHEATSHEET_RERANK_MEDIUM_THRESHOLD", "0.70")
-)
+_HIGH_THRESHOLD_ENV_VAR = "CRE_CHEATSHEET_RERANK_HIGH_THRESHOLD"
+_MEDIUM_THRESHOLD_ENV_VAR = "CRE_CHEATSHEET_RERANK_MEDIUM_THRESHOLD"
+_DEFAULT_HIGH_THRESHOLD = "0.85"
+_DEFAULT_MEDIUM_THRESHOLD = "0.70"
 
 # Identifiers persisted into RerankTrace for the RFC audit trail (mirrors
 # RETRIEVER_NAME / RERANKER_NAME conventions used elsewhere in the codebase).
@@ -79,21 +78,44 @@ class RerankError(ValueError):
     """Base class for reranker construction/usage failures."""
 
 
+def _resolve_threshold(env_var: str, default: str) -> float:
+    raw = os.environ.get(env_var, default)
+    try:
+        value = float(raw)
+    except (TypeError, ValueError) as exc:
+        raise RerankError(f"{env_var}={raw!r} is not a valid float") from exc
+    if not (0.0 <= value <= 1.0):
+        raise RerankError(f"{env_var}={value!r} must be in [0, 1]")
+    return value
+
+
 def classify_confidence(score: float) -> str:
     """
     Map a 0-1 re-rank score to a confidence band ("high" | "medium" | "low").
 
-    Thresholds are the RFC's bootstrap defaults and are recalibratable via
-    ``CRE_CHEATSHEET_RERANK_HIGH_THRESHOLD`` / ``_MEDIUM_THRESHOLD``.
+    Thresholds are the RFC's bootstrap defaults (high >= 0.85, medium >= 0.70)
+    and are recalibratable via ``CRE_CHEATSHEET_RERANK_HIGH_THRESHOLD`` /
+    ``CRE_CHEATSHEET_RERANK_MEDIUM_THRESHOLD``. Thresholds are re-read from
+    the environment on every call (rather than cached at import time) so
+    overrides — including ones set after this module is imported, as in
+    tests — always take effect.
     """
     if not isinstance(score, (int, float)) or isinstance(score, bool):
         raise RerankError(f"score must be a number, got {score!r}")
     if not (0.0 <= float(score) <= 1.0):
         raise RerankError(f"score must be in [0, 1], got {score!r}")
 
-    if score >= HIGH_CONFIDENCE_THRESHOLD:
+    high = _resolve_threshold(_HIGH_THRESHOLD_ENV_VAR, _DEFAULT_HIGH_THRESHOLD)
+    medium = _resolve_threshold(_MEDIUM_THRESHOLD_ENV_VAR, _DEFAULT_MEDIUM_THRESHOLD)
+    if high < medium:
+        raise RerankError(
+            f"{_HIGH_THRESHOLD_ENV_VAR}={high!r} must be >= "
+            f"{_MEDIUM_THRESHOLD_ENV_VAR}={medium!r}"
+        )
+
+    if score >= high:
         return "high"
-    if score >= MEDIUM_CONFIDENCE_THRESHOLD:
+    if score >= medium:
         return "medium"
     return "low"
 
@@ -211,9 +233,18 @@ def _default_model_name() -> str:
     )
 
 
-def default_llm_score_fn(system: str, user: str, *, model: str) -> Dict[str, Any]:
+def default_llm_score_fn(
+    system: str, user: str, *, model: str, timeout: Optional[float] = None
+) -> Dict[str, Any]:
     """Production LLM call via LiteLLM. Raises on any failure; callers must
-    handle fallback (this function intentionally does not swallow errors)."""
+    handle fallback (this function intentionally does not swallow errors).
+
+    ``timeout``, when given, is passed straight through to LiteLLM so the
+    underlying HTTP request itself is bounded — the wall-clock cutoff in
+    ``_call_with_timeout`` protects the pipeline either way, but a
+    request-level timeout lets the worker thread actually terminate instead
+    of continuing to block on the socket after we've stopped waiting on it.
+    """
     try:
         import litellm  # type: ignore
     except ImportError as exc:  # pragma: no cover - exercised only without litellm
@@ -227,6 +258,7 @@ def default_llm_score_fn(system: str, user: str, *, model: str) -> Dict[str, Any
         ],
         response_format={"type": "json_object"},
         temperature=0.2,
+        timeout=timeout,
     )
     choices = getattr(resp, "choices", None)
     if not choices:
@@ -243,15 +275,26 @@ def _call_with_timeout(
     fn: Callable[[], Dict[str, Any]], timeout_seconds: float
 ) -> Dict[str, Any]:
     """Run ``fn`` with a hard wall-clock timeout so a hung LLM call can never
-    block the pipeline; raises on timeout or on any exception from ``fn``."""
-    with ThreadPoolExecutor(max_workers=1) as pool:
-        future = pool.submit(fn)
-        try:
-            return future.result(timeout=timeout_seconds)
-        except FutureTimeoutError as exc:
-            raise RerankError(
-                f"LLM re-rank call exceeded {timeout_seconds}s timeout"
-            ) from exc
+    block the pipeline; raises on timeout or on any exception from ``fn``.
+
+    Uses an explicit (non-context-manager) executor so a timeout returns to
+    the caller immediately instead of blocking on ``shutdown(wait=True)``
+    for a thread that is still running the (now-abandoned) call.
+    """
+    pool = ThreadPoolExecutor(max_workers=1)
+    future = pool.submit(fn)
+    try:
+        return future.result(timeout=timeout_seconds)
+    except FutureTimeoutError as exc:
+        pool.shutdown(wait=False)
+        raise RerankError(
+            f"LLM re-rank call exceeded {timeout_seconds}s timeout"
+        ) from exc
+    except Exception:
+        pool.shutdown(wait=False)
+        raise
+    else:
+        pool.shutdown(wait=False)
 
 
 # ---------------------------------------------------------------------------
@@ -364,9 +407,13 @@ def _node_classify(state: _RerankState) -> _RerankState:
     ranked: List[RankedCRE] = []
     for c in candidates:
         entry = scored.get(c.cre_id)
+        per_candidate_fallback = entry is None
         if entry is None:
             # LLM succeeded overall but skipped this one candidate: fall back
             # to its retrieval score individually rather than dropping it.
+            # This is unscored, unexplained data — always flag it for review
+            # even if the raw retrieval score happens to land in a
+            # medium/high band.
             entry = {
                 "score": max(0.0, min(1.0, c.score)),
                 "reason": "Not scored by reranker; using retrieval score.",
@@ -379,7 +426,9 @@ def _node_classify(state: _RerankState) -> _RerankState:
                 retrieval_score=c.score,
                 confidence=confidence,
                 reason=entry["reason"],
-                needs_review=(confidence == "low") or fallback_used,
+                needs_review=(confidence == "low")
+                or fallback_used
+                or per_candidate_fallback,
                 trace=trace,
             )
         )
@@ -397,14 +446,14 @@ def build_rerank_graph():
     directly in integration tests without going through the convenience
     wrapper below.
     """
-    from langgraph.graph import StateGraph, END
+    from langgraph.graph import StateGraph, START, END
 
     graph = StateGraph(_RerankState)
     graph.add_node("rerank", _node_llm_rerank)
     graph.add_node("fallback", _node_fallback)
     graph.add_node("classify", _node_classify)
 
-    graph.set_entry_point("rerank")
+    graph.add_edge(START, "rerank")
     graph.add_conditional_edges(
         "rerank", _route_after_rerank, {"classify": "classify", "fallback": "fallback"}
     )
@@ -442,7 +491,12 @@ def rerank_candidates_with_llm(
         raise RerankError(f"top_n must be > 0, got {top_n}")
 
     resolved_model = model_name or _default_model_name()
-    score_fn = llm_score_fn or default_llm_score_fn
+    if llm_score_fn is not None:
+        score_fn = llm_score_fn
+    else:
+        # Bind the request-level timeout only for the built-in LiteLLM path;
+        # injected stubs are not required to accept a ``timeout`` kwarg.
+        score_fn = partial(default_llm_score_fn, timeout=timeout_seconds)
 
     app = build_rerank_graph()
     result = app.invoke(

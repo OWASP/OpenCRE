@@ -12,6 +12,27 @@ The implementation is located in:
 
 * `application/utils/external_project_parsers/parsers/cheatsheet_rerank.py`
 
+## Acceptance criteria
+
+- [ ] **Valid LLM result structure**: every `RankedCRE` returned has a
+      non-empty `reason`, a `score` in `[0, 1]`, and a `confidence` of
+      `"high"` / `"medium"` / `"low"` — verified by
+      `test_successful_rerank_produces_reason_and_confidence`.
+- [ ] **Deterministic fallback**: an LLM exception, timeout, malformed JSON,
+      or an all-hallucinated response never raises out of
+      `rerank_candidates_with_llm` — it always returns one `RankedCRE` per
+      input candidate, each with `trace.fallback_used == True` — verified by
+      `test_llm_exception_falls_back_to_retrieval_score`,
+      `test_llm_timeout_falls_back`, `test_malformed_json_falls_back`, and
+      `test_llm_returns_no_valid_candidates_falls_back`.
+- [ ] **Auditable trace**: every result's `trace` carries `model`,
+      `prompt_version`, an ISO-8601 UTC `generated_at`, and
+      `fallback_used`/`fallback_reason` — verified by the same tests above.
+- [ ] **Workstream F compatibility**: `RankedCRE.cre_id`, `.score`,
+      `.confidence`, and `.reason` map 1:1 onto the RFC's
+      `candidate_cres[]` entries in `suggestions.json` (section 4), so
+      Workstream F can serialize a `RankedCRE` list directly.
+
 ---
 
 ## Sources for more context
@@ -41,7 +62,7 @@ exposes:
 
 ### The LangGraph flow
 
-```
+```text
 START -> rerank --(success)--> classify -> END
               \--(failure)--> fallback -> classify -> END
 ```
