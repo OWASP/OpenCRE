@@ -6,7 +6,7 @@ writes what survives to `knowledge_queue`, and **Module C reads that queue and
 decides what each chunk means**: link it to a CRE automatically, or route it to a
 human.
 
-```
+```text
 A (harvester) ──▶ harvest_input ──▶ B (noise filter) ──▶ knowledge_queue ──▶ C (librarian) ──▶ LinkProposal
                                                                                             └▶ ReviewItem ──▶ D (HITL)
 ```

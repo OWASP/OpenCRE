@@ -18,7 +18,7 @@ The OIE pipeline automates the pass. Module A harvests changes, Module B filters
 the noise, **Module C decides what each surviving chunk means**, and Module D puts
 a human in front of what C could not decide alone.
 
-```
+```text
 A (harvester) ──▶ harvest_input ──▶ B (noise filter) ──▶ knowledge_queue ──▶ C (librarian)
                                                                                   │
                                                                     ┌─────────────┴─────────────┐
