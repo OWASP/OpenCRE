@@ -20,12 +20,21 @@ AT = datetime(2026, 1, 1, tzinfo=timezone.utc)
 RUN = "run-7"
 
 
-def _row(text="Verify the JWT signature.", label="KNOWLEDGE"):
+def _row(text="Verify the JWT signature.", label="KNOWLEDGE", row_id="1"):
     return KnowledgeQueueItem(
-        id="1",
+        id=row_id,
+        content_hash=f"hash-{row_id}",
+        chunk_id=f"chk:art:owasp/x:a.md:{row_id}",
+        artifact_id="art:owasp/x:a.md",
+        pipeline_run_id=RUN,
+        schema_version="0.2.0",
+        source_type="github",
         source_repo="owasp/x",
-        source_path="a.md",
         source_commit_sha="abcdef1",
+        locator_kind="repo_path",
+        locator_path="a.md",
+        span_index=0,
+        span_total=1,
         text=text,
         confidence=0.9,
         llm_label=label,
@@ -187,6 +196,53 @@ class PipelineErrorContainmentTest(unittest.TestCase):
         # The UNCERTAIN row is a clean boundary refusal; the other is a fault.
         self.assertEqual(result.stats.skipped, 1)
         self.assertEqual(result.stats.errored, 1)
+
+
+class RowOutcomeTest(unittest.TestCase):
+    """Per-row outcomes (W8): what the queue write-back keys its decision on.
+
+    ``RunStats`` counts alone cannot say *which* rows finished, and retiring an
+    errored row would silently drop that chunk from the pipeline forever.
+    """
+
+    def _run(self, rows, scaler_confidence=0.95):
+        return LibrarianPipeline(
+            _Source(rows),
+            _Retriever(),
+            _Reranker(TOP),
+            _Scaler(scaler_confidence),
+            threshold=0.8,
+            pipeline_run_id=RUN,
+        ).run(at=AT)
+
+    def test_outcome_per_row_carries_the_queue_id(self):
+        result = self._run([_row(row_id="a"), _row(row_id="b")])
+        self.assertEqual([o.row_id for o in result.outcomes], ["a", "b"])
+        self.assertEqual({o.status.value for o in result.outcomes}, {"linked"})
+
+    def test_boundary_rejection_is_finished_with(self):
+        """A malformed row cannot be fixed by re-reading it, so it counts as
+        finished — otherwise it is re-read on every run, forever."""
+        result = self._run([_row(row_id="bad", label="UNCERTAIN")])
+        self.assertEqual([o.status.value for o in result.outcomes], ["skipped"])
+        self.assertEqual(result.finished_row_ids(), ["bad"])
+
+    def test_errored_row_is_not_finished(self):
+        result = LibrarianPipeline(
+            _Source([_row(row_id="a")]),
+            failing_component_stub("retriever"),
+            _Reranker(TOP),
+            _Scaler(0.95),
+            threshold=0.8,
+            pipeline_run_id=RUN,
+        ).run(at=AT)
+        self.assertEqual([o.status.value for o in result.outcomes], ["errored"])
+        self.assertEqual(result.finished_row_ids(), [])
+
+    def test_finished_ids_mix_decisions_and_rejections_but_not_errors(self):
+        rows = [_row(row_id="ok"), _row(row_id="skip", label="UNCERTAIN")]
+        result = self._run(rows)
+        self.assertEqual(sorted(result.finished_row_ids()), ["ok", "skip"])
 
 
 def failing_component_stub(kind):
