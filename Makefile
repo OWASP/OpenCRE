@@ -1,6 +1,6 @@
 .ONESHELL:
 
-.PHONY: run test covers install-deps dev docker lint frontend clean all
+.PHONY: run test covers install-deps dev docker lint frontend clean all e2e e2e-db
 
 prod-run:
 	gunicorn cre:app --log-file=-
@@ -85,6 +85,7 @@ dev-flask-docker:
 	. ./venv/bin/activate && INSECURE_REQUESTS=1 FLASK_APP=`pwd`/cre.py  FLASK_CONFIG=development flask run --host=0.0.0.0 --port $(PORT)
 
 e2e:
+	set -euo pipefail
 	yarn build
 	if [ -d "./venv" ]; then . ./venv/bin/activate; fi
 	[ -f "$(CURDIR)/standards_cache.sqlite" ] || { echo "ERROR: standards_cache.sqlite not found — run 'make e2e-db' first"; exit 1; }

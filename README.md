@@ -381,8 +381,8 @@ Try to keep the coverage above 70%.
 ### Frontend end-to-end tests (Cypress)
 
 Frontend E2E tests run with [Cypress](https://www.cypress.io/) against a local Flask server.
-First seed a local database — this builds the schema from the ORM models and loads the CRE graph
-from upstream into `./standards_cache.sqlite` — then run the suite headlessly:
+First seed a local database — this builds the schema from the ORM models and loads a small
+checked-in fixture graph into `./standards_cache.sqlite` — then run the suite headlessly:
 
 ```bash
 make e2e-db   # rebuild and populate the local SQLite cache (discards any existing cache)
