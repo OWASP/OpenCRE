@@ -44,6 +44,7 @@ python-markdown-maker
 
 # chat (/rest/v1/completion) — embed prompt via LiteLLM, match with sklearn
 litellm
+langgraph>=0.2,<1
 numpy
 scipy
 scikit-learn
