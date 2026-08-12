@@ -41,7 +41,7 @@ from application.defs import cre_defs as defs
 def main() -> None:
     app = create_app(mode="development")
     with app.app_context():
-        collection = db.Node_collection().with_graph()
+        collection = db.Node_collection()
 
         cre = defs.CRE(
             id="558-807",
