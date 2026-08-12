@@ -42,12 +42,18 @@ jobs:
           python-version: '3.12.3'
 
       - name: Install python dependencies
+        # Installed straight into the runner's interpreter rather than through
+        # `make install-python`: that target builds a venv (needing an apt
+        # `virtualenv` the other workflows install first) and then runs
+        # `playwright install`, neither of which a hermetic librarian run uses.
+        # The steps below call `python` directly, so a venv the job never
+        # activates would leave them running against a bare interpreter.
         run: |
           pip install --upgrade pip setuptools
-          make install-python
+          pip install -r requirements-dev.txt
 
       - name: Librarian unit suite
-        run: python -m pytest application/tests/librarian/ -q
+        run: python -m unittest discover -s application/tests/librarian -p '*_test.py' -t .
 
       - name: Golden-set decision gate
         # Non-zero on: a failed explicit-slice gate (C.0.5 must be 100%), or a
