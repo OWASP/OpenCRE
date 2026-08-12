@@ -1,7 +1,10 @@
 """Tests for user persistence and per-user resource selection (issue #586, RFC #876 TODO 1/2)."""
 
 import os
+import threading
 import unittest
+from typing import Any, List
+from unittest.mock import patch
 
 from sqlalchemy.exc import IntegrityError
 
@@ -158,6 +161,107 @@ class TestUserModel(unittest.TestCase):
         sqla.session.delete(user)
         sqla.session.commit()
         self.assertEqual(sqla.session.query(db.UserResourceSelection).count(), 0)
+
+    def test_set_resource_selection_recovers_from_integrity_error(self) -> None:
+        # A concurrent PUT can make the first commit raise IntegrityError on
+        # uq_user_resource_selection. The method must roll back and retry once,
+        # then return the correct selection.
+        user = self.collection.upsert_user(
+            google_sub="sub-1", email="a@x.com", display_name="U"
+        )
+        real_commit = self.collection.session.commit
+        calls = {"n": 0}
+
+        def flaky_commit(*args: Any, **kwargs: Any) -> None:
+            calls["n"] += 1
+            if calls["n"] == 1:
+                raise IntegrityError(
+                    "stmt", {}, Exception("uq_user_resource_selection")
+                )
+            real_commit()
+
+        with patch.object(self.collection.session, "commit", side_effect=flaky_commit):
+            result = self.collection.set_user_resource_selection(
+                user.id, ["ASVS", "CWE"]
+            )
+
+        self.assertEqual(sorted(result), ["ASVS", "CWE"])
+        self.assertEqual(calls["n"], 2)  # retried exactly once
+
+    def test_set_resource_selection_reraises_on_persistent_integrity_error(
+        self,
+    ) -> None:
+        # If the retry also fails, the error propagates — the recovery must not
+        # loop indefinitely (retry exactly once).
+        user = self.collection.upsert_user(
+            google_sub="sub-1", email="a@x.com", display_name="U"
+        )
+
+        def always_raise(*args: Any, **kwargs: Any) -> None:
+            raise IntegrityError("stmt", {}, Exception("uq_user_resource_selection"))
+
+        with patch.object(self.collection.session, "commit", side_effect=always_raise):
+            with self.assertRaises(IntegrityError):
+                self.collection.set_user_resource_selection(user.id, ["ASVS"])
+        self.collection.session.rollback()
+
+    def test_set_resource_selection_blocks_on_locked_user_row(self) -> None:
+        # The replacement serializes per user by locking the User row: a second
+        # writer must WAIT for the first to commit (so its DELETE then sees the
+        # first's rows, instead of the two selections merging). Reproduced
+        # deterministically: hold the user-row lock here, then assert a worker's
+        # set_user_resource_selection blocks until we release it. Postgres-only —
+        # FOR UPDATE is a no-op on SQLite, so nothing would block there.
+        if "postgresql" not in str(sqla.engine.url):
+            self.skipTest("row-lock serialization requires Postgres (FOR UPDATE)")
+
+        user = self.collection.upsert_user(
+            google_sub="sub-1", email="a@x.com", display_name="U"
+        )
+        user_id = user.id
+        self.collection.set_user_resource_selection(user_id, ["ASVS"])  # seed
+        self.collection.session.rollback()
+
+        # Acquire and HOLD the user-row lock on this session (open transaction).
+        self.collection.session.query(db.User).filter(
+            db.User.id == user_id
+        ).with_for_update().first()
+
+        done = threading.Event()
+        errors: List[Exception] = []
+
+        def worker() -> None:
+            with self.app.app_context():
+                try:
+                    # Empty replacement = DELETE only, no INSERT. So the only
+                    # thing that can make this touch (and block on) the User row
+                    # is the method's own FOR UPDATE — which isolates it from the
+                    # FK lock an INSERT would otherwise take.
+                    db.Node_collection().set_user_resource_selection(user_id, [])
+                except Exception as e:  # noqa: BLE001 - report worker failures to test
+                    errors.append(e)
+                finally:
+                    sqla.session.remove()
+                    done.set()
+
+        t = threading.Thread(target=worker)
+        t.start()
+
+        # While we hold the lock the worker must block — it cannot finish.
+        self.assertFalse(
+            done.wait(timeout=2), "worker did not block on the user-row lock"
+        )
+
+        # Release the lock; the worker now proceeds and completes.
+        self.collection.session.rollback()
+        self.assertTrue(
+            done.wait(timeout=15), "worker did not finish after lock release"
+        )
+        t.join(timeout=5)
+
+        self.assertEqual(errors, [])
+        self.collection.session.rollback()  # fresh snapshot
+        self.assertEqual(self.collection.get_user_resource_selection(user_id), [])
 
 
 if __name__ == "__main__":

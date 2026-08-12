@@ -81,7 +81,7 @@ class CRE_Graph:
         if creID in rootIDs:
             return 0
 
-        if self.__parent_child_subgraph == None:
+        if self.__parent_child_subgraph is None:
             if len(self.__graph.edges) == 0:
                 raise ValueError("Graph has no edges")
             include_cres = []
