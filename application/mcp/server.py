@@ -10,11 +10,8 @@ import mcp.types as types
 from mcp.server.lowlevel import Server
 from mcp.server.stdio import stdio_server
 
-from application.mcp.catalog import PUBLIC_TOOLS, get_tool, list_tool_names
-from application.mcp.openapi_loader import (
-    all_tool_input_schemas,
-    operation_input_schema,
-)
+from application.mcp.catalog import PUBLIC_TOOLS
+from application.mcp.openapi_loader import all_tool_input_schemas
 from application.mcp.rest_client import (
     RestClient,
     RestClientError,
@@ -65,11 +62,9 @@ def build_server(rest_client: Optional[RestClient] = None) -> Server[Any]:
         name = params.name
         arguments: Dict[str, Any] = dict(params.arguments or {})
         try:
-            if name not in list_tool_names():
+            # schemas is built from the allowlist at startup; unknown names stop here.
+            if name not in schemas:
                 raise RestRequestError(f"Unknown MCP tool: {name}")
-            # Ensure allowlist entry still matches OpenAPI before calling REST.
-            get_tool(name)
-            operation_input_schema(get_tool(name))
             result = client.call_tool(name, arguments)
             payload = json.dumps(result.data, ensure_ascii=False, default=str)
             structured: Dict[str, Any]

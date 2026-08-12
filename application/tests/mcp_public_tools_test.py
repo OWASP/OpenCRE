@@ -17,6 +17,7 @@ from application.mcp import catalog
 from application.mcp.catalog import PUBLIC_TOOLS, get_tool, list_tool_names
 from application.mcp.openapi_loader import (
     OpenAPILookupError,
+    _resolve_ref,
     all_tool_input_schemas,
     clear_openapi_cache,
     input_schema_for_tool,
@@ -27,6 +28,7 @@ from application.mcp.rest_client import (
     RestClient,
     RestRequestError,
     RestResponseError,
+    _parse_response,
     flask_test_session,
 )
 from application.mcp.server import build_server, dispatch_tool
@@ -52,7 +54,9 @@ class McpPublicToolsTest(unittest.TestCase):
         self.app = create_app(mode="test")
         self.app_context = self.app.app_context()
         self.app_context.push()
-        os.environ["INSECURE_REQUESTS"] = "True"
+        env_patcher = patch.dict(os.environ, {"INSECURE_REQUESTS": "True"})
+        env_patcher.start()
+        self.addCleanup(env_patcher.stop)
         sqla.create_all()
         self.collection = db.Node_collection().with_graph()
         self.collection.graph.with_graph(graph=nx.DiGraph(), graph_data=[])
@@ -443,6 +447,73 @@ class McpPublicToolsTest(unittest.TestCase):
         with patch.dict(os.environ, {"OPENCRE_BASE_URL": "http://example.test:9"}):
             client = RestClient()
             self.assertEqual(client.base_url, "http://example.test:9")
+
+    def test_parse_response_valueerror_falls_back_unrelated_propagates(self) -> None:
+        class _BadJson:
+            status_code = 200
+            text = "not-json"
+
+            def json(self) -> Any:
+                raise ValueError("No JSON object could be decoded")
+
+        ok = _parse_response(_BadJson())
+        self.assertEqual(ok.status_code, 200)
+        self.assertEqual(ok.data, "not-json")
+
+        class _BoomJson:
+            status_code = 200
+            text = "{}"
+
+            def json(self) -> Any:
+                raise RuntimeError("adapter boom")
+
+        with self.assertRaises(RuntimeError):
+            _parse_response(_BoomJson())
+
+    def test_circular_openapi_ref_raises_lookup_error(self) -> None:
+        cyclic = {
+            "components": {
+                "schemas": {
+                    "A": {"$ref": "#/components/schemas/B"},
+                    "B": {"$ref": "#/components/schemas/A"},
+                }
+            }
+        }
+        with self.assertRaises(OpenAPILookupError) as ctx:
+            _resolve_ref(cyclic, {"$ref": "#/components/schemas/A"})
+        self.assertIn("Circular OpenAPI $ref", str(ctx.exception))
+
+        # Same $ref in sibling branches is not a cycle.
+        shared = {
+            "components": {"schemas": {"S": {"type": "string"}}},
+            "properties": {
+                "left": {"$ref": "#/components/schemas/S"},
+                "right": {"$ref": "#/components/schemas/S"},
+            },
+        }
+        resolved = _resolve_ref(shared, shared["properties"])
+        self.assertEqual(resolved["left"]["type"], "string")
+        self.assertEqual(resolved["right"]["type"], "string")
+
+    def test_unknown_mcp_tool_message_unchanged_after_server_simplify(self) -> None:
+        server = build_server(rest_client=self._rest())
+
+        async def _run() -> None:
+            call_handler = server.get_request_handler("tools/call")
+            assert call_handler is not None
+            result_raw = await call_handler.handler(
+                None,
+                types.CallToolRequestParams(name="map_analysis", arguments={}),
+            )
+            assert isinstance(result_raw, types.CallToolResult)
+            self.assertTrue(result_raw.is_error)
+            first = result_raw.content[0]
+            assert isinstance(first, types.TextContent)
+            self.assertEqual(first.text, "Unknown MCP tool: map_analysis")
+
+        import asyncio
+
+        asyncio.run(_run())
 
 
 if __name__ == "__main__":

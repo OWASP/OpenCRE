@@ -34,15 +34,27 @@ def _load_spec(path: str) -> Dict[str, Any]:
     return data
 
 
-def _resolve_ref(spec: Dict[str, Any], node: Any) -> Any:
-    """Resolve local #/components/... refs one level deep as needed."""
+def _resolve_ref(
+    spec: Dict[str, Any],
+    node: Any,
+    *,
+    _ref_stack: Optional[frozenset[str]] = None,
+) -> Any:
+    """Resolve local #/components/... refs; reject cycles on the current ref chain."""
     if not isinstance(node, dict):
         return node
+    stack = _ref_stack or frozenset()
     if "$ref" not in node:
-        return {key: _resolve_ref(spec, value) for key, value in node.items()}
+        # Sibling branches share the parent chain only — not each other's refs.
+        return {
+            key: _resolve_ref(spec, value, _ref_stack=stack)
+            for key, value in node.items()
+        }
     ref = node["$ref"]
     if not isinstance(ref, str) or not ref.startswith("#/"):
         raise OpenAPILookupError(f"Unsupported OpenAPI $ref: {ref}")
+    if ref in stack:
+        raise OpenAPILookupError(f"Circular OpenAPI $ref: {ref}")
     current: Any = spec
     for part in ref[2:].split("/"):
         if not isinstance(current, dict) or part not in current:
@@ -50,12 +62,13 @@ def _resolve_ref(spec: Dict[str, Any], node: Any) -> Any:
         current = current[part]
     # Merge sibling keywords onto the resolved target (OpenAPI 3.0.3).
     resolved = copy.deepcopy(current)
+    next_stack = stack | {ref}
     if isinstance(resolved, dict):
         for key, value in node.items():
             if key == "$ref":
                 continue
             resolved[key] = value
-        return _resolve_ref(spec, resolved)
+        return _resolve_ref(spec, resolved, _ref_stack=next_stack)
     return resolved
 
 
