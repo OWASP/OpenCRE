@@ -36,6 +36,10 @@ jobs:
     steps:
       - name: Check out code
         uses: actions/checkout@v4
+        with:
+          # This job only reads the tree; leaving the token in .git/config would
+          # expose it to anything the test run executes.
+          persist-credentials: false
 
       - uses: actions/setup-python@v5
         with:
