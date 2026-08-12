@@ -14,10 +14,12 @@ three reports, so the sharing is asserted here against stub seams instead:
   without touching the retriever or reranker again.
 """
 
+import contextlib
 import importlib.util
+import io
 import os
 import unittest
-from typing import List, Optional
+from typing import Iterator, List, Optional
 
 from application.utils.librarian.schemas import CreCandidate, RetrievalAudit
 
@@ -71,6 +73,14 @@ def _golden_row(
             },
         }
     )
+
+
+@contextlib.contextmanager
+def _captured_stdout() -> Iterator[io.StringIO]:
+    """The reports return only a status; their numbers are printed."""
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        yield buf
 
 
 class CountingPipeline:
@@ -233,26 +243,95 @@ class ReportDecisionAccuracyTest(unittest.TestCase):
         audits = harness.live_audits(rows, pipe, pipe)
         before = (pipe.retrieve_calls, pipe.rerank_calls)
 
-        status = harness.report_decision_accuracy(
-            rows, audits, TemperatureScaler(1.0), 0.80
-        )
+        with _captured_stdout() as out:
+            status = harness.report_decision_accuracy(
+                rows, audits, TemperatureScaler(1.0), 0.80
+            )
 
         self.assertEqual(status, 0, "the C.4 report is informational, never a gate")
         self.assertEqual((pipe.retrieve_calls, pipe.rerank_calls), before)
+        # Both rows are graded and both land where the golden set expects: the
+        # dominant top-1 auto-links, the near-tie falls under tau and routes to
+        # review with BELOW_THRESHOLD. Assert the numbers, not just the status,
+        # or this passes on a report that counted nothing.
+        report = out.getvalue()
+        self.assertIn("decision (C.4, 2 rows @ tau=0.80): overall 2/2", report)
+        self.assertIn("auto-link recall (expected-linked rows): 1/1", report)
+        self.assertIn("review recall (expected-review rows): 1/1", report)
+        self.assertIn("reason_code match 1/1", report)
 
     def test_no_graded_rows_is_not_an_error(self) -> None:
         from application.utils.librarian.calibration.temperature import (
             TemperatureScaler,
         )
 
+        # No audits at all, so nothing is gradeable even though the row carries an
+        # expected decision — this is the branch a --slice selection hits.
         rows = [_golden_row("p1", "positive", "alpha", ["616-305"])]
-        pipe = CountingPipeline({"alpha": [("616-305", 4.0)]})
-        audits = harness.live_audits(rows, pipe, pipe)
 
-        status = harness.report_decision_accuracy(
-            rows, audits, TemperatureScaler(1.0), 0.80
-        )
+        with _captured_stdout() as out:
+            status = harness.report_decision_accuracy(
+                rows, {}, TemperatureScaler(1.0), 0.80
+            )
+
         self.assertEqual(status, 0)
+        self.assertIn("no rows with an expected decision", out.getvalue())
+
+
+class BoundaryGateTest(unittest.TestCase):
+    """The C.0 boundary must not be able to fail silently.
+
+    Golden rows are adapted into a synthetic ``knowledge_queue`` row before C.0
+    validates them. When Module B's table shape moved in #989, that adapter kept
+    minting the old flat row: every row was rejected, so the explicit gate had
+    nothing to count, skipped itself, and the run still exited 0. Both halves are
+    pinned here — the adapter produces a row the real validator accepts, and a
+    drifted adapter fails the run instead of reporting success.
+    """
+
+    _DATASET = os.path.join(
+        os.path.dirname(__file__), "fixtures", "golden_dataset.json"
+    )
+
+    def test_synthetic_row_satisfies_the_live_queue_schema(self) -> None:
+        from application.utils.librarian.section_validator import (
+            section_from_queue_row,
+        )
+
+        rows = harness.load_dataset(self._DATASET)
+
+        for row in rows[:25]:
+            # Raises SectionValidationError if the shape drifted from B's table.
+            section = section_from_queue_row(harness.queue_row_from_golden(row))
+            self.assertTrue(section.text)
+
+    def test_minted_ids_are_deterministic(self) -> None:
+        # The live reports key their shared audits by these ids; if a second run
+        # minted different ones, the audits would stop lining up with the rows.
+        row = harness.load_dataset(self._DATASET)[0]
+
+        self.assertEqual(
+            harness.queue_row_from_golden(row), harness.queue_row_from_golden(row)
+        )
+
+    def test_total_boundary_rejection_fails_the_run(self) -> None:
+        original = harness.queue_row_from_golden
+        # Regress the adapter to the pre-W8 flat shape B no longer writes.
+        harness.queue_row_from_golden = lambda row: {
+            "id": row.id,
+            "text": row.input.text,
+            "confidence": 0.99,
+            "llm_label": "KNOWLEDGE",
+            "created_at": harness._SYNTHETIC_CREATED_AT,
+        }
+        try:
+            with _captured_stdout() as out:
+                status = harness.main(["--dataset", self._DATASET])
+        finally:
+            harness.queue_row_from_golden = original
+
+        self.assertEqual(status, 1, "a boundary that rejects everything must fail")
+        self.assertIn("FAILED (gates did not run)", out.getvalue())
 
 
 if __name__ == "__main__":
