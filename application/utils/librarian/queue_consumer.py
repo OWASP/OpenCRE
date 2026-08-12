@@ -17,7 +17,7 @@ The caller owns the transaction, matching ``run_noise_filter`` on B's side.
 """
 
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Iterable, List, Sequence
 
 logger = logging.getLogger(__name__)
@@ -45,6 +45,14 @@ def mark_consumed(session: Any, row_ids: Iterable[str], *, at: datetime) -> int:
 
     from application.database.db import KnowledgeQueueItem as KnowledgeQueueRow
 
+    # `consumed_at` is a plain `DateTime`, and the B->C contract is explicit that
+    # the UTC wall clock is "stored and read back timezone-naive". Handing an
+    # aware datetime to a naive column is dialect-dependent: SQLite keeps the
+    # offset in the string, Postgres drops it. Converting to UTC first and then
+    # stripping tzinfo makes the stored instant correct under both, and matches
+    # the `created_at` values B writes alongside it.
+    stamp = at.astimezone(timezone.utc).replace(tzinfo=None) if at.tzinfo else at
+
     stamped = 0
     for chunk in _chunks(unique, _CHUNK_SIZE):
         stamped += (
@@ -53,7 +61,7 @@ def mark_consumed(session: Any, row_ids: Iterable[str], *, at: datetime) -> int:
                 KnowledgeQueueRow.id.in_(list(chunk)),
                 KnowledgeQueueRow.consumed_at.is_(None),
             )
-            .update({KnowledgeQueueRow.consumed_at: at}, synchronize_session=False)
+            .update({KnowledgeQueueRow.consumed_at: stamp}, synchronize_session=False)
         )
 
     if stamped != len(unique):

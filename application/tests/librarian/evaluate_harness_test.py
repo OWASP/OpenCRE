@@ -300,7 +300,9 @@ class BoundaryGateTest(unittest.TestCase):
 
         rows = harness.load_dataset(self._DATASET)
 
-        for row in rows[:25]:
+        # Every row, not a sample: main() validates the whole selection, so a
+        # row past any cap could fail C.0 while this test still passed.
+        for row in rows:
             # Raises SectionValidationError if the shape drifted from B's table.
             section = section_from_queue_row(harness.queue_row_from_golden(row))
             self.assertTrue(section.text)

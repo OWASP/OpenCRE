@@ -67,7 +67,22 @@ class RunSummary:
     #: hidden: an unevaluated guard must not look like a clean one.
     safety_unevaluated: int = 0
     dry_run: bool = False
+    #: ``ok`` only when the run has nothing to declare. A constant ``"ok"`` would
+    #: be the same failure this module keeps fixing elsewhere: a field that looks
+    #: like a verdict while measuring nothing. The orchestrator reads this JSON,
+    #: so a run that dropped rows to errors, or decided them without the safety
+    #: path, has to say so in the field a consumer actually branches on — the
+    #: counts alone require the reader to know which ones are bad news.
     status: str = "ok"
+
+    def finalize_status(self) -> None:
+        """Derive ``status`` from the counts. Called once, after the run."""
+        reasons = []
+        if self.errored:
+            reasons.append(f"{self.errored} errored")
+        if self.safety_unevaluated:
+            reasons.append(f"{self.safety_unevaluated} decided without the safety path")
+        self.status = "degraded: " + "; ".join(reasons) if reasons else "ok"
 
     def to_json(self) -> str:
         return json.dumps(asdict(self))
@@ -154,6 +169,7 @@ def run_librarian_queue(
         )
 
     if dry_run:
+        summary.finalize_status()
         return summary
 
     # Persist first, retire second. If the sink raises, nothing is consumed and
@@ -177,6 +193,7 @@ def run_librarian_queue(
         summary.persisted,
         summary.consumed,
     )
+    summary.finalize_status()
     return summary
 
 
