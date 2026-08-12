@@ -7,6 +7,7 @@ it would silently destroy chunks.
 
 import json
 import os
+import shutil
 import tempfile
 import unittest
 from datetime import datetime, timezone
@@ -75,6 +76,9 @@ class NullEnvelopeSinkTest(unittest.TestCase):
 class JsonlEnvelopeSinkTest(unittest.TestCase):
     def setUp(self) -> None:
         self.dir = tempfile.mkdtemp()
+        # Every method writes envelopes containing chunk text, so the directory
+        # is removed rather than left in the system temp dir once per test.
+        self.addCleanup(shutil.rmtree, self.dir, ignore_errors=True)
         self.path = os.path.join(self.dir, "envelopes.jsonl")
 
     def test_declares_that_it_persists(self) -> None:

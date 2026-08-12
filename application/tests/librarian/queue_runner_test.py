@@ -17,7 +17,7 @@ from application.database.db import KnowledgeQueueItem as KnowledgeQueueRow
 from application.utils.librarian.config_loader import LibrarianConfig
 from application.utils.librarian.envelope_sink import NullEnvelopeSink
 from application.utils.librarian.factory import LibrarianComponents
-from application.utils.librarian.queue_runner import run_librarian_queue
+from application.utils.librarian.queue_runner import RunSummary, run_librarian_queue
 from application.utils.librarian.schemas import CreCandidate, RetrievalAudit
 
 AT = datetime(2026, 8, 5, 12, 0, 0, tzinfo=timezone.utc)
@@ -339,7 +339,34 @@ class RunLibrarianQueueTest(unittest.TestCase):
 
         self.assertEqual(payload["run_id"], RUN)
         self.assertEqual(payload["linked"], 1)
-        self.assertEqual(payload["status"], "ok")
+
+    def test_status_declares_a_degraded_run(self) -> None:
+        """The orchestrator branches on ``status``; a constant "ok" would hide
+        exactly the runs worth noticing.
+
+        Every row today is decided behind ``NullSafetyGuard``, so a real run is
+        genuinely degraded until a detector exists — and the field says which
+        rows and why, rather than leaving the reader to know that a non-zero
+        ``safety_unevaluated`` is bad news.
+        """
+        sqla.session.add(_row("a"))
+        sqla.session.commit()
+
+        summary = self._run()
+
+        self.assertTrue(summary.safety_unevaluated)
+        self.assertIn("degraded", summary.status)
+        self.assertIn("safety path", summary.status)
+
+    def test_status_is_ok_when_there_is_nothing_to_declare(self) -> None:
+        summary = RunSummary(run_id=RUN, read=3, linked=3)
+        summary.finalize_status()
+        self.assertEqual(summary.status, "ok")
+
+    def test_status_names_errored_rows(self) -> None:
+        summary = RunSummary(run_id=RUN, read=3, linked=2, errored=1)
+        summary.finalize_status()
+        self.assertIn("1 errored", summary.status)
 
 
 if __name__ == "__main__":
