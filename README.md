@@ -288,6 +288,8 @@ http://127.0.0.1:5000
 
 See [the myOpenCRE user guide](docs/my-opencre-user-guide.md) on using the OpenCRE API to, for example, add your own security guidelines and standards.
 
+For a local stdio MCP server over public REST reads, see [docs/api/mcp.md](docs/api/mcp.md).
+
 ## Docker building and running
 
 You can build the production or the development docker images with:
