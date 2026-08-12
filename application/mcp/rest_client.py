@@ -7,6 +7,7 @@ base URL, HTTP method, or arbitrary paths.
 from __future__ import annotations
 
 import json
+import logging
 import os
 import re
 from dataclasses import dataclass
@@ -20,6 +21,8 @@ from jsonschema.exceptions import ValidationError
 from application.defs import cre_defs as defs
 from application.mcp.catalog import ToolSpec, get_tool
 from application.mcp.openapi_loader import operation_input_schema
+
+logger = logging.getLogger(__name__)
 
 DEFAULT_BASE_URL = "http://127.0.0.1:5000"
 DEFAULT_TIMEOUT_SECONDS = 30.0
@@ -173,8 +176,13 @@ class RestClient:
         if hasattr(self._session, "cookies"):
             try:
                 self._session.cookies.clear()
-            except Exception:
-                pass
+            except (
+                Exception
+            ):  # noqa: BLE001 - injected sessions may not be requests.Session
+                logger.warning(
+                    "Failed to clear REST session cookies after tool call",
+                    exc_info=True,
+                )
         return _parse_response(response)
 
 
@@ -299,7 +307,8 @@ def _parse_response(response: Any) -> RestResult:
     data: Any
     try:
         data = response.json()
-    except Exception:
+    except ValueError:
+        # JSON decode failures only — unrelated adapter errors must propagate.
         data = text
 
     if status < 200 or status >= 300:
