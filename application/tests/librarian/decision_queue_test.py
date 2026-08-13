@@ -221,6 +221,29 @@ class DbEnvelopeSinkTest(unittest.TestCase):
 
         self.assertEqual(len(self._rows()), 2)
 
+    def test_confidence_is_the_highest_link_not_the_first(self) -> None:
+        """`links` carries no ordering guarantee, so the projection has to take
+        the max — otherwise the column disagrees with the envelope D filters on."""
+        envelope = _linked().model_copy(
+            update={
+                "links": [
+                    ProposedLink(
+                        cre_id="111-111", link_type="Related to", confidence=0.31
+                    ),
+                    ProposedLink(
+                        cre_id="616-305",
+                        link_type="Automatically linked to",
+                        confidence=0.97,
+                    ),
+                ]
+            }
+        )
+        self.sink.write([envelope])
+        sqla.session.commit()
+
+        (row,) = self._rows()
+        self.assertAlmostEqual(row.confidence, 0.97)
+
     def test_empty_batch_writes_nothing(self) -> None:
         self.assertEqual(self.sink.write([]), 0)
         self.assertEqual(self._rows(), [])
