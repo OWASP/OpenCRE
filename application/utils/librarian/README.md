@@ -33,7 +33,7 @@ Supporting the live path:
 |---|---|
 | `pipeline.py` | Runs C.0 → C.4 over a batch. Persistence-free and hermetic |
 | `knowledge_source.py` | Where rows come from — `DbKnowledgeSource` (live) or `FixtureKnowledgeSource` (JSONL) |
-| `envelope_sink.py` | Where envelopes go — `JsonlEnvelopeSink` (durable) or `NullEnvelopeSink` (dry runs) |
+| `envelope_sink.py` | Where envelopes go — `DbEnvelopeSink` (writes `decision_queue`, the C→D handoff), `JsonlEnvelopeSink` (file mirror), `NullEnvelopeSink` (dry runs) |
 | `queue_consumer.py` | Stamps `consumed_at` back on B's queue. Idempotent; never deletes |
 | `queue_runner.py` | The live entry point: drain → decide → persist → retire |
 | `factory.py` | Builds the live C.1/C.2/C.3 components from config + the OpenCRE database |
@@ -96,11 +96,36 @@ python -m pytest application/tests/librarian/
 - **C → D:** the `LinkProposal` / `ReviewItem` envelopes in `schemas.py`, pinned
   to the vendored RFC schemas under `_rfc_schemas/`.
 
+## The C → D handoff
+
+A real run writes one row per decided chunk to **`decision_queue`** — the mirror
+of what B does for C through `knowledge_queue`. Module D reads the rows it cares
+about and sets `consumed_at`; nothing is ever deleted, so the table doubles as the
+audit trail of what C decided and what D did with it.
+
+Both outcomes share the table, separated by `status`:
+
+| `status` | envelope | consumer |
+|---|---|---|
+| `linked` | `LinkProposal` | the graph writer |
+| `review_required` | `ReviewItem`, with a `reason_code` | Module D's HITL review |
+
+The whole RFC envelope is stored in `envelope`, retrieval audit included, so a
+decision stays explainable long after the run. The columns beside it are
+projections for filtering, not a second source of truth.
+
+Inserts are `ON CONFLICT (chunk_id, pipeline_run_id) DO NOTHING`, so replaying a
+run is a no-op rather than a duplicate.
+
+Column-by-column spec: [the C → D contract](../../../docs/gsoc_2026_module_c/module_d_contract.md).
+
 ## Not built yet
 
-- **The graph / review-queue writers (W8b).** C emits envelopes to JSONL; nothing
-  commits a link into the graph. The rule those writers must honour is already
-  stated in `safety_guard.py`: a writer that commits links **must refuse to run
-  behind a guard that reports `evaluated=False`.**
+- **The graph writer.** `decision_queue` carries the `linked` rows, but nothing
+  yet reads them and commits an edge into the CRE graph. The rule that writer
+  must honour is stated in `safety_guard.py`: it **must refuse to run behind a
+  guard reporting `evaluated=False`.** Retiring a queue row without the safety
+  path is recoverable; committing a wrong link into a graph other tools read as
+  truth is not.
 - **The SafetyGuard detector.** The seam is wired; the out-of-distribution
   scoring, conformal prediction, and update detection behind it are future work.

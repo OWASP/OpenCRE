@@ -144,9 +144,15 @@ cloning, change detection, diff retrieval and parsing — but nothing writes
 A's remaining work, noted here because it means the end-to-end chain is not yet
 demonstrable outside a fixture.
 
-**C → D is specified but unconsumed.** C emits `ReviewItem` envelopes against the
-vendored RFC schema. Module D has no active implementation, so nothing reads
-them today.
+**C → D is built.** A real run writes one row per decided chunk to
+`decision_queue` — the same shape of handoff B makes to C through
+`knowledge_queue`: C inserts, D sets `consumed_at`, nothing is deleted. Both
+outcomes share the table separated by `status`, the whole RFC envelope is stored
+so a decision stays explainable, and inserts are idempotent per (chunk, run).
+The contract is written down in [`module_d_contract.md`](module_d_contract.md).
+
+Module D has no active implementation yet, so nothing reads those rows today —
+but the table and its contract exist, so D has something concrete to build to.
 
 ---
 
@@ -154,12 +160,12 @@ them today.
 
 Stated plainly, because a known gap is worth more than a vague claim.
 
-- **Graph / review-queue writers (W8b).** C emits envelopes to JSONL; no link is
-  committed to the graph. The rule those writers must honour is already written
-  into `safety_guard.py`: a writer that commits links **must refuse to run behind
-  a guard reporting `evaluated=False`**. Retiring a queue row without the safety
-  path is recoverable — the envelope is still on disk. Committing a wrong link
-  into a graph other tools trust is not.
+- **The graph writer.** `decision_queue` carries the `linked` rows, but nothing
+  yet reads them and commits an edge into the CRE graph. The rule that writer
+  must honour is already written into `safety_guard.py`: it **must refuse to run
+  behind a guard reporting `evaluated=False`**. Retiring a queue row without the
+  safety path is recoverable — the decision is still in the table. Committing a
+  wrong link into a graph other tools trust is not.
 - **The SafetyGuard detector.** The seam is wired into `decide()`; the
   out-of-distribution scoring, conformal prediction, and update detection behind
   it are future work.
