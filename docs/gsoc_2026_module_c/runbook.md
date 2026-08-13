@@ -53,10 +53,18 @@ run. C.4 is informational.
 # dry run first: reads, decides, persists nothing, retires nothing
 python cre.py --run_librarian --librarian_dry_run --run_id <pipeline_run_id>
 
-# for real: envelopes are written, and only then are rows retired
+# for real: decisions land in decision_queue, and only then are rows retired
+python cre.py --run_librarian --run_id <pipeline_run_id>
+
+# optionally mirror the same batch to a file for eyeballing
 python cre.py --run_librarian --run_id <pipeline_run_id> \
     --librarian_envelopes_out envelopes.jsonl
 ```
+
+A real run writes to **`decision_queue`**, the table Module D reads — that is the
+contract. `--librarian_envelopes_out` only adds a JSONL copy alongside it; it is
+a debugging convenience, not the handoff. See
+[the C → D contract](module_d_contract.md).
 
 Or against a JSONL fixture instead of the live queue:
 
@@ -75,10 +83,11 @@ python cre.py --run_librarian --librarian_dry_run \
 | `--run_id` | The `pipeline_run_id` to drain. Scopes the run to one orchestrator pass |
 | `--librarian_dry_run` | Read and decide, but persist nothing and stamp nothing |
 | `--librarian_source` | Path to a `knowledge_queue` JSONL. **Not valid with `--run_id`** — the CLI rejects the combination rather than silently ignoring one |
-| `--librarian_envelopes_out` | JSONL path envelopes are appended to. **Required for a real `--run_id` run** |
+| `--librarian_envelopes_out` | Optional JSONL mirror of the batch. A real run always writes `decision_queue`; this only adds a file copy |
 
-`--librarian_envelopes_out` is mandatory for a real run by design. Without a sink
-that persists, retiring a row would destroy the chunk, so the runner refuses.
+A real run always has a persisting sink — `decision_queue` — so it can safely
+retire rows. The runner still refuses to consume behind a sink that reports
+`persists=False`, which is what makes a dry run harmless.
 
 ---
 
@@ -148,8 +157,13 @@ count, skipped itself, and the run still exited 0.
 Pick one. A fixture path with a run id would silently ignore one of them.
 
 **A real run reports rows decided but nothing consumed**
-The sink refused the batch, or you passed no `--librarian_envelopes_out`.
-Consumption is gated on persistence — this is the safe failure, not a bug.
+The sink refused the batch. Consumption is gated on persistence — this is the
+safe failure, not a bug. Check the `decision_queue` insert did not raise.
+
+**`decision_queue` shows fewer rows than the run decided**
+Inserts are `ON CONFLICT (chunk_id, pipeline_run_id) DO NOTHING`, so a replayed
+run writes nothing new. That is idempotence working, not loss — the rows from the
+first run are still there.
 
 **Rows keep reappearing across runs**
 They errored mid-pipeline rather than being decided. Errored rows are left

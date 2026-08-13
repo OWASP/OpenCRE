@@ -1278,24 +1278,31 @@ def run_librarian_live(
 
     from application.utils.librarian.config_loader import load_config
     from application.utils.librarian.envelope_sink import (
+        DbEnvelopeSink,
         JsonlEnvelopeSink,
         NullEnvelopeSink,
+        TeeEnvelopeSink,
     )
     from application.utils.librarian.factory import build_components
     from application.utils.librarian.queue_runner import run_librarian_queue
 
-    sink = JsonlEnvelopeSink(envelopes_out) if envelopes_out else NullEnvelopeSink()
-    if not dry_run and envelopes_out is None:
-        raise SystemExit(
-            "--run_librarian --run_id needs --librarian_envelopes_out <path>: a "
-            "real run marks queue rows consumed, so the envelopes it built have "
-            "to land somewhere first. Add --librarian_dry_run to run without "
-            "writing anything."
-        )
-
     cfg = load_config()
     database = db_connect(path=cache_file)
     components = build_components(database, config=cfg)
+
+    # `decision_queue` is where Module D reads from, so a real run writes there
+    # by default — the same handoff B makes to C through `knowledge_queue`.
+    # `--librarian_envelopes_out` additionally mirrors the batch to JSONL, which
+    # is useful for eyeballing a run but is not the contract.
+    if dry_run:
+        sink = JsonlEnvelopeSink(envelopes_out) if envelopes_out else NullEnvelopeSink()
+    elif envelopes_out:
+        sink = TeeEnvelopeSink(
+            DbEnvelopeSink(database.session, pipeline_run_id),
+            JsonlEnvelopeSink(envelopes_out),
+        )
+    else:
+        sink = DbEnvelopeSink(database.session, pipeline_run_id)
 
     # The CLI boundary is the one place a clock read belongs; everything below
     # takes `at` as an argument so a run stays reproducible.
