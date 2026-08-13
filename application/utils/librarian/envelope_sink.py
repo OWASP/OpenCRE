@@ -234,7 +234,10 @@ def _top_confidence(envelope: Envelope) -> Optional[float]:
     )
     if not links:
         return None
-    return links[0].confidence
+    # Max, not first: nothing in the schema orders `links`, so taking [0] could
+    # project a lower number than the envelope Module D filters on actually
+    # carries — and the column is meant to be readable off that same document.
+    return max(link.confidence for link in links)
 
 
 def envelope_id(envelope: Envelope) -> str:
