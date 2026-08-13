@@ -1,13 +1,11 @@
 import time
 import unittest
 
-from application.defs.cheatsheet_defs import CheatsheetRecord
 from application.utils.external_project_parsers.parsers.cheatsheet_rerank import (
-    CandidateCRE,
     RerankError,
-    build_rerank_graph,
+    build_rationale_graph,
     classify_confidence,
-    rerank_candidates_with_llm,
+    generate_link_rationale,
 )
 
 # LangGraph's first StateGraph().compile() in a process pays a one-time
@@ -15,29 +13,15 @@ from application.utils.external_project_parsers.parsers.cheatsheet_rerank import
 # test. Pay it here, at module load, so timing-sensitive assertions (e.g.
 # test_llm_timeout_falls_back) measure only our own timeout mechanism, both
 # in isolation and as part of the full suite.
-build_rerank_graph()
+build_rationale_graph()
 
 
-def _record(**overrides) -> CheatsheetRecord:
-    defaults = dict(
-        source_id="Secrets_Management_Cheat_Sheet",
-        title="Secrets Management Cheat Sheet",
-        hyperlink="https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html",
-        summary="Guidance on secure storage, rotation, and operational handling of secrets.",
-        headings=["Introduction", "Architectural Patterns", "Secret Rotation"],
-        raw_markdown_path="cheatsheets/Secrets_Management_Cheat_Sheet.md",
-    )
-    defaults.update(overrides)
-    return CheatsheetRecord(**defaults)
-
-
-def _candidates():
-    return [
-        CandidateCRE(
-            cre_id="623-550", score=0.62, text="Operational secret rotation controls."
-        ),
-        CandidateCRE(cre_id="123-456", score=0.40, text="Unrelated logging guidance."),
-    ]
+SECTION_TEXT = (
+    "Secrets Management Cheat Sheet: guidance on secure storage, rotation, "
+    "and operational handling of secrets."
+)
+CRE_ID = "623-550"
+CRE_TEXT = "Operational secret rotation controls."
 
 
 class ClassifyConfidenceTest(unittest.TestCase):
@@ -64,183 +48,141 @@ class ClassifyConfidenceTest(unittest.TestCase):
             classify_confidence("high")  # type: ignore[arg-type]
 
 
-class RerankCandidatesWithLlmTest(unittest.TestCase):
-    def test_empty_candidates_returns_empty(self):
-        self.assertEqual(rerank_candidates_with_llm(_record(), []), [])
-
-    def test_invalid_top_n_raises(self):
+class GenerateLinkRationaleTest(unittest.TestCase):
+    def test_empty_cre_id_raises(self):
         with self.assertRaises(RerankError):
-            rerank_candidates_with_llm(_record(), _candidates(), top_n=0)
+            generate_link_rationale(SECTION_TEXT, "", CRE_TEXT, 0.9)
 
-    def test_float_top_n_raises(self):
-        # a float would otherwise pass the "> 0" check and crash later with
-        # an opaque TypeError from list slicing deep inside the graph.
-        with self.assertRaises(RerankError):
-            rerank_candidates_with_llm(_record(), _candidates(), top_n=2.5)
+    def test_invalid_score_raises_before_llm_call(self):
+        called = {"n": 0}
 
-    def test_boolean_top_n_raises(self):
-        # bool is an int subclass in Python; reject it explicitly rather
-        # than silently treating True/False as 1/0.
+        def stub(system, user, *, model):
+            called["n"] += 1
+            return {"rationale": "x"}
+
         with self.assertRaises(RerankError):
-            rerank_candidates_with_llm(_record(), _candidates(), top_n=True)
+            generate_link_rationale(
+                SECTION_TEXT, CRE_ID, CRE_TEXT, 1.5, llm_rationale_fn=stub
+            )
+        self.assertEqual(called["n"], 0)
 
     def test_zero_timeout_seconds_raises(self):
         with self.assertRaises(RerankError):
-            rerank_candidates_with_llm(_record(), _candidates(), timeout_seconds=0)
+            generate_link_rationale(
+                SECTION_TEXT, CRE_ID, CRE_TEXT, 0.9, timeout_seconds=0
+            )
 
     def test_infinite_timeout_seconds_raises(self):
-        # an infinite timeout would defeat the whole point of the timeout
-        # guard and could hang the pipeline forever on a stuck LLM call.
         with self.assertRaises(RerankError):
-            rerank_candidates_with_llm(
-                _record(), _candidates(), timeout_seconds=float("inf")
+            generate_link_rationale(
+                SECTION_TEXT,
+                CRE_ID,
+                CRE_TEXT,
+                0.9,
+                timeout_seconds=float("inf"),
             )
 
     def test_boolean_timeout_seconds_raises(self):
         with self.assertRaises(RerankError):
-            rerank_candidates_with_llm(_record(), _candidates(), timeout_seconds=True)
+            generate_link_rationale(
+                SECTION_TEXT, CRE_ID, CRE_TEXT, 0.9, timeout_seconds=True
+            )
 
-    def test_invalid_params_raise_even_with_empty_candidates(self):
-        # validation must happen before the empty-candidates early return,
-        # not be silently skipped by it.
-        with self.assertRaises(RerankError):
-            rerank_candidates_with_llm(_record(), [], top_n=0)
-        with self.assertRaises(RerankError):
-            rerank_candidates_with_llm(_record(), [], timeout_seconds=-1)
-
-    def test_successful_rerank_produces_reason_and_confidence(self):
+    def test_successful_generation_produces_rationale_and_trace(self):
         def stub(system, user, *, model):
-            self.assertIn("CHEATSHEET_TITLE", user)
-            self.assertIn("623-550", user)
-            return {
-                "ranked": [
-                    {
-                        "cre_id": "623-550",
-                        "score": 0.91,
-                        "reason": "Directly covers rotation.",
-                    },
-                    {"cre_id": "123-456", "score": 0.2, "reason": "Off-topic."},
-                ]
-            }
+            self.assertIn("CHEATSHEET_TEXT", user)
+            self.assertIn(CRE_ID, user)
+            return {"rationale": "Both cover secret rotation controls directly."}
 
-        results = rerank_candidates_with_llm(
-            _record(), _candidates(), llm_score_fn=stub, top_n=5
+        result = generate_link_rationale(
+            SECTION_TEXT, CRE_ID, CRE_TEXT, 0.91, llm_rationale_fn=stub
         )
-        self.assertEqual(len(results), 2)
-        top = results[0]
-        self.assertEqual(top.cre_id, "623-550")
-        self.assertEqual(top.confidence, "high")
-        self.assertFalse(top.needs_review)
-        self.assertFalse(top.trace.fallback_used)
-        self.assertEqual(top.trace.prompt_version, "v1")
-        self.assertIn("rotation", top.reason.lower())
-        self.assertEqual(results[1].confidence, "low")
-        self.assertTrue(results[1].needs_review)
+        self.assertEqual(result.cre_id, CRE_ID)
+        self.assertIn("rotation", result.rationale.lower())
+        self.assertEqual(result.confidence, "high")
+        self.assertFalse(result.fallback_used)
+        self.assertFalse(result.trace.fallback_used)
+        self.assertEqual(result.trace.prompt_version, "v2")
+        self.assertIsNone(result.trace.fallback_reason)
 
-    def test_top_n_truncates_and_sorts_descending(self):
-        def stub(system, user, *, model):
-            return {
-                "ranked": [
-                    {"cre_id": "623-550", "score": 0.3, "reason": "r1"},
-                    {"cre_id": "123-456", "score": 0.95, "reason": "r2"},
-                ]
-            }
-
-        results = rerank_candidates_with_llm(
-            _record(), _candidates(), llm_score_fn=stub, top_n=1
-        )
-        self.assertEqual(len(results), 1)
-        self.assertEqual(results[0].cre_id, "123-456")
-
-    def test_hallucinated_cre_id_is_dropped(self):
-        def stub(system, user, *, model):
-            return {
-                "ranked": [
-                    {"cre_id": "623-550", "score": 0.9, "reason": "ok"},
-                    {"cre_id": "999-999", "score": 0.99, "reason": "invented"},
-                ]
-            }
-
-        results = rerank_candidates_with_llm(
-            _record(), _candidates(), llm_score_fn=stub, top_n=5
-        )
-        by_id = {r.cre_id: r for r in results}
-        self.assertNotIn("999-999", by_id)
-        # the un-scored real candidate still gets a retrieval-only entry,
-        # and must always be flagged for review since it was never actually
-        # judged by the reranker (regardless of its confidence band).
-        self.assertIn("123-456", by_id)
-        self.assertTrue(by_id["123-456"].needs_review)
-
-    def test_llm_exception_falls_back_to_retrieval_score(self):
+    def test_llm_exception_falls_back_to_score_only_rationale(self):
         def stub(system, user, *, model):
             raise RuntimeError("provider unavailable")
 
-        results = rerank_candidates_with_llm(
-            _record(), _candidates(), llm_score_fn=stub, top_n=5
+        result = generate_link_rationale(
+            SECTION_TEXT, CRE_ID, CRE_TEXT, 0.42, llm_rationale_fn=stub
         )
-        self.assertEqual(len(results), 2)
-        for r in results:
-            self.assertTrue(r.trace.fallback_used)
-            self.assertIsNotNone(r.trace.fallback_reason)
-            self.assertTrue(r.needs_review)
-        # retrieval ordering preserved (0.62 > 0.40)
-        self.assertEqual(results[0].cre_id, "623-550")
+        self.assertTrue(result.fallback_used)
+        self.assertTrue(result.trace.fallback_used)
+        self.assertIsNotNone(result.trace.fallback_reason)
+        self.assertIn("0.42", result.rationale)
 
     def test_llm_timeout_falls_back(self):
         def slow_stub(system, user, *, model):
             time.sleep(0.2)
-            return {"ranked": []}
+            return {"rationale": "too slow"}
 
         started = time.monotonic()
-        results = rerank_candidates_with_llm(
-            _record(),
-            _candidates(),
-            llm_score_fn=slow_stub,
-            top_n=5,
+        result = generate_link_rationale(
+            SECTION_TEXT,
+            CRE_ID,
+            CRE_TEXT,
+            0.6,
+            llm_rationale_fn=slow_stub,
             timeout_seconds=0.01,
         )
         elapsed = time.monotonic() - started
         self.assertLess(elapsed, 0.15)  # well under the 0.2s stub delay
-        self.assertEqual(len(results), 2)
-        self.assertTrue(all(r.trace.fallback_used for r in results))
+        self.assertTrue(result.fallback_used)
 
     def test_malformed_json_falls_back(self):
         def bad_stub(system, user, *, model):
-            return {"not_ranked_key": []}
+            return {"not_rationale_key": "x"}
 
-        results = rerank_candidates_with_llm(
-            _record(), _candidates(), llm_score_fn=bad_stub, top_n=5
+        result = generate_link_rationale(
+            SECTION_TEXT, CRE_ID, CRE_TEXT, 0.6, llm_rationale_fn=bad_stub
         )
-        self.assertTrue(all(r.trace.fallback_used for r in results))
+        self.assertTrue(result.fallback_used)
 
-    def test_llm_returns_no_valid_candidates_falls_back(self):
+    def test_empty_rationale_falls_back(self):
         def empty_stub(system, user, *, model):
-            return {
-                "ranked": [{"cre_id": "not-a-real-id", "score": 0.5, "reason": "x"}]
-            }
+            return {"rationale": ""}
 
-        results = rerank_candidates_with_llm(
-            _record(), _candidates(), llm_score_fn=empty_stub, top_n=5
+        result = generate_link_rationale(
+            SECTION_TEXT, CRE_ID, CRE_TEXT, 0.6, llm_rationale_fn=empty_stub
         )
-        self.assertTrue(all(r.trace.fallback_used for r in results))
+        self.assertTrue(result.fallback_used)
+
+    def test_missing_cre_text_still_produces_a_rationale(self):
+        # cre_text may be empty (RFC's original CandidateCRE allowed this);
+        # the prompt degrades gracefully rather than crashing.
+        def stub(system, user, *, model):
+            self.assertIn("<no text available>", user)
+            return {"rationale": "Plausible match based on cheat sheet alone."}
+
+        result = generate_link_rationale(
+            SECTION_TEXT, CRE_ID, "", 0.75, llm_rationale_fn=stub
+        )
+        self.assertFalse(result.fallback_used)
+        self.assertEqual(result.confidence, "medium")
 
 
-class RerankGraphIntegrationTest(unittest.TestCase):
-    """End-to-end execution of the compiled LangGraph flow (RFC Issue E, Checkpoint E5)."""
+class RationaleGraphIntegrationTest(unittest.TestCase):
+    """End-to-end execution of the compiled LangGraph flow."""
 
     def test_graph_runs_success_path(self):
-        app = build_rerank_graph()
+        app = build_rationale_graph()
 
         def stub(system, user, *, model):
-            return {"ranked": [{"cre_id": "623-550", "score": 0.88, "reason": "match"}]}
+            return {"rationale": "match"}
 
         state = app.invoke(
             {
-                "record": _record(),
-                "candidates": [_candidates()[0]],
-                "top_n": 5,
-                "llm_score_fn": stub,
+                "section_text": SECTION_TEXT,
+                "cre_id": CRE_ID,
+                "cre_text": CRE_TEXT,
+                "score": 0.88,
+                "llm_rationale_fn": stub,
                 "model_name": "test-model",
                 "timeout_seconds": 5.0,
                 "generated_at": "2026-08-13T00:00:00+00:00",
@@ -248,21 +190,22 @@ class RerankGraphIntegrationTest(unittest.TestCase):
                 "fallback_reason": None,
             }
         )
-        self.assertEqual(len(state["ranked"]), 1)
-        self.assertEqual(state["ranked"][0].confidence, "high")
+        self.assertEqual(state["result"].confidence, "high")
+        self.assertFalse(state["result"].fallback_used)
 
     def test_graph_runs_fallback_path(self):
-        app = build_rerank_graph()
+        app = build_rationale_graph()
 
         def failing_stub(system, user, *, model):
             raise RuntimeError("boom")
 
         state = app.invoke(
             {
-                "record": _record(),
-                "candidates": _candidates(),
-                "top_n": 5,
-                "llm_score_fn": failing_stub,
+                "section_text": SECTION_TEXT,
+                "cre_id": CRE_ID,
+                "cre_text": CRE_TEXT,
+                "score": 0.3,
+                "llm_rationale_fn": failing_stub,
                 "model_name": "test-model",
                 "timeout_seconds": 5.0,
                 "generated_at": "2026-08-13T00:00:00+00:00",
@@ -270,8 +213,7 @@ class RerankGraphIntegrationTest(unittest.TestCase):
                 "fallback_reason": None,
             }
         )
-        self.assertEqual(len(state["ranked"]), 2)
-        self.assertTrue(all(r.trace.fallback_used for r in state["ranked"]))
+        self.assertTrue(state["result"].fallback_used)
 
 
 if __name__ == "__main__":

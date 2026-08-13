@@ -1,39 +1,66 @@
 """
-RFC Workstream E — LLM Re-Rank and Decision Graph (LangGraph).
+RFC Workstream E — LLM rationale generation for cheat-sheet CRE links.
 
 See: docs/rfc/cheatsheets-llm-autonomous-mapping-rfc.md, section 5
-("Workstream E: LLM Re-Rank and Decision Graph (LangGraph)") and the
-Issue E checklist in section 12.
+("Workstream E: LLM Re-Rank and Decision Graph (LangGraph)").
 
-This module owns the "ReRank/Explain -> Threshold" stage of the overall
-pipeline (docs/rfc section 7): given a ``CheatsheetRecord`` (Workstream B,
-``application/defs/cheatsheet_defs.py``) and the top-k ``CandidateCRE``
-shortlist for it (Workstream D, ``retrieve_candidate_cres``), it asks an LLM
-to re-rank and justify the shortlist, assigns a confidence band to each
-result, and always returns a usable ``RankedCRE`` list — even when the LLM
-call fails, times out, or returns malformed output — by falling back to the
-retrieval-only ordering.
+## Why this module looks different from the original Workstream E scope
 
-Design notes
-------------
-* ``CandidateCRE`` is defined *here* rather than imported from Workstream D
-  because that workstream's ``retrieve_candidate_cres`` has not landed yet.
-  The field set (``cre_id``, ``score``, ``text``) mirrors the RFC's
-  ``CandidateCRE`` contract exactly, so swapping in the real Workstream D
-  output only requires constructing this same dataclass.
-* The LLM call is dependency-injected as ``llm_score_fn`` — a plain
-  ``(system, user) -> dict`` callable — exactly like the ``ai_client`` seam
-  in ``application/prompt_client/embed_alignment.py`` and the ``score_fn``
-  seam in ``application/utils/librarian/cross_encoder.py``. Production code
-  never has to inject anything (a LiteLLM-backed default is wired lazily so
-  this module stays import-light for tests); the test suite and any
-  harness inject a deterministic stub instead, which keeps the LangGraph
-  flow hermetically testable.
-* Confidence bands and thresholds follow the RFC's bootstrap defaults
-  (section 11 "Open Questions"): high >= 0.85, medium >= 0.70, else low.
-  Both are overridable via environment variables so they can be
-  recalibrated later against PR #865-derived precision/recall data without
-  a code change.
+The RFC originally scoped Workstream E as "LLM re-rank the top-k candidates
+from Workstream D." Since then, retrieval *and* reranking for the mapping
+pipeline have consolidated onto Module C ("The Librarian",
+``application/utils/librarian/``): C.1 retrieves candidates, C.2 reranks them
+with a cross-encoder, C.3 calibrates confidence, and C.4 decides + emits an
+RFC ``LinkProposal`` or ``ReviewItem`` (see PR #944's closing comment and
+PR #991). Building a second, LLM-based reranker on top of that would compete
+with C.2 rather than add anything.
+
+What Module C's merged code does *not* do, and structurally cannot do with a
+cross-encoder, is explain its pick in prose. Concretely:
+
+* ``schemas.ProposedLink.rationale: Optional[str]`` is a real field in the
+  RFC wire contract.
+* ``emitter.py``'s ``_proposed_links()`` sets ``rationale=None`` on every
+  single link, unconditionally -- there is no code path anywhere in Module C
+  that populates it.
+* ``decision_engine.decide()`` only ever surfaces a single top-1
+  ``cre_id`` per chunk (``candidate_cre_ids[:1]``), so the scope of "explain
+  the pick" is one candidate, not a shortlist.
+
+This module fills exactly that gap: given the section text and the one CRE
+Module C already chose (id, text, and its calibrated score), it asks an LLM
+for a short, grounded, one-sentence rationale -- the same LLM-reasoning
+capability Workstream E was always meant to contribute, retargeted at the
+one place in the pipeline that's actually missing it, instead of duplicating
+C.2's scoring job.
+
+This is a discussion-first proposal, not a fait accompli: wiring
+``generate_link_rationale`` into ``application/utils/librarian/emitter.py``
+is left to the Module C maintainers to decide on, since that module is an
+actively developed, separately owned GSoC deliverable. This file stays
+self-contained and does not import or modify anything under
+``application/utils/librarian/``.
+
+## Design notes (mostly carried over from the original implementation)
+
+* The LLM call is dependency-injected as ``llm_rationale_fn`` -- the same
+  seam pattern used throughout this codebase (``ai_client`` in
+  ``embed_alignment.py``, ``score_fn`` in ``librarian/cross_encoder.py``).
+  Production defaults to a lazily-imported LiteLLM call; tests inject a
+  deterministic stub, keeping the whole flow hermetically testable.
+* A small LangGraph flow (generate -> format | generate -> fallback ->
+  format) still backs the public entrypoint, per the RFC's "Decision Graph
+  (LangGraph)" framing -- now scoped to one node's worth of real work
+  (generate a rationale) plus its fallback, rather than a multi-stage
+  rerank pipeline that would have duplicated C.2/C.3/C.4.
+* Never raises on LLM failure -- falls back to a short, honest, templated
+  rationale ("Retrieval/rerank score S; LLM explanation unavailable.") so a
+  cheat sheet's link is never blocked or degraded by an LLM hiccup.
+* ``classify_confidence`` is kept as a small, independently useful utility
+  for human-facing review UIs (Module C's own ``decide()`` thresholds
+  numerically and has no notion of confidence *bands*), but is no longer on
+  the path that decides whether something links or gets reviewed -- that
+  call is Module C's alone.
 """
 
 from __future__ import annotations
@@ -46,11 +73,9 @@ from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeout
 from dataclasses import dataclass
 from functools import partial
 from datetime import datetime, timezone
-from typing import Any, Callable, Dict, List, Optional, TypedDict
+from typing import Any, Callable, Dict, Optional, TypedDict
 
 from pydantic import BaseModel, Field, ValidationError
-
-from application.defs.cheatsheet_defs import CheatsheetRecord
 
 logger = logging.getLogger(__name__)
 
@@ -62,12 +87,11 @@ _MEDIUM_THRESHOLD_ENV_VAR = "CRE_CHEATSHEET_RERANK_MEDIUM_THRESHOLD"
 _DEFAULT_HIGH_THRESHOLD = "0.85"
 _DEFAULT_MEDIUM_THRESHOLD = "0.70"
 
-# Identifiers persisted into RerankTrace for the RFC audit trail (mirrors
-# RETRIEVER_NAME / RERANKER_NAME conventions used elsewhere in the codebase).
-RERANKER_NAME = "llm-cheatsheet-reranker"
-PROMPT_VERSION = "v1"
+# Identifiers persisted into RationaleTrace for the RFC audit trail (mirrors
+# RETRIEVER_NAME / RERANKER_NAME conventions in application/utils/librarian/).
+RATIONALE_GENERATOR_NAME = "llm-cheatsheet-rationale-generator"
+PROMPT_VERSION = "v2"
 
-DEFAULT_TOP_N = 5
 DEFAULT_TIMEOUT_SECONDS = 30.0
 DEFAULT_MODEL_ENV_VAR = "CRE_CHEATSHEET_RERANK_MODEL"
 DEFAULT_MODEL_FALLBACK = "gemini/gemini-2.5-flash"
@@ -76,7 +100,7 @@ REASON_MAX_LENGTH = 400
 
 
 class RerankError(ValueError):
-    """Base class for reranker construction/usage failures."""
+    """Base class for this module's construction/usage failures."""
 
 
 def _resolve_threshold(env_var: str, default: str) -> float:
@@ -92,14 +116,14 @@ def _resolve_threshold(env_var: str, default: str) -> float:
 
 def classify_confidence(score: float) -> str:
     """
-    Map a 0-1 re-rank score to a confidence band ("high" | "medium" | "low").
+    Map a 0-1 score to a confidence band ("high" | "medium" | "low").
 
-    Thresholds are the RFC's bootstrap defaults (high >= 0.85, medium >= 0.70)
-    and are recalibratable via ``CRE_CHEATSHEET_RERANK_HIGH_THRESHOLD`` /
-    ``CRE_CHEATSHEET_RERANK_MEDIUM_THRESHOLD``. Thresholds are re-read from
-    the environment on every call (rather than cached at import time) so
-    overrides — including ones set after this module is imported, as in
-    tests — always take effect.
+    Independent utility for human-facing review UIs -- Module C's own
+    ``decide()`` thresholds numerically and has no notion of bands; this
+    does not feed back into that decision. Thresholds are the RFC's
+    bootstrap defaults (high >= 0.85, medium >= 0.70), recalibratable via
+    ``CRE_CHEATSHEET_RERANK_HIGH_THRESHOLD`` /
+    ``CRE_CHEATSHEET_RERANK_MEDIUM_THRESHOLD``, re-read on every call.
     """
     if not isinstance(score, (int, float)) or isinstance(score, bool):
         raise RerankError(f"score must be a number, got {score!r}")
@@ -127,24 +151,8 @@ def classify_confidence(score: float) -> str:
 
 
 @dataclass(frozen=True)
-class CandidateCRE:
-    """
-    One retrieval-stage candidate for a CheatsheetRecord.
-
-    Mirrors the RFC's Workstream D output contract. ``text`` is optional
-    context (e.g. the CRE's embeddings_content) given to the LLM so it can
-    judge fit; when absent the LLM is told only the cre_id, which degrades
-    rationale quality but never breaks the flow.
-    """
-
-    cre_id: str
-    score: float
-    text: str = ""
-
-
-@dataclass(frozen=True)
-class RerankTrace:
-    """Audit metadata captured for every rerank run (RFC Issue E, criterion 3)."""
+class RationaleTrace:
+    """Audit metadata captured for every rationale-generation run."""
 
     model: str
     prompt_version: str
@@ -154,36 +162,32 @@ class RerankTrace:
 
 
 @dataclass(frozen=True)
-class RankedCRE:
-    """One re-ranked, explained candidate — Workstream E's output contract."""
+class LinkRationale:
+    """
+    One CRE link's generated rationale -- meant to fill
+    ``librarian.schemas.ProposedLink.rationale``, which every current
+    Module C code path leaves ``None``.
+    """
 
     cre_id: str
-    score: float
-    retrieval_score: float
+    rationale: str
     confidence: str
-    reason: str
-    needs_review: bool
-    trace: RerankTrace
+    fallback_used: bool
+    trace: RationaleTrace
 
 
 # ---------------------------------------------------------------------------
-# LLM structured-output schema (strict; mirrors embed_alignment.AlignmentPayload)
+# LLM structured-output schema
 # ---------------------------------------------------------------------------
 
 
-class _RerankItem(BaseModel):
-    cre_id: str
-    score: float = Field(ge=0.0, le=1.0)
-    reason: str = ""
+class _RationalePayload(BaseModel):
+    rationale: str = Field(min_length=1, max_length=REASON_MAX_LENGTH)
 
 
-class _RerankPayload(BaseModel):
-    ranked: List[_RerankItem]
-
-
-def rerank_response_json_schema() -> Dict[str, Any]:
+def rationale_response_json_schema() -> Dict[str, Any]:
     """Provider-friendly JSON schema for strict structured LLM outputs."""
-    return _RerankPayload.model_json_schema()
+    return _RationalePayload.model_json_schema()
 
 
 # ---------------------------------------------------------------------------
@@ -193,36 +197,30 @@ def rerank_response_json_schema() -> Dict[str, Any]:
 
 def _system_prompt() -> str:
     return (
-        "You map an OWASP cheat sheet to the Common Requirement (CRE) entries "
-        "it best satisfies. You will be given the cheat sheet's title, summary, "
-        "and headings, plus a shortlist of candidate CREs with their ids. "
-        "Score how well each candidate CRE matches the cheat sheet's content on "
-        "a 0.0-1.0 scale (1.0 = the cheat sheet is clearly authoritative "
-        "guidance for that CRE), and give a short one-sentence reason for each "
-        "score, grounded in the cheat sheet's actual headings/summary. "
-        "Only score cre_ids given to you; never invent new ones. "
-        "Return ONLY valid JSON of the form "
-        '{"ranked": [{"cre_id": "...", "score": 0.0, "reason": "..."}]}, '
-        "one entry per candidate given."
+        "You explain why an OWASP cheat sheet is a good match for a specific "
+        "Common Requirement (CRE) entry. You will be given the cheat sheet's "
+        "text, the CRE's id and text, and Module C's calibrated match score. "
+        "Write ONE short, concrete sentence (max 60 words) grounded in the "
+        "actual cheat sheet content and CRE text -- do not restate the score, "
+        "do not invent facts not present in either text. "
+        'Return ONLY valid JSON of the form {"rationale": "..."}.'
     )
 
 
-def _user_payload(record: CheatsheetRecord, candidates: List[CandidateCRE]) -> str:
+def _user_payload(section_text: str, cre_id: str, cre_text: str, score: float) -> str:
     lines = [
-        f"CHEATSHEET_TITLE: {record.title}",
-        f"CHEATSHEET_SUMMARY: {record.summary}",
-        "CHEATSHEET_HEADINGS: " + "; ".join(record.headings),
+        f"CHEATSHEET_TEXT: {section_text[:2000]}",
         "",
-        "CANDIDATE_CRES (cre_id | text):",
+        f"CRE_ID: {cre_id}",
+        f"CRE_TEXT: {(cre_text or '<no text available>')[:800]}",
+        "",
+        f"CALIBRATED_SCORE: {score:.3f}",
     ]
-    for c in candidates:
-        text_preview = (c.text or "<no text available>")[:800]
-        lines.append(f"{c.cre_id} | {text_preview}")
     return "\n".join(lines)
 
 
 # ---------------------------------------------------------------------------
-# Default (production) LLM call — lazy litellm import so this module stays
+# Default (production) LLM call -- lazy litellm import so this module stays
 # import-light and hermetically testable without a real LLM dependency.
 # ---------------------------------------------------------------------------
 
@@ -234,22 +232,23 @@ def _default_model_name() -> str:
     )
 
 
-def default_llm_score_fn(
+def default_llm_rationale_fn(
     system: str, user: str, *, model: str, timeout: Optional[float] = None
 ) -> Dict[str, Any]:
     """Production LLM call via LiteLLM. Raises on any failure; callers must
     handle fallback (this function intentionally does not swallow errors).
 
     ``timeout``, when given, is passed straight through to LiteLLM so the
-    underlying HTTP request itself is bounded — the wall-clock cutoff in
-    ``_call_with_timeout`` protects the pipeline either way, but a
-    request-level timeout lets the worker thread actually terminate instead
-    of continuing to block on the socket after we've stopped waiting on it.
+    underlying HTTP request itself is bounded, letting the worker thread in
+    ``_call_with_timeout`` actually terminate rather than just being
+    abandoned.
     """
     try:
         import litellm  # type: ignore
     except ImportError as exc:  # pragma: no cover - exercised only without litellm
-        raise RerankError("litellm package is required for LLM re-rank calls") from exc
+        raise RerankError(
+            "litellm package is required for LLM rationale calls"
+        ) from exc
 
     resp = litellm.completion(
         model=model,
@@ -289,7 +288,7 @@ def _call_with_timeout(
     except FutureTimeoutError as exc:
         pool.shutdown(wait=False)
         raise RerankError(
-            f"LLM re-rank call exceeded {timeout_seconds}s timeout"
+            f"LLM rationale call exceeded {timeout_seconds}s timeout"
         ) from exc
     except Exception:
         pool.shutdown(wait=False)
@@ -299,197 +298,146 @@ def _call_with_timeout(
 
 
 # ---------------------------------------------------------------------------
-# LangGraph flow: rerank -> (success: classify) | (failure: fallback -> classify)
+# LangGraph flow: generate -> (success: format) | (failure: fallback -> format)
 # ---------------------------------------------------------------------------
 
 
-class _RerankState(TypedDict, total=False):
-    record: CheatsheetRecord
-    candidates: List[CandidateCRE]
-    top_n: int
-    llm_score_fn: Callable[..., Dict[str, Any]]
+class _RationaleState(TypedDict, total=False):
+    section_text: str
+    cre_id: str
+    cre_text: str
+    score: float
+    llm_rationale_fn: Callable[..., Dict[str, Any]]
     model_name: str
     timeout_seconds: float
     generated_at: str
-    scored: Dict[str, Dict[str, Any]]  # cre_id -> {"score": float, "reason": str}
+    rationale_text: Optional[str]
     fallback_used: bool
     fallback_reason: Optional[str]
-    ranked: List[RankedCRE]
+    result: LinkRationale
 
 
-def _node_llm_rerank(state: _RerankState) -> _RerankState:
-    """Call the LLM, validate its output, and record per-candidate scores.
-
-    On any failure (LLM error, timeout, malformed JSON, schema violation)
-    this node records the reason and leaves ``scored`` empty; the
-    conditional edge below routes to the fallback node instead of raising.
-    """
-    record = state["record"]
-    candidates = state["candidates"]
-    llm_score_fn = state["llm_score_fn"]
+def _node_generate(state: _RationaleState) -> _RationaleState:
+    """Call the LLM and validate its output. On any failure, record the
+    reason and leave ``rationale_text`` unset; the conditional edge below
+    routes to the fallback node instead of raising."""
+    system = _system_prompt()
+    user = _user_payload(
+        state["section_text"], state["cre_id"], state["cre_text"], state["score"]
+    )
+    llm_rationale_fn = state["llm_rationale_fn"]
     model_name = state["model_name"]
     timeout_seconds = state["timeout_seconds"]
 
-    system = _system_prompt()
-    user = _user_payload(record, candidates)
-
     try:
         raw = _call_with_timeout(
-            lambda: llm_score_fn(system, user, model=model_name), timeout_seconds
+            lambda: llm_rationale_fn(system, user, model=model_name), timeout_seconds
         )
-        payload = _RerankPayload.model_validate(raw)
+        payload = _RationalePayload.model_validate(raw)
     except (RerankError, ValidationError, json.JSONDecodeError, TypeError) as exc:
-        logger.warning("LLM re-rank failed for %s: %s", record.source_id, exc)
+        logger.warning("LLM rationale failed for %s: %s", state["cre_id"], exc)
         state["fallback_reason"] = f"{type(exc).__name__}: {exc}"[:REASON_MAX_LENGTH]
-        state["scored"] = {}
+        state["rationale_text"] = None
         return state
     except Exception as exc:  # defensive: never let an unexpected error crash the run
         logger.warning(
-            "LLM re-rank failed unexpectedly for %s: %s", record.source_id, exc
+            "LLM rationale failed unexpectedly for %s: %s", state["cre_id"], exc
         )
         state["fallback_reason"] = f"unexpected:{type(exc).__name__}: {exc}"[
             :REASON_MAX_LENGTH
         ]
-        state["scored"] = {}
+        state["rationale_text"] = None
         return state
 
-    known_ids = {c.cre_id for c in candidates}
-    scored: Dict[str, Dict[str, Any]] = {}
-    for item in payload.ranked:
-        if item.cre_id not in known_ids:
-            logger.info(
-                "Dropping hallucinated cre_id %r not in candidate shortlist for %s",
-                item.cre_id,
-                record.source_id,
-            )
-            continue
-        scored[item.cre_id] = {
-            "score": item.score,
-            "reason": item.reason[:REASON_MAX_LENGTH],
-        }
-
-    if not scored:
-        state["fallback_reason"] = "LLM returned no valid scored candidates"
-
-    state["scored"] = scored
+    state["rationale_text"] = payload.rationale[:REASON_MAX_LENGTH]
     return state
 
 
-def _route_after_rerank(state: _RerankState) -> str:
-    return "classify" if state.get("scored") else "fallback"
+def _route_after_generate(state: _RationaleState) -> str:
+    return "format" if state.get("rationale_text") else "fallback"
 
 
-def _node_fallback(state: _RerankState) -> _RerankState:
-    """Retrieval-only scoring: use each candidate's raw similarity as-is."""
+def _node_fallback(state: _RationaleState) -> _RationaleState:
+    """Deterministic, honest fallback: no LLM prose, just the score."""
     state["fallback_used"] = True
-    state["scored"] = {
-        c.cre_id: {
-            "score": max(0.0, min(1.0, c.score)),
-            "reason": "Retrieval-only score (LLM re-rank unavailable).",
-        }
-        for c in state["candidates"]
-    }
+    state["rationale_text"] = (
+        f"Retrieval/rerank score {state['score']:.2f}; LLM explanation unavailable."
+    )
     return state
 
 
-def _node_classify(state: _RerankState) -> _RerankState:
-    candidates = state["candidates"]
-    scored = state["scored"]
-    fallback_used = state.get("fallback_used", False)
-    fallback_reason = state.get("fallback_reason")
-    trace = RerankTrace(
+def _node_format(state: _RationaleState) -> _RationaleState:
+    trace = RationaleTrace(
         model=state["model_name"],
         prompt_version=PROMPT_VERSION,
         generated_at=state["generated_at"],
-        fallback_used=fallback_used,
-        fallback_reason=fallback_reason if fallback_used else None,
+        fallback_used=state.get("fallback_used", False),
+        fallback_reason=(
+            state.get("fallback_reason") if state.get("fallback_used") else None
+        ),
     )
-
-    ranked: List[RankedCRE] = []
-    for c in candidates:
-        entry = scored.get(c.cre_id)
-        per_candidate_fallback = entry is None
-        if entry is None:
-            # LLM succeeded overall but skipped this one candidate: fall back
-            # to its retrieval score individually rather than dropping it.
-            # This is unscored, unexplained data — always flag it for review
-            # even if the raw retrieval score happens to land in a
-            # medium/high band.
-            entry = {
-                "score": max(0.0, min(1.0, c.score)),
-                "reason": "Not scored by reranker; using retrieval score.",
-            }
-        confidence = classify_confidence(entry["score"])
-        ranked.append(
-            RankedCRE(
-                cre_id=c.cre_id,
-                score=entry["score"],
-                retrieval_score=c.score,
-                confidence=confidence,
-                reason=entry["reason"],
-                needs_review=(confidence == "low")
-                or fallback_used
-                or per_candidate_fallback,
-                trace=trace,
-            )
-        )
-
-    ranked.sort(key=lambda r: r.score, reverse=True)
-    state["ranked"] = ranked[: state["top_n"]]
+    state["result"] = LinkRationale(
+        cre_id=state["cre_id"],
+        rationale=state["rationale_text"],
+        confidence=classify_confidence(state["score"]),
+        fallback_used=state.get("fallback_used", False),
+        trace=trace,
+    )
     return state
 
 
-def build_rerank_graph():
+def build_rationale_graph():
     """Compile and return the Workstream E LangGraph flow.
 
-    Nodes: ``rerank`` -> (``classify`` | ``fallback`` -> ``classify``) -> END.
-    Exposed standalone so it can be inspected, visualized, or exercised
-    directly in integration tests without going through the convenience
-    wrapper below.
+    Nodes: ``generate`` -> (``format`` | ``fallback`` -> ``format``) -> END.
     """
     from langgraph.graph import StateGraph, START, END
 
-    graph = StateGraph(_RerankState)
-    graph.add_node("rerank", _node_llm_rerank)
+    graph = StateGraph(_RationaleState)
+    graph.add_node("generate", _node_generate)
     graph.add_node("fallback", _node_fallback)
-    graph.add_node("classify", _node_classify)
+    graph.add_node("format", _node_format)
 
-    graph.add_edge(START, "rerank")
+    graph.add_edge(START, "generate")
     graph.add_conditional_edges(
-        "rerank", _route_after_rerank, {"classify": "classify", "fallback": "fallback"}
+        "generate", _route_after_generate, {"format": "format", "fallback": "fallback"}
     )
-    graph.add_edge("fallback", "classify")
-    graph.add_edge("classify", END)
+    graph.add_edge("fallback", "format")
+    graph.add_edge("format", END)
 
     return graph.compile()
 
 
 # ---------------------------------------------------------------------------
-# Public entrypoint (RFC function-level API, section 6)
+# Public entrypoint
 # ---------------------------------------------------------------------------
 
 
-def rerank_candidates_with_llm(
-    record: CheatsheetRecord,
-    candidates: List[CandidateCRE],
+def generate_link_rationale(
+    section_text: str,
+    cre_id: str,
+    cre_text: str,
+    score: float,
     *,
-    llm_score_fn: Optional[Callable[..., Dict[str, Any]]] = None,
-    top_n: int = DEFAULT_TOP_N,
+    llm_rationale_fn: Optional[Callable[..., Dict[str, Any]]] = None,
     model_name: Optional[str] = None,
     timeout_seconds: float = DEFAULT_TIMEOUT_SECONDS,
-) -> List[RankedCRE]:
+) -> LinkRationale:
     """
-    Re-rank ``candidates`` for ``record`` via the LangGraph flow above.
+    Generate a natural-language rationale for one CRE link, via the
+    LangGraph flow above.
 
-    ``llm_score_fn`` defaults to a LiteLLM-backed call
-    (:func:`default_llm_score_fn`); tests and harnesses should inject a
-    deterministic stub instead. Never raises on LLM failure — falls back to
-    retrieval-only ordering and marks the trace accordingly.
+    Intended to fill ``librarian.schemas.ProposedLink.rationale`` for the
+    single top-1 candidate Module C's ``decide()`` already chose -- this
+    does not rerank or re-decide anything.
+
+    ``llm_rationale_fn`` defaults to a LiteLLM-backed call
+    (:func:`default_llm_rationale_fn`); tests and harnesses should inject a
+    deterministic stub instead. Never raises on LLM failure -- falls back to
+    a short, honest, score-only rationale and marks the trace accordingly.
     """
-    if not isinstance(top_n, int) or isinstance(top_n, bool):
-        raise RerankError(f"top_n must be a non-boolean int, got {top_n!r}")
-    if top_n <= 0:
-        raise RerankError(f"top_n must be > 0, got {top_n}")
+    if not isinstance(cre_id, str) or not cre_id.strip():
+        raise RerankError(f"cre_id must be a non-empty string, got {cre_id!r}")
     if not isinstance(timeout_seconds, (int, float)) or isinstance(
         timeout_seconds, bool
     ):
@@ -500,25 +448,26 @@ def rerank_candidates_with_llm(
         raise RerankError(
             f"timeout_seconds must be a finite number > 0, got {timeout_seconds!r}"
         )
-
-    if not candidates:
-        return []
+    # classify_confidence performs the score range/type validation; reuse it
+    # up front so a bad score fails fast, before any LLM call is attempted.
+    classify_confidence(score)
 
     resolved_model = model_name or _default_model_name()
-    if llm_score_fn is not None:
-        score_fn = llm_score_fn
+    if llm_rationale_fn is not None:
+        score_fn = llm_rationale_fn
     else:
         # Bind the request-level timeout only for the built-in LiteLLM path;
         # injected stubs are not required to accept a ``timeout`` kwarg.
-        score_fn = partial(default_llm_score_fn, timeout=timeout_seconds)
+        score_fn = partial(default_llm_rationale_fn, timeout=timeout_seconds)
 
-    app = build_rerank_graph()
+    app = build_rationale_graph()
     result = app.invoke(
         {
-            "record": record,
-            "candidates": candidates,
-            "top_n": top_n,
-            "llm_score_fn": score_fn,
+            "section_text": section_text,
+            "cre_id": cre_id,
+            "cre_text": cre_text,
+            "score": float(score),
+            "llm_rationale_fn": score_fn,
             "model_name": resolved_model,
             "timeout_seconds": timeout_seconds,
             "generated_at": datetime.now(timezone.utc).isoformat(),
@@ -526,4 +475,4 @@ def rerank_candidates_with_llm(
             "fallback_reason": None,
         }
     )
-    return result["ranked"]
+    return result["result"]
