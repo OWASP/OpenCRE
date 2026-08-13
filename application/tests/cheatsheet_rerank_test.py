@@ -72,6 +72,42 @@ class RerankCandidatesWithLlmTest(unittest.TestCase):
         with self.assertRaises(RerankError):
             rerank_candidates_with_llm(_record(), _candidates(), top_n=0)
 
+    def test_float_top_n_raises(self):
+        # a float would otherwise pass the "> 0" check and crash later with
+        # an opaque TypeError from list slicing deep inside the graph.
+        with self.assertRaises(RerankError):
+            rerank_candidates_with_llm(_record(), _candidates(), top_n=2.5)
+
+    def test_boolean_top_n_raises(self):
+        # bool is an int subclass in Python; reject it explicitly rather
+        # than silently treating True/False as 1/0.
+        with self.assertRaises(RerankError):
+            rerank_candidates_with_llm(_record(), _candidates(), top_n=True)
+
+    def test_zero_timeout_seconds_raises(self):
+        with self.assertRaises(RerankError):
+            rerank_candidates_with_llm(_record(), _candidates(), timeout_seconds=0)
+
+    def test_infinite_timeout_seconds_raises(self):
+        # an infinite timeout would defeat the whole point of the timeout
+        # guard and could hang the pipeline forever on a stuck LLM call.
+        with self.assertRaises(RerankError):
+            rerank_candidates_with_llm(
+                _record(), _candidates(), timeout_seconds=float("inf")
+            )
+
+    def test_boolean_timeout_seconds_raises(self):
+        with self.assertRaises(RerankError):
+            rerank_candidates_with_llm(_record(), _candidates(), timeout_seconds=True)
+
+    def test_invalid_params_raise_even_with_empty_candidates(self):
+        # validation must happen before the empty-candidates early return,
+        # not be silently skipped by it.
+        with self.assertRaises(RerankError):
+            rerank_candidates_with_llm(_record(), [], top_n=0)
+        with self.assertRaises(RerankError):
+            rerank_candidates_with_llm(_record(), [], timeout_seconds=-1)
+
     def test_successful_rerank_produces_reason_and_confidence(self):
         def stub(system, user, *, model):
             self.assertIn("CHEATSHEET_TITLE", user)

@@ -40,6 +40,7 @@ from __future__ import annotations
 
 import json
 import logging
+import math
 import os
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError
 from dataclasses import dataclass
@@ -485,10 +486,23 @@ def rerank_candidates_with_llm(
     deterministic stub instead. Never raises on LLM failure — falls back to
     retrieval-only ordering and marks the trace accordingly.
     """
-    if not candidates:
-        return []
+    if not isinstance(top_n, int) or isinstance(top_n, bool):
+        raise RerankError(f"top_n must be a non-boolean int, got {top_n!r}")
     if top_n <= 0:
         raise RerankError(f"top_n must be > 0, got {top_n}")
+    if not isinstance(timeout_seconds, (int, float)) or isinstance(
+        timeout_seconds, bool
+    ):
+        raise RerankError(
+            f"timeout_seconds must be a non-boolean number, got {timeout_seconds!r}"
+        )
+    if not math.isfinite(timeout_seconds) or timeout_seconds <= 0:
+        raise RerankError(
+            f"timeout_seconds must be a finite number > 0, got {timeout_seconds!r}"
+        )
+
+    if not candidates:
+        return []
 
     resolved_model = model_name or _default_model_name()
     if llm_score_fn is not None:
