@@ -269,6 +269,68 @@ class ChunkRecordBuilderTests(unittest.TestCase):
             [],
         )
 
+    def test_empty_document_produces_no_records(self):
+        document = self._document(text="", headings=[])
+
+        records = ChunkRecordBuilder().build(document, [])
+
+        self.assertEqual(records, [])
+
+    def test_chunk_text_matches_source_span(self):
+        text = "# Root\n\nFirst paragraph.\n\nSecond paragraph."
+
+        document = self._document(text=text, headings=[])
+
+        chunks = [
+            ChunkInfo(
+                text="First paragraph.",
+                start_char_idx=text.index("First"),
+                end_char_idx=text.index("First") + len("First paragraph."),
+            )
+        ]
+
+        records = ChunkRecordBuilder().build(document, chunks)
+
+        record = records[0]
+
+        self.assertEqual(
+            record.text,
+            text[record.span.start_char_idx : record.span.end_char_idx],
+        )
+
+    def test_chunk_order_is_deterministic(self):
+        text = "# Root\n\nFirst.\n\nSecond."
+
+        document = self._document(text=text, headings=[])
+
+        first_start = text.index("First")
+        second_start = text.index("Second")
+
+        chunks = [
+            ChunkInfo(
+                text="First.",
+                start_char_idx=first_start,
+                end_char_idx=first_start + len("First."),
+            ),
+            ChunkInfo(
+                text="Second.",
+                start_char_idx=second_start,
+                end_char_idx=second_start + len("Second."),
+            ),
+        ]
+
+        records = ChunkRecordBuilder().build(document, chunks)
+
+        self.assertEqual(
+            [record.span.index for record in records],
+            [0, 1],
+        )
+
+        self.assertEqual(
+            [record.span.total for record in records],
+            [2, 2],
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

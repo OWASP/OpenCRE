@@ -68,6 +68,52 @@ class DocumentChunkerTests(unittest.TestCase):
             ],
         )
 
+    @patch("application.utils.harvester.chunker.HuggingFaceEmbedding")
+    @patch("application.utils.harvester.chunker.SemanticSplitterNodeParser")
+    def test_chunking_preserves_node_order(
+        self,
+        splitter_cls,
+        embedding_cls,
+    ):
+        first = type(
+            "Node",
+            (),
+            {
+                "start_char_idx": 0,
+                "end_char_idx": 6,
+                "get_content": lambda self: "First.",
+            },
+        )()
+
+        second = type(
+            "Node",
+            (),
+            {
+                "start_char_idx": 8,
+                "end_char_idx": 15,
+                "get_content": lambda self: "Second.",
+            },
+        )()
+
+        splitter_cls.return_value.get_nodes_from_documents.return_value = [
+            first,
+            second,
+        ]
+
+        chunker = DocumentChunker()
+
+        chunks = chunker.chunk("First.\n\nSecond.")
+
+        self.assertEqual(
+            [(c.start_char_idx, c.end_char_idx) for c in chunks],
+            [(0, 6), (8, 15)],
+        )
+
+        self.assertEqual(
+            [c.text for c in chunks],
+            ["First.", "Second."],
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
