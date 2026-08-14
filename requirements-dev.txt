@@ -89,3 +89,7 @@ pytest-playwright
 
 # Local stdio MCP server (issue #1003 v1) — not needed on Heroku slug
 mcp==2.0.0
+
+# LlamaIndex
+llama-index-core
+llama-index-embeddings-huggingface

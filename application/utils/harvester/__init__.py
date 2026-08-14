@@ -39,16 +39,19 @@ from .document_deduplicator import DocumentDeduplicator
 from .checkpoint_manager import CheckpointManager
 from .incremental_pipeline import IncrementalPipeline
 from .deduplication_metrics import DeduplicationMetrics
+from .chunker import ChunkInfo, DocumentChunker
 
 __all__ = [
     "ArtifactRegistry",
     "build_repository_cache_path",
+    "ChunkInfo",
     "CheckpointManager",
     "ChunkingConfig",
     "ConfigLoaderError",
     "DeduplicationMetrics",
     "DiffRetriever",
     "DocumentBuilder",
+    "DocumentChunker",
     "DocumentDeduplicator",
     "DocumentValidator",
     "GitRepositoryClient",
