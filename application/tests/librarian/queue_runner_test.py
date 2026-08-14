@@ -358,6 +358,51 @@ class RunLibrarianQueueTest(unittest.TestCase):
         self.assertIn("degraded", summary.status)
         self.assertIn("safety path", summary.status)
 
+    def test_blank_run_id_is_refused(self) -> None:
+        """A blank id is a caller mistake, not "every run".
+
+        `DbKnowledgeSource` applies the scope filter behind a truthiness test, so
+        a blank string would drain and consume every run's rows and stamp the
+        blank id onto every envelope — unrecoverable once the rows are retired.
+        """
+        sqla.session.add(_row("a"))
+        sqla.session.commit()
+
+        for blank in ("", "   "):
+            with self.assertRaises(ValueError):
+                run_librarian_queue(
+                    sqla.session,
+                    blank,
+                    _components(),
+                    _config(),
+                    at=AT,
+                    sink=_RecordingSink(),
+                )
+
+        # Nothing was read and nothing was retired.
+        self.assertIsNone(self._consumed_at("a"))
+
+    def test_unmodellable_row_is_retired_not_re_read_forever(self) -> None:
+        """A row B wrote that C cannot model never reaches the pipeline, so the
+        pipeline cannot report it finished. Without retiring it here the next run
+        reads the same poison row again, and every run after that."""
+        good = _row("a")
+        # locator_kind is a required enum; an unknown value fails C's model.
+        bad = _row("b", locator_kind="not_a_locator_kind")
+        sqla.session.add_all([good, bad])
+        sqla.session.commit()
+
+        summary = self._run()
+
+        self.assertEqual(summary.linked, 1)
+        self.assertIsNotNone(self._consumed_at("a"))
+        # The unmodellable row is finished with, and counted rather than hidden.
+        self.assertIsNotNone(self._consumed_at("b"))
+        self.assertGreaterEqual(summary.skipped, 1)
+
+        # A second run therefore has nothing left to do.
+        self.assertEqual(self._run().read, 0)
+
     def test_status_is_ok_when_there_is_nothing_to_declare(self) -> None:
         summary = RunSummary(run_id=RUN, read=3, linked=3)
         summary.finalize_status()

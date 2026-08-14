@@ -64,6 +64,21 @@ class NullEnvelopeSink:
 class JsonlEnvelopeSink:
     """Appends envelopes to a JSONL file, one RFC envelope per line.
 
+    **This is a mirror, not the handoff.** ``decision_queue`` is where a decision
+    is recorded and where Module D reads it; ``DbEnvelopeSink`` owns that, and it
+    is idempotent per ``(chunk_id, pipeline_run_id)``. This sink exists so a run
+    can be eyeballed or grepped, and it deliberately offers weaker guarantees:
+
+    - **No cross-process coordination.** Two runs appending to the same path can
+      interleave. Give concurrent runs separate files.
+    - **No dedup.** A replayed run appends its envelopes again, so a chunk can
+      appear more than once. The chunk id and run id on each record are what let
+      a reader collapse duplicates.
+
+    Neither weakens the consumption rule, because a real run always writes
+    ``decision_queue`` too: rows are retired on the strength of that insert, not
+    of this file.
+
     Append rather than truncate: several runs over different
     ``pipeline_run_id``s share one output file, and each envelope already
     carries its own run id. ``model_dump_json`` is used so the file holds the
@@ -142,6 +157,21 @@ class DbEnvelopeSink:
         from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 
         from application.database.db import DecisionQueueItem, generate_uuid
+
+        mismatched = sorted(
+            {e.pipeline_run_id for e in envelopes if e.pipeline_run_id != self._run_id}
+        )
+        if mismatched:
+            # The row is keyed on the envelope's run id while the runner is
+            # consuming rows for this sink's run id. Letting that through writes
+            # the decision under one run and retires the source row under
+            # another, so the (chunk, run) uniqueness stops protecting anything
+            # and the provenance no longer joins up.
+            raise ValueError(
+                f"DbEnvelopeSink was built for pipeline_run_id={self._run_id!r} "
+                f"but was handed envelopes from {mismatched!r}; a decision must "
+                "be written under the run that produced it."
+            )
 
         rows = [self._row(e) for e in envelopes]
         dialect = self._session.get_bind().dialect.name
