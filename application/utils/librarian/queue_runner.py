@@ -123,6 +123,17 @@ def run_librarian_queue(
     are counted as ``skipped`` or ``errored``. It *does* raise on a caller that
     asks for a real run with nowhere to put the results.
     """
+    # An empty id is not "every run", it is a caller mistake. `DbKnowledgeSource`
+    # applies the scope filter behind a truthiness test, so a blank string would
+    # silently drain every unconsumed row from every run, stamp them all
+    # consumed, and write the blank id onto every envelope — unrecoverable, since
+    # the rows are then retired under a provenance nobody can trace back.
+    if not pipeline_run_id or not pipeline_run_id.strip():
+        raise ValueError(
+            "run_librarian_queue needs a non-empty pipeline_run_id: a blank id "
+            "would drain and consume every run's rows, not one run's."
+        )
+
     config = config or load_config()
     summary = RunSummary(run_id=pipeline_run_id, dry_run=dry_run)
 
@@ -177,7 +188,15 @@ def run_librarian_queue(
     assert sink is not None  # guarded above; narrows the Optional for mypy
     summary.persisted = sink.write(result.envelopes)
 
-    finished = result.finished_row_ids()
+    # Rows B wrote that C could not even model never reached the pipeline, so
+    # they are absent from its outcomes. Retire them here or the next run reads
+    # the same poison rows again, and every run after that. Failing the model is
+    # a definitive refusal — the row will not become modellable by being read a
+    # second time — so it is finished in the same sense a C.0 rejection is. The
+    # row itself is never deleted, so the evidence survives.
+    finished = result.finished_row_ids() + source.rejected_row_ids
+    if source.rejected_row_ids:
+        summary.skipped += len(source.rejected_row_ids)
     summary.consumed = mark_consumed(session, finished, at=at)
     session.commit()
 

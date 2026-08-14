@@ -244,6 +244,27 @@ class DbEnvelopeSinkTest(unittest.TestCase):
         (row,) = self._rows()
         self.assertAlmostEqual(row.confidence, 0.97)
 
+    def test_envelopes_from_another_run_are_refused(self) -> None:
+        """Writing a decision under a different run than the one being consumed
+        would break the (chunk, run) uniqueness and orphan the provenance."""
+        stray = _linked().model_copy(update={"pipeline_run_id": "run-elsewhere"})
+
+        with self.assertRaises(ValueError) as caught:
+            self.sink.write([stray])
+
+        self.assertIn("run-elsewhere", str(caught.exception))
+        self.assertEqual(self._rows(), [])
+
+    def test_a_mismatched_envelope_blocks_the_whole_batch(self) -> None:
+        # Rows are built after the check, so a bad envelope writes nothing at
+        # all rather than leaving a half-inserted batch.
+        stray = _linked("chk:9").model_copy(update={"pipeline_run_id": "run-2"})
+
+        with self.assertRaises(ValueError):
+            self.sink.write([_linked("chk:1"), stray])
+
+        self.assertEqual(self._rows(), [])
+
     def test_empty_batch_writes_nothing(self) -> None:
         self.assertEqual(self.sink.write([]), 0)
         self.assertEqual(self._rows(), [])

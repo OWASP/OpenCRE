@@ -17,7 +17,7 @@ a row C never marks consumed, so D's queue stays intact.
 
 import logging
 from abc import ABC, abstractmethod
-from typing import Iterator, Optional
+from typing import Iterator, List, Optional
 
 from pydantic import ValidationError
 
@@ -86,6 +86,14 @@ class DbKnowledgeSource(KnowledgeSource):
         self._session = session
         self._run_id = pipeline_run_id
         self._limit = limit
+        #: Ids of rows B wrote that C could not model, filled during iteration.
+        #: They never reach the pipeline, so the pipeline cannot report them as
+        #: finished — without this the runner would leave them unconsumed and
+        #: re-read the same poison rows on every run, forever. The runner adds
+        #: them to the consumed set: a row that fails the model is a definitive
+        #: refusal, exactly like a C.0 boundary rejection, and the row itself
+        #: stays in the table as the record of what happened.
+        self.rejected_row_ids: List[str] = []
 
     def _query(self) -> object:
         # Imported lazily: the schemas/pipeline layers stay DB-free by design,
@@ -111,9 +119,12 @@ class DbKnowledgeSource(KnowledgeSource):
                 # A row B wrote that C cannot model is a contract breach worth
                 # seeing, but it must not abort the batch. Ids are safe to log;
                 # the row's text is not.
+                row_id = getattr(row, "id", None)
                 logger.warning(
                     "Skipping unmodellable knowledge_queue row id=%s: %s",
-                    getattr(row, "id", "<unknown>"),
+                    row_id if row_id is not None else "<unknown>",
                     exc.errors(include_input=False),
                 )
+                if row_id is not None:
+                    self.rejected_row_ids.append(row_id)
                 continue
