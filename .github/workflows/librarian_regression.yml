@@ -19,12 +19,15 @@ on:
       - 'application/tests/librarian/**'
       - 'scripts/evaluate_librarian.py'
       - '.github/workflows/librarian_regression.yml'
+      - 'requirements-dev.txt'
   push:
     branches: [main]
     paths:
       - 'application/utils/librarian/**'
       - 'application/tests/librarian/**'
       - 'scripts/evaluate_librarian.py'
+      - '.github/workflows/librarian_regression.yml'
+      - 'requirements-dev.txt'
 
 permissions:
   contents: read

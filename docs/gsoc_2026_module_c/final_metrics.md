@@ -131,7 +131,7 @@ The hermetic subset needs no DB, key, or model, and is what CI gates on:
 ```bash
 python scripts/evaluate_librarian.py \
     --dataset application/tests/librarian/fixtures/golden_dataset.json
-python -m pytest application/tests/librarian/     # 223 tests
+python -m pytest application/tests/librarian/     # 247 tests
 ```
 
 For the live numbers, migrate a legacy cache first:
