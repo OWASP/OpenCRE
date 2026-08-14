@@ -50,10 +50,15 @@ sink accepted the batch. Dry runs use `NullEnvelopeSink`, which reports `False`,
 so a dry run can never consume.
 
 **2. Errors and refusals are different.** A row rejected at the C.0 boundary is
-consumed — re-reading a malformed row forever helps nobody. A row that *errored*
-mid-pipeline (an embedding timeout, a cross-encoder hiccup) is left unconsumed,
-because the next run should retry it. `RunStats` counts them separately on
-purpose.
+consumed — re-reading a malformed row forever helps nobody, and the same goes for
+a row B wrote that C cannot even model. A row that *errored* mid-pipeline (an
+embedding timeout, a cross-encoder hiccup) is left unconsumed, because the next
+run should retry it. `RunStats` counts them separately on purpose.
+
+`UNCERTAIN` rows are never read and so are never consumed. They are Module D's,
+per the B→C contract, and C filters them out in the query rather than at the
+boundary — a row C never reads is a row C never retires, which is what keeps D's
+queue intact.
 
 ## Design constraints
 

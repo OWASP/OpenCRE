@@ -196,7 +196,12 @@ def run_librarian_queue(
     # row itself is never deleted, so the evidence survives.
     finished = result.finished_row_ids() + source.rejected_row_ids
     if source.rejected_row_ids:
-        summary.skipped += len(source.rejected_row_ids)
+        # Counted in `read` as well as `skipped`. They were drawn from the queue
+        # and retired by this run, so leaving them out of `read` would make the
+        # outcomes add up to more rows than the run claims to have read.
+        rejected = len(source.rejected_row_ids)
+        summary.read += rejected
+        summary.skipped += rejected
     summary.consumed = mark_consumed(session, finished, at=at)
     session.commit()
 

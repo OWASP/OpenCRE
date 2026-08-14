@@ -48,7 +48,7 @@ Seven stages, each a separately reviewed and merged pull request.
 | 7 | — | *analysis* | Auto-link threshold sweep; τ held at 0.80 |
 | 8 | — | *this PR* | Live B→C integration — queue drain, sink, write-back |
 
-**223 tests**, all hermetic — no database, API key, or model download required.
+**247 tests**, all hermetic — no database, API key, or model download required.
 
 ### Design decisions worth defending
 
@@ -129,6 +129,10 @@ reranker.** That is a corpus problem, upstream of Module C.
 
 **B → C is live.** Module B writes `knowledge_queue`; C drains it, decides, and
 stamps `consumed_at`. C's model matches B's table on all 23 columns.
+
+One qualification on that claim: it has been verified against SQLite through the
+same SQLAlchemy models, not against a real Postgres. The types and the migration
+are written for both, but the first Postgres run should be treated as a test.
 
 This did not start out true. B's merged table ([#989]) was substantially richer
 than the flat mirror C had been built against — `chunk_id`, `artifact_id`,

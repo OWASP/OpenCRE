@@ -183,23 +183,28 @@ class RunLibrarianQueueTest(unittest.TestCase):
         self.assertEqual(summary.consumed, 1)
 
     def test_envelope_carries_the_rows_own_identity(self) -> None:
-        """The point of the W8 schema fix, asserted end to end."""
+        """The point of the W8 schema fix, asserted on what the run emitted.
+
+        A and B mint ``chunk_id`` / ``artifact_id``; C must carry them through
+        verbatim rather than synthesising its own. Asserting that on a
+        re-derived section would prove nothing about the envelope, so this reads
+        the envelope the runner actually handed to the sink.
+        """
         sqla.session.add(_row("a"))
         sqla.session.commit()
+        sink = _RecordingSink()
 
-        run_librarian_queue(
-            sqla.session, RUN, _components(), _config(), at=AT, dry_run=True
-        )
-        # dry_run leaves state alone; re-read through the pipeline to inspect.
-        from application.utils.librarian.knowledge_source import DbKnowledgeSource
-        from application.utils.librarian.section_validator import (
-            section_from_queue_row,
-        )
+        summary = self._run(sink=sink)
 
-        item = next(iter(DbKnowledgeSource(sqla.session).items()))
-        section = section_from_queue_row(item)
-        self.assertEqual(section.chunk_id, "chk:art:OWASP/ASVS:a.md:a")
-        self.assertEqual(section.artifact_id, "art:OWASP/ASVS:a.md")
+        self.assertEqual(summary.persisted, 1)
+        (envelope,) = sink.envelopes
+        self.assertEqual(envelope.chunk_id, "chk:art:OWASP/ASVS:a.md:a")
+        self.assertEqual(envelope.artifact_id, "art:OWASP/ASVS:a.md")
+        # The run id is stamped from the run, not from whatever the row said.
+        self.assertEqual(envelope.pipeline_run_id, RUN)
+        # And the provenance B supplied survives into the envelope.
+        self.assertEqual(envelope.knowledge.source.repo, "OWASP/ASVS")
+        self.assertEqual(envelope.knowledge.locator.path, "a.md")
 
     def test_errored_row_is_left_unconsumed_for_retry(self) -> None:
         """A timeout is transient; retiring the row would lose the chunk."""
@@ -398,7 +403,11 @@ class RunLibrarianQueueTest(unittest.TestCase):
         self.assertIsNotNone(self._consumed_at("a"))
         # The unmodellable row is finished with, and counted rather than hidden.
         self.assertIsNotNone(self._consumed_at("b"))
-        self.assertGreaterEqual(summary.skipped, 1)
+        self.assertEqual(summary.skipped, 1)
+        # Both rows were drawn from the queue, so both are read: the outcomes
+        # must not add up to more rows than the run claims to have seen.
+        self.assertEqual(summary.read, 2)
+        self.assertEqual(summary.linked + summary.skipped, summary.read)
 
         # A second run therefore has nothing left to do.
         self.assertEqual(self._run().read, 0)

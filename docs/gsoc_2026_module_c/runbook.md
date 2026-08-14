@@ -43,9 +43,11 @@ the C.3 ECE gate, and C.4 decision accuracy. All four share one retrieve+rerank
 pass and one fitted `T` — the pipeline is built once per run, not once per
 report.
 
-**Only the C.3 gate sets the exit status.** A failed *or skipped* ECE gate
-returns non-zero, so a live run cannot pass without calibration having actually
-run. C.4 is informational.
+**C.3 is the only *additional* gate a live run adds.** A failed or skipped ECE
+gate returns non-zero, so a live run cannot pass without calibration having
+actually run, and C.4 stays informational. The hermetic gates still apply on top:
+a failed C.0.5 explicit slice, or a C.0 boundary that rejects the whole dataset,
+fails the run in either mode (§5).
 
 ### c. Live queue drain — the real pipeline
 
@@ -165,6 +167,11 @@ Inserts are `ON CONFLICT (chunk_id, pipeline_run_id) DO NOTHING`, so a replayed
 run writes nothing new. That is idempotence working, not loss — the rows from the
 first run are still there.
 
+**`UNCERTAIN` rows never disappear from `knowledge_queue`**
+By design. C reads only `llm_label = 'KNOWLEDGE'`, so it never reads and never
+retires an `UNCERTAIN` row — those are Module D's, per the B→C contract. The
+queue grows a tail nobody drains until D exists; that is not C falling behind.
+
 **Rows keep reappearing across runs**
 They errored mid-pipeline rather than being decided. Errored rows are left
 unconsumed on purpose so the next run retries them. Check the logs for the chunk
@@ -177,7 +184,15 @@ Widen the slice selection so both the positive and hard_negative slices are in.
 
 ---
 
-## 6. Tests
+## 6. Known limitations
+
+**Postgres is not verified.** Everything here has been exercised against SQLite
+through the same SQLAlchemy models. The column types and the migration are
+written for both, and `consumed_at` is normalised to naive UTC precisely because
+the two dialects differ, but no run has been made against a real Postgres. Treat
+the first one as a test.
+
+## 7. Tests
 
 ```bash
 # everything (hermetic — no DB, key, or model needed)
