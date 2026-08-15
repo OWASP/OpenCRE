@@ -1,6 +1,6 @@
 # Module B → Module C Output Contract
 
-**Audience:** the GSoC 2026 contributor implementing Module C (The Librarian — vector + cross-encoder mapping of filtered knowledge chunks to existing CRE nodes). **Status:** draft **v0.3** (2026-08-16). Reconciled with the orchestrated-pipeline design (`orchestrator_integration_design.md`) and with Module C's shipped consumer (PR #1011), which now mirrors this table column-for-column.
+**Audience:** the GSoC 2026 contributor implementing Module C (The Librarian — vector + cross-encoder mapping of filtered knowledge chunks to existing CRE nodes). **Status:** draft **v0.3** (2026-08-16). Reconciled with the orchestrated-pipeline hand-off and with Module C's shipped consumer (PR #1011), which now mirrors this table column-for-column.
 
 This document specifies how Module C reads Module B's output. Module B produces; Module C consumes; Module D's HITL UI may also read for review.
 
@@ -13,7 +13,7 @@ This document specifies how Module C reads Module B's output. Module B produces;
 
 ## Changelog (v0.1 → v0.2)
 
-- **Orchestrated pipeline:** B is now invoked by the daily **orchestrator** (not a manual CLI run). B reads Module A's chunks from a Postgres table, classifies, writes keepers to `knowledge_queue`, and signals the orchestrator "done"; the orchestrator then calls C. See `orchestrator_integration_design.md`.
+- **Orchestrated pipeline:** B is now invoked by the daily **orchestrator** (not a manual CLI run). B reads Module A's chunks from a Postgres table, classifies, writes keepers to `knowledge_queue`, and signals the orchestrator "done"; the orchestrator then calls C.
 - **Schema aligned to Module A contract v0.3:** provenance columns now mirror A's nested `source` / `span` / `locator` record (confirmed unchanged by A on 2026-07-16), instead of the old flat `source_repo` / `source_path` / `source_commit_sha`.
 - **Dedup key changed:** `UNIQUE(content_hash)` (B-computed on the normalized text) replaces `UNIQUE(source_commit_sha, source_path)`. The same normalized content reaching B via two sources or two runs collapses to one row.
 - **Source-type-aware:** schema and read query now support the `source.type` discriminator (`github` today; `rss` reserved).
@@ -135,7 +135,7 @@ This contract is **v0.2 (draft)**. Becomes v1.0 when both contributors agree. se
 ## Test fixtures and integration
 
 - Module B will produce a real-data fixture (a SQL dump of `knowledge_queue` from a pipeline run) so Module C can replay consumption end-to-end without A or B running live.
-- First end-to-end live test: B fills the table on the shared dev Postgres + pgvector; C polls and maps a small batch. Coordinate in Slack `#project-opencre`.
+- First end-to-end live test: B fills the table on the shared dev Postgres + pgvector; C polls and maps a small batch.
 
 ## Out-of-scope for this contract
 
@@ -143,10 +143,3 @@ This contract is **v0.2 (draft)**. Becomes v1.0 when both contributors agree. se
 - Module D's HITL UI integration — separate contract (`module_d_contract.md`, future).
 - GC of fully-consumed rows — neither B nor C deletes in v1.
 - Read replicas / sharding — single-master Postgres for v1.
-
-## Open questions for the Module C contributor
-
-1. **`cre_mapping_id` column?** Should C populate a back-link to the resulting CRE/Standard/Link row after mapping? Useful for round-trip audit, but couples B/C schemas.
-2. **`last_seen_at` telemetry?** Or is `consumed_at` enough?
-3. **`text` column type** on Postgres for large chunks — `Text` fine, or compressed/`bytea`?
-4. **Polling vs LISTEN/NOTIFY?** v1 assumes polling; push only if latency becomes a problem.

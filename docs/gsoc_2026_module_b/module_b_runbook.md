@@ -1,7 +1,7 @@
 # Module B — How to Run It (Orchestrator Runbook)
 
 **Audience:** whoever builds/operates the daily orchestrator. **Status:** v0.2 (2026-08-16).
-Companion to `orchestrator_integration_design.md` (the *why*) and `module_c_contract.md` (B→C). This is the *how*.
+Companion to `module_c_contract.md` (the B→C contract). This is the operational *how*.
 
 Module B is a **stateless batch step**: the orchestrator invokes it once per harvest run; it reads that run's chunks from a DB table, classifies them, writes the keepers to another table, and exits with a JSON summary. It does not run continuously and does not schedule itself.
 

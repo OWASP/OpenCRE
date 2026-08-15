@@ -8,7 +8,7 @@ This document specifies the format Module A emits so that Module B (Noise/Releva
 
 ## Changelog (v0.3 → v0.4)
 
-- **Delivery moved from a JSONL file to a DB table.** The orchestrated pipeline (see `orchestrator_integration_design.md`) supersedes the earlier "JSONL file via `cre.py --filter_changes <path>`" transport. Module A now writes each record as a row in the shared Postgres `harvest_input` table (JSONB `payload` + top-level `pipeline_run_id` + `status`); Module B reads the pending rows for a run. The `--filter_changes` CLI was never built; Module B's entry point is `cre.py --run_noise_filter --run_id <id>`.
+- **Delivery moved from a JSONL file to a DB table.** The orchestrated pipeline supersedes the earlier "JSONL file via `cre.py --filter_changes <path>`" transport. Module A now writes each record as a row in the shared Postgres `harvest_input` table (JSONB `payload` + top-level `pipeline_run_id` + `status`); Module B reads the pending rows for a run. The `--filter_changes` CLI was never built; Module B's entry point is `cre.py --run_noise_filter --run_id <id>`.
 - **rss `locator.kind` reserved value is `feed_item`** (was `feed_post`), aligning with Module C's shipped consumer (PR #1011), which addresses rss rows by `locator_kind = "feed_item"`. github rows are unchanged (`repo_path`). rss is still not emitted; this only fixes the reserved name so all three modules agree.
 
 ## Changelog (v0.2 → v0.3)
@@ -36,7 +36,7 @@ Driven by reconciliation with Module A's actual mock output. The shape is signif
 ## Transport
 
 - **Format:** one JSON object per chunk — the record described below — stored verbatim as the JSONB `payload` of a `harvest_input` row. (Module B's local test fixtures still keep the same records as JSONL; the on-the-wire shape of a single record is identical either way.)
-- **Delivery:** Module A writes each record as a row in the shared Postgres **`harvest_input`** table — columns `payload` (JSONB, the record), `pipeline_run_id` (top-level, run-scoping), `status` (`pending` → set by A; `processed`/`error` → set by B), plus `id`/`created_at`. Module B reads that run's pending rows (`cre.py --run_noise_filter --run_id <id>`), classifies, and writes keepers to `knowledge_queue`. See `orchestrator_integration_design.md` and `module_b_runbook.md`. *(The earlier "JSONL file via `cre.py --filter_changes`" delivery is superseded and was never implemented.)*
+- **Delivery:** Module A writes each record as a row in the shared Postgres **`harvest_input`** table — columns `payload` (JSONB, the record), `pipeline_run_id` (top-level, run-scoping), `status` (`pending` → set by A; `processed`/`error` → set by B), plus `id`/`created_at`. Module B reads that run's pending rows (`cre.py --run_noise_filter --run_id <id>`), classifies, and writes keepers to `knowledge_queue`. See `module_b_runbook.md` for the operational how-to. *(The earlier "JSONL file via `cre.py --filter_changes`" delivery is superseded and was never implemented.)*
 - **Future (out of scope for v1):** object-storage URL (S3/MinIO) for large or out-of-band payloads.
 - **Record size:** governed by Module A's chunking config (default `max_chars=4000`). Module B truncates internally at 1500 chars before sending to the LLM.
 
@@ -209,14 +209,3 @@ Module A contributors are welcome to add fixtures here as PRs — small files (�
 - Failure handling on the Module A side (rate-limit retries, partial commits).
 - Authentication / API keys (Module A's concern).
 - Module A's source-config schema (`schema_version`, `sources`, `chunking`) — that's internal to A.
-
-## Open questions for the Module A contributor
-
-These don't gate this contract:
-
-1. **`content_hash` — will A start emitting it?** B can use A's hash if shipped; otherwise B computes. Either is fine.
-2. **What does `locator.kind` enumerate?** `"repo_path"` is the only value observed for github. For RSS, the reserved value is `"feed_item"` (Module C already consumes rss rows under that kind, PR #1011) — please confirm Module A will emit `"feed_item"` when feeds go live.
-3. **`pipeline_run_id` format** — is `YYYYMMDDTHHMMSSZ` stable, or might it become a UUID? B doesn't parse the value (just stores it as a string), but reviewers may want to know.
-4. **Will `chunk_id`'s embedded path component be URL-escaped** in production? In the mock it's the raw path (with `/` characters); that's fine for B but worth confirming.
-
-Open these on Slack `#project-opencre` or as PR comments on Module B's Week 1 PR.
