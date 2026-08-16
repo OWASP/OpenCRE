@@ -8,7 +8,8 @@ This document specifies how Module C reads Module B's output. Module B produces;
 
 ## Changelog (v0.2 → v0.3)
 
-- **Verified against Module C's shipped consumer (PR #1011).** C's `KnowledgeQueueItem` now mirrors this table column-for-column (all 23 columns, both `github` and `rss` provenance branches). C reads with `consumed_at IS NULL AND llm_label = 'KNOWLEDGE'` and stamps `consumed_at` as its only write — matching this contract. UNCERTAIN rows are left for Module D.
+- **Module C consumes both `KNOWLEDGE` and `UNCERTAIN`.** The canonical read query now selects `llm_label IN ('KNOWLEDGE', 'UNCERTAIN')` (was `= 'KNOWLEDGE'`). B's `llm_label` is a confidence signal, not a routing directive: C consumes every non-NOISE row and decides internally which chunks need Module D's HITL review. This keeps recall-first intact end to end — no security chunk is stranded in the queue for a label that has no downstream consumer.
+- **Verified against Module C's shipped consumer (PR #1011).** C's `KnowledgeQueueItem` now mirrors this table column-for-column (all 23 columns, both `github` and `rss` provenance branches), and stamps `consumed_at` as its only write. (#1011 as shipped filters `llm_label = 'KNOWLEDGE'`; per the bullet above, its C0 read filter should be updated to `IN ('KNOWLEDGE', 'UNCERTAIN')`.)
 - **`source_committed_at` type corrected to `String`.** Module B stores it as an ISO-8601 **string** (the value Module A emits, unparsed), not a `DateTime`. Module C parses it to a datetime on read (Pydantic coercion) — no conflict, but the storage type in this contract now matches Module B's actual model/migration.
 
 ## Changelog (v0.1 → v0.2)
@@ -93,7 +94,7 @@ SELECT
     confidence
 FROM knowledge_queue
 WHERE consumed_at IS NULL
-  AND llm_label = 'KNOWLEDGE'   -- optional: skip UNCERTAIN (those are for Module D HITL)
+  AND llm_label IN ('KNOWLEDGE', 'UNCERTAIN')   -- C consumes both; escalation to Module D (HITL) is C's own decision, not B's label
 ORDER BY created_at
 LIMIT :batch_size;
 ```
@@ -118,9 +119,9 @@ UPDATE knowledge_queue SET consumed_at = NOW() WHERE id IN (:ids);
 
 ## UNCERTAIN row policy
 
-- B writes `llm_label = 'UNCERTAIN'` when the LLM returned UNCERTAIN, or when the response failed to parse / the batch failed (confidence 0.0).
-- **Recommended C behavior:** filter to `KNOWLEDGE` for normal mapping; UNCERTAIN rows are for Module D's HITL review.
-- **If Module D isn't live yet:** C MAY treat UNCERTAIN as KNOWLEDGE (slightly higher false-positive rate); document the choice.
+- B writes `llm_label = 'UNCERTAIN'` when the LLM returned UNCERTAIN (a genuine borderline chunk), or when classification failed — the batch errored or the response didn't parse (`confidence = 0.0`). B never drops these: recall-first means an UNCERTAIN chunk may still carry security signal.
+- **`llm_label` is B's confidence signal, not a routing directive.** Module C consumes **both** `KNOWLEDGE` and `UNCERTAIN` (`llm_label IN ('KNOWLEDGE', 'UNCERTAIN')`). Which chunks are auto-mapped vs. escalated to Module D's HITL review is **Module C's decision**, made by C's own boundary / cross-encoder / confidence logic. B's label does not gate what reaches Module D — it's just one input available to C.
+- This keeps recall-first intact end to end: every non-NOISE chunk B produces is consumed and judged by C; nothing is stranded in the queue waiting on a label match.
 
 ## Stability guarantees
 
