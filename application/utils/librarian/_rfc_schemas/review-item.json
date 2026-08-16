@@ -18,28 +18,53 @@
     "update_detection"
   ],
   "properties": {
-    "schema_version": { "type": "string", "pattern": "^0\\.\\d+\\.\\d+$" },
-    "review_id": { "type": "string" },
-    "chunk_id": { "type": "string" },
-    "artifact_id": { "type": "string" },
-    "pipeline_run_id": { "type": "string" },
-    "created_at": { "type": "string", "format": "date-time" },
-    "status": { "const": "review_required" },
+    "schema_version": {
+      "type": "string",
+      "pattern": "^0\\.\\d+\\.\\d+$"
+    },
+    "review_id": {
+      "type": "string"
+    },
+    "chunk_id": {
+      "type": "string"
+    },
+    "artifact_id": {
+      "type": "string"
+    },
+    "pipeline_run_id": {
+      "type": "string"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "status": {
+      "const": "review_required"
+    },
     "reason_code": {
       "type": "string",
       "enum": [
         "BELOW_THRESHOLD",
         "NO_CANDIDATES",
         "ADVERSARIAL_FLAG",
-        "UPDATE_AMBIGUOUS"
+        "UPDATE_AMBIGUOUS",
+        "SOURCE_UNCERTAIN"
       ]
     },
-    "knowledge": { "$ref": "link-proposal.json#/$defs/knowledge_snapshot" },
-    "retrieval": { "$ref": "link-proposal.json#/$defs/retrieval_audit" },
+    "knowledge": {
+      "$ref": "link-proposal.json#/$defs/knowledge_snapshot"
+    },
+    "retrieval": {
+      "$ref": "link-proposal.json#/$defs/retrieval_audit"
+    },
     "suggested_links": {
       "type": "array",
-      "items": { "$ref": "proposed-link.json" }
+      "items": {
+        "$ref": "proposed-link.json"
+      }
     },
-    "update_detection": { "$ref": "link-proposal.json#/$defs/update_detection" }
+    "update_detection": {
+      "$ref": "link-proposal.json#/$defs/update_detection"
+    }
   }
 }

@@ -69,6 +69,7 @@ def decide(
     threshold: float,
     adversarial: bool = False,
     update_ambiguous: bool = False,
+    source_uncertain: bool = False,
 ) -> DecisionResult:
     """Apply the auto-link rule to one chunk's calibrated confidence.
 
@@ -77,6 +78,14 @@ def decide(
     chunk links only when ``confidence >= threshold``. ``adversarial`` /
     ``update_ambiguous`` are blocking flags from the SafetyGuard (both default
     False until it is wired) — either one forces review regardless of confidence.
+
+    ``source_uncertain`` says Module B forwarded the chunk as ``UNCERTAIN``: it
+    was not confident the text is security knowledge at all. It blocks too, and
+    for a reason worth stating — "which CRE does this match" and "is this
+    security knowledge" are different questions, so a confident answer to the
+    first does not settle the second. It outranks ``BELOW_THRESHOLD`` because it
+    fires whatever the confidence is; reporting the confidence as the reason
+    would be misleading on a chunk that scored 0.99.
     """
     _validate(confidence, threshold)
 
@@ -91,6 +100,10 @@ def decide(
     if update_ambiguous:
         return DecisionResult(
             Decision.review, confidence, top, ReasonCode.update_ambiguous
+        )
+    if source_uncertain:
+        return DecisionResult(
+            Decision.review, confidence, top, ReasonCode.source_uncertain
         )
     if confidence < threshold:
         return DecisionResult(

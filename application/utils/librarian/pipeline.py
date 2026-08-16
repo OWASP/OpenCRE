@@ -27,6 +27,7 @@ from enum import Enum
 from typing import Any, Dict, Iterable, List, Optional, Protocol, Sequence, Union
 
 from application.utils.librarian.decision_engine import decide
+from application.utils.librarian.knowledge_source import UNCERTAIN_LABEL
 from application.utils.librarian.emitter import emit
 from application.utils.librarian.safety_guard import NullSafetyGuard, SafetyGuard
 from application.utils.librarian.schemas import (
@@ -243,6 +244,9 @@ class LibrarianPipeline:
                     threshold=self._threshold,
                     adversarial=verdict.adversarial,
                     update_ambiguous=verdict.update_ambiguous,
+                    # B forwarded this chunk as UNCERTAIN, so it goes to a human
+                    # whatever C.2 thinks of it.
+                    source_uncertain=label == UNCERTAIN_LABEL,
                 )
                 if not verdict.evaluated:
                     safety_unevaluated += 1

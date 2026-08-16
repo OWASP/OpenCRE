@@ -62,10 +62,15 @@ and left the rest for Module D, which stranded them — nothing retrieved
 candidates, so a reviewer would have faced raw text with no CRE suggestions, and
 until D exists they simply accumulated.
 
-Every decision row records the `source_label` it came from, so a consumer can
-tell a decision made on a confident chunk from one made on an uncertain one.
-`NOISE` is still refused at the boundary — that is the label B's guarantee turns
-on.
+**An `UNCERTAIN` chunk never auto-links.** It goes through the full pipeline, so a
+reviewer gets retrieved candidates and the audit rather than bare text — but it
+always routes to human review with `reason_code = SOURCE_UNCERTAIN`, whatever its
+confidence. B's uncertainty is about *whether the text is security knowledge*;
+C's confidence is about *which CRE it resembles*. A confident answer to the second
+does not settle the first.
+
+Every decision row also records the `source_label` it came from. `NOISE` is still
+refused at the boundary — that is the label B's guarantee turns on.
 
 ## Design constraints
 

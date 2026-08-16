@@ -167,14 +167,13 @@ Inserts are `ON CONFLICT (chunk_id, pipeline_run_id) DO NOTHING`, so a replayed
 run writes nothing new. That is idempotence working, not loss — the rows from the
 first run are still there.
 
-**An `UNCERTAIN` row was auto-linked**
-Expected, and worth understanding. C reads both of B's labels, so an `UNCERTAIN`
-chunk goes through the full pipeline; if its calibrated confidence clears τ it
-auto-links like any other. B's uncertainty is about *whether the chunk is
-security knowledge*, C's confidence is about *which CRE it matches* — they are
-different questions, and C does not currently treat the first as a veto on the
-second. Every decision row records `source_label`, so a consumer that wants
-human sign-off on uncertain-sourced links can filter on it.
+**An `UNCERTAIN` row went to review despite a high confidence**
+Working as intended. C reads both of B's labels, so an `UNCERTAIN` chunk runs the
+full pipeline and the reviewer gets candidates and the audit — but it always
+routes to review with `reason_code = SOURCE_UNCERTAIN`, whatever it scored. B's
+uncertainty is about *whether the chunk is security knowledge*; C's confidence is
+about *which CRE it matches*. A confident answer to the second does not settle
+the first, so the chunk goes to a human either way.
 
 **Rows keep reappearing across runs**
 They errored mid-pipeline rather than being decided. Errored rows are left

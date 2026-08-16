@@ -267,6 +267,25 @@ class RunLibrarianQueueTest(unittest.TestCase):
         self.assertIsNotNone(self._consumed_at("a"))
         self.assertIsNotNone(self._consumed_at("d"))
 
+    def test_uncertain_rows_always_go_to_a_human(self) -> None:
+        """The stub scaler returns 0.95, well over tau, so the KNOWLEDGE row
+        links. The UNCERTAIN row must still route to review: B was not confident
+        the text is security knowledge, and C answering "which CRE" confidently
+        does not settle that."""
+        sqla.session.add_all([_row("a"), _row("d", llm_label="UNCERTAIN")])
+        sqla.session.commit()
+        sink = _RecordingSink()
+
+        summary = self._run(sink=sink)
+
+        self.assertEqual((summary.linked, summary.review), (1, 1))
+        by_chunk = {e.chunk_id: e for e in sink.envelopes}
+        uncertain = by_chunk["chk:art:OWASP/ASVS:a.md:d"]
+        self.assertEqual(uncertain.status, "review_required")
+        self.assertEqual(uncertain.reason_code.value, "SOURCE_UNCERTAIN")
+        # The reviewer still gets C's suggestion rather than bare text.
+        self.assertTrue(uncertain.suggested_links)
+
     def test_the_decision_records_which_label_it_came_from(self) -> None:
         """A consumer has to be able to tell a decision made on a confident chunk
         from one made on a chunk B was unsure about; the pinned RFC envelope has
