@@ -130,6 +130,16 @@ reranker.** That is a corpus problem, upstream of Module C.
 **B → C is live.** Module B writes `knowledge_queue`; C drains it, decides, and
 stamps `consumed_at`. C's model matches B's table on all 23 columns.
 
+C reads both of B's labels. B is recall-first — it drops `NOISE` and forwards
+`KNOWLEDGE` and `UNCERTAIN` — so an `UNCERTAIN` chunk is one B was unsure about
+*classifying*, not one it judged worthless. C originally skipped those, which
+stranded them: nothing retrieved candidates for them, and with Module D
+unimplemented they accumulated behind a `consumed_at` nobody would ever set. They
+now run the full pipeline, so a reviewer gets CRE candidates and the audit rather
+than raw text, and they always route to human review — B's uncertainty is about
+*whether the text is security knowledge* while C's confidence is about *which CRE
+it matches*, and a confident answer to the second does not settle the first.
+
 One qualification on that claim: it has been verified against SQLite through the
 same SQLAlchemy models, not against a real Postgres. The types and the migration
 are written for both, but the first Postgres run should be treated as a test.
