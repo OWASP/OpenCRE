@@ -282,7 +282,7 @@ class RunLibrarianQueueTest(unittest.TestCase):
         by_chunk = {e.chunk_id: e for e in sink.envelopes}
         uncertain = by_chunk["chk:art:OWASP/ASVS:a.md:d"]
         self.assertEqual(uncertain.status, "review_required")
-        self.assertEqual(uncertain.reason_code.value, "SOURCE_UNCERTAIN")
+        self.assertEqual(uncertain.reason_code.value, "BELOW_THRESHOLD")
         # The reviewer still gets C's suggestion rather than bare text.
         self.assertTrue(uncertain.suggested_links)
 

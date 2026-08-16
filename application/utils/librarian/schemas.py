@@ -64,12 +64,6 @@ class ReasonCode(str, Enum):
     no_candidates = "NO_CANDIDATES"
     adversarial_flag = "ADVERSARIAL_FLAG"
     update_ambiguous = "UPDATE_AMBIGUOUS"
-    # Module B forwarded the chunk as UNCERTAIN: it was not confident the text is
-    # security knowledge at all. C can still say which CRE the text resembles,
-    # but "which CRE does this match" and "is this security knowledge" are
-    # different questions, and a confident answer to the first does not settle
-    # the second. So the chunk goes to a human regardless of confidence.
-    source_uncertain = "SOURCE_UNCERTAIN"
 
 
 # ---------- RFC sub-models ----------
