@@ -267,24 +267,32 @@ class RunLibrarianQueueTest(unittest.TestCase):
         self.assertIsNotNone(self._consumed_at("a"))
         self.assertIsNotNone(self._consumed_at("d"))
 
-    def test_uncertain_rows_always_go_to_a_human(self) -> None:
-        """The stub scaler returns 0.95, well over tau, so the KNOWLEDGE row
-        links. The UNCERTAIN row must still route to review: B was not confident
-        the text is security knowledge, and C answering "which CRE" confidently
-        does not settle that."""
+    def test_uncertain_rows_are_decided_on_the_same_rule(self) -> None:
+        """B's label is not an input to the decision.
+
+        The stub scaler returns 0.95, over tau, so both rows link — the UNCERTAIN
+        one is not held back for its provenance. What keeps it traceable is
+        ``source_label`` on the row, not a different verdict.
+        """
         sqla.session.add_all([_row("a"), _row("d", llm_label="UNCERTAIN")])
+        sqla.session.commit()
+
+        summary = self._run()
+
+        self.assertEqual((summary.linked, summary.review), (2, 0))
+
+    def test_a_weak_uncertain_row_goes_to_review_like_any_other(self) -> None:
+        sqla.session.add(_row("d", llm_label="UNCERTAIN"))
         sqla.session.commit()
         sink = _RecordingSink()
 
-        summary = self._run(sink=sink)
+        summary = self._run(sink=sink, components=_components(confidence=0.10))
 
-        self.assertEqual((summary.linked, summary.review), (1, 1))
-        by_chunk = {e.chunk_id: e for e in sink.envelopes}
-        uncertain = by_chunk["chk:art:OWASP/ASVS:a.md:d"]
-        self.assertEqual(uncertain.status, "review_required")
-        self.assertEqual(uncertain.reason_code.value, "BELOW_THRESHOLD")
+        self.assertEqual((summary.linked, summary.review), (0, 1))
+        (envelope,) = sink.envelopes
+        self.assertEqual(envelope.reason_code.value, "BELOW_THRESHOLD")
         # The reviewer still gets C's suggestion rather than bare text.
-        self.assertTrue(uncertain.suggested_links)
+        self.assertTrue(envelope.suggested_links)
 
     def test_the_decision_records_which_label_it_came_from(self) -> None:
         """A consumer has to be able to tell a decision made on a confident chunk

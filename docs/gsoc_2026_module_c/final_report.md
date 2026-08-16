@@ -135,10 +135,11 @@ C reads both of B's labels. B is recall-first — it drops `NOISE` and forwards
 *classifying*, not one it judged worthless. C originally skipped those, which
 stranded them: nothing retrieved candidates for them, and with Module D
 unimplemented they accumulated behind a `consumed_at` nobody would ever set. They
-now run the full pipeline, so a reviewer gets CRE candidates and the audit rather
-than raw text, and they always route to human review — B's uncertainty is about
-*whether the text is security knowledge* while C's confidence is about *which CRE
-it matches*, and a confident answer to the second does not settle the first.
+now run the full pipeline and are decided by the same rule as any other chunk:
+clear τ and they link, fall short and they go to human review with candidates and
+the audit attached. B's label records how sure B was and is preserved on every
+decision row as `source_label`, so a consumer can weigh uncertain-sourced links
+differently without C having to overrule its own calibrated confidence.
 
 One qualification on that claim: it has been verified against SQLite through the
 same SQLAlchemy models, not against a real Postgres. The types and the migration

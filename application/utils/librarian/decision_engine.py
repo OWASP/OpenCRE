@@ -69,7 +69,6 @@ def decide(
     threshold: float,
     adversarial: bool = False,
     update_ambiguous: bool = False,
-    source_uncertain: bool = False,
 ) -> DecisionResult:
     """Apply the auto-link rule to one chunk's calibrated confidence.
 
@@ -79,17 +78,14 @@ def decide(
     ``update_ambiguous`` are blocking flags from the SafetyGuard (both default
     False until it is wired) — either one forces review regardless of confidence.
 
-    ``source_uncertain`` says Module B forwarded the chunk as ``UNCERTAIN`` — it
-    was not confident the text is security knowledge at all — and it blocks the
-    auto-link whatever C scored.
-
-    It reports ``BELOW_THRESHOLD``, which is accurate about the decision rather
-    than about C.2's number. The confidence C computes answers "which CRE does
-    this match, *given* the text is knowledge"; B did not establish that premise,
-    so the claim the link would actually rest on does not clear the bar. The
-    precise cause is not lost: ``decision_queue.source_label`` records which of
-    B's labels the row carried, and the RFC's four reason codes are left as
-    upstream pinned them.
+    Module B's label does not enter this rule. A chunk B forwarded as
+    ``UNCERTAIN`` is decided on exactly the same evidence as a ``KNOWLEDGE`` one:
+    clear τ and it links, fall short and it goes to a human. B's label is about
+    how sure *it* was; C's confidence is calibrated on its own terms, and holding
+    back a chunk that scored 0.99 because of an upstream doubt would bury
+    reviewers in obvious matches. ``decision_queue.source_label`` still records
+    which label the row carried, so a consumer that wants to weigh them
+    differently can.
     """
     _validate(confidence, threshold)
 
@@ -105,7 +101,7 @@ def decide(
         return DecisionResult(
             Decision.review, confidence, top, ReasonCode.update_ambiguous
         )
-    if source_uncertain or confidence < threshold:
+    if confidence < threshold:
         return DecisionResult(
             Decision.review, confidence, top, ReasonCode.below_threshold
         )

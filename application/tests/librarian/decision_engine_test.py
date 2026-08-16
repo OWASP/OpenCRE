@@ -95,58 +95,36 @@ class ResultTest(unittest.TestCase):
             r.confidence = 0.1  # type: ignore[misc]
 
 
-class SourceUncertainTest(unittest.TestCase):
-    """Module B forwards UNCERTAIN chunks; those never auto-link.
+class SourceLabelDoesNotChangeTheRuleTest(unittest.TestCase):
+    """B's label is not an input to the decision.
 
-    B's uncertainty is about whether the text is security knowledge at all. C's
-    confidence is about which CRE it resembles. A confident answer to the second
-    does not settle the first, so the chunk goes to a human either way.
+    A chunk B forwarded as UNCERTAIN is decided on the same evidence as a
+    KNOWLEDGE one. C's confidence is calibrated on its own terms, and holding
+    back a chunk that scored 0.99 on an upstream doubt would bury reviewers in
+    obvious matches. Provenance is preserved on the row instead
+    (``decision_queue.source_label``), so a consumer can still weigh them apart.
     """
 
-    def test_blocks_even_at_full_confidence(self) -> None:
-        result = decide(1.0, ["616-305"], threshold=0.80, source_uncertain=True)
+    def test_decide_takes_no_source_label_argument(self) -> None:
+        import inspect
+
+        params = inspect.signature(decide).parameters
+
+        self.assertNotIn("source_uncertain", params)
+        self.assertEqual(
+            [p for p in params if p not in ("confidence", "candidate_cre_ids")],
+            ["threshold", "adversarial", "update_ambiguous"],
+        )
+
+    def test_a_confident_chunk_links_whatever_its_source(self) -> None:
+        self.assertEqual(
+            decide(0.99, ["616-305"], threshold=0.80).decision, Decision.linked
+        )
+
+    def test_a_weak_chunk_reviews_whatever_its_source(self) -> None:
+        result = decide(0.40, ["616-305"], threshold=0.80)
 
         self.assertEqual(result.decision, Decision.review)
-        self.assertEqual(result.reason_code, ReasonCode.below_threshold)
-        # The candidate is still carried, so the reviewer sees C's suggestion.
-        self.assertEqual(result.cre_ids, ("616-305",))
-
-    def test_confident_chunk_links_when_the_source_was_not_uncertain(self) -> None:
-        result = decide(1.0, ["616-305"], threshold=0.80, source_uncertain=False)
-
-        self.assertEqual(result.decision, Decision.linked)
-
-    def test_reports_below_threshold_without_a_new_rfc_code(self) -> None:
-        """Accurate about the decision rather than about C.2's number: the
-        confidence answers "which CRE, given this is knowledge", and B did not
-        establish that premise. The precise cause lives in
-        ``decision_queue.source_label``, so the RFC's four codes stay as pinned."""
-        result = decide(0.99, ["616-305"], threshold=0.80, source_uncertain=True)
-
-        self.assertEqual(result.reason_code, ReasonCode.below_threshold)
-
-    def test_no_candidates_still_wins(self) -> None:
-        # Nothing to link to is the more basic fact about the row.
-        result = decide(0.99, [], threshold=0.80, source_uncertain=True)
-
-        self.assertEqual(result.reason_code, ReasonCode.no_candidates)
-
-    def test_safety_flags_still_win(self) -> None:
-        # A flagged chunk is a stronger statement than an uncertain label.
-        for flag in ("adversarial", "update_ambiguous"):
-            with self.subTest(flag=flag):
-                result = decide(
-                    0.99,
-                    ["616-305"],
-                    threshold=0.80,
-                    source_uncertain=True,
-                    **{flag: True},
-                )
-                self.assertNotEqual(result.reason_code, ReasonCode.below_threshold)
-
-    def test_low_confidence_uncertain_row_reports_the_source(self) -> None:
-        result = decide(0.10, ["616-305"], threshold=0.80, source_uncertain=True)
-
         self.assertEqual(result.reason_code, ReasonCode.below_threshold)
 
 

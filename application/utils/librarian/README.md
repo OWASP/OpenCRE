@@ -62,11 +62,11 @@ and left the rest for Module D, which stranded them — nothing retrieved
 candidates, so a reviewer would have faced raw text with no CRE suggestions, and
 until D exists they simply accumulated.
 
-**An `UNCERTAIN` chunk never auto-links.** It goes through the full pipeline, so a
-reviewer gets retrieved candidates and the audit rather than bare text — but it
-always routes to human review, whatever its confidence. B's uncertainty is about *whether the text is security knowledge*;
-C's confidence is about *which CRE it resembles*. A confident answer to the second
-does not settle the first.
+**An `UNCERTAIN` chunk is decided on the same rule as any other.** It runs the
+full pipeline; clear τ and it auto-links, fall short and it goes to human review.
+B's label is about how sure *B* was, and C's confidence is calibrated on its own
+terms — holding back a chunk that scored 0.99 on an upstream doubt would bury
+reviewers in obvious matches.
 
 Every decision row also records the `source_label` it came from. `NOISE` is still
 refused at the boundary — that is the label B's guarantee turns on.
