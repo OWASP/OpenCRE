@@ -79,13 +79,17 @@ def decide(
     ``update_ambiguous`` are blocking flags from the SafetyGuard (both default
     False until it is wired) — either one forces review regardless of confidence.
 
-    ``source_uncertain`` says Module B forwarded the chunk as ``UNCERTAIN``: it
-    was not confident the text is security knowledge at all. It blocks too, and
-    for a reason worth stating — "which CRE does this match" and "is this
-    security knowledge" are different questions, so a confident answer to the
-    first does not settle the second. It outranks ``BELOW_THRESHOLD`` because it
-    fires whatever the confidence is; reporting the confidence as the reason
-    would be misleading on a chunk that scored 0.99.
+    ``source_uncertain`` says Module B forwarded the chunk as ``UNCERTAIN`` — it
+    was not confident the text is security knowledge at all — and it blocks the
+    auto-link whatever C scored.
+
+    It reports ``BELOW_THRESHOLD``, which is accurate about the decision rather
+    than about C.2's number. The confidence C computes answers "which CRE does
+    this match, *given* the text is knowledge"; B did not establish that premise,
+    so the claim the link would actually rest on does not clear the bar. The
+    precise cause is not lost: ``decision_queue.source_label`` records which of
+    B's labels the row carried, and the RFC's four reason codes are left as
+    upstream pinned them.
     """
     _validate(confidence, threshold)
 
@@ -101,11 +105,7 @@ def decide(
         return DecisionResult(
             Decision.review, confidence, top, ReasonCode.update_ambiguous
         )
-    if source_uncertain:
-        return DecisionResult(
-            Decision.review, confidence, top, ReasonCode.source_uncertain
-        )
-    if confidence < threshold:
+    if source_uncertain or confidence < threshold:
         return DecisionResult(
             Decision.review, confidence, top, ReasonCode.below_threshold
         )

@@ -64,8 +64,7 @@ until D exists they simply accumulated.
 
 **An `UNCERTAIN` chunk never auto-links.** It goes through the full pipeline, so a
 reviewer gets retrieved candidates and the audit rather than bare text — but it
-always routes to human review with `reason_code = SOURCE_UNCERTAIN`, whatever its
-confidence. B's uncertainty is about *whether the text is security knowledge*;
+always routes to human review, whatever its confidence. B's uncertainty is about *whether the text is security knowledge*;
 C's confidence is about *which CRE it resembles*. A confident answer to the second
 does not settle the first.
 

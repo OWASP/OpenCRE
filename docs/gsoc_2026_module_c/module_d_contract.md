@@ -63,9 +63,11 @@ Module B is recall-first: it drops `NOISE` and forwards both `KNOWLEDGE` and
 ever retrieved candidates for it.
 
 **An `UNCERTAIN` chunk never auto-links.** It always arrives as
-`status = 'review_required'` with `reason_code = 'SOURCE_UNCERTAIN'`, whatever
-its confidence — Module D will see rows that scored well above τ and still need a
-human.
+`status = 'review_required'`, whatever its confidence — Module D will see rows
+that scored well above τ and still need a human. They carry
+`reason_code = 'BELOW_THRESHOLD'` and `source_label = 'UNCERTAIN'`; the label is
+what tells you the source rather than the score is why, and it keeps the RFC's
+four reason codes exactly as upstream pinned them.
 
 That is deliberate. B's uncertainty and C's confidence answer different
 questions: *is this security knowledge* versus *which CRE does it match*. A
@@ -117,7 +119,6 @@ Review rows carry one, in this precedence order:
 | `NO_CANDIDATES` | retrieval returned nothing to link to |
 | `ADVERSARIAL_FLAG` | the safety guard flagged the content |
 | `UPDATE_AMBIGUOUS` | it restates an existing link, ambiguously |
-| `SOURCE_UNCERTAIN` | B forwarded the chunk as `UNCERTAIN`; fires at any confidence |
 | `BELOW_THRESHOLD` | the calibrated confidence did not clear τ |
 
 `ADVERSARIAL_FLAG` and `UPDATE_AMBIGUOUS` cannot fire yet: the seam is wired into

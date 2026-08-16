@@ -107,7 +107,7 @@ class SourceUncertainTest(unittest.TestCase):
         result = decide(1.0, ["616-305"], threshold=0.80, source_uncertain=True)
 
         self.assertEqual(result.decision, Decision.review)
-        self.assertEqual(result.reason_code, ReasonCode.source_uncertain)
+        self.assertEqual(result.reason_code, ReasonCode.below_threshold)
         # The candidate is still carried, so the reviewer sees C's suggestion.
         self.assertEqual(result.cre_ids, ("616-305",))
 
@@ -116,12 +116,14 @@ class SourceUncertainTest(unittest.TestCase):
 
         self.assertEqual(result.decision, Decision.linked)
 
-    def test_outranks_below_threshold(self) -> None:
-        """Reporting BELOW_THRESHOLD on a chunk that scored 0.99 would be
-        misleading: the confidence is not why it was held back."""
+    def test_reports_below_threshold_without_a_new_rfc_code(self) -> None:
+        """Accurate about the decision rather than about C.2's number: the
+        confidence answers "which CRE, given this is knowledge", and B did not
+        establish that premise. The precise cause lives in
+        ``decision_queue.source_label``, so the RFC's four codes stay as pinned."""
         result = decide(0.99, ["616-305"], threshold=0.80, source_uncertain=True)
 
-        self.assertEqual(result.reason_code, ReasonCode.source_uncertain)
+        self.assertEqual(result.reason_code, ReasonCode.below_threshold)
 
     def test_no_candidates_still_wins(self) -> None:
         # Nothing to link to is the more basic fact about the row.
@@ -140,12 +142,12 @@ class SourceUncertainTest(unittest.TestCase):
                     source_uncertain=True,
                     **{flag: True},
                 )
-                self.assertNotEqual(result.reason_code, ReasonCode.source_uncertain)
+                self.assertNotEqual(result.reason_code, ReasonCode.below_threshold)
 
     def test_low_confidence_uncertain_row_reports_the_source(self) -> None:
         result = decide(0.10, ["616-305"], threshold=0.80, source_uncertain=True)
 
-        self.assertEqual(result.reason_code, ReasonCode.source_uncertain)
+        self.assertEqual(result.reason_code, ReasonCode.below_threshold)
 
 
 if __name__ == "__main__":
