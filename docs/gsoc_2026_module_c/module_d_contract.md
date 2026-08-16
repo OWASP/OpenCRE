@@ -62,26 +62,20 @@ Module B is recall-first: it drops `NOISE` and forwards both `KNOWLEDGE` and
 *classifying*, not one it judged worthless, and leaving it unread meant nothing
 ever retrieved candidates for it.
 
-**An `UNCERTAIN` chunk never auto-links.** It always arrives as
-`status = 'review_required'`, whatever its confidence — Module D will see rows
-that scored well above τ and still need a human. They carry
-`reason_code = 'BELOW_THRESHOLD'` and `source_label = 'UNCERTAIN'`; the label is
-what tells you the source rather than the score is why, and it keeps the RFC's
-four reason codes exactly as upstream pinned them.
+**An `UNCERTAIN` chunk is decided on the same rule as any other.** C runs the
+full pipeline over it and applies the same τ: clear it and the chunk arrives as
+`linked`, fall short and it arrives as `review_required` with
+`BELOW_THRESHOLD`. B's label is about how sure *B* was; it is not a veto on C's
+own calibrated confidence.
 
-That is deliberate. B's uncertainty and C's confidence answer different
-questions: *is this security knowledge* versus *which CRE does it match*. A
-confident answer to the second does not settle the first, so C does not let its
-own confidence override B's doubt.
+What travels with the decision is `source_label`, so a consumer that wants to
+treat uncertain-sourced links differently — hold them for sign-off, audit them
+separately — has what it needs:
 
-What the chunk does get is the full pipeline, so the reviewer is handed retrieved
-candidates in `suggested_links` and the audit in `envelope.retrieval` rather than
-bare text. `source_label` records the provenance either way:
 
 ```sql
 SELECT * FROM decision_queue
- WHERE status = 'review_required' AND source_label = 'UNCERTAIN'
-   AND consumed_at IS NULL;
+ WHERE status = 'linked' AND source_label = 'UNCERTAIN';
 ```
 
 > **`linked` rows are not D's.** They are the graph writer's. A HITL queue that
