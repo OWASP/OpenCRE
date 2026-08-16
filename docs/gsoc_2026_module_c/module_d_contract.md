@@ -62,20 +62,25 @@ Module B is recall-first: it drops `NOISE` and forwards both `KNOWLEDGE` and
 *classifying*, not one it judged worthless, and leaving it unread meant nothing
 ever retrieved candidates for it.
 
-B's uncertainty and C's confidence answer different questions: *is this security
-knowledge* versus *which CRE does it match*. C does not currently treat the
-first as a veto on the second, so an `UNCERTAIN` chunk whose calibrated
-confidence clears τ will auto-link. `source_label` is what makes that visible —
-a consumer that wants human sign-off on uncertain-sourced links can filter:
+**An `UNCERTAIN` chunk never auto-links.** It always arrives as
+`status = 'review_required'` with `reason_code = 'SOURCE_UNCERTAIN'`, whatever
+its confidence — Module D will see rows that scored well above τ and still need a
+human.
+
+That is deliberate. B's uncertainty and C's confidence answer different
+questions: *is this security knowledge* versus *which CRE does it match*. A
+confident answer to the second does not settle the first, so C does not let its
+own confidence override B's doubt.
+
+What the chunk does get is the full pipeline, so the reviewer is handed retrieved
+candidates in `suggested_links` and the audit in `envelope.retrieval` rather than
+bare text. `source_label` records the provenance either way:
 
 ```sql
 SELECT * FROM decision_queue
- WHERE status = 'linked' AND source_label = 'UNCERTAIN' AND consumed_at IS NULL;
+ WHERE status = 'review_required' AND source_label = 'UNCERTAIN'
+   AND consumed_at IS NULL;
 ```
-
-If the team decides an `UNCERTAIN` chunk must never auto-link, that is a change
-in C, not here — and it needs a fifth `reason_code` in the RFC, since the four
-current ones all describe something other than "the source label was uncertain".
 
 > **`linked` rows are not D's.** They are the graph writer's. A HITL queue that
 > also surfaced auto-links would ask a human to re-approve decisions the pipeline
@@ -112,6 +117,7 @@ Review rows carry one, in this precedence order:
 | `NO_CANDIDATES` | retrieval returned nothing to link to |
 | `ADVERSARIAL_FLAG` | the safety guard flagged the content |
 | `UPDATE_AMBIGUOUS` | it restates an existing link, ambiguously |
+| `SOURCE_UNCERTAIN` | B forwarded the chunk as `UNCERTAIN`; fires at any confidence |
 | `BELOW_THRESHOLD` | the calibrated confidence did not clear τ |
 
 `ADVERSARIAL_FLAG` and `UPDATE_AMBIGUOUS` cannot fire yet: the seam is wired into

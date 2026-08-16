@@ -95,5 +95,58 @@ class ResultTest(unittest.TestCase):
             r.confidence = 0.1  # type: ignore[misc]
 
 
+class SourceUncertainTest(unittest.TestCase):
+    """Module B forwards UNCERTAIN chunks; those never auto-link.
+
+    B's uncertainty is about whether the text is security knowledge at all. C's
+    confidence is about which CRE it resembles. A confident answer to the second
+    does not settle the first, so the chunk goes to a human either way.
+    """
+
+    def test_blocks_even_at_full_confidence(self) -> None:
+        result = decide(1.0, ["616-305"], threshold=0.80, source_uncertain=True)
+
+        self.assertEqual(result.decision, Decision.review)
+        self.assertEqual(result.reason_code, ReasonCode.source_uncertain)
+        # The candidate is still carried, so the reviewer sees C's suggestion.
+        self.assertEqual(result.cre_ids, ("616-305",))
+
+    def test_confident_chunk_links_when_the_source_was_not_uncertain(self) -> None:
+        result = decide(1.0, ["616-305"], threshold=0.80, source_uncertain=False)
+
+        self.assertEqual(result.decision, Decision.linked)
+
+    def test_outranks_below_threshold(self) -> None:
+        """Reporting BELOW_THRESHOLD on a chunk that scored 0.99 would be
+        misleading: the confidence is not why it was held back."""
+        result = decide(0.99, ["616-305"], threshold=0.80, source_uncertain=True)
+
+        self.assertEqual(result.reason_code, ReasonCode.source_uncertain)
+
+    def test_no_candidates_still_wins(self) -> None:
+        # Nothing to link to is the more basic fact about the row.
+        result = decide(0.99, [], threshold=0.80, source_uncertain=True)
+
+        self.assertEqual(result.reason_code, ReasonCode.no_candidates)
+
+    def test_safety_flags_still_win(self) -> None:
+        # A flagged chunk is a stronger statement than an uncertain label.
+        for flag in ("adversarial", "update_ambiguous"):
+            with self.subTest(flag=flag):
+                result = decide(
+                    0.99,
+                    ["616-305"],
+                    threshold=0.80,
+                    source_uncertain=True,
+                    **{flag: True},
+                )
+                self.assertNotEqual(result.reason_code, ReasonCode.source_uncertain)
+
+    def test_low_confidence_uncertain_row_reports_the_source(self) -> None:
+        result = decide(0.10, ["616-305"], threshold=0.80, source_uncertain=True)
+
+        self.assertEqual(result.reason_code, ReasonCode.source_uncertain)
+
+
 if __name__ == "__main__":
     unittest.main()
