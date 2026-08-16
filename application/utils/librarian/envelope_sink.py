@@ -20,7 +20,7 @@ same protocol, so the consumption rule does not have to change when they land.
 import json
 import logging
 import os
-from typing import Any, List, Optional, Protocol, Sequence, Union
+from typing import Any, List, Mapping, Optional, Protocol, Sequence, Union
 
 from application.utils.librarian.schemas import LinkProposal, ReviewItem
 
@@ -141,9 +141,27 @@ class DbEnvelopeSink:
     follow on the read side.
     """
 
-    def __init__(self, session: Any, pipeline_run_id: str) -> None:
+    def __init__(
+        self,
+        session: Any,
+        pipeline_run_id: str,
+        source_labels: Optional[dict] = None,
+    ) -> None:
         self._session = session
         self._run_id = pipeline_run_id
+        # chunk_id -> B's llm_label. The RFC envelope is pinned and has no field
+        # for it, so it travels beside the envelopes and is recorded on the row.
+        self._source_labels = dict(source_labels or {})
+
+    def accept_source_labels(self, labels: Mapping[str, str]) -> None:
+        """Take the chunk_id -> B-label map the run produced.
+
+        Optional on the sink protocol: a sink that has nowhere to put the label
+        simply does not implement it, and the runner skips the call. Declared as
+        a method rather than letting the caller reach into the attribute, so the
+        seam is visible to anyone writing a new sink.
+        """
+        self._source_labels.update(labels)
 
     @property
     def persists(self) -> bool:
@@ -212,6 +230,7 @@ class DbEnvelopeSink:
             "artifact_id": envelope.artifact_id,
             "pipeline_run_id": envelope.pipeline_run_id,
             "schema_version": envelope.schema_version,
+            "source_label": self._source_labels.get(envelope.chunk_id),
             "status": envelope.status,
             "reason_code": (
                 envelope.reason_code.value

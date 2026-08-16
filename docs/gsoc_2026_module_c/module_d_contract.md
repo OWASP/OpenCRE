@@ -24,6 +24,7 @@ A ──▶ harvest_input ──▶ B ──▶ knowledge_queue ──▶ C ─�
 | `artifact_id` | no | A, via B and C | **A's identity — carried verbatim** |
 | `pipeline_run_id` | no | A, via B and C | scopes one orchestrator pass |
 | `schema_version` | no | C | the RFC envelope version (`0.2.0`) |
+| `source_label` | yes | B, via C | B's `llm_label` on the chunk: `KNOWLEDGE` \| `UNCERTAIN` |
 | `status` | no | C | `linked` \| `review_required` |
 | `reason_code` | yes | C | review rows only; why it needs a human |
 | `review_id` | yes | C | review rows only; the `ReviewItem` id |
@@ -53,6 +54,28 @@ later pipeline run, and that decision is its own record.
 
 **D reads** `consumed_at IS NULL AND status = 'review_required'`, optionally
 scoped by `pipeline_run_id`.
+
+### `source_label`, and why it matters
+
+Module B is recall-first: it drops `NOISE` and forwards both `KNOWLEDGE` and
+`UNCERTAIN`. C reads both — an `UNCERTAIN` chunk is one B was unsure about
+*classifying*, not one it judged worthless, and leaving it unread meant nothing
+ever retrieved candidates for it.
+
+B's uncertainty and C's confidence answer different questions: *is this security
+knowledge* versus *which CRE does it match*. C does not currently treat the
+first as a veto on the second, so an `UNCERTAIN` chunk whose calibrated
+confidence clears τ will auto-link. `source_label` is what makes that visible —
+a consumer that wants human sign-off on uncertain-sourced links can filter:
+
+```sql
+SELECT * FROM decision_queue
+ WHERE status = 'linked' AND source_label = 'UNCERTAIN' AND consumed_at IS NULL;
+```
+
+If the team decides an `UNCERTAIN` chunk must never auto-link, that is a change
+in C, not here — and it needs a fifth `reason_code` in the RFC, since the four
+current ones all describe something other than "the source label was uncertain".
 
 > **`linked` rows are not D's.** They are the graph writer's. A HITL queue that
 > also surfaced auto-links would ask a human to re-approve decisions the pipeline

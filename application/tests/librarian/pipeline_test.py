@@ -112,13 +112,13 @@ class PipelineTest(unittest.TestCase):
         self.assertEqual(env.reason_code, ReasonCode.no_candidates)
 
     def test_uncertain_row_is_skipped_at_boundary(self):
-        result = _pipeline([_row(label="UNCERTAIN")], TOP, 0.95).run(at=AT)
+        result = _pipeline([_row(label="NOISE")], TOP, 0.95).run(at=AT)
         self.assertEqual(result.stats.skipped, 1)
         self.assertEqual(result.stats.total, 1)
         self.assertEqual(result.envelopes, [])
 
     def test_mixed_batch_counts(self):
-        rows = [_row(), _row(label="UNCERTAIN"), _row()]
+        rows = [_row(), _row(label="NOISE"), _row()]
         result = _pipeline(rows, TOP, 0.95).run(at=AT)
         self.assertEqual(result.stats.total, 3)
         self.assertEqual(result.stats.linked, 2)
@@ -191,9 +191,9 @@ class PipelineErrorContainmentTest(unittest.TestCase):
         self.assertEqual(len(result.envelopes), 2)
 
     def test_errored_is_counted_separately_from_skipped(self):
-        rows = [_row(label="UNCERTAIN"), _row()]
+        rows = [_row(label="NOISE"), _row()]
         result = self._run_with("retriever", rows)
-        # The UNCERTAIN row is a clean boundary refusal; the other is a fault.
+        # The NOISE row is a clean boundary refusal; the other is a fault.
         self.assertEqual(result.stats.skipped, 1)
         self.assertEqual(result.stats.errored, 1)
 
@@ -223,7 +223,7 @@ class RowOutcomeTest(unittest.TestCase):
     def test_boundary_rejection_is_finished_with(self):
         """A malformed row cannot be fixed by re-reading it, so it counts as
         finished — otherwise it is re-read on every run, forever."""
-        result = self._run([_row(row_id="bad", label="UNCERTAIN")])
+        result = self._run([_row(row_id="bad", label="NOISE")])
         self.assertEqual([o.status.value for o in result.outcomes], ["skipped"])
         self.assertEqual(result.finished_row_ids(), ["bad"])
 
@@ -240,7 +240,7 @@ class RowOutcomeTest(unittest.TestCase):
         self.assertEqual(result.finished_row_ids(), [])
 
     def test_finished_ids_mix_decisions_and_rejections_but_not_errors(self):
-        rows = [_row(row_id="ok"), _row(row_id="skip", label="UNCERTAIN")]
+        rows = [_row(row_id="ok"), _row(row_id="skip", label="NOISE")]
         result = self._run(rows)
         self.assertEqual(sorted(result.finished_row_ids()), ["ok", "skip"])
 

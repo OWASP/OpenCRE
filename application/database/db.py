@@ -508,6 +508,10 @@ class DecisionQueueItem(BaseModel):  # type: ignore
     artifact_id = sqla.Column(sqla.String, nullable=False)
     pipeline_run_id = sqla.Column(sqla.String, nullable=False)
     schema_version = sqla.Column(sqla.String, nullable=False)
+    # B's label on the chunk this decision was made from: KNOWLEDGE | UNCERTAIN.
+    # Recall-first means B forwards both, so a consumer needs to tell a decision
+    # made on a confident chunk from one made on a chunk B was unsure about.
+    source_label = sqla.Column(sqla.String, nullable=True)
     # C's verdict
     status = sqla.Column(sqla.String, nullable=False)  # linked | review_required
     reason_code = sqla.Column(sqla.String, nullable=True)  # review rows only
