@@ -45,6 +45,20 @@ logger = logging.getLogger(__name__)
 Envelope = Union[LinkProposal, ReviewItem]
 
 
+def _source_label(item: Union[KnowledgeQueueItem, Dict[str, Any]]) -> Optional[str]:
+    """B's ``llm_label`` for this row, when the source carries one.
+
+    Fixture rows and hand-built dicts may not, so this is best-effort: a missing
+    label records nothing rather than guessing ``KNOWLEDGE``, which would claim a
+    confidence B never expressed.
+    """
+    if isinstance(item, dict):
+        value = item.get("llm_label")
+    else:
+        value = getattr(item, "llm_label", None)
+    return str(value) if value else None
+
+
 def _row_id(item: Union[KnowledgeQueueItem, Dict[str, Any]]) -> Optional[str]:
     """The queue row's primary key, read before C.0 may reject the row.
 
@@ -143,6 +157,11 @@ class RunResult:
     envelopes: List[Envelope]
     stats: RunStats
     outcomes: List[RowOutcome] = field(default_factory=list)
+    #: chunk_id -> the ``llm_label`` B wrote on the row it came from. Carried out
+    #: of the run so the decision row can record which of B's labels it was made
+    #: from; the RFC envelope has no field for it and is pinned, so it travels
+    #: beside the envelopes rather than inside them.
+    source_labels: Dict[str, str] = field(default_factory=dict)
 
     def finished_row_ids(self) -> List[str]:
         """Ids of rows that are done with — everything except ``errored``."""
@@ -191,11 +210,13 @@ class LibrarianPipeline:
     def run(self, *, at: datetime) -> RunResult:
         envelopes: List[Envelope] = []
         outcomes: List[RowOutcome] = []
+        source_labels: Dict[str, str] = {}
         linked = review = skipped = errored = total = 0
         safety_unevaluated = 0
         for item in self._source.items():
             total += 1
             row_id = _row_id(item)
+            label = _source_label(item)
             try:
                 section = section_from_queue_row(item)
             except SectionValidationError:
@@ -241,6 +262,8 @@ class LibrarianPipeline:
                 continue
 
             envelopes.append(envelope)
+            if label is not None:
+                source_labels[envelope.chunk_id] = label
             if isinstance(envelope, LinkProposal):
                 linked += 1
                 status = RowStatus.linked
@@ -260,4 +283,5 @@ class LibrarianPipeline:
                 safety_unevaluated=safety_unevaluated,
             ),
             outcomes=outcomes,
+            source_labels=source_labels,
         )

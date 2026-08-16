@@ -34,6 +34,8 @@ def upgrade():
         sa.Column("artifact_id", sa.String, nullable=False),
         sa.Column("pipeline_run_id", sa.String, nullable=False),
         sa.Column("schema_version", sa.String, nullable=False),
+        # B's label on the chunk the decision was made from
+        sa.Column("source_label", sa.String, nullable=True),
         # C's verdict
         sa.Column("status", sa.String, nullable=False),
         sa.Column("reason_code", sa.String, nullable=True),

@@ -167,10 +167,14 @@ Inserts are `ON CONFLICT (chunk_id, pipeline_run_id) DO NOTHING`, so a replayed
 run writes nothing new. That is idempotence working, not loss — the rows from the
 first run are still there.
 
-**`UNCERTAIN` rows never disappear from `knowledge_queue`**
-By design. C reads only `llm_label = 'KNOWLEDGE'`, so it never reads and never
-retires an `UNCERTAIN` row — those are Module D's, per the B→C contract. The
-queue grows a tail nobody drains until D exists; that is not C falling behind.
+**An `UNCERTAIN` row was auto-linked**
+Expected, and worth understanding. C reads both of B's labels, so an `UNCERTAIN`
+chunk goes through the full pipeline; if its calibrated confidence clears τ it
+auto-links like any other. B's uncertainty is about *whether the chunk is
+security knowledge*, C's confidence is about *which CRE it matches* — they are
+different questions, and C does not currently treat the first as a veto on the
+second. Every decision row records `source_label`, so a consumer that wants
+human sign-off on uncertain-sourced links can filter on it.
 
 **Rows keep reappearing across runs**
 They errored mid-pipeline rather than being decided. Errored rows are left

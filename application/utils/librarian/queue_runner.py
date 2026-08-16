@@ -186,6 +186,12 @@ def run_librarian_queue(
     # Persist first, retire second. If the sink raises, nothing is consumed and
     # the whole run is retried — the rows are still B's to hand back.
     assert sink is not None  # guarded above; narrows the Optional for mypy
+    # B's label per chunk is not in the pinned RFC envelope, so it is handed to
+    # the sink beside the batch. Optional: a sink with nowhere to record it does
+    # not implement the method and simply does not receive it.
+    accept = getattr(sink, "accept_source_labels", None)
+    if callable(accept) and result.source_labels:
+        accept(result.source_labels)
     summary.persisted = sink.write(result.envelopes)
 
     # Rows B wrote that C could not even model never reached the pipeline, so

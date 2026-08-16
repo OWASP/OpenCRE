@@ -9,10 +9,17 @@ Defines the source interface plus two implementations:
 Both yield the same ``KnowledgeQueueItem`` mirror, so the pipeline cannot tell
 them apart; C synthesizes the RFC envelope from each row downstream.
 
-**Only ``KNOWLEDGE`` rows are read.** B writes two labels: ``KNOWLEDGE`` (C's
-work) and ``UNCERTAIN``, which exists for Module D's human review. Filtering in
-the query rather than at the C.0 boundary is deliberate — a row C never reads is
-a row C never marks consumed, so D's queue stays intact.
+**Both of B's labels are read.** B drops ``NOISE`` and writes ``KNOWLEDGE`` and
+``UNCERTAIN``; recall-first is the point, so an ``UNCERTAIN`` chunk is one B was
+not confident *classifying*, not one it judged worthless. C originally read only
+``KNOWLEDGE`` and left the rest for Module D, which stranded them: nothing
+retrieved candidates for them, so a human would have had to review raw text with
+no CRE suggestions, and until D exists they simply accumulated.
+
+C now reads both. What differs is the weight the label carries downstream, not
+whether the chunk is looked at — every decision row records the label it came
+from, so a consumer can tell a decision made on a confident chunk from one made
+on an uncertain one.
 """
 
 import logging
@@ -25,8 +32,11 @@ from application.utils.librarian.schemas import KnowledgeQueueItem
 
 logger = logging.getLogger(__name__)
 
-# The one label Module C acts on; see the module docstring.
+# The labels Module C acts on; see the module docstring. NOISE never reaches the
+# queue — B drops it — so these two are everything B writes.
 KNOWLEDGE_LABEL = "KNOWLEDGE"
+UNCERTAIN_LABEL = "UNCERTAIN"
+READABLE_LABELS = (KNOWLEDGE_LABEL, UNCERTAIN_LABEL)
 
 
 class KnowledgeSource(ABC):
@@ -61,7 +71,7 @@ class FixtureKnowledgeSource(KnowledgeSource):
 
 
 class DbKnowledgeSource(KnowledgeSource):
-    """Reads unconsumed ``KNOWLEDGE`` rows from Module B's live queue.
+    """Reads unconsumed ``KNOWLEDGE`` and ``UNCERTAIN`` rows from B's live queue.
 
     The caller owns the session (mirroring Module B's ``run_noise_filter``), so
     this class never opens, commits, or closes a transaction — it only reads.
@@ -102,7 +112,7 @@ class DbKnowledgeSource(KnowledgeSource):
 
         query = self._session.query(KnowledgeQueueRow).filter(  # type: ignore[attr-defined]
             KnowledgeQueueRow.consumed_at.is_(None),
-            KnowledgeQueueRow.llm_label == KNOWLEDGE_LABEL,
+            KnowledgeQueueRow.llm_label.in_(READABLE_LABELS),
         )
         if self._run_id:
             query = query.filter(KnowledgeQueueRow.pipeline_run_id == self._run_id)

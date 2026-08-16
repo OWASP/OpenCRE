@@ -173,14 +173,27 @@ class QueueRowBoundaryTest(unittest.TestCase):
         self.assertFalse(hasattr(section, "llm_reasoning"))
         self.assertFalse(hasattr(section, "confidence"))
 
+    def test_uncertain_rows_are_accepted(self) -> None:
+        """Module B is recall-first: it drops NOISE and forwards KNOWLEDGE and
+        UNCERTAIN. An UNCERTAIN chunk is one B was unsure about classifying, not
+        one it judged worthless, so the boundary lets it through — rejecting it
+        here meant nothing ever retrieved candidates for it.
+
+        The row still records which label it came from, so a consumer can weigh
+        a decision made on an uncertain chunk differently.
+        """
+        section = section_from_queue_row(valid_queue_row(llm_label="UNCERTAIN"))
+
+        self.assertTrue(section.text)
+
     def test_rejection_table(self) -> None:
         cases = [
             ("empty text", valid_queue_row(text=""), EmptyTextError),
             ("whitespace text", valid_queue_row(text="  \n\t "), EmptyTextError),
             ("noise label", valid_queue_row(llm_label="NOISE"), NotKnowledgeError),
             (
-                "uncertain label",
-                valid_queue_row(llm_label="UNCERTAIN"),
+                "unknown label",
+                valid_queue_row(llm_label="SOMETHING_ELSE"),
                 NotKnowledgeError,
             ),
             (

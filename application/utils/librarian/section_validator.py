@@ -50,6 +50,13 @@ from application.utils.librarian.schemas import (
 _ModelT = TypeVar("_ModelT", bound=BaseModel)
 
 KNOWLEDGE_LABEL = "KNOWLEDGE"
+UNCERTAIN_LABEL = "UNCERTAIN"
+# What C accepts at the boundary. Module B is recall-first: it drops NOISE and
+# forwards both of these, so an UNCERTAIN chunk is one B was unsure about
+# *classifying*, not one it judged worthless. C used to reject them here, which
+# meant nothing ever retrieved candidates for them and they sat in the queue.
+# NOISE stays rejected — that is the label B's guarantee actually turns on.
+LINKABLE_LABELS = (KNOWLEDGE_LABEL, UNCERTAIN_LABEL)
 
 # MVP scope: golden dataset and CRE hub vectors are English-only.
 _SUPPORTED_PRIMARY_LANGUAGES = frozenset({"en"})
@@ -208,9 +215,10 @@ def section_from_queue_row(
     """
     row = _validate_or_raise(KnowledgeQueueItem, row)
 
-    if row.llm_label != KNOWLEDGE_LABEL:
+    if row.llm_label not in LINKABLE_LABELS:
         raise NotKnowledgeError(
-            f"llm_label={row.llm_label!r}; only {KNOWLEDGE_LABEL!r} rows may be linked"
+            f"llm_label={row.llm_label!r}; C accepts "
+            f"{' or '.join(repr(l) for l in LINKABLE_LABELS)}"
         )
     _require_text(row.text)
 

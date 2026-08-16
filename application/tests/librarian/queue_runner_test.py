@@ -108,6 +108,10 @@ class _RecordingSink:
 
     def __init__(self) -> None:
         self.envelopes: list = []
+        self.labels: dict = {}
+
+    def accept_source_labels(self, labels) -> None:
+        self.labels.update(labels)
 
     @property
     def persists(self) -> bool:
@@ -247,15 +251,35 @@ class RunLibrarianQueueTest(unittest.TestCase):
         self.assertEqual(summary.read, 1)
         self.assertIsNone(self._consumed_at("b"))
 
-    def test_uncertain_rows_are_never_touched(self) -> None:
-        """They are Module D's queue; C must not drain them."""
+    def test_uncertain_rows_are_processed_and_retired(self) -> None:
+        """B forwards UNCERTAIN as well as KNOWLEDGE, so C decides on both.
+
+        Reading them is the point: a human reviewing a chunk with no retrieved
+        candidates has nothing to work with, and while C skipped them they simply
+        accumulated in the queue.
+        """
         sqla.session.add_all([_row("a"), _row("d", llm_label="UNCERTAIN")])
         sqla.session.commit()
 
         summary = self._run()
 
-        self.assertEqual(summary.read, 1)
-        self.assertIsNone(self._consumed_at("d"))
+        self.assertEqual(summary.read, 2)
+        self.assertIsNotNone(self._consumed_at("a"))
+        self.assertIsNotNone(self._consumed_at("d"))
+
+    def test_the_decision_records_which_label_it_came_from(self) -> None:
+        """A consumer has to be able to tell a decision made on a confident chunk
+        from one made on a chunk B was unsure about; the pinned RFC envelope has
+        no field for it, so it travels beside the envelopes."""
+        sqla.session.add_all([_row("a"), _row("d", llm_label="UNCERTAIN")])
+        sqla.session.commit()
+        sink = _RecordingSink()
+
+        self._run(sink=sink)
+
+        labels = getattr(sink, "labels", {})
+        self.assertEqual(labels.get("chk:art:OWASP/ASVS:a.md:a"), "KNOWLEDGE")
+        self.assertEqual(labels.get("chk:art:OWASP/ASVS:a.md:d"), "UNCERTAIN")
 
     def test_boundary_rejection_is_consumed_not_retried(self) -> None:
         """A row C can never link is finished with; re-reading it forever is

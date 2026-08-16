@@ -55,10 +55,17 @@ a row B wrote that C cannot even model. A row that *errored* mid-pipeline (an
 embedding timeout, a cross-encoder hiccup) is left unconsumed, because the next
 run should retry it. `RunStats` counts them separately on purpose.
 
-`UNCERTAIN` rows are never read and so are never consumed. They are Module D's,
-per the B→C contract, and C filters them out in the query rather than at the
-boundary — a row C never reads is a row C never retires, which is what keeps D's
-queue intact.
+**C reads both of B's labels.** B is recall-first: it drops `NOISE` and forwards
+`KNOWLEDGE` *and* `UNCERTAIN`, so an `UNCERTAIN` chunk is one B was unsure about
+*classifying*, not one it judged worthless. C originally read only `KNOWLEDGE`
+and left the rest for Module D, which stranded them — nothing retrieved
+candidates, so a reviewer would have faced raw text with no CRE suggestions, and
+until D exists they simply accumulated.
+
+Every decision row records the `source_label` it came from, so a consumer can
+tell a decision made on a confident chunk from one made on an uncertain one.
+`NOISE` is still refused at the boundary — that is the label B's guarantee turns
+on.
 
 ## Design constraints
 

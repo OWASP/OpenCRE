@@ -112,10 +112,23 @@ class DbKnowledgeSourceTest(unittest.TestCase):
 
         self.assertEqual([i.id for i in items], ["a"])
 
-    def test_uncertain_rows_are_left_for_module_d(self) -> None:
-        """B writes UNCERTAIN for Module D's human review. If C read those rows
-        it would also mark them consumed, silently emptying D's queue."""
+    def test_reads_both_of_bs_labels(self) -> None:
+        """B is recall-first: it drops NOISE and forwards KNOWLEDGE *and*
+        UNCERTAIN. An UNCERTAIN chunk is one B was unsure about classifying, not
+        one it judged worthless, so C reads it too — leaving it stranded meant
+        nothing ever retrieved candidates for it."""
         sqla.session.add_all([_row("a"), _row("b", llm_label="UNCERTAIN")])
+        sqla.session.commit()
+
+        items = list(DbKnowledgeSource(sqla.session).items())
+
+        self.assertEqual(sorted(i.id for i in items), ["a", "b"])
+        self.assertEqual(sorted(i.llm_label for i in items), ["KNOWLEDGE", "UNCERTAIN"])
+
+    def test_noise_is_never_read(self) -> None:
+        """B drops NOISE before the queue, but if one ever appeared C must not
+        treat it as work — the label is what B's recall-first guarantee turns on."""
+        sqla.session.add_all([_row("a"), _row("n", llm_label="NOISE")])
         sqla.session.commit()
 
         items = list(DbKnowledgeSource(sqla.session).items())
