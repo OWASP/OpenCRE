@@ -6,28 +6,29 @@ artifacts (``suggestions.json`` -> reviewer edits -> ``approved.json``) and,
 in a later checkpoint, the conversion of approved suggestions into the import
 pipeline's ``ParseResult``.
 
-Checkpoints implemented here (F1 + F2):
+Checkpoints implemented here (F1 + F2 + F3):
 
 * F1 -- the data contract: :data:`SUGGESTIONS_SCHEMA` (JSON Schema) plus the
   :class:`CandidateCRE` / :class:`MappingSuggestion` dataclasses.
 * F2 -- the read/write adapters: :func:`write_suggestions_json` and
   :func:`load_approved_suggestions` (schema-validate -> parse -> filter to the
   reviewer-approved entries).
-
-Deliberately NOT in this module yet:
-
-* F3 -- ``suggestions_to_parse_result(approved, cache)``. When it lands it must
-  reconcile the review artifact with the *real* import types (real code wins):
+* F3 -- the import adapter: :func:`suggestions_to_parse_result`, which reconciles
+  the review artifact with the *real* import types (real code wins):
     - fixed ``defs.Standard(name="OWASP Cheat Sheets")``; the suggestion ``title``
       maps to ``Standard.section`` (matching the existing cheatsheets_parser);
     - the import pipeline REQUIRES ``family:/subtype:/audience:/maturity:/source:``
       classification tags (``base_parser_defs.validate_classification_tags``
       raises otherwise) -- built via ``build_tags`` -- even though the RFC's
-      §4 contract omits them;
+      §4 contract omits them; ``category`` rides along as an extra tag when set;
     - candidate CREs are resolved via ``cache.get_CREs(external_id=...)`` and
-      unknown ids are skipped; a Standard with zero resolved links is dropped;
-    - the advisory review fields dropped below (see the schema) have no home on
+      unknown ids are skipped (collected + logged); a Standard with zero resolved
+      links is dropped;
+    - the advisory review fields (see the schema) have no home on
       ``defs.Standard`` and are intentionally not persisted.
+
+Deliberately NOT in this module yet:
+
 * F4/F5 -- the ``generate/validate/convert`` CLI.
 
 The advisory fields ``score``, ``confidence``, ``reason`` (per candidate) and
@@ -45,10 +46,20 @@ from __future__ import annotations
 
 import dataclasses
 import json
+import logging
 from dataclasses import dataclass, field
-from typing import Any, Dict, List
+from typing import Any, Dict, List, TYPE_CHECKING
 
 import jsonschema
+
+from application.defs import cre_defs as defs
+from application.utils.external_project_parsers import base_parser_defs
+from application.utils.external_project_parsers.base_parser_defs import ParseResult
+
+if TYPE_CHECKING:
+    from application.database import db
+
+logger = logging.getLogger(__name__)
 
 # --- valid values -----------------------------------------------------------
 
@@ -232,3 +243,86 @@ def load_approved_suggestions(path: str) -> List[MappingSuggestion]:
         doc = json.load(fh)
     _validate(doc)
     return [_parse_suggestion(raw) for raw in doc if raw["status"] == "approved"]
+
+
+# --- F3: import adapter -----------------------------------------------------
+
+#: Fixed Standard name for every imported cheat sheet, matching the live
+#: ``cheatsheets_parser`` so entries dedupe/merge against the same resource.
+STANDARD_NAME = "OWASP Cheat Sheets"
+
+
+def suggestions_to_parse_result(
+    approved: List[MappingSuggestion],
+    cache: "db.Node_collection",
+) -> ParseResult:
+    """Convert approved suggestions into a ``ParseResult`` the import flow accepts.
+
+    Per approved suggestion, builds a ``defs.Standard`` (fixed name
+    ``"OWASP Cheat Sheets"``; ``title`` -> ``section``; ``hyperlink``; the
+    required classification tags via ``build_tags`` with ``category`` as an extra
+    tag when non-empty). Each candidate ``cre_id`` is resolved via
+    ``cache.get_CREs(external_id=...)``; unknown ids are collected, logged, and
+    skipped. Resolved CREs are attached as ``AutomaticallyLinkedTo`` links (on a
+    ``shallow_copy`` so the CRE's own links don't leak in, and guarded by
+    ``has_link`` so a repeated id can't raise ``DuplicateLinkException``). A
+    Standard with zero resolved links is dropped.
+
+    The advisory review fields (``score`` / ``confidence`` / ``reason`` /
+    ``cheatsheet_id``) have no home on ``defs.Standard`` and are not persisted.
+    """
+    standards: List[defs.Document] = []
+    unknown_cre_ids: List[str] = []
+
+    for suggestion in approved:
+        extra = [suggestion.category] if suggestion.category else []
+        standard = defs.Standard(
+            name=STANDARD_NAME,
+            section=suggestion.title,
+            hyperlink=suggestion.hyperlink,
+            tags=base_parser_defs.build_tags(
+                family=base_parser_defs.Family.GUIDANCE,
+                subtype=base_parser_defs.Subtype.CHEATSHEET,
+                audience=base_parser_defs.Audience.DEVELOPER,
+                maturity=base_parser_defs.Maturity.STABLE,
+                source="owasp_cheatsheets",
+                extra=extra,
+            ),
+        )
+
+        for candidate in suggestion.candidate_cres:
+            cres = cache.get_CREs(external_id=candidate.cre_id)
+            if not cres:
+                unknown_cre_ids.append(candidate.cre_id)
+                logger.warning(
+                    "Skipping unknown CRE id %s for cheat sheet %r; not in cache.",
+                    candidate.cre_id,
+                    suggestion.title,
+                )
+                continue
+            for cre in cres:
+                link = defs.Link(
+                    document=cre.shallow_copy(),
+                    ltype=defs.LinkTypes.AutomaticallyLinkedTo,
+                )
+                # Guard against a repeated cre_id (add_link would otherwise raise
+                # DuplicateLinkException on the second occurrence).
+                if not standard.has_link(link):
+                    standard.add_link(link)
+
+        if standard.links:
+            standards.append(standard)
+        else:
+            logger.info(
+                "Dropping cheat sheet %r: no candidate CREs resolved.",
+                suggestion.title,
+            )
+
+    if unknown_cre_ids:
+        logger.warning(
+            "suggestions_to_parse_result skipped %d unknown CRE id(s): %s",
+            len(unknown_cre_ids),
+            ", ".join(unknown_cre_ids),
+        )
+
+    return ParseResult(results={STANDARD_NAME: standards})
