@@ -217,7 +217,7 @@ class TestSuggestionsToParseResult(unittest.TestCase):
 
         standards = result.results["OWASP Cheat Sheets"]
         self.assertEqual(len(standards), 1)
-        self.assertEqual([l.document.id for l in standards[0].links], ["764-507"])
+        self.assertEqual([link.document.id for link in standards[0].links], ["764-507"])
         # The skipped id is reported for the reviewer.
         self.assertIn("999-999", "\n".join(cm.output))
 
@@ -254,19 +254,38 @@ class TestSuggestionsToParseResult(unittest.TestCase):
         self.assertEqual(len(std.links), 1)
         self.assertEqual(std.links[0].document.id, "764-507")
 
-    def test_empty_category_produces_no_blank_tag(self) -> None:
+    def test_blank_category_produces_no_extra_tag(self) -> None:
+        # Empty AND whitespace-only categories (both schema-valid) must not leak
+        # a blank/whitespace extra tag.
+        for blank in ("", "   "):
+            with self.subTest(category=repr(blank)):
+                cache = _StubCache({"764-507": _cre("764-507")})
+                approved = [
+                    _sugg("Authentication Cheat Sheet", ["764-507"], category=blank)
+                ]
+
+                result = wf.suggestions_to_parse_result(approved, cache)
+
+                # Still a valid, classifiable Standard...
+                base_parser_defs.validate_classification_tags(result.results)
+                std = result.results["OWASP Cheat Sheets"][0]
+                # ...with no blank/whitespace tag leaked in from the category.
+                self.assertNotIn("", std.tags)
+                self.assertNotIn(blank, std.tags)
+                # Only the five required classification tags remain (no extra).
+                self.assertEqual(len(std.tags), 5)
+
+    def test_category_tag_is_stripped(self) -> None:
         cache = _StubCache({"764-507": _cre("764-507")})
-        approved = [_sugg("Authentication Cheat Sheet", ["764-507"], category="")]
+        approved = [
+            _sugg("Authentication Cheat Sheet", ["764-507"], category="  auth  ")
+        ]
 
         result = wf.suggestions_to_parse_result(approved, cache)
 
-        # Still a valid, classifiable Standard...
-        base_parser_defs.validate_classification_tags(result.results)
         std = result.results["OWASP Cheat Sheets"][0]
-        # ...with no empty-string tag leaked in from the blank category.
-        self.assertNotIn("", std.tags)
-        # Only the five required classification tags remain (no extra).
-        self.assertEqual(len(std.tags), 5)
+        self.assertIn("auth", std.tags)
+        self.assertNotIn("  auth  ", std.tags)
 
 
 if __name__ == "__main__":

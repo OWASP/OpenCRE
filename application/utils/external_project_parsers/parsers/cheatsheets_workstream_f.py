@@ -275,7 +275,8 @@ def suggestions_to_parse_result(
     unknown_cre_ids: List[str] = []
 
     for suggestion in approved:
-        extra = [suggestion.category] if suggestion.category else []
+        category = suggestion.category.strip()
+        extra = [category] if category else []
         standard = defs.Standard(
             name=STANDARD_NAME,
             section=suggestion.title,
