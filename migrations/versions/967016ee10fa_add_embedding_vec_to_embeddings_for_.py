@@ -1,7 +1,7 @@
 """add embedding_vec to embeddings for SQLite
 
 Revision ID: 967016ee10fa
-Revises: b5ac48010165
+Revises: e7c3b91d5a24
 Create Date: 2026-08-06 00:13:49.191527
 
 """
@@ -11,7 +11,7 @@ import sqlalchemy as sa
 
 
 revision = "967016ee10fa"
-down_revision = "b5ac48010165"
+down_revision = "e7c3b91d5a24"
 branch_labels = None
 depends_on = None
 
