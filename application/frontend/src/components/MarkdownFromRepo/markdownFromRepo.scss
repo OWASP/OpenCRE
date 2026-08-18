@@ -1,10 +1,15 @@
 .markdown-from-repo {
-  color: var(--muted-foreground, #cbd5e1);
+  color: var(--muted-foreground);
   line-height: 1.7;
   font-size: 1.05rem;
 
+  h1,
+  h2,
+  h3 {
+    color: var(--foreground);
+  }
+
   h2 {
-    color: #fff;
     font-size: 1.35rem;
     margin: 2rem 0 0.75rem;
   }
@@ -18,11 +23,11 @@
   }
 
   a {
-    color: #93c5fd;
+    color: #60a5fa;
     text-decoration: none;
 
     &:hover {
-      color: #bfdbfe;
+      color: #93c5fd;
       text-decoration: underline;
     }
   }
@@ -33,7 +38,8 @@
   }
 
   code {
-    background: rgba(148, 163, 184, 0.15);
+    background: var(--secondary);
+    color: var(--foreground);
     padding: 0.1rem 0.35rem;
     border-radius: 0.25rem;
     font-size: 0.95em;
@@ -42,9 +48,9 @@
 
 .markdown-from-repo__status,
 .markdown-from-repo__error {
-  color: var(--muted-foreground, #cbd5e1);
+  color: var(--muted-foreground);
 }
 
 .markdown-from-repo__error a {
-  color: #93c5fd;
+  color: #60a5fa;
 }
