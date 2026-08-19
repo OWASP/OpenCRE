@@ -378,6 +378,15 @@ def _node_fallback(state: _RationaleState) -> _RationaleState:
 
 
 def _node_format(state: _RationaleState) -> _RationaleState:
+    rationale_text = state.get("rationale_text")
+    if not rationale_text:
+        # Defensive: the router only reaches `format` after `generate` or
+        # `fallback` has set this, but keep the contract total.
+        rationale_text = (
+            f"Retrieval/rerank score {state['score']:.2f}; "
+            "LLM explanation unavailable."
+        )
+        state["fallback_used"] = True
     trace = RationaleTrace(
         model=state["model_name"],
         prompt_version=PROMPT_VERSION,
@@ -389,7 +398,7 @@ def _node_format(state: _RationaleState) -> _RationaleState:
     )
     state["result"] = LinkRationale(
         cre_id=state["cre_id"],
-        rationale=state["rationale_text"],
+        rationale=rationale_text,
         confidence=classify_confidence(state["score"]),
         fallback_used=state.get("fallback_used", False),
         trace=trace,
