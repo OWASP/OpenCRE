@@ -13,6 +13,17 @@ The implementation is located in:
 
 * `application/utils/external_project_parsers/parsers/cheatsheet_rerank.py`
 
+## Dependency footprint
+
+`langgraph` lives in `requirements-dev.txt`, not `requirements.txt` — it is
+a dev/CI-only dependency, lazily imported inside `build_rationale_graph()`.
+Importing this module, or calling `classify_confidence()`, never touches
+`langgraph`. This matches the existing `sentence-transformers` entry in
+`requirements-dev.txt` (Module C's own ML dependency, annotated "never
+install on Heroku"), for the same reason: this module has no CLI/`cre.py`
+wiring yet, so it must not grow the production web slug. Revisit this once
+it's actually wired into a live import path.
+
 ## Sources for more context
 
 * RFC: `docs/rfc/cheatsheets-llm-autonomous-mapping-rfc.md`

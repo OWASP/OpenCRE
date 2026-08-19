@@ -53,6 +53,17 @@ self-contained and does not import or modify anything under
   (LangGraph)" framing -- now scoped to one node's worth of real work
   (generate a rationale) plus its fallback, rather than a multi-stage
   rerank pipeline that would have duplicated C.2/C.3/C.4.
+* ``langgraph`` is a **dev/CI-only dependency**: it lives in
+  ``requirements-dev.txt``, not ``requirements.txt``, and is imported
+  lazily inside :func:`build_rationale_graph` -- importing this module, or
+  calling :func:`classify_confidence`, never touches ``langgraph`` at all.
+  This mirrors the existing ``sentence-transformers`` entry in
+  ``requirements-dev.txt`` ("never install on Heroku") for exactly the
+  same reason: this module has no CLI/``cre.py`` wiring yet (grep the repo
+  for ``cheatsheet_rerank`` -- the only importer is its own test file), so
+  it must not grow the production web slug. If/when this is wired into a
+  live import path, that's the point to revisit whether ``langgraph``
+  belongs in ``requirements.txt`` proper.
 * Never raises on LLM failure -- falls back to a short, honest, templated
   rationale ("Retrieval/rerank score S; LLM explanation unavailable.") so a
   cheat sheet's link is never blocked or degraded by an LLM hiccup.
