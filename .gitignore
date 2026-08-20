@@ -68,7 +68,10 @@ standards_cache.sqlite
 *.md
 !AGENTS.md
 !docs/faq.md
+!docs/api/mcp.md
 !docs/Mid_eval_blog_gsoc2026/module_B_mideval_blog.md
+!application/utils/librarian/README.md
+!docs/gsoc_2026_module_c/*.md
 
 ### Dev DBDumps
 *.sql

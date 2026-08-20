@@ -16,67 +16,129 @@ branch_labels = None
 depends_on = None
 
 
-def upgrade():
-    op.create_table(
-        "artifact_ingest_event",
-        sa.Column("id", sa.String(), primary_key=True),
-        sa.Column("run_id", sa.String(), nullable=False),
-        sa.Column("artifact_id", sa.String(), nullable=False),
-        sa.Column("harvest_mode", sa.String(), nullable=False),
-        sa.Column("event_type", sa.String(), nullable=False),
-        sa.Column("source_json", sa.Text(), nullable=False),
-        sa.Column("locator_json", sa.Text(), nullable=False),
-        sa.Column("artifact_json", sa.Text(), nullable=False),
-        sa.Column("harvest_json", sa.Text(), nullable=False),
-        sa.Column("observed_at", sa.DateTime(), nullable=False),
-        sa.Column("created_at", sa.DateTime(), nullable=False),
-        sa.ForeignKeyConstraint(
-            ["run_id"],
-            ["import_run.id"],
-            onupdate="CASCADE",
-            ondelete="CASCADE",
-        ),
-    )
-    op.create_unique_constraint(
-        "uq_artifact_ingest_event_run_artifact",
-        "artifact_ingest_event",
-        ["run_id", "artifact_id"],
+def _is_sqlite() -> bool:
+    """Return True if the current database dialect is SQLite."""
+    return op.get_bind().dialect.name == "sqlite"
+
+
+def table_exists(table_name: str) -> bool:
+    """Check whether a table with the given name exists in the database."""
+    inspector = sa.inspect(op.get_bind())
+    return table_name in inspector.get_table_names()
+
+
+def has_unique_on_columns(table: str, columns: list) -> bool:
+    """Return True if the table already has a UNIQUE constraint on the exact column list."""
+    inspector = sa.inspect(op.get_bind())
+    for constraint in inspector.get_unique_constraints(table):
+        if constraint["column_names"] == columns:
+            return True
+    return False
+
+
+def constraint_name_exists(table: str, constraint_name: str) -> bool:
+    """Return True if a named UNIQUE constraint exists on the table."""
+    inspector = sa.inspect(op.get_bind())
+    return any(
+        c["name"] == constraint_name for c in inspector.get_unique_constraints(table)
     )
 
-    op.create_table(
-        "ingest_chunk",
-        sa.Column("id", sa.String(), primary_key=True),
-        sa.Column("artifact_event_id", sa.String(), nullable=False),
-        sa.Column("chunk_id", sa.String(), nullable=False),
-        sa.Column("text", sa.Text(), nullable=False),
-        sa.Column("char_count", sa.Integer(), nullable=False),
-        sa.Column("span_json", sa.Text(), nullable=False),
-        sa.Column("delta_json", sa.Text(), nullable=True),
-        sa.Column("created_at", sa.DateTime(), nullable=False),
-        sa.ForeignKeyConstraint(
-            ["artifact_event_id"],
-            ["artifact_ingest_event.id"],
-            onupdate="CASCADE",
-            ondelete="CASCADE",
-        ),
-    )
-    op.create_unique_constraint(
-        "uq_ingest_chunk_artifact_chunk",
-        "ingest_chunk",
-        ["artifact_event_id", "chunk_id"],
-    )
+
+def _ensure_unique_constraint(table: str, name: str, columns: list) -> None:
+    """
+    Add a named UNIQUE constraint on the given columns if one does not already exist.
+
+    For SQLite, this uses batch_alter_table (which rewrites the table) and temporarily
+    disables foreign key enforcement to allow the parent table to be dropped.
+    """
+    if has_unique_on_columns(table, columns):
+        return
+    # SQLite cannot ALTER ADD CONSTRAINT; batch_alter rewrites the table.
+    if _is_sqlite():
+        op.execute(sa.text("PRAGMA foreign_keys=OFF"))
+    try:
+        with op.batch_alter_table(table) as batch_op:
+            if constraint_name_exists(table, name):
+                batch_op.drop_constraint(name, type_="unique")
+            batch_op.create_unique_constraint(name, columns)
+    finally:
+        if _is_sqlite():
+            op.execute(sa.text("PRAGMA foreign_keys=ON"))
+
+
+def upgrade():
+    """
+    Create artifact_ingest_event and ingest_chunk tables with SQLite‑safe UNIQUE
+    constraints. If a table already exists, ensure its required unique constraint
+    is present, repairing it if necessary.
+    """
+    # UniqueConstraints must be declared inside create_table: SQLite rejects
+    # op.create_unique_constraint() after CREATE TABLE.
+    if not table_exists("artifact_ingest_event"):
+        op.create_table(
+            "artifact_ingest_event",
+            sa.Column("id", sa.String(), primary_key=True),
+            sa.Column("run_id", sa.String(), nullable=False),
+            sa.Column("artifact_id", sa.String(), nullable=False),
+            sa.Column("harvest_mode", sa.String(), nullable=False),
+            sa.Column("event_type", sa.String(), nullable=False),
+            sa.Column("source_json", sa.Text(), nullable=False),
+            sa.Column("locator_json", sa.Text(), nullable=False),
+            sa.Column("artifact_json", sa.Text(), nullable=False),
+            sa.Column("harvest_json", sa.Text(), nullable=False),
+            sa.Column("observed_at", sa.DateTime(), nullable=False),
+            sa.Column("created_at", sa.DateTime(), nullable=False),
+            sa.ForeignKeyConstraint(
+                ["run_id"],
+                ["import_run.id"],
+                onupdate="CASCADE",
+                ondelete="CASCADE",
+            ),
+            sa.UniqueConstraint(
+                "run_id", "artifact_id", name="uq_artifact_ingest_event_run_artifact"
+            ),
+        )
+    else:
+        _ensure_unique_constraint(
+            "artifact_ingest_event",
+            "uq_artifact_ingest_event_run_artifact",
+            ["run_id", "artifact_id"],
+        )
+
+    if not table_exists("ingest_chunk"):
+        op.create_table(
+            "ingest_chunk",
+            sa.Column("id", sa.String(), primary_key=True),
+            sa.Column("artifact_event_id", sa.String(), nullable=False),
+            sa.Column("chunk_id", sa.String(), nullable=False),
+            sa.Column("text", sa.Text(), nullable=False),
+            sa.Column("char_count", sa.Integer(), nullable=False),
+            sa.Column("span_json", sa.Text(), nullable=False),
+            sa.Column("delta_json", sa.Text(), nullable=True),
+            sa.Column("created_at", sa.DateTime(), nullable=False),
+            sa.ForeignKeyConstraint(
+                ["artifact_event_id"],
+                ["artifact_ingest_event.id"],
+                onupdate="CASCADE",
+                ondelete="CASCADE",
+            ),
+            sa.UniqueConstraint(
+                "artifact_event_id",
+                "chunk_id",
+                name="uq_ingest_chunk_artifact_chunk",
+            ),
+        )
+    else:
+        _ensure_unique_constraint(
+            "ingest_chunk",
+            "uq_ingest_chunk_artifact_chunk",
+            ["artifact_event_id", "chunk_id"],
+        )
 
 
 def downgrade():
-    op.drop_constraint(
-        "uq_ingest_chunk_artifact_chunk",
-        "ingest_chunk",
-        type_="unique",
-    )
-    op.drop_table("ingest_chunk")
-    op.drop_constraint(
-        "uq_artifact_ingest_event_run_artifact",
-        "artifact_ingest_event",
-        type_="unique",
-    )
-    op.drop_table("artifact_ingest_event")
+    """Drop the tables in reverse dependency order."""
+    if table_exists("ingest_chunk"):
+        op.drop_table("ingest_chunk")
+    if table_exists("artifact_ingest_event"):
+        op.drop_table("artifact_ingest_event")

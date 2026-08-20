@@ -77,6 +77,15 @@ def decide(
     chunk links only when ``confidence >= threshold``. ``adversarial`` /
     ``update_ambiguous`` are blocking flags from the SafetyGuard (both default
     False until it is wired) — either one forces review regardless of confidence.
+
+    Module B's label does not enter this rule. A chunk B forwarded as
+    ``UNCERTAIN`` is decided on exactly the same evidence as a ``KNOWLEDGE`` one:
+    clear τ and it links, fall short and it goes to a human. B's label is about
+    how sure *it* was; C's confidence is calibrated on its own terms, and holding
+    back a chunk that scored 0.99 because of an upstream doubt would bury
+    reviewers in obvious matches. ``decision_queue.source_label`` still records
+    which label the row carried, so a consumer that wants to weigh them
+    differently can.
     """
     _validate(confidence, threshold)
 
