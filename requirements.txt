@@ -55,3 +55,8 @@ compliance-trestle
 posthog
 
 typing_extensions
+
+
+llama-index-core
+llama-index-embeddings-huggingface
+textacy
