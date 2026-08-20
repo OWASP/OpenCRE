@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://opencre.org/schemas/oie/human-decision.json",
+  "title": "HumanDecision",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "decision_id",
+    "review_id",
+    "chunk_id",
+    "pipeline_run_id",
+    "decided_at",
+    "decided_by",
+    "action"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "pattern": "^0\\.\\d+\\.\\d+$" },
+    "decision_id": { "type": "string", "format": "uuid" },
+    "review_id": { "type": "string" },
+    "chunk_id": { "type": "string" },
+    "pipeline_run_id": { "type": "string" },
+    "decided_at": { "type": "string", "format": "date-time" },
+    "decided_by": { "type": "string" },
+    "action": {
+      "type": "string",
+      "enum": ["approve", "reject", "correct"]
+    },
+    "final_links": {
+      "type": "array",
+      "items": { "$ref": "proposed-link.json" }
+    },
+    "rejection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reason_code"],
+      "properties": {
+        "reason_code": { "type": "string" },
+        "reason_message": { "type": "string" }
+      }
+    },
+    "loss_event": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["module", "input_snapshot", "wrong_prediction", "correct_label"],
+      "properties": {
+        "module": { "type": "string", "enum": ["B", "C"] },
+        "input_snapshot": { "type": "object" },
+        "wrong_prediction": { "type": "object" },
+        "correct_label": { "type": "object" },
+        "notes": { "type": "string" }
+      }
+    },
+    "ui": {
+      "type": "object",
+      "properties": {
+        "review_duration_ms": { "type": "integer", "minimum": 0 },
+        "keybind_used": { "type": "string" }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "action": { "enum": ["approve", "correct"] } } },
+      "then": { "required": ["final_links"] }
+    },
+    {
+      "if": { "properties": { "action": { "const": "reject" } } },
+      "then": { "required": ["rejection"] }
+    }
+  ]
+}

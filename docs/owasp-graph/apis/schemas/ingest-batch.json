@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://opencre.org/schemas/oie/ingest-batch.json",
+  "title": "IngestBatch",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "pipeline_run_id",
+    "harvested_at",
+    "harvest_mode",
+    "events"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "pattern": "^0\\.\\d+\\.\\d+$" },
+    "pipeline_run_id": { "type": "string" },
+    "harvested_at": { "type": "string", "format": "date-time" },
+    "harvest_mode": {
+      "type": "string",
+      "enum": ["backfill", "incremental", "mixed"]
+    },
+    "watermark_from": { "type": "string", "format": "date-time" },
+    "watermark_to": { "type": "string", "format": "date-time" },
+    "events": {
+      "type": "array",
+      "items": { "$ref": "artifact-ingest-event.json" }
+    }
+  }
+}
