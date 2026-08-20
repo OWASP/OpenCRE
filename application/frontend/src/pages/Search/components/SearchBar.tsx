@@ -42,24 +42,23 @@ export const SearchBar = () => {
         </label>
 
         <div className="search-container flex items-center">
+          <Search className="search-icon" aria-hidden="true" />
 
-        <Search className="search-icon" aria-hidden="true" />
-
-        <input
-          id={inputId}
-          type="text"
-          placeholder="Search..."
-          value={search.term}
-          aria-label="Search OpenCRE"
-          aria-invalid={Boolean(search.error)}
-          aria-describedby={search.error ? errorId : undefined}
-          onChange={(e) =>
-            setSearch({
-              ...search,
-              term: e.target.value,
-            })
-          }
-        />
+          <input
+            id={inputId}
+            type="text"
+            placeholder="Search..."
+            value={search.term}
+            aria-label="Search OpenCRE"
+            aria-invalid={Boolean(search.error)}
+            aria-describedby={search.error ? errorId : undefined}
+            onChange={(e) =>
+              setSearch({
+                ...search,
+                term: e.target.value,
+              })
+            }
+          />
         </div>
       </form>
       {/* Error text */}
