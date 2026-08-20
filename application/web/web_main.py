@@ -49,7 +49,6 @@ from application.utils.spreadsheet import write_csv
 import oauthlib
 import google.auth.transport.requests
 
-
 ITEMS_PER_PAGE = 20
 MAX_ITEMS_PER_PAGE = 100
 OPENCRE_STANDARD_NAME = gap_analysis.OPENCRE_STANDARD_NAME
@@ -211,7 +210,7 @@ def find_node_by_name(
     sectionID: str = "",
 ) -> Any:
     if posthog:
-        posthog.capture(f"find_node_by_name", f"name:{name};nodeType{ntype}")
+        posthog.capture("find_node_by_name", f"name:{name};nodeType{ntype}")
 
     database = db.Node_collection()
     opt_section = section or request.args.get("section")
@@ -303,7 +302,7 @@ def find_node_by_name(
 def find_document_by_tag() -> Any:
     tags = request.args.getlist("tag")
     if posthog:
-        posthog.capture(f"find_document_by_tag", f"tags:{tags}")
+        posthog.capture("find_document_by_tag", f"tags:{tags}")
 
     database = db.Node_collection()
     # opt_osib = request.args.get("osib")
@@ -342,7 +341,7 @@ def find_document_by_tag() -> Any:
 def map_analysis() -> Any:
     standards = request.args.getlist("standard")
     if posthog:
-        posthog.capture(f"map_analysis", f"standards:{standards}")
+        posthog.capture("map_analysis", f"standards:{standards}")
 
     database = db.Node_collection()
     if len(standards) < 2:
@@ -448,7 +447,7 @@ def map_analysis() -> Any:
 def map_analysis_weak_links() -> Any:
     standards = request.args.getlist("standard")
     if posthog:
-        posthog.capture(f"map_analysis_weak_links", f"standards:{standards}")
+        posthog.capture("map_analysis_weak_links", f"standards:{standards}")
 
     key = request.args.get("key")
     cache_key = gap_analysis.make_subresources_key(standards=standards, key=key)
@@ -536,7 +535,7 @@ def fetch_job() -> Any:
 @app.route("/rest/v1/standards", methods=["GET"])
 def standards() -> Any:
     if posthog:
-        posthog.capture(f"standards", "")
+        posthog.capture("standards", "")
 
     database = db.Node_collection()
     standards = list(database.standards())
@@ -605,7 +604,7 @@ def text_search() -> Any:
     if not text:
         return jsonify({"error": "text parameter is required"}), 400
     if posthog:
-        posthog.capture(f"text_search", f"text:{text}")
+        posthog.capture("text_search", f"text:{text}")
 
     opt_format = request.args.get("format")
     documents = database.text_search(text)
@@ -665,7 +664,7 @@ def find_root_cres() -> Any:
 
     """
     if posthog:
-        posthog.capture(f"find_root_cres", "")
+        posthog.capture("find_root_cres", "")
 
     database = db.Node_collection()
     # opt_osib = request.args.get("osib")
@@ -746,7 +745,7 @@ def smartlink(
     # ATTENTION: DO NOT MESS WITH THIS FUNCTIONALITY WITHOUT A TICKET AND CORE CONTRIBUTORS APPROVAL!
     # CRITICAL FUNCTIONALITY DEPENDS ON THIS!
     if posthog:
-        posthog.capture(f"smartlink", f"name:{name}")
+        posthog.capture("smartlink", f"name:{name}")
 
     database = db.Node_collection()
     opt_version = request.args.get("version")
@@ -794,16 +793,23 @@ def smartlink(
         if found_section_id:
             return redirect(f"/node/{ntype}/{name}/sectionid/{section}")
         return redirect(f"/node/{ntype}/{name}/section/{section}")
-    elif doctype == defs.Credoctypes.Standard.value and redirectors.redirect(
-        name, section
-    ):
-        logger.info(
-            f"did not find node of type {ntype}, name {name} and section {section}, redirecting to external resource"
-        )
-        return redirect(redirectors.redirect(name, section))
-    else:
-        logger.warning(f"not sure what happened, 404")
-        return abort(404, "Document does not exist")
+    elif doctype == defs.Credoctypes.Standard.value:
+        url = redirectors.redirect(name, section)
+        if (
+            url
+            and isinstance(url, str)
+            and (
+                url.startswith("https://cwe.mitre.org/")
+                or url.startswith("https://capec.mitre.org/")
+            )
+        ):
+            logger.info(
+                f"did not find node of type {ntype}, name {name} and section {section}, redirecting to external resource"
+            )
+            return redirect(url)
+
+    logger.warning("not sure what happened, 404")
+    return abort(404, "Document does not exist")
 
 
 @openapi_documented("deeplink")
@@ -826,7 +832,7 @@ def deeplink(
     opt_version = request.args.get("version")
     opt_subsection = request.args.get("subsection")
     if posthog:
-        posthog.capture(f"deeplink", f"name:{name}")
+        posthog.capture("deeplink", f"name:{name}")
 
     if opt_section:
         opt_section = urllib.parse.unquote(opt_section)
@@ -1153,7 +1159,7 @@ def admin_import_run_apply(run_id: str) -> Any:
 def chat_cre() -> Any:
     message = request.get_json(force=True)
     if posthog:
-        posthog.capture(f"chat_cre", "")
+        posthog.capture("chat_cre", "")
 
     database = db.Node_collection()
     # Lazy import to avoid loading heavy prompt/ML dependencies at web boot.
@@ -1376,6 +1382,11 @@ def put_user_resources() -> Any:
     # Normalize before storing: otherwise " ASVS " and "ASVS" both validate but
     # persist as distinct rows, defeating the dedupe.
     selected = [name.strip() for name in raw_selected]
+    # OpenCRE is always part of a non-empty selection (matches the read filter and
+    # the "OpenCRE is always included" UI copy). An empty selection stays empty —
+    # [] means "show everything", so injecting OpenCRE would wrongly narrow it.
+    if selected and OPENCRE_STANDARD_NAME not in selected:
+        selected.append(OPENCRE_STANDARD_NAME)
     database = db.Node_collection()
     user = _resolve_current_user(database)
     if user is None:
@@ -1389,7 +1400,7 @@ def put_user_resources() -> Any:
 def all_cres() -> Any:
     database = db.Node_collection()
     if posthog:
-        posthog.capture(f"all_cres", "")
+        posthog.capture("all_cres", "")
 
     page = 1
     per_page = ITEMS_PER_PAGE
@@ -1417,7 +1428,7 @@ def all_cres() -> Any:
 @app.route("/rest/v1/cre_csv", methods=["GET"])
 def get_cre_csv() -> Any:
     if posthog:
-        posthog.capture(f"get_cre_csv", "")
+        posthog.capture("get_cre_csv", "")
 
     database = db.Node_collection()
     root_cres = database.get_root_cres()
@@ -1506,11 +1517,29 @@ def import_from_cre_csv() -> Any:
     if file is None:
         abort(400, "No file provided")
     contents = file.read()
-    csv_read = csv.DictReader(contents.decode("utf-8").splitlines())
+    try:
+        contents_text = contents.decode("utf-8")
+    except UnicodeDecodeError:
+        abort(400, "Invalid CSV encoding. Expected UTF-8.")
+
+    # Triple-quoted blobs were previously mis-parsed into bogus root CREs (#554).
+    if '"""' in contents_text:
+        abort(
+            400,
+            "Invalid CSV content: triple-quoted text detected. "
+            "Use standard CSV quoting (double quotes) instead.",
+        )
+
+    try:
+        csv_read = csv.DictReader(contents_text.splitlines())
+        rows = list(csv_read)
+    except csv.Error as exc:
+        abort(400, f"Invalid CSV content: {exc}")
+
     try:
         from application.utils.external_project_parsers.parsers import myopencre_parser
 
-        parse_result = myopencre_parser.parse_rows_to_documents(list(csv_read))
+        parse_result = myopencre_parser.parse_rows_to_documents(rows)
     except cre_exceptions.DuplicateLinkException as dle:
         abort(500, f"error during parsing of the incoming CSV, err:{dle}")
     except ValueError as ve:

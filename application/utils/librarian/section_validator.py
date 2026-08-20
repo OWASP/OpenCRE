@@ -9,19 +9,20 @@ silently drift C from what A hashed and B classified.
 
 Two entry points, one per upstream shape:
 
-- ``section_from_queue_row`` — Module B's reduced ``knowledge_queue`` row
-  (master guide §1.2). The RFC identity fields C needs downstream are
-  synthesized from the row::
+- ``section_from_queue_row`` — Module B's live ``knowledge_queue`` row
+  (contract v0.2, table merged in #989). ``chunk_id`` and ``artifact_id``
+  are **read straight off the row**: they are Module A's identity, carried
+  through B, and C consuming them verbatim is what lets a link join back to
+  the artifact it came from.
 
-      artifact_id = "art:{source_repo}:{source_path}"
-      chunk_id    = "chk:{source_repo}@{source_commit_sha}:{source_path}"
-
-  This chunk_id format differs from Module B's ``ChangeRecord``
-  (``chk:art:{repo}:{path}:{index}``); align the two when the live
-  B->C pipeline wiring lands (W8). Not blocking W2 — no shared consumer yet.
+  Through W7 this function *synthesized* those ids from repo/path/sha, which
+  produced strings that matched nothing upstream. W8 removed that: the queue
+  row is the identity, and the source/locator shape now follows B's
+  ``source_type`` (``github`` carries repo+sha, ``rss`` carries a feed url)
+  rather than assuming every row is a GitHub commit.
 
 - ``section_from_knowledge_item`` — the full RFC ``KnowledgeItem``
-  envelope (fixtures today; the live B->C path lands W8).
+  envelope (fixtures; B writes the flat queue row in practice).
 
 Volatile / audit-only metadata (``llm_reasoning``, ``filtered_at``,
 ``pipeline_run_id``, filter stages) is intentionally not carried into
@@ -32,7 +33,7 @@ Pydantic ``ValidationError`` never escapes this module.
 """
 
 from dataclasses import dataclass
-from typing import Any, Dict, Optional, Type, TypeVar, Union
+from typing import Any, Callable, Dict, Optional, Type, TypeVar, Union
 
 from pydantic import BaseModel, ValidationError
 
@@ -49,6 +50,13 @@ from application.utils.librarian.schemas import (
 _ModelT = TypeVar("_ModelT", bound=BaseModel)
 
 KNOWLEDGE_LABEL = "KNOWLEDGE"
+UNCERTAIN_LABEL = "UNCERTAIN"
+# What C accepts at the boundary. Module B is recall-first: it drops NOISE and
+# forwards both of these, so an UNCERTAIN chunk is one B was unsure about
+# *classifying*, not one it judged worthless. C used to reject them here, which
+# meant nothing ever retrieved candidates for them and they sat in the queue.
+# NOISE stays rejected — that is the label B's guarantee actually turns on.
+LINKABLE_LABELS = (KNOWLEDGE_LABEL, UNCERTAIN_LABEL)
 
 # MVP scope: golden dataset and CRE hub vectors are English-only.
 _SUPPORTED_PRIMARY_LANGUAGES = frozenset({"en"})
@@ -117,6 +125,87 @@ def _require_language(language: Optional[str]) -> str:
     return language
 
 
+def _rfc_or_raise(build: Callable[[], _ModelT]) -> _ModelT:
+    """Build an RFC sub-model, converting its Pydantic error to a typed one.
+
+    The row-level validator has already checked the field/`source_type` pairing,
+    but the RFC models carry rules of their own that B's column types cannot
+    express — ``SourceRef.commit_sha`` requires 7+ characters while Module A's
+    contract allows 4, and a ``feed_item`` locator requires a parseable URL. Any
+    such row is malformed *for C* and must leave as a SectionValidationError.
+    """
+    try:
+        return build()
+    except ValidationError as exc:
+        raise MalformedKnowledgeItemError(str(exc)) from exc
+
+
+def _source_ref(row: KnowledgeQueueItem) -> SourceRef:
+    """B's flat source columns -> the RFC source-ref, keyed on ``source_type``.
+
+    ``source_committed_at`` is A's real commit time and is github-only; every
+    other source type falls back to ``created_at`` (B's classification time),
+    which is the best provenance the row carries.
+    """
+    committed_at = row.source_committed_at or row.created_at
+    if row.source_type == SourceType.github:
+        return _rfc_or_raise(
+            lambda: SourceRef(
+                type=SourceType.github,
+                repo=row.source_repo,
+                commit_sha=row.source_commit_sha,
+                committed_at=committed_at,
+            )
+        )
+    # Validated from a mapping rather than constructed: `url` is an ``AnyUrl``
+    # and B stores a plain string, so this routes the coercion (and any failure)
+    # through Pydantic, where ``_rfc_or_raise`` can type it.
+    return _rfc_or_raise(
+        lambda: SourceRef.model_validate(
+            {
+                "type": row.source_type,
+                "url": row.feed_url,
+                "committed_at": committed_at,
+            }
+        )
+    )
+
+
+def _locator(row: KnowledgeQueueItem) -> Locator:
+    """B's ``locator_kind``/``locator_path`` -> the RFC locator.
+
+    ``repo_path`` addresses by path; ``url``/``feed_item`` address by URL, where
+    the stable identity is the post guid when B carried one.
+    """
+    if row.locator_kind == LocatorKind.repo_path:
+        return _rfc_or_raise(
+            lambda: Locator(
+                kind=LocatorKind.repo_path,
+                id=row.locator_path,
+                path=row.locator_path,
+            )
+        )
+    return _rfc_or_raise(
+        lambda: Locator.model_validate(
+            {
+                "kind": row.locator_kind,
+                "id": row.post_guid or row.locator_path,
+                "url": row.locator_path,
+            }
+        )
+    )
+
+
+def _title_hint(row: KnowledgeQueueItem) -> Optional[str]:
+    """The deepest heading above this chunk, when A recorded one.
+
+    Nothing downstream keys a decision on ``title_hint`` — retrieval reads
+    ``text`` — so this is provenance carried forward, not a scoring change.
+    """
+    headings = row.heading_path()
+    return headings[-1] if headings else None
+
+
 def section_from_queue_row(
     row: Union[KnowledgeQueueItem, Dict[str, Any]],
 ) -> Section:
@@ -126,33 +215,22 @@ def section_from_queue_row(
     """
     row = _validate_or_raise(KnowledgeQueueItem, row)
 
-    if row.llm_label != KNOWLEDGE_LABEL:
+    if row.llm_label not in LINKABLE_LABELS:
         raise NotKnowledgeError(
-            f"llm_label={row.llm_label!r}; only {KNOWLEDGE_LABEL!r} rows may be linked"
+            f"llm_label={row.llm_label!r}; C accepts "
+            f"{' or '.join(repr(l) for l in LINKABLE_LABELS)}"
         )
     _require_text(row.text)
 
-    # B's reduced row has no commit timestamp; created_at (B's classification
-    # time) is the best available provenance until the live B->C path lands.
-    source = SourceRef(
-        type=SourceType.github,
-        repo=row.source_repo,
-        commit_sha=row.source_commit_sha,
-        committed_at=row.created_at,
-    )
-    locator = Locator(
-        kind=LocatorKind.repo_path,
-        id=row.source_path,
-        path=row.source_path,
-    )
     return Section(
-        chunk_id=f"chk:{row.source_repo}@{row.source_commit_sha}:{row.source_path}",
-        artifact_id=f"art:{row.source_repo}:{row.source_path}",
+        # A's real identity, carried through B — never synthesized here.
+        chunk_id=row.chunk_id,
+        artifact_id=row.artifact_id,
         text=row.text,
-        title_hint=None,
+        title_hint=_title_hint(row),
         language=_DEFAULT_LANGUAGE,
-        source=source,
-        locator=locator,
+        source=_source_ref(row),
+        locator=_locator(row),
     )
 
 

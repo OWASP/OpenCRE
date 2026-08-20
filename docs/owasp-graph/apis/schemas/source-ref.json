@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://opencre.org/schemas/oie/source-ref.json",
+  "title": "SourceRef",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["type", "committed_at"],
+  "properties": {
+    "type": {
+      "type": "string",
+      "enum": ["github", "url", "rss"]
+    },
+    "repo": { "type": "string" },
+    "url": { "type": "string", "format": "uri" },
+    "commit_sha": { "type": "string", "minLength": 7 },
+    "commit_message": { "type": "string" },
+    "committed_at": { "type": "string", "format": "date-time" },
+    "author_login": { "type": "string" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "type": { "const": "github" } } },
+      "then": { "required": ["repo", "commit_sha"] }
+    }
+  ]
+}

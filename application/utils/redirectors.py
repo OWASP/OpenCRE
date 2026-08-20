@@ -1,9 +1,14 @@
+import urllib.parse
+
+
 def cwe_redirector(cwe_id: int):
-    return f"https://cwe.mitre.org/data/definitions/{cwe_id}.html"
+    return (
+        f"https://cwe.mitre.org/data/definitions/{urllib.parse.quote(str(cwe_id))}.html"
+    )
 
 
 def capec_redirector(capec_id: int) -> str:
-    return f"https://capec.mitre.org/data/definitions/{capec_id}.html"
+    return f"https://capec.mitre.org/data/definitions/{urllib.parse.quote(str(capec_id))}.html"
 
 
 def redirect(node_type, node_id):

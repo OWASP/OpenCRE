@@ -10,7 +10,6 @@ import tempfile
 from types import SimpleNamespace
 from unittest.mock import patch, Mock
 
-import redis
 import rq
 import os
 import networkx as nx
@@ -20,6 +19,7 @@ from application.tests.utils import data_gen
 from application.database import db
 from application.cmd import cre_main
 from application.utils import spreadsheet
+from application.utils import redis as app_redis
 from application.defs import cre_defs as defs
 from application.web import web_main
 from application.utils.gap_analysis import GAP_ANALYSIS_TIMEOUT
@@ -113,7 +113,7 @@ class TestMain(unittest.TestCase):
         }
 
         for c, v in cres.items():
-            res = web_main.extend_cre_with_tag_links(  # type:ignore # mypy bug
+            res = web_main.extend_cre_with_tag_links(  # type: ignore # mypy bug
                 v, collection=collection
             )
             self.assertCountEqual(res.links, v.links)
@@ -715,7 +715,33 @@ class TestMain(unittest.TestCase):
             self.assertEqual(status, 302)
             self.assertEqual(location, "/node/standard/VERSTD/sectionid/200")
 
-    @patch.object(redis, "from_url")
+    @patch("application.utils.redirectors.redirect")
+    def test_smartlink_rejected_redirects(self, mock_redirect) -> None:
+        """Test that invalid URLs returned by redirectors.redirect result in a 404."""
+        with self.app.test_client() as client:
+            # 1. http:// URL
+            mock_redirect.return_value = (
+                "http://cwe.mitre.org/data/definitions/999.html"
+            )
+            response = client.get("/smartlink/standard/CWE/999")
+            self.assertEqual(404, response.status_code)
+            mock_redirect.assert_called_once_with("CWE", "999")
+
+            mock_redirect.reset_mock()
+            # 2. javascript: URL
+            mock_redirect.return_value = "javascript:alert(1)"
+            response = client.get("/smartlink/standard/CWE/999")
+            self.assertEqual(404, response.status_code)
+            mock_redirect.assert_called_once_with("CWE", "999")
+
+            mock_redirect.reset_mock()
+            # 3. non-string result
+            mock_redirect.return_value = {"url": "https://cwe.mitre.org"}
+            response = client.get("/smartlink/standard/CWE/999")
+            self.assertEqual(404, response.status_code)
+            mock_redirect.assert_called_once_with("CWE", "999")
+
+    @patch.object(app_redis, "connect")
     @patch.object(db, "Node_collection")
     def test_gap_analysis_from_cache_full_response(
         self, db_mock, redis_conn_mock
@@ -736,7 +762,7 @@ class TestMain(unittest.TestCase):
     @patch.object(db, "Node_collection")
     @patch.object(rq.job.Job, "fetch")
     @patch.object(rq.Queue, "enqueue_call")
-    @patch.object(redis, "from_url")
+    @patch.object(app_redis, "connect")
     def test_gap_analysis_from_cache_job_id(
         self, redis_conn_mock, enqueue_call_mock, fetch_mock, db_mock
     ) -> None:
@@ -758,7 +784,7 @@ class TestMain(unittest.TestCase):
     @patch.object(db, "Node_collection")
     @patch.object(rq.job.Job, "fetch")
     @patch.object(rq.Queue, "enqueue_call")
-    @patch.object(redis, "from_url")
+    @patch.object(app_redis, "connect")
     def test_gap_analysis_returns_existing_inflight_job(
         self, redis_conn_mock, enqueue_call_mock, fetch_mock, db_mock
     ) -> None:
@@ -778,7 +804,7 @@ class TestMain(unittest.TestCase):
 
     @patch.object(db, "Node_collection")
     @patch.object(rq.Queue, "enqueue_call")
-    @patch.object(redis, "from_url")
+    @patch.object(app_redis, "connect")
     def test_gap_analysis_create_job_id(
         self, redis_conn_mock, enqueue_call_mock, db_mock
     ) -> None:
@@ -806,7 +832,7 @@ class TestMain(unittest.TestCase):
 
     @patch.object(db, "Node_collection")
     @patch.object(rq.Queue, "enqueue_call")
-    @patch.object(redis, "from_url")
+    @patch.object(app_redis, "connect")
     def test_map_analysis_non_material_sql_cache_triggers_job(
         self, redis_conn_mock, enqueue_call_mock, db_mock
     ) -> None:
@@ -826,7 +852,7 @@ class TestMain(unittest.TestCase):
 
     @patch.object(db, "Node_collection")
     @patch.object(db, "gap_analysis")
-    @patch.object(redis, "from_url")
+    @patch.object(app_redis, "connect")
     def test_gap_analysis_fallback_without_redis(
         self, redis_conn_mock, db_gap_analysis_mock, db_mock
     ) -> None:
@@ -846,7 +872,7 @@ class TestMain(unittest.TestCase):
 
     @patch.object(db, "Node_collection")
     @patch.object(db, "gap_analysis")
-    @patch.object(redis, "from_url")
+    @patch.object(app_redis, "connect")
     def test_gap_analysis_fallback_backend_failure_returns_503(
         self, redis_conn_mock, db_gap_analysis_mock, db_mock
     ) -> None:
@@ -867,7 +893,7 @@ class TestMain(unittest.TestCase):
 
     @patch.dict(os.environ, {"HEROKU": "True"}, clear=False)
     @patch.object(db, "Node_collection")
-    @patch.object(redis, "from_url")
+    @patch.object(app_redis, "connect")
     def test_gap_analysis_heroku_cache_miss_returns_404(
         self, redis_conn_mock, db_mock
     ) -> None:
@@ -883,7 +909,7 @@ class TestMain(unittest.TestCase):
 
     @patch.dict(os.environ, {"DYNO": "web.1"}, clear=False)
     @patch.object(db, "Node_collection")
-    @patch.object(redis, "from_url")
+    @patch.object(app_redis, "connect")
     def test_gap_analysis_dyno_cache_miss_returns_404(
         self, redis_conn_mock, db_mock
     ) -> None:
@@ -899,7 +925,7 @@ class TestMain(unittest.TestCase):
 
     @patch.dict(os.environ, {"HEROKU": "True"}, clear=False)
     @patch.object(db, "Node_collection")
-    @patch.object(redis, "from_url")
+    @patch.object(app_redis, "connect")
     def test_map_analysis_opencre_heroku_cache_miss_returns_404(
         self, redis_conn_mock, db_mock
     ) -> None:
@@ -913,7 +939,7 @@ class TestMain(unittest.TestCase):
         db_mock.return_value.get_nodes.assert_not_called()
         redis_conn_mock.assert_not_called()
 
-    @patch.object(redis, "from_url")
+    @patch.object(app_redis, "connect")
     @patch.object(db, "Node_collection")
     def test_standards_from_db(self, node_mock, redis_conn_mock) -> None:
         expected = ["A", "B"]
@@ -1117,7 +1143,7 @@ class TestMain(unittest.TestCase):
         schedule_mock.assert_not_called()
 
     @patch.object(cre_main, "resource_name_ga_eligible_in_db")
-    @patch.object(redis, "from_url")
+    @patch.object(app_redis, "connect")
     @patch.object(db, "Node_collection")
     def test_ga_standards_filters_non_eligible(
         self, node_mock, redis_conn_mock, ga_eligible_mock
@@ -1541,6 +1567,51 @@ class TestMain(unittest.TestCase):
                 self.assertEqual("success", data.get("status"))
                 self.assertGreaterEqual(data.get("new_standards"), 2)
                 self.assertIsInstance(data.get("new_cres"), list)
+
+    def test_import_from_cre_csv_rejects_bad_cre_format(self) -> None:
+        """Malformed CRE cells must 400 with a clear message (#554 / #751)."""
+        workspace = tempfile.mkdtemp()
+        path = os.path.join(workspace, "bad_cre.csv")
+        with open(path, "w", encoding="utf-8") as f:
+            writer = csv.DictWriter(
+                f, fieldnames=["CRE 0", "standard|name", "standard|id"]
+            )
+            writer.writeheader()
+            writer.writerow(
+                {
+                    "CRE 0": "12-456|Too Short",
+                    "standard|name": "ASVS",
+                    "standard|id": "1.1.1",
+                }
+            )
+        with patch.dict(os.environ, {"CRE_ALLOW_IMPORT": "True"}):
+            with self.app.test_client() as client:
+                response = client.post(
+                    "/rest/v1/cre_csv_import",
+                    data={"cre_csv": open(path, "rb")},
+                    buffered=True,
+                    content_type="multipart/form-data",
+                )
+                self.assertEqual(400, response.status_code)
+                self.assertIn(b"Expected XXX-XXX|Name", response.data)
+
+    def test_import_from_cre_csv_rejects_triple_quotes(self) -> None:
+        """Triple-quoted content must not create bogus root CREs (#554)."""
+        workspace = tempfile.mkdtemp()
+        path = os.path.join(workspace, "triple.csv")
+        with open(path, "w", encoding="utf-8") as f:
+            f.write("CRE 0,standard|name,standard|id\n")
+            f.write('"""123-456|Quoted""",ASVS,1.1.1\n')
+        with patch.dict(os.environ, {"CRE_ALLOW_IMPORT": "True"}):
+            with self.app.test_client() as client:
+                response = client.post(
+                    "/rest/v1/cre_csv_import",
+                    data={"cre_csv": open(path, "rb")},
+                    buffered=True,
+                    content_type="multipart/form-data",
+                )
+                self.assertEqual(400, response.status_code)
+                self.assertIn(b"triple-quoted", response.data)
 
     def test_get_cre_csv(self) -> None:
         # empty string means temporary db

@@ -11,7 +11,6 @@ import requests
 from collections import deque
 from typing import Any, Callable, Dict, List, Optional, Tuple, TYPE_CHECKING
 import hashlib
-import json as _json
 from rq import Queue, job, exceptions
 from sqlalchemy import not_
 
@@ -466,7 +465,7 @@ def register_standard(
                     tuple(sorted(links)),
                 )
             )
-        payload = _json.dumps(
+        payload = json.dumps(
             sorted(rows), sort_keys=True, separators=(",", ":"), ensure_ascii=False
         )
         return hashlib.sha256(payload.encode("utf-8")).hexdigest()
@@ -702,7 +701,7 @@ def download_gap_analysis_from_upstream(cache: str) -> None:
                         tojson = res.json()
                         if "result" not in tojson:
                             continue
-                        payload = _json.dumps({"result": tojson.get("result")})
+                        payload = json.dumps({"result": tojson.get("result")})
                         if not gap_analysis.primary_gap_analysis_payload_is_material(
                             payload
                         ):
@@ -719,7 +718,7 @@ def download_gap_analysis_from_upstream(cache: str) -> None:
                     tojson = res.json()
                     if "result" not in tojson:
                         continue
-                    payload = _json.dumps({"result": tojson.get("result")})
+                    payload = json.dumps({"result": tojson.get("result")})
                     if not gap_analysis.primary_gap_analysis_payload_is_material(
                         payload
                     ):
@@ -1066,11 +1065,23 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
     if args.upstream_sync:
         download_graph_from_upstream(args.cache_file)
     if args.run_librarian or args.librarian_dry_run:
-        run_librarian(
-            cache_file=args.cache_file,
-            dry_run=args.librarian_dry_run or not args.run_librarian,
-            source_jsonl=args.librarian_source,
-        )
+        # --run_id selects the live path: drain Module B's knowledge_queue for
+        # that run. Without it, the fixture walk-through stays the default so
+        # the pre-W8 command keeps behaving the way it always has.
+        run_id = (getattr(args, "run_id", "") or "").strip()
+        if run_id:
+            run_librarian_live(
+                cache_file=args.cache_file,
+                pipeline_run_id=run_id,
+                dry_run=args.librarian_dry_run,
+                envelopes_out=args.librarian_envelopes_out,
+            )
+        else:
+            run_librarian(
+                cache_file=args.cache_file,
+                dry_run=args.librarian_dry_run or not args.run_librarian,
+                source_jsonl=args.librarian_source,
+            )
 
 
 def ai_client_init(database: db.Node_collection):
@@ -1272,6 +1283,74 @@ def run_librarian(
     )
 
 
+def run_librarian_live(
+    cache_file: str,
+    pipeline_run_id: str,
+    dry_run: bool = False,
+    envelopes_out: Optional[str] = None,
+) -> None:
+    """Module C entrypoint against Module B's live queue (W8).
+
+    The counterpart to ``--run_noise_filter``: where ``run_librarian`` walks a
+    JSONL fixture and logs shortlists, this drains the ``knowledge_queue`` rows
+    Module B wrote for ``pipeline_run_id`` through C.0->C.4 and stamps
+    ``consumed_at`` on the ones it finished. Prints the ``RunSummary`` as JSON
+    on stdout so the OIE orchestrator can read it, exactly as Module B does.
+
+    Still writes no links: the graph/review writers are W8b. What a real run
+    does write is the envelopes (as JSONL, to ``envelopes_out``) and one column
+    on B's queue. Those two go together — retiring a row whose envelope was
+    discarded would lose the chunk — so a non-dry run requires an output path.
+    ``dry_run`` writes neither.
+
+    Ops note: unchanged from ``run_librarian`` — opt-in CLI only, not on the
+    Procfile, not wired into the web app or the worker. It calls the paid
+    embedding API, so a deployment never triggers it on its own.
+    """
+    from datetime import datetime, timezone
+
+    from application.utils.librarian.config_loader import load_config
+    from application.utils.librarian.envelope_sink import (
+        DbEnvelopeSink,
+        JsonlEnvelopeSink,
+        NullEnvelopeSink,
+        TeeEnvelopeSink,
+    )
+    from application.utils.librarian.factory import build_components
+    from application.utils.librarian.queue_runner import run_librarian_queue
+
+    cfg = load_config()
+    database = db_connect(path=cache_file)
+    components = build_components(database, config=cfg)
+
+    # `decision_queue` is where Module D reads from, so a real run writes there
+    # by default — the same handoff B makes to C through `knowledge_queue`.
+    # `--librarian_envelopes_out` additionally mirrors the batch to JSONL, which
+    # is useful for eyeballing a run but is not the contract.
+    if dry_run:
+        sink = JsonlEnvelopeSink(envelopes_out) if envelopes_out else NullEnvelopeSink()
+    elif envelopes_out:
+        sink = TeeEnvelopeSink(
+            DbEnvelopeSink(database.session, pipeline_run_id),
+            JsonlEnvelopeSink(envelopes_out),
+        )
+    else:
+        sink = DbEnvelopeSink(database.session, pipeline_run_id)
+
+    # The CLI boundary is the one place a clock read belongs; everything below
+    # takes `at` as an argument so a run stays reproducible.
+    summary = run_librarian_queue(
+        database.session,
+        pipeline_run_id,
+        components,
+        cfg,
+        at=datetime.now(timezone.utc),
+        sink=sink,
+        dry_run=dry_run,
+    )
+    print(summary.to_json())
+
+
 def regenerate_embeddings(db_url: str) -> None:
     """Wipe all embedding rows, then rebuild (CRE + every node type) like ``--generate_embeddings``."""
     from application.prompt_client import prompt_client as prompt_client
@@ -1289,13 +1368,13 @@ def populate_neo4j_db(cache: str):
     ):
         logger.info("Skipping Neo4j population as per environment variables")
         return
-    logger.info(f"Populating neo4j DB: Connecting to SQL DB")
+    logger.info("Populating neo4j DB: Connecting to SQL DB")
     database = db_connect(path=cache)
     if database.neo_db:
-        logger.info(f"Populating neo4j DB: Populating")
+        logger.info("Populating neo4j DB: Populating")
         database.neo_db.populate_DB(database.session)
-        logger.info(f"Populating neo4j DB: Complete")
+        logger.info("Populating neo4j DB: Complete")
     else:
         logger.warning(
-            f"Populating neo4j DB: database.neo_db is None, skipping population"
+            "Populating neo4j DB: database.neo_db is None, skipping population"
         )

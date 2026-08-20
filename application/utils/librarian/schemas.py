@@ -11,6 +11,7 @@ harness golden row, respectively.
 
 from __future__ import annotations
 
+import json
 import re
 from datetime import datetime
 from enum import Enum
@@ -277,25 +278,87 @@ class ReviewItem(BaseModel):
 
 
 class KnowledgeQueueItem(BaseModel):
-    """Read-side mirror of Module B's `knowledge_queue` Postgres row.
+    """Read-side mirror of Module B's `knowledge_queue` row — contract v0.2.
 
-    Per master guide §1.2: C reads these rows and synthesizes the RFC
-    `KnowledgeItem` envelope from them. Not a wire contract; tolerates extra
-    fields so B can extend the row without breaking C.
+    Mirrors `application.database.db.KnowledgeQueueItem` (the SQLAlchemy model B
+    merged in #989) column for column, including its nullability: `source_repo`
+    and `source_commit_sha` are NULL on every `rss` row, so neither may be
+    required here. `from_attributes` lets a SQLAlchemy row validate directly.
+
+    `chunk_id` / `artifact_id` are Module A's real identity, carried through B.
+    C consumes them verbatim — it must never mint its own, or the graph ends up
+    keyed on ids that never join back to A's artifacts.
+
+    Not a wire contract: `extra="ignore"` so B can add columns without breaking C.
+    See docs/gsoc_2026_module_b/module_c_contract.md.
     """
 
-    model_config = ConfigDict(extra="ignore")
+    model_config = ConfigDict(extra="ignore", from_attributes=True)
 
     id: str
-    source_repo: str
-    source_path: str
-    source_commit_sha: str
+    content_hash: str  # B's dedup key
+    # Provenance / traceability — Module A's v0.3 record, passed through by B.
+    chunk_id: str
+    artifact_id: str
+    pipeline_run_id: str
+    schema_version: str
+    # Source. Which of these are populated is a function of `source_type`;
+    # see the `_source_fields_match_type` validator below.
+    source_type: SourceType
+    source_repo: Optional[str] = None
+    source_commit_sha: Optional[str] = None
+    source_committed_at: Optional[datetime] = None
+    feed_url: Optional[str] = None
+    post_guid: Optional[str] = None
+    # Locator + position of this chunk within its artifact.
+    locator_kind: LocatorKind
+    locator_path: str
+    span_index: int = Field(ge=0)
+    span_total: int = Field(ge=1)
+    span_heading_path: Optional[str] = None  # JSON-encoded list[str]
+    # Payload + B's verdict.
     text: str
-    confidence: float = Field(ge=0, le=1)
     llm_label: str
+    confidence: float = Field(ge=0, le=1)
     llm_reasoning: Optional[str] = None
-    created_at: str
-    consumed_at: Optional[str] = None
+    created_at: datetime
+    consumed_at: Optional[datetime] = None
+
+    @model_validator(mode="after")
+    def _source_fields_match_type(self) -> "KnowledgeQueueItem":
+        """Reject a row whose populated source fields contradict `source_type`.
+
+        Checked here rather than in the adapter so the failure surfaces as one
+        typed boundary rejection: the adapter builds an RFC `SourceRef`, whose
+        own github rule would otherwise raise a raw Pydantic error from outside
+        the validation call.
+        """
+        if self.source_type == SourceType.github and not (
+            self.source_repo and self.source_commit_sha
+        ):
+            raise ValueError(
+                "source_type='github' requires source_repo and source_commit_sha"
+            )
+        if self.source_type == SourceType.rss and not self.feed_url:
+            raise ValueError("source_type='rss' requires feed_url")
+        return self
+
+    def heading_path(self) -> List[str]:
+        """`span_heading_path` decoded; empty when absent or not decodable.
+
+        B stores A's heading list as a JSON string. A malformed value is a
+        cosmetic loss (it only feeds `title_hint`), so it degrades to empty
+        rather than rejecting a row that is otherwise linkable.
+        """
+        if not self.span_heading_path:
+            return []
+        try:
+            decoded = json.loads(self.span_heading_path)
+        except (ValueError, TypeError):
+            return []
+        if not isinstance(decoded, list):
+            return []
+        return [str(part) for part in decoded if str(part).strip()]
 
 
 # ---------- Golden dataset (internal, harness only) ----------

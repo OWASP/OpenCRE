@@ -478,6 +478,63 @@ class KnowledgeQueueItem(BaseModel):  # type: ignore
     )
 
 
+class DecisionQueueItem(BaseModel):  # type: ignore
+    """Module C's output queue: decided chunks for Module D.
+
+    The C -> D counterpart of ``knowledge_queue``, and deliberately the same
+    shape of handoff: C inserts one row per decided chunk, Module D reads the
+    rows it cares about and sets ``consumed_at``. Nothing is deleted, so the
+    table doubles as the audit trail of what C decided and what D did with it.
+
+    Both outcomes land here, separated by ``status`` — exactly as B puts
+    KNOWLEDGE and UNCERTAIN in one queue and lets its readers filter:
+
+      ``linked``           an auto-link C is confident in (RFC ``LinkProposal``);
+                           the graph writer is the consumer.
+      ``review_required``  routed to a human (RFC ``ReviewItem``), carrying the
+                           ``reason_code`` that explains why; Module D's HITL
+                           review is the consumer.
+
+    ``envelope`` holds the whole RFC document — the retrieval audit included —
+    so a decision can be re-read and explained long after the run. The columns
+    beside it are for querying and filtering, not a second source of truth; they
+    are projected from the same envelope.
+    """
+
+    __tablename__ = "decision_queue"
+    id = sqla.Column(sqla.String, primary_key=True, default=generate_uuid)
+    # provenance, carried verbatim from Module A through B
+    chunk_id = sqla.Column(sqla.String, nullable=False)
+    artifact_id = sqla.Column(sqla.String, nullable=False)
+    pipeline_run_id = sqla.Column(sqla.String, nullable=False)
+    schema_version = sqla.Column(sqla.String, nullable=False)
+    # B's label on the chunk this decision was made from: KNOWLEDGE | UNCERTAIN.
+    # Recall-first means B forwards both, so a consumer needs to tell a decision
+    # made on a confident chunk from one made on a chunk B was unsure about.
+    source_label = sqla.Column(sqla.String, nullable=True)
+    # C's verdict
+    status = sqla.Column(sqla.String, nullable=False)  # linked | review_required
+    reason_code = sqla.Column(sqla.String, nullable=True)  # review rows only
+    review_id = sqla.Column(sqla.String, nullable=True)  # review rows only
+    confidence = sqla.Column(sqla.Float, nullable=True)  # top-1 calibrated
+    # the full RFC LinkProposal / ReviewItem
+    envelope = sqla.Column(
+        sqla.JSON().with_variant(JSONB, "postgresql"), nullable=False
+    )
+    created_at = sqla.Column(
+        sqla.DateTime, nullable=False, server_default=sqla.func.now()
+    )
+    consumed_at = sqla.Column(sqla.DateTime, nullable=True)
+    __table_args__ = (
+        sqla.Index("ix_decision_queue_unconsumed", "consumed_at"),
+        sqla.Index("ix_decision_queue_run_status", "pipeline_run_id", "status"),
+        # One decision per chunk per run: replaying a run must not double-write.
+        sqla.UniqueConstraint(
+            "chunk_id", "pipeline_run_id", name="uq_decision_chunk_run"
+        ),
+    )
+
+
 def create_import_run(source: str, version: Optional[str] = None) -> ImportRun:
     """Create and persist an import run record. Returns the new ImportRun."""
     from datetime import datetime, timezone
@@ -722,7 +779,7 @@ class NeoDocument(StructuredNode):
 
     @classmethod
     def to_cre_def(self, node, parse_links=True):
-        raise Exception(f"Shouldn't be parsing a NeoDocument")
+        raise Exception("Shouldn't be parsing a NeoDocument")
 
     @classmethod
     def get_links(self, links_dict):
@@ -744,7 +801,7 @@ class NeoNode(NeoDocument):
 
     @classmethod
     def to_cre_def(self, node, parse_links=True):
-        raise Exception(f"Shouldn't be parsing a NeoNode")
+        raise Exception("Shouldn't be parsing a NeoNode")
 
 
 class NeoStandard(NeoNode):
@@ -1352,20 +1409,43 @@ class Node_collection:
         for name in standard_names:
             if name not in deduped:
                 deduped.append(name)
-        self.session.query(UserResourceSelection).filter(
-            UserResourceSelection.user_id == user_id
-        ).delete()
-        for name in deduped:
-            self.session.add(
-                UserResourceSelection(
-                    id=generate_uuid(),
-                    user_id=user_id,
-                    standard_name=name,
-                    created_at=now,
+
+        def _replace() -> List[str]:
+            # Serialize concurrent replacements for this user by locking the
+            # parent User row: a second PUT for the same user waits here until
+            # ours commits, then its DELETE sees our rows. Without this, two
+            # *disjoint* selections could both commit (no IntegrityError) and
+            # merge, breaking replacement semantics. FOR UPDATE is a no-op on
+            # SQLite (dev/tests).
+            self.session.query(User).filter(
+                User.id == user_id
+            ).with_for_update().first()
+            self.session.query(UserResourceSelection).filter(
+                UserResourceSelection.user_id == user_id
+            ).delete()
+            for name in deduped:
+                self.session.add(
+                    UserResourceSelection(
+                        id=generate_uuid(),
+                        user_id=user_id,
+                        standard_name=name,
+                        created_at=now,
+                    )
                 )
-            )
-        self.session.commit()
-        return self.get_user_resource_selection(user_id)
+            # Capture our selection while still holding the lock, so the return
+            # value can't reflect a later concurrent write.
+            stored = self.get_user_resource_selection(user_id)
+            self.session.commit()
+            return stored
+
+        try:
+            return _replace()
+        except IntegrityError:
+            # Same-key collision on uq_user_resource_selection; roll back and
+            # retry the replace exactly once (mirrors upsert_user). A second
+            # failure propagates — no retry loop.
+            self.session.rollback()
+            return _replace()
 
     def __get_external_links(self) -> List[Tuple[CRE, Node, str]]:
         external_links: List[Tuple[CRE, Node, str]] = []
@@ -2352,7 +2432,7 @@ class Node_collection:
             ltype (cre_defs.LinkTypes, optional): the linktype
         Returns: the cre_defs.Link or None in case of error (cycle)
         """
-        if ltype == None:
+        if ltype is None:
             raise ValueError("Every link should have a link type")
 
         if ltype == cre_defs.LinkTypes.PartOf:
@@ -3280,7 +3360,7 @@ def gap_analysis(
         key = node.id
         if not key:
             logger.error(
-                f"key is empty, this is a bug and this gap analysis will not progress"
+                "key is empty, this is a bug and this gap analysis will not progress"
             )
             continue
         if key not in grouped_paths:
@@ -3306,7 +3386,7 @@ def gap_analysis(
         end_key = path["end"].id
         if not end_key:
             logger.error(
-                f"end_key is empty, this is a bug and this gap analysis will not progress"
+                "end_key is empty, this is a bug and this gap analysis will not progress"
             )
             continue
         path["score"] = get_path_score(path)
@@ -3327,7 +3407,7 @@ def gap_analysis(
         else:
             if end_key in grouped_paths[key]["paths"]:
                 continue
-            if end_key in extra_paths_dict[key]:
+            if end_key in extra_paths_dict[key]["paths"]:
                 if extra_paths_dict[key]["paths"][end_key]["score"] > path["score"]:
                     extra_paths_dict[key]["paths"][end_key] = path
             else:

@@ -223,20 +223,28 @@ def main() -> None:
     parser.add_argument(
         "--run_librarian",
         action="store_true",
-        help="run Module C (the Librarian): for each knowledge-queue section, "
-        "resolve explicit CRE ids or retrieve the top-K semantic CRE candidates",
+        help="run Module C (the Librarian). With --run_id, drains Module B's "
+        "knowledge_queue for that run through C.0-C.4 and marks the rows "
+        "consumed; without it, walks a JSONL fixture and logs candidates",
     )
     parser.add_argument(
         "--librarian_dry_run",
         action="store_true",
-        help="run the Librarian without writing any links (the only supported "
-        "mode pre-W8; logs the candidate shortlist per section)",
+        help="run the Librarian without persisting anything: no links (never "
+        "written pre-W8b) and no consumed_at stamp on the queue",
     )
     parser.add_argument(
         "--librarian_source",
         default=None,
         help="path to a knowledge_queue JSONL for --run_librarian "
-        "(defaults to the bundled sample fixture)",
+        "(defaults to the bundled sample fixture; not valid with --run_id)",
+    )
+    parser.add_argument(
+        "--librarian_envelopes_out",
+        default=None,
+        help="JSONL path the Librarian appends its LinkProposal / ReviewItem "
+        "envelopes to. Required for a real --run_id run: queue rows are only "
+        "marked consumed once their envelopes have been persisted",
     )
     parser.add_argument(
         "--populate_neo4j_db",
@@ -319,7 +327,8 @@ def main() -> None:
     parser.add_argument(
         "--run_id",
         default="",
-        help="pipeline_run_id to process (required with --run_noise_filter)",
+        help="pipeline_run_id to process (required with --run_noise_filter; "
+        "with --run_librarian, selects the live knowledge_queue path)",
     )
     parser.add_argument(
         "--noise_filter_dry_run",
@@ -332,6 +341,13 @@ def main() -> None:
         parser.error("--export requires --csv <path>")
     if args.run_noise_filter and not args.run_id.strip():
         parser.error("--run_noise_filter requires --run_id <pipeline_run_id>")
+    # The live queue path takes its rows from the DB, so a fixture path would be
+    # silently ignored rather than doing what the caller plainly asked for.
+    if args.librarian_source and args.run_id.strip():
+        parser.error(
+            "--librarian_source reads a fixture and cannot be combined "
+            "with --run_id (which drains the live knowledge_queue)"
+        )
 
     from application.cmd import cre_main
 
