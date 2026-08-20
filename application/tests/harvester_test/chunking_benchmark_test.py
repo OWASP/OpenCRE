@@ -1,9 +1,14 @@
+import os
 import time
 import unittest
 
 from application.utils.harvester.chunker import DocumentChunker
 
 
+@unittest.skipUnless(
+    os.getenv("RUN_CHUNKING_BENCHMARK") == "1",
+    "Chunking benchmark requires RUN_CHUNKING_BENCHMARK=1",
+)
 class ChunkingBenchmarkTests(unittest.TestCase):
     def test_chunking_benchmark(self):
         text = (

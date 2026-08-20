@@ -331,6 +331,46 @@ class ChunkRecordBuilderTests(unittest.TestCase):
             [2, 2],
         )
 
+    def test_chunk_ids_differ_for_identical_text_at_different_offsets(self):
+        text = "# Root\n\nRepeated.\n\nRepeated."
+        document = self._document(
+            text=text,
+            headings=[
+                HeadingNode(
+                    level=1,
+                    text="Root",
+                    start_line=1,
+                    end_line=5,
+                )
+            ],
+        )
+
+        first_start = text.index("Repeated.")
+        second_start = text.index("Repeated.", first_start + 1)
+
+        chunks = [
+            ChunkInfo(
+                text="Repeated.",
+                start_char_idx=first_start,
+                end_char_idx=first_start + len("Repeated."),
+            ),
+            ChunkInfo(
+                text="Repeated.",
+                start_char_idx=second_start,
+                end_char_idx=second_start + len("Repeated."),
+            ),
+        ]
+
+        records = ChunkRecordBuilder().build(
+            document,
+            chunks,
+        )
+
+        self.assertNotEqual(
+            records[0].chunk_id,
+            records[1].chunk_id,
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

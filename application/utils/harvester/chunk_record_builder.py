@@ -34,6 +34,8 @@ class ChunkRecordBuilder:
             chunk_id = self._chunk_id(
                 artifact_id=document.artifact_id,
                 heading_path=heading_path,
+                start_char_idx=chunk.start_char_idx,
+                end_char_idx=chunk.end_char_idx,
                 content_hash=content_hash,
             )
 
@@ -142,8 +144,13 @@ class ChunkRecordBuilder:
     def _chunk_id(
         artifact_id: str,
         heading_path: list[str],
+        start_char_idx: int,
+        end_char_idx: int,
         content_hash: str,
     ) -> str:
         heading = "/".join(heading_path)
 
-        return f"chk:{artifact_id}:{heading}:{content_hash}"
+        return (
+            f"chk:{artifact_id}:{heading}:"
+            f"{start_char_idx}-{end_char_idx}:{content_hash}"
+        )
