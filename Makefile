@@ -84,6 +84,9 @@ dev-flask:
 dev-flask-docker:
 	. ./venv/bin/activate && INSECURE_REQUESTS=1 FLASK_APP=`pwd`/cre.py  FLASK_CONFIG=development flask run --host=0.0.0.0 --port $(PORT)
 
+# Run this recipe under bash: `set -o pipefail` (below) is a bash builtin and
+# fails under Ubuntu CI's /bin/sh (dash). Target-scoped so no other recipe moves.
+e2e: SHELL := /bin/bash
 e2e:
 	set -euo pipefail
 	yarn build
