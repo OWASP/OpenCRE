@@ -210,6 +210,91 @@ class DbKnowledgeSourceTest(unittest.TestCase):
         self.assertIn("SKIP LOCKED", sql)
 
 
+_PG_URL_ENV = "LIBRARIAN_POSTGRES_TEST_URL"
+
+
+@unittest.skipUnless(
+    os.environ.get(_PG_URL_ENV),
+    f"set {_PG_URL_ENV} to a Postgres URL to run the real locking test",
+)
+class DbKnowledgeSourceLockingPostgresTest(unittest.TestCase):
+    """Two live consumers over one queue — the only test that proves the claim.
+
+    Everything else about ``lock_rows`` is asserted against generated SQL, which
+    shows the clause is *emitted*, not that Postgres hands two consumers disjoint
+    rows. That needs a real server and two concurrent transactions, so it lives
+    behind an env var rather than in the default (SQLite, single-consumer) run:
+
+        LIBRARIAN_POSTGRES_TEST_URL=postgresql://user:pw@localhost/opencre_test \
+            python -m pytest application/tests/librarian/knowledge_source_test.py -k Postgres
+
+    Asked for by CodeRabbit on #1030. Until it has actually been run, the runbook
+    lists concurrent consumers as unverified.
+    """
+
+    def setUp(self) -> None:
+        from sqlalchemy import create_engine
+        from sqlalchemy.orm import sessionmaker
+
+        self.engine = create_engine(os.environ[_PG_URL_ENV])
+        KnowledgeQueueRow.__table__.create(self.engine, checkfirst=True)
+        self.Session = sessionmaker(bind=self.engine)
+        seed = self.Session()
+        seed.query(KnowledgeQueueRow).delete()
+        seed.add_all([_row("a"), _row("b"), _row("c"), _row("d")])
+        seed.commit()
+        seed.close()
+
+    def tearDown(self) -> None:
+        wipe = self.Session()
+        wipe.query(KnowledgeQueueRow).delete()
+        wipe.commit()
+        wipe.close()
+        self.engine.dispose()
+
+    def test_two_consumers_claim_disjoint_rows_and_release_on_rollback(self) -> None:
+        first, second = self.Session(), self.Session()
+        try:
+            # First consumer claims two rows and holds the transaction open.
+            claimed_first = [
+                i.id for i in DbKnowledgeSource(first, limit=2, lock_rows=True).items()
+            ]
+            self.assertEqual(len(claimed_first), 2)
+
+            # Second consumer, concurrently: SKIP LOCKED must step over the held
+            # rows rather than block on them or hand back the same ones.
+            claimed_second = [
+                i.id for i in DbKnowledgeSource(second, limit=2, lock_rows=True).items()
+            ]
+            self.assertEqual(
+                set(claimed_first) & set(claimed_second),
+                set(),
+                "concurrent consumers must claim disjoint rows",
+            )
+            self.assertEqual(len(claimed_second), 2)
+
+            # Ending the first transaction releases its claim.
+            first.rollback()
+            third = self.Session()
+            try:
+                after = [
+                    i.id
+                    for i in DbKnowledgeSource(third, limit=4, lock_rows=True).items()
+                ]
+                self.assertEqual(
+                    set(claimed_first) - set(after),
+                    set(),
+                    "rolled-back locks must be claimable again",
+                )
+            finally:
+                third.rollback()
+                third.close()
+        finally:
+            for s in (first, second):
+                s.rollback()
+                s.close()
+
+
 def _as_postgres_sql(query: object) -> str:
     """Render a Query as Postgres would.
 
