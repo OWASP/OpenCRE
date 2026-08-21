@@ -1,5 +1,5 @@
 from pydantic import ValidationError
-
+from application.utils.librarian.section_validator import _DEFAULT_LANGUAGE
 from application.defs.cheatsheet_defs import CheatsheetRecord
 from application.utils.librarian.schemas import (
     Locator,
@@ -15,7 +15,7 @@ from application.utils.librarian.section_validator import (
 
 class MalformedCheatsheetRecordError(SectionValidationError):
     pass
-    
+
 
 def section_from_cheatsheet_record(
     record: CheatsheetRecord,
@@ -42,7 +42,7 @@ def section_from_cheatsheet_record(
         chunk_id=f"chk:{record.source}:{record.source_id}",
         text=text,
         title_hint=record.title,
-        language="en",
+        language=_DEFAULT_LANGUAGE,
         source=source,
         locator=locator,
     )
