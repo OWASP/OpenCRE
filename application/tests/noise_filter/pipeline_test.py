@@ -10,6 +10,7 @@ import unittest
 
 from application import create_app, sqla
 from application.database.db import HarvestInput, KnowledgeQueueItem
+from application.utils.noise_filter.config_loader import NoiseFilterConfig
 from application.utils.noise_filter.hashing import compute_content_hash
 from application.utils.noise_filter.llm_classifier import (
     LLM_CALL_FAILED,
@@ -54,7 +55,9 @@ def _v(label, conf=0.9):
 
 def _infra():
     """The fallback verdict B emits when the LLM call itself fails (retryable)."""
-    return ClassifyResult(label="UNCERTAIN", confidence=0.0, reasoning=LLM_CALL_FAILED)
+    return ClassifyResult(
+        label="UNCERTAIN", confidence=0.0, reasoning=LLM_CALL_FAILED, retryable=True
+    )
 
 
 def _malformed():
@@ -188,6 +191,30 @@ class PipelineTests(unittest.TestCase):
         self.assertEqual(s.inserted, 0)
         self.assertEqual(KnowledgeQueueItem.query.count(), 0)
         self.assertEqual(HarvestInput.query.filter_by(status="pending").count(), 2)
+
+    def test_clean_run_not_degraded_at_threshold_zero(self) -> None:
+        # A `failure_threshold` of 0.0 must NOT degrade a clean run: with no infra
+        # failures there is nothing to retry, so status stays `ok`.
+        self._add(_payload("document/auth.md"))
+        clf = _FakeClassifier([_v("KNOWLEDGE")])
+        cfg = NoiseFilterConfig(failure_threshold=0.0)
+
+        s = run_noise_filter(sqla.session, "run1", config=cfg, classifier=clf)
+
+        self.assertEqual(s.retry_pending, 0)
+        self.assertEqual(s.status, "ok")
+
+    def test_one_infra_failure_degraded_at_threshold_zero(self) -> None:
+        # At threshold 0.0 a single infra failure is enough to degrade the run.
+        self._add(_payload("document/auth.md"))
+        self._add(_payload("document/xss.md"))
+        clf = _FakeClassifier([_v("KNOWLEDGE"), _infra()])
+        cfg = NoiseFilterConfig(failure_threshold=0.0)
+
+        s = run_noise_filter(sqla.session, "run1", config=cfg, classifier=clf)
+
+        self.assertEqual(s.retry_pending, 1)
+        self.assertEqual(s.status, "degraded")
 
     def test_malformed_output_is_persisted_not_retried(self) -> None:
         # Unparseable output is a genuine UNCERTAIN row: written and finalized,

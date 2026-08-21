@@ -153,12 +153,17 @@ def run_noise_filter(
     summary.dropped_noise += sum(1 for _, v, _ in triples if v.label == "NOISE")
     summary.retry_pending = len(retry_rows)
 
-    # Degraded only when the whole classified batch was infra failures (rate >=
-    # failure_threshold, default 1.0) -- the CLI turns this into a non-zero exit
-    # so the orchestrator retries the run. A partial failure stays "ok": the good
-    # rows are committed and the failed ones wait `pending` for a natural retry.
+    # Degraded when the infra-failure ratio reaches `failure_threshold`: at the
+    # default 1.0 that means the *whole* classified batch failed, but a lower
+    # threshold degrades a partial failure too. Requires at least one failure, so
+    # a clean run is never degraded (even at threshold 0.0). The CLI turns this
+    # into a non-zero exit so the orchestrator retries the run; a run that stays
+    # "ok" still commits its good rows and leaves any failures `pending`.
     classified = len(survivors)
-    if classified and summary.retry_pending / classified >= config.failure_threshold:
+    if (
+        summary.retry_pending
+        and summary.retry_pending / classified >= config.failure_threshold
+    ):
         summary.status = "degraded"
 
     if dry_run:

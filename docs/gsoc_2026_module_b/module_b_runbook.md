@@ -77,7 +77,7 @@ The process runs the gate (regex path filter → sanitize → LLM classify), wri
 
 ## 4. Completion signal (how the orchestrator knows it's done)
 
-- **Exit code `0`** = success (`status: ok`), even if some chunks are waiting to retry (`retry_pending > 0`). **Non-zero** = the whole run needs retrying: either a hard failure (e.g. DB unreachable), or a **`degraded`** run where *every* classified chunk hit an infrastructure failure (`retry_pending == classified`, gated by `CRE_NOISE_FILTER_FAILURE_THRESHOLD`, default 1.0). Either way it is safe to retry the same `run_id` — B is idempotent and a retry re-processes only the `pending` rows.
+- **Exit code `0`** = success (`status: ok`), even if some chunks are waiting to retry (`retry_pending > 0`). **Non-zero** = the whole run needs retrying: either a hard failure (e.g. DB unreachable), or a **`degraded`** run where the infra-failure ratio (`retry_pending / classified`) reached `CRE_NOISE_FILTER_FAILURE_THRESHOLD` — at the **default 1.0** that means *every* classified chunk failed; a lower threshold trips on a partial failure (a clean run is never degraded). Either way it is safe to retry the same `run_id` — B is idempotent and a retry re-processes only the `pending` rows.
 - **stdout** = a one-line JSON summary:
 ```json
 {"run_id":"20260201T020000Z","read":512,"parse_errors":0,"dropped_noise":172,
@@ -94,7 +94,7 @@ The process runs the gate (regex path filter → sanitize → LLM classify), wri
 | `inserted` | rows written to `knowledge_queue` |
 | `deduped` | keepers skipped as duplicate content |
 | `retry_pending` | chunks whose **LLM call failed** (infrastructure) — **not** written; their `harvest_input` rows are left `pending` for a later retry |
-| `status` | `ok`, or `degraded` when every classified chunk was an infra failure (→ non-zero exit, retry the run) |
+| `status` | `ok`, or `degraded` when the infra-failure ratio reaches `CRE_NOISE_FILTER_FAILURE_THRESHOLD` (default 1.0 = all classified chunks failed) → non-zero exit, retry the run |
 
 ---
 
@@ -118,7 +118,7 @@ The orchestrator **serialises** the steps: call B only after A has finished writ
 
 - **Recall-first (for records that parse):** among validly-parsed records, only NOISE is dropped; KNOWLEDGE and UNCERTAIN always reach the queue (no security knowledge lost). A record whose `payload` fails validation is a *separate* outcome — **not** queued and **not** counted as NOISE: its `harvest_input` row is marked `status='error'` and **retained** (never deleted), so it can be re-harvested/re-run or reconciled once fixed. Parse failures are surfaced as `parse_errors` in the run summary.
 - **Idempotent:** handled input rows are marked `processed` (infra-failed ones stay `pending`); re-invoking the same `run_id` is safe and re-processes only what's left. `UNIQUE(content_hash)` collapses duplicate content.
-- **Error isolation & retry:** an unparseable *input* row → marked `error` (not fatal). An **LLM-call (infrastructure) failure** → that chunk is **not** written and its `harvest_input` row stays `pending`, so a later run retries it (surfaced as `retry_pending`); if *every* classified chunk fails this way the run is `degraded` and exits non-zero so the orchestrator retries. **Unparseable model output** (the LLM answered, but with junk) → a genuine `UNCERTAIN` row (written, reaches C), not retried — retrying tends to reproduce it.
+- **Error isolation & retry:** an unparseable *input* row → marked `error` (not fatal). An **LLM-call (infrastructure) failure** → that chunk is **not** written and its `harvest_input` row stays `pending`, so a later run retries it (surfaced as `retry_pending`); if the infra-failure ratio reaches `CRE_NOISE_FILTER_FAILURE_THRESHOLD` (default 1.0 = all classified chunks) the run is `degraded` and exits non-zero so the orchestrator retries. **Unparseable model output** (the LLM answered, but with junk) → a genuine `UNCERTAIN` row (written, reaches C), not retried — retrying tends to reproduce it.
 
 ---
 

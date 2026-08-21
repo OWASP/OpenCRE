@@ -323,15 +323,29 @@ class TruncationTests(unittest.TestCase):
 
 
 class InfraFailureHelperTests(unittest.TestCase):
-    def test_only_llm_call_failed_is_an_infra_failure(self) -> None:
+    def test_infra_flag_is_trusted_not_from_reasoning(self) -> None:
+        # is_infra_failure reads the trusted `retryable` flag, set only by B's
+        # own exception path -- never the model-controlled `reasoning` string.
         self.assertTrue(
+            is_infra_failure(
+                ClassifyResult(
+                    label="UNCERTAIN",
+                    confidence=0.0,
+                    reasoning=LLM_CALL_FAILED,
+                    retryable=True,
+                )
+            )
+        )
+        # `reasoning` says llm_call_failed but the result was NOT flagged retryable
+        # (e.g. built from model output) -> not an infra failure
+        self.assertFalse(
             is_infra_failure(
                 ClassifyResult(
                     label="UNCERTAIN", confidence=0.0, reasoning=LLM_CALL_FAILED
                 )
             )
         )
-        # unparseable output is NOT infra -- it is persisted, not retried
+        # unparseable output is persisted, not retried
         self.assertFalse(
             is_infra_failure(
                 ClassifyResult(
@@ -339,19 +353,32 @@ class InfraFailureHelperTests(unittest.TestCase):
                 )
             )
         )
-        # a genuine model UNCERTAIN verdict is not an infra failure
-        self.assertFalse(
-            is_infra_failure(
-                ClassifyResult(
-                    label="UNCERTAIN", confidence=0.4, reasoning="borderline"
-                )
+
+    def test_parsed_model_output_cannot_become_retryable(self) -> None:
+        # A schema-valid model response that sets reasoning="llm_call_failed"
+        # (and even an extra "retryable": true) must NOT become an infra failure:
+        # the parser only reads label/confidence/reasoning, so `retryable` stays
+        # False and the row is persisted normally.
+        clf = _classifier()
+        clf._litellm = Mock(
+            completion=lambda **kw: _resp(
+                {
+                    "results": [
+                        {
+                            "index": 0,
+                            "label": "KNOWLEDGE",
+                            "confidence": 0.9,
+                            "reasoning": LLM_CALL_FAILED,
+                            "retryable": True,
+                        }
+                    ]
+                }
             )
         )
-        self.assertFalse(
-            is_infra_failure(
-                ClassifyResult(label="KNOWLEDGE", confidence=0.9, reasoning=None)
-            )
-        )
+        (out,) = clf.classify_batch([_record()])
+        self.assertEqual(out.label, "KNOWLEDGE")
+        self.assertFalse(out.retryable)
+        self.assertFalse(is_infra_failure(out))
 
 
 if __name__ == "__main__":

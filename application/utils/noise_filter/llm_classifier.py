@@ -79,12 +79,24 @@ def _uncertain(reason: str) -> ClassifyResult:
     return ClassifyResult(label="UNCERTAIN", confidence=0.0, reasoning=reason)
 
 
-def is_infra_failure(result: ClassifyResult) -> bool:
-    """True if `result` is the LLM-call-failed fallback (an infrastructure error),
-    as opposed to a genuine UNCERTAIN verdict or unparseable output. The pipeline
-    uses this to leave such chunks' input rows `pending` for a later retry.
+def _infra_failure() -> ClassifyResult:
+    """Fallback for an LLM-call (infrastructure) failure. `retryable=True` is set
+    here and *only* here -- the parser never sets it -- so the pipeline can trust
+    it to leave the chunk's input row `pending` for a retry.
     """
-    return result.reasoning == LLM_CALL_FAILED
+    return ClassifyResult(
+        label="UNCERTAIN", confidence=0.0, reasoning=LLM_CALL_FAILED, retryable=True
+    )
+
+
+def is_infra_failure(result: ClassifyResult) -> bool:
+    """True if `result` came from B's LLM-call-failure path -- read from the
+    *trusted* `retryable` flag, not the model-controlled `reasoning` string, so a
+    model response that happens to say "llm_call_failed" can never be mistaken for
+    an infrastructure failure. The pipeline uses this to leave such chunks' input
+    rows `pending` for a later retry.
+    """
+    return result.retryable
 
 
 def _batches(seq: list[Any], size: int) -> Iterator[list[Any]]:
@@ -190,7 +202,7 @@ class LLMClassifier:
                 len(batch),
                 e,
             )
-            return [_uncertain(LLM_CALL_FAILED) for _ in batch]
+            return [_infra_failure() for _ in batch]
         return self._parse(text, len(batch))
 
     def _call_llm(self, messages: list[dict]) -> str:

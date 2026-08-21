@@ -907,10 +907,11 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
         )
         print(summary.to_json())
         if summary.status == "degraded":
-            # A whole run of infrastructure failures. The classified rows are
-            # already committed (idempotent) and the failed ones stay `pending`,
-            # so exit non-zero to have the orchestrator retry -- a retry then
-            # re-processes only the pending rows.
+            # The infra-failure ratio reached CRE_NOISE_FILTER_FAILURE_THRESHOLD
+            # (default 1.0 = the whole classified batch failed). The classified
+            # rows are already committed (idempotent) and the failed ones stay
+            # `pending`, so exit non-zero to have the orchestrator retry -- a
+            # retry then re-processes only the pending rows.
             sys.exit(1)
         return
 
