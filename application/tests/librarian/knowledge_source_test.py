@@ -5,8 +5,13 @@
 ``db_test.py`` pattern — no migration needed.
 
 The behaviour that matters here is what the source *refuses* to read: consumed
-rows, other runs' rows, and — the one with a cross-module consequence —
-``UNCERTAIN`` rows, which belong to Module D.
+rows, other runs' rows, and ``NOISE`` — the label B's recall-first guarantee
+turns on. ``UNCERTAIN`` is read and decided like any other label; it used to be
+skipped and left to Module D, which stranded those rows.
+
+The lock tests cover the other half: that the default read takes no row lock
+(one consumer, per the contract) and that asking for one on a dialect that
+cannot honour it fails loudly instead of handing back an unlocked batch.
 """
 
 import json
@@ -166,6 +171,71 @@ class DbKnowledgeSourceTest(unittest.TestCase):
             items = list(DbKnowledgeSource(sqla.session).items())
 
         self.assertEqual([i.id for i in items], ["a"])
+
+    def test_default_read_takes_no_row_lock(self) -> None:
+        """One consumer is the contract, so the default read must not pay for a
+        lock — and must not fail on SQLite, which cannot grant one."""
+        sqla.session.add_all([_row("a")])
+        sqla.session.commit()
+
+        sql = _as_postgres_sql(DbKnowledgeSource(sqla.session)._query())
+
+        self.assertNotIn("FOR UPDATE", sql)
+
+    def test_lock_rows_is_refused_when_the_dialect_cannot_honour_it(self) -> None:
+        """Silently dropping the clause would hand an unlocked batch to a caller
+        who asked for a locked one; the duplicated work would surface under load,
+        nowhere near this code. So SQLite refuses instead."""
+        sqla.session.add_all([_row("a")])
+        sqla.session.commit()
+
+        source = DbKnowledgeSource(sqla.session, lock_rows=True)
+        with self.assertRaises(ValueError) as caught:
+            list(source.items())
+
+        self.assertIn("sqlite", str(caught.exception))
+
+    def test_lock_rows_emits_skip_locked_on_postgres(self) -> None:
+        """The clause itself, checked against a fake bind — the real thing needs a
+        Postgres server, and Module C has not been run against one yet."""
+        sqla.session.add_all([_row("a")])
+        sqla.session.commit()
+
+        source = DbKnowledgeSource(sqla.session, lock_rows=True)
+        # Only the dialect decision is faked; the query itself is the real one.
+        source._session = _PostgresLookalike(sqla.session)
+        sql = _as_postgres_sql(source._query())
+
+        self.assertIn("FOR UPDATE", sql)
+        self.assertIn("SKIP LOCKED", sql)
+
+
+def _as_postgres_sql(query: object) -> str:
+    """Render a Query as Postgres would.
+
+    Not a detail to skip: SQLAlchemy's SQLite compiler emits an empty
+    ``for_update_clause``, so compiling against the test bind hides the very
+    clause these tests exist to check, and both assertions would pass no matter
+    what ``_locked`` did.
+    """
+    from sqlalchemy.dialects import postgresql
+
+    return str(query.statement.compile(dialect=postgresql.dialect())).upper()
+
+
+class _PostgresLookalike:
+    """A session that answers "postgresql" but delegates everything else.
+
+    ``connection_dialect_name`` reads the bind, so claiming the dialect is all it
+    takes to exercise the branch without a Postgres server.
+    """
+
+    def __init__(self, session: object) -> None:
+        self._session = session
+        self.dialect = type("_Dialect", (), {"name": "postgresql"})()
+
+    def __getattr__(self, name: str) -> object:
+        return getattr(self._session, name)
 
 
 if __name__ == "__main__":

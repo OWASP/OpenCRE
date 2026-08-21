@@ -24,6 +24,14 @@ definitive refusal — re-reading a malformed row forever helps nobody). Rows th
 failures — an embedding timeout, a cross-encoder hiccup — that the next run
 should retry. ``RowOutcome`` is what carries that distinction out of the pipeline.
 
+**One consumer per run, by default.** The read predicate is
+``consumed_at IS NULL`` and the stamp lands at the end, so the claim is not
+atomic with the read: two plain consumers on the same ``pipeline_run_id`` do the
+same work twice rather than half each. The orchestrator serialises A->B->C and
+runs a single C consumer per run, which is what makes that safe. ``lock_rows``
+(Postgres only) is the opt-in that makes concurrent consumers disjoint; see
+``DbKnowledgeSource`` for the invariant and #1025 for how it was found.
+
 **The safety path is declared, not assumed.** No detector exists yet, so the
 pipeline runs behind ``NullSafetyGuard`` and every row comes back unevaluated.
 That count is carried into the summary rather than left to look like a clean
@@ -97,6 +105,7 @@ def run_librarian_queue(
     at: datetime,
     sink: Optional[EnvelopeSink] = None,
     limit: Optional[int] = None,
+    lock_rows: bool = False,
     dry_run: bool = False,
 ) -> RunSummary:
     """Drain one pipeline run's unconsumed queue rows through C.0 -> C.4.
@@ -117,6 +126,14 @@ def run_librarian_queue(
             consuming a row whose envelope was discarded loses the chunk — and
             it must report ``persists=True``. A dry run may omit it.
         limit: cap on rows read in this batch; None drains the run.
+        lock_rows: claim the batch with ``FOR UPDATE SKIP LOCKED`` so that
+            several consumers draining one run take disjoint rows. Off by
+            default, because the orchestrator runs a single C consumer per
+            ``pipeline_run_id`` and a lone consumer gains nothing from the lock.
+            Requires Postgres, and pairs with ``limit``: locking an unbounded
+            batch claims every unconsumed row of the run, leaving a second
+            consumer with nothing to take. See ``DbKnowledgeSource._locked`` for
+            how long the lock is held and what that costs.
         dry_run: build envelopes, persist nothing, leave ``consumed_at`` alone.
 
     Returns a ``RunSummary``; it does not raise on individual bad rows, which
@@ -150,7 +167,12 @@ def run_librarian_queue(
                 "must not mark rows consumed. Use dry_run=True with it."
             )
 
-    source = DbKnowledgeSource(session, pipeline_run_id=pipeline_run_id, limit=limit)
+    source = DbKnowledgeSource(
+        session,
+        pipeline_run_id=pipeline_run_id,
+        limit=limit,
+        lock_rows=lock_rows,
+    )
     pipeline = LibrarianPipeline(
         source,
         components.retriever,

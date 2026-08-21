@@ -414,6 +414,32 @@ class RunLibrarianQueueTest(unittest.TestCase):
         self.assertIn("degraded", summary.status)
         self.assertIn("safety path", summary.status)
 
+    def test_lock_rows_reaches_the_source(self) -> None:
+        """Plumbing test, and worth having: if the runner dropped `lock_rows` on
+        the floor, an operator asking for concurrency-safe reads would get plain
+        ones, and the only symptom would be duplicated work under load. SQLite
+        cannot grant the lock, so a refusal here proves the flag arrived."""
+        sqla.session.add(_row("a"))
+        sqla.session.commit()
+
+        with self.assertRaises(ValueError) as caught:
+            self._run(lock_rows=True)
+
+        self.assertIn("sqlite", str(caught.exception))
+        # The run died before deciding anything, so the row is still B's to hand
+        # back — nothing was consumed on the way out.
+        self.assertIsNone(self._consumed_at("a"))
+
+    def test_lock_rows_defaults_off_so_a_single_consumer_still_runs(self) -> None:
+        """The guard must not turn into a wall: the default path is one consumer
+        on SQLite, which is exactly what the orchestrator does today."""
+        sqla.session.add(_row("a"))
+        sqla.session.commit()
+
+        summary = self._run()
+
+        self.assertEqual(summary.consumed, 1)
+
     def test_blank_run_id_is_refused(self) -> None:
         """A blank id is a caller mistake, not "every run".
 
