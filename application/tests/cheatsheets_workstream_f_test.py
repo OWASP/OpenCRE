@@ -304,12 +304,12 @@ def _run_cli(argv):
 
 class TestCliValidate(unittest.TestCase):
     def test_valid_fixture_exits_zero(self) -> None:
-        code, out, err = _run_cli(["validate", VALID_FIXTURE])
+        code, out, _err = _run_cli(["validate", VALID_FIXTURE])
         self.assertEqual(code, 0)
         self.assertIn("OK", out)
 
     def test_invalid_fixture_exits_nonzero_and_names_field(self) -> None:
-        code, out, err = _run_cli(["validate", INVALID_FIXTURE])
+        code, _out, err = _run_cli(["validate", INVALID_FIXTURE])
         self.assertNotEqual(code, 0)
         # The offending field is named so a reviewer can fix it.
         self.assertIn("title", err)
@@ -317,7 +317,7 @@ class TestCliValidate(unittest.TestCase):
     def test_missing_file_exits_two(self) -> None:
         with tempfile.TemporaryDirectory() as d:
             missing = os.path.join(d, "nope.json")
-            code, out, err = _run_cli(["validate", missing])
+            code, _out, err = _run_cli(["validate", missing])
         self.assertEqual(code, 2)
         self.assertTrue(err.strip(), "a clear error message must be printed")
 
@@ -326,7 +326,7 @@ class TestCliGenerate(unittest.TestCase):
     def test_generate_writes_schema_valid_and_roundtrips(self) -> None:
         with tempfile.TemporaryDirectory() as d:
             out_path = os.path.join(d, "out.json")
-            code, out, err = _run_cli(["generate", VALID_FIXTURE, out_path])
+            code, _out, _err = _run_cli(["generate", VALID_FIXTURE, out_path])
             self.assertEqual(code, 0)
             # The written file is schema-valid...
             with open(out_path, encoding="utf-8") as fh:
@@ -339,6 +339,15 @@ class TestCliGenerate(unittest.TestCase):
                 wf.load_approved_suggestions(VALID_FIXTURE),
             )
 
+    def test_generate_unwritable_output_exits_two(self) -> None:
+        # Output path under a nonexistent directory -> OSError on write, which
+        # must surface as a clean exit code, not a traceback.
+        with tempfile.TemporaryDirectory() as d:
+            out_path = os.path.join(d, "no_such_dir", "out.json")
+            code, _out, err = _run_cli(["generate", VALID_FIXTURE, out_path])
+        self.assertEqual(code, 2)
+        self.assertTrue(err.strip(), "a clear error message must be printed")
+
 
 class TestCliConvert(unittest.TestCase):
     def test_convert_reports_skipped_unknown_and_links(self) -> None:
@@ -349,7 +358,7 @@ class TestCliConvert(unittest.TestCase):
             path = os.path.join(d, "approved.json")
             wf.write_suggestions_json(path, suggestions)
             with mock.patch.object(wf, "_open_cache", return_value=stub):
-                code, out, err = _run_cli(["convert", path])
+                code, out, _err = _run_cli(["convert", path])
 
         self.assertEqual(code, 0)
         # Prove the skipped-id reporting actually prints the unknown id.
@@ -367,7 +376,7 @@ class TestCliConvert(unittest.TestCase):
             with mock.patch.object(
                 wf, "_open_cache", side_effect=AssertionError("must not open cache")
             ):
-                code, out, err = _run_cli(["convert", missing])
+                code, _out, err = _run_cli(["convert", missing])
         self.assertEqual(code, 2)
         self.assertTrue(err.strip(), "a clear error message must be printed")
 

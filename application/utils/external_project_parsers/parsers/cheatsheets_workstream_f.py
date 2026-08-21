@@ -411,6 +411,9 @@ def _cmd_generate(args: argparse.Namespace) -> int:
     except SuggestionSchemaError as exc:
         print(str(exc), file=sys.stderr)
         return _EXIT_ERROR
+    except OSError as exc:
+        print(f"cannot write {args.outfile}: {exc}", file=sys.stderr)
+        return _EXIT_USAGE
 
     print(f"wrote {len(suggestions)} suggestions to {args.outfile}")
     return _EXIT_OK
