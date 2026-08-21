@@ -11,6 +11,10 @@ import unittest
 from application import create_app, sqla
 from application.database.db import HarvestInput, KnowledgeQueueItem
 from application.utils.noise_filter.hashing import compute_content_hash
+from application.utils.noise_filter.llm_classifier import (
+    LLM_CALL_FAILED,
+    MALFORMED_OUTPUT,
+)
 from application.utils.noise_filter.pipeline import run_noise_filter
 from application.utils.noise_filter.schemas import ClassifyResult
 
@@ -46,6 +50,16 @@ class _FakeClassifier:
 
 def _v(label, conf=0.9):
     return ClassifyResult(label=label, confidence=conf, reasoning="r")
+
+
+def _infra():
+    """The fallback verdict B emits when the LLM call itself fails (retryable)."""
+    return ClassifyResult(label="UNCERTAIN", confidence=0.0, reasoning=LLM_CALL_FAILED)
+
+
+def _malformed():
+    """The fallback verdict for unparseable model output (persisted, not retried)."""
+    return ClassifyResult(label="UNCERTAIN", confidence=0.0, reasoning=MALFORMED_OUTPUT)
 
 
 class PipelineTests(unittest.TestCase):
@@ -140,6 +154,54 @@ class PipelineTests(unittest.TestCase):
         # nothing written, no rows marked processed
         self.assertEqual(KnowledgeQueueItem.query.count(), 0)
         self.assertEqual(HarvestInput.query.filter_by(status="pending").count(), 2)
+
+    def test_infra_failure_leaves_row_pending(self) -> None:
+        # One chunk classifies, the other hit an LLM-call failure. The failed one
+        # is not written and its row stays `pending` for a retry; the run is still
+        # "ok" because not the whole batch failed (rate 0.5 < threshold 1.0).
+        self._add(_payload("document/auth.md"))  # -> KNOWLEDGE
+        self._add(_payload("document/xss.md"))  # -> infra failure
+        clf = _FakeClassifier([_v("KNOWLEDGE"), _infra()])
+
+        s = run_noise_filter(sqla.session, "run1", classifier=clf)
+
+        self.assertEqual(s.retry_pending, 1)
+        self.assertEqual(s.kept_knowledge, 1)
+        self.assertEqual(s.inserted, 1)
+        self.assertEqual(s.status, "ok")
+        self.assertEqual(KnowledgeQueueItem.query.count(), 1)
+        # exactly one row still pending (the infra-failed one); the other processed
+        self.assertEqual(HarvestInput.query.filter_by(status="pending").count(), 1)
+        self.assertEqual(HarvestInput.query.filter_by(status="processed").count(), 1)
+
+    def test_total_infra_failure_is_degraded(self) -> None:
+        # Every classified chunk failed -> status degraded (rate 1.0), nothing
+        # written, both rows left pending for the orchestrator to retry.
+        self._add(_payload("document/auth.md"))
+        self._add(_payload("document/xss.md"))
+        clf = _FakeClassifier([_infra(), _infra()])
+
+        s = run_noise_filter(sqla.session, "run1", classifier=clf)
+
+        self.assertEqual(s.retry_pending, 2)
+        self.assertEqual(s.status, "degraded")
+        self.assertEqual(s.inserted, 0)
+        self.assertEqual(KnowledgeQueueItem.query.count(), 0)
+        self.assertEqual(HarvestInput.query.filter_by(status="pending").count(), 2)
+
+    def test_malformed_output_is_persisted_not_retried(self) -> None:
+        # Unparseable output is a genuine UNCERTAIN row: written and finalized,
+        # never left pending (retrying junk would loop forever).
+        self._add(_payload("document/auth.md"))
+        clf = _FakeClassifier([_malformed()])
+
+        s = run_noise_filter(sqla.session, "run1", classifier=clf)
+
+        self.assertEqual(s.retry_pending, 0)
+        self.assertEqual(s.kept_uncertain, 1)
+        self.assertEqual(s.inserted, 1)
+        self.assertEqual(s.status, "ok")
+        self.assertEqual(HarvestInput.query.filter_by(status="pending").count(), 0)
 
     def test_sanitize_is_llm_input_only(self) -> None:
         # The "ﬀ" ligature is sanitized to "ff" for the LLM, but the queue keeps
