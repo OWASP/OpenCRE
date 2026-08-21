@@ -6,7 +6,7 @@ artifacts (``suggestions.json`` -> reviewer edits -> ``approved.json``) and,
 in a later checkpoint, the conversion of approved suggestions into the import
 pipeline's ``ParseResult``.
 
-Checkpoints implemented here (F1 + F2 + F3):
+Checkpoints implemented here (F1 + F2 + F3 + F4):
 
 * F1 -- the data contract: :data:`SUGGESTIONS_SCHEMA` (JSON Schema) plus the
   :class:`CandidateCRE` / :class:`MappingSuggestion` dataclasses.
@@ -26,10 +26,17 @@ Checkpoints implemented here (F1 + F2 + F3):
       links is dropped;
     - the advisory review fields (see the schema) have no home on
       ``defs.Standard`` and are intentionally not persisted.
+* F4 -- the ``validate`` / ``generate`` / ``convert`` CLI (:func:`main`,
+  :func:`build_arg_parser`) over the F1-F3 functions. ``convert`` resolves CREs
+  through a live ``Node_collection`` obtained via :func:`_open_cache` and stops
+  at printing the resulting ``ParseResult`` summary (including skipped unknown
+  CRE ids).
 
 Deliberately NOT in this module yet:
 
-* F4/F5 -- the ``generate/validate/convert`` CLI.
+* F5 -- wiring ``convert``'s ``ParseResult`` into the live import/register flow
+  (the real import path + DB registration). ``convert`` deliberately does not
+  register anything into the graph in F4.
 
 The advisory fields ``score``, ``confidence``, ``reason`` (per candidate) and
 ``cheatsheet_id`` / ``category`` (per item) exist so a human reviewer can triage
@@ -44,11 +51,13 @@ requirements.txt.
 
 from __future__ import annotations
 
+import argparse
 import dataclasses
 import json
 import logging
+import sys
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, TYPE_CHECKING
+from typing import Any, Dict, List, Optional, TYPE_CHECKING
 
 import jsonschema
 
@@ -327,3 +336,188 @@ def suggestions_to_parse_result(
         )
 
     return ParseResult(results={STANDARD_NAME: standards})
+
+
+# --- F4: command-line interface ---------------------------------------------
+
+# Exit codes, mirroring scripts/build_golden_dataset.py's convention.
+_EXIT_OK = 0
+_EXIT_ERROR = 1  # schema / logic error
+_EXIT_USAGE = 2  # missing file / bad invocation
+
+
+def _open_cache(db_uri: Optional[str] = None) -> "db.Node_collection":
+    """Instantiate a live ``Node_collection`` for the ``convert`` subcommand.
+
+    Delegates to ``cre_main.db_connect`` (``create_app`` + ``app_context().push()``)
+    so the DB session has the Flask app context its queries need; a bare
+    ``db.Node_collection()`` would construct but fail on the first query. Tests
+    patch this seam with the F3 ``_StubCache`` stub, so no Postgres/Neo4j is
+    required.
+    """
+    from application.cmd.cre_main import db_connect
+
+    return db_connect(db_uri or "")
+
+
+def _load_json_doc(path: str) -> Any:
+    """Read+parse a JSON document, raising FileNotFoundError/JSONDecodeError."""
+    with open(path, encoding="utf-8") as fh:
+        return json.load(fh)
+
+
+def _cmd_validate(args: argparse.Namespace) -> int:
+    """Schema-validate a suggestions document; print OK or the offending field."""
+    try:
+        doc = _load_json_doc(args.suggestions)
+    except FileNotFoundError:
+        print(f"file not found: {args.suggestions}", file=sys.stderr)
+        return _EXIT_USAGE
+    except json.JSONDecodeError as exc:
+        print(f"invalid JSON in {args.suggestions}: {exc}", file=sys.stderr)
+        return _EXIT_USAGE
+
+    try:
+        _validate(doc)
+    except SuggestionSchemaError as exc:
+        print(str(exc), file=sys.stderr)
+        return _EXIT_ERROR
+
+    count = len(doc) if isinstance(doc, list) else 0
+    print(f"OK: {args.suggestions} is a valid suggestions document ({count} items)")
+    return _EXIT_OK
+
+
+def _cmd_generate(args: argparse.Namespace) -> int:
+    """Validate + normalize an input suggestions document into a canonical file.
+
+    Without workstreams A-E to synthesise candidates, this simply validates and
+    re-writes the input in canonical form (schema check, sorted keys, stable
+    indent, trailing newline).
+    """
+    try:
+        doc = _load_json_doc(args.infile)
+    except FileNotFoundError:
+        print(f"file not found: {args.infile}", file=sys.stderr)
+        return _EXIT_USAGE
+    except json.JSONDecodeError as exc:
+        print(f"invalid JSON in {args.infile}: {exc}", file=sys.stderr)
+        return _EXIT_USAGE
+
+    try:
+        _validate(doc)
+        suggestions = [_parse_suggestion(raw) for raw in doc]
+        write_suggestions_json(args.outfile, suggestions)
+    except SuggestionSchemaError as exc:
+        print(str(exc), file=sys.stderr)
+        return _EXIT_ERROR
+    except OSError as exc:
+        print(f"cannot write {args.outfile}: {exc}", file=sys.stderr)
+        return _EXIT_USAGE
+
+    print(f"wrote {len(suggestions)} suggestions to {args.outfile}")
+    return _EXIT_OK
+
+
+def _cmd_convert(args: argparse.Namespace) -> int:
+    """Convert approved suggestions to a ParseResult and print a summary.
+
+    NOTE: this stops at the in-memory ``ParseResult`` summary. Wiring it into the
+    live import/register flow (DB registration) is F5, a separate PR.
+    """
+    try:
+        approved = load_approved_suggestions(args.approved)
+    except FileNotFoundError:
+        print(f"file not found: {args.approved}", file=sys.stderr)
+        return _EXIT_USAGE
+    except json.JSONDecodeError as exc:
+        print(f"invalid JSON in {args.approved}: {exc}", file=sys.stderr)
+        return _EXIT_USAGE
+    except SuggestionSchemaError as exc:
+        print(str(exc), file=sys.stderr)
+        return _EXIT_ERROR
+
+    cache = _open_cache(args.db)
+    result = suggestions_to_parse_result(approved, cache)
+    standards = result.results.get(STANDARD_NAME, []) if result.results else []
+
+    # F3 logs skipped unknown ids but does not return them; re-derive from the
+    # result: any approved candidate id that resolved to no link was skipped.
+    # ``link.document`` is typed as the base ``Document`` (which has no ``id``);
+    # at runtime it is the resolved CRE, so read its id defensively.
+    resolved = {
+        getattr(link.document, "id", "")
+        for standard in standards
+        for link in standard.links
+    }
+    all_candidate_ids = [
+        candidate.cre_id
+        for suggestion in approved
+        for candidate in suggestion.candidate_cres
+    ]
+    skipped = sorted({cid for cid in all_candidate_ids if cid not in resolved})
+    total_links = sum(len(standard.links) for standard in standards)
+
+    print(f"approved suggestions:   {len(approved)}")
+    print(f"standards produced:     {len(standards)}")
+    print(f"total CRE links:        {total_links}")
+    print("skipped unknown CREs:   " + (", ".join(skipped) if skipped else "(none)"))
+    print(
+        "note: nothing was registered into the graph; live import/registration "
+        "is F5 (follow-up PR)."
+    )
+    return _EXIT_OK
+
+
+def build_arg_parser() -> argparse.ArgumentParser:
+    """Build the argparse parser for the three Workstream F subcommands."""
+    parser = argparse.ArgumentParser(
+        prog="cheatsheets_workstream_f",
+        description=(
+            "OWASP Cheat Sheet -> CRE mapping review-artifact CLI (Workstream F)."
+        ),
+    )
+    sub = parser.add_subparsers(dest="command", required=True)
+
+    v = sub.add_parser("validate", help="schema-validate a suggestions.json document")
+    v.add_argument("suggestions", help="path to the suggestions document")
+    v.set_defaults(func=_cmd_validate)
+
+    g = sub.add_parser(
+        "generate",
+        help=(
+            "validate + normalize a suggestions document; without workstreams "
+            "A-E this just writes/normalizes the input"
+        ),
+    )
+    g.add_argument("infile", help="input suggestions document")
+    g.add_argument("outfile", help="output (normalized) suggestions document")
+    g.set_defaults(func=_cmd_generate)
+
+    c = sub.add_parser(
+        "convert",
+        help=(
+            "convert approved suggestions to a ParseResult and print a summary; "
+            "does NOT register into the graph (that is F5)"
+        ),
+    )
+    c.add_argument("approved", help="path to the approved suggestions document")
+    c.add_argument(
+        "--db",
+        default=None,
+        help="database URI passed to cre_main.db_connect for CRE resolution",
+    )
+    c.set_defaults(func=_cmd_convert)
+
+    return parser
+
+
+def main(argv: Optional[List[str]] = None) -> int:
+    """Entry point: parse ``argv`` and dispatch to the chosen subcommand."""
+    parser = build_arg_parser()
+    args = parser.parse_args(argv)
+    return int(args.func(args))
+
+
+if __name__ == "__main__":
+    sys.exit(main())
