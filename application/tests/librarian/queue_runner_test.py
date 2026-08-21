@@ -430,6 +430,65 @@ class RunLibrarianQueueTest(unittest.TestCase):
         # back — nothing was consumed on the way out.
         self.assertIsNone(self._consumed_at("a"))
 
+    def test_lock_rows_is_refused_on_a_dry_run(self) -> None:
+        """A dry run retires nothing, so claiming rows would only block a real
+        consumer from taking rows this run will never finish. Flagged by
+        CodeRabbit on #1030: the dry-run early return skips `commit()`, so the
+        locks would also outlive the call."""
+        sqla.session.add(_row("a"))
+        sqla.session.commit()
+
+        with self.assertRaises(ValueError) as caught:
+            self._run(lock_rows=True, dry_run=True)
+
+        self.assertIn("dry_run", str(caught.exception))
+        self.assertIsNone(self._consumed_at("a"))
+
+    def test_a_locked_run_rolls_back_when_the_sink_fails(self) -> None:
+        """A lock outliving the call would strand the batch: unconsumed, and
+        unclaimable by anyone else until the caller happened to roll back. So a
+        locked run ends its own transaction even on the failure path."""
+        sqla.session.add(_row("a"))
+        sqla.session.commit()
+
+        rolled_back = []
+        real_rollback = sqla.session.rollback
+
+        def _spy() -> None:
+            rolled_back.append(True)
+            real_rollback()
+
+        sqla.session.rollback = _spy  # type: ignore[method-assign]
+        try:
+            with self.assertRaises(ValueError):
+                # `lock_rows` fails at the dialect guard on SQLite, which is
+                # itself an exception escaping the drain — exactly the path that
+                # must not leave a claim behind.
+                self._run(lock_rows=True)
+        finally:
+            sqla.session.rollback = real_rollback  # type: ignore[method-assign]
+
+        self.assertTrue(rolled_back, "a locked run must roll back on failure")
+        self.assertIsNone(self._consumed_at("a"))
+
+    def test_an_unlocked_failure_leaves_the_transaction_to_the_caller(self) -> None:
+        """The unlocked path keeps its existing contract — no rollback of its own,
+        matching Module B's `run_noise_filter`. Without a lock there is nothing to
+        strand, so this stays the caller's call."""
+        sqla.session.add(_row("a"))
+        sqla.session.commit()
+
+        rolled_back = []
+        real_rollback = sqla.session.rollback
+        sqla.session.rollback = lambda: rolled_back.append(True)  # type: ignore[method-assign,return-value]
+        try:
+            with self.assertRaises(OSError):
+                self._run(sink=_ExplodingSink())
+        finally:
+            sqla.session.rollback = real_rollback  # type: ignore[method-assign]
+
+        self.assertEqual(rolled_back, [])
+
     def test_lock_rows_defaults_off_so_a_single_consumer_still_runs(self) -> None:
         """The guard must not turn into a wall: the default path is one consumer
         on SQLite, which is exactly what the orchestrator does today."""
