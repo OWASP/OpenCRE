@@ -13,12 +13,10 @@ class ChunkingBenchmarkTests(unittest.TestCase):
     def test_chunking_benchmark(self):
         text = (
             "# Introduction\n\n" + "Python functions define reusable behavior. "
-            "Variables store values and expressions compute results. "
-            * 20
+            "Variables store values and expressions compute results. " * 20
             + "\n\n## Architecture\n\n"
             + "The architecture separates ingestion from retrieval. "
-            "Each component has a clearly defined responsibility. "
-            * 20
+            "Each component has a clearly defined responsibility. " * 20
             + "\n\n## Storage\n\n"
             + "Persistent state is protected by transactional operations. "
             "Commit and rollback provide atomicity and consistency. " * 20
