@@ -92,9 +92,10 @@ def _fallback_summary(markdown: str) -> str:
 
     return "No summary found."
 
+
 def _get_committed_at(source_path: str) -> str:
-    """Return the ISO 8601 last-commit timestamp for source_path, or ''."""
-   
+    """Return the ISO 8601 last-commit timestamp for source_path, or 'No timestamp found.'"""
+
     try:
         result = subprocess.run(
             ["git", "log", "-1", "--format=%cI", "--", source_path],
@@ -102,9 +103,14 @@ def _get_committed_at(source_path: str) -> str:
             text=True,
             check=True,
         )
-    except (subprocess.CalledProcessError, FileNotFoundError, OSError):
+    except (subprocess.CalledProcessError, FileNotFoundError, OSError) as e:
+        logging.warning(
+            "CheatsheetRecord: could not determine committed_at for %s: %s",
+            source_path,
+            e,
+        )
         return "No timestamp found."
- 
+
     return result.stdout.strip()
 
 
@@ -148,6 +154,6 @@ def extract_cheatsheet_record(
         metadata={
             "parser_version": PARSER_VERSION,
             "fallback_used": fallback_used,
-            "committed_at": committed_at
+            "committed_at": committed_at,
         },
     )
