@@ -77,7 +77,7 @@ class TestSectionFromCheatsheetRecord(unittest.TestCase):
             metadata={
                 "parser_version": "v1",
                 "fallback_used": "false",
-                "committed_at": "",
+                "committed_at": "No timestamp found.",
             },
         )
 
