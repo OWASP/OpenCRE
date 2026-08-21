@@ -452,6 +452,11 @@ class RunLibrarianQueueTest(unittest.TestCase):
         sqla.session.commit()
 
         rolled_back = []
+        # Patch the proxy, then `del` to restore. Reassigning the captured bound
+        # method would leave an instance attribute on the process-wide
+        # `scoped_session` that survives `tearDown`'s `remove()`, so later tests
+        # would roll back a session that no longer exists. Flagged by CodeRabbit
+        # on #1030.
         real_rollback = sqla.session.rollback
 
         def _spy() -> None:
@@ -466,7 +471,7 @@ class RunLibrarianQueueTest(unittest.TestCase):
                 # must not leave a claim behind.
                 self._run(lock_rows=True)
         finally:
-            sqla.session.rollback = real_rollback  # type: ignore[method-assign]
+            del sqla.session.rollback
 
         self.assertTrue(rolled_back, "a locked run must roll back on failure")
         self.assertIsNone(self._consumed_at("a"))
@@ -479,13 +484,12 @@ class RunLibrarianQueueTest(unittest.TestCase):
         sqla.session.commit()
 
         rolled_back = []
-        real_rollback = sqla.session.rollback
         sqla.session.rollback = lambda: rolled_back.append(True)  # type: ignore[method-assign,return-value]
         try:
             with self.assertRaises(OSError):
                 self._run(sink=_ExplodingSink())
         finally:
-            sqla.session.rollback = real_rollback  # type: ignore[method-assign]
+            del sqla.session.rollback  # restore the proxy, not a stale binding
 
         self.assertEqual(rolled_back, [])
 
