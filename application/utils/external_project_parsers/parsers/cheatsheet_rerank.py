@@ -387,6 +387,10 @@ def _node_format(state: _RationaleState) -> _RationaleState:
             "LLM explanation unavailable."
         )
         state["fallback_used"] = True
+        if not state.get("fallback_reason"):
+            state["fallback_reason"] = (
+                "Rationale text was missing; used score-based fallback."
+            )
     trace = RationaleTrace(
         model=state["model_name"],
         prompt_version=PROMPT_VERSION,
