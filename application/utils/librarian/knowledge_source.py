@@ -84,6 +84,18 @@ class DbKnowledgeSource(KnowledgeSource):
     Rows are ordered by ``created_at`` then ``id``: the timestamp alone is not
     unique (B inserts a batch inside one transaction), and an unstable order
     would make a ``limit``ed run non-reproducible.
+
+    **Concurrency.** ``items()`` claims every row it yields with
+    ``SELECT ... FOR UPDATE SKIP LOCKED`` (Postgres only — a no-op on SQLite,
+    matching ``db.py``'s existing ``with_for_update()`` use). The lock is held
+    for the life of the caller's transaction, i.e. until
+    ``queue_runner.run_librarian_queue`` commits after ``mark_consumed`` — which
+    is the whole point: without it, two concurrent runs (a retry overlapping a
+    scheduled pass, two orchestrator workers) would both read the same
+    unconsumed rows, both pay for the retrieval/rerank work, and both persist a
+    decision envelope for the same chunk before either reaches
+    ``mark_consumed``. SKIP LOCKED means a second reader simply excludes rows
+    the first is holding instead of blocking on them or re-reading them.
     """
 
     def __init__(
@@ -119,6 +131,8 @@ class DbKnowledgeSource(KnowledgeSource):
         query = query.order_by(KnowledgeQueueRow.created_at, KnowledgeQueueRow.id)
         if self._limit is not None:
             query = query.limit(self._limit)
+        # Claim the batch: see the concurrency note on the class docstring.
+        query = query.with_for_update(skip_locked=True)
         return query
 
     def items(self) -> Iterator[KnowledgeQueueItem]:

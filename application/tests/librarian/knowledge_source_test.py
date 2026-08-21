@@ -12,8 +12,10 @@ rows, other runs' rows, and — the one with a cross-module consequence —
 import json
 import os
 import tempfile
+import threading
 import unittest
 from datetime import datetime, timezone
+from typing import List
 
 from application import create_app, sqla
 from application.database.db import KnowledgeQueueItem as KnowledgeQueueRow
@@ -166,6 +168,67 @@ class DbKnowledgeSourceTest(unittest.TestCase):
             items = list(DbKnowledgeSource(sqla.session).items())
 
         self.assertEqual([i.id for i in items], ["a"])
+
+    def test_concurrent_readers_skip_locked_rows(self) -> None:
+        """Two Module C workers must never both claim the same row.
+
+        ``queue_runner.run_librarian_queue`` reads a batch, then runs the full
+        retrieval/rerank pipeline on it, then finally commits. If a second
+        worker's read is not fenced off from the first worker's still-open
+        transaction, both would process (and both would persist a decision
+        for) the same chunk. FOR UPDATE SKIP LOCKED must make the second
+        worker's read exclude rows the first is holding, rather than block on
+        them (which would just delay the double-processing) or read them
+        again. Postgres-only: SKIP LOCKED is a no-op on SQLite (there is
+        nothing to skip — FOR UPDATE itself is ignored), so this reproduces
+        the real bug only against Postgres, same as the existing
+        ``user_model_test`` row-lock test.
+        """
+        if "postgresql" not in str(sqla.engine.url):
+            self.skipTest("row-lock serialization requires Postgres (SKIP LOCKED)")
+
+        sqla.session.add_all([_row("a"), _row("b")])
+        sqla.session.commit()
+
+        try:
+            # Worker 1: read (and thereby lock) both rows, then hold the
+            # transaction open -- exactly queue_runner.py's shape, which does
+            # not commit until the whole batch, LLM calls included, has
+            # finished.
+            worker1_ids = [i.id for i in DbKnowledgeSource(sqla.session).items()]
+            self.assertEqual(sorted(worker1_ids), ["a", "b"])
+
+            worker2_ids: List[str] = []
+            worker2_errors: List[BaseException] = []
+
+            def worker2() -> None:
+                with self.app.app_context():
+                    try:
+                        items = list(DbKnowledgeSource(sqla.session).items())
+                        worker2_ids.extend(i.id for i in items)
+                    except BaseException as exc:  # noqa: BLE001 - surface below
+                        worker2_errors.append(exc)
+                    finally:
+                        sqla.session.remove()
+
+            t = threading.Thread(target=worker2)
+            t.start()
+            t.join(timeout=5)
+
+            # A still-running thread means SKIP LOCKED failed to exclude the
+            # locked rows and worker2 is blocked waiting on them instead --
+            # that is a failure, not a pass, so confirm it actually finished.
+            self.assertFalse(t.is_alive(), "worker2 did not finish -- it is blocked")
+            self.assertEqual(worker2_errors, [])
+
+            # Worker 2 must see neither row: both are still locked by worker
+            # 1's open transaction, so SKIP LOCKED excludes them instead of
+            # blocking or (worse) reading and reprocessing them a second time.
+            self.assertEqual(worker2_ids, [])
+        finally:
+            # Release worker 1's row locks regardless of outcome, so a failed
+            # assertion above cannot leak a held lock into the next test.
+            sqla.session.rollback()
 
 
 if __name__ == "__main__":
