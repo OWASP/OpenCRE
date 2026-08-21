@@ -211,6 +211,9 @@ class DbKnowledgeSourceTest(unittest.TestCase):
 
 
 _PG_URL_ENV = "LIBRARIAN_POSTGRES_TEST_URL"
+#: Scopes this test's rows so it can run against a database that already holds
+#: Module B queue data without touching it.
+_PG_RUN_ID = "pg-lock-test-run"
 
 
 @unittest.skipUnless(
@@ -240,31 +243,59 @@ class DbKnowledgeSourceLockingPostgresTest(unittest.TestCase):
         KnowledgeQueueRow.__table__.create(self.engine, checkfirst=True)
         self.Session = sessionmaker(bind=self.engine)
         seed = self.Session()
-        seed.query(KnowledgeQueueRow).delete()
-        seed.add_all([_row("a"), _row("b"), _row("c"), _row("d")])
+        self._clear(seed)
+        seed.add_all(
+            [_row(rid, pipeline_run_id=_PG_RUN_ID) for rid in ("a", "b", "c", "d")]
+        )
         seed.commit()
         seed.close()
 
     def tearDown(self) -> None:
         wipe = self.Session()
-        wipe.query(KnowledgeQueueRow).delete()
+        self._clear(wipe)
         wipe.commit()
         wipe.close()
         self.engine.dispose()
+
+    @staticmethod
+    def _clear(session: object) -> None:
+        """Delete only this test's rows.
+
+        Never the whole table: ``LIBRARIAN_POSTGRES_TEST_URL`` may well point at a
+        database that already holds Module B queue data, and a blanket
+        ``DELETE FROM knowledge_queue`` would destroy it. Scoping on the
+        run id also keeps the assertions honest — the source reads by
+        ``pipeline_run_id``, so pre-existing rows cannot drift into a claim.
+        """
+        session.query(KnowledgeQueueRow).filter(  # type: ignore[attr-defined]
+            KnowledgeQueueRow.pipeline_run_id == _PG_RUN_ID
+        ).delete()
 
     def test_two_consumers_claim_disjoint_rows_and_release_on_rollback(self) -> None:
         first, second = self.Session(), self.Session()
         try:
             # First consumer claims two rows and holds the transaction open.
             claimed_first = [
-                i.id for i in DbKnowledgeSource(first, limit=2, lock_rows=True).items()
+                i.id
+                for i in DbKnowledgeSource(
+                    first,
+                    pipeline_run_id=_PG_RUN_ID,
+                    limit=2,
+                    lock_rows=True,
+                ).items()
             ]
             self.assertEqual(len(claimed_first), 2)
 
             # Second consumer, concurrently: SKIP LOCKED must step over the held
             # rows rather than block on them or hand back the same ones.
             claimed_second = [
-                i.id for i in DbKnowledgeSource(second, limit=2, lock_rows=True).items()
+                i.id
+                for i in DbKnowledgeSource(
+                    second,
+                    pipeline_run_id=_PG_RUN_ID,
+                    limit=2,
+                    lock_rows=True,
+                ).items()
             ]
             self.assertEqual(
                 set(claimed_first) & set(claimed_second),
@@ -279,7 +310,12 @@ class DbKnowledgeSourceLockingPostgresTest(unittest.TestCase):
             try:
                 after = [
                     i.id
-                    for i in DbKnowledgeSource(third, limit=4, lock_rows=True).items()
+                    for i in DbKnowledgeSource(
+                        third,
+                        pipeline_run_id=_PG_RUN_ID,
+                        limit=4,
+                        lock_rows=True,
+                    ).items()
                 ]
                 self.assertEqual(
                     set(claimed_first) - set(after),
