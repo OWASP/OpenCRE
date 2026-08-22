@@ -44,6 +44,16 @@ EXPECTED_GOLDEN_MAPPINGS = {
         "section": "Server Side Request Forgery",
         "cre_ids": ["028-728", "657-084"],
     },
+    ("owasp_kubernetes_top10_2025.json", "K01"): {
+        "section": "Insecure Workload Configurations",
+        "cre_ids": ["233-748", "486-813"],
+        "fallback_section_ids": None,
+    },
+    ("owasp_kubernetes_top10_2025.json", "K04"): {
+        "section": "Lack Of Cluster Level Policy Enforcement",
+        "cre_ids": ["117-371"],
+        "fallback_section_ids": None,
+    },
     ("owasp_kubernetes_top10_2025.json", "K07"): {
         "section": "Misconfigured And Vulnerable Cluster Components",
         "cre_ids": ["053-751", "233-748", "486-813", "715-334"],
