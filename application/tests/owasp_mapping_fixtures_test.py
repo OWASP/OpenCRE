@@ -25,12 +25,8 @@ EXPECTED_SECTION_COUNTS = {
     "owasp_top10_2025.json": 10,
 }
 EXPECTED_LINK_PREFIXES = {
-    "owasp_aisvs_1_0.json": (
-        "https://github.com/OWASP/AISVS/tree/main/1.0/en/",
-    ),
-    "owasp_api_top10_2023.json": (
-        "https://owasp.org/API-Security/editions/2023/en/",
-    ),
+    "owasp_aisvs_1_0.json": ("https://github.com/OWASP/AISVS/tree/main/1.0/en/",),
+    "owasp_api_top10_2023.json": ("https://owasp.org/API-Security/editions/2023/en/",),
     "owasp_cheatsheets_supplement.json": (
         "https://cheatsheetseries.owasp.org/cheatsheets/",
     ),
@@ -40,12 +36,8 @@ EXPECTED_LINK_PREFIXES = {
     "owasp_kubernetes_top10_2025.json": (
         "https://owasp.org/www-project-kubernetes-top-ten/2025/en/src/",
     ),
-    "owasp_llm_top10_2025.json": (
-        "https://genai.owasp.org/llmrisk/",
-    ),
-    "owasp_top10_2025.json": (
-        "https://owasp.org/Top10/2025/",
-    ),
+    "owasp_llm_top10_2025.json": ("https://genai.owasp.org/llmrisk/",),
+    "owasp_top10_2025.json": ("https://owasp.org/Top10/2025/",),
 }
 EXPECTED_GOLDEN_MAPPINGS = {
     ("owasp_api_top10_2023.json", "API7"): {
@@ -109,7 +101,9 @@ class TestOwaspMappingFixtures(unittest.TestCase):
                     self.assertIsInstance(entry.get("hyperlink"), str)
                     self.assertTrue(entry["hyperlink"].strip())
                     self.assertTrue(
-                        entry["hyperlink"].startswith(EXPECTED_LINK_PREFIXES[path.name]),
+                        entry["hyperlink"].startswith(
+                            EXPECTED_LINK_PREFIXES[path.name]
+                        ),
                         msg=(
                             f"Unexpected hyperlink prefix for {path.name}: "
                             f"{entry['hyperlink']}"
