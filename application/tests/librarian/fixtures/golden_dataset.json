@@ -5650,7 +5650,7 @@
     "slice": "positive",
     "input": {
       "text": "Improper Restriction of Rendered UI Layers or Frames",
-      "source_standard": "OTHER"
+      "source_standard": "CWE"
     },
     "expected": {
       "decision": "linked",
@@ -5670,7 +5670,7 @@
     "slice": "positive",
     "input": {
       "text": "Use of Web Link to Untrusted Target with window.opener Access",
-      "source_standard": "OTHER"
+      "source_standard": "CWE"
     },
     "expected": {
       "decision": "linked",
@@ -5691,7 +5691,7 @@
     "slice": "positive",
     "input": {
       "text": "Initialization of a Resource with an Insecure Default",
-      "source_standard": "OTHER"
+      "source_standard": "CWE"
     },
     "expected": {
       "decision": "linked",
@@ -5713,7 +5713,7 @@
     "slice": "positive",
     "input": {
       "text": "On-Chip Debug and Test Interface With Improper Access Control",
-      "source_standard": "OTHER"
+      "source_standard": "CWE"
     },
     "expected": {
       "decision": "linked",
@@ -5734,7 +5734,7 @@
     "slice": "positive",
     "input": {
       "text": "Generation of Weak Initialization Vector (IV)",
-      "source_standard": "OTHER"
+      "source_standard": "CWE"
     },
     "expected": {
       "decision": "linked",
@@ -5756,7 +5756,7 @@
     "slice": "positive",
     "input": {
       "text": "Insufficient Granularity of Access Control",
-      "source_standard": "OTHER"
+      "source_standard": "CWE"
     },
     "expected": {
       "decision": "linked",
@@ -5777,7 +5777,7 @@
     "slice": "positive",
     "input": {
       "text": "Insufficient Granularity of Address Regions Protected by Register Locks",
-      "source_standard": "OTHER"
+      "source_standard": "CWE"
     },
     "expected": {
       "decision": "linked",
@@ -5798,7 +5798,7 @@
     "slice": "positive",
     "input": {
       "text": "Improper Restriction of Write-Once Bit Fields",
-      "source_standard": "OTHER"
+      "source_standard": "CWE"
     },
     "expected": {
       "decision": "linked",
@@ -5819,7 +5819,7 @@
     "slice": "positive",
     "input": {
       "text": "Improper Prevention of Lock Bit Modification",
-      "source_standard": "OTHER"
+      "source_standard": "CWE"
     },
     "expected": {
       "decision": "linked",
@@ -5840,7 +5840,7 @@
     "slice": "positive",
     "input": {
       "text": "Security-Sensitive Hardware Controls with Missing Lock Bit Protection",
-      "source_standard": "OTHER"
+      "source_standard": "CWE"
     },
     "expected": {
       "decision": "linked",
@@ -5861,7 +5861,7 @@
     "slice": "positive",
     "input": {
       "text": "Improper Zeroization of Hardware Register",
-      "source_standard": "OTHER"
+      "source_standard": "CWE"
     },
     "expected": {
       "decision": "linked",
@@ -5881,7 +5881,7 @@
     "slice": "positive",
     "input": {
       "text": "Use of a Cryptographic Primitive with a Risky Implementation",
-      "source_standard": "OTHER"
+      "source_standard": "CWE"
     },
     "expected": {
       "decision": "linked",
@@ -5902,7 +5902,7 @@
     "slice": "positive",
     "input": {
       "text": "Use of Predictable Algorithm in Random Number Generator",
-      "source_standard": "OTHER"
+      "source_standard": "CWE"
     },
     "expected": {
       "decision": "linked",
@@ -5924,7 +5924,7 @@
     "slice": "positive",
     "input": {
       "text": "Sensitive Non-Volatile Information Not Protected During Debug",
-      "source_standard": "OTHER"
+      "source_standard": "CWE"
     },
     "expected": {
       "decision": "linked",
@@ -5945,7 +5945,7 @@
     "slice": "positive",
     "input": {
       "text": "CPU Hardware Not Configured to Support Exclusivity of Write and Execute Operations",
-      "source_standard": "OTHER"
+      "source_standard": "CWE"
     },
     "expected": {
       "decision": "linked",
@@ -5966,7 +5966,7 @@
     "slice": "positive",
     "input": {
       "text": "Insecure Workload Configurations",
-      "source_standard": "OTHER"
+      "source_standard": "kubernetes:2022"
     },
     "expected": {
       "decision": "linked",
@@ -5988,7 +5988,7 @@
     "slice": "positive",
     "input": {
       "text": "Supply Chain Vulnerabilities",
-      "source_standard": "OTHER"
+      "source_standard": "kubernetes:2022"
     },
     "expected": {
       "decision": "linked",
@@ -6010,7 +6010,7 @@
     "slice": "positive",
     "input": {
       "text": "Overly Permissive RBAC Configurations",
-      "source_standard": "OTHER"
+      "source_standard": "kubernetes:2022"
     },
     "expected": {
       "decision": "linked",
@@ -6030,7 +6030,7 @@
     "slice": "positive",
     "input": {
       "text": "Lack of Centralized Policy Enforcement",
-      "source_standard": "OTHER"
+      "source_standard": "kubernetes:2022"
     },
     "expected": {
       "decision": "linked",
@@ -6050,7 +6050,7 @@
     "slice": "positive",
     "input": {
       "text": "Inadequate Logging and Monitoring",
-      "source_standard": "OTHER"
+      "source_standard": "kubernetes:2022"
     },
     "expected": {
       "decision": "linked",
@@ -6072,7 +6072,7 @@
     "slice": "positive",
     "input": {
       "text": "Broken Authentication Mechanisms",
-      "source_standard": "OTHER"
+      "source_standard": "kubernetes:2022"
     },
     "expected": {
       "decision": "linked",
@@ -6095,7 +6095,7 @@
     "slice": "positive",
     "input": {
       "text": "Missing Network Segmentation Controls",
-      "source_standard": "OTHER"
+      "source_standard": "kubernetes:2022"
     },
     "expected": {
       "decision": "linked",
@@ -6116,7 +6116,7 @@
     "slice": "positive",
     "input": {
       "text": "Secrets Management Failures",
-      "source_standard": "OTHER"
+      "source_standard": "kubernetes:2022"
     },
     "expected": {
       "decision": "linked",
@@ -6137,7 +6137,7 @@
     "slice": "positive",
     "input": {
       "text": "Misconfigured Cluster Components",
-      "source_standard": "OTHER"
+      "source_standard": "kubernetes:2022"
     },
     "expected": {
       "decision": "linked",
@@ -6159,7 +6159,7 @@
     "slice": "positive",
     "input": {
       "text": "Outdated and Vulnerable Kubernetes Components",
-      "source_standard": "OTHER"
+      "source_standard": "kubernetes:2022"
     },
     "expected": {
       "decision": "linked",
@@ -6181,7 +6181,7 @@
     "slice": "positive",
     "input": {
       "text": "Insecure Workload Configurations",
-      "source_standard": "OTHER"
+      "source_standard": "kubernetes:2025"
     },
     "expected": {
       "decision": "linked",
@@ -6201,7 +6201,7 @@
     "slice": "positive",
     "input": {
       "text": "Overly Permissive Authorization Configurations",
-      "source_standard": "OTHER"
+      "source_standard": "kubernetes:2025"
     },
     "expected": {
       "decision": "linked",
@@ -6221,7 +6221,7 @@
     "slice": "positive",
     "input": {
       "text": "Secrets Management Failures",
-      "source_standard": "OTHER"
+      "source_standard": "kubernetes:2025"
     },
     "expected": {
       "decision": "linked",
@@ -6242,7 +6242,7 @@
     "slice": "positive",
     "input": {
       "text": "Lack Of Cluster Level Policy Enforcement",
-      "source_standard": "OTHER"
+      "source_standard": "kubernetes:2025"
     },
     "expected": {
       "decision": "linked",
@@ -6261,7 +6261,7 @@
     "slice": "positive",
     "input": {
       "text": "Missing Network Segmentation Controls",
-      "source_standard": "OTHER"
+      "source_standard": "kubernetes:2025"
     },
     "expected": {
       "decision": "linked",
@@ -6282,7 +6282,7 @@
     "slice": "positive",
     "input": {
       "text": "Overly Exposed Kubernetes Components",
-      "source_standard": "OTHER"
+      "source_standard": "kubernetes:2025"
     },
     "expected": {
       "decision": "linked",
@@ -6302,7 +6302,7 @@
     "slice": "positive",
     "input": {
       "text": "Misconfigured And Vulnerable Cluster Components",
-      "source_standard": "OTHER"
+      "source_standard": "kubernetes:2025"
     },
     "expected": {
       "decision": "linked",
@@ -6324,7 +6324,7 @@
     "slice": "positive",
     "input": {
       "text": "Cluster To Cloud Lateral Movement",
-      "source_standard": "OTHER"
+      "source_standard": "kubernetes:2025"
     },
     "expected": {
       "decision": "linked",
@@ -6345,7 +6345,7 @@
     "slice": "positive",
     "input": {
       "text": "Broken Authentication Mechanisms",
-      "source_standard": "OTHER"
+      "source_standard": "kubernetes:2025"
     },
     "expected": {
       "decision": "linked",
@@ -6366,7 +6366,7 @@
     "slice": "positive",
     "input": {
       "text": "Inadequate Logging And Monitoring",
-      "source_standard": "OTHER"
+      "source_standard": "kubernetes:2025"
     },
     "expected": {
       "decision": "linked",
