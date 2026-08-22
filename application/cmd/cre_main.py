@@ -975,6 +975,36 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
         BaseParser().register_resource(
             secure_headers.SecureHeaders, db_connection_str=args.cache_file
         )
+    if args.owasp_top10_2025_in:
+        from application.utils.external_project_parsers.parsers import owasp_top10_2025
+
+        BaseParser().register_resource(
+            owasp_top10_2025.OwaspTop10_2025, db_connection_str=args.cache_file
+        )
+    if args.owasp_api_top10_2023_in:
+        from application.utils.external_project_parsers.parsers import (
+            owasp_api_top10_2023,
+        )
+
+        BaseParser().register_resource(
+            owasp_api_top10_2023.OwaspApiTop10_2023,
+            db_connection_str=args.cache_file,
+        )
+    if args.owasp_llm_top10_2025_in:
+        from application.utils.external_project_parsers.parsers import (
+            owasp_llm_top10_2025,
+        )
+
+        BaseParser().register_resource(
+            owasp_llm_top10_2025.OwaspLlmTop10_2025,
+            db_connection_str=args.cache_file,
+        )
+    if args.owasp_aisvs_in:
+        from application.utils.external_project_parsers.parsers import owasp_aisvs
+
+        BaseParser().register_resource(
+            owasp_aisvs.OwaspAisvs, db_connection_str=args.cache_file
+        )
     if args.pci_dss_4_in:
         from application.utils.external_project_parsers.parsers import pci_dss
 
@@ -1170,7 +1200,7 @@ def run_librarian(
     # resolver may auto-link to (W2 seeded this from the golden set; here it is
     # the real DB-backed registry).
     cre_embeddings = database.get_embeddings_by_doc_type(defs.Credoctypes.CRE.value)
-    known_ids = set(cre_embeddings.keys())
+    known_ids = {cre.external_id for cre in database.get_CREs()}
     # in_memory loads the hub matrix; pgvector ranks in the DB over the
     # embedding_vec column (no in-RAM pool). Both honor the same retrieve().
     pool = (
@@ -1215,6 +1245,23 @@ def run_librarian(
         if resolution.outcome == ResolutionOutcome.resolved:
             explicit += 1
             logger.info("[explicit] %s -> %s", section.chunk_id, resolution.cre_ids[0])
+            continue
+        if resolution.outcome == ResolutionOutcome.no_reference:
+            # Continue to semantic retrieval below
+            pass
+        elif resolution.outcome in (
+            ResolutionOutcome.unknown_reference,
+            ResolutionOutcome.conflicting_references,
+        ):
+            logger.info("[review] %s -> %s", section.chunk_id, resolution.outcome)
+            continue
+        else:
+            rejected += 1
+            logger.warning(
+                "[review] %s skipped: unexpected resolution outcome %s",
+                section.chunk_id,
+                resolution.outcome,
+            )
             continue
 
         try:
