@@ -24,6 +24,14 @@ definitive refusal — re-reading a malformed row forever helps nobody). Rows th
 failures — an embedding timeout, a cross-encoder hiccup — that the next run
 should retry. ``RowOutcome`` is what carries that distinction out of the pipeline.
 
+**One consumer per run, by default.** The read predicate is
+``consumed_at IS NULL`` and the stamp lands at the end, so the claim is not
+atomic with the read: two plain consumers on the same ``pipeline_run_id`` do the
+same work twice rather than half each. The orchestrator serialises A->B->C and
+runs a single C consumer per run, which is what makes that safe. ``lock_rows``
+(Postgres only) is the opt-in that makes concurrent consumers disjoint; see
+``DbKnowledgeSource`` for the invariant and #1025 for how it was found.
+
 **The safety path is declared, not assumed.** No detector exists yet, so the
 pipeline runs behind ``NullSafetyGuard`` and every row comes back unevaluated.
 That count is carried into the summary rather than left to look like a clean
@@ -97,6 +105,7 @@ def run_librarian_queue(
     at: datetime,
     sink: Optional[EnvelopeSink] = None,
     limit: Optional[int] = None,
+    lock_rows: bool = False,
     dry_run: bool = False,
 ) -> RunSummary:
     """Drain one pipeline run's unconsumed queue rows through C.0 -> C.4.
@@ -117,6 +126,22 @@ def run_librarian_queue(
             consuming a row whose envelope was discarded loses the chunk — and
             it must report ``persists=True``. A dry run may omit it.
         limit: cap on rows read in this batch; None drains the run.
+        lock_rows: claim the batch with ``FOR UPDATE SKIP LOCKED`` so that
+            several consumers draining one run take disjoint rows. Off by
+            default, because the orchestrator runs a single C consumer per
+            ``pipeline_run_id`` and a lone consumer gains nothing from the lock.
+            Requires Postgres, and pairs with ``limit``: locking an unbounded
+            batch claims every unconsumed row of the run, leaving a second
+            consumer with nothing to take. See ``DbKnowledgeSource._locked`` for
+            how long the lock is held and what that costs. Not valid with
+            ``dry_run``, which claims nothing because it retires nothing.
+
+            **Transaction boundary.** Unlocked, this function is as it always
+            was: it commits a successful real run and otherwise leaves the
+            transaction to the caller. Locked, it additionally rolls back on any
+            exception, because a lock outliving the call would strand the batch —
+            unconsumed, and unclaimable by anyone else. So a locked run always
+            ends its own transaction, one way or the other.
         dry_run: build envelopes, persist nothing, leave ``consumed_at`` alone.
 
     Returns a ``RunSummary``; it does not raise on individual bad rows, which
@@ -137,6 +162,18 @@ def run_librarian_queue(
     config = config or load_config()
     summary = RunSummary(run_id=pipeline_run_id, dry_run=dry_run)
 
+    # A dry run retires nothing, so claiming rows is meaningless — and worse than
+    # meaningless: the locks would be held for the length of the batch and block a
+    # real consumer from taking rows this run has no intention of finishing. The
+    # combination is a caller mistake, so say so rather than quietly dropping one
+    # of the two flags.
+    if lock_rows and dry_run:
+        raise ValueError(
+            "lock_rows=True is not valid with dry_run=True: a dry run stamps "
+            "nothing, so locking rows would block a real consumer from claiming "
+            "rows this run will never retire."
+        )
+
     if not dry_run:
         if sink is None:
             raise ValueError(
@@ -150,7 +187,12 @@ def run_librarian_queue(
                 "must not mark rows consumed. Use dry_run=True with it."
             )
 
-    source = DbKnowledgeSource(session, pipeline_run_id=pipeline_run_id, limit=limit)
+    source = DbKnowledgeSource(
+        session,
+        pipeline_run_id=pipeline_run_id,
+        limit=limit,
+        lock_rows=lock_rows,
+    )
     pipeline = LibrarianPipeline(
         source,
         components.retriever,
@@ -160,56 +202,70 @@ def run_librarian_queue(
         pipeline_run_id=pipeline_run_id,
     )
 
-    result: RunResult = pipeline.run(at=at)
-    summary.read = result.stats.total
-    summary.linked = result.stats.linked
-    summary.review = result.stats.review
-    summary.skipped = result.stats.skipped
-    summary.errored = result.stats.errored
-    summary.safety_unevaluated = result.stats.safety_unevaluated
+    # A locked run must not leave its claim outstanding. `FOR UPDATE SKIP LOCKED`
+    # holds every locked row until the transaction ends, and the caller owns that
+    # transaction — so an exception escaping here would strand the batch: those
+    # rows are neither consumed nor claimable by another consumer until the caller
+    # happens to roll back or disconnect. Committing on the way out would be worse
+    # (it would retire rows whose envelopes never landed), so the failure path
+    # rolls back and re-raises. The unlocked path is untouched: without a lock
+    # there is nothing to strand, and leaving the transaction to the caller is the
+    # existing contract this module shares with Module B's `run_noise_filter`.
+    try:
+        result: RunResult = pipeline.run(at=at)
+        summary.read = result.stats.total
+        summary.linked = result.stats.linked
+        summary.review = result.stats.review
+        summary.skipped = result.stats.skipped
+        summary.errored = result.stats.errored
+        summary.safety_unevaluated = result.stats.safety_unevaluated
 
-    if summary.safety_unevaluated:
-        logger.warning(
-            "librarian run %s: %d of %d rows were decided without the safety "
-            "path (no SafetyGuard implementation yet), so ADVERSARIAL_FLAG and "
-            "UPDATE_AMBIGUOUS could not fire. Their clean verdicts are defaults, "
-            "not findings.",
-            pipeline_run_id,
-            summary.safety_unevaluated,
-            summary.read,
-        )
+        if summary.safety_unevaluated:
+            logger.warning(
+                "librarian run %s: %d of %d rows were decided without the safety "
+                "path (no SafetyGuard implementation yet), so ADVERSARIAL_FLAG and "
+                "UPDATE_AMBIGUOUS could not fire. Their clean verdicts are defaults, "
+                "not findings.",
+                pipeline_run_id,
+                summary.safety_unevaluated,
+                summary.read,
+            )
 
-    if dry_run:
-        summary.finalize_status()
-        return summary
+        if dry_run:
+            summary.finalize_status()
+            return summary
 
-    # Persist first, retire second. If the sink raises, nothing is consumed and
-    # the whole run is retried — the rows are still B's to hand back.
-    assert sink is not None  # guarded above; narrows the Optional for mypy
-    # B's label per chunk is not in the pinned RFC envelope, so it is handed to
-    # the sink beside the batch. Optional: a sink with nowhere to record it does
-    # not implement the method and simply does not receive it.
-    accept = getattr(sink, "accept_source_labels", None)
-    if callable(accept) and result.source_labels:
-        accept(result.source_labels)
-    summary.persisted = sink.write(result.envelopes)
+        # Persist first, retire second. If the sink raises, nothing is consumed and
+        # the whole run is retried — the rows are still B's to hand back.
+        assert sink is not None  # guarded above; narrows the Optional for mypy
+        # B's label per chunk is not in the pinned RFC envelope, so it is handed to
+        # the sink beside the batch. Optional: a sink with nowhere to record it does
+        # not implement the method and simply does not receive it.
+        accept = getattr(sink, "accept_source_labels", None)
+        if callable(accept) and result.source_labels:
+            accept(result.source_labels)
+        summary.persisted = sink.write(result.envelopes)
 
-    # Rows B wrote that C could not even model never reached the pipeline, so
-    # they are absent from its outcomes. Retire them here or the next run reads
-    # the same poison rows again, and every run after that. Failing the model is
-    # a definitive refusal — the row will not become modellable by being read a
-    # second time — so it is finished in the same sense a C.0 rejection is. The
-    # row itself is never deleted, so the evidence survives.
-    finished = result.finished_row_ids() + source.rejected_row_ids
-    if source.rejected_row_ids:
-        # Counted in `read` as well as `skipped`. They were drawn from the queue
-        # and retired by this run, so leaving them out of `read` would make the
-        # outcomes add up to more rows than the run claims to have read.
-        rejected = len(source.rejected_row_ids)
-        summary.read += rejected
-        summary.skipped += rejected
-    summary.consumed = mark_consumed(session, finished, at=at)
-    session.commit()
+        # Rows B wrote that C could not even model never reached the pipeline, so
+        # they are absent from its outcomes. Retire them here or the next run reads
+        # the same poison rows again, and every run after that. Failing the model is
+        # a definitive refusal — the row will not become modellable by being read a
+        # second time — so it is finished in the same sense a C.0 rejection is. The
+        # row itself is never deleted, so the evidence survives.
+        finished = result.finished_row_ids() + source.rejected_row_ids
+        if source.rejected_row_ids:
+            # Counted in `read` as well as `skipped`. They were drawn from the queue
+            # and retired by this run, so leaving them out of `read` would make the
+            # outcomes add up to more rows than the run claims to have read.
+            rejected = len(source.rejected_row_ids)
+            summary.read += rejected
+            summary.skipped += rejected
+        summary.consumed = mark_consumed(session, finished, at=at)
+        session.commit()
+    except BaseException:
+        if lock_rows:
+            session.rollback()
+        raise
 
     logger.info(
         "librarian run %s: read %d, linked %d, review %d, skipped %d, "
