@@ -151,8 +151,69 @@ class TestLoadDatasetRejectsDuplicateIds(unittest.TestCase):
             os.unlink(tmp)
 
 
+# Import the parsers for the new standards so they can be registered into the DB.
+from application.utils.external_project_parsers.base_parser import BaseParser
+from application.utils.external_project_parsers.parsers import (
+    owasp_kubernetes_top10_2022,
+    owasp_kubernetes_top10_2025,
+)
+# Optionally import API, LLM, AISVS if they exist; if not, skip gracefully.
+try:
+    from application.utils.external_project_parsers.parsers import (
+        owasp_api_security_top10_2023,
+    )
+except ImportError:
+    owasp_api_security_top10_2023 = None
+try:
+    from application.utils.external_project_parsers.parsers import (
+        owasp_llm_top10_2025,
+    )
+except ImportError:
+    owasp_llm_top10_2025 = None
+try:
+    from application.utils.external_project_parsers.parsers import (
+        owasp_aisvs,
+    )
+except ImportError:
+    owasp_aisvs = None
+
+
 class TestDatasetDeterminism(unittest.TestCase):
     """The committed JSON must re-derive identically from the DB."""
+
+    @classmethod
+    def setUpClass(cls):
+        """Populate the DB with all standards that appear in the golden dataset."""
+        if not os.path.exists(_DB):
+            return  # test will be skipped anyway
+        parser = BaseParser()
+        # Register Kubernetes standards
+        parser.register_resource(
+            owasp_kubernetes_top10_2022.OwaspKubernetesTop10_2022,
+            db_connection_str=f"sqlite:///{_DB}",
+        )
+        parser.register_resource(
+            owasp_kubernetes_top10_2025.OwaspKubernetesTop10_2025,
+            db_connection_str=f"sqlite:///{_DB}",
+        )
+        # Register API Security if available
+        if owasp_api_security_top10_2023 is not None:
+            parser.register_resource(
+                owasp_api_security_top10_2023.OwaspApiSecurityTop10_2023,
+                db_connection_str=f"sqlite:///{_DB}",
+            )
+        # Register LLM if available
+        if owasp_llm_top10_2025 is not None:
+            parser.register_resource(
+                owasp_llm_top10_2025.OwaspLlmTop10_2025,
+                db_connection_str=f"sqlite:///{_DB}",
+            )
+        # Register AISVS if available
+        if owasp_aisvs is not None:
+            parser.register_resource(
+                owasp_aisvs.AISVS,
+                db_connection_str=f"sqlite:///{_DB}",
+            )
 
     def test_build_check_matches_committed_dataset(self):
         if not os.path.exists(_DB):

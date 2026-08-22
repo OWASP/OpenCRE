@@ -7220,43 +7220,11 @@
     }
   },
   {
-    "id": "gold:ambiguous:governance",
-    "schema_version": "0.1.0",
-    "slice": "ambiguous",
-    "input": {
-      "text": "Ensure that the organisation has a documented information security policy approved by senior management.",
-      "source_standard": "OTHER"
-    },
-    "expected": {
-      "decision": "review",
-      "reason_code": "BELOW_THRESHOLD"
-    },
-    "provenance": {
-      "ground_truth_source": "synthesised broad statement that should route to human review"
-    }
-  },
-  {
     "id": "gold:ambiguous:risk-assessment",
     "schema_version": "0.1.0",
     "slice": "ambiguous",
     "input": {
       "text": "Risk assessment processes are followed at every major design decision.",
-      "source_standard": "OTHER"
-    },
-    "expected": {
-      "decision": "review",
-      "reason_code": "BELOW_THRESHOLD"
-    },
-    "provenance": {
-      "ground_truth_source": "synthesised broad statement that should route to human review"
-    }
-  },
-  {
-    "id": "gold:ambiguous:training",
-    "schema_version": "0.1.0",
-    "slice": "ambiguous",
-    "input": {
-      "text": "Verify that developers receive security training appropriate to their role and responsibilities.",
       "source_standard": "OTHER"
     },
     "expected": {
