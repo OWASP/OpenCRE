@@ -284,3 +284,34 @@ class GitRepositoryClient(RepositoryClient):
 
     def verify_repository_integrity(self) -> bool:
         return self.is_valid_repository(self.local_path)
+
+    def get_file_at_commit(self, commit_sha: str, file_path: str) -> str:
+        """
+        Retrieve the contents of a file at a specific commit.
+
+        Args:
+            commit_sha:
+                Commit to read from.
+
+            file_path:
+                Repository-relative file path.
+
+        Returns:
+            File contents as a string.
+        """
+
+        result = subprocess.run(
+            [
+                "git",
+                "-C",
+                str(self.get_local_path()),
+                "show",
+                f"{commit_sha}:{file_path}",
+            ],
+            capture_output=True,
+            text=True,
+            check=True,
+            timeout=30,
+        )
+
+        return result.stdout

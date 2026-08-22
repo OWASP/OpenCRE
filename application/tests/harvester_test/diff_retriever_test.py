@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import MagicMock
-from unittest.mock import patch
 from unittest.mock import call
+from unittest.mock import patch
 
 from application.utils.harvester.diff_retriever import (
     DiffRetriever,
@@ -16,10 +16,8 @@ class DiffRetrieverTests(unittest.TestCase):
             MagicMock(stdout="def456\n"),
             MagicMock(stdout=b"diff --git a/README.md b/README.md\n"),
         ]
-
         client = MagicMock()
         client.get_local_path.return_value = "/tmp/repo"
-
         retriever = DiffRetriever(client)
 
         diff = retriever.get_diff(
@@ -31,7 +29,6 @@ class DiffRetrieverTests(unittest.TestCase):
             diff,
             "diff --git a/README.md b/README.md\n",
         )
-
         mock_run.assert_has_calls(
             [
                 call(
@@ -88,7 +85,6 @@ class DiffRetrieverTests(unittest.TestCase):
 
         client = MagicMock()
         client.get_local_path.return_value = "/tmp/repo"
-
         retriever = DiffRetriever(client)
 
         with self.assertRaises(ValueError):
