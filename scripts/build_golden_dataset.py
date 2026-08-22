@@ -466,7 +466,7 @@ def build(conn: sqlite3.Connection) -> List[Dict]:
     rows.extend(build_explicit(conn))
     rows.extend(build_positive_asvs(conn))
     rows.extend(build_positive_multilink(conn))
-    rows.extend(build_kubernetes(conn))          # <-- NEW
+    rows.extend(build_kubernetes(conn))  # <-- NEW
     rows.extend(build_hard_negative(conn))
     rows.extend(build_update(conn))
     rows.extend(build_ambiguous())
