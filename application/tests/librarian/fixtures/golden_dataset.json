@@ -5645,26 +5645,6 @@
     }
   },
   {
-    "id": "gold:cwe:1004:positive_multi",
-    "schema_version": "0.1.0",
-    "slice": "positive",
-    "input": {
-      "text": "Sensitive Cookie Without 'HttpOnly' Flag",
-      "source_standard": "OTHER"
-    },
-    "expected": {
-      "decision": "linked",
-      "cre_ids": [
-        "284-521",
-        "804-220"
-      ]
-    },
-    "provenance": {
-      "section_path": "1004",
-      "ground_truth_source": "OpenCRE DB mapping (multi-CRE node from CWE)"
-    }
-  },
-  {
     "id": "gold:cwe:1021:positive_multi",
     "schema_version": "0.1.0",
     "slice": "positive",
@@ -5685,173 +5665,45 @@
     }
   },
   {
-    "id": "gold:cwe:1053:positive_multi",
+    "id": "gold:cwe:1022:positive_multi",
     "schema_version": "0.1.0",
     "slice": "positive",
     "input": {
-      "text": "Missing Documentation for Design",
+      "text": "Use of Web Link to Untrusted Target with window.opener Access",
       "source_standard": "OTHER"
     },
     "expected": {
       "decision": "linked",
       "cre_ids": [
-        "068-102",
-        "162-655",
-        "820-878"
+        "117-371",
+        "757-271",
+        "801-310"
       ]
     },
     "provenance": {
-      "section_path": "1053",
+      "section_path": "1022",
       "ground_truth_source": "OpenCRE DB mapping (multi-CRE node from CWE)"
     }
   },
   {
-    "id": "gold:cwe:1059:positive_multi",
+    "id": "gold:cwe:1188:positive_multi",
     "schema_version": "0.1.0",
     "slice": "positive",
     "input": {
-      "text": "Insufficient Technical Documentation",
+      "text": "Initialization of a Resource with an Insecure Default",
       "source_standard": "OTHER"
     },
     "expected": {
       "decision": "linked",
       "cre_ids": [
-        "068-102",
-        "162-655",
-        "820-878"
+        "206-254",
+        "287-251",
+        "346-640",
+        "622-835"
       ]
     },
     "provenance": {
-      "section_path": "1059",
-      "ground_truth_source": "OpenCRE DB mapping (multi-CRE node from CWE)"
-    }
-  },
-  {
-    "id": "gold:cwe:1110:positive_multi",
-    "schema_version": "0.1.0",
-    "slice": "positive",
-    "input": {
-      "text": "Incomplete Design Documentation",
-      "source_standard": "OTHER"
-    },
-    "expected": {
-      "decision": "linked",
-      "cre_ids": [
-        "068-102",
-        "162-655",
-        "820-878",
-        "822-100"
-      ]
-    },
-    "provenance": {
-      "section_path": "1110",
-      "ground_truth_source": "OpenCRE DB mapping (multi-CRE node from CWE)"
-    }
-  },
-  {
-    "id": "gold:cwe:1111:positive_multi",
-    "schema_version": "0.1.0",
-    "slice": "positive",
-    "input": {
-      "text": "Incomplete I/O Documentation",
-      "source_standard": "OTHER"
-    },
-    "expected": {
-      "decision": "linked",
-      "cre_ids": [
-        "068-102",
-        "162-655",
-        "820-878"
-      ]
-    },
-    "provenance": {
-      "section_path": "1111",
-      "ground_truth_source": "OpenCRE DB mapping (multi-CRE node from CWE)"
-    }
-  },
-  {
-    "id": "gold:cwe:1112:positive_multi",
-    "schema_version": "0.1.0",
-    "slice": "positive",
-    "input": {
-      "text": "Incomplete Documentation of Program Execution",
-      "source_standard": "OTHER"
-    },
-    "expected": {
-      "decision": "linked",
-      "cre_ids": [
-        "068-102",
-        "162-655",
-        "820-878"
-      ]
-    },
-    "provenance": {
-      "section_path": "1112",
-      "ground_truth_source": "OpenCRE DB mapping (multi-CRE node from CWE)"
-    }
-  },
-  {
-    "id": "gold:cwe:1118:positive_multi",
-    "schema_version": "0.1.0",
-    "slice": "positive",
-    "input": {
-      "text": "Insufficient Documentation of Error Handling Techniques",
-      "source_standard": "OTHER"
-    },
-    "expected": {
-      "decision": "linked",
-      "cre_ids": [
-        "068-102",
-        "162-655",
-        "820-878"
-      ]
-    },
-    "provenance": {
-      "section_path": "1118",
-      "ground_truth_source": "OpenCRE DB mapping (multi-CRE node from CWE)"
-    }
-  },
-  {
-    "id": "gold:cwe:1173:positive_multi",
-    "schema_version": "0.1.0",
-    "slice": "positive",
-    "input": {
-      "text": "Improper Use of Validation Framework",
-      "source_standard": "OTHER"
-    },
-    "expected": {
-      "decision": "linked",
-      "cre_ids": [
-        "031-447",
-        "146-706",
-        "611-051",
-        "653-242"
-      ]
-    },
-    "provenance": {
-      "section_path": "1173",
-      "ground_truth_source": "OpenCRE DB mapping (multi-CRE node from CWE)"
-    }
-  },
-  {
-    "id": "gold:cwe:1174:positive_multi",
-    "schema_version": "0.1.0",
-    "slice": "positive",
-    "input": {
-      "text": "ASP.NET Misconfiguration: Improper Model Validation",
-      "source_standard": "OTHER"
-    },
-    "expected": {
-      "decision": "linked",
-      "cre_ids": [
-        "031-447",
-        "146-706",
-        "611-051",
-        "653-242"
-      ]
-    },
-    "provenance": {
-      "section_path": "1174",
+      "section_path": "1188",
       "ground_truth_source": "OpenCRE DB mapping (multi-CRE node from CWE)"
     }
   },
@@ -5873,26 +5725,6 @@
     },
     "provenance": {
       "section_path": "1191",
-      "ground_truth_source": "OpenCRE DB mapping (multi-CRE node from CWE)"
-    }
-  },
-  {
-    "id": "gold:cwe:120:positive_multi",
-    "schema_version": "0.1.0",
-    "slice": "positive",
-    "input": {
-      "text": "Buffer Copy without Checking Size of Input ('Classic Buffer Overflow')",
-      "source_standard": "OTHER"
-    },
-    "expected": {
-      "decision": "linked",
-      "cre_ids": [
-        "314-131",
-        "831-570"
-      ]
-    },
-    "provenance": {
-      "section_path": "120",
       "ground_truth_source": "OpenCRE DB mapping (multi-CRE node from CWE)"
     }
   },
@@ -5957,6 +5789,174 @@
     },
     "provenance": {
       "section_path": "1222",
+      "ground_truth_source": "OpenCRE DB mapping (multi-CRE node from CWE)"
+    }
+  },
+  {
+    "id": "gold:cwe:1224:positive_multi",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Improper Restriction of Write-Once Bit Fields",
+      "source_standard": "OTHER"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "117-371",
+        "757-271",
+        "801-310"
+      ]
+    },
+    "provenance": {
+      "section_path": "1224",
+      "ground_truth_source": "OpenCRE DB mapping (multi-CRE node from CWE)"
+    }
+  },
+  {
+    "id": "gold:cwe:1231:positive_multi",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Improper Prevention of Lock Bit Modification",
+      "source_standard": "OTHER"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "117-371",
+        "757-271",
+        "801-310"
+      ]
+    },
+    "provenance": {
+      "section_path": "1231",
+      "ground_truth_source": "OpenCRE DB mapping (multi-CRE node from CWE)"
+    }
+  },
+  {
+    "id": "gold:cwe:1233:positive_multi",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Security-Sensitive Hardware Controls with Missing Lock Bit Protection",
+      "source_standard": "OTHER"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "117-371",
+        "757-271",
+        "801-310"
+      ]
+    },
+    "provenance": {
+      "section_path": "1233",
+      "ground_truth_source": "OpenCRE DB mapping (multi-CRE node from CWE)"
+    }
+  },
+  {
+    "id": "gold:cwe:1239:positive_multi",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Improper Zeroization of Hardware Register",
+      "source_standard": "OTHER"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "715-304",
+        "762-451"
+      ]
+    },
+    "provenance": {
+      "section_path": "1239",
+      "ground_truth_source": "OpenCRE DB mapping (multi-CRE node from CWE)"
+    }
+  },
+  {
+    "id": "gold:cwe:1240:positive_multi",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Use of a Cryptographic Primitive with a Risky Implementation",
+      "source_standard": "OTHER"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "002-801",
+        "504-340",
+        "742-431"
+      ]
+    },
+    "provenance": {
+      "section_path": "1240",
+      "ground_truth_source": "OpenCRE DB mapping (multi-CRE node from CWE)"
+    }
+  },
+  {
+    "id": "gold:cwe:1241:positive_multi",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Use of Predictable Algorithm in Random Number Generator",
+      "source_standard": "OTHER"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "206-254",
+        "287-251",
+        "346-640",
+        "622-835"
+      ]
+    },
+    "provenance": {
+      "section_path": "1241",
+      "ground_truth_source": "OpenCRE DB mapping (multi-CRE node from CWE)"
+    }
+  },
+  {
+    "id": "gold:cwe:1243:positive_multi",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Sensitive Non-Volatile Information Not Protected During Debug",
+      "source_standard": "OTHER"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "117-371",
+        "757-271",
+        "801-310"
+      ]
+    },
+    "provenance": {
+      "section_path": "1243",
+      "ground_truth_source": "OpenCRE DB mapping (multi-CRE node from CWE)"
+    }
+  },
+  {
+    "id": "gold:cwe:1252:positive_multi",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "CPU Hardware Not Configured to Support Exclusivity of Write and Execute Operations",
+      "source_standard": "OTHER"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "117-371",
+        "757-271",
+        "801-310"
+      ]
+    },
+    "provenance": {
+      "section_path": "1252",
       "ground_truth_source": "OpenCRE DB mapping (multi-CRE node from CWE)"
     }
   },
@@ -6368,412 +6368,6 @@
     },
     "provenance": {
       "ground_truth_source": "manually synthesised broad statement that should route to human review (no single clear CRE target)"
-    }
-  },
-  {
-    "id": "gold:kubernetes:K01:positive",
-    "schema_version": "0.1.0",
-    "slice": "positive",
-    "input": {
-      "text": "Verify that containers run as a non-root user, use a read-only root filesystem where possible, and drop all unnecessary Linux capabilities. Ensure that Pod Security Standards are enforced at the cluster level to restrict privileged containers and host namespace sharing.",
-      "source_standard": "OTHER"
-    },
-    "expected": {
-      "decision": "linked",
-      "cre_ids": ["233-748", "486-813"]
-    },
-    "provenance": {
-      "section_path": "K01",
-      "ground_truth_source": "manual mapping from OWASP Kubernetes Top Ten 2025"
-    }
-  },
-  {
-    "id": "gold:kubernetes:K01:hard_negative",
-    "schema_version": "0.1.0",
-    "slice": "hard_negative",
-    "input": {
-      "text": "Do NOT run containers as root or in privileged mode. Never mount host paths with write permissions unless absolutely necessary.",
-      "source_standard": "OTHER"
-    },
-    "expected": {
-      "decision": "linked",
-      "cre_ids": ["233-748", "486-813"]
-    },
-    "provenance": {
-      "section_path": "K01",
-      "ground_truth_source": "manual mapping from OWASP Kubernetes Top Ten 2025 (negation phrasing)"
-    }
-  },
-  {
-    "id": "gold:kubernetes:K02:positive",
-    "schema_version": "0.1.0",
-    "slice": "positive",
-    "input": {
-      "text": "Verify that Role-Based Access Control (RBAC) is configured with least-privilege principles. Regularly audit cluster roles and bindings to identify and remove overly permissive permissions.",
-      "source_standard": "OTHER"
-    },
-    "expected": {
-      "decision": "linked",
-      "cre_ids": ["128-128", "724-770"]
-    },
-    "provenance": {
-      "section_path": "K02",
-      "ground_truth_source": "manual mapping from OWASP Kubernetes Top Ten 2025"
-    }
-  },
-  {
-    "id": "gold:kubernetes:K03:positive",
-    "schema_version": "0.1.0",
-    "slice": "positive",
-    "input": {
-      "text": "Verify that secrets are managed securely using Kubernetes Secrets with encryption at rest. Avoid storing secrets in environment variables or config maps. Use external secret management solutions for production environments.",
-      "source_standard": "OTHER"
-    },
-    "expected": {
-      "decision": "linked",
-      "cre_ids": ["340-375", "774-888", "813-610"]
-    },
-    "provenance": {
-      "section_path": "K03",
-      "ground_truth_source": "manual mapping from OWASP Kubernetes Top Ten 2025"
-    }
-  },
-  {
-    "id": "gold:kubernetes:K04:positive",
-    "schema_version": "0.1.0",
-    "slice": "positive",
-    "input": {
-      "text": "Verify that cluster-level policies are defined and enforced using tools like OPA/Gatekeeper or Kyverno. Ensure that policy violations are detected and reported, and that remediation processes are in place.",
-      "source_standard": "OTHER"
-    },
-    "expected": {
-      "decision": "linked",
-      "cre_ids": ["117-371"]
-    },
-    "provenance": {
-      "section_path": "K04",
-      "ground_truth_source": "manual mapping from OWASP Kubernetes Top Ten 2025"
-    }
-  },
-  {
-    "id": "gold:kubernetes:K05:positive",
-    "schema_version": "0.1.0",
-    "slice": "positive",
-    "input": {
-      "text": "Verify that network segmentation is implemented using Kubernetes Network Policies. Default-deny policies should be enforced for all namespaces, with explicit allow rules for necessary communication.",
-      "source_standard": "OTHER"
-    },
-    "expected": {
-      "decision": "linked",
-      "cre_ids": ["132-146", "467-784", "515-021"]
-    },
-    "provenance": {
-      "section_path": "K05",
-      "ground_truth_source": "manual mapping from OWASP Kubernetes Top Ten 2025"
-    }
-  },
-  {
-    "id": "gold:kubernetes:K06:positive",
-    "schema_version": "0.1.0",
-    "slice": "positive",
-    "input": {
-      "text": "Verify that Kubernetes components (API server, kubelet, etcd) are not exposed to untrusted networks. Restrict access to these components using firewalls, network policies, and secure authentication.",
-      "source_standard": "OTHER"
-    },
-    "expected": {
-      "decision": "linked",
-      "cre_ids": ["152-725", "640-364"]
-    },
-    "provenance": {
-      "section_path": "K06",
-      "ground_truth_source": "manual mapping from OWASP Kubernetes Top Ten 2025"
-    }
-  },
-  {
-    "id": "gold:kubernetes:K07:positive",
-    "schema_version": "0.1.0",
-    "slice": "positive",
-    "input": {
-      "text": "Verify that cluster components (API server, controller-manager, scheduler, etcd) are configured with secure defaults. Apply security patches regularly and avoid using deprecated or insecure configuration options.",
-      "source_standard": "OTHER"
-    },
-    "expected": {
-      "decision": "linked",
-      "cre_ids": ["053-751", "233-748", "486-813", "715-334"]
-    },
-    "provenance": {
-      "section_path": "K07",
-      "ground_truth_source": "manual mapping from OWASP Kubernetes Top Ten 2025"
-    }
-  },
-  {
-    "id": "gold:kubernetes:K08:positive",
-    "schema_version": "0.1.0",
-    "slice": "positive",
-    "input": {
-      "text": "Verify that cluster-to-cloud lateral movement risks are mitigated by limiting cloud provider permissions. Use workload identity mechanisms instead of long-lived credentials. Audit cloud resource access logs regularly.",
-      "source_standard": "OTHER"
-    },
-    "expected": {
-      "decision": "linked",
-      "cre_ids": ["132-146", "640-364", "724-770"]
-    },
-    "provenance": {
-      "section_path": "K08",
-      "ground_truth_source": "manual mapping from OWASP Kubernetes Top Ten 2025"
-    }
-  },
-  {
-    "id": "gold:kubernetes:K09:positive",
-    "schema_version": "0.1.0",
-    "slice": "positive",
-    "input": {
-      "text": "Verify that the Kubernetes API server, kubelet, and etcd are configured with strong authentication and authorization mechanisms. Disable anonymous access and ensure that service account tokens are not mounted unnecessarily.",
-      "source_standard": "OTHER"
-    },
-    "expected": {
-      "decision": "linked",
-      "cre_ids": ["177-260", "586-842", "633-428"]
-    },
-    "provenance": {
-      "section_path": "K09",
-      "ground_truth_source": "manual mapping from OWASP Kubernetes Top Ten 2025"
-    }
-  },
-  {
-    "id": "gold:kubernetes:K09:hard_negative",
-    "schema_version": "0.1.0",
-    "slice": "hard_negative",
-    "input": {
-      "text": "Do NOT leave the API server exposed to the internet without authentication. Never disable authentication checks for internal service accounts.",
-      "source_standard": "OTHER"
-    },
-    "expected": {
-      "decision": "linked",
-      "cre_ids": ["177-260", "586-842", "633-428"]
-    },
-    "provenance": {
-      "section_path": "K09",
-      "ground_truth_source": "manual mapping from OWASP Kubernetes Top Ten 2025 (negation phrasing)"
-    }
-  },
-  {
-    "id": "gold:kubernetes:K10:positive",
-    "schema_version": "0.1.0",
-    "slice": "positive",
-    "input": {
-      "text": "Verify that adequate logging and monitoring is implemented for Kubernetes clusters. Collect logs from API server, kubelet, and containers. Set up alerts for suspicious activities such as privilege escalations, unauthorized access attempts, and policy violations.",
-      "source_standard": "OTHER"
-    },
-    "expected": {
-      "decision": "linked",
-      "cre_ids": ["058-083", "148-420", "402-706", "843-841"]
-    },
-    "provenance": {
-      "section_path": "K10",
-      "ground_truth_source": "manual mapping from OWASP Kubernetes Top Ten 2025"
-    }
-  },
-  {
-    "id": "gold:kubernetes:2022:k01:positive",
-    "schema_version": "0.1.0",
-    "slice": "positive",
-    "input": {
-      "text": "Verify that container images are built securely, using minimal base images, and that vulnerabilities are scanned regularly. Ensure that image pull policies are enforced and that images are signed and verified.",
-      "source_standard": "OTHER"
-    },
-    "expected": {
-      "decision": "linked",
-      "cre_ids": ["715-334", "053-751"]
-    },
-    "provenance": {
-      "section_path": "k01",
-      "ground_truth_source": "manual mapping from OWASP Kubernetes Top Ten 2022"
-    }
-  },
-  {
-    "id": "gold:kubernetes:2022:k02:positive",
-    "schema_version": "0.1.0",
-    "slice": "positive",
-    "input": {
-      "text": "Verify that supply chain security is maintained by using trusted base images, scanning for known vulnerabilities, and ensuring that third-party components are vetted. Implement policy enforcement for approved image registries.",
-      "source_standard": "OTHER"
-    },
-    "expected": {
-      "decision": "linked",
-      "cre_ids": ["715-223", "307-507"]
-    },
-    "provenance": {
-      "section_path": "k02",
-      "ground_truth_source": "manual mapping from OWASP Kubernetes Top Ten 2022"
-    }
-  },
-  {
-    "id": "gold:kubernetes:2022:k03:positive",
-    "schema_version": "0.1.0",
-    "slice": "positive",
-    "input": {
-      "text": "Verify that RBAC is configured with least-privilege principles and that service accounts are bound to the minimum set of permissions required. Regularly audit and clean up unused roles and bindings.",
-      "source_standard": "OTHER"
-    },
-    "expected": {
-      "decision": "linked",
-      "cre_ids": ["128-128", "724-770"]
-    },
-    "provenance": {
-      "section_path": "k03",
-      "ground_truth_source": "manual mapping from OWASP Kubernetes Top Ten 2022"
-    }
-  },
-  {
-    "id": "gold:kubernetes:2022:k04:positive",
-    "schema_version": "0.1.0",
-    "slice": "positive",
-    "input": {
-      "text": "Verify that policy enforcement is in place using OPA/Gatekeeper or similar tools. Ensure that policies are validated and enforced consistently across all namespaces, and that violations are detected and reported.",
-      "source_standard": "OTHER"
-    },
-    "expected": {
-      "decision": "linked",
-      "cre_ids": ["117-371", "344-611"]
-    },
-    "provenance": {
-      "section_path": "k04",
-      "ground_truth_source": "manual mapping from OWASP Kubernetes Top Ten 2022"
-    }
-  },
-  {
-    "id": "gold:kubernetes:2022:k05:positive",
-    "schema_version": "0.1.0",
-    "slice": "positive",
-    "input": {
-      "text": "Verify that adequate logging and monitoring is implemented for the cluster. Collect and analyse logs from all components, and set up alerts for suspicious activities.",
-      "source_standard": "OTHER"
-    },
-    "expected": {
-      "decision": "linked",
-      "cre_ids": ["058-083", "148-420", "402-706"]
-    },
-    "provenance": {
-      "section_path": "k05",
-      "ground_truth_source": "manual mapping from OWASP Kubernetes Top Ten 2022"
-    }
-  },
-  {
-    "id": "gold:kubernetes:2022:k06:positive",
-    "schema_version": "0.1.0",
-    "slice": "positive",
-    "input": {
-      "text": "Verify that authentication mechanisms are robust, including the use of strong credentials and multi-factor authentication. Avoid using static tokens or long-lived credentials.",
-      "source_standard": "OTHER"
-    },
-    "expected": {
-      "decision": "linked",
-      "cre_ids": ["113-133", "576-042"]
-    },
-    "provenance": {
-      "section_path": "k06",
-      "ground_truth_source": "manual mapping from OWASP Kubernetes Top Ten 2022"
-    }
-  },
-  {
-    "id": "gold:kubernetes:2022:k07:positive",
-    "schema_version": "0.1.0",
-    "slice": "positive",
-    "input": {
-      "text": "Verify that network segmentation is implemented using Network Policies to restrict communication between pods. Default-deny policies should be enforced.",
-      "source_standard": "OTHER"
-    },
-    "expected": {
-      "decision": "linked",
-      "cre_ids": ["132-146", "467-784", "515-021"]
-    },
-    "provenance": {
-      "section_path": "k07",
-      "ground_truth_source": "manual mapping from OWASP Kubernetes Top Ten 2022"
-    }
-  },
-  {
-    "id": "gold:kubernetes:2022:k08:positive",
-    "schema_version": "0.1.0",
-    "slice": "positive",
-    "input": {
-      "text": "Verify that secrets are stored securely, using Kubernetes Secrets with encryption at rest. Avoid storing secrets in environment variables or config maps.",
-      "source_standard": "OTHER"
-    },
-    "expected": {
-      "decision": "linked",
-      "cre_ids": ["340-375", "774-888", "813-610"]
-    },
-    "provenance": {
-      "section_path": "k08",
-      "ground_truth_source": "manual mapping from OWASP Kubernetes Top Ten 2022"
-    }
-  },
-  {
-    "id": "gold:kubernetes:2022:k09:positive",
-    "schema_version": "0.1.0",
-    "slice": "positive",
-    "input": {
-      "text": "Verify that cluster components are configured with secure defaults. Apply security patches regularly and avoid using deprecated or insecure configuration options.",
-      "source_standard": "OTHER"
-    },
-    "expected": {
-      "decision": "linked",
-      "cre_ids": ["053-751", "233-748", "715-334"]
-    },
-    "provenance": {
-      "section_path": "k09",
-      "ground_truth_source": "manual mapping from OWASP Kubernetes Top Ten 2022"
-    }
-  },
-  {
-    "id": "gold:kubernetes:2022:k10:positive",
-    "schema_version": "0.1.0",
-    "slice": "positive",
-    "input": {
-      "text": "Verify that vulnerable components are identified and remediated by using vulnerability scanning tools, regularly updating base images, and maintaining an inventory of all components.",
-      "source_standard": "OTHER"
-    },
-    "expected": {
-      "decision": "linked",
-      "cre_ids": ["715-334", "053-751", "715-223"]
-    },
-    "provenance": {
-      "section_path": "k10",
-      "ground_truth_source": "manual mapping from OWASP Kubernetes Top Ten 2022"
-    }
-  },
-  {
-    "id": "gold:ambiguous:general-security",
-    "schema_version": "0.1.0",
-    "slice": "ambiguous",
-    "input": {
-      "text": "Security is a shared responsibility and must be integrated into all phases of the development lifecycle.",
-      "source_standard": "OTHER"
-    },
-    "expected": {
-      "decision": "review",
-      "reason_code": "BELOW_THRESHOLD"
-    },
-    "provenance": {
-      "ground_truth_source": "synthesised broad statement that should route to human review"
-    }
-  },
-  {
-    "id": "gold:ambiguous:risk-assessment",
-    "schema_version": "0.1.0",
-    "slice": "ambiguous",
-    "input": {
-      "text": "Risk assessment processes are followed at every major design decision.",
-      "source_standard": "OTHER"
-    },
-    "expected": {
-      "decision": "review",
-      "reason_code": "BELOW_THRESHOLD"
-    },
-    "provenance": {
-      "ground_truth_source": "synthesised broad statement that should route to human review"
     }
   }
 ]
