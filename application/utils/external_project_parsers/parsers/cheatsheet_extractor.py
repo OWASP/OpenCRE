@@ -1,6 +1,7 @@
 import logging
 import os
 import re
+import subprocess
 
 from application.defs.cheatsheet_defs import CheatsheetRecord
 
@@ -92,6 +93,30 @@ def _fallback_summary(markdown: str) -> str:
     return "No summary found."
 
 
+def _get_committed_at(source_path: str) -> str:
+    """Return the ISO 8601 last-commit timestamp for source_path, or 'No timestamp found.'"""
+
+    repo_dir = os.path.dirname(os.path.abspath(source_path)) or "."
+
+    try:
+        result = subprocess.run(
+            ["git", "log", "-1", "--format=%cI", "--", os.path.basename(source_path)],
+            cwd=repo_dir,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+    except (subprocess.CalledProcessError, FileNotFoundError, OSError) as e:
+        logging.warning(
+            "CheatsheetRecord: could not determine committed_at for %s: %s",
+            source_path,
+            e,
+        )
+        return "No timestamp found."
+
+    return result.stdout.strip()
+
+
 def extract_cheatsheet_record(
     markdown: str,
     source_path: str,
@@ -119,6 +144,7 @@ def extract_cheatsheet_record(
 
     source_id = _derive_source_id(source_path)
     hyperlink = _derive_hyperlink(source_path)
+    committed_at = _get_committed_at(source_path)
 
     return CheatsheetRecord(
         source_id=source_id,
@@ -131,5 +157,6 @@ def extract_cheatsheet_record(
         metadata={
             "parser_version": PARSER_VERSION,
             "fallback_used": fallback_used,
+            "committed_at": committed_at,
         },
     )
