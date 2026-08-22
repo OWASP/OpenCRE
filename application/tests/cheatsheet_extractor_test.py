@@ -169,8 +169,10 @@ class TestMalformedHeadings(unittest.TestCase):
     def test_fallback_not_used(self):
         self.assertEqual(self.record.metadata["fallback_used"], "false")
 
+
 def _run_git(args, cwd):
     subprocess.run(["git", *args], cwd=cwd, check=True, capture_output=True)
+
 
 ## Happy path
 class TestGetCommittedAt(unittest.TestCase):
@@ -192,7 +194,8 @@ class TestGetCommittedAt(unittest.TestCase):
                 result,
                 r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}$",
             )
-## Tests file when cwd is not git based
+
+    ## Tests file when cwd is not git based
     def test_returns_fallback_when_not_in_a_git_repo(self):
         with tempfile.TemporaryDirectory() as plain_dir:
             file_path = Path(plain_dir) / "No_Repo_Cheat_Sheet.md"
@@ -202,7 +205,7 @@ class TestGetCommittedAt(unittest.TestCase):
 
             self.assertEqual(result, "No timestamp found.")
 
-## Tests file when cwd is elsewhere
+    ## Tests file when cwd is elsewhere
     def test_finds_timestamp_even_when_process_cwd_is_elsewhere(self):
         import os
 
