@@ -188,7 +188,7 @@ def run_one(markdown, source_path, retriever, reranker):
 
         # Local fixture files are ignored by Git, so committed_at may be
         # unavailable during a local dry-run.
-        if not record.metadata.get("committed_at"):
+        if record.metadata.get("committed_at") in (None, "", "No timestamp found."):
             record.metadata["committed_at"] = "2026-01-01T00:00:00+00:00"
 
     except Exception as exc:
