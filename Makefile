@@ -157,6 +157,11 @@ migrate-upgrade:
 	export FLASK_APP="$(CURDIR)/cre.py" 
 	flask db upgrade  
 
+# PoC: Module A→B→C orchestrator (skips A by default; see scripts/run_oie_demo_pipeline.py)
+oie-demo-pipeline:
+	[ -d "./venv" ] && . ./venv/bin/activate &&\
+	python scripts/run_oie_demo_pipeline.py --skip-b --skip-c $(OIE_DEMO_ARGS)
+
 alembic-guardrail:
 	[ -d "./venv" ] && . ./venv/bin/activate &&\
 	python scripts/check_alembic_revision_guardrail.py
