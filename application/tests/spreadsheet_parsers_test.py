@@ -10,6 +10,7 @@ from application.utils.spreadsheet_parsers import (
     parse_master_spreadsheet_documents,
     parse_standards,
     supported_resource_mapping,
+    validate_import_csv_rows,
 )
 
 
@@ -75,6 +76,43 @@ class TestParsers(unittest.TestCase):
         standards_map = supported_resource_mapping.get("Standards", {})
         for link in legacy_links:
             self.assertIn(link.document.name, standards_map)
+
+
+class TestValidateImportCsvRows(unittest.TestCase):
+    """CRE cell format validation (#554) via the shared validate_import_csv_rows."""
+
+    def _row(self, cre_0: str) -> dict:
+        return {
+            "CRE 0": cre_0,
+            "standard|name": "ASVS",
+            "standard|id": "1.1.1",
+        }
+
+    def test_accepts_well_formed_cre_cells(self) -> None:
+        validate_import_csv_rows([self._row("123-456|Access Control")])
+
+    def test_rejects_short_cre_id(self) -> None:
+        with self.assertRaises(ValueError) as cm:
+            validate_import_csv_rows([self._row("12-456|Bad Id")])
+        self.assertIn("Expected XXX-XXX|Name", str(cm.exception))
+        self.assertIn("row 2", str(cm.exception))
+
+    def test_rejects_missing_separator(self) -> None:
+        with self.assertRaises(ValueError) as cm:
+            validate_import_csv_rows([self._row("123-456 Access Control")])
+        self.assertIn("Expected XXX-XXX|Name", str(cm.exception))
+
+    def test_skips_empty_cre_cells(self) -> None:
+        validate_import_csv_rows(
+            [
+                {
+                    "CRE 0": "",
+                    "CRE 1": "n/a",
+                    "standard|name": "ASVS",
+                    "standard|id": "1.1.1",
+                }
+            ]
+        )
 
 
 if __name__ == "__main__":

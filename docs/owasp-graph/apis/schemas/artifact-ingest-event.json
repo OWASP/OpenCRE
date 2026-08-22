@@ -1,0 +1,103 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://opencre.org/schemas/oie/artifact-ingest-event.json",
+  "title": "ArtifactIngestEvent",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "event_id",
+    "artifact_id",
+    "pipeline_run_id",
+    "observed_at",
+    "harvest_mode",
+    "event_type",
+    "source",
+    "locator",
+    "artifact",
+    "harvest"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "pattern": "^0\\.\\d+\\.\\d+$" },
+    "event_id": { "type": "string", "minLength": 1 },
+    "artifact_id": { "type": "string", "minLength": 1 },
+    "pipeline_run_id": { "type": "string", "minLength": 1 },
+    "observed_at": { "type": "string", "format": "date-time" },
+    "harvest_mode": {
+      "type": "string",
+      "enum": ["backfill", "incremental"]
+    },
+    "event_type": {
+      "type": "string",
+      "enum": ["discovered", "modified", "deleted"]
+    },
+    "source": { "$ref": "source-ref.json" },
+    "locator": { "$ref": "locator.json" },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["content_hash"],
+      "properties": {
+        "title": { "type": "string" },
+        "mime": { "type": "string" },
+        "content_hash": { "type": "string", "pattern": "^sha256:" },
+        "language": { "type": "string" },
+        "change_type": {
+          "type": "string",
+          "enum": ["added", "modified", "deleted", "renamed"]
+        },
+        "previous_locator_id": { "type": "string" }
+      }
+    },
+    "chunks": {
+      "type": "array",
+      "items": { "$ref": "ingest-chunk.json" }
+    },
+    "harvest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "adapter",
+        "fetcher",
+        "registry_seen_before",
+        "excluded_by_path_rule",
+        "chunking"
+      ],
+      "properties": {
+        "adapter": { "type": "string" },
+        "fetcher": { "type": "string" },
+        "registry_seen_before": { "type": "boolean" },
+        "excluded_by_path_rule": { "type": "boolean" },
+        "exclusion_rule_id": { "type": "string" },
+        "chunking": {
+          "type": "object",
+          "required": ["strategy", "max_chars"],
+          "properties": {
+            "strategy": { "type": "string" },
+            "max_chars": { "type": "integer", "minimum": 256 },
+            "overlap_chars": { "type": "integer", "minimum": 0 }
+          }
+        },
+        "llm_diff_judge": {
+          "type": "object",
+          "properties": {
+            "meaning_changed": { "type": "boolean" },
+            "model": { "type": "string" }
+          }
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "event_type": { "const": "deleted" } } },
+      "then": { "not": { "required": ["chunks"] } }
+    },
+    {
+      "if": {
+        "properties": { "event_type": { "enum": ["discovered", "modified"] } }
+      },
+      "then": { "required": ["chunks"] }
+    }
+  ]
+}

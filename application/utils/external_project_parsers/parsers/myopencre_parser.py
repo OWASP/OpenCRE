@@ -3,6 +3,7 @@ import re
 from typing import Dict, List, Any, Tuple
 
 from application.defs import cre_defs as defs
+from application.utils import spreadsheet_parsers
 from application.utils.external_project_parsers.parsers import export_format_parser
 from application.utils.external_project_parsers import base_parser_defs
 from application.utils.external_project_parsers.base_parser_defs import ParseResult
@@ -90,6 +91,7 @@ def parse_rows_to_documents(rows: List[Dict[str, Any]]) -> ParseResult:
     conventions. It reuses export_format_parser.parse_export_format to
     understand the CSV structure.
     """
+    rows = spreadsheet_parsers.validate_import_csv_rows(rows)
     documents = export_format_parser.parse_export_format(rows)
 
     # CREs are under the Credoctypes.CRE value key

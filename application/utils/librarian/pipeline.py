@@ -6,22 +6,29 @@ Wires the librarian end to end for a stream of ``knowledge_queue`` rows:
     C.1  retriever.retrieve       text -> RetrievalAudit.candidates (top-K)
     C.2  reranker.rerank          text -> RetrievalAudit.reranked   (top-N logits)
     C.3  scaler.confidence        logits -> one calibrated confidence
-    C.4  decide + emit            confidence -> LinkProposal | ReviewItem
+    C.4  safety_guard.evaluate    section -> blocking flags
+    C.4  decide + emit            confidence + flags -> LinkProposal | ReviewItem
 
 Every stage is an injected seam (``source``/``retriever``/``reranker``/``scaler``),
 so the whole pipeline runs hermetically with stubs — no DB, embedding model, or
-cross-encoder. It is inherently **dry-run**: it builds envelopes and never persists
-(the queue write-back and graph writes are W8). ``pipeline_run_id`` and the ``at``
-timestamp are injected, never read from the clock, so a run is reproducible.
+cross-encoder. ``pipeline_run_id`` and the ``at`` timestamp are injected, never
+read from the clock, so a run is reproducible.
+
+This module stays **persistence-free**: it builds envelopes and writes nothing.
+What it does report, as of W8, is a ``RowOutcome`` per row, which is what lets
+``queue_runner`` mark the finished rows consumed without this layer ever holding
+a session. Graph writes remain out (W8b).
 """
 
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, Dict, Iterable, List, Protocol, Sequence, Union
+from enum import Enum
+from typing import Any, Dict, Iterable, List, Optional, Protocol, Sequence, Union
 
 from application.utils.librarian.decision_engine import decide
 from application.utils.librarian.emitter import emit
+from application.utils.librarian.safety_guard import NullSafetyGuard, SafetyGuard
 from application.utils.librarian.schemas import (
     KnowledgeQueueItem,
     LinkProposal,
@@ -36,6 +43,34 @@ from application.utils.librarian.section_validator import (
 logger = logging.getLogger(__name__)
 
 Envelope = Union[LinkProposal, ReviewItem]
+
+
+def _source_label(item: Union[KnowledgeQueueItem, Dict[str, Any]]) -> Optional[str]:
+    """B's ``llm_label`` for this row, when the source carries one.
+
+    Fixture rows and hand-built dicts may not, so this is best-effort: a missing
+    label records nothing rather than guessing ``KNOWLEDGE``, which would claim a
+    confidence B never expressed.
+    """
+    if isinstance(item, dict):
+        value = item.get("llm_label")
+    else:
+        value = getattr(item, "llm_label", None)
+    return str(value) if value else None
+
+
+def _row_id(item: Union[KnowledgeQueueItem, Dict[str, Any]]) -> Optional[str]:
+    """The queue row's primary key, read before C.0 may reject the row.
+
+    Taken off the raw item because a row that fails validation still has to be
+    marked consumed — otherwise every malformed row is re-read forever.
+    """
+    if isinstance(item, KnowledgeQueueItem):
+        return item.id
+    if isinstance(item, dict):
+        value = item.get("id")
+        return value if isinstance(value, str) else None
+    return None
 
 
 # The injected seams, as Protocols rather than bare duck-typing: each stage is
@@ -84,12 +119,57 @@ class RunStats:
     review: int
     skipped: int
     errored: int = 0
+    #: Rows whose safety verdict came back unevaluated. Non-zero means the
+    #: ADVERSARIAL_FLAG / UPDATE_AMBIGUOUS path did not run for them, so their
+    #: clean verdicts are defaults, not findings.
+    safety_unevaluated: int = 0
+
+
+class RowStatus(str, Enum):
+    """What the pipeline did with one queue row."""
+
+    linked = "linked"
+    review = "review"
+    skipped = "skipped"  # refused at the C.0 boundary
+    errored = "errored"  # a later stage raised
+
+
+@dataclass(frozen=True)
+class RowOutcome:
+    """Per-row result, so a caller can act on individual rows after the run.
+
+    The queue write-back needs this: a row that reached a decision (or was
+    definitively refused at the boundary) is finished and may be marked
+    consumed, while an ``errored`` row must stay unconsumed so the next run
+    retries it. ``RunStats`` counts alone cannot express that distinction.
+
+    ``row_id`` is the ``knowledge_queue`` primary key and is None when the
+    source yielded something without one (a hand-built fixture dict).
+    """
+
+    row_id: Optional[str]
+    chunk_id: Optional[str]
+    status: RowStatus
 
 
 @dataclass(frozen=True)
 class RunResult:
     envelopes: List[Envelope]
     stats: RunStats
+    outcomes: List[RowOutcome] = field(default_factory=list)
+    #: chunk_id -> the ``llm_label`` B wrote on the row it came from. Carried out
+    #: of the run so the decision row can record which of B's labels it was made
+    #: from; the RFC envelope has no field for it and is pinned, so it travels
+    #: beside the envelopes rather than inside them.
+    source_labels: Dict[str, str] = field(default_factory=dict)
+
+    def finished_row_ids(self) -> List[str]:
+        """Ids of rows that are done with — everything except ``errored``."""
+        return [
+            o.row_id
+            for o in self.outcomes
+            if o.row_id is not None and o.status != RowStatus.errored
+        ]
 
 
 class LibrarianPipeline:
@@ -113,7 +193,8 @@ class LibrarianPipeline:
         scaler: Scaler,
         *,
         threshold: float,
-        pipeline_run_id: str
+        pipeline_run_id: str,
+        safety_guard: Optional[SafetyGuard] = None
     ) -> None:
         self._source = source
         self._retriever = retriever
@@ -121,16 +202,26 @@ class LibrarianPipeline:
         self._scaler = scaler
         self._threshold = threshold
         self._run_id = pipeline_run_id
+        # Defaults to the declared-degraded guard rather than to nothing, so
+        # `decide()` is always called with the safety arguments and the run can
+        # report how many rows went unevaluated.
+        self._safety_guard: SafetyGuard = safety_guard or NullSafetyGuard()
 
     def run(self, *, at: datetime) -> RunResult:
         envelopes: List[Envelope] = []
+        outcomes: List[RowOutcome] = []
+        source_labels: Dict[str, str] = {}
         linked = review = skipped = errored = total = 0
+        safety_unevaluated = 0
         for item in self._source.items():
             total += 1
+            row_id = _row_id(item)
+            label = _source_label(item)
             try:
                 section = section_from_queue_row(item)
             except SectionValidationError:
                 skipped += 1  # rejected at the boundary; not a decision
+                outcomes.append(RowOutcome(row_id, None, RowStatus.skipped))
                 continue
 
             # Contain failures per row. With hermetic stubs nothing here raises,
@@ -145,12 +236,22 @@ class LibrarianPipeline:
                 cre_ids = [c.cre_id for c in reranked]
                 confidence = self._scaler.confidence(logits) if logits else 0.0
 
-                result = decide(confidence, cre_ids, threshold=self._threshold)
+                verdict = self._safety_guard.evaluate(section)
+                result = decide(
+                    confidence,
+                    cre_ids,
+                    threshold=self._threshold,
+                    adversarial=verdict.adversarial,
+                    update_ambiguous=verdict.update_ambiguous,
+                )
+                if not verdict.evaluated:
+                    safety_unevaluated += 1
                 envelope = emit(
                     section, audit, result, pipeline_run_id=self._run_id, at=at
                 )
             except Exception:
                 errored += 1
+                outcomes.append(RowOutcome(row_id, section.chunk_id, RowStatus.errored))
                 logger.warning(
                     "librarian pipeline: chunk %s (artifact %s) failed after the C.0 "
                     "boundary; skipping this row",
@@ -161,10 +262,15 @@ class LibrarianPipeline:
                 continue
 
             envelopes.append(envelope)
+            if label is not None:
+                source_labels[envelope.chunk_id] = label
             if isinstance(envelope, LinkProposal):
                 linked += 1
+                status = RowStatus.linked
             else:
                 review += 1
+                status = RowStatus.review
+            outcomes.append(RowOutcome(row_id, section.chunk_id, status))
 
         return RunResult(
             envelopes=envelopes,
@@ -174,5 +280,8 @@ class LibrarianPipeline:
                 review=review,
                 skipped=skipped,
                 errored=errored,
+                safety_unevaluated=safety_unevaluated,
             ),
+            outcomes=outcomes,
+            source_labels=source_labels,
         )

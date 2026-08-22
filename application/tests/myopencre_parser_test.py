@@ -46,5 +46,24 @@ class MyOpenCreParserIdentityTest(unittest.TestCase):
                 myopencre_parser._reconcile_cre_identities(cres)
 
 
+class MyOpenCreCsvValidationWiringTest(unittest.TestCase):
+    """parse_rows_to_documents delegates CRE cell validation to the shared
+    spreadsheet_parsers.validate_import_csv_rows (#554 / #682). Format-level
+    cases live in spreadsheet_parsers_test.py; this just proves the wiring.
+    """
+
+    def test_rejects_malformed_cre_cell_via_shared_validator(self) -> None:
+        rows = [
+            {
+                "CRE 0": "12-456|Bad Id",
+                "standard|name": "ASVS",
+                "standard|id": "1.1.1",
+            }
+        ]
+        with self.assertRaises(ValueError) as cm:
+            myopencre_parser.parse_rows_to_documents(rows)
+        self.assertIn("Expected XXX-XXX|Name", str(cm.exception))
+
+
 if __name__ == "__main__":
     unittest.main()

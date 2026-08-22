@@ -16,6 +16,9 @@ class TestConfigLoaderDefaults(unittest.TestCase):
         self.assertEqual(cfg.top_k_retrieval, 20)
         self.assertEqual(cfg.top_k_rerank, 5)
         self.assertEqual(cfg.link_threshold, 0.8)
+        # 1.0 is the identity transform: an honestly *uncalibrated* softmax,
+        # rather than a temperature nobody fitted.
+        self.assertEqual(cfg.temperature, 1.0)
         self.assertEqual(cfg.batch_size, 32)
         self.assertEqual(cfg.ece_target, 0.10)
         self.assertEqual(cfg.conformal_alpha, 0.10)
@@ -34,6 +37,7 @@ class TestConfigLoaderOverrides(unittest.TestCase):
         "CRE_LIBRARIAN_TOP_K_RETRIEVAL": "50",
         "CRE_LIBRARIAN_TOP_K_RERANK": "10",
         "CRE_LIBRARIAN_LINK_THRESHOLD": "0.7",
+        "CRE_LIBRARIAN_TEMPERATURE": "1.208",
         "CRE_LIBRARIAN_BATCH_SIZE": "64",
         "CRE_LIBRARIAN_ECE_TARGET": "0.05",
         "CRE_LIBRARIAN_CONFORMAL_ALPHA": "0.20",
@@ -47,6 +51,7 @@ class TestConfigLoaderOverrides(unittest.TestCase):
         self.assertEqual(cfg.top_k_retrieval, 50)
         self.assertEqual(cfg.top_k_rerank, 10)
         self.assertAlmostEqual(cfg.link_threshold, 0.7)
+        self.assertAlmostEqual(cfg.temperature, 1.208)
         self.assertEqual(cfg.batch_size, 64)
         self.assertAlmostEqual(cfg.ece_target, 0.05)
         self.assertAlmostEqual(cfg.conformal_alpha, 0.20)
@@ -64,6 +69,17 @@ class TestConfigLoaderOverrides(unittest.TestCase):
         ):
             with self.assertRaises(ValueError):
                 load_config()
+
+    def test_non_positive_temperature_raises(self):
+        """T divides the logits, so zero or negative is undefined, not merely a
+        bad setting — the same guard TemperatureScaler applies."""
+        for value in ("0", "-1.5", "nan"):
+            with self.subTest(value=value):
+                with mock.patch.dict(
+                    os.environ, {"CRE_LIBRARIAN_TEMPERATURE": value}, clear=True
+                ):
+                    with self.assertRaises(ValueError):
+                        load_config()
 
     def test_negative_top_k_retrieval_raises(self):
         with mock.patch.dict(

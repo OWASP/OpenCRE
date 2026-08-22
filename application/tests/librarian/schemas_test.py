@@ -314,31 +314,73 @@ class TestReviewItemRFC(unittest.TestCase):
 class TestKnowledgeQueueItem(unittest.TestCase):
     """Internal model — mirrors B's SQL row. Not an RFC contract."""
 
-    def test_minimal_row(self):
-        item = KnowledgeQueueItem(
+    @staticmethod
+    def _row(**overrides):
+        row = dict(
             id="uuid-1",
+            content_hash="deadbeef",
+            chunk_id="chk:art:OWASP/ASVS:4.0/en/0x11.md:0",
+            artifact_id="art:OWASP/ASVS:4.0/en/0x11.md",
+            pipeline_run_id="run-1",
+            schema_version="0.2.0",
+            source_type="github",
             source_repo="OWASP/ASVS",
-            source_path="4.0/en/0x11.md",
             source_commit_sha="abc1234567890",
+            locator_kind="repo_path",
+            locator_path="4.0/en/0x11.md",
+            span_index=0,
+            span_total=1,
             text="Verify X.",
             confidence=0.9,
             llm_label="KNOWLEDGE",
             created_at="2026-05-25T02:25:00Z",
         )
+        row.update(overrides)
+        return row
+
+    def test_minimal_row(self):
+        item = KnowledgeQueueItem(**self._row())
         self.assertIsNone(item.consumed_at)
 
     def test_confidence_bounds(self):
         with self.assertRaises(ValidationError):
-            KnowledgeQueueItem(
-                id="x",
-                source_repo="r",
-                source_path="p",
-                source_commit_sha="c",
-                text="t",
-                confidence=1.5,
-                llm_label="KNOWLEDGE",
-                created_at="2026-05-25T02:25:00Z",
-            )
+            KnowledgeQueueItem(**self._row(confidence=1.5))
+
+    def test_extra_columns_are_ignored_so_b_can_extend_the_table(self):
+        item = KnowledgeQueueItem(**self._row(some_column_c_has_never_heard_of=1))
+        self.assertEqual(item.id, "uuid-1")
+
+    def test_heading_path_decodes(self):
+        item = KnowledgeQueueItem(
+            **self._row(span_heading_path='["V2 Authentication","V2.1 Passwords"]')
+        )
+        self.assertEqual(item.heading_path(), ["V2 Authentication", "V2.1 Passwords"])
+
+    def test_heading_path_degrades_on_junk(self):
+        for junk in ("", None, "not json", '{"a": 1}', "[]"):
+            with self.subTest(junk=junk):
+                item = KnowledgeQueueItem(**self._row(span_heading_path=junk))
+                self.assertEqual(item.heading_path(), [])
+
+    def test_source_type_must_agree_with_the_populated_columns(self):
+        """B nulls repo/sha on rss rows and feed_url on github rows; a row that
+        contradicts its own source_type is rejected here rather than deeper in."""
+        for name, overrides in (
+            ("github without repo", {"source_repo": None}),
+            ("github without sha", {"source_commit_sha": None}),
+            (
+                "rss without feed_url",
+                {
+                    "source_type": "rss",
+                    "source_repo": None,
+                    "source_commit_sha": None,
+                    "feed_url": None,
+                },
+            ),
+        ):
+            with self.subTest(name):
+                with self.assertRaises(ValidationError):
+                    KnowledgeQueueItem(**self._row(**overrides))
 
 
 class TestGoldenDataset(unittest.TestCase):

@@ -95,5 +95,38 @@ class ResultTest(unittest.TestCase):
             r.confidence = 0.1  # type: ignore[misc]
 
 
+class SourceLabelDoesNotChangeTheRuleTest(unittest.TestCase):
+    """B's label is not an input to the decision.
+
+    A chunk B forwarded as UNCERTAIN is decided on the same evidence as a
+    KNOWLEDGE one. C's confidence is calibrated on its own terms, and holding
+    back a chunk that scored 0.99 on an upstream doubt would bury reviewers in
+    obvious matches. Provenance is preserved on the row instead
+    (``decision_queue.source_label``), so a consumer can still weigh them apart.
+    """
+
+    def test_decide_takes_no_source_label_argument(self) -> None:
+        import inspect
+
+        params = inspect.signature(decide).parameters
+
+        self.assertNotIn("source_uncertain", params)
+        self.assertEqual(
+            [p for p in params if p not in ("confidence", "candidate_cre_ids")],
+            ["threshold", "adversarial", "update_ambiguous"],
+        )
+
+    def test_a_confident_chunk_links_whatever_its_source(self) -> None:
+        self.assertEqual(
+            decide(0.99, ["616-305"], threshold=0.80).decision, Decision.linked
+        )
+
+    def test_a_weak_chunk_reviews_whatever_its_source(self) -> None:
+        result = decide(0.40, ["616-305"], threshold=0.80)
+
+        self.assertEqual(result.decision, Decision.review)
+        self.assertEqual(result.reason_code, ReasonCode.below_threshold)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -478,6 +478,63 @@ class KnowledgeQueueItem(BaseModel):  # type: ignore
     )
 
 
+class DecisionQueueItem(BaseModel):  # type: ignore
+    """Module C's output queue: decided chunks for Module D.
+
+    The C -> D counterpart of ``knowledge_queue``, and deliberately the same
+    shape of handoff: C inserts one row per decided chunk, Module D reads the
+    rows it cares about and sets ``consumed_at``. Nothing is deleted, so the
+    table doubles as the audit trail of what C decided and what D did with it.
+
+    Both outcomes land here, separated by ``status`` — exactly as B puts
+    KNOWLEDGE and UNCERTAIN in one queue and lets its readers filter:
+
+      ``linked``           an auto-link C is confident in (RFC ``LinkProposal``);
+                           the graph writer is the consumer.
+      ``review_required``  routed to a human (RFC ``ReviewItem``), carrying the
+                           ``reason_code`` that explains why; Module D's HITL
+                           review is the consumer.
+
+    ``envelope`` holds the whole RFC document — the retrieval audit included —
+    so a decision can be re-read and explained long after the run. The columns
+    beside it are for querying and filtering, not a second source of truth; they
+    are projected from the same envelope.
+    """
+
+    __tablename__ = "decision_queue"
+    id = sqla.Column(sqla.String, primary_key=True, default=generate_uuid)
+    # provenance, carried verbatim from Module A through B
+    chunk_id = sqla.Column(sqla.String, nullable=False)
+    artifact_id = sqla.Column(sqla.String, nullable=False)
+    pipeline_run_id = sqla.Column(sqla.String, nullable=False)
+    schema_version = sqla.Column(sqla.String, nullable=False)
+    # B's label on the chunk this decision was made from: KNOWLEDGE | UNCERTAIN.
+    # Recall-first means B forwards both, so a consumer needs to tell a decision
+    # made on a confident chunk from one made on a chunk B was unsure about.
+    source_label = sqla.Column(sqla.String, nullable=True)
+    # C's verdict
+    status = sqla.Column(sqla.String, nullable=False)  # linked | review_required
+    reason_code = sqla.Column(sqla.String, nullable=True)  # review rows only
+    review_id = sqla.Column(sqla.String, nullable=True)  # review rows only
+    confidence = sqla.Column(sqla.Float, nullable=True)  # top-1 calibrated
+    # the full RFC LinkProposal / ReviewItem
+    envelope = sqla.Column(
+        sqla.JSON().with_variant(JSONB, "postgresql"), nullable=False
+    )
+    created_at = sqla.Column(
+        sqla.DateTime, nullable=False, server_default=sqla.func.now()
+    )
+    consumed_at = sqla.Column(sqla.DateTime, nullable=True)
+    __table_args__ = (
+        sqla.Index("ix_decision_queue_unconsumed", "consumed_at"),
+        sqla.Index("ix_decision_queue_run_status", "pipeline_run_id", "status"),
+        # One decision per chunk per run: replaying a run must not double-write.
+        sqla.UniqueConstraint(
+            "chunk_id", "pipeline_run_id", name="uq_decision_chunk_run"
+        ),
+    )
+
+
 def create_import_run(source: str, version: Optional[str] = None) -> ImportRun:
     """Create and persist an import run record. Returns the new ImportRun."""
     from datetime import datetime, timezone
@@ -3350,7 +3407,7 @@ def gap_analysis(
         else:
             if end_key in grouped_paths[key]["paths"]:
                 continue
-            if end_key in extra_paths_dict[key]:
+            if end_key in extra_paths_dict[key]["paths"]:
                 if extra_paths_dict[key]["paths"][end_key]["score"] > path["score"]:
                     extra_paths_dict[key]["paths"][end_key] = path
             else:

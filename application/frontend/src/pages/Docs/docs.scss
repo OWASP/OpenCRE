@@ -1,11 +1,17 @@
 .docs-page {
-  max-width: 72rem;
-  margin: 0 auto;
-  padding: 2rem 1rem 4rem;
-  color: #e2e8f0;
+  width: 100%;
+  min-height: calc(100vh - 4rem);
+  background-color: var(--background);
+  color: var(--foreground);
 
-  @media (min-width: 768px) {
-    padding: 2.5rem 2rem 5rem;
+  &__inner {
+    max-width: 72rem;
+    margin: 0 auto;
+    padding: 2rem 1rem 4rem;
+
+    @media (min-width: 768px) {
+      padding: 2.5rem 2rem 5rem;
+    }
   }
 
   &__hero {
@@ -15,12 +21,12 @@
   &__title {
     font-size: 2.25rem;
     font-weight: 700;
-    color: #fff;
+    color: var(--foreground);
     margin: 0 0 0.75rem;
   }
 
   &__subtitle {
-    color: #94a3b8;
+    color: var(--muted-foreground);
     font-size: 1.125rem;
     line-height: 1.6;
     margin: 0 0 1.5rem;
@@ -33,25 +39,199 @@
     gap: 0.75rem 1.25rem;
 
     a {
-      color: #93c5fd;
+      color: #60a5fa;
       text-decoration: none;
       font-weight: 500;
 
       &:hover {
-        color: #bfdbfe;
+        color: #93c5fd;
         text-decoration: underline;
       }
     }
   }
 
   &__swagger {
-    background: #fff;
-    border-radius: 0.75rem;
+    background: var(--secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
     overflow: hidden;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+    color: var(--foreground);
 
     .swagger-ui {
-      border: none;
+      background: transparent;
+      color: var(--foreground);
+      font-family: 'Inter', system-ui, sans-serif;
+
+      .wrapper {
+        padding: 1rem 1.25rem 1.5rem;
+      }
+
+      .information-container.wrapper {
+        padding-top: 1.25rem;
+      }
+
+      .info {
+        margin: 0 0 1.5rem;
+
+        .title {
+          color: var(--foreground);
+        }
+
+        p,
+        li,
+        table {
+          color: var(--muted-foreground);
+        }
+
+        a {
+          color: #60a5fa;
+        }
+
+        .base-url {
+          color: var(--muted-foreground);
+        }
+      }
+
+      .scheme-container {
+        background: transparent;
+        box-shadow: none;
+        margin: 0;
+        padding: 0 0 1rem;
+        border-bottom: 1px solid var(--border);
+
+        .schemes-title,
+        label {
+          color: var(--muted-foreground);
+        }
+
+        select {
+          background: var(--background);
+          color: var(--foreground);
+          border-color: var(--border);
+        }
+      }
+
+      .opblock-tag-section {
+        padding: 0;
+      }
+
+      .opblock-tag {
+        color: var(--foreground);
+        border-color: var(--border);
+
+        small {
+          color: var(--muted-foreground);
+        }
+      }
+
+      .opblock {
+        background: var(--background);
+        border-color: var(--border);
+        box-shadow: none;
+
+        .opblock-summary-description {
+          color: var(--muted-foreground);
+        }
+
+        .opblock-summary-path,
+        .opblock-summary-path__deprecated {
+          color: var(--foreground);
+        }
+
+        .opblock-section-header {
+          background: var(--secondary);
+          box-shadow: none;
+          border-color: var(--border);
+
+          h4,
+          label {
+            color: var(--foreground);
+          }
+        }
+
+        .opblock-description-wrapper,
+        .opblock-external-docs-wrapper,
+        .opblock-title_normal {
+          p,
+          h4 {
+            color: var(--muted-foreground);
+          }
+        }
+      }
+
+      .tab li,
+      .opblock-description-wrapper p,
+      .response-col_status,
+      .response-col_links,
+      .parameter__name,
+      .parameter__type,
+      .parameter__in,
+      .parameter__deprecated,
+      table thead tr th,
+      table thead tr td,
+      table tbody tr td {
+        color: var(--foreground);
+      }
+
+      table thead tr th,
+      table thead tr td {
+        color: var(--muted-foreground);
+        border-color: var(--border);
+      }
+
+      .response-col_description {
+        color: var(--muted-foreground);
+      }
+
+      .model-box,
+      section.models {
+        background: var(--background);
+        border-color: var(--border);
+      }
+
+      section.models {
+        h4 {
+          color: var(--foreground);
+        }
+
+        h5 {
+          color: var(--muted-foreground);
+        }
+      }
+
+      .model,
+      .model-title,
+      .prop-type,
+      .prop-format {
+        color: var(--foreground);
+      }
+
+      .model-toggle:after {
+        background: var(--muted-foreground);
+      }
+
+      input[type='text'],
+      textarea,
+      select {
+        background: var(--background);
+        color: var(--foreground);
+        border-color: var(--border);
+      }
+
+      .btn {
+        color: var(--foreground);
+        border-color: var(--border);
+        background: var(--secondary);
+        box-shadow: none;
+      }
+
+      a {
+        color: #60a5fa;
+      }
+
+      .copy-to-clipboard {
+        background: var(--secondary);
+      }
     }
   }
 }
@@ -63,24 +243,25 @@
   &__title {
     font-size: 1.5rem;
     font-weight: 600;
-    color: #fff;
+    color: var(--foreground);
     margin: 0 0 1rem;
     padding-bottom: 0.5rem;
-    border-bottom: 1px solid rgba(148, 163, 184, 0.25);
+    border-bottom: 1px solid var(--border);
   }
 
   &__body,
   &__intro {
-    color: #cbd5e1;
+    color: var(--muted-foreground);
     line-height: 1.7;
     margin: 0 0 1rem;
 
     a {
-      color: #93c5fd;
+      color: #60a5fa;
     }
 
     code {
-      background: rgba(148, 163, 184, 0.15);
+      background: var(--secondary);
+      color: var(--foreground);
       padding: 0.1rem 0.35rem;
       border-radius: 0.25rem;
     }
@@ -90,11 +271,11 @@
 .docs-resources {
   margin: 0;
   padding-left: 1.25rem;
-  color: #cbd5e1;
+  color: var(--muted-foreground);
   line-height: 1.9;
 
   a {
-    color: #93c5fd;
+    color: #60a5fa;
     text-decoration: none;
 
     &:hover {
