@@ -7060,7 +7060,7 @@
     },
     "expected": {
       "decision": "linked",
-      "cre_ids": ["307-507", "544-733"]
+      "cre_ids": ["307-507"]
     },
     "provenance": {
       "section_path": "LLM07:2025",
