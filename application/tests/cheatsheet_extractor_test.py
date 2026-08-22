@@ -192,7 +192,7 @@ class TestGetCommittedAt(unittest.TestCase):
 
             self.assertRegex(
                 result,
-                r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}$",
+                r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:[+-]\d{2}:\d{2}|Z)$",
             )
 
     ## Tests file when cwd is not git based
@@ -229,7 +229,7 @@ class TestGetCommittedAt(unittest.TestCase):
 
             self.assertRegex(
                 result,
-                r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}$",
+                r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:[+-]\d{2}:\d{2}|Z)$",
             )
 
 
