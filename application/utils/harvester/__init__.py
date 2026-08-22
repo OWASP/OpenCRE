@@ -26,16 +26,28 @@ from .filtering_benchmark import (
     FilteringBenchmarkResult,
 )
 
+from .heading_extractor import (
+    HeadingExtractor,
+    HeadingNode,
+)
+
+from .document_builder import DocumentBuilder
+from .document_validator import DocumentValidator
+
 __all__ = [
     "build_repository_cache_path",
     "ChunkingConfig",
     "ConfigLoaderError",
     "DiffRetriever",
+    "DocumentBuilder",
+    "DocumentValidator",
     "GitRepositoryClient",
     "FileFilter",
     "FilteringMetricsCollector",
     "FilteringBenchmark",
     "FilteringBenchmarkResult",
+    "HeadingExtractor",
+    "HeadingNode",
     "PathRules",
     "PollingConfig",
     "RepositoryClient",
