@@ -157,6 +157,7 @@ from application.utils.external_project_parsers.parsers import (
     owasp_kubernetes_top10_2022,
     owasp_kubernetes_top10_2025,
 )
+
 # Optionally import API, LLM, AISVS if they exist; if not, skip gracefully.
 try:
     from application.utils.external_project_parsers.parsers import (
