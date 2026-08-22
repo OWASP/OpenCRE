@@ -1,6 +1,11 @@
+import subprocess
+import tempfile
 import unittest
+from pathlib import Path
+
 from application.utils.external_project_parsers.parsers.cheatsheet_extractor import (
     extract_cheatsheet_record,
+    _get_committed_at,
 )
 from application.defs.cheatsheet_defs import SUMMARY_MAX_LENGTH
 
@@ -163,6 +168,66 @@ class TestMalformedHeadings(unittest.TestCase):
 
     def test_fallback_not_used(self):
         self.assertEqual(self.record.metadata["fallback_used"], "false")
+
+def _run_git(args, cwd):
+    subprocess.run(["git", *args], cwd=cwd, check=True, capture_output=True)
+
+## Happy path
+class TestGetCommittedAt(unittest.TestCase):
+    def test_returns_iso_timestamp_for_tracked_file(self):
+        with tempfile.TemporaryDirectory() as repo_dir:
+            _run_git(["init", "-q"], cwd=repo_dir)
+            _run_git(["config", "user.email", "test@test.com"], cwd=repo_dir)
+            _run_git(["config", "user.name", "test"], cwd=repo_dir)
+
+            file_path = Path(repo_dir) / "Some_Cheat_Sheet.md"
+            file_path.write_text("# Some Cheat Sheet\n")
+
+            _run_git(["add", "."], cwd=repo_dir)
+            _run_git(["commit", "-q", "-m", "add cheat sheet"], cwd=repo_dir)
+
+            result = _get_committed_at(str(file_path))
+
+            self.assertRegex(
+                result,
+                r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}$",
+            )
+## Tests file when cwd is not git based
+    def test_returns_fallback_when_not_in_a_git_repo(self):
+        with tempfile.TemporaryDirectory() as plain_dir:
+            file_path = Path(plain_dir) / "No_Repo_Cheat_Sheet.md"
+            file_path.write_text("# No repo\n")
+
+            result = _get_committed_at(str(file_path))
+
+            self.assertEqual(result, "No timestamp found.")
+
+## Tests file when cwd is elsewhere
+    def test_finds_timestamp_even_when_process_cwd_is_elsewhere(self):
+        import os
+
+        with tempfile.TemporaryDirectory() as repo_dir, tempfile.TemporaryDirectory() as unrelated_dir:
+            _run_git(["init", "-q"], cwd=repo_dir)
+            _run_git(["config", "user.email", "test@test.com"], cwd=repo_dir)
+            _run_git(["config", "user.name", "test"], cwd=repo_dir)
+
+            file_path = Path(repo_dir) / "Some_Cheat_Sheet.md"
+            file_path.write_text("# Some Cheat Sheet\n")
+
+            _run_git(["add", "."], cwd=repo_dir)
+            _run_git(["commit", "-q", "-m", "add cheat sheet"], cwd=repo_dir)
+
+            original_cwd = os.getcwd()
+            try:
+                os.chdir(unrelated_dir)  # simulate script launched elsewhere
+                result = _get_committed_at(str(file_path))
+            finally:
+                os.chdir(original_cwd)
+
+            self.assertRegex(
+                result,
+                r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}$",
+            )
 
 
 if __name__ == "__main__":

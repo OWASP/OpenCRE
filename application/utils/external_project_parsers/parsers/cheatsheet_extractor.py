@@ -96,9 +96,12 @@ def _fallback_summary(markdown: str) -> str:
 def _get_committed_at(source_path: str) -> str:
     """Return the ISO 8601 last-commit timestamp for source_path, or 'No timestamp found.'"""
 
+    repo_dir = os.path.dirname(os.path.abspath(source_path)) or "."
+
     try:
         result = subprocess.run(
-            ["git", "log", "-1", "--format=%cI", "--", source_path],
+            ["git", "log", "-1", "--format=%cI", "--", os.path.basename(source_path)],
+            cwd=repo_dir,
             capture_output=True,
             text=True,
             check=True,
