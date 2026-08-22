@@ -6796,20 +6796,20 @@
     }
   },
   {
-    "id": "gold:llm:LLM07:positive",
+    "id": "gold:api:API3:positive",
     "schema_version": "0.1.0",
     "slice": "positive",
     "input": {
-      "text": "Verify that insecure plugins and tool usage is prevented by validating all external tool calls, implementing proper authentication and authorization, and sandboxing plugin execution.",
+      "text": "Verify that excessive data exposure is prevented by limiting API responses to only the data fields necessary for the client. Avoid returning entire database objects in API responses without filtering.",
       "source_standard": "OTHER"
     },
     "expected": {
       "decision": "linked",
-      "cre_ids": ["307-507"]
+      "cre_ids": ["731-120", "765-788"]
     },
     "provenance": {
-      "section_path": "LLM07:2025",
-      "ground_truth_source": "manual mapping from OWASP LLM Top 10 2025"
+      "section_path": "API3:2023",
+      "ground_truth_source": "manual mapping from OWASP API Security Top 10 2023"
     }
   },
   {
@@ -6834,12 +6834,12 @@
     "schema_version": "0.1.0",
     "slice": "positive",
     "input": {
-      "text": "Verify that APIs are protected against injection attacks (SQL, NoSQL, OS command injection, LDAP injection) by using parameterized queries, input validation, and output encoding.",
+      "text": "Verify that APIs enforce function-level authorization to prevent unauthorized access to business functions. Users should only be able to invoke APIs that correspond to their role and permissions.",
       "source_standard": "OTHER"
     },
     "expected": {
       "decision": "linked",
-      "cre_ids": ["732-873", "857-718"]
+      "cre_ids": ["117-371", "368-633"]
     },
     "provenance": {
       "section_path": "API5:2023",
@@ -6851,12 +6851,12 @@
     "schema_version": "0.1.0",
     "slice": "positive",
     "input": {
-      "text": "Verify that APIs have proper inventory management to identify and document all API endpoints. Deprecated API versions should be disabled, and shadow APIs should be discovered through regular scans.",
+      "text": "Verify that business logic attacks are prevented by implementing robust validation and audit controls for sensitive API operations. Protect against business logic flaws by ensuring that workflows cannot be bypassed or exploited.",
       "source_standard": "OTHER"
     },
     "expected": {
       "decision": "linked",
-      "cre_ids": ["253-452", "208-355"]
+      "cre_ids": ["660-867", "418-853"]
     },
     "provenance": {
       "section_path": "API6:2023",
@@ -6902,12 +6902,12 @@
     "schema_version": "0.1.0",
     "slice": "positive",
     "input": {
-      "text": "Verify that APIs are protected against Cross-Site Request Forgery (CSRF) using anti-CSRF tokens, SameSite cookies, or double-submit cookies. Ensure that state-changing requests are authenticated.",
+      "text": "Verify that APIs are protected against improper inventory management by ensuring that all API versions are documented, and that retired versions are actively disabled and not accessible.",
       "source_standard": "OTHER"
     },
     "expected": {
       "decision": "linked",
-      "cre_ids": ["060-472", "464-084"]
+      "cre_ids": ["673-475", "462-245"]
     },
     "provenance": {
       "section_path": "API9:2023",
@@ -6919,12 +6919,12 @@
     "schema_version": "0.1.0",
     "slice": "positive",
     "input": {
-      "text": "Verify that APIs are protected against improper inventory management by ensuring that all API versions are documented, and that retired versions are actively disabled and not accessible.",
+      "text": "Verify that APIs are protected against unsafe consumption of third-party APIs by validating responses, handling errors securely, and ensuring that external integrations do not introduce vulnerabilities.",
       "source_standard": "OTHER"
     },
     "expected": {
       "decision": "linked",
-      "cre_ids": ["673-475", "462-245"]
+      "cre_ids": ["307-507", "814-322"]
     },
     "provenance": {
       "section_path": "API10:2023",
@@ -6970,7 +6970,7 @@
     "schema_version": "0.1.0",
     "slice": "positive",
     "input": {
-      "text": "Verify that LLM-generated outputs are validated for safety, accuracy, and appropriateness before being displayed to users. Implement content filters and human review for high-risk outputs.",
+      "text": "Verify that insecure output handling is prevented by validating model-generated content, escaping outputs appropriately, and preventing cross-site scripting and other injection vulnerabilities in LLM responses.",
       "source_standard": "OTHER"
     },
     "expected": {
@@ -6987,12 +6987,12 @@
     "schema_version": "0.1.0",
     "slice": "positive",
     "input": {
-      "text": "Verify that LLM applications are protected against insecure output handling by validating model outputs and preventing output encoding issues that could lead to XSS or other injection vulnerabilities.",
+      "text": "Verify that training data poisoning attacks are mitigated by validating training data sources, implementing data integrity checks, and using anomaly detection to identify manipulated data.",
       "source_standard": "OTHER"
     },
     "expected": {
       "decision": "linked",
-      "cre_ids": ["806-367", "366-835"]
+      "cre_ids": ["765-788", "731-120"]
     },
     "provenance": {
       "section_path": "LLM03:2025",
@@ -7004,12 +7004,12 @@
     "schema_version": "0.1.0",
     "slice": "positive",
     "input": {
-      "text": "Verify that training data poisoning attacks are mitigated by validating training data sources, implementing data integrity checks, and using anomaly detection to identify manipulated data.",
+      "text": "Verify that model denial of service is prevented by implementing request throttling, input size limits, and resource controls to protect against excessive resource consumption in LLM inference.",
       "source_standard": "OTHER"
     },
     "expected": {
       "decision": "linked",
-      "cre_ids": ["765-788", "731-120"]
+      "cre_ids": ["630-573", "660-052"]
     },
     "provenance": {
       "section_path": "LLM04:2025",
@@ -7038,7 +7038,7 @@
     "schema_version": "0.1.0",
     "slice": "positive",
     "input": {
-      "text": "Verify that sensitive data exposure through LLM outputs is prevented by data sanitization, redaction of personally identifiable information (PII), and access control on model responses.",
+      "text": "Verify that sensitive information disclosure through LLM outputs is prevented by data sanitization, redaction of personally identifiable information (PII), and access control on model responses.",
       "source_standard": "OTHER"
     },
     "expected": {
@@ -7055,12 +7055,12 @@
     "schema_version": "0.1.0",
     "slice": "positive",
     "input": {
-      "text": "Verify that insecure plugins and tool usage is prevented by validating all external tool calls, implementing proper authentication and authorization, and sandboxing plugin execution.",
+      "text": "Verify that insecure plugin and tool usage is prevented by validating all external tool calls, implementing proper authentication and authorization, and sandboxing plugin execution.",
       "source_standard": "OTHER"
     },
     "expected": {
       "decision": "linked",
-      "cre_ids": ["307-507"]
+      "cre_ids": ["307-507", "544-733"]
     },
     "provenance": {
       "section_path": "LLM07:2025",
