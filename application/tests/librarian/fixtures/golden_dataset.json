@@ -5961,6 +5961,428 @@
     }
   },
   {
+    "id": "gold:kubernetes:2022:K01:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Insecure Workload Configurations",
+      "source_standard": "OTHER"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "053-751",
+        "233-748",
+        "486-813",
+        "715-334"
+      ]
+    },
+    "provenance": {
+      "section_path": "K01",
+      "ground_truth_source": "manual mapping from OWASP Kubernetes Top Ten 2022"
+    }
+  },
+  {
+    "id": "gold:kubernetes:2022:K02:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Supply Chain Vulnerabilities",
+      "source_standard": "OTHER"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "307-507",
+        "613-285",
+        "613-287",
+        "715-223"
+      ]
+    },
+    "provenance": {
+      "section_path": "K02",
+      "ground_truth_source": "manual mapping from OWASP Kubernetes Top Ten 2022"
+    }
+  },
+  {
+    "id": "gold:kubernetes:2022:K03:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Overly Permissive RBAC Configurations",
+      "source_standard": "OTHER"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "128-128",
+        "724-770"
+      ]
+    },
+    "provenance": {
+      "section_path": "K03",
+      "ground_truth_source": "manual mapping from OWASP Kubernetes Top Ten 2022"
+    }
+  },
+  {
+    "id": "gold:kubernetes:2022:K04:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Lack of Centralized Policy Enforcement",
+      "source_standard": "OTHER"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "117-371",
+        "344-611"
+      ]
+    },
+    "provenance": {
+      "section_path": "K04",
+      "ground_truth_source": "manual mapping from OWASP Kubernetes Top Ten 2022"
+    }
+  },
+  {
+    "id": "gold:kubernetes:2022:K05:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Inadequate Logging and Monitoring",
+      "source_standard": "OTHER"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "058-083",
+        "148-420",
+        "402-706",
+        "843-841"
+      ]
+    },
+    "provenance": {
+      "section_path": "K05",
+      "ground_truth_source": "manual mapping from OWASP Kubernetes Top Ten 2022"
+    }
+  },
+  {
+    "id": "gold:kubernetes:2022:K06:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Broken Authentication Mechanisms",
+      "source_standard": "OTHER"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "113-133",
+        "177-260",
+        "576-042",
+        "586-842",
+        "633-428"
+      ]
+    },
+    "provenance": {
+      "section_path": "K06",
+      "ground_truth_source": "manual mapping from OWASP Kubernetes Top Ten 2022"
+    }
+  },
+  {
+    "id": "gold:kubernetes:2022:K07:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Missing Network Segmentation Controls",
+      "source_standard": "OTHER"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "132-146",
+        "467-784",
+        "515-021"
+      ]
+    },
+    "provenance": {
+      "section_path": "K07",
+      "ground_truth_source": "manual mapping from OWASP Kubernetes Top Ten 2022"
+    }
+  },
+  {
+    "id": "gold:kubernetes:2022:K08:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Secrets Management Failures",
+      "source_standard": "OTHER"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "340-375",
+        "774-888",
+        "813-610"
+      ]
+    },
+    "provenance": {
+      "section_path": "K08",
+      "ground_truth_source": "manual mapping from OWASP Kubernetes Top Ten 2022"
+    }
+  },
+  {
+    "id": "gold:kubernetes:2022:K09:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Misconfigured Cluster Components",
+      "source_standard": "OTHER"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "053-751",
+        "233-748",
+        "486-813",
+        "715-334"
+      ]
+    },
+    "provenance": {
+      "section_path": "K09",
+      "ground_truth_source": "manual mapping from OWASP Kubernetes Top Ten 2022"
+    }
+  },
+  {
+    "id": "gold:kubernetes:2022:K10:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Outdated and Vulnerable Kubernetes Components",
+      "source_standard": "OTHER"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "053-751",
+        "715-223",
+        "715-334",
+        "863-521"
+      ]
+    },
+    "provenance": {
+      "section_path": "K10",
+      "ground_truth_source": "manual mapping from OWASP Kubernetes Top Ten 2022"
+    }
+  },
+  {
+    "id": "gold:kubernetes:2025:K01:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Insecure Workload Configurations",
+      "source_standard": "OTHER"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "233-748",
+        "486-813"
+      ]
+    },
+    "provenance": {
+      "section_path": "K01",
+      "ground_truth_source": "manual mapping from OWASP Kubernetes Top Ten 2025"
+    }
+  },
+  {
+    "id": "gold:kubernetes:2025:K02:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Overly Permissive Authorization Configurations",
+      "source_standard": "OTHER"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "128-128",
+        "724-770"
+      ]
+    },
+    "provenance": {
+      "section_path": "K02",
+      "ground_truth_source": "manual mapping from OWASP Kubernetes Top Ten 2025"
+    }
+  },
+  {
+    "id": "gold:kubernetes:2025:K03:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Secrets Management Failures",
+      "source_standard": "OTHER"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "340-375",
+        "774-888",
+        "813-610"
+      ]
+    },
+    "provenance": {
+      "section_path": "K03",
+      "ground_truth_source": "manual mapping from OWASP Kubernetes Top Ten 2025"
+    }
+  },
+  {
+    "id": "gold:kubernetes:2025:K04:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Lack Of Cluster Level Policy Enforcement",
+      "source_standard": "OTHER"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "117-371"
+      ]
+    },
+    "provenance": {
+      "section_path": "K04",
+      "ground_truth_source": "manual mapping from OWASP Kubernetes Top Ten 2025"
+    }
+  },
+  {
+    "id": "gold:kubernetes:2025:K05:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Missing Network Segmentation Controls",
+      "source_standard": "OTHER"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "132-146",
+        "467-784",
+        "515-021"
+      ]
+    },
+    "provenance": {
+      "section_path": "K05",
+      "ground_truth_source": "manual mapping from OWASP Kubernetes Top Ten 2025"
+    }
+  },
+  {
+    "id": "gold:kubernetes:2025:K06:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Overly Exposed Kubernetes Components",
+      "source_standard": "OTHER"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "152-725",
+        "640-364"
+      ]
+    },
+    "provenance": {
+      "section_path": "K06",
+      "ground_truth_source": "manual mapping from OWASP Kubernetes Top Ten 2025"
+    }
+  },
+  {
+    "id": "gold:kubernetes:2025:K07:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Misconfigured And Vulnerable Cluster Components",
+      "source_standard": "OTHER"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "053-751",
+        "233-748",
+        "486-813",
+        "715-334"
+      ]
+    },
+    "provenance": {
+      "section_path": "K07",
+      "ground_truth_source": "manual mapping from OWASP Kubernetes Top Ten 2025"
+    }
+  },
+  {
+    "id": "gold:kubernetes:2025:K08:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Cluster To Cloud Lateral Movement",
+      "source_standard": "OTHER"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "132-146",
+        "640-364",
+        "724-770"
+      ]
+    },
+    "provenance": {
+      "section_path": "K08",
+      "ground_truth_source": "manual mapping from OWASP Kubernetes Top Ten 2025"
+    }
+  },
+  {
+    "id": "gold:kubernetes:2025:K09:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Broken Authentication Mechanisms",
+      "source_standard": "OTHER"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "177-260",
+        "586-842",
+        "633-428"
+      ]
+    },
+    "provenance": {
+      "section_path": "K09",
+      "ground_truth_source": "manual mapping from OWASP Kubernetes Top Ten 2025"
+    }
+  },
+  {
+    "id": "gold:kubernetes:2025:K10:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Inadequate Logging And Monitoring",
+      "source_standard": "OTHER"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "058-083",
+        "148-420",
+        "402-706",
+        "843-841"
+      ]
+    },
+    "provenance": {
+      "section_path": "K10",
+      "ground_truth_source": "manual mapping from OWASP Kubernetes Top Ten 2025"
+    }
+  },
+  {
     "id": "gold:asvs:V1.1.3:hard_negative",
     "schema_version": "0.1.0",
     "slice": "hard_negative",

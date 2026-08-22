@@ -6,6 +6,7 @@ in OpenCRE's own cache. The 5 slices are populated as follows:
 
   positive       : all 277 ASVS requirements (1:1 mapping)
                  + multi-link rows from OWASP Top 10 and CWE (2-4 CREs)
+                 + OWASP Kubernetes Top Ten 2022 and 2025 (all 10 each)
   hard_negative  : ASVS requirements whose text contains a negation phrase
                    ("do not", "does not", "shall not", "should not"), with
                    their real DB CRE mapping (cross-encoder must beat cosine
@@ -24,6 +25,7 @@ import argparse
 import json
 import sqlite3
 import sys
+import re
 from pathlib import Path
 from typing import Dict, List, Optional
 
@@ -290,6 +292,43 @@ def build_positive_multilink(conn: sqlite3.Connection) -> List[Dict]:
     return out
 
 
+def build_kubernetes(conn: sqlite3.Connection) -> List[Dict]:
+    """Add OWASP Kubernetes Top Ten 2022 and 2025 entries."""
+    rows = conn.execute(
+        """
+        SELECT n.name, n.section_id, n.section,
+               GROUP_CONCAT(c.external_id, '|')
+        FROM node n
+        JOIN cre_node_links l ON l.node = n.id
+        JOIN cre c ON c.id = l.cre
+        WHERE n.name LIKE '%Kubernetes Top Ten%'
+          AND n.section_id LIKE 'K%'
+        GROUP BY n.id
+        ORDER BY n.name, n.section_id
+        """
+    ).fetchall()
+    out = []
+    for name, section_id, text, cre_concat in rows:
+        cre_ids = sorted(set(cre_concat.split("|")))
+        year_match = re.search(r"\b(20\d{2})\b", name)
+        year = year_match.group(1) if year_match else "2025"
+        # Unique ID with year
+        out.append(
+            {
+                "id": f"gold:kubernetes:{year}:{section_id}:positive",
+                "schema_version": SCHEMA_VERSION,
+                "slice": "positive",
+                "input": {"text": text, "source_standard": "OTHER"},
+                "expected": {"decision": "linked", "cre_ids": cre_ids},
+                "provenance": {
+                    "section_path": section_id,
+                    "ground_truth_source": f"manual mapping from OWASP Kubernetes Top Ten {year}",
+                },
+            }
+        )
+    return out
+
+
 def build_hard_negative(conn: sqlite3.Connection) -> List[Dict]:
     rows = conn.execute(
         """
@@ -427,6 +466,7 @@ def build(conn: sqlite3.Connection) -> List[Dict]:
     rows.extend(build_explicit(conn))
     rows.extend(build_positive_asvs(conn))
     rows.extend(build_positive_multilink(conn))
+    rows.extend(build_kubernetes(conn))          # <-- NEW
     rows.extend(build_hard_negative(conn))
     rows.extend(build_update(conn))
     rows.extend(build_ambiguous())
