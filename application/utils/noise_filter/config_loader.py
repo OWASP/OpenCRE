@@ -24,6 +24,12 @@ DEFAULT_LLM_MODEL = "gemini/gemini-2.5-flash-lite"
 DEFAULT_BATCH_SIZE = 10
 DEFAULT_MAX_CHARS = 1500
 DEFAULT_CONFIDENCE_THRESHOLD = 0.8
+# Fraction of a run's classified chunks that must be *infrastructure* failures
+# (the LLM call itself failed) for the run to report status="degraded" and exit
+# non-zero, so the orchestrator retries the whole run. Default 1.0 = only a total
+# wipeout (every classified chunk failed) is degraded; smaller failures leave
+# their rows `pending` for a natural retry and still exit 0.
+DEFAULT_FAILURE_THRESHOLD = 1.0
 
 
 @dataclass(frozen=True)
@@ -34,6 +40,7 @@ class NoiseFilterConfig:
     batch_size: int = DEFAULT_BATCH_SIZE
     max_chars: int = DEFAULT_MAX_CHARS
     confidence_threshold: float = DEFAULT_CONFIDENCE_THRESHOLD
+    failure_threshold: float = DEFAULT_FAILURE_THRESHOLD
 
     def __post_init__(self) -> None:
         """Fail fast on invalid settings, regardless of construction path.
@@ -50,6 +57,11 @@ class NoiseFilterConfig:
             raise ValueError(
                 f"confidence_threshold must be in [0.0, 1.0], got "
                 f"{self.confidence_threshold}"
+            )
+        if not 0.0 <= self.failure_threshold <= 1.0:
+            raise ValueError(
+                f"failure_threshold must be in [0.0, 1.0], got "
+                f"{self.failure_threshold}"
             )
 
 
@@ -69,12 +81,19 @@ def load_config() -> NoiseFilterConfig:
                 str(DEFAULT_CONFIDENCE_THRESHOLD),
             )
         ),
+        failure_threshold=float(
+            os.environ.get(
+                "CRE_NOISE_FILTER_FAILURE_THRESHOLD",
+                str(DEFAULT_FAILURE_THRESHOLD),
+            )
+        ),
     )
 
 
 __all__ = [
     "DEFAULT_BATCH_SIZE",
     "DEFAULT_CONFIDENCE_THRESHOLD",
+    "DEFAULT_FAILURE_THRESHOLD",
     "DEFAULT_LLM_MODEL",
     "DEFAULT_MAX_CHARS",
     "NoiseFilterConfig",
