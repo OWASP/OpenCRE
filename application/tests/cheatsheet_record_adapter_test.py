@@ -40,6 +40,9 @@ class TestSectionFromCheatsheetRecord(unittest.TestCase):
             str(section.source.url),
             "https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html",
         )
+        self.assertEqual(
+            str(section.source.committed_at.isoformat()), "2026-06-14T10:22:03+00:00"
+        )
         self.assertEqual(section.locator.id, "Secrets_Management_Cheat_Sheet")
         self.assertEqual(
             str(section.locator.url),
@@ -77,7 +80,7 @@ class TestSectionFromCheatsheetRecord(unittest.TestCase):
             metadata={
                 "parser_version": "v1",
                 "fallback_used": "false",
-                "committed_at": "No timestamp found.",
+                "committed_at": "",
             },
         )
 
