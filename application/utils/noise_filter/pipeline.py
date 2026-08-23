@@ -3,11 +3,13 @@
 This is the entry point the orchestrator invokes (via the CLI in cre.py). For a
 given `pipeline_run_id` it reads Module A's pending rows from `harvest_input`,
 runs the three-stage gate (regex -> sanitize -> LLM classifier), writes the
-keepers to `knowledge_queue` (deduped), marks the input rows processed, and
-returns a RunSummary the CLI prints as JSON for the orchestrator to consume.
+keepers to `knowledge_queue` (deduped), marks handled input rows `processed`
+(leaving infrastructure-failed ones `pending` for a later retry), and returns a
+RunSummary the CLI prints as JSON for the orchestrator to consume.
 
 Recall-first is preserved end to end: only NOISE is dropped; KNOWLEDGE and
-UNCERTAIN always reach the queue.
+UNCERTAIN always reach the queue. An LLM-call failure never finalizes a chunk as
+a low-confidence verdict -- the row waits `pending` and is retried instead.
 """
 
 from __future__ import annotations
@@ -22,11 +24,14 @@ from pydantic import ValidationError
 from application.database.db import HarvestInput
 from application.utils.noise_filter.config_loader import NoiseFilterConfig, load_config
 from application.utils.noise_filter.hashing import compute_content_hash
-from application.utils.noise_filter.llm_classifier import LLMClassifier
+from application.utils.noise_filter.llm_classifier import (
+    LLMClassifier,
+    is_infra_failure,
+)
 from application.utils.noise_filter.queue_writer import write_verdicts
 from application.utils.noise_filter.regex_filter import RegexFilter
 from application.utils.noise_filter.sanitize import sanitize_text
-from application.utils.noise_filter.schemas import ChangeRecord
+from application.utils.noise_filter.schemas import ChangeRecord, ClassifyResult
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +48,7 @@ class RunSummary:
     kept_uncertain: int = 0
     inserted: int = 0
     deduped: int = 0
+    retry_pending: int = 0  # infra-failed chunks left `pending` for a later retry
     dry_run: bool = False
     status: str = "ok"
 
@@ -105,15 +111,16 @@ def run_noise_filter(
                 e.errors(include_input=False),
             )
 
-    # Stage 1: regex path filter (dropped = NOISE). Survivors get Stage 1.5 sanitize.
+    # Stage 1: regex path filter (dropped = NOISE). Survivors keep their input
+    # row so an infra failure can leave that row `pending` for a later retry.
     regex = RegexFilter()
-    survivors: list[ChangeRecord] = []
-    for _row, record in parsed:
+    survivors: list[tuple[HarvestInput, ChangeRecord]] = []
+    for row, record in parsed:
         is_noise, _reason = regex.is_noise_record(record)
         if is_noise:
             summary.dropped_noise += 1
         else:
-            survivors.append(record)
+            survivors.append((row, record))
 
     # Stage 1.5 + Stage 2: sanitization is for the classifier's eyes only. We
     # hash and persist the ORIGINAL (canonical) text so the dedup key stays
@@ -121,19 +128,43 @@ def run_noise_filter(
     # sanitized copy reaches the LLM. Require exactly one verdict per survivor --
     # a misaligned classifier must fail loudly rather than let zip() truncate.
     classifier = classifier or LLMClassifier(config)
-    verdicts = classifier.classify_batch([_sanitized(rec) for rec in survivors])
+    verdicts = classifier.classify_batch([_sanitized(rec) for _row, rec in survivors])
     if len(verdicts) != len(survivors):
         raise RuntimeError(
             f"classifier returned {len(verdicts)} verdicts for "
             f"{len(survivors)} chunks; refusing to write a partial batch"
         )
 
-    triples = [
-        (rec, v, compute_content_hash(rec.text)) for rec, v in zip(survivors, verdicts)
-    ]
+    # An *infrastructure* failure (the LLM call itself failed) never really
+    # classified the chunk. Rather than write a conf-0.0 UNCERTAIN row that
+    # ON CONFLICT would then pin forever, leave that input row `pending` so a
+    # later run retries it. Everything else -- genuine KNOWLEDGE/UNCERTAIN/NOISE,
+    # or unparseable output -- is finalized.
+    retry_rows: list[HarvestInput] = []
+    triples: list[tuple[ChangeRecord, ClassifyResult, str]] = []
+    for (row, record), verdict in zip(survivors, verdicts):
+        if is_infra_failure(verdict):
+            retry_rows.append(row)
+        else:
+            triples.append((record, verdict, compute_content_hash(record.text)))
+
     summary.kept_knowledge = sum(1 for _, v, _ in triples if v.label == "KNOWLEDGE")
     summary.kept_uncertain = sum(1 for _, v, _ in triples if v.label == "UNCERTAIN")
     summary.dropped_noise += sum(1 for _, v, _ in triples if v.label == "NOISE")
+    summary.retry_pending = len(retry_rows)
+
+    # Degraded when the infra-failure ratio reaches `failure_threshold`: at the
+    # default 1.0 that means the *whole* classified batch failed, but a lower
+    # threshold degrades a partial failure too. Requires at least one failure, so
+    # a clean run is never degraded (even at threshold 0.0). The CLI turns this
+    # into a non-zero exit so the orchestrator retries the run; a run that stays
+    # "ok" still commits its good rows and leaves any failures `pending`.
+    classified = len(survivors)
+    if (
+        summary.retry_pending
+        and summary.retry_pending / classified >= config.failure_threshold
+    ):
+        summary.status = "degraded"
 
     if dry_run:
         return summary
@@ -142,9 +173,13 @@ def run_noise_filter(
     summary.inserted = write.inserted
     summary.deduped = write.deduped
 
-    # Mark input rows so a re-run doesn't reprocess them.
+    # Finalize every row except the infra-failed ones: NOISE-dropped and
+    # classified rows become `processed`; infra-failed rows stay `pending` for a
+    # retry; parse-failed rows are `error`.
+    pending_ids = {row.id for row in retry_rows}
     for row, _ in parsed:
-        row.status = "processed"
+        if row.id not in pending_ids:
+            row.status = "processed"
     for row in failed:
         row.status = "error"
     session.commit()
