@@ -94,7 +94,7 @@ def _fallback_summary(markdown: str) -> str:
 
 
 def _get_committed_at(source_path: str) -> str:
-    """Return the ISO 8601 last-commit timestamp for source_path, or 'No timestamp found.'"""
+    """Return the ISO 8601 last-commit timestamp for source_path, or '' if unavailable."""
 
     repo_dir = os.path.dirname(os.path.abspath(source_path)) or "."
 
@@ -108,11 +108,11 @@ def _get_committed_at(source_path: str) -> str:
         )
     except (subprocess.CalledProcessError, FileNotFoundError, OSError) as e:
         logging.warning(
-            "CheatsheetRecord: could not determine committed_at for %s: %s",
+            "_get_committed_at: commit not found for %s: %s",
             source_path,
             e,
         )
-        return "No timestamp found."
+        return ""
 
     return result.stdout.strip()
 

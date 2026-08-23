@@ -203,7 +203,7 @@ class TestGetCommittedAt(unittest.TestCase):
 
             result = _get_committed_at(str(file_path))
 
-            self.assertEqual(result, "No timestamp found.")
+            self.assertEqual(result, "")
 
     ## Tests file when cwd is elsewhere
     def test_finds_timestamp_even_when_process_cwd_is_elsewhere(self):
