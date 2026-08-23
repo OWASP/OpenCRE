@@ -893,6 +893,8 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
         return
 
     if getattr(args, "run_noise_filter", False):
+        import sys
+
         from application import sqla
         from application.utils.noise_filter.pipeline import run_noise_filter
 
@@ -904,6 +906,13 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
             dry_run=getattr(args, "noise_filter_dry_run", False),
         )
         print(summary.to_json())
+        if summary.status == "degraded":
+            # The infra-failure ratio reached CRE_NOISE_FILTER_FAILURE_THRESHOLD
+            # (default 1.0 = the whole classified batch failed). The classified
+            # rows are already committed (idempotent) and the failed ones stay
+            # `pending`, so exit non-zero to have the orchestrator retry -- a
+            # retry then re-processes only the pending rows.
+            sys.exit(1)
         return
 
     if args.add and getattr(args, "from_ai_exchange_csv", None):
