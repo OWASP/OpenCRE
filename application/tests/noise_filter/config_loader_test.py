@@ -15,6 +15,7 @@ from unittest.mock import patch
 from application.utils.noise_filter.config_loader import (
     DEFAULT_BATCH_SIZE,
     DEFAULT_CONFIDENCE_THRESHOLD,
+    DEFAULT_FAILURE_THRESHOLD,
     DEFAULT_LLM_MODEL,
     DEFAULT_MAX_CHARS,
     NoiseFilterConfig,
@@ -26,6 +27,7 @@ _ENV_KEYS = (
     "CRE_NOISE_FILTER_BATCH_SIZE",
     "CRE_NOISE_FILTER_MAX_CHARS",
     "CRE_NOISE_FILTER_CONFIDENCE_THRESHOLD",
+    "CRE_NOISE_FILTER_FAILURE_THRESHOLD",
 )
 
 
@@ -40,6 +42,7 @@ class LoadConfigTests(unittest.TestCase):
         self.assertEqual(cfg.batch_size, DEFAULT_BATCH_SIZE)
         self.assertEqual(cfg.max_chars, DEFAULT_MAX_CHARS)
         self.assertEqual(cfg.confidence_threshold, DEFAULT_CONFIDENCE_THRESHOLD)
+        self.assertEqual(cfg.failure_threshold, DEFAULT_FAILURE_THRESHOLD)
 
     def test_env_overrides_applied(self) -> None:
         overrides = {
@@ -47,6 +50,7 @@ class LoadConfigTests(unittest.TestCase):
             "CRE_NOISE_FILTER_BATCH_SIZE": "5",
             "CRE_NOISE_FILTER_MAX_CHARS": "800",
             "CRE_NOISE_FILTER_CONFIDENCE_THRESHOLD": "0.6",
+            "CRE_NOISE_FILTER_FAILURE_THRESHOLD": "0.5",
         }
         with patch.dict(os.environ, overrides):
             cfg = load_config()
@@ -54,6 +58,7 @@ class LoadConfigTests(unittest.TestCase):
         self.assertEqual(cfg.batch_size, 5)
         self.assertEqual(cfg.max_chars, 800)
         self.assertEqual(cfg.confidence_threshold, 0.6)
+        self.assertEqual(cfg.failure_threshold, 0.5)
 
 
 class InvariantTests(unittest.TestCase):
@@ -77,6 +82,14 @@ class InvariantTests(unittest.TestCase):
     def test_confidence_below_zero_raises(self) -> None:
         with self.assertRaises(ValueError):
             NoiseFilterConfig(confidence_threshold=-0.1)
+
+    def test_failure_threshold_above_one_raises(self) -> None:
+        with self.assertRaises(ValueError):
+            NoiseFilterConfig(failure_threshold=1.5)
+
+    def test_failure_threshold_below_zero_raises(self) -> None:
+        with self.assertRaises(ValueError):
+            NoiseFilterConfig(failure_threshold=-0.1)
 
 
 if __name__ == "__main__":

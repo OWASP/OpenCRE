@@ -40,6 +40,7 @@ vector;`).
 | `CRE_NOISE_FILTER_BATCH_SIZE` | chunks per LLM request | `10` |
 | `CRE_NOISE_FILTER_MAX_CHARS` | per-chunk truncation | `1500` |
 | `CRE_NOISE_FILTER_CONFIDENCE_THRESHOLD` | KNOWLEDGE-below → UNCERTAIN | `0.8` |
+| `CRE_NOISE_FILTER_FAILURE_THRESHOLD` | fraction of a run's classified chunks that must be infra failures to mark the run `degraded` (→ non-zero exit) | `1.0` |
 
 Module B needs no ML libraries (no torch/sentence-transformers) — just `litellm` (in the slim prod requirements) + the Gemini key.
 
@@ -76,12 +77,12 @@ The process runs the gate (regex path filter → sanitize → LLM classify), wri
 
 ## 4. Completion signal (how the orchestrator knows it's done)
 
-- **Exit code `0`** = success; **non-zero** = hard failure (e.g. DB unreachable) → safe to retry the same `run_id` (B is idempotent).
+- **Exit code `0`** = success (`status: ok`), even if some chunks are waiting to retry (`retry_pending > 0`). **Non-zero** = the whole run needs retrying: either a hard failure (e.g. DB unreachable), or a **`degraded`** run where the infra-failure ratio (`retry_pending / classified`) reached `CRE_NOISE_FILTER_FAILURE_THRESHOLD` — at the **default 1.0** that means *every* classified chunk failed; a lower threshold trips on a partial failure (a clean run is never degraded). Either way it is safe to retry the same `run_id` — B is idempotent and a retry re-processes only the `pending` rows.
 - **stdout** = a one-line JSON summary:
 ```json
 {"run_id":"20260201T020000Z","read":512,"parse_errors":0,"dropped_noise":172,
  "kept_knowledge":300,"kept_uncertain":40,"inserted":338,"deduped":2,
- "dry_run":false,"status":"ok"}
+ "retry_pending":0,"dry_run":false,"status":"ok"}
 ```
 
 | Field | Meaning |
@@ -92,7 +93,8 @@ The process runs the gate (regex path filter → sanitize → LLM classify), wri
 | `kept_knowledge` / `kept_uncertain` | classified as KNOWLEDGE / UNCERTAIN |
 | `inserted` | rows written to `knowledge_queue` |
 | `deduped` | keepers skipped as duplicate content |
-| `status` | `ok` (per-chunk errors are contained, not fatal) |
+| `retry_pending` | chunks whose **LLM call failed** (infrastructure) — **not** written; their `harvest_input` rows are left `pending` for a later retry |
+| `status` | `ok`, or `degraded` when the infra-failure ratio reaches `CRE_NOISE_FILTER_FAILURE_THRESHOLD` (default 1.0 = all classified chunks failed) → non-zero exit, retry the run |
 
 ---
 
@@ -115,8 +117,8 @@ The orchestrator **serialises** the steps: call B only after A has finished writ
 ## 7. Guarantees
 
 - **Recall-first (for records that parse):** among validly-parsed records, only NOISE is dropped; KNOWLEDGE and UNCERTAIN always reach the queue (no security knowledge lost). A record whose `payload` fails validation is a *separate* outcome — **not** queued and **not** counted as NOISE: its `harvest_input` row is marked `status='error'` and **retained** (never deleted), so it can be re-harvested/re-run or reconciled once fixed. Parse failures are surfaced as `parse_errors` in the run summary.
-- **Idempotent:** input rows are marked `processed`; re-invoking the same `run_id` is safe. `UNIQUE(content_hash)` collapses duplicate content.
-- **Error isolation:** an unparseable input row → marked `error` (not fatal); a failed LLM batch → those chunks become `UNCERTAIN` (never dropped); infrastructure failure → non-zero exit for the orchestrator to retry.
+- **Idempotent:** handled input rows are marked `processed` (infra-failed ones stay `pending`); re-invoking the same `run_id` is safe and re-processes only what's left. `UNIQUE(content_hash)` collapses duplicate content.
+- **Error isolation & retry:** an unparseable *input* row → marked `error` (not fatal). An **LLM-call (infrastructure) failure** → that chunk is **not** written and its `harvest_input` row stays `pending`, so a later run retries it (surfaced as `retry_pending`); if the infra-failure ratio reaches `CRE_NOISE_FILTER_FAILURE_THRESHOLD` (default 1.0 = all classified chunks) the run is `degraded` and exits non-zero so the orchestrator retries. **Unparseable model output** (the LLM answered, but with junk) → a genuine `UNCERTAIN` row (written, reaches C), not retried — retrying tends to reproduce it.
 
 ---
 
