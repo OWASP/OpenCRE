@@ -1,8 +1,10 @@
 # Module B — final metrics
 
-Every number here comes from one command over the committed labeled set — nothing
-is hand-copied. The harness runs the **real** gate (Stage 1 regex → Stage 1.5
-sanitize → Stage 2 LLM) and scores its predictions against the gold labels.
+The numbers in **Results** below come from a single run of the harness over the
+committed labeled set. It runs the **real** gate (Stage 1 regex → Stage 1.5
+sanitize → Stage 2 LLM) and scores its predictions against the gold labels. (The
+*Baseline → final* section further down is a historical comparison across two
+different runs — see the note there.)
 
 ```bash
 python scripts/evaluate_noise_filter.py
@@ -60,10 +62,12 @@ downstream compute in Module C's cross-encoder, never lost knowledge.
 |---|---|---|---|
 | KNOWLEDGE | 0.889 | 1.000 | 0.941 |
 | NOISE | 1.000 | 0.841 | 0.914 |
-| UNCERTAIN | — | — | — |
+| UNCERTAIN | 0.000 | 0.000 | 0.000 |
 
-NOISE precision is **1.000** — nothing the model called NOISE was actually
-security content, so the recall-first bias cost no false drops.
+(The gold has no UNCERTAIN samples, so the harness reports `0.000` across that row.)
+These are **pipeline** metrics — the harness scores the combined regex + LLM
+predictions. NOISE precision is **1.000**: nothing the pipeline marked NOISE was
+actually security content, so the recall-first bias cost no false drops.
 
 ### Stage 2 (LLM) only
 
@@ -73,23 +77,29 @@ security content, so the recall-first bias cost no false drops.
 | LLM accuracy | 91 / 98 = 0.929 |
 | mean confidence | 0.944 |
 
-## Baseline → final
+## Baseline → final (historical)
 
-The number moved by fixing the **gold** and sharpening the **prompt**, not by
-trading away recall — recall stayed at 1.000 the whole way.
+This table is a **historical** comparison across two *different* runs — it does
+**not** come from the single command above. The baseline is an earlier Week-4 run
+on a slightly different gold set (55 KNOWLEDGE), so `0.820 → 0.930` is a directional
+story, not a like-for-like accuracy delta. The point it makes: the gain came from
+fixing the **gold** and sharpening the **prompt**, never from trading away recall.
 
-| | accuracy | KNOWLEDGE recall | leakage |
+| (historical) | accuracy | KNOWLEDGE recall | leakage |
 |---|---|---|---|
-| baseline (untuned prompt) | 0.820 | 1.000 | 0 |
-| **final** | **0.930** | **1.000** | **0 / 56** |
+| baseline (untuned prompt, Week-4 gold) | 0.820 | 1.000 | 0 / 55 |
+| **final (current gold)** | **0.930** | **1.000** | **0 / 56** |
 
-*(The gold set was corrected between these runs — 9 principled relabels resolving
+*(The gold was corrected between the two runs — 9 principled relabels resolving
 stale UNCERTAIN and heading-only cases — which is why the leakage denominator moved
 55 → 56. Recall and leakage stayed perfect across the change.)*
 
 ## Reproduce
 
-Both inputs are committed, so the run reproduces from a clean checkout:
+Both inputs are committed, so the **evaluation procedure** reproduces from a clean
+checkout. Because Stage 2 calls a live Gemini model, the exact per-record
+predictions — and the last decimal of each metric — can vary run to run; the
+recall-first behaviour (100% KNOWLEDGE recall, 0 leakage) is what stays stable.
 
 - harness — `scripts/evaluate_noise_filter.py`
 - labeled set — `application/tests/noise_filter/fixtures/labeled_data.json`
