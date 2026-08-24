@@ -1,6 +1,6 @@
-import textacy.preprocessing as prep
+import re
+import unicodedata
 
-from application.utils.harvester import repository_client
 from .models import DiffBlock
 
 
@@ -13,8 +13,8 @@ class DiffNormalizer:
     """
 
     def normalize_line(self, line: str) -> str:
-        line = prep.normalize.unicode(line)
-        line = prep.normalize.whitespace(line)
+        line = unicodedata.normalize("NFKC", line)
+        line = re.sub(r"\s+", " ", line)
         return line.strip()
 
     def normalize(self, blocks: list[DiffBlock]) -> list[DiffBlock]:

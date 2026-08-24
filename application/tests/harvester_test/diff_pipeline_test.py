@@ -1,8 +1,8 @@
 from datetime import UTC, datetime
+import os
 import subprocess
 import time
 import unittest
-import os
 
 from application.utils.harvester.diff_normalizer import DiffNormalizer
 from application.utils.harvester.diff_parser import DiffParser
