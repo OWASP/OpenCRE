@@ -13,35 +13,31 @@
 
   form {
     position: relative;
-    display: flex;
-    align-items: center;
-    border: 1px solid rgba(var(--border-rgb), 0.5);
-    border-radius: var(--radius);
-    background-color: rgba(var(--card-rgb), 0.5);
-    backdrop-filter: blur(4px);
-    transition: all 0.2s ease;
+    display: block;
+    width: 100%;
   }
 
   .search-icon {
-    position: relative;
-    left: 1rem;
+    position: absolute;
+    left: 0.75rem;
     top: 50%;
     transform: translateY(-50%);
     color: var(--muted-foreground);
-
-    height: 1.20rem;    //bigger for sharpness
-    width: 1.20rem;
-    vector-effect:non-scaling-stroke; // keep strokes crisp
-
+    height: 1.2rem;
+    width: 1.2rem;
+    pointer-events: none;
+    z-index: 1;
+    vector-effect: non-scaling-stroke;
   }
+
   input {
+    display: block;
     padding: 0.5rem 1rem 0.5rem 2.5rem;
     width: 100%;
     max-width: 16rem;
 
-    background-color: rgba(var(--card-rgb), 0.5); /* tiny bump */
-    border: 1px solid rgba(102, 157, 246, 0.267); /* slightly brighter sky blue */
-
+    background-color: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(102, 157, 246, 0.267);
     border-radius: 9999px;
     color: var(--foreground);
 
@@ -58,11 +54,10 @@
   input:focus {
     outline: none;
     background-color: rgba(255, 255, 255, 0.08);
-
     border-color: rgba(96, 165, 250, 0.6);
-
     box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03), 0 2px 6px rgba(0, 0, 0, 0.3);
   }
+
   .search-error {
     margin-top: 0.25rem;
     font-size: 0.75rem;
