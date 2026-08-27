@@ -44,7 +44,10 @@ describe('useResourceSelection', () => {
     const { getByTestId } = render(React.createElement(Probe));
 
     await waitFor(() => expect(getByTestId('loading').textContent).toBe('false'));
-    expect(fetchMock).toHaveBeenCalledWith('/rest/v1/user/resources', { method: 'GET' });
+    expect(fetchMock).toHaveBeenCalledWith('/rest/v1/user/resources', {
+      method: 'GET',
+      headers: { Accept: 'application/json' },
+    });
     expect(getByTestId('selected').textContent).toBe('ASVS,CWE');
   });
 

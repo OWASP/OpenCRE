@@ -29,7 +29,10 @@ export const useResourceSelection = (): ResourceSelectionState => {
 
     const load = async () => {
       try {
-        const res = await fetch(`${apiUrl}/user/resources`, { method: 'GET' });
+        const res = await fetch(`${apiUrl}/user/resources`, {
+          method: 'GET',
+          headers: { Accept: 'application/json' },
+        });
         if (res.status === 401) {
           return; // anonymous / feature not available — not an error
         }
