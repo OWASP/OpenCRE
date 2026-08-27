@@ -7,7 +7,6 @@ the NO_LOGIN dev bypass. OpenAPI documentation is intentionally out of scope her
 
 import os
 import unittest
-import urllib.parse
 from typing import Any
 from unittest.mock import patch
 
@@ -99,6 +98,71 @@ class TestAuthRoutes(unittest.TestCase):
                     self.assertIn("user_id", sess)
         self.assertEqual(sqla.session.query(db.User).count(), 1)
 
+    @patch("application.web.web_main.id_token")
+    @patch("application.web.web_main.CREFlow")
+    @patch("application.web.web_main.db.Node_collection")
+    def test_auth_callback_persistence_failure_returns_503(
+        self, node_collection_mock: Any, cre_flow_mock: Any, id_token_mock: Any
+    ) -> None:
+        # If upsert_user fails, we must NOT redirect as if logged in (that leaves
+        # a broken session that fails every login_required call). Surface a
+        # retryable 503 and leave user_id unset.
+        from sqlalchemy.exc import SQLAlchemyError
+
+        id_token_mock.verify_oauth2_token.return_value = {
+            "sub": "sub-boom",
+            "name": "T",
+            "email": "t@example.com",
+        }
+        cre_flow_mock.instance.return_value.flow.credentials._id_token = "tok"
+        node_collection_mock.return_value.upsert_user.side_effect = SQLAlchemyError(
+            "db down"
+        )
+        with patch.dict(
+            os.environ,
+            {
+                "CRE_ENABLE_LOGIN": "1",
+                "LOGIN_ALLOWED_DOMAINS": "*",
+                "INSECURE_REQUESTS": "1",
+            },
+        ):
+            with self.app.test_client() as client:
+                with client.session_transaction() as sess:
+                    sess["state"] = "xyz"
+                resp = client.get("/rest/v1/auth/callback?state=xyz")
+                self.assertEqual(resp.status_code, 503)
+                with client.session_transaction() as sess:
+                    self.assertNotIn("user_id", sess)
+
+    @patch("application.web.web_main.id_token")
+    @patch("application.web.web_main.CREFlow")
+    def test_auth_callback_missing_sub_returns_401(
+        self, cre_flow_mock: Any, id_token_mock: Any
+    ) -> None:
+        # No 'sub' claim -> identity can't be established -> explicit 401, not a
+        # silently broken session.
+        id_token_mock.verify_oauth2_token.return_value = {
+            "sub": None,
+            "name": "T",
+            "email": "t@example.com",
+        }
+        cre_flow_mock.instance.return_value.flow.credentials._id_token = "tok"
+        with patch.dict(
+            os.environ,
+            {
+                "CRE_ENABLE_LOGIN": "1",
+                "LOGIN_ALLOWED_DOMAINS": "*",
+                "INSECURE_REQUESTS": "1",
+            },
+        ):
+            with self.app.test_client() as client:
+                with client.session_transaction() as sess:
+                    sess["state"] = "xyz"
+                resp = client.get("/rest/v1/auth/callback?state=xyz")
+                self.assertEqual(resp.status_code, 401)
+                with client.session_transaction() as sess:
+                    self.assertNotIn("user_id", sess)
+
     # --- deprecated aliases: header-only ---
     def test_logout_alias_carries_deprecation_header(self) -> None:
         with patch.dict(os.environ, {"INSECURE_REQUESTS": "1"}):
@@ -163,16 +227,19 @@ class TestAuthRoutes(unittest.TestCase):
                 )
                 self.assertEqual(resp.status_code, 401)
 
-    def test_login_required_browser_redirects_to_auth_login_with_next(self) -> None:
+    def test_login_required_browser_redirects_to_auth_login(self) -> None:
         with patch.dict(
             os.environ, {"CRE_ENABLE_LOGIN": "1", "INSECURE_REQUESTS": "1"}
         ):
             with self.app.test_client() as client:
                 resp = client.get("/rest/v1/auth/user", headers={"Accept": "text/html"})
                 self.assertEqual(resp.status_code, 302)
-                loc = resp.headers["Location"]
-                self.assertTrue(loc.startswith("/rest/v1/auth/login?next="))
-                self.assertIn("/rest/v1/auth/user", urllib.parse.unquote(loc))
+                # Redirect to the constant login route -- no ?next (auth_login does
+                # not consume a return target; callback always lands on /chatbot).
+                self.assertTrue(
+                    resp.headers["Location"].endswith("/rest/v1/auth/login")
+                )
+                self.assertNotIn("next=", resp.headers["Location"])
 
     def test_login_required_browser_multivalue_accept_redirects(self) -> None:
         # A real browser sends a multi-value Accept; "text/html" is present as a
@@ -192,7 +259,7 @@ class TestAuthRoutes(unittest.TestCase):
                 )
                 self.assertEqual(resp.status_code, 302)
                 self.assertTrue(
-                    resp.headers["Location"].startswith("/rest/v1/auth/login?next=")
+                    resp.headers["Location"].endswith("/rest/v1/auth/login")
                 )
 
     def test_login_required_star_accept_returns_401(self) -> None:

@@ -893,13 +893,6 @@ def _is_logged_in() -> bool:
     return "user_id" in session
 
 
-def _safe_next(target: str) -> str:
-    """Return an open-redirect-safe relative ``next`` target (default '/')."""
-    if target and target.startswith("/") and not target.startswith("//"):
-        return target
-    return "/"
-
-
 def _auth_challenge():
     """Response for an unauthenticated request, negotiated by Accept.
 
@@ -908,12 +901,16 @@ def _auth_challenge():
     challenge instead of being 302'd into login HTML. Only real browsers -- which
     advertise ``text/html`` in Accept (e.g.
     ``text/html,application/xhtml+xml,...;q=0.9,*/*;q=0.8``) -- get the 302 to the
-    login flow with a safe relative ``?next``. Matched as a substring, so a bare
-    ``*/*`` does not qualify.
+    login flow. Matched as a substring, so a bare ``*/*`` does not qualify.
+
+    The redirect target is the constant login route with no ``?next`` param:
+    ``auth_login`` does not consume a return target and ``auth_callback`` always
+    lands on ``/chatbot``, so forwarding the request path here would be a dead
+    (and taint-flagged) value. Return-to-page is a separate, future feature that
+    would store a validated target in the session at login time.
     """
     if "text/html" in request.headers.get("Accept", ""):
-        next_url = _safe_next(request.full_path)
-        return redirect(f"/rest/v1/auth/login?next={urllib.parse.quote(next_url)}")
+        return redirect("/rest/v1/auth/login")
     allowed_domains = os.environ.get("LOGIN_ALLOWED_DOMAINS")
     abort(
         401,
@@ -1266,7 +1263,7 @@ class CREFlow:
                     "openid",
                 ],
                 redirect_uri=(
-                    request.root_url.rstrip("/") + url_for("web.callback")
+                    request.root_url.rstrip("/") + url_for("web.auth_callback")
                 ).replace("http://", "https://"),
             )
         return cls.__instance
@@ -1351,28 +1348,36 @@ def auth_callback():
             description=f"You need an account with one of the following providers to access this functionality {allowed_domains}",
         )
 
-    # Persist the account when login is enabled; the session keeps working
-    # unchanged if this no-ops (flag off) or fails.
+    # Persist the account when login is enabled. ``session['user_id']`` is what
+    # ``_is_logged_in`` checks, so if persistence cannot establish it we must NOT
+    # redirect as if login succeeded: that would leave a "logged-in-looking"
+    # session that fails every ``login_required`` call and bounces the user back
+    # into the login flow. Fail explicitly (retryable) instead.
     if is_login_enabled():
         google_sub = id_info.get("sub")
         if not google_sub:
             logger.error(
-                "OIDC callback returned no 'sub' claim; skipping user persistence"
+                "OIDC callback returned no 'sub' claim; cannot establish session"
             )
-        else:
-            try:
-                user = db.Node_collection().upsert_user(
-                    google_sub=google_sub,
-                    email=id_info.get("email") or "",
-                    display_name=id_info.get("name"),
-                )
-                session["user_id"] = user.id
-            except SQLAlchemyError as e:
-                # Keep DB failures soft so persistence can never block login, but
-                # let unexpected (non-DB) bugs surface instead of being swallowed.
-                # Log only the exception class: the message can carry SQL
-                # parameters such as the user's email or OIDC subject.
-                logger.error("failed to persist user on login: %s", type(e).__name__)
+            abort(
+                401, description="Login failed: identity provider returned no subject"
+            )
+        try:
+            user = db.Node_collection().upsert_user(
+                google_sub=google_sub,
+                email=id_info.get("email") or "",
+                display_name=id_info.get("name"),
+            )
+            session["user_id"] = user.id
+        except SQLAlchemyError as e:
+            # Log only the exception class: the message can carry SQL parameters
+            # such as the user's email or OIDC subject. Surface a retryable 503
+            # rather than a silently broken session.
+            logger.error("failed to persist user on login: %s", type(e).__name__)
+            abort(
+                503,
+                description="Login temporarily unavailable, please try again",
+            )
     return redirect("/chatbot")
 
 
