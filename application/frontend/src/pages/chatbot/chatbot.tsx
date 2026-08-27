@@ -88,12 +88,12 @@ export const Chatbot = () => {
   }, [chatMessages]);
 
   function login() {
-    fetch(`${apiUrl}/user`, { method: 'GET' })
+    fetch(`${apiUrl}/auth/user`, { method: 'GET', headers: { Accept: 'application/json' } })
       .then((response) => {
         if (response.status === 200) {
           response.text().then((user) => setUser(user));
         } else {
-          window.location.href = `${apiUrl}/login`;
+          window.location.href = `${apiUrl}/auth/login`;
         }
       })
       .catch((error) => {
@@ -156,7 +156,7 @@ export const Chatbot = () => {
 
     fetch(`${apiUrl}/completion`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
       body: JSON.stringify({ prompt: currentTerm }),
     })
       .then(async (response) => {

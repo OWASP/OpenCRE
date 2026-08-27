@@ -95,6 +95,28 @@ class TestAdminImportsApi(unittest.TestCase):
     )
     def test_admin_imports_requires_login(self) -> None:
         with self.app.test_client() as c:
+            # API client (Accept: application/json) gets a 401; browsers (Accept:
+            # text/html) get a 302 to the login flow (login_required content
+            # negotiation, #963 — default is now 401).
+            r = c.get("/admin/imports/runs", headers={"Accept": "application/json"})
+            self.assertEqual(r.status_code, 401)
+
+    @patch.dict(
+        os.environ, {"CRE_ALLOW_IMPORT": "1", "INSECURE_REQUESTS": "1"}, clear=True
+    )
+    def test_admin_imports_star_accept_returns_401(self) -> None:
+        # /admin/* tooling with curl's default Accept "*/*" must get a clean 401,
+        # not a 302 into login HTML (the case Spyros called out).
+        with self.app.test_client() as c:
+            r = c.get("/admin/imports/runs", headers={"Accept": "*/*"})
+            self.assertEqual(r.status_code, 401)
+
+    @patch.dict(
+        os.environ, {"CRE_ALLOW_IMPORT": "1", "INSECURE_REQUESTS": "1"}, clear=True
+    )
+    def test_admin_imports_no_accept_header_returns_401(self) -> None:
+        # /admin/* tooling with no Accept header at all -> 401, not 302.
+        with self.app.test_client() as c:
             r = c.get("/admin/imports/runs")
             self.assertEqual(r.status_code, 401)
 

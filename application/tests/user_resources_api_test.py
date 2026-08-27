@@ -39,7 +39,13 @@ class TestUserResourcesApi(unittest.TestCase):
             os.environ["NO_LOAD_GRAPH_DB"] = self._prev_no_load_graph
 
     def _login(self, client: Any, google_sub: str = "sub-1", name: str = "U") -> None:
+        # login_required keys off session['user_id'] (post-#980, #963), so a test
+        # session must carry it. Resolve/create the user and record its id.
+        user = self.collection.upsert_user(
+            google_sub=google_sub, email="", display_name=name
+        )
         with client.session_transaction() as sess:
+            sess["user_id"] = user.id
             sess["google_id"] = google_sub
             sess["name"] = name
 
@@ -74,7 +80,10 @@ class TestUserResourcesApi(unittest.TestCase):
             },
         ):
             with self.app.test_client() as client:
-                resp = client.get("/rest/v1/user/resources")
+                resp = client.get(
+                    "/rest/v1/user/resources",
+                    headers={"Accept": "application/json"},
+                )
                 self.assertEqual(resp.status_code, 401)
 
     def test_put_401_when_anonymous(self) -> None:
@@ -88,7 +97,9 @@ class TestUserResourcesApi(unittest.TestCase):
         ):
             with self.app.test_client() as client:
                 resp = client.put(
-                    "/rest/v1/user/resources", json={"selected": ["ASVS"]}
+                    "/rest/v1/user/resources",
+                    json={"selected": ["ASVS"]},
+                    headers={"Accept": "application/json"},
                 )
                 self.assertEqual(resp.status_code, 401)
 

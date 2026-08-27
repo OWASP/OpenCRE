@@ -15,7 +15,7 @@ export const useUser = () => {
 
   useEffect(() => {
     let active = true;
-    fetch(`${apiUrl}/user`, { method: 'GET' })
+    fetch(`${apiUrl}/auth/user`, { method: 'GET', headers: { Accept: 'application/json' } })
       .then((res) => {
         if (res.status === 200) {
           return res.text();
@@ -51,11 +51,11 @@ export const useUser = () => {
   }, [apiUrl]);
 
   const login = () => {
-    window.location.href = `${apiUrl}/login`;
+    window.location.href = `${apiUrl}/auth/login`;
   };
 
   const logout = () => {
-    window.location.href = `${apiUrl}/logout`;
+    window.location.href = `${apiUrl}/auth/logout`;
   };
 
   return { user, isLoggedIn: user !== null, loading, login, logout };
