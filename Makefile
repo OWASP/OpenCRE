@@ -1,6 +1,6 @@
 .ONESHELL:
 
-.PHONY: run test covers install-deps dev docker lint frontend clean all
+.PHONY: run test covers install-deps dev docker lint frontend clean all e2e e2e-db
 
 prod-run:
 	gunicorn cre:app --log-file=-
@@ -84,18 +84,38 @@ dev-flask:
 dev-flask-docker:
 	. ./venv/bin/activate && INSECURE_REQUESTS=1 FLASK_APP=`pwd`/cre.py  FLASK_CONFIG=development flask run --host=0.0.0.0 --port $(PORT)
 
+# Run this recipe under bash: `set -o pipefail` (below) is a bash builtin and
+# fails under Ubuntu CI's /bin/sh (dash). Target-scoped so no other recipe moves.
+e2e: SHELL := /bin/bash
 e2e:
+	set -euo pipefail
 	yarn build
+	if [ -d "./venv" ]; then . ./venv/bin/activate; fi
+	[ -f "$(CURDIR)/standards_cache.sqlite" ] || { echo "ERROR: standards_cache.sqlite not found — run 'make e2e-db' first"; exit 1; }
+	export FLASK_APP="$(CURDIR)/cre.py"
+	export FLASK_CONFIG=development
+	export INSECURE_REQUESTS=1
+	flask run --host=127.0.0.1 --port=5000 > /tmp/opencre-e2e-flask.log 2>&1 &
+	FLASK_PID=$$!
+	trap 'kill $$FLASK_PID 2>/dev/null || true' EXIT INT TERM
+	for i in `seq 1 30`; do \
+		curl -fsS http://127.0.0.1:5000 >/dev/null && break; \
+		sleep 1; \
+	done
+	curl -fsS http://127.0.0.1:5000 >/dev/null || { echo "ERROR: Flask did not become ready on http://127.0.0.1:5000 after 30s; see /tmp/opencre-e2e-flask.log"; exit 1; }
+	env -u ELECTRON_RUN_AS_NODE yarn test:e2e
+
+# Build the e2e SQLite schema from the ORM models (create_all), then load a
+# small checked-in fixture graph. Local/CI e2e uses create_all, NOT
+# migrate-upgrade: migrations are the Postgres path and omit columns the
+# models added without a migration (e.g. cre.document_metadata, see
+# application/database/db.py), so a migrate-built SQLite cache is incomplete.
+# create_all always matches the models.
+e2e-db:
 	[ -d "./venv" ] && . ./venv/bin/activate &&\
-	export FLASK_APP="$(CURDIR)/cre.py" &&\
-	export FLASK_CONFIG=development &&\
-	export INSECURE_REQUESTS=1 &&\
-	flask run &
-	sleep 5
-	yarn test:e2e
-	sleep 20
-	killall yarn
-	killall flask
+	rm -f "$(CURDIR)/standards_cache.sqlite" &&\
+	NO_LOAD_GRAPH_DB=1 FLASK_CONFIG=development python -c "from application import create_app, sqla; app=create_app(mode='development'); app.app_context().push(); sqla.create_all()" &&\
+	NO_LOAD_GRAPH_DB=1 FLASK_CONFIG=development python scripts/seed_e2e_fixtures.py
 
 test:
 	[ -d "./venv" ] && . ./venv/bin/activate &&\
@@ -116,11 +136,11 @@ install-deps-typescript:
 install-deps: install-deps-python install-deps-typescript
 
 install-python:
-	virtualenv -p python3  venv
+	virtualenv -p python3 venv
 	. ./venv/bin/activate &&\
 	make install-deps-python &&\
-	playwright install
-	
+	playwright install  # Python embeddings/scraping (prompt_client); NOT frontend e2e — keep when migrating to Cypress
+
 install-typescript:
 	yarn add webpack && cd application/frontend && yarn build
 
