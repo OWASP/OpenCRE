@@ -1193,7 +1193,7 @@ class PromptHandler:
         max_similarity = -1
         most_similar_index = 0
         most_similar_id = ""
-        for page in range(starting_page, total_pages):
+        for page in range(starting_page, total_pages + 1):
             existing_cres, existing_cre_ids = self.__load_cre_embeddings(embeddings)
 
             similarities = cosine_similarity(embedding_array, existing_cres)
@@ -1201,13 +1201,14 @@ class PromptHandler:
                 max_similarity = np.max(similarities)
                 most_similar_index = np.argmax(similarities)
                 most_similar_id = existing_cre_ids[most_similar_index]
-            (
-                embeddings,
-                total_pages,
-                _,
-            ) = self.database.get_embeddings_by_doc_type_paginated(
-                cre_defs.Credoctypes.CRE.value, page=page
-            )
+            if page < total_pages:
+                (
+                    embeddings,
+                    total_pages,
+                    _,
+                ) = self.database.get_embeddings_by_doc_type_paginated(
+                    cre_defs.Credoctypes.CRE.value, page=page + 1
+                )
 
         if max_similarity < similarity_threshold:
             logger.info(
@@ -1264,9 +1265,10 @@ class PromptHandler:
                 most_similar_index = int(np.argmax(similarities))
                 most_similar_id = existing_standard_ids[most_similar_index]
 
-            embeddings, _, _ = self.database.get_embeddings_by_doc_type_paginated(
-                doc_type=cre_defs.Credoctypes.Standard.value, page=page
-            )
+            if page < total_pages:
+                embeddings, _, _ = self.database.get_embeddings_by_doc_type_paginated(
+                    doc_type=cre_defs.Credoctypes.Standard.value, page=page + 1
+                )
         if max_similarity < similarity_threshold:
             logger.info(
                 f"there is no good standard candidate for this other standard section, returning nothing, max similarity was {max_similarity}"
