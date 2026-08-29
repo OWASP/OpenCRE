@@ -1,6 +1,7 @@
 import re
 import unicodedata
 
+from application.utils.harvester import repository_client
 from .models import DiffBlock
 
 
