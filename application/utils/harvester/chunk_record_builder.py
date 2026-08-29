@@ -1,7 +1,14 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from typing import TYPE_CHECKING, Optional
 
+from .chunker import DocumentChunker
 from .models import ChunkInfo, Document, IngestChunkRecord, SpanInfo
+
+if TYPE_CHECKING:
+    from .schemas import ChunkingConfig
 
 
 @dataclass(slots=True)
@@ -100,7 +107,7 @@ class ChunkRecordBuilder:
 
 def chunk_document(
     document: Document,
-    config: ChunkingConfig | None = None,
+    config: Optional["ChunkingConfig"] = None,
 ) -> list[IngestChunkRecord]:
     chunker = DocumentChunker(config)
     chunks = chunker.chunk(document.text, document=document)
