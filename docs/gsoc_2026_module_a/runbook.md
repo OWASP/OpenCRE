@@ -21,13 +21,25 @@ Optional:
 - `--harvester_dry_run` — classify path without inserting rows
 - `--harvester_repos_yaml PATH` — override `application/utils/harvester/repos.yaml`
 
-Orchestrated:
+Orchestrated (A → B → C):
 
 ```bash
 make oie-pipeline OIE_ARGS='--run_id 20260829T020000Z'
 # or
-python scripts/run_oie_pipeline.py --cache_file <db-url> --run_id <id>
+PYTHONPATH=. python scripts/run_oie_pipeline.py --cache_file <db-url> --run_id <id>
 ```
+
+Hermetic A→B→C smoke (no git sync, no LLM / embedding API):
+
+```bash
+make oie-e2e-smoke
+```
+
+Live notes:
+
+- Module B needs an LLM classifier (Vertex / configured provider) unless you inject one.
+- Module C needs embeddings + cross-encoder (`requirements-dev.txt`) unless you inject stubs.
+- Use `--skip-c` / `--dry-run` / `--no-sync-repos` as needed while bootstrapping.
 
 ---
 

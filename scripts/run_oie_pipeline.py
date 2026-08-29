@@ -44,23 +44,23 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    # Ensure Flask app context for SQLAlchemy.
+    # db_connect (inside each stage) creates + pushes the Flask app context.
+    # Do not nest an extra app_context here — that pops the wrong stack frame.
     os.environ.setdefault("FLASK_CONFIG", "development")
-    from cre import app  # noqa: WPS433 — CLI bootstrap
+    os.environ.setdefault("NO_LOAD_GRAPH_DB", "1")
 
     from application.utils.oie_orchestrator import run_oie_pipeline
 
-    with app.app_context():
-        result = run_oie_pipeline(
-            cache_file=args.cache_file,
-            pipeline_run_id=args.run_id or None,
-            skip_a=args.skip_a,
-            skip_b=args.skip_b,
-            skip_c=args.skip_c,
-            dry_run=args.dry_run,
-            sync_repos=not args.no_sync_repos,
-            stop_on_error=not args.continue_on_error,
-        )
+    result = run_oie_pipeline(
+        cache_file=args.cache_file,
+        pipeline_run_id=args.run_id or None,
+        skip_a=args.skip_a,
+        skip_b=args.skip_b,
+        skip_c=args.skip_c,
+        dry_run=args.dry_run,
+        sync_repos=not args.no_sync_repos,
+        stop_on_error=not args.continue_on_error,
+    )
     print(result.to_json())
     return 0 if result.to_dict()["ok"] else 1
 

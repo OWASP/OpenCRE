@@ -183,7 +183,11 @@ alembic-guardrail:
 
 oie-pipeline:
 	[ -d "./venv" ] && . ./venv/bin/activate &&\
-	python scripts/run_oie_pipeline.py --cache_file "$(or $(CACHE_FILE),sqlite:///$(CURDIR)/standards_cache.sqlite)" $(OIE_ARGS)
+	PYTHONPATH=. python scripts/run_oie_pipeline.py --cache_file "$(or $(CACHE_FILE),sqlite:///$(CURDIR)/standards_cache.sqlite)" $(OIE_ARGS)
+
+oie-e2e-smoke:
+	[ -d "./venv" ] && . ./venv/bin/activate &&\
+	PYTHONPATH=. python scripts/run_oie_e2e_smoke.py
 
 openapi-generate:
 	[ -d "./venv" ] && . ./venv/bin/activate &&\
