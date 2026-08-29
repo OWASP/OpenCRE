@@ -26,34 +26,54 @@ from .filtering_benchmark import (
     FilteringBenchmarkResult,
 )
 
-from .heading_extractor import (
-    HeadingExtractor,
-    HeadingNode,
-)
+from .heading_extractor import HeadingExtractor
+from .models import HeadingNode
 
 from .document_builder import DocumentBuilder
 from .document_validator import DocumentValidator
+from .content_hash import generate_content_hash
+from .artifact_registry import ArtifactRegistry
+from .document_deduplicator import DocumentDeduplicator
+from .checkpoint_manager import CheckpointManager
+from .checkpoint_store import CheckpointStore
+from .incremental_pipeline import IncrementalPipeline
+from .deduplication_metrics import DeduplicationMetrics
+from .chunker import ChunkInfo, DocumentChunker
+from .chunk_pipeline import DocumentChunkPipeline
+from .pipeline import RunSummary, run_harvester
 
 __all__ = [
+    "ArtifactRegistry",
     "build_repository_cache_path",
+    "CheckpointManager",
+    "CheckpointStore",
+    "ChunkInfo",
     "ChunkingConfig",
     "ConfigLoaderError",
+    "DeduplicationMetrics",
     "DiffRetriever",
     "DocumentBuilder",
+    "DocumentChunker",
+    "DocumentChunkPipeline",
+    "DocumentDeduplicator",
     "DocumentValidator",
-    "GitRepositoryClient",
     "FileFilter",
-    "FilteringMetricsCollector",
     "FilteringBenchmark",
     "FilteringBenchmarkResult",
+    "FilteringMetricsCollector",
+    "generate_content_hash",
+    "GitRepositoryClient",
     "HeadingExtractor",
     "HeadingNode",
+    "IncrementalPipeline",
     "PathRules",
     "PollingConfig",
     "RepositoryClient",
     "RepositoryConfig",
     "RepositoryValidationError",
     "ReposFile",
+    "RunSummary",
     "load_repo_config",
+    "run_harvester",
     "validate_repositories",
 ]

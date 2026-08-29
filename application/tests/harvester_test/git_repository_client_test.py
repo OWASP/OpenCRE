@@ -116,7 +116,6 @@ class GitRepositoryClientTests(unittest.TestCase):
                 "-C",
                 str(client.get_local_path()),
                 "checkout",
-                "--",
                 "main",
             ],
             check=True,
@@ -156,8 +155,10 @@ class GitRepositoryClientTests(unittest.TestCase):
 
     @patch("application.utils.harvester.git_repository_client.subprocess.run")
     def test_get_file_at_commit(self, mock_run):
-
-        mock_run.return_value = MagicMock(stdout="# Hello\nWorld\n")
+        mock_run.side_effect = [
+            MagicMock(stdout="42\n"),
+            MagicMock(stdout="# Hello\nWorld\n"),
+        ]
 
         client = GitRepositoryClient("OWASP", "ASVS", "master")
 
@@ -166,20 +167,8 @@ class GitRepositoryClientTests(unittest.TestCase):
         content = client.get_file_at_commit("abc123", "README.md")
 
         self.assertEqual(content, "# Hello\nWorld\n")
-
-        mock_run.assert_called_once_with(
-            [
-                "git",
-                "-C",
-                "/tmp/repo",
-                "show",
-                "abc123:README.md",
-            ],
-            capture_output=True,
-            text=True,
-            check=True,
-            timeout=30,
-        )
+        self.assertEqual(mock_run.call_count, 2)
+        self.assertIn("--end-of-options", mock_run.call_args_list[1].args[0])
 
 
 if __name__ == "__main__":

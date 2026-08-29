@@ -1,5 +1,7 @@
 from dataclasses import dataclass
 from datetime import datetime
+from enum import Enum
+
 from pydantic import BaseModel
 
 
@@ -85,3 +87,66 @@ class Document:
     locator: Locator
     heading_structure: list[HeadingNode]
     span: SpanInfo | None = None
+
+
+@dataclass(slots=True)
+class ArtifactRegistryRecord:
+    """
+    Tracks the processing state of an artifact.
+    Used for deduplication within a harvester process.
+    """
+
+    artifact_id: str
+    repository: str
+    locator_path: str
+    content_hash: str
+    last_commit_sha: str
+    last_pipeline_run: str
+    last_processed_at: datetime
+    status: str
+
+
+class DeduplicationStatus(str, Enum):
+    NEW = "new"
+    UPDATED = "updated"
+    UNCHANGED = "unchanged"
+
+
+@dataclass(slots=True)
+class CheckpointRecord:
+    repository: str
+    pipeline_run_id: str
+    last_processed_commit: str
+    status: str
+    updated_at: datetime
+
+
+@dataclass(slots=True)
+class ChunkInfo:
+    text: str
+    start_char_idx: int
+    end_char_idx: int
+
+
+@dataclass(slots=True)
+class IngestChunkRecord:
+    """
+    RFC-facing chunk ready to validate as Module B ChangeRecord.
+
+    ``source_repo`` is the ``owner/repo`` string written to ``source.repo``.
+    ``committed_at`` is an ISO-8601 string (or None only before validation).
+    """
+
+    schema_version: str
+    chunk_id: str
+    artifact_id: str
+    pipeline_run_id: str
+    text: str
+    span: SpanInfo
+    source_type: str
+    source_repo: str
+    source_commit_sha: str
+    source_committed_at: str
+    locator_kind: str
+    locator_id: str
+    locator_path: str

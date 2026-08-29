@@ -892,6 +892,25 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
         logger.info("Exported %s rows to %s", rows, csv_out)
         return
 
+    if getattr(args, "run_harvester", False):
+        import sys
+
+        from application import sqla
+        from application.utils.harvester.pipeline import run_harvester
+
+        db_connect(args.cache_file)
+        repos_yaml = getattr(args, "harvester_repos_yaml", "") or None
+        summary = run_harvester(
+            sqla.session,
+            args.run_id.strip(),
+            repos_yaml=repos_yaml,
+            dry_run=getattr(args, "harvester_dry_run", False),
+        )
+        print(summary.to_json())
+        if summary.status == "degraded":
+            sys.exit(1)
+        return
+
     if getattr(args, "run_noise_filter", False):
         import sys
 
