@@ -181,6 +181,10 @@ alembic-guardrail:
 	[ -d "./venv" ] && . ./venv/bin/activate &&\
 	python scripts/check_alembic_revision_guardrail.py
 
+oie-pipeline:
+	[ -d "./venv" ] && . ./venv/bin/activate &&\
+	python scripts/run_oie_pipeline.py --cache_file "$(or $(CACHE_FILE),sqlite:///$(CURDIR)/standards_cache.sqlite)" $(OIE_ARGS)
+
 openapi-generate:
 	[ -d "./venv" ] && . ./venv/bin/activate &&\
 	python scripts/generate_openapi.py

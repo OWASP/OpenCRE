@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import MagicMock
-from unittest.mock import patch
 from unittest.mock import call
+from unittest.mock import patch
 
 from application.utils.harvester.diff_retriever import (
     DiffRetriever,
@@ -24,7 +24,6 @@ class DiffRetrieverTests(unittest.TestCase):
         client.get_local_path.return_value = "/tmp/repo"
 
         retriever = DiffRetriever(client)
-
         diff = retriever.get_diff(
             "abc123",
             "def456",

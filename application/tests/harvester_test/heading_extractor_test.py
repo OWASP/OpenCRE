@@ -102,6 +102,28 @@ Hello
         self.assertEqual(headings[1].end_line, 7)
         self.assertEqual(headings[2].end_line, 7)
 
+    def test_ignores_headings_inside_fenced_code(self) -> None:
+        text = """# Real
+
+```
+# Not A Heading
+```
+
+## Also Real
+"""
+        headings = HeadingExtractor().extract(text)
+        self.assertEqual([h.text for h in headings], ["Real", "Also Real"])
+
+    def test_ignores_indented_code_headings(self) -> None:
+        text = """# Real
+
+    # Indented Fake
+
+## Also Real
+"""
+        headings = HeadingExtractor().extract(text)
+        self.assertEqual([h.text for h in headings], ["Real", "Also Real"])
+
 
 if __name__ == "__main__":
     unittest.main()

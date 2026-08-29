@@ -71,14 +71,17 @@ class DocumentValidatorTests(unittest.TestCase):
 
         self.assertFalse(validator.validate(document))
 
-    def test_non_markdown_document_is_valid(self):
+    def test_reject_bare_art_prefix(self) -> None:
         validator = DocumentValidator()
-
         document = make_document()
-        document.heading_structure = []
-        document.text = '{"hello": "world"}'
+        document.artifact_id = "art:"
+        self.assertFalse(validator.validate(document))
 
-        self.assertTrue(validator.validate(document))
+    def test_reject_locator_id_mismatch(self) -> None:
+        validator = DocumentValidator()
+        document = make_document()
+        document.locator.id = "other.md"
+        self.assertFalse(validator.validate(document))
 
 
 if __name__ == "__main__":
