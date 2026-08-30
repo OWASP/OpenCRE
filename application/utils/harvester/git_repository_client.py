@@ -156,13 +156,14 @@ class GitRepositoryClient(RepositoryClient):
         )
 
         try:
+            # Do not insert "--" before the revision: that would treat it as a
+            # pathspec and leave HEAD unchanged.
             subprocess.run(
                 [
                     "git",
                     "-C",
                     str(self.local_path),
                     "checkout",
-                    "--",
                     reference,
                 ],
                 check=True,
@@ -284,3 +285,65 @@ class GitRepositoryClient(RepositoryClient):
 
     def verify_repository_integrity(self) -> bool:
         return self.is_valid_repository(self.local_path)
+
+    MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024
+
+    def get_file_at_commit(self, commit_sha: str, file_path: str) -> str:
+        """
+        Retrieve the contents of a file at a specific commit.
+
+        Args:
+            commit_sha:
+                Commit to read from.
+
+            file_path:
+                Repository-relative file path.
+
+        Returns:
+            File contents as a string.
+        """
+        if not commit_sha or commit_sha.startswith("-"):
+            raise ValueError("Invalid commit SHA")
+        if not file_path or file_path.startswith("-"):
+            raise ValueError("Invalid file path")
+        if "\x00" in file_path:
+            raise ValueError("Invalid file path")
+
+        # Resolve blob size before loading contents into memory.
+        size_result = subprocess.run(
+            [
+                "git",
+                "-C",
+                str(self.get_local_path()),
+                "cat-file",
+                "-s",
+                f"{commit_sha}:{file_path}",
+            ],
+            capture_output=True,
+            text=True,
+            check=True,
+            timeout=30,
+        )
+        size = int(size_result.stdout.strip())
+        if size > self.MAX_FILE_SIZE_BYTES:
+            raise ValueError(
+                f"File size ({size} bytes) exceeds "
+                f"maximum supported size ({self.MAX_FILE_SIZE_BYTES} bytes)."
+            )
+
+        result = subprocess.run(
+            [
+                "git",
+                "-C",
+                str(self.get_local_path()),
+                "show",
+                "--end-of-options",
+                f"{commit_sha}:{file_path}",
+            ],
+            capture_output=True,
+            text=True,
+            check=True,
+            timeout=30,
+        )
+
+        return result.stdout

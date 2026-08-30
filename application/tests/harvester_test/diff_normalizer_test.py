@@ -9,7 +9,6 @@ from application.utils.harvester.models import (
     DiffBlock,
 )
 
-
 DIFF_METADATA = {
     "repository": "OWASP/ASVS",
     "commit_sha": "abc123",
