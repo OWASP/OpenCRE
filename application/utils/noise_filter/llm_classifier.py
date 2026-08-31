@@ -64,9 +64,39 @@ CLASSIFY_RESPONSE_SCHEMA = {
 _TRUNCATION_NOTE = " …[truncated]"
 
 
+# Reasons the fallback path marks a chunk UNCERTAIN -- B's own signals, not the
+# model's verdict. LLM_CALL_FAILED is an *infrastructure* failure (the call raised
+# after retries: rate limit, network, auth); the pipeline leaves those input rows
+# `pending` for a later retry rather than finalizing them. MALFORMED_OUTPUT means
+# the model responded but the output couldn't be parsed -- retrying tends to
+# reproduce it, so it is persisted as UNCERTAIN, not retried.
+LLM_CALL_FAILED = "llm_call_failed"
+MALFORMED_OUTPUT = "malformed_output"
+
+
 def _uncertain(reason: str) -> ClassifyResult:
     """Build the fallback verdict used when the LLM output can't be trusted."""
     return ClassifyResult(label="UNCERTAIN", confidence=0.0, reasoning=reason)
+
+
+def _infra_failure() -> ClassifyResult:
+    """Fallback for an LLM-call (infrastructure) failure. `retryable=True` is set
+    here and *only* here -- the parser never sets it -- so the pipeline can trust
+    it to leave the chunk's input row `pending` for a retry.
+    """
+    return ClassifyResult(
+        label="UNCERTAIN", confidence=0.0, reasoning=LLM_CALL_FAILED, retryable=True
+    )
+
+
+def is_infra_failure(result: ClassifyResult) -> bool:
+    """True if `result` came from B's LLM-call-failure path -- read from the
+    *trusted* `retryable` flag, not the model-controlled `reasoning` string, so a
+    model response that happens to say "llm_call_failed" can never be mistaken for
+    an infrastructure failure. The pipeline uses this to leave such chunks' input
+    rows `pending` for a later retry.
+    """
+    return result.retryable
 
 
 def _batches(seq: list[Any], size: int) -> Iterator[list[Any]]:
@@ -172,7 +202,7 @@ class LLMClassifier:
                 len(batch),
                 e,
             )
-            return [_uncertain("llm_call_failed") for _ in batch]
+            return [_infra_failure() for _ in batch]
         return self._parse(text, len(batch))
 
     def _call_llm(self, messages: list[dict]) -> str:
@@ -225,7 +255,7 @@ class LLMClassifier:
         raise RuntimeError("unreachable: retry loop exited unexpectedly")
 
     def _parse(self, text: str, n: int) -> list[ClassifyResult]:
-        verdicts = [_uncertain("malformed_output") for _ in range(n)]
+        verdicts = [_uncertain(MALFORMED_OUTPUT) for _ in range(n)]
         try:
             data = json.loads(text)
             results = data.get("results", []) if isinstance(data, dict) else []
@@ -254,5 +284,8 @@ class LLMClassifier:
 
 __all__ = [
     "CLASSIFY_RESPONSE_SCHEMA",
+    "LLM_CALL_FAILED",
+    "MALFORMED_OUTPUT",
     "LLMClassifier",
+    "is_infra_failure",
 ]

@@ -10,6 +10,11 @@ TEST_COMMIT_SHA = "abc123"
 TEST_COMMITTED_AT = datetime.now(UTC)
 
 
+TEST_REPOSITORY = "OWASP/ASVS"
+TEST_COMMIT_SHA = "abc123"
+TEST_COMMITTED_AT = datetime.now(UTC)
+
+
 class DiffParserTests(unittest.TestCase):
     def test_single_file_diff(self):
         parser = DiffParser()

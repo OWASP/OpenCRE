@@ -162,6 +162,12 @@ class ClassifyResult(BaseModel):
     label: Literal["KNOWLEDGE", "NOISE", "UNCERTAIN"]
     confidence: float = Field(ge=0.0, le=1.0)
     reasoning: Optional[str] = None
+    # B-internal, never set from model output: True only when B's own exception
+    # path built this result (the LLM call itself failed). The parser passes only
+    # label/confidence/reasoning to model_validate, so a model response cannot set
+    # it -- making it a *trusted* signal that the chunk was not really classified
+    # and should be retried (left pending), not persisted.
+    retryable: bool = False
 
 
 class QueuePayload(BaseModel):
