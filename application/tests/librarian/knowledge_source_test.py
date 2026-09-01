@@ -15,7 +15,7 @@ import tempfile
 import threading
 import unittest
 from datetime import datetime, timezone
-from typing import List
+from typing import List, Optional
 
 from application import create_app, sqla
 from application.database.db import KnowledgeQueueItem as KnowledgeQueueRow
@@ -187,9 +187,10 @@ class DbKnowledgeSourceTest(unittest.TestCase):
         if "postgresql" not in str(sqla.engine.url):
             self.skipTest("row-lock serialization requires Postgres (SKIP LOCKED)")
 
-        sqla.session.add_all([_row("a"), _row("b")])
+                sqla.session.add_all([_row("a"), _row("b")])
         sqla.session.commit()
 
+        t: Optional[threading.Thread] = None
         try:
             # Worker 1: read (and thereby lock) both rows, then hold the
             # transaction open -- exactly queue_runner.py's shape, which does
@@ -229,7 +230,11 @@ class DbKnowledgeSourceTest(unittest.TestCase):
             # Release worker 1's row locks regardless of outcome, so a failed
             # assertion above cannot leak a held lock into the next test.
             sqla.session.rollback()
-
+            # If worker2 was still blocked when an assertion above failed,
+            # the rollback just now unblocks it -- join again so it is fully
+            # finished before tearDown() drops the tables out from under it.
+            if t is not None:
+                t.join(timeout=5)
 
 if __name__ == "__main__":
     unittest.main()
