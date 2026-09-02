@@ -187,7 +187,7 @@ class DbKnowledgeSourceTest(unittest.TestCase):
         if "postgresql" not in str(sqla.engine.url):
             self.skipTest("row-lock serialization requires Postgres (SKIP LOCKED)")
 
-                sqla.session.add_all([_row("a"), _row("b")])
+        sqla.session.add_all([_row("a"), _row("b")])
         sqla.session.commit()
 
         t: Optional[threading.Thread] = None
@@ -236,5 +236,7 @@ class DbKnowledgeSourceTest(unittest.TestCase):
             if t is not None:
                 t.join(timeout=5)
 
+
 if __name__ == "__main__":
     unittest.main()
+    
