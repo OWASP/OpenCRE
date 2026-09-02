@@ -1,4 +1,4 @@
-"""Tests for Cheat Sheet -> CRE mapping, Workstream F, checkpoints F1+F2+F3.
+"""Tests for Cheat Sheet -> CRE mapping, Workstream F, checkpoints F1+F2+F3+F4.
 
 F1: the suggestions.json data contract -- SUGGESTIONS_SCHEMA plus the
 CandidateCRE / MappingSuggestion dataclasses.
@@ -7,14 +7,20 @@ load_approved_suggestions (schema-validate -> parse -> filter approved).
 F3: the import adapter -- suggestions_to_parse_result (approved suggestions ->
 ParseResult of defs.Standard with AutomaticallyLinkedTo links). F3's tests use a
 lightweight Node_collection stub (get_CREs only) so no Postgres/Neo4j is needed.
+F4: the CLI (validate / generate / convert) over F1-F3. convert patches the
+_open_cache seam with the same stub, so no Postgres/Neo4j is needed.
 
-F4/F5 (CLI) are deliberately out of scope here.
+F5 (wiring the ParseResult into the live import/register flow) is deliberately
+out of scope here.
 """
 
+import contextlib
+import io
 import json
 import os
 import tempfile
 import unittest
+from unittest import mock
 
 import jsonschema
 
@@ -286,6 +292,105 @@ class TestSuggestionsToParseResult(unittest.TestCase):
         std = result.results["OWASP Cheat Sheets"][0]
         self.assertIn("auth", std.tags)
         self.assertNotIn("  auth  ", std.tags)
+
+
+def _run_cli(argv):
+    """Invoke wf.main(argv), capturing (exit_code, stdout, stderr)."""
+    out, err = io.StringIO(), io.StringIO()
+    with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+        code = wf.main(argv)
+    return code, out.getvalue(), err.getvalue()
+
+
+class TestCliValidate(unittest.TestCase):
+    def test_valid_fixture_exits_zero(self) -> None:
+        code, out, _err = _run_cli(["validate", VALID_FIXTURE])
+        self.assertEqual(code, 0)
+        self.assertIn("OK", out)
+
+    def test_invalid_fixture_exits_nonzero_and_names_field(self) -> None:
+        code, _out, err = _run_cli(["validate", INVALID_FIXTURE])
+        self.assertNotEqual(code, 0)
+        # The offending field is named so a reviewer can fix it.
+        self.assertIn("title", err)
+
+    def test_missing_file_exits_two(self) -> None:
+        with tempfile.TemporaryDirectory() as d:
+            missing = os.path.join(d, "nope.json")
+            code, _out, err = _run_cli(["validate", missing])
+        self.assertEqual(code, 2)
+        self.assertTrue(err.strip(), "a clear error message must be printed")
+
+
+class TestCliGenerate(unittest.TestCase):
+    def test_generate_writes_schema_valid_and_roundtrips(self) -> None:
+        with tempfile.TemporaryDirectory() as d:
+            out_path = os.path.join(d, "out.json")
+            code, _out, _err = _run_cli(["generate", VALID_FIXTURE, out_path])
+            self.assertEqual(code, 0)
+            # The written file is schema-valid...
+            with open(out_path, encoding="utf-8") as fh:
+                jsonschema.validate(
+                    instance=json.load(fh), schema=wf.SUGGESTIONS_SCHEMA
+                )
+            # ...and round-trips through load_approved_suggestions.
+            self.assertEqual(
+                wf.load_approved_suggestions(out_path),
+                wf.load_approved_suggestions(VALID_FIXTURE),
+            )
+
+    def test_generate_unwritable_output_exits_two(self) -> None:
+        # Output path under a nonexistent directory -> OSError on write, which
+        # must surface as a clean exit code, not a traceback.
+        with tempfile.TemporaryDirectory() as d:
+            out_path = os.path.join(d, "no_such_dir", "out.json")
+            code, _out, err = _run_cli(["generate", VALID_FIXTURE, out_path])
+        self.assertEqual(code, 2)
+        self.assertTrue(err.strip(), "a clear error message must be printed")
+
+
+class TestCliConvert(unittest.TestCase):
+    def test_convert_reports_skipped_unknown_and_links(self) -> None:
+        # One known + one unknown candidate on a single approved suggestion.
+        suggestions = [_sugg("Authentication Cheat Sheet", ["764-507", "999-999"])]
+        stub = _StubCache({"764-507": _cre("764-507")})
+        with tempfile.TemporaryDirectory() as d:
+            path = os.path.join(d, "approved.json")
+            wf.write_suggestions_json(path, suggestions)
+            with mock.patch.object(wf, "_open_cache", return_value=stub):
+                code, out, _err = _run_cli(["convert", path])
+
+        self.assertEqual(code, 0)
+        # Prove the skipped-id reporting actually prints the unknown id.
+        self.assertIn("999-999", out)
+        # One Standard with one resolved link survives.
+        self.assertIn("standards produced:     1", out)
+        self.assertIn("total CRE links:        1", out)
+        # And it is explicit that nothing was registered (F5 follow-up).
+        self.assertIn("F5", out)
+
+    def test_convert_missing_file_exits_two(self) -> None:
+        with tempfile.TemporaryDirectory() as d:
+            missing = os.path.join(d, "nope.json")
+            # _open_cache must never be reached for a missing file.
+            with mock.patch.object(
+                wf, "_open_cache", side_effect=AssertionError("must not open cache")
+            ):
+                code, _out, err = _run_cli(["convert", missing])
+        self.assertEqual(code, 2)
+        self.assertTrue(err.strip(), "a clear error message must be printed")
+
+
+class TestCliArgparse(unittest.TestCase):
+    def test_no_subcommand_is_systemexit_2(self) -> None:
+        with self.assertRaises(SystemExit) as ctx:
+            _run_cli([])
+        self.assertEqual(ctx.exception.code, 2)
+
+    def test_unknown_subcommand_is_systemexit_2(self) -> None:
+        with self.assertRaises(SystemExit) as ctx:
+            _run_cli(["frobnicate"])
+        self.assertEqual(ctx.exception.code, 2)
 
 
 if __name__ == "__main__":
