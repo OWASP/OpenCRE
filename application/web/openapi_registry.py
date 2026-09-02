@@ -21,6 +21,13 @@ API_DESCRIPTION = (
 
 OPENAPI_GUARDRAIL_EXEMPT_RULES: Set[str] = {
     "/rest/v1/openapi.yaml",
+    # Canonical OAuth/auth routes (#963). Auth/redirect endpoints, not part of
+    # the documented read-only public API -- exempt rather than documented.
+    "/rest/v1/auth/login",
+    "/rest/v1/auth/callback",
+    "/rest/v1/auth/logout",
+    "/rest/v1/auth/user",
+    # Deprecated pre-#963 aliases of the above (header-only successor links).
     "/rest/v1/login",
     "/rest/v1/callback",
     "/rest/v1/logout",
