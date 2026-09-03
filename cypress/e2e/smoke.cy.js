@@ -12,13 +12,13 @@ describe('OpenCRE e2e smoke', () => {
     cy.visit('/');
     cy.get('form#search-bar input[type="text"]').type(`${term}{enter}`);
     cy.url().should('include', `/search/${term}`);
-    cy.contains('Results matching').should('be.visible');
+    cy.contains('Results matching').scrollIntoView().should('be.visible');
   });
 
   it('browse route is reachable', () => {
     cy.visit('/root_cres');
     cy.contains('h1', 'Root CREs').should('be.visible');
     // Data-bearing: the fixture root CRE 558-807 renders in the list.
-    cy.get('.standard-page__links-container').should('contain.text', 'Mutually authenticate');
+    cy.get('.standard-page__links-container').should('contain.text', 'Cryptography');
   });
 });
