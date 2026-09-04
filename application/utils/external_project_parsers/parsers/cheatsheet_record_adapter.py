@@ -37,9 +37,12 @@ def section_from_cheatsheet_record(
     except ValidationError as exc:
         raise MalformedCheatsheetRecordError(str(exc)) from exc
 
+    # Match Module A identity shape: artifact is the document; chunk_id nests
+    # under it. One CheatsheetRecord == one chunk, so index is always 0.
+    artifact_id = f"art:{record.source}:{record.source_id}"
     return Section(
-        artifact_id=f"art:{record.source}:{record.source_id}",
-        chunk_id=f"chk:{record.source}:{record.source_id}",
+        artifact_id=artifact_id,
+        chunk_id=f"chk:{artifact_id}:0",
         text=text,
         title_hint=record.title,
         language=_DEFAULT_LANGUAGE,

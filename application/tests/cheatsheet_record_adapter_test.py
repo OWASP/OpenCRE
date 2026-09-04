@@ -26,10 +26,12 @@ class TestSectionFromCheatsheetRecord(unittest.TestCase):
         section = section_from_cheatsheet_record(record)
 
         self.assertEqual(
-            section.chunk_id, "chk:owasp_cheatsheets:Secrets_Management_Cheat_Sheet"
+            section.artifact_id,
+            "art:owasp_cheatsheets:Secrets_Management_Cheat_Sheet",
         )
         self.assertEqual(
-            section.artifact_id, "art:owasp_cheatsheets:Secrets_Management_Cheat_Sheet"
+            section.chunk_id,
+            "chk:art:owasp_cheatsheets:Secrets_Management_Cheat_Sheet:0",
         )
         self.assertEqual(
             section.text, "Storage guidance.\nIntroduction\nArchitectural Patterns"
