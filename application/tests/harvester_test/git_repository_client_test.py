@@ -4,6 +4,7 @@ from unittest.mock import patch
 import tempfile
 from pathlib import Path
 
+from unittest.mock import MagicMock
 from application.utils.harvester.git_repository_client import (
     GitRepositoryClient,
 )
@@ -115,7 +116,6 @@ class GitRepositoryClientTests(unittest.TestCase):
                 "-C",
                 str(client.get_local_path()),
                 "checkout",
-                "--",
                 "main",
             ],
             check=True,
@@ -152,6 +152,23 @@ class GitRepositoryClientTests(unittest.TestCase):
             client.clone()
 
         mock_run.assert_called()
+
+    @patch("application.utils.harvester.git_repository_client.subprocess.run")
+    def test_get_file_at_commit(self, mock_run):
+        mock_run.side_effect = [
+            MagicMock(stdout="42\n"),
+            MagicMock(stdout="# Hello\nWorld\n"),
+        ]
+
+        client = GitRepositoryClient("OWASP", "ASVS", "master")
+
+        client.get_local_path = MagicMock(return_value="/tmp/repo")
+
+        content = client.get_file_at_commit("abc123", "README.md")
+
+        self.assertEqual(content, "# Hello\nWorld\n")
+        self.assertEqual(mock_run.call_count, 2)
+        self.assertIn("--end-of-options", mock_run.call_args_list[1].args[0])
 
 
 if __name__ == "__main__":

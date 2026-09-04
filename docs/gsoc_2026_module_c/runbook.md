@@ -68,6 +68,18 @@ contract. `--librarian_envelopes_out` only adds a JSONL copy alongside it; it is
 a debugging convenience, not the handoff. See
 [the C → D contract](module_d_contract.md).
 
+**Run one drain at a time per `--run_id`** — this is the rule for the CLI, which
+is always the unlocked path (`lock_rows` is not CLI-wired). Two concurrent drains
+on the same run id do not split the queue between them — they both read the same rows and
+decide them twice. `decision_queue`'s uniqueness on `(chunk_id,
+pipeline_run_id)` means you lose money, not data: the second run's decisions
+collapse onto the first's, but both paid for the embedding and cross-encoder
+passes. Different run ids are fine and never overlap. If you need real
+parallelism over one run, that is `lock_rows=True` on `run_librarian_queue`
+(Postgres only, programmatic only, and **unverified against a live Postgres** —
+see the known limitations below before relying on it) — details in
+[the B → C contract](../gsoc_2026_module_b/module_c_contract.md#consumption-semantics).
+
 Or against a JSONL fixture instead of the live queue:
 
 ```bash
@@ -198,6 +210,21 @@ through the same SQLAlchemy models. The column types and the migration are
 written for both, and `consumed_at` is normalised to naive UTC precisely because
 the two dialects differ, but no run has been made against a real Postgres. Treat
 the first one as a test.
+
+**Concurrent consumers are unverified for the same reason.** `lock_rows=True`
+emits `FOR UPDATE SKIP LOCKED`, and the default suite asserts the clause is
+generated — which is not the same as watching two consumers claim disjoint
+batches on a live Postgres. The test that proves it exists but is skipped unless
+you point it at a database:
+
+```bash
+LIBRARIAN_POSTGRES_TEST_URL=postgresql://user:pw@localhost/opencre_test \
+    python -m pytest application/tests/librarian/knowledge_source_test.py -k Postgres
+```
+
+It opens two concurrent sessions, asserts they claim disjoint rows, and asserts a
+rollback releases the claim. Until someone has run it green, a single drain per
+`--run_id` is the supported way to run C.
 
 ## 7. Tests
 

@@ -232,9 +232,9 @@ def main() -> None:
     parser.add_argument(
         "--librarian_envelopes_out",
         default=None,
-        help="JSONL path the Librarian appends its LinkProposal / ReviewItem "
-        "envelopes to. Required for a real --run_id run: queue rows are only "
-        "marked consumed once their envelopes have been persisted",
+        help="Optional JSONL mirror of the Librarian's LinkProposal / ReviewItem "
+        "envelopes. A real --run_id run always writes decision_queue, the durable "
+        "handoff; this flag only adds a file copy of the same batch for eyeballing",
     )
     parser.add_argument(
         "--populate_neo4j_db",
@@ -315,15 +315,31 @@ def main() -> None:
         help="run Module B noise/relevance filter over a harvest run's chunks",
     )
     parser.add_argument(
+        "--run_harvester",
+        action="store_true",
+        help="run Module A harvester; writes ChangeRecords into harvest_input",
+    )
+    parser.add_argument(
         "--run_id",
         default="",
-        help="pipeline_run_id to process (required with --run_noise_filter; "
-        "with --run_librarian, selects the live knowledge_queue path)",
+        help="pipeline_run_id to process (required with --run_harvester / "
+        "--run_noise_filter; with --run_librarian, selects the live "
+        "knowledge_queue path)",
     )
     parser.add_argument(
         "--noise_filter_dry_run",
         action="store_true",
         help="classify without writing to knowledge_queue or marking rows processed",
+    )
+    parser.add_argument(
+        "--harvester_dry_run",
+        action="store_true",
+        help="run Module A without writing harvest_input rows",
+    )
+    parser.add_argument(
+        "--harvester_repos_yaml",
+        default="",
+        help="optional path to repos.yaml for --run_harvester",
     )
 
     args = parser.parse_args()
@@ -331,6 +347,8 @@ def main() -> None:
         parser.error("--export requires --csv <path>")
     if args.run_noise_filter and not args.run_id.strip():
         parser.error("--run_noise_filter requires --run_id <pipeline_run_id>")
+    if args.run_harvester and not args.run_id.strip():
+        parser.error("--run_harvester requires --run_id <pipeline_run_id>")
     # The live queue path takes its rows from the DB, so a fixture path would be
     # silently ignored rather than doing what the caller plainly asked for.
     if args.librarian_source and args.run_id.strip():

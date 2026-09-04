@@ -13,6 +13,8 @@ OpenCRE consists of:
 # Contribute code or mappings
 
 To see how you can contribute to the application or to the data (catalog or standard mappings), see [Contributing](docs/CONTRIBUTING.md).
+
+If this is your first code contribution, start with the [first-time contributor setup guide](docs/developmentSetup.md), then read the contribution process and quality bar.
 We really welcome you!
 
 # Documentation
@@ -47,7 +49,7 @@ If you want to develop on OpenCRE or docker is not available in your environment
 ### Command Line
 
 To run outside of Docker you need to install OpenCRE.
-To install this application you need python3, yarn and virtualenv.
+To install this application you need Python 3.11.9, Node.js, Yarn Classic (the repository uses a Yarn v1 lockfile), and `virtualenv`. The Python version is pinned in `.python-version`; the repository does not currently pin a Node.js version.
 
 Clone the repository:
 
@@ -55,12 +57,7 @@ Clone the repository:
 git clone https://github.com/OWASP/OpenCRE
 ```
 
-(Recommended) Create and activate a Python virtual environment:
-
-```bash
-python3 -m venv venv
-source venv/bin/activate
-```
+`make install` creates and uses the project virtual environment. Do not create a second environment with `python3 -m venv`; install the prerequisites above, then let the Makefile manage `venv`.
 
 Install dependencies:
 
@@ -68,10 +65,9 @@ Install dependencies:
 make install
 ```
 
-Create the local schema and download the latest CRE graph from upstream:
+`make install` creates the local schema as part of installation. Download the latest CRE graph from upstream with:
 
 ```bash
-make migrate-upgrade
 make upstream-sync
 ```
 
@@ -156,7 +152,7 @@ make dev-flask
 Alternatively, you can use the dockerfile with:
 
 ```bash
-make docker && make docker-run
+make docker-dev && make docker-dev-run
 ```
 
 Some features like Gap Analysis require a neo4j DB running, you can start this with:
@@ -216,7 +212,7 @@ OpenCRE is fully supported on macOS. The following notes are optional and intend
 Install required tools using Homebrew:
 
 ```bash
-brew install python@3.11 yarn make
+brew install python@3.11 yarn make virtualenv
 ```
 
 > Note: Python 3.11 is recommended. Newer Python versions may cause dependency incompatibilities.
