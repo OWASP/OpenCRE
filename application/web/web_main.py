@@ -1318,7 +1318,7 @@ def auth_callback():
     except oauthlib.oauth2.rfc6749.errors.MismatchingStateError as mse:
         return redirect("/chatbot")
     if not session.get("state") or session.get("state") != request.args["state"]:
-        redirect(url_for("web.auth_login"))  # State does not match!
+        return redirect(url_for("web.auth_login"))  # State does not match!
     credentials = flow_instance.flow.credentials
     token_request = google.auth.transport.requests.Request()
     id_info = id_token.verify_oauth2_token(

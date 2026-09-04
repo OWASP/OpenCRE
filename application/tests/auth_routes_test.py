@@ -100,6 +100,34 @@ class TestAuthRoutes(unittest.TestCase):
 
     @patch("application.web.web_main.id_token")
     @patch("application.web.web_main.CREFlow")
+    def test_auth_callback_state_mismatch_returns_without_continuing(
+        self, cre_flow_mock: Any, id_token_mock: Any
+    ) -> None:
+        # Regression for #1021: missing ``return`` on the state-mismatch redirect
+        # let the handler continue into token verification / session writes.
+        cre_flow_mock.instance.return_value.flow.credentials._id_token = "tok"
+        with patch.dict(
+            os.environ,
+            {
+                "CRE_ENABLE_LOGIN": "1",
+                "LOGIN_ALLOWED_DOMAINS": "*",
+                "INSECURE_REQUESTS": "1",
+            },
+        ):
+            with self.app.test_client() as client:
+                with client.session_transaction() as sess:
+                    sess["state"] = "expected-state"
+                resp = client.get("/rest/v1/auth/callback?state=wrong-state")
+                self.assertEqual(resp.status_code, 302)
+                self.assertIn("/rest/v1/auth/login", resp.headers.get("Location", ""))
+                with client.session_transaction() as sess:
+                    self.assertNotIn("user_id", sess)
+                    self.assertNotIn("google_id", sess)
+        id_token_mock.verify_oauth2_token.assert_not_called()
+        self.assertEqual(sqla.session.query(db.User).count(), 0)
+
+    @patch("application.web.web_main.id_token")
+    @patch("application.web.web_main.CREFlow")
     @patch("application.web.web_main.db.Node_collection")
     def test_auth_callback_persistence_failure_returns_503(
         self, node_collection_mock: Any, cre_flow_mock: Any, id_token_mock: Any
