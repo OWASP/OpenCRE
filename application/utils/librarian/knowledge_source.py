@@ -84,6 +84,26 @@ class DbKnowledgeSource(KnowledgeSource):
     Rows are ordered by ``created_at`` then ``id``: the timestamp alone is not
     unique (B inserts a batch inside one transaction), and an unstable order
     would make a ``limit``ed run non-reproducible.
+
+    **One consumer at a time, unless ``lock_rows`` is set.** The read selects on
+    ``consumed_at IS NULL``, and ``consumed_at`` is only stamped once the batch
+    has been mapped and persisted. The claim is therefore not atomic with the
+    read: for the whole length of a run, a second consumer selecting the same
+    predicate sees the same rows. With ``limit`` set it sees *exactly* the same
+    rows, because the order is deterministic and nothing marks a row as taken —
+    so two plain consumers duplicate each other's work entirely rather than
+    splitting it. The orchestrator runs one C consumer per ``pipeline_run_id``,
+    which is what makes the default safe; see #1025.
+
+    Duplicated work is the cost, not corruption: ``decision_queue`` is unique on
+    ``(chunk_id, pipeline_run_id)`` and the ``consumed_at`` update is filtered on
+    ``IS NULL``, so a doubled batch converges on the same rows. What it wastes is
+    the embedding and cross-encoder passes, which are the expensive part.
+
+    ``lock_rows=True`` is what makes concurrent consumers actually disjoint. It
+    is opt-in because the lock has to be held for the length of the run to mean
+    anything (see ``_locked``), and because a single consumer gains nothing from
+    paying for it.
     """
 
     def __init__(
@@ -92,10 +112,12 @@ class DbKnowledgeSource(KnowledgeSource):
         *,
         pipeline_run_id: Optional[str] = None,
         limit: Optional[int] = None,
+        lock_rows: bool = False,
     ) -> None:
         self._session = session
         self._run_id = pipeline_run_id
         self._limit = limit
+        self._lock_rows = lock_rows
         #: Ids of rows B wrote that C could not model, filled during iteration.
         #: They never reach the pipeline, so the pipeline cannot report them as
         #: finished — without this the runner would leave them unconsumed and
@@ -119,7 +141,51 @@ class DbKnowledgeSource(KnowledgeSource):
         query = query.order_by(KnowledgeQueueRow.created_at, KnowledgeQueueRow.id)
         if self._limit is not None:
             query = query.limit(self._limit)
+        if self._lock_rows:
+            query = self._locked(query)
         return query
+
+    def _locked(self, query: object) -> object:
+        """Add ``FOR UPDATE SKIP LOCKED`` so concurrent consumers claim disjoint rows.
+
+        The lock is only meaningful because of where the transaction ends. This
+        class never commits; the caller does, and ``run_librarian_queue`` commits
+        *after* the write-back. So the rows a consumer locks here stay locked
+        through mapping, persistence, and the ``consumed_at`` stamp — one
+        transaction covering the whole claim, which is the property that makes a
+        second consumer's ``SKIP LOCKED`` skip the right rows.
+
+        That is also the cost: the lock is held across C.1's embedding calls and
+        C.2's cross-encoder passes, so a batch's rows stay locked for as long as
+        the batch takes to decide. Module B inserts into this same table, so a
+        long-running locked batch is contention B pays for. Keep ``limit`` small
+        enough that a batch is minutes, not hours. The lock-free alternative is a
+        dedicated claim column on ``knowledge_queue``, which is B's schema to
+        change, not C's.
+
+        Note that ``LIMIT`` and ``SKIP LOCKED`` interact: Postgres applies the
+        limit to the scan and *then* drops rows another consumer holds, so a
+        locked batch can come back smaller than ``limit`` — sometimes empty —
+        while unclaimed rows remain. Callers must treat a short batch as "keep
+        draining", not as "the queue is empty".
+        """
+        from application.database.pgvector_utils import connection_dialect_name
+
+        dialect = connection_dialect_name(self._session)
+        if dialect == "postgresql":
+            return query.with_for_update(skip_locked=True)  # type: ignore[attr-defined]
+        if not dialect:
+            # Hermetic test fakes carry no bind and no concurrency to guard.
+            return query
+        # Refuse rather than degrade. SQLite has no FOR UPDATE SKIP LOCKED, and
+        # silently dropping the clause would hand back an unlocked batch to a
+        # caller who asked for a locked one — the failure would surface as
+        # duplicated work under load, far from here.
+        raise ValueError(
+            f"lock_rows=True needs Postgres for FOR UPDATE SKIP LOCKED; this "
+            f"session is {dialect!r}. Run a single consumer instead (the "
+            f"default), which is safe without row locks."
+        )
 
     def items(self) -> Iterator[KnowledgeQueueItem]:
         for row in self._query():  # type: ignore[attr-defined]

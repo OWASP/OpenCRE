@@ -232,9 +232,9 @@ def main() -> None:
     parser.add_argument(
         "--librarian_envelopes_out",
         default=None,
-        help="JSONL path the Librarian appends its LinkProposal / ReviewItem "
-        "envelopes to. Required for a real --run_id run: queue rows are only "
-        "marked consumed once their envelopes have been persisted",
+        help="Optional JSONL mirror of the Librarian's LinkProposal / ReviewItem "
+        "envelopes. A real --run_id run always writes decision_queue, the durable "
+        "handoff; this flag only adds a file copy of the same batch for eyeballing",
     )
     parser.add_argument(
         "--populate_neo4j_db",

@@ -414,6 +414,95 @@ class RunLibrarianQueueTest(unittest.TestCase):
         self.assertIn("degraded", summary.status)
         self.assertIn("safety path", summary.status)
 
+    def test_lock_rows_reaches_the_source(self) -> None:
+        """Plumbing test, and worth having: if the runner dropped `lock_rows` on
+        the floor, an operator asking for concurrency-safe reads would get plain
+        ones, and the only symptom would be duplicated work under load. SQLite
+        cannot grant the lock, so a refusal here proves the flag arrived."""
+        sqla.session.add(_row("a"))
+        sqla.session.commit()
+
+        with self.assertRaises(ValueError) as caught:
+            self._run(lock_rows=True)
+
+        self.assertIn("sqlite", str(caught.exception))
+        # The run died before deciding anything, so the row is still B's to hand
+        # back — nothing was consumed on the way out.
+        self.assertIsNone(self._consumed_at("a"))
+
+    def test_lock_rows_is_refused_on_a_dry_run(self) -> None:
+        """A dry run retires nothing, so claiming rows would only block a real
+        consumer from taking rows this run will never finish. Flagged by
+        CodeRabbit on #1030: the dry-run early return skips `commit()`, so the
+        locks would also outlive the call."""
+        sqla.session.add(_row("a"))
+        sqla.session.commit()
+
+        with self.assertRaises(ValueError) as caught:
+            self._run(lock_rows=True, dry_run=True)
+
+        self.assertIn("dry_run", str(caught.exception))
+        self.assertIsNone(self._consumed_at("a"))
+
+    def test_a_locked_run_rolls_back_when_the_sink_fails(self) -> None:
+        """A lock outliving the call would strand the batch: unconsumed, and
+        unclaimable by anyone else until the caller happened to roll back. So a
+        locked run ends its own transaction even on the failure path."""
+        sqla.session.add(_row("a"))
+        sqla.session.commit()
+
+        rolled_back = []
+        # Patch the proxy, then `del` to restore. Reassigning the captured bound
+        # method would leave an instance attribute on the process-wide
+        # `scoped_session` that survives `tearDown`'s `remove()`, so later tests
+        # would roll back a session that no longer exists. Flagged by CodeRabbit
+        # on #1030.
+        real_rollback = sqla.session.rollback
+
+        def _spy() -> None:
+            rolled_back.append(True)
+            real_rollback()
+
+        sqla.session.rollback = _spy  # type: ignore[method-assign]
+        try:
+            with self.assertRaises(ValueError):
+                # `lock_rows` fails at the dialect guard on SQLite, which is
+                # itself an exception escaping the drain — exactly the path that
+                # must not leave a claim behind.
+                self._run(lock_rows=True)
+        finally:
+            del sqla.session.rollback
+
+        self.assertTrue(rolled_back, "a locked run must roll back on failure")
+        self.assertIsNone(self._consumed_at("a"))
+
+    def test_an_unlocked_failure_leaves_the_transaction_to_the_caller(self) -> None:
+        """The unlocked path keeps its existing contract — no rollback of its own,
+        matching Module B's `run_noise_filter`. Without a lock there is nothing to
+        strand, so this stays the caller's call."""
+        sqla.session.add(_row("a"))
+        sqla.session.commit()
+
+        rolled_back = []
+        sqla.session.rollback = lambda: rolled_back.append(True)  # type: ignore[method-assign,return-value]
+        try:
+            with self.assertRaises(OSError):
+                self._run(sink=_ExplodingSink())
+        finally:
+            del sqla.session.rollback  # restore the proxy, not a stale binding
+
+        self.assertEqual(rolled_back, [])
+
+    def test_lock_rows_defaults_off_so_a_single_consumer_still_runs(self) -> None:
+        """The guard must not turn into a wall: the default path is one consumer
+        on SQLite, which is exactly what the orchestrator does today."""
+        sqla.session.add(_row("a"))
+        sqla.session.commit()
+
+        summary = self._run()
+
+        self.assertEqual(summary.consumed, 1)
+
     def test_blank_run_id_is_refused(self) -> None:
         """A blank id is a caller mistake, not "every run".
 
