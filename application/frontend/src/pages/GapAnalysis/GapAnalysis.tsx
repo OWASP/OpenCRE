@@ -63,9 +63,10 @@ const GetResultLine = (path, gapAnalysis, key) => {
         <Popup
           wide="very"
           size="large"
-          style={{ textAlign: 'center' }}
+          style={{ textAlign: 'center', maxWidth: 'min(550px, calc(100vw - 40px))' }}
           hoverable
           position="right center"
+          popperModifiers={[{ name: 'preventOverflow', enabled: true, options: { padding: 8 } }]}
           trigger={<span>{getDocumentDisplayName(path.end, true)} </span>}
         >
           <Popup.Content>
