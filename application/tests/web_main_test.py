@@ -1561,7 +1561,6 @@ class TestMain(unittest.TestCase):
                     buffered=True,
                     content_type="multipart/form-data",
                 )
-                print(f"\nSTATUS CODE: {response.status_code}, DATA: {response.data}")
                 self.assertEqual(200, response.status_code)
                 data = json.loads(response.data)
                 self.assertEqual("success", data.get("status"))
