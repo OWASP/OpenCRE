@@ -44,7 +44,7 @@ Two findings shaped everything after. First, retrieval was strong enough to buil
 
 The experiment felt like confirmation that the main technical risk was already reduced, and that the remaining work was engineering, testing, and integration. Which is exactly the right place to be before you start building.
 
-## Eight weeks, eight merges
+## Eight stages, eight merges
 
 Every stage of the Librarian landed as its own reviewed and merged pull request into OpenCRE's main branch. The contracts, config, and a 319-row hand-labelled golden dataset came first ([#922](https://github.com/OWASP/OpenCRE/pull/922)), because you cannot claim a decision system works without something to measure it against. Then the input boundary ([#925](https://github.com/OWASP/OpenCRE/pull/925)), candidate retrieval over the existing pgvector embeddings ([#937](https://github.com/OWASP/OpenCRE/pull/937)), the cross-encoder reranker ([#957](https://github.com/OWASP/OpenCRE/pull/957)), confidence calibration with an ECE gate ([#974](https://github.com/OWASP/OpenCRE/pull/974)), the decision engine and the pipeline glue ([#990](https://github.com/OWASP/OpenCRE/pull/990), [#991](https://github.com/OWASP/OpenCRE/pull/991)), and finally the live integration that made all of it real ([#1011](https://github.com/OWASP/OpenCRE/pull/1011)). A companion PR carried the package docs, the final metrics, and the CI regression gate ([#1012](https://github.com/OWASP/OpenCRE/pull/1012)); its content landed through [#1011](https://github.com/OWASP/OpenCRE/pull/1011), and that regression gate now runs on every pull request touching the Librarian.
 
@@ -58,7 +58,7 @@ Week 7 shipped zero lines and might have been the most useful week of the summer
 
 At the shipped threshold of 0.80, the system auto-links 172 chunks at 96.5 percent precision, with six wrong. Drop the bar to 0.70 and you automate thirty more chunks, and wrong links go from six to fourteen. A bad link committed into a graph that other tools consume as ground truth costs far more than one extra human glance. We held at 0.80.
 
-The sweep also exposed a ceiling. No threshold setting can be more accurate than the ranking sitting underneath it. The review queue could not be shrunk from the threshold side at all. That finding set up the hardest part of the summer.
+The sweep also exposed a ceiling. Thresholding can raise *precision* by abstaining (96.5% auto-link precision here versus 75% top-1 ranking accuracy), but it cannot make the underlying ranker place the right CRE first more often. The review queue could not be shrunk from the threshold side at all. That finding set up the hardest part of the summer.
 
 ## The number I missed
 
@@ -66,7 +66,7 @@ The plan targeted 90 percent top-1 ranking accuracy. The shipped number is 75. I
 
 I tried thirteen separate reranker levers: model swaps, prompt shapes, score fusion, candidate-pool changes. All thirteen regressed. The cross-encoder as shipped actually scores net minus seven against plain cosine similarity on the same shortlist. The root cause is not the model. It is the corpus: 427 of the 428 CREs have empty description fields. A cross-encoder scores a query against a document, and when the document side is effectively a bare title, there is nothing to cross-attend to. Retrieval still reaches 98 percent recall over that same thin corpus, which localises the problem exactly. The information needed to rank within a shortlist is simply not there to be read. The path to 90 percent runs through populating CRE descriptions, not through a better reranker.
 
-There is a version that gets closer. Gating the reranker to fire only where it helps reached 250 of 319 against the shipped 238. It is deliberately unshipped. It needs held-out validation there was no time to do honestly, and shipping it on in-sample numbers would be exactly the kind of quiet dishonesty this project spent three separate fixes eliminating elsewhere.
+There is a version that gets closer. Gating the reranker to fire only where it helps reached 250 of 319 against the shipped 238. It is deliberately unshipped. It needs held-out validation, but there was no time to do that honestly, and shipping it on in-sample numbers would be exactly the kind of quiet dishonesty this project spent three separate fixes eliminating elsewhere.
 
 Meanwhile, the number I trust most: review recall is five out of five. Every chunk that should reach a human does. The engine never once wrongly auto-linked something that needed review. For a gate whose failure mode is polluting shared truth, that is the number that matters. Failing safe is not a slogan you put in a design doc. It is a measurement, and this one held.
 
@@ -76,7 +76,7 @@ Week 8 made the handoff real. C now drains Module B's knowledge_queue, decides e
 
 Integration found real bugs, the way integration always does. C originally read only B's KNOWLEDGE label and stranded the UNCERTAIN rows. Those are chunks B was unsure about classifying, not chunks it judged worthless. Module B's owner caught it, and C now reads both labels and records which one each decision came from.
 
-The reviewing did not stop at the merge. Manshu, who built Module B, later [filed an issue](https://github.com/OWASP/OpenCRE/issues/1025) pointing out that C read the shared queue without row locking. Harmless with today's single consumer, unsafe the day anyone runs two. I verified his claim against the code. He was right. [The fix](https://github.com/OWASP/OpenCRE/pull/1030), in review as I write this, adds opt-in row claiming that refuses to run on a database that cannot honour the lock, rather than degrading silently. SQLite drops the locking clause without an error, and an unlocked batch handed to a caller who asked for a locked one is the kind of failure that surfaces weeks later, far from its cause. Then the automated reviewer caught a genuine transaction leak in my fix: dry runs were taking locks they never released. Two modules reviewing each other's assumptions, and a bot reviewing mine. That loop of claim, verify, counter-example, fix was the closest thing to real-world engineering this whole program offered.
+The reviewing did not stop at the merge. Manshu, who built Module B, later [filed an issue](https://github.com/OWASP/OpenCRE/issues/1025) pointing out that C read the shared queue without row locking. Harmless with today's single consumer, unsafe the day anyone runs two. I verified his claim against the code. He was right. [The fix](https://github.com/OWASP/OpenCRE/pull/1030) (now on `main`) adds opt-in row claiming that refuses to run on a database that cannot honour the lock, rather than degrading silently. SQLite drops the locking clause without an error, and an unlocked batch handed to a caller who asked for a locked one is the kind of failure that surfaces weeks later, far from its cause. Then the automated reviewer caught a genuine transaction leak in my fix: dry runs were taking locks they never released. Two modules reviewing each other's assumptions, and a bot reviewing mine. That loop of claim, verify, counter-example, fix was the closest thing to real-world engineering this whole program offered.
 
 ## What I am handing over
 
@@ -96,6 +96,6 @@ And the safe direction is a design choice you make once, early, and then defend.
 
 None of this happens alone. Spyros Gasteratos mentored this project with questions rather than directions, and the bar he holds for what counts as verified changed how I work. Rob van der Veer's early questions shaped what the Librarian became before a line of it existed. Paola Garcia Cardenas and Parth Sohaney kept the reviews and the coordination moving through a busy final stretch. And Manshu made both our modules better by refusing to take either one's assumptions on faith. [His Module B writeups](https://manshusainishab.medium.com/) are worth your time, and his final chapter tells the other side of the [#1025](https://github.com/OWASP/OpenCRE/issues/1025) story.
 
-GSoC ends this week. The pipeline does not. Module D needs building, the corpus needs descriptions, and I intend to be around for both.
+GSoC 2026 is over. The pipeline is not. Module D needs building, the corpus needs descriptions, and I intend to be around for both.
 
 Full contribution history: [github.com/OWASP/OpenCRE/commits?author=PRAteek-singHWY](https://github.com/OWASP/OpenCRE/commits?author=PRAteek-singHWY)
