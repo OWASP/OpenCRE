@@ -6,7 +6,7 @@ describe('OpenCRE CRE page', () => {
     cy.visit('/');
     cy.get('form#search-bar input[type="text"]').type(`${creId}{enter}`);
     cy.url().should('include', `/search/${creId}`);
-    cy.contains('h1', 'Matching CREs').should('be.visible');
+    cy.contains('h1', 'Matching CREs').scrollIntoView().should('be.visible');
     // Data-bearing: the CRE result row itself renders (fails on empty DB).
     cy.get('.standard-page__links-container').should('contain.text', 'Mutually authenticate');
   });

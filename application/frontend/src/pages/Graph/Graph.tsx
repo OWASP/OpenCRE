@@ -22,6 +22,7 @@ import { LoadingAndErrorIndicator } from '../../components/LoadingAndErrorIndica
 import { DOCUMENT_TYPES } from '../../const';
 import { useEnvironment } from '../../hooks';
 import { Document, LinkedDocument } from '../../types';
+import { scrollMountToTop } from '../../utils';
 
 interface ReactFlowNode {}
 interface CREGraph {
@@ -99,7 +100,7 @@ export const Graph = () => {
 
   useEffect(() => {
     setLoading(true);
-    window.scrollTo(0, 0);
+    scrollMountToTop();
 
     axios
       .get(`${apiUrl}/id/${id}`)
