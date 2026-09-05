@@ -12,7 +12,7 @@ import { DOCUMENT_TYPES } from '../../const';
 import { useEnvironment } from '../../hooks';
 import { applyFilters, filterContext } from '../../hooks/applyFilters';
 import { Document } from '../../types';
-import { groupLinksByType } from '../../utils';
+import { groupLinksByType, scrollMountToTop } from '../../utils';
 import { getDocumentDisplayName, getDocumentTypeText, orderLinksByType } from '../../utils/document';
 
 const MAX_LENGTH_FOR_AUTO_EXPAND = 5;
@@ -33,7 +33,7 @@ export const CommonRequirementEnumeration = () => {
   useEffect(() => {
     setLoading(true);
     setShowAll({});
-    window.scrollTo(0, 0);
+    scrollMountToTop();
 
     const params = source ? { params: { source } } : undefined;
     axios

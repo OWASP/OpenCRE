@@ -5,6 +5,7 @@ import { useParams } from 'react-router-dom';
 import { LoadingAndErrorIndicator } from '../../components/LoadingAndErrorIndicator';
 import { useEnvironment } from '../../hooks';
 import { Document } from '../../types';
+import { scrollMountToTop } from '../../utils';
 import { groupBy } from '../../utils/document';
 import { SearchResults } from './components/SearchResults';
 
@@ -19,7 +20,7 @@ export const SearchName = () => {
   const [error, setError] = useState<string | Object | null>(null);
 
   useEffect(() => {
-    window.scrollTo(0, 0);
+    scrollMountToTop();
     setLoading(true);
     axios
       .get(`${apiUrl}/text_search`, { params: { text: searchTerm } })

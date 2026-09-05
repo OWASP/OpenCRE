@@ -10,7 +10,7 @@ import { LoadingAndErrorIndicator } from '../../components/LoadingAndErrorIndica
 import { DOCUMENT_TYPES, DOCUMENT_TYPE_NAMES, TOOL } from '../../const';
 import { useEnvironment } from '../../hooks';
 import { Document, PaginatedResponse } from '../../types';
-import { getDocumentDisplayName, groupLinksByType } from '../../utils';
+import { getDocumentDisplayName, groupLinksByType, scrollMountToTop } from '../../utils';
 import { getDocumentTypeText } from '../../utils/document';
 
 export const StandardSection = () => {
@@ -38,7 +38,7 @@ export const StandardSection = () => {
   };
 
   useEffect(() => {
-    window.scrollTo(0, 0);
+    scrollMountToTop();
     setLoading(true);
     axios
       .get(
