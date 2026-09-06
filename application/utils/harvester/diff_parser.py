@@ -1,7 +1,119 @@
 from datetime import datetime
-import re
 
 from .models import DiffBlock
+
+_DIFF_GIT_PREFIX = "diff --git "
+
+
+def _decode_quoted_path(quoted_body: str) -> str:
+    """
+    Decode the body of a git C-quoted path.
+
+    Git quotes any path containing non-ASCII or special characters when
+    ``core.quotePath`` is enabled (the default), escaping each byte in octal:
+    ``café.md`` is emitted as ``"caf\\303\\251.md"``. Undo that so the parser
+    reports the real path.
+    """
+    return (
+        quoted_body.encode("ascii", "backslashreplace")
+        .decode("unicode_escape")
+        .encode("latin-1")
+        .decode("utf-8", errors="replace")
+    )
+
+
+def _split_quoted_header(remainder: str) -> list[str]:
+    """Return the C-quoted path bodies from a quoted ``diff --git`` header."""
+    parts: list[str] = []
+    index = 0
+
+    while index < len(remainder):
+        if remainder[index] != '"':
+            index += 1
+            continue
+
+        cursor = index + 1
+        body: list[str] = []
+
+        while cursor < len(remainder):
+            char = remainder[cursor]
+            if char == "\\" and cursor + 1 < len(remainder):
+                body.append(remainder[cursor : cursor + 2])
+                cursor += 2
+                continue
+            if char == '"':
+                break
+            body.append(char)
+            cursor += 1
+
+        parts.append("".join(body))
+        index = cursor + 1
+
+    return parts
+
+
+def _strip_side_prefix(path: str, prefix: str) -> str | None:
+    return path[len(prefix) :] if path.startswith(prefix) else None
+
+
+def _parse_header_path(line: str) -> str | None:
+    """
+    Extract the file path from a ``diff --git a/<path> b/<path>`` header.
+
+    The header is ambiguous when parsed naively: a path may itself contain the
+    ``" b/"`` separator sequence, and quoted paths do not start with a bare
+    ``a/`` at all. Both cases are handled here rather than by regex.
+    """
+    remainder = line[len(_DIFF_GIT_PREFIX) :]
+    if not remainder:
+        return None
+
+    if remainder.startswith('"'):
+        quoted = _split_quoted_header(remainder)
+        for candidate, prefix in ((quoted[-1:], "b/"), (quoted[:1], "a/")):
+            if candidate:
+                side = _strip_side_prefix(candidate[0], prefix)
+                if side is not None:
+                    return _decode_quoted_path(side)
+        return None
+
+    if not remainder.startswith("a/"):
+        return None
+
+    # Outside of renames both sides name the same path, so the header is
+    # exactly ``a/<path> b/<path>``. That symmetry pins down the path length
+    # without having to guess which " b/" is the separator.
+    body_length = len(remainder) - len("a/") - len(" b/")
+    if body_length > 0 and body_length % 2 == 0:
+        candidate = remainder[2 : 2 + body_length // 2]
+        if remainder == f"a/{candidate} b/{candidate}":
+            return candidate
+
+    # Renamed file: the two sides differ, so fall back to the b-side, which is
+    # where any added lines live.
+    separator = remainder.rfind(" b/")
+    if separator > len("a/"):
+        return remainder[separator + len(" b/") :] or None
+
+    return None
+
+
+def _parse_side_path(line: str, prefix: str) -> str | None:
+    """
+    Extract the path from a ``--- a/<path>`` or ``+++ b/<path>`` header line.
+
+    These lines carry a single path each, so they are unambiguous and are
+    preferred over the combined ``diff --git`` header when present.
+    """
+    target = line[4:].split("\t", 1)[0]
+    if not target or target == "/dev/null":
+        return None
+
+    if target.startswith('"') and target.endswith('"') and len(target) > 1:
+        side = _strip_side_prefix(target[1:-1], prefix)
+        return _decode_quoted_path(side) if side is not None else None
+
+    return _strip_side_prefix(target, prefix)
 
 
 class DiffParser:
@@ -22,9 +134,10 @@ class DiffParser:
 
         current_file: str | None = None
         added_lines: list[str] = []
+        in_hunk = False
 
         for line in diff.splitlines():
-            if line.startswith("diff --git"):
+            if line.startswith(_DIFF_GIT_PREFIX):
                 if current_file is not None:
                     blocks.append(
                         DiffBlock(
@@ -36,20 +149,25 @@ class DiffParser:
                         )
                     )
 
-                match = re.match(r"diff --git a/(.+?) b/", line)
-
-                current_file = match.group(1) if match else None
+                current_file = _parse_header_path(line)
                 added_lines = []
+                in_hunk = False
 
                 continue
 
-            if line.startswith("+++ b/") or line.startswith("+++ /dev/null"):
+            # ``---``/``+++`` are file headers only before the first hunk; once
+            # inside a hunk a line such as ``+++ foo`` is added content.
+            if not in_hunk and line.startswith("+++ "):
+                side_path = _parse_side_path(line, "b/")
+                if side_path is not None:
+                    current_file = side_path
                 continue
 
-            if line.startswith("--- a/") or line.startswith("--- /dev/null"):
+            if not in_hunk and line.startswith("--- "):
                 continue
 
             if line.startswith("@@"):
+                in_hunk = True
                 continue
 
             if line.startswith("+"):
