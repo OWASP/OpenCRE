@@ -3,6 +3,7 @@
 Run with: python repro_diff_parser_bug.py
 Requires: git available on PATH, run from inside a venv with the repo's deps.
 """
+
 import subprocess
 import tempfile
 import os
@@ -50,13 +51,15 @@ def main():
         print("--- raw git diff ---")
         print(diff)
         blocks = parser.parse(
-            diff, repository="test-repo", commit_sha="abc123",
+            diff,
+            repository="test-repo",
+            commit_sha="abc123",
             committed_at=datetime.now(timezone.utc),
         )
         print(f"--- DiffParser result: {len(blocks)} block(s) ---")
         for b in blocks:
             print(f"  file_path={b.file_path!r} added_lines={b.added_lines!r}")
-        print(f"EXPECTED: 1 block, file_path='café.md', added_lines=['added line']")
+        print("EXPECTED: 1 block, file_path='café.md', added_lines=['added line']")
         print(f"BUG CONFIRMED: {len(blocks) == 0}")
 
     print()
@@ -64,19 +67,19 @@ def main():
     print('BUG B: filename containing " b/" -> path truncated')
     print("=" * 70)
     with tempfile.TemporaryDirectory() as tmpdir:
-        diff = make_repo_with_change(
-            tmpdir, "foo b/bar.md", "x\n", "x\nmore\n"
-        )
+        diff = make_repo_with_change(tmpdir, "foo b/bar.md", "x\n", "x\nmore\n")
         print("--- raw git diff ---")
         print(diff)
         blocks = parser.parse(
-            diff, repository="test-repo", commit_sha="abc123",
+            diff,
+            repository="test-repo",
+            commit_sha="abc123",
             committed_at=datetime.now(timezone.utc),
         )
         print(f"--- DiffParser result: {len(blocks)} block(s) ---")
         for b in blocks:
             print(f"  file_path={b.file_path!r} added_lines={b.added_lines!r}")
-        print(f"EXPECTED: file_path='foo b/bar.md'")
+        print("EXPECTED: file_path='foo b/bar.md'")
         if blocks:
             print(f"BUG CONFIRMED: {blocks[0].file_path != 'foo b/bar.md'}")
 

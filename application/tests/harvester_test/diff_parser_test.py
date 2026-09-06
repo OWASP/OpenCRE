@@ -128,6 +128,32 @@ diff --git a/b.md b/b.md
         self.assertEqual(blocks[0].file_path, "café.md")
         self.assertEqual(blocks[0].added_lines, ["added line"])
 
+    def test_unescaped_non_ascii_in_quoted_path_is_preserved(self):
+        """With core.quotePath=false git quotes but leaves UTF-8 bytes raw."""
+        parser = DiffParser()
+
+        # File literally named: café".md — the quote forces quoting, the
+        # accented character stays unescaped.
+        diff = (
+            'diff --git "a/café\\".md" "b/café\\".md"\n'
+            '--- "a/café\\".md"\n'
+            '+++ "b/café\\".md"\n'
+            "@@ -1 +1,2 @@\n"
+            " line1\n"
+            "+added line\n"
+        )
+
+        blocks = parser.parse(
+            diff,
+            repository=TEST_REPOSITORY,
+            commit_sha=TEST_COMMIT_SHA,
+            committed_at=TEST_COMMITTED_AT,
+        )
+
+        self.assertEqual(len(blocks), 1)
+        self.assertEqual(blocks[0].file_path, 'café".md')
+        self.assertEqual(blocks[0].added_lines, ["added line"])
+
     def test_path_containing_separator_sequence_is_not_truncated(self):
         """A path may itself contain " b/", which must not split the header."""
         parser = DiffParser()

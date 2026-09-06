@@ -9,17 +9,26 @@ def _decode_quoted_path(quoted_body: str) -> str:
     """
     Decode the body of a git C-quoted path.
 
-    Git quotes any path containing non-ASCII or special characters when
-    ``core.quotePath`` is enabled (the default), escaping each byte in octal:
-    ``café.md`` is emitted as ``"caf\\303\\251.md"``. Undo that so the parser
-    reports the real path.
+    With ``core.quotePath`` enabled (the default) git escapes every non-ASCII
+    byte in octal, so ``café.md`` arrives as ``"caf\\303\\251.md"``. With it
+    disabled git leaves those bytes raw but still escapes characters such as
+    ``"`` and ``\\``, so a quoted path can mix raw UTF-8 with C escapes. Both
+    forms have to survive decoding.
     """
-    return (
-        quoted_body.encode("ascii", "backslashreplace")
+    # Recover the bytes git actually emitted; raw non-ASCII stays intact here
+    # instead of being flattened into an ASCII escape.
+    raw = quoted_body.encode("utf-8")
+
+    # latin-1 is a lossless 1:1 byte<->character map, so the C escapes can be
+    # decoded as text without discarding any non-ASCII byte.
+    decoded = (
+        raw.decode("latin-1")
+        .encode("ascii", "backslashreplace")
         .decode("unicode_escape")
-        .encode("latin-1")
-        .decode("utf-8", errors="replace")
     )
+
+    # The decoded characters are byte values; read them back as UTF-8.
+    return decoded.encode("latin-1").decode("utf-8", errors="replace")
 
 
 def _split_quoted_header(remainder: str) -> list[str]:
