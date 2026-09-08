@@ -2164,8 +2164,14 @@ class Node_collection:
     def all_cres_with_pagination(
         self, page: int = 1, per_page: int = 10
     ) -> List[cre_defs.CRE]:
-        cres = self.session.query(CRE).paginate(
-            page=int(page), per_page=per_page, error_out=False
+        cres = (
+            self.session.query(CRE)
+            # Without an explicit order the database is free to return rows in
+            # any order, so page boundaries can move between requests and a CRE
+            # can appear on two pages while another is never returned.
+            .order_by(CRE.external_id, CRE.id).paginate(
+                page=int(page), per_page=per_page, error_out=False
+            )
         )
         total_pages = cres.pages
         result = self._hydrate_cres_batch(list(cres.items))

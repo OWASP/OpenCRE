@@ -1541,6 +1541,45 @@ class TestMain(unittest.TestCase):
             self.assertEqual(web_main.ITEMS_PER_PAGE, len(body["data"]))
             self.assertEqual(6, body["total_pages"])
 
+    def test_all_cres_rejects_malformed_pagination(self) -> None:
+        """A non-integer page or per_page is a client error. Live today:
+        GET https://opencre.org/rest/v1/all_cres?page=abc returns 500."""
+        collection = db.Node_collection().with_graph()
+        collection.add_cre(defs.CRE(name="cre", id="111-111"))
+        collection.session.commit()
+
+        with self.app.test_client() as client:
+            for query in ("page=abc", "per_page=abc", "page=1.5"):
+                response = client.get(
+                    f"/rest/v1/all_cres?{query}",
+                    headers={"Content-Type": "application/json"},
+                )
+                self.assertEqual(400, response.status_code, query)
+
+    def test_all_cres_pages_deterministically(self) -> None:
+        """Paging twice returns the same rows in the same places. Without an
+        ORDER BY the database may return rows in any order, which lets a CRE
+        appear on two pages while another is never returned at all."""
+        collection = db.Node_collection().with_graph()
+        for i in range(30):
+            collection.add_cre(defs.CRE(name=f"cre-{i}", id=f"{i:03d}-{i:03d}"))
+        collection.session.commit()
+
+        with self.app.test_client() as client:
+
+            def ids(page: int) -> list:
+                response = client.get(
+                    f"/rest/v1/all_cres?per_page=10&page={page}",
+                    headers={"Content-Type": "application/json"},
+                )
+                return [doc["id"] for doc in json.loads(response.data)["data"]]
+
+            first = [ids(p) for p in (1, 2, 3)]
+            self.assertEqual(first, [ids(p) for p in (1, 2, 3)])
+
+            flat = [cre_id for page in first for cre_id in page]
+            self.assertEqual(30, len(set(flat)), "a CRE appeared on two pages")
+
     def test_import_from_cre_csv(self) -> None:
         input_data, _ = data_gen.export_format_data()
         workspace = tempfile.mkdtemp()
