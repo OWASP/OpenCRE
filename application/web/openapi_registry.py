@@ -281,9 +281,14 @@ OPENAPI_PATHS: List[PathSpec] = [
         "/rest/v1/root_cres",
         "find_root_cres",
         tags=["CRE"],
-        summary="Get root CREs",
-        query_schema=schemas.FormatQuerySchema,
-        response_schema=schemas.DataListResponseSchema,
+        summary="Get root CREs (optionally paginated)",
+        description=(
+            "Returns every root CRE by default. Pass page and/or per_page to "
+            "page through them; the response then also carries page and "
+            "total_pages, as /rest/v1/all_cres does."
+        ),
+        query_schema=schemas.RootCREsQuerySchema,
+        response_schema=schemas.RootCREsResponseSchema,
     ),
     PathSpec(
         "/rest/v1/deeplink/{name}",

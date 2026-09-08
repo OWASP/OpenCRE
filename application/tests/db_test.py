@@ -1324,6 +1324,43 @@ class TestDB(unittest.TestCase):
         self.maxDiff = None
         self.assertCountEqual(root_cres, [cres[0], cres[1], cres[7]])
 
+    def test_get_root_cres_with_pagination(self):
+        """Pages carry only root CREs, in the same order as get_root_cres,
+        and a page past the end is empty rather than an error."""
+        sqla.session.remove()
+        sqla.drop_all()
+        sqla.create_all()
+        collection = db.Node_collection().with_graph()
+
+        dbcres = []
+        for i in range(7):
+            dbcres.append(
+                collection.add_cre(defs.CRE(name=f"C{i}", id=f"{i}{i}{i}-{i}{i}{i}"))
+            )
+        # C5 is contained by C0 and C6 is contained by C1: neither is a root.
+        collection.add_internal_link(
+            higher=dbcres[0], lower=dbcres[5], ltype=defs.LinkTypes.Contains
+        )
+        collection.add_internal_link(
+            higher=dbcres[1], lower=dbcres[6], ltype=defs.LinkTypes.Contains
+        )
+        collection.session.commit()
+
+        all_roots = collection.get_root_cres()
+        self.assertEqual(5, len(all_roots))
+
+        page1, page, total_pages = collection.get_root_cres_with_pagination(1, 2)
+        self.assertEqual((1, 3), (page, total_pages))
+        self.assertEqual(all_roots[0:2], page1)
+
+        page3, page, total_pages = collection.get_root_cres_with_pagination(3, 2)
+        self.assertEqual((3, 3), (page, total_pages))
+        self.assertEqual(all_roots[4:5], page3)
+
+        page4, page, total_pages = collection.get_root_cres_with_pagination(4, 2)
+        self.assertEqual([], page4)
+        self.assertEqual(3, total_pages)
+
     @patch.object(db.NEO_DB, "gap_analysis")
     def test_gap_analysis_disconnected(self, gap_mock):
         collection = db.Node_collection()

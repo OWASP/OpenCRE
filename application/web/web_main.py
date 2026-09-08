@@ -10,7 +10,7 @@ import io
 import pathlib
 import re
 import urllib.parse
-from typing import Any
+from typing import Any, Dict
 
 from rq import job, exceptions
 from rq import Queue
@@ -670,10 +670,40 @@ def find_root_cres() -> Any:
     database = db.Node_collection()
     # opt_osib = request.args.get("osib")
     opt_format = request.args.get("format")
-    documents = database.get_root_cres()
+
+    # Pagination is opt-in. The CLI import (cre_main.download_cre_from_upstream),
+    # the Explorer tree and the MCP tool all read this endpoint as the complete
+    # list of roots, so without page/per_page the response keeps its original
+    # shape. With either present it pages like /rest/v1/all_cres does.
+    paginated = (
+        request.args.get("page") is not None or request.args.get("per_page") is not None
+    )
+    result: Dict[str, Any]
+    if paginated:
+        page = 1
+        per_page = ITEMS_PER_PAGE
+        if request.args.get("page") is not None and int(request.args.get("page")) > 0:
+            page = int(request.args.get("page"))
+
+        if (
+            request.args.get("per_page") is not None
+            and int(request.args.get("per_page")) > 0
+        ):
+            per_page = int(request.args.get("per_page"))
+        per_page = min(per_page, MAX_ITEMS_PER_PAGE)
+
+        documents, page, total_pages = database.get_root_cres_with_pagination(
+            page, per_page
+        )
+    else:
+        documents = database.get_root_cres()
+
     if documents:
         res = [doc.todict() for doc in documents]
         result = {"data": res}
+        if paginated:
+            result["page"] = page
+            result["total_pages"] = total_pages
         # if opt_osib:
         #     result["osib"] = odefs.cre2osib(documents).todict()
         if opt_format == SupportedFormats.Markdown.value:

@@ -526,6 +526,105 @@ class TestMain(unittest.TestCase):
             self.assertEqual(json.loads(response.data.decode()), expected)
             self.assertEqual(200, response.status_code)
 
+    @patch.object(db, "Node_collection")
+    def test_find_root_cres_paginates_only_when_asked(self, db_mock) -> None:
+        """Without page/per_page the endpoint keeps its original shape: every
+        root CRE and no pagination keys. The CLI import, the Explorer tree and
+        the MCP tool all read the whole list, so that path must not change."""
+        cres = [defs.CRE(name=f"root{i}", id=f"{i}{i}{i}-{i}{i}{i}") for i in range(3)]
+        db_mock.return_value.get_root_cres.return_value = cres
+
+        with self.app.test_client() as client:
+            response = client.get(
+                "/rest/v1/root_cres",
+                headers={"Content-Type": "application/json"},
+            )
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(
+            {"data": [c.todict() for c in cres]}, json.loads(response.data)
+        )
+        db_mock.return_value.get_root_cres.assert_called_once_with()
+        db_mock.return_value.get_root_cres_with_pagination.assert_not_called()
+
+    @patch.object(db, "Node_collection")
+    def test_find_root_cres_caps_per_page(self, db_mock) -> None:
+        db_mock.return_value.get_root_cres_with_pagination.return_value = ([], 1, 1)
+
+        with self.app.test_client() as client:
+            client.get(
+                "/rest/v1/root_cres?per_page=1000",
+                headers={"Content-Type": "application/json"},
+            )
+
+        db_mock.return_value.get_root_cres_with_pagination.assert_called_once_with(
+            1, 100
+        )
+        db_mock.return_value.get_root_cres.assert_not_called()
+
+    def test_find_root_cres_pagination_integration(self) -> None:
+        """root_cres pages through root CREs against a real database, with the
+        same metadata all_cres returns, and non-root CREs never appear."""
+        collection = db.Node_collection().with_graph()
+        roots = []
+        for i in range(25):
+            roots.append(
+                collection.add_cre(defs.CRE(name=f"root-{i}", id=f"{i:03d}-{i:03d}"))
+            )
+        # A child of the first root: reachable through a Contains link, so it
+        # is not a root and must be excluded from every page.
+        child = collection.add_cre(defs.CRE(name="child", id="999-999"))
+        collection.add_internal_link(
+            higher=roots[0], lower=child, ltype=defs.LinkTypes.Contains
+        )
+        collection.session.commit()
+
+        with self.app.test_client() as client:
+            response = client.get(
+                "/rest/v1/root_cres?per_page=10&page=1",
+                headers={"Content-Type": "application/json"},
+            )
+            self.assertEqual(200, response.status_code)
+            body = json.loads(response.data)
+            self.assertEqual(10, len(body["data"]))
+            self.assertEqual(1, body["page"])
+            self.assertEqual(3, body["total_pages"])
+
+            response = client.get(
+                "/rest/v1/root_cres?per_page=10&page=3",
+                headers={"Content-Type": "application/json"},
+            )
+            self.assertEqual(200, response.status_code)
+            body = json.loads(response.data)
+            self.assertEqual(5, len(body["data"]))
+            self.assertEqual(3, body["page"])
+            self.assertEqual(3, body["total_pages"])
+
+            seen = set()
+            for page in (1, 2, 3):
+                response = client.get(
+                    f"/rest/v1/root_cres?per_page=10&page={page}",
+                    headers={"Content-Type": "application/json"},
+                )
+                seen.update(doc["id"] for doc in json.loads(response.data)["data"])
+            self.assertEqual(25, len(seen))
+            self.assertNotIn("999-999", seen)
+
+            # Only `page` given: per_page falls back to the default page size.
+            response = client.get(
+                "/rest/v1/root_cres?page=1",
+                headers={"Content-Type": "application/json"},
+            )
+            body = json.loads(response.data)
+            self.assertEqual(web_main.ITEMS_PER_PAGE, len(body["data"]))
+            self.assertEqual(2, body["total_pages"])
+
+            # A page past the end is an empty page, not everything.
+            response = client.get(
+                "/rest/v1/root_cres?per_page=10&page=4",
+                headers={"Content-Type": "application/json"},
+            )
+            self.assertEqual(404, response.status_code)
+
     def test_smartlink(self) -> None:
         self.maxDiff = None
         collection = db.Node_collection().with_graph()

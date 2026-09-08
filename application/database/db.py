@@ -2747,10 +2747,10 @@ class Node_collection:
             deduped.append(entry)
         return deduped
 
-    def get_root_cres(self):
-        """Returns CRES that only have "Contains" links"""
+    def _root_cres_query(self):
+        """CREs that no other CRE contains: the tops of the graph."""
         # select name  from cre where cre.id not in (select cre from cre_links where type="Contains") and cre.id not in (select "group" from cre_links where type="Is Part OF");
-        cres = (
+        return (
             self.session.query(CRE)
             .filter(
                 ~CRE.id.in_(
@@ -2766,9 +2766,27 @@ class Node_collection:
                     )
                 )
             )
-            .all()
         )
+
+    def get_root_cres(self):
+        """Returns CRES that only have "Contains" links"""
+        cres = self._root_cres_query().all()
         return self._hydrate_cres_batch(list(cres))
+
+    def get_root_cres_with_pagination(
+        self, page: int = 1, per_page: int = 10
+    ) -> Tuple[List[cre_defs.CRE], int, int]:
+        """One page of root CREs, in the order get_root_cres returns them.
+
+        Mirrors all_cres_with_pagination: a page past the end is empty rather
+        than an error, and total_pages is always reported.
+        """
+        cres = self._root_cres_query().paginate(
+            page=int(page), per_page=per_page, error_out=False
+        )
+        total_pages = cres.pages
+        result = self._hydrate_cres_batch(list(cres.items))
+        return result, page, total_pages
 
     def health_check(self) -> Dict[str, Any]:
         """Lightweight liveness/readiness probe for the serving database.

@@ -108,6 +108,27 @@ class HealthResponseSchema(Schema):
     message = fields.Str(required=False)
 
 
+class RootCREsQuerySchema(FormatQuerySchema):
+    page = fields.Int(
+        required=False,
+        metadata={
+            "description": "Page number. Supplying page or per_page switches "
+            "the response to paginated form; without either, every root CRE "
+            "is returned."
+        },
+    )
+    per_page = fields.Int(
+        required=False,
+        metadata={"description": "Items per page (default 20, maximum 100)"},
+    )
+
+
+class RootCREsResponseSchema(Schema):
+    data = fields.List(fields.Dict(keys=fields.Str(), values=fields.Raw()))
+    page = fields.Int(required=False)
+    total_pages = fields.Int(required=False)
+
+
 class AllCREsQuerySchema(Schema):
     page = fields.Int(required=False)
     per_page = fields.Int(required=False)
