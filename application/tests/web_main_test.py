@@ -1561,8 +1561,12 @@ class TestMain(unittest.TestCase):
         ORDER BY the database may return rows in any order, which lets a CRE
         appear on two pages while another is never returned at all."""
         collection = db.Node_collection().with_graph()
-        for i in range(30):
-            collection.add_cre(defs.CRE(name=f"cre-{i}", id=f"{i:03d}-{i:03d}"))
+        # Insert in an order that is deliberately not the expected one. SQLite
+        # hands back a small table in insertion order, so a fixture inserted
+        # already-sorted would pass even with the ORDER BY removed.
+        external_ids = [f"{i:03d}-{i:03d}" for i in range(30)]
+        for external_id in reversed(external_ids):
+            collection.add_cre(defs.CRE(name=f"cre-{external_id}", id=external_id))
         collection.session.commit()
 
         with self.app.test_client() as client:
@@ -1579,6 +1583,9 @@ class TestMain(unittest.TestCase):
 
             flat = [cre_id for page in first for cre_id in page]
             self.assertEqual(30, len(set(flat)), "a CRE appeared on two pages")
+            # Inserted descending, returned ascending: this is what fails if the
+            # ORDER BY goes away.
+            self.assertEqual(external_ids, flat)
 
     def test_find_node_by_name_rejects_malformed_pagination(self) -> None:
         """The node endpoints share find_node_by_name, so all of
