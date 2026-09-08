@@ -1587,6 +1587,33 @@ class TestMain(unittest.TestCase):
             # ORDER BY goes away.
             self.assertEqual(external_ids, flat)
 
+    def test_all_cres_orders_duplicate_external_ids_by_primary_key(self) -> None:
+        """external_id is not unique on its own: the constraint is on
+        (name, external_id), so two CREs may carry the same one. Ordering by
+        external_id alone would leave those ties undefined, which is what the
+        CRE.id half of the sort is for. The primary keys are fixed here rather
+        than generated, so the expected order cannot drift between runs."""
+        collection = db.Node_collection().with_graph()
+        # Inserted in the opposite order to their primary keys.
+        for pk, name in (
+            ("bbbbbbbb-0000-0000-0000-000000000000", "tie-second"),
+            ("aaaaaaaa-0000-0000-0000-000000000000", "tie-first"),
+        ):
+            collection.session.add(
+                db.CRE(id=pk, external_id="500-500", name=name, description="")
+            )
+        collection.session.commit()
+
+        with self.app.test_client() as client:
+            response = client.get(
+                "/rest/v1/all_cres?per_page=10&page=1",
+                headers={"Content-Type": "application/json"},
+            )
+            self.assertEqual(200, response.status_code)
+            names = [doc["name"] for doc in json.loads(response.data)["data"]]
+
+        self.assertEqual(["tie-first", "tie-second"], names)
+
     def test_find_node_by_name_rejects_malformed_pagination(self) -> None:
         """The node endpoints share find_node_by_name, so all of
         /standard/{name}, /{ntype}/{name} and the section variants have the
