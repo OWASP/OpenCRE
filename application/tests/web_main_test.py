@@ -1580,6 +1580,52 @@ class TestMain(unittest.TestCase):
             flat = [cre_id for page in first for cre_id in page]
             self.assertEqual(30, len(set(flat)), "a CRE appeared on two pages")
 
+    def test_find_node_by_name_rejects_malformed_pagination(self) -> None:
+        """The node endpoints share find_node_by_name, so all of
+        /standard/{name}, /{ntype}/{name} and the section variants have the
+        same defect. Live today: GET
+        https://opencre.org/rest/v1/standard/ASVS?page=abc returns 500."""
+        collection = db.Node_collection().with_graph()
+        collection.add_node(defs.Standard(name="ASVS", section="S1"))
+        collection.session.commit()
+
+        with self.app.test_client() as client:
+            for url in (
+                "/rest/v1/standard/ASVS?page=abc",
+                "/rest/v1/standard/ASVS?items_per_page=abc",
+                "/rest/v1/standard/ASVS/section/S1?page=abc",
+                "/rest/v1/standard/ASVS/sectionid/S1?items_per_page=abc",
+            ):
+                response = client.get(url, headers={"Content-Type": "application/json"})
+                self.assertEqual(400, response.status_code, url)
+
+    def test_find_node_by_name_caps_items_per_page(self) -> None:
+        """items_per_page was passed straight through with no upper bound, so
+        one request could pull the whole table -- the unbounded response #847
+        describes, on the node endpoints rather than the CRE ones."""
+        collection = db.Node_collection().with_graph()
+        for i in range(150):
+            collection.add_node(defs.Standard(name="ASVS", section=f"S{i:04d}"))
+        collection.session.commit()
+
+        with self.app.test_client() as client:
+            response = client.get(
+                "/rest/v1/standard/ASVS?items_per_page=999999",
+                headers={"Content-Type": "application/json"},
+            )
+            self.assertEqual(200, response.status_code)
+            self.assertEqual(
+                web_main.MAX_ITEMS_PER_PAGE,
+                len(json.loads(response.data)["standards"]),
+            )
+
+            # Below the cap the request is honoured unchanged.
+            response = client.get(
+                "/rest/v1/standard/ASVS?items_per_page=10",
+                headers={"Content-Type": "application/json"},
+            )
+            self.assertEqual(10, len(json.loads(response.data)["standards"]))
+
     def test_import_from_cre_csv(self) -> None:
         input_data, _ = data_gen.export_format_data()
         workspace = tempfile.mkdtemp()

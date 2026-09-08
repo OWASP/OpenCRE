@@ -231,10 +231,26 @@ def find_node_by_name(
     if typ:
         ntype = typ[0]
 
+    # Parse once: int() on a non-integer raises ValueError with nothing to
+    # handle it, so a client typo became a 500. items_per_page was also passed
+    # straight through with no upper bound, so a single request could pull the
+    # whole table; cap it the way all_cres does. A value of zero or less falls
+    # back to the default.
     page = 1
-    if request.args.get("page") is not None and int(request.args.get("page")) > 0:
-        page = request.args.get("page")
-    items_per_page = request.args.get("items_per_page") or ITEMS_PER_PAGE
+    items_per_page = ITEMS_PER_PAGE
+    try:
+        if request.args.get("page") is not None:
+            requested_page = int(request.args.get("page"))
+            if requested_page > 0:
+                page = requested_page
+
+        if request.args.get("items_per_page") is not None:
+            requested_items_per_page = int(request.args.get("items_per_page"))
+            if requested_items_per_page > 0:
+                items_per_page = requested_items_per_page
+    except ValueError:
+        abort(400, "page and items_per_page must be integers")
+    items_per_page = min(items_per_page, MAX_ITEMS_PER_PAGE)
 
     include_only = request.args.getlist("include_only")
     total_pages, nodes = None, None
