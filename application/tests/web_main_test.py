@@ -625,6 +625,53 @@ class TestMain(unittest.TestCase):
             )
             self.assertEqual(404, response.status_code)
 
+    def test_find_root_cres_rejects_malformed_pagination(self) -> None:
+        """A non-integer page or per_page is a client error, not a 500."""
+        collection = db.Node_collection().with_graph()
+        collection.add_cre(defs.CRE(name="root", id="111-111"))
+        collection.session.commit()
+
+        with self.app.test_client() as client:
+            for query in ("page=abc", "per_page=abc", "page=1.5"):
+                response = client.get(
+                    f"/rest/v1/root_cres?{query}",
+                    headers={"Content-Type": "application/json"},
+                )
+                self.assertEqual(400, response.status_code, query)
+
+    def test_find_root_cres_pages_deterministically(self) -> None:
+        """Paging twice returns the same rows in the same places. Without an
+        ORDER BY the database may return rows in any order, which lets a CRE
+        appear on two pages while another is never returned at all."""
+        collection = db.Node_collection().with_graph()
+        for i in range(30):
+            collection.add_cre(defs.CRE(name=f"root-{i}", id=f"{i:03d}-{i:03d}"))
+        collection.session.commit()
+
+        with self.app.test_client() as client:
+
+            def ids(page: int) -> list:
+                response = client.get(
+                    f"/rest/v1/root_cres?per_page=10&page={page}",
+                    headers={"Content-Type": "application/json"},
+                )
+                return [doc["id"] for doc in json.loads(response.data)["data"]]
+
+            first = [ids(p) for p in (1, 2, 3)]
+            second = [ids(p) for p in (1, 2, 3)]
+            self.assertEqual(first, second)
+
+            flat = [cre_id for page in first for cre_id in page]
+            self.assertEqual(30, len(set(flat)), "a CRE appeared on two pages")
+
+            # The paginated pages are exactly the unpaginated list, in order.
+            response = client.get(
+                "/rest/v1/root_cres", headers={"Content-Type": "application/json"}
+            )
+            self.assertEqual(
+                [doc["id"] for doc in json.loads(response.data)["data"]], flat
+            )
+
     def test_smartlink(self) -> None:
         self.maxDiff = None
         collection = db.Node_collection().with_graph()

@@ -2766,6 +2766,12 @@ class Node_collection:
                     )
                 )
             )
+            # Without an explicit order the database is free to return rows in
+            # any order, so page boundaries could shift between requests and a
+            # CRE could appear on two pages while another was never returned.
+            # external_id first because that is the order the catalogue reads
+            # in; id breaks ties and is the primary key, so the order is total.
+            .order_by(CRE.external_id, CRE.id)
         )
 
     def get_root_cres(self):

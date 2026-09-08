@@ -682,14 +682,21 @@ def find_root_cres() -> Any:
     if paginated:
         page = 1
         per_page = ITEMS_PER_PAGE
-        if request.args.get("page") is not None and int(request.args.get("page")) > 0:
-            page = int(request.args.get("page"))
+        # Parse once: int() on a non-integer raises ValueError, which has no
+        # handler and would surface as a 500 for what is a client mistake.
+        # A value of zero or less falls back to the default, as in all_cres.
+        try:
+            if request.args.get("page") is not None:
+                requested_page = int(request.args.get("page"))
+                if requested_page > 0:
+                    page = requested_page
 
-        if (
-            request.args.get("per_page") is not None
-            and int(request.args.get("per_page")) > 0
-        ):
-            per_page = int(request.args.get("per_page"))
+            if request.args.get("per_page") is not None:
+                requested_per_page = int(request.args.get("per_page"))
+                if requested_per_page > 0:
+                    per_page = requested_per_page
+        except ValueError:
+            abort(400, "page and per_page must be integers")
         per_page = min(per_page, MAX_ITEMS_PER_PAGE)
 
         documents, page, total_pages = database.get_root_cres_with_pagination(
