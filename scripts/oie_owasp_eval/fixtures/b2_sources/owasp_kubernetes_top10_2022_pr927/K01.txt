@@ -1,0 +1,246 @@
+Source: K01
+Section: Insecure Workload Configurations
+Section-ID: K01
+
+K01: Insecure Workload Configurations | OWASP Foundation
+Store
+Donate
+Join
+This website uses cookies to analyze our traffic and only share that information with our analytics partners.
+Accept
+x
+Store
+Donate
+Join
+K01: Insecure Workload Configurations
+Overview
+The security context of a workload in Kubernetes is highly configurable which
+can lead to serious security misconfigurations propagating across an
+organization’s workloads and clusters. The
+Kubernetes adoption, security, and
+market trends report
+2022
+from Redhat stated that nearly 53% of respondents have experienced a
+misconfiguration incident in their Kubernetes environments in the last 12
+months.
+Description
+Kubernetes manifests contain many different configurations that can affect the
+reliability, security, and scalability of a given workload. These configurations
+should be audited and remediated continuously. Some examples of high-impact
+manifest configurations are below:
+Application processes should not run as root:
+Running the process inside of
+a container as the
+root
+user is a common misconfiguration in many clusters.
+While
+root
+may be an absolute requirement for some workloads, it should be
+avoided when possible. If the container were to be compromised, the attacker
+would have root-level privileges that allow actions such as starting a malicious
+process that otherwise wouldn’t be permitted with other users on the system.
+apiVersion
+:
+v1
+kind
+:
+Pod
+metadata
+:
+name
+:
+root-user
+spec
+:
+containers
+:
+...
+securityContext
+:
+#root user:
+runAsUser
+:
+0
+#non-root user:
+runAsUser
+:
+5554
+Read-only filesystems should be used:
+In order to limit the impact of a
+compromised container on a Kubernetes node, it is recommended to utilize
+read-only filesystems when possible. This prevents a malicious process or
+application from writing back to the host system. Read-only filesystems are a
+key component to preventing container breakout.
+apiVersion
+:
+v1
+kind
+:
+Pod
+metadata
+:
+name
+:
+read-only-fs
+spec
+:
+containers
+:
+...
+securityContext
+:
+#read-only fs explicitly defined
+readOnlyRootFilesystem
+:
+true
+Privileged containers should be disallowed
+: When setting a container to
+privileged
+within Kubernetes, the container can access additional resources
+and kernel capabilities of the host. Workloads running as root combined with
+privileged containers can be devastating as the user can get complete access to
+the host. This is, however, limited when running as a non-root user. Privileged
+containers are dangerous as they remove many of the built-in container isolation
+mechanisms entirely.
+apiVersion
+:
+v1
+kind
+:
+Pod
+metadata
+:
+name
+:
+privileged-pod
+spec
+:
+containers
+:
+...
+securityContext
+:
+#priviliged
+privileged
+:
+true
+#non-privileged
+privileged
+:
+false
+Resource constraints should be enforced
+: By default, containers run with
+unbounded compute resources on a Kubernetes cluster. CPU requests and limits
+can be attributed to individual containers within a pod. If you don’t specify
+a CPU limit for a container, it means there’s no upper bound on the CPU
+resources it can consume. While this flexibility can be advantageous, it also
+poses a risk for potential resource abuse, such as crypto-mining, as the
+container could potentially utilize all available CPU resources on the
+hosting node.
+apiVersion
+:
+v1
+kind
+:
+Pod
+metadata
+:
+name
+:
+resource-limit-pod
+spec
+:
+containers
+:
+...
+resources
+:
+limits
+:
+cpu
+:
+"
+0.5"
+# 0.5 CPU cores
+memory
+:
+"
+512Mi"
+# 512 Megabytes of memory
+requests
+:
+cpu
+:
+"
+0.2"
+# 0.2 CPU cores
+memory
+:
+"
+256Mi"
+# 256 Megabytes of memory
+How to Prevent
+Maintaining secure configurations throughout a large, distributed Kubernetes
+environment can be a difficult task. While many security configurations are
+often set in the
+securityContext
+of the manifest itself there are a number of
+other misconfigurations that can be detected elsewhere. In order to prevent
+misconfigurations, they must first be detected in both runtime and in code. We
+can enforce that applications:
+Run as non-root user
+Run as non-privileged mode
+Set AllowPrivilegeEscalation: False to disallow child process from
+getting more privileges than its parents.
+Set a LimitRange to constrain the resource allocations for each applicable
+object kind in a namespace.
+Tools such as Open Policy Agent can be used as a policy engine to detect these
+common misconfigurations. The CIS Benchmark for Kubernetes can also be used as a
+starting point for discovering misconfigurations.
+Example Attack Scenarios
+TODO
+References
+CIS Benchmarks for Kubernetes:
+https://www.cisecurity.org/benchmark/kubernetes
+Open Policy Agent:
+https://github.com/open-policy-agent/opa
+Pod Security Standards:
+https://kubernetes.io/docs/concepts/security/pod-security-standards/
+Watch
+Star
+The OWASP
+®
+Foundation
+works to improve the security of software through its community-led open source software projects, 
+     hundreds of chapters worldwide, tens of thousands of members, and by hosting local and global conferences.
+Relevant Links
+OWASP Kubernetes Top 10 Project
+Introduction
+Other Risks to Consider
+Top 10 Kubernetes Risks
+K01: Insecure Workload Configuration
+K02: Supply Chain Vulnerabilities
+K03: Overly Permissive RBAC
+K04: Policy Enforcement
+K05: Inadequate Logging
+K06: Broken Authentication
+K07: Network Segmentation
+K08: Secrets Management
+K09: Misconfigured Cluster Components
+K10: Vulnerable Components
+Leaders
+Jimmy Mesta
+Upcoming OWASP Global Events
+Corporate Supporters
+Become a corporate supporter
+HOME
+PROJECTS
+CHAPTERS
+EVENTS
+ABOUT
+PRIVACY
+SITEMAP
+CONTACT
+OWASP, the OWASP logo, and Global AppSec are registered trademarks and AppSec Days, AppSec California, AppSec Cali, SnowFROC, OWASP Boston Application Security Conference, and LASCON are trademarks of the OWASP Foundation, Inc. Unless otherwise specified, all content on the site is Creative Commons Attribution-ShareAlike v4.0 and provided without warranty of service or accuracy. For more information, please refer to our
+General Disclaimer
+. OWASP does not endorse or recommend commercial products or services, allowing our community to remain vendor neutral with the collective wisdom of the best minds in software security worldwide. Copyright 2026, OWASP Foundation, Inc.

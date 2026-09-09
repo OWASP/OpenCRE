@@ -40,6 +40,8 @@ from application.utils.librarian.section_validator import Section
 #                          must not claim "Automatically linked to".
 AUTO_LINK_TYPE = "Automatically linked to"
 SUGGESTED_LINK_TYPE = "Related"
+# Coverage gap: suggested_links carries a *new* CRE id that is not in the hub yet.
+PROPOSED_NEW_CRE_TYPE = "Proposed new CRE"
 
 
 class EmitterError(ValueError):
@@ -121,9 +123,21 @@ def build_review_item(
         )
     if result.reason_code is None:
         raise EmitterError("a review decision must carry a reason_code")
-    suggested = (
-        _proposed_links(result, SUGGESTED_LINK_TYPE) or None
-    )  # best guess, may be empty
+    if result.gap_proposal is not None:
+        suggested = [
+            ProposedLink(
+                cre_id=result.gap_proposal.external_id,
+                link_type=PROPOSED_NEW_CRE_TYPE,
+                confidence=result.confidence,
+                rationale=(
+                    f"{result.gap_proposal.name}. {result.gap_proposal.rationale}"
+                ),
+            )
+        ]
+    else:
+        suggested = (
+            _proposed_links(result, SUGGESTED_LINK_TYPE) or None
+        )  # best guess, may be empty
     return ReviewItem(
         schema_version=SCHEMA_VERSION,
         review_id=f"review:{section.chunk_id}",

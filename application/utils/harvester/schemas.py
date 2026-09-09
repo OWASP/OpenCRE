@@ -24,7 +24,9 @@ class PathRules(BaseModel):
 class ChunkingConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    strategy: Literal["markdown_heading", "html_readability", "fixed_size"] = Field(
+    strategy: Literal[
+        "markdown_heading", "html_readability", "fixed_size", "docling"
+    ] = Field(
         ...,
         description="Chunking strategy used for text segmentation",
     )
@@ -37,12 +39,73 @@ class ChunkingConfig(BaseModel):
         description="token overlap between adjacent chunks",
     )
 
+    # A.2 merge — one algorithm; profiles only set defaults for these knobs.
+    merge_profile: Literal["none", "requirements", "narrative"] = Field(
+        default="none",
+        description=(
+            "A.2 merge profile: none=disabled; requirements=ASVS-like "
+            "(split on requirement ids); narrative=cheat-sheet-like "
+            "(merge under the same heading up to max_tokens)."
+        ),
+    )
+    merge_min_tokens: int | None = Field(
+        default=None,
+        ge=0,
+        description="Merge undersized siblings under the same heading (profile default if omitted).",
+    )
+    merge_max_tokens: int | None = Field(
+        default=None,
+        gt=0,
+        description="Cap for a merged chunk (defaults to max_tokens).",
+    )
+    split_on_requirement_id: bool | None = Field(
+        default=None,
+        description="Do not merge across different V?/N.N.N requirement ids.",
+    )
+
+    @model_validator(mode="before")
+    @classmethod
+    def apply_merge_profile_defaults(cls, data: object) -> object:
+        """Fill merge knobs from ``merge_profile`` when left unset."""
+        if not isinstance(data, dict):
+            return data
+        profile = data.get("merge_profile") or "none"
+        max_tokens = int(data.get("max_tokens") or 1200)
+
+        def _fill(key: str, value: object) -> None:
+            if data.get(key) is None:
+                data[key] = value
+
+        if profile == "none":
+            _fill("merge_min_tokens", 0)
+            _fill("merge_max_tokens", max_tokens)
+            _fill("split_on_requirement_id", False)
+        elif profile == "requirements":
+            _fill("merge_min_tokens", 100)
+            _fill("merge_max_tokens", max_tokens)
+            _fill("split_on_requirement_id", True)
+        else:  # narrative
+            _fill("merge_min_tokens", 400)
+            _fill("merge_max_tokens", max_tokens)
+            _fill("split_on_requirement_id", False)
+        return data
+
     @model_validator(mode="after")
     def overlap_must_be_less_than_max(self) -> "ChunkingConfig":
         if self.overlap_tokens >= self.max_tokens:
             raise ValueError(
                 f"overlap_tokens ({self.overlap_tokens}) must be less than "
                 f"max_tokens ({self.max_tokens})"
+            )
+        merge_max = (
+            self.merge_max_tokens
+            if self.merge_max_tokens is not None
+            else self.max_tokens
+        )
+        merge_min = self.merge_min_tokens if self.merge_min_tokens is not None else 0
+        if merge_min > 0 and merge_min >= merge_max:
+            raise ValueError(
+                f"merge_min_tokens ({merge_min}) must be < merge_max_tokens ({merge_max})"
             )
         return self
 

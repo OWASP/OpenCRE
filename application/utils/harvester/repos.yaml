@@ -13,9 +13,10 @@ repositories:
         - "**/archive/**"
 
     chunking:
-      strategy: markdown_heading
+      strategy: docling
       max_tokens: 1200
       overlap_tokens: 100
+      merge_profile: requirements
 
     polling:
       mode: incremental
@@ -34,9 +35,10 @@ repositories:
         - "cheatsheets/**/*.md"
 
     chunking:
-      strategy: markdown_heading
+      strategy: docling
       max_tokens: 1000
       overlap_tokens: 100
+      merge_profile: narrative
 
     polling:
       mode: incremental

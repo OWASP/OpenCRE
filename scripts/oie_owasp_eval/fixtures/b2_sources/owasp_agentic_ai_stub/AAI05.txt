@@ -1,0 +1,5 @@
+Source: AAI05
+Section: Unsupervised Cross-System Workflows
+Section-ID: AAI05
+
+Unsupervised agents that orchestrate cross-system workflows (CI, cloud, SaaS) can cascade failures. Require kill-switches, budget limits, human-in-the-loop for production mutations, and audit trails of every cross-system step.

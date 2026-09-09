@@ -1,0 +1,177 @@
+Source: A06
+Section: Insecure Design
+Section-ID: A06
+
+A06 Insecure Design - OWASP Top 10:2025
+Skip to content
+OWASP Top 10:2025
+A06 Insecure Design
+en - English
+cs - Česky
+es - Español
+it - Italiano
+ja - 日本語 (Japanese)
+ko - 한국어 (Korean)
+fa - فارسی (Persian/Fārsi)
+pt-BR - (Português Brasil)
+zh-Hant - 简体中文
+Initializing search
+OWASP/Top10
+OWASP Top 10:2025
+OWASP/Top10
+Home
+Introduction
+About OWASP
+What are Application Security Risks?
+Establishing a Modern Application Security Program
+Top 10:2025 List
+Top 10:2025 List
+A01 Broken Access Control
+A02 Security Misconfiguration
+A03 Software Supply Chain Failures
+A04 Cryptographic Failures
+A05 Injection
+A06 Insecure Design
+A06 Insecure Design
+Table of contents
+Background.
+Score table.
+Description.
+Requirements and Resource Management
+Secure Design
+Secure Development Lifecycle
+How to prevent.
+Example attack scenarios.
+References.
+List of Mapped CWEs
+A07 Authentication Failures
+A08 Software or Data Integrity Failures
+A09 Security Logging and Alerting Failures
+A10 Mishandling of Exceptional Conditions
+Next Steps
+Table of contents
+Background.
+Score table.
+Description.
+Requirements and Resource Management
+Secure Design
+Secure Development Lifecycle
+How to prevent.
+Example attack scenarios.
+References.
+List of Mapped CWEs
+A06:2025 Insecure Design
+Background.
+Insecure Design slides two spots from #4 to #6 in the ranking as
+A02:2025-Security Misconfiguration
+and
+A03:2025-Software Supply Chain Failures
+leapfrog it. This category was introduced in 2021, and we have seen noticeable improvements in the industry related to threat modeling and a greater emphasis on secure design. This category focuses on risks related to design and architectural flaws, with a call for more use of threat modeling, secure design patterns, and reference architectures. This includes flaws in the business logic of an application, e.g. the lack of defining unwanted or unexpected state changes inside an application.  As a community, we need to move beyond "shift-left" in the coding space, to pre-code activities such as requirements writing and application design, that are critical for the principles of Secure by Design (e.g. see
+Establish a Modern AppSec Program: Planning and Design Phase
+). Notable Common Weakness Enumerations (CWEs) include
+CWE-256: Unprotected Storage of Credentials, CWE-269 Improper Privilege Management, CWE-434 Unrestricted Upload of File with Dangerous Type, CWE-501: Trust Boundary Violation, and CWE-522: Insufficiently Protected Credentials.
+Score table.
+CWEs Mapped
+Max Incidence Rate
+Avg Incidence Rate
+Max Coverage
+Avg Coverage
+Avg Weighted Exploit
+Avg Weighted Impact
+Total Occurrences
+Total CVEs
+39
+22.18%
+1.86%
+88.76%
+35.18%
+6.96
+4.05
+729,882
+7,647
+Description.
+Insecure design is a broad category representing different weaknesses, expressed as “missing or ineffective control design.” Insecure design is not the source for all other Top Ten risk categories. Note that there is a difference between insecure design and insecure implementation. We differentiate between design flaws and implementation defects for a reason, they have different root causes, take place at different times in the development process, and have different remediations. A secure design can still have implementation defects leading to vulnerabilities that may be exploited. An insecure design cannot be fixed by a perfect implementation as needed security controls were never created to defend against specific attacks. One of the factors that contributes to insecure design is the lack of business risk profiling inherent in the software or system being developed, and thus the failure to determine what level of security design is required.
+Three key parts of having a secure design are:
+Gathering Requirements and Resource Management
+Creating a Secure Design
+Having a Secure Development Lifecycle
+Requirements and Resource Management
+Collect and negotiate the business requirements for an application with the business, including the protection requirements concerning confidentiality, integrity, availability, and authenticity of all data assets and the expected business logic. Take into account how exposed your application will be and if you need segregation of tenants (beyond those needed for access control). Compile the technical requirements, including functional and non-functional security requirements. Plan and negotiate the budget covering all design, build, testing, and operation, including security activities.
+Secure Design
+Secure design is a culture and methodology that constantly evaluates threats and ensures that code is robustly designed and tested to prevent known attack methods. Threat modeling should be integrated into refinement sessions (or similar activities); look for changes in data flows and access control or other security controls. In the  story development, determine the correct flow and failure states, ensure they are well understood and agreed upon by the responsible and impacted parties. Analyze assumptions and conditions for expected and failure flows to ensure they remain accurate and desirable. Determine how to validate the assumptions and enforce conditions needed for proper behaviors. Ensure the results are documented in the  story. Learn from mistakes and offer positive incentives to promote improvements. Secure design is neither an add-on nor a tool that you can add to software.
+Secure Development Lifecycle
+Secure software requires a secure development lifecycle, a secure design pattern, a paved road methodology, a secure component library, appropriate tooling, threat modeling, and incident post-mortems that are used to improve the process. Reach out to your security specialists at the beginning of a software project, throughout the project, and for ongoing software maintenance. Consider leveraging the
+OWASP Software Assurance Maturity Model (SAMM)
+to help structure your secure software development efforts.
+Often self-responsibility of developers is underappreciated. Foster a culture of awareness, responsibility and proactive risk mitigation. Regular exchanges about security (e.g. during threat modeling sessions) can generate a mindset for including security in all important design decisions.
+How to prevent.
+Establish and use a secure development lifecycle with AppSec professionals to help evaluate and design security and privacy-related controls
+Establish and use a library of secure design patterns or paved-road components
+Use threat modeling for critical parts of the application such as authentication, access control, business logic, and key flows
+Use threat modeling as an educational tool to generate a security mindset
+Integrate security language and controls into user stories
+Integrate plausibility checks at each tier of your application (from frontend to backend)
+Write unit and integration tests to validate that all critical flows are resistant to the threat model. Compile use-cases
+and
+misuse-cases for each tier of your application.
+Segregate tier layers on the system and network layers, depending on the exposure and protection needs
+Segregate tenants robustly by design throughout all tiers
+Example attack scenarios.
+Scenario #1:
+A credential recovery workflow might include “questions and answers,” which is prohibited by NIST 800-63b, the OWASP ASVS, and the OWASP Top 10. Questions and answers cannot be trusted as evidence of identity, as more than one person can know the answers. Such functionality should be removed and replaced with a more secure design.
+Scenario #2:
+A cinema chain allows group booking discounts and has a maximum of fifteen attendees before requiring a deposit. Attackers could threat model this flow and test if they can find an attack vector in the business logic of the application, e.g. booking six hundred seats and all cinemas at once in a few requests, causing a massive loss of income.
+Scenario #3:
+A retail chain’s e-commerce website does not have protection against bots run by scalpers buying high-end video cards to resell on auction websites. This creates terrible publicity for the video card makers and retail chain owners, and enduring bad blood with enthusiasts who cannot obtain these cards at any price. Careful anti-bot design and domain logic rules, such as purchases made within a few seconds of availability, might identify inauthentic purchases and reject such transactions.
+References.
+OWASP Cheat Sheet: Secure Design Principles
+OWASP SAMM: Design | Secure Architecture
+OWASP SAMM: Design | Threat Assessment
+NIST – Guidelines on Minimum Standards for Developer Verification of Software
+The Threat Modeling Manifesto
+Awesome Threat Modeling
+List of Mapped CWEs
+CWE-73 External Control of File Name or Path
+CWE-183 Permissive List of Allowed Inputs
+CWE-256 Unprotected Storage of Credentials
+CWE-266 Incorrect Privilege Assignment
+CWE-269 Improper Privilege Management
+CWE-286 Incorrect User Management
+CWE-311 Missing Encryption of Sensitive Data
+CWE-312 Cleartext Storage of Sensitive Information
+CWE-313 Cleartext Storage in a File or on Disk
+CWE-316 Cleartext Storage of Sensitive Information in Memory
+CWE-362 Concurrent Execution using Shared Resource with Improper Synchronization ('Race Condition')
+CWE-382 J2EE Bad Practices: Use of System.exit()
+CWE-419 Unprotected Primary Channel
+CWE-434 Unrestricted Upload of File with Dangerous Type
+CWE-436 Interpretation Conflict
+CWE-444 Inconsistent Interpretation of HTTP Requests ('HTTP Request Smuggling')
+CWE-451 User Interface (UI) Misrepresentation of Critical Information
+CWE-454 External Initialization of Trusted Variables or Data Stores
+CWE-472 External Control of Assumed-Immutable Web Parameter
+CWE-501 Trust Boundary Violation
+CWE-522 Insufficiently Protected Credentials
+CWE-525 Use of Web Browser Cache Containing Sensitive Information
+CWE-539 Use of Persistent Cookies Containing Sensitive Information
+CWE-598 Use of GET Request Method With Sensitive Query Strings
+CWE-602 Client-Side Enforcement of Server-Side Security
+CWE-628 Function Call with Incorrectly Specified Arguments
+CWE-642 External Control of Critical State Data
+CWE-646 Reliance on File Name or Extension of Externally-Supplied File
+CWE-653 Insufficient Compartmentalization
+CWE-656 Reliance on Security Through Obscurity
+CWE-657 Violation of Secure Design Principles
+CWE-676 Use of Potentially Dangerous Function
+CWE-693 Protection Mechanism Failure
+CWE-799 Improper Control of Interaction Frequency
+CWE-807 Reliance on Untrusted Inputs in a Security Decision
+CWE-841 Improper Enforcement of Behavioral Workflow
+CWE-1021 Improper Restriction of Rendered UI Layers or Frames
+CWE-1022 Use of Web Link to Untrusted Target with window.opener Access
+CWE-1125 Excessive Attack Surface
+© Copyright 2021-2025 - OWASP Top 10 Team - This work is licensed under a
+Creative Commons Attribution 3.0 Unported License
+.
+Made with
+Material for MkDocs

@@ -141,8 +141,12 @@ install-python:
 	make install-deps-python &&\
 	playwright install  # Python embeddings/scraping (prompt_client); NOT frontend e2e — keep when migrating to Cypress
 
-install-typescript:
-	yarn add webpack && cd application/frontend && yarn build
+# Yarn install only. Do not `yarn add` or `yarn build` here: webpack is
+# already in package.json, and a local build rewrites
+# application/frontend/www/bundle.js (tracked so Heroku can serve the UI
+# without a Node compile step). That was dirtying contributor trees after
+# `make install`. Rebuild with `make frontend` when you change the UI.
+install-typescript: install-deps-typescript
 
 install: install-typescript install-python migrate-upgrade
 
@@ -184,6 +188,13 @@ alembic-guardrail:
 oie-pipeline:
 	[ -d "./venv" ] && . ./venv/bin/activate &&\
 	PYTHONPATH=. python scripts/run_oie_pipeline.py --cache_file "$(or $(CACHE_FILE),sqlite:///$(CURDIR)/standards_cache.sqlite)" $(OIE_ARGS)
+
+# Local OIE bootstrap: start cre-postgres, migrate, sync CRE hub (local|upstream).
+# Examples:
+#   make setup-oie
+#   make setup-oie SETUP_OIE_ARGS='--source upstream --install-ml --calibrate'
+setup-oie:
+	bash ./scripts/setup_oie.sh $(SETUP_OIE_ARGS)
 
 oie-e2e-smoke:
 	[ -d "./venv" ] && . ./venv/bin/activate &&\

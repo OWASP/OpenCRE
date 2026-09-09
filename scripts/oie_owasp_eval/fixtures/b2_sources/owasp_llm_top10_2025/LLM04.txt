@@ -1,0 +1,181 @@
+Source: LLM04
+Section: Data and Model Poisoning
+Section-ID: LLM04
+
+LLM04:2025 Data and Model Poisoning - OWASP Gen AI Security Project
+Skip to content
+Join us in Orlando, FL 10/11 – 10/15 @ InfoSec World 2026
+|
+Register Now!
+GETTING STARTED
+Introduction
+MEETINGS
+CONTRIBUTING
+EVENTS
+GLOSSARY
+RESOURCES
+All
+LLM TOP 10
+LLM TOP 10 FOR 2025
+LLM TOP 10 FOR 2023/24
+CHEAT SHEETS
+WHITEPAPERS
+TOOLS
+LEARNING VIDEOS
+SOLUTIONS DIRECTORY
+ROADMAP
+NEWSLETTER
+PROJECT INITIATIVES
+Top 10 for LLM and GenAI
+AGENTIC SECURITY
+AI Bill of Materials
+Ai Data Security
+AI Security Governance
+AI Security Solutions
+AI Threat Intel & Resp
+AI Red Teaming
+BLOG
+ABOUT
+Mission and Charter
+Governance
+LEADERSHIP
+INDUSTRY RECOGNITION
+CONTRIBUTORS
+SPONSORS
+SUPPORTERS
+SPONSORSHIP
+NEWSROOM
+CONTACT
+BRANDING
+LLM04:2025 Data and Model Poisoning
+Data poisoning occurs when pre-training, fine-tuning, or embedding data is manipulated to introduce vulnerabilities, backdoors, or biases. This manipulation can compromise model security, performance, or ethical behavior, leading to harmful outputs or impaired capabilities. Common risks include degraded model performance, biased or toxic content, and exploitation of downstream systems.
+Data poisoning can target different stages of the LLM lifecycle, including pre-training (learning from general data), fine-tuning (adapting models to specific tasks), and embedding (converting text into numerical vectors). Understanding these stages helps identify where vulnerabilities may originate. Data poisoning is considered an integrity attack since tampering with training data impacts the model’s ability to make accurate predictions. The risks are particularly high with external data sources, which may contain unverified or malicious content.
+Moreover, models distributed through shared repositories or open-source platforms can carry risks beyond data poisoning, such as malware embedded through techniques like malicious pickling, which can execute harmful code when the model is loaded. Also, consider that poisoning may allow for the implementation of a backdoor. Such backdoors may leave the model’s behavior untouched until a certain trigger causes it to change. This may make such changes hard to test for and detect, in effect creating the opportunity for a model to become a sleeper agent.
+Common Examples of Vulnerability
+Malicious actors introduce harmful data during training, leading to biased outputs. Techniques like “Split-View Data Poisoning” or “Frontrunning Poisoning” exploit model training dynamics to achieve this. (Ref. link:
+Split-View Data Poisoning
+) (Ref. link:
+Frontrunning Poisoning
+)
+Attackers can inject harmful content directly into the training process, compromising the model’s output quality.
+Users unknowingly inject sensitive or proprietary information during interactions, which could be exposed in subsequent outputs.
+Unverified training data increases the risk of biased or erroneous outputs.
+Lack of resource access restrictions may allow the ingestion of unsafe data, resulting in biased outputs.
+Prevention and Mitigation Strategies
+Track data origins and transformations using tools like OWASP CycloneDX or ML-BOM. Verify data legitimacy during all model development stages.
+Vet data vendors rigorously, and validate model outputs against trusted sources to detect signs of poisoning.
+Implement strict sandboxing to limit model exposure to unverified data sources. Use anomaly detection techniques to filter out adversarial data.
+Tailor models for different use cases by using specific datasets for fine-tuning. This helps produce more accurate outputs based on defined goals.
+Ensure sufficient infrastructure controls to prevent the model from accessing unintended data sources.
+Use data version control (DVC) to track changes in datasets and detect manipulation. Versioning is crucial for maintaining model integrity.
+Store user-supplied information in a vector database, allowing adjustments without re-training the entire model.
+Test model robustness with red team campaigns and adversarial techniques, such as federated learning, to minimize the impact of data perturbations.
+Monitor training loss and analyze model behavior for signs of poisoning. Use thresholds to detect anomalous outputs.
+During inference, integrate Retrieval-Augmented Generation (RAG) and grounding techniques to reduce risks of hallucinations.
+Example Attack Scenarios
+Attack Scenario #1
+An attacker biases the model’s outputs by manipulating training data or using prompt injection techniques, spreading misinformation.
+Attack Scenario #2
+Toxic data without proper filtering can lead to harmful or biased outputs, propagating dangerous information.
+Attack Scenario # 3
+A malicious actor or competitor creates falsified documents for training, resulting in model outputs that reflect these inaccuracies.
+Attack Scenario #4
+Inadequate filtering allows an attacker to insert misleading data via prompt injection, leading to compromised outputs.
+Attack Scenario #5
+An attacker uses poisoning techniques to insert a backdoor trigger into the model. This could leave you open to authentication bypass, data exfiltration or hidden command execution.
+Reference Links
+How data poisoning attacks corrupt machine learning models
+:
+CSO Online
+MITRE ATLAS (framework) Tay Poisoning
+:
+MITRE ATLAS
+PoisonGPT: How we hid a lobotomized LLM on Hugging Face to spread fake news
+:
+Mithril Security
+Poisoning Language Models During Instruction
+:
+Arxiv White Paper 2305.00944
+Poisoning Web-Scale Training Datasets – Nicholas Carlini | Stanford MLSys #75
+:
+Stanford MLSys Seminars YouTube Video
+ML Model Repositories: The Next Big Supply Chain Attack Target
+OffSecML
+Data Scientists Targeted by Malicious Hugging Face ML Models with Silent Backdoor
+JFrog
+Backdoor Attacks on Language Models
+:
+Towards Data Science
+Never a dill moment: Exploiting machine learning pickle files
+TrailofBits
+arXiv:2401.05566 Sleeper Agents: Training Deceptive LLMs that Persist Through Safety Training
+Anthropic (arXiv)
+Backdoor Attacks on AI Models
+Cobalt
+Related Frameworks and Taxonomies
+Refer to this section for comprehensive information, scenarios strategies relating to infrastructure deployment, applied environment controls and other best practices.
+AML.T0018 | Backdoor ML Model
+MITRE ATLAS
+NIST AI Risk Management Framework
+: Strategies for ensuring AI integrity.
+NIST
+Share this:
+Share on X (Opens in new window)
+X
+Share on Facebook (Opens in new window)
+Facebook
+More
+Print (Opens in new window)
+Print
+Email a link to a friend (Opens in new window)
+Email
+Share on X (Opens in new window)
+X
+LLM Top 10
+LLM01:2025 Prompt Injection
+A Prompt Injection Vulnerability occurs when user prompts alter the LLM’s behavior or output in unintended ways. These inputs...
+LLM02:2025 Sensitive Information Disclosure
+Sensitive information can affect both the LLM and its application context. This includes personal identifiable information (PII), financial details,...
+LLM03:2025 Supply Chain
+LLM supply chains are susceptible to various vulnerabilities, which can affect the integrity of training data, models, and deployment...
+LLM04:2025 Data and Model Poisoning
+Data poisoning occurs when pre-training, fine-tuning, or embedding data is manipulated to introduce vulnerabilities, backdoors, or biases. This manipulation...
+LLM05:2025 Improper Output Handling
+Improper Output Handling refers specifically to insufficient validation, sanitization, and handling of the outputs generated by large language models...
+LLM06:2025 Excessive Agency
+An LLM-based system is often granted a degree of agency by its developer – the ability to call functions...
+LLM07:2025 System Prompt Leakage
+The system prompt leakage vulnerability in LLMs refers to the risk that the system prompts or instructions used to...
+LLM08:2025 Vector and Embedding Weaknesses
+Vectors and embeddings vulnerabilities present significant security risks in systems utilizing Retrieval Augmented Generation (RAG) with Large Language Models...
+LLM09:2025 Misinformation
+Misinformation from LLMs poses a core vulnerability for applications relying on these models. Misinformation occurs when LLMs produce false...
+LLM10:2025 Unbounded Consumption
+Unbounded Consumption refers to the process where a Large Language Model (LLM) generates outputs based on input queries or...
+PRIVACY
+NEWSLETTER
+CONTACT
+Overview
+LLM Top 10
+Initiatives
+Landscape
+Glossary
+Roadmaps
+Resources
+Sponsors
+Sponsorship
+Contribute
+Newsroom
+Events
+Meetings
+Leadership
+Volunteer Jobs
+OWASP and the OWASP logo are trademarks of the OWASP Foundation, Inc. Unless otherwise specified, all content on the site is Creative Commons Attribution-ShareAlike v4.0 and provided without
+warranty of service or accuracy. For more information, please refer to our
+General Disclaimer
+.
+– Copyright ©
+2025
+OWASP Foundation, Inc.
+Scroll to Top
+LLM04:2025 Data and Model Poisoning

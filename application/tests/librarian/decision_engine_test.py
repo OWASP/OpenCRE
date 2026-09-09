@@ -41,7 +41,7 @@ class DecideTest(unittest.TestCase):
         r = decide(TAU - 1e-9, CANDS, threshold=TAU)
         self.assertEqual(r.decision, Decision.review)
         self.assertEqual(r.reason_code, ReasonCode.below_threshold)
-        self.assertEqual(r.cre_ids, ("616-305",))  # best-guess suggestion kept
+        self.assertEqual(r.cre_ids, ("616-305", "764-507"))  # top-2 suggestions
 
     def test_no_candidates_reviews_even_when_confident(self):
         r = decide(0.99, (), threshold=TAU)
