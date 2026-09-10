@@ -435,11 +435,39 @@ class TestMain(unittest.TestCase):
             response = client.get(f"/rest/v1/tags?tag=CW")
             self.assertEqual(404, response.status_code)
 
-            expected = {"data": [cres["ca"].todict(), cres["cb"].todict()]}
-
             response = client.get(f"/rest/v1/tags?tag=ta")
             self.assertEqual(200, response.status_code)
-            self.assertCountEqual(json.loads(response.data.decode()), expected)
+            body = json.loads(response.data.decode())
+            self.assertEqual(1, body["page"])
+            self.assertEqual(1, body["total_pages"])
+            self.assertCountEqual(
+                body["cres"], [cres["ca"].todict(), cres["cb"].todict()]
+            )
+            self.assertEqual([], body["nodes"])
+
+    def test_find_document_by_tag_pagination(self) -> None:
+        collection = db.Node_collection()
+        for i in range(3):
+            collection.add_cre(
+                defs.CRE(
+                    id=f"{i}00-{i}00",
+                    description=f"C{i}",
+                    name=f"C{i}",
+                    tags=["shared"],
+                )
+            )
+
+        with self.app.test_client() as client:
+            response = client.get(f"/rest/v1/tags?tag=shared&page=1&items_per_page=2")
+            self.assertEqual(200, response.status_code)
+            body = json.loads(response.data.decode())
+            self.assertEqual(1, body["page"])
+            self.assertEqual(2, len(body["cres"]))
+            self.assertEqual(2, body["total_pages"])
+
+            response = client.get(f"/rest/v1/tags?tag=shared&page=2&items_per_page=2")
+            body = json.loads(response.data.decode())
+            self.assertEqual(1, len(body["cres"]))
 
     def test_test_search(self) -> None:
         collection = db.Node_collection()
