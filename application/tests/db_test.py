@@ -320,6 +320,25 @@ class TestDB(unittest.TestCase):
             doc = yaml.safe_load(f)
             self.assertCountEqual(cre, doc)
 
+    def test_export_filenames_are_safe(self) -> None:
+        loc = tempfile.mkdtemp()
+        collection = db.Node_collection().with_graph()
+        collection.add_node(
+            defs.Standard(
+                name="A01:2021",
+                section="Broken Access Control",
+                sectionID="A01:2021",
+                hyperlink="https://example.com/a01",
+            )
+        )
+        collection.export(loc)
+        reserved = set('<>:"/\\|?*')
+        for name in os.listdir(loc):
+            self.assertFalse(
+                reserved & set(name),
+                f"exported filename contains a reserved character: {name}",
+            )
+
     def test_StandardFromDB(self) -> None:
         expected = defs.Standard(
             name="foo",
