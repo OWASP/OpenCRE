@@ -64,10 +64,24 @@ coverage/
 *.db
 standards_cache.sqlite
 
+### Terraform
+**/.terraform/
+*.tfstate
+*.tfstate.*
+crash.*.log
+crash.log
+*.tfvars
+!infra/gcp/terraform.tfvars.example
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
 ### Docs
 *.md
 !AGENTS.md
 !**/AGENTS.md
+!infra/gcp/*.md
 !docs/continuity/**/*.md
 !docs/continuity/README.md
 !docs/faq.md
