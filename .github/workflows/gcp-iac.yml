@@ -1,0 +1,205 @@
+# GCP IaC — OpenCRE LLM project (Gemini) + Workload Identity Federation
+#
+# Max-security defaults:
+# - workflow_dispatch only (no pull_request)
+# - environment gcp-iac (required reviewers + secrets)
+# - plan-only unless confirm_apply == APPLY
+# - OIDC/WIF after bootstrap; GOOGLE_CREDENTIALS only for first apply
+# - action SHAs pinned; terraform_wrapper false
+# - never logs GEMINI_API_KEY / credentials JSON
+# - persist-credentials: false
+#
+# Values: GitHub environment secrets + variables (see infra/gcp/README.md).
+
+name: GCP IaC
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_apply:
+        description: "Leave empty for plan-only. Type APPLY (exactly) to apply and PATCH Heroku LLM config."
+        required: false
+        default: ""
+        type: string
+      create_project:
+        description: "Terraform create_project. true = create the GCP project."
+        required: false
+        default: "true"
+        type: choice
+        options:
+          - "true"
+          - "false"
+
+permissions:
+  contents: read
+  id-token: write
+  actions: none
+  attestations: none
+  checks: none
+  deployments: none
+  issues: none
+  packages: none
+  pages: none
+  pull-requests: none
+  repository-projects: none
+  security-events: none
+  statuses: none
+
+concurrency:
+  group: gcp-iac
+  cancel-in-progress: false
+
+jobs:
+  terraform:
+    name: plan-or-apply
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    environment: gcp-iac
+    defaults:
+      run:
+        working-directory: infra/gcp
+        shell: bash
+    env:
+      TF_IN_AUTOMATION: "1"
+      TF_INPUT: "0"
+      CLOUDSDK_CORE_DISABLE_PROMPTS: "1"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Require identity values
+        env:
+          PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+          BILLING: ${{ secrets.GCP_BILLING_ACCOUNT_ID }}
+          HEROKU_APP: ${{ vars.HEROKU_APP }}
+          WIF: ${{ vars.GCP_WIF_PROVIDER }}
+          WIF_SA: ${{ vars.GCP_TF_SA_EMAIL }}
+        run: |
+          set -euo pipefail
+          missing=0
+          [ -n "${PROJECT_ID}" ] || { echo "missing variable GCP_PROJECT_ID"; missing=1; }
+          [ -n "${BILLING}" ] || { echo "missing secret GCP_BILLING_ACCOUNT_ID"; missing=1; }
+          [ -n "${HEROKU_APP}" ] || { echo "missing variable HEROKU_APP"; missing=1; }
+          if [ -n "${WIF}" ] && [ -z "${WIF_SA}" ]; then
+            echo "GCP_WIF_PROVIDER set but GCP_TF_SA_EMAIL missing"
+            missing=1
+          fi
+          exit "${missing}"
+
+      - name: Authenticate to Google Cloud (WIF)
+        if: ${{ vars.GCP_WIF_PROVIDER != '' }}
+        uses: google-github-actions/auth@c200f3691d83b41bf9bbd8638997a462592937ed # v2.1.13
+        with:
+          create_credentials_file: true
+          export_environment_variables: true
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_TF_SA_EMAIL }}
+
+      - name: Authenticate to Google Cloud (bootstrap JSON)
+        if: ${{ vars.GCP_WIF_PROVIDER == '' }}
+        uses: google-github-actions/auth@c200f3691d83b41bf9bbd8638997a462592937ed # v2.1.13
+        with:
+          create_credentials_file: true
+          export_environment_variables: true
+          credentials_json: ${{ secrets.GOOGLE_CREDENTIALS }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
+        with:
+          terraform_version: 1.9.8
+          terraform_wrapper: false
+
+      - name: Terraform fmt
+        run: terraform fmt -check -recursive
+
+      - name: Terraform init
+        env:
+          TF_STATE_BUCKET: ${{ vars.TF_STATE_BUCKET }}
+        run: |
+          set -euo pipefail
+          if [ -n "${TF_STATE_BUCKET}" ]; then
+            terraform init -input=false \
+              -backend-config="bucket=${TF_STATE_BUCKET}" \
+              -backend-config="prefix=gcp-iac"
+          else
+            echo "TF_STATE_BUCKET unset: local state for first create (migrate after apply)"
+            terraform init -input=false -backend=false
+          fi
+
+      - name: Terraform validate
+        run: terraform validate
+
+      - name: Terraform plan
+        env:
+          TF_VAR_project_id: ${{ vars.GCP_PROJECT_ID }}
+          TF_VAR_billing_account: ${{ secrets.GCP_BILLING_ACCOUNT_ID }}
+          TF_VAR_region: ${{ vars.GCP_REGION }}
+          TF_VAR_budget_usd: ${{ vars.GCP_BUDGET_USD }}
+          TF_VAR_github_repository: ${{ github.repository }}
+          TF_VAR_create_project: ${{ inputs.create_project }}
+          TF_VAR_org_id: ${{ vars.GCP_ORG_ID }}
+          TF_VAR_folder_id: ${{ vars.GCP_FOLDER_ID }}
+        run: |
+          set -euo pipefail
+          : "${TF_VAR_region:=us-central1}"
+          : "${TF_VAR_budget_usd:=50}"
+          : "${TF_VAR_org_id:=}"
+          : "${TF_VAR_folder_id:=}"
+          terraform plan -input=false -out="${RUNNER_TEMP}/opencre.tfplan"
+
+      - name: Terraform apply
+        if: ${{ inputs.confirm_apply == 'APPLY' }}
+        env:
+          TF_VAR_project_id: ${{ vars.GCP_PROJECT_ID }}
+          TF_VAR_billing_account: ${{ secrets.GCP_BILLING_ACCOUNT_ID }}
+          TF_VAR_region: ${{ vars.GCP_REGION }}
+          TF_VAR_budget_usd: ${{ vars.GCP_BUDGET_USD }}
+          TF_VAR_github_repository: ${{ github.repository }}
+          TF_VAR_create_project: ${{ inputs.create_project }}
+          TF_VAR_org_id: ${{ vars.GCP_ORG_ID }}
+          TF_VAR_folder_id: ${{ vars.GCP_FOLDER_ID }}
+        run: |
+          set -euo pipefail
+          terraform apply -input=false "${RUNNER_TEMP}/opencre.tfplan"
+
+      - name: Migrate state to GCS after first apply
+        if: ${{ inputs.confirm_apply == 'APPLY' && vars.TF_STATE_BUCKET == '' }}
+        run: |
+          set -euo pipefail
+          bucket="$(terraform output -raw tfstate_bucket)"
+          terraform init -input=false -force-copy \
+            -backend-config="bucket=${bucket}" \
+            -backend-config="prefix=gcp-iac"
+          echo "Set GitHub Actions variable TF_STATE_BUCKET=${bucket} (environment gcp-iac)."
+
+      - name: Push LLM config to Heroku (no value logs)
+        if: ${{ inputs.confirm_apply == 'APPLY' }}
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+          HEROKU_APP: ${{ vars.HEROKU_APP }}
+          GOOGLE_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+          GOOGLE_PROJECT_LOCATION: ${{ vars.GCP_REGION }}
+        run: |
+          set -euo pipefail
+          GEMINI_API_KEY="$(terraform output -raw gemini_api_key)"
+          export GEMINI_API_KEY
+          python3 "${GITHUB_WORKSPACE}/scripts/gcp/patch_heroku_llm_config.py"
+          unset GEMINI_API_KEY
+
+      - name: Print WIF identifiers (not secrets)
+        if: ${{ inputs.confirm_apply == 'APPLY' }}
+        run: |
+          set -euo pipefail
+          echo "GCP_WIF_PROVIDER=$(terraform output -raw wif_provider)"
+          echo "GCP_TF_SA_EMAIL=$(terraform output -raw terraform_sa_email)"
+          echo "TF_STATE_BUCKET=$(terraform output -raw tfstate_bucket)"
+          echo "After WIF vars are set, delete secret GOOGLE_CREDENTIALS from environment gcp-iac."
+
+      - name: Shred plan file
+        if: always()
+        run: |
+          set +e
+          rm -f "${RUNNER_TEMP}/opencre.tfplan"
+          exit 0
