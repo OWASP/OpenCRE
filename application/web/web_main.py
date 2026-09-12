@@ -332,11 +332,14 @@ def find_document_by_tag() -> Any:
                 )
             return jsonify(json.loads(oscal_utils.list_to_oscal(documents)))
 
-    page = 1
-    if request.args.get("page") is not None and int(request.args.get("page")) > 0:
-        page = int(request.args.get("page"))
-    items_per_page = int(request.args.get("items_per_page") or ITEMS_PER_PAGE)
-    items_per_page = min(items_per_page, MAX_ITEMS_PER_PAGE)
+    try:
+        page = int(request.args.get("page") or 1)
+        if page <= 0:
+            page = 1
+        items_per_page = int(request.args.get("items_per_page") or ITEMS_PER_PAGE)
+        items_per_page = min(items_per_page, MAX_ITEMS_PER_PAGE)
+    except ValueError:
+        abort(400, "page and items_per_page must be integers")
 
     total_pages, node_documents, cre_documents = database.get_by_tags_with_pagination(
         tags, page=page, items_per_page=items_per_page

@@ -440,8 +440,13 @@ class TestMain(unittest.TestCase):
             body = json.loads(response.data.decode())
             self.assertEqual(1, body["page"])
             self.assertEqual(1, body["total_pages"])
+
+            def _sorted_tags(doc: dict) -> dict:
+                return {**doc, "tags": sorted(doc["tags"])}
+
             self.assertCountEqual(
-                body["cres"], [cres["ca"].todict(), cres["cb"].todict()]
+                [_sorted_tags(c) for c in body["cres"]],
+                [_sorted_tags(cres["ca"].todict()), _sorted_tags(cres["cb"].todict())],
             )
             self.assertEqual([], body["nodes"])
 
@@ -458,14 +463,14 @@ class TestMain(unittest.TestCase):
             )
 
         with self.app.test_client() as client:
-            response = client.get(f"/rest/v1/tags?tag=shared&page=1&items_per_page=2")
+            response = client.get("/rest/v1/tags?tag=shared&page=1&items_per_page=2")
             self.assertEqual(200, response.status_code)
             body = json.loads(response.data.decode())
             self.assertEqual(1, body["page"])
             self.assertEqual(2, len(body["cres"]))
             self.assertEqual(2, body["total_pages"])
 
-            response = client.get(f"/rest/v1/tags?tag=shared&page=2&items_per_page=2")
+            response = client.get("/rest/v1/tags?tag=shared&page=2&items_per_page=2")
             body = json.loads(response.data.decode())
             self.assertEqual(1, len(body["cres"]))
 

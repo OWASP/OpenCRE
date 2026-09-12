@@ -1686,43 +1686,24 @@ class Node_collection:
             nodes_where_clause.append(sqla.and_(Node.tags.like("%{}%".format(tag))))
             cre_where_clause.append(sqla.and_(CRE.tags.like("%{}%".format(tag))))
 
-        node_page = Node.query.filter(*nodes_where_clause).paginate(
-            page=page, per_page=items_per_page, error_out=False
+        node_page = (
+            Node.query.filter(*nodes_where_clause)
+            .order_by(Node.id)
+            .paginate(page=page, per_page=items_per_page, error_out=False)
         )
-        cre_page = CRE.query.filter(*cre_where_clause).paginate(
-            page=page, per_page=items_per_page, error_out=False
+        cre_page = (
+            CRE.query.filter(*cre_where_clause)
+            .order_by(CRE.id)
+            .paginate(page=page, per_page=items_per_page, error_out=False)
         )
 
-        node_documents: List[cre_defs.Document] = []
-        for db_node in node_page.items:
-            resolved = self.get_nodes(
-                name=db_node.name,
-                section=db_node.section,
-                subsection=db_node.subsection,
-                version=db_node.version,
-                link=db_node.link,
-                ntype=db_node.ntype,
-                sectionID=db_node.section_id,
-            )
-            if resolved:
-                node_documents.extend(resolved)
-            else:
-                logger.fatal(
-                    "get_nodes() returned no documents for "
-                    "Node %s:%s:%s that exists, BUG!"
-                    % (db_node.name, db_node.section, db_node.section_id)
-                )
+        node_documents: List[cre_defs.Document] = [
+            nodeFromDB(dbnode=db_node) for db_node in node_page.items
+        ]
 
-        cre_documents: List[cre_defs.Document] = []
-        for c in cre_page.items:
-            cre = self.get_CREs(external_id=c.external_id, name=c.name)[0]
-            if cre:
-                cre_documents.append(cre)
-            else:
-                logger.fatal(
-                    "db.get_CRE returned None for CRE %s:%s that exists, BUG!"
-                    % (c.id, c.name)
-                )
+        cre_documents: List[cre_defs.Document] = [
+            CREfromDB(dbcre=c) for c in cre_page.items
+        ]
 
         total_pages = max(node_page.pages, cre_page.pages)
         return total_pages, node_documents, cre_documents
