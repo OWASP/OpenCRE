@@ -66,6 +66,13 @@ def generate_uuid():
     return str(uuid.uuid4())
 
 
+def safe_filename(name: str) -> str:
+    """Turn a document id into a filename that works on every platform."""
+    name = re.sub(r'[<>:"/\\|?*\x00-\x1f]', "-", name)
+    name = name.replace(" ", "_")
+    return name.rstrip(" .")
+
+
 class Node(BaseModel):  # type: ignore
     __tablename__ = "node"
     id = sqla.Column(sqla.String, primary_key=True, default=generate_uuid)
@@ -2130,31 +2137,13 @@ class Node_collection:
 
         if not dry_run:
             for _, doc in docs.items():
-                title = ""
-                if hasattr(doc, "id"):
-                    title = (
-                        doc.id.replace("/", "-")
-                        .replace(" ", "_")
-                        .replace('"', "")
-                        .replace("'", "")
-                        + ".yaml"
-                    )
-                elif hasattr(doc, "sectionID"):
-                    title = (
-                        doc.name
-                        + "_"
-                        + doc.sectionID.replace("/", "-")
-                        .replace(" ", "_")
-                        .replace('"', "")
-                        .replace("'", "")
-                        + ".yaml"
-                    )
-                else:
+                if not hasattr(doc, "id"):
                     logger.fatal(
-                        f"doc does not have neither sectionID nor id, this is a bug! {doc.__dict__}"
+                        f"doc does not have an id, this is a bug! {doc.__dict__}"
                     )
+                    continue
                 file.writeToDisk(
-                    file_title=title,
+                    file_title=safe_filename(doc.id) + ".yaml",
                     file_content=yaml.safe_dump(doc.todict()),
                     cres_loc=dir,
                 )
