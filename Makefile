@@ -181,6 +181,9 @@ alembic-guardrail:
 	[ -d "./venv" ] && . ./venv/bin/activate &&\
 	python scripts/check_alembic_revision_guardrail.py
 
+gcp-iac-validate:
+	cd infra/gcp && terraform fmt -check -recursive && terraform init -backend=false -input=false && terraform validate
+
 oie-pipeline:
 	[ -d "./venv" ] && . ./venv/bin/activate &&\
 	PYTHONPATH=. python scripts/run_oie_pipeline.py --cache_file "$(or $(CACHE_FILE),sqlite:///$(CURDIR)/standards_cache.sqlite)" $(OIE_ARGS)
