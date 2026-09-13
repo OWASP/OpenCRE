@@ -92,3 +92,47 @@ class TestImportApplySubsectionIdentity(unittest.TestCase):
         self.assertEqual(password_rule.description, "New password rules")
         # The sibling entry that only differs by subsection must be untouched.
         self.assertEqual(overview.description, "Overview text")
+
+    def test_modify_finds_node_with_null_subsection(self) -> None:
+        # Regression: blank input subsection must match a DB NULL subsection.
+        null_subsection_node = db.Node(
+            name="ASVS",
+            section="V2: Authentication",
+            subsection=None,
+            section_id="V2.1.1",
+            description="Overview text",
+            ntype=defs.Credoctypes.Standard.value,
+            tags="",
+            version="",
+            link="",
+        )
+        sqla.session.add(null_subsection_node)
+        sqla.session.commit()
+
+        op = import_diff.ModifyControl(
+            key=("ASVS", "V2: Authentication", "V2.1.1"),
+            before={
+                "name": "ASVS",
+                "section": "V2: Authentication",
+                "subsection": "",
+                "sectionID": "V2.1.1",
+                "description": "Overview text",
+            },
+            after={
+                "name": "ASVS",
+                "section": "V2: Authentication",
+                "subsection": "",
+                "sectionID": "V2.1.1",
+                "description": "Updated overview text",
+            },
+        )
+        run_id = self._stage([op])
+
+        result = import_apply.apply_changeset(run_id=run_id)
+
+        self.assertEqual(result.applied_ops, 1)
+        sqla.session.refresh(null_subsection_node)
+        self.assertEqual(
+            null_subsection_node.description,
+            "Updated overview text",
+        )

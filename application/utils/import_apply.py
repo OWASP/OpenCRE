@@ -52,7 +52,7 @@ def _get_node_for_key(key: Tuple[str, str, str], subsection: str = "") -> db.Nod
     name, section, section_id = key
     q = sqla.session.query(db.Node).filter(db.Node.name == name)
     q = q.filter(db.Node.section == (section or ""))
-    q = q.filter(db.Node.subsection == (subsection or ""))
+    q = q.filter(sqla.func.coalesce(db.Node.subsection, "") == (subsection or ""))
     q = q.filter(db.Node.section_id == (section_id or ""))
     q = q.filter(db.Node.ntype == defs.Credoctypes.Standard.value)
     return q.first()
