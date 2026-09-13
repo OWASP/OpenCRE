@@ -69,7 +69,7 @@ class TestOwaspTop10_2025Parser(unittest.TestCase):
         self.assertEqual("A01", entries[0].sectionID)
         self.assertEqual("Broken Access Control", entries[0].section)
         self.assertEqual(
-            "https://owasp.org/Top10/2025/A01_2025-Broken_Access_Control/",
+            "https://top10.owasp.org/2025/A01_2025-Broken_Access_Control/",
             entries[0].hyperlink,
         )
         self.assertEqual(
